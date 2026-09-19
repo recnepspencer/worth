@@ -4,12 +4,14 @@ use crate::correspondence::{BridgeCorrespondencePrecision, BridgeInstalledSemant
 
 pub(super) fn installed_lowering_identity(
     bridge_runtime_key: u64,
+    signal_branch_identity: &worth_signal::facade::branch::SignalBranchIdentity,
     signal_contract: &worth_signal::facade::InstalledSignalConditionalContract,
     declaration_identity: &str,
     correspondences: &[BridgeInstalledSemanticCorrespondence],
 ) -> String {
     let mut fields = vec![
         bridge_runtime_key.to_string(),
+        signal_branch_identity.as_str().to_owned(),
         signal_contract.graph_instance_id().to_string(),
         signal_contract.node().index().to_string(),
         signal_contract.node().generation().to_string(),

@@ -4,6 +4,12 @@ mod decision;
 mod evaluation;
 mod occupancy;
 mod proof;
+#[allow(
+    dead_code,
+    reason = "milestone 3.16 Gate 0 seals operability appearance standing facts before consumption"
+)]
+mod standing_fact;
+mod standing_observation;
 
 pub use axes::{
     UiIntentAffinityPosture, UiIntentConfirmationPosture, UiIntentMutabilityPosture,
@@ -30,4 +36,15 @@ pub use occupancy::{UiIntentOccupancyReservation, UiIntentOccupancyReservationDe
 pub(crate) use occupancy::{UiIntentOccupancyReservation, UiIntentOccupancyReservationDenial};
 pub use proof::{
     UiInoperableIntentCandidate, UiIntentOperabilityOutcome, UiIntentOperabilityProof,
+};
+#[allow(
+    unused_imports,
+    reason = "milestone 3.16 Gate 0 exposes sealed operability appearance facts internally"
+)]
+pub(crate) use standing_fact::{
+    UiIntentOperabilityAppearanceClass, UiIntentOperabilityStandingFact,
+};
+pub(crate) use standing_observation::{
+    observe_activation_operability, UiIntentStandingOperabilityObservation,
+    UiIntentStandingOperabilityUnavailable,
 };

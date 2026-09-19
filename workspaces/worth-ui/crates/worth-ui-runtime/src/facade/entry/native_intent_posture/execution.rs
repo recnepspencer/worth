@@ -6,6 +6,8 @@ use super::{
 use crate::facade::entry::WorthUiActiveApplicationSession;
 
 mod pending;
+mod recovery;
+mod retry;
 pub(in crate::facade::entry) use pending::DetachedNativeIntentPosturePending;
 
 pub(super) struct PreparedNativeIntentPostureRebind<'session> {
@@ -44,6 +46,17 @@ pub(super) struct NativeIntentPostureIndeterminate<'session> {
 
 impl<'session> PreparedNativeIntentPostureRebind<'session> {
     pub(super) fn execute(mut self) -> WorthUiNativeIntentPosturePublicationOutcome<'session> {
+        if let Err(denial) = self
+            .transfer
+            .observation
+            .validate(self.session, &self.frame)
+        {
+            return stopped(
+                crate::runtime::intent_execution::UiIntentConsequenceStopReason::Preparation(
+                    Box::new(denial),
+                ),
+            );
+        }
         if let Err(denial) = self.reservation.begin_effecting() {
             return stopped(
                 crate::runtime::intent_execution::UiIntentConsequenceStopReason::RebindAdmission(
@@ -60,7 +73,9 @@ impl<'session> PreparedNativeIntentPostureRebind<'session> {
             transfer,
             now_tick,
         } = self;
-        let outcome = session.present_prepared_mounted_frame_internal(frame, deadline, now_tick);
+        let outcome = session
+            .present_prepared_observed_frame(frame, &transfer.observation, None, deadline, now_tick)
+            .expect("exclusive admission preserves the validated observation/frame bond");
         finish(
             NativeIntentPostureAdmitted {
                 session,
@@ -89,10 +104,19 @@ impl<'session> WorthUiNativeIntentPosturePublicationCompletion<'session> {
         now_tick: u64,
     ) -> WorthUiNativeIntentPosturePublicationOutcome<'session> {
         let state = self.take_state();
-        let outcome = state
-            .admitted
-            .session
-            .complete_mounted_presentation(state.mounted, now_tick);
+        let outcome =
+            match state.admitted.session.complete_prepared_observed_frame(
+                state.mounted,
+                &state.admitted.transfer.observation,
+                now_tick,
+            ) {
+                Ok(outcome) => outcome,
+                Err(denial) => return stopped(
+                    crate::runtime::intent_execution::UiIntentConsequenceStopReason::Preparation(
+                        Box::new(denial),
+                    ),
+                ),
+            };
         finish(state.admitted, outcome)
     }
 
@@ -181,7 +205,19 @@ impl DetachedNativeIntentPostureInFlight {
         session: &'session mut WorthUiActiveApplicationSession,
         now_tick: u64,
     ) -> WorthUiNativeIntentPosturePublicationOutcome<'session> {
-        let outcome = session.complete_mounted_presentation(self.mounted, now_tick);
+        let outcome =
+            match session.complete_prepared_observed_frame(
+                self.mounted,
+                &self.transfer.observation,
+                now_tick,
+            ) {
+                Ok(outcome) => outcome,
+                Err(denial) => return stopped(
+                    crate::runtime::intent_execution::UiIntentConsequenceStopReason::Preparation(
+                        Box::new(denial),
+                    ),
+                ),
+            };
         finish(
             NativeIntentPostureAdmitted {
                 session,
@@ -207,71 +243,6 @@ impl DetachedNativeIntentPostureInFlight {
             },
             outcome,
         )
-    }
-}
-
-impl WorthUiNativeIntentPosturePublicationRecovery<'_> {
-    pub fn frame(&self) -> &crate::mounting::UiMountedIndeterminateFrame {
-        &self
-            .state
-            .as_deref()
-            .expect("live posture recovery owns its state")
-            .frame
-    }
-}
-
-impl WorthUiNativeIntentPosturePublicationRetry<'_> {
-    pub fn rejections(&self) -> &[crate::mounting::UiMountedSurfacePresentationRejection] {
-        &self
-            .state
-            .as_deref()
-            .expect("live posture retry owns its state")
-            .rejections
-    }
-}
-
-impl<'session> WorthUiNativeIntentPosturePublicationRetry<'session> {
-    pub fn retry(
-        mut self,
-        now_tick: u64,
-    ) -> WorthUiNativeIntentPosturePublicationOutcome<'session> {
-        let state = self
-            .state
-            .take()
-            .expect("live posture retry owns its state");
-        let NativeIntentPostureRejected {
-            mut admitted,
-            frame,
-            rejections: _,
-        } = *state;
-        if let Err(denial) = admitted.reservation.begin_effecting() {
-            return stopped(
-                crate::runtime::intent_execution::UiIntentConsequenceStopReason::RebindAdmission(
-                    denial,
-                ),
-            );
-        }
-        let deadline = presentation_deadline(&admitted.plan);
-        let outcome = admitted
-            .session
-            .present_prepared_mounted_frame_internal(frame, deadline, now_tick);
-        finish(admitted, outcome)
-    }
-}
-
-impl<'session> WorthUiNativeIntentPosturePublicationRecovery<'session> {
-    pub fn into_session_for_shutdown(mut self) -> &'session mut WorthUiActiveApplicationSession {
-        let state = self
-            .state
-            .take()
-            .expect("live posture recovery owns its state");
-        drop((
-            state.admitted.plan,
-            state.admitted.reservation,
-            state.admitted.transfer,
-            state.frame,
-        ));
-        state.admitted.session
     }
 }
 
@@ -328,6 +299,10 @@ fn finish<'session>(
             ),
         ),
         crate::mounting::UiMountedFrameOutcome::PresentationIndeterminate(frame) => {
+            admitted
+                .reservation
+                .retain_recovery()
+                .expect("pre-effect admission reserved recovery capacity");
             WorthUiNativeIntentPosturePublicationOutcome::Indeterminate(
                 WorthUiNativeIntentPosturePublicationRecovery {
                     state: Some(Box::new(NativeIntentPostureIndeterminate {
@@ -360,8 +335,7 @@ fn publish<'session>(
     ));
     admitted
         .session
-        .application
-        .commit_prepared_observation_progress(admitted.transfer.observation);
+        .commit_consequence_observation(admitted.transfer.observation);
     admitted
         .session
         .intent_postures

@@ -179,6 +179,10 @@ impl UiNativeLifecycleProtocol {
         self.input.has_retained_observations()
     }
 
+    pub(crate) fn observation_drain_capacity_reached(&self) -> bool {
+        self.input.observation_drain_capacity_reached()
+    }
+
     pub fn release_session(&mut self, host_session: u64) {
         self.input.release_session(host_session);
         if self.input.report().last_completed_presentation().is_none() {

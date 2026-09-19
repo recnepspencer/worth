@@ -1,3 +1,7 @@
+mod application_rebind;
+pub(crate) use application_rebind::UiPreparedIntentAdmissionRebind;
+
+use super::standing_owner::UiIntentOperabilityStandingOwner;
 use super::{
     UiAdmittedIntent, UiCurrentIntentAdmissionCandidate, UiIntentAdmissionCancellationReason,
     UiIntentAdmissionCost, UiIntentAdmissionDecision, UiIntentAdmissionMetrics,
@@ -8,6 +12,7 @@ use super::{
 pub(crate) struct UiIntentAdmissionState {
     lineage: super::super::attempt_lineage::UiIntentAttemptLineageState,
     counters: UiIntentAdmissionCounters,
+    standing_owner: Option<UiIntentOperabilityStandingOwner>,
 }
 
 #[derive(Default)]
@@ -19,11 +24,76 @@ struct UiIntentAdmissionCounters {
 }
 
 impl UiIntentAdmissionState {
-    pub(crate) fn new() -> Self {
+    pub(crate) fn prepare_operability_receipt_succession(
+        &self,
+        mounted: &crate::mounting::WorthUiMountedSessionState,
+        successor: &crate::mounting::UiMountedNodeReceiptBasis,
+    ) -> super::UiPreparedIntentOperabilityReceiptSuccession {
+        let successor = self
+            .standing_owner
+            .as_ref()
+            .map(|owner| owner.prepare_receipt_succession(mounted, successor));
+        super::UiPreparedIntentOperabilityReceiptSuccession {
+            predecessor: self.operability_standing_snapshot(),
+            successor,
+        }
+    }
+
+    pub(crate) fn admits_operability_receipt_succession(
+        &self,
+        prepared: &super::UiPreparedIntentOperabilityReceiptSuccession,
+    ) -> bool {
+        self.operability_standing_snapshot() == prepared.predecessor
+    }
+
+    pub(crate) fn commit_operability_receipt_succession(
+        &mut self,
+        prepared: super::UiPreparedIntentOperabilityReceiptSuccession,
+    ) {
+        assert!(self.admits_operability_receipt_succession(&prepared));
+        self.standing_owner = prepared.successor;
+    }
+
+    pub(crate) fn new(operability_appearance_enabled: bool) -> Self {
         Self {
             lineage: super::super::attempt_lineage::UiIntentAttemptLineageState::new(),
             counters: Default::default(),
+            standing_owner: operability_appearance_enabled
+                .then(UiIntentOperabilityStandingOwner::default),
         }
+    }
+
+    pub(crate) fn reconcile_operability_appearance(&mut self, enabled: bool) {
+        match (enabled, self.standing_owner.is_some()) {
+            (true, false) => {
+                self.standing_owner = Some(UiIntentOperabilityStandingOwner::default());
+            }
+            (false, true) => self.standing_owner = None,
+            _ => {}
+        }
+    }
+
+    pub(crate) fn record_operability_standing_fact(
+        &mut self,
+        candidate: &super::super::payload::UiPreparedIntentPayload,
+        decision: &super::super::operability::UiIntentOperabilityDecision,
+    ) {
+        let Some(owner) = self.standing_owner.as_mut() else {
+            return;
+        };
+        owner.record(candidate, decision);
+    }
+
+    #[allow(
+        dead_code,
+        reason = "milestone 3.16 Gate 0 exposes the owner snapshot only to the sealed close-turn lane"
+    )]
+    pub(crate) fn operability_standing_snapshot(
+        &self,
+    ) -> Option<super::UiIntentOperabilityStandingFactSnapshot> {
+        self.standing_owner
+            .as_ref()
+            .map(UiIntentOperabilityStandingOwner::snapshot)
     }
 
     pub(crate) fn issue_lineage(&mut self) -> Option<super::super::UiIntentAttemptLineage> {
@@ -80,20 +150,38 @@ impl UiIntentAdmissionState {
         receipt
     }
 
-    pub(crate) fn cancel_instance(
-        &mut self,
-        execution: &mut crate::runtime::intent_execution::UiIntentExecutionState,
-        instance: worth_ui_host_contract::UiMountedInstanceIdentity,
-    ) -> usize {
-        self.record_lifecycle_cancellation(execution.cancel_instance(instance))
-    }
-
     pub(crate) fn cancel_binding(
         &mut self,
         execution: &mut crate::runtime::intent_execution::UiIntentExecutionState,
         binding: worth_ui_host_contract::UiSurfaceBindingGeneration,
     ) -> usize {
+        if let Some(owner) = self.standing_owner.as_mut() {
+            owner.retire_binding(binding);
+        }
         self.record_lifecycle_cancellation(execution.cancel_binding(binding))
+    }
+
+    pub(crate) fn rebind_surface(
+        &mut self,
+        execution: &mut crate::runtime::intent_execution::UiIntentExecutionState,
+        predecessor: worth_ui_host_contract::UiSurfaceBindingGeneration,
+        successor: worth_ui_host_contract::UiSurfaceBindingGeneration,
+    ) -> usize {
+        if let Some(owner) = self.standing_owner.as_mut() {
+            owner.rebind_surface(predecessor, successor);
+        }
+        self.record_lifecycle_cancellation(execution.cancel_binding(predecessor))
+    }
+
+    pub(crate) fn cancel_instance(
+        &mut self,
+        execution: &mut crate::runtime::intent_execution::UiIntentExecutionState,
+        instance: worth_ui_host_contract::UiMountedInstanceIdentity,
+    ) -> usize {
+        if let Some(owner) = self.standing_owner.as_mut() {
+            owner.retire_instance(instance);
+        }
+        self.record_lifecycle_cancellation(execution.cancel_instance(instance))
     }
 
     pub(crate) fn cancel_all(
@@ -102,6 +190,9 @@ impl UiIntentAdmissionState {
         reason: UiIntentAdmissionCancellationReason,
     ) -> usize {
         let cancelled = execution.cancel_all(reason);
+        if let Some(owner) = self.standing_owner.as_mut() {
+            owner.clear();
+        }
         self.record_lifecycle_cancellation(cancelled)
     }
 
@@ -113,6 +204,9 @@ impl UiIntentAdmissionState {
         crate::runtime::intent_execution::UiIntentExecutionShutdownReport,
     ) {
         let execution_report = execution.shutdown();
+        if let Some(owner) = self.standing_owner.as_mut() {
+            owner.clear();
+        }
         self.record_lifecycle_cancellation(execution_report.reservation_backed_entries_disposed());
         (
             UiIntentAdmissionShutdownReport::new(

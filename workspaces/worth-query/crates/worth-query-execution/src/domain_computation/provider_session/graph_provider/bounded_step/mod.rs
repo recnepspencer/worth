@@ -6,7 +6,6 @@ mod cooperative_execution;
 mod denial;
 mod disposition;
 mod execution_start;
-pub(crate) mod legacy_one_shot;
 mod memory;
 pub(crate) mod provider_anchor;
 mod provider_execution;

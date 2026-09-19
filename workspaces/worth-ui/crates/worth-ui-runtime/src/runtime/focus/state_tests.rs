@@ -123,8 +123,12 @@ fn mosaic_region_scopes_route_independently_on_one_surface() {
             1,
         ),
     ];
-    let snapshot =
-        crate::mounting::UiMountedFocusParticipationSnapshot::new(frame, participants, 2);
+    let snapshot = crate::mounting::UiMountedFocusParticipationSnapshot::new(
+        frame,
+        participants,
+        2,
+        Vec::new(),
+    );
     let mut state = UiFocusRuntimeState::new_session_restore_candidate();
     state.reconcile_mounted_participation(&snapshot).unwrap();
     let first_scope = UiFocusScopeIdentity::from_mounted(surface, first_scope);
@@ -292,6 +296,7 @@ impl World {
                 frame,
                 participants,
                 u32::try_from(focusable_count).unwrap(),
+                Vec::new(),
             ),
             scope: UiFocusScopeIdentity::for_surface(surface),
             identities,
@@ -332,6 +337,7 @@ impl World {
                 frame,
                 participants,
                 self.identities.len() as u32,
+                Vec::new(),
             ),
             scope: self.scope,
             identities: self.identities.clone(),

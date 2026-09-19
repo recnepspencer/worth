@@ -36,6 +36,10 @@ impl UiPointerGesturePressReceipt {
     pub const fn target(&self) -> UiPresentedInteractionTargetView {
         self.target
     }
+
+    pub const fn pointer_device_kind(&self) -> worth_ui_host_contract::UiHostPointerDeviceKind {
+        self.pointer_device_kind
+    }
 }
 
 impl UiTargetedPointerGesture {
@@ -81,5 +85,9 @@ impl UiTargetedPointerGesture {
 
     pub const fn continuity_witness_digest(&self) -> u64 {
         self.continuity_witness_digest
+    }
+
+    pub const fn pointer_device_kind(&self) -> worth_ui_host_contract::UiHostPointerDeviceKind {
+        self.pointer_device_kind
     }
 }

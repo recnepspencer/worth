@@ -14,6 +14,7 @@ pub(crate) struct UiMountedPresentationWork {
     authority: Rc<()>,
     kind: UiMountedPresentationWorkKind,
     layout_owner: Option<std::rc::Rc<crate::mounting::UiMountedProjectionFrame>>,
+    appearance: Option<worth_ui_host_contract::UiMountedAppearancePresentationWork>,
 }
 
 enum UiMountedPresentationWorkKind {
@@ -67,6 +68,40 @@ impl UiMountedPresentationWork {
         self.layout_owner = Some(owner);
     }
 
+    pub(crate) fn bind_appearance(
+        &mut self,
+        source: Option<&worth_ui_host_contract::UiUnpublishedAppearanceFrameProjection>,
+        presentation: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
+        requirement: worth_ui_host_contract::UiMountedSurfaceBindingRequirement,
+        sample_overrides: impl IntoIterator<
+            Item = worth_ui_host_contract::UiMountedPresentationSampleChange,
+        >,
+    ) -> Result<(), worth_ui_host_contract::UiMountedAppearancePresentationWorkDenial> {
+        assert!(
+            self.appearance.is_none(),
+            "appearance work binds exactly once"
+        );
+        self.appearance = source
+            .map(|source| {
+                worth_ui_host_contract::UiMountedAppearancePresentationWork::from_runtime_mounting(
+                    source,
+                    self.view().affinity().successor(),
+                    presentation,
+                    requirement,
+                    sample_overrides,
+                )
+            })
+            .transpose()?
+            .flatten();
+        Ok(())
+    }
+
+    pub(crate) fn appearance(
+        &self,
+    ) -> Option<&worth_ui_host_contract::UiMountedAppearancePresentationWork> {
+        self.appearance.as_ref()
+    }
+
     #[cfg(any(test, feature = "certification-support"))]
     pub(crate) fn into_initial_mechanics(self) -> Option<UiMountedPresentationInitial> {
         match self.kind {
@@ -88,6 +123,7 @@ impl UiMountedPresentationLease {
         UiMountedPresentationWork {
             authority: Rc::clone(&self.seal),
             layout_owner: None,
+            appearance: None,
             kind: UiMountedPresentationWorkKind::Initial(
                 UiMountedPresentationInitial::from_inert_mechanics(input),
             ),
@@ -103,6 +139,7 @@ impl UiMountedPresentationLease {
         UiMountedPresentationWork {
             authority: Rc::clone(&self.seal),
             layout_owner: None,
+            appearance: None,
             kind: UiMountedPresentationWorkKind::Delta(
                 UiMountedPresentationDelta::from_inert_mechanics(input)
                     .with_successor_receipt_affinity(receipt_affinity),
@@ -118,6 +155,7 @@ impl UiMountedPresentationLease {
         UiMountedPresentationWork {
             authority: Rc::clone(&self.seal),
             layout_owner: None,
+            appearance: None,
             kind: UiMountedPresentationWorkKind::Reconstruction(
                 UiMountedPresentationReconstruction::from_inert_mechanics(input),
             ),
@@ -132,6 +170,7 @@ impl UiMountedPresentationLease {
         UiMountedPresentationWork {
             authority: Rc::clone(&self.seal),
             layout_owner: None,
+            appearance: None,
             kind: UiMountedPresentationWorkKind::Sample(
                 UiMountedPresentationSample::from_inert_mechanics(input)
                     .expect("validated runtime sample input remains a lawful same-frame sample"),
@@ -148,6 +187,7 @@ impl UiMountedPresentationLease {
         UiMountedPresentationWork {
             authority: Rc::clone(&self.seal),
             layout_owner: None,
+            appearance: None,
             kind: UiMountedPresentationWorkKind::Unchanged(
                 UiMountedPresentationUnchanged::from_inert_mechanics(input)
                     .with_successor_receipt_affinity(receipt_affinity),

@@ -45,6 +45,21 @@ impl Drop for PendingProbe {
 }
 
 impl UiNativeEventLoopClient for CleanupClient {
+    fn install_observation_clock(
+        &mut self,
+        _clock: super::UiNativeObservationClock,
+    ) -> Result<(), UiNativeEventLoopClientFailure> {
+        Ok(())
+    }
+    fn observation_time_ready(
+        &mut self,
+    ) -> Result<super::UiNativeObservationTimeProgress, UiNativeEventLoopClientFailure> {
+        Ok(super::UiNativeObservationTimeProgress::new(
+            None,
+            UiNativeEventLoopDirective::Continue,
+        ))
+    }
+
     fn native_surface_ready(
         &mut self,
         _grant: super::UiNativeReadinessGrant,
@@ -66,7 +81,10 @@ impl UiNativeEventLoopClient for CleanupClient {
         unreachable!("cleanup proof never enters callbacks")
     }
 
-    fn presentation_attribution(&self) -> Option<super::UiNativeClientPresentationAttribution> {
+    fn presentation_attribution(
+        &self,
+        _observed: &crate::native::UiNativeRetainedFrameObservation,
+    ) -> Option<super::UiNativeClientPresentationAttribution> {
         None
     }
 

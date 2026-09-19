@@ -21,7 +21,7 @@ use super::super::{
 };
 use super::context_identity::selected_elevation_entity;
 use super::operation_role::installed_lifecycle_owner;
-use super::transition_contract::{close_program_targets, lifecycle_decision_reads};
+use super::transition_contract::{close_decision_reads, close_program_targets};
 use crate::domain_computation::primary_graph::{
     WorthQueryApprovedElevation, WorthQueryElevationClosureKind,
     WorthQueryPrimaryGraphApplicationRuntime,
@@ -37,7 +37,10 @@ pub(in crate::domain_computation) struct WorthQueryElevationCloseDraft {
     closer: EntityId,
     closure_kind: WorthQueryElevationClosureKind,
     closed_at: AspectValue,
+    closed_at_field: AspectFieldLocator,
     closed_status: AspectValue,
+    revoked_status: AspectValue,
+    expired_status: AspectValue,
     approved_status: AspectValue,
     elevation_entity: String,
     status_field: AspectFieldLocator,
@@ -88,7 +91,7 @@ where
         WorthQueryElevationCloseAuthorizationDenial,
     >
     where
-        Operation: ApplicationOperationMarkerIdentity,
+        Operation: ApplicationOperationMarkerIdentity<Schema>,
         Input: ApplicationCapabilityRequest<Schema, Capability>,
         Input: 'static,
     {
@@ -120,7 +123,7 @@ fn bind_close<Schema, Capability, Operation, Input>(
 ) -> Result<WorthQueryElevationCloseDraft, WorthQueryOperationAuthorizationDenial>
 where
     Schema: ApplicationSchema,
-    Operation: ApplicationOperationMarkerIdentity,
+    Operation: ApplicationOperationMarkerIdentity<Schema>,
     Input: ApplicationCapabilityRequest<Schema, Capability>,
     Input: 'static,
 {
@@ -153,13 +156,16 @@ where
         closer: access.principal_entity_id(),
         closure_kind,
         closed_at,
+        closed_at_field: lifecycle.lifecycle.closed_at.clone(),
         closed_status,
+        revoked_status: lifecycle.lifecycle.revoked.clone(),
+        expired_status: lifecycle.lifecycle.expired.clone(),
         approved_status: lifecycle.lifecycle.approved.clone(),
         elevation_entity: definition.status().entity().to_string(),
         status_field: lifecycle.lifecycle.status.clone(),
         approver_relation: lifecycle.lifecycle.approver_relation,
         reviewer_relation: lifecycle.lifecycle.reviewer_relation,
-        required_decision_reads: lifecycle_decision_reads(installed),
+        required_decision_reads: close_decision_reads(installed),
         required_program_targets: close_program_targets(installed),
         lifecycle_effect: super::lifecycle_effect::derive_lifecycle_effect(
             definition.lifecycle().revoke(),

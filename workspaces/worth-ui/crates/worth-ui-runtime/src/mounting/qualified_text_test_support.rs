@@ -23,6 +23,23 @@ impl UiQualifiedTextTestFixture {
     }
 
     pub(crate) fn layout(&self, source: &str) -> Arc<worth_ui_text::UiQualifiedTextLayout> {
+        let ranges = if source.is_empty() {
+            Vec::new()
+        } else {
+            vec![worth_ui_host_contract::UiTextOriginalRange::new(
+                0,
+                u32::try_from(source.len()).unwrap(),
+            )
+            .unwrap()]
+        };
+        self.layout_with_ranges(source, &ranges)
+    }
+
+    pub(crate) fn layout_with_ranges(
+        &self,
+        source: &str,
+        ranges: &[worth_ui_host_contract::UiTextOriginalRange],
+    ) -> Arc<worth_ui_text::UiQualifiedTextLayout> {
         let source: Arc<str> = Arc::from(source);
         let constraints = worth_ui_text::UiTextParagraphConstraints::new(
             worth_ui_text::UiTextParagraphConstraintsInput {
@@ -41,21 +58,16 @@ impl UiQualifiedTextTestFixture {
             },
         )
         .unwrap();
-        let styles: Box<[worth_ui_text::UiTextStyleSpan]> = if source.is_empty() {
-            Vec::new().into_boxed_slice()
-        } else {
-            let range = worth_ui_host_contract::UiTextOriginalRange::new(
-                0,
-                u32::try_from(source.len()).unwrap(),
-            )
-            .unwrap();
-            Vec::from([worth_ui_text::UiTextStyleSpan::new(
-                range,
-                worth_ui_text::UiTextStyle::from_paragraph_constraints(&constraints),
-            )
-            .unwrap()])
-            .into_boxed_slice()
-        };
+        let styles = ranges
+            .iter()
+            .map(|&range| {
+                worth_ui_text::UiTextStyleSpan::new(
+                    range,
+                    worth_ui_text::UiTextStyle::from_paragraph_constraints(&constraints),
+                )
+                .unwrap()
+            })
+            .collect();
         Arc::new(
             worth_ui_text::qualify_text_layout(
                 worth_ui_text::UiTextParagraphAdmissionInput {

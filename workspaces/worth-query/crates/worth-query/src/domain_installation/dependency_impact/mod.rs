@@ -26,7 +26,6 @@ pub use impact::{
     WorthQueryImpactAdmissionDenialKind, WorthQueryImpactClass, WorthQueryImpactCounters,
     WorthQueryImpactDecision, WorthQueryInvalidationCandidateSet,
 };
-pub(crate) use impact::{admit_granular_invalidation_deliveries, preflight_owner_delivered_impact};
 pub(crate) use impact::{
     WorthQueryAdmittedLocality, WorthQueryInstalledLiveImpactClassifier,
     WorthQueryInstalledLiveRoutingSelector, WorthQueryPreclassifiedInstalledLiveImpact,

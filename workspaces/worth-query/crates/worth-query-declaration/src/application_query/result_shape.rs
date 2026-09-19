@@ -1,14 +1,17 @@
 use std::marker::PhantomData;
 
+use crate::application_schema::ApplicationStructuredValueBinding;
 use crate::application_schema::{
-    ApplicationFieldPresence, ApplicationFieldUnit, OptionalApplicationFieldValue,
-    RequiredApplicationFieldValue, TypedApplicationValue,
+    ApplicationFieldPresence, ApplicationFieldRef, ApplicationFieldUnit,
+    ApplicationScalarValueBinding, DeclaredApplicationFieldValue, EqualityCapable,
+    EqualityPredicate, OptionalApplicationFieldValue, RequiredApplicationFieldValue,
 };
 
 use super::{
     ApplicationQueryMarkerIdentity, ApplicationQueryOptionalResultFieldRef,
-    ApplicationQueryResultFieldRef, ApplicationQueryResultRelationCardinality,
-    ApplicationQueryResultRelationRef, ApplicationQueryResultTraversalEndpoints,
+    ApplicationQueryParameterRef, ApplicationQueryPredicate, ApplicationQueryResultFieldRef,
+    ApplicationQueryResultRelationCardinality, ApplicationQueryResultRelationRef,
+    ApplicationQueryResultTraversalEndpoints,
 };
 use crate::portable_identity::{WorthQueryPortableType, WorthQueryPortableTypeIdentity};
 
@@ -78,28 +81,30 @@ impl ApplicationQueryResultShape {
     }
 }
 
-pub struct TypedApplicationQueryResultShape<Schema, Query, Entity, Result> {
+pub struct TypedApplicationQueryResultShape<Schema, Query, Entity, Result, ShapeBinding> {
     shape: ApplicationQueryResultShape,
-    _marker: PhantomData<fn() -> (Schema, Query, Entity, Result)>,
+    _marker: PhantomData<fn() -> (Schema, Query, Entity, Result, ShapeBinding)>,
 }
 
-impl<Schema, Query, Entity, Result>
-    TypedApplicationQueryResultShape<Schema, Query, Entity, Result>
+impl<Schema, Query, Entity, Result, ShapeBinding>
+    TypedApplicationQueryResultShape<Schema, Query, Entity, Result, ShapeBinding>
 {
     pub(crate) fn into_erased(self) -> ApplicationQueryResultShape {
         self.shape
     }
 }
 
-pub struct ApplicationQueryResultShapeBuilder<Schema, Query, Entity, Result> {
+pub struct ApplicationQueryResultShapeBuilder<Schema, Query, Entity, Result, ShapeBinding> {
     root_entity: &'static str,
     fields: Vec<ApplicationQueryResultField>,
     relations: Vec<ApplicationQueryResultRelation>,
-    _marker: PhantomData<fn() -> (Schema, Query, Entity, Result)>,
+    _marker: PhantomData<fn() -> (Schema, Query, Entity, Result, ShapeBinding)>,
 }
 
-impl<Schema, Query, Entity, Result>
-    ApplicationQueryResultShapeBuilder<Schema, Query, Entity, Result>
+impl<Schema, Query, Entity, Result, ShapeBinding>
+    ApplicationQueryResultShapeBuilder<Schema, Query, Entity, Result, ShapeBinding>
+where
+    ShapeBinding: ApplicationStructuredValueBinding<Value = Result>,
 {
     pub fn new(root: crate::application_schema::ApplicationEntityRef<Schema, Entity>) -> Self {
         Self {
@@ -127,9 +132,8 @@ impl<Schema, Query, Entity, Result>
     ) -> Self
     where
         Field: RequiredApplicationFieldValue<Value = Value>,
-        Value: TypedApplicationValue + WorthQueryPortableType,
         Unit: ApplicationFieldUnit,
-        Query: ApplicationQueryMarkerIdentity,
+        Query: ApplicationQueryMarkerIdentity<Schema>,
         Slot: WorthQueryPortableType,
     {
         self.fields
@@ -141,8 +145,8 @@ impl<Schema, Query, Entity, Result>
                     aspect: field.aspect().to_owned(),
                     field: field.field().to_owned(),
                     output_name: field.output_name().to_owned(),
-                    scalar_family: Value::SCALAR_FAMILY,
-                    value_type: Value::PORTABLE_TYPE_IDENTITY,
+                    scalar_family: Field::Binding::SCALAR_FAMILY,
+                    value_type: Field::Binding::IDENTITY,
                     presence: ApplicationFieldPresence::Required,
                 },
             ));
@@ -166,9 +170,8 @@ impl<Schema, Query, Entity, Result>
     ) -> Self
     where
         Field: OptionalApplicationFieldValue<Value = Value>,
-        Value: TypedApplicationValue + WorthQueryPortableType,
         Unit: ApplicationFieldUnit,
-        Query: ApplicationQueryMarkerIdentity,
+        Query: ApplicationQueryMarkerIdentity<Schema>,
         Slot: WorthQueryPortableType,
     {
         self.fields
@@ -180,8 +183,8 @@ impl<Schema, Query, Entity, Result>
                     aspect: field.aspect().to_owned(),
                     field: field.field().to_owned(),
                     output_name: field.output_name().to_owned(),
-                    scalar_family: Value::SCALAR_FAMILY,
-                    value_type: Value::PORTABLE_TYPE_IDENTITY,
+                    scalar_family: Field::Binding::SCALAR_FAMILY,
+                    value_type: Field::Binding::IDENTITY,
                     presence: ApplicationFieldPresence::Optional,
                 },
             ));
@@ -197,6 +200,7 @@ impl<Schema, Query, Entity, Result>
         Child,
         Cardinality,
         NestedResult,
+        NestedBinding,
     >(
         mut self,
         relation: ApplicationQueryResultRelationRef<
@@ -209,15 +213,21 @@ impl<Schema, Query, Entity, Result>
             Direction,
             Cardinality,
         >,
-        nested: ApplicationQueryResultShapeBuilder<Schema, Query, Child, NestedResult>,
+        nested: ApplicationQueryResultShapeBuilder<
+            Schema,
+            Query,
+            Child,
+            NestedResult,
+            NestedBinding,
+        >,
     ) -> Self
     where
         Direction:
             ApplicationQueryResultTraversalEndpoints<Entity, Child, DeclaredFrom, DeclaredTo>,
         Cardinality: ApplicationQueryResultRelationCardinality,
-        Query: ApplicationQueryMarkerIdentity,
+        Query: ApplicationQueryMarkerIdentity<Schema>,
+        NestedBinding: ApplicationStructuredValueBinding<Value = NestedResult>,
         Slot: WorthQueryPortableType,
-        NestedResult: WorthQueryPortableType,
     {
         self.relations
             .push(ApplicationQueryResultRelation::from_untrusted_parts(
@@ -230,16 +240,102 @@ impl<Schema, Query, Entity, Result>
                     direction: relation.direction(),
                     output_name: relation.output_name().to_owned(),
                     cardinality: relation.cardinality(),
+                    predicate: None,
                     nested_shape: nested.build().into_erased(),
                 },
             ));
         self
     }
 
-    pub fn build(mut self) -> TypedApplicationQueryResultShape<Schema, Query, Entity, Result>
+    pub fn relation_where_equal<
+        Slot,
+        Relation,
+        DeclaredFrom,
+        DeclaredTo,
+        Direction,
+        Child,
+        Cardinality,
+        NestedResult,
+        NestedBinding,
+        Aspect,
+        Field,
+        Value,
+        Write,
+        Unit,
+        Parameter,
+        Binding,
+    >(
+        mut self,
+        relation: ApplicationQueryResultRelationRef<
+            Query,
+            Slot,
+            Schema,
+            Relation,
+            DeclaredFrom,
+            DeclaredTo,
+            Direction,
+            Cardinality,
+        >,
+        nested: ApplicationQueryResultShapeBuilder<
+            Schema,
+            Query,
+            Child,
+            NestedResult,
+            NestedBinding,
+        >,
+        field: ApplicationFieldRef<
+            Schema,
+            Child,
+            Aspect,
+            Field,
+            Value,
+            Write,
+            EqualityPredicate,
+            Unit,
+        >,
+        parameter: ApplicationQueryParameterRef<Query, Parameter, Binding>,
+    ) -> Self
     where
-        Query: ApplicationQueryMarkerIdentity,
-        Result: WorthQueryPortableType,
+        Direction:
+            ApplicationQueryResultTraversalEndpoints<Entity, Child, DeclaredFrom, DeclaredTo>,
+        Cardinality: ApplicationQueryResultRelationCardinality,
+        Query: ApplicationQueryMarkerIdentity<Schema>,
+        NestedBinding: ApplicationStructuredValueBinding<Value = NestedResult>,
+        Slot: WorthQueryPortableType,
+        Binding: ApplicationScalarValueBinding<Value = Value>,
+        Field: DeclaredApplicationFieldValue<Value = Value, Binding = Binding>,
+        Unit: ApplicationFieldUnit,
+        EqualityPredicate: EqualityCapable,
+    {
+        self.relations
+            .push(ApplicationQueryResultRelation::from_untrusted_parts(
+                WorthQueryPortableApplicationQueryResultRelationParts {
+                    query_type: relation.slot_key().query_identity(),
+                    slot_type: relation.slot_key().slot_identity(),
+                    relation: relation.relation().to_owned(),
+                    from: relation.from().to_owned(),
+                    to: relation.to().to_owned(),
+                    direction: relation.direction(),
+                    output_name: relation.output_name().to_owned(),
+                    cardinality: relation.cardinality(),
+                    predicate: Some(ApplicationQueryPredicate::from_untrusted_fields(
+                        field.entity().to_owned(),
+                        field.aspect().to_owned(),
+                        field.field().to_owned(),
+                        parameter.name().to_owned(),
+                        field.scalar_family(),
+                    )),
+                    nested_shape: nested.build().into_erased(),
+                },
+            ));
+        self
+    }
+
+    pub fn build(
+        mut self,
+    ) -> TypedApplicationQueryResultShape<Schema, Query, Entity, Result, ShapeBinding>
+    where
+        Query: ApplicationQueryMarkerIdentity<Schema>,
     {
         self.fields.sort();
         self.relations.sort();
@@ -247,7 +343,7 @@ impl<Schema, Query, Entity, Result>
             shape: ApplicationQueryResultShape {
                 query_type: Query::QUERY_TYPE_IDENTITY,
                 root_entity: self.root_entity.to_owned(),
-                result_type: Result::PORTABLE_TYPE_IDENTITY,
+                result_type: ShapeBinding::IDENTITY,
                 fields: self.fields,
                 relations: self.relations,
             },

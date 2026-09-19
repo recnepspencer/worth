@@ -12,6 +12,13 @@ pub struct WorthUiPendingMountedPreview<'session> {
     plan_digest: u64,
     transition: crate::runtime::UiPendingMountedPreviewTransition<'session>,
     planning_counters: crate::runtime::UiFrameworkTransitionPlanningCounters,
+    consumed_facts: &'session crate::graph::UiGraphConsumedFactIndex,
+    capabilities: &'session crate::capability::CapabilitySnapshot,
+    intent_catalog: &'session crate::declaration::UiIntentCatalog,
+    presentation: &'session crate::runtime::presentation_state::UiApplicationPresentationState,
+    appearance_owner_snapshot:
+        &'session Option<crate::runtime::appearance::UiAppearanceOwnerSnapshot>,
+    preview_theme_observation: crate::mounting::UiMountedPreviewThemeObservation,
     ports: WorthUiMountedPreviewPorts<'session>,
 }
 

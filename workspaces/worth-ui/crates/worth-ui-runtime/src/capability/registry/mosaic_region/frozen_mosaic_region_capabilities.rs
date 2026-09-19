@@ -6,6 +6,7 @@ use super::{MosaicRegionAcceptedRegistrationProof, MosaicRegionKindDescriptor};
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct FrozenMosaicRegionCapabilities {
     descriptors: Vec<MosaicRegionKindDescriptor>,
+    seam_paint: Option<super::MosaicSeamPaintContract>,
 }
 
 impl FrozenMosaicRegionCapabilities {
@@ -13,16 +14,27 @@ impl FrozenMosaicRegionCapabilities {
     pub(crate) fn empty() -> Self {
         Self {
             descriptors: Vec::new(),
+            seam_paint: None,
         }
     }
 
     pub(crate) fn from_accepted_descriptors(
         mut descriptors: Vec<MosaicRegionKindDescriptor>,
         accepted_regions: &MosaicRegionAcceptedRegistrationProof,
+        seam_paint: Option<super::MosaicSeamPaintContract>,
     ) -> Self {
         descriptors.retain(|descriptor| accepted_regions.admits(descriptor));
         descriptors.sort_by(|left, right| left.id().cmp(right.id()));
-        Self { descriptors }
+        let accepted_ids = descriptors
+            .iter()
+            .map(|descriptor| descriptor.id())
+            .collect::<Vec<_>>();
+        let seam_paint = seam_paint
+            .filter(|contract| contract.regions().iter().eq(accepted_ids.iter().copied()));
+        Self {
+            descriptors,
+            seam_paint,
+        }
     }
 
     pub fn is_empty(&self) -> bool {
@@ -35,6 +47,10 @@ impl FrozenMosaicRegionCapabilities {
 
     pub fn descriptors(&self) -> &[MosaicRegionKindDescriptor] {
         &self.descriptors
+    }
+
+    pub fn seam_paint(&self) -> Option<&super::MosaicSeamPaintContract> {
+        self.seam_paint.as_ref()
     }
 
     pub fn get(&self, id: &MosaicRegionKindId) -> Option<&MosaicRegionKindDescriptor> {
@@ -62,10 +78,58 @@ impl FrozenMosaicRegionCapabilities {
     }
 
     pub(crate) fn digest_basis(&self) -> u64 {
+        let regions = self.region_kind_digest_basis();
+        self.seam_paint.as_ref().map_or_else(
+            || fold_bytes(regions, b"no_seam_paint"),
+            |contract| fold_seam_paint_contract(regions, contract),
+        )
+    }
+
+    pub(crate) fn region_kind_digest_basis(&self) -> u64 {
         self.descriptors
             .iter()
             .fold(0xd46a_193f_70c5_8ab1, fold_mosaic_region_descriptor)
     }
+
+    pub(crate) fn seam_paint_digest_basis(&self) -> u64 {
+        self.seam_paint.as_ref().map_or(0, |contract| {
+            fold_seam_paint_contract(0x6177_2bbf_2e43_087d, contract)
+        })
+    }
+}
+
+impl MosaicRegionKindDescriptor {
+    /// The complete region-kind basis shared with the frozen capability catalog.
+    pub(crate) fn digest_basis(&self) -> u64 {
+        fold_mosaic_region_descriptor(0xd46a_193f_70c5_8ab1, self)
+    }
+}
+
+fn fold_seam_paint_contract(accumulator: u64, contract: &super::MosaicSeamPaintContract) -> u64 {
+    let with_regions = contract.regions().iter().fold(
+        fold_bytes(accumulator, b"seam_regions"),
+        |digest, region| fold_bytes(digest, region.as_str().as_bytes()),
+    );
+    let with_edges = contract.shared_edges().iter().fold(
+        fold_bytes(with_regions, b"seam_edges"),
+        |digest, edge| {
+            edge.endpoints().into_iter().fold(digest, |value, id| {
+                fold_bytes(value, id.as_str().as_bytes())
+            })
+        },
+    );
+    let with_owners = contract.owners().iter().fold(with_edges, |digest, owner| {
+        fold_bytes(digest, owner.owner().as_str().as_bytes())
+    });
+    contract
+        .exterior_corners()
+        .iter()
+        .fold(with_owners, |digest, corner| {
+            fold_bytes(
+                fold_bytes(digest, corner.region().as_str().as_bytes()),
+                &[corner.posture() as u8],
+            )
+        })
 }
 
 fn fold_mosaic_region_descriptor(accumulator: u64, descriptor: &MosaicRegionKindDescriptor) -> u64 {
@@ -137,4 +201,34 @@ fn fold_bytes(mut accumulator: u64, bytes: &[u8]) -> u64 {
         accumulator = accumulator.wrapping_mul(0x0000_0100_0000_01b3);
     }
     accumulator
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::capability::{MosaicRegionRole, MosaicSeamPaintContract};
+
+    #[test]
+    fn seam_digest_changes_without_changing_region_kind_digest() {
+        let region_id = MosaicRegionKindId::new("region.primary").unwrap();
+        let descriptor =
+            MosaicRegionKindDescriptor::new(region_id.clone(), MosaicRegionRole::primary());
+        let without_seam = FrozenMosaicRegionCapabilities {
+            descriptors: vec![descriptor.clone()],
+            seam_paint: None,
+        };
+        let with_seam = FrozenMosaicRegionCapabilities {
+            descriptors: vec![descriptor],
+            seam_paint: Some(MosaicSeamPaintContract::admit([region_id], [], [], []).unwrap()),
+        };
+
+        assert_eq!(
+            without_seam.region_kind_digest_basis(),
+            with_seam.region_kind_digest_basis()
+        );
+        assert_ne!(
+            without_seam.seam_paint_digest_basis(),
+            with_seam.seam_paint_digest_basis()
+        );
+    }
 }

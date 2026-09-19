@@ -190,6 +190,10 @@ impl StaleRelationalBranchObservation {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RelationalPublicationDenial {
+    StaleInvariantGeneration {
+        expected_generation: u64,
+        actual_generation: u64,
+    },
     OwnerUnavailable {
         runtime_instance_id: u64,
     },

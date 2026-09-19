@@ -1,6 +1,13 @@
 use super::WorthUiHostExchangeSessionState;
 
 impl WorthUiHostExchangeSessionState {
+    pub(crate) fn retire_delivered_observation_batch(
+        &mut self,
+        core: worth_ui_host_contract::UiHostObservationCanonicalCore,
+    ) {
+        self.observations.retire_delivered_batch(core);
+    }
+
     pub(crate) fn validate_observation_batch(
         &mut self,
         batch: worth_ui_host_contract::UiHostObservationBatch,

@@ -9,7 +9,7 @@ pub(super) type Link<K, V> = Option<Rc<Node<K, V>>>;
 /// Immutable AVL index used by replacement truth that must fork without
 /// copying unaffected rows. Updates allocate only the search path.
 pub(crate) struct UiPersistentOrdMap<K, V> {
-    root: Link<K, V>,
+    pub(super) root: Link<K, V>,
 }
 
 pub(super) struct Node<K, V> {
@@ -35,6 +35,12 @@ impl<K, V> Default for UiPersistentOrdMap<K, V> {
     }
 }
 
+impl<K, V> UiPersistentOrdMap<K, V> {
+    pub(crate) const fn new() -> Self {
+        Self { root: None }
+    }
+}
+
 impl<K: Ord + Clone, V> UiPersistentOrdMap<K, V> {
     pub(crate) fn len(&self) -> usize {
         node_len(&self.root)
@@ -44,16 +50,22 @@ impl<K: Ord + Clone, V> UiPersistentOrdMap<K, V> {
         self.root.is_none()
     }
 
-    pub(crate) fn get(&self, key: &K) -> Option<&V> {
+    pub(crate) fn get<Q: Ord + ?Sized>(&self, key: &Q) -> Option<&V>
+    where
+        K: std::borrow::Borrow<Q>,
+    {
         self.get_with_probes(key).0
     }
 
-    pub(crate) fn get_with_probes(&self, key: &K) -> (Option<&V>, usize) {
+    pub(crate) fn get_with_probes<Q: Ord + ?Sized>(&self, key: &Q) -> (Option<&V>, usize)
+    where
+        K: std::borrow::Borrow<Q>,
+    {
         let mut cursor = self.root.as_deref();
         let mut probes = 0;
         while let Some(node) = cursor {
             probes += 1;
-            match key.cmp(&node.key) {
+            match key.cmp(node.key.borrow()) {
                 Ordering::Less => cursor = node.left.as_deref(),
                 Ordering::Greater => cursor = node.right.as_deref(),
                 Ordering::Equal => {
@@ -101,6 +113,14 @@ impl<K: Ord + Clone, V> UiPersistentOrdMap<K, V> {
         successor
     }
 
+    pub(crate) fn last_key_value(&self) -> Option<(&K, &V)> {
+        let mut cursor = self.root.as_deref()?;
+        while let Some(right) = cursor.right.as_deref() {
+            cursor = right;
+        }
+        Some((&cursor.key, cursor.value.as_ref()))
+    }
+
     pub(crate) fn insert(&mut self, key: K, value: V) {
         self.insert_with_work(key, value);
     }
@@ -142,7 +162,6 @@ impl<K: Ord + Clone, V> UiPersistentOrdMap<K, V> {
         self.len().checked_mul(bytes_per_entry)
     }
 
-    #[cfg(test)]
     pub(crate) fn root_is_shared_with(&self, other: &Self) -> bool {
         match (&self.root, &other.root) {
             (Some(left), Some(right)) => Rc::ptr_eq(left, right),
@@ -329,5 +348,18 @@ mod tests {
         assert!(removed);
         assert_eq!(work.key_probes(), 2);
         assert_eq!(work.node_copies(), 1);
+    }
+
+    #[test]
+    fn last_key_value_reads_the_greatest_entry_without_iteration() {
+        let mut map = UiPersistentOrdMap::default();
+        for key in [8, 3, 13, 1, 5, 11, 21] {
+            map.insert(key, key * 2);
+        }
+        assert_eq!(map.last_key_value(), Some((&21, &42)));
+        assert_eq!(
+            UiPersistentOrdMap::<u8, u8>::default().last_key_value(),
+            None
+        );
     }
 }

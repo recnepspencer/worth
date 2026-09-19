@@ -54,7 +54,7 @@ impl ApplicationQueryContinuationTarget {
     ) -> Self
     where
         Direction: ApplicationQueryResultTraversal,
-        Query: ApplicationQueryMarkerIdentity,
+        Query: ApplicationQueryMarkerIdentity<Schema>,
         Slot: WorthQueryPortableType,
     {
         Self {

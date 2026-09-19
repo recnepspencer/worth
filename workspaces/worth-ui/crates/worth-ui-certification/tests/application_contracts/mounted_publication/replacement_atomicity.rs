@@ -235,6 +235,7 @@ fn prepared_replacement<'session>(
     workspace: &crate::filesystem_contract_workspace::FilesystemContractWorkspace,
     session: &'session mut worth_ui::facade::app::WorthUiActiveApplicationSession,
 ) -> Box<WorthUiPreparedMountedApplicationReplacement<'session>> {
+    crate::mounted_geometry_fixture::install_current_occurrence_geometry(session);
     let (pending, catalog, boundary) = stage_replacement(workspace, session);
     match session
         .prepare_mounted_replacement(

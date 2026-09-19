@@ -3,7 +3,7 @@ use std::collections::BTreeSet;
 use crate::identity::data::{KindId, PartitionId};
 use crate::transactions::data::{
     CreateIntent, CreatedEntityRef, CreatedRelationRef, EntityMutationIntent, EntityReference,
-    MutationIntent, RecordRef, RelationMutationIntent,
+    MaterializationMutationIntent, MutationIntent, RecordRef, RelationMutationIntent,
 };
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -23,7 +23,6 @@ pub enum RelationalTransactionWriteLocus {
     CreatedRelation(CreatedRelationRef),
 }
 
-/// One exact-basis transaction's authoritative declared read/write scope.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct RelationalTransactionFootprint {
     basis: crate::branch::RelationalBranchBasisDescriptor,
@@ -162,6 +161,27 @@ impl RelationalTransactionFootprint {
                 self.record_read(RelationalTransactionReadLocus::Existing(
                     RecordRef::Relation(record),
                 ));
+            }
+            MutationIntent::Materialization(intent) => {
+                self.record_read(RelationalTransactionReadLocus::Existing(intent.record()));
+                match intent {
+                    MaterializationMutationIntent::RematerializeEntity(spec) => {
+                        self.record_read(RelationalTransactionReadLocus::EntitySchema(spec.kind_id))
+                    }
+                    MaterializationMutationIntent::RematerializeRelation(spec) => {
+                        self.record_read(RelationalTransactionReadLocus::RelationSchema(
+                            spec.kind_id,
+                        ));
+                        self.record_read(RelationalTransactionReadLocus::Existing(
+                            RecordRef::Entity(spec.source),
+                        ));
+                        self.record_read(RelationalTransactionReadLocus::Existing(
+                            RecordRef::Entity(spec.target),
+                        ));
+                    }
+                    MaterializationMutationIntent::SuspendEntity(_)
+                    | MaterializationMutationIntent::SuspendRelation(_) => {}
+                }
             }
         }
     }

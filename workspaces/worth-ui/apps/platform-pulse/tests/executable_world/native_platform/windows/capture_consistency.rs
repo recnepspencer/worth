@@ -16,7 +16,11 @@ pub(super) fn require_matching_capture_sources(
         let observed = capture_pixel(monitor, x, y);
         let source = capture_pixel(window, x, y);
         if source[3] != 255 || observed != source {
-            return Err(capture_mismatch(monitor, window));
+            return Err(NativePlatformFailure::ClientCapture(format!(
+                "independent capture mismatch at ({x}, {y}): monitor={observed:?}; window={source:?}; signatures: monitor={:?}; window={:?}",
+                capture_signature(monitor),
+                capture_signature(window),
+            )));
         }
     }
     Ok(())

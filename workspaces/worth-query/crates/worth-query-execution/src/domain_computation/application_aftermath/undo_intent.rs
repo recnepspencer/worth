@@ -11,6 +11,8 @@ use worth_foundational::facade::{
 };
 use worth_query_installation::facade::WorthQueryCanonicalWorkEvidence;
 
+use crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication;
+
 use super::WorthQueryAftermathDerivationFailure;
 
 const DOMAIN: CanonicalBasisDomain =
@@ -26,7 +28,7 @@ const BUDGET: CanonicalDigestWorkBudget = match CanonicalDigestWorkBudget::new(2
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryUndoIntentIdentity {
     digest: CanonicalDigestId,
-    original_commit_id: u64,
+    original_product_publication: WorthQueryCommittedProductPublication,
     aftermath_digest: CanonicalDigestId,
     work: WorthQueryCanonicalWorkEvidence,
 }
@@ -38,7 +40,7 @@ impl WorthQueryUndoIntentIdentity {
     /// appear here (R8.40). Fan-out twin tests pass those counts as discarded
     /// locals — they never enter the basis.
     pub(crate) fn derive_parts(
-        commit_id: u64,
+        publication: &WorthQueryCommittedProductPublication,
         installed_operation: [u8; 32],
         aftermath_digest: CanonicalDigestId,
         runtime_instance: u64,
@@ -51,10 +53,17 @@ impl WorthQueryUndoIntentIdentity {
                 CanonicalBasisValue::ExactText("undo-intent".into()),
             ),
             entry(
-                "commit-id",
+                "runtime-world-owner",
                 CanonicalBasisValue::UnsignedInteger {
                     width: CanonicalIntegerWidth::Bits64,
-                    value: commit_id.into(),
+                    value: publication.composite_commit().owner_identity().get().into(),
+                },
+            ),
+            entry(
+                "composite-commit",
+                CanonicalBasisValue::UnsignedInteger {
+                    width: CanonicalIntegerWidth::Bits64,
+                    value: publication.composite_commit().ordinal().into(),
                 },
             ),
             entry(
@@ -85,7 +94,7 @@ impl WorthQueryUndoIntentIdentity {
         let derived = canonicalization().digest().derive(ready);
         Ok(Self {
             digest: CanonicalDigestId::new(*derived.value().bytes()),
-            original_commit_id: commit_id,
+            original_product_publication: publication.clone(),
             aftermath_digest,
             work: WorthQueryCanonicalWorkEvidence::one_digest(derived.metadata().work()),
         })
@@ -95,8 +104,8 @@ impl WorthQueryUndoIntentIdentity {
         &self.digest
     }
 
-    pub const fn original_commit_id(&self) -> u64 {
-        self.original_commit_id
+    pub const fn original_product_publication(&self) -> &WorthQueryCommittedProductPublication {
+        &self.original_product_publication
     }
 
     pub const fn aftermath_digest(&self) -> &CanonicalDigestId {

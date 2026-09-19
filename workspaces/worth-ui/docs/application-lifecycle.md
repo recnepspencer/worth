@@ -29,7 +29,8 @@ publication, and generation state coherent. Application code holds one
 - `UiMountedFrameOutcome`
 - `WorthUiMountedFrameExecutionStop`
 - `UiSourceRebindRequest`
-- `UiRebindOutcome`
+- `WorthUiNativeManagedSourceRebindOutcome`
+- `WorthUiNativeManagedRebindProgress`
 - `WorthUiNativeSourceRebindDenial`
 
 Mounted request, deadline, outcome, and recovery types are re-exported by
@@ -52,7 +53,7 @@ used to execute or publish another frame.
 After launch, `begin_source_rebind` is the ordinary bridge from one settled
 filesystem snapshot to semantic classification, bounded consequence planning,
 canonical host presentation, and atomic successor publication. It borrows the
-same running shell; it does not launch or swap in a second application.
+same running shell and retains incomplete work inside that shell.
 
 ## How It Executes
 
@@ -69,15 +70,15 @@ WorthUi::app()
    | RetentionDenied | AdmissionDenied | CompletionDenied
 -> inspect or continue through the returned typed outcome
 -> for a settled edit, begin_source_rebind
--> Published | ObservedNoChange | Duplicate | SupersededBeforeEffects
-   | TimedOutBeforeEffects | CancelledBeforeEffects
-   | RejectedBeforeEffects | InFlight | Indeterminate
+-> Published | Pending | Stopped
+-> progress_managed_rebind or retry_managed_rebind while Pending
+-> Published | AwaitingProgress | Stopped
 -> shutdown
 ```
 
 A pre-effect denial leaves the predecessor publication current. If native
-effects may have started, the runtime retains semantic truth but marks affected
-bindings uncertain until the typed recovery path completes.
+effects may have started, the shell retains semantic truth and the exact
+completion, retry, or recovery authority until managed progression settles it.
 
 ## Small Example
 
@@ -419,19 +420,27 @@ amplification belongs only to the scheduled scale courtroom. Full-frame capture
 above device scale 4 is unsupported; the largest admitted 1120-by-700 scale-4
 RGBA8 capture is bounded to 50,176,000 bytes.
 
-### Current Appearance Posture
+### Appearance And Theme Lifecycle
 
-Canvas, raised surface, structural rule, primary/secondary text, accent,
-positive, and caution roles are application-owned tokens lowered through the
-existing paint and text contracts. They are not a public appearance system.
-Every interactive region must correspond to an admitted action. Hover,
-pressed, selected, focused, disabled, validation, icons, shadows, and rounded
-control treatment remain outside 3.15 unless an existing mounted fact already
-owns that exact meaning.
+The prepared application admits appearance roles, a typed theme-slot catalog,
+complete theme definitions, explicit component attachments, and authored
+Backdrop/Portal relations. Launch selects the bundle's initial theme. Mounted
+preparation resolves role cells from the current theme and coherent UI-owned
+state, then composes accepted Motion samples and relational overlay order before
+the host can receive the frame.
 
-Milestone 3.16 may consume coherent service postures as appearance inputs. It
-may not read mutable service internals, invent a second state lane, or replace
-the Platform Pulse composition and product facts.
+A live theme switch is an application operation with exact predecessor and
+surface authority. It prepares only affected consumers, publishes through the
+ordinary mounted boundary, and commits the selected theme only after host
+acceptance. Source replacement follows the same rule: the owner-state
+succession, text publication, appearance, Motion, overlays, and retention used
+to derive successor pixels are the results committed on acceptance. Rejection
+preserves predecessor paint and state; retry consumes the returned evidence.
+
+UI owners remain authoritative for hover, pressed, selection, focus,
+operability, validation, Portal state, and Motion tracks. Appearance reads
+their sealed facts and cannot mutate interaction or service state. See
+[Appearance and themes](./appearance-and-themes.md) for authoring and limits.
 
 ### Inspection And Cleanup
 

@@ -158,11 +158,6 @@ impl SnapshotHandles {
         self.published.versions()
     }
 
-    #[cfg(test)]
-    pub(crate) fn retains_published_version(&self, version_id: VersionId) -> bool {
-        self.published.versions().contains(&version_id)
-    }
-
     pub(crate) fn published_binding(
         &self,
         snapshot_id: SnapshotId,

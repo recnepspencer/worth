@@ -3,6 +3,7 @@ pub(crate) enum UiPortalPlacementSide {
     Below,
     Above,
     ViewportFit,
+    Centered,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -29,6 +30,7 @@ pub(crate) struct UiPreparedPortalPlacement {
     anchor: worth_ui_host_contract::UiMountedCanonicalBox,
     clip_bounds: worth_ui_host_contract::UiMountedCanonicalBox,
     bounds: UiPresentedPortalBounds,
+    paint_bounds: UiPresentedPortalBounds,
     side: UiPortalPlacementSide,
     layer: UiPortalLayerIdentity,
     shielding: super::UiPortalInputShielding,
@@ -58,6 +60,7 @@ impl UiPreparedPortalPlacement {
         anchor: worth_ui_host_contract::UiMountedCanonicalBox,
         clip_bounds: worth_ui_host_contract::UiMountedCanonicalBox,
         bounds: UiPresentedPortalBounds,
+        paint_bounds: UiPresentedPortalBounds,
         side: UiPortalPlacementSide,
         layer: UiPortalLayerIdentity,
         shielding: super::UiPortalInputShielding,
@@ -67,6 +70,7 @@ impl UiPreparedPortalPlacement {
             anchor,
             clip_bounds,
             bounds,
+            paint_bounds,
             side,
             layer,
             shielding,
@@ -83,6 +87,9 @@ impl UiPreparedPortalPlacement {
     }
     pub(crate) const fn bounds(self) -> UiPresentedPortalBounds {
         self.bounds
+    }
+    pub(crate) const fn paint_bounds(self) -> UiPresentedPortalBounds {
+        self.paint_bounds
     }
     pub(crate) const fn clip_bounds(self) -> worth_ui_host_contract::UiMountedCanonicalBox {
         self.clip_bounds

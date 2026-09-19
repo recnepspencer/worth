@@ -73,7 +73,7 @@ impl PlatformPulseApplicationRuntime {
             );
             return false;
         }
-        if let Err(error) = self.publisher.semantic_focus_published(focus) {
+        if let Err(error) = self.publisher.semantic_focus_published(focus, mounted) {
             self.fail(
                 PlatformPulseTerminalError::ObservationPublication,
                 Err(error),
@@ -96,7 +96,7 @@ impl PlatformPulseApplicationRuntime {
             self.fail_visual_identity(denial);
             return false;
         }
-        self.refresh_product_story(shell)
+        true
     }
 }
 

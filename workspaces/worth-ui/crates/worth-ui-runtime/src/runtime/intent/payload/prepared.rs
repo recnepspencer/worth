@@ -38,6 +38,10 @@ impl UiPreparedIntentPayload {
         self.basis.receipt()
     }
 
+    pub(crate) const fn portal_declaration(&self) -> Option<worth_ui_dsl::UiPortalDeclarationId> {
+        self.input_basis().portal_declaration()
+    }
+
     pub fn retained_owner_reference_count(&self) -> usize {
         self.basis.retained_owner_reference_count()
     }

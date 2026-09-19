@@ -1,0 +1,77 @@
+use super::{UiMountedAppearanceStateMembers, UiMountedAppearanceStateMembership};
+
+impl UiMountedAppearanceStateMembers {
+    pub(in crate::mounting::projection::frame_storage) fn retained_surface(
+        &self,
+        instance: worth_ui_host_contract::UiMountedInstanceIdentity,
+    ) -> Option<&worth_ui_host_contract::UiMountedSurfaceAppearanceMechanic> {
+        let key = self.reverse.get(&instance)?;
+        let UiMountedAppearanceStateMembership::Retained(entry) = self.primary.get(key)? else {
+            return None;
+        };
+        entry
+            .sidecar
+            .current_facts()?
+            .records()
+            .iter()
+            .find_map(|fact| match fact.mechanic() {
+                worth_ui_host_contract::UiMountedAppearanceMechanic::Surface(surface) => {
+                    Some(surface)
+                }
+                _ => None,
+            })
+    }
+
+    pub(in crate::mounting::projection::frame_storage) fn retained_sidecars(
+        &self,
+    ) -> impl Iterator<Item = &super::UiMountedAppearanceSidecar> {
+        self.primary
+            .iter()
+            .filter_map(|(_, membership)| match membership {
+                UiMountedAppearanceStateMembership::Retained(entry) => Some(&entry.sidecar),
+                // Epoch changes retire semantic authority while the accepted image
+                // remains physically visible until its replacement is accepted.
+                UiMountedAppearanceStateMembership::PhysicalOnly(physical) => {
+                    Some(&physical.sidecar)
+                }
+                UiMountedAppearanceStateMembership::Staged { predecessor, .. } => predecessor
+                    .as_ref()
+                    .map(super::UiMountedAppearanceStatePredecessor::sidecar),
+                UiMountedAppearanceStateMembership::Reserved => None,
+            })
+    }
+
+    pub(in crate::mounting::projection::frame_storage) fn matches_geometry_input(
+        &self,
+        instance: worth_ui_host_contract::UiMountedInstanceIdentity,
+        input: &crate::mounting::UiMountedAppearanceGeometryInput,
+    ) -> (bool, usize) {
+        let (key, probes) = self.reverse.get_with_probes(&instance);
+        let Some(key) = key else {
+            return (false, probes);
+        };
+        let (membership, member_probes) = self.primary.get_with_probes(key);
+        let matches = match membership {
+            Some(UiMountedAppearanceStateMembership::Retained(entry)) => {
+                entry.sidecar.matches_geometry_input(input)
+            }
+            Some(UiMountedAppearanceStateMembership::PhysicalOnly(previous)) => {
+                previous.sidecar.matches_geometry_input(input)
+            }
+            _ => false,
+        };
+        (matches, probes + member_probes)
+    }
+
+    pub(in crate::mounting::projection::frame_storage) fn has_current_retained(
+        &self,
+        key: &super::UiMountedAppearanceStateKey,
+    ) -> (bool, super::UiMountedAppearanceMembershipWork) {
+        let (membership, probes) = self.primary.get_with_probes(key.local_node());
+        let mut work = super::UiMountedAppearanceMembershipWork::default();
+        work.add_lookup(probes);
+        let current = matches!(membership,
+            Some(UiMountedAppearanceStateMembership::Retained(entry)) if entry.key == *key);
+        (current, work)
+    }
+}

@@ -17,9 +17,11 @@ pub(crate) use effect::{
     EvaluationEffect, PendingDependencySnapshot, PreparedApplyResult, PreviousArtifactWarmSnapshot,
 };
 pub(crate) use engine::apply_prepared_evaluation_after_dependencies_with_policy;
+#[cfg(test)]
 pub(crate) use engine::apply_prepared_evaluation_with_policy;
 pub(crate) use engine::collect_effect_dependency_inputs_iter;
 pub use engine::EvaluationExecutionMetadata;
+pub(crate) use engine::EvaluationWork;
 #[cfg(feature = "parallel")]
 pub(crate) use engine::{
     build_prepared_apply_commit_packet, record_reuse_rejection_telemetry, ApplyCommitBuildError,

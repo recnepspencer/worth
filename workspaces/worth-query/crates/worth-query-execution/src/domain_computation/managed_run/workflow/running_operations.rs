@@ -95,6 +95,35 @@ impl WorthQueryRunningWorkflowRun {
             .release_projection_bytes(retained_bytes)
     }
 
+    pub(in crate::domain_computation::managed_run) fn transfer_projection_to_output(
+        &mut self,
+        projection_bytes: usize,
+        additional_bytes: usize,
+    ) -> bool {
+        self.affinity
+            .provider_work_mut()
+            .transfer_projection_to_output(projection_bytes, additional_bytes)
+    }
+
+    pub(in crate::domain_computation::managed_run) fn transfer_output_to_receipt(
+        &mut self,
+        envelope_bytes: usize,
+        total_output_bytes: usize,
+    ) -> bool {
+        self.affinity
+            .provider_work_mut()
+            .transfer_output_to_receipt(envelope_bytes, total_output_bytes)
+    }
+
+    pub(in crate::domain_computation::managed_run) fn release_output_bytes(
+        &mut self,
+        retained_bytes: usize,
+    ) -> bool {
+        self.affinity
+            .provider_work_mut()
+            .release_output_bytes(retained_bytes)
+    }
+
     pub(in crate::domain_computation::managed_run) fn record_provider_execution_release(
         &mut self,
         evidence: &WorthQueryProviderExecutionReleaseEvidence,

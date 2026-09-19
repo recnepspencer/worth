@@ -365,7 +365,7 @@ fn demand_for_foreground(
                 foreground,
                 UiMountedTextPaintSpanIdentity::from_runtime_mounting([7; 32]),
             )],
-            logical_damage: &[full_damage()],
+            selection: crate::UiGlyphRasterDemandSelection::LogicalDamage(&[full_damage()]),
             scale: UiGlyphRasterScale::new(1_000, layout.view().text_scale_generation()).unwrap(),
             placement: UiGlyphRasterPlacement::default(),
             lane: UiGlyphRasterLane::Ordinary,

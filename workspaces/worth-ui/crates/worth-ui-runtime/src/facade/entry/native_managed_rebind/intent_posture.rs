@@ -9,6 +9,10 @@ pub(in crate::facade::entry) enum ManagedIntentPostureNormalization {
     ReconstructionRequired(
         crate::facade::entry::native_intent_posture::DetachedNativeIntentPosturePending,
     ),
+    Indeterminate {
+        recovery: crate::runtime::rebind::UiDetachedRebindRecovery,
+        frame: crate::mounting::UiMountedIndeterminateFrame,
+    },
     Stopped(WorthUiNativeManagedRebindStop),
 }
 
@@ -58,10 +62,8 @@ pub(in crate::facade::entry) fn normalize_managed_intent_posture(
             WorthUiNativeManagedRebindStop::IntentPosture(stop),
         ),
         Outcome::Indeterminate(recovery) => {
-            let _ = recovery.into_session_for_shutdown();
-            ManagedIntentPostureNormalization::Stopped(
-                WorthUiNativeManagedRebindStop::Indeterminate,
-            )
+            let (recovery, frame) = recovery.detach_for_native();
+            ManagedIntentPostureNormalization::Indeterminate { recovery, frame }
         }
         Outcome::InternalDefect(defect) => ManagedIntentPostureNormalization::Stopped(
             WorthUiNativeManagedRebindStop::InternalDefect(defect.kind()),
@@ -104,6 +106,10 @@ pub(super) fn finish(
         }
         ManagedIntentPostureNormalization::Pending(completion) => {
             *pending = Some(WorthUiNativePendingManagedRebind::IntentPosture(completion));
+            WorthUiNativeManagedRebindProgress::AwaitingProgress
+        }
+        ManagedIntentPostureNormalization::Indeterminate { recovery, frame } => {
+            *pending = Some(WorthUiNativePendingManagedRebind::Indeterminate { recovery, frame });
             WorthUiNativeManagedRebindProgress::AwaitingProgress
         }
         ManagedIntentPostureNormalization::ReconstructionRequired(_) => {

@@ -256,6 +256,14 @@ impl WorthUiNativeApplicationShell {
                     WorthUiNativeManagedRebindStop::PredecessorReconstructionFailed,
                 )
             }
+            intent_posture::ManagedIntentPostureNormalization::Indeterminate {
+                recovery,
+                frame,
+            } => {
+                self.pending_managed_rebind =
+                    Some(WorthUiNativePendingManagedRebind::Indeterminate { recovery, frame });
+                BeginOutcome::Pending
+            }
             intent_posture::ManagedIntentPostureNormalization::Stopped(stop) => {
                 BeginOutcome::Stopped(stop)
             }

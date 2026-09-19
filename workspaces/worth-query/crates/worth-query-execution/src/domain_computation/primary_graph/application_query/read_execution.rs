@@ -25,6 +25,7 @@ use worth_relational::facade::indexes::{DerivedIndexGenerationId, RelatedEntityO
 
 pub(super) struct RawOneShotRows {
     pub(super) rows: WorthQueryApplicationDisclosedProjectionTree,
+    pub(super) source_footprints: Vec<super::observed_source::WorthQueryObservedSourceFootprint>,
     pub(super) examined_candidates: usize,
     pub(super) predicate_work_units: usize,
     pub(super) predicate_index_generation:
@@ -85,6 +86,7 @@ pub(super) fn read_bounded_root_rows<
         graph,
         contract,
         &plan.governance,
+        &plan.parameters,
         &selection.candidates,
         plan.controls
             .maximum_work()
@@ -104,13 +106,18 @@ pub(super) fn read_bounded_root_rows<
         &result_buffer,
         tree.rows.raw_rows(),
         tree.rows.capacity(),
+        &tree.source_footprints,
+        tree.source_footprints.capacity(),
         plan.query.name(),
     )?;
     Ok(RawNonLiveKernelOutcome {
         raw: RawOneShotRows {
             rows: tree.rows,
+            source_footprints: tree.source_footprints,
             examined_candidates: selection.examined_candidates,
-            predicate_work_units: selection.predicate_work_units,
+            predicate_work_units: selection
+                .predicate_work_units
+                .saturating_add(tree.relation_predicate_work_units),
             predicate_index_generation: selection.predicate_index_generation,
             target_identity_index_generation: None,
             target_identity_index_entries_examined: 0,
@@ -178,6 +185,7 @@ pub(super) fn read_continuation_page<
         graph,
         contract,
         &plan.governance,
+        &plan.parameters,
         &selection.candidates,
         plan.controls
             .maximum_work()
@@ -213,13 +221,18 @@ pub(super) fn read_continuation_page<
         &result_buffer,
         tree.rows.raw_rows(),
         tree.rows.capacity(),
+        &tree.source_footprints,
+        tree.source_footprints.capacity(),
         plan.query.name(),
     )?;
     Ok(RawNonLiveKernelOutcome {
         raw: RawOneShotRows {
             rows: tree.rows,
+            source_footprints: tree.source_footprints,
             examined_candidates: selection.examined_candidates,
-            predicate_work_units: selection.predicate_work_units,
+            predicate_work_units: selection
+                .predicate_work_units
+                .saturating_add(tree.relation_predicate_work_units),
             predicate_index_generation: selection.predicate_index_generation,
             target_identity_index_generation: None,
             target_identity_index_entries_examined: 0,
@@ -246,6 +259,8 @@ fn verify_result_tree_accounting(
     reservation: &WorthQueryApplicationResultBufferReservation,
     rows: &[WorthQueryApplicationProjectionNode],
     row_capacity: usize,
+    source_footprints: &[super::observed_source::WorthQueryObservedSourceFootprint],
+    source_footprint_capacity: usize,
     subject: &str,
 ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
     let retained_bytes = rows
@@ -253,6 +268,15 @@ fn verify_result_tree_accounting(
         .map(WorthQueryApplicationProjectionNode::retained_bytes)
         .fold(
             row_capacity.saturating_mul(std::mem::size_of::<WorthQueryApplicationProjectionNode>()),
+            usize::saturating_add,
+        );
+    let retained_bytes = source_footprints
+        .iter()
+        .map(super::observed_source::WorthQueryObservedSourceFootprint::retained_bytes)
+        .fold(
+            retained_bytes.saturating_add(source_footprint_capacity.saturating_mul(
+                std::mem::size_of::<super::observed_source::WorthQueryObservedSourceFootprint>(),
+            )),
             usize::saturating_add,
         );
     reservation.verify_retained(retained_bytes).map_err(|()| {

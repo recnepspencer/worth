@@ -5,10 +5,25 @@ use worth_ui_host_contract::{
 
 use crate::facade::prepared_application_authority::WorthUiPreparedApplicationGenerationIdentity;
 
+#[path = "assembly/appearance_retry.rs"]
+mod appearance_retry;
+#[path = "assembly/appearance_visual_regions.rs"]
+mod appearance_visual_regions;
+#[path = "assembly/pointer_affordance.rs"]
+mod pointer_affordance;
 #[path = "assembly/prepared_frame.rs"]
 mod prepared_frame;
 
+#[cfg(test)]
+#[path = "assembly/appearance_order_tests.rs"]
+mod appearance_order_tests;
+#[cfg(test)]
+#[path = "assembly/appearance_output_tests.rs"]
+mod appearance_output_tests;
+
 pub(crate) use prepared_frame::binding_requirement;
+mod resolved_frame;
+pub use resolved_frame::UiPreparedMountedFrame;
 
 #[derive(Clone, Debug)]
 pub struct UiMountedFrameRequest {
@@ -41,6 +56,12 @@ pub enum UiMountedFramePreparationDenial {
     TraceSourceGenerationMismatch,
     IncompleteManifest,
     IntegrityMismatch,
+    AppearanceStateCapacityExceeded(super::projection::UiAppearanceStateCapacityExceeded),
+    AppearanceStateIdentityMismatch,
+    AppearanceOwnerSnapshotUnavailable,
+    AppearanceThemeSwitch(crate::runtime::appearance::UiThemeSwitchDenial),
+    PointerSnapshotGenerationMismatch,
+    PointerSnapshotTargetUnavailable(worth_ui_host_contract::UiMountedInstanceIdentity),
 }
 
 #[derive(Clone)]
@@ -58,8 +79,10 @@ pub struct UiMountedFrameReceipt {
     cost: super::UiMountCostReport,
 }
 
-pub struct UiPreparedMountedFrame {
+pub struct UiAssembledMountedFrame {
     candidate: super::UiProjectedMountedFrameCandidate,
+    appearance_retry_basis: Option<super::projection::UiMountedProjectionFrameOwner>,
+    prepared_theme_binding: Option<crate::runtime::appearance::UiActiveThemeBinding>,
     generation: WorthUiPreparedApplicationGenerationIdentity,
     manifest: UiMountedFrameManifest,
     canonical_core: UiMountedFrameCanonicalCore,
@@ -72,6 +95,9 @@ pub struct UiPreparedMountedFrame {
 
 pub(crate) struct UiPreparedMountedFrameAdmission {
     pub candidate: super::UiProjectedMountedFrameCandidate,
+    pub text_publication:
+        Option<std::rc::Rc<crate::runtime::presentation_state::UiApplicationTextPublication>>,
+    pub text_publication_work: usize,
     pub generation: WorthUiPreparedApplicationGenerationIdentity,
     pub manifest: UiMountedFrameManifest,
     pub graph_world: u64,
@@ -82,6 +108,19 @@ pub(crate) struct UiPreparedMountedFrameAdmission {
 }
 
 impl UiMountedFrameRequest {
+    pub(crate) fn includes_surface(&self, surface: UiSemanticSurfaceIdentity) -> bool {
+        match &self.surfaces {
+            UiMountedSurfaceSelection::AllBound => true,
+            UiMountedSurfaceSelection::Exact(surfaces) => surfaces.contains(&surface),
+        }
+    }
+
+    pub(crate) fn for_surfaces(mut self, surfaces: Vec<UiSemanticSurfaceIdentity>) -> Self {
+        self.surfaces = UiMountedSurfaceSelection::Exact(surfaces.into());
+        self.reuse_identity = UiMountedFrameRequestIdentity(std::rc::Rc::new(()));
+        self
+    }
+
     pub fn all_bound_surfaces() -> Self {
         Self {
             surfaces: UiMountedSurfaceSelection::AllBound,

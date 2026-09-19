@@ -1,7 +1,7 @@
 use super::WorthUiPreparedApplicationActivation;
 
 impl WorthUiPreparedApplicationActivation {
-    pub(super) fn candidate_graph(&self) -> crate::graph::UiGraphAuthority<'_> {
+    pub(in crate::facade::entry) fn candidate_graph(&self) -> crate::graph::UiGraphAuthority<'_> {
         crate::graph::UiGraphAuthority::new(&self.candidate_graph)
     }
 

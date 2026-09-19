@@ -40,7 +40,10 @@ impl super::WorthUiNativeApplicationShell {
     ) -> Option<bool> {
         self.mounted_row_indices
             .get(authored_semantic_identity)
-            .map(|index| self.mounted_rows[*index].mounted.is_some())
+            .map(|index| {
+                self.current_native_mounted_instance(&self.mounted_rows[*index])
+                    .is_some()
+            })
     }
 
     pub fn inspect_motion_presentation_for_certification(

@@ -3,6 +3,10 @@ use crate::runtime::tests::active_application_session_test_support::{
     admit_candidate_catalog, admit_first_candidate_catalog_row_with_viewport_width,
     component_candidate_submission, source_backed_component_session,
 };
+use crate::runtime::tests::appearance_component_session_test_support::{
+    source_backed_two_node_appearance_session, two_node_appearance_candidate_submission,
+    validation_background_role, APPEARANCE_NODE_A, APPEARANCE_NODE_B,
+};
 use crate::runtime::tests::source_ingress_boundary_test_support::lower_file_submission;
 use crate::runtime::{
     WorthUiFrameBoundary, WorthUiNoOpProvenancePosture, WorthUiNoOpQueryPosture,
@@ -96,6 +100,63 @@ fn watcher_order_and_formatting_drift_preserve_the_admitted_mapping_without_publ
     let outcome = replace(&mut session, reformatted);
     assert!(outcome.semantic_no_op().is_some());
     assert_eq!(session.inspect_runtime(), admitted);
+}
+
+#[test]
+fn equivalent_appearance_attachment_remains_a_semantic_no_op() {
+    let role = validation_background_role("theme.appearance_consumer");
+    let mut session = source_backed_two_node_appearance_session(&role);
+    prime_two_node_appearance_allocation(&mut session, &role);
+    let predecessor = session.inspect_runtime();
+    let submission = two_node_appearance_candidate_submission(
+        &session,
+        "two-node-appearance-current",
+        &role,
+        APPEARANCE_NODE_A,
+    );
+
+    let outcome = replace(&mut session, submission);
+
+    assert!(outcome.semantic_no_op().is_some());
+    assert_eq!(session.inspect_runtime(), predecessor);
+}
+
+#[test]
+fn moving_an_equal_demand_attachment_activates_the_successor_graph() {
+    let role = validation_background_role("theme.appearance_consumer");
+    let mut session = source_backed_two_node_appearance_session(&role);
+    prime_two_node_appearance_allocation(&mut session, &role);
+    let submission = two_node_appearance_candidate_submission(
+        &session,
+        "two-node-appearance-current",
+        &role,
+        APPEARANCE_NODE_B,
+    );
+
+    let outcome = replace(&mut session, submission);
+
+    assert!(outcome.activation().is_some());
+    let graph = session.graph();
+    let attachment_by_node = graph
+        .snapshot()
+        .nodes()
+        .iter()
+        .filter_map(|node| {
+            let authored = node.declaration_identity().authored_semantic_name();
+            (authored == APPEARANCE_NODE_A || authored == APPEARANCE_NODE_B).then(|| {
+                (
+                    authored.to_owned(),
+                    node.appearance_role_attachment()
+                        .map(|attachment| attachment.role().as_str().to_owned()),
+                )
+            })
+        })
+        .collect::<std::collections::BTreeMap<_, _>>();
+    assert_eq!(attachment_by_node.get(APPEARANCE_NODE_A), Some(&None));
+    assert_eq!(
+        attachment_by_node.get(APPEARANCE_NODE_B),
+        Some(&Some(role.role().as_str().to_owned()))
+    );
 }
 
 #[test]
@@ -267,6 +328,25 @@ fn prime_allocation_truth(session: &mut crate::facade::WorthUiActiveApplicationS
         "plan equality cannot erase the first committed allocation transition"
     );
     activation.allocation_catalog_successor().successor_rows()
+}
+
+fn prime_two_node_appearance_allocation(
+    session: &mut crate::facade::WorthUiActiveApplicationSession,
+    role: &worth_ui_dsl::UiAppearanceRoleDeclaration,
+) {
+    let submission = two_node_appearance_candidate_submission(
+        session,
+        "two-node-appearance-current",
+        role,
+        APPEARANCE_NODE_A,
+    );
+    let activation = replace(session, submission)
+        .into_activation()
+        .expect("initial appearance allocation truth requires publication");
+    assert_eq!(
+        activation.plan_decision().kind(),
+        crate::runtime::WorthUiExecutablePlanDecisionKind::ExactSemanticNoOp
+    );
 }
 
 fn replace(

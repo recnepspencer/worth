@@ -27,7 +27,7 @@ fn admission_from_an_equivalent_foreign_runtime_opens_no_application_door() {
         .installed_operation(TouchAccountOperation::reference())
         .unwrap();
     let admission = source_world
-        .application
+        .selected_product()
         .authorize_operation(
             &principal,
             &account,
@@ -57,7 +57,7 @@ fn admission_from_an_equivalent_foreign_runtime_opens_no_application_door() {
     );
 
     let projected_admission = source_world
-        .application
+        .selected_product()
         .authorize_operation(
             &principal,
             &account,
@@ -118,7 +118,7 @@ fn cancelled_admission_cannot_inspect_provider_idempotency() {
         .installed_operation(TouchAccountOperation::reference())
         .unwrap();
     let admission = world
-        .application
+        .selected_product()
         .authorize_operation(
             &principal,
             &account,

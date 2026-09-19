@@ -243,3 +243,10 @@ requests cannot replace the installed witness.
 Use the [Runtime World example](../worth-runtime-world/examples/runtime_world_publication.rs)
 for real same-graph construction and three-way publication handling. Bridge
 speculation/replay is not product-head or committed-terminal authority.
+
+For Query-hosted conditional work, Bridge owns semantic correspondence and
+baseline interpretation while Signal's sealed owner service owns evaluation,
+mutation, and lifecycle mechanics. Use `BridgeOwnedSignalRuntime` and its
+installed operation ports. The returned exact basis and performed evidence are
+carried into Query and Runtime World; consumers do not reopen raw graph access
+or rebuild a Signal basis from descriptors.

@@ -21,8 +21,9 @@ impl super::UiPortalRuntimeState {
         self.records
             .values()
             .filter(|record| record.posture != super::super::UiPortalLifecyclePosture::Closed)
-            .filter_map(|record| record.placement)
-            .max_by_key(|placement| placement.prepared().layer().depth())
+            .filter(|record| record.placement.is_some())
+            .max_by_key(|record| record.stack_ordinal)
+            .and_then(|record| record.placement)
             .map(|placement| placement.prepared().presentation())
     }
 
@@ -56,7 +57,9 @@ impl super::UiPortalRuntimeState {
                     .map(|placement| {
                         crate::mounting::UiMountedPortalOverlayProjectionInput::new(
                             portal.diagnostic_value(),
+                            record.stack_ordinal,
                             portal.owner().mounted_instance_identity(),
+                            record.semantic_surface,
                             placement.prepared(),
                             if transition.closes(*portal) {
                                 super::super::UiPortalLifecyclePosture::Closing
@@ -71,7 +74,11 @@ impl super::UiPortalRuntimeState {
             if let Some(placement) = transition.placement() {
                 inputs.push(crate::mounting::UiMountedPortalOverlayProjectionInput::new(
                     target.diagnostic_value(),
+                    transition
+                        .stack_ordinal()
+                        .expect("opening Portal carries issued stack order"),
                     target.owner().mounted_instance_identity(),
+                    transition.request().semantic_surface(),
                     placement,
                     super::super::UiPortalLifecyclePosture::Visible,
                 ));
@@ -91,7 +98,9 @@ impl super::UiPortalRuntimeState {
                     .map(|placement| {
                         crate::mounting::UiMountedPortalOverlayProjectionInput::new(
                             portal.diagnostic_value(),
+                            record.stack_ordinal,
                             portal.owner().mounted_instance_identity(),
+                            record.semantic_surface,
                             placement.prepared(),
                             record.posture,
                         )

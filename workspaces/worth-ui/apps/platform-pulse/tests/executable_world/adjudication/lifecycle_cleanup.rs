@@ -47,18 +47,11 @@ pub(crate) enum ExecutableLifecycleCleanupFailure {
     QueryWatcherNotJoined,
     PendingQueryObservations(u64),
     IntentWatcherNotJoined,
+    ThemeWatchNotReleased,
     PendingIntentInputs(u64),
     IntentResourcesNotEmpty,
     QueryCloseIncomplete,
-    QueryResidue {
-        owner_terminal: bool,
-        sources: u64,
-        attempts: u64,
-        resources: u64,
-        consumer_leases: u64,
-        retained_projections: u64,
-        projection_receipts: u64,
-    },
+    QueryOwnerNotTerminal,
     MountedPresentationNotQuiescent(u64),
     VisualCaptureResidue {
         cancelled: u64,
@@ -78,6 +71,7 @@ pub(crate) enum ExecutableLifecycleCleanupFailure {
 impl fmt::Display for ExecutableLifecycleCleanupFailure {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::ThemeWatchNotReleased => formatter.write_str("theme preference watch was not released"),
             Self::MissingShutdownCompletion => {
                 formatter.write_str("terminal lifecycle event was not shutdown completion")
             }
@@ -103,18 +97,7 @@ impl fmt::Display for ExecutableLifecycleCleanupFailure {
             Self::QueryCloseIncomplete => {
                 formatter.write_str("runtime Query close was incomplete at shutdown")
             }
-            Self::QueryResidue {
-                owner_terminal,
-                sources,
-                attempts,
-                resources,
-                consumer_leases,
-                retained_projections,
-                projection_receipts,
-            } => write!(
-                formatter,
-                "Query residue: owner_terminal={owner_terminal}, sources={sources}, attempts={attempts}, resources={resources}, consumer_leases={consumer_leases}, retained_projections={retained_projections}, projection_receipts={projection_receipts}"
-            ),
+            Self::QueryOwnerNotTerminal => formatter.write_str("Query owner did not close"),
             Self::MountedPresentationNotQuiescent(count) => write!(
                 formatter,
                 "{count} exceptional mounted presentation shutdown attempt(s) remained"
@@ -165,6 +148,9 @@ pub(crate) fn adjudicate_lifecycle_cleanup(
     if !shutdown.host_session_released() {
         return Err(ExecutableLifecycleCleanupFailure::HostSessionNotReleased);
     }
+    if !shutdown.theme_watch_released() {
+        return Err(ExecutableLifecycleCleanupFailure::ThemeWatchNotReleased);
+    }
     require_zero_intent_residue(shutdown)?;
     require_zero_query_residue(shutdown)?;
     if shutdown.mounted_shutdown_attempt_count() != 0 {
@@ -207,24 +193,8 @@ fn require_zero_query_residue(
             shutdown.pending_query_observation_count(),
         ));
     }
-    let counts = (
-        shutdown.live_query_source_count(),
-        shutdown.live_query_attempt_count(),
-        shutdown.live_query_resource_count(),
-        shutdown.live_query_consumer_lease_count(),
-        shutdown.retained_query_projection_count(),
-        shutdown.query_projection_receipt_count(),
-    );
-    if !shutdown.query_owner_terminal() || counts != (0, 0, 0, 0, 0, 0) {
-        return Err(ExecutableLifecycleCleanupFailure::QueryResidue {
-            owner_terminal: shutdown.query_owner_terminal(),
-            sources: counts.0,
-            attempts: counts.1,
-            resources: counts.2,
-            consumer_leases: counts.3,
-            retained_projections: counts.4,
-            projection_receipts: counts.5,
-        });
+    if !shutdown.query_owner_terminal() {
+        return Err(ExecutableLifecycleCleanupFailure::QueryOwnerNotTerminal);
     }
     Ok(())
 }

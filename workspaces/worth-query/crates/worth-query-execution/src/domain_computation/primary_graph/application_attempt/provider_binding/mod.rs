@@ -26,6 +26,14 @@ pub(in crate::domain_computation) struct WorthQueryPreparedApplicationProviderAt
     facts: Vec<WorthQueryApplicationObservedFact>,
     effects: effect_accumulator::WorthQueryRegisteredProviderEffects,
     preimage_demand: Option<InstalledPreImageDemand>,
+    conditional_definition:
+        Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
+    validator_work_admission: super::effect_program::WorthQueryCandidateValidatorWorkAdmission,
+    retain_output_demand_observation: bool,
+    retain_client_observation: bool,
+    producer_required_invariants:
+        &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement],
+    output_currentness_facts: Option<std::sync::Arc<[WorthQueryApplicationObservedFact]>>,
 }
 
 impl WorthQueryPreparedApplicationProviderAttempt {
@@ -66,26 +74,45 @@ pub(super) fn installed_preimage_demand(
 }
 
 pub(super) fn prepare_provider_attempt(
+    mutation_partition: worth_relational::facade::identity::PartitionId,
     installed_read_scopes: Vec<worth_query_installation::facade::WorthQueryOperationGraphReadScope>,
     facts: Vec<WorthQueryApplicationObservedFact>,
     effects: Vec<WorthQueryApplicationRealizedEffect>,
     expected_emission_retained_bytes: u64,
     emission_retained_bytes_ceiling: u64,
     preimage_demand: Option<InstalledPreImageDemand>,
+    conditional_definition: Option<
+        crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition,
+    >,
+    validator_work_admission: super::effect_program::WorthQueryCandidateValidatorWorkAdmission,
+    output_correspondence: super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
+    retain_output_demand_observation: bool,
+    retain_client_observation: bool,
+    producer_required_invariants:
+        &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement],
+    output_currentness_facts: Option<std::sync::Arc<[WorthQueryApplicationObservedFact]>>,
 ) -> Result<WorthQueryPreparedApplicationProviderAttempt, WorthQueryApplicationAttemptDenial> {
-    let mut accumulator = WorthQueryProviderEffectAccumulator::new(&facts, &effects);
+    let mut accumulator =
+        WorthQueryProviderEffectAccumulator::new(&facts, &effects, mutation_partition);
     for effect in effects {
         accumulator.add_effect(effect)?;
     }
     let completed = accumulator.finish(
         expected_emission_retained_bytes,
         emission_retained_bytes_ceiling,
+        output_correspondence,
     )?;
     Ok(WorthQueryPreparedApplicationProviderAttempt {
         installed_read_scopes,
         facts,
         effects: completed,
         preimage_demand,
+        conditional_definition,
+        validator_work_admission,
+        retain_output_demand_observation,
+        retain_client_observation,
+        producer_required_invariants,
+        output_currentness_facts,
     })
 }
 

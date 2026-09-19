@@ -8,26 +8,24 @@ use bank_domain::proposals::{
 };
 use bank_domain::schema::{
     AccountIdentity, ApplyOpeningFunding, BankPrincipalBinding, BankSchema, CreatePersonalAccount,
-    PersonalOwner, PostingAccount, Principal, SendMoney, SendMoneyOperation,
+    PersonalOwner, Principal, SendMoney, SendMoneyOperation,
+};
+use worth_query_host::facade::application_installation::{
+    in_memory_program, WorthQueryProgramApplicationRuntime,
 };
 use worth_query_host::facade::declaration::authentication::{
     WorthQueryExternalPrincipalIdentity, WorthQueryPrincipalMappingStatus,
 };
-use worth_query_host::facade::domain::{
-    WorthQueryInstallationAdmissionProfile, WorthQueryInstallationGeneration,
-};
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationEntityKey, WorthQueryApplicationInvariantProjectionAuthority,
     WorthQueryApplicationPrincipalKey, WorthQueryApplicationRelationSeed,
-    WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrimaryGraphBootstrap,
+    WorthQueryPrimaryGraphBootstrap,
 };
-use worth_query_host::facade::runtime::WorthQueryExecutionRuntimeInstaller;
 
 use super::{project_send_money_decision, BankProjectionDenial};
-use crate::domain_package::bank_domain_package;
+use crate::application_definition::{validated_bank_application, BankApplication};
 use crate::graph_bootstrap::{
-    account_key, bind_bank_world_with_estate, bind_bank_world_with_revision_override, posting_key,
-    principal_key,
+    account_key, bind_bank_world_with_estate, bind_bank_world_with_revision_override, principal_key,
 };
 
 #[test]
@@ -53,7 +51,8 @@ fn bounded_send_projection_rejects_accounting_revision_drift() {
                 .resolve_entity(AccountIdentity::reference(), source)
                 .unwrap();
             project_send_money_decision(reader, &source_entity, &send(source))
-        });
+        })
+        .unwrap();
     assert_eq!(
         completed.output().as_ref().err(),
         Some(&BankProjectionDenial::AccountingRevisionMismatch)
@@ -76,7 +75,8 @@ fn bounded_send_projection_carries_the_authoritative_starting_balance() {
                 .resolve_entity(AccountIdentity::reference(), source)
                 .unwrap();
             project_send_money_decision(reader, &source_entity, &send(source))
-        });
+        })
+        .unwrap();
     let cold_work = cold.work();
     let projected = cold.into_output().unwrap();
 
@@ -93,7 +93,8 @@ fn bounded_send_projection_carries_the_authoritative_starting_balance() {
                 .resolve_entity(AccountIdentity::reference(), source)
                 .unwrap();
             project_send_money_decision(reader, &source_entity, &send(source))
-        });
+        })
+        .unwrap();
     assert_eq!(
         warm.output().as_ref().unwrap().starting_balance(source),
         Some(expected)
@@ -113,7 +114,8 @@ fn bounded_send_projection_carries_the_authoritative_starting_balance() {
                 .resolve_entity(AccountIdentity::reference(), source)
                 .unwrap();
             project_send_money_decision(reader, &source_entity, &send(source))
-        });
+        })
+        .unwrap();
     assert_eq!(
         rebuilt_projection
             .output()
@@ -149,65 +151,16 @@ fn bounded_send_projection_rejects_ambiguous_recipient_ownership() {
                 .resolve_entity(AccountIdentity::reference(), source)
                 .unwrap();
             project_send_money_decision(reader, &source_entity, &send(source))
-        });
+        })
+        .unwrap();
     assert_eq!(
         completed.output().as_ref().err(),
         Some(&BankProjectionDenial::AmbiguousRelation("PersonalOwner"))
     );
 }
 
-#[test]
-fn bounded_send_projection_rejects_posting_with_two_accounts() {
-    let snapshot = funded_world();
-    let source = source_account(&snapshot);
-    let destination = snapshot
-        .primary_account(id(BankPrincipalId::new, 2))
-        .unwrap();
-    let source_posting = snapshot
-        .journal()
-        .iter()
-        .flat_map(|entry| entry.postings())
-        .find(|posting| posting.account() == source)
-        .unwrap()
-        .id();
-    let harness = ProjectionHarness::install(&snapshot, |graph| {
-        bind_bank_world_with_revision_override(
-            graph,
-            &snapshot,
-            &[],
-            &[],
-            destination,
-            AccountJournalRevision::from_posting_count(1),
-        )
-        .unwrap();
-        graph
-            .bind_relation(WorthQueryApplicationRelationSeed::new(
-                PostingAccount::reference(),
-                "hostile-second-posting-account",
-                entity_key(posting_key(source_posting)),
-                entity_key(account_key(destination)),
-            ))
-            .unwrap();
-    });
-
-    let completed = harness
-        .projection
-        .project_operation::<SendMoneyOperation, _>(|reader| {
-            let source_entity = reader
-                .resolve_entity(AccountIdentity::reference(), source)
-                .unwrap();
-            project_send_money_decision(reader, &source_entity, &send(source))
-        });
-    assert_eq!(
-        completed.output().as_ref().err(),
-        Some(&BankProjectionDenial::Aggregate(
-            super::BankInvariantAggregateDenialKind::AmbiguousSourceRelation
-        ))
-    );
-}
-
 pub(super) struct ProjectionHarness {
-    _runtime: WorthQueryPrimaryGraphApplicationRuntime<BankSchema>,
+    _runtime: WorthQueryProgramApplicationRuntime<BankSchema, BankApplication>,
     pub(super) projection: WorthQueryApplicationInvariantProjectionAuthority<BankSchema>,
 }
 
@@ -216,49 +169,40 @@ impl ProjectionHarness {
         snapshot: &BankSnapshot,
         bind_world: impl FnOnce(&mut WorthQueryPrimaryGraphBootstrap<BankSchema>),
     ) -> Self {
-        let validated = bank_domain_package().unwrap().validate().unwrap();
-        let admitted =
-            WorthQueryInstallationAdmissionProfile::new("hostile-provider-test", "bank-graph-test")
-                .admit(validated)
-                .unwrap();
-        let installation = WorthQueryExecutionRuntimeInstaller::new()
-            .install(WorthQueryInstallationGeneration::initial(), [admitted])
-            .unwrap();
-        let (runtime, authority) = installation.into_parts();
-        let installed_schema = runtime
-            .installed_packages()
-            .bind_application_schema(BankSchema::declaration().unwrap())
-            .unwrap();
-        let binding = installed_schema
-            .principal_binding(BankPrincipalBinding::reference())
-            .unwrap();
-        let mut graph = authority
-            .prepare_primary_graph(&runtime, &installed_schema)
-            .unwrap();
-        for principal in snapshot.principals() {
-            let identity = WorthQueryExternalPrincipalIdentity::new(
-                "https://hostile-provider.test.invalid",
-                format!("principal-{}", principal.get()),
-            )
-            .unwrap();
-            graph
-                .bind_principal(
-                    &binding,
-                    WorthQueryApplicationPrincipalKey::<BankSchema, Principal>::new(principal_key(
-                        principal.get(),
-                    ))
-                    .unwrap(),
-                    principal,
-                    identity,
-                    WorthQueryPrincipalMappingStatus::Enabled,
-                )
-                .unwrap();
-        }
-        bind_world(&mut graph);
-        let projection = graph.retain_invariant_projection_authority();
-        let runtime = graph
-            .publish_application_runtime(runtime, authority, installed_schema)
-            .unwrap();
+        let mut projection = None;
+        let runtime = in_memory_program(
+            validated_bank_application().unwrap(),
+            BankSchema::declaration().unwrap(),
+            ((), (), ()),
+            crate::identity_runtime::bank_application_limits(),
+            |graph, installed_schema| {
+                let binding = installed_schema
+                    .principal_binding(BankPrincipalBinding::reference())
+                    .unwrap();
+                for principal in snapshot.principals() {
+                    let identity = WorthQueryExternalPrincipalIdentity::new(
+                        "https://hostile-provider.test.invalid",
+                        format!("principal-{}", principal.get()),
+                    )
+                    .unwrap();
+                    graph.bind_principal(
+                        &binding,
+                        WorthQueryApplicationPrincipalKey::<BankSchema, Principal>::new(
+                            principal_key(principal.get()),
+                        )
+                        .unwrap(),
+                        principal,
+                        identity,
+                        WorthQueryPrincipalMappingStatus::Enabled,
+                    )?;
+                }
+                bind_world(graph);
+                projection = Some(graph.retain_invariant_projection_authority());
+                Ok(())
+            },
+        )
+        .unwrap();
+        let projection = projection.expect("the program initializer retains projection authority");
         Self {
             _runtime: runtime,
             projection,

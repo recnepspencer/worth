@@ -14,7 +14,7 @@ where
         captured: CapturedFinalization,
     ) -> TransactionResult {
         let CapturedFinalization {
-            result,
+            mut result,
             failure,
             replay_events,
         } = captured;
@@ -35,13 +35,14 @@ where
                 .record_observation(result.observation.clone());
         }
         for entry in replay_events {
-            record_transaction_semantic_event(
+            let work = record_transaction_semantic_event(
                 self.graph,
                 entry.kind,
                 entry.detail,
                 entry.execution_record_id.map(|id| id.0),
                 entry.semantic_segment_id.map(|id| id.0),
             );
+            result.diagnostic_publication_work.accumulate(work);
         }
         result
     }

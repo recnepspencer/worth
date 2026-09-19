@@ -10,6 +10,7 @@ pub(super) fn seed_graph(
         ExternalMapping,
         Principal,
         u64,
+        declaration::application_schema::U64ApplicationValueBinding,
     >,
     record_identity: &str,
     curve_rate: u64,

@@ -12,7 +12,7 @@ fn workflow_effect_uses_real_mutation_authority_and_retains_its_receipt() {
     let initial_snapshot = workspace.snapshot_identity().clone();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let observation_denial = match workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(MutationFamily)
         .bind(&installed_domain, WorkflowMutation)
@@ -28,7 +28,7 @@ fn workflow_effect_uses_real_mutation_authority_and_retains_its_receipt() {
     assert_eq!(observation_denial.counters().graph_participation_lookups, 0);
 
     let bound = workspace
-        .prepare_mutation_operating_world()
+        .prepare_mutation_operating_world(workspace.current_world())
         .unwrap()
         .family(MutationFamily)
         .bind(&installed_domain, WorkflowMutation)
@@ -78,7 +78,7 @@ fn failure_after_effect_retains_the_query_executed_partial_outcome() {
     let initial_snapshot = workspace.snapshot_identity().clone();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let run = workspace
-        .prepare_mutation_operating_world()
+        .prepare_mutation_operating_world(workspace.current_world())
         .unwrap()
         .family(MutationFamily)
         .bind(&installed_domain, WorkflowMutation)
@@ -148,7 +148,7 @@ fn workflow_stage_cannot_skip_its_declared_primary_read() {
     let mut workspace = workflow_workspace("workflow-skipped-read").unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let run = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, WorkflowRead)
@@ -215,7 +215,7 @@ fn failing_stage_denial(name: &str, input: &str) -> domain::WorthQueryWorkflowAd
     let mut workspace = workflow_workspace(name).unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let run = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, WorkflowRead)

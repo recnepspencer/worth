@@ -45,6 +45,24 @@ pub(super) fn lifecycle_decision_reads(
     reads
 }
 
+pub(super) fn close_decision_reads(
+    installed: &WorthQueryInstalledCapabilityPlan,
+) -> Vec<ApplicationOperationDecisionReadTarget> {
+    let mut reads = lifecycle_decision_reads(installed);
+    let elevation = installed.contract().elevation().definition().unwrap();
+    reads.push(field_read_target(elevation.closed_at()));
+    reads
+}
+
+pub(super) fn review_decision_reads(
+    installed: &WorthQueryInstalledCapabilityPlan,
+) -> Vec<ApplicationOperationDecisionReadTarget> {
+    let mut reads = lifecycle_decision_reads(installed);
+    let elevation = installed.contract().elevation().definition().unwrap();
+    reads.push(field_read_target(elevation.review().reviewed_at()));
+    reads
+}
+
 pub(super) fn approval_program_targets(
     installed: &WorthQueryInstalledCapabilityPlan,
 ) -> Vec<ApplicationOperationProgramTarget> {
@@ -61,7 +79,10 @@ pub(super) fn close_program_targets(
     installed: &WorthQueryInstalledCapabilityPlan,
 ) -> Vec<ApplicationOperationProgramTarget> {
     let elevation = installed.contract().elevation().definition().unwrap();
-    let mut targets = vec![write_target(elevation.status())];
+    let mut targets = vec![
+        write_target(elevation.status()),
+        write_target(elevation.closed_at()),
+    ];
     append_lifecycle_effect(&mut targets, elevation.lifecycle().revoke());
     targets
 }
@@ -77,6 +98,7 @@ pub(super) fn review_program_targets(
         .review();
     let mut targets = vec![
         write_target(review.status()),
+        write_target(review.reviewed_at()),
         link_target(review.reviewer()),
     ];
     append_lifecycle_effect(
@@ -107,6 +129,16 @@ fn write_target(
     field: &worth_query_declaration::facade::application_capability::ApplicationCapabilityFieldBinding,
 ) -> ApplicationOperationProgramTarget {
     ApplicationOperationProgramTarget::Write {
+        entity: field.entity().to_string(),
+        aspect: field.aspect().to_string(),
+        field: field.field().to_string(),
+    }
+}
+
+fn field_read_target(
+    field: &worth_query_declaration::facade::application_capability::ApplicationCapabilityFieldBinding,
+) -> ApplicationOperationDecisionReadTarget {
+    ApplicationOperationDecisionReadTarget::Field {
         entity: field.entity().to_string(),
         aspect: field.aspect().to_string(),
         field: field.field().to_string(),

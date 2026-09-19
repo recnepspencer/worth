@@ -27,7 +27,7 @@ impl<'session> WorthUiPreparedMountedPreview<'session> {
         let publication =
             ports
                 .mounted
-                .present_prepared_frame(ports.host_session, frame, deadline, now);
+                .present_prepared_frame(ports.host_session, frame, None, deadline, now);
         let outcome = super::super::mounted_publication::finish_mounted_transition(
             ports.mounted,
             ports.focus.as_deref_mut(),
@@ -38,6 +38,9 @@ impl<'session> WorthUiPreparedMountedPreview<'session> {
             &ports.generation_identity,
             ports.host_exchange,
             publication,
+            None,
+            None,
+            None,
         );
         finish_preview_outcome(outcome, before, transition, planning_counters, ports)
     }
@@ -93,6 +96,9 @@ impl<'session> WorthUiMountedPreviewInFlight<'session> {
             &ports.generation_identity,
             ports.host_exchange,
             publication,
+            None,
+            None,
+            None,
         );
         if let crate::mounting::UiMountedFrameOutcome::CompletionDenied(denial) = outcome {
             return WorthUiMountedPreviewOutcome::CompletionDenied(Box::new(

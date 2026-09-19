@@ -21,6 +21,17 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationAtt
     aftermath_causality: Option<
         crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
     >,
+    conditional_definition:
+        Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
+    validator_work_admission:
+        super::super::effect_program::WorthQueryCandidateValidatorWorkAdmission,
+    retain_output_demand_observation: bool,
+    retain_client_observation: bool,
+    producer_required_invariants:
+        &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement],
+    output_currentness_facts: Option<
+        std::sync::Arc<[super::super::WorthQueryApplicationObservedFact]>,
+    >,
 }
 
 /// Proves that the effect owner consumed a completed provider attempt before
@@ -63,6 +74,12 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
         facts,
         effects,
         preimage_demand,
+        conditional_definition,
+        validator_work_admission,
+        retain_output_demand_observation,
+        retain_client_observation,
+        producer_required_invariants,
+        output_currentness_facts,
     } = prepared;
     let affinity = match staged.bind_application_attempt(attempt_basis) {
         Ok(affinity) => affinity,
@@ -70,8 +87,16 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
     };
     let decision_facts = match authorization.bind_application_facts(installed_read_scopes, facts) {
         Ok(bound) => bound,
-        Err(()) => {
-            return abort_registration(staged, DenialStage::DecisionReadSet);
+        Err(detail) => {
+            let _ = staged.abort();
+            return Err(
+                super::super::provider_execution::WorthQueryProviderProgressionOutcome::Denied(
+                    super::super::WorthQueryApplicationCommitDenial::provider_rejected_with_detail(
+                        DenialStage::DecisionReadSet,
+                        detail,
+                    ),
+                ),
+            );
         }
     };
     let expected_steps = effects.expected_steps();
@@ -91,6 +116,12 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
                 .external_effect(),
             preimage_demand: preimage_demand.as_ref(),
             aftermath_causality: context.aftermath_causality(&inspection).cloned(),
+            conditional_definition,
+            validator_work_admission,
+            retain_output_demand_observation,
+            retain_client_observation,
+            producer_required_invariants,
+            output_currentness_facts,
         },
     );
     match dispatch_outbox {

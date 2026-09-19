@@ -1,3 +1,4 @@
+#[cfg(test)]
 use crate::data::dependency::DependencyEdge;
 use crate::data::error::SignalError;
 use crate::data::graph::SignalGraph;
@@ -6,9 +7,7 @@ use crate::data::output::NodeEvaluationResult;
 use crate::data::reuse::{ReuseBoundaryAuthority, ReuseBoundaryContext};
 use crate::data::temporal::LoweredTemporalEligibility;
 use crate::logic::evaluation::{DeferralReason, SuppressionReason};
-use crate::logic::prepared::{
-    PreparedDependencyCapture, PreparedEvaluation, PreparedEvaluationOutcome,
-};
+use crate::logic::prepared::{PreparedEvaluation, PreparedEvaluationOutcome};
 
 pub(super) struct PassivePreparedEffect {
     pub(super) result: NodeEvaluationResult,
@@ -122,6 +121,7 @@ pub(super) fn ensure_temporal_outcome_alignment(
     }
 }
 
+#[cfg(test)]
 pub(super) fn apply_prepared_dependencies(
     graph: &mut SignalGraph,
     node: NodeId,
@@ -132,6 +132,7 @@ pub(super) fn apply_prepared_dependencies(
     Ok(report.added + report.removed)
 }
 
+#[cfg(test)]
 fn build_prepared_dependency_edges(capture: &PreparedDependencyCapture) -> Vec<DependencyEdge> {
     capture
         .as_slice()
@@ -144,3 +145,6 @@ fn build_prepared_dependency_edges(capture: &PreparedDependencyCapture) -> Vec<D
         })
         .collect()
 }
+
+#[cfg(test)]
+use crate::logic::prepared::PreparedDependencyCapture;

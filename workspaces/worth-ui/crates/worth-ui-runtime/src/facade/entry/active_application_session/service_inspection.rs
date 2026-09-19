@@ -1,4 +1,19 @@
 impl super::WorthUiActiveApplicationSession {
+    pub fn appearance_inspection_world(
+        &self,
+        surface: crate::facade::mounted::UiSemanticSurfaceIdentity,
+    ) -> worth_ui_inspection::UiAppearanceInspectionWorld {
+        self.appearance_inspection
+            .current_world(surface.diagnostic_value())
+    }
+
+    pub fn why_appearance(
+        &self,
+        query: worth_ui_inspection::UiAppearanceInspectionQuery,
+    ) -> worth_ui_inspection::UiAppearanceInspectionOutcome {
+        self.appearance_inspection.query(query)
+    }
+
     pub fn why_portal_closed(
         &self,
     ) -> Option<worth_ui_inspection::UiPortalClosedInspectionSummary> {

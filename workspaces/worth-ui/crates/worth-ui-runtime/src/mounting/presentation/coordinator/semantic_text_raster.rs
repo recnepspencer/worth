@@ -5,9 +5,8 @@ use worth_ui_host_contract::{
 
 use super::presentation_attempt::{UiMountedPresentationProgress, UiMountedPresentationStart};
 use crate::native_platform::text_presentation::{
-    derive_text_presentation_request_bases, prepare_mounted_semantic_text,
-    UiMountedEventTimeDpiAuthority, UiNativeMountedTextCoordinator,
-    UiNativeTextPresentationPreparation,
+    derive_text_presentation_request_bases, UiMountedEventTimeDpiAuthority,
+    UiNativeMountedTextCoordinator, UiNativeTextPresentationPreparation,
 };
 
 pub(super) fn present(
@@ -26,9 +25,25 @@ pub(super) fn present(
         );
         return None;
     };
-    let preparation = prepare_mounted_semantic_text(presentation_work.view(), dpi, |identity| {
-        presentation_work.resolve_layout(identity)
-    });
+    let host_lineage = start
+        .authority
+        .bind(
+            super::super::consumption_view::UiRuntimeMountedFrameConsumptionInput {
+                attempt: start.attempt,
+                deadline: start.deadline,
+                requirement,
+                presentation_work,
+                text_raster_work: None,
+            },
+        )
+        .host_presentation_lineage();
+    let preparation = text.prepare_mounted_semantic_text(
+        presentation_work.view(),
+        requirement,
+        dpi,
+        host_lineage,
+        |identity| presentation_work.resolve_layout(identity),
+    );
     let preparation = preparation?;
     let prepared = match preparation {
         UiNativeTextPresentationPreparation::Prepared(prepared) => prepared,
@@ -43,6 +58,9 @@ pub(super) fn present(
     };
     text.present_with_mounted_work(
         requirement.binding(),
+        presentation_work.view(),
+        requirement,
+        host_lineage,
         &prepared,
         |identity| presentation_work.resolve_layout(identity),
         |text_raster_work| {

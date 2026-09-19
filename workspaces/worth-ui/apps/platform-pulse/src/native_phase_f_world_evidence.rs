@@ -22,20 +22,6 @@ fn evidence(
             })
         })
         .collect::<Vec<_>>();
-    let semantic_frontiers = shutdown
-        .presentation_semantic_frontiers()
-        .iter()
-        .map(|frontier| {
-            serde_json::json!({
-                "change": format!("{:?}", frontier.change()),
-                "subscribers": frontier.subscribers().iter().copied().map(semantic_subscriber_evidence).collect::<Vec<_>>(),
-                "source_deliveries": frontier.source_deliveries(),
-                "outcomes": frontier.outcomes().iter().map(|outcome| format!("{outcome:?}")).collect::<Vec<_>>(),
-                "performed_counter_rows": frontier.performed_counter_rows(),
-                "scope_rejections": frontier.scope_rejections(),
-            })
-        })
-        .collect::<Vec<_>>();
     let text_work = shutdown
         .text_presentation_work()
         .iter()
@@ -117,8 +103,6 @@ fn evidence(
         "presentation_transitions": transitions,
         "presentation_transition_count": transitions.len(),
         "presentation_transition_trace_complete": shutdown.presentation_transition_trace_complete(),
-        "semantic_frontiers": semantic_frontiers,
-        "semantic_frontier_trace_complete": shutdown.presentation_semantic_frontier_trace_complete(),
         "text_presentation_work": text_work,
         "text_presentation_work_trace_complete": shutdown.text_presentation_work_trace_complete(),
         "text_atlas_plans": atlas_plans,
@@ -135,48 +119,25 @@ fn evidence(
         "text_pin_frames": crate::native_phase_f_evidence::pin_frames(receipt),
         "retained_frame_intrinsic_glyphs": crate::native_phase_f_evidence::retained_frame_intrinsic_glyphs(receipt),
         "presentation": {
-            "client_physical_size": presentation.client_physical_size(),
-            "scale_factor_milli": presentation.scale_factor_milli(),
-            "source": presentation.source_rgba8(),
-            "retained_center": presentation.retained_center_rgba8(),
-            "retained_baseline": presentation.retained_baseline_rgba8(),
-            "frame": presentation.presented_frame(),
-            "binding": presentation.binding_generation(),
-            "attempt": presentation.presentation_attempt(),
+            "client_physical_size": presentation.map(|value| value.client_physical_size()),
+            "scale_factor_milli": presentation.map(|value| value.scale_factor_milli()),
+            "source": presentation.map(|value| value.source_rgba8()),
+            "retained_center": presentation.map(|value| value.retained_center_rgba8()),
+            "retained_baseline": presentation.map(|value| value.retained_baseline_rgba8()),
+            "frame": presentation.map(|value| value.presented_frame()),
+            "binding": presentation.map(|value| value.binding_generation()),
+            "attempt": presentation.map(|value| value.presentation_attempt()),
             "alpha_glyphs": crate::native_phase_f_evidence::alpha_glyphs(receipt),
             "intrinsic_glyphs": crate::native_phase_f_evidence::intrinsic_glyphs(receipt),
-            "glyph_transcript_digest": crate::native_phase_f_evidence::hex_digest(presentation.glyph_transcript_digest()),
-            "intrinsic_glyph_transcript_digest": crate::native_phase_f_evidence::hex_digest(presentation.intrinsic_glyph_transcript_digest()),
+            "glyph_transcript_digest": presentation.map(|value| crate::native_phase_f_evidence::hex_digest(value.glyph_transcript_digest())),
+            "intrinsic_glyph_transcript_digest": presentation.map(|value| crate::native_phase_f_evidence::hex_digest(value.intrinsic_glyph_transcript_digest())),
         },
         "runtime_attribution": {
-            "frame": attribution.frame(),
-            "binding": attribution.binding(),
-            "attempt": attribution.presentation_attempt(),
+            "frame": attribution.map(|value| value.frame()),
+            "binding": attribution.map(|value| value.binding()),
+            "attempt": attribution.map(|value| value.presentation_attempt()),
         },
         "retained_frames": retained_frames,
-    })
-}
-
-fn semantic_subscriber_evidence(
-    subscriber: worth_ui_native_platform::UiNativeClientPresentationSemanticSubscriberObservation,
-) -> serde_json::Value {
-    serde_json::json!({
-        "mounted_instance": subscriber.mounted_instance(),
-        "semantic_slot": subscriber.semantic_slot(),
-        "collection_row": subscriber.collection_row().map(crate::native_phase_f_evidence::hex_digest),
-        "mounted_frame": subscriber.mounted_frame(),
-        "removal": subscriber.removal(),
-        "content_digest": crate::native_phase_f_evidence::hex_digest(subscriber.content_digest()),
-        "layout_digest": crate::native_phase_f_evidence::hex_digest(subscriber.layout_digest()),
-        "foreground_digest": crate::native_phase_f_evidence::hex_digest(subscriber.foreground_digest()),
-        "raster_key_set_digest": crate::native_phase_f_evidence::hex_digest(subscriber.raster_key_set_digest()),
-        "source_digest": crate::native_phase_f_evidence::hex_digest(subscriber.source_digest()),
-        "immediate_dependency_digest": crate::native_phase_f_evidence::hex_digest(subscriber.immediate_dependency_digest()),
-        "attempt": subscriber.attempt(),
-        "semantic_surface": subscriber.semantic_surface(),
-        "host_surface": subscriber.host_surface(),
-        "binding": subscriber.binding(),
-        "host_lineage": subscriber.host_lineage(),
     })
 }
 

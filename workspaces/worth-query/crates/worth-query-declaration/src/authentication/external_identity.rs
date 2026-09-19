@@ -1,6 +1,11 @@
 use worth_foundational::facade::{AspectValue, InternedString, ScalarAspectType};
 
-use crate::application_schema::TypedApplicationValue;
+use crate::application_schema::{
+    ApplicationIdentityScalarValueBinding, ApplicationReadableScalarValueBinding,
+    ApplicationScalarValueBinding, ApplicationValueDecodeAvailable, ApplicationValueDecodeDenial,
+    ApplicationValueEncodeDenial, ApplicationValueIsIdentity,
+    ApplicationValueSignedAggregateUnavailable, ApplicationValueValidationDenial,
+};
 
 const MAX_ISSUER_BYTES: usize = 2_048;
 const MAX_SUBJECT_BYTES: usize = 1_024;
@@ -58,12 +63,65 @@ impl WorthQueryExternalPrincipalIdentity {
     }
 }
 
-impl TypedApplicationValue for WorthQueryExternalPrincipalIdentity {
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct WorthQueryExternalPrincipalIdentityBinding;
+
+impl ApplicationScalarValueBinding for WorthQueryExternalPrincipalIdentityBinding {
+    type Value = WorthQueryExternalPrincipalIdentity;
+    type Unit = ();
+    type Decode = ApplicationValueDecodeAvailable;
+    type Identity = ApplicationValueIsIdentity;
+    type SignedAggregate = ApplicationValueSignedAggregateUnavailable;
+
+    const IDENTITY_NAME: &'static str = "worth.query.external_principal_identity.v1";
     const SCALAR_FAMILY: ScalarAspectType = ScalarAspectType::String;
 
-    fn into_foundational_value(self) -> AspectValue {
-        AspectValue::String(InternedString::from(self.into_index_value()))
+    fn validate(_: &Self::Value) -> Result<(), ApplicationValueValidationDenial> {
+        Ok(())
     }
+
+    fn encode(value: &Self::Value) -> Result<AspectValue, ApplicationValueEncodeDenial> {
+        Ok(AspectValue::String(InternedString::from(
+            value.clone().into_index_value(),
+        )))
+    }
+}
+
+impl ApplicationReadableScalarValueBinding for WorthQueryExternalPrincipalIdentityBinding {
+    fn decode(value: &AspectValue) -> Result<Self::Value, ApplicationValueDecodeDenial> {
+        let AspectValue::String(InternedString::Raw(encoded)) = value else {
+            return Err(ApplicationValueDecodeDenial::ScalarFamilyMismatch {
+                binding_identity: Self::IDENTITY,
+                expected: Self::SCALAR_FAMILY,
+                observed: value.value_family(),
+            });
+        };
+        decode_index_value(encoded).ok_or(ApplicationValueDecodeDenial::CodecRejected {
+            binding_identity: Self::IDENTITY,
+        })
+    }
+}
+
+impl ApplicationIdentityScalarValueBinding for WorthQueryExternalPrincipalIdentityBinding {}
+
+fn decode_index_value(encoded: &str) -> Option<WorthQueryExternalPrincipalIdentity> {
+    let mut offset = 0;
+    let issuer = decode_index_component(encoded, &mut offset)?;
+    let subject = decode_index_component(encoded, &mut offset)?;
+    (offset == encoded.len())
+        .then(|| WorthQueryExternalPrincipalIdentity::new(issuer, subject).ok())
+        .flatten()
+}
+
+fn decode_index_component<'a>(encoded: &'a str, offset: &mut usize) -> Option<&'a str> {
+    let suffix = encoded.get(*offset..)?;
+    let delimiter = suffix.find(':')?;
+    let length = suffix.get(..delimiter)?.parse::<usize>().ok()?;
+    let start = offset.checked_add(delimiter)?.checked_add(1)?;
+    let end = start.checked_add(length)?;
+    let component = encoded.get(start..end)?;
+    *offset = end;
+    Some(component)
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -137,6 +195,18 @@ mod tests {
             .unwrap()
             .into_index_value();
         assert_ne!(left, right);
+    }
+
+    #[test]
+    fn binding_round_trips_the_exact_issuer_and_subject() {
+        let identity =
+            WorthQueryExternalPrincipalIdentity::new("https://issuer.example", "subject-123")
+                .unwrap();
+        let encoded = WorthQueryExternalPrincipalIdentityBinding::encode(&identity).unwrap();
+        assert_eq!(
+            WorthQueryExternalPrincipalIdentityBinding::decode(&encoded).unwrap(),
+            identity
+        );
     }
 
     #[test]

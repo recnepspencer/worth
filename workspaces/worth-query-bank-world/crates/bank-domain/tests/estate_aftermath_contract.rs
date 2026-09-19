@@ -45,7 +45,16 @@ fn assert_installed_posture<Operation, Input>(
     operation: ApplicationOperationRef<BankSchema, Operation, Input>,
     expected: Option<PublishedAftermathPosture>,
     label: &str,
-) {
+) where
+    Operation: worth_query_host::facade::declaration::application_schema::ApplicationOperationMarkerIdentity<
+            BankSchema,
+        > + 'static,
+    Input: 'static,
+    Operation::InputBinding:
+        worth_query_host::facade::declaration::application_schema::ApplicationStructuredValueBinding<
+            Value = Input,
+        >,
+{
     let installed = bank
         .installed_operation(operation)
         .unwrap_or_else(|denial| panic!("{label} must install: {denial:?}"));

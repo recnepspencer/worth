@@ -20,12 +20,11 @@ use crate::intent::operability::{
 
 #[test]
 fn native_content_retry_after_reconstruction_preserves_the_open_portal_projection() {
-    let plan = worth_ui::facade::query_binding::WorthUiScalarProjectionHostPlan::prepare()
-        .expect("the product Query plan prepares");
-    let installed = plan
-        .install_for_certification()
-        .expect("the product Query owner installs for certification");
-    let (registration, initial) = installed.into_parts();
+    let owner = worth_ui::facade::query_binding::WorthUiStatusSourceOwner::install()
+        .expect("the authored status program installs");
+    let (registration, initial) = owner
+        .initial_projection()
+        .expect("the authored status program issues its initial projection");
 
     let host = ScriptedPresentationHost::default();
     host.set_capabilities(
@@ -41,15 +40,15 @@ fn native_content_retry_after_reconstruction_preserves_the_open_portal_projectio
         ]),
     );
     let (application, _) =
-        build_open_portal_projection_application_with_host(host.clone(), registration);
+        build_open_portal_projection_application_with_host(host.clone(), registration.clone());
     let mut shell = application
-        .launch_native_surface()
+        .launch_native_declared_surface("visual.identity.surface.main")
         .expect("the native portal and Query application launches");
-    let (initial_observation, initial_completion) = initial.into_parts();
+    crate::mounted_geometry_fixture::install_native_occurrence_geometry(&mut shell);
     host.push_native_display_presented();
     let initial_receipt = match shell
         .begin_managed_projection_rebind(
-            UiProjectionRebindRequest::new(initial_observation).observed_at_tick(1),
+            UiProjectionRebindRequest::new(initial).observed_at_tick(1),
         )
         .expect("the initial Query observation enters the native content rebind")
     {
@@ -62,18 +61,17 @@ fn native_content_retry_after_reconstruction_preserves_the_open_portal_projectio
         }
     };
     let initial_observation = initial_receipt
-        .release_scalar_projection_observation()
+        .release_application_scalar_projection_observation()
         .unwrap_or_else(|_| panic!("the initial content receipt returns its Query observation"));
-    let owner = initial_completion
-        .admit_publication(initial_observation)
-        .expect("the initial fact readmits its exact Query owner");
+    assert!(registration.admits(initial_observation.fact()));
     let current = owner
-        .advance(
+        .publish_source(
             worth_ui::facade::query_binding::WorthUiScalarProjectionSourceRecord::new("ONLINE", 1)
                 .expect("the successor source record is valid"),
         )
-        .expect("the Query owner advances to a real successor fact");
-    let (observation, completion) = current.into_parts();
+        .expect("the Query owner advances to a real successor fact")
+        .into_projection_observation()
+        .expect("the successor result issues an admitted UI observation");
 
     let presentation = super::native_duplicate_dismissal::current_presentation(&shell);
     let definition = UiIntentDefinition::<PrimaryIntent>::runtime_service(
@@ -81,7 +79,7 @@ fn native_content_retry_after_reconstruction_preserves_the_open_portal_projectio
     );
     let ingress = shell.admit_native_intent_observations(
         definition,
-        super::native_recovery::native_activation_drain(
+        super::native_activation::native_activation_drain(
             shell.host_session_identity().as_u64(),
             presentation,
         ),
@@ -132,7 +130,7 @@ fn native_content_retry_after_reconstruction_preserves_the_open_portal_projectio
     );
     match shell
         .begin_managed_projection_rebind(
-            UiProjectionRebindRequest::new(observation).observed_at_tick(41),
+            UiProjectionRebindRequest::new(current).observed_at_tick(41),
         )
         .expect("the Query observation enters the managed content rebind")
     {
@@ -161,6 +159,9 @@ fn native_content_retry_after_reconstruction_preserves_the_open_portal_projectio
         .expect("the exact native completion remains session-bound")
     {
         WorthUiNativeManagedRebindProgress::Published(receipt) => receipt,
+        WorthUiNativeManagedRebindProgress::RebindRecovered(_) => {
+            panic!("before-effects denial must retry the content successor")
+        }
         WorthUiNativeManagedRebindProgress::AwaitingProgress => {
             panic!("immediate reconstruction and retry unexpectedly remained pending")
         }
@@ -210,12 +211,10 @@ fn native_content_retry_after_reconstruction_preserves_the_open_portal_projectio
     );
 
     let returned = receipt
-        .release_scalar_projection_observation()
+        .release_application_scalar_projection_observation()
         .unwrap_or_else(|_| panic!("the content receipt returns the exact Query observation"));
-    let owner = completion
-        .admit_publication(returned)
-        .expect("the exact published fact readmits its Query owner");
-    let source_close = owner.close().expect("the Query owner closes terminally");
+    assert!(registration.admits(returned.fact()));
+    let source_close = owner.close();
     assert!(source_close.owner_terminal());
     assert!(shell
         .inspect_service_proposals_for_certification()

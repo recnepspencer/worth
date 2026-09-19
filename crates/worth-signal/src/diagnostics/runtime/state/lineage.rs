@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use super::DiagnosticHistory;
 
 use crate::data::handle::NodeId;
 use crate::diagnostics::lineage::{LineageArtifactId, LineageRecord};
@@ -6,18 +6,21 @@ use crate::diagnostics::lineage::{LineageArtifactId, LineageRecord};
 use super::DiagnosticsState;
 
 impl DiagnosticsState {
-    pub fn lineage_records(&self) -> &VecDeque<LineageRecord> {
+    pub fn lineage_records(&self) -> &DiagnosticHistory<LineageRecord> {
         &self.lineage_records
     }
 
     pub fn lineage_records_for_artifact(
         &self,
         artifact_id: LineageArtifactId,
-    ) -> Option<&VecDeque<LineageRecord>> {
+    ) -> Option<&DiagnosticHistory<LineageRecord>> {
         self.lineage_records_by_artifact.get(&artifact_id)
     }
 
-    pub fn lineage_records_for_node(&self, node: NodeId) -> Option<&VecDeque<LineageRecord>> {
+    pub fn lineage_records_for_node(
+        &self,
+        node: NodeId,
+    ) -> Option<&DiagnosticHistory<LineageRecord>> {
         self.lineage_records_by_node.get(&node)
     }
 
@@ -51,15 +54,19 @@ impl DiagnosticsState {
             self.lineage_records_by_node
                 .entry(node)
                 .or_default()
-                .push_back(record.clone());
+                .push_back(record.clone())
+                .expect("diagnostic history exhausted its private position space");
         }
         if let Some(artifact_id) = record.subject_artifact_id() {
             self.lineage_records_by_artifact
                 .entry(artifact_id)
                 .or_default()
-                .push_back(record.clone());
+                .push_back(record.clone())
+                .expect("diagnostic history exhausted its private position space");
         }
-        self.lineage_records.push_back(record);
+        self.lineage_records
+            .push_back(record)
+            .expect("diagnostic history exhausted its private position space");
         let limit = self.installed_retention_budget.history_limit.max(1) * 32;
         while self.lineage_records.len() > limit {
             if let Some(record) = self.lineage_records.pop_front() {

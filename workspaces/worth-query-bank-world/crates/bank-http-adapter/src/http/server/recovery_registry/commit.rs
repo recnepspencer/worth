@@ -74,7 +74,6 @@ impl BankHttpRecoveryRegistry {
         origin: RecoveryOrigin,
         action: EstateAction,
     ) -> BankHttpCommitReplay {
-        self.purge_expired();
         let replay = CommitReplayKey {
             owner: owner.clone(),
             origin,
@@ -92,6 +91,7 @@ impl BankHttpRecoveryRegistry {
         BankHttpCommitReplay::Applied {
             commit: record.commit,
             recovery: token.clone(),
+            completed: record.retried.is_some(),
         }
     }
 
@@ -102,7 +102,9 @@ impl BankHttpRecoveryRegistry {
         origin: RecoveryOrigin,
         action: EstateAction,
     ) -> Option<BankHttpRecoveryReservation<'_>> {
-        self.purge_expired();
+        if self.records.len() >= self.capacity {
+            self.evict_terminal_replay();
+        }
         if self.records.len() >= self.capacity {
             return None;
         }
@@ -117,6 +119,23 @@ impl BankHttpRecoveryRegistry {
             },
             action,
         })
+    }
+
+    fn evict_terminal_replay(&mut self) {
+        let oldest = self
+            .records
+            .iter()
+            .filter(|(_, record)| record.handle.is_none())
+            .min_by(|(left_token, left), (right_token, right)| {
+                left.expires_at
+                    .cmp(&right.expires_at)
+                    .then_with(|| left_token.cmp(right_token))
+            })
+            .map(|(token, _)| token.clone());
+        if let Some(token) = oldest {
+            self.records.remove(&token);
+            self.replay_tokens.retain(|_, indexed| indexed != &token);
+        }
     }
 
     fn register_commit(

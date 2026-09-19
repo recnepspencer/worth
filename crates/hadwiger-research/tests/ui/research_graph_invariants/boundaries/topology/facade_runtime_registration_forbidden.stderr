@@ -1,5 +1,0 @@
-error[E0432]: unresolved import `hadwiger_research::facade::register_research_graph_invariant_catalog_with_query_runtime`
- --> tests/ui/research_graph_invariants/boundaries/topology/facade_runtime_registration_forbidden.rs:1:5
-  |
-1 | use hadwiger_research::facade::register_research_graph_invariant_catalog_with_query_runtime;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `register_research_graph_invariant_catalog_with_query_runtime` in `facade`

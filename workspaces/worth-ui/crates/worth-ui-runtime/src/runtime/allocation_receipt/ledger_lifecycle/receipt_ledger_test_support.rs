@@ -123,7 +123,7 @@ impl super::UiAllocationReceiptLedger {
         state.mounted_projection_catalog.insert(receipt.clone());
         state.truth_revision = revision;
         let graph_node = receipt.identity().graph_node_identity();
-        let changed_graph_nodes = state
+        let changed_projection_graph_keys = state
             .mounted_projection_catalog
             .projection_changed_since(&predecessor_projection, graph_node)
             .then_some(graph_node)
@@ -132,7 +132,7 @@ impl super::UiAllocationReceiptLedger {
         state.mounted_projection_journal.record(
             predecessor_revision.revision(),
             revision.revision(),
-            changed_graph_nodes,
+            changed_projection_graph_keys,
         );
         super::UiAllocationReceiptCommitOutcome::Committed(Box::new(receipt))
     }

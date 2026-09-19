@@ -26,17 +26,8 @@ pub(super) fn describe_query_publication(
             snapshot: basis.snapshot(),
             version: basis.version(),
             posture: match basis.posture() {
-                WorthQueryPublishedApplicationBasisPosture::Current => {
-                    BankHttpQueryBasisPosture::Current
-                }
-                WorthQueryPublishedApplicationBasisPosture::Pinned => {
-                    BankHttpQueryBasisPosture::Pinned
-                }
-                WorthQueryPublishedApplicationBasisPosture::Historical => {
-                    BankHttpQueryBasisPosture::Historical
-                }
-                WorthQueryPublishedApplicationBasisPosture::Preview => {
-                    BankHttpQueryBasisPosture::Preview
+                WorthQueryPublishedApplicationBasisPosture::SelectedProduct => {
+                    BankHttpQueryBasisPosture::SelectedProduct
                 }
             },
         },

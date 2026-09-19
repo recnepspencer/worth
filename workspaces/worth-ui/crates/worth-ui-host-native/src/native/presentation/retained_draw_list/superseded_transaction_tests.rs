@@ -15,6 +15,9 @@ use worth_ui_host_contract::{
     UiMountedPresentationInitial, UiMountedPresentationWorkView, UiPresentationDeadline,
 };
 
+#[path = "superseded_transaction_tests/cursor.rs"]
+mod cursor;
+
 struct TerminalPresentationProbe {
     status: UiNativePhysicalSignalStatus,
 }
@@ -252,6 +255,7 @@ fn physical_basis(
             deadline: UiPresentationDeadline::at_tick(20),
             requirement: world.requirement,
             presentation_work: UiMountedPresentationWorkView::Initial(initial),
+            appearance_work: None,
             qualified_text: &(),
             text_raster_work: None,
         });
@@ -286,9 +290,9 @@ fn pending_delta(
 fn replacement_delta(
     world: &DrawListWorld,
     predecessor: UiMountedFrameIdentity,
-    previous: UiMountedFilledRectMechanic,
+    previous: UiMountedPortalOverlayMechanic,
     successor: UiMountedFrameIdentity,
-    replacement: UiMountedFilledRectMechanic,
+    replacement: UiMountedPortalOverlayMechanic,
 ) -> UiMountedPresentationDelta {
     let replacement = command(replacement);
     let replacement_order = UiMountedPaintOrderIdentity::for_command(replacement.identity());

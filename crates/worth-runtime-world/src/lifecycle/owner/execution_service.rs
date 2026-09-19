@@ -29,7 +29,10 @@ mod rehearsal;
 mod tests;
 
 use relational::RelationalExecutionFailure;
-use signal::{SignalExecutionFailure, SignalExecutionRequest, UntouchedSignalMutation};
+use signal::{
+    SignalDefinitionPublicationAdmission, SignalExecutionFailure, SignalExecutionRequest,
+    UntouchedSignalMutation,
+};
 
 pub(crate) use signal::map_fork_no_effect;
 
@@ -51,11 +54,15 @@ where
         prepared: PreparedCompositePublicationWithoutSignal,
         cancellation: &RuntimeWorldCancellationToken,
     ) -> OwnerExecutionOutcome {
-        self.execute_publication(
-            prepared.into_attempt(),
-            cancellation,
-            SignalExecutionRequest::<Ctx, UntouchedSignalMutation<D, I, E, Ctx, T>>::RetainExact,
-        )
+        let signal_request: SignalExecutionRequest<
+            '_,
+            Ctx,
+            UntouchedSignalMutation<D, I, E, Ctx, T>,
+            fn(
+                Option<worth_signal::facade::branch::SignalConditionalDefinitionAdvanceBinding>,
+            ) -> Result<(), SignalError>,
+        > = SignalExecutionRequest::RetainExact;
+        self.execute_publication(prepared.into_attempt(), cancellation, signal_request)
     }
 
     fn execute_with_signal<F>(
@@ -71,7 +78,43 @@ where
         self.execute_publication(
             prepared.into_attempt(),
             cancellation,
-            SignalExecutionRequest::AdvanceExact { runtime_ctx, apply },
+            SignalExecutionRequest::AdvanceExact {
+                runtime_ctx,
+                apply,
+                admit_activation: admit_no_activation,
+            },
+        )
+    }
+
+    fn execute_conditional_definition_with_signal<F, H>(
+        &self,
+        prepared: PreparedCompositePublicationWithSignal,
+        publication: worth_signal::facade::branch::SignalConditionalDefinitionPublicationOperation,
+        runtime_ctx: &mut Ctx,
+        cancellation: &RuntimeWorldCancellationToken,
+        apply: F,
+        admit_activation: H,
+    ) -> OwnerExecutionOutcome
+    where
+        F: FnOnce(&mut SignalTransaction<'_, D, I, E, Ctx, T>) -> Result<(), SignalError>,
+        H: FnOnce(
+            worth_signal::facade::branch::SignalConditionalDefinitionAdvanceBinding,
+        ) -> Result<(), SignalError>,
+    {
+        self.execute_publication(
+            prepared.into_attempt(),
+            cancellation,
+            SignalExecutionRequest::PublishConditionalDefinition {
+                publication: SignalDefinitionPublicationAdmission::Prepared(publication),
+                runtime_ctx,
+                apply,
+                admit_activation: |binding| match binding {
+                    Some(binding) => admit_activation(binding),
+                    None => Err(SignalError::invalid_input(
+                        "Signal definition publication returned no activation binding",
+                    )),
+                },
+            },
         )
     }
 }
@@ -85,15 +128,41 @@ where
     /// The one publication execution body. Both public entry points reach it
     /// with the same reserved attempt; only the Signal borrow differs, so the
     /// two stages can never drift into two different orderings.
-    fn execute_publication<F>(
+    fn execute_publication<F, H>(
         &self,
         mut attempt: ReservedCompositePublicationAttempt,
         cancellation: &RuntimeWorldCancellationToken,
-        signal_request: SignalExecutionRequest<'_, Ctx, F>,
+        signal_request: SignalExecutionRequest<'_, Ctx, F, H>,
     ) -> OwnerExecutionOutcome
     where
         F: FnOnce(&mut SignalTransaction<'_, D, I, E, Ctx, T>) -> Result<(), SignalError>,
+        H: FnOnce(
+            Option<worth_signal::facade::branch::SignalConditionalDefinitionAdvanceBinding>,
+        ) -> Result<(), SignalError>,
     {
+        let signal_request = match signal_request {
+            SignalExecutionRequest::PublishConditionalDefinition {
+                publication: SignalDefinitionPublicationAdmission::Prepared(publication),
+                runtime_ctx,
+                apply,
+                admit_activation,
+            } => match self
+                .state
+                .signal_definition_publication
+                .admit(publication, attempt.plan().signal().expected())
+            {
+                Ok(publication) => SignalExecutionRequest::PublishConditionalDefinition {
+                    publication: SignalDefinitionPublicationAdmission::Admitted(publication),
+                    runtime_ctx,
+                    apply,
+                    admit_activation,
+                },
+                Err(denial) => {
+                    return self.no_effect(attempt, signal::map_advance_no_effect(&denial))
+                }
+            },
+            request => request,
+        };
         attempt.begin_owner_execution();
         if let Err(cause) = self.admit_owner_execution(&attempt, cancellation) {
             return self.no_effect(attempt, cause);
@@ -166,4 +235,10 @@ where
             None,
         ))
     }
+}
+
+fn admit_no_activation(
+    _: Option<worth_signal::facade::branch::SignalConditionalDefinitionAdvanceBinding>,
+) -> Result<(), SignalError> {
+    Ok(())
 }

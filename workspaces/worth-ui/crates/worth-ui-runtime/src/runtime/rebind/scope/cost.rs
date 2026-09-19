@@ -8,6 +8,7 @@ pub struct UiAffectedScopeCost {
     index_probes: usize,
     contract_checks: usize,
     graph_and_mounted_entries: usize,
+    theme_slots_compared: usize,
 }
 
 pub(crate) struct UiAffectedScopeCostInput {
@@ -19,6 +20,7 @@ pub(crate) struct UiAffectedScopeCostInput {
     pub(crate) index_probes: usize,
     pub(crate) contract_checks: usize,
     pub(crate) graph_and_mounted_entries: usize,
+    pub(crate) theme_slots_compared: usize,
 }
 
 impl UiAffectedScopeCost {
@@ -32,11 +34,16 @@ impl UiAffectedScopeCost {
             index_probes: input.index_probes,
             contract_checks: input.contract_checks,
             graph_and_mounted_entries: input.graph_and_mounted_entries,
+            theme_slots_compared: input.theme_slots_compared,
         }
     }
 
     pub const fn observations(self) -> usize {
         self.observations
+    }
+
+    pub const fn theme_slots_compared(self) -> usize {
+        self.theme_slots_compared
     }
 
     pub const fn changed_facts(self) -> usize {

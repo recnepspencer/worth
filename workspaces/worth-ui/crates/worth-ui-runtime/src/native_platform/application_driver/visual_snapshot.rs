@@ -40,7 +40,7 @@ pub(super) fn capture_presented_source(
             | UiVisualCapturePoll::Completed(UiVisualSnapshotOutcome::Omitted(_))
             | UiVisualCapturePoll::Completed(UiVisualSnapshotOutcome::Denied(_))
             | UiVisualCapturePoll::Completed(UiVisualSnapshotOutcome::Indeterminate(_)) => {
-                return Err(())
+                return Err(());
             }
         }
         if Instant::now() >= wall_deadline || *tick >= deadline_tick {

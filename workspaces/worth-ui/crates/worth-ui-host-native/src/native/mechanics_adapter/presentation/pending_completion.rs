@@ -69,6 +69,7 @@ fn complete_superseded(
     let Some(settlement) = pending.take_settlement() else {
         pending.release(&mut state.resources);
         state.lifecycle.record_presentation_indeterminate();
+
         return worth_ui_host_contract::UiHostSurfaceInFlightCompletion::PresentationIndeterminate;
     };
     if !settlement.is_resolved_supersession() {
@@ -79,6 +80,7 @@ fn complete_superseded(
         );
         pending.release(&mut state.resources);
         state.lifecycle.record_presentation_indeterminate();
+
         return worth_ui_host_contract::UiHostSurfaceInFlightCompletion::PresentationIndeterminate;
     }
     let cost = observation.into_superseded_cost();
@@ -96,6 +98,8 @@ fn complete_presented(
     let completion_identity = pending
         .completion_identity()
         .expect("presented pending work retains its completion identity");
+    let cursor = pending.prepared_cursor();
+    let attempt = pending.physical_basis().attempt();
     let completion = pending.take_settlement().and_then(|settlement| {
         settlement.complete(
             state,
@@ -107,6 +111,7 @@ fn complete_presented(
     pending.release(&mut state.resources);
     match completion {
         Some(completion) => {
+            crate::native::presentation::appearance::cursor::accept_cursor(state, attempt, cursor);
             worth_ui_host_contract::UiHostSurfaceInFlightCompletion::Presented(completion)
         }
         None => {

@@ -20,6 +20,17 @@ pub(crate) enum RecordMutation {
         kind_id: KindId,
         authoritative_patch: Option<worth_foundational::facade::AuthoritativeRecordAspectPatch>,
     },
+    EntityMaterializationSuspended {
+        entity_id: EntityId,
+        kind_id: KindId,
+        old_authoritative_aspect_state: Option<AuthoritativeRecordAspectState>,
+    },
+    EntityRematerialized {
+        entity_id: EntityId,
+        kind_id: KindId,
+        new_authoritative_aspect_state: Option<AuthoritativeRecordAspectState>,
+        authoritative_patch: Option<worth_foundational::facade::AuthoritativeRecordAspectPatch>,
+    },
     RelationCreated {
         relation_id: RelationId,
         kind_id: KindId,
@@ -51,5 +62,20 @@ pub(crate) enum RecordMutation {
         source: EntityId,
         target: EntityId,
         authoritative_aspect_state: Option<AuthoritativeRecordAspectState>,
+    },
+    RelationMaterializationSuspended {
+        relation_id: RelationId,
+        kind_id: KindId,
+        source: EntityId,
+        target: EntityId,
+        old_authoritative_aspect_state: Option<AuthoritativeRecordAspectState>,
+    },
+    RelationRematerialized {
+        relation_id: RelationId,
+        kind_id: KindId,
+        source: EntityId,
+        target: EntityId,
+        new_authoritative_aspect_state: Option<AuthoritativeRecordAspectState>,
+        authoritative_patch: Option<worth_foundational::facade::AuthoritativeRecordAspectPatch>,
     },
 }

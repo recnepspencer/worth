@@ -64,6 +64,10 @@ impl super::UiNativeLifecycleOrchestrator {
         self.protocol.has_retained_observations()
     }
 
+    pub(crate) fn observation_drain_capacity_reached(&self) -> bool {
+        self.protocol.observation_drain_capacity_reached()
+    }
+
     pub(crate) fn drain_observations(&mut self, host_session: u64) -> UiHostObservationDrain {
         self.protocol.drain(host_session)
     }

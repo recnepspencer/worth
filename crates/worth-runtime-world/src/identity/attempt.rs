@@ -15,4 +15,9 @@ impl CompositePublicationAttemptIdentity {
     pub const fn owner_identity(&self) -> RuntimeWorldOwnerIdentity {
         self.owner
     }
+
+    /// Descriptive attempt ordinal; this value cannot admit publication.
+    pub const fn ordinal(&self) -> u64 {
+        self.ordinal
+    }
 }

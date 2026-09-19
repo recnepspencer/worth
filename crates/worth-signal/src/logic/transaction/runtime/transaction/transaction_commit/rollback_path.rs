@@ -15,7 +15,24 @@ where
     I: Copy + Ord,
     T: Copy + Ord,
 {
-    pub fn rollback(mut self) -> Result<TransactionResult, SignalError> {
+    pub fn rollback(self) -> Result<TransactionResult, SignalError> {
+        self.rollback_with_restoration_status()
+            .map(|(result, _)| result)
+    }
+
+    pub(in crate::logic::transaction::runtime) fn rollback_for_canonical_owner(
+        self,
+    ) -> Result<TransactionResult, SignalError> {
+        let (result, restoration_error) = self.rollback_with_restoration_status()?;
+        match restoration_error {
+            Some(error) => Err(error),
+            None => Ok(result),
+        }
+    }
+
+    fn rollback_with_restoration_status(
+        mut self,
+    ) -> Result<(TransactionResult, Option<SignalError>), SignalError> {
         let commit_start = RuntimeInstant::now();
         if self.finished {
             return Err(SignalError::transaction_finished());
@@ -71,7 +88,7 @@ where
                         semantic_segment_id: None,
                     });
             }
-            return Ok(self.finalize_semantic_delta(
+            return Ok(self.finalize_semantic_delta_with_rollback_status(
                 true,
                 TransactionOutcome::Poisoned,
                 touched_nodes,
@@ -91,7 +108,7 @@ where
                     semantic_segment_id: None,
                 });
         }
-        Ok(self.finalize_semantic_delta(
+        Ok(self.finalize_semantic_delta_with_rollback_status(
             true,
             TransactionOutcome::RolledBack,
             touched_nodes,

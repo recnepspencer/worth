@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use std::time::Duration;
 
 use bank_domain::model::AccountId;
 
@@ -214,6 +215,107 @@ async fn expired_elevation_token_opens_no_approval_phase() {
         BankHttpElevationApprovalOutcome::Denied { denial, .. }
             if denial.kind == BankHttpDenialKind::Stale
     ));
+    server.shutdown().await.expect("server should shut down");
+}
+
+#[tokio::test]
+async fn lost_approval_response_replays_the_committed_transition() {
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+    let server = bind_application(
+        Arc::new(application(AccountId::new(100).unwrap())),
+        BankHttpServerConfiguration::local_ephemeral(),
+    )
+    .await
+    .expect("HTTP server should bind");
+    let address = server.local_address();
+    let origin = format!("http://{address}");
+    let client = reqwest::Client::new();
+    let requested = client
+        .post(format!("{origin}/v1/estate/elevation/request"))
+        .json(&serde_json::json!({
+            "protocol": "v1",
+            "request_id": "approval-response-loss-request",
+            "credential": credential("test-only"),
+            "controls": { "deadline_milliseconds": 5_000 },
+            "idempotency_key": "approval-response-loss-request-key",
+            "estate": "fixture:3",
+            "access": 51,
+            "mandatory_review": 52,
+            "upper_bound_grant": 20,
+            "reason": "prevent_immediate_loss",
+            "field": "account_details",
+            "duration_seconds": 300
+        }))
+        .send()
+        .await
+        .expect("request should cross TCP")
+        .json::<BankHttpElevationRequestOutcome>()
+        .await
+        .expect("request outcome should decode");
+    let BankHttpElevationRequestOutcome::Requested { elevation, .. } = requested else {
+        panic!("the initial elevation must commit: {requested:?}");
+    };
+
+    let body = serde_json::json!({
+        "protocol": "v1",
+        "request_id": "approval-response-loss",
+        "credential": credential("approver"),
+        "controls": { "deadline_milliseconds": 5_000 },
+        "idempotency_key": "approval-response-loss-key",
+        "elevation": elevation,
+    })
+    .to_string();
+    let frame = format!(
+        "POST /v1/estate/elevation/approve HTTP/1.1\r\nHost: {address}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+        body.len()
+    );
+    let mut disconnected = tokio::net::TcpStream::connect(address)
+        .await
+        .expect("approval socket should connect");
+    disconnected
+        .write_all(frame.as_bytes())
+        .await
+        .expect("complete approval request should reach TCP");
+    let mut response_started = [0_u8; 1];
+    disconnected
+        .read_exact(&mut response_started)
+        .await
+        .expect("the server should start its response after approval commits");
+    drop(disconnected);
+
+    let replay = tokio::time::timeout(Duration::from_secs(5), async {
+        loop {
+            let outcome = approve(
+                &client,
+                &origin,
+                "approver",
+                "approval-response-loss-key",
+                &elevation,
+            )
+            .await;
+            match outcome {
+                BankHttpElevationApprovalOutcome::Denied { denial, .. }
+                    if denial.kind == BankHttpDenialKind::Stale =>
+                {
+                    tokio::time::sleep(Duration::from_millis(10)).await;
+                }
+                other => break other,
+            }
+        }
+    })
+    .await
+    .expect("the first approval should settle within the endpoint deadline");
+    assert!(
+        matches!(
+            replay,
+            BankHttpElevationApprovalOutcome::Approved {
+                disposition: BankHttpCommitDisposition::AlreadyCommitted,
+                ..
+            }
+        ),
+        "the lost response must not execute approval again: {replay:?}"
+    );
     server.shutdown().await.expect("server should shut down");
 }
 

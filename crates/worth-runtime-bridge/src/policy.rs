@@ -1,4 +1,6 @@
 pub(crate) mod admission;
+mod conditional_retention;
+pub use conditional_retention::BridgeConditionalRetentionBudget;
 mod contracts;
 mod counters;
 mod declaration;
@@ -212,6 +214,7 @@ impl BridgeArtifactPolicyBaseline {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct BridgeRuntimePolicy {
+    conditional_retention: BridgeConditionalRetentionBudget,
     execution: BridgeExecutionPolicyBaseline,
     diagnostics: BridgeDiagnosticsPolicyBaseline,
     artifacts: BridgeArtifactPolicyBaseline,
@@ -222,8 +225,10 @@ impl BridgeRuntimePolicy {
         execution: BridgeExecutionPolicyBaseline,
         diagnostics: BridgeDiagnosticsPolicyBaseline,
         artifacts: BridgeArtifactPolicyBaseline,
+        conditional_retention: BridgeConditionalRetentionBudget,
     ) -> Self {
         Self {
+            conditional_retention,
             execution,
             diagnostics,
             artifacts,
@@ -235,6 +240,7 @@ impl BridgeRuntimePolicy {
             BridgeExecutionPolicyBaseline::operational(),
             BridgeDiagnosticsPolicyBaseline::for_tier_const(BridgeDiagnosticsTier::Minimal),
             BridgeArtifactPolicyBaseline::operational(),
+            BridgeConditionalRetentionBudget::development(),
         )
     }
 
@@ -243,6 +249,7 @@ impl BridgeRuntimePolicy {
             BridgeExecutionPolicyBaseline::development(),
             BridgeDiagnosticsPolicyBaseline::for_tier_const(BridgeDiagnosticsTier::Standard),
             BridgeArtifactPolicyBaseline::development(),
+            BridgeConditionalRetentionBudget::development(),
         )
     }
 
@@ -251,7 +258,17 @@ impl BridgeRuntimePolicy {
             BridgeExecutionPolicyBaseline::forensic(),
             BridgeDiagnosticsPolicyBaseline::for_tier_const(BridgeDiagnosticsTier::Exhaustive),
             BridgeArtifactPolicyBaseline::forensic(),
+            BridgeConditionalRetentionBudget::development(),
         )
+    }
+
+    pub fn conditional_retention(&self) -> BridgeConditionalRetentionBudget {
+        self.conditional_retention
+    }
+
+    pub fn with_conditional_retention(mut self, budget: BridgeConditionalRetentionBudget) -> Self {
+        self.conditional_retention = budget;
+        self
     }
 
     pub fn execution(&self) -> BridgeExecutionPolicyBaseline {
@@ -354,6 +371,7 @@ mod tests {
                 .with_route_record_limit(77)
                 .with_failure_record_limit(19),
             BridgeArtifactPolicyBaseline::new(true, false),
+            super::BridgeConditionalRetentionBudget::development(),
         );
 
         assert_eq!(

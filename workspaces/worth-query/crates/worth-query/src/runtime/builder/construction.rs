@@ -3,15 +3,21 @@ use super::*;
 impl WorthQueryRuntimeBuilder {
     pub fn build(mut self) -> Result<WorthQueryRuntime, WorthQueryRuntimeError> {
         self.queue_installed_domain_substrates();
-        let conditional_runtime_bridge = self.conditional_runtime_bridge.take();
+        let mut conditional_runtime_bridge = self.conditional_runtime_bridge.take();
         let conditional_signal_graph = self.conditional_signal_graph.take();
+        let conditional_execution_resources = self.conditional_execution_resources.take();
         let pending_conditional_installations =
             std::mem::take(&mut self.pending_conditional_installations);
+        let pending_owned_async_declarations =
+            std::mem::take(&mut self.pending_owned_async_declarations);
         let pending_primary_graph_installation = self.pending_primary_graph_installation.take();
-        if self.backend.is_some() && !self.backend_parts.is_empty() {
+        let product_world_resources = self.product_world_resources.clone();
+        if self.backend.is_some()
+            && (!self.backend_parts.is_empty() || self.pending_relational_product_bridge.is_some())
+        {
             return Err(WorthQueryRuntimeError::InvariantRegistration {
                 stage: "runtime_backend_authority_selection",
-                message: "explicit runtime backends cannot be combined with backend parts such as runtime_bridge(...), schema_adapter(...), or write_authority(...); choose one backend authority path".to_string(),
+                message: "explicit runtime backends cannot be combined with backend parts such as runtime_bridge(...), schema_adapter(...), or write_authority(...), or relational_product_bridge(...); choose one backend authority path".to_string(),
             });
         }
         if self.backend.is_some() && !self.queued_invariant_registrations.is_empty() {
@@ -76,28 +82,71 @@ impl WorthQueryRuntimeBuilder {
                 stage: "graph_participation_installation",
                 message: format!("{:?}: {}", denial.kind(), denial.detail()),
             })?;
-        let primary_graph_publication = pending_primary_graph_installation
+        let primary_graph_installation = pending_primary_graph_installation
             .map(|pending| {
                 pending.install(
                     &mut execution_runtime,
                     &execution_installation_authority,
                     backend.as_mut(),
+                    product_world_resources,
                 )
             })
             .transpose()?;
+        let primary_graph_publication = primary_graph_installation.map(|installed| {
+            conditional_runtime_bridge = Some(installed.product_bridge);
+            installed.publication
+        });
         let domain_installation_registry =
             crate::domain_installation::WorthQueryDomainInstallationRegistry::from_artifacts(
                 installed_domain_artifacts,
                 authority_identity,
                 execution_runtime.retain_installed_packages(),
             );
-        let (conditional_signal_runtime, conditional_execution_registry) =
-            WorthQueryRuntimeBuilder::install_conditional_execution(
-                conditional_runtime_bridge,
-                conditional_signal_graph,
-                &pending_conditional_installations,
-                &domain_installation_registry,
-                &graph_participation_registry,
+        let managed_execution_bridge = conditional_runtime_bridge
+            .as_ref()
+            .map(worth_runtime_bridge::facade::RuntimeBridge::fork_managed_request_lane);
+        let (
+            conditional_signal_runtime,
+            conditional_execution_registry,
+            installed_owned_async_declarations,
+        ) = WorthQueryRuntimeBuilder::install_conditional_execution(
+            conditional_runtime_bridge,
+            conditional_signal_graph,
+            conditional_execution_resources,
+            &pending_conditional_installations,
+            &pending_owned_async_declarations,
+            &domain_installation_registry,
+            &graph_participation_registry,
+        )?;
+        let conditional = conditional_signal_runtime.ok_or_else(|| {
+            WorthQueryRuntimeError::InvariantRegistration {
+                stage: "product_world_installation",
+                message: "execution runtime construction requires the exact Runtime Bridge and explicit Product World resources"
+                    .to_owned(),
+            }
+        })?;
+        let managed_execution_bridge = managed_execution_bridge.ok_or_else(|| {
+            WorthQueryRuntimeError::InvariantRegistration {
+                stage: "managed_execution_installation",
+                message: "installed operation execution requires the exact Runtime Bridge selected for Product World"
+                    .to_owned(),
+            }
+        })?;
+        let resources = conditional_execution_resources
+            .expect("sealed conditional runtime installation requires its resource configuration");
+        let installed_product =
+            super::super::installed_product::WorthQueryInstalledProduct::install(
+                backend.as_ref(),
+                conditional,
+                managed_execution_bridge,
+                resources.query_cache(),
+                self.product_world_resources,
+            )?;
+        let installed_owned_async_declarations =
+            super::super::owned_async_source::install_owned_async_registry(
+                authority_identity,
+                &installed_product,
+                installed_owned_async_declarations,
             )?;
         let domain_operation_executor_registry = self
             .pending_domain_operation_executors
@@ -141,11 +190,11 @@ impl WorthQueryRuntimeBuilder {
             workflow_stage_executor_registry,
             workflow_parallel_admission_provider_registry,
             graph_participation_registry,
-            conditional_signal_runtime,
+            installed_product,
             conditional_execution_registry,
+            installed_owned_async_declarations,
             installed_live_routes: Default::default(),
             shared_projection_owners: Default::default(),
-            conditional_installations: pending_conditional_installations,
             consumer_support_profile,
             native_aspect_contracts,
             preview_session_labels: BTreeSet::new(),

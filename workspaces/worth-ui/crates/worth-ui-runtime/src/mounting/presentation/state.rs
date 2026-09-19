@@ -11,8 +11,12 @@ pub struct UiMountedPresentationAdmission {
     pub(super) retention: super::super::retention::UiMountedRetentionReservation,
     pub(super) attempt: UiMountedPresentationAttemptIdentity,
     pub(super) deadline: UiPresentationDeadline,
+    candidates: super::coordinator::UiPreparedFrameCandidates,
     lease: UiPresentationAdmissionLease,
 }
+
+#[path = "state/appearance_admission.rs"]
+mod appearance_admission;
 
 struct UiPresentationAdmissionLease {
     active: Rc<RefCell<BTreeSet<UiMountedPresentationAttemptIdentity>>>,
@@ -26,7 +30,9 @@ pub struct UiMountedPresentationAttempt {
 
 pub struct UiMountedPresentationAdmissionRejection {
     denial: UiMountedPresentationAdmissionDenial,
+    attempt: Option<UiMountedPresentationAttemptIdentity>,
     frame: Box<UiPreparedMountedFrame>,
+    cost: Box<crate::mounting::UiMountCostReport>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -69,6 +75,8 @@ pub(super) struct UiPendingMountedSurface {
     pub(super) expected_effects: Box<[worth_ui_host_contract::UiMountedEffectFamily]>,
     pub(super) text_candidate: Option<super::coordinator::UiMountedTextPinCandidate>,
     pub(super) semantic_receipts: Box<[worth_ui_query_binding::WorthUiPresentationRecoveryReceipt]>,
+    pub(super) text_reuse:
+        Option<crate::native_platform::text_presentation::UiMountedTextForegroundReuseUpdate>,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -84,6 +92,9 @@ pub enum UiMountedPresentationAdmissionDenial {
     ReconciliationBasisMismatch,
     IdentityExhausted,
     SupersedingPredecessorUnavailable,
+    CandidatePreparation(worth_ui_host_contract::UiHostSurfacePresentationDenial),
+    AppearanceOutputUnavailable,
+    RetainedVisualBasisUnavailable,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -97,10 +108,13 @@ impl UiMountedPresentationAdmission {
         attempt: UiMountedPresentationAttemptIdentity,
         deadline: UiPresentationDeadline,
         active: Rc<RefCell<BTreeSet<UiMountedPresentationAttemptIdentity>>>,
+        candidates: super::coordinator::UiPreparedFrameCandidates,
     ) -> Self {
-        let (frame, retention) = prepared.into_parts();
+        let (mut frame, retention) = prepared.into_parts();
+        frame.reserve_appearance_retry_basis();
         Self {
             frame,
+            candidates,
             retention,
             attempt,
             deadline,
@@ -124,8 +138,29 @@ impl UiMountedPresentationAdmission {
         &self.frame
     }
 
-    pub fn into_attempt(self) -> UiMountedPresentationAttempt {
-        UiMountedPresentationAttempt { admission: self }
+    pub(crate) fn reject_appearance_output(self) -> UiMountedPresentationAdmissionRejection {
+        let attempt = self.attempt;
+        let frame = self.frame;
+        drop(self.retention);
+        UiMountedPresentationAdmissionRejection::new_with_attempt(
+            frame,
+            UiMountedPresentationAdmissionDenial::AppearanceOutputUnavailable,
+            attempt,
+        )
+    }
+
+    pub(crate) fn reject_retained_visual_basis(
+        self,
+        _denial: super::super::retention::UiMountedRetentionRefreshDenial,
+    ) -> UiMountedPresentationAdmissionRejection {
+        let attempt = self.attempt;
+        let frame = self.frame;
+        drop(self.retention);
+        UiMountedPresentationAdmissionRejection::new_with_attempt(
+            frame,
+            UiMountedPresentationAdmissionDenial::RetainedVisualBasisUnavailable,
+            attempt,
+        )
     }
 }
 
@@ -136,6 +171,23 @@ impl UiMountedPresentationAdmissionRejection {
     ) -> Self {
         Self {
             denial,
+            attempt: None,
+            cost: Box::new(frame.cost_report()),
+            frame: Box::new(frame),
+        }
+    }
+
+    fn new_with_attempt(
+        mut frame: UiPreparedMountedFrame,
+        denial: UiMountedPresentationAdmissionDenial,
+        attempt: UiMountedPresentationAttemptIdentity,
+    ) -> Self {
+        let cost = frame.cost_report();
+        frame.restore_rejected_appearance();
+        Self {
+            denial,
+            attempt: Some(attempt),
+            cost: Box::new(cost),
             frame: Box::new(frame),
         }
     }
@@ -144,8 +196,16 @@ impl UiMountedPresentationAdmissionRejection {
         self.denial
     }
 
+    pub fn cost_report(&self) -> crate::mounting::UiMountCostReport {
+        *self.cost
+    }
+
     pub fn frame(&self) -> &UiPreparedMountedFrame {
         &self.frame
+    }
+
+    pub fn attempt(&self) -> Option<UiMountedPresentationAttemptIdentity> {
+        self.attempt
     }
 
     pub fn into_frame(self) -> UiPreparedMountedFrame {
@@ -163,6 +223,14 @@ impl std::fmt::Debug for UiMountedPresentationAdmissionRejection {
 }
 
 impl UiMountedPresentationAttempt {
+    pub fn frame(&self) -> &UiPreparedMountedFrame {
+        &self.admission.frame
+    }
+
+    pub fn attempt(&self) -> UiMountedPresentationAttemptIdentity {
+        self.admission.attempt
+    }
+
     pub(super) fn into_parts(
         mut self,
     ) -> (
@@ -170,6 +238,7 @@ impl UiMountedPresentationAttempt {
         super::super::retention::UiMountedRetentionReservation,
         UiMountedPresentationAttemptIdentity,
         UiPresentationDeadline,
+        super::coordinator::UiPreparedFrameCandidates,
     ) {
         self.admission.lease.release_on_drop = false;
         (
@@ -177,6 +246,7 @@ impl UiMountedPresentationAttempt {
             self.admission.retention,
             self.admission.attempt,
             self.admission.deadline,
+            self.admission.candidates,
         )
     }
 }

@@ -168,12 +168,16 @@ fn resolve_source(
         Source::ProjectionText { projection } => {
             require_kind(declaration, field, UiIntentPayloadFieldKind::Text)?;
             let identity = projection_identity(declaration, field, projection)?;
-            let registration = query
+            let native_family = query
                 .scalar_projection_registration(&identity)
+                .map(|registration| registration.requirement().native_family())
+                .or_else(|| {
+                    query
+                        .application_scalar_projection_registration(&identity)
+                        .map(|registration| registration.requirement().native_family())
+                })
                 .ok_or_else(|| unknown_projection(declaration, field, projection, "scalar-text"))?;
-            if registration.requirement().native_family()
-                != worth_ui_query_binding::UiProjectionNativeFamily::Text
-            {
+            if native_family != worth_ui_query_binding::UiProjectionNativeFamily::Text {
                 return Err(source_mismatch(declaration, field, "scalar-text"));
             }
             UiResolvedIntentPayloadSource::ProjectionText(resolve_projection_slot(

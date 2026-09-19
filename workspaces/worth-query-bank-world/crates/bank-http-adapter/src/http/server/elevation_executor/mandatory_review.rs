@@ -65,6 +65,17 @@ where
         }
     };
     let (reviewed_authority, disposition) = match outcome {
+        BankEstateMandatoryReviewOutcome::ProductStale(_, mandatory) => {
+            registry.restore_mandatory_review(&request.token, mandatory);
+            return review_denied(Some(request_id), stale());
+        }
+        BankEstateMandatoryReviewOutcome::NoEffect(_, mandatory) => {
+            registry.restore_mandatory_review(&request.token, mandatory);
+            return review_denied(Some(request_id), unavailable());
+        }
+        BankEstateMandatoryReviewOutcome::ProductUnpublished(_) => {
+            return review_denied(Some(request_id), indeterminate());
+        }
         BankEstateMandatoryReviewOutcome::Reviewed(authority) => {
             (authority, BankHttpCommitDisposition::Committed)
         }
@@ -79,12 +90,16 @@ where
             registry.restore_mandatory_review(&request.token, mandatory);
             return review_denied(Some(request_id), cancelled());
         }
+        BankEstateMandatoryReviewOutcome::TimedOut => {
+            return review_denied(Some(request_id), deadline_exceeded());
+        }
         BankEstateMandatoryReviewOutcome::Denied { mandatory, .. }
         | BankEstateMandatoryReviewOutcome::Aborted(mandatory) => {
             registry.restore_mandatory_review(&request.token, mandatory);
             return review_denied(Some(request_id), unavailable());
         }
-        BankEstateMandatoryReviewOutcome::PartialEffect
+        BankEstateMandatoryReviewOutcome::Deferred(_)
+        | BankEstateMandatoryReviewOutcome::SettlementDeferred(_)
         | BankEstateMandatoryReviewOutcome::Indeterminate => {
             return review_denied(Some(request_id), indeterminate());
         }

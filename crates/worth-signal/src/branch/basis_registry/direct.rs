@@ -30,6 +30,9 @@ impl SignalBranchBasisRegistry {
                 let mut state = self.lock_state();
                 match live_ready_basis(&mut state, &key) {
                     Some(existing) => {
+                        // Release duplicate custody outside the registry lock:
+                        // lease cleanup contacts the independent retention owner.
+                        drop(state);
                         drop(retention);
                         return super::super::AdmittedSignalBranchBasis::from_inner(existing);
                     }

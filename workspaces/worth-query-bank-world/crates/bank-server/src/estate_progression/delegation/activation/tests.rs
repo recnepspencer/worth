@@ -1,10 +1,9 @@
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
-
 use bank_domain::estate::{
     CapabilityGrantId, CapabilityValidity, DelegationLimit, EstateAction,
     EstateCapabilityDelegationRequest, EstateCapabilityOperation, EstateCapabilityPurpose,
     EstateCapabilityScope, EstateMoment, EstateWorkflowStage, RestrictedBankField,
 };
+use bank_domain::proposals::BankIdempotencyKey;
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitDenialStage,
     WorthQueryApplicationCommitOutcome, WorthQueryApplicationEffectProgram,
@@ -13,13 +12,43 @@ use worth_query_host::facade::primary_graph::{
 
 use super::*;
 use crate::estate_capability_admission::fixture::{
-    delegation_world, delegation_world_with_parent_spec, request_scope, GrantSpec, APPROVER,
-    BRANCH, ESTATE, GRANT, INSTITUTION, REVIEWER, UNRELATED_GOVERNANCE_GRANT,
+    delegation_world, request_scope, APPROVER, BRANCH, ESTATE, GRANT, INSTITUTION, REVIEWER,
+    UNRELATED_GOVERNANCE_GRANT,
 };
 use crate::BankReadControls;
 
 const CHILD: CapabilityGrantId = CapabilityGrantId::new(401).unwrap();
 const GRANDCHILD: CapabilityGrantId = CapabilityGrantId::new(402).unwrap();
+
+mod expiry;
+
+#[test]
+fn raw_specialized_commit_cannot_bypass_the_installed_program() {
+    let fixture = delegation_world("delegation-raw-program-bypass");
+    let specialist = fixture.authenticate();
+    let action = delegated_action();
+    let command = delegation_command(action).unwrap();
+    let admission = fixture
+        .runtime
+        .admit_delegation(&specialist, action, command.child, &request_scope())
+        .expect("the exact delegation command should admit");
+    let program = fixture
+        .runtime
+        .materialize_delegation(admission, command.child)
+        .expect("Query should materialize a valid specialized program");
+    let outcome = fixture
+        .runtime
+        .application_runtime()
+        .compare_and_commit_capability_delegation(program, query_idempotency(119));
+    let WorthQueryApplicationCommitOutcome::Denied(denial) = outcome else {
+        panic!("raw specialized commit must reject this installed-program action: {outcome:?}");
+    };
+    assert_eq!(
+        denial.kind(),
+        WorthQueryApplicationCommitDenialKind::ApplicationProgramRequired
+    );
+    assert_child_absent(&fixture);
+}
 
 #[test]
 fn parent_revocation_after_activation_materialization_denies_final_commit() {
@@ -35,16 +64,15 @@ fn parent_revocation_after_activation_materialization_denies_final_commit() {
         .runtime
         .materialize_delegation(admission, command.child)
         .expect("the exact activation program must materialize while its parent is current");
-
     let revoked = fixture
         .runtime
-        .revoke_estate_capability(
+        .revoke_estate_capability_with_key(
             &specialist,
             EstateAction::RevokeCapability {
                 estate: ESTATE,
                 grant: GRANT,
             },
-            idempotency(121),
+            &idempotency(121),
             &request_scope(),
         )
         .expect("the exact parent must revoke before the stale program reaches the provider");
@@ -52,15 +80,15 @@ fn parent_revocation_after_activation_materialization_denies_final_commit() {
         revoked,
         crate::BankMutationCommitOutcome::Committed(_)
     ));
-
     let outcome = fixture
         .runtime
-        .application_runtime()
-        .compare_and_commit_capability_delegation(program, idempotency(123));
+        .application_program()
+        .admit_program_operation::<DelegateEstateCapabilityOperation>()
+        .unwrap()
+        .compare_and_commit_capability_delegation(program, query_idempotency(123));
     assert_provider_currentness_denial(outcome);
     assert_child_absent(&fixture);
 }
-
 #[test]
 fn ancestor_revocation_after_grandchild_materialization_denies_final_commit() {
     let fixture = delegation_world("delegation-provider-ancestor-currentness");
@@ -68,7 +96,12 @@ fn ancestor_revocation_after_grandchild_materialization_denies_final_commit() {
     let child = delegated_action();
     fixture
         .runtime
-        .delegate_estate_capability(&specialist, child, idempotency(129), &request_scope())
+        .delegate_estate_capability_with_key(
+            &specialist,
+            child,
+            &idempotency(129),
+            &request_scope(),
+        )
         .expect("the root must activate the intermediate child");
 
     let approver = fixture.authenticate_approver();
@@ -85,27 +118,33 @@ fn ancestor_revocation_after_grandchild_materialization_denies_final_commit() {
 
     fixture
         .runtime
-        .revoke_estate_capability(
+        .revoke_estate_capability_with_key(
             &specialist,
             EstateAction::RevokeCapability {
                 estate: ESTATE,
                 grant: GRANT,
             },
-            idempotency(131),
+            &idempotency(131),
             &request_scope(),
         )
         .expect("the root must revoke before the retained grandchild reaches the provider");
 
     let outcome = fixture
         .runtime
-        .application_runtime()
-        .compare_and_commit_capability_delegation(program, idempotency(133));
+        .application_program()
+        .admit_program_operation::<DelegateEstateCapabilityOperation>()
+        .unwrap()
+        .compare_and_commit_capability_delegation(program, query_idempotency(133));
     assert_provider_currentness_denial(outcome);
-    assert_grant_absent(&fixture, GRANDCHILD);
+    assert!(!grant_is_visible(
+        &fixture,
+        &fixture.authenticate_executor(),
+        GRANDCHILD,
+    ));
 }
 
 #[test]
-fn generic_provider_entry_cannot_bypass_typed_activation_materialization() {
+fn generic_provider_entry_cannot_bypass_the_installed_delegation_action() {
     let fixture = delegation_world("delegation-generic-provider-bypass");
     let specialist = fixture.authenticate();
     let program = materialize_generic(&fixture.runtime, &specialist)
@@ -114,17 +153,17 @@ fn generic_provider_entry_cannot_bypass_typed_activation_materialization() {
     let outcome = fixture
         .runtime
         .application_runtime()
-        .compare_and_commit_application(program, idempotency(125));
+        .compare_and_commit_application(program, query_idempotency(125));
     let WorthQueryApplicationCommitOutcome::Denied(denial) = outcome else {
         panic!("the generic provider entry must reject activation admissions");
     };
     assert_eq!(
         denial.kind(),
-        WorthQueryApplicationCommitDenialKind::DelegationActivationRequired
+        WorthQueryApplicationCommitDenialKind::ApplicationProgramRequired
     );
     assert_eq!(
         denial.stage(),
-        WorthQueryApplicationCommitDenialStage::DelegationTransition
+        WorthQueryApplicationCommitDenialStage::ProposalBinding
     );
     assert_child_absent(&fixture);
 }
@@ -147,8 +186,10 @@ fn activation_program_cannot_cross_runtime_session_authority() {
     let foreign = delegation_world("delegation-provider-foreign-runtime");
     let outcome = foreign
         .runtime
-        .application_runtime()
-        .compare_and_commit_capability_delegation(program, idempotency(137));
+        .application_program()
+        .admit_program_operation::<DelegateEstateCapabilityOperation>()
+        .unwrap()
+        .compare_and_commit_capability_delegation(program, query_idempotency(137));
     assert!(matches!(
         outcome,
         WorthQueryApplicationCommitOutcome::Denied(_)
@@ -158,7 +199,7 @@ fn activation_program_cannot_cross_runtime_session_authority() {
 }
 
 #[test]
-fn unrelated_revocation_does_not_stale_the_exact_activation_support() {
+fn unrelated_revocation_invalidates_the_old_product_basis_and_fresh_delegation_commits() {
     let fixture = delegation_world("delegation-provider-unrelated-currentness");
     let specialist = fixture.authenticate();
     let action = delegated_action();
@@ -172,63 +213,39 @@ fn unrelated_revocation_does_not_stale_the_exact_activation_support() {
         .materialize_delegation(admission, command.child)
         .expect("the exact activation program must retain only relevant support");
 
-    fixture
+    let revoked = fixture
         .runtime
-        .revoke_estate_capability(
+        .revoke_estate_capability_with_key(
             &specialist,
             EstateAction::RevokeCapability {
                 estate: ESTATE,
                 grant: UNRELATED_GOVERNANCE_GRANT,
             },
-            idempotency(139),
+            &idempotency(139),
             &request_scope(),
         )
         .expect("an unrelated authority should revoke independently");
+    assert!(matches!(revoked, BankMutationCommitOutcome::Committed(_)));
     let outcome = fixture
         .runtime
-        .application_runtime()
-        .compare_and_commit_capability_delegation(program, idempotency(141));
-    assert!(matches!(
-        outcome,
-        WorthQueryApplicationCommitOutcome::Committed(_)
-    ));
-}
+        .application_program()
+        .admit_program_operation::<DelegateEstateCapabilityOperation>()
+        .unwrap()
+        .compare_and_commit_capability_delegation(program, query_idempotency(141));
+    assert_product_basis_stale(outcome);
+    assert!(!grant_is_visible(&fixture, &specialist, CHILD));
 
-#[test]
-fn parent_expiry_after_activation_materialization_denies_final_commit() {
-    let expiry = epoch_seconds() + 20;
-    let mut parent = GrantSpec::governance_view();
-    parent.not_after = expiry;
-    let fixture = delegation_world_with_parent_spec("delegation-provider-parent-expiry", parent);
-    let specialist = fixture.authenticate();
-    let mut action = delegated_action();
-    let EstateAction::DelegateCapability { child, .. } = &mut action else {
-        unreachable!("the fixture action is delegation")
-    };
-    child.scope.validity = CapabilityValidity::new(
-        EstateMoment::from_epoch_seconds(0),
-        EstateMoment::from_epoch_seconds(expiry),
-    )
-    .unwrap();
-    let command = delegation_command(action).unwrap();
-    let admission = fixture
+    let fresh = fixture
         .runtime
-        .admit_delegation(&specialist, action, command.child, &request_scope())
-        .unwrap();
-    let program = fixture
-        .runtime
-        .materialize_delegation(admission, command.child)
-        .expect("the activation program must materialize before parent expiry");
-
-    while epoch_seconds() <= expiry {
-        std::thread::sleep(Duration::from_millis(10));
-    }
-    let outcome = fixture
-        .runtime
-        .application_runtime()
-        .compare_and_commit_capability_delegation(program, idempotency(127));
-    assert_provider_currentness_denial(outcome);
-    assert_child_absent(&fixture);
+        .delegate_estate_capability_with_key(
+            &specialist,
+            action,
+            &idempotency(141),
+            &request_scope(),
+        )
+        .expect("fresh admission must preserve progress unrelated to the delegation");
+    assert!(matches!(fresh, BankMutationCommitOutcome::Committed(_)));
+    assert!(grant_is_visible(&fixture, &specialist, CHILD));
 }
 
 fn delegated_action() -> EstateAction {
@@ -325,34 +342,50 @@ fn assert_provider_currentness_denial(outcome: WorthQueryApplicationCommitOutcom
     );
 }
 
-fn assert_child_absent(fixture: &crate::estate_capability_admission::fixture::CapabilityFixture) {
-    assert_grant_absent(fixture, CHILD);
+fn assert_product_basis_stale(outcome: WorthQueryApplicationCommitOutcome) {
+    let WorthQueryApplicationCommitOutcome::Denied(denial) = outcome else {
+        panic!("an old materialized program must retain its exact product basis: {outcome:?}");
+    };
+    assert_eq!(
+        denial.kind(),
+        WorthQueryApplicationCommitDenialKind::ProductBasisStale
+    );
+    assert_eq!(
+        denial.stage(),
+        WorthQueryApplicationCommitDenialStage::InvariantExecution
+    );
 }
 
-fn assert_grant_absent(
+fn assert_child_absent(fixture: &crate::estate_capability_admission::fixture::CapabilityFixture) {
+    assert!(!grant_is_visible(
+        fixture,
+        &fixture.authenticate_executor(),
+        CHILD,
+    ));
+}
+
+fn grant_is_visible(
     fixture: &crate::estate_capability_admission::fixture::CapabilityFixture,
+    principal: &BankAuthenticatedPrincipal,
     grant: CapabilityGrantId,
-) {
+) -> bool {
     let result = fixture
         .runtime
         .query(crate::queries::estate_governance_context(ESTATE))
-        .as_principal(&fixture.authenticate_executor())
+        .as_principal(principal)
         .controls(BankReadControls::current(request_scope(), 1, 20_000).unwrap())
         .execute()
-        .expect("independent governance authority must read authoritative post-denial state");
-    assert!(result.rows()[0]
+        .expect("governance authority must read authoritative delegation state");
+    result.rows()[0]
         .capabilities()
         .iter()
-        .all(|capability| capability.id() != grant));
+        .any(|capability| capability.id() == grant)
 }
 
-fn idempotency(seed: u8) -> WorthQueryApplicationIdempotencyBinding {
+fn idempotency(seed: u8) -> BankIdempotencyKey {
+    BankIdempotencyKey::new(format!("delegation-activation-{seed}")).unwrap()
+}
+
+fn query_idempotency(seed: u8) -> WorthQueryApplicationIdempotencyBinding {
     WorthQueryApplicationIdempotencyBinding::new([seed; 32], [seed + 1; 32])
-}
-
-fn epoch_seconds() -> u64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("test time follows the Unix epoch")
-        .as_secs()
 }

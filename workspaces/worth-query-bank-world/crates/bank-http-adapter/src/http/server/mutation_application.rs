@@ -3,17 +3,22 @@ use std::time::Instant;
 use bank_domain::model::{AccountId, BankPrincipalId, InstitutionId, Money, USD};
 use bank_domain::proposals::BankIdempotencyKey;
 use bank_domain::schema::{Deposit, SendMoney, Withdraw};
-use bank_server::{
-    mutations, BankCommitReceipt, BankMutationControls, BankMutationDenial, BankMutationOutcome,
-    BankMutationStatus,
+use bank_server::{mutations, BankMoneyMovementExecution, BankMutationControls};
+use worth_query_host::facade::primary_graph::{
+    WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitRecoveryKind,
 };
-use worth_query_host::facade::admission::authenticated_principal::{
-    WorthQueryCancellationToken, WorthQueryRequestScope,
+use worth_query_host::facade::{
+    admission::authenticated_principal::{WorthQueryCancellationToken, WorthQueryRequestScope},
+    application_entry::{
+        WorthQueryApplicationMutationOutcome, WorthQueryApplicationRequestMutationDenialKind,
+    },
+    primary_graph::{WorthQueryApplicationCommitOutcome, WorthQueryApplicationCommitReceipt},
 };
 
 use super::super::protocol::{
     BankHttpCommitDescription, BankHttpCommitDisposition, BankHttpCredential, BankHttpDenial,
     BankHttpDenialKind, BankHttpMutationFailureKind, BankHttpMutationOutcome, BankHttpNextAction,
+    BankHttpProviderRecoveryKind,
 };
 use super::authentication::BankHttpApplicationAuthenticator;
 
@@ -105,45 +110,32 @@ pub(super) fn parse_send_money(
     }))
 }
 
-fn describe_outcome(request_id: String, outcome: BankMutationOutcome) -> BankHttpMutationOutcome {
-    let provider_work_units = outcome.metadata().provider_work_units();
-    match outcome.into_status() {
-        BankMutationStatus::Committed(receipt) => applied(
-            request_id,
-            BankHttpCommitDisposition::Committed,
-            receipt,
-            provider_work_units,
-        ),
-        BankMutationStatus::AlreadyCommitted(receipt) => applied(
+fn describe_outcome(
+    request_id: String,
+    outcome: BankMoneyMovementExecution,
+) -> BankHttpMutationOutcome {
+    match outcome {
+        Err(denial) => {
+            let wire = request_mutation_denial(denial.kind());
+            not_applied(Some(request_id), cancelled_or_denied(wire), wire)
+        }
+        Ok(WorthQueryApplicationMutationOutcome::Committed { receipt, .. }) => {
+            applied(request_id, BankHttpCommitDisposition::Committed, receipt)
+        }
+        Ok(WorthQueryApplicationMutationOutcome::AlreadyCommitted(receipt)) => applied(
             request_id,
             BankHttpCommitDisposition::AlreadyCommitted,
             receipt,
-            provider_work_units,
         ),
-        BankMutationStatus::Stale { stale_fact_count } => BankHttpMutationOutcome::NotApplied {
-            request_id: Some(request_id),
-            failure: BankHttpMutationFailureKind::Stale,
-            stale_fact_count: Some(stale_fact_count),
-            denial: BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh),
-        },
-        BankMutationStatus::Cancelled => not_applied(
+        Ok(WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift) => not_applied(
             Some(request_id),
-            BankHttpMutationFailureKind::Cancelled,
-            BankHttpDenial::new(BankHttpDenialKind::Cancelled, BankHttpNextAction::Retry),
-        ),
-        BankMutationStatus::DeadlineExceeded => not_applied(
-            Some(request_id),
-            BankHttpMutationFailureKind::DeadlineExceeded,
+            BankHttpMutationFailureKind::Aborted,
             BankHttpDenial::new(
-                BankHttpDenialKind::DeadlineExceeded,
-                BankHttpNextAction::Retry,
+                BankHttpDenialKind::Stale,
+                BankHttpNextAction::CorrectRequest,
             ),
         ),
-        BankMutationStatus::Denied(denial) => {
-            let wire = mutation_denial(&denial);
-            not_applied(Some(request_id), cancelled_or_denied(wire), wire)
-        }
-        BankMutationStatus::InvariantViolated(_) => not_applied(
+        Ok(WorthQueryApplicationMutationOutcome::DomainDenied(_)) => not_applied(
             Some(request_id),
             BankHttpMutationFailureKind::InvariantViolated,
             BankHttpDenial::new(
@@ -151,16 +143,105 @@ fn describe_outcome(request_id: String, outcome: BankMutationOutcome) -> BankHtt
                 BankHttpNextAction::CorrectRequest,
             ),
         ),
-        BankMutationStatus::Aborted => not_applied(
+        Ok(WorthQueryApplicationMutationOutcome::Cancelled) => not_applied(
+            Some(request_id),
+            BankHttpMutationFailureKind::Cancelled,
+            BankHttpDenial::new(BankHttpDenialKind::Cancelled, BankHttpNextAction::Retry),
+        ),
+        Ok(WorthQueryApplicationMutationOutcome::DeadlineExceeded) => not_applied(
+            Some(request_id),
+            BankHttpMutationFailureKind::DeadlineExceeded,
+            BankHttpDenial::new(
+                BankHttpDenialKind::DeadlineExceeded,
+                BankHttpNextAction::Retry,
+            ),
+        ),
+        Ok(WorthQueryApplicationMutationOutcome::Commit(outcome)) => {
+            describe_commit_outcome(request_id, outcome)
+        }
+    }
+}
+
+fn describe_commit_outcome(
+    request_id: String,
+    outcome: WorthQueryApplicationCommitOutcome,
+) -> BankHttpMutationOutcome {
+    match outcome {
+        WorthQueryApplicationCommitOutcome::ProductStale(_) => not_applied(
+            Some(request_id),
+            BankHttpMutationFailureKind::ProductStale,
+            BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh),
+        ),
+        WorthQueryApplicationCommitOutcome::ProductUnpublished(_) => {
+            recovery_required(request_id, BankHttpMutationFailureKind::ProductUnpublished)
+        }
+        WorthQueryApplicationCommitOutcome::NoEffect(_) => not_applied(
+            Some(request_id),
+            BankHttpMutationFailureKind::NoEffect,
+            BankHttpDenial::new(BankHttpDenialKind::Unavailable, BankHttpNextAction::Retry),
+        ),
+        WorthQueryApplicationCommitOutcome::Committed(receipt) => {
+            applied(request_id, BankHttpCommitDisposition::Committed, receipt)
+        }
+        WorthQueryApplicationCommitOutcome::AlreadyCommitted(receipt) => applied(
+            request_id,
+            BankHttpCommitDisposition::AlreadyCommitted,
+            receipt,
+        ),
+        WorthQueryApplicationCommitOutcome::Stale(stale) => BankHttpMutationOutcome::NotApplied {
+            request_id: Some(request_id),
+            failure: BankHttpMutationFailureKind::Stale,
+            stale_fact_count: Some(stale.stale_fact_count()),
+            provider_recovery: None,
+            denial: BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh),
+        },
+        WorthQueryApplicationCommitOutcome::Cancelled => not_applied(
+            Some(request_id),
+            BankHttpMutationFailureKind::Cancelled,
+            BankHttpDenial::new(BankHttpDenialKind::Cancelled, BankHttpNextAction::Retry),
+        ),
+        WorthQueryApplicationCommitOutcome::TimedOut => not_applied(
+            Some(request_id),
+            BankHttpMutationFailureKind::TimedOut,
+            BankHttpDenial::new(
+                BankHttpDenialKind::DeadlineExceeded,
+                BankHttpNextAction::Retry,
+            ),
+        ),
+        WorthQueryApplicationCommitOutcome::Denied(denial) => {
+            let (failure, wire) = commit_denial(denial.kind());
+            not_applied(Some(request_id), failure, wire)
+        }
+        WorthQueryApplicationCommitOutcome::Aborted => not_applied(
             Some(request_id),
             BankHttpMutationFailureKind::Aborted,
             BankHttpDenial::new(BankHttpDenialKind::Unavailable, BankHttpNextAction::Retry),
         ),
-        BankMutationStatus::PartialEffect(_) => {
-            recovery_required(request_id, BankHttpMutationFailureKind::PartialEffect)
+        WorthQueryApplicationCommitOutcome::Deferred(_) => {
+            recovery_required(request_id, BankHttpMutationFailureKind::Deferred)
         }
-        BankMutationStatus::Indeterminate(_) => {
-            recovery_required(request_id, BankHttpMutationFailureKind::Indeterminate)
+        WorthQueryApplicationCommitOutcome::SettlementDeferred(_) => {
+            recovery_required(request_id, BankHttpMutationFailureKind::SettlementDeferred)
+        }
+        WorthQueryApplicationCommitOutcome::Indeterminate(evidence) => {
+            let provider_recovery = match evidence.recovery() {
+                WorthQueryApplicationCommitRecoveryKind::CommitRecoveryRequired => {
+                    BankHttpProviderRecoveryKind::CommitRecoveryRequired
+                }
+                WorthQueryApplicationCommitRecoveryKind::AbortRecoveryRequired => {
+                    BankHttpProviderRecoveryKind::AbortRecoveryRequired
+                }
+            };
+            BankHttpMutationOutcome::NotApplied {
+                request_id: Some(request_id),
+                failure: BankHttpMutationFailureKind::Indeterminate,
+                stale_fact_count: None,
+                provider_recovery: Some(provider_recovery),
+                denial: BankHttpDenial::new(
+                    BankHttpDenialKind::Unavailable,
+                    BankHttpNextAction::ContactOperator,
+                ),
+            }
         }
     }
 }
@@ -168,18 +249,22 @@ fn describe_outcome(request_id: String, outcome: BankMutationOutcome) -> BankHtt
 fn applied(
     request_id: String,
     disposition: BankHttpCommitDisposition,
-    receipt: BankCommitReceipt,
-    provider_work_units: usize,
+    receipt: WorthQueryApplicationCommitReceipt,
 ) -> BankHttpMutationOutcome {
+    let invariant_work_units = receipt
+        .mutation_work()
+        .and_then(|work| usize::try_from(work.invariant_work_units()).ok());
+    let preconditions = receipt.precondition_comparison();
     BankHttpMutationOutcome::Applied {
         request_id,
         disposition,
         commit: BankHttpCommitDescription {
             changed_record_count: receipt.changed_record_count(),
             emitted_effect_count: receipt.emitted_effect_count(),
-            expected_version_count: receipt.expected_version_count(),
-            expected_fact_count: receipt.expected_fact_count(),
-            provider_work_units: Some(provider_work_units),
+            expected_version_count: preconditions.expected_version_count(),
+            expected_fact_count: preconditions.expected_fact_count(),
+            provider_work_units: None,
+            invariant_work_units,
         },
     }
 }
@@ -207,6 +292,7 @@ fn not_applied(
         request_id,
         failure,
         stale_fact_count: None,
+        provider_recovery: None,
         denial,
     }
 }
@@ -219,28 +305,92 @@ fn cancelled_or_denied(denial: BankHttpDenial) -> BankHttpMutationFailureKind {
     }
 }
 
-fn mutation_denial(denial: &BankMutationDenial) -> BankHttpDenial {
-    match denial {
-        BankMutationDenial::Scope(_) => BankHttpDenial::new(
+pub(super) fn request_mutation_denial(
+    kind: WorthQueryApplicationRequestMutationDenialKind,
+) -> BankHttpDenial {
+    use WorthQueryApplicationRequestMutationDenialKind as Denial;
+    match kind {
+        Denial::ProductSelection => {
+            BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh)
+        }
+        Denial::ScopeResolution => BankHttpDenial::new(
             BankHttpDenialKind::NotFound,
             BankHttpNextAction::CorrectRequest,
         ),
-        BankMutationDenial::Authorization(_) => BankHttpDenial::new(
+        Denial::Authorization => BankHttpDenial::new(
             BankHttpDenialKind::PermissionDenied,
             BankHttpNextAction::None,
         ),
-        BankMutationDenial::IdempotencyIntentDrift => BankHttpDenial::new(
-            BankHttpDenialKind::Stale,
-            BankHttpNextAction::CorrectRequest,
-        ),
-        BankMutationDenial::Proposal(_) => BankHttpDenial::new(
-            BankHttpDenialKind::MalformedRequest,
-            BankHttpNextAction::CorrectRequest,
-        ),
-        BankMutationDenial::Installation(_)
-        | BankMutationDenial::Preparation(_)
-        | BankMutationDenial::Commit { .. } => {
+        Denial::ApplicationProgramRequired | Denial::ApplicationProgramMismatch => {
+            BankHttpDenial::new(
+                BankHttpDenialKind::MalformedRequest,
+                BankHttpNextAction::CorrectRequest,
+            )
+        }
+        Denial::BindingInstallation
+        | Denial::CapabilityInstallation
+        | Denial::PrincipalResolution
+        | Denial::Idempotency
+        | Denial::Handler
+        | Denial::SourceExpectation => {
             BankHttpDenial::new(BankHttpDenialKind::Unavailable, BankHttpNextAction::Retry)
         }
+    }
+}
+
+pub(super) fn commit_denial(
+    kind: WorthQueryApplicationCommitDenialKind,
+) -> (BankHttpMutationFailureKind, BankHttpDenial) {
+    use WorthQueryApplicationCommitDenialKind as Denial;
+    match kind {
+        Denial::ProductBasisStale => (
+            BankHttpMutationFailureKind::ProductStale,
+            BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh),
+        ),
+        Denial::CustomInvariantDenied => (
+            BankHttpMutationFailureKind::InvariantViolated,
+            BankHttpDenial::new(
+                BankHttpDenialKind::MalformedRequest,
+                BankHttpNextAction::CorrectRequest,
+            ),
+        ),
+        Denial::IdempotencyIntentDrift => (
+            BankHttpMutationFailureKind::Aborted,
+            BankHttpDenial::new(
+                BankHttpDenialKind::Stale,
+                BankHttpNextAction::CorrectRequest,
+            ),
+        ),
+        Denial::CandidateValidatorWorkExceeded { .. }
+        | Denial::PreparedRootBudgetExhausted { .. }
+        | Denial::ElevationTransitionRequired
+        | Denial::ElevationRequestProgramMismatch
+        | Denial::ElevationApprovalProgramMismatch
+        | Denial::ElevationCloseProgramMismatch
+        | Denial::MandatoryReviewProgramMismatch
+        | Denial::DelegationActivationRequired
+        | Denial::CapabilityRevocationRequired
+        | Denial::ApplicationProgramRequired => (
+            BankHttpMutationFailureKind::Aborted,
+            BankHttpDenial::new(
+                BankHttpDenialKind::MalformedRequest,
+                BankHttpNextAction::CorrectRequest,
+            ),
+        ),
+        Denial::ProviderRejected
+        | Denial::ActiveSnapshotCapacityExhausted { .. }
+        | Denial::RetentionCapacityExhausted => (
+            BankHttpMutationFailureKind::Aborted,
+            BankHttpDenial::new(BankHttpDenialKind::Unavailable, BankHttpNextAction::Retry),
+        ),
+        Denial::RetentionIdentityExhausted
+        | Denial::SnapshotIdentityExhausted
+        | Denial::CandidateIdentityExhausted => (
+            BankHttpMutationFailureKind::Aborted,
+            BankHttpDenial::new(
+                BankHttpDenialKind::Unavailable,
+                BankHttpNextAction::ContactOperator,
+            ),
+        ),
     }
 }

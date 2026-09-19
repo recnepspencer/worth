@@ -37,6 +37,9 @@ impl UiMountedIdentityState {
             current_frame: None,
             current_receipt_basis: None,
             current_projection: None,
+            unprojected_semantic_predecessor: None,
+            unprojected_appearance_predecessor: self.appearance_predecessor().cloned(),
+            unprojected_pointer_predecessor: self.pointer_predecessor().cloned(),
             current_manifest: None,
             current_core: None,
             current_publication: None,
@@ -78,7 +81,12 @@ fn replacement_projection_changes(
         .filter(|identity| !instances.contains_key(identity))
         .copied()
     {
-        changes.mark_retired_instance(identity);
+        changes.mark_retired_instance(
+            identity,
+            predecessor.instances[&identity]
+                .basis
+                .semantic_surface_identity(),
+        );
     }
     changes
 }

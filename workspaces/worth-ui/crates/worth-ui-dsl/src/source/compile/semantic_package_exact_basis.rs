@@ -23,6 +23,7 @@ struct WorthUiSemanticModuleExactBasis {
 struct WorthUiSemanticBlockExactBasis {
     name: String,
     authored_identity: Option<String>,
+    appearance_role_attachment: Option<(String, u64)>,
     structure: WorthUiStructuralBodyExactBasis,
 }
 
@@ -106,6 +107,12 @@ impl WorthUiSemanticBlockExactBasis {
         Self {
             name: block.name_text().to_owned(),
             authored_identity: block.authored_identity().map(str::to_owned),
+            appearance_role_attachment: block.appearance_role_attachment().map(|attachment| {
+                (
+                    attachment.role().as_str().to_owned(),
+                    attachment.revision().value(),
+                )
+            }),
             structure: WorthUiStructuralBodyExactBasis::from_structure(block.structure()),
         }
     }
@@ -113,6 +120,14 @@ impl WorthUiSemanticBlockExactBasis {
     fn fold_into(&self, fingerprint: &mut Fingerprint) {
         fingerprint.fold_text(&self.name);
         fingerprint.fold_optional_text(self.authored_identity.as_deref());
+        match &self.appearance_role_attachment {
+            Some((role, revision)) => {
+                fingerprint.fold_bool(true);
+                fingerprint.fold_text(role);
+                fingerprint.fold_u64(*revision);
+            }
+            None => fingerprint.fold_bool(false),
+        }
         self.structure.fold_into(fingerprint);
     }
 }

@@ -99,6 +99,31 @@ mod tests {
     }
 
     #[test]
+    fn geometry_profile_admits_a_coherent_frame_publication_batch() {
+        let config = RelationalRuntimeConfig::resolved(
+            RelationalRuntimeProfile::GeometryKernel,
+            RelationalConfigOverride::default(),
+        );
+
+        assert!(config.publication.policy.max_transaction_footprint_loci >= 85_389);
+        assert!(config.publication.policy.max_patch_records_per_commit >= 16_707);
+        assert!(
+            config
+                .execution
+                .relation_integrity_scope_budget
+                .max_touched_entities
+                >= 22_877
+        );
+        assert!(
+            config
+                .execution
+                .relation_integrity_scope_budget
+                .max_planned_edges
+                >= 38_837
+        );
+    }
+
+    #[test]
     fn overriding_diagnostics_profile_breaks_boundary_default_match() {
         let mut overrides = RelationalConfigOverride::default();
         overrides.diagnostics.profile =

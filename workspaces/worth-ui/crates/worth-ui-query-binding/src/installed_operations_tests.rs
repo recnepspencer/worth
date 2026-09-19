@@ -107,7 +107,7 @@ fn registered_snapshot_and_recording_workflow_execute_real_query_mechanics() {
         .worth_ui()
         .expect("Worth UI domain should install");
     let recording = workspace
-        .prepare_mutation_operating_world()
+        .prepare_mutation_operating_world(workspace.current_world())
         .unwrap()
         .family(WorthUiMeasurementRecordingFamily)
         .bind(installed.handle(), WorthUiMeasurementRecording)
@@ -153,7 +153,7 @@ fn registered_snapshot_and_recording_workflow_execute_real_query_mechanics() {
     assert!(recorded_touches.contains(&&aspect_touch("measurement.value")));
 
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(WorthUiSnapshotMeasurementFamily)
         .bind(installed.handle(), WorthUiSnapshotMeasurement)
@@ -198,7 +198,7 @@ fn recording_workflow_rejects_invalid_value_without_a_partial_write() {
         .unwrap();
     let installed = workspace.worth_ui().unwrap();
     let run = workspace
-        .prepare_mutation_operating_world()
+        .prepare_mutation_operating_world(workspace.current_world())
         .unwrap()
         .family(WorthUiMeasurementRecordingFamily)
         .bind(installed.handle(), WorthUiMeasurementRecording)
@@ -338,7 +338,7 @@ pub(crate) fn bound_snapshot(
 ) -> crate::WorthUiBoundSnapshotMeasurement<foundation::ObservationLaneWitness> {
     let installed = workspace.worth_ui().unwrap();
     workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(WorthUiSnapshotMeasurementFamily)
         .bind(installed.handle(), WorthUiSnapshotMeasurement)

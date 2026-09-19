@@ -8,7 +8,10 @@ pub use clock::{RuntimeWorldClock, RuntimeWorldClockSource, RuntimeWorldInstant}
 pub use close::{
     RuntimeWorldCloseDenial, RuntimeWorldCloseReport, RuntimeWorldRetainedRecordReport,
 };
-pub use owner::RuntimeWorldOwnerRoot;
+pub use owner::{
+    RuntimeWorldOwnedAsyncRequestAdmissionDenial, RuntimeWorldOwnedAsyncRevalidationDenial,
+    RuntimeWorldOwnerRoot,
+};
 pub use owner_inputs::RuntimeWorldOwnerInputs;
 #[allow(unused_imports)]
 pub(crate) use ports::{

@@ -55,11 +55,11 @@ impl WorthSignalJsError {
         }
     }
 
-    pub fn restore_token_capacity_exhausted(maximum_pending_tokens: usize) -> Self {
+    pub fn restore_token_not_pending(token: &str, maximum_pending_tokens: usize) -> Self {
         Self {
-            code: "restoreTokenCapacityExhausted".to_owned(),
+            code: "restoreTokenNotPending".to_owned(),
             message: format!(
-                "restore token capacity exhausted at {maximum_pending_tokens} pending artifacts"
+                "restore token `{token}` is not pending: it was consumed, discarded, or evicted (a realm keeps its {maximum_pending_tokens} most recent pending exact restore artifacts)"
             ),
             context: None,
         }

@@ -1,4 +1,5 @@
 mod authentication;
+mod contributions;
 mod decision_read_manifest;
 mod entities;
 mod estate;
@@ -7,17 +8,20 @@ mod governance;
 mod manifest;
 mod money_movement_program;
 mod operations;
+mod posting_integrity;
 mod precondition_manifest;
 mod program_manifest;
 mod relations;
 mod values;
 
 pub use authentication::*;
+pub use contributions::{BankAccounts, BankEstate, BankPayments};
 pub use entities::*;
 pub use estate::*;
 pub use fields::*;
 pub use governance::*;
 pub use manifest::*;
 pub use operations::*;
+pub use posting_integrity::BankPostingIntegrity;
 pub use relations::*;
 pub use values::*;

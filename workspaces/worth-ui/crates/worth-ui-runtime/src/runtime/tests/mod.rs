@@ -40,10 +40,20 @@ mod allocation_planning_inspection_boundary_tests;
 pub(crate) mod allocation_planning_test_support;
 #[path = "planning/allocation_truth_boundary_tests.rs"]
 mod allocation_truth_boundary_tests;
+#[path = "source_ingress/appearance_component_session_test_support.rs"]
+pub(crate) mod appearance_component_session_test_support;
+#[path = "source_ingress/appearance_owner_availability_test_support.rs"]
+pub(crate) mod appearance_owner_availability_test_support;
+#[path = "source_ingress/appearance_owner_availability_tests.rs"]
+mod appearance_owner_availability_tests;
+#[path = "source_ingress/appearance_theme_test_support.rs"]
+pub(crate) mod appearance_theme_test_support;
 #[path = "source_ingress/application_semantic_no_op_tests.rs"]
 mod application_semantic_no_op_tests;
 #[path = "replacement/artifact_equivalence_boundary_tests.rs"]
 mod artifact_equivalence_boundary_tests;
+#[path = "source_ingress/authored_overlay_handoff_tests.rs"]
+mod authored_overlay_handoff_tests;
 #[path = "replacement/candidate_admission_boundary_tests.rs"]
 mod candidate_admission_boundary_tests;
 #[path = "source_ingress/candidate_composition_preparation_tests.rs"]
@@ -110,8 +120,12 @@ mod lane_meaning_parity_test_support;
 mod lifecycle_path_parity;
 #[path = "execution/measurement_boundary_tests.rs"]
 mod measurement_boundary_tests;
+#[path = "planning/mosaic_layout_contract_tests.rs"]
+mod mosaic_layout_contract_tests;
 #[path = "source_ingress/multi_removal_activation_tests.rs"]
 mod multi_removal_activation_tests;
+#[path = "source_ingress/native_pointer_observation_test_support.rs"]
+pub(crate) mod native_pointer_observation_test_support;
 #[path = "replacement/node_replacement_classification_boundary_tests.rs"]
 mod node_replacement_classification_boundary_tests;
 #[path = "replacement/node_replacement_classification_test_support.rs"]

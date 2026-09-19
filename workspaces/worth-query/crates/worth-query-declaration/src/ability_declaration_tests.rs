@@ -3,9 +3,17 @@ use crate::facade::application_schema::{ApplicationSchemaMember, OperationRequir
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct TransferInput;
 worth_query_portable_type!(TransferInput => "worth.query.test.transfer-input");
+worth_query_structured_value_binding!(
+    pub TransferInputBinding for TransferInput {
+        identity: <TransferInput as crate::facade::portable_identity::WorthQueryPortableType>::PORTABLE_TYPE_NAME
+    }
+);
 
-worth_query_entity!(pub Account in AbilitySchema);
-worth_query_operation!(pub TransferOperation(TransferInput) in AbilitySchema);
+worth_query_entity!(pub Account for AbilitySchema);
+worth_query_operation!(
+    pub TransferOperation for AbilitySchema,
+    input TransferInputBinding
+);
 worth_query_ability!(pub SendMoney scoped_to Account, in AbilitySchema);
 worth_query_operation_requires!(TransferOperation => [SendMoney]);
 

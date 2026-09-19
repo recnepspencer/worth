@@ -38,6 +38,7 @@ pub enum RailResponseFrame {
     /// none.
     NoticeReport(Option<EstateDeathNotice>),
     AdmissionCount(u64),
+    DispatchContactCount(u64),
     CompletedEffectCount(u64),
     CompletedNoticeReport(Option<EstateDeathNotice>),
 }

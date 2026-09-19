@@ -49,6 +49,20 @@ pub(super) fn seal_declaration(
                 WorthUiSealedSemanticArtifact::new(node.declaration().clone(), provenance_ref),
             ))
         }
+        WorthUiArtifactInputNode::AppearanceRole(node) => {
+            Ok(WorthUiSemanticDeclaration::AppearanceRole(
+                super::WorthUiSemanticAppearanceRoleDeclaration::new(
+                    node.role().clone(),
+                    provenance_ref,
+                ),
+            ))
+        }
+        WorthUiArtifactInputNode::Backdrop(node) => Ok(WorthUiSemanticDeclaration::Backdrop(
+            super::WorthUiSemanticBackdropDeclaration::new(
+                node.declaration().clone(),
+                provenance_ref,
+            ),
+        )),
     }
 }
 
@@ -64,6 +78,8 @@ pub(super) fn input_node_provenance(
         | WorthUiArtifactInputNode::QueryCollection(declaration) => declaration.provenance(),
         WorthUiArtifactInputNode::Token(declaration) => declaration.provenance(),
         WorthUiArtifactInputNode::SemanticArtifact(declaration) => declaration.provenance(),
+        WorthUiArtifactInputNode::AppearanceRole(declaration) => declaration.provenance(),
+        WorthUiArtifactInputNode::Backdrop(declaration) => declaration.provenance(),
     }
 }
 
@@ -120,8 +136,57 @@ fn seal_block(
         name_text: block.name_text().to_owned(),
         authored_identity: block.authored_identity().map(str::to_owned),
         structure,
+        appearance_role_attachment: block.appearance_role_attachment().cloned(),
         provenance_ref,
     })
+}
+
+pub(super) fn appearance_diagnostic(
+    code: WorthUiDslCompileDiagnosticCode,
+    message: impl Into<String>,
+    provenance: &WorthUiArtifactInputProvenance,
+) -> WorthUiDslCompileDiagnostic {
+    let (module_id, span) = diagnostic_location(provenance);
+    WorthUiDslCompileDiagnostic::new(
+        code,
+        WorthUiDslCompileStopClass::SemanticNormalization,
+        message,
+        Some(module_id),
+        span,
+    )
+}
+
+pub(super) fn overlay_diagnostic(
+    denial: crate::UiOverlayRelationAdmissionDenial,
+    provenance: &WorthUiArtifactInputProvenance,
+) -> WorthUiDslCompileDiagnostic {
+    let code = match denial {
+        crate::UiOverlayRelationAdmissionDenial::BackdropCapacityExceeded => {
+            WorthUiDslCompileDiagnosticCode::OverlayCapacityDenied
+        }
+        crate::UiOverlayRelationAdmissionDenial::MissingAnchor => {
+            WorthUiDslCompileDiagnosticCode::MissingOverlayAnchor
+        }
+        crate::UiOverlayRelationAdmissionDenial::ForeignSurfaceAnchor => {
+            WorthUiDslCompileDiagnosticCode::ForeignOverlaySurface
+        }
+        crate::UiOverlayRelationAdmissionDenial::Cycle => {
+            WorthUiDslCompileDiagnosticCode::CyclicOverlayRelation
+        }
+        crate::UiOverlayRelationAdmissionDenial::AmbiguousOrder => {
+            WorthUiDslCompileDiagnosticCode::AmbiguousOverlayRelation
+        }
+        crate::UiOverlayRelationAdmissionDenial::DuplicateParticipant
+        | crate::UiOverlayRelationAdmissionDenial::SelfRelation
+        | crate::UiOverlayRelationAdmissionDenial::ConflictingImmediateAdjacency => {
+            WorthUiDslCompileDiagnosticCode::InvalidBackdropDeclaration
+        }
+    };
+    appearance_diagnostic(
+        code,
+        format!("overlay relation admission denied: {denial:?}"),
+        provenance,
+    )
 }
 
 fn projection_diagnostic(

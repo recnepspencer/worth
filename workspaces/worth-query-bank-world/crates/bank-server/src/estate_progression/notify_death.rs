@@ -1,22 +1,18 @@
 use bank_domain::{
-    estate::{
-        DeathNoticeId, DeathNoticeStatus, EstateAction, EstateCaseId,
-        EstateDeathNotificationRequest,
-    },
+    estate::{DeathNoticeId, DeathNoticeStatus, EstateAction, EstateCaseId},
     model::BankPrincipalId,
     proposals::BankIdempotencyKey,
     schema::{
         BankSchema, DeathNoticeIdentityField, DeathNoticeStatusField, DeathNoticeSubject,
-        EstateCase, EstateDeathNotice, EstateDeathNotificationEffect, EstateDeceased,
-        NotifyDeathEstateCapability, NotifyDeathEstateOperation, PrincipalIdentityField,
+        EstateCase, EstateDeathNotice, EstateDeceased, NotifyDeathEstateCapability,
+        NotifyDeathEstateOperation, PrincipalIdentityField,
     },
 };
 use worth_query_host::facade::{
     admission::authenticated_principal::WorthQueryRequestScope,
     declaration::application_schema::TypedMutationPreconditions,
     primary_graph::{
-        WorthQueryAdmittedApplicationOperation, WorthQueryApplicationEffectProgram,
-        WorthQueryApplicationIdempotencyBinding,
+        WorthQueryAdmittedApplicationOperation,
         WorthQueryApplicationOperationInvariantProjectionReader, WorthQueryEntityResolutionDenial,
         WorthQueryInvariantDecisionPlanDenial, WorthQueryInvariantEntityIdentity,
         WorthQueryInvariantProjectionTraversalDenial,
@@ -32,13 +28,6 @@ type AdmittedNotificationOperation = WorthQueryAdmittedApplicationOperation<
     EstateAction,
     EstateCase,
 >;
-type NotificationEffectProgram = WorthQueryApplicationEffectProgram<
-    BankSchema,
-    NotifyDeathEstateOperation,
-    EstateAction,
-    EstateCase,
->;
-
 #[derive(Debug)]
 pub enum BankDeathNotificationProjectionDenial {
     RelationCardinality {
@@ -57,7 +46,6 @@ pub enum BankDeathNotificationProjectionDenial {
     DecisionPlan(crate::BankInvariantDecisionPlanDenial),
     Traversal(crate::BankInvariantProjectionTraversalDenial),
 }
-
 impl BankIdentityRuntime {
     pub fn notify_estate_death_with_key(
         &self,
@@ -66,29 +54,30 @@ impl BankIdentityRuntime {
         key: &BankIdempotencyKey,
         request: &WorthQueryRequestScope,
     ) -> Result<BankMutationCommitOutcome, BankEstateProgressionDenial> {
-        let binding = super::idempotency::notification_binding(key, action)?;
-        self.notify_estate_death(principal, action, binding, request)
-    }
-
-    pub fn notify_estate_death(
-        &self,
-        principal: &BankAuthenticatedPrincipal,
-        action: EstateAction,
-        idempotency: WorthQueryApplicationIdempotencyBinding,
-        request: &WorthQueryRequestScope,
-    ) -> Result<BankMutationCommitOutcome, BankEstateProgressionDenial> {
-        let command = notification_command(action)?;
-        let admission = self.admit_notification_operation(principal, action, request)?;
-        if let Some(outcome) =
-            super::idempotency::resolve_admitted_idempotency(self, &admission, idempotency)?
-        {
-            return Ok(outcome);
-        }
-        let program = self.materialize_notification_effect(admission, command)?;
-        Ok(self
-            .application_runtime()
-            .compare_and_commit_application(program, idempotency)
-            .into())
+        let EstateAction::NotifyDeath {
+            estate,
+            notice,
+            subject,
+        } = action
+        else {
+            return Err(BankEstateProgressionDenial::CommandInput(
+                "NotifyDeathEstateOperation",
+            ));
+        };
+        super::program_outcome::program_outcome(
+            self.request(principal, request)
+                .mutate(bank_domain::schema::NotifyEstateDeath::new(
+                    estate, notice, subject,
+                ))
+                .idempotency(key)
+                .execute_capability_in_program(self.application_program()),
+            "NotifyDeathEstateOperation",
+            |denial| {
+                denial
+                    .downcast::<BankDeathNotificationProjectionDenial>()
+                    .map(BankEstateProgressionDenial::DeathNotificationProjection)
+            },
+        )
     }
 
     pub(crate) fn admit_notification_operation(
@@ -105,8 +94,10 @@ impl BankIdentityRuntime {
                 NotifyDeathEstateOperation::reference(),
             )
             .map_err(BankEstateProgressionDenial::from_capability_installation)?;
-        let access = self
-            .application_runtime()
+        let selected = self
+            .select_current_product()
+            .map_err(BankEstateProgressionDenial::from_product_selection)?;
+        let access = selected
             .admit_capability_access(principal.query(), &capability, action, request)
             .map_err(BankEstateProgressionDenial::from_authorization)?;
         let operation = self
@@ -126,65 +117,16 @@ impl BankIdentityRuntime {
             )
             .map_err(BankEstateProgressionDenial::from_authorization)
     }
-
-    fn materialize_notification_effect(
-        &self,
-        admission: AdmittedNotificationOperation,
-        command: NotificationCommand,
-    ) -> Result<NotificationEffectProgram, BankEstateProgressionDenial> {
-        let projected = self
-            .invariant_projection()
-            .project_admitted_operation(&admission, |reader, estate| {
-                project_notification(reader, estate, command)
-            })
-            .map_err(BankEstateProgressionDenial::from_projection)?;
-        let (projection_result, projection, _) = projected.into_parts();
-        projection_result.map_err(BankEstateProgressionDenial::DeathNotificationProjection)?;
-        let reads = self
-            .application_runtime()
-            .begin_projected_application_read_attempt(admission, projection)
-            .map_err(BankEstateProgressionDenial::from_attempt)?;
-        let notice = reads
-            .resolve_entity(DeathNoticeIdentityField::reference(), command.notice)
-            .map_err(BankEstateProgressionDenial::from_attempt)?;
-        let mut effects = reads
-            .complete_projected_dependencies()
-            .map_err(BankEstateProgressionDenial::from_attempt)?
-            .begin_effect_program();
-        let notice = effects
-            .existing_entity(&notice)
-            .map_err(BankEstateProgressionDenial::from_attempt)?;
-        effects
-            .write_field(
-                &notice,
-                DeathNoticeStatusField::reference(),
-                DeathNoticeStatus::NotificationRequested,
-            )
-            .map_err(BankEstateProgressionDenial::from_attempt)?;
-        effects
-            .emit_external(
-                EstateDeathNotificationEffect::reference(),
-                EstateDeathNotificationRequest::new(
-                    command.estate,
-                    command.notice,
-                    command.subject,
-                ),
-            )
-            .map_err(BankEstateProgressionDenial::from_attempt)?;
-        effects
-            .finish()
-            .map_err(BankEstateProgressionDenial::from_attempt)
-    }
 }
 
 #[derive(Clone, Copy)]
-struct NotificationCommand {
-    estate: EstateCaseId,
-    notice: DeathNoticeId,
-    subject: BankPrincipalId,
+pub(crate) struct NotificationCommand {
+    pub(crate) estate: EstateCaseId,
+    pub(crate) notice: DeathNoticeId,
+    pub(crate) subject: BankPrincipalId,
 }
 
-fn notification_command(
+pub(crate) fn notification_command(
     action: EstateAction,
 ) -> Result<NotificationCommand, BankEstateProgressionDenial> {
     match action {
@@ -203,7 +145,7 @@ fn notification_command(
     }
 }
 
-fn project_notification(
+pub(crate) fn project_notification(
     reader: &mut WorthQueryApplicationOperationInvariantProjectionReader<
         BankSchema,
         NotifyDeathEstateOperation,

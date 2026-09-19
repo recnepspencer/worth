@@ -7,7 +7,7 @@
 //! scan therefore stays proportional to the currently active portals.
 
 use super::state::duplicate_request_capacity_for_test;
-use super::state_tests::{idempotency, open_request, portal, semantic_surface, state};
+use super::test_support::{idempotency, open_request, portal, state};
 use super::{UiPortalDismissalCause, UiPortalIdentity, UiPortalServiceRequest};
 
 /// One remount incarnation: a distinct mounted instance for the same graph node.
@@ -25,12 +25,13 @@ fn open_then_close(
     let open = state
         .prepare(open_request(portal, lineage))
         .expect("remounted portal opens");
+    let surface = open.request().semantic_surface();
     state.commit_published(open).expect("open remains current");
     let close_request = UiPortalServiceRequest::close(
         portal,
         idempotency(lineage + 1),
         UiPortalDismissalCause::Escape,
-        semantic_surface(),
+        surface,
     );
     let close = state
         .prepare(close_request)
@@ -106,7 +107,7 @@ fn a_duplicate_close_inside_the_window_still_settles_idempotently() {
 }
 
 #[test]
-fn a_duplicate_close_evicted_from_the_window_settles_as_a_fresh_terminal_close() {
+fn a_duplicate_close_evicted_from_the_window_is_denied_as_not_live() {
     let mut state = state();
     let evicted = remounted_portal(1);
     let close_request = open_then_close(&mut state, evicted, 10);
@@ -116,22 +117,10 @@ fn a_duplicate_close_evicted_from_the_window_settles_as_a_fresh_terminal_close()
         open_then_close(&mut state, remounted_portal(incarnation), incarnation * 10);
     }
 
-    let repeat = state
-        .prepare(close_request)
-        .expect("an evicted portal still prepares a lawful close");
-    let receipt = state
-        .commit_published(repeat)
-        .expect("evicted close remains current");
-
-    assert_eq!(
-        receipt.disposition(),
-        super::UiPortalServiceDisposition::Closing
-    );
-    assert_eq!(
-        receipt.posture(),
-        super::UiPortalLifecyclePosture::Closed,
-        "an evicted repeat still terminates rather than reviving a live portal"
-    );
+    assert!(matches!(
+        state.prepare(close_request),
+        Err(super::UiPortalServiceTransitionDenial::PortalNotLive)
+    ));
     assert_eq!(state.live_record_count(), 0);
 }
 

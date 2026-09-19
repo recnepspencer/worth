@@ -10,11 +10,9 @@ use std::time::{Duration, Instant};
 
 use bank_domain::model::{BusinessId, Money};
 use bank_domain::proposals::{BankIdempotencyKey, BankProposalDenial};
-use bank_domain::schema::InitiateBusinessPayment;
+use bank_domain::schema::{ApprovePayment, InitiateBusinessPayment, RejectPayment};
 use bank_server::{
-    mutations, queries, BankMutationControls, BankMutationExplanation,
-    BankMutationExplanationStage, BankMutationStatus, BankPendingPaymentContinuation,
-    BankReadControls,
+    mutations, queries, BankMutationControls, BankPendingPaymentContinuation, BankReadControls,
 };
 
 use fixture::{ordinary_read_world, principal_id, APPROVER, OWNER, RECIPIENT};
@@ -22,6 +20,10 @@ use support::request_scope;
 use worth_query_host::facade::admission::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
 };
+use worth_query_host::facade::application_entry::{
+    WorthQueryApplicationMutationOutcome, WorthQueryApplicationRequestMutationDenial,
+};
+use worth_query_host::facade::primary_graph::WorthQueryPrincipalResolutionDenialKind;
 
 #[test]
 fn initiation_recovers_one_continuation_and_a_fresh_approver_commits() {
@@ -35,40 +37,42 @@ fn initiation_recovers_one_continuation_and_a_fresh_approver_commits() {
         amount: Money::from_minor(300).unwrap(),
     };
 
-    let first = execute_initiation(&fixture, &owner, input.clone(), "initiate-workflow");
-    assert!(matches!(first.status(), BankMutationStatus::Committed(_)));
+    let initiation_scope = request_scope();
+    let request = fixture.world.runtime.request(&owner, &initiation_scope);
+    let key = BankIdempotencyKey::new("initiate-workflow").unwrap();
+    let first = request
+        .mutate(input.clone())
+        .idempotency(&key)
+        .execute_in_program(fixture.world.runtime.application_program())
+        .expect("the program-owned initiation should execute");
+    let WorthQueryApplicationMutationOutcome::Committed { result, .. } = first else {
+        panic!("the first initiation must commit: {first:?}");
+    };
+    let pending = BankPendingPaymentContinuation::from_payment_id(result.payment);
+    let recovered = request
+        .mutate(input)
+        .idempotency(&key)
+        .execute_in_program(fixture.world.runtime.application_program())
+        .expect("the identical initiation retry should execute");
     assert!(matches!(
-        first.explanation(),
-        BankMutationExplanation::Committed {
-            recovered: false,
-            ..
-        }
+        recovered,
+        WorthQueryApplicationMutationOutcome::AlreadyCommitted(_)
     ));
-    let pending = first.continuation().expect("commit must mint continuation");
-    let recovered = execute_initiation(&fixture, &owner, input, "initiate-workflow");
-    assert!(matches!(
-        recovered.status(),
-        BankMutationStatus::AlreadyCommitted(_)
-    ));
-    assert!(matches!(
-        recovered.explanation(),
-        BankMutationExplanation::Committed {
-            recovered: true,
-            ..
-        }
-    ));
-    assert_eq!(recovered.continuation(), Some(pending));
 
-    let approval = fixture
-        .world
-        .runtime
-        .mutate(pending.approve())
-        .as_principal(&approver)
-        .controls(controls("approve-workflow"))
-        .execute();
+    let approval_scope = request_scope();
+    let approval_request = fixture.world.runtime.request(&approver, &approval_scope);
+    let approval_key = BankIdempotencyKey::new("approve-workflow").unwrap();
+    let approval = approval_request
+        .mutate(ApprovePayment {
+            payment: pending.payment_id(),
+            approver: principal_id(APPROVER),
+        })
+        .idempotency(&approval_key)
+        .execute_in_program(fixture.world.runtime.application_program())
+        .expect("the program-owned approval should execute");
     assert!(matches!(
-        approval.status(),
-        BankMutationStatus::Committed(_)
+        approval,
+        WorthQueryApplicationMutationOutcome::Committed { .. }
     ));
 }
 
@@ -88,15 +92,10 @@ fn pending_read_mints_no_authority_and_decided_continuation_cannot_advance_again
         .controls(controls("owner-cannot-approve"))
         .execute();
     assert!(matches!(
-        unauthorized.status(),
-        BankMutationStatus::Denied(_)
-    ));
-    assert!(matches!(
-        unauthorized.explanation(),
-        BankMutationExplanation::Denied {
-            stage: BankMutationExplanationStage::Admission,
-            ..
-        }
+        unauthorized,
+        Err(ref denial)
+            if denial.kind()
+                == worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenialKind::Authorization
     ));
 
     let approval = fixture
@@ -107,8 +106,8 @@ fn pending_read_mints_no_authority_and_decided_continuation_cannot_advance_again
         .controls(controls("approver-can-approve"))
         .execute();
     assert!(matches!(
-        approval.status(),
-        BankMutationStatus::Committed(_)
+        approval,
+        Ok(WorthQueryApplicationMutationOutcome::Committed { .. })
     ));
 
     let stale_decision = fixture
@@ -119,16 +118,10 @@ fn pending_read_mints_no_authority_and_decided_continuation_cannot_advance_again
         .controls(controls("cannot-decide-twice"))
         .execute();
     assert!(matches!(
-        stale_decision.status(),
-        BankMutationStatus::InvariantViolated(
+        stale_decision,
+        Ok(WorthQueryApplicationMutationOutcome::DomainDenied(
             BankProposalDenial::PaymentAlreadyDecided(payment)
-        ) if *payment == pending.payment_id()
-    ));
-    assert!(matches!(
-        stale_decision.explanation(),
-        BankMutationExplanation::InvariantViolated(
-            BankProposalDenial::PaymentAlreadyDecided(payment)
-        ) if *payment == pending.payment_id()
+        )) if payment == pending.payment_id()
     ));
 }
 
@@ -138,18 +131,25 @@ fn a_fresh_authorized_rejector_can_reject_the_read_derived_continuation() {
     let approver = fixture.authenticate(APPROVER);
     let pending = pending_continuation(&fixture, &approver);
 
-    let rejection = fixture
-        .world
-        .runtime
-        .mutate(pending.reject())
-        .as_principal(&approver)
-        .controls(controls("reject-pending"))
-        .execute();
+    let rejection_scope = request_scope();
+    let rejection_request = fixture.world.runtime.request(&approver, &rejection_scope);
+    let rejection_key = BankIdempotencyKey::new("reject-pending").unwrap();
+    let rejection = rejection_request
+        .mutate(RejectPayment {
+            payment: pending.payment_id(),
+            rejecting_principal: principal_id(APPROVER),
+        })
+        .idempotency(&rejection_key)
+        .execute_in_program(fixture.world.runtime.application_program())
+        .expect("the program-owned rejection should execute");
 
-    assert!(matches!(
-        rejection.status(),
-        BankMutationStatus::Committed(_)
-    ));
+    assert!(
+        matches!(
+            rejection,
+            WorthQueryApplicationMutationOutcome::Committed { .. }
+        ),
+        "program-owned rejection must commit: {rejection:?}"
+    );
 }
 
 #[test]
@@ -178,23 +178,12 @@ fn cancelled_initiation_cannot_mint_a_continuation() {
         ))
         .execute();
 
-    assert_eq!(outcome.status(), &BankMutationStatus::Cancelled);
+    assert!(matches!(
+        outcome.execution(),
+        Err(WorthQueryApplicationRequestMutationDenial::PrincipalResolution(denial))
+            if denial.kind() == WorthQueryPrincipalResolutionDenialKind::Cancelled
+    ));
     assert_eq!(outcome.continuation(), None);
-}
-
-fn execute_initiation(
-    fixture: &fixture::OrdinaryReadFixture,
-    principal: &bank_server::BankAuthenticatedPrincipal,
-    input: InitiateBusinessPayment,
-    idempotency: &str,
-) -> bank_server::BankPaymentInitiationOutcome {
-    fixture
-        .world
-        .runtime
-        .mutate(mutations::initiate_business_payment(input))
-        .as_principal(principal)
-        .controls(controls(idempotency))
-        .execute()
 }
 
 fn pending_continuation(

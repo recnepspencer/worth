@@ -1,9 +1,15 @@
+mod family_chain;
+
+#[cfg(test)]
+mod tests;
+
 use worth_foundational::facade::prepare_aspect_value_identity_basis;
 
 use super::core::compose_extraction_counters_digest;
 use super::scope::{scope_encoder, seal};
 use crate::runtime::{WorthQueryContinuityMutationFamily, WorthQueryContinuityOutcomeClass};
 use crate::WorthQueryEvidenceTag;
+use family_chain::compose_consumed_projection_fact_family_digest;
 
 use super::super::consumed::{
     ConsumedEffectContinuityFact, ConsumedEntityIdentityFact, ConsumedFieldValueFact,
@@ -33,7 +39,7 @@ pub(crate) fn compose_consumed_projection_fact_set_digest(
     effect_continuity_facts: &[ConsumedEffectContinuityFact],
     relation_endpoints: &[ConsumedRelationEndpointFact],
 ) -> String {
-    let mut encoder = scope_encoder("consumed_projection_fact_set_v1")
+    let mut encoder = scope_encoder("consumed_projection_fact_set_v2")
         .field_shape(
             WorthQueryEvidenceTag::new("declaration"),
             declaration_digest,
@@ -57,42 +63,52 @@ pub(crate) fn compose_consumed_projection_fact_set_digest(
             posture.posture_digest(),
         );
     }
-    let entity_entries = entity_identities
-        .iter()
-        .map(compose_entity_identity_entry)
-        .collect::<Vec<_>>();
-    let view_local_entries = view_local_identities
-        .iter()
-        .map(compose_view_local_identity_entry)
-        .collect::<Vec<_>>();
-    let membership_entries = memberships
-        .iter()
-        .map(compose_membership_entry)
-        .collect::<Vec<_>>();
-    let display_field_entries = display_fields
-        .iter()
-        .map(|fact| compose_field_value_entry("display_field", fact))
-        .collect::<Vec<_>>();
-    let derived_field_entries = derived_fields
-        .iter()
-        .map(|fact| compose_field_value_entry("derived_field", fact))
-        .collect::<Vec<_>>();
-    let target_entries = target_identities
-        .iter()
-        .map(compose_target_identity_entry)
-        .collect::<Vec<_>>();
-    let source_reference_entries = source_references
-        .iter()
-        .map(compose_source_reference_entry)
-        .collect::<Vec<_>>();
-    let effect_entries = effect_continuity_facts
-        .iter()
-        .flat_map(compose_effect_continuity_entries)
-        .collect::<Vec<_>>();
-    let relation_entries = relation_endpoints
-        .iter()
-        .map(compose_relation_endpoint_entry)
-        .collect::<Vec<_>>();
+    let entity_identity_digest = compose_consumed_projection_fact_family_digest(
+        "entity_identity",
+        entity_identities.iter().map(compose_entity_identity_entry),
+    );
+    let view_local_identity_digest = compose_consumed_projection_fact_family_digest(
+        "view_local_identity",
+        view_local_identities
+            .iter()
+            .map(compose_view_local_identity_entry),
+    );
+    let membership_digest = compose_consumed_projection_fact_family_digest(
+        "membership",
+        memberships.iter().map(compose_membership_entry),
+    );
+    let display_field_digest = compose_consumed_projection_fact_family_digest(
+        "display_field",
+        display_fields
+            .iter()
+            .map(|fact| compose_field_value_entry("display_field", fact)),
+    );
+    let derived_field_digest = compose_consumed_projection_fact_family_digest(
+        "derived_field",
+        derived_fields
+            .iter()
+            .map(|fact| compose_field_value_entry("derived_field", fact)),
+    );
+    let target_identity_digest = compose_consumed_projection_fact_family_digest(
+        "target_identity",
+        target_identities.iter().map(compose_target_identity_entry),
+    );
+    let source_reference_digest = compose_consumed_projection_fact_family_digest(
+        "source_reference",
+        source_references.iter().map(compose_source_reference_entry),
+    );
+    let effect_continuity_digest = compose_consumed_projection_fact_family_digest(
+        "effect_continuity",
+        effect_continuity_facts
+            .iter()
+            .flat_map(compose_effect_continuity_entries),
+    );
+    let relation_endpoint_digest = compose_consumed_projection_fact_family_digest(
+        "relation_endpoint",
+        relation_endpoints
+            .iter()
+            .map(compose_relation_endpoint_entry),
+    );
     seal(
         encoder
             .field_value_sequence(
@@ -106,38 +122,41 @@ pub(crate) fn compose_consumed_projection_fact_set_digest(
                 WorthQueryEvidenceTag::new("counters"),
                 compose_extraction_counters_digest(counters),
             )
-            .field_value_sequence(
-                WorthQueryEvidenceTag::new("entity_identity"),
-                entity_entries,
+            .field_shape(
+                WorthQueryEvidenceTag::new("entity_identity_family"),
+                entity_identity_digest,
             )
-            .field_value_sequence(
-                WorthQueryEvidenceTag::new("view_local_identity"),
-                view_local_entries,
+            .field_shape(
+                WorthQueryEvidenceTag::new("view_local_identity_family"),
+                view_local_identity_digest,
             )
-            .field_value_sequence(WorthQueryEvidenceTag::new("membership"), membership_entries)
-            .field_value_sequence(
-                WorthQueryEvidenceTag::new("display_field"),
-                display_field_entries,
+            .field_shape(
+                WorthQueryEvidenceTag::new("membership_family"),
+                membership_digest,
             )
-            .field_value_sequence(
-                WorthQueryEvidenceTag::new("derived_field"),
-                derived_field_entries,
+            .field_shape(
+                WorthQueryEvidenceTag::new("display_field_family"),
+                display_field_digest,
             )
-            .field_value_sequence(
-                WorthQueryEvidenceTag::new("target_identity"),
-                target_entries,
+            .field_shape(
+                WorthQueryEvidenceTag::new("derived_field_family"),
+                derived_field_digest,
             )
-            .field_value_sequence(
-                WorthQueryEvidenceTag::new("source_reference"),
-                source_reference_entries,
+            .field_shape(
+                WorthQueryEvidenceTag::new("target_identity_family"),
+                target_identity_digest,
             )
-            .field_value_sequence(
-                WorthQueryEvidenceTag::new("effect_continuity"),
-                effect_entries,
+            .field_shape(
+                WorthQueryEvidenceTag::new("source_reference_family"),
+                source_reference_digest,
             )
-            .field_value_sequence(
-                WorthQueryEvidenceTag::new("relation_endpoint"),
-                relation_entries,
+            .field_shape(
+                WorthQueryEvidenceTag::new("effect_continuity_family"),
+                effect_continuity_digest,
+            )
+            .field_shape(
+                WorthQueryEvidenceTag::new("relation_endpoint_family"),
+                relation_endpoint_digest,
             ),
     )
 }
@@ -234,7 +253,9 @@ fn compose_source_reference_entry(fact: &ConsumedSourceReferenceFact) -> String 
     )
 }
 
-fn compose_effect_continuity_entries(fact: &ConsumedEffectContinuityFact) -> Vec<String> {
+fn compose_effect_continuity_entries(
+    fact: &ConsumedEffectContinuityFact,
+) -> impl Iterator<Item = String> + '_ {
     let primary = seal(
         scope_encoder("consumed_effect_continuity_entry_v1")
             .field_shape(
@@ -261,9 +282,8 @@ fn compose_effect_continuity_entries(fact: &ConsumedEffectContinuityFact) -> Vec
                         identity.evidence_identity(),
                     ),
             )
-        })
-        .collect::<Vec<_>>();
-    std::iter::once(primary).chain(successors).collect()
+        });
+    std::iter::once(primary).chain(successors)
 }
 
 fn compose_relation_endpoint_entry(fact: &ConsumedRelationEndpointFact) -> String {

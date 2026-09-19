@@ -1,4 +1,6 @@
-use worth_query_installation::facade::TypedApplicationValue;
+use worth_query_declaration::facade::application_schema::{
+    ApplicationScalarValueBinding, StringApplicationValueBinding,
+};
 use worth_relational::facade::indexes::DerivedIndexBuildRequest;
 
 use super::super::tests::fixture::{
@@ -16,25 +18,23 @@ fn equal_version_snapshot_from_another_relational_runtime_is_rejected() {
     let first_graph = first.application.runtime.primary_graph().unwrap();
     let second_graph = second.application.runtime.primary_graph().unwrap();
     let installed = first_graph.retain_entity_resolution_context();
-    let first_version = first_graph
-        .integration_handle()
-        .with_runtime_mut(|runtime| {
-            let snapshot = super::super::exact_basis_access::open_current_main_snapshot(runtime)
-                .expect("primary branch has a current snapshot");
-            let version = snapshot.version_id();
-            crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
-            version
-        });
+    let first_product = first.selected_product();
+    let first_version = first_graph.integration_handle().with_runtime_mut(|_| {
+        first_product
+            .application_basis()
+            .snapshot_handle()
+            .version_id()
+    });
 
+    let second_product = second.selected_product();
     second_graph
         .integration_handle()
         .with_runtime_mut(|runtime| {
-            let snapshot = super::super::exact_basis_access::open_current_main_snapshot(runtime)
-                .expect("primary branch has a current snapshot");
+            let snapshot = second_product.application_basis().snapshot_handle();
             assert_eq!(snapshot.version_id(), first_version);
             let denial = match installed.at_snapshot(
                 runtime,
-                &snapshot,
+                snapshot,
                 WorthQueryPrincipalResolutionMode::Ordinary,
             ) {
                 Ok(_) => panic!("foreign runtime truth entered entity resolution"),
@@ -44,7 +44,6 @@ fn equal_version_snapshot_from_another_relational_runtime_is_rejected() {
                 denial.kind(),
                 WorthQueryEntityResolutionDenialKind::ForeignResolutionTruth
             );
-            crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
         });
 }
 
@@ -54,6 +53,8 @@ fn rebuilt_index_generation_preserves_stable_entity_meaning() {
     let request = live_scope();
     let identity = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountStatus::reference(),
             "open".to_owned(),
@@ -63,6 +64,7 @@ fn rebuilt_index_generation_preserves_stable_entity_meaning() {
         .unwrap();
     let graph = world.application.runtime.primary_graph().unwrap();
     let installed = graph.retain_entity_resolution_context();
+    let selected = world.selected_product();
     let index_id = graph
         .layout()
         .equality_field("Account", "AccountPolicy", "AccountStatus")
@@ -87,17 +89,15 @@ fn rebuilt_index_generation_preserves_stable_entity_meaning() {
             build.generations[0].generation_id,
             identity.identity_index_generation()
         );
-        let snapshot = super::super::exact_basis_access::open_current_main_snapshot(runtime)
-            .expect("primary branch has a current snapshot");
+        let snapshot = selected.application_basis().snapshot_handle();
         let truth = installed
             .at_snapshot(
                 runtime,
-                &snapshot,
+                snapshot,
                 WorthQueryPrincipalResolutionMode::Ordinary,
             )
             .unwrap();
         truth.validate_entity_freshness(&identity).unwrap();
-        crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
     });
 }
 
@@ -106,23 +106,22 @@ fn installed_context_derives_binding_layout_and_index_from_its_graph() {
     let world = installed_authorization_world(true);
     let graph = world.application.runtime.primary_graph().unwrap();
     let installed = graph.retain_entity_resolution_context();
+    let selected = world.selected_product();
     graph.integration_handle().with_runtime_mut(|runtime| {
-        let snapshot = super::super::exact_basis_access::open_current_main_snapshot(runtime)
-            .expect("primary branch has a current snapshot");
+        let snapshot = selected.application_basis().snapshot_handle();
         let truth = installed
-            .at_snapshot(runtime, &snapshot, WorthQueryPrincipalResolutionMode::Ordinary)
+            .at_snapshot(runtime, snapshot, WorthQueryPrincipalResolutionMode::Ordinary)
             .unwrap();
         let resolved = truth
             .resolve(
                 "Account",
                 "AccountPolicy",
                 "AccountStatus",
-                "open".to_owned().into_foundational_value(),
+                StringApplicationValueBinding::encode(&"open".to_owned()).unwrap(),
             )
             .unwrap();
         let typed = resolved.into_application_identity::<IdentityExecutionSchema, super::super::tests::fixture::Account>();
         assert_eq!(typed.binding_identity(), graph.binding_identity());
         assert_eq!(typed.identity_index_id(), graph.layout().equality_field("Account", "AccountPolicy", "AccountStatus").unwrap().equality_index_id.unwrap());
-        crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
     });
 }

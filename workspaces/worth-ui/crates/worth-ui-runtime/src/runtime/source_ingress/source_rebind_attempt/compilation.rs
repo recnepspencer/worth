@@ -85,7 +85,7 @@ fn compile_file(
     let (artifact, declaration, handoff) = material.into_parts();
     let candidate = file_authored_replacement_candidate(
         artifact,
-        snapshot.digest(),
+        handoff.successor_snapshot_digest(),
         WorthUiReplacementCause::file_source_change(
             primary,
             basis.source_revision().final_package_digest(),
@@ -124,7 +124,7 @@ fn compile_rust(
     let (artifact, declaration, handoff) = material.into_parts();
     let candidate = rust_authored_replacement_candidate(
         artifact,
-        snapshot.digest(),
+        handoff.successor_snapshot_digest(),
         WorthUiReplacementCause::rust_authored_input_change(
             basis.source_revision().final_package_digest(),
         ),

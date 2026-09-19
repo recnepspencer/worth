@@ -40,6 +40,7 @@ fn full_substrate_package() -> WorthQueryDomainPackage<InstalledDomain> {
                 vec![KindId::new(901)],
                 1,
             ),
+            std::num::NonZeroU64::new(4096).unwrap(),
         ))
         .declaration_family(
             WorthQueryDomainDeclarationFamilyDefinition::from_marker::<
@@ -55,7 +56,7 @@ fn full_substrate_package() -> WorthQueryDomainPackage<InstalledDomain> {
 
 #[test]
 fn installed_package_compiles_every_semantic_family_before_runtime_publication() {
-    let runtime = complete_backend_from_parts_builder()
+    let runtime = complete_query_owned_backend_from_parts_builder()
         .domain_package(full_substrate_package())
         .unwrap()
         .build_backend_from_parts()
@@ -113,7 +114,7 @@ fn installed_package_compiles_every_semantic_family_before_runtime_publication()
 
 #[test]
 fn installed_invariants_cannot_be_bypassed_with_an_explicit_relational_runtime() {
-    let result = WorthQueryRuntime::builder()
+    let result = WorthQueryRuntime::builder(test_product_world_resources())
         .domain_package(full_substrate_package())
         .unwrap()
         .relational_runtime(RelationalRuntimeApi::builder().build())
@@ -133,7 +134,7 @@ fn installed_invariants_cannot_be_bypassed_with_an_explicit_relational_runtime()
 
 #[test]
 fn rebuilt_execution_index_reproduces_resolution_denial_and_diagnostic_identity() {
-    let mut runtime = complete_backend_from_parts_builder()
+    let mut runtime = complete_query_owned_backend_from_parts_builder()
         .domain_package(full_substrate_package())
         .unwrap()
         .build_backend_from_parts()

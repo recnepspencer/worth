@@ -2,9 +2,13 @@
 //! target identity → query admission → receipt projection → evidence contract → posture → scope.
 
 mod allocation;
+mod appearance;
+#[path = "appearance/change_distinctions.rs"]
+mod appearance_change_distinctions;
 mod evidence_contract;
 mod facade;
 mod intent;
+mod pointer_affordance;
 mod posture;
 mod query;
 mod receipt;
@@ -16,6 +20,26 @@ mod target;
 pub use target::{
     UiAuthoredSourceProvenanceRef, UiInspectionAspectName, UiInspectionDeclarationIdentity,
     UiInspectionTarget, UiSourceArtifactGeneration, UiSourceArtifactIdentity,
+};
+
+// Appearance inspection lane. These are inert evidence contracts; runtime
+// owns production and no contract below can authorize a runtime mutation.
+pub use appearance::{
+    UiAppearanceInspectionCost, UiAppearanceInspectionDecisionCell,
+    UiAppearanceInspectionDenialPosture, UiAppearanceInspectionEvidence,
+    UiAppearanceInspectionExplanation, UiAppearanceInspectionMountedMechanic,
+    UiAppearanceInspectionOutcome, UiAppearanceInspectionPhysicalSuppression,
+    UiAppearanceInspectionQuery, UiAppearanceInspectionSourceSpan, UiAppearanceInspectionSupport,
+    UiAppearanceInspectionValue, UiAppearanceInspectionValueSource, UiAppearanceInspectionWorld,
+};
+pub use appearance_change_distinctions::UiAppearanceInspectionChangeDistinctions;
+pub use pointer_affordance::{
+    UiPointerAffordanceInspectionConfirmationStop, UiPointerAffordanceInspectionDecision,
+    UiPointerAffordanceInspectionExpiry, UiPointerAffordanceInspectionExplanation,
+    UiPointerAffordanceInspectionFamily, UiPointerAffordanceInspectionInoperableCause,
+    UiPointerAffordanceInspectionOutcome, UiPointerAffordanceInspectionPresentation,
+    UiPointerAffordanceInspectionPresentationDenial, UiPointerAffordanceInspectionTargetDenial,
+    UiPointerAffordanceInspectionTargetingDenial, UiPointerAffordanceInspectionUnavailable,
 };
 
 // Evidence contract lane

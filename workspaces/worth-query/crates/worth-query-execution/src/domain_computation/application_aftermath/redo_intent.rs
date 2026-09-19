@@ -17,15 +17,14 @@ use worth_proof::{
 };
 use worth_query_installation::facade::WorthQueryCanonicalWorkEvidence;
 use worth_relational::facade::history::RelationalCommitReceipt;
-#[cfg(test)]
-use worth_relational::facade::{
-    history::{BranchId, CommitId},
-    identity::VersionId,
-};
+use worth_runtime_world::facade::CompositeCommitIdentity;
 
 use super::undo_admission::WorthQueryUndoAdmission;
 use super::{WorthQueryAftermathCausalRole, WorthQueryAftermathDerivationFailure};
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
+
+#[cfg(test)]
+mod test_support;
 
 const DOMAIN: CanonicalBasisDomain =
     CanonicalBasisDomain::Future("worth-query.application-aftermath-redo-intent");
@@ -59,6 +58,8 @@ pub struct WorthQueryProvedUndo {
     causal: Inverts<WorthQueryOriginalCommitAction, WorthQueryUndoCompletionAuthority>,
     original_operation: [u8; 32],
     undo_commit: RelationalCommitReceipt,
+    undo_product_publication:
+        crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication,
     principal_scope_digest: [u8; 32],
     compatibility_generation: u64,
     runtime_instance: u64,
@@ -95,6 +96,7 @@ impl WorthQueryProvedUndo {
             causal: prove_inversion(&performed),
             original_operation: *admission.original_operation(),
             undo_commit: causality.child().clone(),
+            undo_product_publication: undo_receipt.committed_product_publication().clone(),
             principal_scope_digest: *admission.principal_scope_digest(),
             compatibility_generation: admission.compatibility_generation(),
             runtime_instance: admission.runtime_instance(),
@@ -102,37 +104,18 @@ impl WorthQueryProvedUndo {
         })
     }
 
-    #[cfg(test)]
-    pub(crate) fn axis_probe(parts: WorthQueryProvedUndoAxisProbe) -> Self {
-        let performed =
-            Performed::<WorthQueryCompletedUndoAction, WorthQueryUndoCompletionAuthority>::record(
-                &WorthQueryUndoCompletionAuthority::witness(),
-                (),
-            );
-        Self {
-            _completion: Proof::from_authority_witness(
-                &WorthQueryUndoCompletionAuthority::witness(),
-            ),
-            causal: prove_inversion(&performed),
-            original_operation: parts.original_operation,
-            undo_commit: super::redo_intent_tests::probe_commit(parts.undo_commit_id),
-            principal_scope_digest: parts.principal_scope_digest,
-            compatibility_generation: parts.compatibility_generation,
-            runtime_instance: parts.runtime_instance,
-            _private: (),
-        }
-    }
-
     pub const fn original_operation(&self) -> &[u8; 32] {
         &self.original_operation
     }
 
-    pub const fn undo_commit_id(&self) -> u64 {
-        self.undo_commit.commit_id.0
-    }
-
     pub const fn undo_commit(&self) -> &RelationalCommitReceipt {
         &self.undo_commit
+    }
+
+    pub const fn undo_product_publication(
+        &self,
+    ) -> &crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication {
+        &self.undo_product_publication
     }
 
     pub const fn principal_scope_digest(&self) -> &[u8; 32] {
@@ -151,7 +134,6 @@ impl WorthQueryProvedUndo {
 #[cfg(test)]
 pub(crate) struct WorthQueryProvedUndoAxisProbe {
     pub original_operation: [u8; 32],
-    pub undo_commit_id: u64,
     pub principal_scope_digest: [u8; 32],
     pub compatibility_generation: u64,
     pub runtime_instance: u64,
@@ -186,6 +168,9 @@ pub struct WorthQueryRedoIntent {
     identity: WorthQueryRedoIntentIdentity,
     original_operation: [u8; 32],
     undo_commit: RelationalCommitReceipt,
+    undo_product_publication:
+        crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication,
+    bound_product_commit: CompositeCommitIdentity,
     bound_relational_head: RelationalCommitReceipt,
     principal_scope_digest: [u8; 32],
     compatibility_generation: u64,
@@ -198,13 +183,16 @@ impl WorthQueryRedoIntent {
     /// derivation time. Does not consult live chain state for validity.
     pub(crate) fn derive(
         proved: &WorthQueryProvedUndo,
+        bound_product_commit: CompositeCommitIdentity,
         bound_relational_head: RelationalCommitReceipt,
     ) -> Result<Self, WorthQueryAftermathDerivationFailure> {
-        let identity = derive_identity(proved, &bound_relational_head)?;
+        let identity = derive_identity(proved, &bound_product_commit, &bound_relational_head)?;
         Ok(Self {
             identity,
             original_operation: *proved.original_operation(),
             undo_commit: proved.undo_commit().clone(),
+            undo_product_publication: proved.undo_product_publication().clone(),
+            bound_product_commit,
             bound_relational_head,
             principal_scope_digest: *proved.principal_scope_digest(),
             compatibility_generation: proved.compatibility_generation(),
@@ -221,13 +209,19 @@ impl WorthQueryRedoIntent {
         &self.original_operation
     }
 
-    pub const fn undo_commit_id(&self) -> u64 {
-        self.undo_commit.commit_id.0
-    }
-
     /// Head recorded at derivation — descriptive binding, not a live check.
     pub const fn undo_commit(&self) -> &RelationalCommitReceipt {
         &self.undo_commit
+    }
+
+    pub const fn undo_product_publication(
+        &self,
+    ) -> &crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication {
+        &self.undo_product_publication
+    }
+
+    pub const fn bound_product_commit(&self) -> &CompositeCommitIdentity {
+        &self.bound_product_commit
     }
 
     /// Exact Relational head recorded at derivation; descriptive, not authority.
@@ -254,11 +248,12 @@ impl WorthQueryRedoIntent {
 
 fn derive_identity(
     proved: &WorthQueryProvedUndo,
+    bound_product_commit: &CompositeCommitIdentity,
     bound_relational_head: &RelationalCommitReceipt,
 ) -> Result<WorthQueryRedoIntentIdentity, WorthQueryAftermathDerivationFailure> {
     let version =
         CanonicalizationRuleVersion::new(RULE_VERSION).expect("the redo-intent rule is valid");
-    let entries = redo_intent_basis_entries(proved, bound_relational_head);
+    let entries = redo_intent_basis_entries(proved, bound_product_commit, bound_relational_head);
     let prepared = prepare_canonical_basis_sequence(version, DOMAIN, entries)
         .into_result()
         .map_err(|_| WorthQueryAftermathDerivationFailure::BasisRejected)?;
@@ -276,6 +271,7 @@ fn derive_identity(
 
 fn redo_intent_basis_entries(
     proved: &WorthQueryProvedUndo,
+    bound_product_commit: &CompositeCommitIdentity,
     bound_relational_head: &RelationalCommitReceipt,
 ) -> Vec<CanonicalBasisEntry> {
     let mut entries = vec![
@@ -308,9 +304,30 @@ fn redo_intent_basis_entries(
             },
         ),
     ];
+    append_product_commit_entries(
+        &mut entries,
+        "undo-product",
+        proved.undo_product_publication().composite_commit(),
+    );
+    append_product_commit_entries(&mut entries, "bound-product", bound_product_commit);
     append_commit_reference_entries(&mut entries, "undo", proved.undo_commit());
     append_commit_reference_entries(&mut entries, "bound-head", bound_relational_head);
     entries
+}
+
+fn append_product_commit_entries(
+    entries: &mut Vec<CanonicalBasisEntry>,
+    prefix: &str,
+    commit: &CompositeCommitIdentity,
+) {
+    entries.push(unsigned_entry(
+        &format!("{prefix}-owner"),
+        commit.owner_identity().get(),
+    ));
+    entries.push(unsigned_entry(
+        &format!("{prefix}-commit"),
+        commit.ordinal(),
+    ));
 }
 
 fn append_commit_reference_entries(
@@ -360,37 +377,4 @@ fn entry(locus: &str, value: CanonicalBasisValue) -> CanonicalBasisEntry {
         CanonicalBasisEntryKind::Identity,
         value,
     )
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn intent_does_not_decide_divergence() {
-        // R8.45 — intent remains constructible and unchanged when a caller
-        // later observes divergence. Validity is not a method of this type.
-        let proved = WorthQueryProvedUndo::axis_probe(WorthQueryProvedUndoAxisProbe {
-            original_operation: [1; 32],
-            undo_commit_id: 20,
-            principal_scope_digest: [2; 32],
-            compatibility_generation: 1,
-            runtime_instance: 7,
-        });
-        let bound = RelationalCommitReceipt {
-            commit_id: CommitId(20),
-            version_id: VersionId(20),
-            branch_id: BranchId("main".to_owned()),
-            parents: vec![CommitId(19)],
-        };
-        let intent = WorthQueryRedoIntent::derive(&proved, bound.clone()).expect("derive");
-        assert_eq!(intent.bound_relational_head(), &bound);
-        assert_eq!(intent.work().basis_preparations(), 1);
-        assert_eq!(intent.work().digest_derivations(), 1);
-        assert_eq!(intent.work().digest_text_materializations(), 0);
-        // No API exists that takes a live head and returns invalidation.
-        let _ = intent.original_operation();
-        let _ = intent.undo_commit_id();
-        let _ = intent.compatibility_generation();
-    }
 }

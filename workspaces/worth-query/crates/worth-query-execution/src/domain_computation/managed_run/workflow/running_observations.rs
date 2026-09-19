@@ -1,6 +1,58 @@
 use super::*;
 
 impl WorthQueryRunningWorkflowRun {
+    pub fn resources(
+        &self,
+    ) -> &worth_query_admission::facade::resource_admission::WorthQueryAdmittedWorkflowResourcePlan
+    {
+        self.affinity.resources()
+    }
+
+    pub fn operation_resources(
+        &self,
+    ) -> &worth_query_admission::facade::resource_admission::WorthQueryAdmittedExecutionResourcePlan
+    {
+        self.affinity.operation_resources()
+    }
+
+    pub fn stage_resources_and_evidence(
+        &self,
+        stage_identity: &str,
+    ) -> Option<(
+        std::sync::Arc<worth_query_admission::facade::resource_admission::WorthQueryAdmittedExecutionResourcePlan>,
+        WorthQueryExecutionResourceAttemptEvidence,
+    )>{
+        self.affinity
+            .managed_stage_resources_and_evidence(stage_identity)
+    }
+
+    pub fn provider_session_identity(&self) -> &str {
+        self.affinity.provider_session_description()
+    }
+
+    pub fn bind_stage_commit_call(
+        &self,
+        stage_identity: &str,
+        graph_authorities: &[&worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority],
+        request: crate::domain_computation::WorthQueryGraphCommitCallRequest,
+    ) -> Result<
+        crate::domain_computation::WorthQueryGraphCommitCall,
+        crate::domain_computation::WorthQueryGraphCallBindingDenial,
+    > {
+        let (resources, evidence) = self
+            .affinity
+            .managed_stage_resources_and_evidence(stage_identity)
+            .ok_or(
+                crate::domain_computation::WorthQueryGraphCallBindingDenial::ForeignResourceAttempt,
+            )?;
+        self.affinity.bind_graph_commit_call(
+            graph_authorities,
+            request,
+            &evidence,
+            resources.shared_envelope(),
+        )
+    }
+
     pub fn identity(&self) -> &str {
         self.affinity.attempt_identity()
     }
@@ -175,7 +227,7 @@ impl WorthQueryRunningWorkflowRun {
             request.scope_identity(),
             stage_identity,
         )
-        .bind_execution_snapshot(self.execution_snapshot_reference());
+        .with_managed_execution_snapshot(self.execution_snapshot_reference());
         let call = self
             .affinity
             .bind_graph_provider_call(

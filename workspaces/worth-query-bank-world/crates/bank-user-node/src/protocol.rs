@@ -2,8 +2,7 @@ use bank_http_adapter::{
     BankHttpAccountActivityPageOutcome, BankHttpAccountSummaryOutcome,
     BankHttpEstateDisbursementOutcome, BankHttpEstateNotificationOutcome, BankHttpMutationControls,
     BankHttpMutationOperation, BankHttpMutationOutcome, BankHttpRecoveryInspectionOutcome,
-    BankHttpRedoProgressionOutcome, BankHttpRequestControls, BankHttpUndoAdmissionOutcome,
-    BankHttpUndoProgressionOutcome,
+    BankHttpRecoverySafeRetryOutcome, BankHttpRequestControls,
 };
 use serde::{Deserialize, Serialize};
 
@@ -88,23 +87,6 @@ pub struct BankUserNodeEstateDisbursementRequest {
     pub destination_account: String,
     pub beneficiary: String,
     pub amount_minor_units: i64,
-}
-
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-#[serde(deny_unknown_fields)]
-pub struct BankUserNodeUndoProgressionRequest {
-    pub request_id: String,
-    pub controls: BankHttpMutationControls,
-    pub undo: String,
-    pub idempotency_key: String,
-}
-
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-#[serde(deny_unknown_fields)]
-pub struct BankUserNodeRedoProgressionRequest {
-    pub request_id: String,
-    pub controls: BankHttpMutationControls,
-    pub redo: String,
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -194,9 +176,9 @@ pub enum BankUserNodeRecoveryInspectionOutcome {
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(tag = "node_outcome", rename_all = "snake_case")]
-pub enum BankUserNodeUndoAdmissionOutcome {
+pub enum BankUserNodeRecoverySafeRetryOutcome {
     Forwarded {
-        response: BankHttpUndoAdmissionOutcome,
+        response: BankHttpRecoverySafeRetryOutcome,
     },
     Denied {
         denial: BankUserNodeDenial,
@@ -208,28 +190,6 @@ pub enum BankUserNodeUndoAdmissionOutcome {
 pub enum BankUserNodeEstateDisbursementOutcome {
     Forwarded {
         response: BankHttpEstateDisbursementOutcome,
-    },
-    Denied {
-        denial: BankUserNodeDenial,
-    },
-}
-
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-#[serde(tag = "node_outcome", rename_all = "snake_case")]
-pub enum BankUserNodeUndoProgressionOutcome {
-    Forwarded {
-        response: BankHttpUndoProgressionOutcome,
-    },
-    Denied {
-        denial: BankUserNodeDenial,
-    },
-}
-
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-#[serde(tag = "node_outcome", rename_all = "snake_case")]
-pub enum BankUserNodeRedoProgressionOutcome {
-    Forwarded {
-        response: BankHttpRedoProgressionOutcome,
     },
     Denied {
         denial: BankUserNodeDenial,

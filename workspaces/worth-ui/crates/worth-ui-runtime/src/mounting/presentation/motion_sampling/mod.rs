@@ -1,6 +1,7 @@
 mod curve;
 mod damage;
 mod interruption;
+mod opacity;
 mod receipt;
 mod sampled_geometry;
 mod sampling;
@@ -9,12 +10,12 @@ mod tests;
 mod track_sampling;
 
 pub(crate) use damage::{UiPresentationMotionDamage, UiPresentationSampledClipGeometry};
-#[cfg(test)]
-pub(crate) use receipt::UiPresentationMotionSamplingCost;
+pub use receipt::UiPresentationMotionSamplingCost;
 pub(crate) use receipt::{
-    UiPresentationMotionInstallationReceipt, UiPresentationMotionSamplePosture,
-    UiPresentationMotionSampleReceipt, UiPresentationMotionSamplingReceipt,
-    UiPresentationMotionTerminalRequest, UiPresentationReducedMotionPosture,
+    UiPresentationMotionInstallationReceipt, UiPresentationMotionPresentedSurface,
+    UiPresentationMotionSamplePosture, UiPresentationMotionSampleReceipt,
+    UiPresentationMotionSamplingReceipt, UiPresentationMotionTerminalRequest,
+    UiPresentationReducedMotionPosture,
 };
 pub(crate) use sampled_geometry::{
     UiPresentationGeometrySamplingDenial, UiPresentationSampledGeometry,

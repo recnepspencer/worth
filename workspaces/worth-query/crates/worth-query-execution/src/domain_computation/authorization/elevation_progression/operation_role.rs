@@ -22,11 +22,14 @@ pub(super) fn installed_lifecycle_owner<'runtime, Schema, Operation, Input>(
 >
 where
     Schema: ApplicationSchema,
-    Operation: ApplicationOperationMarkerIdentity,
+    Operation: ApplicationOperationMarkerIdentity<Schema>,
 {
     let Some((capability, command_capability, role)) = runtime
         .authorization
-        .elevation_lifecycle_operation::<Operation>(operation.operation(), operation.input_type())
+        .elevation_lifecycle_operation::<Schema, Operation>(
+            operation.operation(),
+            operation.input_type(),
+        )
         .map_err(|()| stale_operation(operation.operation()))?
     else {
         return Err(role_mismatch(operation.operation()));

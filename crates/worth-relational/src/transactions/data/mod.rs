@@ -28,9 +28,10 @@ pub use commit_log::{
 pub use intents::{
     ApplyEntityAspectPatchIntent, ApplyRelationAspectPatchIntent, BulkEntityCreateIntent,
     BulkRelationCreateIntent, CreateIntent, DeleteEntityIntent, DeleteRelationIntent,
-    EntityAspectCreateIntent, EntityMutationIntent, MutationIntent, RelationAspectCreateIntent,
-    RelationMutationIntent, ReplaceEntityIntent, UpdateEntityFieldsIntent,
-    UpdateRelationEndpointsIntent,
+    EntityAspectCreateIntent, EntityMutationIntent, MaterializationMutationIntent, MutationIntent,
+    RelationAspectCreateIntent, RelationMutationIntent, RematerializeEntityIntent,
+    RematerializeRelationIntent, ReplaceEntityIntent, SuspendEntityMaterializationIntent,
+    SuspendRelationMaterializationIntent, UpdateEntityFieldsIntent, UpdateRelationEndpointsIntent,
 };
 pub use mutation_planning::CommitTopology;
 pub(crate) use outcomes::merge_commit_mutation_plan_token;

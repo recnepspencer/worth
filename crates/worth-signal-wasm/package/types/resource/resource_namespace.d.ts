@@ -105,6 +105,19 @@ export interface ResourceCompatibilityNamespace {
 export interface ResourceNamespace {
   readonly branch: ResourceBranchNamespace;
   readonly compatibility: ResourceCompatibilityNamespace;
+  /**
+   * Marks every materialized line of every family in this namespace stale
+   * (freshness `manualRuntimeInvalidateAll`, scope `runtimeAll`). Visible
+   * values stay. Returns the number of lines marked. Lines materialized after
+   * the call are unaffected.
+   */
+  invalidateAll(): number;
+  /**
+   * Starts a refresh on every materialized line of every family in this
+   * namespace, with `line.refresh()` semantics per line (a pending reload is
+   * superseded). Returns the number of lines refreshed.
+   */
+  refreshAll(): number;
   readonly detailFields: typeof resourceDetailFields;
   readonly detailRegions: typeof resourceDetailRegions;
   readonly detailJsonPaths: typeof resourceDetailJsonPaths;

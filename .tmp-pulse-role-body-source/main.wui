@@ -1,0 +1,80 @@
+component platform.pulse.component.status_band {}
+surface platform.pulse.surface.main {}
+surface platform.pulse.surface.evidence {}
+surface platform.pulse.surface.service {}
+surface platform.pulse.surface.status {}
+query_scalar platform.pulse.status {
+  view platform.pulse.status
+  field status
+  require text
+  lifecycle live
+}
+intent platform.pulse.action.route {
+  definition platform.pulse.action;
+  interaction activate;
+  payload action_input_revision application-unsigned64 platform.pulse.action.input-revision;
+  payload query_denial_requested application-boolean platform.pulse.action.query-denial-requested;
+  operability platform.pulse.action.operability
+    mutability-application-boolean platform.pulse.action.mutable
+    readiness-application-boolean platform.pulse.action.ready
+    policy-application-boolean platform.pulse.action.policy-allowed;
+  confirmation platform.pulse.action.confirmation
+    application-boolean platform.pulse.action.confirmation-required;
+  concurrency target-route-single-flight;
+  consequences mounted-posture-and-query platform.pulse.status;
+}
+intent platform.pulse.portal.open.route {
+  definition platform.pulse.portal.open;
+  interaction activate;
+  operability platform.pulse.portal.open.operability
+    mutability-application-boolean platform.pulse.action.mutable
+    readiness-application-boolean platform.pulse.action.ready
+    policy-application-boolean platform.pulse.action.policy-allowed;
+  confirmation platform.pulse.portal.open.confirmation
+    application-boolean platform.pulse.action.confirmation-required;
+  concurrency target-route-single-flight;
+  consequences mounted-posture;
+}
+intent platform.pulse.portal.close.route {
+  definition platform.pulse.portal.close;
+  interaction submit;
+  operability platform.pulse.portal.close.operability
+    mutability-application-boolean platform.pulse.portal.dismiss.mutable
+    readiness-application-boolean platform.pulse.portal.dismiss.ready
+    policy-application-boolean platform.pulse.portal.dismiss.policy-allowed;
+  confirmation platform.pulse.portal.close.confirmation
+    application-boolean platform.pulse.portal.dismiss.confirmation-required;
+  concurrency target-route-single-flight;
+  consequences mounted-posture;
+}
+intent platform.pulse.portal.cancel.route {
+  definition platform.pulse.portal.close;
+  interaction activate;
+  operability platform.pulse.portal.cancel.operability
+    mutability-application-boolean platform.pulse.portal.dismiss.mutable
+    readiness-application-boolean platform.pulse.portal.dismiss.ready
+    policy-application-boolean platform.pulse.portal.dismiss.policy-allowed;
+  confirmation platform.pulse.portal.cancel.confirmation
+    application-boolean platform.pulse.portal.dismiss.confirmation-required;
+  concurrency target-route-single-flight;
+  consequences mounted-posture;
+}
+command platform.pulse.command.run.application {
+  shortcut Primary+Shift+P;
+  scope application;
+}
+command platform.pulse.command.run.portal {
+  shortcut Primary+Shift+P;
+  scope active_portal;
+  binding platform.pulse.component.portal_target;
+}
+token theme.platform_pulse.canvas = "theme.platform_pulse.palette.canvas";
+
+portal platform.pulse.portal.details {
+  surface platform.pulse.surface.main
+  anchor platform.pulse.component.portal_target
+  layer transient
+  dismiss escape anchor_gone
+  focus first_enabled
+  motion system_popover
+}

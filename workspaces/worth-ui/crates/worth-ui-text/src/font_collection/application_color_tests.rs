@@ -371,7 +371,7 @@ pub(super) fn color_demand_at_dpi(
                 UiMountedRgba8::new(255, 255, 255, 255),
                 UiMountedTextPaintSpanIdentity::from_runtime_mounting([9; 32]),
             )],
-            logical_damage: &[full_damage()],
+            selection: crate::UiGlyphRasterDemandSelection::LogicalDamage(&[full_damage()]),
             scale: UiGlyphRasterScale::new(dpi_milli, UiTextScaleGeneration::new(1).unwrap())
                 .unwrap(),
             placement: UiGlyphRasterPlacement::default(),

@@ -16,7 +16,14 @@ where
     L: BasisOperationLane,
     O: WorthQueryExecutableDomainOperation<D, F>,
 {
-    admitted: WorthQueryAdmittedDirectOperation<D, O, F, L>,
+    bound: crate::domain_installation::WorthQueryBoundDomainOperation<D, O, F, L>,
+    input: O::Input,
+    executor: std::sync::Arc<crate::domain_installation::WorthQueryInstalledDomainOperationExecutor>,
+    phase_proof: crate::domain_installation::operation_authority_chain::WorthQueryOperationPhaseProof<
+        crate::domain_installation::operation_authority_chain::WorthQueryResourceAdmittedOperationPhase,
+    >,
+    running: Option<worth_query_execution::facade::runtime::WorthQueryRunningDirectRun>,
+    resources: super::super::super::WorthQueryAdmittedExecutionResourcePlan,
     execution_snapshot: crate::memory_workspace::WorthQuerySnapshotIdentity,
     conditional: Vec<crate::domain_installation::WorthQueryConditionalProvenance>,
     resource_evidence: super::super::super::WorthQueryExecutionResourceAttemptEvidence,
@@ -41,7 +48,8 @@ where
     phase_proof: crate::domain_installation::operation_authority_chain::WorthQueryOperationPhaseProof<
         crate::domain_installation::operation_authority_chain::WorthQueryResourceAdmittedOperationPhase,
     >,
-    resource_attempt: super::super::super::WorthQueryDirectExecutionResourceAttempt,
+    running: worth_query_execution::facade::runtime::WorthQueryRunningDirectRun,
+    resources: super::super::super::WorthQueryAdmittedExecutionResourcePlan,
     output: Output,
     result_state: crate::domain_installation::WorthQueryOperationResultState,
     warnings: Vec<super::super::super::WorthQueryOperationExecutionWarning>,
@@ -116,8 +124,39 @@ where
             Ok(conditional) => conditional,
             Err(stop) => return Err(conditional_stop_outcome(admitted, counters, stop)),
         };
+        let WorthQueryAdmittedDirectOperation {
+            bound,
+            input,
+            executor,
+            resource_attempt,
+            phase_proof,
+        } = admitted;
+        let resources = resource_attempt.resources().clone();
+        let managed = match workspace.admit_managed_direct_run(
+            bound.execution_authority(),
+            bound.product(),
+            resource_attempt,
+        ) {
+            Ok(managed) => managed,
+            Err(failure) => {
+                let detail = failure.detail().to_owned();
+                let _ = failure.release();
+                return Err(TransitionOutcome::Denied(
+                    WorthQueryBoundExecutionDenial::new(
+                        WorthQueryBoundExecutionDenialKind::GraphProvider,
+                        detail,
+                        counters,
+                    ),
+                ));
+            }
+        };
         Ok(Self {
-            admitted,
+            bound,
+            input,
+            executor,
+            phase_proof,
+            running: Some(managed.start()),
+            resources,
             execution_snapshot,
             conditional,
             resource_evidence,
@@ -132,17 +171,17 @@ where
         super::super::WorthQueryBoundExecutionOutcome<D, O, F, L, O::Output>,
     > {
         let graph_receipts = super::super::super::bound_graph_execution::invoke_bound_graphs(
-            &self.admitted.bound,
-            self.admitted.resource_attempt.resources(),
-            &self.resource_evidence,
-            self.admitted.resource_attempt.provider_session(),
-            &self.execution_snapshot,
+            &self.bound,
+            self.running
+                .take()
+                .expect("prepared direct execution owns its managed run"),
             &mut self.counters,
         )
         .map_err(TransitionOutcome::Denied)?;
+        self.running = Some(graph_receipts.0);
         Ok(WorthQueryGraphCompletedDirectExecution {
             prepared: self,
-            graph_receipts,
+            graph_receipts: graph_receipts.1,
         })
     }
 }
@@ -165,19 +204,18 @@ where
             graph_receipts,
         } = self;
         let WorthQueryPreparedDirectExecution {
-            admitted,
+            bound,
+            input,
+            executor,
+            phase_proof,
+            running,
+            resources,
             execution_snapshot,
             conditional,
             resource_evidence,
             mut counters,
         } = prepared;
-        let WorthQueryAdmittedDirectOperation {
-            bound,
-            input,
-            executor,
-            resource_attempt,
-            phase_proof,
-        } = admitted;
+        let running = running.expect("completed graph execution owns its managed run");
         let context = WorthQueryOperationExecutionContext::new(
             bound.definition(),
             bound.binding_identity(),
@@ -185,8 +223,8 @@ where
             bound.basis().normalized(),
             executor.installed_read.as_ref(),
             &graph_receipts,
-            resource_attempt.resources(),
-            resource_attempt.provider_session(),
+            &resources,
+            running.provider_session_identity(),
         );
         counters.executor_contacts += 1;
         let (material, primary_read_contacts) =
@@ -194,9 +232,12 @@ where
                 Ok(material) => material,
                 Err(failure) => {
                     let kind = classify_executor_failure(&bound, failure.class().clone());
+                    let detail = failure.detail().to_owned();
+                    let cleanup = running.abandon().cleanup();
                     return TransitionOutcome::Failed(
-                        WorthQueryBoundExecutionDenial::new(kind, failure.detail(), counters)
-                            .with_graph_receipts(graph_receipts),
+                        WorthQueryBoundExecutionDenial::new(kind, detail, counters)
+                            .with_graph_receipts(graph_receipts)
+                            .with_managed_cleanup(cleanup),
                     );
                 }
             };
@@ -205,7 +246,8 @@ where
         WorthQueryExecutorCompletedDirectExecution {
             bound,
             phase_proof,
-            resource_attempt,
+            running,
+            resources,
             output,
             result_state,
             warnings,
@@ -238,19 +280,22 @@ where
             .result_states
             .contains(&self.result_state)
         {
+            let cleanup = self.running.abandon().cleanup();
             return TransitionOutcome::Denied(
                 WorthQueryBoundExecutionDenial::new(
                     WorthQueryBoundExecutionDenialKind::UndeclaredResultState,
                     "executor returned a result state absent from the installed terminal contract",
                     self.counters,
                 )
-                .with_graph_receipts(self.graph_receipts),
+                .with_graph_receipts(self.graph_receipts)
+                .with_managed_cleanup(cleanup),
             );
         }
         WorthQueryValidatedDirectEvidenceCompletion {
             bound: self.bound,
             phase_proof: self.phase_proof,
-            resource_attempt: self.resource_attempt,
+            running: Some(self.running),
+            resources: self.resources,
             output: self.output,
             result_state: self.result_state,
             warnings: self.warnings,

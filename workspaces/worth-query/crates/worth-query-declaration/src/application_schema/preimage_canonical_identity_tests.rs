@@ -15,10 +15,20 @@ struct Operation;
 struct Entity;
 struct Aspect;
 struct Field;
+impl crate::application_schema::DeclaredApplicationFieldValue for Field {
+    type Value = u64;
+    type Binding = crate::application_schema::U64ApplicationValueBinding;
+    const PRESENCE: crate::application_schema::ApplicationFieldPresence =
+        crate::application_schema::ApplicationFieldPresence::Required;
+}
+crate::worth_query_structured_value_binding!(
+    OperationInputBinding for () {
+        identity: "worth.rust.unit"
+    }
+);
 
-impl ApplicationOperationMarkerIdentity for Operation {
-    type Schema = Schema;
-    type Input = ();
+impl ApplicationOperationMarkerIdentity<Schema> for Operation {
+    type InputBinding = OperationInputBinding;
     const IDENTIFIER: &'static str = "Operation";
 }
 

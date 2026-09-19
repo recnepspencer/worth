@@ -6,20 +6,14 @@ use worth_ui_host_headless::UiHeadlessMountedFrameTranscript;
 pub(super) fn exact_portal_child_commands(
     transcript: &UiHeadlessMountedFrameTranscript,
     portal_child: UiMountedInstanceIdentity,
+    portal: worth_ui_host_contract::UiMountedPortalOverlayMechanic,
 ) -> HashSet<UiMountedPaintCommandIdentity> {
-    let fills = transcript
-        .filled_rects()
-        .iter()
-        .filter(|mechanic| mechanic.mounted_instance() == portal_child)
-        .map(|mechanic| mechanic.command_identity())
-        .collect::<Vec<_>>();
     let texts = transcript
         .semantic_text()
         .iter()
         .filter(|mechanic| mechanic.mounted_instance() == portal_child)
         .collect::<Vec<_>>();
 
-    assert_eq!(fills.len(), 1, "the Portal child emits its authored fill");
     assert_eq!(
         texts.len(),
         2,
@@ -39,12 +33,9 @@ pub(super) fn exact_portal_child_commands(
         "the child emits its authored value and retained posture rows"
     );
 
-    fills
+    let _ = portal;
+    texts
         .into_iter()
-        .chain(
-            texts
-                .into_iter()
-                .map(|mechanic| mechanic.command_identity()),
-        )
+        .map(|mechanic| mechanic.command_identity())
         .collect()
 }

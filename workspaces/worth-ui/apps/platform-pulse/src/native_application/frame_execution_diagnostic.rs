@@ -20,7 +20,9 @@ pub(super) fn outcome_label(outcome: &UiMountedFrameOutcome) -> String {
         ),
         UiMountedFrameOutcome::Superseded(_) => "superseded".to_owned(),
         UiMountedFrameOutcome::RetentionDenied(_) => "retention-denied".to_owned(),
-        UiMountedFrameOutcome::AdmissionDenied(_) => "admission-denied".to_owned(),
+        UiMountedFrameOutcome::AdmissionDenied(rejection) => {
+            format!("admission-denied:{:?}", rejection.denial())
+        }
         UiMountedFrameOutcome::CompletionDenied(_) => "completion-denied".to_owned(),
     }
 }
@@ -38,6 +40,9 @@ pub(super) fn stop_label(
         worth_ui::facade::app::WorthUiMountedFrameExecutionStop::HostMeasurementTransition(
             denial,
         ) => host_measurement_transition_label(denial),
+        worth_ui::facade::app::WorthUiMountedFrameExecutionStop::OccurrenceGeometry(denial) => {
+            format!("occurrence-geometry:{denial:?}")
+        }
         worth_ui::facade::app::WorthUiMountedFrameExecutionStop::FrameworkTransition(_) => {
             "framework-transition".to_owned()
         }

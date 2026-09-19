@@ -1,6 +1,13 @@
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum UiPortalServiceTransitionDenial {
     RevisionExhausted,
+    StackOrdinalExhausted,
+    LiveRowCapacityExceeded { limit: u16 },
+    PortalNotLive,
+    PortalSurfaceMismatch,
+    ReplacementNotTopmost,
+    StackOrdinalConflict,
+    DescendantExitRetentionPending,
     StalePlan,
     Placement(super::UiPortalPlacementDenial),
 }
@@ -14,37 +21,47 @@ pub(crate) enum UiPortalExitTerminalDenial {
 #[must_use = "a prepared portal transition changes no truth until it is committed"]
 pub(crate) struct UiPreparedPortalServiceTransition {
     request: super::UiPortalServiceRequest,
+    policy: crate::declaration::UiPortalPolicy,
     expected_revision: u64,
     committed_revision: u64,
     staged_posture: super::UiPortalLifecyclePosture,
     disposition: super::UiPortalServiceDisposition,
     placement: Option<super::UiPreparedPortalPlacement>,
+    stack_ordinal: Option<super::UiPortalStackOrdinal>,
     closed_descendants: Box<[super::UiPortalIdentity]>,
 }
 
 impl UiPreparedPortalServiceTransition {
     pub(super) const fn new(
         request: super::UiPortalServiceRequest,
+        policy: crate::declaration::UiPortalPolicy,
         expected_revision: u64,
         committed_revision: u64,
         staged_posture: super::UiPortalLifecyclePosture,
         disposition: super::UiPortalServiceDisposition,
         placement: Option<super::UiPreparedPortalPlacement>,
+        stack_ordinal: Option<super::UiPortalStackOrdinal>,
         closed_descendants: Box<[super::UiPortalIdentity]>,
     ) -> Self {
         Self {
             request,
+            policy,
             expected_revision,
             committed_revision,
             staged_posture,
             disposition,
             placement,
+            stack_ordinal,
             closed_descendants,
         }
     }
 
     pub(crate) const fn request(&self) -> super::UiPortalServiceRequest {
         self.request
+    }
+
+    pub(super) const fn policy(&self) -> crate::declaration::UiPortalPolicy {
+        self.policy
     }
 
     pub(crate) const fn portal(&self) -> super::UiPortalIdentity {
@@ -83,6 +100,10 @@ impl UiPreparedPortalServiceTransition {
 
     pub(crate) const fn placement(&self) -> Option<super::UiPreparedPortalPlacement> {
         self.placement
+    }
+
+    pub(crate) const fn stack_ordinal(&self) -> Option<super::UiPortalStackOrdinal> {
+        self.stack_ordinal
     }
 
     pub(crate) const fn successor_revision(&self) -> u64 {

@@ -98,7 +98,7 @@ fn presentation_cancellation_transitions_the_exact_physical_request_to_recovery(
         panic!("unsettled port work must remain pending");
     };
     let token = super::text_atlas_tests::inert_view().issue_completion_token();
-    assert!(pending.bind_completion_identity(token.diagnostic_value()));
+    assert!(pending.bind_completion_identity(token.diagnostic_value(), None));
     state.pending_presentations.push(pending);
 
     let outcome = super::pending_completion::stop_pending(&mut state, token);

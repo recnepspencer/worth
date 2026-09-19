@@ -2,6 +2,47 @@ use crate::identity::{
     ProductBranchIdentity, ProductBranchIncarnation, ProductUnpublishedOwnerEffectsIdentity,
 };
 
+/// Exact cleanup facts released with one product-unpublished recovery record.
+/// The history identity is descriptive input for the lifecycle owner's bounded
+/// reclamation service; it grants no history or publication authority.
+#[derive(Debug)]
+pub struct ProductUnpublishedCleanup {
+    unpublished_history_candidates: Vec<crate::identity::CompositeCommitIdentity>,
+    owner_retirement_work: Vec<crate::branch::OwnerRetirementWork>,
+}
+
+impl ProductUnpublishedCleanup {
+    pub(crate) fn new(
+        unpublished_history_candidates: Vec<crate::identity::CompositeCommitIdentity>,
+        owner_retirement_work: Vec<crate::branch::OwnerRetirementWork>,
+    ) -> Self {
+        Self {
+            unpublished_history_candidates,
+            owner_retirement_work,
+        }
+    }
+
+    pub fn unpublished_history_candidates(&self) -> &[crate::identity::CompositeCommitIdentity] {
+        &self.unpublished_history_candidates
+    }
+
+    pub fn owner_retirement_work(&self) -> &[crate::branch::OwnerRetirementWork] {
+        &self.owner_retirement_work
+    }
+
+    pub fn into_parts(
+        self,
+    ) -> (
+        Vec<crate::identity::CompositeCommitIdentity>,
+        Vec<crate::branch::OwnerRetirementWork>,
+    ) {
+        (
+            self.unpublished_history_candidates,
+            self.owner_retirement_work,
+        )
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum RecoveryCleanupDenial {
     Missing,
@@ -21,6 +62,7 @@ pub(crate) enum RecoveryCleanupDenial {
 pub(crate) struct RecoveryCleanupOutcome {
     identity: ProductUnpublishedOwnerEffectsIdentity,
     destination: Option<(ProductBranchIdentity, ProductBranchIncarnation)>,
+    unpublished_commit: Option<crate::identity::CompositeCommitIdentity>,
 }
 
 impl RecoveryCleanupOutcome {
@@ -30,6 +72,10 @@ impl RecoveryCleanupOutcome {
         self.destination
             .as_ref()
             .map(|(branch, incarnation)| (branch, *incarnation))
+    }
+
+    pub(crate) fn unpublished_commit(&self) -> Option<&crate::identity::CompositeCommitIdentity> {
+        self.unpublished_commit.as_ref()
     }
 }
 
@@ -65,10 +111,12 @@ impl super::catalog::ProductUnpublishedRecoveryCatalog {
                 let destination = record
                     .destination()
                     .map(|(branch, incarnation)| (branch.clone(), incarnation));
+                let unpublished_commit = record.successor_commit().cloned();
                 drop(record);
                 Ok(RecoveryCleanupOutcome {
                     identity,
                     destination,
+                    unpublished_commit,
                 })
             }
             Err(super::catalog::RecoveryRecordRemovalDenial::Busy) => {

@@ -1,6 +1,5 @@
 use worth_query_execution::facade::primary_graph::{
-    WorthQueryApplicationCommitPublicationExternalEffect, WorthQueryApplicationCommitReceipt,
-    WorthQueryExternalDispatchPostureKind,
+    WorthQueryApplicationCommitReceipt, WorthQueryExternalDispatchPostureKind,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -37,6 +36,7 @@ pub enum WorthQueryPublishedExternalEffectFailure {
         posture: WorthQueryPublishedUnsupportedProtocolVersionPosture,
     },
     UnknownProviderOutcome,
+    ObservationDerivationDenied,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -99,38 +99,6 @@ pub(super) fn publish_external_effect(
     }
 }
 
-pub(super) const fn publish_external_effect_source(
-    source: WorthQueryApplicationCommitPublicationExternalEffect,
-) -> WorthQueryPublishedExternalEffectPosture {
-    match source {
-        WorthQueryApplicationCommitPublicationExternalEffect::NotDeclared => {
-            WorthQueryPublishedExternalEffectPosture::NotDeclared
-        }
-        WorthQueryApplicationCommitPublicationExternalEffect::PendingDispatch => {
-            WorthQueryPublishedExternalEffectPosture::PendingDispatch
-        }
-        WorthQueryApplicationCommitPublicationExternalEffect::Completed => {
-            WorthQueryPublishedExternalEffectPosture::Completed
-        }
-        WorthQueryApplicationCommitPublicationExternalEffect::Acknowledged => {
-            WorthQueryPublishedExternalEffectPosture::Acknowledged
-        }
-        WorthQueryApplicationCommitPublicationExternalEffect::Unresolved(Some(failure)) => {
-            WorthQueryPublishedExternalEffectPosture::Unresolved(publish_failure(failure))
-        }
-        WorthQueryApplicationCommitPublicationExternalEffect::Unresolved(None) => {
-            WorthQueryPublishedExternalEffectPosture::Unresolved(
-                WorthQueryPublishedExternalEffectFailure::UnknownProviderOutcome,
-            )
-        }
-        WorthQueryApplicationCommitPublicationExternalEffect::PreparationDenied(denial) => {
-            WorthQueryPublishedExternalEffectPosture::Unresolved(publish_preparation_failure(
-                denial,
-            ))
-        }
-    }
-}
-
 const fn publish_preparation_failure(
     denial: worth_query_execution::facade::primary_graph::WorthQueryExternalDispatchPreparationDenial,
 ) -> WorthQueryPublishedExternalEffectFailure {
@@ -184,6 +152,9 @@ const fn publish_failure(
         Execution::UnknownProviderOutcome => {
             WorthQueryPublishedExternalEffectFailure::UnknownProviderOutcome
         }
+        Execution::ObservationDerivationDenied => {
+            WorthQueryPublishedExternalEffectFailure::ObservationDerivationDenied
+        }
     }
 }
 
@@ -228,6 +199,10 @@ mod tests {
             (
                 ExternalRailTransportFault::UnknownProviderOutcome,
                 WorthQueryPublishedExternalEffectFailure::UnknownProviderOutcome,
+            ),
+            (
+                ExternalRailTransportFault::ObservationDerivationDenied,
+                WorthQueryPublishedExternalEffectFailure::ObservationDerivationDenied,
             ),
         ];
 

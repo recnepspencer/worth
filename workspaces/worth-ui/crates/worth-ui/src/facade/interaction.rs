@@ -1,3 +1,4 @@
+pub use worth_ui_runtime::facade::interaction::UiMountedSelectionBindingDenial;
 pub use worth_ui_runtime::facade::interaction::{
     UiActivateInteraction, UiActivateInteractionSource, UiCommandAmbiguity,
     UiCommandInvocationOrigin, UiCommandPrefixReceipt, UiCommandRouteLoss,

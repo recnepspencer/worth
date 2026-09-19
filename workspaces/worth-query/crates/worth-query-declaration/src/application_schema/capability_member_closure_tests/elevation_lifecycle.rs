@@ -196,6 +196,7 @@ fn elevation_definition_with_lifecycle(
         elevation_binding::<ElevationIdentity>("ElevationIdentity"),
         elevation_binding::<ElevationReason>("ElevationReason"),
         elevation_binding::<ElevationStatus>("ElevationStatus"),
+        elevation_binding::<ElevationClosedAt>("ElevationClosedAt"),
         ApplicationCapabilityElevationStates::new(
             elevation_value(values[0]),
             elevation_value(values[1]),
@@ -219,10 +220,14 @@ fn elevation_definition_with_lifecycle(
                 "Review",
             ),
             review_binding::<ReviewIdentity>("ReviewIdentity"),
-            ApplicationCapabilityValueBinding::new(review_field::<ReviewKind>("ReviewKind"), 1_u64),
+            ApplicationCapabilityValueBinding::new(
+                review_field::<ReviewKind>("ReviewKind"),
+                encoded(1_u64),
+            ),
             relation::<ReviewScope, Review, Resource>("ReviewScope", "Review", "Resource"),
             relation::<Reviewer, Principal, Review>("Reviewer", "Principal", "Review"),
             review_binding::<ReviewStatus>("ReviewStatus"),
+            review_binding::<ReviewReviewedAt>("ReviewReviewedAt"),
             review_value(1),
             review_value(completed),
         ),
@@ -320,11 +325,13 @@ fn elevation_members(
         elevation_field_member("ElevationIdentity"),
         elevation_field_member("ElevationReason"),
         elevation_field_member("ElevationStatus"),
+        elevation_field_member("ElevationClosedAt"),
         elevation_field_member("ElevationNotBefore"),
         elevation_field_member("ElevationNotAfter"),
         review_field_member("ReviewIdentity"),
         review_field_member("ReviewKind"),
         review_field_member("ReviewStatus"),
+        review_field_member("ReviewReviewedAt"),
         relation_member("Requester", "Principal", "Elevation"),
         relation_member("Approver", "Principal", "Elevation"),
         relation_member("ElevationGrant", "Elevation", "Grant"),
@@ -363,4 +370,12 @@ fn elevation_members(
         },
     ]);
     result
+}
+
+fn encoded(
+    value: u64,
+) -> crate::application_schema::ApplicationEncodedScalarValue<
+    crate::application_schema::U64ApplicationValueBinding,
+> {
+    crate::application_schema::ApplicationEncodedScalarValue::try_new(value).unwrap()
 }

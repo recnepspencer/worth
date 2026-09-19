@@ -4,6 +4,11 @@
 fn owner_services_public_facade_and_negative_fences_are_current() {
     let tests = trybuild::TestCases::new();
     tests.pass("tests/signal_owner_services/ui/public_port_matrix.rs");
+    tests.pass("tests/signal_owner_services/ui/conditional_claimant_issuance.rs");
+    tests.compile_fail(
+        "tests/signal_owner_services/ui/component_bundle_has_no_conditional_issuer.rs",
+    );
+    tests.compile_fail("tests/signal_owner_services/ui/conditional_issuance_is_owner_private.rs");
     #[cfg(feature = "test-operation-control")]
     tests.pass("tests/signal_owner_services/ui/operation_control_matrix.rs");
     #[cfg(feature = "test-operation-control")]

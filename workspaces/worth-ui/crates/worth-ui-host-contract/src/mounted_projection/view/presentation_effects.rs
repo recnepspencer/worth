@@ -1,7 +1,6 @@
 use crate::{
     UiMountedEffectFamily, UiMountedNodeProjectionView, UiMountedPaintBatchTable,
-    UiMountedPaintPrimitiveKind, UiMountedPaintProjection, UiMountedRealtimeBatchTable,
-    UiMountedSpatialBatchTable,
+    UiMountedPaintPrimitiveKind, UiMountedRealtimeBatchTable, UiMountedSpatialBatchTable,
 };
 
 pub(super) fn derive(
@@ -67,8 +66,7 @@ fn has_realtime(paint: &UiMountedPaintBatchTable, realtime: &UiMountedRealtimeBa
 }
 
 fn has_native_paint(node: &UiMountedNodeProjectionView) -> bool {
-    matches!(node.paint(), UiMountedPaintProjection::FilledRect(_))
-        || !node.semantic_text().is_empty()
+    !node.semantic_text().is_empty()
         || matches!(
             node.preview(),
             crate::UiMountedPreviewProjection::Resize { .. }

@@ -20,22 +20,25 @@ use crate::failure_teardown::{
 use crate::native_platform::NativePlatformFailure;
 
 use super::{
-    await_watched_observation, NativeBoundExecutableWorld, PortalReady, Published,
+    await_next_observation, NativeBoundExecutableWorld, PortalReady, Published,
     PulseExecutableWorld, WatchedPulseObservationFailure, WatchedPulseTransition,
 };
 
 mod focus_observation;
 mod input;
+mod journey_failure;
+mod modal_stack;
 mod pixel_observation;
 mod resize;
 mod runtime_service_story;
 mod source_rebind;
+mod theme_switch;
 use focus_observation::{
     await_portal_dismissed, await_semantic_focus, require_open_focus,
     require_restoration_after_rebind,
 };
 use input::{activate, escape, require_intent_quiet_after_occupancy_click};
-use pixel_observation::{await_closed_pixels, await_open_pixels, capture};
+use pixel_observation::{await_closed_pixels, await_open_pixels, capture, export_capture};
 
 const TRANSITION_DEADLINE: Duration = Duration::from_secs(5);
 const PIXEL_POLL_SLICE: Duration = Duration::from_millis(10);
@@ -54,6 +57,8 @@ pub(crate) enum PlatformPulsePortalJourneyFailure {
     UnexpectedObservation(String),
     InputDelivery(&'static str),
     RuntimeServiceEvidence(&'static str),
+    ModalStack(&'static str),
+    CaptureExport(String),
 }
 
 pub(crate) struct PlatformPulsePortalJourneyEvidence {
@@ -97,9 +102,12 @@ impl PulseExecutableWorld<Published<PortalReady>> {
 fn complete(
     world: &mut NativeBoundExecutableWorld,
 ) -> Result<PlatformPulsePortalJourneyEvidence, PlatformPulsePortalJourneyFailure> {
+    theme_switch::exercise(world)?;
     let baseline = capture(world)?;
     let target = adjudicate_portal_control_point(&baseline)
         .map_err(PlatformPulsePortalJourneyFailure::ControlPoint)?;
+    export_capture("01-main-default-960x600.png", &baseline)
+        .map_err(PlatformPulsePortalJourneyFailure::CaptureExport)?;
     let application_command = runtime_service_story::exercise_application(world)?;
 
     activate(world, target.point())?;
@@ -107,22 +115,21 @@ fn complete(
     require_open_focus(first_open_focus)?;
     let opened = await_open_pixels(world, &baseline)?;
     let runtime_service_story = runtime_service_story::exercise_portal(world, application_command)?;
-    await_open_pixels(world, &baseline)?;
-    let resized_open_pixels = resize::exercise(world, &baseline)?;
-    let resized_capture = capture(world)?;
-    let occupancy = portal_occupancy_point(&resized_capture)
-        .map_err(PlatformPulsePortalJourneyFailure::Pixels)?;
-    portal_action_points(&resized_capture).map_err(PlatformPulsePortalJourneyFailure::Pixels)?;
+    modal_stack::exercise(world, [960, 600])?;
+    let open_capture = capture(world)?;
+    let occupancy =
+        portal_occupancy_point(&open_capture).map_err(PlatformPulsePortalJourneyFailure::Pixels)?;
+    portal_action_points(&open_capture).map_err(PlatformPulsePortalJourneyFailure::Pixels)?;
     activate(world, occupancy)?;
     require_intent_quiet_after_occupancy_click(world)?;
-    await_open_pixels(world, &baseline)?;
-    let before_rebind = capture(world)?;
-    let portal_rebind = source_rebind::exercise(world, &before_rebind, first_open_focus)?;
+    input::focus_next(world)?;
+    let traversed = await_semantic_focus(world)?;
+    focus_observation::require_traversal(first_open_focus, traversed)?;
     escape(world)?;
-    let dismissed = await_portal_dismissed(world)?;
-    let escape_close_focus = await_semantic_focus(world)?;
-    require_restoration_after_rebind(first_open_focus, escape_close_focus)?;
-    if dismissed.frame().diagnostic_value() != escape_close_focus.frame() {
+    let initial_dismissed = await_portal_dismissed(world)?;
+    let initial_close_focus = await_semantic_focus(world)?;
+    require_restoration_after_rebind(first_open_focus, initial_close_focus)?;
+    if initial_dismissed.frame().diagnostic_value() != initial_close_focus.frame() {
         return Err(PlatformPulsePortalJourneyFailure::FocusEvidence(
             "Escape dismissal and Focus restoration did not share one publication frame",
         ));
@@ -131,11 +138,28 @@ fn complete(
     let runtime_service_pixels =
         adjudicate_runtime_service_story_pixels(&baseline, &closed_after_service_story)
             .map_err(PlatformPulsePortalJourneyFailure::ServicePixels)?;
+    let resized = resize::exercise(world)?;
+    input::focus_next(world)?;
+    let resized_traversed = await_semantic_focus(world)?;
+    focus_observation::require_traversal(resized.root_focus(), resized_traversed)?;
+    drain_until_idle(world)?;
+    let before_rebind = capture(world)?;
+    let portal_rebind = source_rebind::exercise(world, &before_rebind, resized_traversed)?;
+    escape(world)?;
+    let dismissed = await_portal_dismissed(world)?;
+    let escape_close_focus = await_semantic_focus(world)?;
+    require_restoration_after_rebind(resized.root_focus(), escape_close_focus)?;
+    if dismissed.frame().diagnostic_value() != escape_close_focus.frame() {
+        return Err(PlatformPulsePortalJourneyFailure::FocusEvidence(
+            "resized Escape dismissal and Focus restoration did not share one publication frame",
+        ));
+    }
+    await_closed_pixels(world, resized.closed_baseline())?;
     let expected_shutdown_sequence = drain_until_idle(world)?;
 
     Ok(PlatformPulsePortalJourneyEvidence {
         initial_open_pixels: opened,
-        resized_open_pixels,
+        resized_open_pixels: resized.pixels(),
         runtime_service_pixels,
         runtime_service_story,
         portal_rebind,
@@ -232,7 +256,7 @@ fn next(
     worth_ui_platform_pulse::observation_contract::PlatformPulseLifecycleObservationEnvelope,
     PlatformPulsePortalJourneyFailure,
 > {
-    await_watched_observation(
+    await_next_observation(
         &mut world.process,
         &mut world.lifecycle,
         expected,
@@ -287,6 +311,10 @@ impl CompletedPlatformPulsePortalJourney {
 }
 
 impl PlatformPulsePortalJourneyEvidence {
+    pub(crate) const fn focus_before_rebind(&self) -> PlatformPulseSemanticFocusPublished {
+        self.portal_rebind.focused_before_edit()
+    }
+
     pub(crate) const fn initial_open_pixels(&self) -> PlatformPulsePortalPixelEvidence {
         self.initial_open_pixels
     }
@@ -351,30 +379,5 @@ impl PlatformPulsePortalJourneyEvidence {
 
     pub(crate) const fn escape_dismissed_frame(&self) -> u64 {
         self.escape_dismissed_frame
-    }
-}
-
-impl std::fmt::Display for PlatformPulsePortalJourneyFailure {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Native(failure) => write!(formatter, "native platform: {failure:?}"),
-            Self::ControlPoint(failure) => write!(formatter, "control point: {failure}"),
-            Self::Pixels(failure) => write!(formatter, "portal pixels: {failure}"),
-            Self::TextClipping(failure) => write!(formatter, "text clipping: {failure:?}"),
-            Self::ServicePixels(failure) => write!(formatter, "service pixels: {failure:?}"),
-            Self::SourceAction(failure) => write!(formatter, "source action: {failure:?}"),
-            Self::SourceDefinition(failure) => {
-                write!(formatter, "source definition: {failure:?}")
-            }
-            Self::Observation(failure) => write!(formatter, "observation: {failure:?}"),
-            Self::FocusEvidence(message) => write!(formatter, "focus evidence: {message}"),
-            Self::UnexpectedObservation(observation) => {
-                write!(formatter, "unexpected observation: {observation}")
-            }
-            Self::InputDelivery(message) => write!(formatter, "input delivery: {message}"),
-            Self::RuntimeServiceEvidence(message) => {
-                write!(formatter, "runtime service evidence: {message}")
-            }
-        }
     }
 }

@@ -15,6 +15,7 @@ use crate::branch::{
 #[derive(Debug, Clone)]
 pub struct RelationalPublicationPort {
     runtime_instance_id: u64,
+    configuration: crate::runtime::RelationalRuntimeConfigurationBinding,
     owner_binding: crate::runtime::RelationalRuntimeOwnerBinding,
     publication_binding: crate::runtime::RelationalRuntimePublicationBinding,
     branch_head_versions: crate::runtime::BranchHeadVersionIndexAuthority,
@@ -45,12 +46,14 @@ struct PreparedBranchPublicationPreflight {
 impl RelationalPublicationPort {
     pub(crate) fn new(
         runtime_instance_id: u64,
+        configuration: crate::runtime::RelationalRuntimeConfigurationBinding,
         owner_binding: crate::runtime::RelationalRuntimeOwnerBinding,
         publication_binding: crate::runtime::RelationalRuntimePublicationBinding,
         branch_head_versions: crate::runtime::BranchHeadVersionIndexAuthority,
     ) -> Self {
         Self {
             runtime_instance_id,
+            configuration,
             owner_binding,
             publication_binding,
             branch_head_versions,
@@ -78,6 +81,18 @@ impl RelationalPublicationPort {
                 },
             );
         };
+        // Lock order is configuration epoch, then branch publication. Initial
+        // installation cannot replace branch roots between this check and CAS.
+        let epoch = self.configuration.operation();
+        let expected_generation = epoch.schema_contract_runtime.custom_invariant_generation;
+        if candidate.custom_invariant_generation() != expected_generation {
+            return RelationalPublicationOutcome::denied(
+                RelationalPublicationDenial::StaleInvariantGeneration {
+                    expected_generation,
+                    actual_generation: candidate.custom_invariant_generation(),
+                },
+            );
+        }
         if candidate.lifetime_expired() {
             return RelationalPublicationOutcome::deferred(
                 RelationalPublicationDeferred::CandidateLifetimeExpired {
@@ -155,6 +170,7 @@ impl crate::runtime::RelationalRuntime {
     pub fn publication_port(&self) -> RelationalPublicationPort {
         RelationalPublicationPort::new(
             self.runtime_instance_id(),
+            self.configuration_binding(),
             self.owner_binding(),
             self.publication_binding(),
             self.history.branch_head_version_index(),

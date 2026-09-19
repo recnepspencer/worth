@@ -5,7 +5,7 @@ use worth_query_installation::facade::{
 };
 use worth_query_package_archive::facade::*;
 
-const VERSION_ONE_MANIFEST_FRAME_HEX: &str = "5751504b47415200000100000068000141414141414141414141414141414141414141414141414141414141414141410000000100000000000000000000000000000040000c000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
+const CURRENT_MANIFEST_FRAME_HEX: &str = "5751504b47415200000200000068000141414141414141414141414141414141414141414141414141414141414141410000000100000000000000000000000000000040000c000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
 
 fn manifest() -> WorthQueryPortablePackageManifest {
     let mut counts = [0; WorthQueryPortablePackageRecordFamily::ALL.len()];
@@ -37,12 +37,12 @@ fn manifest_frame_is_deterministic_and_reenters_phase_three() {
 }
 
 #[test]
-fn version_one_manifest_frame_matches_the_frozen_golden_vector() {
+fn current_manifest_frame_matches_the_frozen_golden_vector() {
     let bytes =
         encode_manifest_frame(&manifest(), WorthQueryPackageArchiveLimits::DEFAULT).unwrap();
-    assert_eq!(encode_hex(&bytes), VERSION_ONE_MANIFEST_FRAME_HEX);
+    assert_eq!(encode_hex(&bytes), CURRENT_MANIFEST_FRAME_HEX);
 
-    let independent_golden_bytes = decode_hex(VERSION_ONE_MANIFEST_FRAME_HEX);
+    let independent_golden_bytes = decode_hex(CURRENT_MANIFEST_FRAME_HEX);
     let decoded = decode_manifest_frame(
         &independent_golden_bytes,
         WorthQueryPackageArchiveLimits::DEFAULT,

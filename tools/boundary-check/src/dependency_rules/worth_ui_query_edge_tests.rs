@@ -78,3 +78,30 @@ fn raw_facade_reexport_reports_the_admitted_path() {
     assert!(diagnostics[0].message().contains("raw `worth_query`"));
     std::fs::remove_dir_all(root).expect("fixture cleanup");
 }
+
+#[test]
+fn renamed_engine_dependency_is_still_denied() {
+    let root = fixture_root("renamed-engine");
+    write_crate(
+        &root,
+        "worth-ui-runtime",
+        false,
+        "pub fn hidden_alias_edge() {}",
+    );
+    let manifest = root
+        .join("worth-ui")
+        .join("crates")
+        .join("worth-ui-runtime")
+        .join("Cargo.toml");
+    std::fs::write(
+        manifest,
+        "[package]\nname = \"worth-ui-runtime\"\nversion = \"0.1.0\"\n[target.'cfg(windows)'.dependencies]\nquery_engine = { package = \"worth-query\", path = \"../../worth-query\" }\n",
+    )
+    .expect("aliased fixture manifest");
+    let diagnostics = validate_worth_ui_query_edge(&root, &contract()).expect("edge validation");
+    assert_eq!(diagnostics.len(), 1);
+    assert!(diagnostics[0]
+        .message()
+        .contains("direct production dependency on `worth-query`"));
+    std::fs::remove_dir_all(root).expect("fixture cleanup");
+}

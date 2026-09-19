@@ -1,16 +1,10 @@
-use std::{collections::BTreeMap, num::NonZeroUsize, sync::Arc};
+use std::{collections::BTreeMap, num::NonZeroUsize};
 
 use worth_query_installation::facade::{
     ApplicationFieldRef, ApplicationFieldUnit, ApplicationSchema, EqualityPredicate,
-    TypedApplicationIdentityValue, TypedApplicationReadableValue, TypedApplicationValue,
     WorthQueryHostConditionalPredicateProvider, WorthQueryInstalledTemporalConditionalOperation,
-    WorthQueryNamedClock, WorthQueryNamedClockSource, WorthQueryTemporalIntentLifecycle,
-    WorthQueryTemporalIntentProjector, WritePosture,
-};
-use worth_runtime_bridge::facade::{
-    BridgeManagedClockBinding, BridgeManagedTemporalIntentIdentity,
-    BridgeManagedTemporalIntentLifecycle, BridgeManagedTemporalIntentReconciliation,
-    BridgeManagedTemporalIntentReconciliationParts, BridgeOwnedSignalRuntime,
+    WorthQueryNamedClock, WorthQueryNamedClockSource, WorthQueryTemporalIntentProjector,
+    WritePosture,
 };
 
 use super::installation::{
@@ -21,13 +15,14 @@ use super::reconstruction_authority::{
     WorthQueryTemporalPrincipalSource, WorthQueryTemporalReconstructionAccess,
 };
 mod denial;
-mod refresh;
+mod reconciliation;
 mod source_record_binding;
 pub(super) use denial::{
     bridge_reconstruction_denial, reconstruction_denial, retention_capacity_reconstruction_denial,
     retention_identity_reconstruction_denial, snapshot_capacity_reconstruction_denial,
     snapshot_identity_reconstruction_denial,
 };
+pub(super) use reconciliation::{reconcile_prepared_temporal_intents, reconcile_temporal_intents};
 #[cfg(test)]
 mod tests;
 use crate::domain_computation::primary_graph::{
@@ -35,7 +30,6 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationQueryControls, WorthQueryPrimaryGraphApplicationRuntime,
     WorthQueryPrincipalResolutionMode,
 };
-pub(super) use refresh::reconcile_refreshed_temporal_intents;
 use source_record_binding::bind_source_records;
 pub(super) use source_record_binding::WorthQueryReconstructedTemporalIntent;
 
@@ -72,6 +66,7 @@ pub(super) fn reconstruct_temporal_intents<
     PrincipalMapping,
     Principal,
     PrincipalIdentity,
+    PrincipalIdentityBinding,
     ScopeAspect,
     ScopeField,
     ScopeValue,
@@ -110,6 +105,7 @@ pub(super) fn reconstruct_temporal_intents<
         PrincipalMapping,
         Principal,
         PrincipalIdentity,
+        PrincipalIdentityBinding,
         Scope,
         ScopeAspect,
         ScopeField,
@@ -129,6 +125,7 @@ pub(super) fn reconstruct_temporal_intents<
         EqualityPredicate,
         IdentityUnit,
     >,
+    product: &crate::basis::WorthQueryProductBranchLease,
 ) -> Result<
     WorthQueryTemporalReconstruction<Clock, Input>,
     WorthQueryConditionalRuntimeInstallationDenial,
@@ -140,8 +137,15 @@ where
     Source: WorthQueryNamedClockSource<Clock>,
     QueryResult: WorthQueryApplicationProjection<Schema, Query>,
     Projector: WorthQueryTemporalIntentProjector<Node, Clock, QueryResult, Input>,
-    PrincipalIdentity: TypedApplicationIdentityValue,
-    ScopeValue: TypedApplicationValue + Clone,
+    PrincipalIdentity: 'static,
+    PrincipalIdentityBinding:
+        worth_query_installation::facade::ApplicationIdentityScalarValueBinding<
+            Value = PrincipalIdentity,
+        >,
+    ScopeField: worth_query_installation::facade::DeclaredApplicationFieldValue<Value = ScopeValue>,
+    ScopeField::Binding:
+        worth_query_installation::facade::ApplicationScalarValueBinding<Value = ScopeValue>,
+    ScopeValue: Clone,
     ScopeWrite: WritePosture,
     ScopeUnit: ApplicationFieldUnit,
     PrincipalSource: WorthQueryTemporalPrincipalSource<Schema>,
@@ -154,21 +158,28 @@ where
         PrincipalIdentity,
         Scope,
     >,
-    IdentityValue: TypedApplicationReadableValue,
+    IdentityField:
+        worth_query_installation::facade::DeclaredApplicationFieldValue<Value = IdentityValue>,
+    IdentityField::Binding: worth_query_installation::facade::ApplicationReadableScalarValueBinding<
+        Value = IdentityValue,
+    >,
     IdentityWrite: WritePosture,
     IdentityUnit: ApplicationFieldUnit,
 {
     let admission = isolate_principal_source(access)?;
     let (external, request) = admission.into_parts();
-    let principal = runtime
+    let selected = runtime
+        .on_product(product.retained_clone())
+        .map_err(product_denial)?;
+    let principal = selected
         .resolve_authenticated_principal(
             &access.principal_binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .map_err(denial::principal)?;
-    let scope = runtime
+    let scope = selected
         .resolve_entity(
             access.scope_field,
             access.scope_value.clone(),
@@ -178,11 +189,17 @@ where
         .map_err(denial::entity)?;
     let query_access = WorthQueryApplicationQueryAccessContext::new(&principal, &scope);
     let bounds = binding.bounds();
-    let controls = WorthQueryApplicationQueryControls::current_one_shot(
-        NonZeroUsize::new(bounds.maximum_reconstruction_rows())
-            .expect("installed temporal bounds are non-zero"),
-        NonZeroUsize::new(bounds.maximum_query_work())
-            .expect("installed temporal bounds are non-zero"),
+    let maximum_results = NonZeroUsize::new(bounds.maximum_reconstruction_rows())
+        .expect("installed temporal bounds are non-zero");
+    let maximum_work = NonZeroUsize::new(bounds.maximum_query_work())
+        .expect("installed temporal bounds are non-zero");
+    let source_product = selected.product().retained_clone();
+    let (_, product, application_basis) = selected.into_parts();
+    let controls = WorthQueryApplicationQueryControls::product_one_shot(
+        product,
+        application_basis,
+        maximum_results,
+        maximum_work,
         &request,
     );
     let plan = access
@@ -207,8 +224,32 @@ where
     };
     let candidates =
         super::temporal_intent_projection::project_unique_candidates(binding, result.into_rows())?;
-    let intents = bind_source_records(runtime, candidates, identity_field, &request)?;
+    let intents = bind_source_records(
+        runtime,
+        candidates,
+        identity_field,
+        &request,
+        &source_product,
+    )?;
     Ok(WorthQueryTemporalReconstruction { intents, work })
+}
+
+pub(super) fn product_denial(
+    denial: crate::basis::WorthQueryProductBranchAdmissionDenial,
+) -> WorthQueryConditionalRuntimeInstallationDenial {
+    use crate::basis::WorthQueryProductBranchAdmissionDenial as Kind;
+    match denial {
+        Kind::ActiveSnapshotCapacityExhausted {
+            maximum_active_snapshots,
+        } => snapshot_capacity_reconstruction_denial(maximum_active_snapshots),
+        Kind::RetentionCapacityExhausted => retention_capacity_reconstruction_denial(),
+        Kind::RetentionIdentityExhausted => retention_identity_reconstruction_denial(),
+        Kind::SnapshotIdentityExhausted => snapshot_identity_reconstruction_denial(),
+        denial => reconstruction_denial(
+            WorthQueryConditionalRuntimeInstallationDenialKind::ReconstructionIntent,
+            format!("selected product admission failed: {denial:?}"),
+        ),
+    }
 }
 
 fn isolate_principal_source<
@@ -217,6 +258,7 @@ fn isolate_principal_source<
     Mapping,
     Principal,
     PrincipalIdentity,
+    PrincipalIdentityBinding,
     Scope,
     ScopeAspect,
     ScopeField,
@@ -232,6 +274,7 @@ fn isolate_principal_source<
         Mapping,
         Principal,
         PrincipalIdentity,
+        PrincipalIdentityBinding,
         Scope,
         ScopeAspect,
         ScopeField,
@@ -246,8 +289,14 @@ fn isolate_principal_source<
     WorthQueryConditionalRuntimeInstallationDenial,
 >
 where
-    PrincipalIdentity: TypedApplicationIdentityValue,
-    ScopeValue: TypedApplicationValue,
+    PrincipalIdentity: 'static,
+    PrincipalIdentityBinding:
+        worth_query_installation::facade::ApplicationIdentityScalarValueBinding<
+            Value = PrincipalIdentity,
+        >,
+    ScopeField: worth_query_installation::facade::DeclaredApplicationFieldValue<Value = ScopeValue>,
+    ScopeField::Binding:
+        worth_query_installation::facade::ApplicationScalarValueBinding<Value = ScopeValue>,
     ScopeWrite: WritePosture,
     ScopeUnit: ApplicationFieldUnit,
     PrincipalSource: WorthQueryTemporalPrincipalSource<Schema>,
@@ -259,60 +308,4 @@ where
             format!("{:?}: {}", failure.kind(), failure.detail()),
         )),
     }
-}
-
-pub(super) fn reconcile_temporal_intents<Clock, Input>(
-    bridge: &mut BridgeOwnedSignalRuntime,
-    clock: &BridgeManagedClockBinding,
-    candidates: &mut BTreeMap<String, WorthQueryReconstructedTemporalIntent<Clock, Input>>,
-) -> Result<(), WorthQueryConditionalRuntimeInstallationDenial> {
-    for reconstructed in candidates.values() {
-        let candidate = reconstructed.candidate();
-        let identity = BridgeManagedTemporalIntentIdentity::declare(Arc::<str>::from(
-            candidate.identity().as_str(),
-        ))
-        .map_err(|denial| bridge_reconstruction_denial(denial.detail()))?;
-        let lifecycle = match candidate.lifecycle() {
-            WorthQueryTemporalIntentLifecycle::Active => {
-                BridgeManagedTemporalIntentLifecycle::Active
-            }
-            WorthQueryTemporalIntentLifecycle::Cancelled => {
-                BridgeManagedTemporalIntentLifecycle::Cancelled
-            }
-            WorthQueryTemporalIntentLifecycle::Completed => {
-                BridgeManagedTemporalIntentLifecycle::Completed
-            }
-        };
-        let outcome = bridge
-            .reconcile_managed_temporal_intent(BridgeManagedTemporalIntentReconciliationParts {
-                binding: clock,
-                identity,
-                revision: candidate.revision(),
-                due_coordinate: candidate.due().nanoseconds(),
-                idempotency_identity: Arc::from(candidate.idempotency().as_str()),
-                source_record_identity: reconstructed.source_record(),
-                lifecycle,
-            })
-            .map_err(|denial| bridge_reconstruction_denial(denial.detail()))?;
-        let expected = matches!(
-            (candidate.lifecycle(), outcome),
-            (
-                WorthQueryTemporalIntentLifecycle::Active,
-                BridgeManagedTemporalIntentReconciliation::Installed
-            ) | (
-                WorthQueryTemporalIntentLifecycle::Cancelled
-                    | WorthQueryTemporalIntentLifecycle::Completed,
-                BridgeManagedTemporalIntentReconciliation::TerminalNoop
-            )
-        );
-        if !expected {
-            return Err(bridge_reconstruction_denial(
-                "fresh conditional publication observed non-fresh temporal intent state",
-            ));
-        }
-    }
-    candidates.retain(|_, intent| {
-        intent.candidate().lifecycle() == WorthQueryTemporalIntentLifecycle::Active
-    });
-    Ok(())
 }

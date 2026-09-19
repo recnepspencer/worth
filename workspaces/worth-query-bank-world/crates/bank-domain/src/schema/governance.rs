@@ -1,3 +1,4 @@
+use worth_query_decl::facade::worth_query_structured_value_binding;
 use worth_query_decl::facade::{worth_query_effect, worth_query_policy, worth_query_unit};
 
 use crate::model::{AccountId, JournalEntryId, PostingId, USD};
@@ -18,19 +19,21 @@ pub struct ActivityEvent {
     pub journal_sequence: u64,
 }
 
-impl worth_query_decl::facade::application_schema::ApplicationEffectPayload for ActivityEvent {
-    fn retained_bytes(&self) -> u64 {
-        u64::try_from(std::mem::size_of::<Self>()).unwrap_or(u64::MAX)
+worth_query_structured_value_binding!(pub ActivityEventBinding for ActivityEvent { identity: "bank.effect.account-activity.payload.v1" });
+impl worth_query_decl::facade::application_schema::ApplicationRetainedEffectBinding
+    for ActivityEventBinding
+{
+    fn retained_bytes(_: &Self::Value) -> u64 {
+        u64::try_from(std::mem::size_of::<ActivityEvent>()).unwrap_or(u64::MAX)
     }
 }
-
-worth_query_effect!(pub AccountActivityEffect(ActivityEvent) in BankSchema);
+worth_query_effect!(pub AccountActivityEffect for BankSchema, payload ActivityEventBinding);
 
 #[cfg(test)]
 mod tests {
-    use worth_query_decl::facade::application_schema::ApplicationEffectPayload;
+    use worth_query_decl::facade::application_schema::ApplicationRetainedEffectBinding;
 
-    use super::ActivityEvent;
+    use super::{ActivityEvent, ActivityEventBinding};
     use crate::model::{AccountId, JournalEntryId, PostingId};
 
     #[test]
@@ -43,7 +46,7 @@ mod tests {
         };
 
         assert_eq!(
-            event.retained_bytes(),
+            ActivityEventBinding::retained_bytes(&event),
             u64::try_from(std::mem::size_of::<ActivityEvent>()).unwrap()
         );
     }

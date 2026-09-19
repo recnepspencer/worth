@@ -150,6 +150,8 @@ fn run_watch(
         .watch(&root, notify::RecursiveMode::NonRecursive)
         .map_err(|error| PlatformPulseExternalValueWatchDenial::Watcher(error.to_string()))?;
     let mut admitted_revision = None;
+    publish_exact_target(&target, &mut admitted_revision, &sender);
+    signal_readiness(&readiness);
     while !stop.load(Ordering::Acquire) {
         match notification_receiver.recv_timeout(WORKER_SETTLE_INTERVAL) {
             Ok(Ok(_)) => {

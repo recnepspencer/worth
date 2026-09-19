@@ -1,18 +1,46 @@
+mod appearance;
+#[cfg(test)]
+#[path = "appearance_fact_index_test_support.rs"]
+pub(crate) mod appearance_fact_index_test_support;
 mod artifact;
 mod aspect_contract;
 mod closeout;
+mod component_reference;
 mod declaration_handoff;
 mod declared_posture;
 mod family;
 mod inspection;
 mod intent;
 mod measurement_dependency;
+mod overlay;
 #[cfg(any(test, feature = "certification-support"))]
 mod rust_authored_declaration_fixture;
 mod service;
 mod structural_semantics;
 mod support;
 
+#[allow(
+    unused_imports,
+    reason = "Gate 0 freezes the declaration-side appearance contract"
+)]
+pub use appearance::{
+    UiAppearanceAspect, UiAppearanceAspectContract, UiAppearanceAxisClass, UiAppearanceAxisDomain,
+    UiAppearanceAxisPredicate, UiAppearanceCell, UiAppearanceCellBuilder,
+    UiAppearanceCellBuilderDenial, UiAppearanceCellValue, UiAppearanceDecisionCell,
+    UiAppearanceDecisionPartition, UiAppearanceDecisionPartitionDenial, UiAppearanceDecisionResult,
+    UiAppearanceDecisionRule, UiAppearanceDecisionValue, UiAppearancePartitionAuthoring,
+    UiAppearanceRole, UiAppearanceRoleAuthoring, UiAppearanceRoleAuthoringDenial,
+    UiAppearanceRoleDeclaration, UiAppearanceRoleDeclarationDenial, UiAppearanceRoleId,
+    UiAppearanceRoleIdentity, UiAppearanceRoleRevision, UiAppearanceRoleSchemaVersion,
+    UiAppearanceStateAxis, UiAppearanceStateAxisVersion, UiThemeSlotUse,
+};
+#[allow(
+    unused_imports,
+    reason = "Gate 0 retains non-current attachment and pointer declarations"
+)]
+pub(crate) use appearance::{
+    UiAppearanceRoleAttachment, UiAppearanceRoleAttachmentDenial, UiPointerAffordance,
+};
 pub(crate) use artifact::ui_declaration_lowering::UiDeclarationLowering;
 pub(crate) use artifact::{
     authored_source_provenance_digest, stable_text_digest, UiDeclarationArtifactInput,
@@ -33,6 +61,8 @@ pub use closeout::{
     UiDeclarationClosedSemanticLane, UiDeclarationCloseoutGuarantee, UiDeclarationCloseoutNonGoal,
     UiDeclarationCloseoutReport,
 };
+pub(crate) use component_reference::admit_component_reference;
+pub use component_reference::UiDeclarationComponentReferenceDenial;
 pub use declaration_handoff::{UiDeclarationGraphHandoff, UiDeclarationGraphHandoffDenial};
 pub(crate) use declaration_handoff::{
     UiDeclaredAspectPayload, UiDeclaredPosturePayload, UiStructuralDeclarationPayload,
@@ -56,11 +86,12 @@ pub(crate) use inspection::{UiDeclarationAuthoredEvidenceIndex, UiDeclarationEvi
 pub(crate) use intent::{
     prepare_authored_intent_material, UiCanonicalIntentDeclaration, UiIntentCatalog,
     UiIntentCatalogCommandRoute, UiIntentCatalogResolvedRoute, UiIntentCatalogSemanticComparison,
-    UiResolvedIntentApplicationSource, UiResolvedIntentConfirmationContract,
-    UiResolvedIntentConfirmationSource, UiResolvedIntentMutabilitySource,
-    UiResolvedIntentPayloadBinding, UiResolvedIntentPayloadSource,
-    UiResolvedIntentProjectionSource, UiResolvedIntentReadinessSource,
-    WorthUiAuthoredIntentDeclaration, WorthUiAuthoredIntentMaterial, WorthUiAuthoredIntentRoute,
+    UiIntentSingleProductRouteDenial, UiResolvedIntentApplicationSource,
+    UiResolvedIntentConfirmationContract, UiResolvedIntentConfirmationSource,
+    UiResolvedIntentMutabilitySource, UiResolvedIntentPayloadBinding,
+    UiResolvedIntentPayloadSource, UiResolvedIntentProjectionSource,
+    UiResolvedIntentReadinessSource, WorthUiAuthoredIntentDeclaration,
+    WorthUiAuthoredIntentMaterial, WorthUiAuthoredIntentRoute,
 };
 pub use intent::{
     UiIntentApplicationFact, UiIntentApplicationFactIdentityError,
@@ -85,6 +116,17 @@ pub(crate) use measurement_dependency::declared_measurement_basis_requirements;
 pub(crate) use measurement_dependency::declared_query_measurement_dependencies;
 pub use measurement_dependency::{
     UiDeclaredMeasurementBasisRequirementSet, UiDeclaredMeasurementQueryDependencySet,
+};
+#[allow(
+    unused_imports,
+    reason = "Gate 0 freezes non-current backdrop and overlay declarations"
+)]
+pub use overlay::{
+    UiBackdropDeclaration, UiBackdropDeclarationDenial, UiBackdropExtentBasis, UiBackdropIdentity,
+    UiBackdropMotionBasis, UiBackdropPlacement, UiBackdropPresenceBasis, UiBackdropScope,
+    UiMosaicRegionDeclarationIdentity, UiOverlayAnchor, UiOverlayPortalParticipant,
+    UiOverlayRelation, UiOverlayRelationAdmissionDenial, UiOverlayRelationGraph,
+    UiOverlayRelationKind, UiPortalDeclarationId, UiSemanticSurfaceDeclarationIdentity,
 };
 #[cfg(any(test, feature = "certification-support"))]
 pub(crate) use rust_authored_declaration_fixture::WorthUiRustAuthoredDeclarationFixture;

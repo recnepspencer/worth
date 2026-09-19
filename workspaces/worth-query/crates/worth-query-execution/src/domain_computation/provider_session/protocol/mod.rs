@@ -6,6 +6,7 @@ mod declared_closure_tests;
 mod denial;
 mod execution_plan;
 mod plan_contract;
+mod product_affinity;
 mod provider_port;
 mod readmission;
 mod session_affinity;
@@ -21,6 +22,8 @@ pub(crate) use declared_closure::WorthQueryProviderPlanDeclarations;
 pub use denial::*;
 pub use execution_plan::*;
 pub use plan_contract::*;
+pub(crate) use product_affinity::WorthQueryProviderProductAffinity;
+pub(in crate::domain_computation) use product_affinity::WorthQueryProviderTerminalProductAffinity;
 pub use provider_port::*;
 pub use readmission::{
     WorthQueryPreparedProviderSession, WorthQueryProviderPlanReadmission,

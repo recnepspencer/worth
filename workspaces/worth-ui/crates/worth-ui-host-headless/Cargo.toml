@@ -11,6 +11,10 @@ path = "src/lib.rs"
 [lints]
 workspace = true
 
+[features]
+default = []
+certification-support = []
+
 [dependencies]
 worth-ui-host-contract = { path = "../worth-ui-host-contract" }
 worth-ui-retained-order = { path = "../worth-ui-retained-order" }

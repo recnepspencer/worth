@@ -15,3 +15,6 @@ certification-construction = []
 
 [lints]
 workspace = true
+
+[dependencies]
+worth-foundational = { path = "../../../../crates/worth-foundational" }

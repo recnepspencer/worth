@@ -273,6 +273,12 @@ fn encode_native_capture(
     let Some(FailureNativeCaptureInput::Captured(capture)) = input else {
         return Ok(None);
     };
+    encode_native_capture_png(capture).map(Some)
+}
+
+pub(crate) fn encode_native_capture_png(
+    capture: &crate::external_observation::NativeClientPixelCapture,
+) -> Result<Vec<u8>, FailureArtifactFailure> {
     let image = xcap::image::RgbaImage::from_raw(
         capture.width(),
         capture.height(),
@@ -283,7 +289,7 @@ fn encode_native_capture(
     xcap::image::DynamicImage::ImageRgba8(image)
         .write_to(&mut bytes, xcap::image::ImageFormat::Png)
         .map_err(FailureArtifactFailure::EncodeNativeCapture)?;
-    Ok(Some(bytes.into_inner()))
+    Ok(bytes.into_inner())
 }
 
 fn write_synced(path: &Path, bytes: &[u8]) -> Result<(), FailureArtifactFailure> {

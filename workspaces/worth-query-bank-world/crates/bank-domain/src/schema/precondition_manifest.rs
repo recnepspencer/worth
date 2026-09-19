@@ -2,7 +2,7 @@ use worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationBu
 
 use super::{AccountingRevision, BankSchema, SendMoneyOperation, Status};
 
-pub(super) fn install_operation_preconditions(
+pub(super) fn install_payment_preconditions(
     schema: ApplicationSchemaDeclarationBuilder<BankSchema>,
 ) -> ApplicationSchemaDeclarationBuilder<BankSchema> {
     schema

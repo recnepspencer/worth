@@ -32,7 +32,7 @@ where
     T: Copy + Ord,
 {
     pub(in crate::logic::transaction::runtime) config: SignalRuntimeConfig<T>,
-    pub(in crate::logic::transaction::runtime) graph: SignalGraph,
+    pub(in crate::logic::transaction::runtime) graph: Box<SignalGraph>,
     pub(in crate::logic::transaction::runtime) schema_registry: SignalSchemaRegistry,
     pub(in crate::logic::transaction::runtime) merge_strategy_registry: FrozenMergeStrategyRegistry,
     pub(in crate::logic::transaction::runtime) merge_base_strategy_registry:

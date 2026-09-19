@@ -1,6 +1,8 @@
 mod admitted_projection;
+mod attempt_progression;
 mod denial;
 mod invoker_isolation;
+mod outcome_application;
 mod processing;
 mod provider_commit_deferred;
 mod reentry_counts;
@@ -17,8 +19,7 @@ mod tests;
 
 use worth_query_installation::facade::{
     ApplicationFieldUnit, ApplicationSchema, OperationReads, OperationWrites,
-    TypedApplicationReadableValue, TypedApplicationValue, WorthQueryInstalledApplicationOperation,
-    WorthQueryTemporalIntentCandidate, WorthQueryTemporalIntentRevisionValue, WritableCapability,
+    WorthQueryInstalledApplicationOperation, WorthQueryTemporalIntentCandidate, WritableCapability,
     WritePosture,
 };
 
@@ -31,6 +32,9 @@ use super::reconstruction_authority::{
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 pub(super) enum WorthQueryTemporalReentryOutcome {
+    ProductStale(crate::domain_computation::WorthQueryProductStaleApplication),
+    ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
+    NoEffect(crate::domain_computation::primary_graph::WorthQueryApplicationNoEffectCause),
     Committed,
     AlreadyCommitted,
     Obsolete,
@@ -47,10 +51,6 @@ pub(super) enum WorthQueryTemporalReentryOutcome {
     SettlementDeferred(
         crate::domain_computation::primary_graph::WorthQueryApplicationSettlementDeferred,
     ),
-    SettlementSnapshotCapacityBackpressured {
-        deferred: crate::domain_computation::primary_graph::WorthQueryApplicationSettlementDeferred,
-        maximum_active_snapshots: usize,
-    },
     Indeterminate(String),
 }
 
@@ -95,6 +95,7 @@ pub(super) fn reenter_temporal_operation<
     PrincipalMapping,
     Principal,
     PrincipalIdentity,
+    PrincipalIdentityBinding,
     ScopeAspect,
     ScopeField,
     ScopeValue,
@@ -125,6 +126,7 @@ pub(super) fn reenter_temporal_operation<
     Clock,
 >(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    product: &crate::basis::WorthQueryProductBranchLease,
     operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
     access: &WorthQueryTemporalReconstructionAccess<
         Schema,
@@ -132,6 +134,7 @@ pub(super) fn reenter_temporal_operation<
         PrincipalMapping,
         Principal,
         PrincipalIdentity,
+        PrincipalIdentityBinding,
         Scope,
         ScopeAspect,
         ScopeField,
@@ -172,23 +175,47 @@ pub(super) fn reenter_temporal_operation<
 ) -> WorthQueryTemporalReentryAttempt
 where
     Schema: ApplicationSchema,
+    Operation: 'static,
     Input: Clone + Send + Sync + 'static,
-    PrincipalIdentity: worth_query_installation::facade::TypedApplicationIdentityValue,
-    ScopeValue: TypedApplicationValue + Clone,
+    PrincipalIdentity: 'static,
+    PrincipalIdentityBinding:
+        worth_query_installation::facade::ApplicationIdentityScalarValueBinding<
+            Value = PrincipalIdentity,
+        >,
+    ScopeField: worth_query_installation::facade::DeclaredApplicationFieldValue<Value = ScopeValue>,
+    ScopeField::Binding:
+        worth_query_installation::facade::ApplicationScalarValueBinding<Value = ScopeValue>,
+    ScopeValue: Clone,
     ScopeWrite: WritePosture,
     ScopeUnit: ApplicationFieldUnit,
     PrincipalSource: WorthQueryTemporalPrincipalSource<Schema>,
     Invoker: WorthQueryTemporalOperationInvoker<Schema, Operation, Input, Scope>,
     IdentityField: OperationReads<Operation>,
-    IdentityValue: TypedApplicationReadableValue + Clone,
+    IdentityField:
+        worth_query_installation::facade::DeclaredApplicationFieldValue<Value = IdentityValue>,
+    IdentityField::Binding: worth_query_installation::facade::ApplicationReadableScalarValueBinding<
+        Value = IdentityValue,
+    >,
+    IdentityValue: Clone,
     IdentityWrite: WritePosture,
     IdentityUnit: ApplicationFieldUnit,
     RevisionField: OperationReads<Operation> + OperationWrites<Operation>,
-    RevisionValue: WorthQueryTemporalIntentRevisionValue + TypedApplicationReadableValue + Clone,
+    RevisionField:
+        worth_query_installation::facade::DeclaredApplicationFieldValue<Value = RevisionValue>,
+    RevisionField::Binding: worth_query_installation::facade::ApplicationReadableScalarValueBinding<
+            Value = RevisionValue,
+        > + worth_query_installation::facade::WorthQueryTemporalIntentRevisionValue,
+    RevisionValue: Clone,
     RevisionWrite: WritableCapability,
     RevisionUnit: ApplicationFieldUnit,
     LifecycleField: OperationReads<Operation> + OperationWrites<Operation>,
-    LifecycleValue: TypedApplicationReadableValue + Clone,
+    LifecycleField:
+        worth_query_installation::facade::DeclaredApplicationFieldValue<Value = LifecycleValue>,
+    LifecycleField::Binding:
+        worth_query_installation::facade::ApplicationReadableScalarValueBinding<
+            Value = LifecycleValue,
+        >,
+    LifecycleValue: Clone,
     LifecycleWrite: WritableCapability,
     LifecycleUnit: ApplicationFieldUnit,
     Authorization: super::WorthQueryTemporalOperationAuthorization<Schema, Operation, Input, Scope>,
@@ -207,8 +234,9 @@ where
             }
         };
     let admission_canonical_work = idempotency.canonical_work();
-    let result = try_reentry(
+    let result = attempt_progression::try_reentry(
         runtime,
+        product,
         operation,
         access,
         execution,
@@ -241,136 +269,4 @@ where
         outcome,
         admission_canonical_work,
     }
-}
-
-#[allow(clippy::too_many_arguments)]
-fn try_reentry<
-    Schema,
-    Operation,
-    Input,
-    Scope,
-    PrincipalBinding,
-    PrincipalMapping,
-    Principal,
-    PrincipalIdentity,
-    ScopeAspect,
-    ScopeField,
-    ScopeValue,
-    ScopeWrite,
-    ScopeUnit,
-    PrincipalSource,
-    QueryAuthorization,
-    Invoker,
-    IntentEntity,
-    IdentityAspect,
-    IdentityField,
-    IdentityValue,
-    IdentityWrite,
-    IdentityUnit,
-    RevisionAspect,
-    RevisionField,
-    RevisionValue,
-    RevisionWrite,
-    RevisionEquality,
-    RevisionUnit,
-    LifecycleAspect,
-    LifecycleField,
-    LifecycleValue,
-    LifecycleWrite,
-    LifecycleEquality,
-    LifecycleUnit,
-    Authorization,
-    Clock,
->(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
-    access: &WorthQueryTemporalReconstructionAccess<
-        Schema,
-        PrincipalBinding,
-        PrincipalMapping,
-        Principal,
-        PrincipalIdentity,
-        Scope,
-        ScopeAspect,
-        ScopeField,
-        ScopeValue,
-        ScopeWrite,
-        ScopeUnit,
-        PrincipalSource,
-        QueryAuthorization,
-    >,
-    execution: &WorthQueryTemporalOperationExecution<
-        Schema,
-        Operation,
-        Input,
-        Scope,
-        Invoker,
-        IntentEntity,
-        IdentityAspect,
-        IdentityField,
-        IdentityValue,
-        IdentityWrite,
-        IdentityUnit,
-        RevisionAspect,
-        RevisionField,
-        RevisionValue,
-        RevisionWrite,
-        RevisionEquality,
-        RevisionUnit,
-        LifecycleAspect,
-        LifecycleField,
-        LifecycleValue,
-        LifecycleWrite,
-        LifecycleEquality,
-        LifecycleUnit,
-        Authorization,
-    >,
-    candidate: &WorthQueryTemporalIntentCandidate<Clock, Input>,
-    idempotency: &temporal_idempotency::WorthQueryPreparedTemporalIdempotency,
-) -> Result<WorthQueryTemporalReentryOutcome, WorthQueryTemporalReentryDenial>
-where
-    Schema: ApplicationSchema,
-    Input: Clone + Send + Sync + 'static,
-    PrincipalIdentity: worth_query_installation::facade::TypedApplicationIdentityValue,
-    ScopeValue: TypedApplicationValue + Clone,
-    ScopeWrite: WritePosture,
-    ScopeUnit: ApplicationFieldUnit,
-    PrincipalSource: WorthQueryTemporalPrincipalSource<Schema>,
-    Invoker: WorthQueryTemporalOperationInvoker<Schema, Operation, Input, Scope>,
-    IdentityField: OperationReads<Operation>,
-    IdentityValue: TypedApplicationReadableValue + Clone,
-    IdentityWrite: WritePosture,
-    IdentityUnit: ApplicationFieldUnit,
-    RevisionField: OperationReads<Operation> + OperationWrites<Operation>,
-    RevisionValue: WorthQueryTemporalIntentRevisionValue + TypedApplicationReadableValue + Clone,
-    RevisionWrite: WritableCapability,
-    RevisionUnit: ApplicationFieldUnit,
-    LifecycleField: OperationReads<Operation> + OperationWrites<Operation>,
-    LifecycleValue: TypedApplicationReadableValue + Clone,
-    LifecycleWrite: WritableCapability,
-    LifecycleUnit: ApplicationFieldUnit,
-    Authorization: super::WorthQueryTemporalOperationAuthorization<Schema, Operation, Input, Scope>,
-{
-    let fresh = access.resolve_fresh_operation_access(runtime)?;
-    let Some(current) = execution.resolve_current_intent(
-        runtime,
-        candidate.record_identity(),
-        candidate.revision(),
-        &fresh.request,
-    )?
-    else {
-        return Ok(WorthQueryTemporalReentryOutcome::Obsolete);
-    };
-    let Some(projected) =
-        execution.admit_current_projection(runtime, operation, candidate, &fresh, &current)?
-    else {
-        return Ok(WorthQueryTemporalReentryOutcome::Obsolete);
-    };
-    Ok(execution.commit_projected_temporal_effect(
-        runtime,
-        candidate,
-        current,
-        projected,
-        idempotency,
-    )?)
 }

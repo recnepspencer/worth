@@ -1,6 +1,7 @@
 use super::WorthUiMountedSessionState;
 
 impl WorthUiMountedSessionState {
+    #[cfg(feature = "certification-support")]
     pub(crate) fn require_raster_cache_reconstruction(
         &mut self,
         binding: worth_ui_host_contract::UiSurfaceBindingGeneration,

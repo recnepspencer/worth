@@ -1,6 +1,8 @@
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     ForeignRuntime,
+    ContributionInventoryMismatch,
+    ContributionMemberMismatch,
     StaleInstalledSchema,
     AlreadyInstalled,
     BindingNotInstalled,
@@ -51,6 +53,30 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     AuthorizationPolicyRejected,
     RuntimeBridgeRejected,
     ConditionalBindingsRequired,
+    MissingMutationHandler,
+    DuplicateMutationHandler,
+    ForeignMutationHandler,
+    MutationHandlerMeaningMismatch,
+    MissingInvariantFactory,
+    DuplicateInvariantFactory,
+    ForeignInvariantFactory,
+    InvariantFactoryMeaningMismatch,
+    InvariantFactoryRejected,
+    InvariantInstallationReceiptMismatch,
+    MissingProducerBinding,
+    DuplicateProducerBinding,
+    DuplicateProducerOperationBinding,
+    MissingProducerProvider,
+    ForeignProducerBinding,
+    ProducerBindingMeaningMismatch,
+    MissingConditionalBinding,
+    DuplicateConditionalBinding,
+    MissingApplicableProducer,
+    AmbiguousApplicableProducer,
+    MissingManagedComputationOwner,
+    DuplicateManagedComputationOwner,
+    ForeignManagedComputationOwner,
+    ManagedComputationOwnerMeaningMismatch,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -68,6 +94,16 @@ impl WorthQueryPrimaryGraphInstallationDenial {
             kind,
             subject: subject.into(),
         }
+    }
+
+    /// Maps failure to resolve a declaration-required installed binding while
+    /// constructing an unpublished application root.
+    #[doc(hidden)]
+    pub fn binding_not_installed(subject: impl Into<String>) -> Self {
+        Self::new(
+            WorthQueryPrimaryGraphInstallationDenialKind::BindingNotInstalled,
+            subject,
+        )
     }
 
     pub const fn kind(&self) -> WorthQueryPrimaryGraphInstallationDenialKind {

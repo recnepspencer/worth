@@ -32,8 +32,7 @@ fn unsupported_facade_family_stop_class_preserves_denied_family_and_reason() {
 
 #[test]
 fn preview_promotion_stop_class_preserves_kind_and_evidence() {
-    let mut runtime = WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
         .snapshot_identity(TestSnapshotIdentityAdapter)
@@ -81,8 +80,7 @@ fn preview_promotion_stop_class_preserves_kind_and_evidence() {
 #[test]
 fn preview_promotion_stop_class_preserves_all_denial_kinds() {
     let stale_basis_error = {
-        let mut runtime = WorthQueryRuntime::builder()
-            .runtime_bridge(test_bridge())
+        let mut runtime = test_product_runtime_builder()
             .schema_adapter(TestSchemaAdapter)
             .source_adapter(TestSourceAdapter::default())
             .snapshot_identity(DriftingSnapshotIdentityAdapter::default())
@@ -132,8 +130,7 @@ fn preview_promotion_stop_class_preserves_all_denial_kinds() {
 
     let atomic_batch_error = {
         let attempted_writes = std::rc::Rc::new(std::cell::Cell::new(0));
-        let mut runtime = WorthQueryRuntime::builder()
-            .runtime_bridge(test_bridge())
+        let mut runtime = test_product_runtime_builder()
             .schema_adapter(TestSchemaAdapter)
             .source_adapter(TestSourceAdapter::default())
             .snapshot_identity(TestSnapshotIdentityAdapter)
@@ -300,8 +297,7 @@ fn preview_operation_effect_denial_stop_class_preserves_typed_label_identity() {
 #[test]
 fn intent_commit_stop_class_preserves_stage_and_evidence() {
     let attempted = std::rc::Rc::new(std::cell::Cell::new(0));
-    let mut runtime = WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
         .snapshot_identity(TestSnapshotIdentityAdapter)

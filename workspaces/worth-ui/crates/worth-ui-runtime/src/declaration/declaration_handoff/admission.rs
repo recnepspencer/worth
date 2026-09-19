@@ -13,6 +13,8 @@ pub(crate) fn derive_declaration_graph_handoff(
     structural_digest: UiDeclarationStructuralDigest,
     structural_semantics: &UiDeclarationStructuralSemantics,
     declared_posture: &UiDeclaredPostureContract,
+    component_reference: Option<crate::capability::ComponentId>,
+    appearance_role_attachment: Option<crate::declaration::UiAppearanceRoleAttachment>,
 ) -> UiDeclarationGraphHandoff {
     UiDeclarationGraphHandoff::new(
         identity.clone(),
@@ -27,5 +29,7 @@ pub(crate) fn derive_declaration_graph_handoff(
         ),
         UiDeclaredAspectPayload::new(aspect_contract.clone()),
         UiDeclaredPosturePayload::new(declared_posture.clone()),
+        component_reference,
+        appearance_role_attachment,
     )
 }

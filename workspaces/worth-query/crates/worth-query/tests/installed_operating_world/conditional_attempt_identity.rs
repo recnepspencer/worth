@@ -264,7 +264,7 @@ fn bind(
     foundation::ObservationLaneWitness,
 > {
     workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(installed, ReadVertex)
@@ -309,6 +309,16 @@ impl worth_runtime_bridge::facade::BridgeConditionalProviderSemantics for Reques
     type SemanticContract = ();
 
     fn semantic_contract(&self) -> Self::SemanticContract {}
+
+    fn retained_heap_bytes(
+        &self,
+        _: &Self::SemanticContract,
+    ) -> Result<
+        worth_runtime_bridge::facade::BridgeConditionalProviderHeapRetention,
+        worth_runtime_bridge::facade::BridgeConditionalProviderRetentionOverflow,
+    > {
+        Ok(worth_runtime_bridge::facade::BridgeConditionalProviderHeapRetention::none())
+    }
 }
 
 impl worth_runtime_bridge::facade::BridgeConditionalTriggerProvider for RequestedTrigger {
@@ -325,6 +335,16 @@ impl domain::WorthQueryConditionalNodeComputeProvider<GeometryDomain, ReadVertex
     type SemanticContract = ();
 
     fn semantic_contract(&self) -> Self::SemanticContract {}
+
+    fn retained_heap_bytes(
+        &self,
+        _: &Self::SemanticContract,
+    ) -> Result<
+        worth_runtime_bridge::facade::BridgeConditionalProviderHeapRetention,
+        worth_runtime_bridge::facade::BridgeConditionalProviderRetentionOverflow,
+    > {
+        Ok(worth_runtime_bridge::facade::BridgeConditionalProviderHeapRetention::none())
+    }
 
     fn execution_resource_support(&self) -> domain::WorthQueryExecutionResourceSupport {
         crate::suite::installed_operation_fixture::execution_resource_support()

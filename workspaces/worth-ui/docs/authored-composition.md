@@ -24,6 +24,7 @@ sealed semantic package before runtime prepares an application.
 - `WorthUiSettledSourceSnapshot::attempt_source_rebind(...)`
 - `WorthUiApplicationBuilder::with_rust_authored_input(...)`
 - `WorthUiApplicationBuilder::with_candidate_submission(...)`
+- `WorthUiPreparedApplicationAuthority::authored_overlay_material()`
 - `WorthUiNativeApplicationShell::begin_source_rebind(...)`
 
 The source facade owns transport, settlement, revision affinity, and candidate
@@ -95,7 +96,28 @@ let session = app.launch()?;
 The capability-only preparation supplies the exact admission snapshot for
 lowering; it does not launch or become a second active application. The
 candidate retains source revision, ordering, semantic handoff, and provenance
-as one unit.
+as one unit. That handoff also carries the compiler-issued overlay declaration
+bindings, admitted backdrop/relation material, portal-anchor rows, and their
+source provenance; prepared authority exposes those facts only as immutable
+borrowed reads.
+
+An authored Portal may explicitly name its semantic surface, and an interaction
+route may explicitly name the Portal it opens. The compiler resolves those
+names to issued declaration identities; the prepared runtime binds the declared
+surface and Portal owner under the current application generation, staging and
+settling the binding with the existing Portal transition. Unqualified legacy
+surface creation remains valid but does not acquire authored-Portal eligibility.
+Appearance-role attachments, Backdrop declarations, and overlay relations stay
+in that same sealed candidate and retain source provenance. The mounted runtime
+resolves them against the candidate's admitted theme and concrete occurrence
+geometry. A source edit cannot publish a partially prepared successor: text,
+owner-state succession, appearance, Motion/overlay composition, and retention
+admission must produce the prepared frame consumed by presentation.
+
+Rust authoring registers the same role and theme contracts through
+`WorthUiApplicationBuilder`; DSL `appearance role` and component `appearance`
+blocks lower to the same semantic package. See
+[Appearance and themes](./appearance-and-themes.md) for matching examples.
 
 ### Watched Edit
 

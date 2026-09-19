@@ -36,6 +36,12 @@ belongs to the consumer; the latter belongs to the producer. The deprecated
 
 Query-hosted Signal work uses an installed contract:
 
+The host binds that contract through Runtime Bridge's sealed
+`BridgeOwnedSignalRuntime` service. Signal admits and evaluates the exact
+component branch basis and returns performed evidence; Query and Runtime World
+carry it as part of the selected product occurrence. Do not reopen the raw
+Signal graph or infer component authority from a product or branch identifier.
+
 - `InstalledSignalConditionalContract`
 - `InstalledSignalConditionIdentity`
 - `InstalledSignalComparatorIdentity`

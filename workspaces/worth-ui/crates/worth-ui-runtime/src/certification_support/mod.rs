@@ -57,11 +57,15 @@ pub use crate::graph::{
     UiGraphFactConsumerIdentity, UiGraphFactIndexBasis, UiGraphFactIndexEntry,
     UiGraphFactLookupCost, UiGraphFactLookupDenial, UiGraphFactLookupReceipt,
 };
+pub use crate::runtime::appearance::UiAppearanceOwnerSnapshot;
 pub(crate) use activation_interruption::interrupt_if_armed;
 pub use activation_interruption::{
     with_activation_precommit_interruption, WorthUiActivationPrecommitStage,
 };
-pub use active_session_observation::WorthUiActiveSessionCertificationExt;
+pub use active_session_observation::{
+    WorthUiActiveSessionCertificationExt, WorthUiDeclaredSurfaceCertificationDenial,
+    WorthUiPresentationFrameCertificationDenial, WorthUiSemanticTextCertificationDenial,
+};
 pub use application_builder::WorthUiApplicationBuilderCertificationExt;
 pub use application_graph::{
     UiRepeatedInstanceIdentityCertificationRow, WorthUiApplicationGraphCertificationExt,

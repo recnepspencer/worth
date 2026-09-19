@@ -3,6 +3,7 @@ pub enum UiProducedFactOwner {
     SourceIngress,
     HostViewport,
     HostDeviceScale,
+    PointerPresenceRuntimeState,
     MeasurementExchange,
     QueryBinding,
     IntentRuntime,
@@ -19,6 +20,7 @@ pub enum UiProducedFactFamily {
     AuthoredSource,
     HostViewport,
     HostDeviceScale,
+    PointerPresenceTarget,
     Measurement,
     Query,
     IntentPosture,
@@ -54,6 +56,9 @@ impl UiProducedFactContract {
             }
             UiProducedFactOwner::HostDeviceScale => {
                 Self::new(owner, UiProducedFactFamily::HostDeviceScale, false)
+            }
+            UiProducedFactOwner::PointerPresenceRuntimeState => {
+                Self::new(owner, UiProducedFactFamily::PointerPresenceTarget, false)
             }
             UiProducedFactOwner::MeasurementExchange => {
                 Self::new(owner, UiProducedFactFamily::Measurement, false)

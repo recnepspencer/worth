@@ -18,11 +18,14 @@ use deadline::presentation_deadline;
 mod portal_settlement;
 #[path = "intent_consequence_publication/receipt.rs"]
 mod receipt;
+#[path = "intent_consequence_publication/stop.rs"]
+mod stop;
 use portal_settlement::{
     settle_indeterminate_portal_proposal, settle_published_portal_proposal,
     settle_rejected_portal_proposal,
 };
 pub use receipt::UiIntentConsequencePublicationReceipt;
+use stop::{stop_admitted, stop_prepared, withdraw_query};
 
 pub enum UiIntentConsequencePublicationOutcome<'session> {
     NoConsequences(crate::runtime::intent_execution::UiIntentConsequenceCompletionReceipt),
@@ -91,6 +94,18 @@ impl<'session> WorthUiPreparedIntentConsequenceRebind<'session> {
         mut self,
         now_tick: u64,
     ) -> UiIntentConsequencePublicationOutcome<'session> {
+        if let Err(denial) = self
+            .transfer
+            .observation
+            .validate(self.session, &self.frame)
+        {
+            return stop_prepared(
+                self,
+                crate::runtime::intent_execution::UiIntentConsequenceStopReason::Preparation(
+                    Box::new(denial),
+                ),
+            );
+        }
         if let Err(denial) = self.reservation.begin_effecting() {
             return stop_prepared(
                 self,
@@ -118,7 +133,17 @@ impl<'session> WorthUiPreparedIntentConsequenceRebind<'session> {
             frame,
             transfer,
         } = self;
-        let outcome = session.present_prepared_mounted_frame_internal(frame, deadline, now_tick);
+        let outcome = session
+            .present_prepared_observed_frame(
+                frame,
+                &transfer.observation,
+                transfer.portal_proposal.as_ref(),
+                deadline,
+                now_tick,
+            )
+            .expect(
+                "exclusive consequence admission preserves the validated observation/frame bond",
+            );
         finish_first(
             UiIntentConsequenceAdmitted {
                 session,
@@ -145,10 +170,20 @@ impl UiIntentConsequencePublicationCompletion<'_> {
 impl<'session> UiIntentConsequencePublicationCompletion<'session> {
     pub fn complete(mut self, now_tick: u64) -> UiIntentConsequencePublicationOutcome<'session> {
         let state = self.take_state();
-        let outcome = state
-            .admitted
-            .session
-            .complete_mounted_presentation(state.mounted, now_tick);
+        let outcome =
+            match state.admitted.session.complete_prepared_observed_frame(
+                state.mounted,
+                &state.admitted.transfer.observation,
+                now_tick,
+            ) {
+                Ok(outcome) => outcome,
+                Err(denial) => return stop_admitted(
+                    state.admitted,
+                    crate::runtime::intent_execution::UiIntentConsequenceStopReason::Preparation(
+                        Box::new(denial),
+                    ),
+                ),
+            };
         finish_completion(state.admitted, outcome)
     }
 
@@ -307,8 +342,7 @@ fn publish<'session>(
     let focus = settle_published_portal_proposal(&mut admitted, &mounted);
     admitted
         .session
-        .application
-        .commit_prepared_observation_progress(admitted.transfer.observation);
+        .commit_consequence_observation(admitted.transfer.observation);
     if let Some(posture) = admitted.transfer.posture.take() {
         admitted.session.intent_postures.commit(posture);
     }
@@ -328,68 +362,4 @@ fn publish<'session>(
         ),
         Err(defect) => UiIntentConsequencePublicationOutcome::InternalDefect(defect),
     }
-}
-
-fn stop_prepared<'session>(
-    prepared: WorthUiPreparedIntentConsequenceRebind<'session>,
-    reason: crate::runtime::intent_execution::UiIntentConsequenceStopReason,
-) -> UiIntentConsequencePublicationOutcome<'session> {
-    let WorthUiPreparedIntentConsequenceRebind {
-        session,
-        plan,
-        reservation,
-        frame,
-        transfer,
-    } = prepared;
-    drop((reservation, frame));
-    retain_stop(session, plan, transfer, reason)
-}
-
-fn stop_admitted<'session>(
-    mut admitted: UiIntentConsequenceAdmitted<'session>,
-    reason: crate::runtime::intent_execution::UiIntentConsequenceStopReason,
-) -> UiIntentConsequencePublicationOutcome<'session> {
-    withdraw_query(&mut admitted);
-    retain_stop(admitted.session, admitted.plan, admitted.transfer, reason)
-}
-
-fn withdraw_query(admitted: &mut UiIntentConsequenceAdmitted<'_>) {
-    if let Some(query) = admitted.query.take() {
-        drop(
-            admitted
-                .session
-                .application
-                .withdraw_exact_query_change(query)
-                .expect("exclusive exact Query admission must remain withdrawable"),
-        );
-    }
-}
-
-fn retain_stop<'session>(
-    session: &'session mut WorthUiActiveApplicationSession,
-    plan: crate::runtime::rebind::UiRebindPlan,
-    mut transfer: WorthUiIntentConsequenceRebindTransfer,
-    reason: crate::runtime::intent_execution::UiIntentConsequenceStopReason,
-) -> UiIntentConsequencePublicationOutcome<'session> {
-    if let Some(proposal) = transfer.portal_proposal.take() {
-        session.application.cancel_portal_service_proposal(
-            proposal,
-            session
-                .focus
-                .as_mut()
-                .expect("staged proposal retains Focus installation"),
-            session
-                .motion
-                .as_mut()
-                .expect("staged proposal retains Motion installation"),
-        );
-    }
-    transfer
-        .consequence
-        .restore_query_from_facts(plan.into_retained_facts());
-    UiIntentConsequencePublicationOutcome::Stopped(
-        session
-            .intent_execution
-            .retain_consequence_handoff(transfer.consequence, reason),
-    )
 }

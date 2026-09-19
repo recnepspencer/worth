@@ -3,6 +3,7 @@ pub enum UiObservationFamily {
     AuthoredSource,
     HostViewport,
     HostDeviceScale,
+    PointerPresenceTarget,
     Measurement,
     Query,
     IntentPosture,
@@ -19,6 +20,7 @@ pub enum UiObservationOwner {
     SourceIngress,
     HostViewport,
     HostDeviceScale,
+    PointerPresenceRuntimeState,
     MeasurementExchange,
     QueryBinding,
     IntentRuntime,
@@ -91,6 +93,9 @@ impl UiObservationFamily {
             Self::AuthoredSource => crate::fact_contract::UiProducedFactOwner::SourceIngress,
             Self::HostViewport => crate::fact_contract::UiProducedFactOwner::HostViewport,
             Self::HostDeviceScale => crate::fact_contract::UiProducedFactOwner::HostDeviceScale,
+            Self::PointerPresenceTarget => {
+                crate::fact_contract::UiProducedFactOwner::PointerPresenceRuntimeState
+            }
             Self::Measurement => crate::fact_contract::UiProducedFactOwner::MeasurementExchange,
             Self::Query => crate::fact_contract::UiProducedFactOwner::QueryBinding,
             Self::IntentPosture => crate::fact_contract::UiProducedFactOwner::IntentRuntime,
@@ -130,10 +135,13 @@ impl UiObservationFamily {
             Self::HostDeviceScale => {
                 host_latest_value_definition(self, UiObservationOwner::HostDeviceScale, 2)
             }
+            Self::PointerPresenceTarget => {
+                service_fact_definition(self, UiObservationOwner::PointerPresenceRuntimeState, 3)
+            }
             Self::Measurement => definition(
                 self,
                 UiObservationOwner::MeasurementExchange,
-                3,
+                4,
                 UiObservationDuplicatePolicy::Reject,
                 UiObservationLossPolicy::Lossless,
                 UiObservationResetPolicy::NoReset,
@@ -142,7 +150,7 @@ impl UiObservationFamily {
             Self::Query => definition(
                 self,
                 UiObservationOwner::QueryBinding,
-                4,
+                5,
                 UiObservationDuplicatePolicy::Reject,
                 UiObservationLossPolicy::OwnerDeclaredLoss,
                 UiObservationResetPolicy::OwnerIssuedReset,
@@ -151,7 +159,7 @@ impl UiObservationFamily {
             Self::IntentPosture => definition(
                 self,
                 UiObservationOwner::IntentRuntime,
-                5,
+                6,
                 UiObservationDuplicatePolicy::Reject,
                 UiObservationLossPolicy::Lossless,
                 UiObservationResetPolicy::NoReset,
@@ -160,7 +168,7 @@ impl UiObservationFamily {
             Self::CommittedScrollExtent => definition(
                 self,
                 UiObservationOwner::ScrollRuntimeState,
-                6,
+                7,
                 UiObservationDuplicatePolicy::OwnerEquivalentMayCoalesce,
                 UiObservationLossPolicy::Lossless,
                 UiObservationResetPolicy::NoReset,
@@ -169,23 +177,23 @@ impl UiObservationFamily {
             Self::CommittedPortalAnchor => definition(
                 self,
                 UiObservationOwner::PortalRuntimeState,
-                7,
+                8,
                 UiObservationDuplicatePolicy::OwnerEquivalentMayCoalesce,
                 UiObservationLossPolicy::Lossless,
                 UiObservationResetPolicy::NoReset,
                 UiObservationCoalescingPolicy::OwnerEquivalentOnly,
             ),
             Self::CommittedFocus => {
-                service_fact_definition(self, UiObservationOwner::FocusRuntimeState, 8)
+                service_fact_definition(self, UiObservationOwner::FocusRuntimeState, 9)
             }
             Self::CommittedSelection => {
-                service_fact_definition(self, UiObservationOwner::SelectionRuntimeState, 9)
+                service_fact_definition(self, UiObservationOwner::SelectionRuntimeState, 10)
             }
             Self::CommittedMotionTrack => {
-                service_fact_definition(self, UiObservationOwner::MotionRuntimeState, 10)
+                service_fact_definition(self, UiObservationOwner::MotionRuntimeState, 11)
             }
             Self::CommittedCommandRoute => {
-                service_fact_definition(self, UiObservationOwner::CommandRoutingRuntimeState, 11)
+                service_fact_definition(self, UiObservationOwner::CommandRoutingRuntimeState, 12)
             }
         }
     }

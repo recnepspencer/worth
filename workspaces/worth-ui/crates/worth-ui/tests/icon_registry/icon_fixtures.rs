@@ -4,8 +4,8 @@ use worth_ui::facade::declaration::{
     IconSourceDescriptor, RuntimeOutcomeDenialPosture, RuntimeOutcomeFamily,
     RuntimeOutcomePresentation, RuntimeOutcomeProjectionDescriptor, RuntimeOutcomeProjectionId,
     RuntimeOutcomeSourceReference, SurfaceDescriptor, SurfaceId, SurfaceKind,
-    SurfacePlacementClass, SurfaceStateClass, ThemeColorValue, ThemeTokenDescriptor,
-    ThemeTokenFamily, ThemeTokenId, ThemeTokenSource, ThemeTokenValue,
+    SurfacePlacementClass, SurfaceStateClass, ThemeTokenDescriptor, ThemeTokenFamily, ThemeTokenId,
+    ThemeTokenSource, ThemeTokenValue, UiThemeColor,
 };
 
 pub(crate) fn command_icon(id: &str) -> IconDescriptor {
@@ -76,7 +76,7 @@ pub(crate) fn color_theme_token(id: &str, hex: &str) -> ThemeTokenDescriptor {
         theme_token_id(id),
         ThemeTokenFamily::text(),
         ThemeTokenSource::application(),
-        ThemeTokenValue::color(ThemeColorValue::hex(hex).expect("valid theme color value")),
+        ThemeTokenValue::color(UiThemeColor::parse(hex).expect("valid theme color value")),
     )
 }
 

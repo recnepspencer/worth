@@ -17,9 +17,9 @@ pub use aspect::{
     UiGraphAspectConsumer, UiGraphAspectConsumerKind, UiGraphAspectPublisher,
     UiGraphAspectPublisherKind, UiGraphConsumedAspectIndex, UiGraphPublishedAspectIndex,
 };
-pub(crate) use fact::UiAuthoredDeclarationLookup;
 #[cfg(any(test, feature = "certification-support"))]
 pub use fact::UiGraphFactLookupCost;
+pub(crate) use fact::{component_capability_for_node, UiAuthoredDeclarationLookup};
 pub use fact::{
     UiGraphConsumedFactIndex, UiGraphFactConsumerIdentity, UiGraphFactConsumerKey,
     UiGraphFactConsumerKind, UiGraphFactIndexBasis, UiGraphFactIndexEntry, UiGraphFactLookupDenial,

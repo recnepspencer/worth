@@ -4,7 +4,7 @@ use crate::branch::observation::RuntimeWorldBranchAdmissionDenial;
 use crate::budget::RuntimeWorldBudgetLimit;
 use crate::identity::{ProductBranchIdentity, ProductBranchIncarnation};
 
-use super::{CustodyComponent, OwnerCreatedComponentCustodyRecord};
+use super::{CustodyComponent, OwnerCreatedComponentCustodyRecord, OwnerRetirementWork};
 
 #[derive(Debug)]
 struct CustodyRegistryState {
@@ -59,27 +59,48 @@ impl OwnerCreatedComponentCustodyRegistry {
         })
     }
 
-    /// Drain the records one exact product-branch occurrence created. The key
-    /// is the identity **and** its incarnation: a name-keyed identity outlives
-    /// retirement, so filtering on it alone would hand a recreated branch the
-    /// component branches an earlier occurrence created.
-    pub(crate) fn take_for_incarnation(
+    /// Reserve the exact output needed to drain one occurrence before the
+    /// occurrence or a recovery record naming it is removed.
+    pub(crate) fn reserve_retirement_work(
         &self,
         branch: &ProductBranchIdentity,
         incarnation: ProductBranchIncarnation,
-    ) -> Vec<OwnerCreatedComponentCustodyRecord> {
+    ) -> Result<Vec<OwnerRetirementWork>, ()> {
+        let count = self
+            .state
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .installed
+            .iter()
+            .filter(|record| {
+                record.product_branch() == branch && record.incarnation() == incarnation
+            })
+            .count();
+        let mut work = Vec::new();
+        work.try_reserve_exact(count).map_err(|_| ())?;
+        Ok(work)
+    }
+
+    /// Drain the records one exact product-branch occurrence created into
+    /// storage reserved before the authority naming that occurrence moved.
+    pub(crate) fn drain_retirement_work_into(
+        &self,
+        branch: &ProductBranchIdentity,
+        incarnation: ProductBranchIncarnation,
+        work: &mut Vec<OwnerRetirementWork>,
+    ) {
         let mut state = self.state.lock().unwrap_or_else(|error| error.into_inner());
-        let mut taken = Vec::new();
-        let mut retained = Vec::with_capacity(state.installed.len() + state.reserved);
-        for record in std::mem::take(&mut state.installed) {
-            if record.product_branch() == branch && record.incarnation() == incarnation {
-                taken.push(record);
+        let mut index = 0;
+        while index < state.installed.len() {
+            if state.installed[index].product_branch() == branch
+                && state.installed[index].incarnation() == incarnation
+            {
+                let record = state.installed.swap_remove(index);
+                work.push(record.into_retirement_work());
             } else {
-                retained.push(record);
+                index += 1;
             }
         }
-        state.installed = retained;
-        taken
     }
 
     /// Take every record still charged against this registry. Close drains

@@ -86,7 +86,7 @@ fn prepare_collection(
 ) {
     let installed = workspace.worth_ui().expect("Worth UI domain installed");
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .expect("observation world")
         .family(WorthUiCollectionTextProjectionFamily)
         .bind(installed.handle(), WorthUiCollectionTextProjection)

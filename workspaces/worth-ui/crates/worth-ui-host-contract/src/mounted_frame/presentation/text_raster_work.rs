@@ -11,7 +11,34 @@ pub struct UiMountedTextRasterWork<'work> {
     rasterizer: &'work dyn UiMountedTextRasterCallback,
 }
 
+/// Successful read-only correspondence costs, separate from raster and atlas work.
+/// Denials do not currently carry comparison costs.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct UiMountedTextDemandValidationCost {
+    pub demand_sources_checked: usize,
+    pub demand_records_checked: usize,
+    pub glyph_runs_checked: usize,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum UiMountedTextDemandValidationDenial {
+    MissingCommand,
+    IncompleteDemand,
+    DemandMismatch,
+    GlyphRunMismatch,
+}
+
 pub trait UiMountedTextRasterCallback {
+    /// Authenticate exact complete demand and ordered command attribution against
+    /// runtime's owned preparation. This performs no raster or cache work and
+    /// grants no publication, atlas, or settlement authority.
+    fn validate_complete_demand(
+        &self,
+        command: crate::UiMountedPaintCommandIdentity,
+        demand: crate::UiGlyphRasterDemandBatchView<'_>,
+        glyph_runs: &[crate::UiGlyphRunView],
+    ) -> Result<UiMountedTextDemandValidationCost, UiMountedTextDemandValidationDenial>;
+
     fn rasterize(
         &self,
         misses: crate::UiGlyphRasterMissSelectionView<'_>,
@@ -51,6 +78,16 @@ impl<'work> UiMountedTextRasterWork<'work> {
 
     pub const fn binding_pins(&self) -> &'work [crate::UiGlyphRasterPinRequest] {
         self.binding_pins
+    }
+
+    pub fn validate_complete_demand(
+        &self,
+        command: crate::UiMountedPaintCommandIdentity,
+        demand: crate::UiGlyphRasterDemandBatchView<'_>,
+        glyph_runs: &[crate::UiGlyphRunView],
+    ) -> Result<UiMountedTextDemandValidationCost, UiMountedTextDemandValidationDenial> {
+        self.rasterizer
+            .validate_complete_demand(command, demand, glyph_runs)
     }
 
     pub fn rasterize(

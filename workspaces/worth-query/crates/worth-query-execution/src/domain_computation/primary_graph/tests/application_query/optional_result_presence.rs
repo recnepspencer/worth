@@ -8,8 +8,7 @@ use super::super::fixture::{
     OptionalAccountFieldQuery, OptionalAccountFieldResult,
 };
 use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationQueryAccessContext, WorthQueryApplicationQueryControls,
-    WorthQueryPrincipalResolutionMode,
+    WorthQueryApplicationQueryAccessContext, WorthQueryPrincipalResolutionMode,
 };
 
 #[test]
@@ -19,9 +18,11 @@ fn optional_result_field_distinguishes_present_value_from_lawful_absence() {
     let present = execute(&world, "account-1");
     assert_eq!(present.note(), Some("reviewed"));
     assert_eq!(present.score(), None);
+    assert_eq!(present.annotation(), None);
     let absent = execute(&world, "account-2");
     assert_eq!(absent.note(), None);
     assert_eq!(absent.score(), None);
+    assert_eq!(absent.annotation(), None);
 }
 
 fn execute(world: &AuthorizationWorld, account: &str) -> OptionalAccountFieldResult {
@@ -29,15 +30,19 @@ fn execute(world: &AuthorizationWorld, account: &str) -> OptionalAccountFieldRes
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap();
     let scope = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountIdentity::reference(),
             account.to_owned(),
@@ -48,16 +53,16 @@ fn execute(world: &AuthorizationWorld, account: &str) -> OptionalAccountFieldRes
     let query = world
         .application
         .installed_schema()
-        .application_query(OptionalAccountFieldQuery::reference())
+        .certification_query(OptionalAccountFieldQuery::reference())
         .unwrap();
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &scope);
     let plan = world
-        .application
+        .selected_product()
         .admit_application_query(
             &query,
             &access,
             ApplicationQueryParameterSet::<OptionalAccountFieldQuery>::new(),
-            WorthQueryApplicationQueryControls::current_one_shot(
+            crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
                 NonZeroUsize::new(1).unwrap(),
                 NonZeroUsize::new(256).unwrap(),
                 &request,
@@ -70,7 +75,18 @@ fn execute(world: &AuthorizationWorld, account: &str) -> OptionalAccountFieldRes
         .unwrap();
     assert_eq!(result.rows().len(), 1);
     assert_eq!(result.rows()[0].account(), account);
-    assert_eq!(result.receipt().projected_field_count(), 3);
+    assert_eq!(result.receipt().projected_field_count(), 4);
     assert!(result.receipt().disclosure().omitted().is_empty());
+    let footprint = result.observed_sources()[0].footprint_for_test();
+    assert_eq!(footprint.aspects.len(), 2);
+    assert_eq!(
+        footprint
+            .aspects
+            .iter()
+            .filter(|aspect| aspect.native_revision.is_none())
+            .count(),
+        1,
+        "the absent optional field on its own aspect must retain a source dependency"
+    );
     result.rows()[0].clone()
 }

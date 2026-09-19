@@ -3,6 +3,7 @@ use worth_ui::facade::app::{
 };
 use worth_ui::facade::inspection::{
     UiPixelsRequired, UiVisualSnapshotReceipt, UiVisualSnapshotRelation,
+    UiVisualSnapshotRelationDenial,
 };
 
 use super::PlatformPulseVisualExecutionDenial;
@@ -11,9 +12,15 @@ pub(super) fn snapshot_matches_current_mounted_frame(
     snapshot: &UiVisualSnapshotReceipt<UiPixelsRequired>,
     shell: &WorthUiNativeApplicationShell,
 ) -> Result<bool, PlatformPulseVisualExecutionDenial> {
-    let relation = snapshot
-        .relation()
-        .map_err(PlatformPulseVisualExecutionDenial::SnapshotRelation)?;
+    let relation = match snapshot.relation() {
+        Ok(relation) => relation,
+        // A retained snapshot whose frame retention already expired or forgot
+        // is a superseded predecessor: not current, and refreshable through
+        // the same refresh path whose retirement accepts those relations.
+        Err(UiVisualSnapshotRelationDenial::ExpiredFrame)
+        | Err(UiVisualSnapshotRelationDenial::UnknownFrame) => return Ok(false),
+        Err(denial) => return Err(PlatformPulseVisualExecutionDenial::SnapshotRelation(denial)),
+    };
     let current = match shell.inspect_mounted_frame(UiMountedInspectionRequest::current()) {
         UiMountedInspectionReceipt::Available(frame) => Some(frame.frame().diagnostic_value()),
         UiMountedInspectionReceipt::Omitted(

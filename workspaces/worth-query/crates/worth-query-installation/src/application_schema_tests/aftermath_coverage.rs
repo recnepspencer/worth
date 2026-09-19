@@ -6,8 +6,9 @@ use worth_query_declaration::facade::application_aftermath::{
     DeclaredPreImageLocus, DeclaredRecordedInverse,
 };
 use worth_query_declaration::facade::application_schema::{
-    ApplicationFieldMarkerIdentity, ApplicationOperationRef, ApplicationSchema,
-    ApplicationSchemaDeclaration,
+    ApplicationFieldMarkerIdentity, ApplicationFieldPresence, ApplicationOperationRef,
+    ApplicationSchema, ApplicationSchemaDeclaration, DeclaredApplicationFieldValue,
+    U64ApplicationValueBinding,
 };
 
 use super::*;
@@ -16,11 +17,17 @@ struct CoveredAftermathSchema;
 struct UncoveredAftermathSchema;
 struct UncoveredSecretField<Schema>(std::marker::PhantomData<fn() -> Schema>);
 
-impl<Schema> ApplicationFieldMarkerIdentity for UncoveredSecretField<Schema> {
-    type Schema = Schema;
-    type Entity = FixtureEntity<Schema>;
-    type Aspect = FixtureIdentityAspect<Schema>;
+impl<Schema>
+    ApplicationFieldMarkerIdentity<Schema, FixtureEntity<Schema>, FixtureIdentityAspect<Schema>>
+    for UncoveredSecretField<Schema>
+{
     const IDENTIFIER: &'static str = "UncoveredSecretField";
+}
+
+impl<Schema> DeclaredApplicationFieldValue for UncoveredSecretField<Schema> {
+    type Value = u64;
+    type Binding = U64ApplicationValueBinding;
+    const PRESENCE: ApplicationFieldPresence = ApplicationFieldPresence::Required;
 }
 
 impl ApplicationSchema for CoveredAftermathSchema {
@@ -55,9 +62,10 @@ fn aftermath_schema_members<Schema, PreImageField>() -> ApplicationSchemaDeclara
 where
     Schema: ApplicationSchema,
     PreImageField: ApplicationFieldMarkerIdentity<
-        Schema = Schema,
-        Entity = FixtureEntity<Schema>,
-        Aspect = FixtureIdentityAspect<Schema>,
+        Schema,
+        FixtureEntity<Schema>,
+        FixtureIdentityAspect<Schema>,
+        Value = u64,
     >,
 {
     let preimage_locus = DeclaredPreImageLocus::from_field(ApplicationFieldRef::<

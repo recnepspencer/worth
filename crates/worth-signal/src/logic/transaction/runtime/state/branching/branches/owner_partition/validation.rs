@@ -9,6 +9,26 @@ where
     I: Copy + Ord,
     T: Copy + Ord,
 {
+    pub(in crate::logic::transaction::runtime) fn conditional_retention_budget_matches(
+        &self,
+        budget: crate::runtime_policy::SignalConditionalEvaluationBudget,
+        temporal_budget: crate::runtime_policy::SignalConditionalTemporalBudget,
+    ) -> bool {
+        self.branches.values().all(|state| {
+            let installed = state
+                .graph()
+                .installed_runtime_policy()
+                .conditional_evaluation_budget();
+            installed.maximum_retained_slots == budget.maximum_retained_slots
+                && installed.maximum_retained_bytes == budget.maximum_retained_bytes
+                && state
+                    .graph()
+                    .installed_runtime_policy()
+                    .conditional_temporal_budget()
+                    == temporal_budget
+        })
+    }
+
     pub(in crate::logic::transaction::runtime) fn validate_owner_partition(
         &self,
         active_branch_id: SignalBranchId,

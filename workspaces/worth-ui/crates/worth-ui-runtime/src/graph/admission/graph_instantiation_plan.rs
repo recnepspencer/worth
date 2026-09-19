@@ -52,6 +52,8 @@ pub struct UiGraphNodeInstantiationEntry {
     measurement_constraint_modifier: Option<UiDeclaredMeasurementConstraintModifier>,
     measurement_basis_source: Option<UiDeclaredMeasurementBasisSource>,
     aspect_contract: UiAspectContract,
+    component_reference: Option<crate::capability::ComponentId>,
+    appearance_role_attachment: Option<crate::declaration::UiAppearanceRoleAttachment>,
     repeated_instance_basis: UiRepeatedInstanceBasis,
     topology_seed: UiGraphTopologySeed,
     participation_seed: UiGraphParticipationSeed,
@@ -66,6 +68,8 @@ pub(crate) struct UiGraphNodeInstantiationInput {
     pub(crate) measurement_constraint_modifier: Option<UiDeclaredMeasurementConstraintModifier>,
     pub(crate) measurement_basis_source: Option<UiDeclaredMeasurementBasisSource>,
     pub(crate) aspect_contract: UiAspectContract,
+    pub(crate) component_reference: Option<crate::capability::ComponentId>,
+    pub(crate) appearance_role_attachment: Option<crate::declaration::UiAppearanceRoleAttachment>,
     pub(crate) repeated_instance_basis: UiRepeatedInstanceBasis,
     pub(crate) topology_seed: UiGraphTopologySeed,
     pub(crate) participation_seed: UiGraphParticipationSeed,
@@ -82,6 +86,8 @@ impl UiGraphNodeInstantiationEntry {
             measurement_constraint_modifier,
             measurement_basis_source,
             aspect_contract,
+            component_reference,
+            appearance_role_attachment,
             repeated_instance_basis,
             topology_seed,
             participation_seed,
@@ -95,6 +101,8 @@ impl UiGraphNodeInstantiationEntry {
             measurement_constraint_modifier,
             measurement_basis_source,
             aspect_contract,
+            component_reference,
+            appearance_role_attachment,
             repeated_instance_basis,
             topology_seed,
             participation_seed,
@@ -114,6 +122,16 @@ impl UiGraphNodeInstantiationEntry {
 
     pub fn aspect_contract(&self) -> &UiAspectContract {
         &self.aspect_contract
+    }
+
+    pub(crate) const fn appearance_role_attachment(
+        &self,
+    ) -> Option<&crate::declaration::UiAppearanceRoleAttachment> {
+        self.appearance_role_attachment.as_ref()
+    }
+
+    pub(crate) const fn component_reference(&self) -> Option<&crate::capability::ComponentId> {
+        self.component_reference.as_ref()
     }
 
     pub fn measurement_constraint_modifier(

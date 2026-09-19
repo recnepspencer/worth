@@ -10,7 +10,7 @@ use bank_domain::proposals::BankIdempotencyKey;
 use super::super::protocol::{
     BankHttpDenial, BankHttpDenialKind, BankHttpEstateNotificationOutcome,
     BankHttpEstateNotificationRequest, BankHttpNextAction, BankHttpRecoveryInspectionOutcome,
-    BankHttpRecoveryRequest, BankHttpUndoAdmissionOutcome,
+    BankHttpRecoveryRequest, BankHttpRecoverySafeRetryOutcome,
 };
 use super::recovery_executor::{
     AdmittedBankHttpNotificationRequest, AdmittedBankHttpRecoveryRequest,
@@ -51,19 +51,21 @@ pub(super) async fn inspect(
     inspection_response(state.recovery.inspect(admitted).await)
 }
 
-pub(super) async fn admit_undo(
+pub(super) async fn safe_retry(
     State(state): State<BankHttpRouteState>,
     request: Result<Json<BankHttpRecoveryRequest>, JsonRejection>,
-) -> (StatusCode, Json<BankHttpUndoAdmissionOutcome>) {
+) -> (StatusCode, Json<BankHttpRecoverySafeRetryOutcome>) {
     let request = match request {
         Ok(Json(request)) => request,
-        Err(_) => return undo_response(undo_denied(None, malformed())),
+        Err(_) => return safe_retry_response(safe_retry_denied(None, malformed())),
     };
     let admitted = match admit_recovery(request, state.maximum_deadline) {
         Ok(admitted) => admitted,
-        Err((request_id, denial)) => return undo_response(undo_denied(request_id, denial)),
+        Err((request_id, denial)) => {
+            return safe_retry_response(safe_retry_denied(request_id, denial));
+        }
     };
-    undo_response(state.recovery.admit_undo(admitted).await)
+    safe_retry_response(state.recovery.safe_retry(admitted).await)
 }
 
 fn admit_notification(
@@ -138,8 +140,11 @@ fn inspection_denied(
     BankHttpRecoveryInspectionOutcome::Denied { request_id, denial }
 }
 
-fn undo_denied(request_id: Option<String>, denial: BankHttpDenial) -> BankHttpUndoAdmissionOutcome {
-    BankHttpUndoAdmissionOutcome::Denied { request_id, denial }
+fn safe_retry_denied(
+    request_id: Option<String>,
+    denial: BankHttpDenial,
+) -> BankHttpRecoverySafeRetryOutcome {
+    BankHttpRecoverySafeRetryOutcome::Denied { request_id, denial }
 }
 
 fn notification_response(
@@ -162,12 +167,12 @@ fn inspection_response(
     (status, Json(outcome))
 }
 
-fn undo_response(
-    outcome: BankHttpUndoAdmissionOutcome,
-) -> (StatusCode, Json<BankHttpUndoAdmissionOutcome>) {
+fn safe_retry_response(
+    outcome: BankHttpRecoverySafeRetryOutcome,
+) -> (StatusCode, Json<BankHttpRecoverySafeRetryOutcome>) {
     let status = match &outcome {
-        BankHttpUndoAdmissionOutcome::Admitted { .. } => StatusCode::OK,
-        BankHttpUndoAdmissionOutcome::Denied { denial, .. } => response_status(denial.kind),
+        BankHttpRecoverySafeRetryOutcome::Applied { .. } => StatusCode::OK,
+        BankHttpRecoverySafeRetryOutcome::Denied { denial, .. } => response_status(denial.kind),
     };
     (status, Json(outcome))
 }

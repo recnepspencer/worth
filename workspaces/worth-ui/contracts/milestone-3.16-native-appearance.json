@@ -1,0 +1,40 @@
+{
+  "live_profile": "worth-ui-windows-dx12-v2",
+  "mechanics": [
+    "surface-fill",
+    "surface-border",
+    "corner-radii",
+    "outline",
+    "text-range-foreground",
+    "portal-surface",
+    "backdrop",
+    "overlay-order",
+    "pointer-affordance",
+    "damage",
+    "clip"
+  ],
+  "required_host_contract_symbols": [
+    "UiMountedSurfaceAppearanceMechanic",
+    "UiMountedPortalSurfaceAppearanceMechanic",
+    "UiMountedOutlineAppearanceMechanic",
+    "UiMountedTextForegroundAppearanceMechanic",
+    "UiMountedBackdropMechanic",
+    "UiMountedOverlayOrderMechanic",
+    "UiMountedPointerAffordanceMechanic",
+    "UiAppearanceDamageRegion",
+    "UiAppearanceClip",
+    "UiMountedSurfaceAppearanceCompletionInput",
+    "UiMountedOutlineAppearanceCompletionInput",
+    "UiMountedBackdropCompletionInput",
+    "UiMountedTextForegroundAppearanceCompletionInput",
+    "UiHostAppearanceMechanicFamily"
+  ],
+  "live_owners": {
+    "consumed_fact_index": "workspaces/worth-ui/crates/worth-ui-runtime/src/graph/indexes/fact/index.rs",
+    "mounted_preview": "workspaces/worth-ui/crates/worth-ui-host-contract/src/mounted_projection/preview.rs",
+    "runtime_appearance_lowering": "workspaces/worth-ui/crates/worth-ui-runtime/src/mounting/projection/appearance/lowering.rs",
+    "native_appearance_translation": "workspaces/worth-ui/crates/worth-ui-host-native/src/native/presentation/appearance/command.rs",
+    "headless_appearance_translation": "workspaces/worth-ui/crates/worth-ui-host-headless/src/headless_translation/appearance/mod.rs",
+    "appearance_presentation_work": "workspaces/worth-ui/crates/worth-ui-host-contract/src/mounted_frame/appearance_work.rs"
+  }
+}

@@ -11,10 +11,12 @@ use crate::domain_computation::primary_graph::tests::fixture::{
     installed_authorization_world, installed_authorization_world_with_label, live_scope,
     status_parameter, AccountStatus,
 };
+
+mod relation_predicate;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationOneShotDenialKind, WorthQueryApplicationProjectionDenialKind,
-    WorthQueryApplicationQueryAccessContext, WorthQueryApplicationQueryControls,
-    WorthQueryApplicationQueryOmissionPosture, WorthQueryPrincipalResolutionMode,
+    WorthQueryApplicationQueryAccessContext, WorthQueryApplicationQueryOmissionPosture,
+    WorthQueryPrincipalResolutionMode,
 };
 
 #[test]
@@ -24,15 +26,19 @@ fn nested_projection_preserves_sibling_slots_cardinality_and_direction() {
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap();
     let account = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountStatus::reference(),
             "open".to_string(),
@@ -43,11 +49,13 @@ fn nested_projection_preserves_sibling_slots_cardinality_and_direction() {
     let query = installed_nested_query(&world);
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
     let plan = world
-        .application
+        .selected_product()
         .admit_application_query(
             &query,
             &access,
-            ApplicationQueryParameterSet::new().bind(status_parameter(), "open".to_string()),
+            ApplicationQueryParameterSet::new()
+                .bind(status_parameter(), "open".to_string())
+                .expect("fixture query parameter must encode"),
             current_controls(&request),
         )
         .unwrap();
@@ -69,6 +77,11 @@ fn nested_projection_preserves_sibling_slots_cardinality_and_direction() {
     assert_eq!(result.rows()[0].secondary_sequence(), Some(22));
     assert_eq!(result.rows()[0].all_sequences(), &[11, 22]);
     assert_eq!(result.rows()[0].reverse_sequences(), &[11, 22]);
+    let (primary, secondary, all, reverse) = result.rows()[0].activity_identities();
+    assert_eq!(secondary, Some(all[1]));
+    assert_eq!(primary, all[0]);
+    assert_eq!(reverse, all);
+    assert_ne!(all[0], all[1]);
     assert_eq!(result.receipt().projected_record_count(), 7);
     assert_eq!(result.receipt().projected_field_count(), 6);
     assert_eq!(result.receipt().adjacency_list_read_count(), 4);
@@ -142,15 +155,19 @@ fn root_result_limit_does_not_cap_nested_dependency_records() {
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap();
     let account = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountStatus::reference(),
             "open".to_string(),
@@ -160,17 +177,19 @@ fn root_result_limit_does_not_cap_nested_dependency_records() {
         .unwrap();
     let query = installed_nested_query(&world);
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
-    let controls = WorthQueryApplicationQueryControls::current_one_shot(
+    let controls = crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
         NonZeroUsize::new(1).unwrap(),
         NonZeroUsize::new(10_000).unwrap(),
         &request,
     );
     let plan = world
-        .application
+        .selected_product()
         .admit_application_query(
             &query,
             &access,
-            ApplicationQueryParameterSet::new().bind(status_parameter(), "open".to_string()),
+            ApplicationQueryParameterSet::new()
+                .bind(status_parameter(), "open".to_string())
+                .expect("fixture query parameter must encode"),
             controls,
         )
         .unwrap();
@@ -194,15 +213,19 @@ fn invented_selector_contract_denies_domain_projection() {
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap();
     let account = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountStatus::reference(),
             "open".to_string(),
@@ -213,11 +236,13 @@ fn invented_selector_contract_denies_domain_projection() {
     let query = installed_forged_selector_query(&world);
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
     let plan = world
-        .application
+        .selected_product()
         .admit_application_query(
             &query,
             &access,
-            ApplicationQueryParameterSet::new().bind(status_parameter(), "open".to_string()),
+            ApplicationQueryParameterSet::new()
+                .bind(status_parameter(), "open".to_string())
+                .expect("fixture query parameter must encode"),
             current_controls(&request),
         )
         .unwrap();
@@ -242,20 +267,24 @@ fn invented_selector_contract_denies_domain_projection() {
 
 #[test]
 fn variable_width_scalar_overflow_denies_and_releases_the_result_buffer() {
-    let world = installed_authorization_world_with_label(&"x".repeat(25_000));
+    let world = installed_authorization_world_with_label(&"x".repeat(50_000));
     let request = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap();
     let account = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountStatus::reference(),
             "open".to_string(),
@@ -266,11 +295,13 @@ fn variable_width_scalar_overflow_denies_and_releases_the_result_buffer() {
     let query = installed_query(&world);
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
     let plan = world
-        .application
+        .selected_product()
         .admit_application_query(
             &query,
             &access,
-            ApplicationQueryParameterSet::new().bind(status_parameter(), "open".to_string()),
+            ApplicationQueryParameterSet::new()
+                .bind(status_parameter(), "open".to_string())
+                .expect("fixture query parameter must encode"),
             current_controls(&request),
         )
         .unwrap();
@@ -296,5 +327,5 @@ fn variable_width_scalar_overflow_denies_and_releases_the_result_buffer() {
     assert!(observation.peak_observed_bytes() > 0);
     assert!(observation.peak_observed_bytes() <= result_buffer_limit);
     assert!(observation.peak_rejected_bytes() > result_buffer_limit);
-    assert!(observation.peak_rejected_bytes() >= 25_000);
+    assert!(observation.peak_rejected_bytes() >= 50_000);
 }

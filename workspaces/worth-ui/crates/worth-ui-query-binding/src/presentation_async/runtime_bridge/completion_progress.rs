@@ -7,7 +7,7 @@ use super::{
 
 #[derive(Debug)]
 pub(crate) struct WorthUiPresentationCompletionProgress {
-    report: worth_runtime_bridge::facade::BridgeAsyncCompletionAdmissionReport,
+    report: worth_runtime_bridge::facade::BridgeOwnedAsyncCompletionAdmission,
     ordering: Option<worth_runtime_bridge::facade::BridgeMixedCauseOrdering>,
     batch: Option<runtime::WorthQueryAsyncResultTransitionBatch>,
     observation: Option<WorthUiPresentationAsyncObservation>,
@@ -84,14 +84,15 @@ impl WorthUiPresentationRuntimeAdmission {
     ) -> worth_signal::facade::RawCompletionEnvelope {
         let descriptor = self
             .request
+            .request()
             .lowered()
             .resource_descriptor()
             .expect("presentation request retains its resource descriptor");
         worth_signal::facade::RawCompletionEnvelope::new(
-            self.request.request_handle().request_id(),
-            self.request.request_handle().generation(),
-            self.request.request_handle().branch_epoch(),
-            self.request.attempt(),
+            self.request.request().request_handle().request_id(),
+            self.request.request().request_handle().generation(),
+            self.request.request().request_handle().branch_epoch(),
+            self.request.request().attempt(),
             descriptor.payload_contract_digest().clone(),
             payload_byte_len,
         )
@@ -105,7 +106,7 @@ impl WorthUiPresentationCompletionAdvance {
 }
 
 impl WorthUiPresentationCompletionProgress {
-    fn new(report: worth_runtime_bridge::facade::BridgeAsyncCompletionAdmissionReport) -> Self {
+    fn new(report: worth_runtime_bridge::facade::BridgeOwnedAsyncCompletionAdmission) -> Self {
         Self {
             report,
             ordering: None,

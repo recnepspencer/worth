@@ -28,24 +28,45 @@ where
         .cloned()
         .map(InvariantPacketRegistration::Native);
 
-    let prepared_scope = crate::validation::data::PreparedCustomInvariantScope::capture(
-        request.observation(),
-        request.version_id(),
-        request.merged_plan(),
-    );
     let custom = runtime
         .schema_contract_runtime
         .custom_invariant_registries
         .iter()
         .filter(|registration| request.includes_custom_registration(registration))
         .map(|registration| {
+            let work = crate::validation::custom_rule::CustomInvariantWorkMeter::new(
+                registration.maximum_work_units(),
+            );
+            let prepared_scope = crate::validation::data::PreparedCustomInvariantScope::capture(
+                request.observation(),
+                request.version_id(),
+                request.merged_plan(),
+                registration.access_contract(),
+                &work,
+            );
             let mut planner = CustomInvariantScopePlanner::new_at_current_version(
                 runtime,
                 request.observation(),
                 request.version_id(),
                 request.current_version_id(),
                 &prepared_scope,
+                work.clone(),
+                std::sync::Arc::new(registration.access_contract().clone()),
             );
+            let access = registration.access_contract();
+            let has_declared_applicability = !access.affected_entity_kinds.is_empty()
+                || !access.affected_relation_kinds.is_empty();
+            if request.merged_plan().is_some()
+                && has_declared_applicability
+                && !planner.has_applicable_touches()
+                && !work.exceeded()
+            {
+                return InvariantPacketRegistration::CustomNotApplicable {
+                    registration: registration.clone(),
+                    prepared_scope,
+                    work,
+                };
+            }
             let prepared_execution = registration
                 .executable()
                 .prepare_for_execution(runtime, &mut planner);

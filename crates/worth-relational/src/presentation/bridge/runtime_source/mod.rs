@@ -9,6 +9,7 @@ mod committed_patches;
 mod continuity_lineage;
 mod observation_bindings;
 mod retained_entity_projection;
+mod retained_snapshot;
 mod selected_commit_resolution;
 mod snapshot_reads;
 mod source_profile;
@@ -22,6 +23,7 @@ pub use observation_bindings::{
 pub(in crate::presentation::bridge) use observation_bindings::{
     RelationalBridgeSelectedCommitObservation, RelationalBridgeSelectedObservation,
 };
+pub use retained_snapshot::RelationalBridgeRetainedSnapshot;
 
 #[derive(Debug, Clone)]
 pub struct RuntimeBridgeRelationalSource {

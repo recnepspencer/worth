@@ -1,7 +1,9 @@
 use std::fs;
 
 use worth_ui::facade::app::{
+    UiMountedCanonicalBox, UiMountedCanonicalBoxInput, UiMountedCoordinateSpace,
     UiMountedFrameOutcome, UiMountedFramePublicationReceipt, UiMountedFrameRequest,
+    UiMountedLayoutRevision, UiMountedOccurrenceGeometry, UiMountedSurfaceGeometryBatch,
     UiPresentationDeadline,
 };
 use worth_ui::facade::source::{WorthUiFilesystemSourceProvider, WorthUiFilesystemSourceWatcher};
@@ -45,7 +47,7 @@ fn poisoned_watched_source_cannot_enter_unchanged_or_changed_mounted_frames() {
         .prepare_application_with_host(submission, recorder.clone())
         .launch()
         .expect("real file-authored application launches");
-    let surface = mount_one_instance(&mut session);
+    let (surface, first_instance) = mount_one_instance(&mut session);
 
     let request = UiMountedFrameRequest::all_bound_surfaces();
     let first = published(
@@ -118,9 +120,10 @@ fn poisoned_watched_source_cannot_enter_unchanged_or_changed_mounted_frames() {
     drop(execution);
 
     let node = first_node(&session);
-    session
+    let second_instance = session
         .mount_instance(node, surface)
         .expect("one-instance semantic delta remains valid");
+    install_stable_geometry(&mut session, surface, first_instance, Some(second_instance));
     let changed = published(
         session
             .execute_mounted_frame(request, UiPresentationDeadline::at_tick(30), 3, |_| {})
@@ -146,7 +149,10 @@ fn poisoned_watched_source_cannot_enter_unchanged_or_changed_mounted_frames() {
 
 fn mount_one_instance(
     session: &mut worth_ui::facade::app::WorthUiActiveApplicationSession,
-) -> worth_ui_runtime::facade::mounted::UiSemanticSurfaceIdentity {
+) -> (
+    worth_ui_runtime::facade::mounted::UiSemanticSurfaceIdentity,
+    worth_ui_runtime::facade::mounted::UiMountedInstanceIdentity,
+) {
     let surface = session
         .create_semantic_surface()
         .expect("semantic surface identity mints");
@@ -157,10 +163,56 @@ fn mount_one_instance(
             profile(1),
         )
         .expect("headless surface registers");
-    session
+    let first_instance = session
         .mount_instance(first_node(session), surface)
         .expect("one active graph node mounts");
-    surface
+    install_stable_geometry(session, surface, first_instance, None);
+    (surface, first_instance)
+}
+
+fn install_stable_geometry(
+    session: &mut worth_ui::facade::app::WorthUiActiveApplicationSession,
+    surface: worth_ui_runtime::facade::mounted::UiSemanticSurfaceIdentity,
+    first_instance: worth_ui_runtime::facade::mounted::UiMountedInstanceIdentity,
+    second_instance: Option<worth_ui_runtime::facade::mounted::UiMountedInstanceIdentity>,
+) {
+    let first_bounds = canonical_box([8.0, 12.0, 28.0, 20.0]);
+    let mut occurrences = vec![UiMountedOccurrenceGeometry::surface(
+        first_instance,
+        first_bounds,
+    )];
+    if let Some(second_instance) = second_instance {
+        let second_bounds = canonical_box([44.0, 12.0, 28.0, 20.0]);
+        assert!(first_bounds.x() + first_bounds.width() <= second_bounds.x());
+        occurrences.push(UiMountedOccurrenceGeometry::surface(
+            second_instance,
+            second_bounds,
+        ));
+    }
+    let revision = u64::try_from(occurrences.len()).expect("bounded occurrence count");
+    let mut layout = session.begin_mounted_layout();
+    let basis = layout
+        .basis(surface)
+        .expect("hot-frame surface remains bound during explicit layout");
+    layout
+        .complete_surface_geometry(UiMountedSurfaceGeometryBatch::new(
+            basis,
+            UiMountedLayoutRevision::new(revision).expect("layout revision is nonzero"),
+            canonical_box([0.0, 0.0, 320.0, 96.0]),
+            occurrences,
+        ))
+        .expect("stable geometry covers every mounted occurrence");
+}
+
+fn canonical_box([x, y, width, height]: [f32; 4]) -> UiMountedCanonicalBox {
+    UiMountedCanonicalBox::canonicalize(UiMountedCanonicalBoxInput {
+        x,
+        y,
+        width,
+        height,
+        coordinate_space: UiMountedCoordinateSpace::HostSurface,
+    })
+    .expect("hot-frame geometry is finite host-surface geometry")
 }
 
 fn published(outcome: UiMountedFrameOutcome) -> UiMountedFramePublicationReceipt {

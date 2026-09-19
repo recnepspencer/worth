@@ -13,6 +13,7 @@ pub struct BridgeConditionalDecisionEvidence {
     pub(super) query_capability_identity: u64,
     pub(super) reentry_counters: BridgeConditionalReentryCounters,
     pub(super) performed_signal_invalidation: Option<SignalInvalidationExecutionReceipt>,
+    pub(super) _reservation: super::retention::BridgeRetentionReservation,
 }
 
 impl BridgeConditionalDecisionEvidence {
@@ -48,14 +49,14 @@ impl BridgeConditionalDecisionEvidence {
     }
 
     pub fn bridge_snapshot_identity(&self) -> Option<&crate::snapshot::TruthSnapshotIdentity> {
-        self.core.bridge_snapshot_identity.as_ref()
+        self.core.bridge_snapshot_identity()
     }
 
     pub fn retains_bridge_snapshot_identity(
         &self,
         candidate: &crate::snapshot::TruthSnapshotIdentity,
     ) -> bool {
-        self.core.bridge_snapshot_identity.as_ref() == Some(candidate)
+        self.core.bridge_snapshot_identity() == Some(candidate)
     }
 
     pub fn signal(&self) -> &SignalConditionalDecisionEvidence {
@@ -114,7 +115,7 @@ impl BridgeConditionalDecisionEvidence {
             && self.query_binding_identity.as_ref() == admission.query_binding_identity
             && self.query_capability_identity == admission.query_capability_identity
             && self.core.signal_snapshot_projection.as_ref() == admission.signal_snapshot_projection
-            && self.core.bridge_snapshot_identity.as_ref() == admission.bridge_snapshot_identity
+            && self.core.bridge_snapshot_identity() == admission.bridge_snapshot_identity
             && self.core.signal_execution_projection.as_ref()
                 == admission.signal_execution_projection
             && self.core.attempt == admission.attempt

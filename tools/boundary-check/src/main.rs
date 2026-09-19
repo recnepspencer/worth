@@ -3,6 +3,7 @@ mod config;
 mod configured_dependency_denials;
 mod configured_source_dependency_allowlists;
 mod configured_source_identifier_denials;
+mod context_workspace_rules;
 mod dependency_rules;
 mod diagnostics;
 mod hook_authority;
@@ -22,6 +23,7 @@ use crate::configured_dependency_denials::{
 };
 use crate::configured_source_dependency_allowlists::validate_source_dependency_allowlists;
 use crate::configured_source_identifier_denials::validate_source_identifier_denials;
+use crate::context_workspace_rules::validate_context_workspaces;
 use crate::dependency_rules::{validate_dependency_rules, validate_worth_ui_query_edge};
 use crate::diagnostics::{render_human, render_json, Diagnostic};
 use crate::hook_authority::validate_hook_authority;
@@ -121,6 +123,11 @@ fn run(
 
     let mut diagnostics = Vec::<Diagnostic>::new();
     diagnostics.extend(validate_hook_authority(&root));
+    diagnostics.extend(validate_context_workspaces(
+        &root,
+        &config.context_workspaces,
+        &config.rule_contracts,
+    ));
     diagnostics.extend(validate_machine_authority(
         &root,
         &resolved_config_path,

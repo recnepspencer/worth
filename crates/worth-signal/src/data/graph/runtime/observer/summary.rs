@@ -10,7 +10,7 @@ use crate::diagnostics::history::ExecutionInspector;
 use crate::diagnostics::policy::OrdinaryAccessLane;
 use crate::diagnostics::profile::DiagnosticsTier;
 use crate::diagnostics::summary::{ExecutionHistorySummary, GraphSummary};
-use crate::diagnostics::{FailureSummary, FlowSummary, RollbackDiagnostic};
+use crate::diagnostics::{FailureSummary, RetainedFlowSummaryView, RollbackDiagnostic};
 use crate::logic::transaction::ObservationBoundarySummary;
 use crate::presentation::metrics::GraphMetrics;
 use crate::runtime_policy::SignalRuntimePolicy;
@@ -47,6 +47,8 @@ impl<'a> GraphObserver<'a> {
             self.graph.denied_reconstruction_provenance_api_count();
         metrics.storage.hot_node_inline_size_bytes = node_hot_inline_size_bytes();
         metrics.storage.warm_node_inline_size_bytes = node_warm_inline_size_bytes();
+        metrics.storage.definition_node_inline_size_bytes =
+            std::mem::size_of::<crate::data::node::NodeDefinitionData>() as u64;
         metrics.storage.hot_runtime_artifact_inline_size_bytes =
             std::mem::size_of::<RuntimeArtifactHot>() as u64;
         metrics.storage.warm_runtime_artifact_inline_size_bytes =
@@ -111,7 +113,7 @@ impl<'a> GraphObserver<'a> {
         ExecutionInspector { graph: self.graph }
     }
 
-    pub fn latest_flow_diagnostics(&self) -> Option<&'a FlowSummary> {
+    pub fn latest_flow_diagnostics(&self) -> Option<RetainedFlowSummaryView<'a>> {
         self.graph.observation.diagnostics.latest_flow()
     }
 
@@ -155,7 +157,9 @@ impl<'a> GraphObserver<'a> {
 
     pub fn recent_execution_history_diagnostics(
         &self,
-    ) -> &'a std::collections::VecDeque<ExecutionHistorySummary> {
-        self.graph.observation.diagnostics.recent_history()
+    ) -> crate::diagnostics::summary::RetainedExecutionHistoryView<'a> {
+        crate::diagnostics::summary::RetainedExecutionHistoryView::new(
+            self.graph.observation.diagnostics.recent_history(),
+        )
     }
 }

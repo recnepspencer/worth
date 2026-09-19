@@ -1,7 +1,7 @@
 //! Retained operation identity for capability transitions.
 
 use crate::application_schema::ApplicationOperationRef;
-use crate::portable_identity::{WorthQueryPortableType, WorthQueryPortableTypeIdentity};
+use crate::portable_identity::WorthQueryPortableTypeIdentity;
 
 mod portable_parts;
 pub use portable_parts::WorthQueryPortableApplicationCapabilityOperationBindingParts;
@@ -16,14 +16,11 @@ pub struct ApplicationCapabilityOperationBinding {
 impl ApplicationCapabilityOperationBinding {
     pub fn from_reference<Schema, Operation, Input>(
         operation: ApplicationOperationRef<Schema, Operation, Input>,
-    ) -> Self
-    where
-        Input: WorthQueryPortableType,
-    {
+    ) -> Self {
         Self {
             operation: operation.name().to_string(),
             operation_identity: WorthQueryPortableTypeIdentity::declared(operation.name()),
-            input_identity: Input::PORTABLE_TYPE_IDENTITY,
+            input_identity: operation.input_identity(),
         }
     }
 

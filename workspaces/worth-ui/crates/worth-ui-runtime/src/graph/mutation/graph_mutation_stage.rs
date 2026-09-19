@@ -39,6 +39,8 @@ impl UiGraphMutationStage {
                 graph_node_identity,
                 declaration_identity: entry.declaration_identity().clone(),
                 aspect_contract: entry.aspect_contract().clone(),
+                component_reference: entry.component_reference().cloned(),
+                appearance_role_attachment: entry.appearance_role_attachment().cloned(),
                 structural_digest: entry.topology_seed().structural_digest(),
                 structural_role: entry.topology_seed().role(),
                 operator_kind: entry.topology_seed().operator_kind(),
@@ -191,6 +193,8 @@ fn clone_node_with_posture(
         graph_node_identity: node.graph_node_identity(),
         declaration_identity: node.declaration_identity().clone(),
         aspect_contract: node.aspect_contract().clone(),
+        component_reference: node.component_reference().cloned(),
+        appearance_role_attachment: node.appearance_role_attachment().cloned(),
         structural_digest: node.structural_digest(),
         structural_role: node.structural_role(),
         operator_kind: node.operator_kind(),
@@ -202,4 +206,35 @@ fn clone_node_with_posture(
         attachment_posture: node.attachment_posture(),
         participation_posture,
     })
+}
+
+#[cfg(test)]
+pub(crate) fn adversarial_snapshot_with_swapped_node_index_for_test(
+    snapshot: &UiGraphSnapshot,
+    attached: UiGraphNodeIdentity,
+    peer: UiGraphNodeIdentity,
+) -> UiGraphSnapshot {
+    let mut indexed_nodes = snapshot.nodes().to_vec();
+    let attached_position = indexed_nodes
+        .iter()
+        .position(|node| node.graph_node_identity() == attached)
+        .expect("attached node should be present in the index source");
+    let peer_position = indexed_nodes
+        .iter()
+        .position(|node| node.graph_node_identity() == peer)
+        .expect("peer node should be present in the index source");
+    indexed_nodes.swap(attached_position, peer_position);
+    let indexes = UiGraphCoreIndexes::build(
+        &indexed_nodes,
+        snapshot.topology(),
+        snapshot.mount_eligibilities(),
+    );
+    UiGraphSnapshot::new(
+        snapshot.generation(),
+        snapshot.world_profile().clone(),
+        snapshot.nodes().to_vec(),
+        snapshot.topology().clone(),
+        snapshot.mount_eligibilities().clone(),
+        indexes,
+    )
 }

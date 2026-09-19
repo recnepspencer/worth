@@ -25,6 +25,7 @@ pub enum UiMountedPortalInputShielding {
 pub enum UiMountedPortalOverlayCompletionDenial {
     NonAreaGeometry,
     CoordinateSpaceMismatch,
+    PaintBoundsDoNotCoverBody,
     NodeReceiptFrameMismatch,
     NodeReceiptInstanceMismatch,
     LayerOrderOverflow,
@@ -42,6 +43,7 @@ pub struct UiMountedPortalOverlayMechanic {
     anchor_presentation: UiHostObservationPresentationBasis,
     anchor_bounds: super::UiMountedCanonicalBox,
     bounds: super::UiMountedCanonicalBox,
+    paint_bounds: super::UiMountedCanonicalBox,
     clip_bounds: super::UiMountedCanonicalBox,
     color: super::UiMountedRgba8,
     layer_semantic_order: u32,
@@ -63,6 +65,7 @@ pub struct UiMountedPortalOverlayCompletionInput {
     pub anchor_presentation: UiHostObservationPresentationBasis,
     pub anchor_bounds: super::UiMountedCanonicalBox,
     pub bounds: super::UiMountedCanonicalBox,
+    pub paint_bounds: super::UiMountedCanonicalBox,
     pub clip_bounds: super::UiMountedCanonicalBox,
     pub color: super::UiMountedRgba8,
     pub layer_semantic_order: u32,
@@ -84,7 +87,7 @@ impl UiMountedPortalOverlaySchemaVersion {
     pub const REQUIRED_MOUNTED_FRAME_REVISION: u16 = 3;
 
     pub const fn current() -> Self {
-        Self(1)
+        Self(2)
     }
 
     pub const fn revision(self) -> u16 {
@@ -109,12 +112,14 @@ impl UiMountedPortalOverlayMechanic {
         input: UiMountedPortalOverlayCompletionInput,
     ) -> Result<Self, UiMountedPortalOverlayCompletionDenial> {
         if input.bounds.posture() != super::UiMountedGeometryPosture::Area
+            || input.paint_bounds.posture() != super::UiMountedGeometryPosture::Area
             || input.anchor_bounds.posture() != super::UiMountedGeometryPosture::Area
             || input.clip_bounds.posture() != super::UiMountedGeometryPosture::Area
         {
             return Err(UiMountedPortalOverlayCompletionDenial::NonAreaGeometry);
         }
         if input.bounds.coordinate_space() != super::UiMountedCoordinateSpace::Viewport
+            || input.paint_bounds.coordinate_space() != super::UiMountedCoordinateSpace::Viewport
             || input.anchor_bounds.coordinate_space() != super::UiMountedCoordinateSpace::Viewport
             || input.clip_bounds.coordinate_space() != super::UiMountedCoordinateSpace::Viewport
         {
@@ -129,6 +134,15 @@ impl UiMountedPortalOverlayMechanic {
         if u32::from(input.layer_depth) > input.layer_semantic_order {
             return Err(UiMountedPortalOverlayCompletionDenial::LayerOrderOverflow);
         }
+        if input.paint_bounds.x() > input.bounds.x()
+            || input.paint_bounds.y() > input.bounds.y()
+            || f64::from(input.paint_bounds.x()) + f64::from(input.paint_bounds.width())
+                < f64::from(input.bounds.x()) + f64::from(input.bounds.width())
+            || f64::from(input.paint_bounds.y()) + f64::from(input.paint_bounds.height())
+                < f64::from(input.bounds.y()) + f64::from(input.bounds.height())
+        {
+            return Err(UiMountedPortalOverlayCompletionDenial::PaintBoundsDoNotCoverBody);
+        }
         let semantic_digest = semantic_digest(&input);
         Ok(Self {
             schema: UiMountedPortalOverlaySchemaVersion::current(),
@@ -141,6 +155,7 @@ impl UiMountedPortalOverlayMechanic {
             anchor_presentation: input.anchor_presentation,
             anchor_bounds: input.anchor_bounds,
             bounds: input.bounds,
+            paint_bounds: input.paint_bounds,
             clip_bounds: input.clip_bounds,
             color: input.color,
             layer_semantic_order: input.layer_semantic_order,
@@ -181,6 +196,9 @@ impl UiMountedPortalOverlayMechanic {
     pub const fn bounds(self) -> super::UiMountedCanonicalBox {
         self.bounds
     }
+    pub const fn paint_bounds(self) -> super::UiMountedCanonicalBox {
+        self.paint_bounds
+    }
     pub const fn clip_bounds(self) -> super::UiMountedCanonicalBox {
         self.clip_bounds
     }
@@ -201,6 +219,42 @@ impl UiMountedPortalOverlayMechanic {
     }
     pub const fn semantic_digest(self) -> u64 {
         self.semantic_digest
+    }
+
+    #[doc(hidden)]
+    pub fn same_retained_paint_meaning(self, other: Self) -> bool {
+        self.schema == other.schema
+            && self.surface == other.surface
+            && self.binding == other.binding
+            && self.owner == other.owner
+            && self.portal_identity == other.portal_identity
+            && self.anchor_presentation.host_surface() == other.anchor_presentation.host_surface()
+            && self.anchor_presentation.binding() == other.anchor_presentation.binding()
+            && self.anchor_bounds == other.anchor_bounds
+            && self.bounds == other.bounds
+            && self.paint_bounds == other.paint_bounds
+            && self.clip_bounds == other.clip_bounds
+            && self.color == other.color
+            && self.layer_semantic_order == other.layer_semantic_order
+            && self.layer_depth == other.layer_depth
+            && self.lifecycle == other.lifecycle
+            && self.shielding == other.shielding
+    }
+
+    /// Reconciliation may move one unchanged command onto the admitted replacement binding.
+    #[doc(hidden)]
+    pub fn same_retained_paint_meaning_after_binding_replacement(
+        self,
+        other: Self,
+        affected: UiSurfaceBindingGeneration,
+        replacement: UiSurfaceBindingGeneration,
+    ) -> bool {
+        if self.binding != affected || other.binding != replacement {
+            return false;
+        }
+        let mut rebound = self;
+        rebound.binding = replacement;
+        rebound.same_retained_paint_meaning(other)
     }
 }
 
@@ -238,7 +292,12 @@ impl UiMountedPortalOverlayTable {
 
 fn semantic_digest(input: &UiMountedPortalOverlayCompletionInput) -> u64 {
     let mut digest = 0x706f_7274_616c_6f76_u64;
-    let bounds = [input.anchor_bounds, input.bounds, input.clip_bounds];
+    let bounds = [
+        input.anchor_bounds,
+        input.bounds,
+        input.paint_bounds,
+        input.clip_bounds,
+    ];
     for value in [
         input.frame.diagnostic_value(),
         input.surface.diagnostic_value(),

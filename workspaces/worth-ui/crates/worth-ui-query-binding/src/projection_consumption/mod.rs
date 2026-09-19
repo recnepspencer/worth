@@ -1,3 +1,4 @@
+mod application_scalar;
 mod budget;
 mod collection;
 mod collection_change_derivation;
@@ -11,6 +12,7 @@ mod scalar;
 mod scalar_derivation;
 mod work_counters;
 
+pub use application_scalar::UiApplicationScalarProjectionFactReceipt;
 pub use budget::{
     UiCollectionProjectionBudget, UiCollectionProjectionBudgetError, UiProjectionConsumptionBudget,
     UiProjectionConsumptionBudgetError, UiProjectionConsumptionLimits,

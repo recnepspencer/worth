@@ -32,6 +32,8 @@ pub(super) fn validate(
     validate_contrast(manifest, &tokens)?;
     super::interactive_content_validation::validate(manifest, &layouts, &typography, &tokens)?;
     super::control_point_validation::validate(manifest, &tokens)?;
+    super::pixel_region_validation::validate(manifest)?;
+    validate_inspection(manifest)?;
     validate_capture_budget(manifest)
 }
 
@@ -187,6 +189,7 @@ fn validate_tokens(
         }
     }
     let expected = BTreeMap::from([
+        ("action-fill".into(), [148, 64, 212, 255]),
         ("action-text".into(), [250, 251, 252, 255]),
         ("canvas".into(), [11, 15, 20, 255]),
         ("raised-surface".into(), [17, 22, 28, 255]),
@@ -195,6 +198,7 @@ fn validate_tokens(
         ("primary-text".into(), [242, 244, 247, 255]),
         ("secondary-text".into(), [161, 169, 180, 255]),
         ("principal-accent".into(), [172, 103, 242, 255]),
+        ("visual-inspection-overlay".into(), [255, 0, 255, 255]),
         ("positive".into(), [92, 201, 120, 255]),
         ("caution".into(), [224, 173, 98, 255]),
         ("source-signal-blue".into(), [47, 129, 247, 255]),
@@ -238,6 +242,8 @@ fn validate_contrast(
     tokens: &BTreeMap<String, [u8; 4]>,
 ) -> Result<(), PlatformPulseVisualContractFailure> {
     let expected = BTreeSet::from([
+        ("primary-text", "action-fill", 4_500),
+        ("action-text", "action-fill", 4_500),
         ("caution", "raised-surface", 4_500),
         ("caution", "elevated-surface", 4_500),
         ("positive", "canvas", 4_500),
@@ -296,4 +302,15 @@ fn validate_capture_budget(
         && limits.channel_tolerance > 0)
         .then_some(())
         .ok_or(PlatformPulseVisualContractFailure::CaptureBudget)
+}
+
+fn validate_inspection(
+    manifest: &PlatformPulseVisualContractManifest,
+) -> Result<(), PlatformPulseVisualContractFailure> {
+    (manifest.inspection.visible_region_count == 10
+        && manifest.inspection.hit_test_region_count == 4
+        && manifest.inspection.target_authored_name
+            == "component:platform.pulse.component.identity_target")
+        .then_some(())
+        .ok_or(PlatformPulseVisualContractFailure::ControlPoint)
 }

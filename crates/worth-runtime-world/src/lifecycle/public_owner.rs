@@ -26,6 +26,7 @@ impl RuntimeWorldOwner<(), (), (), (), ()> {
         MissingRuntimeWorldInput,
         MissingRuntimeWorldInput,
         MissingRuntimeWorldInput,
+        MissingRuntimeWorldInput,
     > {
         RuntimeWorldOwnerBuilder::new()
     }
@@ -38,6 +39,34 @@ where
     Ctx: Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
+    pub fn admit_owned_async_request(
+        &self,
+        bridge: &worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,
+        declaration: &worth_runtime_bridge::facade::LoweredBridgeAsyncSourceDeclaration,
+        observation: &crate::branch::ProductBranchObservation,
+        relational_source: &worth_relational::facade::bridge::RelationalBridgeObservationLease,
+    ) -> Result<
+        worth_runtime_bridge::facade::BridgeOwnedAsyncRequestAdmission,
+        super::owner::RuntimeWorldOwnedAsyncRequestAdmissionDenial,
+    > {
+        self.root
+            .admit_owned_async_request(bridge, declaration, observation, relational_source)
+    }
+
+    pub fn revalidate_owned_async_request(
+        &self,
+        bridge: &worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,
+        request: &worth_runtime_bridge::facade::BridgeOwnedAsyncRequestAdmission,
+        observation: &crate::branch::ProductBranchObservation,
+        relational_source: &worth_relational::facade::bridge::RelationalBridgeObservationLease,
+    ) -> Result<
+        worth_runtime_bridge::facade::BridgeOwnedAsyncRevalidationAdmission,
+        super::owner::RuntimeWorldOwnedAsyncRevalidationDenial,
+    > {
+        self.root
+            .revalidate_owned_async_request(bridge, request, observation, relational_source)
+    }
+
     pub(super) fn from_inputs(
         inputs: RuntimeWorldOwnerInputs<D, I, E, Ctx, T>,
     ) -> Result<Self, RuntimeWorldIdentityExhaustion> {

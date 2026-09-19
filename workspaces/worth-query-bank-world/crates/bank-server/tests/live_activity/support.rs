@@ -1,11 +1,10 @@
 use bank_domain::model::{CustomerRole, Money};
 use bank_domain::proposals::BankIdempotencyKey;
 use bank_domain::schema::{Deposit, GrantAccountAuthorization, RevokeAccountAuthorization};
-use bank_server::{mutations, queries, BankMutationControls, BankMutationStatus, BankReadControls};
+use bank_server::{mutations, queries, BankMutationControls, BankReadControls};
 use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope;
-use worth_query_host::facade::primary_graph::{
-    WorthQueryApplicationLiveControls, WorthQueryApplicationQueryControls,
-};
+use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;
+use worth_query_host::facade::primary_graph::WorthQueryApplicationLiveControls;
 
 use crate::fixture::{self, VIEWER};
 use crate::support::request_scope;
@@ -41,7 +40,10 @@ pub(crate) fn commit_authorization_toggle(
             .controls(mutation_controls(&format!("overflow-grant-{ordinal}")))
             .execute()
     };
-    assert!(matches!(outcome.status(), BankMutationStatus::Committed(_)));
+    assert!(matches!(
+        outcome,
+        Ok(WorthQueryApplicationMutationOutcome::Committed { .. })
+    ));
 }
 
 pub(crate) fn authorized_user_id(
@@ -72,17 +74,12 @@ pub(crate) fn activity_count(
     fixture: &fixture::OrdinaryReadFixture,
     owner: &bank_server::BankAuthenticatedPrincipal,
 ) -> usize {
-    let request = request_scope();
     fixture
         .world
         .runtime
         .account_activity(fixture.personal_account)
         .as_principal(owner)
-        .execute(WorthQueryApplicationQueryControls::current_one_shot(
-            std::num::NonZeroUsize::new(64).unwrap(),
-            std::num::NonZeroUsize::new(8_192).unwrap(),
-            &request,
-        ))
+        .execute(BankReadControls::current(request_scope(), 64, 8_192).unwrap())
         .expect("owner should read installed account activity")
         .rows()[0]
         .entries()
@@ -94,7 +91,7 @@ pub(crate) fn commit_deposit(
     teller: &bank_server::BankAuthenticatedPrincipal,
     account: bank_domain::model::AccountId,
     key: &str,
-) -> bank_server::BankMutationOutcome {
+) -> worth_query_host::facade::primary_graph::WorthQueryApplicationCommitReceipt {
     let outcome = fixture
         .world
         .runtime
@@ -109,8 +106,10 @@ pub(crate) fn commit_deposit(
             BankIdempotencyKey::new(key).unwrap(),
         ))
         .execute();
-    assert!(matches!(outcome.status(), BankMutationStatus::Committed(_)));
-    outcome
+    let Ok(WorthQueryApplicationMutationOutcome::Committed { receipt, .. }) = outcome else {
+        panic!("deposit must commit: {outcome:?}");
+    };
+    receipt
 }
 
 pub(crate) fn live_controls() -> WorthQueryApplicationLiveControls {

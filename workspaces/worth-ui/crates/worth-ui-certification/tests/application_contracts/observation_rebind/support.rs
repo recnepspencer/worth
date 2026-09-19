@@ -154,6 +154,7 @@ fn mount_one_surface(session: &mut WorthUiActiveApplicationSession) {
 }
 
 fn publish_predecessor(session: &mut WorthUiActiveApplicationSession) {
+    crate::mounted_geometry_fixture::install_current_occurrence_geometry(session);
     let prepared = session
         .execute_framework_turn(|_| {})
         .expect("initial framework turn is available")

@@ -13,6 +13,7 @@ pub(crate) use authority::BranchState;
 pub(in crate::logic::transaction::runtime) use authority::{
     BranchAncestryState, LatestMergeReference,
 };
+pub(crate) use canonical_transaction::SignalCanonicalCallerUnwind;
 pub(in crate::logic::transaction::runtime) use catalog::BranchManager;
 pub(in crate::logic::transaction::runtime::state) use catalog::DEFAULT_MAXIMUM_STORED_SIGNAL_BRANCH_SNAPSHOTS;
 pub(in crate::logic::transaction::runtime) use owner_partition::SignalOwnerPartitionDenial;
@@ -41,6 +42,9 @@ where
     derived: DerivedState<D, I>,
     ancestry: BranchAncestryState,
     mutation_ledger: BranchMutationLedger,
+    installed_definition: Option<
+        crate::branch::owner_services::conditional_execution::SignalInstalledDefinitionBinding,
+    >,
 }
 
 #[derive(Debug, Clone)]
@@ -73,6 +77,7 @@ where
             derived: state.derived.clone(),
             ancestry: state.ancestry().clone(),
             mutation_ledger: state.mutation_ledger().clone(),
+            installed_definition: state.installed_definition.clone(),
         }
     }
 
@@ -88,7 +93,7 @@ where
         } else {
             RuntimeTelemetry::default()
         };
-        BranchState::new(
+        let mut state = BranchState::new(
             AuthorityState {
                 graph,
                 config: self.config,
@@ -101,7 +106,21 @@ where
             },
             self.ancestry,
             self.mutation_ledger,
-        )
+        );
+        // Absence is also retained truth: a pre-seal snapshot cannot acquire
+        // the destination's current service binding during restoration.
+        state.installed_definition = self.installed_definition;
+        state
+    }
+
+    /// The packet a snapshot stores carries the merge ledger *as of the
+    /// snapshot*: cleared, with the snapshot as its baseline, so restoring
+    /// the snapshot reinstates that boundary. Capturing a snapshot is an
+    /// observation of the live branch, so the live ledger itself keeps its
+    /// pending records for the branch's next merge.
+    pub fn with_snapshot_ledger_boundary(mut self, snapshot_id: SignalSnapshotId) -> Self {
+        self.mutation_ledger.clear_all(Some(snapshot_id));
+        self
     }
 
     pub fn packet(self, snapshot_id: SignalSnapshotId) -> SnapshotStatePacket<D, I, T> {

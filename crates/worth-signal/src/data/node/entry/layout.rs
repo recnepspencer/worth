@@ -1,12 +1,14 @@
+mod clone_work;
 use serde::{Deserialize, Serialize};
 use smallvec::SmallVec;
+
+mod retained_charge;
 
 use crate::data::aspect::{AspectMask, AspectVersionHeader, PartitionVersionOverrides};
 use crate::data::core_profile::HOT_VEC_INLINE_CAPACITY;
 use crate::data::dependency::DependencySnapshotId;
 use crate::data::graph::storage::invalidation_causes::PendingCauseSetId;
 use crate::data::graph::{DependencySetId, SubscriberSetId};
-use crate::data::node::NodeEvaluationConfig;
 use crate::data::proof::invalidation::binding::DependencyRevision;
 use crate::data::trace::{
     CausalityMetadata, ExecutionTraceStamp, RetainedDiagnosticArtifact, RuntimeArtifactState,
@@ -49,8 +51,6 @@ pub(crate) struct NodeHotData {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub(crate) struct NodeWarmData {
     #[serde(default)]
-    pub(crate) tombstoned: bool,
-    #[serde(default)]
     pub(crate) pending_dependency_revalidation:
         Option<crate::data::proof::invalidation::binding::PendingDependencyRevalidation>,
     #[serde(default)]
@@ -69,8 +69,6 @@ pub(crate) struct NodeWarmData {
     >,
     #[serde(default)]
     pub(crate) runtime_artifact_state: Option<RuntimeArtifactState>,
-    #[serde(default)]
-    pub(crate) eval_config: NodeEvaluationConfig,
 }
 
 pub(crate) fn node_hot_inline_size_bytes() -> u64 {

@@ -63,7 +63,7 @@ fn bind(
 > {
     let installed = workspace.domain(GeometryDomain).unwrap();
     workspace
-        .prepare_mutation_operating_world()
+        .prepare_mutation_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed, WorkflowRead)

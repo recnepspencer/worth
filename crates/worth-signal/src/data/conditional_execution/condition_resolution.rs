@@ -21,6 +21,7 @@ pub(super) fn resolve_condition(
     graph: &SignalGraph,
     request: &SignalConditionalExecutionRequest<'_>,
     resolver: &mut impl InstalledSignalConditionResolver,
+    work: &mut crate::data::retained_storage::RetainedStoragePreparation,
 ) -> Result<ConditionDisposition, SignalError> {
     let node = request.contract.node();
     let external_trigger_requested = request.force_on_demand
@@ -29,7 +30,7 @@ pub(super) fn resolve_condition(
             EvaluationCondition::Installed(identity)
                 if identity.role() == crate::data::node::InstalledSignalConditionRole::TemporalWake
         );
-    if graph.has_current_unsettled_upstream(node)? {
+    if graph.conditional_has_current_unsettled_upstream(node, work)? {
         return Ok(ConditionDisposition::Deferred);
     }
     let dirty_aspects = match graph.node_invalidation_input(node)? {
@@ -54,7 +55,7 @@ pub(super) fn resolve_condition(
             EvaluationRequestMode::Default
         },
         dirty_aspects: trigger_dirty_aspects,
-        max_dependency_delta: max_dependency_delta(graph, node)?,
+        max_dependency_delta: max_dependency_delta(graph, node, work)?,
         required_context: graph.get_contract(node)?.semantics.required_context,
     };
     Ok(match request.contract.condition() {
@@ -100,12 +101,17 @@ pub(super) fn resolve_condition(
 fn max_dependency_delta(
     graph: &SignalGraph,
     node: crate::data::handle::NodeId,
+    work: &mut crate::data::retained_storage::RetainedStoragePreparation,
 ) -> Result<u64, SignalError> {
     let snapshot = graph.get_dep_snapshot(node)?;
     let mut maximum = 0;
     for entry in snapshot.entries() {
-        let current =
-            graph.node_version_for_scope(entry.source, entry.aspect, entry.scope.as_ref())?;
+        let current = graph.conditional_node_version_for_scope(
+            entry.source,
+            entry.aspect,
+            entry.scope.as_ref(),
+            work,
+        )?;
         maximum = maximum.max(current.abs_diff(entry.cached_version));
     }
     Ok(maximum)

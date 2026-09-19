@@ -5,7 +5,6 @@ use crate::branch::{
 use crate::data::error::SignalError;
 use crate::state::SignalBranchId;
 
-use super::super::branch_execution_cell::{advance, fork, restoration, snapshot};
 use super::super::{
     SignalBranchRegistryDenial, SignalOwnerAdmissionDenial, SignalOwnerUnavailable,
 };
@@ -57,6 +56,7 @@ pub(super) fn map_fork_registry_denial(
         SignalBranchRegistryDenial::NameAlreadyInstalled => {
             SignalBranchForkOperationDenial::NameAlreadyInstalled
         }
+        #[cfg(test)]
         SignalBranchRegistryDenial::TargetCellDenied(denial) => {
             fork::map_fork_cell_denial(denial, branch_id)
         }
@@ -84,6 +84,7 @@ pub(super) fn map_advance_registry_denial(
         SignalBranchRegistryDenial::RetirementInProgress(_) => {
             SignalBranchAdvanceDenial::RetirementInProgress { branch_id }
         }
+        #[cfg(test)]
         SignalBranchRegistryDenial::TargetCellDenied(denial) => {
             advance::map_advance_cell_denial(denial, branch_id)
         }
@@ -111,6 +112,7 @@ pub(super) fn map_capture_registry_denial(
         SignalBranchRegistryDenial::RetirementInProgress(_) => {
             SignalBranchSnapshotCaptureDenial::RetirementInProgress { branch_id }
         }
+        #[cfg(test)]
         SignalBranchRegistryDenial::TargetCellDenied(denial) => {
             snapshot::map_snapshot_cell_denial(denial, branch_id)
         }
@@ -138,6 +140,7 @@ pub(super) fn map_restore_registry_denial(
         SignalBranchRegistryDenial::RetirementInProgress(_) => {
             SignalBranchRestoreDenial::RetirementInProgress { branch_id }
         }
+        #[cfg(test)]
         SignalBranchRegistryDenial::TargetCellDenied(denial) => {
             restoration::map_restore_cell_denial(denial, branch_id)
         }
@@ -156,3 +159,6 @@ fn registry_invariant_error(operation: &str, denial: SignalBranchRegistryDenial)
         "Signal mutation port {operation} invariant failed: {denial:?}"
     ))
 }
+
+#[cfg(test)]
+use super::super::branch_execution_cell::{advance, fork, restoration, snapshot};

@@ -7,6 +7,14 @@ mod active_framework_turn;
 mod app;
 mod app_builder;
 mod app_inspection_routing;
+mod appearance_generation_succession;
+pub(crate) mod appearance_projection;
+mod mounted_owner_receipt_succession;
+mod retained_appearance_succession;
+pub use crate::runtime::appearance::UiAppearanceInspectionGenerationSuccessionDenial;
+pub(super) use appearance_generation_succession::{
+    UiAppearanceGenerationSuccessionDenial, UiPreparedAppearanceGenerationSuccession,
+};
 mod application_replacement;
 mod builder;
 #[cfg(any(test, feature = "certification-support"))]
@@ -14,12 +22,14 @@ mod certification_application_transition;
 mod focus_placement;
 pub use crate::mounting::{
     UiFocusHostPlacementReconciliationDenial, UiFocusHostPlacementReconciliationOutcome,
-    UiFocusHostPlacementReconciliationReceipt, UiFocusHostPlacementShutdownReport,
+    UiFocusHostPlacementReconciliationReceipt, UiFocusHostPlacementSettlementDenial,
+    UiFocusHostPlacementShutdownReport,
 };
 pub use focus_placement::{
-    UiFocusPlacementReconciliationExecutionDenial, UiSemanticFocusParticipantObservation,
-    UiSemanticFocusPhysicalPlacementOutcome, UiSemanticFocusPublicationCause,
-    UiSemanticFocusPublicationOutcome, UiSemanticFocusPublicationReceipt,
+    UiFocusPlacementExecutionDenial, UiFocusPlacementReconciliationExecutionDenial,
+    UiSemanticFocusParticipantObservation, UiSemanticFocusPhysicalPlacementOutcome,
+    UiSemanticFocusPublicationCause, UiSemanticFocusPublicationOutcome,
+    UiSemanticFocusPublicationReceipt,
 };
 mod host_neutral_app;
 mod intent_admission;
@@ -30,6 +40,7 @@ mod intent_consequence_publication;
 mod intent_consequence_rebind;
 mod intent_evidence;
 mod intent_execution;
+mod intent_operability_observation;
 mod intent_payload;
 mod intent_resource_census;
 mod intent_routing;
@@ -45,14 +56,15 @@ mod mounted_frame_execution;
 mod mounted_identity;
 mod mounted_inspection;
 mod mounted_interaction_lifecycle;
+mod mounted_occurrence_geometry;
+#[cfg(test)]
+pub(crate) mod mounted_occurrence_geometry_test_support;
 mod mounted_preview;
 mod mounted_publication;
 #[cfg(test)]
 mod native_application_identity_trace_test_support;
 #[cfg(test)]
 mod native_application_identity_trace_tests;
-#[cfg(test)]
-mod native_application_presentation_attribution_tests;
 mod native_application_program;
 mod native_application_shell;
 #[cfg(test)]
@@ -79,9 +91,17 @@ mod native_source_rebind;
 mod native_source_rebind_tests;
 mod observation;
 mod observation_report;
+#[cfg(test)]
+mod pointer_device_admission_tests;
+#[cfg(test)]
+mod presentation_currentness_tests;
 mod rebind_execution;
 mod rebind_recovery;
+mod selection_binding;
 mod selection_interaction;
+pub use selection_binding::UiMountedSelectionBindingDenial;
+#[cfg(test)]
+mod typed_pointer_observation_tests;
 mod visual_overlay;
 mod visual_snapshot;
 pub use crate::lifecycle::WorthUiActiveApplicationSessionIdentity;
@@ -104,18 +124,19 @@ pub use app_builder::{
     WorthUiQueryViewRegistrationError,
 };
 pub use application_replacement::{
-    WorthUiApplicationCutoverDenial, WorthUiApplicationCutoverReceipt,
-    WorthUiApplicationCutoverRetry, WorthUiApplicationPublicationObservation,
-    WorthUiApplicationReplacementLoweringDenial, WorthUiApplicationReplacementOutcome,
-    WorthUiApplicationReplacementPreparationDenial, WorthUiApplicationReplacementStagingDenial,
-    WorthUiApplicationSemanticNoOpReceipt, WorthUiCandidateInspectionReceipt,
-    WorthUiLoweredApplicationReplacement, WorthUiMountedApplicationReplacementInFlight,
+    UiNativeReplacementLayoutInput, WorthUiApplicationCutoverDenial,
+    WorthUiApplicationCutoverReceipt, WorthUiApplicationCutoverRetry,
+    WorthUiApplicationPublicationObservation, WorthUiApplicationReplacementLoweringDenial,
+    WorthUiApplicationReplacementOutcome, WorthUiApplicationReplacementPreparationDenial,
+    WorthUiApplicationReplacementStagingDenial, WorthUiApplicationSemanticNoOpReceipt,
+    WorthUiCandidateInspectionReceipt, WorthUiLoweredApplicationReplacement,
+    WorthUiMountedApplicationReplacementInFlight,
     WorthUiMountedApplicationReplacementIndeterminate, WorthUiMountedApplicationReplacementOutcome,
     WorthUiMountedReplacementAdmissionDenial, WorthUiMountedReplacementCompletionDenial,
     WorthUiMountedReplacementPreparationOutcome, WorthUiMountedReplacementRetentionDenial,
-    WorthUiPendingApplicationCutover, WorthUiPreparedApplicationReplacement,
-    WorthUiPreparedMountedApplicationReplacement, WorthUiReplacementCandidateSummary,
-    WorthUiReplacementPlannedCostEnvelope,
+    WorthUiPendingApplicationCutover, WorthUiPortalExitRetentionPendingKind,
+    WorthUiPreparedApplicationReplacement, WorthUiPreparedMountedApplicationReplacement,
+    WorthUiReplacementCandidateSummary, WorthUiReplacementPlannedCostEnvelope,
 };
 pub(crate) use application_replacement::{
     WorthUiDetachedMountedApplicationReplacementInFlight,
@@ -159,6 +180,7 @@ pub use mounted_interaction_lifecycle::{
     UiSurfaceRebindInteractionDenial, UiSurfaceRebindInteractionReceipt,
     WorthUiMountedInteractionLifecycleCertificationExt,
 };
+pub use mounted_occurrence_geometry::WorthUiMountedLayout;
 pub use mounted_preview::{
     WorthUiMountedPreviewAdmissionRejection, WorthUiMountedPreviewCompletionRejection,
     WorthUiMountedPreviewDisposition, WorthUiMountedPreviewInFlight, WorthUiMountedPreviewOutcome,
@@ -169,12 +191,12 @@ pub use mounted_preview::{
 pub use native_application_program::{
     UiNativeApplicationFrame, UiNativeApplicationProgram, UiNativeApplicationProgramDenial,
     UiNativeComponentPresenceChange, UiNativeComponentSemanticTextChange,
-    UiNativeThemeTokenValueChange,
 };
 pub(crate) use native_application_shell::{
     UiNativeApplicationQueryCloseObservation, UiNativeComponentPresenceProgress,
 };
 pub use native_application_shell::{
+    UiNativeMountedComponentLayoutInput, UiNativeMountedRegionLayoutInput,
     WorthUiNativeApplicationCleanup, WorthUiNativeApplicationShell,
     WorthUiNativeApplicationShellLaunchDenial, WorthUiNativeApplicationShutdownReceipt,
     WorthUiNativePhysicalPresentationRecovery, WorthUiNativePresentationRecoveryDenial,
@@ -212,3 +234,10 @@ pub use portal_dismissal::UiPortalDismissalPublicationReceipt;
 pub(crate) use rebind_execution::WorthUiPreparedEvidenceOnlyApplicationRebind;
 pub(crate) use rebind_recovery::WorthUiRebindRecoveryAuthority;
 pub use selection_interaction::UiCurrentProjectionOptionStop;
+
+mod native_theme_switch;
+mod theme_switch;
+pub use native_theme_switch::UiNativeThemeSwitchDenial;
+pub use theme_switch::{
+    UiProgrammaticThemeSwitchPreparationDenial, UiThemeSwitchPreparationDenial,
+};

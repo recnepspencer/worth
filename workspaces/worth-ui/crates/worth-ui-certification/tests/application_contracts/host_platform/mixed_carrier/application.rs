@@ -22,8 +22,10 @@ pub(super) fn build(
 ) -> worth_ui::facade::app::WorthUiApp {
     let (builder, module) = (0..profile.rectangle_component_count).fold(
         (
-            world::application_builder(recorder),
-            WorthUiRustAuthoredArtifactInputModule::new("app/main.wui"),
+            world::appearance::register(world::application_builder(recorder)),
+            world::appearance::declare_roles(WorthUiRustAuthoredArtifactInputModule::new(
+                "app/main.wui",
+            )),
         ),
         |(builder, module), index| {
             let component = world::component_identity(index);
@@ -38,7 +40,11 @@ pub(super) fn build(
             } else {
                 world::component(&component, index)
             };
-            let module = authored_component(module, &component, &token, index);
+            let module = world::appearance::attach(
+                authored_component(module, &component, &token, index),
+                &component,
+                index,
+            );
             (
                 builder
                     .register_theme_token(world::color_token(&token, world::color(index)))

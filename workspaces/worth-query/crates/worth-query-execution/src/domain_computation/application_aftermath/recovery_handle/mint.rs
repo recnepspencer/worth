@@ -8,6 +8,7 @@ use worth_query_installation::facade::ApplicationSchema;
 
 use crate::domain_computation::managed_run::{
     WorthQueryRecoveryHandleRegistry, WorthQueryRecoveryMintClaim,
+    WorthQueryRecoveryResourceTerminal,
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitReceipt, WorthQueryPrimaryGraphApplicationRuntime,
@@ -18,6 +19,18 @@ use super::binding::WorthQueryRecoveryHandleBinding;
 use super::denial::{WorthQueryRecoveryHandleDenial, WorthQueryRecoveryHandleDenialKind};
 use super::handle::WorthQueryRecoveryHandle;
 use super::identity::WorthQueryRecoveryHandleIdentity;
+
+/// Owner-recorded fate of the one recovery claim for a committed operation.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WorthQueryRecoveryClaimStatus {
+    Unclaimed,
+    Live,
+    Consumed,
+    Completed,
+    Expired,
+    Disposed,
+    ForceTerminated,
+}
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
@@ -42,6 +55,40 @@ where
             receipt.runtime_authority(),
         )?;
         mint_recovery_handle_in_registry(receipt, Arc::clone(&self.recovery_handles))
+    }
+
+    /// Read the exact commit's recovery fate without minting or consuming it.
+    pub fn recovery_claim_status(
+        &self,
+        receipt: &WorthQueryApplicationCommitReceipt,
+    ) -> Result<WorthQueryRecoveryClaimStatus, WorthQueryRecoveryHandleDenial> {
+        ensure_receipt_belongs_to_runtime(
+            self.runtime.authority_identity(),
+            receipt.runtime_authority(),
+        )?;
+        let (claimed, terminal) = self.recovery_handles.claim_state(&claim_for(receipt));
+        Ok(match terminal {
+            Some(WorthQueryRecoveryResourceTerminal::Consumed) => {
+                WorthQueryRecoveryClaimStatus::Consumed
+            }
+            Some(WorthQueryRecoveryResourceTerminal::Completed) => {
+                WorthQueryRecoveryClaimStatus::Completed
+            }
+            Some(WorthQueryRecoveryResourceTerminal::Expired) => {
+                WorthQueryRecoveryClaimStatus::Expired
+            }
+            Some(WorthQueryRecoveryResourceTerminal::Disposed) => {
+                WorthQueryRecoveryClaimStatus::Disposed
+            }
+            Some(WorthQueryRecoveryResourceTerminal::ForceTerminated) => {
+                WorthQueryRecoveryClaimStatus::ForceTerminated
+            }
+            Some(WorthQueryRecoveryResourceTerminal::Relinquished) => {
+                WorthQueryRecoveryClaimStatus::Unclaimed
+            }
+            None if claimed => WorthQueryRecoveryClaimStatus::Live,
+            None => WorthQueryRecoveryClaimStatus::Unclaimed,
+        })
     }
 
     // There is deliberately no `recovery_handle_registry()` here. It existed,
@@ -70,11 +117,7 @@ pub(crate) fn mint_recovery_handle_in_registry(
 ) -> Result<WorthQueryRecoveryHandle, WorthQueryRecoveryHandleDenial> {
     let expires_at = expiry_deadline(registry.clock())?;
     let binding = WorthQueryRecoveryHandleBinding::from_receipt(receipt, expires_at)?;
-    let claim = WorthQueryRecoveryMintClaim::new(
-        receipt.provider_runtime_instance_id(),
-        receipt.terminal().branch().clone(),
-        receipt.commit_id(),
-    );
+    let claim = claim_for(receipt);
     let slot = registry.register_once(claim).map_err(|_| {
         WorthQueryRecoveryHandleDenial::new(
             WorthQueryRecoveryHandleDenialKind::RecoveryAlreadyMinted,
@@ -90,6 +133,16 @@ pub(crate) fn mint_recovery_handle_in_registry(
         binding,
         receipt.canonical_work(),
     ))
+}
+
+fn claim_for(receipt: &WorthQueryApplicationCommitReceipt) -> WorthQueryRecoveryMintClaim {
+    WorthQueryRecoveryMintClaim::new(
+        receipt.provider_runtime_instance_id(),
+        receipt
+            .committed_product_publication()
+            .composite_commit()
+            .clone(),
+    )
 }
 
 /// The minting runtime must be the one that admitted the commit.

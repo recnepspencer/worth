@@ -3,8 +3,7 @@ use std::collections::{HashMap, HashSet};
 use worth_query::facade::runtime;
 
 use super::{
-    correspondence, WorthUiPresentationAsyncOwner, WorthUiPresentationAsyncRegistry,
-    WorthUiPresentationCorrespondenceIssuer,
+    correspondence, WorthUiPresentationAsyncOwner, WorthUiPresentationCorrespondenceIssuer,
 };
 
 pub struct WorthUiPresentationAsyncHostPlan {
@@ -27,21 +26,28 @@ pub struct WorthUiPresentationAsyncInstallation {
 
 #[derive(Debug)]
 pub enum WorthUiPresentationAsyncInstallationError {
-    Builder(Box<super::super::super::WorthUiScalarProjectionInstallationError>),
+    DomainPackage(Box<worth_query::facade::domain::WorthQueryDomainPackageInstallationError>),
+    AspectContract(Box<runtime::WorthQueryAspectContractRegistrationDenial>),
     Completion(Box<runtime::WorthQueryHostRuntimeCompletionError>),
+    Installation(String),
     Runtime(Box<runtime::WorthQueryRuntimeError>),
+    OperatingWorld(Box<worth_query::facade::installed::WorthQueryOperatingWorldEntryDenial>),
+    MissingOwnedAsyncSource,
 }
 
 impl WorthUiPresentationAsyncHostPlan {
     pub fn prepare() -> Result<Self, WorthUiPresentationAsyncInstallationError> {
-        let source = crate::product_projection::shared_source_state();
-        let bridge = crate::product_projection::platform_pulse_bridge().map_err(|detail| {
-            WorthUiPresentationAsyncInstallationError::Builder(Box::new(
-                super::super::super::WorthUiScalarProjectionInstallationError::Bridge(detail),
-            ))
+        let builder = runtime::WorthQueryRuntime::builder(
+            crate::query_runtime_resources::ui_product_world_resources(),
+        )
+        .domain_package(super::super::worth_ui_presentation_async_domain_package())
+        .map_err(|error| {
+            WorthUiPresentationAsyncInstallationError::DomainPackage(Box::new(error))
         })?;
-        let builder = crate::product_projection::projection_runtime_builder(source, bridge)
-            .map_err(|error| WorthUiPresentationAsyncInstallationError::Builder(Box::new(error)))?;
+        let builder = super::super::install_worth_ui_presentation_async_runtime(builder).map_err(
+            |error| WorthUiPresentationAsyncInstallationError::AspectContract(Box::new(error)),
+        )?;
+        let builder = super::super::backend::configure(builder);
         let plan = builder.prepare_host_installation();
         let (request, completion) = plan.into_parts();
         Ok(Self {
@@ -57,6 +63,21 @@ impl WorthUiPresentationAsyncHostPlan {
         WorthUiPresentationAsyncHostCompletion,
     ) {
         (self.request, self.completion)
+    }
+
+    #[cfg(feature = "certification-construction")]
+    pub fn install_for_certification(
+        self,
+    ) -> Result<WorthUiPresentationAsyncInstallation, WorthUiPresentationAsyncInstallationError>
+    {
+        let (request, completion) = self.into_parts();
+        let installation =
+            worth_query_host::facade::runtime::WorthQueryExecutionRuntimeInstaller::new()
+                .install(request.generation(), request.into_packages())
+                .map_err(|error| {
+                    WorthUiPresentationAsyncInstallationError::Installation(format!("{error:?}"))
+                })?;
+        completion.complete(installation)
     }
 }
 
@@ -82,13 +103,23 @@ impl WorthUiPresentationAsyncHostCompletion {
         let workspace = runtime
             .workspace("worth-ui-mounted-presentation")
             .map_err(|error| WorthUiPresentationAsyncInstallationError::Runtime(Box::new(error)))?;
+        let world = workspace
+            .observe_operating_world(workspace.current_world())
+            .map_err(|error| {
+                WorthUiPresentationAsyncInstallationError::OperatingWorld(Box::new(error))
+            })?;
+        let product = world.retain_product_branch();
+        drop(world);
+        let owned_async_source =
+            super::super::runtime_bridge::installed_presentation_owned_async_source(&workspace)
+                .ok_or(WorthUiPresentationAsyncInstallationError::MissingOwnedAsyncSource)?;
         let (correspondence_authority, correspondence) =
             correspondence::correspondence_authority_pair();
         let owner = WorthUiPresentationAsyncOwner {
             correspondence_authority,
             workspace,
-            registry: WorthUiPresentationAsyncRegistry::default(),
-            next_truth_revision: 1,
+            product,
+            owned_async_source,
             next_receipt_nonce: 0,
             pending: HashMap::new(),
             settling: HashMap::new(),

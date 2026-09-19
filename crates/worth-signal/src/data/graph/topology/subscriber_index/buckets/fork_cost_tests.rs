@@ -101,38 +101,84 @@ fn single_membership_first_write_is_bounded_by_nested_persistent_granule() {
         ));
 
         assert_eq!(
-            source.query_whole_aspect(producer, aspect).candidates.len(),
+            source
+                .query_whole_aspect(
+                    producer,
+                    aspect,
+                    &mut crate::logic::evaluation::EvaluationWork::Ordinary
+                )
+                .unwrap()
+                .candidates
+                .len(),
             consumer_count as usize,
             "source membership must remain independent"
         );
         assert_eq!(
-            fork.query_whole_aspect(producer, aspect).candidates.len(),
+            fork.query_whole_aspect(
+                producer,
+                aspect,
+                &mut crate::logic::evaluation::EvaluationWork::Ordinary
+            )
+            .unwrap()
+            .candidates
+            .len(),
             consumer_count as usize - 1,
             "fork must observe only its changed membership"
         );
         assert!(
             !fork
-                .query_scope(producer, aspect, removed_scope)
+                .query_scope(
+                    producer,
+                    aspect,
+                    removed_scope,
+                    &mut crate::logic::evaluation::EvaluationWork::Ordinary
+                )
+                .unwrap()
                 .candidates
                 .contains(&removed),
             "removed base membership must stay retired in the fork"
         );
         let reconstructed = fork.operational_clone();
         assert_eq!(
-            reconstructed.query_whole_aspect(producer, aspect),
-            fork.query_whole_aspect(producer, aspect),
+            reconstructed
+                .query_whole_aspect(
+                    producer,
+                    aspect,
+                    &mut crate::logic::evaluation::EvaluationWork::Ordinary
+                )
+                .unwrap(),
+            fork.query_whole_aspect(
+                producer,
+                aspect,
+                &mut crate::logic::evaluation::EvaluationWork::Ordinary
+            )
+            .unwrap(),
             "operational reconstruction must preserve the fork overlay"
         );
 
         fork.replace_consumer(removed, vec![removed_membership]);
         assert!(
-            fork.query_scope(producer, aspect, removed_scope)
-                .candidates
-                .contains(&removed),
+            fork.query_scope(
+                producer,
+                aspect,
+                removed_scope,
+                &mut crate::logic::evaluation::EvaluationWork::Ordinary
+            )
+            .unwrap()
+            .candidates
+            .contains(&removed),
             "readmitting an inherited membership must cancel its retirement"
         );
         assert_eq!(
-            source.query_whole_aspect(producer, aspect).candidates.len(),
+            source
+                .query_whole_aspect(
+                    producer,
+                    aspect,
+                    &mut crate::logic::evaluation::EvaluationWork::Ordinary
+                )
+                .unwrap()
+                .candidates
+                .len(),
             consumer_count as usize,
             "fork readmission must not mutate the live source"
         );
@@ -189,7 +235,15 @@ fn inherited_retirement_queries_visit_only_live_or_changed_members() {
         );
         assert_eq!(repeated_traversal, first_traversal);
         assert_eq!(
-            source.query_whole_aspect(producer, aspect).candidates.len(),
+            source
+                .query_whole_aspect(
+                    producer,
+                    aspect,
+                    &mut crate::logic::evaluation::EvaluationWork::Ordinary
+                )
+                .unwrap()
+                .candidates
+                .len(),
             consumer_count as usize,
             "destination retirement must preserve the live source"
         );
@@ -207,7 +261,12 @@ fn inherited_retirement_queries_visit_only_live_or_changed_members() {
         );
         assert_eq!(
             fork.operational_clone()
-                .query_whole_aspect(producer, aspect),
+                .query_whole_aspect(
+                    producer,
+                    aspect,
+                    &mut crate::logic::evaluation::EvaluationWork::Ordinary
+                )
+                .unwrap(),
             readmitted
         );
     }
@@ -237,7 +296,15 @@ fn ordinary_queries_stream_unretired_base_without_range_reseeks() {
             "unretired base traversal must stay on the native linear iterator"
         );
         assert_eq!(
-            source.query_whole_aspect(producer, aspect).candidates.len(),
+            source
+                .query_whole_aspect(
+                    producer,
+                    aspect,
+                    &mut crate::logic::evaluation::EvaluationWork::Ordinary
+                )
+                .unwrap()
+                .candidates
+                .len(),
             consumer_count as usize
         );
     }

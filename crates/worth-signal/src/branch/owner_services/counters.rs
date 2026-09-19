@@ -194,12 +194,14 @@ impl SignalOwnerServiceCounters {
             .fetch_add(copied_nodes, Ordering::SeqCst);
     }
 
-    pub(crate) fn record_diagnostic_event(&self) {
-        Self::increment(&self.diagnostic_events_recorded);
-    }
-
-    pub(crate) fn record_dropped_diagnostic_event(&self) {
-        Self::increment(&self.diagnostic_events_dropped);
+    pub(crate) fn record_diagnostic_publication(
+        &self,
+        work: crate::diagnostics::state::DiagnosticPublicationWork,
+    ) {
+        self.diagnostic_events_recorded
+            .fetch_add(work.recorded, Ordering::SeqCst);
+        self.diagnostic_events_dropped
+            .fetch_add(work.evicted, Ordering::SeqCst);
     }
 
     pub(crate) fn record_close_batch(&self) {

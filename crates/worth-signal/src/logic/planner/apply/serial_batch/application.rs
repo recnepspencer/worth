@@ -128,6 +128,7 @@ fn apply_serial_input(
         input.dependency_updates,
         Some(input.dependency_inputs),
         false,
+        &mut crate::logic::evaluation::EvaluationWork::Ordinary,
     )
     .inspect_err(|err| {
         record_execution_failure_if_enabled(graph, || {

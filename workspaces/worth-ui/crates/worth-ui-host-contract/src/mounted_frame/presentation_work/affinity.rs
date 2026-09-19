@@ -20,6 +20,29 @@ pub(super) struct UiMountedPresentationAffinityInput {
 }
 
 impl UiMountedPresentationAffinity {
+    /// Carries mounted identity into an inert projection without issuing work
+    /// or granting publication or settlement authority.
+    /// A removal-only frame may have no successor node receipt affinity;
+    /// fragments containing successor nodes still require that exact affinity.
+    #[doc(hidden)]
+    pub fn from_runtime_mounting(
+        predecessor: Option<crate::UiMountedFrameIdentity>,
+        successor: crate::UiMountedFrameIdentity,
+        binding: crate::UiMountedSurfaceBindingRequirement,
+        content: crate::UiMountedContentGeneration,
+        receipt_affinity: Option<crate::UiMountedNodeReceiptAffinity>,
+    ) -> Self {
+        Self::from_runtime(UiMountedPresentationAffinityInput {
+            predecessor,
+            successor,
+            surface: binding.semantic_surface(),
+            binding: binding.binding(),
+            content,
+            baseline: binding.baseline(),
+            receipt_affinity,
+        })
+    }
+
     pub(super) const fn from_runtime(input: UiMountedPresentationAffinityInput) -> Self {
         Self {
             predecessor: input.predecessor,

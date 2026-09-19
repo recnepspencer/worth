@@ -1,3 +1,4 @@
+mod appearance_relation;
 mod authored_declaration_lookup;
 mod basis;
 mod consumer;
@@ -8,12 +9,14 @@ mod index;
 mod intent_posture;
 mod lookup;
 
+pub(crate) use appearance_relation::UiGraphFactConsumptionRelation;
 pub(crate) use authored_declaration_lookup::UiAuthoredDeclarationLookup;
 pub use basis::UiGraphFactIndexBasis;
 pub use consumer::UiGraphFactConsumerIdentity;
 pub use consumer_key::{UiGraphFactConsumerKey, UiGraphFactConsumerKind};
 pub use denial::UiGraphFactLookupDenial;
 pub use entry::UiGraphFactIndexEntry;
+pub(crate) use index::component_capability_for_node;
 pub use index::UiGraphConsumedFactIndex;
 #[cfg(any(test, feature = "certification-support"))]
 pub use lookup::UiGraphFactLookupCost;

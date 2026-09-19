@@ -9,4 +9,9 @@ impl UiObservationTurnIdentity {
     pub const fn as_u64(self) -> u64 {
         self.0
     }
+
+    #[cfg(test)]
+    pub(crate) const fn for_test(value: u64) -> Self {
+        Self(value)
+    }
 }

@@ -4,13 +4,12 @@ mod fixture;
 use bank_domain::{
     estate::{EstateAction, EstateCaseStatus, LegalAuthorityId, MandatoryReviewId},
     model::BankPrincipalId,
+    proposals::BankIdempotencyKey,
 };
 use bank_server::{
-    queries, BankAuthenticatedPrincipal, BankCommitDenialKind, BankCommitDenialStage,
-    BankCommitReceipt, BankEstateProgressionDenial, BankEstateReleaseProjectionDenial,
-    BankMutationCommitOutcome, BankReadControls,
+    queries, BankAuthenticatedPrincipal, BankCommitReceipt, BankEstateProgressionDenial,
+    BankEstateReleaseProjectionDenial, BankMutationCommitOutcome, BankReadControls,
 };
-use worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyBinding;
 
 use self::fixture::{
     release_world, ActorConflict, ExecutorPosture, ReleaseFixture, ReleaseWorldSpec, ReviewPosture,
@@ -22,7 +21,7 @@ fn public_progression_releases_the_exact_ready_estate_and_recovers_retry() {
     let fixture = release_world("estate-release-commit", ReleaseWorldSpec::ready());
     let specialist = fixture.authenticate_actor();
     let binding = idempotency(11);
-    let outcome = release(&fixture, &specialist, binding)
+    let outcome = release(&fixture, &specialist, binding.clone())
         .expect("the exact ready estate should release through Query");
 
     let BankMutationCommitOutcome::Committed(receipt) = outcome else {
@@ -30,7 +29,7 @@ fn public_progression_releases_the_exact_ready_estate_and_recovers_retry() {
     };
     assert_eq!(receipt.changed_record_count(), 2);
     assert_eq!(receipt.emitted_effect_count(), 0);
-    assert_eq!(receipt.decision_fact_count(), Some(16));
+    assert_eq!(receipt.decision_fact_count(), Some(17));
     assert_zero_canonical_work(receipt.canonical_work());
     assert_release_posture(&fixture, EstateCaseStatus::Released);
     assert_equivalent_retry(&fixture, &specialist, binding, &receipt);
@@ -61,7 +60,7 @@ fn four_lawful_executors_and_many_unrelated_reviews_preserve_bounded_readiness()
     let BankMutationCommitOutcome::Committed(receipt) = outcome else {
         panic!("the additional-truth release must commit: {outcome:?}");
     };
-    assert_eq!(receipt.decision_fact_count(), Some(16));
+    assert_eq!(receipt.decision_fact_count(), Some(17));
     assert_release_posture(&fixture, EstateCaseStatus::Released);
 }
 
@@ -207,7 +206,9 @@ fn beneficiary_and_executor_callers_deny_at_capability_composition() {
             .expect_err("conflicted release authority must deny before invariant projection");
         assert!(matches!(
             denial,
-            BankEstateProgressionDenial::Authorization(_)
+            BankEstateProgressionDenial::ApplicationEntry(ref denial)
+                if denial.kind()
+                    == worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenialKind::Authorization
         ));
         assert_release_posture(&fixture, EstateCaseStatus::Open);
     }
@@ -216,12 +217,12 @@ fn beneficiary_and_executor_callers_deny_at_capability_composition() {
 fn release(
     fixture: &ReleaseFixture,
     specialist: &BankAuthenticatedPrincipal,
-    idempotency: WorthQueryApplicationIdempotencyBinding,
+    idempotency: BankIdempotencyKey,
 ) -> Result<BankMutationCommitOutcome, BankEstateProgressionDenial> {
-    fixture.world.runtime.release_estate(
+    fixture.world.runtime.release_estate_with_key(
         specialist,
         fixture.action(),
-        idempotency,
+        &idempotency,
         &request_scope(),
     )
 }
@@ -229,48 +230,23 @@ fn release(
 fn assert_equivalent_retry(
     fixture: &ReleaseFixture,
     specialist: &BankAuthenticatedPrincipal,
-    binding: WorthQueryApplicationIdempotencyBinding,
+    binding: BankIdempotencyKey,
     committed: &BankCommitReceipt,
 ) {
-    let retry = release(fixture, specialist, binding)
+    let retry = release(fixture, specialist, binding.clone())
         .expect("equivalent authorized retry must resolve before released poststate");
     let BankMutationCommitOutcome::AlreadyCommitted(recovered) = retry else {
         panic!("the retry must recover its exact commit: {retry:?}");
     };
     assert_eq!(committed.aftermath(), recovered.aftermath());
 
-    assert_raw_intent_drift(fixture, specialist, binding);
-    assert_release_witness_drift(fixture, specialist, binding);
-}
-
-fn assert_raw_intent_drift(
-    fixture: &ReleaseFixture,
-    specialist: &BankAuthenticatedPrincipal,
-    binding: WorthQueryApplicationIdempotencyBinding,
-) {
-    let drift = fixture
-        .world
-        .runtime
-        .release_estate(
-            specialist,
-            fixture.action(),
-            WorthQueryApplicationIdempotencyBinding::new(*binding.key_identity(), [99; 32]),
-            &request_scope(),
-        )
-        .expect("intent drift remains a typed commit outcome");
-    assert!(matches!(
-        drift,
-        BankMutationCommitOutcome::Denied {
-            kind: BankCommitDenialKind::IdempotencyIntentDrift,
-            stage: BankCommitDenialStage::Idempotency,
-        }
-    ));
+    assert_release_witness_drift(fixture, specialist, &binding);
 }
 
 fn assert_release_witness_drift(
     fixture: &ReleaseFixture,
     specialist: &BankAuthenticatedPrincipal,
-    binding: WorthQueryApplicationIdempotencyBinding,
+    binding: &BankIdempotencyKey,
 ) {
     let EstateAction::ReleaseEstate {
         estate,
@@ -302,17 +278,14 @@ fn assert_release_witness_drift(
         },
     ];
     for action in drifted_witnesses {
-        let outcome = fixture
+        let denial = fixture
             .world
             .runtime
-            .release_estate(specialist, action, binding, &request_scope())
-            .expect("witness drift remains a typed idempotency outcome");
+            .release_estate_with_key(specialist, action, binding, &request_scope())
+            .expect_err("witness drift must stop at idempotency");
         assert!(matches!(
-            outcome,
-            BankMutationCommitOutcome::Denied {
-                kind: BankCommitDenialKind::IdempotencyIntentDrift,
-                stage: BankCommitDenialStage::Idempotency,
-            }
+            denial,
+            BankEstateProgressionDenial::IdempotencyIntentDrift
         ));
     }
 }
@@ -324,7 +297,7 @@ fn assert_release_posture(fixture: &ReleaseFixture, expected: EstateCaseStatus) 
         .runtime
         .query(queries::estate_case(fixture.estate))
         .as_principal(&actor)
-        .controls(BankReadControls::current(request_scope(), 16, 20_000).unwrap())
+        .controls(BankReadControls::current(request_scope(), 1, 20_000).unwrap())
         .execute()
         .expect("the assigned specialist should read the authoritative estate status");
     assert_eq!(result.rows().len(), 1);
@@ -332,8 +305,8 @@ fn assert_release_posture(fixture: &ReleaseFixture, expected: EstateCaseStatus) 
     assert_eq!(result.rows()[0].status(), expected);
 }
 
-fn idempotency(identity: u8) -> WorthQueryApplicationIdempotencyBinding {
-    WorthQueryApplicationIdempotencyBinding::new([identity; 32], [identity + 1; 32])
+fn idempotency(identity: u8) -> BankIdempotencyKey {
+    BankIdempotencyKey::new(format!("release-estate-{identity}")).unwrap()
 }
 
 fn assert_zero_canonical_work(phases: bank_server::BankCommitCanonicalWorkPhases) {

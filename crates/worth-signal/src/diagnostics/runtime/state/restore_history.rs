@@ -1,4 +1,5 @@
 use std::collections::{BTreeMap, VecDeque};
+use std::sync::Arc;
 
 use crate::diagnostics::failure::{FailureSummary, RollbackDiagnostic};
 use crate::diagnostics::lineage::LineageRecord;
@@ -61,13 +62,17 @@ struct SnapshotHistoryPreservation {
 impl SnapshotHistoryPreservation {
     fn capture(current: &DiagnosticsState, payload: &SignalSnapshotDiagnostics) -> Self {
         Self {
-            recent_history: current.recent_history.clone(),
-            replay_events: current.replay_events.clone(),
-            lineage_records: current.lineage_records.clone(),
-            branch_catalog: current.branch_catalog.clone(),
-            latest_failure: current.latest_failure.clone(),
-            latest_rollback: current.latest_rollback.clone(),
-            latest_observation: current.latest_observation.clone(),
+            recent_history: current.recent_history.iter().cloned().collect(),
+            replay_events: current.replay_events.iter().cloned().collect(),
+            lineage_records: current.lineage_records.iter().cloned().collect(),
+            branch_catalog: current
+                .branch_catalog
+                .iter()
+                .map(|(id, handle)| (*id, handle.clone()))
+                .collect(),
+            latest_failure: current.latest_failure.as_deref().cloned(),
+            latest_rollback: current.latest_rollback.as_deref().cloned(),
+            latest_observation: current.latest_observation.as_deref().cloned(),
             next_replay_cursor: current.next_replay_cursor,
             next_snapshot_id: current.next_snapshot_id,
             next_branch_id: current.next_branch_id,
@@ -147,12 +152,18 @@ fn merge_recent_history_and_replay(
         if payload_latest_execution_record_id
             .is_some_and(|latest| current_latest.is_some_and(|current| current > latest))
         {
-            state.recent_history.push_back(summary);
+            state
+                .recent_history
+                .push_back(summary)
+                .expect("restored history fits its position space");
         }
     }
     for event in replay_events {
         if payload_last_replay_cursor.is_some_and(|latest| event.cursor > latest) {
-            state.replay_events.push_back(event);
+            state
+                .replay_events
+                .push_back(event)
+                .expect("restored history fits its position space");
         }
     }
 }
@@ -164,7 +175,10 @@ fn merge_lineage_records(
 ) {
     for record in lineage_records {
         if payload_last_lineage_sequence.is_some_and(|latest| record.sequence > latest) {
-            state.lineage_records.push_back(record);
+            state
+                .lineage_records
+                .push_back(record)
+                .expect("restored history fits its position space");
         }
     }
 }
@@ -180,16 +194,13 @@ fn restore_latest_diagnostics(
         return;
     }
     if latest_failure.is_some() {
-        state.latest_failure = latest_failure;
+        state.latest_failure = latest_failure.map(Arc::new);
     }
     if latest_rollback.is_some() {
-        state.latest_rollback = latest_rollback;
+        state.latest_rollback = latest_rollback.map(Arc::new);
     }
     if let Some(observation) = latest_observation {
-        state.latest_observation = Some(observation.clone());
-        if let Some(flow) = &mut state.latest_flow {
-            flow.observation = Some(observation);
-        }
+        state.record_observation(observation);
     }
 }
 

@@ -1,5 +1,0 @@
-error[E0599]: no function or associated item named `admitted_theorem_authority` found for struct `HadwigerAspectRecord` in the current scope
- --> tests/ui/aspect_authority/boundaries/authority/admitted_theorem_aspect_constructor_forbidden.rs:4:35
-  |
-4 |     let _ = HadwigerAspectRecord::admitted_theorem_authority();
-  |                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^ function or associated item not found in `HadwigerAspectRecord`

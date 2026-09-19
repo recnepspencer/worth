@@ -20,8 +20,10 @@ use crate::facade::UiHostEffectPort;
 mod admission;
 mod cancellation;
 mod cancellation_settlement;
+mod candidate_preparation;
 mod duplicate_observation;
 mod host_truth;
+mod motion_evidence;
 mod motion_sample;
 mod pending_completion;
 mod physical_uncertainty;
@@ -38,6 +40,8 @@ mod surface_uncertainty;
 mod text_pins;
 mod work_preparation;
 
+pub(crate) use candidate_preparation::UiAcceptedAppearanceMotion;
+pub(super) use candidate_preparation::UiPreparedFrameCandidates;
 pub(crate) use motion_sample::UiMotionSamplePresentationOutcome;
 use presentation_attempt::{
     present_one_surface, UiMountedPresentationProgress, UiMountedPresentationStart,
@@ -53,6 +57,10 @@ pub struct UiMountedPresentationCoordinator {
     in_flight: BTreeMap<
         UiMountedPresentationAttemptIdentity,
         super::state::UiMountedPresentationInFlightState,
+    >,
+    appearance_attempts: BTreeMap<
+        UiMountedPresentationAttemptIdentity,
+        crate::runtime::appearance::UiAppearanceInspectionAttemptBatch,
     >,
     unresolved_semantic_receipts: BTreeMap<
         UiMountedPresentationAttemptIdentity,
@@ -95,6 +103,7 @@ impl Default for UiMountedPresentationCoordinator {
             in_flight_limit: DEFAULT_IN_FLIGHT_LIMIT,
             active: Rc::new(RefCell::new(BTreeSet::new())),
             in_flight: BTreeMap::new(),
+            appearance_attempts: BTreeMap::new(),
             unresolved_semantic_receipts: BTreeMap::new(),
             unresolved_semantic_recoveries: BTreeMap::new(),
             presentation_states: BTreeMap::new(),
@@ -127,7 +136,7 @@ impl UiMountedPresentationCoordinator {
         authority: UiMountedHostPresentationAuthority<'_>,
         now: u64,
     ) -> UiMountedPresentationOutcome {
-        let (frame, retention, attempt, deadline) = attempt.into_parts();
+        let (frame, retention, attempt, deadline, candidates) = attempt.into_parts();
         if deadline.expired_at(now) {
             self.active.borrow_mut().remove(&attempt);
             let rejections = frame_rejections(
@@ -136,19 +145,42 @@ impl UiMountedPresentationCoordinator {
             );
             return rejected_outcome(attempt, frame, retention, rejections);
         }
-        self.present_all(UiMountedPresentationStart {
-            frame,
-            retention,
-            attempt,
-            deadline,
-            host,
-            authority,
-        })
+        self.present_all(
+            UiMountedPresentationStart {
+                frame,
+                retention,
+                attempt,
+                deadline,
+                host,
+                authority,
+            },
+            candidates,
+        )
+    }
+
+    pub(crate) fn retain_appearance_attempt(
+        &mut self,
+        attempt: UiMountedPresentationAttemptIdentity,
+        batch: crate::runtime::appearance::UiAppearanceInspectionAttemptBatch,
+    ) {
+        let replaced = self.appearance_attempts.insert(attempt, batch);
+        assert!(
+            replaced.is_none(),
+            "runtime-minted presentation attempts have one appearance batch"
+        );
+    }
+
+    pub(crate) fn take_appearance_attempt(
+        &mut self,
+        attempt: UiMountedPresentationAttemptIdentity,
+    ) -> Option<crate::runtime::appearance::UiAppearanceInspectionAttemptBatch> {
+        self.appearance_attempts.remove(&attempt)
     }
 
     fn present_all(
         &mut self,
         start: UiMountedPresentationStart<'_, '_>,
+        candidates: UiPreparedFrameCandidates,
     ) -> UiMountedPresentationOutcome {
         if let Err(rejections) =
             validate_before_effects(&start.frame, start.host.adapter(), start.authority)
@@ -156,11 +188,13 @@ impl UiMountedPresentationCoordinator {
             self.active.borrow_mut().remove(&start.attempt);
             return rejected_outcome(start.attempt, start.frame, start.retention, rejections);
         }
-        let prepared = match work_preparation::prepare(
+        let prepared = match work_preparation::issue(
+            candidates,
             &start.frame,
             &self.presentation_states,
             &self.reconstruction_bindings,
             &start.authority,
+            start.attempt,
         ) {
             Ok(prepared) => prepared,
             Err(denial) => {
@@ -304,7 +338,7 @@ impl UiMountedPresentationCoordinator {
                 {
                     self.host_truth.block_presentation(requirement);
                 }
-                self.presentation_states.remove(&rejection.binding());
+                self.reconstruction_bindings.insert(rejection.binding());
             }
         }
         rejected_outcome(
@@ -346,7 +380,8 @@ impl UiMountedPresentationCoordinator {
         }
         self.active.borrow_mut().remove(&attempt);
         for binding in &affected {
-            self.presentation_states.remove(binding);
+            // Retain accepted commands and Motion for reconstruction while host truth is blocked.
+            self.reconstruction_bindings.insert(*binding);
             let requirement = frame
                 .surfaces()
                 .iter()

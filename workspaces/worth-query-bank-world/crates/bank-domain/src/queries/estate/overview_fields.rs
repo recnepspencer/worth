@@ -24,28 +24,51 @@ use crate::schema::{
 use super::overview::EstateCaseOverviewQuery;
 
 pub(super) struct EstateIdentitySlot;
+worth_query_decl::facade::worth_query_portable_type!(EstateIdentitySlot => "EstateIdentitySlot");
 pub(super) struct EstateStageSlot;
+worth_query_decl::facade::worth_query_portable_type!(EstateStageSlot => "EstateStageSlot");
 pub(super) struct EstateStatusSlot;
+worth_query_decl::facade::worth_query_portable_type!(EstateStatusSlot => "EstateStatusSlot");
 pub(super) struct AccountIdentitySlot;
+worth_query_decl::facade::worth_query_portable_type!(AccountIdentitySlot => "AccountIdentitySlot");
 pub(super) struct AccountNameSlot;
+worth_query_decl::facade::worth_query_portable_type!(AccountNameSlot => "AccountNameSlot");
 pub(super) struct AccountStatusSlot;
+worth_query_decl::facade::worth_query_portable_type!(AccountStatusSlot => "AccountStatusSlot");
 pub(super) struct BranchIdentitySlot;
+worth_query_decl::facade::worth_query_portable_type!(BranchIdentitySlot => "BranchIdentitySlot");
 pub(super) struct NoticeIdentitySlot;
+worth_query_decl::facade::worth_query_portable_type!(NoticeIdentitySlot => "NoticeIdentitySlot");
 pub(super) struct NoticeStatusSlot;
+worth_query_decl::facade::worth_query_portable_type!(NoticeStatusSlot => "NoticeStatusSlot");
 pub(super) struct DeceasedIdentitySlot;
+worth_query_decl::facade::worth_query_portable_type!(DeceasedIdentitySlot => "DeceasedIdentitySlot");
 pub(super) struct ExecutorIdentitySlot;
+worth_query_decl::facade::worth_query_portable_type!(ExecutorIdentitySlot => "ExecutorIdentitySlot");
 pub(super) struct BeneficiaryIdentitySlot;
+worth_query_decl::facade::worth_query_portable_type!(BeneficiaryIdentitySlot => "BeneficiaryIdentitySlot");
 pub(super) struct AssignmentIdentitySlot;
+worth_query_decl::facade::worth_query_portable_type!(AssignmentIdentitySlot => "AssignmentIdentitySlot");
 pub(super) struct AssignmentRoleSlot;
+worth_query_decl::facade::worth_query_portable_type!(AssignmentRoleSlot => "AssignmentRoleSlot");
 pub(super) struct AssignmentPrincipalIdentitySlot;
+worth_query_decl::facade::worth_query_portable_type!(AssignmentPrincipalIdentitySlot => "AssignmentPrincipalIdentitySlot");
 pub(super) struct AuthorityIdentitySlot;
+worth_query_decl::facade::worth_query_portable_type!(AuthorityIdentitySlot => "AuthorityIdentitySlot");
 pub(super) struct AuthorityKindSlot;
+worth_query_decl::facade::worth_query_portable_type!(AuthorityKindSlot => "AuthorityKindSlot");
 pub(super) struct AuthorityRecognizedSlot;
+worth_query_decl::facade::worth_query_portable_type!(AuthorityRecognizedSlot => "AuthorityRecognizedSlot");
 pub(super) struct AuthorityHolderIdentitySlot;
+worth_query_decl::facade::worth_query_portable_type!(AuthorityHolderIdentitySlot => "AuthorityHolderIdentitySlot");
 pub(super) struct ReviewIdentitySlot;
+worth_query_decl::facade::worth_query_portable_type!(ReviewIdentitySlot => "ReviewIdentitySlot");
 pub(super) struct ReviewKindSlot;
+worth_query_decl::facade::worth_query_portable_type!(ReviewKindSlot => "ReviewKindSlot");
 pub(super) struct ReviewStatusSlot;
+worth_query_decl::facade::worth_query_portable_type!(ReviewStatusSlot => "ReviewStatusSlot");
 pub(super) struct ReviewPrincipalIdentitySlot;
+worth_query_decl::facade::worth_query_portable_type!(ReviewPrincipalIdentitySlot => "ReviewPrincipalIdentitySlot");
 
 macro_rules! selector {
     (

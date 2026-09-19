@@ -352,6 +352,8 @@ mod tests {
             ),
             UiDeclaredAspectPayload::new(graph_handoff.aspect_contract().clone()),
             UiDeclaredPosturePayload::new(declared_posture),
+            graph_handoff.component_reference().cloned(),
+            graph_handoff.appearance_role_attachment().cloned(),
         )
     }
 

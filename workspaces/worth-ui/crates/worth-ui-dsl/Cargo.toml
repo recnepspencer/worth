@@ -14,3 +14,6 @@ certification-support = []
 
 [lints]
 workspace = true
+
+[dependencies]
+worth-foundational = { workspace = true }

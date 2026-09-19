@@ -73,6 +73,16 @@ impl UiObservationTurn<'_> {
         UiIntentConsequenceObservationAdmissionStop,
     > {
         let (posture, query, projection) = batch.into_parts();
+        if let Some(observation) = projection.as_ref() {
+            if let Err(denial) = self.validate_projection_source(observation) {
+                return Err(UiIntentConsequenceObservationAdmissionStop {
+                    reason: UiIntentConsequenceObservationAdmissionReason::Observation(denial),
+                    batch: Box::new(UiIntentConsequenceObservationBatch::new(
+                        posture, query, projection,
+                    )),
+                });
+            }
+        }
         let (posture_observation, posture_commit) = unzip_posture(posture);
         let query_observation = match query {
             Some(consequence) => match self

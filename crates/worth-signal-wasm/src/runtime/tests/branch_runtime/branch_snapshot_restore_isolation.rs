@@ -77,7 +77,7 @@ fn restoring_inactive_branch_snapshot_then_editing_other_field_keeps_branch_loca
 }
 
 #[test]
-fn general_restore_rejects_an_inactive_branch_and_substituted_payload() {
+fn general_restore_reactivates_the_snapshot_branch_and_rejects_a_substituted_payload() {
     let mut runtime = RuntimeCore::new(RuntimePolicySpec::default()).unwrap();
     runtime
         .define_source(SourceSpec {
@@ -98,16 +98,25 @@ fn general_restore_rejects_an_inactive_branch_and_substituted_payload() {
         }])
         .unwrap();
 
-    let inactive = runtime.restore_snapshot(main_snapshot.clone()).unwrap_err();
-    assert!(inactive.message.contains("while active branch"));
+    // A snapshot belongs to the branch it was captured on: restoring it from
+    // another branch reactivates that branch, and the other branch keeps its
+    // own truth.
+    let main_branch_id = main_snapshot.snapshot.meta.branch_id.0;
+    runtime.restore_snapshot(main_snapshot.clone()).unwrap();
+    assert_eq!(runtime.current_branch().id.0, main_branch_id);
     assert_eq!(
         runtime.read_value("value").unwrap(),
-        SignalValue::Number(2.0)
+        SignalValue::Number(1.0)
+    );
+    runtime.switch_branch(feature.id.0).unwrap();
+    assert_eq!(
+        runtime.read_value("value").unwrap(),
+        SignalValue::Number(2.0),
+        "the feature branch is untouched by restoring main"
     );
 
-    runtime
-        .switch_branch(main_snapshot.snapshot.meta.branch_id.0)
-        .unwrap();
+    // A refused restore leaves the active branch where it was: the payload
+    // check runs before any branch switch.
     main_snapshot
         .snapshot
         .meta
@@ -117,8 +126,9 @@ fn general_restore_rejects_an_inactive_branch_and_substituted_payload() {
     assert!(substituted
         .message
         .contains("does not match the owner-admitted snapshot"));
+    assert_eq!(runtime.current_branch().id, feature.id);
     assert_eq!(
         runtime.read_value("value").unwrap(),
-        SignalValue::Number(1.0)
+        SignalValue::Number(2.0)
     );
 }

@@ -20,12 +20,19 @@ use crate::{
 use super::legal_compliance::EstateLegalComplianceQuery;
 
 pub(super) struct EstateIdentitySlot;
+worth_query_decl::facade::worth_query_portable_type!(EstateIdentitySlot => "EstateIdentitySlot");
 pub(super) struct AuthoritiesSlot;
+worth_query_decl::facade::worth_query_portable_type!(AuthoritiesSlot => "AuthoritiesSlot");
 pub(super) struct AuthorityIdentitySlot;
+worth_query_decl::facade::worth_query_portable_type!(AuthorityIdentitySlot => "AuthorityIdentitySlot");
 pub(super) struct AuthorityKindSlot;
+worth_query_decl::facade::worth_query_portable_type!(AuthorityKindSlot => "AuthorityKindSlot");
 pub(super) struct AuthorityRecognizedSlot;
+worth_query_decl::facade::worth_query_portable_type!(AuthorityRecognizedSlot => "AuthorityRecognizedSlot");
 pub(super) struct AuthorityHolderSlot;
+worth_query_decl::facade::worth_query_portable_type!(AuthorityHolderSlot => "AuthorityHolderSlot");
 pub(super) struct AuthorityHolderIdentitySlot;
+worth_query_decl::facade::worth_query_portable_type!(AuthorityHolderIdentitySlot => "AuthorityHolderIdentitySlot");
 
 macro_rules! selector {
     ($name:ident, $slot:ty, $entity:ty, $aspect:ty, $field:ty, $value:ty, $write:ty, $alias:literal) => {

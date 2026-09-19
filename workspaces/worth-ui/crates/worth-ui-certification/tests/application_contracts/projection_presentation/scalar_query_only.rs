@@ -2,12 +2,11 @@ use worth_runtime_bridge::facade::BridgeMixedCauseOrderingInput;
 use worth_signal::facade::NodeId;
 use worth_ui::facade::declaration::{
     ComponentAllocationMeasurementContract, ComponentChildPolicy, ComponentDescriptor, ComponentId,
-    ComponentPropSchema, ComponentSemanticTextContract, ComponentStateOwnership,
-    ComponentStaticPaintContract, ComponentStaticPaintOrder, MosaicChildRule,
+    ComponentPropSchema, ComponentSemanticTextContract, ComponentStateOwnership, MosaicChildRule,
     MosaicClippingPosture, MosaicFocusScopeKind, MosaicHitTestPosture, MosaicRegionKindDescriptor,
     MosaicRegionKindId, MosaicRegionPersistence, MosaicRegionRole, MosaicScrollOwnership,
-    MosaicSizingBehavior, ThemeColorValue, ThemeTokenDescriptor, ThemeTokenFamily, ThemeTokenId,
-    ThemeTokenSource, ThemeTokenValue,
+    MosaicSizingBehavior, ThemeTokenDescriptor, ThemeTokenFamily, ThemeTokenId, ThemeTokenSource,
+    ThemeTokenValue, UiThemeColor,
 };
 use worth_ui::facade::measurement_exchange::{
     UiMeasurementEvidenceFamily, UiViewportExtentObservation, UiViewportExtentRequest,
@@ -95,6 +94,7 @@ fn real_query_scalar_publishes_same_generation_semantic_text_to_headless_host() 
         plan.basis().candidate_generation() == &active_generation,
         "Query-only planning must retain the post-allocation application generation"
     );
+    crate::mounted_geometry_fixture::install_current_occurrence_geometry(&mut session);
     let prepared = session
         .prepare_rebind(plan, UiRebindExecutionRequest::new(313))
         .expect("same-generation content rebind prepares");
@@ -153,7 +153,7 @@ fn real_query_scalar_publishes_same_generation_semantic_text_to_headless_host() 
     assert_eq!(
         transcript.unperformed_effects(),
         &[UiHeadlessUnperformedEffect::NativePaint {
-            filled_rect_count: 1,
+            appearance_mechanic_count: 0,
             portal_overlay_count: 0,
             semantic_text_count: 2,
             preview_node_count: 0,
@@ -203,17 +203,6 @@ pub(super) fn projection_app(
         .expect("projection application freezes")
 }
 
-pub(super) fn projection_module(component: &str) -> WorthUiRustAuthoredArtifactInputModule {
-    projection_module_with_body(
-        component,
-        [
-            WorthUiArtifactInputBodyAtom::Identifier("content".to_owned()),
-            WorthUiArtifactInputBodyAtom::Identifier("projection".to_owned()),
-            WorthUiArtifactInputBodyAtom::Identifier(PROJECTION.to_owned()),
-        ],
-    )
-}
-
 pub(super) fn projection_module_with_additional_token(
     component: &str,
     token: &str,
@@ -222,33 +211,16 @@ pub(super) fn projection_module_with_additional_token(
     projection_module(component).with_token(token, value)
 }
 
-pub(super) fn projection_module_with_region(
-    component: &str,
-    region: &str,
-) -> WorthUiRustAuthoredArtifactInputModule {
-    projection_module_with_body(
-        component,
-        [
-            WorthUiArtifactInputBodyAtom::Identifier("content".to_owned()),
-            WorthUiArtifactInputBodyAtom::Identifier("projection".to_owned()),
-            WorthUiArtifactInputBodyAtom::Identifier(PROJECTION.to_owned()),
-            WorthUiArtifactInputBodyAtom::Identifier("region".to_owned()),
-            WorthUiArtifactInputBodyAtom::Identifier(region.to_owned()),
-            WorthUiArtifactInputBodyAtom::LeftBrace,
-            WorthUiArtifactInputBodyAtom::RightBrace,
-        ],
-    )
-}
-
-fn projection_module_with_body<const N: usize>(
-    component: &str,
-    body: [WorthUiArtifactInputBodyAtom; N],
-) -> WorthUiRustAuthoredArtifactInputModule {
+pub(super) fn projection_module(component: &str) -> WorthUiRustAuthoredArtifactInputModule {
     WorthUiRustAuthoredArtifactInputModule::new("app/main.wui")
         .with_component_body_atoms_and_authored_identity(
             component,
             "platform-pulse-projected-status-component",
-            body,
+            [
+                WorthUiArtifactInputBodyAtom::Identifier("content".to_owned()),
+                WorthUiArtifactInputBodyAtom::Identifier("projection".to_owned()),
+                WorthUiArtifactInputBodyAtom::Identifier(PROJECTION.to_owned()),
+            ],
         )
         .with_token(TEXT_COLOR, "#ffffff")
         .try_with_query_scalar_text(
@@ -267,13 +239,8 @@ pub(crate) fn component_descriptor(identity: &str) -> ComponentDescriptor {
         ComponentChildPolicy::no_children(),
         ComponentStateOwnership::runtime_owned(),
     )
-    .with_static_paint(
-        ComponentStaticPaintContract::opaque_fill(
-            ThemeTokenId::new(TEXT_COLOR).unwrap(),
-            ComponentStaticPaintOrder::back_to_front(0),
-        ),
-        ComponentAllocationMeasurementContract::fill_viewport(),
-    )
+    .with_allocation_measurement_contract(ComponentAllocationMeasurementContract::fill_viewport())
+    .with_surface_paint_order(0)
     .with_semantic_text(ComponentSemanticTextContract::body_default(
         ThemeTokenId::new(TEXT_COLOR).unwrap(),
         1,
@@ -299,7 +266,7 @@ pub(crate) fn text_token_descriptor() -> ThemeTokenDescriptor {
         ThemeTokenId::new(TEXT_COLOR).unwrap(),
         ThemeTokenFamily::surface(),
         ThemeTokenSource::application(),
-        ThemeTokenValue::color(ThemeColorValue::hex("#ffffff").unwrap()),
+        ThemeTokenValue::color(UiThemeColor::parse("#ffffff").unwrap()),
     )
 }
 
@@ -319,7 +286,19 @@ pub(crate) fn mount_and_allocate(
             .unwrap(),
         )
         .unwrap();
-    let nodes = session.graph().node_identities().collect::<Vec<_>>();
+    let graph = session.graph();
+    let nodes = graph
+        .node_identities()
+        .filter(|identity| {
+            graph.lookup().graph_node(*identity).is_some_and(|record| {
+                record
+                    .value()
+                    .declaration_identity()
+                    .authored_semantic_name()
+                    == format!("component:{ACTIVE_COMPONENT}")
+            })
+        })
+        .collect::<Vec<_>>();
     let mounted_instances = nodes
         .into_iter()
         .map(|node| {

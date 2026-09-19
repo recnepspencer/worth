@@ -1,8 +1,8 @@
 impl super::UiSelectionRuntimeState {
     pub(crate) fn shutdown(&mut self) -> usize {
         let released = self.owners.len();
-        self.owners.clear();
-        self.mounted_owners.clear();
+        self.owners = Default::default();
+        self.mounted_owners = Default::default();
         self.family_owners.clear();
         self.last_drop = None;
         released
@@ -89,15 +89,29 @@ impl super::UiSelectionRuntimeState {
     pub(crate) fn suspend_projection_catalogs(&mut self) -> usize {
         let families = self.projection_families();
         let mut suspended = 0;
+        // One lifecycle operation reserves one successor before changing any
+        // owner. Exhaustion cannot leave a partially suspended family set.
+        let mut successor_revision = None;
         for &family in &families {
             let owners = self.family_owners.get(&family).cloned().unwrap_or_default();
             for owner in owners {
-                let Some(record) = self.owners.get_mut(&owner) else {
+                let Some(mut record) = self.owners.get(&owner).cloned() else {
                     continue;
                 };
+                if !record.catalog_available {
+                    continue;
+                }
+                let revision = *successor_revision.get_or_insert_with(|| {
+                    self.revision
+                        .checked_add(1)
+                        .expect("Selection lifecycle revision exhausted")
+                });
+                record.revision = revision;
                 record.catalog_available = false;
                 record.catalog = std::sync::Arc::from([]);
                 record.catalog_positions = std::sync::Arc::new(std::collections::BTreeMap::new());
+                self.owners.insert(owner, record);
+                self.revision = revision;
                 suspended += 1;
             }
         }
@@ -110,29 +124,19 @@ impl super::UiSelectionRuntimeState {
         graph_node: crate::graph::UiGraphNodeIdentity,
         incarnation: crate::runtime::selection::UiSelectionOwnerIncarnation,
     ) -> usize {
-        let owners = self
-            .mounted_owners
-            .remove(&(surface, graph_node, incarnation))
-            .unwrap_or_default();
+        let mounted_key = (surface, graph_node, incarnation);
+        let Some(owners) = self.mounted_owners.get(&mounted_key).cloned() else {
+            return 0;
+        };
         let mut released = 0;
-        for owner in owners {
+        for owner in owners.iter().copied() {
             if self
                 .owners
                 .get(&owner)
                 .is_some_and(|record| record.incarnation == incarnation)
             {
                 self.owners.remove(&owner);
-                let family = owner.key_family();
-                let remove_family = if let Some(family_owners) = self.family_owners.get_mut(&family)
-                {
-                    family_owners.remove(&owner);
-                    family_owners.is_empty()
-                } else {
-                    false
-                };
-                if remove_family {
-                    self.family_owners.remove(&family);
-                }
+                self.unindex_owner(owner, incarnation);
                 released += 1;
             }
         }
@@ -143,26 +147,14 @@ impl super::UiSelectionRuntimeState {
         &mut self,
         family: crate::runtime::UiApplicationItemKeyFamily,
     ) -> usize {
-        let owners = self.family_owners.remove(&family).unwrap_or_default();
+        let owners = self.family_owners.get(&family).cloned().unwrap_or_default();
         let mut released = 0;
         for owner in owners {
-            let Some(record) = self.owners.remove(&owner) else {
+            let Some(incarnation) = self.owners.get(&owner).map(|record| record.incarnation) else {
                 continue;
             };
-            let mounted_key = (
-                owner.semantic_surface(),
-                owner.graph_node(),
-                record.incarnation,
-            );
-            let remove_mounted = if let Some(mounted) = self.mounted_owners.get_mut(&mounted_key) {
-                mounted.remove(&owner);
-                mounted.is_empty()
-            } else {
-                false
-            };
-            if remove_mounted {
-                self.mounted_owners.remove(&mounted_key);
-            }
+            self.owners.remove(&owner);
+            self.unindex_owner(owner, incarnation);
             released += 1;
         }
         released

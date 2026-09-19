@@ -102,6 +102,10 @@ impl UiMountedNodeReceiptIssuer {
         self.frame
     }
 
+    pub(crate) const fn issuer_nonce(self) -> u64 {
+        self.nonce
+    }
+
     #[doc(hidden)]
     pub const fn receipt_affinity(self) -> UiMountedNodeReceiptAffinity {
         UiMountedNodeReceiptAffinity { issuer: self }

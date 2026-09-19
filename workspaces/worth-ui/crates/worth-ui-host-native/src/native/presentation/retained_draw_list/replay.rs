@@ -23,6 +23,16 @@ impl UiNativeRetainedDrawList {
         counters.damage_regions = exact_u64(clear_regions.len())?;
         let mut replay_regions = Vec::with_capacity(clear_regions.len());
         for region in clear_regions {
+            // Once admitted images are retained, selection waits for physical
+            // damage conversion in the raster planner. Allocation bounds no
+            // longer select an ordinary replay set at this stage.
+            if self.physical_coverage.is_some() {
+                replay_regions.push(UiNativeRetainedReplayRegion {
+                    damage: region,
+                    replay: Box::new([]),
+                });
+                continue;
+            }
             let query = self.damage.intersecting(region.bounds())?;
             counters.damage_index_branch_aabb_probes = add(
                 counters.damage_index_branch_aabb_probes,
@@ -57,8 +67,10 @@ impl UiNativeRetainedDrawList {
         counters.order_index_rotations = order_cost.rotations();
         counters.order_index_high_water = order_cost.high_water_entries();
         Ok(UiNativeRetainedReplayPlan {
+            physical_text_regions: Vec::new(),
             baseline_rgba8: self.baseline.transparent_rgba8(),
             regions: replay_regions.into_boxed_slice(),
+            staged_appearance_regions: Box::new([]),
             counters,
             identity_overlay_effect: false,
         })

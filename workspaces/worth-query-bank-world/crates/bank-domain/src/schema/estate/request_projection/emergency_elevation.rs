@@ -107,7 +107,9 @@ impl ApplicationCapabilityRequest<BankSchema, CompleteEstateMandatoryReviewCapab
             EstateMandatoryReviewSlot::reference(),
             ApplicationCapabilityEntitySelector::new(
                 MandatoryReviewIdentityField::reference(),
-                review,
+                crate::schema::encoded_bank_value::<crate::schema::MandatoryReviewIdBinding>(
+                    review,
+                ),
             ),
         );
         Ok(estate_transition_request(self, estate, context))
@@ -146,19 +148,28 @@ impl ApplicationCapabilityElevationRequest<BankSchema, RequestEstateEmergencyAcc
             elevation_target_request(estate, field),
             ApplicationCapabilityEntitySelector::new(
                 CapabilityGrantIdentityField::reference(),
-                grant,
+                crate::schema::encoded_bank_value::<crate::schema::CapabilityGrantIdBinding>(grant),
             ),
             format!("estate-emergency-access-{}", access.get()),
             ApplicationCapabilityValueBinding::new(
                 EmergencyAccessIdentityField::reference(),
-                access,
+                crate::schema::encoded_bank_value::<crate::schema::EmergencyAccessIdBinding>(
+                    access,
+                ),
             ),
             format!("estate-mandatory-review-{}", review.get()),
             ApplicationCapabilityValueBinding::new(
                 MandatoryReviewIdentityField::reference(),
-                review,
+                crate::schema::encoded_bank_value::<crate::schema::MandatoryReviewIdBinding>(
+                    review,
+                ),
             ),
-            ApplicationCapabilityValueBinding::new(EmergencyAccessReasonField::reference(), reason),
+            ApplicationCapabilityValueBinding::new(
+                EmergencyAccessReasonField::reference(),
+                crate::schema::encoded_bank_value::<crate::schema::EmergencyAccessReasonBinding>(
+                    reason,
+                ),
+            ),
             duration,
         )
     }
@@ -169,7 +180,10 @@ fn elevation_context(
 ) -> ApplicationCapabilityRequestContext<BankSchema, EstateActionContext> {
     ApplicationCapabilityRequestContext::new(EstateActionContext::reference()).entity(
         EstateEmergencyAccessSlot::reference(),
-        ApplicationCapabilityEntitySelector::new(EmergencyAccessIdentityField::reference(), access),
+        ApplicationCapabilityEntitySelector::new(
+            EmergencyAccessIdentityField::reference(),
+            crate::schema::encoded_bank_value::<crate::schema::EmergencyAccessIdBinding>(access),
+        ),
     )
 }
 
@@ -179,9 +193,16 @@ fn estate_transition_request(
     context: ApplicationCapabilityRequestContext<BankSchema, EstateActionContext>,
 ) -> ApplicationCapabilityRequestProjection<BankSchema, EstateCase, EstateActionContext> {
     ApplicationCapabilityRequestProjection::new(
-        ApplicationCapabilityEntitySelector::new(EstateCaseIdentityField::reference(), estate),
-        action.operation(),
-        action.purpose(),
+        ApplicationCapabilityEntitySelector::new(
+            EstateCaseIdentityField::reference(),
+            crate::schema::encoded_bank_value::<crate::schema::EstateCaseIdBinding>(estate),
+        ),
+        crate::schema::encoded_bank_value::<crate::schema::EstateCapabilityOperationBinding>(
+            action.operation(),
+        ),
+        crate::schema::encoded_bank_value::<crate::schema::EstateCapabilityPurposeBinding>(
+            action.purpose(),
+        ),
         context,
     )
 }
@@ -191,10 +212,19 @@ fn elevation_target_request(
     field: crate::estate::RestrictedBankField,
 ) -> ApplicationCapabilityRequestProjection<BankSchema, EstateCase, EstateActionContext> {
     ApplicationCapabilityRequestProjection::new(
-        ApplicationCapabilityEntitySelector::new(EstateCaseIdentityField::reference(), estate),
-        EstateCapabilityOperation::ViewRestrictedEstate,
-        EstateCapabilityPurpose::EmergencyProtection,
+        ApplicationCapabilityEntitySelector::new(
+            EstateCaseIdentityField::reference(),
+            crate::schema::encoded_bank_value::<crate::schema::EstateCaseIdBinding>(estate),
+        ),
+        crate::schema::encoded_bank_value::<crate::schema::EstateCapabilityOperationBinding>(
+            EstateCapabilityOperation::ViewRestrictedEstate,
+        ),
+        crate::schema::encoded_bank_value::<crate::schema::EstateCapabilityPurposeBinding>(
+            EstateCapabilityPurpose::EmergencyProtection,
+        ),
         ApplicationCapabilityRequestContext::new(EstateActionContext::reference()),
     )
-    .field(field)
+    .field(crate::schema::encoded_bank_value::<
+        crate::schema::RestrictedBankFieldBinding,
+    >(field))
 }

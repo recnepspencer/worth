@@ -1,3 +1,4 @@
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -9,20 +10,28 @@ use super::super::protocol::{
 };
 use super::{bind_application, BankHttpServerConfiguration};
 
-mod aftermath;
+mod continuation_replay;
 mod elevation;
+mod elevation_request_replay;
 mod fixture;
 mod mutation;
 mod protocol;
 mod recovery;
+mod resource_close;
 
 use fixture::{application, CausalHttpApplication};
+use resource_close::TrackedAuthorizationTime;
 
 #[tokio::test]
 async fn account_activity_sse_preserves_open_and_deadline_postures() {
     let account = AccountId::new(100).unwrap();
-    let application = Arc::new(application(account));
+    let releases = Arc::new(AtomicUsize::new(0));
+    let application = Arc::new(fixture::application_with_authorization_time(
+        account,
+        TrackedAuthorizationTime::new(Arc::clone(&releases)),
+    ));
     assert_live_fixture_admits(application.as_ref(), account).await;
+    let retained_application = Arc::clone(&application);
     let server = bind_application(
         application,
         BankHttpServerConfiguration::local_ephemeral()
@@ -120,13 +129,59 @@ async fn account_activity_sse_preserves_open_and_deadline_postures() {
             "http://{}/v1/live/account-activity",
             server.local_address()
         ))
-        .json(&live_request(account, "activity-stream-replacement", 250))
+        .json(&live_request(
+            account,
+            "activity-stream-replacement",
+            30_000,
+        ))
         .send()
         .await
         .expect("replacement SSE request should connect");
     assert_eq!(replacement.status(), reqwest::StatusCode::OK);
+    let mut replacement = replacement;
+    let mut replacement_transcript = String::new();
+    read_sse_until(
+        &mut replacement,
+        &mut replacement_transcript,
+        "\"event\":\"opened\"",
+    )
+    .await;
+    assert_eq!(
+        retained_application
+            .runtime
+            .application_program()
+            .active_live_consumers_for_test(),
+        1,
+        "the replacement stream must hold a real Query live lease at shutdown"
+    );
+    assert_eq!(releases.load(Ordering::SeqCst), 0);
+    tokio::time::timeout(Duration::from_secs(5), server.shutdown())
+        .await
+        .expect("server shutdown must close an active stream promptly")
+        .expect("server should shut down");
+    assert_eq!(
+        retained_application
+            .runtime
+            .application_program()
+            .active_live_consumers_for_test(),
+        0,
+        "shutdown must close the active Query live lease"
+    );
+    read_sse_until(
+        &mut replacement,
+        &mut replacement_transcript,
+        "\"event\":\"closed\"",
+    )
+    .await;
+    assert!(!replacement_transcript.contains("deadline_exceeded"));
+    assert_eq!(releases.load(Ordering::SeqCst), 0);
     drop(replacement);
-    server.shutdown().await.expect("server should shut down");
+    drop(retained_application);
+    assert_eq!(
+        releases.load(Ordering::SeqCst),
+        1,
+        "shutdown must leave no task retaining the installed Bank runtime"
+    );
 }
 
 async fn read_sse_until(response: &mut reqwest::Response, transcript: &mut String, marker: &str) {
@@ -191,6 +246,11 @@ async fn opaque_continuation_replays_lost_responses_without_reusing_query_author
             ..
         }
     ));
+    assert_eq!(
+        post_page(&client, &page_endpoint, &first_request).await,
+        first,
+        "the first request id must still replay its own response after resume"
+    );
 
     let crossed_request = serde_json::json!({
         "protocol": "v1",
@@ -227,7 +287,10 @@ async fn assert_live_fixture_admits(application: &CausalHttpApplication, account
         .subscribe(controls)
     {
         Ok(lease) => {
-            let _ = lease.close();
+            assert_eq!(
+                lease.close(),
+                bank_server::BankApplicationLiveCloseOutcome::Completed
+            );
         }
         Err(error) => panic!("live fixture must admit: {error:?}"),
     };

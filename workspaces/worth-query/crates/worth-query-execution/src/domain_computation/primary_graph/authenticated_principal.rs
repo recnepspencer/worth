@@ -2,7 +2,8 @@ use std::marker::PhantomData;
 use std::time::Instant;
 
 use worth_query_admission::facade::authenticated_principal::{
-    WorthQueryAuthenticatedExternalPrincipal, WorthQueryPrincipalAttribute,
+    WorthQueryAuthenticatedExternalPrincipal, WorthQueryAuthenticationAdapterIdentity,
+    WorthQueryPrincipalAttribute,
 };
 use worth_query_installation::facade::{
     ApplicationSchemaBindingIdentity, WorthQueryExternalPrincipalIdentity,
@@ -45,7 +46,9 @@ impl<Schema, Principal, PrincipalIdentity> std::fmt::Debug
 /// use worth_query_execution::facade::primary_graph::WorthQueryAuthenticatedPrincipal;
 ///
 /// let _ = WorthQueryAuthenticatedPrincipal::<(), (), u64> {
-///     external: todo!(),
+///     external_identity: todo!(),
+///     attributes: Vec::new(),
+///     valid_until: std::time::Instant::now(),
 ///     application_principal: todo!(),
 ///     binding_identity: todo!(),
 ///     binding: String::new(),
@@ -65,7 +68,10 @@ impl<Schema, Principal, PrincipalIdentity> std::fmt::Debug
 ///     serde_json::from_str("{}").unwrap();
 /// ```
 pub struct WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity> {
-    external: WorthQueryAuthenticatedExternalPrincipal<Schema>,
+    external_identity: WorthQueryExternalPrincipalIdentity,
+    adapter_identity: WorthQueryAuthenticationAdapterIdentity,
+    attributes: Vec<WorthQueryPrincipalAttribute>,
+    valid_until: Instant,
     application_principal:
         WorthQueryApplicationPrincipalIdentity<Schema, Principal, PrincipalIdentity>,
     binding_identity: ApplicationSchemaBindingIdentity,
@@ -92,11 +98,14 @@ impl<Schema, Principal, PrincipalIdentity>
     WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>
 {
     pub(super) fn mint(
-        external: WorthQueryAuthenticatedExternalPrincipal<Schema>,
+        external: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         evidence: WorthQueryResolvedPrincipalEvidence<PrincipalIdentity>,
     ) -> Self {
         Self {
-            external,
+            external_identity: external.identity().clone(),
+            adapter_identity: external.adapter_identity().clone(),
+            attributes: external.attributes().to_vec(),
+            valid_until: external.valid_until(),
             application_principal: WorthQueryApplicationPrincipalIdentity {
                 entity_id: evidence.principal_entity_id,
                 runtime_authority: evidence.runtime_authority,
@@ -123,11 +132,15 @@ impl<Schema, Principal, PrincipalIdentity>
     }
 
     pub fn external_identity(&self) -> &WorthQueryExternalPrincipalIdentity {
-        self.external.identity()
+        &self.external_identity
+    }
+
+    pub fn adapter_identity(&self) -> &WorthQueryAuthenticationAdapterIdentity {
+        &self.adapter_identity
     }
 
     pub fn attributes(&self) -> &[WorthQueryPrincipalAttribute] {
-        self.external.attributes()
+        &self.attributes
     }
 
     pub fn binding_identity(&self) -> &ApplicationSchemaBindingIdentity {
@@ -139,11 +152,11 @@ impl<Schema, Principal, PrincipalIdentity>
     }
 
     pub fn valid_until(&self) -> Instant {
-        self.external.valid_until()
+        self.valid_until
     }
 
     pub fn is_expired(&self) -> bool {
-        self.external.is_expired()
+        Instant::now() >= self.valid_until
     }
 
     pub const fn examined_candidate_count(&self) -> usize {

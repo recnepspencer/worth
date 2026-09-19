@@ -107,6 +107,9 @@ impl UiDeclarationLowering {
             semantic_input_digest,
             source_artifact_generation,
         );
+        let authored_appearance_role_attachment =
+            semantic_artifact.appearance_role_attachment().cloned();
+        let authored_component_reference = semantic_artifact.component_reference().cloned();
         UiDeclarationArtifact::new(crate::declaration::UiDeclarationArtifactInput {
             identity,
             digests,
@@ -116,6 +119,8 @@ impl UiDeclarationLowering {
             structural_semantics_admission,
             family_admission,
             provenance,
+            authored_appearance_role_attachment,
+            authored_component_reference,
         })
     }
 }

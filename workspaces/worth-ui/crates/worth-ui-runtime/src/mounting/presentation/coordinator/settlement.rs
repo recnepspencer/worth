@@ -216,8 +216,6 @@ impl UiMountedPresentationCoordinator {
             query_close_complete,
             query_transitions,
             query_transition_trace_complete,
-            query_semantic_frontiers,
-            query_semantic_frontier_trace_complete,
             cleanup,
         ) = match self.presentation_async.take() {
             Some(runtime) => match runtime.into_terminal_close() {
@@ -229,8 +227,6 @@ impl UiMountedPresentationCoordinator {
                         true,
                         receipt.transitions().to_vec().into_boxed_slice(),
                         receipt.transition_trace_complete(),
-                        receipt.settled_frontiers().to_vec().into_boxed_slice(),
-                        receipt.settled_frontier_trace_complete(),
                         None,
                     )
                 }
@@ -240,9 +236,6 @@ impl UiMountedPresentationCoordinator {
                     Vec::<worth_ui_query_binding::WorthUiPresentationTransitionObservation>::new()
                         .into_boxed_slice(),
                     false,
-                    Vec::<worth_ui_query_binding::WorthUiPresentationSemanticFrontierObservation>::new()
-                        .into_boxed_slice(),
-                    false,
                     Some(cleanup),
                 ),
             },
@@ -250,9 +243,6 @@ impl UiMountedPresentationCoordinator {
                 0,
                 true,
                 Vec::<worth_ui_query_binding::WorthUiPresentationTransitionObservation>::new()
-                    .into_boxed_slice(),
-                true,
-                Vec::<worth_ui_query_binding::WorthUiPresentationSemanticFrontierObservation>::new()
                     .into_boxed_slice(),
                 true,
                 None,
@@ -268,8 +258,6 @@ impl UiMountedPresentationCoordinator {
                     complete: query_close_complete,
                     transitions: query_transitions,
                     transition_trace_complete: query_transition_trace_complete,
-                    semantic_frontiers: query_semantic_frontiers,
-                    semantic_frontier_trace_complete: query_semantic_frontier_trace_complete,
                 },
                 super::super::UiMountedPresentationTextShutdown {
                     work: text_presentation_work,

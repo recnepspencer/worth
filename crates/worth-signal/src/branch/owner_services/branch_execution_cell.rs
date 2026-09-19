@@ -15,6 +15,13 @@ use super::lifecycle_state::{
 
 pub(crate) mod advance;
 pub(crate) mod basis;
+mod committed_patch_delivery;
+mod conditional_execution;
+mod conditional_installation;
+mod conditional_issuance;
+mod conditional_owned_async;
+mod conditional_retirement;
+mod conditional_topology;
 pub(crate) mod fork;
 #[path = "branch_execution_cell/fork_custody.rs"]
 mod fork_custody;
@@ -42,17 +49,20 @@ pub(crate) enum SignalBranchCellAdmissionDenial {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg(test)]
 pub(crate) enum SignalBranchCellPoisonRecovery {
     TerminallyQuarantinedPartialMutation,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[cfg(test)]
 pub(crate) struct SignalBranchCellCostSnapshot {
     contacts: u64,
     waits: u64,
     movements: u64,
 }
 
+#[cfg(test)]
 impl SignalBranchCellCostSnapshot {
     pub(crate) const fn contacts(&self) -> u64 {
         self.contacts
@@ -185,12 +195,14 @@ impl<S> SignalBranchExecutionCell<S> {
         Ok(result)
     }
 
+    #[cfg(test)]
     pub(crate) fn poison_recovery(&self) -> Option<SignalBranchCellPoisonRecovery> {
         self.recovered_poison
             .load(Ordering::Acquire)
             .then_some(SignalBranchCellPoisonRecovery::TerminallyQuarantinedPartialMutation)
     }
 
+    #[cfg(test)]
     pub(crate) fn cost_snapshot(&self) -> SignalBranchCellCostSnapshot {
         SignalBranchCellCostSnapshot {
             contacts: self.contacts.load(Ordering::SeqCst),
@@ -357,6 +369,7 @@ impl SignalBranchCellWork<'_> {
         self.movements.fetch_add(1, Ordering::SeqCst);
     }
 
+    #[cfg(test)]
     pub(crate) fn record_retention_registry_contact(&self) {
         self.counters.record_retention_registry_contact();
     }
@@ -368,13 +381,5 @@ impl SignalBranchCellWork<'_> {
         self.counters.record_fork_source_capture();
         self.counters
             .record_forked_mutable_graph_node_copies(work.copied_mutable_graph_nodes());
-    }
-
-    pub(crate) fn record_diagnostic_event(&self) {
-        self.counters.record_diagnostic_event();
-    }
-
-    pub(crate) fn record_dropped_diagnostic_event(&self) {
-        self.counters.record_dropped_diagnostic_event();
     }
 }

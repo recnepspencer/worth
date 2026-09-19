@@ -3,8 +3,8 @@ use worth_query_declaration::facade::application_schema::{
 };
 
 use super::{
-    basis::admit_current_execution_basis, WorthQueryApplicationBasisIdentity,
-    WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryAdmissionDenialKind,
+    WorthQueryApplicationBasisIdentity, WorthQueryApplicationQueryAdmissionDenial,
+    WorthQueryApplicationQueryAdmissionDenialKind,
 };
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
@@ -22,7 +22,8 @@ pub struct WorthQueryPrimaryGraphApplicationReadinessSnapshot {
     basis_token: String,
 }
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+impl<Schema>
+    crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<'_, Schema>
 where
     Schema: ApplicationSchema,
 {
@@ -34,28 +35,26 @@ where
         WorthQueryPrimaryGraphApplicationReadinessSnapshot,
         WorthQueryApplicationQueryAdmissionDenial,
     > {
-        let basis = admit_current_execution_basis(self)?;
-        let basis_identity = basis.identity().clone();
-        let schema_binding = self.installed_schema().binding_identity();
+        let application = self.application();
+        let basis_identity = self.application_basis().identity().clone();
+        let schema_binding = application.installed_schema().binding_identity();
         let basis_token = basis_token(
-            &self.application_readiness_schema_token,
+            &application.application_readiness_schema_token,
             basis_identity.runtime_instance_id(),
             basis_identity.descriptor(),
         );
-        let release = basis.release();
-        if !release.released() {
-            return Err(WorthQueryApplicationQueryAdmissionDenial::new(
-                WorthQueryApplicationQueryAdmissionDenialKind::RuntimeSupportUnavailable,
-                "primary-graph readiness basis release",
-            ));
-        }
         Ok(WorthQueryPrimaryGraphApplicationReadinessSnapshot {
             schema_binding,
             basis_identity,
             basis_token,
         })
     }
+}
 
+impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+where
+    Schema: ApplicationSchema,
+{
     /// Renders the transport precondition for the exact basis observed by an
     /// application query result.
     pub fn application_basis_token(

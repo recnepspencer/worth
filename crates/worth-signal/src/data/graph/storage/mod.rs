@@ -1,5 +1,9 @@
 mod diagnostic_scan;
 mod entries;
+pub(in crate::data::graph) use entries::NodeEvaluationMutation;
+pub(crate) use entries::PreparedInvalidationCache;
+pub(crate) mod evaluation_partition;
+pub(crate) mod execution_basis;
 mod handles;
 pub(crate) mod invalidation_causes;
 mod segmented;

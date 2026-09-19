@@ -46,7 +46,7 @@ pub enum BankEstateReleaseProjectionDenial {
     Traversal(crate::BankInvariantProjectionTraversalDenial),
 }
 
-pub(super) fn project_release_readiness(
+pub(crate) fn project_release_readiness(
     reader: &mut WorthQueryApplicationOperationInvariantProjectionReader<
         BankSchema,
         ReleaseEstateOperation,

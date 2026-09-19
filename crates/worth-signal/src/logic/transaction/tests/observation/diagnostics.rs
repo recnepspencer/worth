@@ -62,7 +62,6 @@ fn observation_phase4_diagnostics_surface_exposes_latest_boundary_summary() {
         .expect("flow diagnostics should exist after commit");
     let flow_observation = latest_flow
         .observation
-        .as_ref()
         .expect("latest flow should carry observation summary");
     assert_eq!(flow_observation, latest_observation);
     assert_eq!(flow_observation, &result.observation);

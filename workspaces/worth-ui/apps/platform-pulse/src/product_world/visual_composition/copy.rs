@@ -7,83 +7,100 @@ pub struct PlatformPulseStaticCopy {
 }
 
 impl PlatformPulseStaticCopy {
-    pub const ALL: [Self; 23] = [
-        Self::new(PlatformPulseProductComponent::Brand, "W  O  R  T  H"),
+    pub const ALL: [Self; 28] = [
+        Self::new(PlatformPulseProductComponent::ReviewLabel, "Review deployment"),
+        Self::new(
+            PlatformPulseProductComponent::ReviewTitle,
+            "Review deployment",
+        ),
+        Self::new(
+            PlatformPulseProductComponent::ReviewBody,
+            "Production release 2.5.0\nPricing model · 3 files\nError handling · 5 files\nLegacy cleanup · 2 files",
+        ),
+        Self::new(PlatformPulseProductComponent::ReviewCancelLabel, "Cancel"),
+        Self::new(
+            PlatformPulseProductComponent::ReviewPrimaryLabel,
+            "Approve deployment",
+        ),
+        Self::new(PlatformPulseProductComponent::Brand, "Platform Pulse"),
         Self::new(
             PlatformPulseProductComponent::RuntimeBadge,
-            "●  LIVE     NATIVE PROCESS",
+            "●  ALL SYSTEMS OPERATIONAL",
         ),
         Self::new(
             PlatformPulseProductComponent::EvidenceTitle,
-            "LIVE EVIDENCE",
+            "Overview",
         ),
         Self::new(
             PlatformPulseProductComponent::EvidenceBody,
-            "Source 1 ·\napplication current",
+            "Activity",
         ),
         Self::new(
             PlatformPulseProductComponent::SourceSignalTitle,
-            "Query live\nAction ready",
+            "Signals",
         ),
         Self::new(
             PlatformPulseProductComponent::EvidenceServiceLabel,
-            "LATEST SERVICE",
+            "Deployments",
         ),
         Self::new(
             PlatformPulseProductComponent::EvidenceServiceBody,
-            "Portal ready · bounded evidence",
+            "Settings",
         ),
         Self::new(
             PlatformPulseProductComponent::ServiceEyebrow,
-            "PLATFORM PULSE",
+            "OVERVIEW",
         ),
         Self::new(
             PlatformPulseProductComponent::ServiceTitle,
-            "Platform\nPulse",
+            "Good afternoon,\nhere’s your platform pulse.",
         ),
         Self::new(
             PlatformPulseProductComponent::ServiceBody,
-            "Bound Query, intent admission, and native publication — only as they happen.",
+            "Everything important across your services, signals, and deployments in one calm view.",
         ),
-        Self::new(PlatformPulseProductComponent::QueryLabel, "QUERY POSTURE"),
+        Self::new(PlatformPulseProductComponent::QueryLabel, "REQUEST VOLUME"),
+        Self::new(
+            PlatformPulseProductComponent::ConfirmationLabel,
+            "Live Query posture",
+        ),
         Self::new(
             PlatformPulseProductComponent::NativeLabel,
-            "COMMAND CONTEXT",
+            "SERVICE HEALTH",
         ),
         Self::new(
             PlatformPulseProductComponent::NativeBody,
-            "Primary+Shift+P · awaiting route",
+            "API · Operational\nWeb app · Operational",
         ),
         Self::new(
             PlatformPulseProductComponent::QueryDenialLabel,
-            "QUERY ADMISSION",
+            "P95 LATENCY",
         ),
         Self::new(
             PlatformPulseProductComponent::QueryDenialBody,
-            "Separate boundary · not exercised",
+            "186 ms · down 8%",
         ),
         Self::new(
             PlatformPulseProductComponent::ActionLabel,
-            "Run live action",
+            "Review deployment",
         ),
-        Self::new(PlatformPulseProductComponent::PortalLabel, "Details"),
-        Self::new(PlatformPulseProductComponent::PortalIconText, "↗"),
+        Self::new(PlatformPulseProductComponent::PortalLabel, "Signals"),
         Self::new(
             PlatformPulseProductComponent::PortalTitle,
-            "Run live action",
+            "Recent signals",
         ),
         Self::new(
             PlatformPulseProductComponent::PortalBody,
-            "Publish one admitted action.\nObserve the resulting Query posture.",
+            "Error rate spike · 12m\nLatency increased · 47m\nRecovery confirmed · 2h",
         ),
-        Self::new(PlatformPulseProductComponent::PortalCancelLabel, "Cancel"),
+        Self::new(PlatformPulseProductComponent::PortalCancelLabel, "Dismiss"),
         Self::new(
             PlatformPulseProductComponent::PortalPrimaryLabel,
-            "Run action",
+            "View all",
         ),
         Self::new(
             PlatformPulseProductComponent::StatusText,
-            "Awaiting runtime service posture",
+            "Live telemetry ready · Last refreshed just now",
         ),
     ];
 

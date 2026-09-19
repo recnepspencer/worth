@@ -33,14 +33,35 @@ worth_query_declaration::worth_query_portable_type!(ReverseSequenceSlot => "wort
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct NestedAccountResult {
+    primary_activity: worth_relational::facade::identity::EntityId,
+    secondary_activity: Option<worth_relational::facade::identity::EntityId>,
+    all_activities: Vec<worth_relational::facade::identity::EntityId>,
+    reverse_activities: Vec<worth_relational::facade::identity::EntityId>,
     primary_sequence: u64,
     secondary_sequence: Option<u64>,
     all_sequences: Vec<u64>,
     reverse_sequences: Vec<u64>,
 }
 worth_query_declaration::worth_query_portable_type!(NestedAccountResult => "worth.query.test.execution.nested.result.v1");
+worth_query_declaration::worth_query_structured_value_binding!(NestedUnitResultBinding for () { identity: "worth.rust.unit" });
 
 impl NestedAccountResult {
+    pub(in crate::domain_computation::primary_graph::tests) fn activity_identities(
+        &self,
+    ) -> (
+        worth_relational::facade::identity::EntityId,
+        Option<worth_relational::facade::identity::EntityId>,
+        &[worth_relational::facade::identity::EntityId],
+        &[worth_relational::facade::identity::EntityId],
+    ) {
+        (
+            self.primary_activity,
+            self.secondary_activity,
+            &self.all_activities,
+            &self.reverse_activities,
+        )
+    }
+
     pub(in crate::domain_computation::primary_graph::tests) const fn primary_sequence(
         &self,
     ) -> u64 {
@@ -62,11 +83,14 @@ impl NestedAccountResult {
     }
 }
 
+worth_query_declaration::worth_query_structured_value_binding!(pub NestedAccountQueryParametersBinding for AccountSummaryParameters { identity: "AccountSummaryParameters" });
+worth_query_declaration::worth_query_structured_value_binding!(pub NestedAccountQueryResultBinding for NestedAccountResult { identity: "worth.query.test.execution.nested.result.v1" });
 worth_query_application_query!(
-    pub NestedAccountQuery in IdentityExecutionSchema,
-    parameters AccountSummaryParameters,
-    result NestedAccountResult,
-    scope Account,
+    pub NestedAccountQuery for IdentityExecutionSchema,
+    identity "NestedAccountQuery",
+    parameters NestedAccountQueryParametersBinding,
+    result NestedAccountQueryResultBinding,
+    scope Account => "Account",
     name "nested_account"
 );
 
@@ -84,22 +108,34 @@ impl
         >,
     ) -> Result<Self, crate::domain_computation::primary_graph::WorthQueryApplicationProjectionDenial>
     {
-        let primary_sequence = row.one(primary_activity())?.field(primary_sequence())?;
-        let secondary_sequence = row
-            .optional(secondary_activity())?
+        let primary = row.one(primary_activity())?;
+        let primary_activity = primary.entity_id();
+        let primary_sequence = primary.field(primary_sequence())?;
+        let secondary = row.optional(secondary_activity())?;
+        let secondary_activity = secondary.as_ref().map(|activity| activity.entity_id());
+        let secondary_sequence = secondary
             .map(|activity| activity.field(secondary_sequence()))
             .transpose()?;
-        let all_sequences = row
-            .many(all_activity())?
+        let all = row.many(all_activity())?;
+        let all_activities = all.iter().map(|activity| activity.entity_id()).collect();
+        let all_sequences = all
             .iter()
             .map(|activity| activity.field(all_sequence()))
             .collect::<Result<Vec<_>, _>>()?;
-        let reverse_sequences = row
-            .many(reverse_activity())?
+        let reverse = row.many(reverse_activity())?;
+        let reverse_activities = reverse
+            .iter()
+            .map(|activity| activity.entity_id())
+            .collect();
+        let reverse_sequences = reverse
             .iter()
             .map(|activity| activity.field(reverse_sequence()))
             .collect::<Result<Vec<_>, _>>()?;
         Ok(Self {
+            primary_activity,
+            secondary_activity,
+            all_activities,
+            reverse_activities,
             primary_sequence,
             secondary_sequence,
             all_sequences,
@@ -124,6 +160,7 @@ pub(super) fn nested_account_definition() -> ApplicationQueryDefinition<
         NestedAccountQuery,
         Account,
         NestedAccountResult,
+        NestedAccountQueryResultBinding,
     >::new(Account::reference())
     .relation(primary_activity(), primary)
     .relation(secondary_activity(), secondary)
@@ -162,7 +199,13 @@ fn nested_shape<
         worth_query_declaration::facade::application_schema::NoEqualityPredicate,
         worth_query_declaration::facade::application_schema::NoApplicationUnit,
     >,
-) -> ApplicationQueryResultShapeBuilder<IdentityExecutionSchema, NestedAccountQuery, Activity, ()> {
+) -> ApplicationQueryResultShapeBuilder<
+    IdentityExecutionSchema,
+    NestedAccountQuery,
+    Activity,
+    (),
+    NestedUnitResultBinding,
+> {
     ApplicationQueryResultShapeBuilder::new(Activity::reference()).field(field)
 }
 

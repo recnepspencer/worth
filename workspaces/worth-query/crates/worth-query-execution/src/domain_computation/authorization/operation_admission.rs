@@ -7,6 +7,7 @@ use std::time::Instant;
 
 #[path = "operation_admission/capability_admission/mod.rs"]
 mod capability_admission;
+pub(in crate::domain_computation) use capability_admission::admit_capability_access;
 pub use capability_admission::WorthQueryAdmittedApplicationCapabilityAccess;
 pub(in crate::domain_computation::authorization) use capability_admission::{
     WorthQueryCapabilityContextKey, WorthQueryCurrentCapabilityObservation,
@@ -15,8 +16,8 @@ pub(in crate::domain_computation::authorization) use capability_admission::{
 };
 
 use worth_query_installation::facade::{
-    ApplicationSchemaBindingIdentity, WorthQueryCanonicalWorkPhases,
-    WorthQueryCompiledApplicationOperationContracts,
+    ApplicationSchemaBindingIdentity, WorthQueryCanonicalWorkEvidence,
+    WorthQueryCanonicalWorkPhases, WorthQueryCompiledApplicationOperationContracts,
 };
 
 use crate::domain_computation::authorization::WorthQueryRetainedAuthorizationDecisionFacts;
@@ -122,7 +123,20 @@ pub struct WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scop
     governed_input_identity: Option<[u8; 32]>,
     authorization_basis: WorthQueryOperationAuthorizationBasis<Input>,
     graph_work: crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
+    source_partition_identity: Option<[u8; 32]>,
+    source_facts: Vec<crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact>,
     _marker: PhantomData<fn(Input) -> (Schema, Operation, Scope)>,
+}
+
+impl<Schema, Operation, Input, Scope>
+    WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>
+{
+    pub(in crate::domain_computation) fn retain_execution_canonical_work(
+        &mut self,
+        work: WorthQueryCanonicalWorkEvidence,
+    ) {
+        self.canonical_work = self.canonical_work.with_execution_work(work);
+    }
 }
 
 pub(in crate::domain_computation::authorization::operation_progression) fn transition_conventional_operation<

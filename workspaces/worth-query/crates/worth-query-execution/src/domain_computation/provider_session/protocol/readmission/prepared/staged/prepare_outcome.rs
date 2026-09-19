@@ -78,6 +78,22 @@ impl WorthQuerySessionPrepareOutcome<'_> {
             self.affinity.session_mut().commit()
         }));
         match invocation {
+            Ok(Err(
+                super::super::super::super::WorthQueryProviderSessionCommitStop::ProductStale(
+                    stale,
+                ),
+            )) => {
+                let _ = self.affinity.session_mut().abort();
+                WorthQuerySessionCommitOrAbortOutcome::ProductStale(stale)
+            }
+            Ok(Err(
+                super::super::super::super::WorthQueryProviderSessionCommitStop::ProductUnpublished(
+                    unpublished,
+                ),
+            )) => WorthQuerySessionCommitOrAbortOutcome::ProductUnpublished(unpublished),
+            Ok(Err(super::super::super::super::WorthQueryProviderSessionCommitStop::NoEffect(
+                no_effect,
+            ))) => WorthQuerySessionCommitOrAbortOutcome::NoEffect(no_effect),
             Ok(Ok(provider_receipt)) => WorthQuerySessionCommitOrAbortOutcome::Committed(
                 WorthQueryClosedProviderSessionDisposition::close(
                     provider_receipt,

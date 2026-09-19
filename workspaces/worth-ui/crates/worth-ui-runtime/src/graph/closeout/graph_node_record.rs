@@ -22,9 +22,14 @@ pub struct UiGraphNodeRecord {
     repeated_instance_basis: UiRepeatedInstanceBasis,
     attachment_posture: UiGraphAttachmentPosture,
     participation_posture: UiGraphParticipationPosture,
+    has_appearance_attachment: bool,
 }
 
 impl UiGraphNodeRecord {
+    pub(crate) const fn has_appearance_attachment(&self) -> bool {
+        self.has_appearance_attachment
+    }
+
     pub fn graph_node_identity(&self) -> UiGraphNodeIdentity {
         self.graph_node_identity
     }
@@ -91,6 +96,7 @@ impl From<&UiGraphNode> for UiGraphNodeRecord {
             repeated_instance_basis: node.repeated_instance_basis().clone(),
             attachment_posture: node.attachment_posture(),
             participation_posture: node.participation_posture(),
+            has_appearance_attachment: node.appearance_role_attachment().is_some(),
         }
     }
 }

@@ -1,5 +1,0 @@
-error[E0616]: field `lower_runtime_source_digest` of struct `hadwiger_research::facade::ResearchGraphInvariantDenial` is private
- --> tests/ui/research_graph_invariants/boundaries/immutability/denial_source_reference_mutation_forbidden.rs:4:12
-  |
-4 |     denial.lower_runtime_source_digest = "changed".to_string();
-  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^ private field

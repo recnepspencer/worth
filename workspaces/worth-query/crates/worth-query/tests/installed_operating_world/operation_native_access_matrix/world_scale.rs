@@ -172,7 +172,7 @@ pub(super) fn bind_foreign_same_contract(
 > {
     let installed = workspace.domain(ForeignMatrixDomain).unwrap();
     workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed, NativeMatrixRead)
@@ -189,7 +189,7 @@ pub(super) fn bind_foreign_revision(
 > {
     let installed = workspace.domain(UnrelatedTwo).unwrap();
     workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed, NativeMatrixRead)
@@ -206,7 +206,7 @@ pub(super) fn bind_foreign_family(
 > {
     let installed = workspace.domain(UnrelatedThree).unwrap();
     workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed, NativeMatrixRead)

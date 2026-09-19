@@ -27,7 +27,7 @@ pub(in crate::mounting::projection) fn complete_hit_test(
             node.receipt.graph_node(),
         ));
     }
-    let bounds = match node.receipt.allocation() {
+    let bounds = match node.presentation_allocation() {
         UiMountedAllocationProjection::Known { bounds, .. } => bounds,
         UiMountedAllocationProjection::PortalAnchorObservation { .. } => {
             return Err(UiMountedProjectionDenial::UnsupportedHitTestAllocation(
@@ -43,6 +43,14 @@ pub(in crate::mounting::projection) fn complete_hit_test(
     let surface = semantic
         .surface_for(node.receipt.semantic_surface())
         .ok_or(UiMountedProjectionDenial::MissingSurfaceBinding)?;
+    let bounds = if node.portal_child_owner.is_none() {
+        super::super::frame_storage::surface_coordinates::viewport_bounds(
+            bounds,
+            surface.coordinate_posture,
+        )?
+    } else {
+        bounds
+    };
     let mounted_instance = node.receipt.mounted_instance();
     let node_receipt = receipt_basis
         .receipt_for(mounted_instance)
@@ -67,9 +75,16 @@ pub(in crate::mounting) fn reattribute_hit_test(
     frame: worth_ui_host_contract::UiMountedFrameIdentity,
     receipts: &super::super::super::UiMountedNodeReceiptBasis,
 ) -> Result<UiMountedHitTestMechanic, UiMountedProjectionDenial> {
-    let node_receipt = receipts
-        .receipt_for(row.mounted_instance())
-        .ok_or(UiMountedProjectionDenial::HitTestNodeReceiptMismatch)?;
+    reattribute_hit_test_with_probes(row, frame, receipts).map(|(row, _)| row)
+}
+
+pub(in crate::mounting) fn reattribute_hit_test_with_probes(
+    row: UiMountedHitTestMechanic,
+    frame: worth_ui_host_contract::UiMountedFrameIdentity,
+    receipts: &super::super::super::UiMountedNodeReceiptBasis,
+) -> Result<(UiMountedHitTestMechanic, usize), UiMountedProjectionDenial> {
+    let (receipt, probes) = receipts.receipt_for_with_probes(row.mounted_instance());
+    let node_receipt = receipt.ok_or(UiMountedProjectionDenial::HitTestNodeReceiptMismatch)?;
     UiMountedHitTestMechanic::complete_from_runtime_mounting(UiMountedHitTestCompletionInput {
         frame,
         surface: row.surface(),
@@ -80,6 +95,7 @@ pub(in crate::mounting) fn reattribute_hit_test(
         clip_bounds: row.clip_bounds(),
         order: row.order(),
     })
+    .map(|row| (row, probes))
     .map_err(UiMountedProjectionDenial::HitTestCompletion)
 }
 
@@ -143,4 +159,31 @@ pub(in crate::mounting::projection) fn rebind_hit_tests(
         .map_err(UiMountedProjectionDenial::HitTestCompletion)?;
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod coordinate_tests {
+    use super::*;
+    use worth_ui_host_contract::{
+        UiMountedCanonicalBox, UiMountedCanonicalBoxInput, UiMountedCoordinateSpace,
+    };
+
+    #[test]
+    fn physical_surface_coordinates_cannot_be_relabelled_as_logical_pointer_bounds() {
+        let bounds = UiMountedCanonicalBox::canonicalize(UiMountedCanonicalBoxInput {
+            x: 80.0,
+            y: 100.0,
+            width: 360.0,
+            height: 120.0,
+            coordinate_space: UiMountedCoordinateSpace::HostSurface,
+        })
+        .unwrap();
+        assert!(matches!(
+            crate::mounting::projection::frame_storage::surface_coordinates::viewport_bounds(
+                bounds,
+                crate::mounting::UiSurfaceBindingCoordinatePosture::PhysicalPixels
+            ),
+            Err(UiMountedProjectionDenial::CoordinateBasisMismatch)
+        ));
+    }
 }

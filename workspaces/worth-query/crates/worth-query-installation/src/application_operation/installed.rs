@@ -13,9 +13,9 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 
 use worth_query_declaration::facade::application_schema::{
-    ApplicationSchema, ApplicationSchemaBindingIdentity,
+    ApplicationOperationMarkerIdentity, ApplicationSchema, ApplicationSchemaBindingIdentity,
+    ApplicationStructuredValueBinding,
 };
-use worth_query_declaration::facade::portable_identity::WorthQueryPortableType;
 
 use super::contract_resolution::ability_requirements;
 use super::installed_contract_support::{
@@ -85,6 +85,7 @@ pub struct WorthQueryInstalledApplicationOperation<Schema, Operation, Input> {
         Arc<crate::application_schema::WorthQueryInstalledApplicationSchemaContractCatalog>,
     portable_native_contracts: Arc<Vec<WorthQueryPortableNativeAspectContractRecord>>,
     portable_contract: WorthQueryPortableApplicationOperationContractRecord,
+    mutation_bindings: Arc<Vec<worth_query_declaration::facade::application_operation::ApplicationMutationBindingDescriptor>>,
     obligations: WorthQueryInstalledGraphObligationSet,
     authority_identity: AuthoritySeal,
     _marker: PhantomData<fn(Input) -> (Schema, Operation)>,
@@ -135,8 +136,9 @@ impl<Schema, Operation, Input> WorthQueryInstalledApplicationOperation<Schema, O
     ) -> Result<Self, WorthQueryApplicationOperationInstallationDenial>
     where
         Schema: ApplicationSchema,
-        Operation: 'static,
-        Input: WorthQueryPortableType + 'static,
+        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
+        Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
+        Input: 'static,
     {
         let declaration =
             resolve_operation_declaration::<Schema, Operation, Input>(schema, operation)?;
@@ -157,8 +159,9 @@ impl<Schema, Operation, Input> WorthQueryInstalledApplicationOperation<Schema, O
     >
     where
         Schema: ApplicationSchema,
-        Operation: 'static,
-        Input: WorthQueryPortableType + 'static,
+        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
+        Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
+        Input: 'static,
     {
         let declaration = resolve_operation_declaration::<Schema, Operation, Input>(
             schema,
@@ -198,7 +201,9 @@ impl<Schema, Operation, Input> WorthQueryInstalledApplicationOperation<Schema, O
     ) -> Result<Self, WorthQueryApplicationOperationInstallationDenial>
     where
         Schema: ApplicationSchema,
-        Input: WorthQueryPortableType,
+        Operation: ApplicationOperationMarkerIdentity<Schema>,
+        Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
+        Input: 'static,
     {
         let operation = declaration.operation();
         let input_type = declaration.input_type();
@@ -220,6 +225,7 @@ impl<Schema, Operation, Input> WorthQueryInstalledApplicationOperation<Schema, O
             operation_compilation::WorthQueryApplicationOperationCompilation::resolve(
                 binding_identity.clone(),
                 schema.installed_declaration().members(),
+                schema.member_provenance.mutation_bindings(),
                 portable_contract,
                 operation,
                 input_type,
@@ -262,6 +268,7 @@ impl<Schema, Operation, Input> WorthQueryInstalledApplicationOperation<Schema, O
             native_contracts: schema.retain_native_contracts(),
             portable_native_contracts: Arc::new(schema.portable_native_contracts().to_vec()),
             portable_contract: portable_contract.clone(),
+            mutation_bindings: Arc::new(schema.member_provenance.mutation_bindings().to_vec()),
             obligations,
             authority_identity,
             _marker: PhantomData,

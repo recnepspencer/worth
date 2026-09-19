@@ -1,9 +1,8 @@
 use worth_ui::facade::declaration::{
     ComponentAllocationMeasurementContract, ComponentChildPolicy, ComponentDescriptor, ComponentId,
-    ComponentPropSchema, ComponentSemanticTextContract, ComponentStateOwnership,
-    ComponentStaticPaintContract, ComponentStaticPaintOrder, SurfaceDescriptor, SurfaceId,
-    SurfaceKind, SurfacePlacementClass, SurfaceStateClass, ThemeColorValue, ThemeTokenDescriptor,
-    ThemeTokenFamily, ThemeTokenId, ThemeTokenSource, ThemeTokenValue,
+    ComponentPropSchema, ComponentSemanticTextContract, ComponentStateOwnership, SurfaceDescriptor,
+    SurfaceId, SurfaceKind, SurfacePlacementClass, SurfaceStateClass, ThemeTokenDescriptor,
+    ThemeTokenFamily, ThemeTokenId, ThemeTokenSource, ThemeTokenValue, UiThemeColor,
     WorthUiRustAuthoredArtifactInput, WorthUiRustAuthoredArtifactInputModule,
 };
 use worth_ui_native_platform::{
@@ -95,13 +94,8 @@ fn baseline_component() -> ComponentDescriptor {
         ComponentChildPolicy::no_children(),
         ComponentStateOwnership::runtime_owned(),
     )
-    .with_static_paint(
-        ComponentStaticPaintContract::opaque_fill(
-            ThemeTokenId::new(BASELINE_TOKEN).expect("Gate D baseline token"),
-            ComponentStaticPaintOrder::back_to_front(0),
-        ),
-        ComponentAllocationMeasurementContract::fill_viewport(),
-    )
+    .with_allocation_measurement_contract(ComponentAllocationMeasurementContract::fill_viewport())
+    .with_surface_paint_order(0)
 }
 
 fn text_component(identity: &str, paint_order: u32) -> ComponentDescriptor {
@@ -123,7 +117,7 @@ fn text_token() -> ThemeTokenDescriptor {
         ThemeTokenId::new(TEXT_TOKEN).expect("Gate D text token identity"),
         ThemeTokenFamily::surface(),
         ThemeTokenSource::application(),
-        ThemeTokenValue::color(ThemeColorValue::hex("#ffffff").expect("Gate D text color")),
+        ThemeTokenValue::color(UiThemeColor::parse("#ffffff").expect("Gate D text color")),
     )
 }
 
@@ -132,7 +126,7 @@ fn baseline_token() -> ThemeTokenDescriptor {
         ThemeTokenId::new(BASELINE_TOKEN).expect("Gate D baseline token identity"),
         ThemeTokenFamily::surface(),
         ThemeTokenSource::application(),
-        ThemeTokenValue::color(ThemeColorValue::hex("#1f2328").expect("Gate D baseline color")),
+        ThemeTokenValue::color(UiThemeColor::parse("#1f2328").expect("Gate D baseline color")),
     )
 }
 

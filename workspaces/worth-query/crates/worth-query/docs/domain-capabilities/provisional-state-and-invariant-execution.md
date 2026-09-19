@@ -44,6 +44,16 @@ Host integration through
 - `WorthQueryProvisionalGraphProvider`
 - `WorthQueryInvariantExecutionProvider`
 
+Ordinary application invariants use the higher-level
+`worth_query_host::facade::application_invariants` audience. An invariant factory
+receives `WorthQueryApplicationInvariantSchemaResolver`, resolves its declared
+typed fields and relations, and returns a
+`WorthQueryApplicationInvariantRule`. The rule's `prepare_scope` reads the
+proposed view to establish the complete affected closure. `evaluate` receives
+proposed and committed views constrained to that prepared scope. Both views
+decode installed values and expose bounded typed `field`, `relations_from`, and
+`relations_to` access without exposing raw aspect payloads or a commit handle.
+
 ## Core Mental Model
 
 The provisional program is lowered from the exact staged session and fresh
@@ -103,6 +113,13 @@ reservations; caller code cannot clone or retry the candidate.
 invariant slot. Blocking requirements need passed receipts. Advisory
 requirements need advisory receipts. Missing, duplicate, foreign, violated,
 indeterminate, or exhausted receipts cannot progress.
+
+The ordinary typed adapter preserves the same progression. Foreign bindings or
+views, undeclared reads, expansion beyond the prepared scope, wrong entity kinds,
+unavailable entities, missing required fields, invalid values, missing relations,
+and exhausted work return `WorthQueryInvariantAccessDenial` with a specific kind.
+An absent optional field is the only successful `None`; malformed or truncated
+state cannot pass as empty data.
 
 ## How It Executes
 

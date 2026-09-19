@@ -1,20 +1,6 @@
 use super::WorthUiApplicationSessionState;
 
 impl WorthUiApplicationSessionState {
-    pub(crate) fn scroll_bounds_for_chain(
-        &self,
-        chain: &[crate::runtime::scroll::UiScrollChainEntry],
-        target: crate::graph::UiGraphNodeIdentity,
-    ) -> Result<
-        Vec<crate::runtime::scroll::UiScrollBounds>,
-        crate::runtime::scroll::UiScrollBoundsResolutionDenial,
-    > {
-        chain
-            .iter()
-            .map(|entry| self.scroll_bounds_for(entry.owner(), target))
-            .collect()
-    }
-
     pub(crate) fn scroll_bounds_for(
         &self,
         owner: crate::runtime::scroll::UiScrollOwnerIdentity,

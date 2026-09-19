@@ -218,3 +218,15 @@ fn registry_digest(descriptors: &[MergeBaseStrategyDescriptor]) -> String {
     let digest = Sha256::digest(bytes);
     digest.iter().map(|byte| format!("{byte:02x}")).collect()
 }
+
+use crate::data::retained_storage::{
+    RetainedStorageCharge as Charge, RetainedStorageMeasurement,
+    RetainedStoragePreparation as Work, RetainedStoragePreparationDenial as Denial,
+};
+impl RetainedStorageMeasurement for MergeBaseStrategyName {
+    fn retained_heap_charge(&self, work: &mut Work) -> Result<Charge, Denial> {
+        work.visit()?;
+        let Self(name) = self;
+        name.retained_heap_charge(work)
+    }
+}

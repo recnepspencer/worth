@@ -1,11 +1,10 @@
 use std::marker::PhantomData;
 
 use worth_query_declaration::facade::application_schema::{
-    ApplicationOperationRef, ApplicationSchema,
+    ApplicationOperationMarkerIdentity, ApplicationOperationRef, ApplicationSchema,
+    ApplicationStructuredValueBinding,
 };
-use worth_query_declaration::facade::portable_identity::{
-    WorthQueryPortableType, WorthQueryPortableTypeIdentity,
-};
+use worth_query_declaration::facade::portable_identity::WorthQueryPortableTypeIdentity;
 
 use crate::domain_operation::WorthQueryDomainOperationRef;
 
@@ -94,7 +93,9 @@ impl<Schema, ApplicationOperation, Input, D, O, F>
     WorthQueryApplicationConditionalOperationBinding<Schema, ApplicationOperation, Input, D, O, F>
 where
     Schema: ApplicationSchema,
-    Input: WorthQueryPortableType,
+    ApplicationOperation: ApplicationOperationMarkerIdentity<Schema>,
+    ApplicationOperation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
+    Input: 'static,
 {
     pub fn declare(
         application_operation: ApplicationOperationRef<Schema, ApplicationOperation, Input>,
@@ -105,7 +106,7 @@ where
                 schema_owner: Schema::OWNER.to_string(),
                 schema_name: Schema::NAME.to_string(),
                 application_operation: application_operation.name().to_string(),
-                input_type: Input::PORTABLE_TYPE_IDENTITY,
+                input_type: ApplicationOperation::InputBinding::IDENTITY,
                 domain_operation_slot: domain_operation.identity().slot(),
                 domain_operation_canonical_identity: domain_operation
                     .canonical_identity()

@@ -99,6 +99,21 @@ pub(crate) fn contextual_line_fragments_do_not_consume_logical_run_capacity() {
     );
 }
 
+#[test]
+fn ordinary_sentence_spaces_preserve_one_latin_shaping_run() {
+    let (fonts, _) = UiGlobalFontCollection::admit_qualified_profile().unwrap();
+    let source = "Please review the changes before proceeding. ".repeat(12);
+    let layout = layout(
+        &source,
+        500_000,
+        32,
+        UiTextWrap::UnicodeWord,
+        &Arc::new(fonts),
+    );
+    assert_eq!(layout.artifact().view().logical_runs().len(), 1);
+    assert!(layout.lines().len() > 1);
+    assert_eq!(layout.artifact().view().source(), source.as_str());
+}
 fn layout(
     source: &str,
     width_millipoints: u32,

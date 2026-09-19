@@ -20,9 +20,6 @@ pub struct UiMountedPresentationShutdownReport {
     query_close_complete: bool,
     query_transitions: Box<[worth_ui_query_binding::WorthUiPresentationTransitionObservation]>,
     query_transition_trace_complete: bool,
-    query_semantic_frontiers:
-        Box<[worth_ui_query_binding::WorthUiPresentationSemanticFrontierObservation]>,
-    query_semantic_frontier_trace_complete: bool,
     text_presentation_work:
         Box<[crate::native_platform::text_presentation::UiNativeTextPresentationWorkObservation]>,
     text_presentation_work_trace_complete: bool,
@@ -33,9 +30,6 @@ pub(crate) struct UiMountedPresentationQueryShutdown {
     pub(super) complete: bool,
     pub(super) transitions: Box<[worth_ui_query_binding::WorthUiPresentationTransitionObservation]>,
     pub(super) transition_trace_complete: bool,
-    pub(super) semantic_frontiers:
-        Box<[worth_ui_query_binding::WorthUiPresentationSemanticFrontierObservation]>,
-    pub(super) semantic_frontier_trace_complete: bool,
 }
 
 pub(crate) struct UiMountedPresentationTextShutdown {
@@ -82,8 +76,6 @@ impl UiMountedPresentationShutdownReport {
             query_close_complete: query.complete,
             query_transitions: query.transitions,
             query_transition_trace_complete: query.transition_trace_complete,
-            query_semantic_frontiers: query.semantic_frontiers,
-            query_semantic_frontier_trace_complete: query.semantic_frontier_trace_complete,
             text_presentation_work: text.work,
             text_presentation_work_trace_complete: text.trace_complete,
         }
@@ -115,16 +107,6 @@ impl UiMountedPresentationShutdownReport {
         self.query_transition_trace_complete
     }
 
-    pub fn query_semantic_frontiers(
-        &self,
-    ) -> &[worth_ui_query_binding::WorthUiPresentationSemanticFrontierObservation] {
-        &self.query_semantic_frontiers
-    }
-
-    pub const fn query_semantic_frontier_trace_complete(&self) -> bool {
-        self.query_semantic_frontier_trace_complete
-    }
-
     pub(crate) fn text_presentation_work(
         &self,
     ) -> &[crate::native_platform::text_presentation::UiNativeTextPresentationWorkObservation] {
@@ -144,8 +126,6 @@ impl Default for UiMountedPresentationShutdownReport {
             query_close_complete: true,
             query_transitions: Box::new([]),
             query_transition_trace_complete: true,
-            query_semantic_frontiers: Box::new([]),
-            query_semantic_frontier_trace_complete: true,
             text_presentation_work: Box::new([]),
             text_presentation_work_trace_complete: true,
         }

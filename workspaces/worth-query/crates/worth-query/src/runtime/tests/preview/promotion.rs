@@ -135,8 +135,7 @@ fn preview_promotion_closeout_records_consumed_staging_without_preview_lane_muta
 
 #[test]
 fn preview_promotion_rejects_stale_basis_before_authority_execution() {
-    let mut runtime = WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
         .snapshot_identity(DriftingSnapshotIdentityAdapter::default())
@@ -192,8 +191,7 @@ fn preview_promotion_rejects_stale_basis_before_authority_execution() {
 
 #[test]
 fn preview_promotion_write_failure_is_typed_and_not_silently_dropped() {
-    let mut runtime = WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
         .snapshot_identity(TestSnapshotIdentityAdapter)
@@ -248,8 +246,7 @@ fn preview_promotion_write_failure_is_typed_and_not_silently_dropped() {
 #[test]
 fn preview_promotion_rejects_multi_write_batch_before_partial_authority_execution() {
     let attempted_writes = std::rc::Rc::new(std::cell::Cell::new(0));
-    let mut runtime = WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
         .snapshot_identity(TestSnapshotIdentityAdapter)

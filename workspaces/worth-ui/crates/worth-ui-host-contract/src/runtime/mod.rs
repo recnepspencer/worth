@@ -10,6 +10,7 @@ mod solicited_effect;
 
 pub use host_capability::WorthUiHostCapability;
 pub use host_capability_posture::WorthUiHostCapabilityPosture;
+pub(crate) use host_capability_report::WorthUiHostCapabilityDigest;
 pub use host_capability_report::{
     WorthUiHostCapabilityObservationGeneration, WorthUiHostCapabilityReport,
 };

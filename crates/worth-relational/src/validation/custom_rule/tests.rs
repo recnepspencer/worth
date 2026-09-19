@@ -6,8 +6,8 @@ use crate::facade::runtime::RelationalRuntimeApi;
 use crate::facade::schema::RelationalSchemaRegistry;
 use crate::facade::transactions::{
     CreateIntent, CreatedEntityRef, DeleteEntityIntent, DeleteRelationIntent, EntityReference,
-    EntitySpec, MutationIntent, RelationMutationIntent, UpdateRelationEndpointsIntent,
-    WorkerIntentBatch,
+    EntitySpec, MutationIntent, RelationMutationIntent, RelationSpec, TransactionId,
+    UpdateRelationEndpointsIntent, WorkerIntentBatch,
 };
 use crate::symbols::data::ClientKey;
 use crate::tests::support::{create_entity, create_relation, runtime_with_test_schema};
@@ -20,6 +20,8 @@ use crate::validation::data::{
 };
 use crate::validation::engine::InvariantObservation;
 
+mod touched_scope_tests;
+
 struct TestRule;
 
 fn prepared_scope(
@@ -27,7 +29,72 @@ fn prepared_scope(
     observation: &InvariantObservation<'_>,
     merged_plan: Option<&MergedCommitPlan>,
 ) -> PreparedCustomInvariantScope {
-    PreparedCustomInvariantScope::capture(observation, runtime.current_version_id(), merged_plan)
+    prepared_scope_with_access(
+        runtime,
+        observation,
+        merged_plan,
+        &crate::validation::data::CustomInvariantAccessContract::default(),
+    )
+}
+
+fn prepared_scope_with_access(
+    runtime: &crate::runtime::RelationalRuntime,
+    observation: &InvariantObservation<'_>,
+    merged_plan: Option<&MergedCommitPlan>,
+    access: &crate::validation::data::CustomInvariantAccessContract,
+) -> PreparedCustomInvariantScope {
+    PreparedCustomInvariantScope::capture(
+        observation,
+        runtime.current_version_id(),
+        merged_plan,
+        access,
+        &super::CustomInvariantWorkMeter::new(std::num::NonZeroU64::new(4096).unwrap()),
+    )
+}
+
+#[test]
+fn unrelated_shared_endpoint_does_not_expand_its_existing_adjacency() {
+    let runtime = runtime_with_test_schema();
+    let shared = create_entity(&runtime, "shared");
+    for index in 0..64 {
+        let leaf = create_entity(&runtime, &format!("leaf-{index}"));
+        create_relation(&runtime, shared, leaf, &format!("existing-{index}"));
+    }
+    let target = create_entity(&runtime, "new-target");
+    let relation = MutationIntent::Create(CreateIntent::Relation(RelationSpec {
+        partition_id: crate::identity::data::PartitionId::main(),
+        kind_id: KindId(2),
+        client_key: ClientKey::raw("planned"),
+        source: EntityReference::Existing(shared),
+        target: EntityReference::Existing(target),
+        fields: crate::transactions::data::AspectFieldPatch::default(),
+    }));
+    let merged_plan = MergedCommitPlan {
+        transaction_id: TransactionId(9_001),
+        merged_intents: vec![relation],
+    };
+    let access = crate::validation::data::CustomInvariantAccessContract {
+        read_entity_kinds: vec![KindId(1)],
+        read_relation_kinds: vec![KindId(2)],
+        affected_entity_kinds: vec![KindId(3)],
+        affected_relation_kinds: vec![KindId(2)],
+    };
+    let observation = InvariantObservation::committed(runtime.storage_access().current_edition());
+    let prepared = prepared_scope_with_access(&runtime, &observation, Some(&merged_plan), &access);
+    let view = crate::validation::engine::InvariantRuntimeView::from_runtime(&runtime);
+    let planner = CustomInvariantScopePlanner::new_at_current_version(
+        &view,
+        &observation,
+        runtime.current_version_id(),
+        runtime.current_version_id(),
+        &prepared,
+        super::CustomInvariantWorkMeter::new(std::num::NonZeroU64::new(4096).unwrap()),
+        Arc::new(access),
+    );
+
+    assert!(planner.touched().visible_entity_ids().is_empty());
+    assert!(planner.touched().visible_relation_ids().is_empty());
+    assert_eq!(planner.touched().planned_relation_creates().len(), 1);
 }
 
 #[test]
@@ -45,6 +112,8 @@ fn custom_scope_planner_preserves_owner_selected_current_version() {
         selected_version,
         selected_version,
         &prepared_scope,
+        super::CustomInvariantWorkMeter::new(std::num::NonZeroU64::new(u64::MAX).unwrap()),
+        std::sync::Arc::new(crate::validation::data::CustomInvariantAccessContract::default()),
     );
 
     assert_eq!(planner.version_id(), selected_version);
@@ -63,6 +132,8 @@ impl CustomInvariantRule for TestRule {
             },
             display_name: Arc::from("Test Rule"),
             operational: CustomInvariantOperationalMetadata {
+                maximum_work_units: std::num::NonZeroU64::new(1).unwrap(),
+                access: crate::validation::data::CustomInvariantAccessContract::default(),
                 execution_point: InvariantExecutionPoint::CommitBoundary,
                 groups: InvariantGroupSet::of(InvariantGroup::SchemaCompliance),
                 cost_class: InvariantCostClass::Touched,
@@ -113,6 +184,8 @@ fn custom_registration_rejects_empty_ids() {
                 },
                 display_name: Arc::from("Empty"),
                 operational: CustomInvariantOperationalMetadata {
+                    maximum_work_units: std::num::NonZeroU64::new(1).unwrap(),
+                    access: crate::validation::data::CustomInvariantAccessContract::default(),
                     execution_point: InvariantExecutionPoint::CommitBoundary,
                     groups: InvariantGroupSet::of(InvariantGroup::SchemaCompliance),
                     cost_class: InvariantCostClass::Touched,
@@ -155,6 +228,8 @@ fn traversal_budget_is_session_wide() {
         runtime.current_version_id(),
         runtime.current_version_id(),
         &prepared_scope,
+        super::CustomInvariantWorkMeter::new(std::num::NonZeroU64::new(u64::MAX).unwrap()),
+        std::sync::Arc::new(crate::validation::data::CustomInvariantAccessContract::default()),
     );
 
     for _ in 0..8 {
@@ -170,177 +245,4 @@ fn traversal_budget_is_session_wide() {
         .walk_outgoing_from(&large_seed_set, 1)
         .unwrap_err();
     assert!(error.detail().contains("session frontier budget"));
-}
-
-#[test]
-fn touched_scope_tracks_planned_relation_endpoint_updates() {
-    let runtime = runtime_with_test_schema();
-    let source = create_entity(&runtime, "source");
-    let old_target = create_entity(&runtime, "old-target");
-    let new_target = create_entity(&runtime, "new-target");
-    let relation_id = create_relation(&runtime, source, old_target, "edge");
-    let intent = MutationIntent::Relation(RelationMutationIntent::UpdateEndpoints(
-        UpdateRelationEndpointsIntent {
-            relation_id,
-            kind_id: KindId(2),
-            source: EntityReference::Existing(source),
-            target: EntityReference::Existing(new_target),
-        },
-    ));
-    let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
-    txn.push_batch(WorkerIntentBatch::new("rewire").push(intent.clone()))
-        .expect("test staging stays within configured resource budgets");
-    let merged_plan = MergedCommitPlan {
-        transaction_id: txn.transaction_id,
-        merged_intents: vec![intent],
-    };
-    let observation = InvariantObservation::committed(runtime.storage_access().current_edition());
-    let prepared_scope = prepared_scope(&runtime, &observation, Some(&merged_plan));
-    let planner = CustomInvariantScopePlanner::new(
-        &runtime,
-        &observation,
-        runtime.current_version_id(),
-        &prepared_scope,
-    );
-
-    let updates = planner.touched().planned_relation_endpoint_updates();
-    assert_eq!(updates.len(), 1);
-    assert_eq!(updates[0].relation_id(), relation_id);
-    assert_eq!(updates[0].kind_id(), KindId(2));
-    assert_eq!(updates[0].source(), &EntityReference::Existing(source));
-    assert_eq!(updates[0].target(), &EntityReference::Existing(new_target));
-    assert_eq!(planner.counts().planned_relation_endpoint_update_count(), 1);
-    assert_eq!(
-        planner
-            .touched()
-            .provenance_summary()
-            .planned_relation_endpoint_update_count,
-        1
-    );
-}
-
-#[test]
-fn touched_scope_tracks_planned_relation_endpoint_updates_to_created_entities() {
-    let runtime = runtime_with_test_schema();
-    let source = create_entity(&runtime, "source");
-    let old_target = create_entity(&runtime, "old-target");
-    let relation_id = create_relation(&runtime, source, old_target, "edge");
-    let created_target = CreatedEntityRef {
-        partition_id: crate::identity::data::PartitionId(1),
-        kind_id: KindId(1),
-        client_key: ClientKey::raw("planned-target"),
-    };
-    let create_target = MutationIntent::Create(CreateIntent::Entity(EntitySpec {
-        partition_id: created_target.partition_id,
-        kind_id: created_target.kind_id,
-        client_key: created_target.client_key.clone(),
-        fields: crate::transactions::data::AspectFieldPatch::default(),
-    }));
-    let update_relation = MutationIntent::Relation(RelationMutationIntent::UpdateEndpoints(
-        UpdateRelationEndpointsIntent {
-            relation_id,
-            kind_id: KindId(2),
-            source: EntityReference::Existing(source),
-            target: EntityReference::Created(created_target.clone()),
-        },
-    ));
-    let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
-    txn.push_batch(
-        WorkerIntentBatch::new("rewire-to-created")
-            .push(create_target.clone())
-            .push(update_relation.clone()),
-    )
-    .expect("test staging stays within configured resource budgets");
-    let merged_plan = MergedCommitPlan {
-        transaction_id: txn.transaction_id,
-        merged_intents: vec![create_target, update_relation],
-    };
-    let observation = InvariantObservation::committed(runtime.storage_access().current_edition());
-    let prepared_scope = prepared_scope(&runtime, &observation, Some(&merged_plan));
-    let planner = CustomInvariantScopePlanner::new(
-        &runtime,
-        &observation,
-        runtime.current_version_id(),
-        &prepared_scope,
-    );
-
-    let updates = planner.touched().planned_relation_endpoint_updates();
-    assert_eq!(updates.len(), 1);
-    assert_eq!(updates[0].relation_id(), relation_id);
-    assert_eq!(updates[0].kind_id(), KindId(2));
-    assert_eq!(updates[0].source(), &EntityReference::Existing(source));
-    assert_eq!(
-        updates[0].target(),
-        &EntityReference::Created(created_target)
-    );
-}
-
-#[test]
-fn touched_scope_tracks_planned_relation_deletes() {
-    let runtime = runtime_with_test_schema();
-    let source = create_entity(&runtime, "source");
-    let target = create_entity(&runtime, "target");
-    let relation_id = create_relation(&runtime, source, target, "edge");
-    let intent = MutationIntent::Relation(RelationMutationIntent::Delete(DeleteRelationIntent {
-        relation_id,
-    }));
-    let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
-    txn.push_batch(WorkerIntentBatch::new("delete").push(intent.clone()))
-        .expect("test staging stays within configured resource budgets");
-    let merged_plan = MergedCommitPlan {
-        transaction_id: txn.transaction_id,
-        merged_intents: vec![intent],
-    };
-    let observation = InvariantObservation::committed(runtime.storage_access().current_edition());
-    let prepared_scope = prepared_scope(&runtime, &observation, Some(&merged_plan));
-    let planner = CustomInvariantScopePlanner::new(
-        &runtime,
-        &observation,
-        runtime.current_version_id(),
-        &prepared_scope,
-    );
-
-    assert_eq!(planner.touched().planned_relation_deletes(), &[relation_id]);
-    assert_eq!(planner.counts().planned_relation_delete_count(), 1);
-    assert_eq!(
-        planner
-            .touched()
-            .provenance_summary()
-            .planned_relation_delete_count,
-        1
-    );
-}
-
-#[test]
-fn touched_scope_tracks_planned_entity_deletes() {
-    let runtime = runtime_with_test_schema();
-    let entity_id = create_entity(&runtime, "entity");
-    let intent = MutationIntent::Entity(crate::facade::transactions::EntityMutationIntent::Delete(
-        DeleteEntityIntent { entity_id },
-    ));
-    let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
-    txn.push_batch(WorkerIntentBatch::new("delete-entity").push(intent.clone()))
-        .expect("test staging stays within configured resource budgets");
-    let merged_plan = MergedCommitPlan {
-        transaction_id: txn.transaction_id,
-        merged_intents: vec![intent],
-    };
-    let observation = InvariantObservation::committed(runtime.storage_access().current_edition());
-    let prepared_scope = prepared_scope(&runtime, &observation, Some(&merged_plan));
-    let planner = CustomInvariantScopePlanner::new(
-        &runtime,
-        &observation,
-        runtime.current_version_id(),
-        &prepared_scope,
-    );
-
-    assert_eq!(planner.touched().planned_entity_deletes(), &[entity_id]);
-    assert_eq!(planner.counts().planned_entity_delete_count(), 1);
-    assert_eq!(
-        planner
-            .touched()
-            .provenance_summary()
-            .planned_entity_delete_count,
-        1
-    );
 }

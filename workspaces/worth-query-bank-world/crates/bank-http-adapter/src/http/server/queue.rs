@@ -167,6 +167,7 @@ fn mutation_denied(request_id: String, kind: BankHttpDenialKind) -> BankHttpMuta
         request_id: Some(request_id),
         failure,
         stale_fact_count: None,
+        provider_recovery: None,
         denial: BankHttpDenial::new(kind, BankHttpNextAction::Retry),
     }
 }

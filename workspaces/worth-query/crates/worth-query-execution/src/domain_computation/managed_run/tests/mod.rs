@@ -27,6 +27,7 @@ mod provider_session_protocol_workflow;
 mod provider_session_substitution;
 mod provider_support_affinity;
 mod provider_work;
+mod provider_work_start;
 mod provisional_attempt;
 mod provisional_attempt_fixture;
 mod provisional_provider_failures;

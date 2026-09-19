@@ -8,17 +8,15 @@ use bank_domain::{
         EstateAction, EstateWorkflowStage, MandatoryReviewId, MandatoryReviewStatus,
         RestrictedBankField,
     },
+    proposals::BankIdempotencyKey,
     queries::EstateGovernanceQuery,
     reads::EstateGovernanceContext,
     schema::AccountStatus,
 };
 use worth_query_host::facade::publication::domain_computation::WorthQueryPublishedApplicationResult;
-use worth_query_host::facade::{
-    primary_graph::WorthQueryApplicationIdempotencyBinding,
-    publication::domain_computation::{
-        WorthQueryPublishedApplicationDisclosurePosture,
-        WorthQueryPublishedApplicationQueryOmissionPosture,
-    },
+use worth_query_host::facade::publication::domain_computation::{
+    WorthQueryPublishedApplicationDisclosurePosture,
+    WorthQueryPublishedApplicationQueryOmissionPosture,
 };
 
 use super::{
@@ -206,14 +204,14 @@ fn close_elevation(
 ) -> BankEstateMandatoryReview {
     let close = fixture
         .runtime
-        .revoke_estate_emergency_access(
+        .revoke_estate_emergency_access_with_key(
             approver,
             approved,
             EstateAction::RevokeEmergencyAccess {
                 estate: ESTATE,
                 access,
             },
-            WorthQueryApplicationIdempotencyBinding::new([95; 32], [96; 32]),
+            &bank_idempotency(95),
             &request_scope(),
         )
         .expect("the used elevation should remain closable through its exact command");
@@ -256,7 +254,7 @@ fn complete_review(
 ) {
     let outcome = fixture
         .runtime
-        .complete_estate_mandatory_review(
+        .complete_estate_mandatory_review_with_key(
             reviewer,
             mandatory,
             EstateAction::CompleteMandatoryReview {
@@ -264,7 +262,7 @@ fn complete_review(
                 access: identity.access,
                 review: identity.review,
             },
-            WorthQueryApplicationIdempotencyBinding::new([97; 32], [98; 32]),
+            &bank_idempotency(97),
             &request_scope(),
         )
         .expect("the exact mandatory review should commit after readback");
@@ -321,4 +319,8 @@ fn emergency(
 
 fn controls() -> BankReadControls {
     BankReadControls::current(request_scope(), 1, 20_000).unwrap()
+}
+
+fn bank_idempotency(seed: u8) -> BankIdempotencyKey {
+    BankIdempotencyKey::new(format!("active-elevation-{seed}")).unwrap()
 }

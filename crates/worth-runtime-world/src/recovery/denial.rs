@@ -10,6 +10,7 @@ pub enum RuntimeWorldRecoveryDenial {
     CallerCapabilityLive,
     SettlementRequired,
     SettlementEvidenceUnavailable,
+    OutputCapacityExhausted,
 }
 impl From<crate::lifecycle::RuntimeWorldOwnerUnavailable> for RuntimeWorldRecoveryDenial {
     fn from(value: crate::lifecycle::RuntimeWorldOwnerUnavailable) -> Self {

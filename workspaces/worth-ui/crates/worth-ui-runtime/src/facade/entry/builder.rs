@@ -1,14 +1,14 @@
 use crate::capability::{
-    CapabilityDiagnosticRichness, CommandDescriptor, CommandProjectionDescriptor,
-    CommandProjectionRegistry, CommandRegistry, ComponentDescriptor, ComponentRegistry,
-    IconDescriptor, IconRegistry, IntentDefinitionRegistry, MosaicPlacementPolicyDescriptor,
-    MosaicPlacementRegistry, MosaicRegionKindDescriptor, MosaicRegionRegistry,
-    MosaicSizingContractDescriptor, MosaicSizingRegistry, MosaicStateSlotDescriptor,
-    MosaicStateSlotRegistry, NativeCapabilityDescriptor, NativeCapabilityRegistry,
-    PluginSlotDescriptor, PluginSlotRegistry, RegistrationCandidate,
+    AppearanceRoleRegistry, CapabilityDiagnosticRichness, CommandDescriptor,
+    CommandProjectionDescriptor, CommandProjectionRegistry, CommandRegistry, ComponentDescriptor,
+    ComponentRegistry, IconDescriptor, IconRegistry, IntentDefinitionRegistry,
+    MosaicPlacementPolicyDescriptor, MosaicPlacementRegistry, MosaicRegionKindDescriptor,
+    MosaicRegionRegistry, MosaicSizingContractDescriptor, MosaicSizingRegistry,
+    MosaicStateSlotDescriptor, MosaicStateSlotRegistry, NativeCapabilityDescriptor,
+    NativeCapabilityRegistry, PluginSlotDescriptor, PluginSlotRegistry, RegistrationCandidate,
     RuntimeOutcomeProjectionDescriptor, RuntimeOutcomeProjectionRegistry, SettingDescriptor,
     SettingsRegistry, SurfaceDescriptor, SurfaceRegistry, TaskPresentationDescriptor,
-    TaskPresentationRegistry, ThemeTokenDescriptor, ThemeTokenRegistry, UiIntent,
+    TaskPresentationRegistry, ThemeRegistry, ThemeTokenDescriptor, ThemeTokenRegistry, UiIntent,
     UiIntentDefinition, UiIntentDefinitionDestination, UiIntentDefinitionRegistrationError,
     ViewBindingDescriptor, ViewBindingRegistry,
 };
@@ -18,6 +18,8 @@ mod snapshot_freeze;
 /// Low-level capability registration builder for the public Worth UI facade.
 pub struct CapabilityRegistrationBuilder {
     registration_candidates: Vec<RegistrationCandidate>,
+    appearance_role_registry: AppearanceRoleRegistry,
+    appearance_theme_registry: ThemeRegistry,
     command_registry: CommandRegistry,
     command_projection_registry: CommandProjectionRegistry,
     component_registry: ComponentRegistry,
@@ -48,6 +50,8 @@ impl CapabilityRegistrationBuilder {
     pub fn new() -> Self {
         Self {
             registration_candidates: Vec::new(),
+            appearance_role_registry: AppearanceRoleRegistry::empty(),
+            appearance_theme_registry: ThemeRegistry::default(),
             command_registry: CommandRegistry::empty(),
             command_projection_registry: CommandProjectionRegistry::empty(),
             component_registry: ComponentRegistry::empty(),
@@ -91,6 +95,33 @@ impl CapabilityRegistrationBuilder {
             .push(descriptor.registration_candidate());
         self.component_registry.push(descriptor);
         self
+    }
+
+    pub fn register_mosaic_seam_paint_contract(
+        mut self,
+        contract: crate::capability::MosaicSeamPaintContract,
+    ) -> Result<Self, crate::capability::MosaicSeamPaintContractDenial> {
+        let candidate = self.mosaic_region_registry.install_seam_paint(contract)?;
+        self.registration_candidates.push(candidate);
+        Ok(self)
+    }
+
+    pub fn register_appearance_role(
+        mut self,
+        role: worth_ui_dsl::UiAppearanceRoleDeclaration,
+    ) -> Result<Self, crate::capability::AppearanceRoleRegistrationDenial> {
+        self.registration_candidates
+            .push(self.appearance_role_registry.push(role)?);
+        Ok(self)
+    }
+
+    pub fn register_appearance_theme_bundle(
+        mut self,
+        bundle: crate::capability::FrozenAppearanceThemeCapabilities,
+    ) -> Result<Self, crate::capability::FrozenAppearanceThemeCapabilitiesDenial> {
+        let candidate = self.appearance_theme_registry.install(bundle)?;
+        self.registration_candidates.push(candidate);
+        Ok(self)
     }
 
     /// Register a domain-agnostic stable icon capability.

@@ -31,7 +31,7 @@ pub(super) fn assert_owner_projection(evidence: &serde_json::Value) -> AuthoredP
         .filter(|glyph| {
             glyph["original_range"] == serde_json::json!([8, 19])
                 && glyph["glyph_id"] == 2_316
-                && glyph["target_bounds"] == serde_json::json!([115, 24, 142, 49])
+                && glyph["target_bounds"] == serde_json::json!([115, 24, 141, 48])
         })
         .collect::<Vec<_>>();
     let [observed] = matches.as_slice() else {
@@ -42,12 +42,12 @@ pub(super) fn assert_owner_projection(evidence: &serde_json::Value) -> AuthoredP
     assert_eq!(observed["palette"], 0);
     assert_eq!(
         observed["target_bounds"],
-        serde_json::json!([115, 24, 142, 49])
+        serde_json::json!([115, 24, 141, 48])
     );
 
     AuthoredPixelContract {
         alpha_bounds,
-        intrinsic_bounds: Box::new([[115, 24, 142, 49]]),
+        intrinsic_bounds: Box::new([[115, 24, 141, 48]]),
     }
 }
 
@@ -78,40 +78,41 @@ struct ExpectedAlphaGlyph {
     bounds: [u32; 4],
 }
 
+// Final authored text is ASYNC-C. Raster extents are half-open pixel boxes.
 const EXPECTED_ALPHA: [ExpectedAlphaGlyph; 7] = [
     ExpectedAlphaGlyph {
         glyph_id: 36,
         original_range: [0, 1],
-        bounds: [24, 28, 38, 46],
+        bounds: [24, 28, 38, 45],
     },
     ExpectedAlphaGlyph {
         glyph_id: 54,
         original_range: [1, 2],
-        bounds: [38, 28, 49, 46],
+        bounds: [38, 28, 48, 45],
     },
     ExpectedAlphaGlyph {
         glyph_id: 60,
         original_range: [2, 3],
-        bounds: [48, 28, 62, 46],
+        bounds: [48, 28, 61, 45],
     },
     ExpectedAlphaGlyph {
         glyph_id: 49,
         original_range: [3, 4],
-        bounds: [62, 28, 76, 46],
+        bounds: [62, 28, 75, 45],
     },
     ExpectedAlphaGlyph {
         glyph_id: 38,
         original_range: [4, 5],
-        bounds: [78, 28, 91, 46],
+        bounds: [78, 28, 90, 45],
     },
     ExpectedAlphaGlyph {
         glyph_id: 16,
         original_range: [5, 6],
-        bounds: [90, 37, 97, 41],
+        bounds: [90, 37, 96, 40],
     },
     ExpectedAlphaGlyph {
-        glyph_id: 36,
+        glyph_id: 38,
         original_range: [6, 7],
-        bounds: [96, 28, 112, 46],
+        bounds: [98, 28, 110, 45],
     },
 ];

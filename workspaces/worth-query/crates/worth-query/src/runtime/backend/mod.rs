@@ -9,7 +9,9 @@ mod merge_snapshot_owner;
 mod mutation_authority;
 mod parts;
 mod primary_graph_runtime;
+mod product_source;
 mod receipts;
+mod relational_owner;
 mod settlement_recovery;
 mod snapshot_identity;
 mod source_adapter_contract;
@@ -49,6 +51,8 @@ pub use parts::WorthQueryRuntimeBackendParts;
 pub use primary_graph_runtime::{
     WorthQueryPrimaryGraphBackendHandle, WorthQueryUnpublishedPrimaryGraphRuntime,
 };
+#[doc(hidden)]
+pub use product_source::WorthQueryProductSourceDenial;
 pub use receipts::{
     LiveViewDeclarationAdmissionReceipt, SignalInvalidationRoutingReceipt,
     SubscriptionActivationReceipt,

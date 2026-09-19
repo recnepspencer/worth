@@ -671,10 +671,10 @@ pub use crate::transitions::{
     FoundationalTransitionWORTHProofSurface,
 };
 pub use crate::values::{
-    AspectValue, CanonicalBigInt, CanonicalDate, CanonicalDecimal, CanonicalF32, CanonicalF64,
-    CanonicalRational, CanonicalString, CanonicalTime, CanonicalTimestamp, CanonicalTimestampTz,
-    ContentRefId, EntityId, Generation, InternedString, LocalSlot, PartitionId, ScalarAspectType,
-    Symbol,
+    decode_canonical_text_hex, encode_canonical_text_hex, AspectValue, CanonicalBigInt,
+    CanonicalDate, CanonicalDecimal, CanonicalF32, CanonicalF64, CanonicalRational,
+    CanonicalString, CanonicalTime, CanonicalTimestamp, CanonicalTimestampTz, ContentRefId,
+    EntityId, Generation, InternedString, LocalSlot, PartitionId, ScalarAspectType, Symbol,
 };
 
 pub use crate::responsibilities::{foundational_responsibilities, ResponsibilityArea};

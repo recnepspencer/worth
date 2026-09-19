@@ -33,6 +33,7 @@ pub mod identity_authority {
 pub mod consumer_kit {
     pub use crate::consumer_kit::{
         advance_test_workspace_domain_installation_generation, compare_test_backend_write_receipts,
+        in_memory_test_product_world_installation, in_memory_test_product_world_resources,
         in_memory_test_runtime, load_support_pin_contract_terminal_json_document,
         load_support_snapshot_terminal_json_document, project_support_snapshot,
         project_workspace_support_snapshot, support_pinning_contract, EvidenceReport,
@@ -152,6 +153,12 @@ pub mod runtime {
     pub use super::exports_runtime_core::*;
     pub use super::exports_runtime_phase_nine::*;
     pub use super::exports_runtime_products::*;
+}
+
+/// Ordinary product-world selection, creation, and operation progression.
+pub mod product {
+    pub use crate::runtime::product_branch::*;
+    pub use worth_query_execution::facade::primary_graph::WorthQueryProductBranchLease;
 }
 
 #[cfg(test)]

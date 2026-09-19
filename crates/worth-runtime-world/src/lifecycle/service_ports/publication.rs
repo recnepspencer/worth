@@ -125,6 +125,106 @@ where
         let outcome = owner.execute_with_signal(prepared, context, cancellation, apply);
         owner.finish_publication(outcome, cancellation)
     }
+
+    pub(crate) fn execute_conditional_definition_with_signal<F, H>(
+        &self,
+        mut prepared: PreparedCompositePublicationWithSignal,
+        publication: worth_signal::facade::branch::SignalConditionalDefinitionPublicationOperation,
+        context: &mut Ctx,
+        cancellation: &RuntimeWorldCancellationToken,
+        apply: F,
+        admit_activation: H,
+    ) -> (
+        RuntimeWorldPublicationOutcome,
+        Arc<crate::publication::ConditionalDefinitionAttemptCustody>,
+    )
+    where
+        F: FnOnce(
+            &mut SignalTransaction<'_, D, I, E, Ctx, T>,
+            &crate::publication::ConditionalDefinitionAttemptCustody,
+        ) -> Result<(), SignalError>,
+        H: FnOnce(
+            worth_signal::facade::branch::SignalConditionalDefinitionAdvanceBinding,
+            &crate::publication::ConditionalDefinitionAttemptCustody,
+        ) -> Result<(), SignalError>,
+    {
+        let custody = prepared.reserve_conditional_definition_custody();
+        let owner = match self.service() {
+            Ok(owner) => owner,
+            Err(_) => return (unavailable(prepared.expected_head().clone()), custody),
+        };
+        if prepared.expected_head().owner_identity() != owner.owner_identity() {
+            return (foreign(prepared.expected_head().clone()), custody);
+        }
+        let outcome = owner.execute_conditional_definition_with_signal(
+            prepared,
+            publication,
+            context,
+            cancellation,
+            |transaction| apply(transaction, &custody),
+            |successor| admit_activation(successor, &custody),
+        );
+        (owner.finish_publication(outcome, cancellation), custody)
+    }
+}
+
+impl RuntimeWorldPublicationPort<(), (), (), (), ()> {
+    /// Publish and activate one Bridge definition as a single product-world
+    /// operation. Bridge registry visibility is granted only after the exact
+    /// product publication returns `Performed`.
+    pub fn publish_bridge_conditional_definition(
+        &self,
+        prepared: PreparedCompositePublicationWithSignal,
+        mut bridge_prepared: worth_runtime_bridge::facade::BridgePreparedConditionalInstallationExtension,
+        bridge: &worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,
+        cancellation: &RuntimeWorldCancellationToken,
+    ) -> crate::publication::RuntimeWorldConditionalDefinitionPublicationOutcome {
+        use crate::publication::{
+            RuntimeWorldConditionalDefinitionPublicationOutcome as Outcome,
+            RuntimeWorldPublicationOutcome,
+        };
+
+        let publication = bridge_prepared.take_runtime_world_publication_operation();
+        let (outcome, custody) = self.execute_conditional_definition_with_signal(
+            prepared,
+            publication,
+            &mut (),
+            cancellation,
+            |transaction, custody| {
+                let completion = bridge
+                    .apply_owned_conditional_installation_extension(transaction, bridge_prepared)
+                    .map_err(|denial| SignalError::invalid_input(format!("{denial:?}")))?;
+                custody.retain_applied(completion);
+                Ok(())
+            },
+            |binding, custody| {
+                let mut applied = custody.lease_applied();
+                bridge
+                    .complete_owned_conditional_installation_activation(
+                        applied.applied_mut(),
+                        binding,
+                    )
+                    .map_err(|denial| SignalError::invalid_input(format!("{denial:?}")))?;
+                Ok(())
+            },
+        );
+        match outcome {
+            RuntimeWorldPublicationOutcome::Performed(publication) => {
+                let lowering =
+                    bridge.commit_owned_conditional_installation_extension(custody.take_applied());
+                Outcome::Performed {
+                    publication,
+                    lowering,
+                }
+            }
+            RuntimeWorldPublicationOutcome::NoEffect(no_effect) => Outcome::NoEffect(no_effect),
+            RuntimeWorldPublicationOutcome::ProductUnpublished(effects) => {
+                Outcome::ProductUnpublished(
+                    crate::publication::RuntimeWorldUnpublishedConditionalDefinition::new(effects),
+                )
+            }
+        }
+    }
 }
 fn unavailable(expected: ProductBranchObservation) -> RuntimeWorldPublicationOutcome {
     RuntimeWorldPublicationOutcome::NoEffect(NoEffectCompositePublication::new(

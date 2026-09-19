@@ -26,7 +26,7 @@ pub(crate) enum PlatformPulseIntentJourneyFailure {
     ControlPoint(IntentControlPointFailure),
     Observation(observation::IntentObservationFailure),
     SourceAction(crate::source_delta::PulseSourceActionFailure),
-    Cancellation(&'static str),
+    Cancellation(String),
     EvidenceOrder(&'static str),
     CausalManifest(crate::source_delta::PulseCausalActionManifestFailure),
     EvidenceIncomplete,

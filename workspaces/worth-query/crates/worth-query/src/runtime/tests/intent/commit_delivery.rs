@@ -2,8 +2,7 @@ use super::*;
 
 #[test]
 fn strategy_intent_commit_routes_query_delivery_and_returns_canonical_receipt() {
-    let mut runtime = WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
         .snapshot_identity(TestSnapshotIdentityAdapter)
@@ -139,8 +138,7 @@ fn strategy_intent_commit_routes_query_delivery_and_returns_canonical_receipt() 
 
 #[test]
 fn intent_receipt_inspection_explains_strategy_lanes_and_delivery_counters() {
-    let mut runtime = WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
         .snapshot_identity(TestSnapshotIdentityAdapter)

@@ -132,7 +132,7 @@ where
         self.graph.clear_branch_mutation_nodes();
 
         let authority = AuthorityState {
-            graph: std::mem::take(&mut self.graph),
+            graph: *std::mem::take(&mut self.graph),
             config: std::mem::take(&mut self.config),
         };
         let checkpoint_policy = self.checkpoint.policy().clone();

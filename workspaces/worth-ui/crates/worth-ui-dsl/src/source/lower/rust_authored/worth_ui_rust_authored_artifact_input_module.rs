@@ -19,6 +19,7 @@ pub(crate) enum WorthUiRustAuthoredDeclaration {
         name_text: String,
         authored_identity: Option<String>,
         body_atoms: Vec<WorthUiArtifactInputBodyAtom>,
+        appearance_role_attachment: Option<crate::UiAppearanceRoleAttachmentDeclaration>,
     },
     Surface {
         name_text: String,
@@ -44,6 +45,8 @@ pub(crate) enum WorthUiRustAuthoredDeclaration {
         value_text: String,
     },
     SemanticArtifact(WorthUiSemanticArtifactDeclaration),
+    AppearanceRole(crate::UiAppearanceRoleDeclaration),
+    Backdrop(crate::UiBackdropDeclaration),
 }
 
 impl WorthUiRustAuthoredArtifactInputModule {
@@ -68,6 +71,7 @@ impl WorthUiRustAuthoredArtifactInputModule {
                 name_text: name_text.into(),
                 authored_identity: None,
                 body_atoms: Vec::new(),
+                appearance_role_attachment: None,
             });
         self
     }
@@ -82,6 +86,7 @@ impl WorthUiRustAuthoredArtifactInputModule {
                 name_text: name_text.into(),
                 authored_identity: Some(authored_identity.into()),
                 body_atoms: Vec::new(),
+                appearance_role_attachment: None,
             });
         self
     }
@@ -96,6 +101,7 @@ impl WorthUiRustAuthoredArtifactInputModule {
                 name_text: name_text.into(),
                 authored_identity: None,
                 body_atoms: body_atoms.into_iter().collect(),
+                appearance_role_attachment: None,
             });
         self
     }
@@ -111,6 +117,7 @@ impl WorthUiRustAuthoredArtifactInputModule {
                 name_text: name_text.into(),
                 authored_identity: Some(authored_identity.into()),
                 body_atoms: body_atoms.into_iter().collect(),
+                appearance_role_attachment: None,
             });
         self
     }
@@ -129,6 +136,7 @@ impl WorthUiRustAuthoredArtifactInputModule {
                 name_text: name_text.into(),
                 authored_identity: None,
                 body_atoms,
+                appearance_role_attachment: None,
             });
         self
     }
@@ -148,12 +156,47 @@ impl WorthUiRustAuthoredArtifactInputModule {
                 name_text: name_text.into(),
                 authored_identity: Some(authored_identity.into()),
                 body_atoms,
+                appearance_role_attachment: None,
             });
         self
     }
 
     pub fn with_intent_declaration(self, declaration: WorthUiIntentDeclarationSpec) -> Self {
         self.with_semantic_declaration(declaration.into_semantic_declaration())
+    }
+
+    pub fn with_portal_declaration(
+        mut self,
+        identity: impl Into<String>,
+        surface: impl Into<String>,
+        anchor: impl Into<String>,
+        layer: crate::WorthUiPortalLayer,
+        dismissal: crate::WorthUiPortalDismissalSet,
+        first_enabled_focus: bool,
+        restore_focus: bool,
+        motion: impl Into<String>,
+    ) -> Result<Self, crate::WorthUiServiceDeclarationParseError> {
+        let identity = identity.into();
+        let portal = crate::WorthUiPortalDeclaration::authoring(
+            identity.clone().into_boxed_str(),
+            surface.into().into_boxed_str(),
+            anchor.into().into_boxed_str(),
+            layer,
+            dismissal,
+            first_enabled_focus,
+            restore_focus,
+            motion.into().into_boxed_str(),
+        )?;
+        let declaration = WorthUiSemanticArtifactDeclaration::new(
+            crate::UiDslSemanticKey::new(identity),
+            crate::UiDslSemanticFamily::RuntimeService,
+        )
+        .with_service_declaration(crate::WorthUiServiceDeclarationMeaning::Portal(portal));
+        self.declarations
+            .push(WorthUiRustAuthoredDeclaration::SemanticArtifact(
+                declaration,
+            ));
+        Ok(self)
     }
 
     pub fn with_surface(mut self, name_text: impl Into<String>) -> Self {
@@ -270,6 +313,74 @@ impl WorthUiRustAuthoredArtifactInputModule {
                 declaration,
             ));
         self
+    }
+
+    pub fn with_appearance_role(mut self, role: crate::UiAppearanceRoleDeclaration) -> Self {
+        self.declarations
+            .push(WorthUiRustAuthoredDeclaration::AppearanceRole(role));
+        self
+    }
+
+    pub fn with_backdrop(mut self, declaration: crate::UiBackdropDeclaration) -> Self {
+        self.declarations
+            .push(WorthUiRustAuthoredDeclaration::Backdrop(declaration));
+        self
+    }
+
+    pub fn with_component_appearance_role(
+        mut self,
+        component_name: impl Into<String>,
+        attachment: crate::UiAppearanceRoleAttachmentDeclaration,
+    ) -> Result<Self, crate::UiAppearanceRoleAttachmentDeclarationDenial> {
+        let component_name = component_name.into();
+        let matching_components = self
+            .declarations
+            .iter()
+            .filter(|declaration| {
+                matches!(
+                    declaration,
+                    WorthUiRustAuthoredDeclaration::Component { name_text, .. }
+                        if name_text == &component_name
+                )
+            })
+            .count();
+        if matching_components > 1 {
+            return Err(crate::UiAppearanceRoleAttachmentDeclarationDenial::DuplicateAttachment);
+        }
+        if matching_components == 1 {
+            let declaration = self
+                .declarations
+                .iter_mut()
+                .find(|declaration| {
+                    matches!(
+                        declaration,
+                        WorthUiRustAuthoredDeclaration::Component { name_text, .. }
+                            if name_text == &component_name
+                    )
+                })
+                .expect("the single matching component must be present");
+            if let WorthUiRustAuthoredDeclaration::Component {
+                appearance_role_attachment,
+                ..
+            } = declaration
+            {
+                if appearance_role_attachment.is_some() {
+                    return Err(
+                        crate::UiAppearanceRoleAttachmentDeclarationDenial::DuplicateAttachment,
+                    );
+                }
+                *appearance_role_attachment = Some(attachment);
+            }
+            return Ok(self);
+        }
+        self.declarations
+            .push(WorthUiRustAuthoredDeclaration::Component {
+                name_text: component_name,
+                authored_identity: None,
+                body_atoms: Vec::new(),
+                appearance_role_attachment: Some(attachment),
+            });
+        Ok(self)
     }
 
     pub(crate) fn relative_module_path(&self) -> &str {

@@ -46,6 +46,7 @@ pub(super) fn deliver_keyboard_command(
     );
     let input = match command {
         NativeKeyboardCommand::Escape => NativeKeyboardInput::Single(co::VK::ESCAPE),
+        NativeKeyboardCommand::Tab => NativeKeyboardInput::Single(co::VK::TAB),
         NativeKeyboardCommand::PrimaryShiftP => NativeKeyboardInput::PrimaryShiftP,
     };
     deliver_at(
@@ -164,10 +165,21 @@ fn deliver_at(
         )
         .map_err(NativePlatformFailure::InputEnvironment)?;
     }
-    let delivered_event_count = match kind {
+    let (delivered_event_count, qualified_point) = match kind {
         NativeInputProbeKind::Pointer => {
             prime_pointer_motion(window, (screen_x, screen_y))?;
+            super::pointer_visual_settlement::await_client_stability(observed)?;
             super::pointer_target::require_before_effect(window, (screen_x, screen_y))?;
+            let cursor = Mouse::get_cursor_pos().map_err(input_failure)?;
+            let qualified_point = (cursor.get_x(), cursor.get_y());
+            if pointer_tolerance.is_some_and(|tolerance| {
+                qualified_point.0.abs_diff(screen_x) > tolerance
+                    || qualified_point.1.abs_diff(screen_y) > tolerance
+            }) {
+                return Err(NativePlatformFailure::InputDelivery(format!(
+                    "cursor moved away from the qualified control before button delivery: expected=({screen_x}, {screen_y}); observed={qualified_point:?}; tolerance={pointer_tolerance:?}"
+                )));
+            }
             let delivered = winsafe::SendInput(&[
                 HwKbMouse::Mouse(MOUSEINPUT {
                     dwFlags: co::MOUSEEVENTF::LEFTDOWN,
@@ -180,7 +192,7 @@ fn deliver_at(
             ])
             .map_err(|error| post_effect_failure(kind, 0, error.to_string()))?;
             require_complete_delivery(kind, delivered, 2, "pointer")?;
-            delivered
+            (delivered, qualified_point)
         }
         NativeInputProbeKind::Keyboard => {
             super::input_environment::qualify_keyboard_world(window, observed.process_id())
@@ -210,46 +222,21 @@ fn deliver_at(
                     "process-bound automation element lost keyboard focus",
                 ));
             }
-            delivered
+            (delivered, (screen_x, screen_y))
         }
     };
-    let delivered_point = match kind {
-        NativeInputProbeKind::Pointer => {
-            super::pointer_target::require_after_effect(
-                window,
-                (screen_x, screen_y),
-                kind,
-                delivered_event_count,
-            )?;
-            let delivered_point = Mouse::get_cursor_pos().map_err(|error| {
-                post_effect_failure(
-                    kind,
-                    delivered_event_count,
-                    format!("observe cursor position after delivery: {error}"),
-                )
-            })?;
-            if pointer_tolerance.is_some_and(|tolerance| {
-                delivered_point.get_x().abs_diff(screen_x) > tolerance
-                    || delivered_point.get_y().abs_diff(screen_y) > tolerance
-            }) {
-                return Err(post_effect_failure(
-                    kind,
-                    delivered_event_count,
-                    format!(
-                        "native pointer landed at ({}, {}) instead of ({screen_x}, {screen_y})",
-                        delivered_point.get_x(),
-                        delivered_point.get_y()
-                    ),
-                ));
-            }
-            (delivered_point.get_x(), delivered_point.get_y())
-        }
-        NativeInputProbeKind::Keyboard => (screen_x, screen_y),
-    };
-    if delivered_point.0 < bounds.left()
-        || delivered_point.0 >= bounds.right()
-        || delivered_point.1 < bounds.top()
-        || delivered_point.1 >= bounds.bottom()
+    if kind == NativeInputProbeKind::Pointer {
+        super::pointer_target::require_after_effect(
+            window,
+            qualified_point,
+            kind,
+            delivered_event_count,
+        )?;
+    }
+    if qualified_point.0 < bounds.left()
+        || qualified_point.0 >= bounds.right()
+        || qualified_point.1 < bounds.top()
+        || qualified_point.1 >= bounds.bottom()
     {
         return Err(post_effect_failure(
             kind,
@@ -260,7 +247,7 @@ fn deliver_at(
     Ok(NativeInputDeliveryObservation::for_client(
         kind,
         observed,
-        delivered_point,
+        qualified_point,
         delivered_event_count,
     ))
 }

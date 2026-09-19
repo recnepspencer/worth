@@ -11,7 +11,7 @@ use crate::authorization_time::AuthorizationTimeController;
 use crate::estate_operations::notify_death::fixture::notification_world_with_authorization_time;
 
 #[test]
-fn runtime_time_failure_survives_initial_receipt_and_publication() {
+fn late_runtime_time_failure_preserves_the_observed_lost_response() {
     let rail = spawn_rail();
     let transport = Arc::new(BankEstateRailTransport::connected_to(
         rail.local_addr(),
@@ -34,10 +34,10 @@ fn runtime_time_failure_survives_initial_receipt_and_publication() {
     let outcome = fixture
         .world
         .runtime
-        .notify_estate_death(
+        .notify_estate_death_with_key(
             &fixture.authenticate_specialist(),
             fixture.action(fixture.notice, fixture.deceased),
-            idempotency(97),
+            &idempotency(97),
             &request_scope(),
         )
         .expect("lawful notification commits before dispatch classification");
@@ -50,6 +50,6 @@ fn runtime_time_failure_survives_initial_receipt_and_publication() {
         receipt
             .external_dispatch_posture()
             .and_then(|posture| posture.failure()),
-        Some(WorthQueryPublishedExternalEffectFailure::InitialDispatchTimeObservationDenied)
+        Some(WorthQueryPublishedExternalEffectFailure::LostResponse)
     );
 }

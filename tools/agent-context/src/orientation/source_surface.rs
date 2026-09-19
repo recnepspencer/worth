@@ -1,9 +1,10 @@
+use std::collections::BTreeSet;
 use std::fs;
 use std::path::Path;
 use syn::{Item, ItemMod};
 
 pub(crate) fn collect_owned_modules(src_root: &Path) -> Result<Vec<String>, String> {
-    let mut modules = Vec::new();
+    let mut modules = BTreeSet::new();
     for entry in fs::read_dir(src_root).map_err(|e| format!("read {}: {e}", src_root.display()))? {
         let entry = entry.map_err(|e| format!("read {} entry: {e}", src_root.display()))?;
         let path = entry.path();
@@ -12,9 +13,9 @@ pub(crate) fn collect_owned_modules(src_root: &Path) -> Result<Vec<String>, Stri
             continue;
         }
         if path.is_dir() {
-            modules.push(name);
+            modules.insert(name);
         } else if path.extension().and_then(|ext| ext.to_str()) == Some("rs") {
-            modules.push(
+            modules.insert(
                 path.file_stem()
                     .and_then(|stem| stem.to_str())
                     .ok_or_else(|| format!("invalid utf-8 module name in {}", path.display()))?
@@ -22,8 +23,7 @@ pub(crate) fn collect_owned_modules(src_root: &Path) -> Result<Vec<String>, Stri
             );
         }
     }
-    modules.sort();
-    Ok(modules)
+    Ok(modules.into_iter().collect())
 }
 
 pub(crate) fn ensure_facade_only_public_surface(path: &Path) -> Result<(), String> {

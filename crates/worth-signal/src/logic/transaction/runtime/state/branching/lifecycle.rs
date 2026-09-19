@@ -4,7 +4,7 @@ use crate::state::{SignalBranchHandle, SignalBranchId, SignalSnapshotId};
 use super::super::runtime_state::{
     AuthorityTransferPacket, BranchLifecycleTransfer, SignalRuntime,
 };
-use super::{SignalBranchForkDenial, SignalBranchForkRequest};
+use super::SignalBranchForkDenial;
 
 impl<D, I, E, Ctx, T> SignalRuntime<D, I, E, Ctx, T>
 where
@@ -12,6 +12,7 @@ where
     I: Copy + Ord,
     T: Copy + Ord,
 {
+    #[cfg(test)]
     pub(crate) fn create_branch(
         &mut self,
         name: impl Into<String>,
@@ -206,3 +207,6 @@ where
         }
     }
 }
+
+#[cfg(test)]
+use super::SignalBranchForkRequest;

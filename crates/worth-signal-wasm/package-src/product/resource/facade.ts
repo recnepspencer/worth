@@ -32,6 +32,10 @@ import {
   resetResourceEffectEnvelopeAuthorityForTesting,
 } from "./effects/resource_effect_envelope.js";
 import { createResourceLineEpoch } from "./lines/state/resource_line_epoch.js";
+import {
+  invalidateAllRuntimeLines,
+  refreshAllRuntimeLines,
+} from "./lines/actions/runtime_line_sweep.js";
 import { createResourceEffectProjectionCoordinator } from "./effects/projection/resource_effect_projection_coordinator.js";
 
 function createResourceNamespace(signalNamespace, rawSignals) {
@@ -75,6 +79,12 @@ function createResourceNamespace(signalNamespace, rawSignals) {
         undefined,
         effectProjectionCoordinator,
       );
+    },
+    invalidateAll() {
+      return invalidateAllRuntimeLines(resourceLineEpoch);
+    },
+    refreshAll() {
+      return refreshAllRuntimeLines(resourceLineEpoch);
     },
     effects: resourceEffects,
     mutationResponses: resourceMutationResponses,

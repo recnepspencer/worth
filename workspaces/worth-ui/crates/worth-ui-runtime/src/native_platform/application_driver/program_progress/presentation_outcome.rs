@@ -1,3 +1,4 @@
+use super::UiNativePresentationSource;
 use super::{
     FrameProgress, UiNativeApplicationProgramProgress, UiNativePendingProgramFrame,
     UiNativeProgramReconstructionAuthority, UiNativeProgramRetryReadiness,
@@ -9,7 +10,7 @@ impl UiNativeApplicationProgramProgress {
         &mut self,
         shell: &mut WorthUiNativeApplicationShell,
         outcome: crate::mounting::UiMountedFrameOutcome,
-        program_frame: usize,
+        source: UiNativePresentationSource,
         physical_presentation: Option<
             worth_ui_host_native::UiNativePhysicalPresentationCorrelation,
         >,
@@ -20,7 +21,7 @@ impl UiNativeApplicationProgramProgress {
         match outcome {
             crate::mounting::UiMountedFrameOutcome::InFlight(in_flight) => {
                 self.pending.push_back(UiNativePendingProgramFrame {
-                    program_frame,
+                    source,
                     presentation: in_flight,
                     reconstruction_authority,
                     cancel_after_external_submission,
@@ -31,7 +32,7 @@ impl UiNativeApplicationProgramProgress {
                 match rejection_requirements(&rejected) {
                     UiNativeRejectedFrameRequirements::Retry(readiness) => {
                         self.retain_retry(
-                            program_frame,
+                            source,
                             rejected,
                             reconstruction_authority,
                             cancel_after_external_submission,
@@ -42,8 +43,9 @@ impl UiNativeApplicationProgramProgress {
                     UiNativeRejectedFrameRequirements::Reconstruct => {
                         return self.reconstruct_for_owner(
                             shell,
-                            program_frame,
+                            source,
                             reconstruction_authority,
+                            cancel_after_external_submission,
                         );
                     }
                     UiNativeRejectedFrameRequirements::Terminal => {}
@@ -51,18 +53,16 @@ impl UiNativeApplicationProgramProgress {
                 Ok(FrameProgress::Failed)
             }
             crate::mounting::UiMountedFrameOutcome::PresentationIndeterminate(indeterminate) => {
-                self.settle_indeterminate(
-                    shell,
-                    indeterminate,
-                    program_frame,
-                    physical_presentation,
-                )
+                self.settle_indeterminate(shell, indeterminate, source, physical_presentation)
             }
             crate::mounting::UiMountedFrameOutcome::Published(_)
             | crate::mounting::UiMountedFrameOutcome::Unchanged(_)
-            | crate::mounting::UiMountedFrameOutcome::Reconciled(_) => {
-                self.settle_attribution(shell, program_frame, reconstruction_authority.is_some())
-            }
+            | crate::mounting::UiMountedFrameOutcome::Reconciled(_) => self.settle_attribution(
+                shell,
+                source,
+                #[cfg(feature = "certification-support")]
+                reconstruction_authority.is_some(),
+            ),
             crate::mounting::UiMountedFrameOutcome::Superseded(_) => Ok(FrameProgress::Settled),
             crate::mounting::UiMountedFrameOutcome::RetentionDenied(_)
             | crate::mounting::UiMountedFrameOutcome::AdmissionDenied(_)
@@ -75,8 +75,9 @@ impl UiNativeApplicationProgramProgress {
     fn reconstruct_for_owner(
         &mut self,
         shell: &mut WorthUiNativeApplicationShell,
-        program_frame: usize,
+        source: UiNativePresentationSource,
         reconstruction_authority: Option<UiNativeProgramReconstructionAuthority>,
+        cancel_after_external_submission: bool,
     ) -> Result<FrameProgress, ()> {
         self.next_completion_tick = self.next_completion_tick.saturating_add(1);
         let reconstruction = shell
@@ -88,13 +89,13 @@ impl UiNativeApplicationProgramProgress {
         self.retain_or_attribute(
             shell,
             reconstruction,
-            program_frame,
+            source,
             None,
             Some(
                 reconstruction_authority
                     .unwrap_or(UiNativeProgramReconstructionAuthority::HostRequired),
             ),
-            false,
+            cancel_after_external_submission,
         )
     }
 
@@ -102,7 +103,7 @@ impl UiNativeApplicationProgramProgress {
         &mut self,
         shell: &mut WorthUiNativeApplicationShell,
         indeterminate: crate::mounting::UiMountedIndeterminateFrame,
-        program_frame: usize,
+        source: UiNativePresentationSource,
         physical_presentation: Option<
             worth_ui_host_native::UiNativePhysicalPresentationCorrelation,
         >,
@@ -113,6 +114,10 @@ impl UiNativeApplicationProgramProgress {
             }) {
                 return Err(());
             }
+            if self.physical_recovery.has_pending() && self.recovery_source != Some(source) {
+                return Err(());
+            }
+            self.recovery_source = Some(source);
             for binding in indeterminate.report().physical_recovery_bindings() {
                 self.physical_recovery
                     .expect(indeterminate.report().attempt(), *binding)
@@ -137,18 +142,22 @@ impl UiNativeApplicationProgramProgress {
         if owner_reconstruction_required(&recovery) {
             return Ok(FrameProgress::Failed);
         }
-        self.retain_or_attribute(shell, recovery, program_frame, None, None, false)
+        self.retain_or_attribute(shell, recovery, source, None, None, false)
     }
 
-    fn settle_attribution(
+    pub(super) fn settle_attribution(
         &mut self,
         shell: &mut WorthUiNativeApplicationShell,
-        program_frame: usize,
-        reconstructed: bool,
+        source: UiNativePresentationSource,
+        #[cfg(feature = "certification-support")] reconstructed: bool,
     ) -> Result<FrameProgress, ()> {
+        let UiNativePresentationSource::Program(source) = source else {
+            return Ok(FrameProgress::Settled);
+        };
+        #[cfg(feature = "certification-support")]
         self.runtime_qualification
             .observe_settled_presentation(shell, reconstructed)?;
-        if self.program.frames()[program_frame].captures_presented_source_pixels() {
+        if self.program.frames()[source].captures_presented_source_pixels() {
             if self.visual_snapshot.is_some() {
                 return Err(());
             }
@@ -286,11 +295,14 @@ fn apply_completion_intent(
         {
             Ok(shell.cancel_mounted_presentation(in_flight))
         }
-        outcome @ crate::mounting::UiMountedFrameOutcome::InFlight(_) => Ok(outcome),
+        // Atlas deferral and other before-effects retries have not reached the
+        // physical submission this intent cancels. Preserve the intent through
+        // the existing retained retry until a PhysicalSurface token is issued.
+        outcome @ (crate::mounting::UiMountedFrameOutcome::InFlight(_)
+        | crate::mounting::UiMountedFrameOutcome::RejectedBeforeEffects(_)) => Ok(outcome),
         crate::mounting::UiMountedFrameOutcome::Published(_)
         | crate::mounting::UiMountedFrameOutcome::Unchanged(_)
         | crate::mounting::UiMountedFrameOutcome::Reconciled(_)
-        | crate::mounting::UiMountedFrameOutcome::RejectedBeforeEffects(_)
         | crate::mounting::UiMountedFrameOutcome::PresentationIndeterminate(_)
         | crate::mounting::UiMountedFrameOutcome::Superseded(_)
         | crate::mounting::UiMountedFrameOutcome::RetentionDenied(_)

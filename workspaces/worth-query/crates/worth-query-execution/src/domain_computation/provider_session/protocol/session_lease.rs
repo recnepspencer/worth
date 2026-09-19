@@ -63,6 +63,8 @@ impl WorthQueryProviderSessionLease {
             || matches!(
                 &result,
                 Err(super::WorthQueryProviderSessionCommitStop::SettlementDeferred(_))
+                    | Err(super::WorthQueryProviderSessionCommitStop::ProductUnpublished(_))
+                    | Err(super::WorthQueryProviderSessionCommitStop::NoEffect(_))
                     | Err(super::WorthQueryProviderSessionCommitStop::ControlStopped(
                         _
                     ))

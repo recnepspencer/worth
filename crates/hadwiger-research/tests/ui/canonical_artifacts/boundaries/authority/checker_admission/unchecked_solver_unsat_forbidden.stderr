@@ -1,5 +1,0 @@
-error[E0599]: no function or associated item named `unchecked_unsat` found for struct `hadwiger_research::facade::SolverRun` in the current scope
- --> tests/ui/canonical_artifacts/boundaries/authority/checker_admission/unchecked_solver_unsat_forbidden.rs:4:24
-  |
-4 |     let _ = SolverRun::unchecked_unsat();
-  |                        ^^^^^^^^^^^^^^^ function or associated item not found in `hadwiger_research::facade::SolverRun`

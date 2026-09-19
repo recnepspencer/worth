@@ -1,6 +1,11 @@
 #[cfg(test)]
 mod accessibility_focus_hook;
 mod active_descendant;
+#[allow(
+    dead_code,
+    reason = "milestone 3.16 Gate 0 seals the focus appearance export before it is consumed"
+)]
+mod appearance_export;
 mod container_navigation;
 mod identity;
 mod inspection;
@@ -25,6 +30,13 @@ pub(in crate::runtime) use accessibility_focus_hook::{
     UiAccessibilityFocusHook, UiAccessibilityFocusHookSupport,
 };
 pub(in crate::runtime) use active_descendant::UiActiveDescendant;
+#[allow(
+    unused_imports,
+    reason = "milestone 3.16 Gate 0 exposes the sealed focus appearance contract internally"
+)]
+pub(crate) use appearance_export::{
+    UiFocusAppearanceClass, UiFocusAppearancePosture, UiFocusAppearanceTarget,
+};
 pub(crate) use container_navigation::{
     UiFocusContainerNavigationKey, UiFocusContainerNavigationReceipt,
 };
@@ -42,7 +54,9 @@ pub(crate) use receipt::UiFocusOutcome;
 pub(crate) use receipt::UiFocusReconciliationReceipt;
 pub(crate) use receipt::UiFocusTransitionReceipt;
 pub(crate) use request::UiFocusCause;
-pub(in crate::runtime) use request::{UiFocusRequest, UiFocusTraversalDirection};
+#[cfg(any(test, feature = "certification-support"))]
+pub(in crate::runtime) use request::UiFocusRequest;
+pub(in crate::runtime) use request::UiFocusTraversalDirection;
 pub(in crate::runtime) use restoration::UiFocusRestorationToken;
 pub(in crate::runtime) use routing::UiFocusPlan;
 pub(crate) use routing::UiFocusRoutingDenial;

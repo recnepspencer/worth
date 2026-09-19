@@ -9,7 +9,10 @@ where
     I: Copy + Ord + Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
-    pub(crate) fn snapshot(&self) -> crate::inspection::RuntimeWorldRetentionSnapshot {
+    pub(crate) fn snapshot(
+        &self,
+        active_publication_attempts: usize,
+    ) -> crate::inspection::RuntimeWorldRetentionSnapshot {
         let state = self.lock();
         crate::inspection::RuntimeWorldRetentionSnapshot {
             unique_pins: state.unique_slots,
@@ -18,6 +21,7 @@ where
             reserved_unique_pins: state.reserved_unique_slots,
             reserved_acquisitions: state.reserved_in_flight_reservations,
             observations: self.active_observation_count(),
+            active_publication_attempts,
         }
     }
     pub(crate) fn inspect_key(

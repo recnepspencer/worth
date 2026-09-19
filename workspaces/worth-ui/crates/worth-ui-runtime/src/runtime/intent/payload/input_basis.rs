@@ -10,6 +10,7 @@ pub struct UiIntentInputBasisReceipt {
     generation: crate::runtime::WorthUiActiveApplicationGenerationIdentity,
     publication_frame: worth_ui_host_contract::UiMountedFrameIdentity,
     target: crate::runtime::interaction::UiPresentedInteractionTargetView,
+    portal_declaration: Option<worth_ui_dsl::UiPortalDeclarationId>,
     route_resolution: crate::declaration::UiIntentRouteResolutionCost,
     cost: UiIntentPayloadProjectionCost,
     owner_revisions: Box<[UiIntentInputOwnerRevision]>,
@@ -28,6 +29,7 @@ pub(crate) struct UiIntentInputBasisInput {
     pub(crate) generation: crate::runtime::WorthUiActiveApplicationGenerationIdentity,
     pub(crate) publication_frame: worth_ui_host_contract::UiMountedFrameIdentity,
     pub(crate) target: crate::runtime::interaction::UiPresentedInteractionTargetView,
+    pub(crate) portal_declaration: Option<worth_ui_dsl::UiPortalDeclarationId>,
     pub(crate) route_resolution: crate::declaration::UiIntentRouteResolutionCost,
     pub(crate) source: super::super::routing::UiIntentProductInputSource,
     pub(crate) query_inputs: Vec<worth_ui_query_binding::UiProjectionInputFactReference>,
@@ -40,6 +42,7 @@ pub(crate) struct UiIntentInputBasisInput {
 
 pub(crate) struct UiIntentInputBasisMaterial {
     pub(crate) source: super::super::routing::UiIntentProductInputSource,
+    pub(crate) portal_declaration: Option<worth_ui_dsl::UiPortalDeclarationId>,
     pub(crate) query_inputs: Vec<worth_ui_query_binding::UiProjectionInputFactReference>,
     pub(crate) application_inputs: Vec<super::UiIntentApplicationInputReference>,
     pub(crate) owner_revisions: Vec<UiIntentInputOwnerRevision>,
@@ -56,6 +59,7 @@ impl UiIntentInputBasis {
                 generation: input.generation,
                 publication_frame: input.publication_frame,
                 target: input.target,
+                portal_declaration: input.portal_declaration,
                 route_resolution: input.route_resolution,
                 cost: input.cost,
                 owner_revisions: input.owner_revisions.into_boxed_slice(),
@@ -135,6 +139,10 @@ impl UiIntentInputBasisReceipt {
 
     pub const fn target(&self) -> crate::runtime::interaction::UiPresentedInteractionTargetView {
         self.target
+    }
+
+    pub const fn portal_declaration(&self) -> Option<worth_ui_dsl::UiPortalDeclarationId> {
+        self.portal_declaration
     }
 
     pub const fn cost(&self) -> UiIntentPayloadProjectionCost {

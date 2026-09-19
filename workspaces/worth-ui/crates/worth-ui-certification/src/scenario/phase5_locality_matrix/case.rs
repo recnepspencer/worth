@@ -3,12 +3,12 @@
 use std::sync::Arc;
 
 use worth_ui::facade::declaration::{
-    ComponentSemanticTextSpanContract, ThemeColorValue, ThemeTokenId, ThemeTokenValue,
+    ComponentSemanticTextSpanContract, ThemeTokenId, ThemeTokenValue, UiThemeColor,
 };
 use worth_ui_host_contract::UiTextOriginalRange;
 use worth_ui_native_platform::{
     UiNativeApplicationFrame, UiNativeApplicationProgram, UiNativeComponentPresenceChange,
-    UiNativeComponentSemanticTextChange, UiNativeQualificationPlan, UiNativeThemeTokenValueChange,
+    UiNativeComponentSemanticTextChange, UiNativeQualificationPlan,
 };
 use worth_ui_text::{
     UiTextAlignment, UiTextBaseDirection, UiTextOverflow, UiTextParagraphConstraints,
@@ -24,7 +24,6 @@ pub(super) const SURFACE: &str = "phase5.matrix.surface";
 pub(super) enum Phase5LocalityAxis {
     Content,
     Width,
-    PaintValue,
     PaintBoundary,
     Dpi,
     AtlasMiss,
@@ -39,10 +38,9 @@ pub(super) struct Phase5LocalityCase {
 }
 
 impl Phase5LocalityAxis {
-    pub(super) const ALL: [Self; 8] = [
+    pub(super) const ALL: [Self; 7] = [
         Self::Content,
         Self::Width,
-        Self::PaintValue,
         Self::PaintBoundary,
         Self::Dpi,
         Self::AtlasMiss,
@@ -54,7 +52,6 @@ impl Phase5LocalityAxis {
         match self {
             Self::Content => "content",
             Self::Width => "width",
-            Self::PaintValue => "paint-value",
             Self::PaintBoundary => "paint-boundary",
             Self::Dpi => "dpi",
             Self::AtlasMiss => "atlas-miss",
@@ -163,11 +160,6 @@ impl Phase5LocalityCase {
             Phase5LocalityAxis::Width | Phase5LocalityAxis::Dpi => {
                 UiNativeApplicationFrame::present_current().after_host_surface_basis_successor()
             }
-            Phase5LocalityAxis::PaintValue => UiNativeApplicationFrame::with_theme_token_values([
-                UiNativeThemeTokenValueChange::new(token(TARGET_TOKEN), color("#2878ff"))
-                    .expect("matrix paint value successor"),
-            ])
-            .expect("one paint value change is bounded"),
             Phase5LocalityAxis::PaintBoundary => {
                 let change = UiNativeComponentSemanticTextChange::new(
                     self.authored_identity(self.target_index()),
@@ -214,7 +206,7 @@ pub(super) fn token(identity: &str) -> ThemeTokenId {
 }
 
 pub(super) fn color(value: &str) -> ThemeTokenValue {
-    ThemeTokenValue::color(ThemeColorValue::hex(value).expect("matrix token color"))
+    ThemeTokenValue::color(UiThemeColor::parse(value).expect("matrix token color"))
 }
 
 fn spans(boundary: u32) -> [ComponentSemanticTextSpanContract; 2] {

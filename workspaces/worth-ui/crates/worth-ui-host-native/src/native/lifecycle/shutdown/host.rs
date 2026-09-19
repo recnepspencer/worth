@@ -14,7 +14,7 @@ impl UiNativeShutdownPort for UiNativeHostShutdownPort<'_> {
     type Census = crate::native::UiNativeResourceCensus;
 
     fn begin_close(&mut self) {
-        self.state.last_presentation = None;
+        self.state.last_retained_frame = None;
         self.state.lifecycle.close_input_protocol();
         let _ = self.state.physical_signal.shutdown();
     }
@@ -35,6 +35,7 @@ impl UiNativeShutdownPort for UiNativeHostShutdownPort<'_> {
     fn release_derived_state(&mut self) {
         self.state.retained_draw_lists.clear();
         self.state.presentation_epochs.clear();
+        self.state.accepted_cursor = None;
         self.state.lifecycle.clear_recovery();
         let atlas_cleared = self.state.text_atlas.clear();
         self.state.text_atlas_completion = None;

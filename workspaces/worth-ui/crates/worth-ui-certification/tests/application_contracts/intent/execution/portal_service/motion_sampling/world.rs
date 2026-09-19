@@ -70,8 +70,13 @@ pub(in crate::intent::execution::portal_service) fn launch_scripted_motion_world
     use crate::intent::operability::build_open_portal_application_with_host;
 
     let (application, facts) = build_open_portal_application_with_host(host);
-    let mut world =
-        AdmissionWorld::launch_application_with_target(application, facts, 1, 2, [18, 20]);
+    let mut world = AdmissionWorld::launch_application_on_declared_surface(
+        application,
+        facts,
+        "visual.identity.surface.main",
+        2,
+        [18, 20],
+    );
     let definition = UiIntentDefinition::<PrimaryIntent>::runtime_service(
         UiIntentRuntimeServiceDestination::OpenPortal,
     );

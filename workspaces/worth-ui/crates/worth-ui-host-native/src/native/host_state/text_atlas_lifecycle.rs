@@ -50,7 +50,9 @@ impl UiNativeHostState {
         }
         let token = match self.physical_signal.take_ready_atlas_upload(pending) {
             Ok(token) => token,
-            Err(()) => return UiNativeTextAtlasPhysicalProgress::NoProgress,
+            Err(()) => {
+                return UiNativeTextAtlasPhysicalProgress::NoProgress;
+            }
         };
         if !self
             .text_atlas_in_flight

@@ -133,6 +133,30 @@ impl WorthUiActiveApplicationSession {
             .application
             .prepare_graph_successor(graph_commit)
             .map_err(|_| WorthUiMountedAllocationEstablishmentDenial::StaleGraphSuccessor)?;
+        let overlay_succession = self
+            .authored_overlay_bindings
+            .prepare_graph_succession(&graph_successor)
+            .map_err(|_| {
+                WorthUiMountedAllocationEstablishmentDenial::StaleOverlayBindingGeneration
+            })?;
+        let appearance_succession = self
+            .prepare_appearance_generation_succession(&graph_successor.generation_succession())
+            .map_err(|denial| match denial {
+                super::UiAppearanceGenerationSuccessionDenial::Theme(denial) => {
+                    WorthUiMountedAllocationEstablishmentDenial::AppearanceThemeSuccession(denial)
+                }
+                super::UiAppearanceGenerationSuccessionDenial::Inspection(denial) => {
+                    WorthUiMountedAllocationEstablishmentDenial::AppearanceInspectionSuccession(
+                        denial,
+                    )
+                }
+            })?;
+        let owners = self
+            .capture_retained_appearance_owners(
+                &appearance_succession,
+                self.capabilities().digest().as_u64(),
+            )
+            .ok_or(WorthUiMountedAllocationEstablishmentDenial::StaleGraphSuccessor)?;
         let entries = self.collect_mounted_measurement_entries(
             graph_successor.graph_snapshot(),
             &candidates,
@@ -151,10 +175,31 @@ impl WorthUiActiveApplicationSession {
                     WorthUiMountedAllocationRuntimeStage::CatalogPreparation,
                 )
             })?;
+        let pointer = self
+            .prepare_pointer_graph_succession(&graph_successor.generation_succession())
+            .map_err(|_| {
+                WorthUiMountedAllocationEstablishmentDenial::StalePointerBindingGeneration
+            })?;
+        pointer
+            .validate_predecessor(
+                &self.active_generation_identity(),
+                self.pointer_affordance_snapshot.as_ref(),
+                self.observation_clock
+                    .as_ref()
+                    .map(|clock| clock.sample_millis()),
+                &self.mounted,
+            )
+            .map_err(|_| {
+                WorthUiMountedAllocationEstablishmentDenial::StalePointerBindingGeneration
+            })?;
         let committed = self
             .application
             .activate_initial_mounted_allocation_catalog(graph_successor, admitted, boundary)
             .map_err(map_initial_activation_denial)?;
+        self.commit_retained_appearance_succession(appearance_succession, owners);
+        self.pointer_affordance_snapshot = pointer.into_snapshot();
+        self.authored_overlay_bindings
+            .commit_graph_succession(overlay_succession);
         Ok(WorthUiMountedAllocationEstablishmentReceipt { committed })
     }
 

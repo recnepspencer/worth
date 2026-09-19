@@ -4328,6 +4328,7 @@ dependencies = [
  "worth-query-installation",
  "worth-relational",
  "worth-runtime-bridge",
+ "worth-runtime-world",
  "worth-signal",
 ]
 
@@ -4363,8 +4364,11 @@ dependencies = [
  "sha2",
  "worth-foundational",
  "worth-proof",
+ "worth-query-admission",
+ "worth-query-declaration",
  "worth-query-execution",
  "worth-query-installation",
+ "worth-runtime-world",
 ]
 
 [[package]]
@@ -4400,6 +4404,17 @@ dependencies = [
  "worth-foundational",
  "worth-harness",
  "worth-proof",
+ "worth-signal",
+]
+
+[[package]]
+name = "worth-runtime-world"
+version = "0.1.0"
+dependencies = [
+ "worth-foundational",
+ "worth-proof",
+ "worth-relational",
+ "worth-runtime-bridge",
  "worth-signal",
 ]
 
@@ -4475,10 +4490,16 @@ dependencies = [
 [[package]]
 name = "worth-ui-dsl"
 version = "0.1.0"
+dependencies = [
+ "worth-foundational",
+]
 
 [[package]]
 name = "worth-ui-host-contract"
 version = "0.1.0"
+dependencies = [
+ "worth-foundational",
+]
 
 [[package]]
 name = "worth-ui-host-headless"
@@ -4511,6 +4532,9 @@ dependencies = [
 [[package]]
 name = "worth-ui-inspection"
 version = "0.1.0"
+dependencies = [
+ "worth-ui-dsl",
+]
 
 [[package]]
 name = "worth-ui-native-platform"
@@ -4563,6 +4587,7 @@ version = "0.1.0"
 dependencies = [
  "notify",
  "sha2",
+ "winit",
  "worth-foundational",
  "worth-proof",
  "worth-ui-dsl",

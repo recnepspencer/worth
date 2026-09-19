@@ -123,8 +123,10 @@ where
                 TemporalReconstructabilityArtifact::from_temporal_state(self.temporal()),
             )),
         };
-        self.mutation_ledger_mut().clear_all(Some(snapshot_id));
-        Ok((snapshot, SnapshotBranchState::from_branch_state(self)))
+        Ok((
+            snapshot,
+            SnapshotBranchState::from_branch_state(self).with_snapshot_ledger_boundary(snapshot_id),
+        ))
     }
 
     /// Reconstructs a replacement off to the side so denial never mutates the cell.

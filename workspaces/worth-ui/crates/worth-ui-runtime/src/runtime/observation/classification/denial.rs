@@ -8,6 +8,8 @@ pub enum UiAuthoredFactDeclarationSide {
 pub enum UiChangeClassificationDenial {
     ForeignSession,
     ForeignSourceBasis,
+    ForeignApplicationGeneration,
+    StalePointerPresenceTransition,
     MissingHostReport {
         family: worth_ui_host_contract::UiHostObservationFamily,
     },
@@ -24,6 +26,10 @@ pub enum UiChangeClassificationDenial {
         side: UiAuthoredFactDeclarationSide,
         provenance_digest: u64,
         matches: usize,
+    },
+    InconsistentAppearanceAttachment {
+        side: UiAuthoredFactDeclarationSide,
+        declaration: Box<str>,
     },
     AuthoredFactDeclarationIdentityMismatch {
         predecessor: Box<str>,

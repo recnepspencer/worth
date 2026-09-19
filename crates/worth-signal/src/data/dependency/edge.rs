@@ -2,6 +2,8 @@ use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
 
+mod retained_charge;
+
 use crate::data::aspect::{Aspect, AspectMask};
 use crate::data::handle::NodeId;
 use crate::data::output::{InternedPartitionSubscription, PartitionSubscription, PartitionToken};

@@ -5,7 +5,7 @@ use worth_foundational::facade::CanonicalDigestId;
 ///
 /// This value is not installation authority. Execution must validate it
 /// against the opaque installed schema handle.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct ApplicationSchemaBindingIdentity {
     runtime_ordinal: u64,
     generation: u64,

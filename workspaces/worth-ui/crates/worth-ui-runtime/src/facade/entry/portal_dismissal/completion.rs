@@ -1,11 +1,46 @@
 use super::*;
 
+pub(super) fn finish_presented<'session>(
+    admitted: UiPortalDismissalAdmitted<'session>,
+    outcome: crate::mounting::UiMountedFrameOutcome,
+    now_tick: u64,
+) -> UiPortalDismissalPublicationOutcome<'session> {
+    let crate::mounting::UiMountedFrameOutcome::RejectedBeforeEffects(rejected) = outcome else {
+        return finish(admitted, outcome);
+    };
+    if rejected.rejections().is_empty()
+        || !rejected.rejections().iter().all(|rejection| {
+            rejection.denial()
+                == worth_ui_host_contract::UiHostSurfacePresentationDenial::TextAtlasPresentationDeferred
+        })
+    {
+        return finish(admitted, crate::mounting::UiMountedFrameOutcome::RejectedBeforeEffects(rejected));
+    }
+    let proposal = admitted
+        .proposal
+        .as_ref()
+        .expect("deferred dismissal retains its proposal");
+    let outcome = admitted.session.present_prepared_portal_frame_internal(
+        rejected.into_frame(),
+        proposal,
+        admitted.retain_exit,
+        worth_ui_host_contract::UiPresentationDeadline::at_tick(u64::MAX),
+        now_tick,
+    );
+    finish(admitted, outcome)
+}
+
 pub(super) fn finish<'session>(
     mut admitted: UiPortalDismissalAdmitted<'session>,
     outcome: crate::mounting::UiMountedFrameOutcome,
 ) -> UiPortalDismissalPublicationOutcome<'session> {
     match outcome {
         crate::mounting::UiMountedFrameOutcome::Published(mounted) => {
+            let binding_commit = admitted
+                .proposal
+                .as_ref()
+                .expect("published dismissal retains proposal")
+                .overlay_binding_commit();
             let (focus, motion, exit_retention) = admitted
                 .session
                 .application
@@ -34,6 +69,11 @@ pub(super) fn finish<'session>(
                         .expect("admitted dismissal retains Motion installation"),
                 )
                 .expect("published dismissal retains exact service proposal");
+            let binding_commit = binding_commit.with_retained_exit(exit_retention.is_some());
+            admitted
+                .session
+                .commit_authored_overlay_binding(binding_commit)
+                .expect("published dismissal retains its exact overlay binding stage");
             admitted
                 .session
                 .rebind_portal_after_current_published_frame();

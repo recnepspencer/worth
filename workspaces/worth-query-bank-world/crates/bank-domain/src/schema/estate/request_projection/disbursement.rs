@@ -50,10 +50,14 @@ impl ApplicationCapabilityRequest<BankSchema, DisburseEstateCapability> for Esta
                 CapabilityAccount::reference(),
                 ApplicationCapabilityEntitySelector::new(
                     AccountIdentity::reference(),
-                    disbursement.source_account,
+                    crate::schema::encoded_bank_value::<crate::schema::AccountIdBinding>(
+                        disbursement.source_account,
+                    ),
                 ),
             ))
-            .magnitude(disbursement.amount))
+            .magnitude(crate::schema::encoded_bank_value::<
+                crate::schema::UsdMoneyBinding,
+            >(disbursement.amount)))
     }
 }
 

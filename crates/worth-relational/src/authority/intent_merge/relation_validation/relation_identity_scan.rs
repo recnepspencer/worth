@@ -11,7 +11,7 @@ pub(super) fn existing_relation_targets_for_source(
     kind_id: crate::identity::data::KindId,
     source: &EntityReference,
     targets: &BTreeSet<EntityReference>,
-    excluded_relation_id: Option<crate::identity::data::RelationId>,
+    excluded_relation_ids: &BTreeSet<crate::identity::data::RelationId>,
 ) -> bool {
     let EntityReference::Existing(source_entity) = source else {
         return false;
@@ -32,7 +32,7 @@ pub(super) fn existing_relation_targets_for_source(
             kind_id,
             source_entity,
             targets,
-            excluded_relation_id,
+            excluded_relation_ids,
             relation_id,
         ) {
             return true;
@@ -47,10 +47,10 @@ fn relation_candidate_matches_target_identity(
     kind_id: crate::identity::data::KindId,
     source_entity: &crate::identity::data::EntityId,
     targets: &BTreeSet<EntityReference>,
-    excluded_relation_id: Option<crate::identity::data::RelationId>,
+    excluded_relation_ids: &BTreeSet<crate::identity::data::RelationId>,
     relation_id: crate::identity::data::RelationId,
 ) -> bool {
-    if excluded_relation_id == Some(relation_id) || relation_id.partition_id != partition_id {
+    if excluded_relation_ids.contains(&relation_id) || relation_id.partition_id != partition_id {
         return false;
     }
     let Some(relation_partition) = state.get_partition(relation_id.partition_id) else {
@@ -170,7 +170,7 @@ mod tests {
                 EntityReference::Existing(left),
                 EntityReference::Existing(right),
             ]),
-            None,
+            &BTreeSet::new(),
         );
         let counters = instrumentation
             .complexity_counters

@@ -71,9 +71,11 @@ where
         let created_basis = self
             .admit_signal_branch_with_retention(created_branch.clone(), retention)
             .expect("validated created branch must admit its canonical basis");
-        Ok(SignalBranchForkOutcome::owner_issued(
-            created_branch,
-            created_basis,
-        ))
+        Ok(
+            SignalBranchForkOutcome::owner_issued_without_service_reference(
+                created_branch,
+                created_basis,
+            ),
+        )
     }
 }

@@ -1,3 +1,6 @@
+use crate::data::retained_storage::{
+    arc_allocation_charge, RetainedStorageCharge, RetainedStoragePreparationDenial,
+};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
@@ -50,6 +53,11 @@ impl Default for SignalObservationCaptureGate {
 }
 
 impl SignalObservationSessionState {
+    pub(crate) fn initial_heap_charge(
+    ) -> Result<RetainedStorageCharge, RetainedStoragePreparationDenial> {
+        arc_allocation_charge::<AtomicU64>()?.checked_mul(5)
+    }
+
     pub(crate) fn capture_gate(&self) -> SignalObservationCaptureGate {
         SignalObservationCaptureGate {
             active_generation: Arc::clone(&self.active_generation),

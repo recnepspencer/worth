@@ -63,6 +63,7 @@ where
         })
     }
 
+    #[cfg(test)]
     pub(in crate::branch::owner_services) fn reserve_fork_destination<'a>(
         &'a self,
         admission: &'a SignalOwnerOperationAdmission<'_>,
@@ -123,6 +124,7 @@ where
         }
     }
 
+    #[cfg(test)]
     pub(in crate::branch::owner_services) fn branch(&self) -> &SignalBranchHandle {
         &self.handle
     }

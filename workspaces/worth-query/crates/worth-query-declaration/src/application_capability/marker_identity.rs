@@ -21,6 +21,6 @@ pub trait ApplicationCapabilityProvenanceMarkerIdentity: WorthQueryPortableType 
 pub trait ApplicationCapabilityContextEntitySlotMarkerIdentity: WorthQueryPortableType {
     type Schema;
     type Context: ApplicationCapabilityContextMarkerIdentity<Schema = Self::Schema>;
-    type Entity: ApplicationEntityMarkerIdentity<Schema = Self::Schema>;
+    type Entity: ApplicationEntityMarkerIdentity<Self::Schema>;
     const IDENTIFIER: &'static str;
 }

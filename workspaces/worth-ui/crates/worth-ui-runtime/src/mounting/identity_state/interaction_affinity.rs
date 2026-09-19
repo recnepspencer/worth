@@ -8,6 +8,7 @@ use super::UiMountedIdentityState;
 /// Why a historically presented hit row can no longer name a live target.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum UiCurrentHitTargetAffinityDenial {
+    PresentationNotCurrent,
     SurfaceNoLongerBound,
     BindingNoLongerCurrent,
     MountedInstanceNoLongerCurrent,
@@ -59,27 +60,6 @@ impl UiMountedIdentityState {
             return Err(UiCurrentHitTargetAffinityDenial::MountedSurfaceAffinityChanged);
         }
         Ok(UiCurrentHitTarget { row })
-    }
-
-    pub(crate) fn admit_current_interaction_affinity(
-        &self,
-        input: UiMountedInteractionAffinityInput,
-    ) -> Result<UiCurrentInteractionAffinity, UiCurrentHitTargetAffinityDenial> {
-        let affinity =
-            self.admit_current_mounted_incarnation_affinity(UiMountedIncarnationAffinityInput {
-                surface: input.surface,
-                binding: input.binding,
-                mounted_instance: input.mounted_instance,
-            })?;
-        let receipt_is_current = self
-            .current_receipt_basis
-            .as_ref()
-            .and_then(|basis| basis.receipt_for(input.mounted_instance))
-            .is_some_and(|receipt| receipt == input.node_receipt);
-        if !receipt_is_current {
-            return Err(UiCurrentHitTargetAffinityDenial::MountedInstanceNoLongerCurrent);
-        }
-        Ok(affinity)
     }
 
     pub(crate) fn admit_current_mounted_incarnation_affinity(

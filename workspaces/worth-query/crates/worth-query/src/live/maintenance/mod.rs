@@ -33,8 +33,7 @@ pub use primary_binding::{
     WorthQueryPrimaryRuntimeInvalidationBinding,
 };
 pub use primary_runtime::{
-    maintain_granular_invalidation_deliveries, maintain_primary_runtime_granular_batch,
-    maintain_primary_runtime_granular_collection_batch,
+    maintain_primary_runtime_granular_batch, maintain_primary_runtime_granular_collection_batch,
     maintain_primary_runtime_granular_invalidations, WorthQueryCoalescedMaintenancePlan,
     WorthQueryGranularNoChange, WorthQueryPrimaryGranularMaintenanceDenial,
     WorthQueryPrimaryGranularMaintenanceOutcome, WorthQueryPrimaryGranularMaintenancePerformed,

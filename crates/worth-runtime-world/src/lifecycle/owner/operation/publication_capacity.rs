@@ -68,7 +68,6 @@ impl RuntimeWorldPublicationCapacityLedger {
         })
     }
 
-    #[cfg(test)]
     pub(crate) fn active(&self) -> usize {
         self.state
             .lock()

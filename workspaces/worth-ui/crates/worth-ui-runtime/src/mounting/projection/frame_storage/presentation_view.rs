@@ -1,6 +1,14 @@
 use super::{portal_child_view::UiMountedPortalChildPresentation, UiMountedProjectionFrame};
 
 impl UiMountedProjectionFrame {
+    pub(in crate::mounting) fn presentation_authored_order(
+        &self,
+    ) -> crate::runtime::persistent_index::UiPersistentOrder<
+        worth_ui_host_contract::UiMountedInstanceIdentity,
+    > {
+        self.semantic.order.clone()
+    }
+
     pub(in crate::mounting) fn portal_presentation_affinity_for_instance(
         &self,
         instance: worth_ui_host_contract::UiMountedInstanceIdentity,
@@ -11,7 +19,7 @@ impl UiMountedProjectionFrame {
             .portal_child_presentation(instance, surface, binding)
             .expect("prepared Portal children retain an unambiguous mounted owner")
         {
-            UiMountedPortalChildPresentation::Presented(portal) => Some(
+            UiMountedPortalChildPresentation::Presented(portal, _) => Some(
                 worth_ui_host_contract::UiMountedPortalPresentationAffinity::from_runtime_mounting(
                     portal.owner(),
                     portal.portal_identity(),
@@ -26,10 +34,15 @@ impl UiMountedProjectionFrame {
         &self,
     ) -> crate::mounting::UiMountedVisualRegionBasis {
         let mut portal_children = std::collections::BTreeMap::new();
+        let mut text_clips = std::collections::BTreeMap::new();
         for instance in self.semantic.order.iter().copied() {
             let Some(node) = self.semantic.node(instance) else {
                 continue;
             };
+            let clip = node.completed_appearance_geometry().clip;
+            if clip != crate::mounting::projection::UiMountedAppearanceClip::Unclipped {
+                text_clips.insert(instance, clip);
+            }
             if node.portal_child_owner.is_none() {
                 continue;
             }
@@ -44,15 +57,22 @@ impl UiMountedProjectionFrame {
                 UiMountedPortalChildPresentation::Suppressed => {
                     portal_children.insert(instance, None);
                 }
-                UiMountedPortalChildPresentation::Presented(portal) => {
-                    portal_children.insert(instance, Some(portal));
+                UiMountedPortalChildPresentation::Presented(portal, source_anchor) => {
+                    portal_children.insert(instance, Some((portal, source_anchor)));
                 }
             }
         }
         self.mechanics
             .visual_region_basis()
-            .with_portal_overlays(self.portal_overlay_visual_rows())
+            .with_portal_overlays(
+                self.portal_overlay_visual_rows(),
+                self.portal_overlays
+                    .iter()
+                    .map(|input| input.input_order())
+                    .collect(),
+            )
             .with_portal_children(portal_children)
+            .with_text_clips(text_clips)
     }
 
     pub(in crate::mounting) fn presentation_commands_for_instance(
@@ -65,22 +85,21 @@ impl UiMountedProjectionFrame {
             .mechanics
             .commands_for_instance(instance, surface, binding)
             .to_vec();
-        commands = match self
-            .portal_child_presentation(instance, surface, binding)
-            .expect("prepared Portal children retain an unambiguous mounted owner")
-        {
-            UiMountedPortalChildPresentation::Ordinary => commands,
-            UiMountedPortalChildPresentation::Suppressed => Vec::new(),
-            UiMountedPortalChildPresentation::Presented(portal) => commands
-                .into_iter()
-                .map(|command| present_portal_child_command(command, portal))
-                .collect(),
-        };
+        commands = commands.into_iter().filter_map(|command| match command {
+            worth_ui_host_contract::UiMountedPaintCommand::SemanticText { mechanic, .. } => {
+                self.present_semantic_text_row(mechanic)
+                    .expect("prepared text retains validated mounted clip geometry")
+                    .map(|mechanic| worth_ui_host_contract::UiMountedPaintCommand::SemanticText {
+                        identity: worth_ui_host_contract::UiMountedPaintCommandIdentity::semantic_text(&mechanic), mechanic,
+                    })
+            }
+            other => Some(other),
+        }).collect();
         for input in self
             .portal_overlays
             .iter()
             .copied()
-            .filter(|input| input.owner() == instance)
+            .filter(|input| input.owner() == instance && input.surface() == surface)
         {
             let owner = self
                 .semantic
@@ -94,7 +113,7 @@ impl UiMountedProjectionFrame {
                 .receipt_for(instance)
                 .expect("prepared Portal overlay retains its mounted receipt");
             let mechanic = input
-                .mechanic_for(self.frame, surface, binding, receipt)
+                .mechanic_for(self.frame, binding, receipt)
                 .expect("prepared Portal overlay retains valid geometry");
             commands.push(
                 worth_ui_host_contract::UiMountedPaintCommand::PortalOverlay {
@@ -125,67 +144,6 @@ impl UiMountedProjectionFrame {
             &self.presentation_command_changes
         } else {
             &[]
-        }
-    }
-
-    pub(in crate::mounting) fn presentation_instance_order(
-        &self,
-        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
-        binding: worth_ui_host_contract::UiSurfaceBindingGeneration,
-    ) -> crate::runtime::persistent_index::UiPersistentOrder<
-        worth_ui_host_contract::UiMountedInstanceIdentity,
-    > {
-        let mut presented = crate::runtime::persistent_index::UiPersistentOrder::default();
-        for instance in self.semantic.order.iter().copied() {
-            let Some(node) = self.semantic.node(instance) else {
-                continue;
-            };
-            if node.receipt.semantic_surface() != surface
-                || matches!(
-                    self.portal_child_presentation(instance, surface, binding)
-                        .expect("prepared Portal children retain an unambiguous mounted owner"),
-                    UiMountedPortalChildPresentation::Suppressed
-                )
-            {
-                continue;
-            }
-            presented
-                .append(instance)
-                .expect("presented mounted identities remain unique and bounded");
-        }
-        presented
-    }
-}
-
-fn present_portal_child_command(
-    command: worth_ui_host_contract::UiMountedPaintCommand,
-    portal: worth_ui_host_contract::UiMountedPortalOverlayMechanic,
-) -> worth_ui_host_contract::UiMountedPaintCommand {
-    match command {
-        worth_ui_host_contract::UiMountedPaintCommand::FilledRect { mechanic, .. } => {
-            let mechanic = mechanic
-                .presented_within_portal(portal)
-                .expect("validated Portal-relative paint remains canonical");
-            worth_ui_host_contract::UiMountedPaintCommand::FilledRect {
-                identity: worth_ui_host_contract::UiMountedPaintCommandIdentity::filled_rect(
-                    &mechanic,
-                ),
-                mechanic,
-            }
-        }
-        worth_ui_host_contract::UiMountedPaintCommand::SemanticText { mechanic, .. } => {
-            let mechanic = mechanic
-                .presented_within_portal(portal)
-                .expect("validated Portal-relative text remains canonical");
-            worth_ui_host_contract::UiMountedPaintCommand::SemanticText {
-                identity: worth_ui_host_contract::UiMountedPaintCommandIdentity::semantic_text(
-                    &mechanic,
-                ),
-                mechanic,
-            }
-        }
-        worth_ui_host_contract::UiMountedPaintCommand::PortalOverlay { .. } => {
-            unreachable!("Portal children cannot own nested overlay commands here")
         }
     }
 }

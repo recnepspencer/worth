@@ -271,8 +271,14 @@ scan or allocation fallback.
 runtime-service destinations. Direct focus, scroll-to, reveal, and selection
 destinations are not public intent shortcuts; their current operations use the
 family-specific origins and proposal requirements described in
-[Runtime services](./runtime-services.md). Appearance behavior arrives in
-Milestone 3.16. Intent detail inspection remains bounded and
+[Runtime services](./runtime-services.md).
+
+Appearance consumes sealed hover, pressed, selection, focus, operability, and
+validation facts after their owners decide meaning. It can select paint and
+pointer-affordance cells but cannot admit an intent, mutate an owner, or make a
+disabled control operable. Pressed and pending-operability replacement clear or
+carry state only through the owner-issued succession used by the accepted
+frame. Intent detail and appearance inspection remain bounded and
 non-reconstructive; replay is not an ordinary runtime feature.
 
 ## Related Docs

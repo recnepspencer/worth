@@ -87,17 +87,11 @@ impl UiNativePlatformProfile {
         worth_ui_host_native::WorthUiPreparedNativeHost::prepare_qualified()
     }
 
+    #[cfg(feature = "certification-support")]
     pub(crate) const fn driver_runtime_qualification(
         &self,
     ) -> Option<super::runtime_qualification::UiNativeRuntimeQualificationPlan> {
-        #[cfg(feature = "certification-support")]
-        {
-            self.runtime_qualification
-        }
-        #[cfg(not(feature = "certification-support"))]
-        {
-            None
-        }
+        self.runtime_qualification
     }
 
     pub(crate) fn validate(&self) -> Result<(), UiNativePlatformPreparationDenial> {
@@ -115,8 +109,8 @@ impl UiNativePlatformProfile {
         if width > 16_384 || height > 16_384 {
             return Err(UiNativePlatformPreparationDenial::WindowExtentCapacityExceeded);
         }
-        if worth_ui_host_native::UiNativePlatformProfileIdentity::WORTH_UI_WINDOWS_DX12_V1.as_str()
-            != "worth-ui-windows-dx12-v1"
+        if worth_ui_host_native::UiNativePlatformProfileIdentity::WORTH_UI_WINDOWS_DX12_V2.as_str()
+            != "worth-ui-windows-dx12-v2"
         {
             return Err(UiNativePlatformPreparationDenial::QualifiedProfileMismatch);
         }

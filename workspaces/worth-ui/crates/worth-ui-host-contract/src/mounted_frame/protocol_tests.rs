@@ -49,6 +49,25 @@ const FAMILIES: [UiHostProtocolSchemaFamily; 5] = [
     UiHostProtocolSchemaFamily::SolicitedEffect,
 ];
 
+#[test]
+fn peers_without_surface_gradient_paint_are_denied() {
+    let mut previous = Revisions::current(UiHostProtocolContract::current());
+    previous.protocol = 8;
+    previous.frame = 7;
+    previous.presentation = 7;
+    assert_denial(previous.contract(), UiHostProtocolDenial::ProtocolTooOld);
+    previous.protocol = 9;
+    assert_denial(
+        previous.contract(),
+        UiHostProtocolDenial::SchemaTooOld(UiHostProtocolSchemaFamily::MountedFrame),
+    );
+    previous.frame = 8;
+    assert_denial(
+        previous.contract(),
+        UiHostProtocolDenial::SchemaTooOld(UiHostProtocolSchemaFamily::MountedPresentation),
+    );
+}
+
 #[derive(Clone, Copy)]
 struct Revisions {
     protocol: u16,

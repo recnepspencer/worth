@@ -1,10 +1,12 @@
 use std::time::Duration;
 
-use bank_domain::estate::{
-    CapabilityGrantId, EmergencyAccessId, EmergencyAccessReason, EstateAction, MandatoryReviewId,
-    RestrictedBankField,
+use bank_domain::{
+    estate::{
+        CapabilityGrantId, EmergencyAccessId, EmergencyAccessReason, EstateAction,
+        MandatoryReviewId, RestrictedBankField,
+    },
+    proposals::BankIdempotencyKey,
 };
-use worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyBinding;
 
 use super::fixture::{request_scope, CapabilityFixture, ESTATE};
 use crate::{
@@ -33,7 +35,7 @@ pub(super) fn request_elevation(
 ) -> BankRequestedEstateElevation {
     let outcome = fixture
         .runtime
-        .request_estate_emergency_access(
+        .request_estate_emergency_access_with_key(
             requester,
             EstateAction::RequestEmergencyAccess {
                 estate: ESTATE,
@@ -44,10 +46,7 @@ pub(super) fn request_elevation(
                 field: spec.field,
                 duration: spec.duration,
             },
-            WorthQueryApplicationIdempotencyBinding::new(
-                [spec.idempotency; 32],
-                [spec.idempotency + 1; 32],
-            ),
+            &bank_idempotency(spec.idempotency),
             &request_scope(),
         )
         .expect("the approval prerequisite request should commit");
@@ -65,17 +64,14 @@ pub(super) fn approve_elevation(
 ) -> BankApprovedEstateElevation {
     let outcome = fixture
         .runtime
-        .approve_estate_emergency_access(
+        .approve_estate_emergency_access_with_key(
             approver,
             requested,
             EstateAction::ApproveEmergencyAccess {
                 estate: ESTATE,
                 access: EmergencyAccessId::new(spec.access).unwrap(),
             },
-            WorthQueryApplicationIdempotencyBinding::new(
-                [spec.idempotency; 32],
-                [spec.idempotency + 1; 32],
-            ),
+            &bank_idempotency(spec.idempotency),
             &request_scope(),
         )
         .expect("the terminal lifecycle prerequisite approval should commit");
@@ -83,4 +79,8 @@ pub(super) fn approve_elevation(
         panic!("the terminal prerequisite approval must be fresh: {outcome:?}");
     };
     approved
+}
+
+fn bank_idempotency(seed: u8) -> BankIdempotencyKey {
+    BankIdempotencyKey::new(format!("estate-elevation-{seed}")).unwrap()
 }

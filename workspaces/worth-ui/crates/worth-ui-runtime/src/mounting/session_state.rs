@@ -1,12 +1,19 @@
+mod appearance_mount;
 mod identity;
 mod inspection;
 mod interaction;
 mod layout_reconstruction;
 mod motion_sampling;
+mod occurrence_projection;
 mod projection;
 mod publication;
 mod raster_cache_reconstruction;
 mod replacement;
+mod scroll_geometry;
+mod selection_binding;
+#[cfg(test)]
+mod test_support;
+pub use selection_binding::UiMountedSelectionBindingDenial;
 
 pub(crate) use motion_sampling::UiMountedMotionSampleSettlement;
 pub(crate) use publication::{
@@ -26,9 +33,12 @@ use worth_ui_host_contract::UiMountedPresentationAttemptIdentity;
 /// Mounted lifecycle authority retained by one active application session.
 pub(crate) struct WorthUiMountedSessionState {
     identity: super::UiMountedIdentityState,
+    occurrence_geometry: super::UiMountedOccurrenceGeometryState,
     retention: super::UiMountedFrameRetentionCoordinator,
     presentation: super::UiMountedPresentationCoordinator,
     motion_sampling: super::presentation::motion_sampling::UiMountedMotionSampler,
+    last_motion_sampling_cost: Option<super::UiPresentationMotionSamplingCost>,
+    selection_bindings: super::selection_binding::UiMountedSelectionBindings,
     publication_reservations:
         BTreeMap<UiMountedPresentationAttemptIdentity, super::UiMountedFramePublicationCandidate>,
     reconciliation_reservations: BTreeMap<
@@ -47,9 +57,12 @@ impl WorthUiMountedSessionState {
     ) -> Result<Self, super::UiMountedIdentityDenial> {
         Ok(Self {
             identity: super::UiMountedIdentityState::new(host_session)?,
+            occurrence_geometry: Default::default(),
             retention: super::UiMountedFrameRetentionCoordinator::with_budget(retention_budget),
             presentation: super::UiMountedPresentationCoordinator::new(presentation_async),
             motion_sampling: Default::default(),
+            last_motion_sampling_cost: None,
+            selection_bindings: Default::default(),
             publication_reservations: BTreeMap::new(),
             reconciliation_reservations: BTreeMap::new(),
         })
@@ -57,6 +70,10 @@ impl WorthUiMountedSessionState {
 
     pub(crate) fn has_active_presentation_attempt(&self) -> bool {
         self.presentation.has_active_attempt()
+    }
+
+    pub(crate) fn observation_basis_admission_ready(&self) -> bool {
+        self.retention.observation_basis_admission_ready()
     }
 
     pub(crate) fn place_semantic_focus(
@@ -95,6 +112,7 @@ impl WorthUiMountedSessionState {
         Option<crate::native_platform::text_presentation::UiPresentationAsyncTerminalCleanup>,
     ) {
         let _ = self.presentation.cancel_motion_sample(host.effect_port());
+        self.selection_bindings.clear();
         self.presentation.shutdown(host.effect_port())
     }
 

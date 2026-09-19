@@ -25,10 +25,10 @@ impl WorthUiNativeApplicationShell {
 
         match self.session.progress_portal_exit_terminal(tick) {
             UiPortalExitTerminalProgress::Retry => {
-                return Ok(UiNativeMotionTickDisposition::Active)
+                return Ok(UiNativeMotionTickDisposition::Active);
             }
             UiPortalExitTerminalProgress::AwaitingPhysical => {
-                return Ok(UiNativeMotionTickDisposition::AwaitingPhysicalCompletion)
+                return Ok(UiNativeMotionTickDisposition::AwaitingPhysicalCompletion);
             }
             UiPortalExitTerminalProgress::Published | UiPortalExitTerminalProgress::Idle => {}
         }
@@ -56,7 +56,9 @@ impl WorthUiNativeApplicationShell {
             || self.session.portal_exit_terminal_work_pending()
     }
 
-    pub(crate) fn native_motion_sample_presentation_pending(&self) -> bool {
+    /// Whether Motion or retained Portal-exit work currently owns native
+    /// physical presentation completion.
+    pub fn native_motion_sample_presentation_pending(&self) -> bool {
         self.session.mounted.motion_sample_presentation_pending()
             || self.session.portal_exit_terminal_awaits_physical()
     }
@@ -158,7 +160,7 @@ impl WorthUiNativeApplicationShell {
         };
         match progress {
             UiPortalExitTerminalProgress::AwaitingPhysical => {
-                return UiNativeMotionTickDisposition::AwaitingPhysicalCompletion
+                return UiNativeMotionTickDisposition::AwaitingPhysicalCompletion;
             }
             UiPortalExitTerminalProgress::Retry => return UiNativeMotionTickDisposition::Active,
             UiPortalExitTerminalProgress::Published | UiPortalExitTerminalProgress::Idle => {}

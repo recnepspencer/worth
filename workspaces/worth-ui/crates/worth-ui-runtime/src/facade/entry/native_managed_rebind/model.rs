@@ -1,6 +1,7 @@
 #[derive(Debug)]
 pub enum WorthUiNativeManagedRebindDenial {
     SessionMismatch,
+    Reconstruction(super::super::WorthUiNativePresentationRecoveryDenial),
     PredecessorReconstruction,
     Preparation(crate::runtime::rebind::UiRebindPreparationDenial),
 }
@@ -14,9 +15,9 @@ pub enum WorthUiNativeManagedRebindStop {
         cause: crate::runtime::rebind::UiRebindDenialCause,
         host_denials: Box<[worth_ui_host_contract::UiHostSurfacePresentationDenial]>,
     },
-    CancelledBeforeEffects(crate::runtime::rebind::UiRebindStoppedPhase),
-    TimedOutBeforeEffects(crate::runtime::rebind::UiRebindStoppedPhase),
-    SupersededBeforeEffects(crate::runtime::rebind::UiRebindStoppedPhase),
+    CancelledBeforeEffects(crate::runtime::rebind::UiRebindCancellationReceipt),
+    TimedOutBeforeEffects(crate::runtime::rebind::UiRebindTimeoutReceipt),
+    SupersededBeforeEffects(crate::runtime::rebind::UiRebindSupersededReceipt),
     Indeterminate,
     PredecessorReconstructionFailed,
     IntentPosture(super::super::native_intent_posture::WorthUiNativeIntentPosturePublicationStop),
@@ -39,6 +40,7 @@ pub enum WorthUiNativeManagedRebindProgress {
     ),
     RecoveredToPredecessor(WorthUiNativePredecessorRecovery),
     Published(crate::runtime::rebind::UiRebindReceipt),
+    RebindRecovered(crate::runtime::rebind::UiRebindRecoveryReceipt),
     IntentConsequencePublished(
         crate::facade::entry::intent_consequence_publication::UiIntentConsequencePublicationReceipt,
     ),
@@ -47,7 +49,20 @@ pub enum WorthUiNativeManagedRebindProgress {
 }
 
 pub(in crate::facade::entry) enum WorthUiNativePendingManagedRebind {
+    Indeterminate {
+        recovery: crate::runtime::rebind::UiDetachedRebindRecovery,
+        frame: crate::mounting::UiMountedIndeterminateFrame,
+    },
+    RecoveryReconstruction {
+        recovery: crate::runtime::rebind::UiDetachedRebindRecovery,
+        in_flight: crate::mounting::UiMountedPresentationInFlight,
+    },
+    RecoveryReconstructionDeferred(crate::runtime::rebind::UiDetachedRebindRecovery),
     Completion(crate::runtime::rebind::UiDetachedRebindCompletion),
+    Retry {
+        retry: crate::runtime::rebind::UiDetachedRebindRetry,
+        requires_reconstruction: bool,
+    },
     IntentPosture(super::super::native_intent_posture::DetachedNativeIntentPosturePending),
     IntentPosturePredecessorReconstruction {
         retry: super::super::native_intent_posture::DetachedNativeIntentPosturePending,

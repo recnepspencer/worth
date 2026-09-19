@@ -145,6 +145,21 @@ macro_rules! define_registry_families {
 }
 
 define_registry_families! {
+    AppearanceRole => {
+        name: "appearance_role",
+        facade_exposure: PublicFacade,
+        lifecycle: FullRegistryLifecycle,
+    },
+    AppearanceTheme => {
+        name: "appearance_theme",
+        facade_exposure: InternalOnly,
+        lifecycle: FullRegistryLifecycle,
+    },
+    MosaicSeamPaint => {
+        name: "mosaic_seam_paint",
+        facade_exposure: InternalOnly,
+        lifecycle: FullRegistryLifecycle,
+    },
     Command => {
         name: "command",
         facade_exposure: PublicFacade,

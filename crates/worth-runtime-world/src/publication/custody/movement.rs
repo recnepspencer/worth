@@ -12,6 +12,11 @@ use crate::publication::{
 
 use super::{ActiveAttemptCustody, ActiveHistoryCustody, ActivePinCustody};
 
+pub(crate) enum AttemptProductMovementFailure {
+    Observation(crate::retention::RetentionObligationDenial),
+    Reference(ProductBranchReferenceLoss),
+}
+
 impl ActiveAttemptCustody {
     /// Full component evidence is prepared before the cell lock. The same
     /// owner-held resource lease spans materialization, CAS, and caller unwind.
@@ -24,7 +29,7 @@ impl ActiveAttemptCustody {
         late: CompositeLateCancellationPosture,
         cell: &ProductBranchReferenceCell,
         cutoff: Option<crate::publication::ProductMovementCutoff>,
-    ) -> Result<PerformedCompositePublication, ProductBranchReferenceLoss> {
+    ) -> Result<PerformedCompositePublication, AttemptProductMovementFailure> {
         let publication = self
             .record
             .publication
@@ -42,6 +47,8 @@ impl ActiveAttemptCustody {
             Arc::clone(commit),
         )
         .expect("the successor has the expected owner and lineage");
+        self.prepare_successor_observation(&snapshot)
+            .map_err(AttemptProductMovementFailure::Observation)?;
         let mut lease = self.lease_resources();
         counters.record_product_cell_touch();
         counters.record_cas_attempt();
@@ -64,7 +71,7 @@ impl ActiveAttemptCustody {
                 counters.record_cas_loss();
             }
             lease.resources_mut().product_comparison_costs = Some(*counters);
-            return Err(loss);
+            return Err(AttemptProductMovementFailure::Reference(loss));
         }
         let resources = lease.resources_mut();
         let delivery = resources
@@ -72,6 +79,28 @@ impl ActiveAttemptCustody {
             .take()
             .expect("successful custody reserved its exclusive delivery");
         Ok(PerformedCompositePublication::owner_issued(delivery))
+    }
+
+    fn prepare_successor_observation(
+        &mut self,
+        snapshot: &ProductBranchReferenceSnapshot,
+    ) -> Result<(), crate::retention::RetentionObligationDenial> {
+        let mut lease = self.lease_resources();
+        let resources = lease.resources_mut();
+        let Some(capacity) = resources.successor_observation_capacity.take() else {
+            assert!(resources.successor_observation_pins.is_none());
+            return Ok(());
+        };
+        let pins = resources
+            .successor_observation_pins
+            .as_mut()
+            .expect("successor observation capacity reserves its component pair");
+        let components = pins.try_bind_observation(snapshot.commit(), capacity)?;
+        resources.successor_observation_pins = None;
+        resources.prepared_successor_observation = Some(
+            ProductBranchObservation::prepare_successor(snapshot.clone(), components),
+        );
+        Ok(())
     }
 }
 
@@ -99,6 +128,7 @@ impl super::ActiveAttemptResourceLease<'_> {
                     .history_pins
                     .take()
                     .expect("history pins bound before cell admission"),
+                resources.prepared_successor_observation.take(),
             )
             .expect("reserved publication history installs with both protections");
         resources.history_custody = ActiveHistoryCustody::Installed(history);

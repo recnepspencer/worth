@@ -1,3 +1,4 @@
+use super::super::UiNativePresentationSource;
 use super::{
     super::{
         FrameProgress, UiNativeApplicationProgramProgress, UiNativeProgramReconstructionAuthority,
@@ -35,7 +36,7 @@ impl UiNativeApplicationProgramProgress {
         if self.staged_superseding_successor.is_none() {
             return Ok(());
         }
-        if completed.program_frame != self.next_frame
+        if completed.source != UiNativePresentationSource::Program(self.next_frame)
             || completed.progress != FrameProgress::Retained
         {
             return Err(());
@@ -55,9 +56,7 @@ impl UiNativeApplicationProgramProgress {
                 UiNativeProgramReconstructionAuthority::Physical(reconstruction),
                 FrameProgress::Settled,
             ) => {
-                self.physical_recovery
-                    .commit_settlement(reconstruction)
-                    .map_err(|_| ())?;
+                self.settle_physical_reconstruction(reconstruction)?;
                 self.advance(shell)
             }
             (UiNativeProgramReconstructionAuthority::HostRequired, FrameProgress::Settled) => {
@@ -75,7 +74,9 @@ impl UiNativeApplicationProgramProgress {
         completed: CompletedPhysicalProgramFrame,
     ) -> Result<(), ()> {
         if matches!(completed.progress, FrameProgress::RetryRequired(_)) {
-            self.next_frame = self.next_frame.min(completed.program_frame);
+            if let UiNativePresentationSource::Program(index) = completed.source {
+                self.next_frame = self.next_frame.min(index);
+            }
         } else if completed.progress == FrameProgress::Failed {
             return Err(());
         }

@@ -10,6 +10,13 @@ impl RelationalPreparationRuntime {
         candidate: ValidatedRelationalProposal,
     ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
         self.ensure_validated_proposal_branch_is_current(&candidate)?;
+        if candidate.custom_invariant_generation
+            != self.schema_contract_runtime.custom_invariant_generation
+        {
+            return Err(stale_validated_proposal(
+                "validated mutation belongs to an obsolete custom-invariant generation",
+            ));
+        }
         Ok(candidate)
     }
 

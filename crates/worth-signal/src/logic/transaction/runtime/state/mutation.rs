@@ -38,6 +38,10 @@ where
             self.telemetry.transaction.transaction_begin_count += 1;
         }
         self.config.sync_graph_capacity(&self.graph);
+        // One transaction is one flow (`DiagnosticsState::transaction_flow_scope`).
+        self.graph
+            .diagnostics_state_mut()
+            .open_transaction_flow_scope();
         let current_branch = self.graph.current_branch();
         let (branch_mutation_ledger, branch_head_generation, branch_restore_snapshot_id) = self
             .branches
@@ -55,6 +59,7 @@ where
             branch_mutation_ledger,
             branch_head_generation,
             branch_restore_snapshot_id,
+            conditional_operation_scope: None,
             scratch: TransactionScratch::new(),
             rollback_packets: super::super::transaction::TransactionRollbackPacketSet::default(),
             poisoned: false,

@@ -12,15 +12,15 @@ where
         &mut self,
         restore_baseline: bool,
         outcome: TransactionOutcome,
-    ) -> TransactionOutcome {
+    ) -> (TransactionOutcome, Option<crate::data::error::SignalError>) {
         if !restore_baseline {
-            return outcome;
+            return (outcome, None);
         }
         match self.apply_rollback_packets() {
-            Ok(()) => outcome,
+            Ok(()) => (outcome, None),
             Err(error) => {
                 self.record_rollback_poison(&error);
-                TransactionOutcome::Poisoned
+                (TransactionOutcome::Poisoned, Some(error))
             }
         }
     }

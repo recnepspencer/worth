@@ -1,5 +1,8 @@
 use std::sync::Arc;
 
+use crate::data::aspect::{Aspect, AspectMask, AspectVersion};
+use crate::data::conditional_execution::SignalConditionalVersionObservation;
+
 use crate::data::graph::runtime::scratch::ScratchLeaseKind;
 use crate::data::handle::NodeId;
 use crate::data::proof::invalidation::binding::DependencyRevision;
@@ -23,7 +26,7 @@ pub(crate) struct SignalGraphRetainedObservation {
     pub(crate) schema_registry: SignalSchemaRegistry,
     pub(crate) cause_readmission_required: bool,
     pub(crate) traversal: SignalTraversalReplacementObservation,
-    pub(crate) conditional_dependency_versions: Vec<(NodeId, Vec<u64>)>,
+    pub(crate) conditional_dependency_versions: Vec<(NodeId, SignalConditionalVersionObservation)>,
     pub(crate) authorization_policy_identities: Vec<[u8; 32]>,
 }
 
@@ -74,7 +77,7 @@ impl SignalGraph {
             conditional_dependency_versions: self
                 .conditional_dependency_versions
                 .iter()
-                .map(|(node, versions)| (*node, versions.clone()))
+                .map(|(node, versions)| (*node, *versions))
                 .collect(),
             authorization_policy_identities: self
                 .authorization_policy_identities
@@ -130,8 +133,17 @@ impl SignalGraph {
             barrier: Some(StageBarrier::StageBoundary),
         });
         self.traversal.topology_node_buffer.push(node);
-        self.conditional_dependency_versions
-            .insert(node, vec![3, 5, 8]);
+        self.conditional_dependency_versions.insert(
+            node,
+            SignalConditionalVersionObservation::new(
+                AspectMask::from([Aspect::new(0), Aspect::new(1), Aspect::new(2)]),
+                AspectVersion::from_updates([
+                    (Aspect::new(0), 3),
+                    (Aspect::new(1), 5),
+                    (Aspect::new(2), 8),
+                ]),
+            ),
+        );
         self.authorization_policy_identities.insert([0xA5; 32]);
         self.claim_aspect_lowering_owner(&crate::data::aspect::SignalAspectLoweringOwner::fresh())
             .expect("replacement fixture claims one lowering owner");
@@ -151,15 +163,21 @@ impl SignalGraph {
             crate::data::telemetry::InvalidationPerformedCounter::NodesEvaluated,
             17,
         );
-        self.invalidation_performed_work
-            .record(InvalidationWorkBindingAxes {
-                graph_instance: self.instance_id,
-                target: node,
-                dependency_revision: DependencyRevision(29),
-                origin: InvalidationOriginBinding::StructuralMutation { ordinal: 31 },
-                readiness_epoch: InvalidationReadinessEpoch(41),
-                stage_order: InvalidationStageOrder { stage: 2, order: 7 },
-            });
+        let binding = InvalidationWorkBindingAxes {
+            graph_instance: self.instance_id,
+            target: node,
+            dependency_revision: DependencyRevision(29),
+            origin: InvalidationOriginBinding::StructuralMutation { ordinal: 31 },
+            readiness_epoch: InvalidationReadinessEpoch(41),
+            stage_order: InvalidationStageOrder { stage: 2, order: 7 },
+        };
+        self.prepare_invalidation_performed_work(
+            &binding,
+            &mut crate::logic::evaluation::EvaluationWork::Ordinary,
+        )
+        .unwrap()
+        .expect("fixture captures performed work")
+        .commit();
         self.pending_repeated_invalidation_admissions
             .insert(node, 9);
     }

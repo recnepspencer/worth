@@ -3,23 +3,28 @@ use std::time::Instant;
 use worth_ui_platform_pulse::observation_contract::PlatformPulseLifecycleObservation;
 
 use crate::adjudication::{
-    adjudicate_authored_portal_pixels, adjudicate_open_portal_pixels,
+    adjudicate_authored_portal_pixels, adjudicate_portal_control_point_for_extent,
     adjudicate_resized_wrapping_text, PlatformPulseAuthoredPortalPixelEvidence,
 };
-use crate::native_platform::NativePlatformContract;
+use crate::native_platform::{NativePlatformContract, NativePlatformFailure};
 
 use super::{
-    capture, next, NativeBoundExecutableWorld, PlatformPulsePortalJourneyFailure,
-    WatchedPulseTransition, PIXEL_POLL_SLICE, TRANSITION_DEADLINE,
+    activate, await_completed_portal_intent, capture, export_capture, next, require_open_focus,
+    NativeBoundExecutableWorld, PlatformPulsePortalJourneyFailure, WatchedPulseTransition,
+    PIXEL_POLL_SLICE, TRANSITION_DEADLINE,
 };
 
-const DEFAULT_EXTENT: [u32; 2] = [960, 600];
 const RESIZED_EXTENT: [u32; 2] = [1_120, 700];
+
+pub(super) struct ResizedPortalEvidence {
+    closed_baseline: crate::external_observation::NativeClientPixelCapture,
+    pixels: PlatformPulseAuthoredPortalPixelEvidence,
+    root_focus: worth_ui_platform_pulse::observation_contract::PlatformPulseSemanticFocusPublished,
+}
 
 pub(super) fn exercise(
     world: &mut NativeBoundExecutableWorld,
-    default_baseline: &crate::external_observation::NativeClientPixelCapture,
-) -> Result<PlatformPulseAuthoredPortalPixelEvidence, PlatformPulsePortalJourneyFailure> {
+) -> Result<ResizedPortalEvidence, PlatformPulsePortalJourneyFailure> {
     let observed = world
         .platform
         .observe_bound_client_area(&world.native_client)
@@ -31,17 +36,78 @@ pub(super) fn exercise(
         .resize_bound_client_area(&mut world.native_client, resized_physical, deadline)
         .map_err(PlatformPulsePortalJourneyFailure::Native)?;
     await_presented_extent(world, resized_physical)?;
-    let resized = await_authored(world, RESIZED_EXTENT, resized_physical, deadline)?;
+    let (closed_baseline, target) = await_closed_control(world, resized_physical)?;
+    activate(world, target)?;
+    let root_focus = await_completed_portal_intent(world)?;
+    require_open_focus(root_focus)?;
+    let resized = await_authored(
+        world,
+        RESIZED_EXTENT,
+        resized_physical,
+        Instant::now() + TRANSITION_DEADLINE,
+    )?;
+    super::modal_stack::exercise(world, RESIZED_EXTENT)?;
+    Ok(ResizedPortalEvidence {
+        closed_baseline,
+        pixels: resized,
+        root_focus,
+    })
+}
 
-    let restored_physical = project_extent(DEFAULT_EXTENT, observed.dpi());
+impl ResizedPortalEvidence {
+    pub(super) const fn closed_baseline(
+        &self,
+    ) -> &crate::external_observation::NativeClientPixelCapture {
+        &self.closed_baseline
+    }
+
+    pub(super) const fn pixels(&self) -> PlatformPulseAuthoredPortalPixelEvidence {
+        self.pixels
+    }
+
+    pub(super) const fn root_focus(
+        &self,
+    ) -> worth_ui_platform_pulse::observation_contract::PlatformPulseSemanticFocusPublished {
+        self.root_focus
+    }
+}
+
+fn await_closed_control(
+    world: &mut NativeBoundExecutableWorld,
+    physical_extent: [u32; 2],
+) -> Result<
+    (
+        crate::external_observation::NativeClientPixelCapture,
+        crate::external_observation::NativeClientPixelPoint,
+    ),
+    PlatformPulsePortalJourneyFailure,
+> {
     let deadline = Instant::now() + TRANSITION_DEADLINE;
-    world
-        .platform
-        .resize_bound_client_area(&mut world.native_client, restored_physical, deadline)
-        .map_err(PlatformPulsePortalJourneyFailure::Native)?;
-    await_presented_extent(world, restored_physical)?;
-    await_default_open(world, default_baseline, restored_physical, deadline)?;
-    Ok(resized)
+    loop {
+        let closed = match capture(world) {
+            Ok(closed) => closed,
+            Err(PlatformPulsePortalJourneyFailure::Native(
+                NativePlatformFailure::ClientCapture(_),
+            )) if Instant::now() < deadline => {
+                std::thread::sleep(PIXEL_POLL_SLICE);
+                continue;
+            }
+            Err(failure) => return Err(failure),
+        };
+        if [closed.width(), closed.height()] == physical_extent {
+            if let Ok(target) = adjudicate_portal_control_point_for_extent(&closed, RESIZED_EXTENT)
+            {
+                return Ok((closed, target.point()));
+            }
+        }
+        if Instant::now() >= deadline {
+            let closed = capture(world)?;
+            let target = adjudicate_portal_control_point_for_extent(&closed, RESIZED_EXTENT)
+                .map_err(PlatformPulsePortalJourneyFailure::ControlPoint)?;
+            return Ok((closed, target.point()));
+        }
+        std::thread::sleep(PIXEL_POLL_SLICE);
+    }
 }
 
 fn await_presented_extent(
@@ -78,41 +144,37 @@ fn await_authored(
         if [current.width(), current.height()] == physical_extent {
             if let Ok(evidence) = adjudicate_authored_portal_pixels(&current, logical_extent) {
                 if adjudicate_resized_wrapping_text(&current).is_ok() {
+                    export_resized_capture(&current, logical_extent)?;
                     return Ok(evidence);
                 }
             }
         }
         if Instant::now() >= deadline {
+            if [current.width(), current.height()] != physical_extent {
+                return Err(PlatformPulsePortalJourneyFailure::Pixels(
+                    crate::adjudication::PlatformPulsePortalPixelFailure::CaptureMismatch,
+                ));
+            }
             let evidence = adjudicate_authored_portal_pixels(&current, logical_extent)
                 .map_err(PlatformPulsePortalJourneyFailure::Pixels)?;
             adjudicate_resized_wrapping_text(&current)
                 .map_err(PlatformPulsePortalJourneyFailure::TextClipping)?;
+            export_resized_capture(&current, logical_extent)?;
             return Ok(evidence);
         }
         std::thread::sleep(PIXEL_POLL_SLICE);
     }
 }
 
-fn await_default_open(
-    world: &mut NativeBoundExecutableWorld,
-    baseline: &crate::external_observation::NativeClientPixelCapture,
-    physical_extent: [u32; 2],
-    deadline: Instant,
+fn export_resized_capture(
+    capture: &crate::external_observation::NativeClientPixelCapture,
+    logical_extent: [u32; 2],
 ) -> Result<(), PlatformPulsePortalJourneyFailure> {
-    loop {
-        let current = capture(world)?;
-        if [current.width(), current.height()] == physical_extent
-            && adjudicate_open_portal_pixels(baseline, &current).is_ok()
-        {
-            return Ok(());
-        }
-        if Instant::now() >= deadline {
-            return adjudicate_open_portal_pixels(baseline, &current)
-                .map(|_| ())
-                .map_err(PlatformPulsePortalJourneyFailure::Pixels);
-        }
-        std::thread::sleep(PIXEL_POLL_SLICE);
+    if logical_extent == RESIZED_EXTENT {
+        export_capture("02-portal-resized-1120x700.png", capture)
+            .map_err(PlatformPulsePortalJourneyFailure::CaptureExport)?;
     }
+    Ok(())
 }
 
 fn project_extent(logical: [u32; 2], dpi: u32) -> [u32; 2] {

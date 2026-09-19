@@ -79,7 +79,8 @@ impl UiMountedPresentationCoordinator {
         for binding in &settlement.reconstructed_bindings {
             self.reconstruction_bindings.remove(binding);
         }
-        self.presentation_states = std::mem::take(&mut settlement.candidates);
+        self.presentation_states
+            .extend(std::mem::take(&mut settlement.candidates));
         UiMountedPresentationOutcome::Presented(UiMountedPresentedFrame::new(
             settlement.frame,
             settlement.retention,

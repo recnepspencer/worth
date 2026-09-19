@@ -40,12 +40,32 @@ pub const fn estate_governance_context(estate: EstateCaseId) -> EstateGovernance
     EstateGovernanceRequest { estate }
 }
 
+worth_query_decl::facade::worth_query_structured_value_binding!(pub EstateGovernanceQueryParametersBinding for EstateGovernanceQueryParameters { identity: "EstateGovernanceQueryParameters" });
+worth_query_decl::facade::worth_query_structured_value_binding!(pub EstateGovernanceQueryResultBinding for EstateGovernanceContext { identity: "EstateGovernanceContext" });
 worth_query_application_query!(
-    pub EstateGovernanceQuery in BankSchema,
-    parameters EstateGovernanceQueryParameters,
-    result EstateGovernanceContext,
-    scope EstateCase,
+    pub EstateGovernanceQuery for BankSchema,
+    identity "EstateGovernanceQuery",
+    parameters EstateGovernanceQueryParametersBinding,
+    result EstateGovernanceQueryResultBinding,
+    scope EstateCase => "EstateCase",
     name "estate_governance_context"
+);
+worth_query_decl::facade::worth_query_structured_value_binding!(pub EstateGovernanceRequestBinding for EstateGovernanceRequest { identity: "EstateGovernanceRequest" });
+worth_query_decl::facade::worth_query_query_binding!(
+    pub EstateGovernanceQueryBinding for EstateGovernanceRequest, schema BankSchema,
+    identity "worth.bank.estate-governance-query-binding.v1",
+    input EstateGovernanceRequestBinding,
+    query EstateGovernanceQuery,
+    parameters EstateGovernanceQueryParametersBinding => |_| worth_query_decl::facade::application_query::ApplicationQueryParameterSet::new(),
+    result EstateGovernanceQueryResultBinding,
+    principal crate::schema::BankPrincipalBinding, mapping crate::schema::ExternalPrincipalMapping, principal_entity crate::schema::Principal,
+        principal_identity crate::model::BankPrincipalId, identity_binding crate::schema::BankPrincipalIdBinding,
+    scope EstateCase, crate::schema::EstateCaseRecord, crate::schema::EstateCaseIdentityField,
+        EstateCaseId, worth_query_decl::facade::application_schema::ReadOnly,
+        worth_query_decl::facade::application_schema::NoApplicationUnit,
+    field crate::schema::EstateCaseIdentityField::reference(),
+    value EstateGovernanceRequest::estate,
+    limits results 1_024, work 100_000
 );
 
 pub fn estate_governance_definition() -> ApplicationQueryDefinition<

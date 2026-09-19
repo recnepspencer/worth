@@ -1,9 +1,10 @@
 use std::collections::BTreeMap;
 
 use crate::{
-    UiCollectionProjectionRegistration, UiScalarProjectionRegistration,
-    WorthUiInstalledQueryBindingReference, WorthUiInstalledQueryDomain, WorthUiInstalledQueryView,
-    WorthUiQueryViewDefinition, WorthUiQueryViewIdentity,
+    UiApplicationScalarProjectionRegistration, UiCollectionProjectionRegistration,
+    UiScalarProjectionRegistration, WorthUiInstalledQueryBindingReference,
+    WorthUiInstalledQueryDomain, WorthUiInstalledQueryView, WorthUiQueryViewDefinition,
+    WorthUiQueryViewIdentity,
 };
 
 use super::{
@@ -22,9 +23,11 @@ pub enum WorthUiQueryBindingPlan {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthUiInstalledQueryBindingPlan {
-    installed_domain: WorthUiInstalledQueryDomain,
+    installed_domain: Option<WorthUiInstalledQueryDomain>,
     references: BTreeMap<WorthUiQueryViewIdentity, WorthUiInstalledQueryBindingReference>,
     scalar_projections: BTreeMap<WorthUiQueryViewIdentity, UiScalarProjectionRegistration>,
+    application_scalar_projections:
+        BTreeMap<WorthUiQueryViewIdentity, UiApplicationScalarProjectionRegistration>,
     collection_projections: BTreeMap<WorthUiQueryViewIdentity, UiCollectionProjectionRegistration>,
     projection_slots: BTreeMap<WorthUiQueryViewIdentity, crate::UiProjectionInputSlot>,
 }
@@ -44,23 +47,26 @@ impl WorthUiQueryBindingPlan {
                 let mut references = BTreeMap::new();
                 references.insert(identity, reference);
                 Ok(Self::Installed(WorthUiInstalledQueryBindingPlan {
-                    installed_domain,
+                    installed_domain: Some(installed_domain),
                     references,
                     scalar_projections: BTreeMap::new(),
+                    application_scalar_projections: BTreeMap::new(),
                     collection_projections: BTreeMap::new(),
                     projection_slots: BTreeMap::new(),
                 }))
             }
             Self::Installed(mut plan) => {
-                if !plan
+                if plan
                     .installed_domain
-                    .shares_authority_with(&installed_domain)
+                    .as_ref()
+                    .is_some_and(|current| !current.shares_authority_with(&installed_domain))
                 {
                     return Err(WorthUiQueryBindingRegistrationDenial {
                         kind: WorthUiQueryBindingRegistrationDenialKind::ForeignInstalledDomain,
                         identity,
                     });
                 }
+                plan.installed_domain = Some(installed_domain.clone());
                 if plan.references.contains_key(&identity) {
                     return Err(WorthUiQueryBindingRegistrationDenial {
                         kind: WorthUiQueryBindingRegistrationDenialKind::DuplicateViewIdentity,
@@ -95,6 +101,42 @@ impl WorthUiQueryBindingPlan {
             identity,
             ProjectionRegistration::Collection(registration),
         )
+    }
+
+    pub fn register_application_scalar_projection(
+        self,
+        registration: UiApplicationScalarProjectionRegistration,
+    ) -> Result<Self, WorthUiQueryBindingRegistrationDenial> {
+        let identity = registration.identity().clone();
+        let mut plan = match self {
+            Self::QueryFree => WorthUiInstalledQueryBindingPlan {
+                installed_domain: None,
+                references: BTreeMap::new(),
+                scalar_projections: BTreeMap::new(),
+                application_scalar_projections: BTreeMap::new(),
+                collection_projections: BTreeMap::new(),
+                projection_slots: BTreeMap::new(),
+            },
+            Self::Installed(plan) => plan,
+        };
+        if plan.scalar_projections.contains_key(&identity)
+            || plan.application_scalar_projections.contains_key(&identity)
+            || plan.collection_projections.contains_key(&identity)
+        {
+            return Err(WorthUiQueryBindingRegistrationDenial {
+                kind: WorthUiQueryBindingRegistrationDenialKind::DuplicateProjectionIdentity,
+                identity,
+            });
+        }
+        let slot = crate::UiProjectionInputSlot::from_index(plan.projection_slots.len())
+            .ok_or_else(|| WorthUiQueryBindingRegistrationDenial {
+                kind: WorthUiQueryBindingRegistrationDenialKind::ProjectionCapacityExceeded,
+                identity: identity.clone(),
+            })?;
+        plan.projection_slots.insert(identity.clone(), slot);
+        plan.application_scalar_projections
+            .insert(identity, registration);
+        Ok(Self::Installed(plan))
     }
 
     pub fn is_query_free(&self) -> bool {
@@ -132,12 +174,23 @@ impl WorthUiQueryBindingPlan {
         }
     }
 
+    pub fn application_scalar_projection_registration(
+        &self,
+        identity: &WorthUiQueryViewIdentity,
+    ) -> Option<&UiApplicationScalarProjectionRegistration> {
+        match self {
+            Self::QueryFree => None,
+            Self::Installed(plan) => plan.application_scalar_projections.get(identity),
+        }
+    }
+
     pub fn projection_identities(&self) -> Vec<WorthUiQueryViewIdentity> {
         match self {
             Self::QueryFree => Vec::new(),
             Self::Installed(plan) => plan
                 .scalar_projections
                 .keys()
+                .chain(plan.application_scalar_projections.keys())
                 .chain(plan.collection_projections.keys())
                 .cloned()
                 .collect(),
@@ -199,6 +252,7 @@ impl WorthUiQueryBindingPlan {
                 WorthUiInstalledDownstreamQueryState::new(
                     plan.references.clone(),
                     plan.scalar_projections.clone(),
+                    plan.application_scalar_projections.clone(),
                     plan.collection_projections.clone(),
                 ),
             )),
@@ -213,26 +267,30 @@ impl WorthUiQueryBindingPlan {
     ) -> Result<Self, WorthUiQueryBindingRegistrationDenial> {
         let mut plan = match self {
             Self::QueryFree => WorthUiInstalledQueryBindingPlan {
-                installed_domain,
+                installed_domain: Some(installed_domain),
                 references: BTreeMap::new(),
                 scalar_projections: BTreeMap::new(),
+                application_scalar_projections: BTreeMap::new(),
                 collection_projections: BTreeMap::new(),
                 projection_slots: BTreeMap::new(),
             },
-            Self::Installed(plan) => {
-                if !plan
+            Self::Installed(mut plan) => {
+                if plan
                     .installed_domain
-                    .shares_authority_with(&installed_domain)
+                    .as_ref()
+                    .is_some_and(|current| !current.shares_authority_with(&installed_domain))
                 {
                     return Err(WorthUiQueryBindingRegistrationDenial {
                         kind: WorthUiQueryBindingRegistrationDenialKind::ForeignInstalledDomain,
                         identity,
                     });
                 }
+                plan.installed_domain = Some(installed_domain);
                 plan
             }
         };
         if plan.scalar_projections.contains_key(&identity)
+            || plan.application_scalar_projections.contains_key(&identity)
             || plan.collection_projections.contains_key(&identity)
         {
             return Err(WorthUiQueryBindingRegistrationDenial {

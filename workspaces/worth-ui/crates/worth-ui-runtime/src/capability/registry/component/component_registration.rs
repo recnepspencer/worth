@@ -104,6 +104,5 @@ fn add_component_dependencies(
             portal_child.owner().as_str(),
         ));
     }
-
     candidate
 }

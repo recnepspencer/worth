@@ -3,6 +3,8 @@
 //! The fixture installs the production WORTH UI domain package and operation
 //! executors. It does not construct binding, fact, patch, or authority outcomes.
 
+mod bounded_seed;
+
 pub fn scalar_projection_workspace(
     supports_async_lifecycle: bool,
 ) -> worth_query::facade::runtime::WorthQueryWorkspace {
@@ -48,16 +50,10 @@ pub fn seeded_collection_projection_workspace(
     Vec<worth_query::facade::foundation::WorthQueryEntityIdentity>,
 ) {
     if rows.is_empty() {
-        let workspace = match posture {
-            WorthUiCollectionProjectionSeedPosture::Complete => collection_projection_workspace(),
-            WorthUiCollectionProjectionSeedPosture::Partial => {
-                partial_collection_projection_workspace()
-            }
-            WorthUiCollectionProjectionSeedPosture::ResetOnly => {
-                collection_projection_workspace_without_entity_lookup()
-            }
-        };
-        return (workspace, Vec::new());
+        return (empty_collection_projection_workspace(posture), Vec::new());
+    }
+    if rows.len() > bounded_seed::MAX_ATOMIC_SEED_ROWS {
+        return bounded_seed::collection_projection_workspace(rows, posture);
     }
     let (workspace, seed) =
         crate::scalar_text_projection_fixture::seeded_collection_projection_workspace(
@@ -75,6 +71,20 @@ pub fn seeded_collection_projection_workspace(
         })
         .collect();
     (workspace, entities)
+}
+
+fn empty_collection_projection_workspace(
+    posture: WorthUiCollectionProjectionSeedPosture,
+) -> worth_query::facade::runtime::WorthQueryWorkspace {
+    match posture {
+        WorthUiCollectionProjectionSeedPosture::Complete => collection_projection_workspace(),
+        WorthUiCollectionProjectionSeedPosture::Partial => {
+            partial_collection_projection_workspace()
+        }
+        WorthUiCollectionProjectionSeedPosture::ResetOnly => {
+            collection_projection_workspace_without_entity_lookup()
+        }
+    }
 }
 
 pub fn seeded_collection_projection_workspace_with_item_keys(

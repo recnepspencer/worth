@@ -6,10 +6,10 @@ use bank_domain::{
         EstateAction, EstateWorkflowStage, MandatoryReviewId, MandatoryReviewStatus,
         RestrictedBankField,
     },
+    proposals::BankIdempotencyKey,
     queries::EstateGovernanceQuery,
     reads::{EstateCapabilityContext, EstateEmergencyContext, EstateGovernanceContext},
 };
-use worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyBinding;
 use worth_query_host::facade::publication::domain_computation::WorthQueryPublishedApplicationResult;
 
 use super::{
@@ -101,14 +101,14 @@ fn revoked_support_cuts_active_use_but_not_close_or_mandatory_review() {
 
     let closed = fixture
         .runtime
-        .revoke_estate_emergency_access(
+        .revoke_estate_emergency_access_with_key(
             &approver,
             approved,
             EstateAction::RevokeEmergencyAccess {
                 estate: ESTATE,
                 access,
             },
-            idempotency(117),
+            &bank_idempotency(117),
             &request_scope(),
         )
         .expect("independent close authority must remain available after support revocation");
@@ -117,7 +117,7 @@ fn revoked_support_cuts_active_use_but_not_close_or_mandatory_review() {
     };
     let reviewed = fixture
         .runtime
-        .complete_estate_mandatory_review(
+        .complete_estate_mandatory_review_with_key(
             &reviewer,
             mandatory,
             EstateAction::CompleteMandatoryReview {
@@ -125,7 +125,7 @@ fn revoked_support_cuts_active_use_but_not_close_or_mandatory_review() {
                 access,
                 review,
             },
-            idempotency(119),
+            &bank_idempotency(119),
             &request_scope(),
         )
         .expect("independent review authority must survive support revocation");
@@ -170,17 +170,18 @@ fn revoked_request_support_cannot_be_replaced_during_approval() {
 
     let denial = fixture
         .runtime
-        .approve_estate_emergency_access(
+        .approve_estate_emergency_access_with_key(
             &approver,
             requested,
             EstateAction::ApproveEmergencyAccess {
                 estate: ESTATE,
                 access,
             },
-            idempotency(125),
+            &bank_idempotency(125),
             &request_scope(),
         )
-        .expect_err("an equivalent grant must not replace the request's exact revoked support");
+        .expect_err("an equivalent grant must not replace the request's exact revoked support")
+        .into_denial();
     let BankEstateProgressionDenial::ApprovalAuthorization(denial) = denial else {
         panic!("stale request support must fail during approval authorization: {denial:?}");
     };
@@ -220,13 +221,13 @@ fn revoke_exact_support(
 ) {
     let outcome = fixture
         .runtime
-        .revoke_estate_capability(
+        .revoke_estate_capability_with_key(
             principal,
             EstateAction::RevokeCapability {
                 estate: ESTATE,
                 grant: GRANT,
             },
-            idempotency(idempotency_seed),
+            &bank_idempotency(idempotency_seed),
             &request_scope(),
         )
         .expect("the independent capability-revocation command should execute");
@@ -272,6 +273,6 @@ fn controls() -> BankReadControls {
     BankReadControls::current(request_scope(), 1, 20_000).unwrap()
 }
 
-fn idempotency(seed: u8) -> WorthQueryApplicationIdempotencyBinding {
-    WorthQueryApplicationIdempotencyBinding::new([seed; 32], [seed + 1; 32])
+fn bank_idempotency(seed: u8) -> BankIdempotencyKey {
+    BankIdempotencyKey::new(format!("support-cutoff-{seed}")).unwrap()
 }

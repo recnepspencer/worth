@@ -4,9 +4,9 @@ use super::{
 };
 
 pub(super) struct UiNativeEventLoopCompletionEvidence {
-    pub presentation: crate::native::UiNativePresentationObservation,
+    pub final_frame: crate::native::UiNativeRetainedFrameObservation,
     pub graphics: crate::native::UiNativeGraphicsObservation,
-    pub client_attribution: UiNativeClientPresentationAttribution,
+    pub client_attribution: Option<UiNativeClientPresentationAttribution>,
     pub peak_census: crate::native::UiNativeResourceCensus,
     pub terminal_census: crate::native::UiNativeResourceCensus,
     pub retained_frames: Vec<crate::native::UiNativeRetainedFrameObservation>,
@@ -40,8 +40,8 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
         UiNativeEventLoopRunReport {
             port_crossings: self
                 .port_crossings
-                .saturating_add(evidence.presentation.port_crossings()),
-            presentation: evidence.presentation,
+                .saturating_add(evidence.final_frame.port_crossings()),
+            final_frame: evidence.final_frame,
             graphics: evidence.graphics,
             event_loop_thread: format!("{:?}", thread.thread).into_boxed_str(),
             event_loop_thread_matches_launch: thread.matches_launch,

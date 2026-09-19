@@ -6,7 +6,7 @@ impl WorthUiPreparedApplicationActivation {
     }
 }
 
-pub(super) struct UiMountedReplacementReuseBasis {
+pub(super) struct UiMountedReplacementFrameBasis {
     pub(super) generation:
         crate::facade::prepared_application_authority::WorthUiPreparedApplicationGenerationIdentity,
     pub(super) host_session: u64,
@@ -20,11 +20,14 @@ pub(super) fn prepare_candidate_mounted_frame(
     application: &WorthUiPreparedApplicationActivation,
     state: &crate::mounting::UiMountedGraphReplacementSuccessor,
     graph: crate::graph::UiGraphAuthority<'_>,
-    reuse_basis: UiMountedReplacementReuseBasis,
+    reuse_basis: UiMountedReplacementFrameBasis,
     semantic_content: crate::mounting::UiMountedSemanticContentInput,
+    presentation: crate::runtime::presentation_state::UiApplicationPresentationProjection,
     request: crate::mounting::UiMountedFrameRequest,
-) -> Result<crate::mounting::UiPreparedMountedFrame, crate::mounting::UiMountedFramePreparationDenial>
-{
+) -> Result<
+    crate::mounting::UiAssembledMountedFrame,
+    crate::mounting::UiMountedFramePreparationDenial,
+> {
     let range = request.virtualized_range();
     let visual_overlay = request.visual_overlay();
     let visual_overlay_revision = request.visual_overlay_revision();
@@ -47,6 +50,7 @@ pub(super) fn prepare_candidate_mounted_frame(
             capability_generation: reuse_basis.capability_generation,
             capability_profile_digest: reuse_basis.capability_profile_digest,
             visual_overlay_revision,
+            pointer_affordance: Default::default(),
         });
     let mut assembler =
         state.begin_frame_assembly(crate::mounting::UiMountedFrameAssemblyInput {
@@ -59,17 +63,39 @@ pub(super) fn prepare_candidate_mounted_frame(
             allocation_source,
             request,
             lanes,
-            preview: None,
+            application_presentation: crate::mounting::UiMountedFrameContentSource::Application(
+                presentation,
+            ),
             visual_overlay,
             portal_overlays,
             semantic_content,
-            theme_values:
-                crate::mounting::UiMountedThemeValueSource::replacement_candidate_frozen_plan(),
+            theme_values: application
+                .appearance_succession
+                .as_ref()
+                .expect("replacement retains prepared presentation values")
+                .theme()
+                .semantic_text_theme_values(),
+            appearance_invalidation: Some(
+                crate::runtime::appearance::UiAppearanceInvalidationInput {
+                    index: application
+                        .candidate_replacement_authority()
+                        .consumed_fact_index(),
+                    pending: Some(
+                        crate::runtime::appearance::UiAppearanceInvalidationBatch::initial(
+                            application
+                                .candidate_replacement_authority()
+                                .consumed_fact_index(),
+                        ),
+                    ),
+                },
+            ),
             font_collection: std::sync::Arc::clone(application.font_collection()),
             reuse_contract,
         })?;
     execute_candidate_lanes(application, &mut assembler, lanes, range)?;
-    assembler.finish()
+    let mut frame = assembler.finish()?;
+    frame.clear_pointer_affordance();
+    Ok(frame)
 }
 
 fn candidate_lanes(

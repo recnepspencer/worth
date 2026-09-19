@@ -1,34 +1,9 @@
+use crate::domain_computation::primary_graph::application_query::{
+    WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryAdmissionDenialKind,
+};
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryRequestInterruption, WorthQueryRequestScope,
 };
-use worth_query_declaration::facade::application_schema::ApplicationSchema;
-
-use super::super::WorthQueryApplicationPreviewSession;
-use crate::domain_computation::primary_graph::{
-    application_query::{
-        WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryAdmissionDenialKind,
-    },
-    WorthQueryPrimaryGraphApplicationRuntime,
-};
-
-pub(super) fn validate_preview_session<Schema>(
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    session: &WorthQueryApplicationPreviewSession<Schema>,
-) -> Result<(), WorthQueryApplicationQueryAdmissionDenial>
-where
-    Schema: ApplicationSchema,
-{
-    if session.runtime_authority != application.runtime.authority_identity()
-        || session.schema_binding != application.installed_schema.binding_identity()
-    {
-        Err(denial(
-            WorthQueryApplicationQueryAdmissionDenialKind::ForeignPreviewSession,
-            "application preview session",
-        ))
-    } else {
-        Ok(())
-    }
-}
 
 pub(super) fn validate_truth_view_request(
     request: &WorthQueryRequestScope,

@@ -134,10 +134,7 @@ pub(crate) fn validate_worth_ui_query_edge(
             .and_then(|value| value.get("name"))
             .and_then(toml::Value::as_str)
             .unwrap_or("unknown");
-        let has_engine_dependency = manifest
-            .get("dependencies")
-            .and_then(toml::Value::as_table)
-            .is_some_and(|dependencies| dependencies.contains_key(&contract.engine_package));
+        let has_engine_dependency = has_production_dependency(&manifest, &contract.engine_package);
         if has_engine_dependency
             && !contract
                 .allowed_production_consumers
@@ -166,6 +163,38 @@ pub(crate) fn validate_worth_ui_query_edge(
         }
     }
     Ok(diagnostics)
+}
+
+fn has_production_dependency(manifest: &toml::Value, target_package: &str) -> bool {
+    let direct = ["dependencies", "build-dependencies"]
+        .into_iter()
+        .any(|table| dependency_table_contains(manifest.get(table), target_package));
+    direct
+        || manifest
+            .get("target")
+            .and_then(toml::Value::as_table)
+            .is_some_and(|targets| {
+                targets.values().any(|target| {
+                    ["dependencies", "build-dependencies"]
+                        .into_iter()
+                        .any(|table| dependency_table_contains(target.get(table), target_package))
+                })
+            })
+}
+
+fn dependency_table_contains(table: Option<&toml::Value>, target_package: &str) -> bool {
+    table
+        .and_then(toml::Value::as_table)
+        .is_some_and(|dependencies| {
+            dependencies.iter().any(|(alias, specification)| {
+                alias == target_package
+                    || specification
+                        .as_table()
+                        .and_then(|details| details.get("package"))
+                        .and_then(toml::Value::as_str)
+                        .is_some_and(|package| package == target_package)
+            })
+        })
 }
 
 fn validate_crate_query_source_edge(
@@ -254,7 +283,7 @@ fn is_query_framework_package(dependency: &str, contract: &QueryAudienceContract
             .any(|audience| audience.package == dependency)
 }
 
-fn replay_surface_label(dependency: &str, contracts: &RuleContracts) -> Option<String> {
+pub(crate) fn replay_surface_label(dependency: &str, contracts: &RuleContracts) -> Option<String> {
     contracts
         .replay_surfaces
         .iter()

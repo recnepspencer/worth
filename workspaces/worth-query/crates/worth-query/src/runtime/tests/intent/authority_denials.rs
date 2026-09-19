@@ -2,8 +2,7 @@ use super::*;
 
 #[test]
 fn mutating_intent_cannot_promote_projection_only_truth_into_query_authority() {
-    let mut runtime = WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
         .snapshot_identity(TestSnapshotIdentityAdapter)
@@ -39,8 +38,7 @@ fn mutating_intent_cannot_promote_projection_only_truth_into_query_authority() {
 
 #[test]
 fn invariant_denial_inspection_explains_failed_invariants_without_commit_identity() {
-    let mut runtime = WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
         .snapshot_identity(TestSnapshotIdentityAdapter)
@@ -102,8 +100,7 @@ fn invariant_denial_inspection_explains_failed_invariants_without_commit_identit
 #[test]
 fn invariant_violation_intent_denies_with_evidence_without_partial_publication() {
     let routed = std::rc::Rc::new(std::cell::Cell::new(0));
-    let mut runtime = WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
         .snapshot_identity(TestSnapshotIdentityAdapter)

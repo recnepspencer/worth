@@ -51,6 +51,7 @@ pub(crate) enum SignalOwnerCloseDenial {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg(test)]
 pub(crate) enum SignalOwnerLifecyclePoisonRecovery {
     PreservedLifecycleStatus,
 }
@@ -101,6 +102,7 @@ impl SignalOwnerLifecycleState {
         })
     }
 
+    #[cfg(test)]
     pub(crate) fn admit(
         self: &Arc<Self>,
         owner_runtime_instance_id: u64,
@@ -144,6 +146,7 @@ impl SignalOwnerLifecycleState {
         Ok(admission)
     }
 
+    #[cfg(test)]
     pub(crate) fn close(
         &self,
         owner_runtime_instance_id: u64,
@@ -160,6 +163,7 @@ impl SignalOwnerLifecycleState {
         }
     }
 
+    #[cfg(test)]
     pub(super) fn begin_explicit_close(
         &self,
         owner_runtime_instance_id: u64,
@@ -174,6 +178,7 @@ impl SignalOwnerLifecycleState {
         self.begin_close(owner_runtime_instance_id, false)
     }
 
+    #[cfg(test)]
     pub(super) fn wait_until_closed(&self) {
         let mut gate = self.lock_transition_gate();
         while self.observation() != SignalOwnerLifecycleObservation::Closed {
@@ -201,6 +206,7 @@ impl SignalOwnerLifecycleState {
         })
     }
 
+    #[cfg(test)]
     pub(super) fn wait_for_cleanup_turn(&self) {
         #[cfg(test)]
         self.cleanup_waiters.fetch_add(1, Ordering::AcqRel);
@@ -254,13 +260,6 @@ impl SignalOwnerLifecycleState {
     #[cfg(any(test, feature = "test-operation-control"))]
     pub(super) fn operation_control(&self) -> SignalOwnerOperationControl {
         self.operation_control.clone()
-    }
-
-    pub(crate) fn poison_recovery(&self) -> Option<SignalOwnerLifecyclePoisonRecovery> {
-        drop(self.lock_transition_gate());
-        self.recovered_poison
-            .load(Ordering::Acquire)
-            .then_some(SignalOwnerLifecyclePoisonRecovery::PreservedLifecycleStatus)
     }
 
     fn reserve_admission_count<'owner>(
@@ -393,3 +392,7 @@ fn next_lifecycle_identity() -> SignalOwnerLifecycleIdentity {
         .expect("Signal owner lifecycle identity exhausted");
     SignalOwnerLifecycleIdentity(identity)
 }
+
+#[cfg(test)]
+#[path = "lifecycle_state/poison_observation.rs"]
+mod poison_observation;

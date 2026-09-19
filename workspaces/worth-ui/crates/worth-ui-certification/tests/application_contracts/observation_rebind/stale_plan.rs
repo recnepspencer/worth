@@ -1,3 +1,6 @@
+use worth_ui::facade::app::{
+    WorthUiNativeManagedRebindStop, WorthUiNativeManagedSourceRebindOutcome,
+};
 use worth_ui::facade::rebind::{
     UiRebindExecutionRequest, UiRebindOutcome, UiRebindPreparationDenial, UiSourceRebindRequest,
 };
@@ -75,13 +78,17 @@ fn newer_owner_order_supersedes_historical_source_without_host_effects() {
         shell
             .begin_source_rebind(timed_out)
             .expect("newer source reaches final admission"),
-        UiRebindOutcome::TimedOutBeforeEffects(_)
+        WorthUiNativeManagedSourceRebindOutcome::Stopped(
+            WorthUiNativeManagedRebindStop::TimedOutBeforeEffects(_)
+        )
     ));
     assert!(matches!(
         shell
             .begin_source_rebind(UiSourceRebindRequest::new(historical).observed_at_tick(2))
             .expect("historical source is a terminal posture"),
-        UiRebindOutcome::SupersededBeforeEffects(_)
+        WorthUiNativeManagedSourceRebindOutcome::Stopped(
+            WorthUiNativeManagedRebindStop::SupersededBeforeEffects(_)
+        )
     ));
     assert_eq!(shell.generation_identity(), &generation);
     assert_eq!(host.presentation_calls(), 0);

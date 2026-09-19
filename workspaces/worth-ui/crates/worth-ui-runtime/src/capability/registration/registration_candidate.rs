@@ -90,6 +90,13 @@ impl RegistrationCandidate {
         self
     }
 
+    pub(crate) fn record_descriptor_diagnostic(
+        &mut self,
+        diagnostic: RegistrationCandidateDiagnostic,
+    ) {
+        self.descriptor_diagnostics.push(diagnostic);
+    }
+
     pub(crate) fn family_name(&self) -> &'static str {
         self.family_name
     }

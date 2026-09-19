@@ -1,0 +1,20 @@
+appearance role platform.pulse.appearance.modal_backdrop applies_to backdrop {
+  background use token(theme.platform_pulse.modal_scrim)
+  opacity use token(theme.platform_pulse.modal_opacity)
+}
+portal platform.pulse.portal.review {
+  surface platform.pulse.surface.main
+  anchor platform.pulse.component.review_target
+  layer modal
+  dismiss escape anchor_gone
+  focus first_enabled
+  motion system_popover
+}
+backdrop platform.pulse.backdrop.review {
+  scope per_portal_instance platform.pulse.portal.review
+  extent surface_viewport platform.pulse.surface.main
+  presence while portal platform.pulse.portal.review presented
+  motion follow portal platform.pulse.portal.review presentation
+  place immediately_above_surface_content
+  appearance { role platform.pulse.appearance.modal_backdrop }
+}

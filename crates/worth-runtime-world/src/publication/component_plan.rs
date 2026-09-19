@@ -1,6 +1,7 @@
 use worth_relational::facade::mvcc::PreparedRelationalCommitCandidate;
 
 use crate::publication::ResolvedExpectedProductHead;
+use crate::publication::SettledRelationalPublicationAdoption;
 
 mod compatibility;
 mod lowering;
@@ -61,5 +62,11 @@ impl LoweredOwnerComponentPlan {
         &mut self,
     ) -> Option<PreparedRelationalCommitCandidate> {
         self.relational.take_prepared_candidate()
+    }
+
+    pub(crate) fn take_settled_relational_adoption(
+        &mut self,
+    ) -> Option<SettledRelationalPublicationAdoption> {
+        self.relational.take_settled_adoption()
     }
 }

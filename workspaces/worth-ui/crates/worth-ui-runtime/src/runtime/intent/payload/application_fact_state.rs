@@ -8,9 +8,21 @@ use crate::declaration::{
     UiIntentApplicationFact, UiIntentApplicationFactPlan, UiIntentApplicationFactValue,
 };
 
+#[path = "application_fact_state/validation.rs"]
+mod validation;
+#[cfg(any(test, feature = "certification-support"))]
+pub(crate) use validation::{
+    UiAdmittedValidationAppearanceTarget, UiValidationAppearanceFactDenial,
+};
+pub(crate) use validation::{
+    UiPreparedValidationAppearanceReceiptSuccession, UiValidationAppearanceClass,
+    UiValidationAppearanceFactSnapshot,
+};
+
 pub(crate) struct UiIntentApplicationFactState {
     slots_by_identity: BTreeMap<Arc<str>, crate::declaration::UiIntentApplicationFactSlot>,
     facts: Box<[UiIntentApplicationFactRecord]>,
+    validation_owner: Option<validation::UiValidationAppearanceOwner>,
 }
 
 struct UiIntentApplicationFactRecord {
@@ -70,7 +82,10 @@ pub(crate) enum UiIntentApplicationInputReference {
 }
 
 impl UiIntentApplicationFactState {
-    pub(crate) fn activate(plan: &UiIntentApplicationFactPlan) -> Self {
+    pub(crate) fn activate(
+        plan: &UiIntentApplicationFactPlan,
+        validation_appearance_enabled: bool,
+    ) -> Self {
         let mut slots_by_identity = BTreeMap::new();
         let mut facts = (0..plan.entries().len())
             .map(|_| None)
@@ -90,6 +105,18 @@ impl UiIntentApplicationFactState {
                 .into_iter()
                 .map(|record| record.expect("application fact slots are dense"))
                 .collect(),
+            validation_owner: validation_appearance_enabled
+                .then(validation::UiValidationAppearanceOwner::new),
+        }
+    }
+
+    pub(crate) fn reconcile_validation_appearance(&mut self, enabled: bool) {
+        match (enabled, self.validation_owner.is_some()) {
+            (true, false) => {
+                self.validation_owner = Some(validation::UiValidationAppearanceOwner::new());
+            }
+            (false, true) => self.validation_owner = None,
+            _ => {}
         }
     }
 

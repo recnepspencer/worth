@@ -6,7 +6,9 @@ use crate::state::SignalBranchHandle;
 
 impl SignalGraph {
     #[cfg(any(test, doctest))]
-    pub(crate) fn replay_events(&self) -> &std::collections::VecDeque<ReplayEvent> {
+    pub(crate) fn replay_events(
+        &self,
+    ) -> &crate::diagnostics::state::DiagnosticHistory<ReplayEvent> {
         self.observation.diagnostics.replay_events()
     }
 
@@ -26,6 +28,7 @@ impl SignalGraph {
         self.observation.diagnostics.active_branch()
     }
 
+    #[cfg(test)]
     pub(crate) fn known_branches(&self) -> Vec<SignalBranchHandle> {
         self.observation
             .diagnostics
@@ -52,21 +55,5 @@ impl SignalGraph {
     ) -> Option<crate::state::SignalSnapshotId> {
         self.branch_handle(branch_id)
             .and_then(|branch| branch.head_snapshot_id)
-    }
-
-    pub(crate) fn branch_ancestry(
-        &self,
-        branch_id: crate::state::SignalBranchId,
-    ) -> Vec<SignalBranchHandle> {
-        let mut lineage = Vec::new();
-        let mut current = self.branch_handle(branch_id);
-        while let Some(branch) = current {
-            current = branch
-                .parent_branch_id
-                .and_then(|parent_id| self.branch_handle(parent_id));
-            lineage.push(branch);
-        }
-        lineage.reverse();
-        lineage
     }
 }

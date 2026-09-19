@@ -14,8 +14,8 @@ use super::ExternalEffectCorrelationIdentity;
 
 const DOMAIN: CanonicalBasisDomain =
     CanonicalBasisDomain::Future("worth-query.external-effect-causal-event");
-const RULE_VERSION: &str = "worth-query-external-effect-causal-event-v3";
-const BUDGET: CanonicalDigestWorkBudget = match CanonicalDigestWorkBudget::new(10, 4 * 1_024) {
+const RULE_VERSION: &str = "worth-query-external-effect-causal-event-v4";
+const BUDGET: CanonicalDigestWorkBudget = match CanonicalDigestWorkBudget::new(18, 4 * 1_024) {
     Some(budget) => budget,
     None => panic!("fixed external-effect causal event budget is valid"),
 };
@@ -25,6 +25,7 @@ pub(super) fn provider_commit_identity(
     observation: &crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxObservation,
 ) -> Result<DerivedEventIdentity, WorthQueryAftermathDerivationFailure> {
     let commit = observation.commit_reference();
+    let product = observation.committed_product_publication();
     let (record_kind, partition, slot, generation) = match observation.record_ref() {
         worth_relational::facade::transactions::RecordRef::Entity(record) => (
             "entity",
@@ -42,6 +43,21 @@ pub(super) fn provider_commit_identity(
     derive(vec![
         text_entry("stage", "provider-commit"),
         integer_entry("query-runtime", runtime.as_u64()),
+        integer_entry(
+            "world-owner",
+            product.product_branch().owner_identity().get(),
+        ),
+        text_entry("product-branch", product.product_branch().name().as_str()),
+        integer_entry(
+            "product-incarnation",
+            product.product_incarnation().ordinal(),
+        ),
+        integer_entry("product-generation", product.product_generation().get()),
+        integer_entry("composite-commit", product.composite_commit().ordinal()),
+        integer_entry(
+            "publication-attempt",
+            product.publication_attempt().ordinal(),
+        ),
         digest_entry("correlation", observation.record().correlation().digest()),
         text_entry("record-kind", record_kind),
         integer_entry("record-partition", partition),
@@ -152,17 +168,17 @@ mod tests {
     use super::*;
 
     #[test]
-    fn v3_rule_has_a_frozen_distinct_canonical_corpus() {
+    fn v4_rule_has_a_frozen_distinct_canonical_corpus() {
         let derived = derive(vec![
-            text_entry("stage", "v3-corpus"),
+            text_entry("stage", "v4-corpus"),
             integer_entry("query-runtime", 7),
         ])
         .unwrap();
         assert_eq!(
             derived.digest.bytes(),
             &[
-                213, 127, 104, 153, 55, 185, 43, 175, 113, 131, 40, 170, 52, 137, 58, 176, 119,
-                127, 1, 115, 179, 151, 39, 42, 177, 49, 46, 242, 88, 145, 40, 117,
+                52, 50, 78, 208, 166, 12, 4, 218, 68, 175, 119, 7, 75, 239, 170, 103, 231, 247,
+                238, 125, 199, 241, 217, 214, 210, 142, 140, 66, 205, 221, 138, 82,
             ]
         );
     }

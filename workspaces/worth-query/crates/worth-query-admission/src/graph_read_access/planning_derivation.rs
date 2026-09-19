@@ -130,8 +130,12 @@ fn adjacency_rows(
             WorthQueryAdmittedGraphReadRelationDirection::Forward
             | WorthQueryAdmittedGraphReadRelationDirection::Descendant => vec![forward()],
         },
-        WorthQueryGraphReadTraversalOperator::DirectEdge
-        | WorthQueryGraphReadTraversalOperator::SuccessorWalk
+        WorthQueryGraphReadTraversalOperator::DirectEdge => match relation.direction() {
+            WorthQueryAdmittedGraphReadRelationDirection::Ancestor => vec![reverse()],
+            WorthQueryAdmittedGraphReadRelationDirection::Forward
+            | WorthQueryAdmittedGraphReadRelationDirection::Descendant => vec![forward()],
+        },
+        WorthQueryGraphReadTraversalOperator::SuccessorWalk
         | WorthQueryGraphReadTraversalOperator::BoundedDescendant
         | WorthQueryGraphReadTraversalOperator::AnchoredFrontier => vec![forward()],
     }

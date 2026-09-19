@@ -12,6 +12,12 @@ mod authorization_world_installation;
 #[path = "fixture/commit_snapshot_closeout.rs"]
 mod commit_snapshot_closeout;
 pub(in crate::domain_computation::primary_graph) use commit_snapshot_closeout::release_test_commit_snapshot;
+#[path = "fixture/product_publication.rs"]
+mod product_publication;
+pub(in crate::domain_computation::primary_graph) use product_publication::{
+    prepare_relational_mutation_on_application, publish_relational_mutation,
+    publish_relational_mutation_on_application,
+};
 #[path = "fixture/capability.rs"]
 pub(in crate::domain_computation) mod capability;
 #[path = "fixture/capability_access_fixture.rs"]
@@ -32,14 +38,16 @@ mod capability_status_mutation;
 pub(super) use capability::{
     canonical_governed_input_materialization_count, elevated_account_activity_parameters,
     ApproveCapabilityElevationOperation, ApproveElevationCapability, ApproveElevationInput,
-    CapabilityAction, CapabilityDisclosure, CapabilityElevationApprover, CapabilityElevationGrant,
-    CapabilityElevationIdentity, CapabilityElevationNotAfter, CapabilityElevationNotBefore,
-    CapabilityElevationReason, CapabilityElevationRequester, CapabilityElevationResource,
-    CapabilityElevationReview, CapabilityElevationStatus, CapabilityElevationStatusField,
+    CapabilityAction, CapabilityActionBinding, CapabilityDisclosure, CapabilityDisclosureBinding,
+    CapabilityElevationApprover, CapabilityElevationGrant, CapabilityElevationIdentity,
+    CapabilityElevationNotAfter, CapabilityElevationNotBefore, CapabilityElevationReason,
+    CapabilityElevationRequester, CapabilityElevationResource, CapabilityElevationReview,
+    CapabilityElevationStatus, CapabilityElevationStatusBinding, CapabilityElevationStatusField,
     CapabilityGovernedInputIdentity, CapabilityIdentity, CapabilityPurpose,
-    CapabilityRequestContext, CapabilityReviewIdentity, CapabilityReviewKindField,
-    CapabilityReviewResource, CapabilityReviewStatus, CapabilityReviewStatusField,
-    CapabilityReviewer, CapabilityStatus, CapabilityStatusField, CapabilityTouchInput,
+    CapabilityPurposeBinding, CapabilityRequestContext, CapabilityReviewIdentity,
+    CapabilityReviewKindField, CapabilityReviewResource, CapabilityReviewStatus,
+    CapabilityReviewStatusBinding, CapabilityReviewStatusField, CapabilityReviewer,
+    CapabilityStatus, CapabilityStatusBinding, CapabilityStatusField, CapabilityTouchInput,
     CapabilityTouchOperation, CloseElevationInput, CompleteCapabilityReviewOperation,
     CompleteElevationReviewCapability, CompleteElevationReviewInput, ElevatedAccountActivityCause,
     ElevatedAccountActivityQuery, ElevatedAccountActivityResult, ElevatedCapabilityTouchInput,
@@ -50,11 +58,20 @@ pub(super) use capability::{
 pub(in crate::domain_computation::primary_graph) use capability_status_mutation::revoke_current_capability;
 #[path = "fixture/application_queries.rs"]
 mod application_queries;
+#[path = "fixture/current_output_source.rs"]
+mod current_output_source;
+#[path = "fixture/filtered_activity_query.rs"]
+mod filtered_activity_query;
 pub(in crate::domain_computation::primary_graph) use application_queries::AccountSummaryParameters;
 pub(super) use application_queries::{
     cross_root_definition, status_parameter, AccountSummaryQuery, AccountSummaryResult,
     CrossRootQuery, GovernedAccountSummaryQuery, OrderedAccountSummaryQuery,
     ScopedAccountSummaryQuery,
+};
+pub(super) use current_output_source::TestAccountSourceBinding;
+pub(super) use filtered_activity_query::{
+    selected_activity_parameters, SelectedActivityParameters, SelectedActivityQuery,
+    SelectedActivityResult,
 };
 #[path = "fixture/optional_account_field_query.rs"]
 mod optional_account_field_query;
@@ -108,6 +125,10 @@ pub(super) use invalid_disclosure_queries::{
 };
 #[path = "fixture/operation_contracts.rs"]
 mod operation_contracts;
+#[path = "fixture/program_required_binding.rs"]
+mod program_required_binding;
+use program_required_binding::{ProgramRequiredHandler, ProgramRequiredMutationBinding};
+pub(super) use program_required_binding::{ProgramRequiredInput, ProgramRequiredOperation};
 #[path = "fixture/schema_types.rs"]
 mod schema_types;
 #[path = "fixture/world_authentication.rs"]
@@ -127,13 +148,11 @@ pub(in crate::domain_computation::primary_graph) use capability_world_installati
 };
 pub(in crate::domain_computation::primary_graph) use schema_types::*;
 pub(in crate::domain_computation::primary_graph) use world_installation::{
-    installed_authorization_world, installed_authorization_world_with_active_snapshot_limit,
-    installed_authorization_world_with_label, installed_authorization_world_with_resource_profile,
-    installed_blocked_authorization_world,
+    installed_authorization_world, installed_authorization_world_with_label,
+    installed_authorization_world_with_resource_profile, installed_blocked_authorization_world,
+    installed_two_principal_authorization_world,
 };
-pub(super) use world_installation::{
-    installed_two_principal_authorization_world, installed_world, installed_world_with_policy_fact,
-};
+pub(super) use world_installation::{installed_world, installed_world_with_policy_fact};
 
 use worth_query_admission::facade::authenticated_principal::*;
 use worth_query_declaration::facade::authentication::{
@@ -162,7 +181,7 @@ use crate::domain_computation::execution_runtime::{
 use crate::domain_computation::primary_graph::WorthQueryApplicationPrincipalKey;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationEntityKey, WorthQueryApplicationEntitySeed,
-    WorthQueryApplicationRelationSeed, WorthQueryPrimaryGraphPublication,
+    WorthQueryApplicationRelationSeed, WorthQueryPrimaryGraphApplicationRuntime,
 };
 
 worth_query_application_schema! {
@@ -186,6 +205,8 @@ worth_query_application_schema! {
                 .field(Account::reference(), AccountLabel::reference())
                 .field(Account::reference(), AccountNote::reference())
                 .field(Account::reference(), AccountScore::reference())
+                .aspect(Account::reference(), AccountAnnotations::reference())
+                .field(Account::reference(), AccountAnnotation::reference())
                 .aspect(Activity::reference(), ActivityFacts::reference())
                 .field(Activity::reference(), ActivityIdentity::reference())
                 .field(Activity::reference(), ActivitySequence::reference())
@@ -233,6 +254,9 @@ worth_query_application_schema! {
                 .effect(MutationFreeExternalEffect::reference())
                 .effect(LiveActivityEffect::reference());
             let schema = operation_contracts::install(schema)
+                .application_mutation_binding::<
+                    program_required_binding::ProgramRequiredMutationBinding,
+                >()
                 .policy(AccountAccessPolicy::reference())
                 .ability_policy(
                     ViewAccount::reference(),
@@ -281,6 +305,7 @@ worth_query_application_schema! {
                 .application_query(application_queries::ordered_account_summary_definition())
                 .application_query(optional_account_field_query::optional_account_field_definition())
                 .application_query(nested_account::nested_account_definition())
+                .application_query(filtered_activity_query::selected_activity_definition())
                 .application_query(forged_selector::forged_selector_definition())
                 .application_query(live_account_query::live_account_activity_definition())
                 .application_query(governed_live_query::governed_live_account_definition())

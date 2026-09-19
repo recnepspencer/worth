@@ -65,6 +65,7 @@ pub struct RuntimeWorldRetentionSnapshot {
     pub(crate) reserved_unique_pins: usize,
     pub(crate) reserved_acquisitions: usize,
     pub(crate) observations: usize,
+    pub(crate) active_publication_attempts: usize,
 }
 impl RuntimeWorldRetentionSnapshot {
     pub fn unique_pins(&self) -> usize {
@@ -84,5 +85,8 @@ impl RuntimeWorldRetentionSnapshot {
     }
     pub fn observations(&self) -> usize {
         self.observations
+    }
+    pub fn active_publication_attempts(&self) -> usize {
+        self.active_publication_attempts
     }
 }

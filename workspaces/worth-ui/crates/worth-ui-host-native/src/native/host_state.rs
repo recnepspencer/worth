@@ -7,9 +7,9 @@ use super::physical_work_signal::UiNativePhysicalSignalOwner;
 use super::text_atlas::{UiNativeTextAtlas, UiNativeTextAtlasGpuPages, UiNativeTextAtlasInFlight};
 use super::{
     event_loop::UiNativeOwnedWindow, UiNativeOwnedDevice, UiNativeOwnedPresentationSurface,
-    UiNativePendingPresentation, UiNativePresentationAccess, UiNativePresentationObservation,
-    UiNativeResourceCensus, UiNativeResourceOwner, UiNativeResourceRegistry,
-    UiNativeRetainedDrawList, UiNativeRetainedFrameObservation,
+    UiNativePendingPresentation, UiNativePresentationAccess, UiNativeResourceCensus,
+    UiNativeResourceOwner, UiNativeResourceRegistry, UiNativeRetainedDrawList,
+    UiNativeRetainedFrameObservation,
 };
 
 pub(super) const NATIVE_OBSERVATION_HISTORY_CAPACITY: usize = 64;
@@ -36,9 +36,13 @@ pub(crate) struct UiNativeHostState {
     pub(crate) registrations: BTreeMap<u64, UiHostSurfaceRegistrationRequest>,
     pub(crate) registration_resources: BTreeMap<u64, UiNativeResourceOwner>,
     pub(crate) window: Option<UiNativeOwnedWindow>,
+    pub(crate) accepted_cursor: Option<(
+        worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
+        winit::window::CursorIcon,
+    )>,
     pub(crate) device: Option<UiNativeOwnedDevice>,
     pub(crate) presentation_surface: Option<UiNativeOwnedPresentationSurface>,
-    pub(crate) last_presentation: Option<UiNativePresentationObservation>,
+    pub(crate) last_retained_frame: Option<UiNativeRetainedFrameObservation>,
     pub(crate) retained_frame_observations: Vec<UiNativeRetainedFrameObservation>,
     pub(crate) resources: UiNativeResourceRegistry,
     pub(crate) pending_presentations: Vec<UiNativePendingPresentation>,
@@ -115,9 +119,10 @@ impl UiNativeHostState {
             registrations: BTreeMap::new(),
             registration_resources: BTreeMap::new(),
             window: None,
+            accepted_cursor: None,
             device: None,
             presentation_surface: None,
-            last_presentation: None,
+            last_retained_frame: None,
             retained_frame_observations: Vec::new(),
             resources: UiNativeResourceRegistry::new(),
             pending_presentations: Vec::new(),
@@ -207,6 +212,7 @@ impl UiNativeHostState {
         &mut self,
         observation: UiNativeRetainedFrameObservation,
     ) {
+        self.last_retained_frame = Some(observation.clone());
         if self.retained_frame_observations.len() == NATIVE_OBSERVATION_HISTORY_CAPACITY {
             self.retained_frame_observations.remove(0);
             self.observation_history_overflowed = true;

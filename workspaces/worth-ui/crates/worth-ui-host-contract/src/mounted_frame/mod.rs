@@ -1,3 +1,4 @@
+mod appearance_work;
 mod assembly;
 mod identity;
 mod presentation;
@@ -10,6 +11,9 @@ mod surface_stop;
 #[cfg(test)]
 mod presentation_work_tests;
 
+pub use appearance_work::{
+    UiMountedAppearancePresentationWork, UiMountedAppearancePresentationWorkDenial,
+};
 pub use assembly::{
     UiMountedFrameCanonicalCore, UiMountedFrameIntegrity, UiMountedFrameManifest,
     UiMountedLaneParticipation, UiMountedSurfaceBindingRequirement, UiRequiredLaneContribution,
@@ -28,6 +32,7 @@ pub use presentation::{
     UiHostSurfacePresentationDenial, UiHostSurfacePresentationOutcome, UiMountedCompletedEffects,
     UiMountedEffectFamily, UiMountedFrameConsumptionInput, UiMountedFrameConsumptionView,
     UiMountedSurfacePresentationCompletion, UiMountedSurfacePresentationSupersession,
+    UiMountedTextDemandValidationCost, UiMountedTextDemandValidationDenial,
     UiMountedTextRasterCallback, UiMountedTextRasterWork, UiPresentationDeadline,
 };
 pub use presentation_cost::{

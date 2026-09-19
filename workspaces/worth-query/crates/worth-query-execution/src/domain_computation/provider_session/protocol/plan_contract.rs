@@ -64,6 +64,7 @@ pub struct WorthQueryProviderExecutionPlanContract {
     application_schema_binding:
         Option<worth_query_installation::facade::ApplicationSchemaBindingIdentity>,
     application_snapshot: Option<worth_relational::facade::snapshots::SnapshotHandle>,
+    application_product_observation: Option<worth_runtime_world::facade::ProductBranchObservation>,
 }
 
 impl WorthQueryProviderExecutionPlanContract {
@@ -123,6 +124,7 @@ impl WorthQueryProviderExecutionPlanContract {
             application_operation_slot: operation.application_operation_slot().cloned(),
             application_schema_binding: operation.application_schema_binding().cloned(),
             application_snapshot: operation.application_snapshot().cloned(),
+            application_product_observation: operation.application_product_observation().cloned(),
         })
     }
 
@@ -209,6 +211,12 @@ impl WorthQueryProviderExecutionPlanContract {
         &self,
     ) -> Option<&worth_relational::facade::snapshots::SnapshotHandle> {
         self.application_snapshot.as_ref()
+    }
+
+    pub(crate) const fn application_product_observation(
+        &self,
+    ) -> Option<&worth_runtime_world::facade::ProductBranchObservation> {
+        self.application_product_observation.as_ref()
     }
 
     pub fn resource_envelope_identity(&self) -> &str {

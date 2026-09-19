@@ -30,6 +30,7 @@ pub(crate) enum PlatformPulseVisualExecutionDenial {
     ReplacementBeforeOverlayClear,
     SnapshotRelation(worth_ui::facade::inspection::UiVisualSnapshotRelationDenial),
     SnapshotStillCurrent,
+    SnapshotSuccessorMismatch,
     ShutdownNotQuiescent,
     ComparisonOmitted(worth_ui::facade::inspection::UiVisualSnapshotComparisonOmission),
     ComparisonExpired(worth_ui::facade::inspection::UiVisualSnapshotComparisonExpiry),

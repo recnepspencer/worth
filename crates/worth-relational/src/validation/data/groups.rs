@@ -27,7 +27,7 @@ const ALL_INVARIANT_GROUPS: [InvariantGroup; 9] = [
     InvariantGroup::RelationIntegrity,
 ];
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum InvariantCostClass {
     Touched,
     Partition,

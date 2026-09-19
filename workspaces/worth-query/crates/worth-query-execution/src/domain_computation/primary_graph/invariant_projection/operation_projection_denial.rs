@@ -17,14 +17,6 @@ pub struct WorthQueryOperationProjectionDenial {
 }
 
 impl WorthQueryOperationProjectionDenial {
-    pub(super) fn work_budget_exceeded(subject: impl Into<String>) -> Self {
-        Self {
-            kind: WorthQueryOperationProjectionDenialKind::WorkBudgetExceeded,
-            authorization_denial: None,
-            subject: subject.into(),
-        }
-    }
-
     pub(super) fn from_invariant(
         denial: super::WorthQueryInvariantProjectionDenial,
         subject: impl Into<String>,

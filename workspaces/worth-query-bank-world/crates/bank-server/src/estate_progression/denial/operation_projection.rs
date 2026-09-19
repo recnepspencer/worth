@@ -6,6 +6,9 @@ use worth_query_host::facade::primary_graph::{
 pub enum BankEstateOperationProjectionDenial {
     Authorization(crate::BankAuthorizationDenial),
     AuthorizationLineageUnavailable(crate::BankAuthorizationDenial),
+    InvariantAdmission(
+        worth_query_host::facade::primary_graph::WorthQueryInvariantProjectionDenialKind,
+    ),
     WorkBudgetExceeded,
 }
 
@@ -25,6 +28,9 @@ pub(super) fn from_query(
         }
         WorthQueryOperationProjectionDenialKind::WorkBudgetExceeded => {
             BankEstateOperationProjectionDenial::WorkBudgetExceeded
+        }
+        WorthQueryOperationProjectionDenialKind::InvariantAdmission(kind) => {
+            BankEstateOperationProjectionDenial::InvariantAdmission(kind)
         }
     }
 }

@@ -13,17 +13,29 @@ use crate::schema::{
 use super::overview::EstateCaseOverviewQuery;
 
 pub(super) struct AccountSlot;
+worth_query_decl::facade::worth_query_portable_type!(AccountSlot => "AccountSlot");
 pub(super) struct BranchSlot;
+worth_query_decl::facade::worth_query_portable_type!(BranchSlot => "BranchSlot");
 pub(super) struct NoticeSlot;
+worth_query_decl::facade::worth_query_portable_type!(NoticeSlot => "NoticeSlot");
 pub(super) struct DeceasedSlot;
+worth_query_decl::facade::worth_query_portable_type!(DeceasedSlot => "DeceasedSlot");
 pub(super) struct ExecutorsSlot;
+worth_query_decl::facade::worth_query_portable_type!(ExecutorsSlot => "ExecutorsSlot");
 pub(super) struct BeneficiariesSlot;
+worth_query_decl::facade::worth_query_portable_type!(BeneficiariesSlot => "BeneficiariesSlot");
 pub(super) struct AssignmentsSlot;
+worth_query_decl::facade::worth_query_portable_type!(AssignmentsSlot => "AssignmentsSlot");
 pub(super) struct AssignmentPrincipalSlot;
+worth_query_decl::facade::worth_query_portable_type!(AssignmentPrincipalSlot => "AssignmentPrincipalSlot");
 pub(super) struct AuthoritiesSlot;
+worth_query_decl::facade::worth_query_portable_type!(AuthoritiesSlot => "AuthoritiesSlot");
 pub(super) struct AuthorityHolderSlot;
+worth_query_decl::facade::worth_query_portable_type!(AuthorityHolderSlot => "AuthorityHolderSlot");
 pub(super) struct ReviewsSlot;
+worth_query_decl::facade::worth_query_portable_type!(ReviewsSlot => "ReviewsSlot");
 pub(super) struct ReviewPrincipalSlot;
+worth_query_decl::facade::worth_query_portable_type!(ReviewPrincipalSlot => "ReviewPrincipalSlot");
 
 pub(super) fn estate_account() -> ApplicationQueryResultRelationRef<
     EstateCaseOverviewQuery,

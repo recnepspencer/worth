@@ -32,6 +32,7 @@ impl SignalBranchRetentionBinding {
             .cancel_reserved_admitted(reservation_count, branch_id);
     }
 
+    #[cfg(test)]
     pub(crate) fn rebind_reserved_admitted(
         &self,
         reservation_count: usize,
@@ -103,6 +104,7 @@ impl SignalRetentionLedger {
         }
     }
 
+    #[cfg(test)]
     fn rebind_reserved_admitted(
         &self,
         reservation_count: usize,

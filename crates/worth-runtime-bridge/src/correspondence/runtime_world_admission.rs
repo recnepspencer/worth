@@ -9,5 +9,5 @@ pub use basis::AdmittedRuntimeWorldCorrespondenceBasis;
 pub use denial::RuntimeWorldCorrespondenceAdmissionDenial;
 pub use inspection::RuntimeWorldCorrespondenceInspectionCounters;
 
-pub(crate) use admission::{admit_installed_basis, compare_current_basis};
+pub(crate) use admission::{admit_baseline, admit_installed_basis, compare_current_basis};
 pub(crate) use inspection::RuntimeWorldCorrespondenceInspectionLedger;

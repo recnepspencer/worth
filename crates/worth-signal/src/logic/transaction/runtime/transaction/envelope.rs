@@ -175,6 +175,7 @@ impl TransactionResult {
 
         Self {
             outcome,
+            diagnostic_publication_work: Default::default(),
             execution_report,
             timing,
             touched_nodes,

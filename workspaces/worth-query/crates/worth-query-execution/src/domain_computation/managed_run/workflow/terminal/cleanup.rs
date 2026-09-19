@@ -16,6 +16,15 @@ pub enum WorthQueryWorkflowRunCleanupOutcome {
     RecoveryRequired(WorthQueryWorkflowRunCleanupFailure),
 }
 
+impl std::fmt::Debug for WorthQueryWorkflowRunCleanupOutcome {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("WorthQueryWorkflowRunCleanupOutcome")
+            .field("disposition", &self.disposition())
+            .finish()
+    }
+}
+
 impl WorthQueryWorkflowRunCleanupOutcome {
     pub fn disposition(&self) -> WorthQueryManagedRunCleanupDisposition {
         match self {

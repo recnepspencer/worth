@@ -21,8 +21,9 @@ use worth_query_declaration::facade::{
         ErasedApplicationCapabilityContract,
     },
     application_schema::{
-        ApplicationAuthorizationPath, ApplicationAuthorizationPathBuilder, ApplicationEntityRef,
-        ApplicationOperationRef, ApplicationRelationRef,
+        ApplicationAuthorizationPath, ApplicationAuthorizationPathBuilder,
+        ApplicationEncodedScalarValue, ApplicationEntityRef, ApplicationOperationRef,
+        ApplicationRelationRef, U64ApplicationValueBinding,
     },
 };
 
@@ -156,7 +157,7 @@ fn target_with_resource_name(
         1
     };
     ApplicationCapabilityTargetDefinition::new(
-        ApplicationCapabilityValueBinding::new(field::<Action>(), action_value),
+        ApplicationCapabilityValueBinding::new(field::<Action>(), encoded_u64(action_value)),
         relation::<ResourceRelation, Grant, Resource>(resource_name, "Grant", "Resource"),
         if matches!(axis, Some(Axis::Relation)) {
             ApplicationCapabilityRelationDimension::not_applicable()
@@ -170,7 +171,7 @@ fn target_with_resource_name(
         } else {
             ApplicationCapabilityFieldDimension::bound(field::<Field>())
         },
-        ApplicationCapabilityValueBinding::new(field::<Purpose>(), purpose_value),
+        ApplicationCapabilityValueBinding::new(field::<Purpose>(), encoded_u64(purpose_value)),
     )
 }
 
@@ -215,7 +216,7 @@ fn constraints<ContextMarker>(
             ApplicationCapabilityCardinalityDimension::One
         },
         ApplicationCapabilityCurrentnessDefinition::new(
-            ApplicationCapabilityValueBinding::new(field::<Status>(), status_value),
+            ApplicationCapabilityValueBinding::new(field::<Status>(), encoded_u64(status_value)),
             ApplicationCapabilityWorkflowDefinition::new(workflow, resource_workflow),
             ApplicationCapabilityValidityDefinition::new(
                 validity_timeline,
@@ -295,12 +296,16 @@ fn composition(axis: Option<Axis>) -> ApplicationCapabilityComposition {
                 ApplicationCapabilityScopeGuard::requiring([
                     ApplicationCapabilityAcceptedValues::one_of(
                         field::<Field>(),
-                        [if changed(6) { 2_u64 } else { 1_u64 }],
+                        [encoded_u64(if changed(6) { 2_u64 } else { 1_u64 })],
                     ),
                 ]),
             ]),
         ),
     )
+}
+
+fn encoded_u64(value: u64) -> ApplicationEncodedScalarValue<U64ApplicationValueBinding> {
+    ApplicationEncodedScalarValue::try_new(value).expect("fixture u64 encoding must succeed")
 }
 
 fn optional_deny_rule(changed: bool) -> ApplicationCapabilityDenyRule {
@@ -348,7 +353,9 @@ fn graph_rule(allow: bool, changed: bool) -> ApplicationCapabilityGraphRule {
 
 fn graph_path(allow: bool, relation_name: &'static str) -> ApplicationAuthorizationPath {
     let relation = ApplicationRelationRef::<Schema, PrincipalResource, Principal, Resource>::
-        from_schema_identifiers(relation_name, "Principal", "Resource");
+        from_schema_identifiers(relation_name, "Principal", "Resource",
+                worth_query_declaration::facade::application_schema::ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
+            );
     let path = ApplicationAuthorizationPathBuilder::from_principal(ApplicationEntityRef::<
         Schema,
         Principal,
@@ -374,6 +381,7 @@ fn relation<RelationMarker, From, To>(
         From,
         To,
     >::from_schema_identifiers(
-        name, from, to
-    ))
+        name, from, to,
+                worth_query_declaration::facade::application_schema::ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
+            ))
 }

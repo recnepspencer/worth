@@ -130,6 +130,15 @@ impl WorthQueryMandatoryReview {
 
 #[derive(Debug)]
 pub enum WorthQueryElevationCloseOutcome {
+    ProductStale(
+        crate::domain_computation::WorthQueryProductStaleApplication,
+        WorthQueryApprovedElevation,
+    ),
+    ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
+    NoEffect(
+        super::WorthQueryApplicationNoEffect,
+        WorthQueryApprovedElevation,
+    ),
     Closed(WorthQueryMandatoryReview),
     AlreadyClosed(WorthQueryMandatoryReview),
     Stale(
@@ -157,10 +166,39 @@ pub(in crate::domain_computation::primary_graph) fn closed_outcome(
             WorthQueryElevationCloseOutcome::Closed(closed(binding, commit))
         }
         WorthQueryApplicationCommitOutcome::AlreadyCommitted(commit) => {
-            WorthQueryElevationCloseOutcome::AlreadyClosed(closed(binding, commit))
+            let values = commit.committed_changes().committed_field_values(
+                binding.elevation(),
+                &[binding.status_field(), binding.closed_at_field()],
+            );
+            match values {
+                Some(values) => {
+                    match binding.restore_committed_close(values[0].clone(), values[1].clone()) {
+                        Ok(binding) => {
+                            WorthQueryElevationCloseOutcome::AlreadyClosed(closed(binding, commit))
+                        }
+                        Err(binding) => WorthQueryElevationCloseOutcome::Denied(
+                            WorthQueryApplicationCommitDenial::provider_rejected_with_detail(
+                                super::WorthQueryApplicationCommitDenialStage::Idempotency,
+                                "committed elevation status is invalid",
+                            ),
+                            binding.into_approved(),
+                        ),
+                    }
+                }
+                None => WorthQueryElevationCloseOutcome::Denied(
+                    WorthQueryApplicationCommitDenial::provider_rejected_with_detail(
+                        super::WorthQueryApplicationCommitDenialStage::Idempotency,
+                        "committed close fields are unavailable",
+                    ),
+                    binding.into_approved(),
+                ),
+            }
         }
         WorthQueryApplicationCommitOutcome::Stale(stale) => {
             WorthQueryElevationCloseOutcome::Stale(stale, binding.into_approved())
+        }
+        WorthQueryApplicationCommitOutcome::ProductStale(stale) => {
+            WorthQueryElevationCloseOutcome::ProductStale(stale, binding.into_approved())
         }
         WorthQueryApplicationCommitOutcome::Cancelled => {
             WorthQueryElevationCloseOutcome::Cancelled(binding.into_approved())
@@ -174,6 +212,12 @@ pub(in crate::domain_computation::primary_graph) fn closed_outcome(
         }
         WorthQueryApplicationCommitOutcome::Deferred(deferred) => {
             WorthQueryElevationCloseOutcome::Deferred(deferred)
+        }
+        WorthQueryApplicationCommitOutcome::ProductUnpublished(unpublished) => {
+            WorthQueryElevationCloseOutcome::ProductUnpublished(unpublished)
+        }
+        WorthQueryApplicationCommitOutcome::NoEffect(no_effect) => {
+            WorthQueryElevationCloseOutcome::NoEffect(no_effect, binding.into_approved())
         }
         WorthQueryApplicationCommitOutcome::SettlementDeferred(deferred) => {
             WorthQueryElevationCloseOutcome::SettlementDeferred(deferred)

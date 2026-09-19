@@ -22,6 +22,10 @@ impl Default for StringInterner {
 }
 
 impl StringInterner {
+    pub fn symbol(&self, value: &str) -> Option<Symbol> {
+        self.by_value.get(value).copied()
+    }
+
     pub fn contains(&self, value: &str) -> bool {
         self.by_value.contains_key(value)
     }

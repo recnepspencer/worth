@@ -38,12 +38,33 @@ pub const fn payment(payment: PaymentId) -> PaymentDetailRequest {
     PaymentDetailRequest::new(payment)
 }
 
+worth_query_decl::facade::worth_query_structured_value_binding!(pub PaymentDetailQueryParametersBinding for PaymentDetailQueryParameters { identity: "PaymentDetailQueryParameters" });
+worth_query_decl::facade::worth_query_structured_value_binding!(pub PaymentDetailQueryResultBinding for PaymentSummary { identity: "PaymentSummary" });
 worth_query_application_query!(
-    pub PaymentDetailQuery in BankSchema,
-    parameters PaymentDetailQueryParameters,
-    result PaymentSummary,
-    scope PaymentIntent,
+    pub PaymentDetailQuery for BankSchema,
+    identity "PaymentDetailQuery",
+    parameters PaymentDetailQueryParametersBinding,
+    result PaymentDetailQueryResultBinding,
+    scope PaymentIntent => "PaymentIntent",
     name "payment_detail"
+);
+worth_query_decl::facade::worth_query_structured_value_binding!(pub PaymentDetailRequestBinding for PaymentDetailRequest { identity: "PaymentDetailRequest" });
+worth_query_decl::facade::worth_query_query_binding!(
+    pub PaymentDetailQueryBinding for PaymentDetailRequest, schema BankSchema,
+    identity "worth.bank.payment-detail-query-binding.v1",
+    input PaymentDetailRequestBinding,
+    query PaymentDetailQuery,
+    parameters PaymentDetailQueryParametersBinding => |_| worth_query_decl::facade::application_query::ApplicationQueryParameterSet::new(),
+    result PaymentDetailQueryResultBinding,
+    principal crate::schema::BankPrincipalBinding, mapping crate::schema::ExternalPrincipalMapping, principal_entity crate::schema::Principal,
+        principal_identity crate::model::BankPrincipalId, identity_binding crate::schema::BankPrincipalIdBinding,
+    scope PaymentIntent, crate::schema::PaymentIdentity, crate::schema::PaymentIdentityField,
+        PaymentId, worth_query_decl::facade::application_schema::ReadOnly,
+        worth_query_decl::facade::application_schema::NoApplicationUnit,
+    field crate::schema::PaymentIdentityField::reference(),
+    value PaymentDetailRequest::payment,
+    limits results 1_024, work 100_000
+
 );
 
 pub fn payment_detail_definition() -> ApplicationQueryDefinition<
@@ -56,7 +77,14 @@ pub fn payment_detail_definition() -> ApplicationQueryDefinition<
     ApplicationQueryDefinitionBuilder::declare(PaymentDetailQuery::reference())
         .root(PaymentIntent::reference())
         .scope(PaymentIntent::reference())
-        .result_shape(payment_summary_shape().build())
+        .result_shape(
+            payment_summary_shape::<
+                PaymentDetailQuery,
+                PaymentSummary,
+                PaymentDetailQueryResultBinding,
+            >()
+            .build(),
+        )
         .cardinality(ApplicationQueryCardinality::ExactlyOne)
         .dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(2, 6, 8))
         .disclosure(ApplicationQueryDisclosureContract::public())

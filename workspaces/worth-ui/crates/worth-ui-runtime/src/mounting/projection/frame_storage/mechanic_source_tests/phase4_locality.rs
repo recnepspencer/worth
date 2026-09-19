@@ -307,6 +307,7 @@ fn semantic_projection_with_width(
     .unwrap();
     UiMountedSemanticProjection::initial(
         vec![UiMountedProjectionNodeRecord {
+            surface_geometry: worth_ui_host_contract::UiSurfaceGeometry::default(),
             receipt: UiMountedNodeReceipt::from_input(UiMountedNodeReceiptInput {
                 mounted_instance: instance,
                 graph_node,
@@ -326,7 +327,32 @@ fn semantic_projection_with_width(
                 },
             }),
             plan_index: Some(0),
-            static_paint: None,
+        occurrence_allocation: UiMountedAllocationProjection::Known {
+                    bounds,
+                    basis: UiMountedAllocationBasis::new(
+                        1,
+                        2,
+                        3,
+                        UiMountedTransformProjection::Identity,
+                    ),
+                },
+        appearance_geometry: crate::mounting::projection::frame_storage::UiMountedAppearanceGeometry::from_occurrence(
+                UiMountedAllocationProjection::Known {
+                    bounds,
+                    basis: UiMountedAllocationBasis::new(
+                        1,
+                        2,
+                        3,
+                        UiMountedTransformProjection::Identity,
+                    ),
+                },
+                crate::mounting::projection::appearance::UiMountedAppearanceClip::Unclipped,
+            ),
+        surface_paint_order: Some(0),
+        portal_surface_appearance: true,
+        has_appearance_attachment: false,
+            appearance_clip:
+                crate::mounting::projection::appearance::UiMountedAppearanceClip::Unclipped,
             semantic_text: Some(seed),
             hit_test: None,
             focus_support: crate::capability::ComponentFocusSupport::not_focusable(),
@@ -336,6 +362,7 @@ fn semantic_projection_with_width(
             portal_child_owner: None,
         }],
         vec![UiMountedProjectionSurface {
+                coordinate_posture: crate::mounting::UiSurfaceBindingCoordinatePosture::LogicalPoints,
             surface,
             binding,
             audience: UiMountedProjectionAudience::full(),

@@ -12,8 +12,8 @@ use worth_ui::facade::declaration::{
     MosaicStateReplacementRule, MosaicStateSlotDescriptor, MosaicStateSlotId, MosaicStateSlotKind,
     MosaicStateTruthPosture, MosaicViewportConstraint, NamedMeasurementDefinition,
     NamedMeasurementToken, SurfaceDescriptor, SurfaceId, SurfaceKind, SurfacePlacementClass,
-    SurfaceStateClass, ThemeColorValue, ThemeTokenAlias, ThemeTokenDescriptor, ThemeTokenFamily,
-    ThemeTokenId, ThemeTokenSource, ThemeTokenValue, ViewBindingId,
+    SurfaceStateClass, ThemeTokenAlias, ThemeTokenDescriptor, ThemeTokenFamily, ThemeTokenId,
+    ThemeTokenSource, ThemeTokenValue, UiThemeColor, ViewBindingId,
 };
 use worth_ui::facade::graph::UiGraphWorldProfile;
 use worth_ui::facade::query_binding::WorthUiQueryViewRegistration;
@@ -121,7 +121,7 @@ where
             ThemeTokenId::new("theme.text.authority_primary").expect("valid primary token id"),
             ThemeTokenFamily::text(),
             ThemeTokenSource::application(),
-            ThemeTokenValue::color(ThemeColorValue::hex("#101820").expect("valid theme color")),
+            ThemeTokenValue::color(UiThemeColor::parse("#101820").expect("valid theme color")),
         ))
         .register_theme_token(ThemeTokenDescriptor::alias(
             ThemeTokenId::new(TOKEN).expect("valid scenario token id"),

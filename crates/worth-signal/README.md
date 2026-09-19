@@ -157,6 +157,13 @@ When Signal is hosted by Query, use the one graph owned through
 `worth-runtime-bridge::BridgeOwnedSignalRuntime`. Do not create a second graph
 for the same installed operations.
 
+That sealed service boundary owns exact branch-basis admission, conditional
+evaluation, component mutation, and lifecycle cleanup. Runtime Bridge supplies
+installed semantic correspondence and returns Signal's exact performed
+evidence; Query and Runtime World carry it without reopening graph access or
+restamping component identity. A product branch may reuse the same Signal basis
+while its Relational sibling advances independently.
+
 ## One Continuous Story
 
 The flagship story looks like this:

@@ -1,3 +1,4 @@
+use super::super::UiNativePresentationSource;
 use super::super::{
     is_text_atlas_deferred, retry_text_atlas_deferred, FrameProgress,
     UiNativeApplicationProgramProgress, UiNativePendingProgramFrame,
@@ -5,7 +6,7 @@ use super::super::{
 };
 
 pub(super) struct CompletedPhysicalProgramFrame {
-    pub(super) program_frame: usize,
+    pub(super) source: UiNativePresentationSource,
     pub(super) reconstruction_authority: Option<UiNativeProgramReconstructionAuthority>,
     pub(super) progress: FrameProgress,
 }
@@ -50,7 +51,7 @@ impl UiNativeApplicationProgramProgress {
         presentation: Option<worth_ui_host_native::UiNativePhysicalPresentationCorrelation>,
     ) -> Result<CompletedPhysicalProgramFrame, ()> {
         let UiNativePendingProgramFrame {
-            program_frame,
+            source,
             presentation: pending_presentation,
             reconstruction_authority,
             cancel_after_external_submission,
@@ -71,13 +72,13 @@ impl UiNativeApplicationProgramProgress {
         let progress = self.retain_or_attribute(
             shell,
             outcome,
-            program_frame,
+            source,
             presentation,
             reconstruction_authority,
             cancel_after_external_submission,
         )?;
         Ok(CompletedPhysicalProgramFrame {
-            program_frame,
+            source,
             reconstruction_authority,
             progress,
         })

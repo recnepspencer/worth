@@ -4,8 +4,8 @@ use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledPackageIndex, WorthQueryInstalledPackageIndexRelation,
 };
 
+use super::signal_decision_reentry::WorthQueryConditionalTruthBasis;
 use super::{
-    publication::ConditionalRuntimeAffinity, runtime_owners::ConditionalRuntimeOwners,
     WorthQueryConditionalRuntimeInstallationDenial,
     WorthQueryConditionalRuntimeInstallationDenialKind,
 };
@@ -91,12 +91,13 @@ where
     /// installation is exactly the installation already owning this runtime.
     pub fn reinstall_conditional_runtime(
         &mut self,
+        product_branch: crate::basis::WorthQueryProductBranch,
     ) -> Result<
         WorthQueryConditionalRuntimeReinstallationReceipt,
         WorthQueryConditionalRuntimeInstallationDenial,
     > {
         let current = self.runtime.retain_installed_packages();
-        self.reinstall_conditional_runtime_for_installation(current)
+        self.reinstall_conditional_runtime_for_installation(current, product_branch)
     }
 
     /// Rebuilds derived conditional state for one explicitly presented
@@ -105,51 +106,54 @@ where
     pub fn reinstall_conditional_runtime_for_installation(
         &mut self,
         candidate: Arc<WorthQueryInstalledPackageIndex>,
+        product_branch: crate::basis::WorthQueryProductBranch,
     ) -> Result<
         WorthQueryConditionalRuntimeReinstallationReceipt,
         WorthQueryConditionalRuntimeInstallationDenial,
     > {
         require_equivalent_installation(self.runtime.installed_packages(), &candidate)?;
-        let affinity = ConditionalRuntimeAffinity::for_installation(self, &candidate);
-        let mut owners = ConditionalRuntimeOwners::take(self);
-        if owners.binding_count() == 0 {
-            return Err(rebind(
-                "conditional runtime has no installed binding inventory",
-            ));
-        }
-        let mut successor = owners.fresh_bridge().map_err(|error| {
-            WorthQueryConditionalRuntimeInstallationDenial::new(
-                WorthQueryConditionalRuntimeInstallationDenialKind::BridgeRejected,
-                format!("{error:?}"),
-            )
-        })?;
-        let lower_runtime_reconstitution = successor.reconstitution_report().ok_or_else(|| {
-            WorthQueryConditionalRuntimeInstallationDenial::new(
-                WorthQueryConditionalRuntimeInstallationDenialKind::BridgeRejected,
-                "conditional successor omitted Signal/Bridge reconstitution evidence",
-            )
-        })?;
-        let mut prepared =
-            isolate_reinstallation(|| owners.prepare_reinstallation(&mut successor, &affinity))?;
-        isolate_reinstallation(|| {
-            owners.reconcile_prepared_reinstallation(&mut successor, &mut prepared)
-        })?;
-        let reconstructed_binding_count = owners.binding_count();
-        owners.commit_reinstallation(successor, prepared);
-        let reconstructed_intent_count = owners.retained_resource_counts().intents;
-        let work = owners.reconstruction_work();
-        owners.clear_maintenance_failure();
-        owners.advance_granular_invalidation_generation();
-        let successor_invalidation_installation = owners.granular_invalidation_installation();
+        let selected = self
+            .on_branch(product_branch)
+            .select()
+            .map_err(|denial| bridge_denial(format!("product selection failed: {denial:?}")))?;
+        let truth = WorthQueryConditionalTruthBasis::from_selected(selected);
+        let mut bridge_candidate = self
+            .bridge
+            .conditional()
+            .prepare_conditional_reconstitution(truth.signal_basis())
+            .map_err(|denial| bridge_denial(denial.detail()))?;
+        let mut registry = self
+            .conditional_operations
+            .get_mut()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .snapshot();
+        let mut prepared = registry.prepare_derived_runtime_reinstallation(
+            self,
+            &mut bridge_candidate,
+            truth.product(),
+        )?;
+        let reconstructed_intent_count = prepared
+            .values()
+            .map(|binding| binding.reconstructed_intent_count)
+            .sum();
+        registry.reconcile_prepared_runtime_reinstallation(&mut bridge_candidate, &mut prepared)?;
+        let lower_runtime_reconstitution = self
+            .bridge
+            .conditional_lifecycle()
+            .activate_conditional_reconstitution(bridge_candidate)
+            .map_err(|denial| bridge_denial(denial.detail()))?;
+        registry.apply_derived_runtime_reinstallation(prepared, self);
+        self.granular_invalidation.advance_runtime_generation();
+        let work = registry.reconstruction_work();
         Ok(WorthQueryConditionalRuntimeReinstallationReceipt {
             lower_runtime_reconstitution,
-            reconstructed_binding_count,
+            reconstructed_binding_count: registry.len(),
             reconstructed_intent_count,
             examined_candidate_count: work.examined_candidates,
             projected_record_count: work.projected_records,
             projected_field_count: work.projected_fields,
             total_work_units: work.total_work_units,
-            successor_invalidation_installation,
+            successor_invalidation_installation: self.granular_invalidation.current(),
         })
     }
 }
@@ -175,20 +179,16 @@ fn require_equivalent_installation(
     }
 }
 
-fn isolate_reinstallation<Output>(
-    action: impl FnOnce() -> Result<Output, WorthQueryConditionalRuntimeInstallationDenial>,
-) -> Result<Output, WorthQueryConditionalRuntimeInstallationDenial> {
-    std::panic::catch_unwind(std::panic::AssertUnwindSafe(action)).unwrap_or_else(|_| {
-        Err(WorthQueryConditionalRuntimeInstallationDenial::new(
-            WorthQueryConditionalRuntimeInstallationDenialKind::ReconstructionIntent,
-            "conditional runtime reinstallation callback panicked",
-        ))
-    })
-}
-
 fn rebind(detail: impl Into<String>) -> WorthQueryConditionalRuntimeInstallationDenial {
     WorthQueryConditionalRuntimeInstallationDenial::new(
         WorthQueryConditionalRuntimeInstallationDenialKind::RebindRequired,
+        detail,
+    )
+}
+
+fn bridge_denial(detail: impl Into<String>) -> WorthQueryConditionalRuntimeInstallationDenial {
+    WorthQueryConditionalRuntimeInstallationDenial::new(
+        WorthQueryConditionalRuntimeInstallationDenialKind::BridgeRejected,
         detail,
     )
 }

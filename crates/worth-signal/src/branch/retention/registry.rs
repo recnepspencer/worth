@@ -171,6 +171,7 @@ impl SignalBranchRetentionRegistry {
         self.ledger.terminality.counts()
     }
 
+    #[cfg(test)]
     pub(crate) fn admitted_or_reserved_count(&self, branch_id: SignalBranchId) -> u32 {
         let state = self.ledger.lock();
         obligation_count(&state.admitted_count_by_branch, &branch_id).saturating_add(

@@ -4,7 +4,6 @@ use worth_query_installation::facade::{
     WorthQueryHostConditionalPredicateProvider, WorthQueryInstalledTemporalConditionalOperation,
     WorthQueryNamedClock, WorthQueryNamedClockSource, WorthQueryTemporalIntentProjector,
 };
-use worth_runtime_bridge::facade::BridgeManagedClockInstallationParts;
 
 use super::installation::{
     ConditionalClockLease, WorthQueryConditionalRuntimeInstallationDenial,
@@ -61,6 +60,7 @@ impl<
         PrincipalMapping,
         Principal,
         PrincipalIdentity,
+        PrincipalIdentityBinding,
         ScopeAspect,
         ScopeField,
         ScopeValue,
@@ -113,6 +113,7 @@ impl<
             PrincipalMapping,
             Principal,
             PrincipalIdentity,
+            PrincipalIdentityBinding,
             Scope,
             ScopeAspect,
             ScopeField,
@@ -169,10 +170,17 @@ where
     PrincipalBinding: 'static,
     PrincipalMapping: 'static,
     Principal: 'static,
-    PrincipalIdentity: worth_query_installation::facade::TypedApplicationIdentityValue + 'static,
+    PrincipalIdentity: 'static,
+    PrincipalIdentityBinding:
+        worth_query_installation::facade::ApplicationIdentityScalarValueBinding<
+                Value = PrincipalIdentity,
+            > + 'static,
     ScopeAspect: 'static,
-    ScopeField: 'static,
-    ScopeValue: worth_query_installation::facade::TypedApplicationValue + Clone + Send + 'static,
+    ScopeField: worth_query_installation::facade::DeclaredApplicationFieldValue<Value = ScopeValue>
+        + 'static,
+    ScopeField::Binding:
+        worth_query_installation::facade::ApplicationScalarValueBinding<Value = ScopeValue>,
+    ScopeValue: Clone + Send + Sync + 'static,
     ScopeWrite: worth_query_installation::facade::WritePosture + 'static,
     ScopeUnit: worth_query_installation::facade::ApplicationFieldUnit + 'static,
     PrincipalSource: super::reconstruction_authority::WorthQueryTemporalPrincipalSource<Schema>,
@@ -193,29 +201,37 @@ where
     >,
     IntentEntity: 'static,
     IdentityAspect: 'static,
-    IdentityField: worth_query_installation::facade::OperationReads<ApplicationOperation> + 'static,
-    IdentityValue:
-        worth_query_installation::facade::TypedApplicationReadableValue + Clone + Send + 'static,
+    IdentityField: worth_query_installation::facade::OperationReads<ApplicationOperation>
+        + worth_query_installation::facade::DeclaredApplicationFieldValue<Value = IdentityValue>
+        + 'static,
+    IdentityField::Binding: worth_query_installation::facade::ApplicationReadableScalarValueBinding<
+        Value = IdentityValue,
+    >,
+    IdentityValue: Clone + Send + 'static,
     IdentityWrite: worth_query_installation::facade::WritePosture + 'static,
     IdentityUnit: worth_query_installation::facade::ApplicationFieldUnit + 'static,
     RevisionAspect: 'static,
     RevisionField: worth_query_installation::facade::OperationReads<ApplicationOperation>
         + worth_query_installation::facade::OperationWrites<ApplicationOperation>
+        + worth_query_installation::facade::DeclaredApplicationFieldValue<Value = RevisionValue>
         + 'static,
-    RevisionValue: worth_query_installation::facade::WorthQueryTemporalIntentRevisionValue
-        + worth_query_installation::facade::TypedApplicationReadableValue
-        + Clone
-        + Send
-        + 'static,
+    RevisionField::Binding: worth_query_installation::facade::ApplicationReadableScalarValueBinding<
+            Value = RevisionValue,
+        > + worth_query_installation::facade::WorthQueryTemporalIntentRevisionValue,
+    RevisionValue: Clone + Send + 'static,
     RevisionWrite: worth_query_installation::facade::WritableCapability + 'static,
     RevisionEquality: 'static,
     RevisionUnit: worth_query_installation::facade::ApplicationFieldUnit + 'static,
     LifecycleAspect: 'static,
     LifecycleField: worth_query_installation::facade::OperationReads<ApplicationOperation>
         + worth_query_installation::facade::OperationWrites<ApplicationOperation>
+        + worth_query_installation::facade::DeclaredApplicationFieldValue<Value = LifecycleValue>
         + 'static,
-    LifecycleValue:
-        worth_query_installation::facade::TypedApplicationReadableValue + Clone + Send + 'static,
+    LifecycleField::Binding:
+        worth_query_installation::facade::ApplicationReadableScalarValueBinding<
+            Value = LifecycleValue,
+        >,
+    LifecycleValue: Clone + Send + Sync + 'static,
     LifecycleWrite: worth_query_installation::facade::WritableCapability + 'static,
     LifecycleEquality: 'static,
     LifecycleUnit: worth_query_installation::facade::ApplicationFieldUnit + 'static,
@@ -228,19 +244,26 @@ where
 
     fn install(
         self: Box<Self>,
-        bridge: &mut worth_runtime_bridge::facade::BridgeOwnedSignalRuntime,
+        bridge: &mut worth_runtime_bridge::facade::BridgeConditionalRuntimeBuilder,
         graph: &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
         affinity: &ConditionalRuntimeAffinity,
+        authoritative_commit_cursor: u64,
     ) -> Result<
         Box<dyn super::lifecycle::WorthQueryInstalledConditionalOperation<Schema>>,
         WorthQueryConditionalRuntimeInstallationDenial,
     > {
-        let lowering = super::predicate_admission::install_temporal_predicate_lowering(
+        let request = super::predicate_admission::prepare_temporal_predicate_installation(
             &self.binding,
             graph,
-            bridge,
         )?;
-        let bounds = self.binding.bounds();
+        let lowering = bridge
+            .install_owned_conditional(request)
+            .map_err(|denial| {
+                WorthQueryConditionalRuntimeInstallationDenial::new(
+                    WorthQueryConditionalRuntimeInstallationDenialKind::BridgeRejected,
+                    format!("{:?}: {}", denial.kind(), denial.detail()),
+                )
+            })?;
         let runtime_canonical_identity =
             Arc::new(affinity.bind(&self.binding_identity).map_err(|denial| {
                 WorthQueryConditionalRuntimeInstallationDenial::new(
@@ -253,43 +276,32 @@ where
             .binding_identity
             .canonical_work()
             .combine(runtime_canonical_identity.canonical_work());
-        let clock = self.binding.clocked_node();
-        let managed_clock = bridge
-            .install_managed_clock(BridgeManagedClockInstallationParts {
-                lowering: &lowering,
-                binding_identity: Arc::clone(&runtime_binding_identity),
-                source_identity: Arc::from(clock.source_identity().as_str()),
-                timeline_identity: Arc::from(clock.timeline_identity().as_str()),
-                maximum_active_intents: bounds.maximum_reconstruction_rows(),
-                maximum_due_wakes_per_observation: bounds.maximum_due_wakes_per_observation(),
-            })
-            .map_err(|denial| {
-                WorthQueryConditionalRuntimeInstallationDenial::new(
-                    WorthQueryConditionalRuntimeInstallationDenialKind::BridgeRejected,
-                    denial.detail(),
-                )
-            })?;
         Ok(Box::new(WorthQueryInstalledTemporalOperation {
             lifecycle_token: Default::default(),
-            binding_identity: self.binding_identity,
-            installation_canonical_work,
-            clock_lease: self.clock_lease,
-            binding: self.binding,
-            reconstruction: self.reconstruction,
-            execution: self.execution,
-            lowering,
-            managed_clock,
+            definition: Arc::new(super::definition::WorthQueryTemporalOperationDefinition {
+                binding_identity: self.binding_identity,
+                installation_canonical_work,
+                clock_lease: self.clock_lease,
+                binding: self.binding,
+                reconstruction: self.reconstruction,
+                execution: self.execution,
+            }),
+            bootstrap_lowering: lowering,
+            active_affinity: None,
+            managed_clock: None,
             runtime_binding_identity,
             runtime_canonical_identity,
             runtime_capability_identity: affinity.runtime_authority(),
             retained_wakes: Vec::new(),
             reconstructed_intents: std::collections::BTreeMap::new(),
             reconstruction_work: Default::default(),
-            authoritative_commit_cursor: None,
-            committed_operation_count: 0,
-            already_committed_operation_count: 0,
-            failed_operation_count: 0,
-            indeterminate_operation_count: 0,
+            authoritative_commit_cursor,
+            bootstrap_commit_catch_up_pending: true,
+            commit_watch: Default::default(),
+            operation_totals: Default::default(),
+            pending_direct_delivery: None,
+            inactive_bindings: Default::default(),
+            next_evaluation_binding_ordinal: 1,
         }))
     }
 }

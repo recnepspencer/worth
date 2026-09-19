@@ -1,12 +1,12 @@
-#[path = "scroll_runtime/replacement.rs"]
-mod replacement;
+#[path = "scroll_runtime/geometry.rs"]
+mod geometry;
 #[path = "scroll_runtime/scenario.rs"]
 mod scenario;
 #[path = "scroll_runtime/shared_owner_replacement.rs"]
 mod shared_owner_replacement;
 
 use scenario::{
-    admit_scroll, publish_predecessor, publish_with_hit_coordinate, scroll_visual_source,
+    admit_scroll, publish_predecessor, publish_with_hit_coordinate, sibling_scroll_visual_source,
     with_scroll_mosaic,
 };
 use worth_ui::facade::observation_report::UiHostObservationPresentationBasis;
@@ -19,7 +19,8 @@ use worth_ui_host_contract::{
 use worth_ui_host_headless::{UiHeadlessRecorderCapacity, WorthUiHeadlessRecorder};
 use worth_ui_test_support::{
     UiScrollObservationCertificationDenial, UiScrollObservationCertificationOutcome,
-    WorthUiMountedIdentityCertificationExt, WorthUiServiceStateCertificationExt,
+    WorthUiActiveSessionCertificationExt, WorthUiMountedIdentityCertificationExt,
+    WorthUiServiceStateCertificationExt,
 };
 
 use crate::filesystem_contract_workspace::FilesystemContractWorkspace;
@@ -41,7 +42,7 @@ fn exact_coordinate_scroll_retains_sign_cancellation_and_ambiguous_denial() {
             .freeze()
             .expect("scroll visual capabilities freeze");
     let workspace = FilesystemContractWorkspace::new("phase-315-scroll-ingress");
-    workspace.write("app/main.wui", &scroll_visual_source());
+    workspace.write("app/main.wui", &sibling_scroll_visual_source());
     let snapshot = WorthUiFilesystemSourceProvider::new(workspace.root())
         .read()
         .expect("production source provider reads the scroll visual source");
@@ -60,7 +61,9 @@ fn exact_coordinate_scroll_retains_sign_cancellation_and_ambiguous_denial() {
     let mut session = application
         .launch()
         .expect("mosaic-authored application launches");
-    let surface = session.create_semantic_surface().unwrap();
+    let surface = session
+        .create_declared_semantic_surface("visual.identity.surface.main")
+        .unwrap();
     let binding = session
         .register_host_surface(
             surface,
@@ -78,13 +81,18 @@ fn exact_coordinate_scroll_retains_sign_cancellation_and_ambiguous_denial() {
         }
     }
     establish_allocation(&mut session, 3);
+    assert_eq!(
+        session.declared_region_layout_inputs(surface).len(),
+        4,
+        "both nested region declarations on both mounted owners must reach layout"
+    );
     publish_predecessor(&mut session);
-    let (current, coordinate) = publish_with_hit_coordinate(
+    let (mut current, coordinate) = publish_with_hit_coordinate(
         &mut session,
         binding,
         scroll_target.expect("hit-only component is mounted"),
     );
-    let presentation = UiHostObservationPresentationBasis::new(
+    let mut presentation = UiHostObservationPresentationBasis::new(
         current.host_surface,
         current.frame,
         binding,
@@ -112,10 +120,53 @@ fn exact_coordinate_scroll_retains_sign_cancellation_and_ambiguous_denial() {
             precision: UiHostScrollDeltaPrecision::Pixel,
             requested_inline_subpixels: -125,
             requested_block_subpixels: 250,
-            owners_visited: 2,
+            owners_visited: 1,
         }
     );
 
+    let prepared_offset = session
+        .inspect_scroll_runtime_for_certification()
+        .owner_geometry()
+        .iter()
+        .find(|owner| owner.graph_node_digest() == Some(scroll_target_node.digest()))
+        .unwrap()
+        .block_offset_subpixels();
+    assert_eq!(prepared_offset, 250);
+    let routed = session.inspect_scroll_runtime_for_certification();
+    assert_eq!(
+        routed.ownership_resolutions(),
+        ownership_before_deltas.ownership_resolutions()
+    );
+    assert_eq!(
+        routed.ownership_graph_nodes_visited(),
+        ownership_before_deltas.ownership_graph_nodes_visited()
+    );
+    assert_eq!(
+        routed.ownership_plan_nodes_visited(),
+        ownership_before_deltas.ownership_plan_nodes_visited()
+    );
+    (current, _) = publish_with_hit_coordinate(&mut session, binding, current.instance);
+    presentation = UiHostObservationPresentationBasis::new(
+        current.host_surface,
+        current.frame,
+        binding,
+        current.epoch,
+    );
+    assert_eq!(
+        session
+            .inspect_scroll_runtime_for_certification()
+            .owner_geometry()
+            .iter()
+            .find(|owner| owner.graph_node_digest() == Some(scroll_target_node.digest()))
+            .unwrap()
+            .block_offset_subpixels(),
+        prepared_offset,
+        "publication must commit the same regional offset used to prepare the accepted frame"
+    );
+
+    // Completing a new mounted layout legitimately refreshes ownership. The
+    // following ingress interval must again do no ownership discovery.
+    let ownership_before_deltas = session.inspect_scroll_runtime_for_certification();
     let cancelled = admit_scroll(
         &mut session,
         binding,
@@ -156,24 +207,30 @@ fn exact_coordinate_scroll_retains_sign_cancellation_and_ambiguous_denial() {
             precision: UiHostScrollDeltaPrecision::Pixel,
             requested_inline_subpixels: 0,
             requested_block_subpixels: 1_000_000_000,
-            owners_visited: 2,
+            owners_visited: 1,
         }
     );
     let saturated_geometry = session.inspect_scroll_runtime_for_certification();
     assert_eq!(saturated_geometry.owner_geometry().len(), 2);
-    assert!(
-        saturated_geometry.owner_geometry().iter().all(|owner| {
-            owner.graph_node_digest() == Some(scroll_target_node.digest())
-                && owner.plan_region_index().is_some()
-                && owner.max_block_subpixels() > 0
-                && owner.block_offset_subpixels() == owner.max_block_subpixels()
-        }),
-        "nested owner geometry: {:?}",
-        saturated_geometry.owner_geometry(),
+    assert_eq!(
+        saturated_geometry
+            .owner_geometry()
+            .iter()
+            .filter(|owner| owner.graph_node_digest() == Some(scroll_target_node.digest()))
+            .count(),
+        1,
+        "the target resolves to its nearest declared owner"
     );
-    assert_ne!(
-        saturated_geometry.owner_geometry()[0].plan_region_index(),
-        saturated_geometry.owner_geometry()[1].plan_region_index(),
+    let saturated_target = saturated_geometry
+        .owner_geometry()
+        .iter()
+        .find(|owner| owner.graph_node_digest() == Some(scroll_target_node.digest()))
+        .expect("exact-coordinate target has one nearest declared owner");
+    assert!(saturated_target.plan_region_index().is_some());
+    assert!(saturated_target.max_block_subpixels() > 0);
+    assert_eq!(
+        saturated_target.block_offset_subpixels(),
+        saturated_target.max_block_subpixels()
     );
 
     let returned = admit_scroll(
@@ -194,81 +251,37 @@ fn exact_coordinate_scroll_retains_sign_cancellation_and_ambiguous_denial() {
             precision: UiHostScrollDeltaPrecision::Pixel,
             requested_inline_subpixels: 0,
             requested_block_subpixels: -1_000_000_000,
-            owners_visited: 2,
+            owners_visited: 1,
         }
     );
     let returned_geometry = session.inspect_scroll_runtime_for_certification();
     assert!(returned_geometry
         .owner_geometry()
         .iter()
+        .filter(|owner| owner.graph_node_digest() == Some(scroll_target_node.digest()))
         .all(|owner| owner.block_offset_subpixels() == 0));
-
-    let inner = returned_geometry
+    let mut distinct_owner_nodes = returned_geometry
         .owner_geometry()
         .iter()
-        .min_by_key(|owner| owner.plan_region_index())
-        .copied()
-        .expect("nested scroll geometry contains the inner owner");
-    let outer = returned_geometry
-        .owner_geometry()
-        .iter()
-        .max_by_key(|owner| owner.plan_region_index())
-        .copied()
-        .expect("nested scroll geometry contains the outer owner");
-    assert!(inner.max_block_subpixels() > 1);
-    assert!(outer.max_block_subpixels() > 1);
-    let outer_share = (outer.max_block_subpixels() / 2).max(1);
-    assert!(outer_share < outer.max_block_subpixels());
-    let routed_delta = inner
-        .max_block_subpixels()
-        .checked_add(outer_share)
-        .expect("nested routed delta remains representable");
-
-    let partially_routed = admit_scroll(
-        &mut session,
-        binding,
-        &current,
-        5,
-        UiHostScrollDeltaPhase::Updated,
-        UiHostScrollDeltaTargetAffinity::exact_coordinate(presentation, coordinate),
-        0,
-        -routed_delta,
-    );
+        .map(|owner| {
+            owner
+                .graph_node_digest()
+                .expect("each sibling region owner retains its graph identity")
+        })
+        .collect::<Vec<_>>();
+    distinct_owner_nodes.sort_unstable();
+    distinct_owner_nodes.dedup();
     assert_eq!(
-        partially_routed,
-        UiScrollObservationCertificationOutcome::Applied {
-            source: UiHostScrollDeltaSource::PointerWheel,
-            phase: UiHostScrollDeltaPhase::Updated,
-            precision: UiHostScrollDeltaPrecision::Pixel,
-            requested_inline_subpixels: 0,
-            requested_block_subpixels: routed_delta,
-            owners_visited: 2,
-        }
+        distinct_owner_nodes.len(),
+        2,
+        "surface fallback is ambiguous between two distinct sibling owners"
     );
-    let partially_routed_geometry = session.inspect_scroll_runtime_for_certification();
-    let routed_inner = partially_routed_geometry
-        .owner_geometry()
-        .iter()
-        .find(|owner| owner.plan_region_index() == inner.plan_region_index())
-        .copied()
-        .expect("inner owner remains observable after partial routing");
-    let routed_outer = partially_routed_geometry
-        .owner_geometry()
-        .iter()
-        .find(|owner| owner.plan_region_index() == outer.plan_region_index())
-        .copied()
-        .expect("outer owner remains observable after partial routing");
-    assert_eq!(
-        routed_inner.block_offset_subpixels(),
-        inner.max_block_subpixels()
-    );
-    assert_eq!(routed_outer.block_offset_subpixels(), outer_share);
 
     let fallback = admit_scroll(
         &mut session,
         binding,
         &current,
-        6,
+        5,
         UiHostScrollDeltaPhase::Updated,
         UiHostScrollDeltaTargetAffinity::presented_surface_fallback(presentation),
         1,
@@ -295,6 +308,39 @@ fn exact_coordinate_scroll_retains_sign_cancellation_and_ambiguous_denial() {
         ownership_after_deltas.ownership_plan_nodes_visited(),
         ownership_before_deltas.ownership_plan_nodes_visited(),
         "host delta routing must not rediscover ownership through mosaic plan ranges"
+    );
+
+    for sequence in 6..=101 {
+        let wheel = if sequence % 2 == 0 { -1_000 } else { 1_000 };
+        assert!(
+            matches!(
+                admit_scroll(
+                    &mut session,
+                    binding,
+                    &current,
+                    sequence,
+                    UiHostScrollDeltaPhase::Updated,
+                    UiHostScrollDeltaTargetAffinity::exact_coordinate(presentation, coordinate),
+                    0,
+                    wheel,
+                ),
+                UiScrollObservationCertificationOutcome::Applied {
+                    owners_visited: 1,
+                    ..
+                }
+            ),
+            "lossless wheel input must continue after consumed reports exceed retention capacity"
+        );
+    }
+    assert_eq!(
+        session
+            .inspect_scroll_runtime_for_certification()
+            .owner_geometry()
+            .iter()
+            .find(|owner| owner.graph_node_digest() == Some(scroll_target_node.digest()))
+            .unwrap()
+            .block_offset_subpixels(),
+        0
     );
 
     let _ = session.shutdown();

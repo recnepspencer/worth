@@ -1,3 +1,4 @@
+use bank_domain::proposals::BankIdempotencyKey;
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitDenialStage,
     WorthQueryApplicationCommitOutcome, WorthQueryApplicationEffectProgram,
@@ -10,7 +11,7 @@ use crate::estate_capability_admission::fixture::{
 };
 
 #[test]
-fn generic_program_cannot_bypass_the_query_owned_revocation_transition() {
+fn generic_program_cannot_bypass_the_installed_revocation_action() {
     let fixture = revocation_world("capability-revocation-generic-bypass");
     let specialist = fixture.authenticate();
     let action = revocation_action();
@@ -22,17 +23,17 @@ fn generic_program_cannot_bypass_the_query_owned_revocation_transition() {
     let outcome = fixture
         .runtime
         .application_runtime()
-        .compare_and_commit_application(program, idempotency(151));
+        .compare_and_commit_application(program, query_idempotency(151));
     let WorthQueryApplicationCommitOutcome::Denied(denial) = outcome else {
         panic!("generic revocation must deny before provider execution: {outcome:?}");
     };
     assert_eq!(
         denial.kind(),
-        WorthQueryApplicationCommitDenialKind::CapabilityRevocationRequired
+        WorthQueryApplicationCommitDenialKind::ApplicationProgramRequired
     );
     assert_eq!(
         denial.stage(),
-        WorthQueryApplicationCommitDenialStage::DelegationTransition
+        WorthQueryApplicationCommitDenialStage::ProposalBinding
     );
 }
 
@@ -52,17 +53,51 @@ fn target_status_drift_after_materialization_stales_provider_commit() {
 
     let drift = fixture
         .runtime
-        .revoke_estate_capability(&specialist, action, idempotency(153), &request_scope())
+        .revoke_estate_capability_with_key(&specialist, action, &idempotency(153), &request_scope())
         .expect("a separate public command should revoke the prepared target");
     assert!(matches!(drift, BankMutationCommitOutcome::Committed(_)));
 
     let outcome = fixture
         .runtime
-        .application_runtime()
-        .compare_and_commit_capability_revocation(program, idempotency(155));
+        .application_program()
+        .admit_program_operation::<RevokeEstateCapabilityOperation>()
+        .unwrap()
+        .compare_and_commit_capability_revocation(program, query_idempotency(155));
+    assert_product_basis_stale(outcome);
+}
+
+fn assert_product_basis_stale(outcome: WorthQueryApplicationCommitOutcome) {
+    let WorthQueryApplicationCommitOutcome::Denied(denial) = outcome else {
+        panic!("an old materialized program must retain its exact product basis: {outcome:?}");
+    };
+    assert_eq!(
+        denial.kind(),
+        WorthQueryApplicationCommitDenialKind::ProductBasisStale
+    );
+    assert_eq!(
+        denial.stage(),
+        WorthQueryApplicationCommitDenialStage::InvariantExecution
+    );
+}
+
+#[test]
+fn exact_revocation_retry_replays_after_the_grant_is_revoked() {
+    let fixture = revocation_world("capability-revocation-exact-replay");
+    let specialist = fixture.authenticate();
+    let action = revocation_action();
+    let key = idempotency(159);
+    let first = fixture
+        .runtime
+        .revoke_estate_capability_with_key(&specialist, action, &key, &request_scope())
+        .expect("the active grant should revoke");
+    assert!(matches!(first, BankMutationCommitOutcome::Committed(_)));
+    let replay = fixture
+        .runtime
+        .revoke_estate_capability_with_key(&specialist, action, &key, &request_scope())
+        .expect("the same request should replay after revocation");
     assert!(matches!(
-        outcome,
-        WorthQueryApplicationCommitOutcome::Stale(_)
+        replay,
+        BankMutationCommitOutcome::AlreadyCommitted(_)
     ));
 }
 
@@ -83,10 +118,10 @@ fn revocation_retains_its_declared_preimage_without_a_per_operation_opt_in() {
     let specialist = fixture.authenticate();
     let outcome = fixture
         .runtime
-        .revoke_estate_capability(
+        .revoke_estate_capability_with_key(
             &specialist,
             revocation_action(),
-            idempotency(161),
+            &idempotency(161),
             &request_scope(),
         )
         .expect("the exact command should revoke the active target");
@@ -152,6 +187,10 @@ fn revocation_action() -> EstateAction {
     }
 }
 
-fn idempotency(seed: u8) -> WorthQueryApplicationIdempotencyBinding {
+fn idempotency(seed: u8) -> BankIdempotencyKey {
+    BankIdempotencyKey::new(format!("capability-revocation-owner-{seed}")).unwrap()
+}
+
+fn query_idempotency(seed: u8) -> WorthQueryApplicationIdempotencyBinding {
     WorthQueryApplicationIdempotencyBinding::new([seed; 32], [seed + 1; 32])
 }

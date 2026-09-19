@@ -1,7 +1,7 @@
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Mutex, MutexGuard};
 
-use crate::branch::{SignalBranchForkOperationDenial, SignalBranchRetirementReceipt};
+use crate::branch::SignalBranchRetirementReceipt;
 use crate::logic::transaction::SignalOwnerMetadataState;
 use crate::state::SignalBranchId;
 
@@ -57,6 +57,7 @@ where
         }
     }
 
+    #[cfg(test)]
     pub(super) fn reserve_fork_child<'a>(
         &'a self,
         admission: &'a SignalOwnerOperationAdmission<'_>,
@@ -74,6 +75,7 @@ where
         })
     }
 
+    #[cfg(test)]
     pub(super) fn branch_children(
         &self,
         admission: &SignalOwnerOperationAdmission<'_>,
@@ -81,15 +83,6 @@ where
     ) -> Result<Vec<SignalBranchId>, SignalOwnerMetadataAuthorizationDenial> {
         let _hold = self.authorize(admission)?;
         Ok(self.lock().branch_children(branch_id))
-    }
-
-    pub(super) fn is_merge_participant(
-        &self,
-        admission: &SignalOwnerOperationAdmission<'_>,
-        branch_id: SignalBranchId,
-    ) -> Result<bool, SignalOwnerMetadataAuthorizationDenial> {
-        let _hold = self.authorize(admission)?;
-        Ok(self.lock().is_merge_participant(branch_id))
     }
 
     pub(super) fn retirement_receipt(
@@ -198,3 +191,6 @@ where
         }
     }
 }
+
+#[cfg(test)]
+use crate::branch::SignalBranchForkOperationDenial;

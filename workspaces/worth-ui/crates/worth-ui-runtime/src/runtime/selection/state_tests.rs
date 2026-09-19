@@ -139,8 +139,13 @@ fn extending_a_range_preserves_the_predecessor_selection() {
     assert_eq!(delta.added(), &keys[2..=3]);
     assert!(delta.removed().is_empty());
     assert_eq!(
-        state.selected(owner).unwrap(),
-        &[keys[1], keys[2], keys[3], keys[5]].into_iter().collect()
+        state
+            .selected(owner)
+            .unwrap()
+            .iter()
+            .copied()
+            .collect::<Vec<_>>(),
+        vec![keys[1], keys[2], keys[3], keys[5]]
     );
 }
 

@@ -51,6 +51,8 @@ impl WorthQueryInMemoryTestRuntimeBuilder {
             )
             .map_err(workspace_error)?;
         let seed = apply_initial_seed(&mut memory, schema.collection(), self.initial_seed)?;
+        let source = memory.relational_source_owner();
+        let product_bridge = super::product_bridge::build_product_bridge(&source, &schema)?;
         let backend = WorthQueryInMemoryTestBackend::with_close_failures(
             memory,
             self.support_profile,
@@ -58,11 +60,16 @@ impl WorthQueryInMemoryTestRuntimeBuilder {
             !self.collection_entity_lookup_disabled,
             self.remask_projection,
         );
-        let mut runtime = WorthQueryRuntimeBuilder::new()
-            .backend(backend)
-            .with_precompiled_domain_installations(installations);
+        let mut runtime =
+            WorthQueryRuntimeBuilder::new(super::in_memory_test_product_world_resources())
+                .backend(backend)
+                .installed_product_bridge(
+                    product_bridge,
+                    crate::runtime::WorthQueryConditionalExecutionResources::development(),
+                )
+                .with_precompiled_domain_installations(installations);
         for install in self.runtime_installers {
-            runtime = install(runtime);
+            runtime = install.install(runtime, &source, &seed)?;
         }
         runtime = runtime
             .aspect_contracts(schema.contracts().cloned())

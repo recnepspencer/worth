@@ -24,19 +24,30 @@ impl WorthUiNativeApplicationShell {
     pub fn begin_projection_rebind(
         &mut self,
         request: crate::runtime::rebind::UiProjectionRebindRequest,
+    ) -> Result<WorthUiNativeManagedProjectionRebindOutcome, WorthUiNativeProjectionRebindDenial>
+    {
+        self.begin_managed_projection_rebind(request)
+    }
+
+    fn execute_projection_rebind(
+        &mut self,
+        request: crate::runtime::rebind::UiProjectionRebindRequest,
     ) -> Result<crate::runtime::rebind::UiRebindOutcome<'_>, WorthUiNativeProjectionRebindDenial>
     {
+        if self.pending_managed_rebind.is_some() {
+            return Err(WorthUiNativeProjectionRebindDenial::ManagedRebindAlreadyInFlight);
+        }
         let (observation, policy, execution) = request.into_parts();
         let admitted = admit_projection(&mut self.session, observation)?;
         let admitted = match admitted {
             NativeProjectionAdmission::Admitted(admitted) => admitted,
             NativeProjectionAdmission::Duplicate(receipt) => {
-                return Ok(crate::runtime::rebind::UiRebindOutcome::Duplicate(receipt))
+                return Ok(crate::runtime::rebind::UiRebindOutcome::Duplicate(receipt));
             }
             NativeProjectionAdmission::Superseded(receipt) => {
                 return Ok(
                     crate::runtime::rebind::UiRebindOutcome::SupersededBeforeEffects(receipt),
-                )
+                );
             }
         };
         let classified = self
@@ -52,23 +63,16 @@ impl WorthUiNativeApplicationShell {
         request: crate::runtime::rebind::UiProjectionRebindRequest,
     ) -> Result<WorthUiNativeManagedProjectionRebindOutcome, WorthUiNativeProjectionRebindDenial>
     {
-        if self.pending_managed_rebind.is_some() {
-            return Err(WorthUiNativeProjectionRebindDenial::ManagedRebindAlreadyInFlight);
-        }
-        let outcome = self.begin_projection_rebind(request)?;
+        let outcome = self.execute_projection_rebind(request)?;
         match super::native_managed_rebind::normalize_managed_outcome(outcome) {
-            super::native_managed_rebind::ManagedRebindNormalization::Published(receipt) => Ok(
-                WorthUiNativeManagedProjectionRebindOutcome::Published(receipt),
-            ),
-            super::native_managed_rebind::ManagedRebindNormalization::Pending(pending) => {
-                if pending.session_identity() != self.session.session_identity() {
-                    return Err(WorthUiNativeProjectionRebindDenial::ManagedRebindSessionMismatch);
-                }
-                self.pending_managed_rebind = Some(
-                    super::native_managed_rebind::WorthUiNativePendingManagedRebind::Completion(
-                        pending,
-                    ),
-                );
+            super::native_managed_rebind::ManagedRebindNormalization::Published(receipt) => {
+                self.settle_native_rebind_reconciliation(&receipt);
+                Ok(WorthUiNativeManagedProjectionRebindOutcome::Published(receipt))
+            }
+            pending @ (super::native_managed_rebind::ManagedRebindNormalization::Pending(_)
+            | super::native_managed_rebind::ManagedRebindNormalization::Retry { .. }
+            | super::native_managed_rebind::ManagedRebindNormalization::Indeterminate { .. }) => {
+                super::native_managed_rebind::retain_normalized_managed_rebind(&mut self.pending_managed_rebind, pending);
                 Ok(WorthUiNativeManagedProjectionRebindOutcome::Pending)
             }
             super::native_managed_rebind::ManagedRebindNormalization::Stopped(stop) => {
@@ -97,19 +101,19 @@ fn admit_projection(
         Err(crate::runtime::observation::UiObservationAdmissionDenial::DuplicateOwnerOrder) => {
             return Ok(NativeProjectionAdmission::Duplicate(
                 crate::runtime::rebind::UiDuplicateObservationReceipt::new(identity),
-            ))
+            ));
         }
         Err(crate::runtime::observation::UiObservationAdmissionDenial::HistoricalOwnerOrder) => {
             return Ok(NativeProjectionAdmission::Superseded(
                 crate::runtime::rebind::UiRebindSupersededReceipt::before_effects(
                     crate::runtime::rebind::UiRebindStoppedPhase::ObservationAdmission,
                 ),
-            ))
+            ));
         }
         Err(denial) => {
             return Err(WorthUiNativeProjectionRebindDenial::ObservationAdmission(
                 denial,
-            ))
+            ));
         }
     }
     turn.seal()
@@ -126,7 +130,7 @@ fn plan_projection_rebind(
         crate::runtime::observation::UiChangeClassificationOutcome::Changed(change) => change,
         crate::runtime::observation::UiChangeClassificationOutcome::ObservedNoChange(_)
         | crate::runtime::observation::UiChangeClassificationOutcome::EvidenceOnly(_) => {
-            return Err(WorthUiNativeProjectionRebindDenial::UnexpectedClassification)
+            return Err(WorthUiNativeProjectionRebindDenial::UnexpectedClassification);
         }
     };
     let lifecycle = session

@@ -16,6 +16,14 @@ pub mod application_query {
     pub use crate::application_query::*;
 }
 
+pub mod application_operation {
+    pub use crate::application_operation::*;
+}
+
+pub mod application_program {
+    pub use crate::application_program::*;
+}
+
 pub mod authentication {
     pub use crate::authentication::*;
 }
@@ -31,6 +39,10 @@ pub mod foundation {
 
 pub mod binding {
     pub use crate::binding::*;
+}
+
+pub mod branch {
+    pub use crate::branch::*;
 }
 
 pub mod canonicalization {

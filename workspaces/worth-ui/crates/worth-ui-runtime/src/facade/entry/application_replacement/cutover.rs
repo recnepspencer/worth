@@ -1,12 +1,11 @@
-#[cfg(test)]
-mod staging_inspection;
-
 use super::publication_observation::WorthUiApplicationPublicationPreparation;
-use super::service_installation_reconciliation::{
-    reconcile_focus_installation, reconcile_motion_installation, reconcile_portal_installation,
-};
 use super::*;
 use crate::facade::WorthUiActiveApplicationSession;
+
+mod appearance;
+mod application_commit;
+mod outcome;
+use outcome::seal_prepared_activation;
 
 pub(super) struct WorthUiCutoverGenerationBasis {
     pub(super) prior: WorthUiPreparedApplicationGenerationIdentity,
@@ -25,6 +24,7 @@ struct WorthUiPreparedCutoverEvidence {
     candidate_application_authority:
         crate::facade::prepared_application_authority::WorthUiPreparedApplicationLoweringAuthority,
     candidate_service_policy_plan: crate::declaration::UiNormalizedServicePolicyPlan,
+    appearance_succession: super::super::UiPreparedAppearanceGenerationSuccession,
 }
 
 struct WorthUiCutoverPreparationInput {
@@ -40,6 +40,7 @@ struct WorthUiPreparedCatalogActivation {
     visual_trace_source:
         crate::facade::prepared_application_authority::WorthUiPreparedVisualTraceSource,
     font_collection: std::sync::Arc<worth_ui_text::UiGlobalFontCollection>,
+    appearance_succession: super::super::UiPreparedAppearanceGenerationSuccession,
 }
 
 impl WorthUiActiveApplicationSession {
@@ -79,11 +80,35 @@ impl WorthUiActiveApplicationSession {
                         &candidate_graph,
                     ))
                     .map_err(WorthUiApplicationCutoverDenial::MountedIdentity)?;
-                let scroll = self.prepare_scroll_replacement(&activation, &next_mounted, None);
+                let mut lifecycle =
+                    self.prepare_application_lifecycle(&next_mounted, &activation)?;
+                let staged_scroll = lifecycle.take_staged_scroll();
+                let scroll = self.prepare_scroll_replacement(
+                    &activation,
+                    &next_mounted,
+                    None,
+                    staged_scroll,
+                );
                 let selection =
-                    self.prepare_selection_replacement(&activation, &next_mounted, false);
-                let receipt =
-                    self.commit_application_activation(activation, next_mounted, scroll, selection);
+                    self.prepare_selection_replacement(&activation, &next_mounted, None);
+                let text = self
+                    .presentation
+                    .prepare_text_succession(
+                        self.capabilities(),
+                        activation.candidate_replacement_authority().capabilities(),
+                        crate::graph::UiGraphAuthority::new(&candidate_graph),
+                    )
+                    .map_err(WorthUiApplicationCutoverDenial::MountedFrame)?;
+                let receipt = self.commit_application_activation(
+                    activation,
+                    next_mounted,
+                    lifecycle,
+                    scroll,
+                    super::owner_succession::UiApplicationOwnerCutover::Unmounted {
+                        selection,
+                        text,
+                    },
+                );
                 Ok(WorthUiApplicationReplacementOutcome::Activated(Box::new(
                     receipt,
                 )))
@@ -103,6 +128,22 @@ impl WorthUiActiveApplicationSession {
             pending.next_app.prepared_authority().lowering_authority();
         let candidate_service_policy_plan =
             pending.next_app.prepared_authority().service_policy_plan();
+        appearance::validate_candidate_owner_installation(
+            &pending,
+            &candidate_service_policy_plan,
+        )?;
+        if let Some(kind) = self.portal_exit_retention.pending_replacement_kind() {
+            return Err(
+                WorthUiApplicationCutoverDenial::PortalExitRetentionPending {
+                    kind: replacement_pending_kind(kind),
+                    retry: Box::new(WorthUiApplicationCutoverRetry {
+                        pending,
+                        admitted_delta,
+                        lane_parity_report,
+                    }),
+                },
+            );
+        }
         if self.mounted.has_active_presentation_attempt() {
             return Err(WorthUiApplicationCutoverDenial::MountedPresentationInFlight);
         }
@@ -136,6 +177,7 @@ impl WorthUiActiveApplicationSession {
             candidate_graph,
             candidate_application_authority,
             candidate_service_policy_plan,
+            appearance_succession: prepared_catalog.appearance_succession,
         };
         match prepared_catalog.prepared.into_activation() {
             Err(receipt) => Ok(seal_semantic_no_op(evidence, receipt)),
@@ -153,6 +195,13 @@ impl WorthUiActiveApplicationSession {
         input: WorthUiCutoverPreparationInput,
     ) -> Result<WorthUiPreparedCatalogActivation, WorthUiApplicationCutoverDenial> {
         let pending = input.pending;
+        let successor_generation =
+            crate::runtime::WorthUiActiveApplicationGenerationIdentity::current(
+                self.identity,
+                pending.next_app.generation_identity(),
+            );
+        let appearance_succession =
+            appearance::prepare_successor_theme(self, &pending, successor_generation)?;
         let reload_cost_seed = pending.reload_cost_seed;
         let visual_trace_source = pending.next_app.visual_trace_source();
         let font_collection = std::sync::Arc::clone(pending.next_app.font_collection());
@@ -184,115 +233,23 @@ impl WorthUiActiveApplicationSession {
             reload_cost_seed,
             visual_trace_source,
             font_collection,
+            appearance_succession,
         })
     }
+}
 
-    pub(super) fn commit_application_activation(
-        &mut self,
-        mut prepared: Box<WorthUiPreparedApplicationActivation>,
-        mounted_successor: crate::mounting::UiMountedGraphReplacementSuccessor,
-        scroll: super::scroll_replacement::UiPreparedScrollReplacement,
-        selection: super::selection_replacement::UiPreparedSelectionReplacement,
-    ) -> WorthUiApplicationCutoverReceipt {
-        let motion_rebind = self
-            .motion
-            .as_ref()
-            .map(|motion| motion.prepare_mounted_rebind(&mounted_successor));
-        let transition = prepared
-            .transition
-            .take()
-            .expect("prepared application transition is present");
-        let activation = match transition {
-            WorthUiApplicationCutoverTransition::Prepared(activation) => activation,
-            WorthUiApplicationCutoverTransition::Committed { .. } => {
-                unreachable!("prepared application transition cannot already be committed")
-            }
-        };
-        let publication = self.application.commit_application_activation(activation);
-        let service_policy_plan = self.application.prepared_authority().service_policy_plan();
-        if let Some(command_routing) = self.command_routing.as_mut() {
-            command_routing.shutdown();
+fn replacement_pending_kind(
+    kind: crate::facade::entry::active_application_session::UiPortalExitTerminalPendingKind,
+) -> WorthUiPortalExitRetentionPendingKind {
+    match kind {
+        crate::facade::entry::active_application_session::UiPortalExitTerminalPendingKind::InFlight => {
+            WorthUiPortalExitRetentionPendingKind::InFlight
         }
-        self.command_routing = crate::runtime::UiRuntimeServiceInstallation::from_optional(
-            self.application
-                .prepared_authority()
-                .service_policy_plan()
-                .command_routing()
-                .map(|policy| {
-                    crate::runtime::command_routing::UiCommandRoutingRuntimeState::new(
-                        crate::runtime::UiServiceStatePersistencePosture::Ephemeral,
-                        self.application.capabilities().commands(),
-                        policy,
-                    )
-                }),
-        );
-        reconcile_focus_installation(
-            &mut self.focus,
-            service_policy_plan.focus().map(|policy| {
-                let restoration = service_policy_plan
-                    .portal()
-                    .is_none_or(crate::declaration::UiPortalPolicy::restores_focus);
-                policy.with_scope_restoration(policy.restores_on_scope_close() && restoration)
-            }),
-        );
-        reconcile_portal_installation(&mut self.portal, service_policy_plan.portal());
-        if let (Some(motion), Some(prepared)) = (self.motion.as_mut(), motion_rebind) {
-            for terminal in motion.commit_mounted_rebind(prepared) {
-                let _retired = self.mounted.retire_terminal_motion_sample(terminal.track());
-            }
+        crate::facade::entry::active_application_session::UiPortalExitTerminalPendingKind::Indeterminate => {
+            WorthUiPortalExitRetentionPendingKind::Indeterminate
         }
-        reconcile_motion_installation(&mut self.motion, service_policy_plan.motion());
-        self.intent_application_facts =
-            crate::runtime::intent::UiIntentApplicationFactState::activate(
-                self.application.intent_application_fact_plan(),
-            );
-        self.intent_confirmation.cancel_all(
-            crate::runtime::intent::UiIntentConfirmationCancellationReason::ApplicationRebound,
-        );
-        self.intent_admission.cancel_all(
-            &mut self.intent_execution,
-            crate::runtime::intent::UiIntentAdmissionCancellationReason::ApplicationRebound,
-        );
-        let scroll = scroll.into_state();
-        if !scroll.is_installed() {
-            let _ = self
-                .scroll
-                .as_mut()
-                .map(crate::runtime::scroll::UiScrollRuntimeState::shutdown);
-        }
-        self.scroll = scroll;
-        let selection = selection.into_state();
-        if !selection.is_installed() {
-            let _ = self
-                .selection
-                .as_mut()
-                .map(crate::runtime::selection::UiSelectionRuntimeState::shutdown);
-        }
-        self.selection = selection;
-        self.mounted
-            .commit_graph_replacement_successor(mounted_successor);
-        self.cancel_all_interactions(
-            crate::runtime::interaction::UiInteractionLifecycleStopReason::ApplicationRebound,
-        );
-        let observation_resources = self.application.retire_observation_resources(
-            crate::runtime::observation::UiObservationResourceRetirementCause::
-                ApplicationReplacement,
-        );
-        let intent_evidence = self
-            .intent_evidence
-            .retire(worth_ui_inspection::UiIntentEvidenceRetirementCause::ApplicationReplacement);
-        let (plan_swap, query_retirement, plan_decision, allocation_catalog_successor) =
-            publication.into_parts();
-        prepared.transition = Some(WorthUiApplicationCutoverTransition::Committed {
-            plan_swap,
-            plan_decision,
-            query_retirement,
-            allocation_catalog_successor,
-        });
-        WorthUiApplicationCutoverReceipt {
-            transition: prepared,
-            observation_resources,
-            intent_evidence,
+        crate::facade::entry::active_application_session::UiPortalExitTerminalPendingKind::Reconstruction => {
+            WorthUiPortalExitRetentionPendingKind::Reconstruction
         }
     }
 }
@@ -319,50 +276,6 @@ fn seal_semantic_no_op(
         WorthUiApplicationSemanticNoOpReceipt {
             receipt: *receipt,
             reload_cost,
-        },
-    ))
-}
-
-fn seal_prepared_activation(
-    evidence: WorthUiPreparedCutoverEvidence,
-    activation: crate::runtime::WorthUiPreparedApplicationPlanSwap,
-) -> WorthUiPreparedApplicationCutoverOutcome {
-    let successor_runtime = activation.candidate_runtime_observation();
-    let publication = WorthUiApplicationPublicationObservation::prepare_successor(
-        WorthUiApplicationPublicationPreparation {
-            application_generation: evidence.generations.active.clone(),
-            successor_runtime: successor_runtime.clone(),
-            runtime_basis: evidence.runtime_basis,
-            host_session: evidence.host_session,
-            successor_scheduler: activation.candidate_scheduler_state(),
-        },
-    );
-    let reload_cost = evidence.reload_cost_seed.finish(
-        evidence.generations.prior.clone(),
-        evidence.generations.active.clone(),
-        activation.previous_active_plan_digest(),
-        successor_runtime
-            .cross_lane_bundle()
-            .construction_counters(),
-        activation
-            .plan_decision()
-            .summary()
-            .expect("prepared activation carries comparison evidence"),
-    );
-    WorthUiPreparedApplicationCutoverOutcome::Activation(Box::new(
-        WorthUiPreparedApplicationActivation {
-            identity: Box::new(WorthUiApplicationCutoverIdentityEvidence {
-                prior_generation: evidence.generations.prior,
-                active_generation: evidence.generations.active,
-            }),
-            publication: Box::new(publication),
-            visual_trace_source: evidence.visual_trace_source,
-            font_collection: evidence.font_collection,
-            candidate_graph: evidence.candidate_graph,
-            candidate_application_authority: evidence.candidate_application_authority,
-            candidate_service_policy_plan: evidence.candidate_service_policy_plan,
-            reload_cost,
-            transition: Some(WorthUiApplicationCutoverTransition::Prepared(activation)),
         },
     ))
 }

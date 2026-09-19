@@ -37,6 +37,7 @@ pub struct EvaluationSummary {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TransactionResult {
+    pub(crate) diagnostic_publication_work: crate::diagnostics::state::DiagnosticPublicationWork,
     pub outcome: TransactionOutcome,
     pub execution_report: Option<ExecutionReport>,
     pub timing: TransactionTiming,

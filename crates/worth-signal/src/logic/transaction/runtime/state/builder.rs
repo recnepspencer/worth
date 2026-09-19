@@ -40,7 +40,7 @@ pub struct SignalRuntimeBuilder<
     I: Copy + Ord,
     T: Copy + Ord,
 {
-    graph: SignalGraph,
+    graph: Box<SignalGraph>,
     schema_registry: SignalSchemaRegistry,
     merge_strategy_registry: FrozenMergeStrategyRegistry,
     merge_base_strategy_registry: FrozenMergeBaseStrategyRegistry,
@@ -67,6 +67,10 @@ where
     T: Copy + Ord,
 {
     pub(super) fn new(graph: SignalGraph) -> Self {
+        Self::new_boxed(Box::new(graph))
+    }
+
+    pub(super) fn new_boxed(graph: Box<SignalGraph>) -> Self {
         Self {
             graph,
             schema_registry: SignalSchemaRegistry::default(),

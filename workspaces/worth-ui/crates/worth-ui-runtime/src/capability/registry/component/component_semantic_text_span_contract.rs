@@ -8,6 +8,7 @@ pub struct ComponentSemanticTextSpanContract {
     foreground_token: ThemeTokenId,
     style: worth_ui_text::UiTextStyle,
     paint_identity: [u8; 32],
+    appearance_foreground: bool,
 }
 
 impl ComponentSemanticTextSpanContract {
@@ -25,11 +26,23 @@ impl ComponentSemanticTextSpanContract {
             foreground_token,
             style,
             paint_identity,
+            appearance_foreground: false,
         })
     }
 
     pub const fn original_range(&self) -> worth_ui_host_contract::UiTextOriginalRange {
         self.original_range
+    }
+
+    /// Adopts the node's resolved appearance foreground for this original range.
+    /// The range, style, and paint identity remain owned by semantic text.
+    pub fn with_appearance_foreground(mut self) -> Self {
+        self.appearance_foreground = true;
+        self
+    }
+
+    pub const fn uses_appearance_foreground(&self) -> bool {
+        self.appearance_foreground
     }
 
     pub fn foreground_token(&self) -> &ThemeTokenId {

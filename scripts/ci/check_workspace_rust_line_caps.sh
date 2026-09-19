@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+ROOT_DIR="${WORTH_WORKSPACE_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 cd "$ROOT_DIR"
 
 CAP=400
@@ -15,18 +15,22 @@ case "$SCOPE" in
       'workspaces/worth-query-bank-world/crates/**/*.rs'
       'workspaces/worth-query/crates/**/*.rs'
       'workspaces/worth-ui/crates/**/*.rs'
+      'workspaces/worth-ui/apps/**/*.rs'
       'workspaces/worth-store/crates/**/*.rs'
       'workspaces/worth-store/tools/**/*.rs'
     )
     ;;
   worth-ui)
-    PATHS=('workspaces/worth-ui/crates/**/*.rs')
+    PATHS=('workspaces/worth-ui/crates/**/*.rs' 'workspaces/worth-ui/apps/**/*.rs')
+    ;;
+  worth-ui-apps)
+    PATHS=('workspaces/worth-ui/apps/**/*.rs')
     ;;
   dirty)
     PATHS=()
     ;;
   *)
-    echo "usage: $0 [workspace|worth-ui|dirty]" >&2
+    echo "usage: $0 [workspace|worth-ui|worth-ui-apps|dirty]" >&2
     exit 2
     ;;
 esac

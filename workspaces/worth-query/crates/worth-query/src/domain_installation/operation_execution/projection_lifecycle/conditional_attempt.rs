@@ -9,7 +9,7 @@ use super::{
 };
 
 pub(super) struct WorthQueryProjectionReadyToOpen<D, O, F, L: BasisOperationLane> {
-    pub(super) current: WorthQueryCurrentDomainProjection<D, O, F, L>,
+    pub(super) current: Box<WorthQueryCurrentDomainProjection<D, O, F, L>>,
     pub(super) read: crate::ordinary::read::WorthQueryReadDeclaration,
     pub(super) counters: WorthQueryProjectionPromotionCounters,
     pub(super) attempt: u64,
@@ -20,8 +20,8 @@ pub(super) struct WorthQueryProjectionReadyToOpen<D, O, F, L: BasisOperationLane
 }
 
 pub(super) enum WorthQueryConditionalPromotionOutcome<D, O, F, L: BasisOperationLane> {
-    Ready(WorthQueryProjectionReadyToOpen<D, O, F, L>),
-    Stopped(WorthQueryProjectionPromotionOutcome<D, O, F, L>),
+    Ready(Box<WorthQueryProjectionReadyToOpen<D, O, F, L>>),
+    Stopped(Box<WorthQueryProjectionPromotionOutcome<D, O, F, L>>),
 }
 
 pub(super) fn evaluate_fresh_conditionals<D, O, F, L: BasisOperationLane>(
@@ -55,15 +55,15 @@ pub(super) fn evaluate_fresh_conditionals<D, O, F, L: BasisOperationLane>(
             return stopped(current, wrap, stop.kind, stop.detail, stop.counters);
         }
     };
-    WorthQueryConditionalPromotionOutcome::Ready(WorthQueryProjectionReadyToOpen {
-        current,
+    WorthQueryConditionalPromotionOutcome::Ready(Box::new(WorthQueryProjectionReadyToOpen {
+        current: Box::new(current),
         read,
         counters: ready.counters,
         attempt: ready.attempt,
         operational_identity: ready.operational_identity,
         resource_name: ready.resource_name,
         conditional_provenance: ready.conditional_provenance,
-    })
+    }))
 }
 
 fn stopped<D, O, F, L: BasisOperationLane>(
@@ -75,7 +75,7 @@ fn stopped<D, O, F, L: BasisOperationLane>(
     detail: String,
     counters: WorthQueryProjectionPromotionCounters,
 ) -> WorthQueryConditionalPromotionOutcome<D, O, F, L> {
-    WorthQueryConditionalPromotionOutcome::Stopped(wrap(WorthQueryProjectionPromotionStop::new(
-        current, kind, detail, counters,
+    WorthQueryConditionalPromotionOutcome::Stopped(Box::new(wrap(
+        WorthQueryProjectionPromotionStop::new(current, kind, detail, counters),
     )))
 }

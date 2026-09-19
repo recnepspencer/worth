@@ -5,11 +5,9 @@ use std::sync::Arc;
 
 use worth_foundational::facade::{AspectFieldLocator, AspectValue, PortableAspectContractBasis};
 use worth_query_declaration::facade::application_schema::{
-    ApplicationEffectPayload, ApplicationExternalEffectPayload,
+    ApplicationExternalEffectBinding, ApplicationRetainedEffectBinding,
 };
-use worth_query_declaration::facade::portable_identity::{
-    WorthQueryPortableType, WorthQueryPortableTypeIdentity,
-};
+use worth_query_declaration::facade::portable_identity::WorthQueryPortableTypeIdentity;
 use worth_relational::facade::identity::{EntityId, KindId, RelationId};
 use worth_relational::facade::transactions::EntityReference;
 
@@ -34,41 +32,43 @@ struct WorthQueryExternalPayloadProjection {
 }
 
 impl WorthQueryApplicationEmission {
-    pub(in crate::domain_computation::primary_graph::application_attempt) fn new<Payload>(
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn new<Binding>(
         effect: &'static str,
-        payload: Payload,
+        payload: Binding::Value,
     ) -> Self
     where
-        Payload: ApplicationEffectPayload + WorthQueryPortableType,
+        Binding: ApplicationRetainedEffectBinding,
+        Binding::Value: Send + Sync,
     {
-        let retained_bytes = payload.retained_bytes();
+        let retained_bytes = Binding::retained_bytes(&payload);
         Self {
             effect,
-            payload_type: Payload::PORTABLE_TYPE_IDENTITY,
-            payload_type_id: TypeId::of::<Payload>(),
+            payload_type: Binding::IDENTITY,
+            payload_type_id: TypeId::of::<Binding::Value>(),
             payload: Arc::new(payload),
             retained_bytes,
-            measure_retained_bytes: measure_retained_bytes::<Payload>,
+            measure_retained_bytes: measure_retained_bytes::<Binding>,
             external_payload: None,
         }
     }
 
-    pub(in crate::domain_computation::primary_graph::application_attempt) fn new_external<Payload>(
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn new_external<Binding>(
         effect: &'static str,
-        payload: Payload,
+        payload: Binding::Value,
     ) -> Result<Self, ()>
     where
-        Payload: ApplicationExternalEffectPayload + WorthQueryPortableType,
+        Binding: ApplicationExternalEffectBinding,
+        Binding::Value: Send + Sync,
     {
-        let bytes = payload.external_effect_bytes();
+        let bytes = Binding::external_effect_bytes(&payload);
         let encoded_len = u64::try_from(bytes.len()).map_err(|_| ())?;
-        if Payload::MAX_EXTERNAL_BYTES == 0 || encoded_len > Payload::MAX_EXTERNAL_BYTES {
+        if Binding::MAX_EXTERNAL_BYTES == 0 || encoded_len > Binding::MAX_EXTERNAL_BYTES {
             return Err(());
         }
-        let mut emission = Self::new(effect, payload);
+        let mut emission = Self::new::<Binding>(effect, payload);
         emission.external_payload = Some(WorthQueryExternalPayloadProjection {
             bytes: bytes.into(),
-            maximum_bytes: Payload::MAX_EXTERNAL_BYTES,
+            maximum_bytes: Binding::MAX_EXTERNAL_BYTES,
         });
         Ok(emission)
     }
@@ -110,23 +110,31 @@ impl WorthQueryApplicationEmission {
         self.retained_bytes
     }
 
+    pub(super) fn candidate_retained_representation_bytes(&self) -> Option<usize> {
+        usize::try_from(self.retained_bytes).ok()?.checked_add(
+            self.external_payload
+                .as_ref()
+                .map_or(0, |payload| payload.bytes.len()),
+        )
+    }
+
     fn external_payload(&self) -> Option<&WorthQueryExternalPayloadProjection> {
         self.external_payload.as_ref()
     }
 
-    pub(in crate::domain_computation::primary_graph) fn cloned_payload<Schema, Effect, Payload>(
+    pub(in crate::domain_computation::primary_graph) fn payload_ref<Schema, Effect, Payload>(
         &self,
         effect: &worth_query_declaration::facade::application_schema::ApplicationEffectRef<
             Schema,
             Effect,
             Payload,
         >,
-    ) -> Option<Payload>
+    ) -> Option<&Payload>
     where
-        Payload: ApplicationEffectPayload + Clone,
+        Payload: 'static,
     {
         (self.effect == effect.name())
-            .then(|| self.payload.downcast_ref::<Payload>().cloned())
+            .then(|| self.payload.downcast_ref::<Payload>())
             .flatten()
     }
 
@@ -141,13 +149,13 @@ impl WorthQueryApplicationEmission {
     }
 }
 
-fn measure_retained_bytes<Payload>(payload: &(dyn Any + Send + Sync)) -> Option<u64>
+fn measure_retained_bytes<Binding>(payload: &(dyn Any + Send + Sync)) -> Option<u64>
 where
-    Payload: ApplicationEffectPayload,
+    Binding: ApplicationRetainedEffectBinding,
 {
     payload
-        .downcast_ref::<Payload>()
-        .map(ApplicationEffectPayload::retained_bytes)
+        .downcast_ref::<Binding::Value>()
+        .map(Binding::retained_bytes)
 }
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryAdmittedApplicationEmissionBatch {
@@ -248,6 +256,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) enum Worth
         kind: KindId,
         key: String,
         fields: BTreeMap<AspectFieldLocator, AspectValue>,
+        partition: WorthQueryApplicationCreationPartition,
     },
     UpdateEntity {
         entity: String,
@@ -289,6 +298,20 @@ pub struct WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope> {
         u64,
     pub(in crate::domain_computation::primary_graph::application_attempt) emission_retained_bytes_ceiling:
         u64,
+    pub(in crate::domain_computation::primary_graph::application_attempt) conditional_definition:
+        Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
+    pub(in crate::domain_computation::primary_graph::application_attempt) validator_work_admission:
+        super::WorthQueryCandidateValidatorWorkAdmission,
+    pub(in crate::domain_computation::primary_graph::application_attempt) output_correspondence:
+        super::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
+    pub(in crate::domain_computation::primary_graph::application_attempt) retain_output_demand_observation:
+        bool,
+    pub(in crate::domain_computation::primary_graph::application_attempt) retain_client_observation:
+        bool,
+    pub(in crate::domain_computation::primary_graph::application_attempt) producer_required_invariants:
+        &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement],
+    pub(in crate::domain_computation::primary_graph::application_attempt) output_currentness_facts:
+        Option<Arc<[super::super::WorthQueryApplicationObservedFact]>>,
 }
 
 pub struct WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, Scope> {
@@ -305,4 +328,69 @@ pub struct WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, S
     pub(super) keys: BTreeSet<(KindId, String)>,
     pub(super) emission_retained_bytes: u64,
     pub(super) emission_retained_bytes_ceiling: u64,
+    pub(super) conditional_definition:
+        Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
+    pub(super) candidate_reservation: Option<super::WorthQueryCandidateReservation>,
+    pub(super) output_correspondence:
+        super::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
+    pub(super) creation_partition: Option<WorthQueryApplicationCreationPartition>,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(in crate::domain_computation::primary_graph::application_attempt) enum WorthQueryApplicationCreationPartition
+{
+    Issued,
+    Context(worth_relational::facade::identity::PartitionId),
+}
+
+impl WorthQueryApplicationCreationPartition {
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn resolve(
+        self,
+        issued: worth_relational::facade::identity::PartitionId,
+    ) -> worth_relational::facade::identity::PartitionId {
+        match self {
+            Self::Issued => issued,
+            Self::Context(partition) => partition,
+        }
+    }
+}
+
+impl<Schema, Operation, Input, Scope>
+    WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>
+{
+    pub(in crate::domain_computation::primary_graph) fn belongs_to_application(
+        &self,
+        runtime_authority: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+        binding_identity: &worth_query_installation::facade::ApplicationSchemaBindingIdentity,
+    ) -> bool {
+        self.read_set
+            .admission
+            .belongs_to(runtime_authority, binding_identity)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn product_branch(
+        &self,
+    ) -> crate::basis::WorthQueryProductBranch {
+        self.read_set.lease.product().product_branch()
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn with_output_demand_observation(
+        mut self,
+    ) -> Self {
+        self.retain_output_demand_observation = true;
+        self
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn with_client_observation(mut self) -> Self {
+        self.retain_client_observation = true;
+        self
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn with_producer_required_invariants(
+        mut self,
+        requirements: &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement],
+    ) -> Self {
+        self.producer_required_invariants = requirements;
+        self
+    }
 }

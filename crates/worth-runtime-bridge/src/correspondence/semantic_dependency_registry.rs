@@ -178,24 +178,16 @@ impl AdmittedSemanticDependencyRegistry {
         })
     }
 
+    pub(crate) fn reconstruct_derived_indexes(&self) -> Result<Self, BridgeBuildError> {
+        Self::freeze(self.authoritative.clone())
+    }
+
     pub(crate) fn authoritative_count(&self) -> usize {
         self.authoritative.len()
     }
 
     pub(crate) fn signal_graph_instance_id(&self) -> Option<u64> {
         self.signal_graph_instance_id
-    }
-
-    pub(crate) fn rebind_to_graph(
-        &self,
-        graph: &worth_signal::facade::SignalGraph,
-    ) -> Option<Self> {
-        let registrations = self
-            .authoritative
-            .iter()
-            .map(|registration| registration.rebind_to_graph(graph))
-            .collect::<Option<Vec<_>>>()?;
-        Self::freeze(registrations).ok()
     }
 
     #[cfg(test)]

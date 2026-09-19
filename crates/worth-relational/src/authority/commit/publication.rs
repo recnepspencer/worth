@@ -192,6 +192,8 @@ fn diff_kind_order(
         crate::authority::commit::preparation::packets::diff::DiffFragmentKind::Updated => 1,
         crate::authority::commit::preparation::packets::diff::DiffFragmentKind::Deleted => 2,
         crate::authority::commit::preparation::packets::diff::DiffFragmentKind::RetainedForAudit => 3,
+        crate::authority::commit::preparation::packets::diff::DiffFragmentKind::MaterializationSuspended => 4,
+        crate::authority::commit::preparation::packets::diff::DiffFragmentKind::Rematerialized => 5,
     }
 }
 

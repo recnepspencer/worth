@@ -18,8 +18,19 @@ pub(super) fn resolve_exact_committed_aftermath(
     let Some(pending) = pending else {
         return Ok(None);
     };
+    let outcome_identity = receipt.application_outcome_identity().ok_or(
+        crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial::Unavailable,
+    )?;
     provider
-        .resolve_aftermath_causality(pending, receipt.application_outcome_identity())
+        .resolve_aftermath_causality_at_basis(
+            receipt
+                .product_publication()
+                .new_product_head()
+                .basis()
+                .relational_basis(),
+            pending,
+            Some(outcome_identity),
+        )
         ?
         .filter(|causality| causality.child() == receipt.commit_reference())
         .map(Some)

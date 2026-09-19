@@ -40,7 +40,7 @@ fn complete_history_carriage_matches_reconstruction_and_incomplete_coverage_fall
     let carried = complete
         .observe()
         .recent_execution_history_diagnostics()
-        .back()
+        .last()
         .cloned()
         .expect("complete execution should retain its carried history");
     let reconstructed = complete
@@ -72,7 +72,7 @@ fn complete_history_carriage_matches_reconstruction_and_incomplete_coverage_fall
     let retained_fallback = incomplete
         .observe()
         .recent_execution_history_diagnostics()
-        .back()
+        .last()
         .cloned()
         .expect("incomplete execution should retain reconstructed history");
     let reconstructed_fallback = incomplete

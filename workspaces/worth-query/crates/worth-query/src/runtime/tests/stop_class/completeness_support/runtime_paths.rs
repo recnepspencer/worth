@@ -3,8 +3,7 @@ use crate::runtime::async_result_state::runtime_async_checkpoint_label_identity;
 
 pub(in super::super) fn intent_commit_denied_error() -> WorthQueryRuntimeError {
     let attempted = std::rc::Rc::new(std::cell::Cell::new(0));
-    let mut runtime = WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
         .snapshot_identity(TestSnapshotIdentityAdapter)
@@ -90,8 +89,7 @@ pub(in super::super) fn intent_execution_routing_failed_error() -> WorthQueryRun
 }
 
 pub(in super::super) fn preview_promotion_write_failed_error() -> WorthQueryRuntimeError {
-    let mut runtime = WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
         .snapshot_identity(TestSnapshotIdentityAdapter)
@@ -123,8 +121,7 @@ pub(in super::super) fn preview_promotion_write_failed_error() -> WorthQueryRunt
 }
 
 pub(in super::super) fn preview_promotion_stale_basis_error() -> WorthQueryRuntimeError {
-    let mut runtime = WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
         .snapshot_identity(DriftingSnapshotIdentityAdapter::default())
@@ -162,8 +159,7 @@ pub(in super::super) fn preview_promotion_stale_basis_error() -> WorthQueryRunti
 pub(in super::super) fn preview_promotion_atomic_batch_unsupported_error() -> WorthQueryRuntimeError
 {
     let attempted_writes = std::rc::Rc::new(std::cell::Cell::new(0));
-    let mut runtime = WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
         .snapshot_identity(TestSnapshotIdentityAdapter)

@@ -1,3 +1,4 @@
+use super::DiagnosticHistory;
 use crate::data::aspect::Aspect;
 use crate::data::handle::NodeId;
 use crate::data::output::ChangedRegion;
@@ -7,14 +8,17 @@ use crate::data::proof::{
 use crate::diagnostics::epochs::EventEpochSummary;
 use crate::diagnostics::facts::{ExplanationFact, ProvenanceFact};
 use crate::diagnostics::failure::{FailureSummary, RollbackDiagnostic};
-use crate::diagnostics::flow::{ChangeInputSummary, FlowSummary, InvalidationSummary};
+use crate::diagnostics::flow::{
+    ChangeInputSummary, FlowSummary, InvalidationSummary, RetainedFlowSummaryView,
+};
 use crate::diagnostics::policy::FrontierTracingPolicy;
 use crate::diagnostics::profile::DiagnosticsTier;
 use crate::diagnostics::summary::{ExecutionHistorySummary, GraphSummary};
 use crate::logic::transaction::ObservationBoundarySummary;
 use crate::runtime_policy::{InstalledSignalRuntimePolicy, SignalRuntimePolicy};
+use std::sync::Arc;
 
-use super::{DiagnosticsState, PendingFlowInput};
+use super::{DiagnosticsState, PendingFlowInput, TransactionFlowScope};
 
 impl DiagnosticsState {
     pub(crate) fn record_observation_activation(&mut self, surface_mask: u8) {
@@ -57,38 +61,38 @@ impl DiagnosticsState {
             self.installed_frontier_tracing_policy,
             FrontierTracingPolicy::SummaryOnly
         ) {
-            self.latest_invalidation_trace_records.clear();
+            self.latest_invalidation_trace_records = Arc::new(Vec::new());
         }
         self.trim_history();
     }
 
-    pub fn latest_flow(&self) -> Option<&FlowSummary> {
-        self.latest_flow.as_ref()
+    pub fn latest_flow(&self) -> Option<RetainedFlowSummaryView<'_>> {
+        self.latest_flow.as_ref().map(super::RetainedFlow::view)
     }
 
     pub fn latest_failure(&self) -> Option<&FailureSummary> {
-        self.latest_failure.as_ref()
+        self.latest_failure.as_deref()
     }
 
     pub fn latest_rollback(&self) -> Option<&RollbackDiagnostic> {
-        self.latest_rollback.as_ref()
+        self.latest_rollback.as_deref()
     }
 
     pub fn latest_observation(&self) -> Option<&ObservationBoundarySummary> {
-        self.latest_observation.as_ref()
+        self.latest_observation.as_deref()
     }
 
     pub fn latest_graph_summary(&self) -> Option<&GraphSummary> {
-        self.latest_graph_summary.as_ref()
+        self.latest_graph_summary.as_deref()
     }
 
     pub fn pending_graph_summary(&self) -> Option<&GraphSummary> {
-        self.pending_graph_summary.as_ref()
+        self.pending_graph_summary.as_deref()
     }
 
     #[cfg(test)]
     pub fn latest_frontier_execution(&self) -> Option<&FrontierDiagnosticsSidecar> {
-        self.latest_frontier_execution.as_ref()
+        self.latest_frontier_execution.as_deref()
     }
 
     pub fn latest_invalidation_planning_estimate(&self) -> Option<&InvalidationPlanningEstimate> {
@@ -99,15 +103,19 @@ impl DiagnosticsState {
         &self.latest_invalidation_trace_records
     }
 
-    pub fn recent_history(&self) -> &std::collections::VecDeque<ExecutionHistorySummary> {
+    pub fn recent_history(&self) -> &DiagnosticHistory<ExecutionHistorySummary> {
         &self.recent_history
     }
 
-    pub fn explanation_facts(&self) -> &std::collections::BTreeMap<NodeId, ExplanationFact> {
+    pub fn explanation_facts(
+        &self,
+    ) -> &crate::data::persistent_ord_map::PersistentOrdMap<NodeId, ExplanationFact> {
         &self.explanation_facts
     }
 
-    pub fn provenance_facts(&self) -> &std::collections::BTreeMap<NodeId, ProvenanceFact> {
+    pub fn provenance_facts(
+        &self,
+    ) -> &crate::data::persistent_ord_map::PersistentOrdMap<NodeId, ProvenanceFact> {
         &self.provenance_facts
     }
 
@@ -117,18 +125,20 @@ impl DiagnosticsState {
         aspect: Aspect,
         changed_regions: &[ChangedRegion],
         causality_kind: Option<String>,
+        performed_baseline: crate::data::telemetry::SignalInvalidationRealizedCounters,
     ) {
         let pending = self.pending_input.get_or_insert_with(|| PendingFlowInput {
             changed_nodes: Default::default(),
             changed_aspects: Default::default(),
             changed_region_count: 0,
             causality_kind: None,
+            performed_baseline,
         });
         pending.changed_nodes.insert(node);
         pending.changed_aspects.insert(aspect.id());
         pending.changed_region_count += changed_regions.len() as u32;
         if pending.causality_kind.is_none() {
-            pending.causality_kind = causality_kind;
+            pending.causality_kind = causality_kind.map(Arc::new);
         }
     }
 
@@ -139,12 +149,12 @@ impl DiagnosticsState {
         trace_records: Vec<InvalidationTraceRecord>,
     ) {
         self.latest_invalidation_planning_estimate = Some(planning_estimate);
-        self.latest_frontier_execution = Some(summary);
-        self.latest_invalidation_trace_records = trace_records;
+        self.latest_frontier_execution = Some(Arc::new(summary));
+        self.latest_invalidation_trace_records = Arc::new(trace_records);
     }
 
     pub fn set_pending_graph_summary(&mut self, summary: GraphSummary) {
-        self.pending_graph_summary = Some(summary);
+        self.pending_graph_summary = Some(Arc::new(summary));
     }
 
     pub fn complete_flow_without_graph_summary(
@@ -152,12 +162,98 @@ impl DiagnosticsState {
         flow: FlowSummary,
         history: ExecutionHistorySummary,
     ) {
-        self.latest_flow = Some(flow);
+        self.latest_flow = Some(flow.into());
         self.latest_graph_summary = None;
-        self.recent_history.push_back(history);
+        self.recent_history
+            .push_back(history)
+            .expect("diagnostic history exhausted its private position space");
         self.trim_history();
-        self.pending_input = None;
+        match self.transaction_flow_scope {
+            TransactionFlowScope::Closed => self.pending_input = None,
+            // The change input stays pending so later executions of the
+            // same transaction extend this flow against the same change and
+            // a change noted later in the transaction joins it.
+            TransactionFlowScope::Open | TransactionFlowScope::OpenWithFlow => {
+                self.transaction_flow_scope = TransactionFlowScope::OpenWithFlow;
+            }
+        }
         self.pending_graph_summary = None;
+    }
+
+    /// Whether the open transaction has already recorded its flow, so the
+    /// next execution extends `latest_flow` instead of replacing it.
+    pub fn extends_open_transaction_flow(&self) -> bool {
+        matches!(
+            self.transaction_flow_scope,
+            TransactionFlowScope::OpenWithFlow
+        ) && self.latest_flow.is_some()
+    }
+
+    /// Folds a later execution of the open transaction into its flow: the
+    /// change and invalidation are refreshed from the still-pending input,
+    /// planning and execution work are added, cause samples are appended
+    /// within the detail limit, and the explanation is kept from whichever
+    /// execution first produced one. History stays one entry per execution.
+    pub fn extend_flow_with_execution(
+        &mut self,
+        change: ChangeInputSummary,
+        invalidation: InvalidationSummary,
+        planning: crate::diagnostics::flow::PlanningSummary,
+        precompute: crate::diagnostics::flow::PrecomputeSummary,
+        apply: crate::diagnostics::flow::ApplySummary,
+        cause_samples: Vec<crate::diagnostics::flow::FlowCauseSample>,
+        explanation: Option<crate::diagnostics::summary::ExplanationSummary>,
+        history: ExecutionHistorySummary,
+    ) {
+        let detail_limit = self.installed_retention_budget.detail_limit.get();
+        let flow = self
+            .latest_flow
+            .as_mut()
+            .expect("extend_flow_with_execution requires a recorded flow");
+        flow.extend_with_execution(
+            change,
+            invalidation,
+            planning,
+            precompute,
+            apply,
+            cause_samples,
+            explanation,
+            detail_limit,
+        );
+        self.latest_graph_summary = None;
+        self.recent_history
+            .push_back(history)
+            .expect("diagnostic history exhausted its private position space");
+        self.trim_history();
+        self.pending_graph_summary = None;
+    }
+
+    /// A `SignalTransaction` began. A flow recorded by an earlier transaction
+    /// that never finalized (dropped without commit or rollback) is closed
+    /// here so its change input cannot leak into this transaction's flow.
+    pub(crate) fn open_transaction_flow_scope(&mut self) {
+        if matches!(
+            self.transaction_flow_scope,
+            TransactionFlowScope::OpenWithFlow
+        ) {
+            self.pending_input = None;
+        }
+        self.transaction_flow_scope = TransactionFlowScope::Open;
+    }
+
+    /// The transaction finalized (commit, rollback, or failure). A change
+    /// input whose flow was recorded is consumed; one that never executed
+    /// stays pending for the execution that follows, exactly as a change
+    /// noted outside any transaction does.
+    pub(crate) fn close_transaction_flow_scope(&mut self) {
+        if matches!(
+            self.transaction_flow_scope,
+            TransactionFlowScope::OpenWithFlow
+        ) {
+            self.pending_input = None;
+            self.pending_graph_summary = None;
+        }
+        self.transaction_flow_scope = TransactionFlowScope::Closed;
     }
 
     pub fn refresh_retained_views(
@@ -165,8 +261,10 @@ impl DiagnosticsState {
         history: ExecutionHistorySummary,
         graph_summary: GraphSummary,
     ) {
-        self.latest_graph_summary = Some(graph_summary);
-        self.recent_history.push_back(history);
+        self.latest_graph_summary = Some(Arc::new(graph_summary));
+        self.recent_history
+            .push_back(history)
+            .expect("diagnostic history exhausted its private position space");
         self.trim_history();
         self.pending_graph_summary = None;
     }
@@ -178,19 +276,20 @@ impl DiagnosticsState {
         {
             return;
         }
-        self.latest_failure = Some(failure);
+        self.latest_failure = Some(Arc::new(failure));
     }
 
     pub fn record_rollback(&mut self, rollback: RollbackDiagnostic) {
         if self.installed_retention_budget.retain_history_details {
-            self.latest_rollback = Some(rollback);
+            self.latest_rollback = Some(Arc::new(rollback));
         }
     }
 
     pub fn record_observation(&mut self, observation: ObservationBoundarySummary) {
-        self.latest_observation = Some(observation.clone());
+        let observation = Arc::new(observation);
+        self.latest_observation = Some(Arc::clone(&observation));
         if let Some(flow) = &mut self.latest_flow {
-            flow.observation = Some(observation);
+            flow.record_observation(observation);
         }
     }
 
@@ -199,12 +298,20 @@ impl DiagnosticsState {
         self.pending_graph_summary = None;
         self.latest_frontier_execution = None;
         self.latest_invalidation_planning_estimate = None;
-        self.latest_invalidation_trace_records.clear();
+        self.latest_invalidation_trace_records = Arc::new(Vec::new());
+        // With no pending input there is nothing for a later execution of
+        // the open transaction to extend against.
+        if matches!(
+            self.transaction_flow_scope,
+            TransactionFlowScope::OpenWithFlow
+        ) {
+            self.transaction_flow_scope = TransactionFlowScope::Open;
+        }
     }
 
     pub fn attach_event_epochs_to_latest_flow(&mut self, event_epochs: Vec<EventEpochSummary>) {
         if let Some(flow) = &mut self.latest_flow {
-            flow.event_epochs = event_epochs;
+            flow.attach_event_epochs(event_epochs);
         }
     }
 
@@ -224,7 +331,15 @@ impl DiagnosticsState {
         }
     }
 
-    pub fn pending_change_summary(&self) -> Option<(ChangeInputSummary, InvalidationSummary)> {
+    /// Change input and invalidation summary for the flow in progress.
+    ///
+    /// `performed_now` is the performed invalidation counter snapshot at flow
+    /// completion; the direct-hop fields of the invalidation summary are the
+    /// delta from the baseline captured with the first change input.
+    pub fn pending_change_summary(
+        &self,
+        performed_now: crate::data::telemetry::SignalInvalidationRealizedCounters,
+    ) -> Option<(ChangeInputSummary, InvalidationSummary)> {
         self.pending_input.as_ref().map(|pending| {
             (
                 ChangeInputSummary::new(
@@ -236,14 +351,28 @@ impl DiagnosticsState {
                         .map(Aspect::new)
                         .collect(),
                     pending.changed_region_count,
-                    pending.causality_kind.clone(),
+                    pending.causality_kind.as_deref().cloned(),
                 ),
                 self.latest_frontier_execution
-                    .as_ref()
+                    .as_deref()
                     .map(InvalidationSummary::from_frontier_execution)
-                    .unwrap_or_else(InvalidationSummary::empty_frontier),
+                    .unwrap_or_else(InvalidationSummary::empty_frontier)
+                    .with_performed_direct_hop(pending.performed_baseline, performed_now),
             )
         })
+    }
+
+    /// Records an execution that carried no change input and executed no
+    /// task (a clean read). Its history entry is kept, but the latest flow is
+    /// left as the last execution that actually changed or computed
+    /// something, so `latest_flow()` never reports an empty change for a
+    /// transaction that a later clean read merely followed.
+    pub fn record_noop_execution_history(&mut self, history: ExecutionHistorySummary) {
+        self.recent_history
+            .push_back(history)
+            .expect("diagnostic history exhausted its private position space");
+        self.trim_history();
+        self.pending_graph_summary = None;
     }
 
     pub fn has_pending_change_input(&self) -> bool {

@@ -111,24 +111,28 @@ fn assert_cleanup_releases_custody(
     let work = owner
         .cleanup_recovery(effects)
         .expect("the retained record is released by its own caller capability");
+    assert_eq!(work.len(), 1);
     assert_eq!(
-        work,
-        vec![OwnerRetirementWork::RelationalBranchRetirement {
-            target: BranchId("relational-branch-partial".to_owned()),
-        }],
-        "cleanup returns the forked owner's retirement work, typed and exact"
+        work[0].component(),
+        crate::branch::CustodyComponent::Relational
     );
+    assert_eq!(work[0].target_name(), "relational-branch-partial");
     assert_eq!(
         owner.state.custody.installed(),
         0,
         "the occurrence's custody is empty once the cleanup drained it"
     );
+    let mut second_drain = owner
+        .state
+        .custody
+        .reserve_retirement_work(&destination, incarnation)
+        .expect("an empty retirement output needs no allocation");
+    owner
+        .state
+        .custody
+        .drain_retirement_work_into(&destination, incarnation, &mut second_drain);
     assert!(
-        owner
-            .state
-            .custody
-            .take_for_incarnation(&destination, incarnation)
-            .is_empty(),
+        second_drain.is_empty(),
         "a second drain of the same occurrence finds nothing left to retire"
     );
     assert_eq!(owner.recovery_record_count(), 0);
@@ -177,13 +181,12 @@ fn releasing_the_record_by_handle_drains_the_same_fork_custody() {
         .cleanup_recovery_handle(&handle)
         .expect("a settled record with no live capability is released by its handle");
 
+    assert_eq!(work.len(), 1);
     assert_eq!(
-        work,
-        vec![OwnerRetirementWork::RelationalBranchRetirement {
-            target: BranchId("relational-branch-handle".to_owned()),
-        }],
-        "the handle release returns the forked owner's retirement work, typed and exact"
+        work[0].component(),
+        crate::branch::CustodyComponent::Relational
     );
+    assert_eq!(work[0].target_name(), "relational-branch-handle");
     assert_eq!(
         owner.state.custody.installed(),
         0,
@@ -246,12 +249,10 @@ fn assert_exact_fork_custody(owner: &TestOwner) {
         "the denied Signal leg charges nothing and the performed Relational leg charges once"
     );
     assert_eq!(
-        records[0].target(),
-        &crate::branch::ComponentBranchTarget::Relational(BranchId(
-            "relational-branch-fork-loss".to_owned()
-        )),
-        "custody names the exact destination the performed fork created"
+        records[0].component(),
+        crate::branch::CustodyComponent::Relational
     );
+    assert_eq!(records[0].target().name(), "relational-branch-fork-loss");
     assert_eq!(
         records[0].product_branch(),
         &crate::identity::ProductBranchIdentity::issued(

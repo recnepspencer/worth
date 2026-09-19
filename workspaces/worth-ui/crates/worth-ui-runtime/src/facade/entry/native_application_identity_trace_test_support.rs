@@ -15,6 +15,21 @@ use crate::facade::WorthUiPreparedMountedApplicationReplacement;
 
 pub(super) type CandidateProvenanceOracle = Vec<PreparedIdentityTraceOracle>;
 
+pub(super) fn install_bound_surface_geometry(shell: &mut WorthUiNativeApplicationShell) {
+    let surfaces = shell
+        .session
+        .mounted
+        .view()
+        .surface_bindings()
+        .iter()
+        .map(|binding| binding.semantic_surface_identity())
+        .collect::<Vec<_>>();
+    for surface in surfaces {
+        crate::facade::entry::mounted_occurrence_geometry_test_support::
+            refresh_nonoverlapping_surface_geometry(&mut shell.session, surface);
+    }
+}
+
 pub(super) fn frame_receipt(outcome: UiMountedFrameOutcome) -> UiMountedFramePublicationReceipt {
     match outcome {
         UiMountedFrameOutcome::Published(receipt)
@@ -271,6 +286,8 @@ pub(super) fn remount_presented_instance(
         .session
         .mount_instance(handle, surface)
         .expect("the same graph node should remount");
+    crate::facade::entry::mounted_occurrence_geometry_test_support::
+        refresh_nonoverlapping_surface_geometry(&mut shell.session, surface);
     let successor = frame_receipt(completed(shell.present_frame(200, 2)));
     (successor, successor_instance, predecessor_incarnation)
 }

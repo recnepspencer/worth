@@ -57,6 +57,32 @@ where
             Some(self.phase_proof.payload().identity()),
             operation_phase_basis(&self.phase_proof).clone(),
         );
+        let terminal = match self
+            .running
+            .take()
+            .expect("validated direct execution owns its managed run")
+            .completed()
+        {
+            Ok(terminal) => terminal,
+            Err(rejection) => {
+                let detail = rejection.denial().detail().to_owned();
+                return self.managed_run_denied(detail, rejection.into_running());
+            }
+        };
+        let managed_cleanup = match terminal.cleanup() {
+            Ok(receipt) => receipt,
+            Err(failure) => {
+                return TransitionOutcome::Denied(
+                    WorthQueryBoundExecutionDenial::new(
+                        WorthQueryBoundExecutionDenialKind::GraphProvider,
+                        "managed direct cleanup requires owner retry",
+                        self.counters,
+                    )
+                    .with_graph_receipts(self.graph_receipts)
+                    .with_managed_cleanup(Err(failure)),
+                );
+            }
+        };
         TransitionOutcome::Success(WorthQueryExecutedDomainOperation {
             bound: self.bound,
             output: self.output,
@@ -67,18 +93,43 @@ where
             execution_snapshot: self.snapshot,
             phase_proof,
             conditional: self.conditional,
-            resource_attempt: self.resource_attempt,
+            resources: self.resources,
+            managed_cleanup,
         })
     }
 
     fn denied(
-        self,
+        mut self,
         denial: super::super::super::WorthQueryCompletedDomainEvidenceAdmissionDenial,
     ) -> WorthQueryBoundExecutionOutcome<D, O, F, L, Output> {
         let kind = WorthQueryBoundExecutionDenialKind::DomainEvidence(denial.kind());
+        let cleanup = self
+            .running
+            .take()
+            .expect("validated direct execution owns its managed run")
+            .abandon()
+            .cleanup();
         TransitionOutcome::Denied(
             WorthQueryBoundExecutionDenial::new(kind, denial.subject(), self.counters)
-                .with_graph_receipts(self.graph_receipts),
+                .with_graph_receipts(self.graph_receipts)
+                .with_managed_cleanup(cleanup),
+        )
+    }
+
+    fn managed_run_denied(
+        self,
+        detail: String,
+        running: worth_query_execution::facade::runtime::WorthQueryRunningDirectRun,
+    ) -> WorthQueryBoundExecutionOutcome<D, O, F, L, Output> {
+        let cleanup = running.abandon().cleanup();
+        TransitionOutcome::Denied(
+            WorthQueryBoundExecutionDenial::new(
+                WorthQueryBoundExecutionDenialKind::GraphProvider,
+                detail,
+                self.counters,
+            )
+            .with_graph_receipts(self.graph_receipts)
+            .with_managed_cleanup(cleanup),
         )
     }
 }

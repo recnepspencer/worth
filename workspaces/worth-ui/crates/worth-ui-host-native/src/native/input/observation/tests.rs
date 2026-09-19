@@ -238,10 +238,7 @@ fn button_without_a_cursor_witness_is_a_typed_stop() {
 fn retention_over_capacity_is_terminal_and_does_not_overwrite() {
     let mut state = presented_state();
     for index in 0..17 {
-        state.observe_window_event(&WindowEvent::CursorMoved {
-            device_id: DeviceId::dummy(),
-            position: PhysicalPosition::new(index as f64, 0.0),
-        });
+        state.observe_window_event(&WindowEvent::Focused(index % 2 == 0));
     }
     assert_eq!(
         state.report().terminal_stop(),

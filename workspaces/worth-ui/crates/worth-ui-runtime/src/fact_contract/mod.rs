@@ -6,8 +6,8 @@ pub use produced::{
     UiAuthoredChangedFact, UiAuthoredFactKind, UiAuthoredFactSelector,
     UiCommittedPortalAnchorChangedFact, UiCommittedScrollExtentChangedFact,
     UiHostDeviceScaleChangedFact, UiHostViewportChangedFact, UiIntentPostureChangedFact,
-    UiIntentPostureKind, UiIntentPostureReference, UiMeasurementChangedFact, UiProducedFact,
-    UiProducedFactContract, UiProducedFactFamily, UiProducedFactOwner, UiProducedFactResetPosture,
-    UiQueryChangedFact, UiQueryChangedFactKind, UiQueryIncrementalChangedFact,
-    UiQueryResetChangedFact,
+    UiIntentPostureKind, UiIntentPostureReference, UiMeasurementChangedFact,
+    UiPointerPresenceTargetChangedFact, UiProducedFact, UiProducedFactContract,
+    UiProducedFactFamily, UiProducedFactOwner, UiProducedFactResetPosture, UiQueryChangedFact,
+    UiQueryChangedFactKind, UiQueryIncrementalChangedFact, UiQueryResetChangedFact,
 };

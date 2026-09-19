@@ -49,40 +49,55 @@ impl WorthServerQueryWorkspaceProvider for RemaskWorkspaceProvider {
             .request_context()
             .workspace_target()
             .workspace_id();
-        let mut workspace = WorthQueryRuntime::builder()
-            .backend(RemaskRuntimeBackend::new(
-                self.support_profile.clone(),
-                self.projection.clone(),
-            ))
-            .build()
-            .map_err(|error| {
-                WorthServerQueryWorkspaceBindingError::new("runtime_build", format!("{error:?}"))
-            })?
-            .workspace(workspace_id)
-            .map_err(|error| {
-                WorthServerQueryWorkspaceBindingError::new("workspace_bind", format!("{error:?}"))
-            })?;
+        let (product_source, product_bridge) =
+            worth_query::facade::consumer_kit::in_memory_test_product_world_installation()
+                .map_err(|error| {
+                    WorthServerQueryWorkspaceBindingError::new("product_world", error.to_string())
+                })?;
+        let mut workspace = WorthQueryRuntime::builder(
+            worth_query::facade::consumer_kit::in_memory_test_product_world_resources(),
+        )
+        .backend(RemaskRuntimeBackend::new(
+            self.support_profile.clone(),
+            self.projection.clone(),
+            product_source,
+        ))
+        .installed_product_bridge(
+            product_bridge,
+            worth_query::facade::runtime::WorthQueryConditionalExecutionResources::development(),
+        )
+        .build()
+        .map_err(|error| {
+            WorthServerQueryWorkspaceBindingError::new("runtime_build", format!("{error:?}"))
+        })?
+        .workspace(workspace_id)
+        .map_err(|error| {
+            WorthServerQueryWorkspaceBindingError::new("workspace_bind", format!("{error:?}"))
+        })?;
         install_requested_named_read(&mut workspace, request)?;
         Ok(workspace)
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 struct RemaskRuntimeBackend {
     support_profile: WorthQueryRuntimeSupportProfile,
     projection: WorthQueryRuntimeRemaskProjection,
     declared_live_views: std::collections::BTreeSet<String>,
+    product_source: worth_query::facade::runtime::WorthQueryRelationalSourceOwner,
 }
 
 impl RemaskRuntimeBackend {
     fn new(
         support_profile: WorthQueryRuntimeSupportProfile,
         projection: WorthQueryRuntimeRemaskProjection,
+        product_source: worth_query::facade::runtime::WorthQueryRelationalSourceOwner,
     ) -> Self {
         Self {
             support_profile,
             projection,
             declared_live_views: std::collections::BTreeSet::new(),
+            product_source,
         }
     }
 }
@@ -92,6 +107,20 @@ impl worth_query::facade::runtime::WorthQuerySettlementRecoveryBackend for Remas
 impl worth_query::facade::runtime::WorthQueryMergeSnapshotOwner for RemaskRuntimeBackend {}
 
 impl WorthQueryRuntimeBackend for RemaskRuntimeBackend {
+    fn prepare_product_source(
+        &self,
+    ) -> Result<
+        worth_query::facade::runtime::WorthQueryProductRelationalInstallation,
+        worth_query::facade::runtime::WorthQueryProductSourceDenial,
+    > {
+        let branch = self
+            .product_source
+            .with_runtime(|runtime| runtime.main_branch_identity());
+        self.product_source
+            .prepare_product_source(&branch)
+            .map_err(worth_query::facade::runtime::WorthQueryProductSourceDenial::Basis)
+    }
+
     fn support_profile(&self) -> WorthQueryRuntimeSupportProfile {
         self.support_profile.clone()
     }

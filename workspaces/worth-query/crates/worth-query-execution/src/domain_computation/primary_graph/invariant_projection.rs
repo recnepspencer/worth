@@ -4,17 +4,19 @@ mod locked_reader;
 mod operation_projection_denial;
 mod operation_reader;
 mod realized_scope;
+mod relation_identity;
 mod traversal;
 mod work;
 
 use std::cmp::Ordering;
+use std::collections::BTreeMap;
 use std::marker::PhantomData;
 use std::sync::Arc;
 
 use worth_query_installation::facade::{
-    ApplicationEntityRef, ApplicationFieldRef, ApplicationFieldUnit, ApplicationRelationRef,
-    ApplicationSchema, ApplicationSchemaBindingIdentity, TypedApplicationReadableValue,
-    WritePosture,
+    ApplicationEntityRef, ApplicationFieldRef, ApplicationFieldUnit,
+    ApplicationReadableScalarValueBinding, ApplicationRelationRef, ApplicationSchema,
+    ApplicationSchemaBindingIdentity, DeclaredApplicationFieldValue, WritePosture,
 };
 use worth_relational::facade::identity::{EntityId, KindId, RelationId, VersionId};
 use worth_relational::facade::storage::RecordLifecycleState;
@@ -25,6 +27,7 @@ use super::{
     WorthQueryPrimaryGraphIntegrationHandle,
 };
 use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
+use crate::domain_computation::primary_graph::application_attempt;
 
 pub use admission_denial::{
     WorthQueryInvariantProjectionDenial, WorthQueryInvariantProjectionDenialKind,
@@ -43,9 +46,11 @@ pub use operation_projection_denial::{
 pub use operation_reader::{
     WorthQueryApplicationOperationInvariantProjectionReader,
     WorthQueryApplicationOperationInvariantProjectionSnapshot,
-    WorthQueryCompletedOperationInvariantProjection,
-    WorthQueryInspectedOperationInvariantProjection, WorthQueryInvariantDecisionPlanDenial,
-    WorthQueryInvariantDecisionPlanDenialKind,
+    WorthQueryCompletedOperationInvariantProjection, WorthQueryCurrentOutputDenial,
+    WorthQueryCurrentOutputDenialKind, WorthQueryCurrentOutputRole,
+    WorthQueryCurrentOutputSelection, WorthQueryInspectedOperationInvariantProjection,
+    WorthQueryInvariantDecisionPlanDenial, WorthQueryInvariantDecisionPlanDenialKind,
+    WorthQueryPriorOutputFamilyMember,
 };
 pub(in crate::domain_computation::primary_graph) use realized_scope::WorthQueryRealizedProjectionScope;
 pub use work::WorthQueryInvariantProjectionWork;
@@ -77,6 +82,8 @@ pub struct WorthQueryApplicationInvariantProjectionSnapshot<Schema> {
     binding_identity: ApplicationSchemaBindingIdentity,
     authority_identity: u64,
     realized_scope: WorthQueryRealizedProjectionScope,
+    dependent_source_facts:
+        BTreeMap<String, application_attempt::WorthQueryApplicationObservedFact>,
     _schema: PhantomData<fn() -> Schema>,
 }
 
@@ -95,6 +102,12 @@ pub struct WorthQueryInvariantEntityIdentity<Schema, Entity> {
 pub struct WorthQueryInvariantMutationTarget<Schema, Entity> {
     pub(in crate::domain_computation::primary_graph) entity_id: EntityId,
     pub(in crate::domain_computation::primary_graph) entity: Arc<str>,
+    pub(in crate::domain_computation::primary_graph) runtime_authority:
+        WorthQueryRuntimeAuthorityIdentity,
+    pub(in crate::domain_computation::primary_graph) binding_identity:
+        ApplicationSchemaBindingIdentity,
+    pub(in crate::domain_computation::primary_graph) admission_identity:
+        crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity,
     _marker: PhantomData<fn() -> (Schema, Entity)>,
 }
 
@@ -170,6 +183,7 @@ where
             binding_identity: self.binding_identity.clone(),
             authority_identity: self.authority_identity,
             realized_scope: WorthQueryRealizedProjectionScope::default(),
+            dependent_source_facts: BTreeMap::new(),
             _schema: PhantomData,
         })
     }
@@ -213,7 +227,8 @@ where
         field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
     ) -> Option<Value>
     where
-        Value: TypedApplicationReadableValue,
+        Field: DeclaredApplicationFieldValue<Value = Value>,
+        Field::Binding: ApplicationReadableScalarValueBinding,
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
@@ -236,7 +251,7 @@ where
                     &locator,
                 )
             })
-            .and_then(|value| Value::from_foundational_value(&value))
+            .and_then(|value| Field::Binding::decode(&value).ok())
     }
 
     pub fn relations<Relation, From, To>(
@@ -284,6 +299,7 @@ where
 
     pub(in crate::domain_computation::primary_graph) fn into_lease(
         mut self,
+        product: crate::basis::WorthQueryProductBranchLease,
     ) -> super::application_attempt::snapshot_lease::WorthQueryApplicationSnapshotLease {
         let basis = self
             .basis
@@ -298,17 +314,27 @@ where
             Arc::clone(&self.layout),
             basis,
             snapshot,
+            product,
         )
     }
 
     pub(in crate::domain_computation::primary_graph) fn into_lease_and_realized_scope(
         mut self,
+        product: crate::basis::WorthQueryProductBranchLease,
     ) -> (
         super::application_attempt::snapshot_lease::WorthQueryApplicationSnapshotLease,
         WorthQueryRealizedProjectionScope,
+        Vec<application_attempt::WorthQueryApplicationObservedFact>,
     ) {
         let realized_scope = std::mem::take(&mut self.realized_scope);
-        (self.into_lease(), realized_scope)
+        let dependent_source_facts = std::mem::take(&mut self.dependent_source_facts)
+            .into_values()
+            .collect();
+        (
+            self.into_lease(product),
+            realized_scope,
+            dependent_source_facts,
+        )
     }
 
     fn snapshot(&self) -> &worth_relational::facade::snapshots::SnapshotHandle {
@@ -319,6 +345,10 @@ where
 }
 
 impl<Schema, Entity> WorthQueryInvariantEntityIdentity<Schema, Entity> {
+    pub const fn entity_id(&self) -> EntityId {
+        self.entity_id
+    }
+
     pub fn entity_name(&self) -> &str {
         &self.entity
     }
@@ -355,20 +385,6 @@ impl<Schema, Entity> Ord for WorthQueryInvariantEntityIdentity<Schema, Entity> {
                 other.kind,
                 other.entity.as_ref(),
             ))
-    }
-}
-
-impl<Schema, Relation, From, To> WorthQueryInvariantRelation<Schema, Relation, From, To> {
-    pub const fn from(&self) -> &WorthQueryInvariantEntityIdentity<Schema, From> {
-        &self.from
-    }
-
-    pub const fn to(&self) -> &WorthQueryInvariantEntityIdentity<Schema, To> {
-        &self.to
-    }
-
-    pub const fn relation_id(&self) -> RelationId {
-        self.relation_id
     }
 }
 

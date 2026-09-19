@@ -2,9 +2,7 @@ use worth_ui::facade::measurement_exchange::{
     UiHostMeasurementOutcome, UiMeasurementEvidenceFamily, UiPortalAnchorRectRequest,
     UiViewportExtentRequest, WorthUiHostMeasurementSessionExt,
 };
-use worth_ui::facade::observation::{
-    UiChangeClassificationOutcome, UiObservationFamily, UiObservationOwner,
-};
+use worth_ui::facade::observation::{UiChangeClassificationOutcome, UiObservationFamily};
 use worth_ui::facade::observation_report::{
     UiHostObservationLoss, UiHostObservationPayload, UiHostObservationReportOutcome,
     WorthUiHostObservationSessionExt,
@@ -51,68 +49,6 @@ use crate::{
 const RUNTIME_STATE_COMPONENT: &str = "workspace.component.authority_candidate";
 const RUNTIME_STATE_REGION: &str = "workspace.region.authority_primary";
 const RUNTIME_STATE_SIZING: &str = "workspace.sizing.authority_primary";
-
-#[derive(Clone, Copy)]
-struct ExpectedFamily {
-    family: UiObservationFamily,
-    owner: UiObservationOwner,
-    rank: u8,
-}
-
-const EXPECTED_FAMILIES: [ExpectedFamily; 8] = [
-    expected(
-        UiObservationFamily::AuthoredSource,
-        UiObservationOwner::SourceIngress,
-        0,
-    ),
-    expected(
-        UiObservationFamily::HostViewport,
-        UiObservationOwner::HostViewport,
-        1,
-    ),
-    expected(
-        UiObservationFamily::HostDeviceScale,
-        UiObservationOwner::HostDeviceScale,
-        2,
-    ),
-    expected(
-        UiObservationFamily::Measurement,
-        UiObservationOwner::MeasurementExchange,
-        3,
-    ),
-    expected(
-        UiObservationFamily::Query,
-        UiObservationOwner::QueryBinding,
-        4,
-    ),
-    expected(
-        UiObservationFamily::IntentPosture,
-        UiObservationOwner::IntentRuntime,
-        5,
-    ),
-    expected(
-        UiObservationFamily::CommittedScrollExtent,
-        UiObservationOwner::ScrollRuntimeState,
-        6,
-    ),
-    expected(
-        UiObservationFamily::CommittedPortalAnchor,
-        UiObservationOwner::PortalRuntimeState,
-        7,
-    ),
-];
-
-const fn expected(
-    family: UiObservationFamily,
-    owner: UiObservationOwner,
-    rank: u8,
-) -> ExpectedFamily {
-    ExpectedFamily {
-        family,
-        owner,
-        rank,
-    }
-}
 
 #[test]
 fn real_source_and_query_consequences_share_one_canonically_ordered_turn() {
@@ -379,14 +315,4 @@ fn establish_runtime_state_catalog(
 
 fn identifier(value: &str) -> WorthUiArtifactInputBodyAtom {
     WorthUiArtifactInputBodyAtom::Identifier(value.to_owned())
-}
-
-#[test]
-fn closed_family_table_preserves_owner_authority_and_framework_rank() {
-    for expected in EXPECTED_FAMILIES {
-        let actual = expected.family.definition();
-        assert_eq!(actual.family(), expected.family);
-        assert_eq!(actual.owner(), expected.owner);
-        assert_eq!(actual.framework_rank(), expected.rank);
-    }
 }

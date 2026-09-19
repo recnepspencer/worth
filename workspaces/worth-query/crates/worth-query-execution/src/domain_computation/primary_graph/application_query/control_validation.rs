@@ -11,10 +11,7 @@ pub(super) fn validate_controls<Schema, Query, Parameters, QueryResult, Scope>(
     controls: &WorthQueryApplicationQueryControls<'_, Schema>,
 ) -> Result<(), WorthQueryApplicationQueryAdmissionDenial> {
     let basis_supported = match controls.basis_posture() {
-        WorthQueryApplicationQueryBasisPosture::Current => query.basis_support().current(),
-        WorthQueryApplicationQueryBasisPosture::Pinned => query.basis_support().pinned(),
-        WorthQueryApplicationQueryBasisPosture::Historical => query.basis_support().pinned(),
-        WorthQueryApplicationQueryBasisPosture::Preview => query.basis_support().preview(),
+        WorthQueryApplicationQueryBasisPosture::SelectedProduct => query.basis_support().pinned(),
     };
     if !basis_supported {
         return Err(denial(

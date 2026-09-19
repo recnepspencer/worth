@@ -11,12 +11,13 @@ mod frontier;
 mod lifecycle;
 mod observation;
 mod previous_value;
+mod receipt_retention;
 mod restoration;
 mod retirement;
 
 /// Runtime-owned temporal state for authoritative clock basis semantics and wake lifecycle.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(in crate::logic::transaction::runtime) struct TemporalRuntimeState {
+pub(crate) struct TemporalRuntimeState {
     pub(super) clock_basis: RuntimeClockBasis,
     pub(super) previous_value_capability_epoch: u64,
     pub(super) next_wake_id: TemporalWakeId,

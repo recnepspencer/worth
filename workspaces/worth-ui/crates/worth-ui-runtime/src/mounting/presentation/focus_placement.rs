@@ -1,5 +1,5 @@
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(crate) enum UiFocusHostPlacementSettlementDenial {
+pub enum UiFocusHostPlacementSettlementDenial {
     NoCurrentSemanticFocus,
     TargetMismatch,
     StaleRequest,

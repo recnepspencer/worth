@@ -5,6 +5,7 @@ use crate::lifecycle::owner::{
 };
 use crate::recovery::ReservedProductUnpublishedSlot;
 use crate::retention::ReservedComponentPinPairCapacity;
+use crate::retention::ReservedObservationCapacity;
 
 /// The bounded reservations every terminal-governed attempt acquires before
 /// its first owner effect. Publication and branch creation reserve the same
@@ -19,6 +20,8 @@ pub(crate) struct ReservedAttemptCapacities {
     reserved_commit_capacity: ReservedCompositeCommitCapacity,
     reserved_recovery_slot: ReservedProductUnpublishedSlot,
     reserved_component_pin_pair: ReservedComponentPinPairCapacity,
+    reserved_successor_observation_capacity: Option<ReservedObservationCapacity>,
+    reserved_successor_observation_pin_pair: Option<ReservedComponentPinPairCapacity>,
     reserved_publication_capacity: ReservedPublicationAttemptCapacity,
     history: CompositeHistoryCatalog,
     operation: RuntimeWorldOperationReservation,
@@ -34,6 +37,8 @@ pub(crate) struct ReservedAttemptCapacityInputs {
     pub(crate) reserved_commit_capacity: ReservedCompositeCommitCapacity,
     pub(crate) reserved_recovery_slot: ReservedProductUnpublishedSlot,
     pub(crate) reserved_component_pin_pair: ReservedComponentPinPairCapacity,
+    pub(crate) reserved_successor_observation_capacity: Option<ReservedObservationCapacity>,
+    pub(crate) reserved_successor_observation_pin_pair: Option<ReservedComponentPinPairCapacity>,
     pub(crate) reserved_publication_capacity: ReservedPublicationAttemptCapacity,
     pub(crate) history: CompositeHistoryCatalog,
     pub(crate) operation: RuntimeWorldOperationReservation,
@@ -48,6 +53,8 @@ impl ReservedAttemptCapacities {
             reserved_commit_capacity,
             reserved_recovery_slot,
             reserved_component_pin_pair,
+            reserved_successor_observation_capacity,
+            reserved_successor_observation_pin_pair,
             reserved_publication_capacity,
             history,
             operation,
@@ -59,6 +66,8 @@ impl ReservedAttemptCapacities {
             reserved_commit_capacity,
             reserved_recovery_slot,
             reserved_component_pin_pair,
+            reserved_successor_observation_capacity,
+            reserved_successor_observation_pin_pair,
             reserved_publication_capacity,
             history,
             operation,
@@ -73,6 +82,8 @@ impl ReservedAttemptCapacities {
             reserved_commit_capacity: self.reserved_commit_capacity,
             reserved_recovery_slot: self.reserved_recovery_slot,
             reserved_component_pin_pair: self.reserved_component_pin_pair,
+            reserved_successor_observation_capacity: self.reserved_successor_observation_capacity,
+            reserved_successor_observation_pin_pair: self.reserved_successor_observation_pin_pair,
             reserved_publication_capacity: self.reserved_publication_capacity,
             history: self.history,
             operation: self.operation,

@@ -49,7 +49,7 @@ pub(crate) fn prepare_rust_authored_handoff(
     let (artifact, declaration_material, handoff) = material.into_parts();
     let candidate = rust_authored_replacement_candidate(
         artifact,
-        snapshot.digest(),
+        handoff.successor_snapshot_digest(),
         WorthUiReplacementCause::rust_authored_input_change(source_revision_digest),
     )
     .map_err(|denial| WorthUiAuthoredCompositionPreparationDenial::Candidate(Box::new(denial)))?;

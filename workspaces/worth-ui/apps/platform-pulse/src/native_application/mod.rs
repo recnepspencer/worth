@@ -16,6 +16,7 @@ mod frame_execution_diagnostic;
 mod frame_presentation;
 mod input;
 mod intent;
+mod layout;
 mod lifecycle;
 mod product_copy;
 mod product_story;
@@ -25,6 +26,7 @@ mod readiness;
 mod rebind;
 mod source_rebind;
 mod terminal_error;
+mod theme;
 
 pub(crate) use composition::PlatformPulseApplication;
 
@@ -33,6 +35,7 @@ use projection::PlatformPulseProjectionRebindDenial;
 use terminal_error::PlatformPulseTerminalError;
 
 enum PlatformPulsePendingManagedRebind {
+    ThemeSwitch(crate::theme_preference::PlatformPulseThemePreference),
     Projection(query::PlatformPulsePendingProjection),
     Source(WorthUiSourcePackageRevision),
     IntentPosture(intent::PlatformPulsePendingIntentPosture),
@@ -41,7 +44,9 @@ enum PlatformPulsePendingManagedRebind {
 }
 
 pub(crate) struct PlatformPulseApplicationRuntime {
+    theme_watch: Option<crate::theme_preference::PlatformPulseThemePreferenceWatch>,
     initial_source: Option<WorthUiSourcePackageRevision>,
+    startup_ready: bool,
     shell: Option<WorthUiNativeApplicationShell>,
     source_watch: Option<PlatformPulseSourceWatch>,
     query_watch: Option<crate::query_source::PlatformPulseExternalValueWatch>,
@@ -55,7 +60,8 @@ pub(crate) struct PlatformPulseApplicationRuntime {
     >,
     pending_frame_presentation: Option<PlatformPulsePendingFramePresentation>,
     pending_managed_rebind: Option<PlatformPulsePendingManagedRebind>,
-    pending_intent_postures: std::collections::VecDeque<intent::PlatformPulsePreparedIntentPosture>,
+    pending_native_publications:
+        std::collections::VecDeque<intent::PlatformPulsePendingNativePublication>,
     pending_intent_execution_transitions:
         std::collections::VecDeque<worth_ui::facade::intent::UiIntentExecutionTransition>,
     intent_evidence_index: intent::PlatformPulseIntentEvidenceIndex,
@@ -67,6 +73,7 @@ pub(crate) struct PlatformPulseApplicationRuntime {
     visual_identity: PlatformPulseVisualIdentityExecution,
     intent_clock: intent::PlatformPulseIntentClock,
     presentation_tick: u64,
+    frame_time_origin: std::time::Instant,
     product_story: product_story::PlatformPulseProductStory,
 }
 
@@ -77,30 +84,6 @@ struct PlatformPulsePendingQueryAction {
 }
 
 impl PlatformPulseApplicationRuntime {
-    fn refresh_product_story(&mut self, shell: &mut WorthUiNativeApplicationShell) -> bool {
-        match self.product_story.refresh_runtime(shell) {
-            Ok(()) => true,
-            Err(denial) => {
-                self.fail(PlatformPulseTerminalError::ProductCopy(denial), Ok(()));
-                false
-            }
-        }
-    }
-
-    fn publish_source_story(
-        &mut self,
-        shell: &mut WorthUiNativeApplicationShell,
-        sequence: u64,
-    ) -> bool {
-        match self.product_story.publish_source(shell, sequence) {
-            Ok(()) => true,
-            Err(denial) => {
-                self.fail(PlatformPulseTerminalError::ProductCopy(denial), Ok(()));
-                false
-            }
-        }
-    }
-
     fn publish_query_denial_story(
         &mut self,
         shell: &mut WorthUiNativeApplicationShell,
@@ -172,6 +155,9 @@ pub(crate) fn publish_preparation_failure(
     denial: &PlatformPulsePreparationDenial,
 ) -> Result<(), PlatformPulseObservationPublicationDenial> {
     match denial {
+        PlatformPulsePreparationDenial::ThemePreference(_) => {
+            publisher.appearance_preparation_failure()
+        }
         PlatformPulsePreparationDenial::WatcherStart(denial)
         | PlatformPulsePreparationDenial::InitialSourceSettlement(denial) => {
             publisher.filesystem_watcher_failure(denial)
@@ -183,8 +169,7 @@ pub(crate) fn publish_preparation_failure(
             publisher.candidate_submission_failure(denial)
         }
         PlatformPulsePreparationDenial::QueryInstallation(_)
-        | PlatformPulsePreparationDenial::QueryRegistration(_)
-        | PlatformPulsePreparationDenial::QueryViewRegistration(_) => {
+        | PlatformPulsePreparationDenial::QueryRegistration(_) => {
             publisher.query_preparation_failure()
         }
         PlatformPulsePreparationDenial::IntentInput(_)
@@ -193,5 +178,6 @@ pub(crate) fn publish_preparation_failure(
         | PlatformPulsePreparationDenial::IntentProvider(_) => {
             publisher.intent_preparation_failure()
         }
+        PlatformPulsePreparationDenial::Appearance(_) => publisher.appearance_preparation_failure(),
     }
 }

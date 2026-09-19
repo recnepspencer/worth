@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use super::{
-    UiHeadlessFilledRectMechanic, UiHeadlessMountedFrameTranscript, UiHeadlessSemanticTextMechanic,
+    UiHeadlessMountedFrameTranscript, UiHeadlessSemanticTextMechanic,
     UiHeadlessTranscriptSuccessorIdentity,
 };
 use worth_ui_host_contract::{UiMountedLogicalDamage, UiMountedPaintOrderIdentity};
@@ -41,7 +41,18 @@ impl UiHeadlessMountedFrameTranscript {
         successor.attempt = identity.attempt;
         successor.frame = identity.frame;
         successor.binding = identity.binding;
+        successor.appearance_work = None;
         successor
+    }
+
+    pub(crate) fn successor_appearance(
+        &self,
+        identity: UiHeadlessTranscriptSuccessorIdentity,
+        appearance: super::appearance::UiHeadlessAppearancePresentationTranscript,
+    ) -> Result<Self, worth_ui_host_contract::UiHostSurfacePresentationDenial> {
+        let mut successor = self.successor_recorded_identity(identity);
+        successor.replace_appearance_work(appearance)?;
+        Ok(successor)
     }
 }
 
@@ -99,14 +110,8 @@ fn translate_node_state(
     use worth_ui_host_contract::UiMountedPresentationNodePaint;
     let paint = match state.paint() {
         UiMountedPresentationNodePaint::Command(identity) => {
-            let index = successor
-                .filled_rects
-                .iter()
-                .position(|mechanic| mechanic.command_identity() == identity)
-                .ok_or_else(malformed)?;
-            super::UiHeadlessNodePaintMechanic::FilledRect(
-                u16::try_from(index).map_err(|_| malformed())?,
-            )
+            let _ = identity;
+            return Err(malformed());
         }
         UiMountedPresentationNodePaint::CountOnlyBatch(index) => {
             if usize::from(index) >= successor.paint_batches.len() {
@@ -137,7 +142,6 @@ fn translate_node_state(
 fn refresh_native_paint_effect(
     successor: &mut UiHeadlessMountedFrameTranscript,
 ) -> Result<(), worth_ui_host_contract::UiHostSurfacePresentationDenial> {
-    let filled_rect_count = u32::try_from(successor.filled_rects.len()).map_err(|_| malformed())?;
     let portal_overlay_count =
         u32::try_from(successor.portal_overlays.len()).map_err(|_| malformed())?;
     let semantic_text_count =
@@ -153,12 +157,12 @@ fn refresh_native_paint_effect(
         .iter_mut()
         .find_map(|effect| match effect {
             super::UiHeadlessUnperformedEffect::NativePaint {
-                filled_rect_count,
+                appearance_mechanic_count,
                 portal_overlay_count,
                 semantic_text_count,
                 preview_node_count,
             } => Some((
-                filled_rect_count,
+                appearance_mechanic_count,
                 portal_overlay_count,
                 semantic_text_count,
                 preview_node_count,
@@ -166,7 +170,10 @@ fn refresh_native_paint_effect(
             _ => None,
         })
         .ok_or_else(malformed)?;
-    *effect.0 = filled_rect_count;
+    *effect.0 = successor
+        .appearance_work
+        .as_ref()
+        .map_or(Ok(0), |appearance| appearance.mechanic_count())?;
     *effect.1 = portal_overlay_count;
     *effect.2 = semantic_text_count;
     *effect.3 = preview_node_count;
@@ -235,23 +242,15 @@ fn apply_mechanic_changes(
         UiHeadlessSemanticTextMechanic,
     )],
 ) -> Result<(), worth_ui_host_contract::UiHostSurfacePresentationDenial> {
-    let mut filled_rects = std::mem::take(&mut successor.filled_rects).into_vec();
     let mut portal_overlays = std::mem::take(&mut successor.portal_overlays).into_vec();
     let mut semantic_text = std::mem::take(&mut successor.semantic_text).into_vec();
-    remove_changed_commands(
-        &mut filled_rects,
-        &mut portal_overlays,
-        &mut semantic_text,
-        changes,
-    )?;
+    remove_changed_commands(&mut portal_overlays, &mut semantic_text, changes)?;
     insert_changed_commands(
-        &mut filled_rects,
         &mut portal_overlays,
         &mut semantic_text,
         changes,
         semantic_snapshots,
     )?;
-    successor.filled_rects = filled_rects.into_boxed_slice();
     successor.portal_overlays = portal_overlays.into_boxed_slice();
     successor.semantic_text = semantic_text.into_boxed_slice();
     Ok(())
@@ -285,7 +284,6 @@ fn apply_recorded_order_edits(
 }
 
 fn remove_changed_commands(
-    filled_rects: &mut Vec<UiHeadlessFilledRectMechanic>,
     portal_overlays: &mut Vec<worth_ui_host_contract::UiMountedPortalOverlayMechanic>,
     semantic_text: &mut Vec<UiHeadlessSemanticTextMechanic>,
     changes: &[worth_ui_host_contract::UiMountedPaintCommandChange],
@@ -298,12 +296,7 @@ fn remove_changed_commands(
             } => *predecessor,
             worth_ui_host_contract::UiMountedPaintCommandChange::Remove(identity) => *identity,
         };
-        if let Some(index) = filled_rects
-            .iter()
-            .position(|mechanic| mechanic.command_identity() == identity)
-        {
-            filled_rects.remove(index);
-        } else if let Some(index) = semantic_text
+        if let Some(index) = semantic_text
             .iter()
             .position(|mechanic| mechanic.command_identity() == identity)
         {
@@ -321,7 +314,6 @@ fn remove_changed_commands(
 }
 
 fn insert_changed_commands(
-    filled_rects: &mut Vec<UiHeadlessFilledRectMechanic>,
     portal_overlays: &mut Vec<worth_ui_host_contract::UiMountedPortalOverlayMechanic>,
     semantic_text: &mut Vec<UiHeadlessSemanticTextMechanic>,
     changes: &[worth_ui_host_contract::UiMountedPaintCommandChange],
@@ -332,10 +324,6 @@ fn insert_changed_commands(
 ) -> Result<(), worth_ui_host_contract::UiHostSurfacePresentationDenial> {
     for command in changes.iter().filter_map(changed_command) {
         match command {
-            worth_ui_host_contract::UiMountedPaintCommand::FilledRect { mechanic, .. } => {
-                filled_rects
-                    .push(crate::headless_translation::static_paint::translate_command(*mechanic))
-            }
             worth_ui_host_contract::UiMountedPaintCommand::SemanticText { mechanic, .. } => {
                 let snapshot = semantic_snapshots
                     .iter()

@@ -2,20 +2,21 @@
 
 use sha2::{Digest, Sha256};
 use worth_ui_host_contract::{
-    UiGlyphRasterDemandIdentity, UiGlyphRasterDemandRecord, UiGlyphRasterLane, UiGlyphRasterSource,
-    UiQualifiedTextLayoutIdentity,
+    UiGlyphRasterDemandIdentity, UiGlyphRasterDemandRecord, UiGlyphRasterDemandScope,
+    UiGlyphRasterLane, UiGlyphRasterSource, UiQualifiedTextLayoutIdentity,
 };
 
 use super::demand::UiGlyphRasterScale;
 use super::placement::UiGlyphRasterPlacement;
 
-const DEMAND_IDENTITY_DOMAIN: &[u8] = b"worth-ui-glyph-raster-demand-v1\0";
+const DEMAND_IDENTITY_DOMAIN: &[u8] = b"worth-ui-glyph-raster-demand-v2\0";
 
 pub(super) fn demand_identity(
     layout: UiQualifiedTextLayoutIdentity,
     scale: UiGlyphRasterScale,
     placement: UiGlyphRasterPlacement,
     lane: UiGlyphRasterLane,
+    scope: UiGlyphRasterDemandScope,
     records: &[UiGlyphRasterDemandRecord],
 ) -> UiGlyphRasterIdentity {
     let mut digest = Sha256::new();
@@ -26,6 +27,10 @@ pub(super) fn demand_identity(
     digest.update(placement.origin_x_millipoints().to_le_bytes());
     digest.update(placement.origin_y_millipoints().to_le_bytes());
     digest.update([lane_byte(lane)]);
+    digest.update([match scope {
+        UiGlyphRasterDemandScope::CompleteLayout => 0,
+        UiGlyphRasterDemandScope::DamageFiltered => 1,
+    }]);
     digest.update(
         u64::try_from(records.len())
             .unwrap_or(u64::MAX)

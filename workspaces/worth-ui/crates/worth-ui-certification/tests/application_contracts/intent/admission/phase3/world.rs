@@ -1,3 +1,4 @@
+use super::super::super::operability::{OperabilityFacts, PrimaryIntent};
 use worth_ui::facade::app::WorthUiActiveApplicationSession;
 use worth_ui::facade::intent::{
     UiAdmittedIntent, UiIntentAdmissionDecision, UiIntentDefinition, UiIntentOperabilityOutcome,
@@ -7,34 +8,19 @@ use worth_ui::facade::interaction::{
     UiHostInteractionIngressOutcome, UiInteractionTransition, UiSemanticInteraction,
 };
 use worth_ui::facade::observation_report::{
-    UiHostObservationBatch, UiHostObservationBatchInput, UiHostObservationLoss,
-    UiHostObservationPayload, UiHostObservationPresentationBasis, UiHostObservationReport,
-    UiHostObservationSequence, UiHostObservationSequenceRange, UiHostObservationTimeBasis,
-    UiHostPointerButton, UiHostPointerButtonTransition, UiHostPointerCaptureEpoch,
-    UiHostPointerIdentity, UiHostPressedPointerButtons, UiHostProtocolContract,
-    UiHostProtocolNegotiation, UiHostSurfacePosition, UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
+    UiHostObservationPayload, UiHostObservationPresentationBasis, UiHostPointerButtonTransition,
+    UiHostPointerCaptureEpoch, UiHostPointerIdentity, UiHostPressedPointerButtons,
 };
-use worth_ui_runtime::facade::mounted::{
-    UiHostSurfacePresentationMode, UiMountedFrameOutcome, UiMountedInstanceIdentity,
-    UiPresentationDeadline, UiSurfaceBindingGeneration,
-};
-use worth_ui_test_support::{
-    WorthUiMountedIdentityCertificationExt, WorthUiMountedInteractionLifecycleCertificationExt,
-    WorthUiMountedPublicationCertificationExt,
-};
-
-use super::super::super::operability::{
-    build_scoped, build_scoped_with_provider, build_scoped_with_provider_observation,
-    OccupancyLayout, OperabilityFacts, PrimaryIntent,
-};
-use crate::filesystem_mounted_world::{component_graph_nodes, establish_allocation, prepare_frame};
-use crate::mounted_application_lifecycle::known_empty_surface_world::profile;
-use crate::mounted_application_lifecycle::published_mounted_world::presented_epoch;
+use worth_ui_runtime::facade::mounted::UiMountedInstanceIdentity;
+use worth_ui_test_support::WorthUiMountedInteractionLifecycleCertificationExt;
 
 const TARGET_POINT: [i64; 2] = [10, 20];
 
+mod launch;
+mod observation;
 mod replacement;
-mod semantic_text_launch;
+
+use observation::{pointer_button, position};
 
 pub(in crate::intent) struct AdmissionWorld {
     pub(in crate::intent) session: WorthUiActiveApplicationSession,
@@ -43,6 +29,7 @@ pub(in crate::intent) struct AdmissionWorld {
     next_pointer: u64,
     next_sequence: u64,
     target_point: [i64; 2],
+    replacement_input: worth_ui_dsl::WorthUiRustAuthoredArtifactInput,
 }
 
 #[derive(Clone, Copy)]
@@ -52,103 +39,6 @@ struct AdmissionTarget {
 }
 
 impl AdmissionWorld {
-    pub(in crate::intent) fn launch(target_count: usize) -> Self {
-        assert!(target_count > 0, "an admission world needs one real target");
-        let (application, facts) = build_scoped(OccupancyLayout::TargetRoute);
-        Self::launch_application(application, facts, target_count)
-    }
-
-    pub(in crate::intent) fn launch_with_provider_observation(
-        target_count: usize,
-    ) -> (
-        Self,
-        worth_ui_certification::WorthUiCertificationProviderObservation,
-    ) {
-        assert!(target_count > 0, "an admission world needs one real target");
-        let (application, facts, observation) =
-            build_scoped_with_provider_observation(OccupancyLayout::TargetRoute);
-        (
-            Self::launch_application(application, facts, target_count),
-            observation,
-        )
-    }
-
-    pub(in crate::intent) fn launch_with_provider<P>(target_count: usize, provider: P) -> Self
-    where
-        P: worth_ui::facade::intent::UiIntentExecutionProvider<PrimaryIntent>,
-    {
-        assert!(target_count > 0, "an admission world needs one real target");
-        let (application, facts) =
-            build_scoped_with_provider(OccupancyLayout::TargetRoute, provider);
-        Self::launch_application(application, facts, target_count)
-    }
-
-    pub(in crate::intent) fn launch_application(
-        application: worth_ui::facade::app::WorthUiApp,
-        facts: OperabilityFacts,
-        target_count: usize,
-    ) -> Self {
-        Self::launch_application_with_routed_component(application, facts, target_count, 1)
-    }
-
-    pub(in crate::intent) fn launch_application_with_routed_component(
-        application: worth_ui::facade::app::WorthUiApp,
-        facts: OperabilityFacts,
-        target_count: usize,
-        routed_component_index: usize,
-    ) -> Self {
-        Self::launch_application_with_target(
-            application,
-            facts,
-            target_count,
-            routed_component_index,
-            TARGET_POINT,
-        )
-    }
-
-    pub(in crate::intent) fn launch_application_with_target(
-        application: worth_ui::facade::app::WorthUiApp,
-        facts: OperabilityFacts,
-        target_count: usize,
-        routed_component_index: usize,
-        target_point: [i64; 2],
-    ) -> Self {
-        let nodes = component_graph_nodes(&application);
-        assert!(routed_component_index < nodes.len());
-        let mut session = application
-            .launch()
-            .expect("admission application launches");
-        let mounted =
-            mount_complete_pages(&mut session, &nodes, target_count, routed_component_index);
-        establish_allocation(&mut session, 3);
-        let prepared = prepare_frame(&mut session).expect("admission frame prepares");
-        assert_eq!(prepared.surfaces().len(), target_count);
-        let publication = match session.present_prepared_mounted_frame(
-            prepared,
-            UiPresentationDeadline::at_tick(1_000),
-            0,
-        ) {
-            UiMountedFrameOutcome::Published(publication) => publication,
-            _ => panic!("admission frame must publish"),
-        };
-        let targets = mounted
-            .into_iter()
-            .map(|(binding, mounted_instance)| AdmissionTarget {
-                presentation: presentation(&session, publication.frame(), binding),
-                mounted_instance,
-            })
-            .collect::<Vec<_>>()
-            .into_boxed_slice();
-        Self {
-            session,
-            facts,
-            targets,
-            next_pointer: 1,
-            next_sequence: 1,
-            target_point,
-        }
-    }
-
     pub(in crate::intent) fn admit(
         &mut self,
         target: usize,
@@ -290,107 +180,9 @@ impl AdmissionWorld {
         semantic
     }
 
-    fn observe(
-        &mut self,
-        target: usize,
-        payload: UiHostObservationPayload,
-    ) -> UiHostInteractionIngressOutcome {
-        let presentation = self.targets[target].presentation;
-        let sequence = UiHostObservationSequence::new(self.next_sequence);
-        self.next_sequence += 1;
-        let report = UiHostObservationReport::new(
-            sequence,
-            UiHostObservationTimeBasis::HostMonotonicMillis(sequence.value()),
-            payload,
-        );
-        let batch = UiHostObservationBatch::new(UiHostObservationBatchInput {
-            protocol: protocol(),
-            host_session: self.session.host_session_identity().as_u64(),
-            presentation,
-            sequences: UiHostObservationSequenceRange::new(sequence, sequence),
-            loss: UiHostObservationLoss::Complete,
-            reports: vec![report],
-        })
-        .expect("admission world emits a structurally valid host batch");
-        self.session.admit_host_interaction_batch(batch)
-    }
-
     fn take_pointer(&mut self) -> u64 {
         let pointer = self.next_pointer;
         self.next_pointer += 1;
         pointer
-    }
-}
-
-fn mount_complete_pages(
-    session: &mut WorthUiActiveApplicationSession,
-    nodes: &[worth_ui::facade::graph::UiGraphNodeIdentity],
-    target_count: usize,
-    routed_component_index: usize,
-) -> Vec<(UiSurfaceBindingGeneration, UiMountedInstanceIdentity)> {
-    (0..target_count)
-        .map(|index| {
-            let surface = session.create_semantic_surface().unwrap();
-            let binding = session
-                .register_host_surface(
-                    surface,
-                    UiHostSurfacePresentationMode::RecordOnly,
-                    profile(index as u64 + 1),
-                )
-                .unwrap()
-                .binding_generation();
-            let mut routed_instance = None;
-            for (node_index, graph_node) in nodes.iter().copied().enumerate() {
-                let handle = session.mounted_graph_node(graph_node).unwrap();
-                let mounted = session.mount_instance(handle, surface).unwrap();
-                if node_index == routed_component_index {
-                    routed_instance = Some(mounted);
-                }
-            }
-            let routed_instance =
-                routed_instance.expect("the complete page includes its routed hit-only component");
-            (binding, routed_instance)
-        })
-        .collect()
-}
-
-fn presentation(
-    session: &WorthUiActiveApplicationSession,
-    frame: worth_ui_host_contract::UiMountedFrameIdentity,
-    binding: UiSurfaceBindingGeneration,
-) -> UiHostObservationPresentationBasis {
-    UiHostObservationPresentationBasis::new(
-        session.inspect_mounted_identity().surface_bindings()[0].host_surface_identity(),
-        frame,
-        binding,
-        presented_epoch(session, frame, binding),
-    )
-}
-
-fn pointer_button(
-    pointer: u64,
-    transition: UiHostPointerButtonTransition,
-    target_point: [i64; 2],
-) -> UiHostObservationPayload {
-    UiHostObservationPayload::PointerButton {
-        pointer: UiHostPointerIdentity::new(pointer),
-        capture_epoch: UiHostPointerCaptureEpoch::new(1),
-        button: UiHostPointerButton::Primary,
-        transition,
-        position: position(target_point),
-    }
-}
-
-fn position(point: [i64; 2]) -> UiHostSurfacePosition {
-    UiHostSurfacePosition::viewport_logical(
-        point[0] * UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
-        point[1] * UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
-    )
-}
-
-fn protocol() -> worth_ui::facade::observation_report::UiHostProtocolAgreement {
-    match UiHostProtocolContract::current().negotiate() {
-        UiHostProtocolNegotiation::Compatible(agreement) => agreement,
-        UiHostProtocolNegotiation::Incompatible(_) => unreachable!(),
     }
 }

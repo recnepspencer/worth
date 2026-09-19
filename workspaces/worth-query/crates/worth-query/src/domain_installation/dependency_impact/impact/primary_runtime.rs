@@ -1,8 +1,8 @@
 use crate::basis_lifecycle::BasisOperationLane;
 
 use super::{
-    admit_current_invalidation_impact, select_invalidation_candidates,
-    WorthQueryAdmittedInvalidationImpact, WorthQueryImpactAdmissionDenial,
+    admit_current_invalidation_impact, WorthQueryAdmittedInvalidationImpact,
+    WorthQueryImpactAdmissionDenial,
 };
 use crate::domain_installation::WorthQuerySettledDomainProjection;
 
@@ -119,39 +119,9 @@ pub fn admit_primary_runtime_granular_batch<D, O, F, L: BasisOperationLane>(
         batch.into_bridge_deliveries(),
         observation.direct_truth_delivery_count(),
         observation.signal_performed_delivery_count(),
-        DeliveryAuthority::BoundPrimaryRuntime,
         Some(binding),
         source_read_basis,
     )
-}
-
-pub(crate) fn admit_granular_invalidation_deliveries<D, O, F, L: BasisOperationLane>(
-    current: &WorthQuerySettledDomainProjection<D, O, F, L>,
-    deliveries: impl IntoIterator<
-        Item = worth_runtime_bridge::facade::BridgeGranularInvalidationDelivery,
-    >,
-) -> Result<WorthQueryAdmittedInvalidationBatch, WorthQueryImpactAdmissionDenial> {
-    let deliveries = deliveries.into_iter().collect::<Vec<_>>();
-    let signal_performed_delivery_count = deliveries
-        .iter()
-        .filter(|delivery| delivery.performed_signal().is_some())
-        .count();
-    let delivery_count = deliveries.len();
-    admit_granular_invalidation_deliveries_with_observation(
-        current,
-        deliveries,
-        delivery_count,
-        signal_performed_delivery_count,
-        DeliveryAuthority::LocalOperation,
-        None,
-        None,
-    )
-}
-
-#[derive(Clone, Copy)]
-enum DeliveryAuthority {
-    LocalOperation,
-    BoundPrimaryRuntime,
 }
 
 fn admit_granular_invalidation_deliveries_with_observation<D, O, F, L: BasisOperationLane>(
@@ -159,14 +129,13 @@ fn admit_granular_invalidation_deliveries_with_observation<D, O, F, L: BasisOper
     deliveries: Vec<worth_runtime_bridge::facade::BridgeGranularInvalidationDelivery>,
     lower_truth_delivery_count: usize,
     lower_signal_performed_delivery_count: usize,
-    authority: DeliveryAuthority,
     primary_binding: Option<&crate::live::WorthQueryPrimaryRuntimeInvalidationBinding>,
     source_read_basis: Option<crate::runtime::WorthQueryGranularSourceReadBasis>,
 ) -> Result<WorthQueryAdmittedInvalidationBatch, WorthQueryImpactAdmissionDenial> {
     let closure = current.semantic_aspect_dependency_closure();
     let mut admission_counters = super::WorthQueryGranularAdmissionCounters::default();
     for delivery in &deliveries {
-        preflight_current_delivery(closure, delivery, authority)?;
+        preflight_current_delivery(closure, delivery)?;
         admission_counters.inspect_delivery(delivery);
     }
     let converged = super::delivery_convergence::converge_granular_deliveries(deliveries)?;
@@ -178,23 +147,18 @@ fn admit_granular_invalidation_deliveries_with_observation<D, O, F, L: BasisOper
             already_settled_delivery_count += 1;
             continue;
         }
-        let candidates = match authority {
-            DeliveryAuthority::LocalOperation => select_invalidation_candidates(closure, delivery)?,
-            DeliveryAuthority::BoundPrimaryRuntime => {
-                let binding = primary_binding
-                    .expect("bound-primary admission retains its current Query binding");
-                let (consumer_dependencies, index_lookups) = binding.consumer_dependencies_for(
-                    delivery.truth().change_set().dependency(),
-                    delivery.truth().change_set().changes(),
-                );
-                super::candidate_set::select_bound_primary_invalidation_candidates(
-                    closure,
-                    &consumer_dependencies,
-                    index_lookups,
-                    delivery,
-                )?
-            }
-        };
+        let binding =
+            primary_binding.expect("bound-primary admission retains its current Query binding");
+        let (consumer_dependencies, index_lookups) = binding.consumer_dependencies_for(
+            delivery.truth().change_set().dependency(),
+            delivery.truth().change_set().changes(),
+        );
+        let candidates = super::candidate_set::select_bound_primary_invalidation_candidates(
+            closure,
+            &consumer_dependencies,
+            index_lookups,
+            delivery,
+        )?;
         admission_counters.retain_candidates(candidates.index_lookups(), candidates.roles());
         if candidates.roles().is_empty() {
             irrelevant_delivery_count += 1;
@@ -220,51 +184,8 @@ fn admit_granular_invalidation_deliveries_with_observation<D, O, F, L: BasisOper
 fn preflight_current_delivery(
     closure: &crate::domain_installation::WorthQueryCompiledSemanticAspectDependencyClosure,
     delivery: &worth_runtime_bridge::facade::BridgeGranularInvalidationDelivery,
-    authority: DeliveryAuthority,
 ) -> Result<(), WorthQueryImpactAdmissionDenial> {
-    match authority {
-        DeliveryAuthority::LocalOperation => {
-            super::classification::preflight_owner_delivered_truth(closure, delivery.truth())?
-        }
-        DeliveryAuthority::BoundPrimaryRuntime => {
-            super::classification::preflight_bound_primary_truth(closure, delivery.truth())?
-        }
-    }
-    let dependency = delivery.truth().change_set().dependency();
-    if matches!(authority, DeliveryAuthority::LocalOperation) {
-        let location =
-            crate::domain_installation::conditional_execution::query_location_from_bridge_candidate(
-                dependency,
-            );
-        if !closure
-            .invalidation_manifest()
-            .admits_bridge_dependency(&location, dependency)
-        {
-            return Err(WorthQueryImpactAdmissionDenial::new(
-                super::WorthQueryImpactAdmissionDenialKind::ConditionalDeliveryMismatch,
-                super::WorthQueryImpactCounters {
-                    dependency_membership_lookups: 1,
-                    ..Default::default()
-                },
-            ));
-        }
-    }
-    if let (DeliveryAuthority::LocalOperation, Some(performed)) =
-        (authority, delivery.performed_signal())
-    {
-        if performed.query_binding_identity() != closure.affinity.binding_identity
-            || performed.query_capability_identity() != closure.affinity.capability_identity
-        {
-            return Err(WorthQueryImpactAdmissionDenial::new(
-                super::WorthQueryImpactAdmissionDenialKind::ConditionalAuthorityMismatch,
-                super::WorthQueryImpactCounters {
-                    conditional_authority_checks: 2,
-                    ..Default::default()
-                },
-            ));
-        }
-    }
-    Ok(())
+    super::classification::preflight_bound_primary_truth(closure, delivery.truth())
 }
 
 fn delivery_is_already_settled<D, O, F, L: BasisOperationLane>(

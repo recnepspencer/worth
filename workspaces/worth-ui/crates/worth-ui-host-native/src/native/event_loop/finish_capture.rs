@@ -3,7 +3,7 @@ use super::{
 };
 
 pub(super) struct UiNativeEventLoopFinishCapture {
-    pub presentation: Option<crate::native::UiNativePresentationObservation>,
+    pub final_frame: Option<crate::native::UiNativeRetainedFrameObservation>,
     pub graphics: Option<crate::native::UiNativeGraphicsObservation>,
     pub client_attribution: Option<UiNativeClientPresentationAttribution>,
     pub effect_posture: crate::native::UiNativeEffectPosture,
@@ -31,14 +31,15 @@ pub(super) fn capture<Client: UiNativeEventLoopClient>(
 ) -> UiNativeEventLoopFinishCapture {
     let state = application.shared.borrow();
     UiNativeEventLoopFinishCapture {
-        presentation: state.last_presentation.clone(),
+        final_frame: state.last_retained_frame.clone(),
         graphics: state.presentation_access().as_ref().map(|access| {
             crate::native::UiNativeGraphicsObservation::from_presentation_access(access)
         }),
         client_attribution: application
             .client
             .as_ref()
-            .and_then(UiNativeEventLoopClient::presentation_attribution),
+            .zip(state.last_retained_frame.as_ref())
+            .and_then(|(client, observed)| client.presentation_attribution(observed)),
         effect_posture: state.lifecycle.effect_posture(),
         host_peak_census: state.compiler_total_peak(),
         retained_frames: state.retained_frame_observations.clone(),

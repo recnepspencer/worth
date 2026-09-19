@@ -5,12 +5,15 @@ mod commit_terminal;
 mod compare_and_commit;
 mod delegation_activation_program;
 mod denial;
+mod dependency_identity;
 mod effect_program;
 mod effect_validation;
 mod elevation_approval_outcome;
 mod elevation_approval_program;
+mod elevation_approval_replay;
 mod elevation_close_outcome;
 mod elevation_close_program;
+mod elevation_close_replay;
 mod elevation_lifecycle_effects;
 mod elevation_lifecycle_emission;
 mod elevation_lifecycle_facts;
@@ -21,6 +24,7 @@ mod idempotency;
 mod idempotency_resolution;
 mod mandatory_review_outcome;
 mod mandatory_review_program;
+mod mandatory_review_replay;
 mod observation;
 pub(in crate::domain_computation::primary_graph) mod precondition_binding;
 mod provider_binding;
@@ -30,6 +34,7 @@ mod provider_recomparison;
 mod read_phase;
 mod read_scope;
 mod read_set;
+mod retained_commit;
 pub(super) mod snapshot_lease;
 pub(in crate::domain_computation) use snapshot_lease::{
     WorthQueryApplicationSnapshotLease, WorthQueryApplicationSnapshotLeaseDenial,
@@ -46,11 +51,12 @@ pub use compare_and_commit::{
     WorthQueryApplicationCommitDeferred, WorthQueryApplicationCommitDeferredKind,
     WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitDenialKind,
     WorthQueryApplicationCommitDenialStage, WorthQueryApplicationCommitOutcome,
-    WorthQueryApplicationCommitPublicationExternalEffect,
     WorthQueryApplicationCommitPublicationSource, WorthQueryApplicationCommitReceipt,
-    WorthQueryApplicationCommitRecoveryKind, WorthQueryApplicationSettlementDeferred,
-    WorthQueryApplicationSettlementNextAction, WorthQueryApplicationStaleAttempt,
-    WorthQueryApplicationUnresolvedCommitEvidence,
+    WorthQueryApplicationCommitRecoveryKind, WorthQueryApplicationCommittedChanges,
+    WorthQueryApplicationNoEffect, WorthQueryApplicationNoEffectCause,
+    WorthQueryApplicationSettlementDeferred, WorthQueryApplicationSettlementNextAction,
+    WorthQueryApplicationStaleAttempt, WorthQueryApplicationUnresolvedCommitEvidence,
+    WorthQueryCommittedProductPublication,
 };
 pub(in crate::domain_computation::primary_graph) use compare_and_commit::{
     WorthQueryCommittedReceiptProjection, WorthQueryPendingApplicationCommitReceipt,
@@ -59,10 +65,16 @@ pub use delegation_activation_program::WorthQueryDelegationActivationProgram;
 pub use denial::{WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind};
 pub(in crate::domain_computation::primary_graph) use effect_program::{
     WorthQueryAdmittedApplicationEmissionBatch, WorthQueryApplicationEmission,
+    WorthQueryCandidateValidatorWorkAdmission,
 };
 pub use effect_program::{
     WorthQueryApplicationEffectEntity, WorthQueryApplicationEffectProgram,
-    WorthQueryApplicationEffectProgramBuilder,
+    WorthQueryApplicationEffectProgramBuilder, WorthQueryApplicationOutputAction,
+    WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationOutputEntity,
+    WorthQueryApplicationOutputFamilyEntry, WorthQueryApplicationOutputPosture,
+    WorthQueryApplicationOutputProjectionDenial, WorthQueryApplicationOutputRole,
+    WorthQueryApplicationOutputRoleFamily, WorthQueryApplicationOutputRoleNameDenial,
+    WorthQueryCreateOutput, WorthQueryPreserveOutput, WorthQueryRetireOutput,
 };
 pub(super) use elevation_approval_outcome::approved_outcome;
 pub use elevation_approval_outcome::{
@@ -85,6 +97,7 @@ pub use elevation_request_program::WorthQueryElevationRequestProgram;
 pub(in crate::domain_computation) use fact::WorthQueryApplicationObservedFact;
 pub(in crate::domain_computation::primary_graph) use fact::{
     WorthQueryApplicationAdjacencyDirection, WorthQueryApplicationFactKey,
+    WorthQuerySourceCurrentnessFailure,
 };
 pub use idempotency::WorthQueryApplicationIdempotencyBinding;
 pub use idempotency_resolution::{
@@ -115,3 +128,4 @@ pub use read_set::{
     WorthQueryApplicationReadAttempt, WorthQueryCompleteApplicationReadSet,
     WorthQueryObservedApplicationRelation,
 };
+pub use retained_commit::WorthQueryApplicationRetainedCommitOutcome;

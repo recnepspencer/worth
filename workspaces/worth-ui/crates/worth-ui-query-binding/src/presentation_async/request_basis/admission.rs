@@ -10,15 +10,6 @@ impl WorthUiPresentationRequestBasis {
         if input.dpi_milli == 0 {
             return Err(WorthUiPresentationRequestBasisDenial::ZeroDpi);
         }
-        if !input.complete
-            && input.mechanics.is_empty()
-            && input.pin_additions.is_empty()
-            && input.pin_releases.is_empty()
-            && input.binding_pins.is_empty()
-            && input.removed_mechanics.is_empty()
-        {
-            return Err(WorthUiPresentationRequestBasisDenial::EmptyPresentationChange);
-        }
         let mut mechanics = input
             .mechanics
             .into_vec()
@@ -161,7 +152,7 @@ fn paint_command_sort_key(
 }
 
 fn sort_pins(pins: &mut [WorthUiPresentationPinBasis]) {
-    pins.sort_by_key(super::identity_parts::pin_sort_parts);
+    pins.sort_by_cached_key(super::identity_parts::pin_sort_parts);
 }
 
 fn validate_unique_pins(

@@ -10,6 +10,7 @@ mod entities;
 mod estate_relation_installation;
 mod fields;
 mod member_installation;
+mod mutation_bindings;
 mod operation_program_installation;
 mod policies;
 mod policy_installation;
@@ -21,8 +22,10 @@ pub use capability_contracts::*;
 pub use effects::*;
 pub use entities::*;
 pub use fields::*;
+pub use mutation_bindings::*;
 pub use policies::*;
 pub use relations::*;
+pub use values::*;
 
 use worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationBuilder;
 

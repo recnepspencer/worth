@@ -54,10 +54,30 @@ pub use merge::{SignalBranchMergeDenial, SignalBranchMergeOutcome};
     reason = "Phase 4 port signatures consume the Phase 3 cancellation vocabulary"
 )]
 pub use owner_services::{
-    SignalBranchBasisPort, SignalBranchForkReservation, SignalBranchLifecyclePort,
-    SignalBranchMutationPort, SignalOwnerCancellationSource, SignalOwnerCancellationToken,
-    SignalOwnerLifecycleObservation, SignalOwnerServiceCostSnapshot,
+    AdmittedSignalConditionalDefinitionPublication, SignalBranchBasisPort,
+    SignalBranchForkReservation, SignalBranchLifecyclePort, SignalBranchMutationPort,
+    SignalCommittedPatchDeliveryCompletion, SignalCommittedPatchDeliveryDenial,
+    SignalCommittedPatchDeliveryRequest, SignalCommittedPatchTarget,
+    SignalConditionalDefinitionAdvanceBinding, SignalConditionalDefinitionPublicationOperation,
+    SignalConditionalDefinitionPublicationPort, SignalConditionalEvaluationAdmission,
+    SignalConditionalEvaluationBindingEvidence, SignalConditionalEvaluationReadmission,
+    SignalConditionalEvaluationReadmissionCounters, SignalConditionalEvaluationReadmissionDenial,
+    SignalConditionalEvaluationReadmissionRequest, SignalConditionalEvaluationSourceEvidence,
+    SignalConditionalExecutionPort, SignalConditionalInstallationChangeDenial,
+    SignalConditionalInstallationCustody, SignalConditionalInstallationExtensionCompletion,
+    SignalConditionalInstallationExtensionDenial, SignalConditionalInstallationExtensionRequest,
+    SignalConditionalReconstitutionReport, SignalConditionalRetentionObservation,
+    SignalConditionalRetirementCompletion, SignalConditionalServiceCompletion,
+    SignalConditionalServiceExecutionDenial, SignalConditionalServiceExecutionRequest,
+    SignalConditionalServiceIssuanceDenial, SignalConditionalSuccessorTransition,
+    SignalConditionalTemporalPartition, SignalConditionalTemporalPartitionDenial,
+    SignalConditionalTemporalPromotion, SignalConditionalTemporalPromotionView,
+    SignalOwnedAsyncRequestAdmission, SignalOwnedAsyncRetryAdmission,
+    SignalOwnedAsyncRetrySchedule, SignalOwnedAsyncRevalidationAdmission,
+    SignalOwnedAsyncSourceBinding, SignalOwnedAsyncTimeoutAdmission, SignalOwnerCancellationSource,
+    SignalOwnerCancellationToken, SignalOwnerLifecycleObservation, SignalOwnerServiceCostSnapshot,
     SignalOwnerServiceIssuanceDenial, SignalOwnerServicePorts, SignalOwnerUnavailable,
+    SignalPreparedConditionalInstallationExtension,
 };
 #[cfg(feature = "test-operation-control")]
 pub use owner_services::{

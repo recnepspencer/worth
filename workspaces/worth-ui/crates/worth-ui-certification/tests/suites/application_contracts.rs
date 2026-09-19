@@ -2,6 +2,8 @@
 
 #[path = "../admission_support_runtime.rs"]
 mod admission_support_runtime;
+#[path = "../application_contracts/appearance_documentation.rs"]
+mod appearance_documentation;
 #[path = "../application_contracts/canvas_spatial_execution.rs"]
 mod canvas_spatial_execution;
 #[path = "../application_contracts/canvas_spatial_replacement.rs"]
@@ -54,12 +56,16 @@ mod milestone_312_observation_admission;
 mod milestone_312_planning_guards;
 #[path = "../application_contracts/milestone_312_post_classification_cost.rs"]
 mod milestone_312_post_classification_cost;
+#[path = "../application_contracts/mounted_appearance.rs"]
+mod mounted_appearance;
 #[path = "../application_contracts/mounted_application_lifecycle/mod.rs"]
 mod mounted_application_lifecycle;
 #[path = "../application_contracts/mounted_cost_evidence.rs"]
 mod mounted_cost_evidence;
 #[path = "../application_contracts/mounted_frame_assembly.rs"]
 mod mounted_frame_assembly;
+#[path = "../application_contracts/mounted_geometry_fixture.rs"]
+mod mounted_geometry_fixture;
 #[path = "../application_contracts/mounted_headless_recorder.rs"]
 mod mounted_headless_recorder;
 #[path = "../application_contracts/mounted_host_protocol/mod.rs"]
@@ -94,8 +100,6 @@ mod mounted_projection_parity;
 mod mounted_protocol_model;
 #[path = "../application_contracts/mounted_publication.rs"]
 mod mounted_publication;
-#[path = "../application_contracts/mounted_static_paint.rs"]
-mod mounted_static_paint;
 #[path = "../application_contracts/multi_removal_filesystem.rs"]
 mod multi_removal_filesystem;
 #[path = "../application_contracts/observation_rebind.rs"]
@@ -112,8 +116,6 @@ mod phase7_denial_preservation;
 mod phase7_hot_frame_source_exclusion;
 #[path = "../application_contracts/phase7_public_mounted_allocation.rs"]
 mod phase7_public_mounted_allocation;
-#[path = "../application_contracts/projection_adoption/mod.rs"]
-mod projection_adoption;
 #[path = "../application_contracts/projection_authority/mod.rs"]
 mod projection_authority;
 #[path = "../application_contracts/projection_compatibility/mod.rs"]

@@ -13,6 +13,7 @@ use super::super::UiObservationFamily;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum UiHostObservationSuccessorOwner {
     Intent,
+    PointerPresence,
     Focus,
     Scroll,
     PresentationSampling,
@@ -175,8 +176,8 @@ const fn map_supported(family: MechanicalFamily) -> Option<UiObservationFamily> 
     match family {
         MechanicalFamily::Viewport => Some(UiObservationFamily::HostViewport),
         MechanicalFamily::DeviceScale => Some(UiObservationFamily::HostDeviceScale),
-        MechanicalFamily::PointerMotion
-        | MechanicalFamily::PointerButton
+        MechanicalFamily::PointerMotion => None,
+        MechanicalFamily::PointerButton
         | MechanicalFamily::Keyboard
         | MechanicalFamily::WindowFocus
         | MechanicalFamily::ScrollDelta
@@ -190,8 +191,8 @@ const fn map_supported(family: MechanicalFamily) -> Option<UiObservationFamily> 
 const fn unavailable(family: MechanicalFamily) -> Option<UiHostObservationUnavailable> {
     let successor = match family {
         MechanicalFamily::Viewport | MechanicalFamily::DeviceScale => return None,
-        MechanicalFamily::PointerMotion
-        | MechanicalFamily::PointerButton
+        MechanicalFamily::PointerMotion => UiHostObservationSuccessorOwner::PointerPresence,
+        MechanicalFamily::PointerButton
         | MechanicalFamily::Keyboard
         | MechanicalFamily::TextComposition
         | MechanicalFamily::ImeComposition => UiHostObservationSuccessorOwner::Intent,

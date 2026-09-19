@@ -27,6 +27,7 @@ mod input_delivery;
 mod input_delivery_tests;
 mod input_environment;
 mod pointer_target;
+mod pointer_visual_settlement;
 mod process_windows;
 mod window_state;
 

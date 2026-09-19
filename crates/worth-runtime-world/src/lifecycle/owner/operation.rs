@@ -11,16 +11,14 @@ use super::RuntimeWorldOwnerRoot;
 mod attempt;
 #[path = "operation/creation_reservation.rs"]
 mod creation_reservation;
-mod publication_capacity;
-mod reservation_steps;
-
-#[cfg(test)]
-#[path = "operation/preparation_tests.rs"]
-mod preparation_tests;
-
 #[cfg(test)]
 #[path = "operation/preparation_test_support.rs"]
 mod preparation_test_support;
+#[cfg(test)]
+#[path = "operation/preparation_tests.rs"]
+mod preparation_tests;
+mod publication_capacity;
+mod reservation_steps;
 
 pub(crate) use attempt::{
     RuntimeWorldOperationLedger, RuntimeWorldOperationReservation, RuntimeWorldOperationState,
@@ -39,6 +37,7 @@ struct ReservationContext<'a> {
     cancellation: &'a RuntimeWorldCancellationToken,
     deadline: Option<RuntimeWorldInstant>,
     operation: RuntimeWorldOperationReservation,
+    successor_observation_requested: bool,
 }
 
 impl<D, I, E, Ctx, T> RuntimeWorldOwnerRoot<D, I, E, Ctx, T>
@@ -54,6 +53,7 @@ where
         plan: LoweredOwnerComponentPlan,
         cancellation: &RuntimeWorldCancellationToken,
         deadline: Option<RuntimeWorldInstant>,
+        successor_observation_requested: bool,
     ) -> Result<ReservedCompositePublicationAttempt, NoEffectCompositePublication> {
         let expected_head = plan.expected().expected().clone();
         self.validate_reservation_preconditions(&plan, &expected_head, cancellation, deadline)
@@ -75,6 +75,7 @@ where
             cancellation,
             deadline,
             operation,
+            successor_observation_requested,
         })
     }
 
@@ -88,6 +89,7 @@ where
             cancellation,
             deadline,
             operation,
+            successor_observation_requested,
         } = context;
         if let Some(denied) = self.reservation_denial(&expected_head, cancellation, deadline) {
             return Err(denied);
@@ -103,6 +105,7 @@ where
             &expected_head,
             &identities.commit_identity,
             Some(&identities.attempt_identity),
+            successor_observation_requested,
         )
         .map_err(|cause| NoEffectCompositePublication::new(cause, Some(expected_head.clone())))?;
         if let Some(denied) = self.reservation_denial(&expected_head, cancellation, deadline) {
@@ -302,7 +305,12 @@ where
         S: crate::publication::CompositePublicationStage,
     {
         let current = self.admit_publication_source(&expected)?;
-        let (component_intent, prepared_candidate) = intent.into_parts();
+        let (
+            component_intent,
+            prepared_candidate,
+            settled_adoption,
+            successor_observation_requested,
+        ) = intent.into_parts();
         let resolved = match ResolvedExpectedProductHead::from_current(
             component_intent,
             expected.clone(),
@@ -311,14 +319,21 @@ where
             Ok(resolved) => resolved,
             Err(_) => {
                 drop(prepared_candidate);
+                drop(settled_adoption);
                 return Err(NoEffectCompositePublication::new(
                     NoEffectCause::StaleExpectedProductHead,
                     Some(expected),
                 ));
             }
         };
-        let plan = lower_component_plans(resolved, prepared_candidate)?;
-        let attempt = RuntimeWorldOwnerRoot::reserve(self, plan, cancellation, deadline)?;
+        let plan = lower_component_plans(resolved, prepared_candidate, settled_adoption)?;
+        let attempt = RuntimeWorldOwnerRoot::reserve(
+            self,
+            plan,
+            cancellation,
+            deadline,
+            successor_observation_requested,
+        )?;
         Ok(S::seal(attempt))
     }
 

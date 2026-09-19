@@ -18,7 +18,9 @@ use super::{
 };
 
 mod inspection;
+mod presented_hits;
 mod visual_lease;
+pub(crate) use presented_hits::UiPresentedPointLookupDenial;
 
 pub(crate) struct UiMountedFrameRetentionCoordinator {
     authority: Rc<RefCell<UiMountedFrameRetentionAuthority>>,
@@ -36,6 +38,10 @@ impl UiMountedFrameRetentionCoordinator {
         admitted: super::super::UiAuthorityAdmittedMountedFrame,
     ) -> Result<UiRetentionPreparedMountedFrame, UiMountedFrameRetentionRejection> {
         self.prepare(admitted.into_frame(), false, None)
+    }
+
+    pub(crate) fn observation_basis_admission_ready(&self) -> bool {
+        self.authority.borrow().reservations.is_empty()
     }
 
     pub(crate) fn prepare_superseding_publication(
@@ -75,18 +81,42 @@ impl UiMountedFrameRetentionCoordinator {
         Ok(relation)
     }
 
+    /// Advances the host-current epoch of one presented binding and returns
+    /// the semantic surface that binding presents, proven at the same point
+    /// the advance is accepted, so owners rebind to exactly that surface.
     pub(crate) fn update_current_presentation_epoch(
         &mut self,
         presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
-    ) -> Result<(), UiPresentedFrameBasisDenial> {
+    ) -> Result<worth_ui_host_contract::UiSemanticSurfaceIdentity, UiPresentedFrameBasisDenial>
+    {
         let mut authority = self.authority.borrow_mut();
-        let evidence = authority
-            .frames
-            .current
-            .as_mut()
-            .filter(|evidence| evidence.frame() == presentation.frame())
+        let mut evidence = authority
+            .evidence_rc(presentation.frame())
             .ok_or(UiPresentedFrameBasisDenial::Unknown)?;
-        Rc::make_mut(evidence).update_presentation_epoch(presentation)
+        let previous = evidence
+            .current_presentations()
+            .find_map(|(_, current)| {
+                (current.binding() == presentation.binding()
+                    && current.host_surface() == presentation.host_surface())
+                .then_some(current)
+            })
+            .ok_or(UiPresentedFrameBasisDenial::BindingNotPresented)?;
+        let surface = authority.surface_for_current_presentation(previous)?;
+        Rc::make_mut(&mut evidence).update_presentation_epoch(presentation)?;
+        authority.replace_evidence(evidence);
+        Ok(surface)
+    }
+
+    pub(in crate::mounting) fn retire_surface(
+        &mut self,
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+    ) {
+        let mut authority = self.authority.borrow_mut();
+        assert!(
+            authority.reservations.is_empty(),
+            "surface retirement requires settled publication"
+        );
+        authority.frames.surface_frames.remove(&surface);
     }
 
     pub(crate) fn interaction_hit_test_basis(

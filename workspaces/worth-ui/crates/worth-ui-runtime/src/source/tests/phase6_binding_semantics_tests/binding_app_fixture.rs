@@ -3,8 +3,8 @@ use crate::capability::{
     CommandProjectionId, CommandProjectionSurface, ComponentChildPolicy, ComponentDescriptor,
     ComponentId, ComponentPropSchema, ComponentStateOwnership, IconDescriptor, IconFamily, IconId,
     IconSourceDescriptor, SurfaceDescriptor, SurfaceId, SurfaceKind, SurfacePlacementClass,
-    SurfaceStateClass, ThemeColorValue, ThemeTokenAlias, ThemeTokenDescriptor, ThemeTokenFamily,
-    ThemeTokenId, ThemeTokenSource, ThemeTokenValue, ViewBindingDescriptor, ViewBindingId,
+    SurfaceStateClass, ThemeTokenAlias, ThemeTokenDescriptor, ThemeTokenFamily, ThemeTokenId,
+    ThemeTokenSource, ThemeTokenValue, UiThemeColor, ViewBindingDescriptor, ViewBindingId,
 };
 use crate::facade::{WorthUi, WorthUiApp};
 use worth_ui_dsl::{WorthUiRustAuthoredArtifactInput, WorthUiRustAuthoredArtifactInputModule};
@@ -82,7 +82,7 @@ pub(super) fn app_with_view_binding_descriptor(
             ThemeTokenId::new("theme.text.primary").unwrap(),
             ThemeTokenFamily::text(),
             ThemeTokenSource::application(),
-            ThemeTokenValue::color(ThemeColorValue::hex("#101820").unwrap()),
+            ThemeTokenValue::color(UiThemeColor::parse("#101820").unwrap()),
         ))
         .register_theme_token(ThemeTokenDescriptor::alias(
             ThemeTokenId::new("theme.text.default").unwrap(),

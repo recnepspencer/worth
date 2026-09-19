@@ -1,7 +1,4 @@
-use crate::capability::{
-    ComponentDescriptor, ComponentFocusSupport, ComponentHitTestContract,
-    ComponentStaticPaintContract, ComponentStaticPaintOrder, ThemeTokenId,
-};
+use crate::capability::{ComponentDescriptor, ComponentFocusSupport, ComponentHitTestContract};
 
 use super::digest::{fold, fold_text};
 
@@ -26,16 +23,16 @@ impl WorthUiComponentPlanMeaning {
         self.child_range_identity.as_deref()
     }
 
+    pub(crate) fn same_mounted_layout_meaning(&self, successor: &Self) -> bool {
+        self.descriptor == successor.descriptor
+    }
+
     pub(crate) fn descriptor(&self) -> &ComponentDescriptor {
         &self.descriptor
     }
 
-    pub(crate) fn static_paint_theme_token_dependency(&self) -> Option<&ThemeTokenId> {
-        Some(self.static_paint_contract()?.theme_token())
-    }
-
-    pub(crate) fn static_paint_order(&self) -> Option<ComponentStaticPaintOrder> {
-        Some(self.static_paint_contract()?.order())
+    pub(crate) fn surface_paint_order(&self) -> Option<u32> {
+        self.descriptor.surface_paint_order()
     }
 
     pub(crate) fn semantic_text_layer_order(&self) -> Option<u32> {
@@ -66,18 +63,20 @@ impl WorthUiComponentPlanMeaning {
             .map(crate::capability::ComponentPortalChildContract::owner)
     }
 
-    fn static_paint_contract(&self) -> Option<&ComponentStaticPaintContract> {
-        self.descriptor.static_paint_contract()
-    }
-
     pub(crate) fn semantic_digest(&self) -> u64 {
         let digest = self.descriptor.theme_token_dependencies().iter().fold(
             fold_text(0x636f_6d70_6f6e_656e, self.descriptor.id().as_str()),
             |digest, token| fold_text(fold(digest, 1), token.as_str()),
         );
-        let digest = self
-            .static_paint_order()
-            .map_or(digest, |order| fold(digest, u64::from(order.rank())));
+        let digest = match self.surface_paint_order() {
+            Some(rank) => fold(fold(digest, 0x7375_7266_6f72_6401), u64::from(rank)),
+            None => fold(digest, 0x7375_7266_6f72_6400),
+        };
+        let digest = fold(digest, self.descriptor.surface_geometry().semantic_digest());
+        let digest = fold(
+            digest,
+            u64::from(self.descriptor.portal_surface_appearance()),
+        );
         let digest = self
             .semantic_text_layer_order()
             .map_or(digest, |order| fold(digest, u64::from(order)));
@@ -92,79 +91,16 @@ impl WorthUiComponentPlanMeaning {
             fold_text(fold(digest, 0x706f_7274_616c_6368), owner.as_str())
         })
     }
-
-    #[cfg(test)]
-    pub(crate) fn with_static_paint_order_for_test(rank: u32) -> Self {
-        let descriptor = ComponentDescriptor::new(
-            crate::capability::ComponentId::new("workspace.component.paint")
-                .expect("valid component id"),
-            crate::capability::ComponentPropSchema::named("workspace.component.paint.props"),
-            crate::capability::ComponentChildPolicy::no_children(),
-            crate::capability::ComponentStateOwnership::runtime_owned(),
-        )
-        .with_static_paint(
-            ComponentStaticPaintContract::opaque_fill(
-                crate::capability::ThemeTokenId::new("theme.paint.fill").expect("valid token id"),
-                ComponentStaticPaintOrder::back_to_front(rank),
-            ),
-            crate::capability::ComponentAllocationMeasurementContract::fill_viewport(),
-        );
-        Self::new(descriptor, None)
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::capability::{
-        ComponentAllocationMeasurementContract, ComponentChildPolicy, ComponentDescriptor,
-        ComponentFocusSupport, ComponentId, ComponentPropSchema, ComponentStateOwnership,
-        ComponentStaticPaintContract, ComponentStaticPaintOrder, ComponentViewportInset,
-        ThemeTokenId,
+        ComponentChildPolicy, ComponentDescriptor, ComponentFocusSupport, ComponentId,
+        ComponentPropSchema, ComponentStateOwnership,
     };
 
     use super::WorthUiComponentPlanMeaning;
-
-    #[test]
-    fn static_paint_requires_an_explicit_complete_contract() {
-        let token = ThemeTokenId::new("theme.pulse.fill").expect("valid token id");
-        let generic = meaning(component().with_theme_token_dependency(token.clone()));
-        let inferred = meaning(
-            component()
-                .with_theme_token_dependency(token.clone())
-                .with_allocation_measurement_contract(
-                    ComponentAllocationMeasurementContract::fill_viewport(),
-                ),
-        );
-        let viewport = meaning(component().with_static_paint(
-            ComponentStaticPaintContract::opaque_fill(
-                token.clone(),
-                ComponentStaticPaintOrder::back_to_front(0),
-            ),
-            ComponentAllocationMeasurementContract::fill_viewport(),
-        ));
-        let inset = meaning(component().with_static_paint(
-            ComponentStaticPaintContract::opaque_fill(
-                token.clone(),
-                ComponentStaticPaintOrder::back_to_front(1),
-            ),
-            ComponentAllocationMeasurementContract::viewport_inset(
-                ComponentViewportInset::symmetric(48, 24),
-            ),
-        ));
-
-        assert_eq!(generic.static_paint_theme_token_dependency(), None);
-        assert_eq!(inferred.static_paint_theme_token_dependency(), None);
-        assert_eq!(viewport.static_paint_theme_token_dependency(), Some(&token));
-        assert_eq!(inset.static_paint_theme_token_dependency(), Some(&token));
-        assert_eq!(
-            viewport.static_paint_order(),
-            Some(ComponentStaticPaintOrder::back_to_front(0))
-        );
-        assert_eq!(
-            inset.static_paint_order(),
-            Some(ComponentStaticPaintOrder::back_to_front(1))
-        );
-    }
 
     #[test]
     fn focus_support_survives_into_semantic_plan_meaning() {
@@ -179,6 +115,37 @@ mod tests {
             ComponentFocusSupport::focusable()
         );
         assert_ne!(plain.semantic_digest(), focusable.semantic_digest());
+    }
+
+    #[test]
+    fn surface_paint_order_is_executable_meaning_without_static_paint_inference() {
+        let legacy = component();
+        let variants = [None, Some(0), Some(65_536), Some(u32::MAX)].map(|rank| {
+            let descriptor = rank.map_or_else(
+                || legacy.clone(),
+                |rank| legacy.clone().with_surface_paint_order(rank),
+            );
+            let meaning = meaning(descriptor);
+            assert_eq!(meaning.surface_paint_order(), rank);
+            meaning
+        });
+        for (index, left) in variants.iter().enumerate() {
+            for right in &variants[index + 1..] {
+                assert_ne!(left.semantic_digest(), right.semantic_digest());
+            }
+        }
+        assert_eq!(
+            meaning(component().with_surface_paint_order(23)).surface_paint_order(),
+            Some(23),
+        );
+    }
+
+    #[test]
+    fn portal_surface_composition_changes_plan_and_mounted_reuse_meaning() {
+        let anchor = meaning(component());
+        let children = meaning(component().with_portal_surface_from_children());
+        assert_ne!(anchor.semantic_digest(), children.semantic_digest());
+        assert!(!anchor.same_mounted_layout_meaning(&children));
     }
 
     fn component() -> ComponentDescriptor {

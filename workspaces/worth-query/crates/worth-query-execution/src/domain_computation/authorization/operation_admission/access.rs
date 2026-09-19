@@ -247,6 +247,35 @@ impl<Schema, Operation, Input, Scope>
         Ok(())
     }
 
+    pub(in crate::domain_computation) fn publication_request(
+        &self,
+    ) -> &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope {
+        &self.request_scope
+    }
+
+    pub(in crate::domain_computation) fn bind_source_facts(
+        &mut self,
+        facts: Vec<crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact>,
+    ) {
+        self.source_facts = facts;
+    }
+
+    pub(in crate::domain_computation) fn bind_source_partition(&mut self, identity: [u8; 32]) {
+        self.source_partition_identity = Some(identity);
+    }
+
+    pub(in crate::domain_computation) const fn source_partition_identity(
+        &self,
+    ) -> Option<[u8; 32]> {
+        self.source_partition_identity
+    }
+
+    pub(in crate::domain_computation) fn take_source_facts(
+        &mut self,
+    ) -> Vec<crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact> {
+        std::mem::take(&mut self.source_facts)
+    }
+
     /// Stable identity of the authenticated runtime, installed operation,
     /// principal, and typed scope. It intentionally excludes snapshot identity
     /// so an equivalent authorized retry can retain one idempotency intent.

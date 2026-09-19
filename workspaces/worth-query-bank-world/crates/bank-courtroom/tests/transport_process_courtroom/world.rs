@@ -1,6 +1,11 @@
 use std::net::SocketAddr;
 use std::path::Path;
 
+use bank_external_rail::RailProcessHandle;
+
+#[path = "world/rail.rs"]
+mod rail;
+
 use super::identity_world::administration::AuthentikAdministration;
 use super::identity_world::docker_world::{DockerIdentityWorld, IdentityEndpoints};
 use super::identity_world::fixture::IdentityFixture;
@@ -14,6 +19,7 @@ pub struct TransportProcessWorld {
     approver_node: CourtroomProcess,
     reviewer_node: CourtroomProcess,
     bank_server: CourtroomProcess,
+    rail: RailProcessHandle,
     docker: DockerIdentityWorld,
     fixture: IdentityFixture,
     endpoints: IdentityEndpoints,
@@ -28,6 +34,11 @@ pub struct TransportProcessWorld {
 
 impl TransportProcessWorld {
     pub async fn start() -> Self {
+        let rail = RailProcessHandle::spawn(
+            Path::new(env!("CARGO_BIN_EXE_cold-bank-rail")),
+            "127.0.0.1:0",
+        )
+        .expect("the external rail should start in a separate process");
         let (mut primary_node, primary_bound) = spawn_user_node().await;
         let (mut peer_node, peer_bound) = spawn_user_node().await;
         let (mut approver_node, approver_bound) = spawn_user_node().await;
@@ -64,6 +75,7 @@ impl TransportProcessWorld {
                 &fixture,
                 &endpoints,
                 &primary_redirect,
+                rail.local_addr(),
             ))
             .await
             .expect("authoritative Bank process should become ready");
@@ -111,6 +123,7 @@ impl TransportProcessWorld {
             approver_ready.process_id,
             reviewer_ready.process_id,
             replacement_bound.process_id,
+            rail.pid(),
         ]);
         assert_eq!(parse_address(&server_ready.address), server_address);
         Self {
@@ -120,6 +133,7 @@ impl TransportProcessWorld {
             approver_node,
             reviewer_node,
             bank_server,
+            rail,
             docker,
             fixture,
             endpoints,
@@ -272,6 +286,7 @@ fn server_configuration(
     fixture: &IdentityFixture,
     endpoints: &IdentityEndpoints,
     redirect_url: &str,
+    rail_address: SocketAddr,
 ) -> serde_json::Value {
     let participants = fixture
         .participants()
@@ -291,6 +306,7 @@ fn server_configuration(
         })
         .collect::<Vec<_>>();
     serde_json::json!({
+        "external_rail": rail_address,
         "oidc": {
             "issuer": endpoints.issuer(),
             "client_id": fixture.client_id(),

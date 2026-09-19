@@ -151,6 +151,7 @@ fn execute_content_plan(
     plan: worth_ui::facade::rebind::UiRebindPlan,
     request: u64,
 ) {
+    crate::mounted_geometry_fixture::install_current_occurrence_geometry(session);
     let prepared = session
         .prepare_rebind(plan, UiRebindExecutionRequest::new(request))
         .expect("content plan prepares");
@@ -165,7 +166,7 @@ fn source_candidate(
     provider: &str,
 ) -> worth_ui::facade::source::WorthUiWatchedCandidateSubmission {
     let source = WorthUiSourceProvider::rust_authored(provider).with_rust_authored_input(
-        WorthUiRustAuthoredArtifactInput::from_modules([collection_module(false)]),
+        WorthUiRustAuthoredArtifactInput::from_modules([collection_module()]),
     );
     WorthUiSourceEventIngress::new(source)
         .start()

@@ -4,11 +4,18 @@ mod continuation;
 mod product_unpublished;
 mod progress;
 
+pub use cleanup::ProductUnpublishedCleanup;
 pub use continuation::{ProductUnpublishedNextAction, RecoveryContinuationContract};
 pub use product_unpublished::{
     ProductUnpublishedCause, ProductUnpublishedOwnerEffects, ProductUnpublishedRecoveryHandle,
     ProductUnpublishedRetentionPosture,
 };
+
+#[derive(Debug)]
+pub enum RuntimeWorldSettledRelationalAdoptionDenial {
+    Recovery(RuntimeWorldRecoveryDenial),
+    Publication(crate::publication::NoEffectCompositePublication),
+}
 
 pub(crate) use catalog::{RecoveryCatalog, RecoveryCatalogDenial, ReservedProductUnpublishedSlot};
 pub(crate) use cleanup::RecoveryCleanupOutcome;

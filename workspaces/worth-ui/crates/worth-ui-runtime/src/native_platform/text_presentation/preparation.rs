@@ -2,10 +2,17 @@
 
 use std::num::NonZeroU32;
 
+use sha2::{Digest, Sha256};
 use worth_ui_host_contract::{
     UiGlyphRunView, UiMountedLogicalDamage, UiMountedPaintCommandIdentity,
     UiMountedPresentationWorkView, UiMountedSurfaceBindingRequirement,
 };
+
+#[cfg(test)]
+#[path = "preparation/complete.rs"]
+mod complete;
+#[cfg(test)]
+pub(crate) use complete::prepare_complete_semantic_text;
 
 #[path = "preparation/demand_join.rs"]
 mod demand_join;
@@ -14,10 +21,14 @@ mod mounted_work;
 
 #[cfg(test)]
 use super::rasterization::UiNativeTextRasterWorkReport;
-use demand_join::{prepare_demands, MountedTextDemandJoin, PreparedDemand};
-pub(super) use mounted_work::mounted_semantic_text;
+use demand_join::{prepare_demands, rebuild_glyph_runs, MountedTextDemandJoin, PreparedDemand};
+pub(crate) use mounted_work::mounted_semantic_text;
 use mounted_work::{logical_damage, MountedSemanticTextCommand, MountedSemanticTextWork};
 use worth_ui_text::{UiGlyphRasterDemandBatch, UiGlyphRasterDemandDenial, UiGlyphRasterLane};
+
+use crate::mounting::{
+    UiMountedTextForegroundPresentationBasis, UiMountedTextForegroundReuseReceipt,
+};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum UiNativeTextPresentationReadiness {
@@ -77,6 +88,8 @@ pub(crate) struct UiNativeTextPresentationPrepared {
     pin_set_complete: bool,
     planning: Option<UiNativeTextDemandInspection>,
     performed_layout_work: [u64; 17],
+    #[cfg(test)]
+    foreground_reused: bool,
 }
 
 pub(crate) struct UiNativeTextPresentationDenial {
@@ -91,30 +104,78 @@ pub(crate) fn prepare_mounted_semantic_text<'work>(
     ) -> Option<&'work worth_ui_text::UiQualifiedTextLayout>,
 ) -> Option<UiNativeTextPresentationPreparation> {
     let pin_work = mounted_semantic_text(work);
-    // A delta removal carries only its command identity.  Preserve it here so
-    // the runtime's committed command-to-pin owner can decide whether it is a
-    // text release.  Arbitrary non-text removals remain insufficient because
-    // the mounted text coordinator rejects zero-demand candidates that do not
-    // change committed text ownership.
-    if pin_work.mechanics.is_empty()
-        && pin_work.removals.is_empty()
-        && !pin_work.complete
-        && !matches!(work, UiMountedPresentationWorkView::Delta(_))
-    {
+    // Every mounted successor, including unchanged paint, carries Query
+    // currentness through host acceptance. Empty demand preserves retained
+    // commands and pins without preparing layout or raster work. Physical
+    // samples retain the mounted frame and have their own acceptance path.
+    if matches!(work, UiMountedPresentationWorkView::Sample(_)) {
         return None;
     }
     let lane = lane_for(work);
-    let damage = canonical_damage(logical_damage(work));
     let join = MountedTextDemandJoin {
         dpi,
         lane,
-        damage: &damage,
+        // Native retention replaces each selected command's entire glyph-run set.
+        // Damage narrows replay, not the evidence retained for future replay.
+        selection: worth_ui_text::UiGlyphRasterDemandSelection::CompleteLayout,
         resolve,
         _layout: std::marker::PhantomData,
     };
     Some(match prepare_demands(&pin_work.mechanics, &join) {
         Ok(demands) => inspect_demand_boundary(&pin_work, demands),
         Err(readiness) => denied_preparation(readiness),
+    })
+}
+
+pub(crate) fn prepare_from_foreground_reuse<'work>(
+    work: UiMountedPresentationWorkView<'work>,
+    receipts: &[UiMountedTextForegroundReuseReceipt],
+    basis: UiMountedTextForegroundPresentationBasis,
+    resolve: impl Fn(
+        worth_ui_host_contract::UiQualifiedTextLayoutIdentity,
+    ) -> Option<&'work worth_ui_text::UiQualifiedTextLayout>,
+) -> Option<UiNativeTextPresentationPrepared> {
+    let pin_work = mounted_semantic_text(work);
+    if pin_work.mechanics.len() != receipts.len() || receipts.is_empty() {
+        return None;
+    }
+    let layouts: Vec<&'work worth_ui_text::UiQualifiedTextLayout> = pin_work
+        .mechanics
+        .iter()
+        .zip(receipts)
+        .map(|((command, mechanic), receipt)| {
+            receipt
+                .accepts_successor(*command, mechanic, basis)
+                .then(|| resolve(mechanic.qualified_layout_identity()))?
+        })
+        .collect::<Option<Vec<_>>>()?;
+    let demands = receipts
+        .iter()
+        .map(|receipt| receipt.demand().clone())
+        .collect::<Vec<_>>()
+        .into_boxed_slice();
+    let glyph_runs = rebuild_glyph_runs(&pin_work.mechanics, &layouts, &demands);
+    Some(UiNativeTextPresentationPrepared {
+        layout_count: demands.len(),
+        paint_span_count: paint_span_count(&pin_work.mechanics),
+        demand_batches: demands,
+        glyph_runs,
+        pin_commands: pin_work
+            .mechanics
+            .iter()
+            .map(|(identity, _)| *identity)
+            .collect::<Vec<_>>()
+            .into_boxed_slice(),
+        pin_removals: pin_work.removals.into_boxed_slice(),
+        pin_set_complete: pin_work.complete,
+        planning: Some(UiNativeTextDemandInspection {
+            demand_batches: 0,
+            demand_records: 0,
+            key_checks: 0,
+        }),
+        performed_layout_work: [0; 17],
+        #[cfg(test)]
+        foreground_reused: true,
     })
 }
 
@@ -139,6 +200,20 @@ fn canonical_damage(damage: &[UiMountedLogicalDamage]) -> Vec<UiMountedLogicalDa
         )
     });
     canonical
+}
+
+pub(crate) fn presentation_damage_digest(work: UiMountedPresentationWorkView<'_>) -> [u8; 32] {
+    let damage = canonical_damage(logical_damage(work));
+    let mut digest = Sha256::new();
+    digest.update((damage.len() as u64).to_le_bytes());
+    for region in damage {
+        let bounds = region.bounds();
+        digest.update(bounds.x().to_bits().to_le_bytes());
+        digest.update(bounds.y().to_bits().to_le_bytes());
+        digest.update(bounds.width().to_bits().to_le_bytes());
+        digest.update(bounds.height().to_bits().to_le_bytes());
+    }
+    digest.finalize().into()
 }
 
 fn inspect_demand_boundary(
@@ -171,6 +246,8 @@ fn inspect_demand_boundary(
         pin_set_complete: pin_work.complete,
         planning: Some(inspection),
         performed_layout_work: layout_work_counts(&pin_work.mechanics),
+        #[cfg(test)]
+        foreground_reused: false,
     })
 }
 
@@ -214,6 +291,11 @@ impl UiNativeTextPresentationPrepared {
 
     pub(crate) const fn performed_layout_work(&self) -> [u64; 17] {
         self.performed_layout_work
+    }
+
+    #[cfg(test)]
+    pub(crate) const fn foreground_reused(&self) -> bool {
+        self.foreground_reused
     }
 }
 
@@ -280,3 +362,11 @@ fn lane_for(work: UiMountedPresentationWorkView<'_>) -> UiGlyphRasterLane {
 #[cfg(test)]
 #[path = "preparation_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "preparation/retained_demand_tests.rs"]
+mod retained_demand_tests;
+
+#[cfg(test)]
+#[path = "preparation/currentness_tests.rs"]
+mod currentness_tests;

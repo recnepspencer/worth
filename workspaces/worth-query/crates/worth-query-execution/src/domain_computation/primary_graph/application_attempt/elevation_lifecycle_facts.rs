@@ -25,6 +25,7 @@ pub(super) struct WorthQueryElevationLifecycleFactExpectation<'a> {
     pub(super) review_identity: (&'a AspectFieldLocator, &'a AspectValue),
     pub(super) review_type: (&'a AspectFieldLocator, &'a AspectValue),
     pub(super) review_status: (&'a AspectFieldLocator, &'a AspectValue),
+    pub(super) absent_fields: &'a [(EntityId, &'a AspectFieldLocator)],
     pub(super) requester_relation: KindId,
     pub(super) approver_relation: KindId,
     pub(super) grant_relation: KindId,
@@ -48,10 +49,15 @@ pub(super) fn lifecycle_facts_are_exact(
         (expected.review, expected.review_type),
         (expected.review, expected.review_status),
     ];
-    facts.len() == 14 + usize::from(expected.resource_relation.is_some())
+    facts.len()
+        == 14 + usize::from(expected.resource_relation.is_some()) + expected.absent_fields.len()
         && fields
             .into_iter()
             .all(|(entity, (locator, value))| exact_field(facts, entity, locator, value))
+        && expected
+            .absent_fields
+            .iter()
+            .all(|(entity, locator)| exact_absent_field(facts, *entity, locator))
         && exact_relation_set(
             facts,
             expected.requester_relation,
@@ -103,6 +109,24 @@ pub(super) fn lifecycle_facts_are_exact(
             WorthQueryApplicationAdjacencyDirection::Incoming,
             expected.reviewer,
         )
+}
+
+fn exact_absent_field(
+    facts: &[WorthQueryApplicationObservedFact],
+    entity: EntityId,
+    locator: &AspectFieldLocator,
+) -> bool {
+    facts
+        .iter()
+        .filter(|fact| {
+            matches!(fact, WorthQueryApplicationObservedFact::AbsentField {
+                entity_id,
+                locator: observed_locator,
+                ..
+            } if *entity_id == entity && observed_locator == locator)
+        })
+        .count()
+        == 1
 }
 
 fn exact_relation_set(

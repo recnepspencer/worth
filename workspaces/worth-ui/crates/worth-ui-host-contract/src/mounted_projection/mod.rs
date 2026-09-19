@@ -1,9 +1,13 @@
+mod appearance;
+pub use appearance::{UiMountedLinearGradient, UiMountedSurfaceFill};
+mod color;
 mod geometry;
 mod headless_cache;
 mod headless_observation;
 mod hit_test;
 mod identity_overlay;
 mod participation;
+mod portal_child_geometry;
 #[cfg(test)]
 mod portal_child_presentation_tests;
 mod portal_overlay;
@@ -11,10 +15,46 @@ mod portal_presentation;
 mod preview;
 mod resource;
 mod semantic_text;
-mod static_paint;
 mod tables;
 mod view;
 
+pub use appearance::{
+    compose_source_over, UiAppearanceAllocationBounds, UiAppearanceBackdropExtent,
+    UiAppearanceClip, UiAppearanceDamageAttribution, UiAppearanceDamageRegion,
+    UiAppearanceEmptyRegion, UiAppearanceGeometryOverflow, UiAppearanceLogicalLength,
+    UiAppearanceNegativeLength, UiAppearanceNormalizedLogicalRadii, UiAppearanceOutlineGeometry,
+    UiAppearanceOutlineGeometryDenial, UiAppearanceTextDamageRequirement,
+    UiAppearanceTextDamageTransition, UiAppearanceVisualBounds,
+    UiHostAppearanceGeometryQualification, UiHostAppearanceGeometryQualificationBasis,
+    UiHostAppearanceGeometryQualificationDenial, UiHostAppearanceMechanicFamily,
+    UiHostAppearanceProfileContract, UiHostAppearanceProfileDenial, UiHostAppearanceProfilePosture,
+    UiHostAppearanceScaleDenial, UiHostAppearanceScaleGeometryQualification,
+    UiHostPrimaryPointerKind, UiMountedAppearanceColor, UiMountedAppearanceFrame,
+    UiMountedAppearanceFrameDenial, UiMountedAppearanceMechanic, UiMountedAppearanceMechanicChange,
+    UiMountedAppearanceMechanicIdentity, UiMountedAppearanceOpacity,
+    UiMountedAppearancePredecessorManifest, UiMountedAppearanceWork,
+    UiMountedAppearanceWorkPosture, UiMountedBackdropAppearanceAttribution,
+    UiMountedBackdropCompletionDenial, UiMountedBackdropCompletionInput, UiMountedBackdropIdentity,
+    UiMountedBackdropMechanic, UiMountedBackdropScope, UiMountedNodeAppearanceAttribution,
+    UiMountedOutlineAppearanceCompletionDenial, UiMountedOutlineAppearanceCompletionInput,
+    UiMountedOutlineAppearanceMechanic, UiMountedOverlayOrderMechanic,
+    UiMountedOverlayOrderMechanicDenial, UiMountedPointerAffordanceMechanic,
+    UiMountedPortalSurfaceAppearanceCompletionDenial, UiMountedPortalSurfaceAppearanceMechanic,
+    UiMountedSurfaceAppearanceCompletionDenial, UiMountedSurfaceAppearanceCompletionInput,
+    UiMountedSurfaceAppearanceMechanic, UiMountedSurfaceBorderEdges,
+    UiMountedSurfaceBorderOmission, UiMountedSurfaceBorderSide, UiMountedSurfacePaint,
+    UiMountedTextForegroundAppearanceCompletionDenial,
+    UiMountedTextForegroundAppearanceCompletionInput, UiMountedTextForegroundAppearanceMechanic,
+    UiOverlayParticipantIdentity, UiOverlayPlacementReceipt, UiPointerAffordanceFamily,
+    UiUnpublishedAppearanceFragment, UiUnpublishedAppearanceFragmentIdentity,
+    UiUnpublishedAppearanceFrameProjection, UiUnpublishedAppearanceFrameProjectionDenial,
+    SRGB_GAMMA_DENOMINATOR, SRGB_GAMMA_NUMERATOR, SRGB_LINEAR_SCALE_DENOMINATOR,
+    SRGB_LINEAR_SCALE_NUMERATOR, SRGB_LINEAR_THRESHOLD_DENOMINATOR,
+    SRGB_LINEAR_THRESHOLD_NUMERATOR, SRGB_OFFSET_DENOMINATOR, SRGB_OFFSET_NUMERATOR,
+    SRGB_SCALE_DENOMINATOR, SRGB_SCALE_NUMERATOR, UI_APPEARANCE_LOGICAL_SUBPIXELS_PER_POINT,
+    UI_HOST_APPEARANCE_GEOMETRY_ROW_CAPACITY, UI_UNPUBLISHED_APPEARANCE_FRAGMENT_CAPACITY,
+};
+pub use color::UiMountedRgba8;
 pub use geometry::{
     UiMountedAllocationBasis, UiMountedAllocationProjection, UiMountedCanonicalBox,
     UiMountedCanonicalBoxInput, UiMountedCoordinateSpace, UiMountedGeometryDenial,
@@ -62,11 +102,6 @@ pub use semantic_text::{
     UiMountedTextSchemaVersion, UiSemanticTextBaselinePosture, UiSemanticTextProfile,
     UiSemanticTextSlot, UiSemanticTextWrapPosture,
 };
-pub use static_paint::{
-    UiMountedFilledRectCompletionDenial, UiMountedFilledRectCompletionInput,
-    UiMountedFilledRectMechanic, UiMountedFilledRectReference, UiMountedFilledRectTable,
-    UiMountedFilledRectTableDenial, UiMountedRgba8, UiMountedStaticPaintSchemaVersion,
-};
 pub use tables::{
     UiMountedClipProjection, UiMountedClipReference, UiMountedClipRow, UiMountedClipTable,
     UiMountedLayerProjection, UiMountedLayerReference, UiMountedLayerRow, UiMountedLayerTable,
@@ -78,4 +113,9 @@ pub use tables::{
 pub use view::{
     UiMountedDrawableReference, UiMountedNodeProjectionView, UiMountedNodeProjectionViewInput,
     UiMountedProjectionView, UiMountedProjectionViewInput,
+};
+
+pub use appearance::{
+    NormalizedPoint, UiSoftShadowGeometry, UiSurfaceGeometry, UiSurfaceGeometryDenial,
+    UiVectorSurfaceGeometry, VectorPath, VectorPathDenial, VectorPathSegment,
 };

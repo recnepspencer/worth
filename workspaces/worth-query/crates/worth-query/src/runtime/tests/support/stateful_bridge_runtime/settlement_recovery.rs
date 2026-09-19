@@ -9,11 +9,11 @@ impl crate::runtime::WorthQuerySettlementRecoveryBackend for StatefulBridgeRunti
         crate::runtime::WorthQuerySettlementRepairError,
     > {
         self.state
-            .borrow_mut()
-            .relational_runtime
-            .as_mut()
-            .ok_or(crate::runtime::WorthQuerySettlementRepairError::RelationalOwnerUnavailable)?
-            .repair_deferred_publication_settlement(deferred.settlement())
+            .borrow()
+            .relational_source
+            .with_runtime_mut(|runtime| {
+                runtime.repair_deferred_publication_settlement(deferred.settlement())
+            })
             .map_err(Into::into)
     }
 
@@ -25,11 +25,9 @@ impl crate::runtime::WorthQuerySettlementRecoveryBackend for StatefulBridgeRunti
         crate::runtime::WorthQuerySettlementRepairError,
     > {
         self.state
-            .borrow_mut()
-            .relational_runtime
-            .as_mut()
-            .ok_or(crate::runtime::WorthQuerySettlementRepairError::RelationalOwnerUnavailable)?
-            .repair_pending_publication_settlement(commit_id)
+            .borrow()
+            .relational_source
+            .with_runtime_mut(|runtime| runtime.repair_pending_publication_settlement(commit_id))
             .map_err(Into::into)
     }
 }

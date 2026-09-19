@@ -8,6 +8,14 @@ impl<'runtime> VisibilityReadContext<'runtime> {
 
     pub fn read_snapshot(&self, handle: &SnapshotHandle) -> Option<RelationalReadView> {
         let resolved = resolve_snapshot_state(self.runtime, handle)?;
+        if resolved
+            .state
+            .basis
+            .root()
+            .is_some_and(|root| root.has_materialization_unavailable())
+        {
+            return None;
+        }
         Some(read_view_from_snapshot_state(
             self.runtime,
             &resolved.state,
@@ -47,6 +55,9 @@ impl<'runtime> VisibilityReadContext<'runtime> {
     pub fn query_plan_context(&self, handle: &SnapshotHandle) -> Option<QueryPlanContextId> {
         let snapshot = self.resolved_snapshot_handle(handle)?;
         let basis = resolve_snapshot_basis(self.runtime, &snapshot)?;
+        if basis.root().has_materialization_unavailable() {
+            return None;
+        }
         let root = basis.root();
         let (schema_version, descriptor_semantics_version, evidence_basis) =
             query_schema_context_for_root(root);
@@ -66,6 +77,12 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         observation: &crate::mvcc::RelationalBranchObservation,
     ) -> Result<RelationalReadView, crate::branch::RelationalBranchBasisDenial> {
         self.require_local_observation(observation)?;
+        if observation
+            .selected_root()
+            .has_materialization_unavailable()
+        {
+            return Err(crate::branch::RelationalBranchBasisDenial::MaterializationUnavailable);
+        }
         let state = build_visibility_state(
             self.runtime,
             crate::visibility::snapshot_states::VisibilitySnapshotBasis::from_observation(

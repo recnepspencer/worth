@@ -39,19 +39,17 @@ impl SignalGraph {
         let desired = desired.as_slice();
         let analysis = analyze_dependency_reconciliation(self.raw_dependencies_of(node)?, desired);
         if analysis.changed() {
-            let invalidates_dependency_causes = !self.pending_causes(node)?.is_empty();
-            self.release_pending_causes(node)?;
-            self.advance_node_dependency_revision(node)?;
-            if invalidates_dependency_causes {
-                self.set_node_state(node, crate::data::node::NodeState::MaybeStale)?;
-            }
-            self.set_dependency_edges_sorted_with_delta(node, desired, analysis.delta)?;
+            self.set_dependency_edges_sorted_with_delta(
+                node,
+                desired,
+                analysis.delta,
+                &mut crate::logic::evaluation::EvaluationWork::Ordinary,
+            )?;
             self.reconcile_dependency_subscribers(
                 node,
                 &analysis.current_sources,
                 &analysis.desired_sources,
             )?;
-            self.transition_node_structural_revalidation(node)?;
             let performed = self.invalidation_performed_counter_state();
             performed.add(
                 InvalidationPerformedCounter::TopologyRevisionRevalidations,
@@ -102,20 +100,18 @@ impl SignalGraph {
             if !analysis.changed() {
                 continue;
             }
-            let invalidates_dependency_causes = !self.pending_causes(*node)?.is_empty();
-            self.release_pending_causes(*node)?;
-            self.advance_node_dependency_revision(*node)?;
-            if invalidates_dependency_causes {
-                self.set_node_state(*node, crate::data::node::NodeState::MaybeStale)?;
-            }
             collect_subscriber_batch_ops(
                 &mut subscriber_ops,
                 *node,
                 &analysis.current_sources,
                 &analysis.desired_sources,
             );
-            self.set_dependency_edges_sorted_with_delta(*node, desired, analysis.delta)?;
-            self.transition_node_structural_revalidation(*node)?;
+            self.set_dependency_edges_sorted_with_delta(
+                *node,
+                desired,
+                analysis.delta,
+                &mut crate::logic::evaluation::EvaluationWork::Ordinary,
+            )?;
             let performed = self.invalidation_performed_counter_state();
             performed.add(
                 InvalidationPerformedCounter::TopologyRevisionRevalidations,
@@ -133,19 +129,25 @@ impl SignalGraph {
         node: NodeId,
         edges: &[DependencyEdge],
     ) -> Result<(), SignalError> {
+        self.set_dependency_edges_sorted_with_work(
+            node,
+            edges,
+            &mut crate::logic::evaluation::EvaluationWork::Ordinary,
+        )
+    }
+
+    pub(in crate::data::graph) fn set_dependency_edges_sorted_with_work(
+        &mut self,
+        node: NodeId,
+        edges: &[DependencyEdge],
+        work: &mut crate::logic::evaluation::EvaluationWork<'_>,
+    ) -> Result<(), SignalError> {
         let current = self.raw_dependencies_of(node)?;
         let delta = diff_dependency_topology(current, edges);
         if delta.added_edges.is_empty() && delta.removed_edges.is_empty() {
             return Ok(());
         }
-        let invalidates_dependency_causes = !self.pending_causes(node)?.is_empty();
-        self.release_pending_causes(node)?;
-        self.advance_node_dependency_revision(node)?;
-        if invalidates_dependency_causes {
-            self.set_node_state(node, crate::data::node::NodeState::MaybeStale)?;
-        }
-        self.set_dependency_edges_sorted_with_delta(node, edges, delta)?;
-        self.transition_node_structural_revalidation(node)
+        self.set_dependency_edges_sorted_with_delta(node, edges, delta, work)
     }
 }
 

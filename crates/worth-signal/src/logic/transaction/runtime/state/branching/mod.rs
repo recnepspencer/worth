@@ -30,8 +30,11 @@ pub use crate::branch::{
     SignalBranchRetirementBatchDenial, SignalBranchRetirementBatchReceipt,
     SignalBranchRetirementDenial, SignalBranchRetirementReason, SignalBranchRetirementReceipt,
 };
+#[cfg(test)]
 pub use basis::{
     bridge_signal_branch_basis_trust_boundary, BoundaryBridgedSignalBranchBasisArtifact,
+};
+pub use basis::{
     SignalBranchBasis, SignalBranchBasisArtifact, SignalBranchBasisDenial,
     SignalBranchBasisIdentity, SignalBranchBasisReady, SignalBranchBasisValidationOutcome,
     SignalBranchHeadPosture, SignalBranchRestorePosture, StaleSignalBranchBasisArtifact,
@@ -45,9 +48,9 @@ pub(in crate::logic::transaction::runtime) use branches::{
     BranchManager, SignalOwnerPartitionDenial,
 };
 pub(crate) use branches::{
-    BranchState, SignalOwnerMetadataCloseBatch, SignalOwnerMetadataState, SignalOwnerPartition,
-    SignalOwnerRetirementCleanup, SignalOwnerSnapshotReservationDenial, SnapshotBranchState,
-    SnapshotStatePacket,
+    BranchState, SignalCanonicalCallerUnwind, SignalOwnerMetadataCloseBatch,
+    SignalOwnerMetadataState, SignalOwnerPartition, SignalOwnerRetirementCleanup,
+    SignalOwnerSnapshotReservationDenial, SnapshotBranchState, SnapshotStatePacket,
 };
 pub use fork_contract::{
     SignalBranchForkDenial, SignalBranchForkReceipt, SignalBranchForkRequest,

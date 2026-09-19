@@ -1,0 +1,12 @@
+error[E0599]: no method named `install_runtime_world_owned_async_product_authority` found for reference `&BridgeSealedRuntimeAssembly` in the current scope
+ --> tests/ui/owned_async_product_authority_installation_removed.rs:5:10
+  |
+4 | /     bridge
+5 | |         .install_runtime_world_owned_async_product_authority(())
+  | |_________-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+help: there is a method `installed_owned_async_declaration` with a similar name
+  |
+5 -         .install_runtime_world_owned_async_product_authority(())
+5 +         .installed_owned_async_declaration(())
+  |

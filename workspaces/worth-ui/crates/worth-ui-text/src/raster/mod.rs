@@ -56,7 +56,7 @@ pub use color::{
 pub use cost::{UiGlyphRasterCost, UiGlyphRasterLaneCost};
 pub use demand::{
     derive_glyph_raster_demand, UiGlyphRasterDemandBatch, UiGlyphRasterDemandDenial,
-    UiGlyphRasterDemandRequest, UiGlyphRasterScale,
+    UiGlyphRasterDemandRequest, UiGlyphRasterDemandSelection, UiGlyphRasterScale,
 };
 pub use denial::UiGlyphRasterizationDenial;
 pub use key::admit_raster_key;
@@ -234,6 +234,8 @@ mod demand_alpha_tests;
 pub(crate) mod demand_identity_tests;
 #[cfg(test)]
 mod demand_ligature_tests;
+#[cfg(test)]
+mod demand_scope_tests;
 
 #[cfg(test)]
 mod alpha_transaction_tests;

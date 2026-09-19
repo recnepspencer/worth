@@ -266,9 +266,10 @@ fn validate_proposal_basis(
     authority: &WorthQuerySessionEffectAuthority<'_>,
     step: &WorthQueryProvisionalEffectStep,
 ) -> Result<(), WorthQueryProvisionalFailure> {
-    if step.proposal_basis().is_some_and(|proposal| {
-        proposal.semantic_basis_identity() != authority.plan().basis_identity()
-    }) {
+    if step
+        .proposal_basis()
+        .is_some_and(|proposal| !proposal.belongs_to(authority.terminal_binding()))
+    {
         Err(WorthQueryProvisionalFailure::new(
             WorthQueryProvisionalDenialKind::ProposalBasisMismatch,
             "proposal basis does not match the sealed semantic basis",

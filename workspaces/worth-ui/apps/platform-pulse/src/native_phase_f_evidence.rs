@@ -2,7 +2,7 @@ pub(crate) fn intrinsic_glyphs(
     receipt: &worth_ui_native_platform::UiNativePlatformCloseReceipt,
 ) -> Vec<serde_json::Value> {
     receipt
-        .presentation()
+        .final_frame()
         .intrinsic_glyphs()
         .iter()
         .copied()
@@ -25,7 +25,7 @@ pub(crate) fn alpha_glyphs(
     receipt: &worth_ui_native_platform::UiNativePlatformCloseReceipt,
 ) -> Vec<serde_json::Value> {
     receipt
-        .presentation()
+        .final_frame()
         .alpha_glyphs()
         .iter()
         .copied()

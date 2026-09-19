@@ -4,8 +4,8 @@ use super::replacement_impact_test_support::{
 use crate::capability::{
     ComponentChildPolicy, ComponentDescriptor, ComponentId, ComponentPropSchema,
     ComponentStateOwnership, SurfaceDescriptor, SurfaceId, SurfaceKind, SurfacePlacementClass,
-    SurfaceStateClass, ThemeColorValue, ThemeTokenDescriptor, ThemeTokenFamily, ThemeTokenId,
-    ThemeTokenSource, ThemeTokenValue, WorthUiQueryViewRegistration,
+    SurfaceStateClass, ThemeTokenDescriptor, ThemeTokenFamily, ThemeTokenId, ThemeTokenSource,
+    ThemeTokenValue, UiThemeColor, WorthUiQueryViewRegistration,
 };
 use crate::facade::{WorthUi, WorthUiApp};
 use crate::runtime::{WorthUiRuntimeLaunch, WorthUiSourceProvider};
@@ -138,7 +138,7 @@ fn theme_token(id: &str, color: &str) -> ThemeTokenDescriptor {
         ThemeTokenId::new(id).expect("valid token id"),
         ThemeTokenFamily::text(),
         ThemeTokenSource::application(),
-        ThemeTokenValue::color(ThemeColorValue::hex(color).expect("valid color")),
+        ThemeTokenValue::color(UiThemeColor::parse(color).expect("valid color")),
     )
 }
 

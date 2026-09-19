@@ -19,7 +19,6 @@ pub(super) struct WorthQueryApplicationAttemptWorkLedger {
     external_dispatch_admissions: AtomicU64,
 }
 
-#[cfg(test)]
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub(crate) struct WorthQueryApplicationAttemptWorkSnapshot {
     pub(crate) retained_resolutions: u64,
@@ -72,7 +71,6 @@ impl WorthQueryApplicationAttemptWorkLedger {
         external_dispatch_admissions
     );
 
-    #[cfg(test)]
     pub(super) fn snapshot(&self) -> WorthQueryApplicationAttemptWorkSnapshot {
         WorthQueryApplicationAttemptWorkSnapshot {
             retained_resolutions: load(&self.retained_resolutions),
@@ -92,32 +90,50 @@ impl WorthQueryApplicationAttemptWorkLedger {
     }
 }
 
-#[cfg(test)]
 impl WorthQueryApplicationAttemptWorkSnapshot {
     pub(crate) fn since(self, earlier: Self) -> Self {
         Self {
-            retained_resolutions: self.retained_resolutions - earlier.retained_resolutions,
-            managed_bridge_plans: self.managed_bridge_plans - earlier.managed_bridge_plans,
-            provider_session_readmissions: self.provider_session_readmissions
-                - earlier.provider_session_readmissions,
-            provider_session_preparations: self.provider_session_preparations
-                - earlier.provider_session_preparations,
-            staged_session_preparations: self.staged_session_preparations
-                - earlier.staged_session_preparations,
-            attempt_registrations: self.attempt_registrations - earlier.attempt_registrations,
-            overlay_stagings: self.overlay_stagings - earlier.overlay_stagings,
-            invariant_state_loads: self.invariant_state_loads - earlier.invariant_state_loads,
-            invariant_executions: self.invariant_executions - earlier.invariant_executions,
-            prepared_commits: self.prepared_commits - earlier.prepared_commits,
-            attempt_aborts: self.attempt_aborts - earlier.attempt_aborts,
-            managed_cleanups: self.managed_cleanups - earlier.managed_cleanups,
-            external_dispatch_admissions: self.external_dispatch_admissions
-                - earlier.external_dispatch_admissions,
+            retained_resolutions: self
+                .retained_resolutions
+                .saturating_sub(earlier.retained_resolutions),
+            managed_bridge_plans: self
+                .managed_bridge_plans
+                .saturating_sub(earlier.managed_bridge_plans),
+            provider_session_readmissions: self
+                .provider_session_readmissions
+                .saturating_sub(earlier.provider_session_readmissions),
+            provider_session_preparations: self
+                .provider_session_preparations
+                .saturating_sub(earlier.provider_session_preparations),
+            staged_session_preparations: self
+                .staged_session_preparations
+                .saturating_sub(earlier.staged_session_preparations),
+            attempt_registrations: self
+                .attempt_registrations
+                .saturating_sub(earlier.attempt_registrations),
+            overlay_stagings: self
+                .overlay_stagings
+                .saturating_sub(earlier.overlay_stagings),
+            invariant_state_loads: self
+                .invariant_state_loads
+                .saturating_sub(earlier.invariant_state_loads),
+            invariant_executions: self
+                .invariant_executions
+                .saturating_sub(earlier.invariant_executions),
+            prepared_commits: self
+                .prepared_commits
+                .saturating_sub(earlier.prepared_commits),
+            attempt_aborts: self.attempt_aborts.saturating_sub(earlier.attempt_aborts),
+            managed_cleanups: self
+                .managed_cleanups
+                .saturating_sub(earlier.managed_cleanups),
+            external_dispatch_admissions: self
+                .external_dispatch_admissions
+                .saturating_sub(earlier.external_dispatch_admissions),
         }
     }
 }
 
-#[cfg(test)]
 fn load(counter: &AtomicU64) -> u64 {
     counter.load(Ordering::Relaxed)
 }

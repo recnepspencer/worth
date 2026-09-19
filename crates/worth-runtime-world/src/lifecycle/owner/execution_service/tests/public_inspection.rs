@@ -174,8 +174,9 @@ fn recovery_pages_bound_active_work_and_age_starts_at_admission() {
         page.rows()[0].handle().identity(),
         page3.rows()[0].handle().identity()
     );
+    let mut foreign_fixture = reference_test_fixture::real_fixture(12, 12);
     let foreign = TestOwner::new(
-        fixture.owner_inputs(budgets(4), RuntimeWorldClock::from_source(clock.clone())),
+        foreign_fixture.owner_inputs(budgets(4), RuntimeWorldClock::from_source(clock.clone())),
     )
     .unwrap();
     assert!(matches!(

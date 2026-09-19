@@ -60,6 +60,25 @@ pub(super) fn custom_invariant_identity_diagnostic_value(
     ])
 }
 
+pub(super) fn custom_invariant_semantic_identity_diagnostic_value(
+    identity: &crate::validation::data::CustomInvariantSemanticIdentity,
+) -> RelationalDiagnosticValue {
+    RelationalDiagnosticValue::object([
+        (
+            "rule_id",
+            RelationalDiagnosticValue::string(identity.rule_id.as_str()),
+        ),
+        (
+            "semantic_version_major",
+            RelationalDiagnosticValue::Unsigned(u64::from(identity.semantic_version.major)),
+        ),
+        (
+            "semantic_version_minor",
+            RelationalDiagnosticValue::Unsigned(u64::from(identity.semantic_version.minor)),
+        ),
+    ])
+}
+
 pub(super) fn optional_label(label: Option<&str>) -> RelationalDiagnosticValue {
     RelationalDiagnosticValue::optional(label.map(RelationalDiagnosticValue::string))
 }

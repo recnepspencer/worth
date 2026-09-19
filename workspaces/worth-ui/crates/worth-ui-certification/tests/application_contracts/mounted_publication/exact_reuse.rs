@@ -63,21 +63,20 @@ fn ordinary_publication_preserves_predecessor_and_exact_reuse_skips_the_adapter(
         "effect-free rejection preserves predecessor publication"
     );
 
-    let binding = session.inspect_mounted_identity().surface_bindings()[0];
-    session
-        .rebind_host_surface(
-            binding.binding_generation(),
-            binding.presentation_mode(),
-            profile(2),
-        )
-        .unwrap();
+    drop(rejected);
     host.push_presented();
-    assert!(matches!(
+    let recovered = published(
         session
-            .execute_mounted_frame(request, UiPresentationDeadline::at_tick(30), 3, |_| {},)
-            .unwrap_or_else(|_| panic!("rebound frame remains executable")),
-        UiMountedFrameOutcome::Published(_)
-    ));
+            .execute_mounted_frame(
+                UiMountedFrameRequest::all_bound_surfaces(),
+                UiPresentationDeadline::at_tick(30),
+                3,
+                |_| {},
+            )
+            .unwrap_or_else(|_| panic!("publication recovers after effect-free rejection")),
+    );
+    assert_eq!(recovered.predecessor(), Some(first.frame()));
+    assert_eq!(session.current_mounted_publication(), Some(&recovered));
 }
 
 fn assert_constant_unchanged_cost(cost: worth_ui_runtime::facade::mounted::UiMountCostReport) {

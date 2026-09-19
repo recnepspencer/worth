@@ -1,4 +1,8 @@
-use worth_ui::facade::app::{UiMountedFrameOutcome, UiMountedFrameRequest, UiPresentationDeadline};
+use worth_ui::facade::app::{
+    UiMountedCanonicalBox, UiMountedCanonicalBoxInput, UiMountedCoordinateSpace,
+    UiMountedFrameOutcome, UiMountedFrameRequest, UiMountedLayoutRevision,
+    UiMountedOccurrenceGeometry, UiMountedSurfaceGeometryBatch, UiPresentationDeadline,
+};
 use worth_ui_host_headless::WorthUiHeadlessRecorder;
 use worth_ui_runtime::facade::mounted::{UiHostSurfacePresentationMode, UiMountedFrameReuse};
 use worth_ui_test_support::{
@@ -10,10 +14,10 @@ use super::mounted_application_lifecycle::known_empty_surface_world::{
     first_node, mounted_application_with_host, profile,
 };
 
-// Revision 4 retains predecessor protocol state plus the Phase 3 receipt, order,
-// damage, and structural-sharing indexes. This local ceiling complements the
-// retained-scale slope proofs; it is not itself an O(k) claim.
-const MAX_CHANGED_PUBLIC_ALLOCATIONS: u64 = 144;
+// The changed path retains predecessor protocol state plus receipt, order,
+// damage, and Gate 4 appearance-membership indexes. This local ceiling
+// complements the retained-scale slope proofs; it is not itself an O(k) claim.
+const MAX_CHANGED_PUBLIC_ALLOCATIONS: u64 = 192;
 const MAX_CHANGED_PUBLIC_BYTES: u64 = 64 * 1_024;
 
 #[test]
@@ -160,6 +164,7 @@ fn public_unchanged_is_allocation_free_and_one_instance_change_is_bounded() {
     session
         .mount_instance(node, surface)
         .expect("one-instance mounted delta is admitted");
+    install_stable_cost_geometry(&mut session, surface, 2);
     let mut changed = None;
     let changed_allocations = allocation_counter::measure(|| {
         changed = Some(
@@ -218,7 +223,56 @@ fn mount_one(
     session
         .mount_instance(node, surface)
         .expect("one graph node mounts");
+    install_stable_cost_geometry(session, surface, 1);
     surface
+}
+
+fn install_stable_cost_geometry(
+    session: &mut worth_ui::facade::app::WorthUiActiveApplicationSession,
+    surface: worth_ui_runtime::facade::mounted::UiSemanticSurfaceIdentity,
+    revision: u64,
+) {
+    let identity = session.inspect_mounted_identity();
+    let mut instances = identity
+        .mounted_instances()
+        .iter()
+        .filter(|instance| instance.basis().semantic_surface_identity() == surface)
+        .map(|instance| instance.identity())
+        .collect::<Vec<_>>();
+    instances.sort_unstable();
+    let occurrences = instances
+        .into_iter()
+        .enumerate()
+        .map(|(slot, instance)| {
+            UiMountedOccurrenceGeometry::surface(
+                instance,
+                canonical_box([8.0 + slot as f32 * 36.0, 12.0, 28.0, 20.0]),
+            )
+        })
+        .collect::<Vec<_>>();
+    let mut layout = session.begin_mounted_layout();
+    let basis = layout
+        .basis(surface)
+        .expect("cost fixture surface remains bound during layout");
+    layout
+        .complete_surface_geometry(UiMountedSurfaceGeometryBatch::new(
+            basis,
+            UiMountedLayoutRevision::new(revision).expect("cost fixture revisions are nonzero"),
+            canonical_box([0.0, 0.0, 1_280.0, 720.0]),
+            occurrences,
+        ))
+        .expect("cost fixture geometry covers every mounted occurrence");
+}
+
+fn canonical_box([x, y, width, height]: [f32; 4]) -> UiMountedCanonicalBox {
+    UiMountedCanonicalBox::canonicalize(UiMountedCanonicalBoxInput {
+        x,
+        y,
+        width,
+        height,
+        coordinate_space: UiMountedCoordinateSpace::HostSurface,
+    })
+    .expect("cost fixture geometry is finite")
 }
 
 fn published(

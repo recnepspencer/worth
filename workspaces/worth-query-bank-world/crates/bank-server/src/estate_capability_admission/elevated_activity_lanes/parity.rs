@@ -1,3 +1,4 @@
+use bank_domain::estate::{EmergencyAccessId, EmergencyAccessStatus};
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationLiveControls, WorthQueryApplicationQueryResumeControls,
 };
@@ -9,7 +10,7 @@ use worth_query_host::facade::publication::domain_computation::{
 
 use super::support::{
     activity_request, activity_world, approve_first, assert_resources_released, controls, items,
-    take_first_requested,
+    take_first_requested, FIRST_ACCESS,
 };
 use crate::{
     BankApplicationLiveCloseOutcome, BankEstateEmergencyAccessActivityLiveOutcome, BankReadControls,
@@ -63,14 +64,31 @@ fn exact_activity_meaning_survives_every_public_lane() {
         .subscribe_with_approved_elevation(&world.approved, live_controls)
         .expect("the same exact elevation should open the activity live lane");
     approve_first(&world, first_requested);
-    let BankEstateEmergencyAccessActivityLiveOutcome::Delivered(update) = live.poll() else {
+    let request = super::super::fixture::request_scope();
+    let BankEstateEmergencyAccessActivityLiveOutcome::Delivered(update) =
+        live.poll(&world.requester, &request)
+    else {
         panic!("a real matching approval effect should deliver through publication");
     };
     let current = ready(&world, controls(8))
         .execute_with_approved_elevation(&world.approved)
         .expect("current one-shot should remain lawful after the matching cause");
+    let historical_after_change = ready(&world, controls(8))
+        .admit_historical_with_approved_elevation(&world.approved, |admitted| admitted.execute())
+        .expect("historical activity should retain the approval-commit rows");
     let delivered = items(update.rows());
     let current_items = items(current.rows());
+    let first_access = EmergencyAccessId::new(FIRST_ACCESS).unwrap();
+    let historical_first = items(historical_after_change.rows())
+        .into_iter()
+        .find(|item| item.access() == first_access)
+        .expect("the first requested access existed at the approval commit");
+    let current_first = current_items
+        .iter()
+        .find(|item| item.access() == first_access)
+        .expect("the first access remains visible after its approval");
+    assert_eq!(historical_first.status(), EmergencyAccessStatus::Requested);
+    assert_eq!(current_first.status(), EmergencyAccessStatus::Approved);
     assert_eq!(update.rows().len(), 1);
     assert_eq!(update.rows()[0].estate(), super::super::fixture::ESTATE);
     assert_eq!(

@@ -22,6 +22,7 @@ pub(crate) enum CanonicalIntentKey {
         replacement_kind_id: crate::identity::data::KindId,
         replacement_client_key: crate::symbols::data::ClientKey,
     },
+    DeleteRelation(RelationId),
     CreateRelation(RelationCreateKey),
     BulkCreateRelations {
         partition_id: crate::identity::data::PartitionId,
@@ -30,8 +31,11 @@ pub(crate) enum CanonicalIntentKey {
         endpoints: Vec<(EntityReference, EntityReference)>,
     },
     UpdateRelationEndpoints(RelationId),
-    DeleteRelation(RelationId),
     DeleteEntity(EntityId),
+    Materialization {
+        record: crate::transactions::data::RecordRef,
+        suspension: bool,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -116,6 +120,10 @@ pub(crate) fn canonical_intent_key(intent: &MutationIntent) -> CanonicalIntentKe
         MutationIntent::Relation(RelationMutationIntent::Delete(spec)) => {
             CanonicalIntentKey::DeleteRelation(spec.relation_id)
         }
+        MutationIntent::Materialization(intent) => CanonicalIntentKey::Materialization {
+            record: intent.record(),
+            suspension: intent.is_suspension(),
+        },
     }
 }
 

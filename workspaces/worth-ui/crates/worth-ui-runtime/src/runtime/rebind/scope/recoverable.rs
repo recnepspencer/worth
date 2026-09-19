@@ -25,11 +25,12 @@ impl UiAffectedScopeResolver {
                 })
             }
         };
-        let (classification, facts, source_succession) = change.into_parts();
+        let (classification, facts, source_succession, theme_switch) = change.into_parts();
         finish_scope(FinishScopeInput {
             classification,
             facts,
             source_succession,
+            theme_switch,
             predecessor_graph: prepared.predecessor_graph,
             candidate_generation: prepared.candidate_generation,
             candidate_graph: prepared.candidate_graph,

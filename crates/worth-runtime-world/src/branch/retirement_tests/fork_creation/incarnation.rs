@@ -4,9 +4,7 @@
 
 use super::*;
 
-use crate::branch::{
-    ComponentBranchTarget, OwnerRetirementWork, ProductBranchObservationMismatchAxis,
-};
+use crate::branch::ProductBranchObservationMismatchAxis;
 
 const ABA_NAME: &str = "branch-aba";
 const PARTIAL_NAME: &str = "branch-aba-partial";
@@ -108,19 +106,16 @@ fn custody_is_keyed_to_the_occurrence_that_created_it_not_the_reused_name() {
     assert_eq!(owner.state.custody.installed(), 2);
     let report = RuntimeWorldBranchService::retire_product_branch(&owner, &recreated)
         .expect("the recreated occurrence retires");
+    assert_eq!(report.owner_retirement_work().len(), 1);
     assert_eq!(
-        report.owner_retirement_work(),
-        [OwnerRetirementWork::RelationalBranchRetirement {
-            target: BranchId("relational-branch-aba-recreated".to_owned()),
-        }],
-        "retirement drains only the occurrence it retired"
+        report.owner_retirement_work()[0].target_name(),
+        "relational-branch-aba-recreated"
     );
     let remaining = owner.state.custody.installed_records();
     assert_eq!(remaining.len(), 1);
     assert_eq!(
-        remaining[0].target(),
-        &ComponentBranchTarget::Relational(BranchId("relational-branch-aba-partial".to_owned())),
-        "the earlier occurrence keeps custody of the branch it really created"
+        remaining[0].target().name(),
+        "relational-branch-aba-partial"
     );
     drop(effects);
 }

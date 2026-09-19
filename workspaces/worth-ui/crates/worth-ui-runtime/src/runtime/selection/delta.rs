@@ -5,6 +5,33 @@ pub(crate) struct UiSelectionDelta {
     selected_count: usize,
     candidates_visited: u32,
     revision: u64,
+    positions: UiSelectionPositionChanges,
+}
+
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub(crate) struct UiSelectionPositions {
+    pub(super) anchor: Option<super::UiSelectionStableKey>,
+    pub(super) cursor: Option<super::UiSelectionStableKey>,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) struct UiSelectionPositionChanges {
+    previous: UiSelectionPositions,
+    current: UiSelectionPositions,
+}
+
+impl UiSelectionPositionChanges {
+    pub(super) const fn new(previous: UiSelectionPositions, current: UiSelectionPositions) -> Self {
+        Self { previous, current }
+    }
+    #[cfg(test)]
+    pub(crate) const fn previous(self) -> UiSelectionPositions {
+        self.previous
+    }
+    #[cfg(test)]
+    pub(crate) const fn current(self) -> UiSelectionPositions {
+        self.current
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -21,6 +48,7 @@ impl UiSelectionDelta {
         selected_count: usize,
         candidates_visited: u32,
         revision: u64,
+        positions: UiSelectionPositionChanges,
     ) -> Self {
         Self {
             added: added.into_boxed_slice(),
@@ -28,6 +56,7 @@ impl UiSelectionDelta {
             selected_count,
             candidates_visited,
             revision,
+            positions,
         }
     }
 
@@ -41,6 +70,7 @@ impl UiSelectionDelta {
     pub(crate) const fn selected_count(&self) -> usize {
         self.selected_count
     }
+    #[cfg(any(test, feature = "certification-support"))]
     pub(crate) const fn candidates_visited(&self) -> u32 {
         self.candidates_visited
     }
@@ -48,11 +78,17 @@ impl UiSelectionDelta {
         self.revision
     }
 
+    #[cfg(test)]
+    pub(crate) const fn positions(&self) -> UiSelectionPositionChanges {
+        self.positions
+    }
+
     pub(in crate::runtime::selection) fn has_same_effect_as(&self, staged: &Self) -> bool {
         self.added == staged.added
             && self.removed == staged.removed
             && self.selected_count == staged.selected_count
             && self.candidates_visited == staged.candidates_visited
+            && self.positions == staged.positions
     }
 }
 

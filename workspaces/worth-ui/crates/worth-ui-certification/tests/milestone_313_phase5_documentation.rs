@@ -95,7 +95,7 @@ fn milestone_313_continuing_documentation_matches_the_shipped_projection_path() 
     assert_topics(
         ADVANCED,
         &[
-            "WorthUiScalarProjectionHostPlan",
+            "WorthUiStatusSourceOwner",
             "UiProjectionAvailability",
             "stale-generation",
             "additive successors",
@@ -130,7 +130,8 @@ fn milestone_313_registration_example_is_compiled_and_pulse_installation_is_real
     assert_topics(
         PULSE_INSTALLATION,
         &[
-            "WorthUiScalarProjectionHostPlan::prepare()",
+            "WorthUiStatusSourceOwner::install()",
+            "WorthUiPresentationAsyncHostPlan::prepare()",
             "WorthQueryExecutionRuntimeInstaller::new()",
             ".complete(installation)",
         ],
@@ -166,7 +167,8 @@ fn assert_query_guide(guide: &str) {
         "UiScalarProjectionRegistration",
         "UiCollectionProjectionRegistration",
         "UiProjectionAvailability",
-        "WorthUiScalarProjectionHostPlan::prepare()",
+        "WorthUiStatusSourceOwner::install()",
+        "WorthUiPresentationAsyncHostPlan::prepare()",
         "begin_projection_rebind(...)",
         "Query-free and unchanged turns perform zero projection/content work.",
         "Milestone 3.14",

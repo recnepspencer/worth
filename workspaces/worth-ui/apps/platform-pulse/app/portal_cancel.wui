@@ -1,3 +1,0 @@
-component platform.pulse.component.portal_cancel_target {
-  interaction activate routes platform.pulse.portal.cancel.route;
-}

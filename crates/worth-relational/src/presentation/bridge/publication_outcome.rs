@@ -114,8 +114,8 @@ impl RelationalBridgePatchPublication {
         &self.proof.payload().graph_role
     }
 
-    pub fn adapter_identity(&self) -> &str {
-        &self.proof.strong_basis().value().adapter_identity
+    pub fn adapter_semantic_identity(&self) -> &str {
+        &self.proof.strong_basis().value().adapter_semantic_identity
     }
 
     pub fn source_basis(&self) -> &str {

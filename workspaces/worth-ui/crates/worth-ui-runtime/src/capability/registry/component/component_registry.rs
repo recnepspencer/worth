@@ -17,6 +17,14 @@ impl ComponentRegistry {
         self.descriptors.push(descriptor);
     }
 
+    #[allow(
+        dead_code,
+        reason = "Gate 0 theme admission inspects component descriptors in tests"
+    )]
+    pub(crate) fn descriptors(&self) -> &[ComponentDescriptor] {
+        &self.descriptors
+    }
+
     pub(crate) fn freeze(
         self,
         accepted_components: &ComponentAcceptedRegistrationProof,

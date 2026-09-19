@@ -67,6 +67,18 @@ pub(crate) struct ReservedProductUnpublishedSlot {
     armed: bool,
 }
 
+impl ReservedProductUnpublishedSlot {
+    pub(crate) fn recovery_handle(
+        &self,
+        identity: &crate::identity::ProductUnpublishedOwnerEffectsIdentity,
+    ) -> crate::recovery::ProductUnpublishedRecoveryHandle {
+        crate::recovery::ProductUnpublishedRecoveryHandle::new(
+            identity.clone(),
+            self.catalog.affinity(),
+        )
+    }
+}
+
 impl std::fmt::Debug for ReservedProductUnpublishedSlot {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         formatter

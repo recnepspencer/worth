@@ -13,6 +13,8 @@ pub struct UiDslSemanticArtifact {
     structural_tokens: Vec<UiDslStructuralToken>,
     posture_tokens: Vec<UiDslPostureToken>,
     support_tokens: Vec<UiDslSupportToken>,
+    component_reference: Option<crate::UiDslComponentReference>,
+    appearance_role_attachment: Option<crate::UiAppearanceRoleAttachmentDeclaration>,
     authored_comments: Vec<String>,
     formatting_profile: Option<String>,
     parser_local_id: Option<String>,
@@ -29,6 +31,8 @@ pub(crate) struct UiDslSemanticArtifactInput {
     pub structural_tokens: Vec<UiDslStructuralToken>,
     pub posture_tokens: Vec<UiDslPostureToken>,
     pub support_tokens: Vec<UiDslSupportToken>,
+    pub component_reference: Option<crate::UiDslComponentReference>,
+    pub appearance_role_attachment: Option<crate::UiAppearanceRoleAttachmentDeclaration>,
     pub authored_comments: Vec<String>,
     pub formatting_profile: Option<String>,
     pub parser_local_id: Option<String>,
@@ -47,6 +51,8 @@ impl UiDslSemanticArtifact {
             structural_tokens,
             posture_tokens,
             support_tokens,
+            component_reference,
+            appearance_role_attachment,
             authored_comments,
             formatting_profile,
             parser_local_id,
@@ -62,6 +68,8 @@ impl UiDslSemanticArtifact {
             structural_tokens,
             posture_tokens,
             support_tokens,
+            component_reference,
+            appearance_role_attachment,
             authored_comments,
             formatting_profile,
             parser_local_id,
@@ -100,5 +108,15 @@ impl UiDslSemanticArtifact {
 
     pub fn support_tokens(&self) -> &[UiDslSupportToken] {
         &self.support_tokens
+    }
+
+    pub fn component_reference(&self) -> Option<&crate::UiDslComponentReference> {
+        self.component_reference.as_ref()
+    }
+
+    pub fn appearance_role_attachment(
+        &self,
+    ) -> Option<&crate::UiAppearanceRoleAttachmentDeclaration> {
+        self.appearance_role_attachment.as_ref()
     }
 }

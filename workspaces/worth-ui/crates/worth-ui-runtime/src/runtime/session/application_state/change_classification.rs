@@ -26,6 +26,14 @@ struct ComparedAuthoredSource {
 }
 
 impl WorthUiApplicationSessionState {
+    pub(crate) fn validate_observation_basis(
+        &self,
+        session: crate::facade::WorthUiActiveApplicationSessionIdentity,
+        set: &crate::runtime::observation::UiAdmittedObservationSet,
+    ) -> Result<(), UiChangeClassificationDenial> {
+        UiChangeClassifier::validate_basis(set, session, self.app.capabilities().digest().as_u64())
+    }
+
     pub(crate) fn intent_consequence_fact_capacity(&self) -> usize {
         self.app
             .prepared_authority()

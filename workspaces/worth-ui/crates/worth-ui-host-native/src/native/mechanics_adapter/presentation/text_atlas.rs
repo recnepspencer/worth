@@ -153,6 +153,7 @@ pub(super) fn complete(
         );
     };
     let outcome = state.complete_pending_text_atlas(pending.atlas);
+
     state.record_compiler_total_peak();
     match outcome {
         worth_ui_host_contract::UiGlyphRasterTransactionOutcome::Pending(next) => {

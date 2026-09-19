@@ -75,58 +75,56 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
         &self,
         mutate: impl FnOnce(&mut worth_relational::facade::runtime::RelationalRuntime) -> Result<T, E>,
     ) -> Result<Result<T, E>, WorthQueryPrimaryGraphIndexRefreshDenial> {
-        let mut runtime = self
-            .runtime
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
-        let started_after = runtime
-            .publication()
-            .observation_snapshot()
-            .latest_patch_position;
-        let previous = started_after.and_then(|position| {
-            runtime
-                .history()
-                .immutable_commit_receipt_at_patch_stream_position(position)
-        });
-        let outcome = mutate(&mut runtime);
-        let published = runtime
-            .publication()
-            .read_patch_stream(PatchStreamRequest {
-                after_position: started_after,
-                max_commits: usize::MAX,
-            })
-            .map_err(|_| {
-                missing_committed_mutation(previous.as_ref(), self.primary_index_ids.len())
-            })?;
-        if published.patches.is_empty() {
-            return Ok(outcome);
-        }
-        for patch in published.patches {
-            let committed = runtime
-                .history()
-                .immutable_commit_receipt_at_patch_stream_position(patch.position)
-                .ok_or_else(|| {
+        self.source_owner.with_runtime_mut(|runtime| {
+            let started_after = runtime
+                .publication()
+                .observation_snapshot()
+                .latest_patch_position;
+            let previous = started_after.and_then(|position| {
+                runtime
+                    .history()
+                    .immutable_commit_receipt_at_patch_stream_position(position)
+            });
+            let outcome = mutate(runtime);
+            let published = runtime
+                .publication()
+                .read_patch_stream(PatchStreamRequest {
+                    after_position: started_after,
+                    max_commits: usize::MAX,
+                })
+                .map_err(|_| {
                     missing_committed_mutation(previous.as_ref(), self.primary_index_ids.len())
                 })?;
-            let build = runtime
-                .index_authority()
-                .build_for_commit(DerivedIndexBuildRequest {
-                    source_commit_id: committed.commit_id,
-                    branch_id: committed.branch_id.clone(),
-                    index_ids: self.primary_index_ids.to_vec(),
-                });
-            if !build.failed_indexes.is_empty()
-                || build.generations.len() != self.primary_index_ids.len()
-            {
-                return Err(index_build_rejected(
-                    previous.as_ref(),
-                    &committed,
-                    self.primary_index_ids.len(),
-                    build.failed_indexes.len(),
-                ));
+            if published.patches.is_empty() {
+                return Ok(outcome);
             }
-        }
-        Ok(outcome)
+            for patch in published.patches {
+                let committed = runtime
+                    .history()
+                    .immutable_commit_receipt_at_patch_stream_position(patch.position)
+                    .ok_or_else(|| {
+                        missing_committed_mutation(previous.as_ref(), self.primary_index_ids.len())
+                    })?;
+                let build = runtime
+                    .index_authority()
+                    .build_for_commit(DerivedIndexBuildRequest {
+                        source_commit_id: committed.commit_id,
+                        branch_id: committed.branch_id.clone(),
+                        index_ids: self.primary_index_ids.to_vec(),
+                    });
+                if !build.failed_indexes.is_empty()
+                    || build.generations.len() != self.primary_index_ids.len()
+                {
+                    return Err(index_build_rejected(
+                        previous.as_ref(),
+                        &committed,
+                        self.primary_index_ids.len(),
+                        build.failed_indexes.len(),
+                    ));
+                }
+            }
+            Ok(outcome)
+        })
     }
 }
 

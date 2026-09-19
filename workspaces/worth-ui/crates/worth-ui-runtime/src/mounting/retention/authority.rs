@@ -22,12 +22,17 @@ impl UiMountedRetentionReservationIdentity {
 }
 
 mod pin_accounting;
+mod surface_current;
 
 use pin_accounting::{UiMountedFramePinCounts, UiMountedPinAdmission};
 
 #[derive(Clone, Default)]
 pub(super) struct UiMountedRetainedFrameState {
     pub(super) current: Option<Rc<UiRetainedPresentedFrame>>,
+    pub(super) surface_frames: crate::runtime::persistent_index::UiPersistentOrdMap<
+        worth_ui_host_contract::UiSemanticSurfaceIdentity,
+        UiMountedFrameIdentity,
+    >,
     pub(super) predecessors: crate::runtime::persistent_index::UiPersistentOrdMap<
         UiMountedFrameIdentity,
         Rc<UiRetainedPresentedFrame>,
@@ -231,8 +236,14 @@ impl UiMountedFrameRetentionAuthority {
     }
 
     pub(super) fn snapshot(&self) -> super::UiMountedFrameRetentionSnapshot {
+        let mut current = retained_frame_usage(self.frames.current.as_deref());
+        current.retained_structural_bytes += self
+            .frames
+            .surface_frames
+            .retained_structural_bytes()
+            .expect("admitted surface index bytes fit usize");
         super::UiMountedFrameRetentionSnapshot {
-            current: retained_frame_usage(self.frames.current.as_deref()),
+            current,
             in_flight: UiMountedRetentionUsageSnapshot {
                 retained_items: self.reservations.len(),
                 retained_structural_bytes: self.in_flight_structural_bytes,

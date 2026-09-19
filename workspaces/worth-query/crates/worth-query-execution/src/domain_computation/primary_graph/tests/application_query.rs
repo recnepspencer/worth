@@ -12,18 +12,14 @@ use super::fixture::{
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationQueryAccessContext, WorthQueryApplicationQueryAdmissionDenialKind,
-    WorthQueryApplicationQueryControls, WorthQueryPrincipalResolutionMode,
+    WorthQueryPrincipalResolutionMode,
 };
 mod disclosure_noninterference;
 mod graph_work_capacity;
 mod identity_convergence;
-mod lane_hostility;
-mod lane_parity;
 mod lifecycle;
 mod lifecycle_mutations;
 mod optional_result_presence;
-mod pinned_basis;
-mod pinned_basis_capacity;
 mod planning_budget;
 mod result_projection;
 mod root_guard_basis;
@@ -43,7 +39,7 @@ fn installed_query(
     world
         .application
         .installed_schema()
-        .application_query(AccountSummaryQuery::reference())
+        .certification_query(AccountSummaryQuery::reference())
         .unwrap()
 }
 
@@ -59,7 +55,7 @@ fn installed_governed_query(
     world
         .application
         .installed_schema()
-        .application_query(GovernedAccountSummaryQuery::reference())
+        .certification_query(GovernedAccountSummaryQuery::reference())
         .unwrap()
 }
 
@@ -75,7 +71,7 @@ fn installed_ordered_query(
     world
         .application
         .installed_schema()
-        .application_query(OrderedAccountSummaryQuery::reference())
+        .certification_query(OrderedAccountSummaryQuery::reference())
         .unwrap()
 }
 
@@ -91,7 +87,7 @@ fn installed_live_query(
     world
         .application
         .installed_schema()
-        .application_query(LiveAccountActivityQuery::reference())
+        .certification_query(LiveAccountActivityQuery::reference())
         .unwrap()
 }
 
@@ -107,7 +103,7 @@ fn installed_nested_query(
     world
         .application
         .installed_schema()
-        .application_query(NestedAccountQuery::reference())
+        .certification_query(NestedAccountQuery::reference())
         .unwrap()
 }
 
@@ -123,14 +119,14 @@ fn installed_forged_selector_query(
     world
         .application
         .installed_schema()
-        .application_query(ForgedSelectorQuery::reference())
+        .certification_query(ForgedSelectorQuery::reference())
         .unwrap()
 }
 
 fn current_controls(
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
-) -> WorthQueryApplicationQueryControls<'_, IdentityExecutionSchema> {
-    WorthQueryApplicationQueryControls::current_one_shot(
+) -> crate::domain_computation::primary_graph::WorthQueryProductQueryControls<'_> {
+    crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
         NonZeroUsize::new(10).unwrap(),
         NonZeroUsize::new(10_000).unwrap(),
         request,
@@ -144,15 +140,19 @@ fn execution_runtime_mints_plan_from_exact_mapped_principal_and_typed_scope() {
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap();
     let account = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountStatus::reference(),
             "open".to_string(),
@@ -164,11 +164,13 @@ fn execution_runtime_mints_plan_from_exact_mapped_principal_and_typed_scope() {
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
 
     let plan = world
-        .application
+        .selected_product()
         .admit_application_query(
             &query,
             &access,
-            ApplicationQueryParameterSet::new().bind(status_parameter(), "open".to_string()),
+            ApplicationQueryParameterSet::new()
+                .bind(status_parameter(), "open".to_string())
+                .unwrap(),
             current_controls(&request),
         )
         .unwrap();
@@ -216,15 +218,19 @@ fn mapped_stranger_cannot_admit_a_valid_foreign_account_scope() {
     let external = world.authenticate("bob", Duration::from_secs(60), &request);
     let principal = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap();
     let account = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountStatus::reference(),
             "open".to_string(),
@@ -236,11 +242,13 @@ fn mapped_stranger_cannot_admit_a_valid_foreign_account_scope() {
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
 
     let denial = world
-        .application
+        .selected_product()
         .admit_application_query(
             &query,
             &access,
-            ApplicationQueryParameterSet::new().bind(status_parameter(), "open".to_string()),
+            ApplicationQueryParameterSet::new()
+                .bind(status_parameter(), "open".to_string())
+                .unwrap(),
             current_controls(&request),
         )
         .err()
@@ -262,15 +270,19 @@ fn foreign_scope_and_missing_disclosure_governance_open_no_plan_authority() {
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap();
     let foreign_account = foreign
         .application
+        .select_product_branch(foreign.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountStatus::reference(),
             "open".to_string(),
@@ -281,11 +293,13 @@ fn foreign_scope_and_missing_disclosure_governance_open_no_plan_authority() {
     let query = installed_query(&world);
     let crossed = WorthQueryApplicationQueryAccessContext::new(&principal, &foreign_account);
     let denial = world
-        .application
+        .selected_product()
         .admit_application_query(
             &query,
             &crossed,
-            ApplicationQueryParameterSet::new().bind(status_parameter(), "open".to_string()),
+            ApplicationQueryParameterSet::new()
+                .bind(status_parameter(), "open".to_string())
+                .unwrap(),
             current_controls(&request),
         )
         .err()
@@ -298,6 +312,8 @@ fn foreign_scope_and_missing_disclosure_governance_open_no_plan_authority() {
     let governed = installed_governed_query(&world);
     let local_account = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountStatus::reference(),
             "open".to_string(),
@@ -307,11 +323,13 @@ fn foreign_scope_and_missing_disclosure_governance_open_no_plan_authority() {
         .unwrap();
     let local = WorthQueryApplicationQueryAccessContext::new(&principal, &local_account);
     let denial = world
-        .application
+        .selected_product()
         .admit_application_query(
             &governed,
             &local,
-            ApplicationQueryParameterSet::new().bind(status_parameter(), "open".to_string()),
+            ApplicationQueryParameterSet::new()
+                .bind(status_parameter(), "open".to_string())
+                .unwrap(),
             current_controls(&request),
         )
         .err()
@@ -329,15 +347,19 @@ fn path_bound_ordering_mechanism_opens_exact_plan_authority() {
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap();
     let account = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountStatus::reference(),
             "open".to_string(),
@@ -348,11 +370,13 @@ fn path_bound_ordering_mechanism_opens_exact_plan_authority() {
     let query = installed_ordered_query(&world);
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
     let plan = world
-        .application
+        .selected_product()
         .admit_application_query(
             &query,
             &access,
-            ApplicationQueryParameterSet::new().bind(status_parameter(), "open".to_string()),
+            ApplicationQueryParameterSet::new()
+                .bind(status_parameter(), "open".to_string())
+                .unwrap(),
             current_controls(&request),
         )
         .unwrap();

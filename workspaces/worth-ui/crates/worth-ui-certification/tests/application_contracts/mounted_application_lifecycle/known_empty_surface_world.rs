@@ -132,7 +132,19 @@ pub(crate) fn registered_surface(
 pub(crate) fn first_node(
     session: &worth_ui::facade::app::WorthUiActiveApplicationSession,
 ) -> worth_ui_runtime::facade::mounted::UiMountedGraphNodeHandle {
-    let node = session.graph().node_identities().next().unwrap();
+    let graph = session.graph();
+    let node = graph
+        .node_identities()
+        .find(|node| {
+            graph.lookup().graph_node(*node).is_some_and(|record| {
+                record
+                    .value()
+                    .declaration_identity()
+                    .authored_semantic_name()
+                    == "component:workspace.component.authority_current"
+            })
+        })
+        .expect("the mounted fixture selects its declared current component");
     session.mounted_graph_node(node).unwrap()
 }
 

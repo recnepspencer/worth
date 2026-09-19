@@ -1,7 +1,7 @@
 use worth_query_installation::facade::{
-    ApplicationFieldUnit, ApplicationSchema, OperationReads, OperationWrites,
-    TypedApplicationReadableValue, WorthQueryInstalledApplicationOperation,
-    WorthQueryTemporalIntentCandidate, WorthQueryTemporalIntentRevisionValue, WritableCapability,
+    ApplicationFieldUnit, ApplicationReadableScalarValueBinding, ApplicationSchema,
+    DeclaredApplicationFieldValue, OperationReads, OperationWrites,
+    WorthQueryInstalledApplicationOperation, WorthQueryTemporalIntentCandidate, WritableCapability,
     WritePosture,
 };
 
@@ -17,8 +17,7 @@ use crate::domain_computation::primary_graph::conditional_operation::{
     WorthQueryTemporalOperationAuthorization,
 };
 use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationOperationInvariantProjectionSnapshot,
-    WorthQueryPrimaryGraphApplicationRuntime,
+    WorthQueryApplicationOperationInvariantProjectionSnapshot, WorthQuerySelectedProductOperation,
 };
 
 pub(in crate::domain_computation::primary_graph::conditional_operation) struct WorthQueryAdmittedTemporalProjection<
@@ -42,36 +41,40 @@ where
     Input: Clone + Send + Sync + 'static,
     Invoker: WorthQueryTemporalOperationInvoker<Schema, Operation, Input, Scope>,
     IdentityField: OperationReads<Operation>,
-    IdentityValue: TypedApplicationReadableValue + Clone,
+    IdentityField: DeclaredApplicationFieldValue<Value = IdentityValue>,
+    IdentityField::Binding: ApplicationReadableScalarValueBinding<Value = IdentityValue>,
+    IdentityValue: Clone,
     IdentityWrite: WritePosture,
     IdentityUnit: ApplicationFieldUnit,
     RevisionField: OperationReads<Operation> + OperationWrites<Operation>,
-    RevisionValue: WorthQueryTemporalIntentRevisionValue + TypedApplicationReadableValue + Clone,
+    RevisionField: DeclaredApplicationFieldValue<Value = RevisionValue>,
+    RevisionField::Binding: ApplicationReadableScalarValueBinding<Value = RevisionValue> + worth_query_installation::facade::WorthQueryTemporalIntentRevisionValue,
+    RevisionValue: Clone,
     RevisionWrite: WritableCapability,
     RevisionUnit: ApplicationFieldUnit,
     LifecycleField: OperationReads<Operation> + OperationWrites<Operation>,
-    LifecycleValue: TypedApplicationReadableValue + Clone,
+    LifecycleField: DeclaredApplicationFieldValue<Value = LifecycleValue>,
+    LifecycleField::Binding: ApplicationReadableScalarValueBinding<Value = LifecycleValue>,
+    LifecycleValue: Clone,
     LifecycleWrite: WritableCapability,
     LifecycleUnit: ApplicationFieldUnit,
     Authorization: WorthQueryTemporalOperationAuthorization<Schema, Operation, Input, Scope>,
 {
     pub(in crate::domain_computation::primary_graph::conditional_operation) fn admit_current_projection<Principal, PrincipalIdentity, Clock>(
         &self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        product: &WorthQuerySelectedProductOperation<'_, Schema>,
         operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
         candidate: &WorthQueryTemporalIntentCandidate<Clock, Input>,
         fresh: &WorthQueryFreshTemporalOperationAccess<Schema, Principal, PrincipalIdentity, Scope>,
         current: &WorthQueryCurrentTemporalIntent<Schema, IntentEntity, IdentityValue, RevisionValue>,
     ) -> Result<Option<WorthQueryAdmittedTemporalProjection<Schema, Operation, Input, Scope, Invoker::Projection>>, WorthQueryTemporalReentryDenial>
-    where
-        PrincipalIdentity: worth_query_installation::facade::TypedApplicationIdentityValue,
     {
         let preconditions = isolate_invoker(|| self.invoker.preconditions(candidate.input()))
             .map_err(|detail| format!("temporal operation preconditions failed: {detail}"))?;
         let admission = self
             .authorization
             .authorize(
-                runtime,
+                product,
                 &fresh.principal,
                 &fresh.scope,
                 operation,

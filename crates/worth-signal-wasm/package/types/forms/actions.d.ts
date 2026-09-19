@@ -305,6 +305,12 @@ export interface FormActionExecutionArtifact {
   readonly executionDigest: string;
 }
 
+/**
+ * Snapshot of one action's plan and filtered lifecycle history. `verification`
+ * and `digest` are computed on first access (memoized per report), because
+ * they require the full verification package; reading `pending`,
+ * `latestExecution`, or `blockers` never builds it.
+ */
 export interface FormActionDebugReport {
   readonly kind: "actionDebug";
   readonly action: string;

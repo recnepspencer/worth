@@ -18,6 +18,7 @@ impl<K: Clone + Ord, V: Clone> Clone for PersistentOrdMap<K, V> {
                     retired_base_intervals: retired_base_intervals.clone(),
                     len: *len,
                 },
+                retained_charge: self.retained_charge,
             },
         }
     }
@@ -33,6 +34,7 @@ impl<K: Clone + Ord, V: Clone> FromIterator<(K, V)> for PersistentOrdMap<K, V> {
     fn from_iter<T: IntoIterator<Item = (K, V)>>(iter: T) -> Self {
         Self {
             storage: PersistentOrdMapStorage::Exclusive(iter.into_iter().collect()),
+            retained_charge: None,
         }
     }
 }

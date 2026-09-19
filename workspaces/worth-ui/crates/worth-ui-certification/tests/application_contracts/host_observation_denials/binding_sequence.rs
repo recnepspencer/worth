@@ -3,14 +3,10 @@ use worth_ui::facade::observation_report::{
     UiHostObservationLoss, UiHostObservationPayload, UiHostObservationReportDenial,
     UiHostObservationReportOutcome,
 };
-use worth_ui_runtime::facade::mounted::UiHostSurfacePresentationMode;
-use worth_ui_test_support::WorthUiMountedIdentityCertificationExt;
 
 use crate::host_observation_fixture::{batch, report, source, window_focus};
 use crate::mounted_application_lifecycle::known_empty_surface_world::profile;
-use crate::mounted_application_lifecycle::published_mounted_world::{
-    publish, published_observation_world,
-};
+use crate::mounted_application_lifecycle::published_mounted_world::published_observation_world;
 
 #[test]
 fn observation_sequence_remains_session_scoped_across_a_binding_successor() {
@@ -30,16 +26,8 @@ fn observation_sequence_remains_session_scoped_across_a_binding_successor() {
         UiHostObservationReportOutcome::Validated(_)
     ));
 
-    let successor = world
-        .session
-        .rebind_host_surface(
-            world.binding,
-            UiHostSurfacePresentationMode::RecordOnly,
-            profile(2),
-        )
-        .expect("surface rebind issues one successor binding")
-        .binding_generation();
-    let successor_basis = publish(&mut world.session, &world.host, world.current.instance);
+    let successor = world.rebind_surface(profile(2));
+    let successor_basis = world.current;
 
     let next = batch(
         source(&world.session, successor, &successor_basis),

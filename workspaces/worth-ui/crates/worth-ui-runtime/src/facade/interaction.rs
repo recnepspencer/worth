@@ -1,4 +1,5 @@
 pub use crate::facade::entry::UiCurrentProjectionOptionStop;
+pub use crate::facade::entry::UiMountedSelectionBindingDenial;
 pub use crate::runtime::interaction::{
     UiActivateInteraction, UiActivateInteractionSource, UiDismissInteraction,
     UiDismissInteractionCause, UiDraftByteBudget, UiDraftByteBudgetDenial, UiDraftFieldIdentity,
@@ -12,7 +13,8 @@ pub use crate::runtime::interaction::{
     UiLocalInputRecipientBindingStop, UiLocalInputRecipientBindingStopReason,
     UiLocalInputRecipientContract, UiLocalInputRecipientFamily, UiLocalInputStop,
     UiLocalInputStopReason, UiPointerGestureContinuityKind, UiPointerGesturePressReceipt,
-    UiPointerGestureStop, UiPointerGestureStopReason, UiPresentedInteractionTarget,
+    UiPointerGestureStop, UiPointerGestureStopReason, UiPointerPresenceAdmissionDenial,
+    UiPointerPresenceTargetTransition, UiPresentedInteractionTarget,
     UiPresentedInteractionTargetView, UiPresentedTargetFrameRelation,
     UiQuarantinedHostInteractionBatch, UiSelectionCommitInteraction, UiSelectionCommitStop,
     UiSelectionCommitStopReason, UiSemanticInteraction, UiSubmitInteraction,

@@ -19,6 +19,7 @@ pub(crate) mod allocation_neighborhood_test_support;
 mod closeout;
 mod identity;
 mod indexes;
+pub(crate) use indexes::component_capability_for_node;
 mod inspection;
 #[cfg(test)]
 mod measurement_neighborhood_hint;
@@ -122,6 +123,8 @@ pub use mount_eligibility::{
 };
 
 // --- mutation ---
+#[cfg(test)]
+pub(crate) use mutation::adversarial_snapshot_with_swapped_node_index_for_test;
 pub(crate) use mutation::UiGraphMutationStage;
 pub use mutation::{
     UiGraphMountEligibilityAdmissionDenial, UiGraphMutationCommitDenial,

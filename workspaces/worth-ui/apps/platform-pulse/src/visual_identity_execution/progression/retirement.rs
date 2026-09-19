@@ -29,28 +29,35 @@ pub(super) fn retire_refresh_predecessor(
     shell: &mut WorthUiNativeApplicationShell,
     publisher: &PlatformPulseObservationPublisher,
 ) -> Result<(), PlatformPulseVisualExecutionDenial> {
-    match retained.snapshot.relation() {
-        Ok(_) => retire_snapshot(retained, shell, publisher),
-        Err(worth_ui::facade::inspection::UiVisualSnapshotRelationDenial::ExpiredFrame)
-        | Err(worth_ui::facade::inspection::UiVisualSnapshotRelationDenial::UnknownFrame) => {
-            let predecessor_frame = retained.snapshot.affinity().frame();
-            let successor_frame = successor.affinity().frame();
-            if predecessor_frame == successor_frame {
-                return Err(PlatformPulseVisualExecutionDenial::SnapshotStillCurrent);
-            }
-            let snapshot = retained.snapshot.identity();
-            let disposal = shell.dispose_visual_snapshot(retained.snapshot);
-            publisher
-                .visual_snapshot_retired_after_current_successor(
-                    snapshot,
-                    predecessor_frame,
-                    successor_frame,
-                    disposal,
-                )
-                .map_err(PlatformPulseVisualExecutionDenial::Observation)
-        }
-        Err(denial) => Err(PlatformPulseVisualExecutionDenial::SnapshotRelation(denial)),
+    if !super::super::frame_affinity::snapshot_matches_current_mounted_frame(successor, shell)?
+        || retained.snapshot.affinity().semantic_surface()
+            != successor.affinity().semantic_surface()
+        || retained.snapshot.affinity().frame() == successor.affinity().frame()
+    {
+        return Err(PlatformPulseVisualExecutionDenial::SnapshotSuccessorMismatch);
     }
+    match retained.snapshot.relation() {
+        Ok(worth_ui::facade::inspection::UiVisualSnapshotRelation::Current) => {
+            return Err(PlatformPulseVisualExecutionDenial::SnapshotStillCurrent);
+        }
+        Ok(worth_ui::facade::inspection::UiVisualSnapshotRelation::RetainedPredecessor)
+        | Ok(worth_ui::facade::inspection::UiVisualSnapshotRelation::Historical)
+        | Err(worth_ui::facade::inspection::UiVisualSnapshotRelationDenial::ExpiredFrame)
+        | Err(worth_ui::facade::inspection::UiVisualSnapshotRelationDenial::UnknownFrame) => {}
+        Err(denial) => return Err(PlatformPulseVisualExecutionDenial::SnapshotRelation(denial)),
+    }
+    let predecessor_frame = retained.snapshot.affinity().frame();
+    let successor_frame = successor.affinity().frame();
+    let snapshot = retained.snapshot.identity();
+    let disposal = shell.dispose_visual_snapshot(retained.snapshot);
+    publisher
+        .visual_snapshot_retired_after_current_successor(
+            snapshot,
+            predecessor_frame,
+            successor_frame,
+            disposal,
+        )
+        .map_err(PlatformPulseVisualExecutionDenial::Observation)
 }
 
 pub(in crate::visual_identity_execution) fn retire_snapshot(

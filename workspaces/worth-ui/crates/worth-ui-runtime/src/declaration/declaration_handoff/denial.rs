@@ -5,6 +5,8 @@ use crate::declaration::{
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum UiDeclarationGraphHandoffDenial {
+    ComponentReferenceNotAdmitted,
+    AppearanceRoleAttachmentNotAdmitted,
     AspectContractNotAdmitted {
         denial: UiAspectContractAdmissionDenial,
     },

@@ -20,6 +20,8 @@ pub(crate) struct WorthUiRustAuthoredToArtifactInputLowerer;
 pub(crate) enum WorthUiRustAuthoredInputLoweringDenial {
     InvalidModulePath,
     DuplicateModuleIdentity,
+    DuplicateOverlayDeclaration,
+    OverlayIdentityCapacity,
 }
 
 impl WorthUiRustAuthoredToArtifactInputLowerer {
@@ -52,8 +54,27 @@ impl WorthUiRustAuthoredToArtifactInputLowerer {
             }
         }
 
+        let overlay_declaration_bindings =
+            crate::source::resolve_rust_authored_overlay_declaration_bindings(&modules).map_err(
+                |report| {
+                    let code = report
+                        .diagnostics()
+                        .first()
+                        .map(|diagnostic| diagnostic.identity().code());
+                    match code {
+                        Some(
+                            crate::WorthUiDslCompileDiagnosticCode::DuplicateAppearanceDeclaration,
+                        ) => WorthUiRustAuthoredInputLoweringDenial::DuplicateOverlayDeclaration,
+                        _ => WorthUiRustAuthoredInputLoweringDenial::OverlayIdentityCapacity,
+                    }
+                },
+            )?;
         Ok(WorthUiArtifactInputNormalizer::normalize(
-            WorthUiArtifactInput::new(modules, canonical_module_order),
+            WorthUiArtifactInput::new(
+                modules,
+                canonical_module_order,
+                overlay_declaration_bindings,
+            ),
         ))
     }
 }
@@ -81,12 +102,22 @@ fn lower_rust_authored_module(
                     name_text,
                     authored_identity,
                     body_atoms,
-                } => WorthUiArtifactInputNode::Component(WorthUiArtifactInputBlockNode::new(
-                    name_text,
-                    authored_identity.clone(),
-                    body_atoms.clone(),
-                    provenance,
-                )),
+                    appearance_role_attachment,
+                } => {
+                    let node = WorthUiArtifactInputBlockNode::new(
+                        name_text,
+                        authored_identity.clone(),
+                        body_atoms.clone(),
+                        provenance,
+                    );
+                    let node = match appearance_role_attachment.clone() {
+                        Some(attachment) => node
+                            .with_appearance_role_attachment(attachment)
+                            .expect("a Rust-authored component has one attachment"),
+                        None => node,
+                    };
+                    WorthUiArtifactInputNode::Component(node)
+                }
                 WorthUiRustAuthoredDeclaration::Surface {
                     name_text,
                     authored_identity,
@@ -139,6 +170,22 @@ fn lower_rust_authored_module(
                     WorthUiArtifactInputNode::SemanticArtifact(
                         WorthUiArtifactInputSemanticArtifactNode::new(
                             declaration.clone().canonicalize(),
+                            provenance,
+                        ),
+                    )
+                }
+                WorthUiRustAuthoredDeclaration::AppearanceRole(role) => {
+                    WorthUiArtifactInputNode::AppearanceRole(
+                        crate::WorthUiArtifactInputAppearanceRoleNode::new(
+                            role.clone(),
+                            provenance,
+                        ),
+                    )
+                }
+                WorthUiRustAuthoredDeclaration::Backdrop(declaration) => {
+                    WorthUiArtifactInputNode::Backdrop(
+                        crate::WorthUiArtifactInputBackdropNode::new(
+                            declaration.clone(),
                             provenance,
                         ),
                     )

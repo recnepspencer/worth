@@ -1,5 +1,14 @@
-use super::frame_storage::{UiMountedProjectionFrameInput, UiMountedSemanticProjection};
-use super::{UiMountedProjectionDenial, UiMountedProjectionFrame};
+use super::frame_storage::{
+    UiMountedAppearanceFrameState, UiMountedProjectionFrameInput, UiMountedProjectionFrameOwner,
+    UiMountedSemanticProjection,
+};
+use super::{
+    UiMountedAppearanceProjectionSelection, UiMountedProjectionDenial, UiMountedProjectionFrame,
+};
+
+#[path = "prepared_projection/delta_source.rs"]
+mod delta_source;
+pub(crate) use delta_source::UiMountedPresentationDeltaSource;
 
 pub(crate) struct UiPreparedMountedProjection {
     plan_digest: u64,
@@ -14,6 +23,8 @@ pub(crate) struct UiPreparedMountedProjection {
     projection_changes: super::super::UiMountedProjectionChangeSnapshot,
     presentation_changed_instances:
         std::rc::Rc<[worth_ui_host_contract::UiMountedInstanceIdentity]>,
+    appearance_selection: std::rc::Rc<UiMountedAppearanceProjectionSelection>,
+    appearance_invalidation: Option<crate::runtime::appearance::UiAppearanceInvalidationBatch>,
     portal_overlays_changed: bool,
     counters: super::super::UiMountStageCounters,
     capability_generation: worth_ui_host_contract::WorthUiHostCapabilityObservationGeneration,
@@ -30,6 +41,9 @@ pub(super) struct UiPreparedMountedProjectionInput {
     pub(super) projection_changes: super::super::UiMountedProjectionChangeSnapshot,
     pub(super) presentation_changed_instances:
         std::rc::Rc<[worth_ui_host_contract::UiMountedInstanceIdentity]>,
+    pub(super) appearance_selection: std::rc::Rc<UiMountedAppearanceProjectionSelection>,
+    pub(super) appearance_invalidation:
+        Option<crate::runtime::appearance::UiAppearanceInvalidationBatch>,
     pub(super) portal_overlays_changed: bool,
     pub(super) counters: super::super::UiMountStageCounters,
     pub(super) capability_generation:
@@ -38,109 +52,9 @@ pub(super) struct UiPreparedMountedProjectionInput {
     pub(super) font_collection: std::sync::Arc<worth_ui_text::UiGlobalFontCollection>,
 }
 
-#[derive(Clone)]
-pub struct UiProjectedMountedFrameCandidate {
-    pub(in crate::mounting) frame: std::rc::Rc<UiMountedProjectionFrame>,
-    pub(in crate::mounting) identity_candidate:
-        super::super::identity_state::UiMountedIdentityFrameCandidate,
-    pub(in crate::mounting) projection_changes: super::super::UiMountedProjectionChangeSnapshot,
-    pub(in crate::mounting) presentation_predecessor:
-        Option<worth_ui_host_contract::UiMountedFrameIdentity>,
-    pub(in crate::mounting) presentation_changed_instances:
-        std::rc::Rc<[worth_ui_host_contract::UiMountedInstanceIdentity]>,
-    pub(in crate::mounting) presentation_node_changed_instances:
-        std::rc::Rc<[worth_ui_host_contract::UiMountedInstanceIdentity]>,
-}
-
-#[derive(Clone, Copy)]
-pub(crate) struct UiMountedPresentationDeltaSource<'a> {
-    frame: &'a UiMountedProjectionFrame,
-    predecessor: Option<worth_ui_host_contract::UiMountedFrameIdentity>,
-    changed_instances: &'a [worth_ui_host_contract::UiMountedInstanceIdentity],
-    node_changed_instances: &'a [worth_ui_host_contract::UiMountedInstanceIdentity],
-    changes: &'a super::super::UiMountedProjectionChangeSnapshot,
-}
-
-impl UiMountedPresentationDeltaSource<'_> {
-    pub(in crate::mounting) const fn frame(&self) -> &UiMountedProjectionFrame {
-        self.frame
-    }
-    pub(in crate::mounting) const fn predecessor(
-        &self,
-    ) -> Option<worth_ui_host_contract::UiMountedFrameIdentity> {
-        self.predecessor
-    }
-
-    pub(in crate::mounting) const fn changed_instances(
-        &self,
-    ) -> &[worth_ui_host_contract::UiMountedInstanceIdentity] {
-        self.changed_instances
-    }
-
-    pub(in crate::mounting) const fn node_changed_instances(
-        &self,
-    ) -> &[worth_ui_host_contract::UiMountedInstanceIdentity] {
-        self.node_changed_instances
-    }
-
-    pub(in crate::mounting) fn surface_changed(
-        &self,
-        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
-    ) -> bool {
-        self.changes.affects_surface(surface)
-    }
-}
-
-impl UiProjectedMountedFrameCandidate {
-    pub(in crate::mounting) fn prepare_surface_reconstruction(
-        &mut self,
-        replacements: &[(
-            worth_ui_host_contract::UiSurfaceBindingGeneration,
-            crate::mounting::UiSurfaceBindingIdentityView,
-        )],
-    ) -> Result<(), UiMountedProjectionDenial> {
-        let frame = std::rc::Rc::make_mut(&mut self.frame);
-        frame.rebind_retained_mechanics(replacements)?;
-        self.presentation_changed_instances = frame.mounted_instances().collect::<Vec<_>>().into();
-        self.presentation_node_changed_instances = self.presentation_changed_instances.clone();
-        Ok(())
-    }
-
-    pub fn frame(&self) -> &UiMountedProjectionFrame {
-        &self.frame
-    }
-
-    pub fn is_unpublished(&self) -> bool {
-        let _ = &self.identity_candidate;
-        true
-    }
-
-    pub(crate) fn presented_receipt_basis(&self) -> &super::super::UiMountedNodeReceiptBasis {
-        self.identity_candidate.receipt_basis()
-    }
-
-    pub(in crate::mounting) fn presentation_delta_source(
-        &self,
-    ) -> UiMountedPresentationDeltaSource<'_> {
-        UiMountedPresentationDeltaSource {
-            frame: &self.frame,
-            predecessor: self.presentation_predecessor,
-            changed_instances: &self.presentation_changed_instances,
-            node_changed_instances: &self.presentation_node_changed_instances,
-            changes: &self.projection_changes,
-        }
-    }
-
-    pub(crate) fn into_parts(
-        self,
-    ) -> (
-        std::rc::Rc<UiMountedProjectionFrame>,
-        super::super::identity_state::UiMountedIdentityFrameCandidate,
-        super::super::UiMountedProjectionChangeSnapshot,
-    ) {
-        (self.frame, self.identity_candidate, self.projection_changes)
-    }
-}
+#[path = "prepared_projection/candidate.rs"]
+mod candidate;
+pub use candidate::UiProjectedMountedFrameCandidate;
 
 impl UiPreparedMountedProjection {
     pub(super) fn new(input: UiPreparedMountedProjectionInput) -> Self {
@@ -156,6 +70,8 @@ impl UiPreparedMountedProjection {
             portal_overlays: input.portal_overlays,
             projection_changes: input.projection_changes,
             presentation_changed_instances: input.presentation_changed_instances,
+            appearance_selection: input.appearance_selection,
+            appearance_invalidation: input.appearance_invalidation,
             portal_overlays_changed: input.portal_overlays_changed,
             counters: input.counters,
             capability_generation: input.capability_generation,
@@ -214,9 +130,10 @@ impl UiPreparedMountedProjection {
                     super::super::UiMountedIdentityDenial::IdentityExhausted,
                 )
             })?;
-        let predecessor = state
-            .current_projection()
-            .filter(|projection| projection.plan_digest() == self.plan_digest);
+        let appearance_predecessor = state.current_projection_owner();
+        let predecessor = appearance_predecessor
+            .filter(|owner| owner.projection().plan_digest() == self.plan_digest)
+            .map(UiMountedProjectionFrameOwner::projection);
         let mechanics = predecessor
             .map(UiMountedProjectionFrame::mechanic_source)
             .unwrap_or_default();
@@ -267,8 +184,20 @@ impl UiPreparedMountedProjection {
         frame.record_visual_overlay(self.visual_overlay)?;
         frame.complete_presentation_effects(&presentation_node_changed_instances);
         frame.complete_diagnostics(&presentation_node_changed_instances);
+        let appearance = UiMountedAppearanceFrameState::fork(
+            state.appearance_predecessor(),
+            self.appearance_selection,
+        );
+        let mut owner = UiMountedProjectionFrameOwner::new(
+            std::rc::Rc::new(frame),
+            appearance,
+            state.pointer_predecessor().cloned().unwrap_or_default(),
+        );
+        if let Some(batch) = self.appearance_invalidation {
+            owner.set_appearance_invalidation_batch(batch);
+        }
         Ok(UiProjectedMountedFrameCandidate {
-            frame: std::rc::Rc::new(frame),
+            owner,
             identity_candidate,
             projection_changes: self.projection_changes,
             presentation_predecessor,

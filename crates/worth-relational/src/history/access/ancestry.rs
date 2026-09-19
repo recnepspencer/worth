@@ -3,7 +3,9 @@ use std::collections::BTreeSet;
 use crate::branch::AdmittedRelationalBranchBasis;
 #[cfg(test)]
 use crate::history::data::BranchId;
-use crate::history::data::{CommitId, MergeConflictRecord, MergeInspection};
+use crate::history::data::CommitId;
+#[cfg(test)]
+use crate::history::data::{MergeConflictRecord, MergeInspection};
 
 use super::HistoryAccess;
 
@@ -158,51 +160,6 @@ impl<'runtime> HistoryAccess<'runtime> {
         self.max_commit_id_common_ancestor(left, right)
     }
 
-    /// Inspect merge overlap from owner-issued branch bindings. Raw branch
-    /// names remain a diagnostic/test vocabulary and cannot select current
-    /// heads for production planning.
-    pub(crate) fn inspect_merge_from_bindings(
-        &self,
-        source_binding: &AdmittedRelationalBranchBasis,
-        target_binding: &AdmittedRelationalBranchBasis,
-    ) -> Option<MergeInspection> {
-        let source_branch = source_binding.identity().branch_id().clone();
-        let target_branch = target_binding.identity().branch_id().clone();
-        let source_head_id = self.bound_head_commit_id(source_binding)?;
-        let target_head_id = self.bound_head_commit_id(target_binding)?;
-        let source_head = self
-            .runtime
-            .history
-            .canonical_envelope(source_head_id)
-            .map(|envelope| envelope.commit.clone())?;
-        let target_head = self
-            .runtime
-            .history
-            .canonical_envelope(target_head_id)
-            .map(|envelope| envelope.commit.clone())?;
-        let merge_base =
-            self.max_commit_id_common_ancestor(source_head.commit_id, target_head.commit_id);
-        let source_only_commits =
-            self.branch_unique_commit_closure_by_commit_id_order(source_head.commit_id, merge_base);
-        let target_only_commits =
-            self.branch_unique_commit_closure_by_commit_id_order(target_head.commit_id, merge_base);
-        let conflicting_records = self.merge_conflicts_between(
-            source_only_commits.as_slice(),
-            target_only_commits.as_slice(),
-        );
-        Some(MergeInspection {
-            source_branch,
-            target_branch,
-            source_head: Some(source_head),
-            target_head: Some(target_head),
-            merge_base,
-            source_only_commits,
-            target_only_commits,
-            can_merge: merge_base.is_some() && conflicting_records.is_empty(),
-            conflicting_records,
-        })
-    }
-
     fn bound_head_commit_id(&self, binding: &AdmittedRelationalBranchBasis) -> Option<CommitId> {
         binding
             .commit_identity()
@@ -301,6 +258,7 @@ impl<'runtime> HistoryAccess<'runtime> {
 
     /// Returns the branch-local ancestor closure for `head` after removing the
     /// merge-base ancestor closure, ordered by ascending `CommitId`.
+    #[cfg(test)]
     fn branch_unique_commit_closure_by_commit_id_order(
         &self,
         head: CommitId,
@@ -315,6 +273,7 @@ impl<'runtime> HistoryAccess<'runtime> {
         commits
     }
 
+    #[cfg(test)]
     fn merge_conflicts_between(
         &self,
         left_commits: &[CommitId],
@@ -325,6 +284,7 @@ impl<'runtime> HistoryAccess<'runtime> {
         left_records.intersection(&right_records).cloned().collect()
     }
 
+    #[cfg(test)]
     fn commit_record_set(&self, commits: &[CommitId]) -> BTreeSet<MergeConflictRecord> {
         commits
             .iter()

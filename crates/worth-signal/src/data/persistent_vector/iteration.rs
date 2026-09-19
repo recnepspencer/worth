@@ -1,3 +1,4 @@
+use crate::data::retained_storage::RetainedStorageBacking;
 use std::sync::Arc;
 
 use super::fork_page::ForkPage;
@@ -5,7 +6,7 @@ use super::fork_page::ForkPage;
 pub(crate) enum PersistentVectorIter<'a, T: Clone, const PAGE_LEN: usize> {
     Exclusive(std::slice::Iter<'a, T>),
     ForkShared {
-        base: &'a Arc<Vec<T>>,
+        base: &'a Arc<RetainedStorageBacking<Vec<T>>>,
         changed_pages: &'a im::OrdMap<usize, Arc<ForkPage<T>>>,
         len: usize,
         next: usize,

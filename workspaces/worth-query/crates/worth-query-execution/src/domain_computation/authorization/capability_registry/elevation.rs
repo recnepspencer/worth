@@ -34,6 +34,8 @@ pub(in crate::domain_computation::authorization) struct WorthQueryCapabilityElev
         worth_foundational::facade::AspectFieldLocator,
     pub(in crate::domain_computation::authorization) status:
         worth_foundational::facade::AspectFieldLocator,
+    pub(in crate::domain_computation::authorization) closed_at:
+        worth_foundational::facade::AspectFieldLocator,
     pub(in crate::domain_computation::authorization) review_identity:
         worth_foundational::facade::AspectFieldLocator,
     pub(in crate::domain_computation::authorization) review_type:
@@ -41,6 +43,8 @@ pub(in crate::domain_computation::authorization) struct WorthQueryCapabilityElev
     pub(in crate::domain_computation::authorization) review_type_value:
         worth_foundational::facade::AspectValue,
     pub(in crate::domain_computation::authorization) review_status:
+        worth_foundational::facade::AspectFieldLocator,
+    pub(in crate::domain_computation::authorization) reviewed_at:
         worth_foundational::facade::AspectFieldLocator,
     pub(in crate::domain_computation::authorization) requester_relation: KindId,
     pub(in crate::domain_computation::authorization) approver_relation: KindId,

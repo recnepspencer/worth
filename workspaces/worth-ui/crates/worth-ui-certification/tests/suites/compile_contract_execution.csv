@@ -14,3 +14,4 @@ fail,tests/ui/host/caller_defined_certification_host_is_rejected.rs,host_replace
 pass,tests/ui/host/fixed_certification_headless_host_is_lawful.rs,host_replaceability_compile.rs
 fail,tests/ui/host/retired_egui_surface_is_absent.rs,host_replaceability_compile.rs
 pass,tests/ui/inspection/ai_and_human_callers_share_inspection_contract.rs,inspection_contract_compile.rs
+fail,tests/ui/appearance_snapshot/independent_owner_reads_cannot_construct_coherent_snapshot.rs,appearance_snapshot_compile.rs

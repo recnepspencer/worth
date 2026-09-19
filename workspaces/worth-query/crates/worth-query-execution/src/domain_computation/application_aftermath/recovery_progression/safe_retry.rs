@@ -1,16 +1,14 @@
 //! Safe-retry transition — consumes proof of one completed re-dispatch (R8.66).
 
-use worth_query_installation::facade::InstalledAftermathRecoveryContract;
-
 use crate::domain_computation::managed_run::WorthQueryRecoveryResourceTerminal;
 
 use super::super::external_effect::WorthQueryExternalEffectDispatch;
 use super::super::recovery_handle::{
-    RelinquishOnDenial, WorthQueryRecoveryHandle, WorthQueryRecoveryHandleBinding,
-    WorthQueryRecoveryHandleDenial, WorthQueryRecoveryHandleDenialKind,
+    WorthQueryRecoveryHandle, WorthQueryRecoveryHandleBinding, WorthQueryRecoveryHandleDenial,
+    WorthQueryRecoveryHandleDenialKind,
 };
 use super::super::recovery_posture::WorthQueryDispatchOutboxDurabilityPosture;
-use super::authority::{require_fresh_effect_authority, WorthQueryRecoveryEffectAuthority};
+use super::authority::WorthQueryRecoveryEffectAuthority;
 use super::redispatch::WorthQueryPerformedExternalRedispatch;
 
 /// Proof that safe-retry was admitted after a real re-dispatch and the handle
@@ -20,6 +18,37 @@ pub struct WorthQueryRecoverySafeRetryAdmission {
     binding: WorthQueryRecoveryHandleBinding,
     dispatch: WorthQueryExternalEffectDispatch,
     outbox_durability: WorthQueryDispatchOutboxDurabilityPosture,
+}
+
+/// A denied retry returns the still-live handle to its custodian. A terminal
+/// denial means the registry already ended the resource and cannot return it.
+#[derive(Debug)]
+pub enum WorthQueryRecoverySafeRetryDenial {
+    Retained {
+        denial: WorthQueryRecoveryHandleDenial,
+        handle: Box<WorthQueryRecoveryHandle>,
+    },
+    Terminal(WorthQueryRecoveryHandleDenial),
+}
+
+impl WorthQueryRecoverySafeRetryDenial {
+    pub const fn kind(&self) -> WorthQueryRecoveryHandleDenialKind {
+        match self {
+            Self::Retained { denial, .. } | Self::Terminal(denial) => denial.kind(),
+        }
+    }
+
+    pub fn into_parts(
+        self,
+    ) -> (
+        WorthQueryRecoveryHandleDenial,
+        Option<WorthQueryRecoveryHandle>,
+    ) {
+        match self {
+            Self::Retained { denial, handle } => (denial, Some(*handle)),
+            Self::Terminal(denial) => (denial, None),
+        }
+    }
 }
 
 impl WorthQueryRecoverySafeRetryAdmission {
@@ -41,17 +70,9 @@ pub fn safe_retry_recovery_handle(
     handle: WorthQueryRecoveryHandle,
     authority: &WorthQueryRecoveryEffectAuthority,
     redispatch: WorthQueryPerformedExternalRedispatch,
-) -> Result<WorthQueryRecoverySafeRetryAdmission, WorthQueryRecoveryHandleDenial> {
-    let handle = handle.admit(|handle| {
-        require_fresh_effect_authority(handle, authority)?;
-        match handle.binding().installed_aftermath().recovery() {
-            InstalledAftermathRecoveryContract::NotAdmitted => {
-                return Err(WorthQueryRecoveryHandleDenial::new(
-                    WorthQueryRecoveryHandleDenialKind::TransitionNotAdmitted,
-                ));
-            }
-            InstalledAftermathRecoveryContract::Admissible { .. } => {}
-        }
+) -> Result<WorthQueryRecoverySafeRetryAdmission, WorthQueryRecoverySafeRetryDenial> {
+    let check = (|| {
+        authority.ensure_performed_for(&handle)?;
         // Rules out swapping a redispatch proof performed for handle A into
         // safe-retry for handle B (same runtime, different binding). Rung 3:
         // both sides are runtime values, so this is a comparison rather than a
@@ -67,11 +88,27 @@ pub fn safe_retry_recovery_handle(
                 WorthQueryRecoveryHandleDenialKind::CorrelationMismatch,
             ));
         }
+        if !redispatch.dispatch().is_external_completion() {
+            return Err(WorthQueryRecoveryHandleDenial::new(
+                WorthQueryRecoveryHandleDenialKind::UnresolvedExternalPosture,
+            ));
+        }
         Ok(())
-    })?;
+    })();
+    if let Err(denial) = check {
+        if denial.kind() == WorthQueryRecoveryHandleDenialKind::AlreadyTerminal {
+            return Err(WorthQueryRecoverySafeRetryDenial::Terminal(denial));
+        }
+        return Err(WorthQueryRecoverySafeRetryDenial::Retained {
+            denial,
+            handle: Box::new(handle),
+        });
+    }
     let dispatch = redispatch.into_dispatch();
     Ok(WorthQueryRecoverySafeRetryAdmission {
-        binding: handle.consume(WorthQueryRecoveryResourceTerminal::Consumed)?,
+        binding: handle
+            .consume(WorthQueryRecoveryResourceTerminal::Completed)
+            .map_err(WorthQueryRecoverySafeRetryDenial::Terminal)?,
         dispatch,
         outbox_durability: WorthQueryDispatchOutboxDurabilityPosture::StoreCapabilityRequired,
     })

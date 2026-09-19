@@ -26,11 +26,38 @@ impl WorthUiActiveApplicationSession {
     }
 
     pub fn evaluate_intent_operability(
-        &self,
+        &mut self,
         candidate: crate::facade::intent::UiPreparedIntentPayload,
     ) -> crate::facade::intent::UiIntentOperabilityOutcome {
         let generation = self.active_generation_identity();
-        crate::runtime::intent::evaluate_intent_operability(candidate, &generation, &self.mounted)
+        let outcome = crate::runtime::intent::evaluate_intent_operability(
+            candidate,
+            &generation,
+            &self.mounted,
+        );
+        let appearance_operability_demanded = self
+            .application
+            .prepared_authority()
+            .consumed_fact_index()
+            .appearance_axis_demand()
+            .contains(worth_ui_dsl::UiAppearanceStateAxis::Operability);
+        if appearance_operability_demanded {
+            match &outcome {
+                crate::runtime::intent::UiIntentOperabilityOutcome::Operable(proof) => {
+                    self.intent_admission.record_operability_standing_fact(
+                        proof.candidate_for_standing_fact(),
+                        proof.decision(),
+                    );
+                }
+                crate::runtime::intent::UiIntentOperabilityOutcome::Inoperable(candidate) => {
+                    self.intent_admission.record_operability_standing_fact(
+                        candidate.candidate(),
+                        candidate.decision(),
+                    );
+                }
+            }
+        }
+        outcome
     }
 
     #[cfg(any(test, feature = "certification-support"))]

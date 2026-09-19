@@ -8,6 +8,9 @@ use crate::logic::transaction::{
     SignalObservationSession,
 };
 
+#[cfg(test)]
+mod admission_tests;
+
 impl SignalGraph {
     pub(crate) fn interrupt_observation_at_boundary(&mut self) -> bool {
         if self.observation_session_active_generation() == 0 {
@@ -38,6 +41,10 @@ impl SignalGraph {
         &mut self,
         request: SignalObservationRequest,
     ) -> Result<SignalObservationSession, SignalObservationAdmissionDenial> {
+        let request = crate::logic::transaction::admit_signal_observation_request(
+            request,
+            self.observation_session_active_generation(),
+        )?;
         if self.observation_capture_cleanup.is_none() {
             self.rebind_observation_capture_state();
         }
@@ -46,30 +53,30 @@ impl SignalGraph {
                 .observation_capture_plan()
                 .default_surface_mask(),
         );
-        let request = crate::logic::transaction::admit_signal_observation_request(
-            request,
-            self.observation_session_active_generation(),
-        )?;
-        let generation = self.observation_sessions.begin(request);
-        self.diagnostics_state_mut()
-            .record_observation_activation(request.mask());
+        // Prepare capture before publishing a live generation. A poisoned work
+        // store must not leave an active session for which no token exists.
+        if request.includes(crate::logic::transaction::SignalObservationSurface::PerformedWork) {
+            self.invalidation_performed_work.reset();
+        }
+        let liveness = self.observation_session_liveness();
+        let drop_cleanup = self
+            .observation_capture_cleanup
+            .as_ref()
+            .expect("observation cleanup initialized")
+            .clone();
         if request.includes(crate::logic::transaction::SignalObservationSurface::PerformedCounters)
         {
             self.invalidation_performed_counters.begin_capture();
         }
-        if request.includes(crate::logic::transaction::SignalObservationSurface::PerformedWork) {
-            self.invalidation_performed_work.reset();
-        }
+        let generation = self.observation_sessions.begin(request);
+        self.diagnostics_state_mut()
+            .record_observation_activation(request.mask());
         Ok(SignalObservationSession {
             graph_instance: self.runtime_instance_id(),
             generation,
             request,
-            liveness: self.observation_session_liveness(),
-            drop_cleanup: self
-                .observation_capture_cleanup
-                .as_ref()
-                .expect("observation cleanup initialized")
-                .clone(),
+            liveness,
+            drop_cleanup,
         })
     }
 
@@ -88,6 +95,17 @@ impl SignalGraph {
     fn finish_optional_observation_session(
         &self,
         observation: &SignalObservationSession,
+    ) -> Result<Option<SignalInvalidationExecutionReceipt>, SignalError> {
+        self.finish_optional_observation_session_with_work(
+            observation,
+            &mut crate::logic::evaluation::EvaluationWork::Ordinary,
+        )
+    }
+
+    pub(crate) fn finish_optional_observation_session_with_work(
+        &self,
+        observation: &SignalObservationSession,
+        work: &mut crate::logic::evaluation::EvaluationWork<'_>,
     ) -> Result<Option<SignalInvalidationExecutionReceipt>, SignalError> {
         if observation.graph_instance() != self.runtime_instance_id() {
             return Err(SignalError::invalid_input(
@@ -110,17 +128,17 @@ impl SignalGraph {
         } else {
             crate::data::telemetry::SignalInvalidationRealizedCounters::default()
         };
-        let mut executed_targets = if captures_work {
-            self.invalidation_performed_work()
-                .into_iter()
-                .map(|binding| binding.target)
-                .collect::<Vec<_>>()
-        } else {
-            Vec::new()
-        };
-        executed_targets.sort_unstable();
-        executed_targets.dedup();
         let completed_execution_boundaries = self.completed_observation_execution_boundaries();
+        let captured_targets = if completed_execution_boundaries != 0 {
+            Some(self.snapshot_invalidation_performed_targets(captures_work, work)?)
+        } else {
+            // No receipt is constructed. Cleanup must remain possible after
+            // execution exhausts its work allowance, including capture faults.
+            if captures_work {
+                self.invalidation_performed_work.ensure_available();
+            }
+            None
+        };
         if !self.finish_observation_generation(observation.generation()) {
             return Err(SignalError::invalid_input(
                 "observation session is no longer active",
@@ -139,11 +157,15 @@ impl SignalGraph {
         }
         self.observation_sessions
             .record_completion(SignalObservationCompletion::Completed);
+        let (executed_targets, storage_custody) = captured_targets
+            .map(|snapshot| (snapshot.targets, snapshot.custody))
+            .unwrap_or_default();
         let receipt = SignalInvalidationExecutionReceipt::after_execution(
             self.runtime_instance_id(),
             counters,
             executed_targets,
             observation.request(),
+            storage_custody,
         );
         if captures_counters {
             self.invalidation_performed_counter_state().reset();

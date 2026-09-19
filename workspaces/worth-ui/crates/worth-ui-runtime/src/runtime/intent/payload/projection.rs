@@ -22,7 +22,7 @@ pub(crate) fn prepare_intent_payload(
     application_facts: &UiIntentApplicationFactState,
     occupancy: &super::super::operability::UiIntentOccupancyState,
 ) -> Result<UiPreparedIntentPayload, UiIntentPayloadStop> {
-    let (graph_node, declaration, source, route_resolution, evidence_reference) =
+    let (graph_node, portal_declaration, declaration, source, route_resolution, evidence_reference) =
         route.into_parts();
     let basis_view =
         UiIntentInputBasisView::observe(&source, generation, mounted, application_facts)?;
@@ -49,6 +49,7 @@ pub(crate) fn prepare_intent_payload(
         application_inputs,
         owner_revisions,
         route_resolution,
+        portal_declaration,
         cost,
         operability,
         evidence_reference,

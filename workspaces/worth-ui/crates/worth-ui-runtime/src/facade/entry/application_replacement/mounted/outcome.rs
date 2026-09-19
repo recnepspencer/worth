@@ -8,18 +8,24 @@ pub struct WorthUiPreparedMountedApplicationReplacement<'session> {
     pub(super) application: Box<WorthUiPreparedApplicationActivation>,
     pub(super) mounted_successor: crate::mounting::UiMountedGraphReplacementSuccessor,
     pub(super) frame: crate::mounting::UiPreparedMountedFrame,
+    pub(super) lifecycle: super::super::portal_lifecycle::WorthUiPreparedApplicationLifecycle,
+    pub(super) owners: super::super::owner_succession::UiPreparedApplicationOwnerSuccession,
 }
 
 pub struct WorthUiMountedApplicationReplacementInFlight<'session> {
     pub(super) session: &'session mut WorthUiActiveApplicationSession,
     pub(super) application: Box<WorthUiPreparedApplicationActivation>,
     pub(super) mounted: crate::mounting::UiMountedGraphReplacementInFlight,
+    pub(super) lifecycle: super::super::portal_lifecycle::WorthUiPreparedApplicationLifecycle,
+    pub(super) owners: super::super::owner_succession::UiPreparedApplicationOwnerSuccession,
 }
 
 pub struct WorthUiMountedApplicationReplacementIndeterminate<'session> {
     pub(super) session: &'session mut WorthUiActiveApplicationSession,
     pub(super) application: Box<WorthUiPreparedApplicationActivation>,
     pub(super) frame: crate::mounting::UiMountedIndeterminateFrame,
+    pub(super) lifecycle: super::super::portal_lifecycle::WorthUiPreparedApplicationLifecycle,
+    pub(super) owners: super::super::owner_succession::UiPreparedApplicationOwnerSuccession,
 }
 
 pub struct WorthUiMountedReplacementAdmissionDenial<'session> {
@@ -42,12 +48,16 @@ pub(crate) struct WorthUiDetachedPreparedMountedApplicationReplacement {
     pub(super) application: Box<WorthUiPreparedApplicationActivation>,
     pub(super) mounted_successor: crate::mounting::UiMountedGraphReplacementSuccessor,
     pub(super) frame: crate::mounting::UiPreparedMountedFrame,
+    pub(super) lifecycle: super::super::portal_lifecycle::WorthUiPreparedApplicationLifecycle,
+    pub(super) owners: super::super::owner_succession::UiPreparedApplicationOwnerSuccession,
 }
 
 pub(crate) struct WorthUiDetachedMountedApplicationReplacementInFlight {
     pub(super) session_identity: crate::facade::WorthUiActiveApplicationSessionIdentity,
     pub(super) application: Box<WorthUiPreparedApplicationActivation>,
     pub(super) mounted: crate::mounting::UiMountedGraphReplacementInFlight,
+    pub(super) lifecycle: super::super::portal_lifecycle::WorthUiPreparedApplicationLifecycle,
+    pub(super) owners: super::super::owner_succession::UiPreparedApplicationOwnerSuccession,
 }
 
 pub struct WorthUiMountedReplacementHostRejection<'session> {
@@ -81,13 +91,27 @@ impl<'session> WorthUiMountedApplicationReplacementIndeterminate<'session> {
     pub(crate) fn into_session_for_shutdown(
         self: Box<Self>,
     ) -> &'session mut WorthUiActiveApplicationSession {
+        let (session, frame) = self.into_recovery_parts();
+        drop(frame);
+        session
+    }
+
+    pub(crate) fn into_recovery_parts(
+        self: Box<Self>,
+    ) -> (
+        &'session mut WorthUiActiveApplicationSession,
+        crate::mounting::UiMountedIndeterminateFrame,
+    ) {
         let Self {
             session,
             application,
             frame,
+            lifecycle,
+            owners,
         } = *self;
-        drop((application, frame));
-        session
+        drop((application, owners));
+        drop(lifecycle);
+        (session, frame)
     }
 }
 

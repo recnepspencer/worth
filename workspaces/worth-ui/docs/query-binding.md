@@ -20,7 +20,8 @@ identity, and presentation.
 
 ## Stable Entry Points
 
-- `worth_ui::facade::query_binding::WorthUiScalarProjectionHostPlan`
+- `worth_ui::facade::query_binding::WorthUiStatusSourceOwner`
+- `worth_ui::facade::query_binding::WorthUiPresentationAsyncHostPlan`
 - `UiScalarProjectionRegistration`
 - `UiCollectionProjectionRegistration`
 - `UiScalarProjectionObservation`
@@ -92,20 +93,21 @@ executes Query or creates UI-local result state.
 
 ## Install The Production Query Runtime
 
-Platform Pulse demonstrates the concrete hosted scalar route:
+Platform Pulse installs its authored status source and a separate
+presentation-only async package:
 
 ```text
-WorthUiScalarProjectionHostPlan::prepare()
--> split request and completion
--> pass the declared request through the worth-query-decl audience
+WorthUiStatusSourceOwner::install()
+-> obtain the initial application scalar projection
+-> register it on WorthUi::app()
+WorthUiPresentationAsyncHostPlan::prepare()
+-> split the presentation request and completion
 -> worth_query_host::facade::runtime::WorthQueryExecutionRuntimeInstaller::install(...)
 -> completion.complete(installation)
--> split installed registration and initial projection advance
--> register the scalar projection on WorthUi::app()
 ```
 
-The completion verifies the Query Consumer Kit support contract for the actual
-backend before opening the live projection. The host audience remains the
+The authored source owns application Query progression. The presentation
+installation contains no second status source. The host audience remains the
 Query progression boundary; Worth UI does not emulate it or reach into the raw
 engine.
 

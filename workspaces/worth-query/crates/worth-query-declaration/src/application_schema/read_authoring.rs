@@ -6,7 +6,8 @@ use super::authoring_context::ApplicationFieldAdmission;
 use super::capabilities::{ApplicationFieldUnit, EqualityCapable, EqualityPredicate};
 use super::field_reference::ApplicationFieldRef;
 use super::references::{ApplicationEntityRef, ApplicationRelationRef};
-use super::values::TypedApplicationValue;
+use super::values::DeclaredApplicationFieldValue;
+use super::ApplicationEncodedScalarValue;
 use super::{
     ApplicationSchemaAuthoringContext, ApplicationSchemaAuthoringDenial,
     ApplicationSchemaBindingIdentity,
@@ -210,7 +211,7 @@ impl<Schema, Entity> TypedReadDeclarationBuilder<Schema, Entity> {
         field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
     ) -> Self
     where
-        Value: TypedApplicationValue,
+        Field: DeclaredApplicationFieldValue<Value = Value>,
         Unit: ApplicationFieldUnit,
     {
         if self.denial.is_none() {
@@ -248,10 +249,10 @@ impl<Schema, Entity> TypedReadDeclarationBuilder<Schema, Entity> {
             EqualityPredicate,
             Unit,
         >,
-        value: Value,
+        value: ApplicationEncodedScalarValue<Field::Binding>,
     ) -> Self
     where
-        Value: TypedApplicationValue,
+        Field: DeclaredApplicationFieldValue<Value = Value>,
         Unit: ApplicationFieldUnit,
         EqualityPredicate: EqualityCapable,
     {

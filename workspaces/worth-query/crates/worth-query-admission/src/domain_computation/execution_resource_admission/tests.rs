@@ -1,3 +1,4 @@
+mod capacity_diagnostics;
 use worth_query_declaration::facade::domain_computation::{
     WorthQueryCancellationSafePointFamily, WorthQueryExecutionDegradation, WorthQueryExecutionMode,
     WorthQueryExecutionResourceRequest, WorthQueryPartialEffectPosture,
@@ -333,7 +334,10 @@ fn assert_single_axis_denial(request: WorthQueryExecutionResourceRequest) {
         &WorthQueryExecutionResourceAdmissionDenialKind::ResourceCeilingExceeded
     );
     assert_eq!(denial.counters().strategy_checks, 1);
-    assert_eq!(denial.counters().envelope_dimension_checks, 31);
+    assert_eq!(
+        denial.counters().envelope_dimension_checks,
+        WorthQuerySemanticScaleAxis::ALL.len() + WorthQueryResourceDimension::ALL.len()
+    );
     assert_eq!(denial.counters().support_snapshot_checks, 0);
     assert_eq!(denial.counters().capacity_reservations, 0);
     assert_eq!(denial.counters().provider_session_mints, 0);

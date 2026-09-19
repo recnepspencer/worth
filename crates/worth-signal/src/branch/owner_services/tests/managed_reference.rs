@@ -4,9 +4,8 @@ use worth_proof::TransitionOutcome;
 
 use crate::branch::{
     ManagedSignalBranchReference, ManagedSignalBranchReferenceAdmissionDenial,
-    SignalBranchAdvanceDenial, SignalBranchBasisObservationDenial,
-    SignalBranchBasisReadmissionDenial, SignalBranchRetirementReason,
-    SignalBranchSnapshotCaptureDenial,
+    SignalBranchBasisObservationDenial, SignalBranchBasisReadmissionDenial,
+    SignalBranchRetirementReason, SignalBranchSnapshotCaptureDenial,
 };
 
 use super::runtime_root::runtime_with_two_branches;
@@ -227,7 +226,7 @@ fn managed_reference_treats_matching_owner_close_as_terminal() {
 }
 
 #[test]
-fn transaction_panic_quarantines_managed_readmission_without_unknown_branch() {
+fn transaction_panic_rollback_preserves_managed_readmission() {
     let (mut runtime, _, branch, basis) = runtime_with_two_branches();
     let (port, _, _) = runtime.owner_port_slots().expect("runtime seals");
     let owner = port.upgrade_owner().expect("sealed owner remains live");
@@ -253,28 +252,23 @@ fn transaction_panic_quarantines_managed_readmission_without_unknown_branch() {
     assert!(panic.is_err());
     drop(admission);
 
-    assert!(matches!(
-        owner.observe_managed_reference_for_readmission(&reference),
-        Err(SignalBranchBasisReadmissionDenial::QuarantinedBranch { branch_id })
-            if branch_id == branch.id
-    ));
-    let retry_admission = owner.admit().expect("quarantined owner still admits");
+    owner
+        .observe_managed_reference_for_readmission(&reference)
+        .expect("successful rollback preserves managed readmission");
+    let retry_admission = owner.admit().expect("the owner still admits");
     let mut callback_ran = false;
-    assert!(matches!(
-        cell.advance_exact::<(), (), _>(
-            &retry_admission,
-            &basis,
-            &mut (),
-            &super::super::SignalOwnerCancellationSource::new().token(),
-            |_| {
-                callback_ran = true;
-                Ok(())
-            },
-        ),
-        Err(SignalBranchAdvanceDenial::QuarantinedBranch { branch_id })
-            if branch_id == branch.id
-    ));
-    assert!(!callback_ran);
+    cell.advance_exact::<(), (), _>(
+        &retry_admission,
+        &basis,
+        &mut (),
+        &super::super::SignalOwnerCancellationSource::new().token(),
+        |_| {
+            callback_ran = true;
+            Ok(())
+        },
+    )
+    .expect("the exact cell remains usable after rollback");
+    assert!(callback_ran);
 }
 
 #[test]

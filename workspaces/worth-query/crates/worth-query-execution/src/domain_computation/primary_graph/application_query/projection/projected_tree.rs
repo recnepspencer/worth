@@ -9,7 +9,7 @@ use worth_query_declaration::facade::application_query::{
 };
 use worth_query_declaration::facade::portable_identity::WorthQueryPortableType;
 use worth_query_installation::facade::{
-    ApplicationFieldUnit, OptionalApplicationFieldValue, TypedApplicationValue,
+    ApplicationFieldUnit, OptionalApplicationFieldValue, RequiredApplicationFieldValue,
     WorthQueryInstalledGraphProjection, WorthQueryInstalledGraphRelation,
 };
 use worth_relational::facade::identity::EntityId;
@@ -35,12 +35,15 @@ pub(in crate::domain_computation::primary_graph::application_query) struct Worth
     slot_type: Arc<str>,
     slot_key: Arc<ApplicationQueryResultSlotKey>,
     cardinality: ApplicationQueryCardinality,
+    predicate_sources: Vec<EntityId>,
     rows: Vec<WorthQueryApplicationProjectionNode>,
 }
 
 pub(in crate::domain_computation::primary_graph::application_query) struct WorthQueryApplicationProjectionNode
 {
     entity_id: EntityId,
+    source_path: Option<Arc<str>>,
+    source_dependencies_complete: bool,
     fields: Vec<WorthQueryApplicationProjectedField>,
     relations: Vec<WorthQueryApplicationProjectedRelation>,
 }
@@ -48,11 +51,15 @@ pub(in crate::domain_computation::primary_graph::application_query) struct Worth
 impl WorthQueryApplicationProjectionNode {
     pub(in crate::domain_computation::primary_graph::application_query) fn new(
         entity_id: EntityId,
+        source_path: Option<Arc<str>>,
+        source_dependencies_complete: bool,
         fields: Vec<WorthQueryApplicationProjectedField>,
         relations: Vec<WorthQueryApplicationProjectedRelation>,
     ) -> Self {
         Self {
             entity_id,
+            source_path,
+            source_dependencies_complete,
             fields,
             relations,
         }
@@ -62,6 +69,24 @@ impl WorthQueryApplicationProjectionNode {
         &self,
     ) -> EntityId {
         self.entity_id
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_query) fn result_path(
+        &self,
+    ) -> &str {
+        self.source_path.as_deref().unwrap_or("root")
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_query) const fn source_dependencies_complete(
+        &self,
+    ) -> bool {
+        self.source_dependencies_complete
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_query) fn relations(
+        &self,
+    ) -> &[WorthQueryApplicationProjectedRelation] {
+        &self.relations
     }
 
     pub(in crate::domain_computation::primary_graph::application_query) fn field(
@@ -183,9 +208,9 @@ impl WorthQueryApplicationProjectedField {
         >,
     ) -> bool
     where
-        Value: TypedApplicationValue + WorthQueryPortableType,
+        Field: RequiredApplicationFieldValue<Value = Value>,
         Unit: ApplicationFieldUnit,
-        Query: ApplicationQueryMarkerIdentity,
+        Query: ApplicationQueryMarkerIdentity<Schema>,
         Slot: WorthQueryPortableType,
     {
         self.slot_key.as_ref() == &selector.slot_key()
@@ -219,9 +244,8 @@ impl WorthQueryApplicationProjectedField {
     ) -> bool
     where
         Field: OptionalApplicationFieldValue<Value = Value>,
-        Value: TypedApplicationValue + WorthQueryPortableType,
         Unit: ApplicationFieldUnit,
-        Query: ApplicationQueryMarkerIdentity,
+        Query: ApplicationQueryMarkerIdentity<Schema>,
         Slot: WorthQueryPortableType,
     {
         self.slot_key.as_ref() == &selector.slot_key()
@@ -231,6 +255,7 @@ impl WorthQueryApplicationProjectedField {
 impl WorthQueryApplicationProjectedRelation {
     pub(in crate::domain_computation::primary_graph::application_query) fn new(
         relation: &WorthQueryInstalledGraphRelation,
+        predicate_sources: Vec<EntityId>,
         rows: Vec<WorthQueryApplicationProjectionNode>,
     ) -> Self {
         Self {
@@ -238,6 +263,7 @@ impl WorthQueryApplicationProjectedRelation {
             slot_type: relation.slot_type_identity(),
             slot_key: relation.slot_key_identity(),
             cardinality: relation.cardinality(),
+            predicate_sources,
             rows,
         }
     }
@@ -248,21 +274,38 @@ impl WorthQueryApplicationProjectedRelation {
         &self.result_path
     }
 
+    pub(in crate::domain_computation::primary_graph::application_query) fn slot_type(
+        &self,
+    ) -> &str {
+        &self.slot_type
+    }
+
     pub(in crate::domain_computation::primary_graph::application_query) fn rows(
         &self,
     ) -> &[WorthQueryApplicationProjectionNode] {
         &self.rows
     }
 
+    pub(in crate::domain_computation::primary_graph::application_query) fn predicate_sources(
+        &self,
+    ) -> &[EntityId] {
+        &self.predicate_sources
+    }
+
     fn retained_bytes(&self) -> usize {
-        self.rows
-            .iter()
-            .map(WorthQueryApplicationProjectionNode::retained_bytes)
-            .fold(
+        self.predicate_sources
+            .capacity()
+            .saturating_mul(std::mem::size_of::<EntityId>())
+            .saturating_add(
                 self.rows
-                    .capacity()
-                    .saturating_mul(std::mem::size_of::<WorthQueryApplicationProjectionNode>()),
-                usize::saturating_add,
+                    .iter()
+                    .map(WorthQueryApplicationProjectionNode::retained_bytes)
+                    .fold(
+                        self.rows.capacity().saturating_mul(std::mem::size_of::<
+                            WorthQueryApplicationProjectionNode,
+                        >()),
+                        usize::saturating_add,
+                    ),
             )
     }
 
@@ -291,7 +334,7 @@ impl WorthQueryApplicationProjectedRelation {
     where
         Direction: ApplicationQueryResultTraversal,
         Cardinality: ApplicationQueryResultRelationCardinality,
-        Query: ApplicationQueryMarkerIdentity,
+        Query: ApplicationQueryMarkerIdentity<Schema>,
         Slot: WorthQueryPortableType,
     {
         self.slot_key.as_ref() == &selector.slot_key() && self.cardinality == selector.cardinality()

@@ -19,27 +19,38 @@ pub(crate) enum InvariantPacketRegistration {
         prepared_execution: Arc<dyn PreparedCustomInvariantExecution>,
         prepared_scope: crate::validation::data::PreparedCustomInvariantScope,
     },
+    CustomNotApplicable {
+        registration: CustomInvariantRegistration,
+        prepared_scope: crate::validation::data::PreparedCustomInvariantScope,
+        work: crate::validation::CustomInvariantWorkMeter,
+    },
 }
 
 impl InvariantPacketRegistration {
     pub(crate) fn execution_point(&self) -> crate::validation::data::InvariantExecutionPoint {
         match self {
             Self::Native(registration) => registration.execution_point,
-            Self::Custom { registration, .. } => registration.execution_point(),
+            Self::Custom { registration, .. } | Self::CustomNotApplicable { registration, .. } => {
+                registration.execution_point()
+            }
         }
     }
 
     pub(crate) fn failure_effect(&self) -> crate::validation::data::InvariantFailureEffect {
         match self {
             Self::Native(registration) => registration.failure_effect,
-            Self::Custom { registration, .. } => registration.failure_effect(),
+            Self::Custom { registration, .. } | Self::CustomNotApplicable { registration, .. } => {
+                registration.failure_effect()
+            }
         }
     }
 
     pub(crate) fn groups(&self) -> crate::validation::data::InvariantGroupSet {
         match self {
             Self::Native(registration) => registration.groups(),
-            Self::Custom { registration, .. } => registration.groups(),
+            Self::Custom { registration, .. } | Self::CustomNotApplicable { registration, .. } => {
+                registration.groups()
+            }
         }
     }
 }

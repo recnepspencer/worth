@@ -1,12 +1,12 @@
 use worth_ui_host_contract::{
     UiMountedAccessibilityProjection, UiMountedClipTable, UiMountedDiagnosticProjection,
-    UiMountedFilledRectTable, UiMountedHitTestProjection, UiMountedHitTestTable,
-    UiMountedLayerTable, UiMountedNodeProjectionView, UiMountedNodeProjectionViewInput,
-    UiMountedOmissionReason, UiMountedPaintBatchReference, UiMountedPaintBatchTable,
-    UiMountedPaintProjection, UiMountedParticipationStatus, UiMountedPortalOverlayTable,
-    UiMountedPreviewProjection, UiMountedProjectionAudience, UiMountedProjectionView,
-    UiMountedProjectionViewInput, UiMountedRealtimeBatchTable, UiMountedResourceTable,
-    UiMountedSemanticTextTable, UiMountedSpatialBatchTable, UiSurfaceBindingGeneration,
+    UiMountedHitTestProjection, UiMountedHitTestTable, UiMountedLayerTable,
+    UiMountedNodeProjectionView, UiMountedNodeProjectionViewInput, UiMountedOmissionReason,
+    UiMountedPaintBatchReference, UiMountedPaintBatchTable, UiMountedPaintProjection,
+    UiMountedParticipationStatus, UiMountedPortalOverlayTable, UiMountedPreviewProjection,
+    UiMountedProjectionAudience, UiMountedProjectionView, UiMountedProjectionViewInput,
+    UiMountedRealtimeBatchTable, UiMountedResourceTable, UiMountedSemanticTextTable,
+    UiMountedSpatialBatchTable, UiSurfaceBindingGeneration,
 };
 
 use super::super::{UiMountedNodeReceipt, UiMountedProjectionDenial};
@@ -15,13 +15,10 @@ use super::{UiMountedProjectionFrame, UiMountedProjectionNodeRecord, UiMountedPr
 use super::drawable_order::{
     drawable_reference_index, validate_drawable_coverage, UiMountedDrawableReferenceIndex,
 };
-use super::portal_mechanic_view::{
-    portal_relative_allocation, UiMountedFilledRectReferenceIndex, UiMountedHitTestReferenceIndex,
-};
+use super::portal_mechanic_view::UiMountedHitTestReferenceIndex;
 
 struct UiMountedNodeViewContext<'a> {
     surface: UiMountedProjectionSurface,
-    filled_rect_by_instance: &'a UiMountedFilledRectReferenceIndex,
     hit_test_by_instance: &'a UiMountedHitTestReferenceIndex,
     semantic_text_by_instance: &'a super::semantic_text_view::UiMountedSemanticTextReferenceIndex,
     drawables_by_instance: &'a UiMountedDrawableReferenceIndex,
@@ -40,6 +37,12 @@ pub(super) struct UiMountedPlanIndexPaintSelector {
 }
 
 impl UiMountedProjectionFrame {
+    pub(in crate::mounting) const fn hit_index_maintenance_work(
+        &self,
+    ) -> crate::mounting::hit_test_work::UiHitTestSpatialWork {
+        self.hit_index_work
+    }
+
     pub fn view_for(
         &self,
         binding: UiSurfaceBindingGeneration,
@@ -50,18 +53,12 @@ impl UiMountedProjectionFrame {
             .get(&binding)
             .copied()
             .ok_or(UiMountedProjectionDenial::MissingSurfaceBinding)?;
-        let filled_rects = self.filled_rect_view_rows(surface)?;
         let hit_tests = self.hit_test_view_rows(surface)?;
         let semantic_text = self.semantic_text_view_rows(surface)?;
         let portal_overlays = self.portal_overlay_view_rows(surface)?;
-        let drawables = drawable_reference_index(
-            &filled_rects.rows,
-            &portal_overlays.rows,
-            &semantic_text.rows,
-        )?;
+        let drawables = drawable_reference_index(&portal_overlays.rows, &semantic_text.rows)?;
         let node_view_context = UiMountedNodeViewContext {
             surface,
-            filled_rect_by_instance: &filled_rects.references,
             hit_test_by_instance: &hit_tests.references,
             semantic_text_by_instance: &semantic_text.references,
             drawables_by_instance: &drawables,
@@ -74,21 +71,26 @@ impl UiMountedProjectionFrame {
             .filter_map(|instance| self.semantic.nodes.get(instance))
             .filter(|node| node.receipt.semantic_surface() == surface.surface)
         {
+            let occurrence = super::surface_coordinates::viewport_allocation(
+                node.presentation_allocation(),
+                surface.coordinate_posture,
+            )?;
             let (allocation, portal_presentation) = match self.portal_child_presentation(
                 node.receipt.mounted_instance(),
                 surface.surface,
                 surface.binding,
             )? {
                 super::portal_child_view::UiMountedPortalChildPresentation::Ordinary => {
-                    (None, None)
+                    (occurrence, None)
                 }
                 super::portal_child_view::UiMountedPortalChildPresentation::Suppressed => continue,
-                super::portal_child_view::UiMountedPortalChildPresentation::Presented(portal) => {
+                super::portal_child_view::UiMountedPortalChildPresentation::Presented(portal, source_anchor) => {
                     (
-                        Some(portal_relative_allocation(
-                            node.receipt.allocation(),
+                        super::super::appearance::portal_presented_allocation(
+                            occurrence,
                             portal,
-                        )?),
+                            source_anchor,
+                        ).map_err(|_| UiMountedProjectionDenial::NonFiniteGeometry)?,
                         Some(
                             worth_ui_host_contract::UiMountedPortalPresentationAffinity::from_runtime_mounting(
                                 portal.owner(),
@@ -108,11 +110,10 @@ impl UiMountedProjectionFrame {
         validate_drawable_coverage(
             &drawables,
             &nodes,
-            filled_rects.rows.len() + portal_overlays.rows.len() + semantic_text.rows.len(),
+            portal_overlays.rows.len() + semantic_text.rows.len(),
         )?;
         let materialized_rows = [
             nodes.len(),
-            filled_rects.rows.len(),
             semantic_text.rows.len(),
             portal_overlays.rows.len(),
             hit_tests.rows.len(),
@@ -128,12 +129,9 @@ impl UiMountedProjectionFrame {
         .ok_or(UiMountedProjectionDenial::CostCounterOverflow)?;
         let (authored_paint_commands, authored_paint_order) = super::presentation_sources::compile(
             &nodes,
-            &filled_rects.rows,
             &portal_overlays.rows,
             &semantic_text.rows,
         );
-        let filled_rects = UiMountedFilledRectTable::from_runtime_mounting(filled_rects.rows)
-            .map_err(|_| UiMountedProjectionDenial::StaticPaintCapacityExceeded)?;
         let hit_tests = UiMountedHitTestTable::from_runtime_mounting(hit_tests.rows)
             .ok_or(UiMountedProjectionDenial::HitTestCapacityExceeded)?;
         let semantic_text = UiMountedSemanticTextTable::from_runtime_mounting(semantic_text.rows)
@@ -149,7 +147,6 @@ impl UiMountedProjectionFrame {
             nodes,
             clips: UiMountedClipTable::produced(Vec::new()),
             layers: UiMountedLayerTable::produced(self.layers.clone()),
-            filled_rects,
             portal_overlays,
             semantic_text,
             hit_tests,
@@ -173,7 +170,7 @@ impl UiMountedProjectionFrame {
         &self,
         node: &UiMountedProjectionNodeRecord,
         context: &UiMountedNodeViewContext<'_>,
-        allocation: Option<worth_ui_host_contract::UiMountedAllocationProjection>,
+        allocation: worth_ui_host_contract::UiMountedAllocationProjection,
         portal_presentation: Option<worth_ui_host_contract::UiMountedPortalPresentationAffinity>,
     ) -> UiMountedNodeProjectionView {
         let receipt = &node.receipt;
@@ -199,9 +196,9 @@ impl UiMountedProjectionFrame {
                 .expect("a projected node remains in owner-authored order"),
             role: receipt.role(),
             participation: receipt.participation(),
-            allocation: allocation.unwrap_or_else(|| receipt.allocation()),
+            allocation,
             preview: self.preview_for(receipt),
-            paint: self.paint_for(node, context.filled_rect_by_instance),
+            paint: self.paint_for(node),
             hit_test: context
                 .hit_test_by_instance
                 .get(&receipt.mounted_instance())
@@ -253,18 +250,11 @@ impl UiMountedProjectionFrame {
             )
     }
 
-    fn paint_for(
-        &self,
-        node: &UiMountedProjectionNodeRecord,
-        filled_rect_by_instance: &UiMountedFilledRectReferenceIndex,
-    ) -> UiMountedPaintProjection {
+    fn paint_for(&self, node: &UiMountedProjectionNodeRecord) -> UiMountedPaintProjection {
         if node.receipt.participation().paint().status() != UiMountedParticipationStatus::Admitted {
             return UiMountedPaintProjection::Omitted(
                 UiMountedOmissionReason::NotProducedByExecutedLane,
             );
-        }
-        if let Some(reference) = filled_rect_by_instance.get(&node.receipt.mounted_instance()) {
-            return UiMountedPaintProjection::FilledRect(*reference);
         }
         self.plan_index_paint_selectors
             .iter()

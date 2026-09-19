@@ -3,6 +3,7 @@ use super::{WorthUiActiveApplicationSession, WorthUiRuntimeShutdownReceipt};
 impl WorthUiActiveApplicationSession {
     pub fn shutdown(mut self) -> WorthUiRuntimeShutdownReceipt {
         self.shutdown_portal_exit_retention();
+        self.clear_authored_overlay_bindings();
         let rebind = self.rebind.shutdown();
         let visual_capture = self.visual_captures.shutdown();
         let visual_overlay = self.visual_overlays.shutdown();
@@ -52,6 +53,7 @@ impl WorthUiActiveApplicationSession {
         for outcome in outcomes {
             let _ = self.finish_mounted_presentation(outcome);
         }
+        assert!(self.mounted_owner_receipt_successions.is_empty());
         self.mounted.assert_shutdown_resolved();
         self.host_exchange.shutdown();
         let host_session_release = self.host_session.release_adapter_session();

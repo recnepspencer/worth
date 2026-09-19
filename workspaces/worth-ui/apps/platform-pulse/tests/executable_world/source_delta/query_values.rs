@@ -25,7 +25,7 @@ impl QueryStatusV1 {
 }
 
 impl QueryStatusV2 {
-    pub(crate) const VALUE: &'static str = "QUERY STATUS CURRENT";
+    pub(crate) const VALUE: &'static str = "SYNCHRONIZED";
 
     pub(crate) fn apply(
         self,

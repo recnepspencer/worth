@@ -1,5 +1,0 @@
-error[E0599]: no function or associated item named `execute_unchecked` found for struct `ResearchCockpitAction` in the current scope
- --> tests/ui/research_cockpit/boundaries/authority/no_unchecked_action_execution.rs:4:36
-  |
-4 |     let _ = ResearchCockpitAction::execute_unchecked("run-this");
-  |                                    ^^^^^^^^^^^^^^^^^ function or associated item not found in `ResearchCockpitAction`

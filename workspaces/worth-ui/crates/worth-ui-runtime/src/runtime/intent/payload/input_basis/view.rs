@@ -16,10 +16,31 @@ impl<'state> UiIntentInputBasisView<'state> {
         if source.generation() != generation {
             return Err(super::super::UiIntentPayloadStop::ApplicationGenerationChanged);
         }
+        Self::admit_target(source.target(), generation, mounted, application_facts)
+    }
+
+    /// Observes dependencies without issuing an interaction or payload source.
+    pub(crate) fn observe_target_with<R>(
+        target: crate::runtime::interaction::UiPresentedInteractionTargetView,
+        generation: &'state crate::runtime::WorthUiActiveApplicationGenerationIdentity,
+        mounted: &'state crate::mounting::WorthUiMountedSessionState,
+        application_facts: &'state super::super::UiIntentApplicationFactState,
+        observe: impl FnOnce(&Self) -> R,
+    ) -> Result<R, super::super::UiIntentPayloadStop> {
+        let view = Self::admit_target(target, generation, mounted, application_facts)?;
+        Ok(observe(&view))
+    }
+
+    fn admit_target(
+        target: crate::runtime::interaction::UiPresentedInteractionTargetView,
+        generation: &'state crate::runtime::WorthUiActiveApplicationGenerationIdentity,
+        mounted: &'state crate::mounting::WorthUiMountedSessionState,
+        application_facts: &'state super::super::UiIntentApplicationFactState,
+    ) -> Result<Self, super::super::UiIntentPayloadStop> {
         if mounted.has_active_presentation_attempt() {
             return Err(super::super::UiIntentPayloadStop::PublicationTransitionInFlight);
         }
-        crate::runtime::interaction::targeting::require_current_target(mounted, source.target())
+        crate::runtime::interaction::targeting::require_current_target(mounted, target)
             .map_err(super::super::UiIntentPayloadStop::Targeting)?;
         let publication_frame = mounted
             .view()
@@ -28,7 +49,7 @@ impl<'state> UiIntentInputBasisView<'state> {
         Ok(Self {
             generation,
             publication_frame,
-            target: source.target(),
+            target,
             mounted,
             application_facts,
         })
@@ -69,6 +90,7 @@ impl<'state> UiIntentInputBasisView<'state> {
             generation: self.generation.clone(),
             publication_frame: self.publication_frame,
             target: self.target,
+            portal_declaration: material.portal_declaration,
             source: material.source,
             query_inputs: material.query_inputs,
             application_inputs: material.application_inputs,

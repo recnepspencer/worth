@@ -13,11 +13,12 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
     ) -> Result<UiNativeEventLoopRunReport, UiNativeEventLoopStopReport> {
         let captured = finish_capture::capture(&self);
         let terminal = finish_cleanup::close(&mut self, captured.host_peak_census);
+        let final_frame =
+            completion_frame(captured.final_frame.as_ref(), captured.client_attribution);
         let failure = self.failure_cause(
             terminal.cleanup_complete,
-            captured.presentation.as_ref(),
+            final_frame.as_ref().err().copied(),
             captured.graphics.as_ref(),
-            captured.client_attribution,
         );
         if let Some(cause) = failure {
             let cleanup = UiNativeEventLoopCleanup::retain(
@@ -40,11 +41,9 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
             });
         }
         Ok(self.completed_report(UiNativeEventLoopCompletionEvidence {
-            presentation: captured.presentation.expect("validated presentation"),
+            final_frame: final_frame.expect("validated retained presentation"),
             graphics: captured.graphics.expect("validated graphics"),
-            client_attribution: captured
-                .client_attribution
-                .expect("validated client attribution"),
+            client_attribution: captured.client_attribution,
             peak_census: terminal.peak_census,
             terminal_census: terminal.terminal_census,
             retained_frames: captured.retained_frames,
@@ -70,19 +69,14 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
     fn failure_cause(
         &self,
         cleanup_complete: bool,
-        presentation: Option<&crate::native::UiNativePresentationObservation>,
+        presentation_failure: Option<UiNativeEventLoopRunDenial>,
         graphics: Option<&crate::native::UiNativeGraphicsObservation>,
-        attribution: Option<super::UiNativeClientPresentationAttribution>,
     ) -> Option<UiNativeEventLoopRunDenial> {
         if !cleanup_complete {
             return Some(UiNativeEventLoopRunDenial::IncompleteCleanup);
         }
         self.failure
-            .or_else(|| {
-                presentation
-                    .is_none()
-                    .then_some(UiNativeEventLoopRunDenial::ApplicationDriver)
-            })
+            .or(presentation_failure)
             .or_else(|| {
                 graphics
                     .is_none()
@@ -99,12 +93,6 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
                     .then_some(UiNativeEventLoopRunDenial::EventLoopRun)
             })
             .or_else(|| {
-                attribution
-                    .zip(presentation)
-                    .is_none_or(|(value, observed)| !value.matches(observed))
-                    .then_some(UiNativeEventLoopRunDenial::ApplicationDriver)
-            })
-            .or_else(|| {
                 self.shared
                     .borrow()
                     .lifecycle
@@ -115,3 +103,20 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
             })
     }
 }
+
+fn completion_frame(
+    frame: Option<&crate::native::UiNativeRetainedFrameObservation>,
+    attribution: Option<super::UiNativeClientPresentationAttribution>,
+) -> Result<crate::native::UiNativeRetainedFrameObservation, UiNativeEventLoopRunDenial> {
+    let denied = UiNativeEventLoopRunDenial::ApplicationDriver;
+    let last = frame.ok_or(denied)?;
+    match (last.presentation(), attribution) {
+        (None, None) => Ok(last.clone()),
+        (Some(observed), Some(attribution)) if attribution.matches(observed) => Ok(last.clone()),
+        _ => Err(denied),
+    }
+}
+
+#[cfg(test)]
+#[path = "finish/presentation_tests.rs"]
+mod presentation_tests;

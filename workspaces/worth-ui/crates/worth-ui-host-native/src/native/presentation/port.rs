@@ -32,13 +32,14 @@ pub(crate) enum UiNativePresentationPortFailure {
 
 pub(crate) struct UiWgpuNativePresentationPort;
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub(crate) enum UiNativeRasterOperation {
     Clear(RasterRect),
     FilledRect {
         rect: RasterRect,
         source_rgba8: [u8; 4],
     },
+    Surface(super::appearance::UiNativeSurfaceRasterOperation),
     Glyph(super::text::UiNativeGlyphCommand),
 }
 

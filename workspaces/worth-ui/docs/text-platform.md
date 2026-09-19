@@ -74,6 +74,44 @@ and every unlisted source are rejected during font admission. Runtime does not s
 downgrade a rejected color source to monochrome or ask an operating-system renderer to choose
 another interpretation.
 
+## Appearance foreground
+
+An existing `ComponentSemanticTextSpanContract` can explicitly adopt its node's
+appearance role color with `span.with_appearance_foreground()`. Other spans keep
+their foreground token. Adoption preserves the original UTF-8 range, style, and
+paint identity; the value range does not adopt a separate posture row.
+
+The adopted foreground is part of live mounted appearance and is consumed by
+both native and headless presentation.
+An empty `UiNativeComponentSemanticTextChange::successor` clears the value while
+retaining declared formatting; it still requires the current semantic revision.
+Content and span-adoption changes refresh mounted foreground without requiring
+an unrelated owner-state change. Prepared text revisions remain pending until
+publication succeeds; dropping a prepared frame or rejecting its publication
+before effects does not consume them.
+
+Publishing a subset of surfaces does not acknowledge text for an omitted mounted
+copy. Each binding retains its accepted presentation predecessor when the scope
+expands again; that surface's complete reconstruction is separate from ordinary
+paint refresh cost.
+
+Foreground membership is restricted to current qualified text candidates
+after mounted ancestor and Portal clipping. A completely clipped candidate has
+no foreground override; restored coverage uses its current original-span identity.
+A partial clip retains the candidate's original spans. This is not per-glyph
+visibility or exact span-damage support.
+Missing retained correspondence or unresolved clip evidence denies preparation
+instead of treating the text as successfully suppressed.
+
+Appearance work exposes `text_damage_requirements()` for exact mounted
+target/span insertions, replacements, and removals. Headless transport preserves
+these unresolved requirements separately from completed non-text logical damage.
+The node allocation is not reported as text damage. Text/presentation finalizes
+actual old/new image coverage after host raster admission and before surface
+submission. Intrinsic-color glyphs retain their own color and exclude the
+appearance foreground; the composed appearance and Motion opacity still apply.
+This path does not expand the frozen text profile.
+
 ## Generations and replacement
 
 Register, replace, or remove a pack by consuming the current collection and naming the exact
@@ -159,6 +197,13 @@ admits at most four 1024×1024 alpha pages, two 2048×2048 color pages, 8,192 en
 texels, and an 8 MiB staged-upload budget. An atlas key includes the font-collection and profile
 generations, exact face and glyph, variation coordinates, palette, size, raster source, DPI scale,
 and fractional origin.
+
+`UiGlyphRasterBearing::positioned_bounds` places the actual raster image from its
+retained bearing and extent. Rasterization already includes the signed fractional
+origin, so native drawing adds only the integral physical origin, truncated toward
+zero. Native clipping crops the corresponding atlas texels. This shared geometry
+describes the image rectangle; it does not establish nonzero-alpha coverage or the
+complete appearance span-damage handoff.
 
 Live layout and presentation work pin their entries. Eviction may choose only unpinned entries;
 saturation is a typed denial and never overwrites a live glyph. Phase 5 supplies deterministic

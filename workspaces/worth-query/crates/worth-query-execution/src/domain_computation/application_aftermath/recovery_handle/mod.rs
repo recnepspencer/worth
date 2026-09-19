@@ -17,6 +17,7 @@ pub use handle::WorthQueryRecoveryHandle;
 pub(crate) use held::WorthQueryHeldRecoveryHandle;
 pub use identity::WorthQueryOpaqueRecoveryWireIdentity;
 pub(crate) use identity::WorthQueryRecoveryHandleAuthorityIdentity;
+pub use mint::WorthQueryRecoveryClaimStatus;
 
 #[cfg(test)]
 mod tests;

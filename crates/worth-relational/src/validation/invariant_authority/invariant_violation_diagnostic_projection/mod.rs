@@ -128,6 +128,9 @@ pub(super) enum InvariantViolationDiagnosticProjection<'a> {
         failure: ResultCustomInvariantFailureKind,
         detail: &'a str,
     },
+    CustomInvariantViolation {
+        identity: &'a crate::validation::data::CustomInvariantSemanticIdentity,
+    },
     PartitionIsolation {
         contract_id: &'a ContractId,
         relation_kind_id: KindId,

@@ -8,9 +8,10 @@ use worth_query_declaration::facade::application_query::{
 };
 use worth_query_declaration::facade::portable_identity::WorthQueryPortableType;
 use worth_query_installation::facade::{
-    ApplicationFieldUnit, OptionalApplicationFieldValue, TypedApplicationReadableValue,
-    WritePosture,
+    ApplicationFieldUnit, ApplicationReadableScalarValueBinding, OptionalApplicationFieldValue,
+    RequiredApplicationFieldValue, WritePosture,
 };
+use worth_relational::facade::identity::EntityId;
 
 mod disclosed;
 mod projected_tree;
@@ -85,6 +86,15 @@ impl WorthQueryApplicationProjectionDenial {
 }
 
 impl<'row, Schema, Query> WorthQueryApplicationProjectionRow<'row, Schema, Query> {
+    /// Returns the authorized graph identity represented by this projected row.
+    ///
+    /// Domain projectors can use this to distinguish repeated traversal of one
+    /// entity from traversal of distinct entities without inferring identity
+    /// from field values.
+    pub const fn entity_id(&self) -> EntityId {
+        self.node.entity_id()
+    }
+
     pub fn field<Slot, Entity, Aspect, Field, Value, Write, Equality, Unit>(
         &self,
         selector: ApplicationQueryResultFieldRef<
@@ -101,10 +111,11 @@ impl<'row, Schema, Query> WorthQueryApplicationProjectionRow<'row, Schema, Query
         >,
     ) -> Result<Value, WorthQueryApplicationProjectionDenial>
     where
-        Value: TypedApplicationReadableValue + WorthQueryPortableType,
+        Field: RequiredApplicationFieldValue<Value = Value>,
+        Field::Binding: ApplicationReadableScalarValueBinding,
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
-        Query: ApplicationQueryMarkerIdentity,
+        Query: ApplicationQueryMarkerIdentity<Schema>,
         Slot: WorthQueryPortableType,
     {
         self.disclosed_field(selector)?
@@ -128,10 +139,10 @@ impl<'row, Schema, Query> WorthQueryApplicationProjectionRow<'row, Schema, Query
     ) -> Result<Option<Value>, WorthQueryApplicationProjectionDenial>
     where
         Field: OptionalApplicationFieldValue<Value = Value>,
-        Value: TypedApplicationReadableValue + WorthQueryPortableType,
+        Field::Binding: ApplicationReadableScalarValueBinding,
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
-        Query: ApplicationQueryMarkerIdentity,
+        Query: ApplicationQueryMarkerIdentity<Schema>,
         Slot: WorthQueryPortableType,
     {
         self.disclosed_optional_field(selector)?
@@ -156,7 +167,7 @@ impl<'row, Schema, Query> WorthQueryApplicationProjectionRow<'row, Schema, Query
     >
     where
         Direction: ApplicationQueryResultTraversal,
-        Query: ApplicationQueryMarkerIdentity,
+        Query: ApplicationQueryMarkerIdentity<Schema>,
         Slot: WorthQueryPortableType,
     {
         let relation = self.relation(&selector)?;
@@ -188,7 +199,7 @@ impl<'row, Schema, Query> WorthQueryApplicationProjectionRow<'row, Schema, Query
     >
     where
         Direction: ApplicationQueryResultTraversal,
-        Query: ApplicationQueryMarkerIdentity,
+        Query: ApplicationQueryMarkerIdentity<Schema>,
         Slot: WorthQueryPortableType,
     {
         let relation = self.relation(&selector)?;
@@ -219,7 +230,7 @@ impl<'row, Schema, Query> WorthQueryApplicationProjectionRow<'row, Schema, Query
     >
     where
         Direction: ApplicationQueryResultTraversal,
-        Query: ApplicationQueryMarkerIdentity,
+        Query: ApplicationQueryMarkerIdentity<Schema>,
         Slot: WorthQueryPortableType,
     {
         let relation = self.relation(&selector)?;
@@ -247,7 +258,7 @@ impl<'row, Schema, Query> WorthQueryApplicationProjectionRow<'row, Schema, Query
     where
         Direction: ApplicationQueryResultTraversal,
         Cardinality: ApplicationQueryResultRelationCardinality,
-        Query: ApplicationQueryMarkerIdentity,
+        Query: ApplicationQueryMarkerIdentity<Schema>,
         Slot: WorthQueryPortableType,
     {
         self.disclosed_relation(selector)?

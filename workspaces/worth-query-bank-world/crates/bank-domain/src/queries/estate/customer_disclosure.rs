@@ -70,12 +70,32 @@ pub const fn estate_customer_identity(estate: EstateCaseId) -> EstateCustomerDis
     EstateCustomerDisclosureRequest { estate }
 }
 
+worth_query_decl::facade::worth_query_structured_value_binding!(pub EstateCustomerDisclosureQueryParametersBinding for EstateCustomerDisclosureQueryParameters { identity: "EstateCustomerDisclosureQueryParameters" });
+worth_query_decl::facade::worth_query_structured_value_binding!(pub EstateCustomerDisclosureQueryResultBinding for EstateCustomerDisclosure { identity: "EstateCustomerDisclosure" });
 worth_query_application_query!(
-    pub EstateCustomerDisclosureQuery in BankSchema,
-    parameters EstateCustomerDisclosureQueryParameters,
-    result EstateCustomerDisclosure,
-    scope EstateCase,
+    pub EstateCustomerDisclosureQuery for BankSchema,
+    identity "EstateCustomerDisclosureQuery",
+    parameters EstateCustomerDisclosureQueryParametersBinding,
+    result EstateCustomerDisclosureQueryResultBinding,
+    scope EstateCase => "EstateCase",
     name "estate_customer_identity"
+);
+worth_query_decl::facade::worth_query_structured_value_binding!(pub EstateCustomerDisclosureRequestBinding for EstateCustomerDisclosureRequest { identity: "EstateCustomerDisclosureRequest" });
+worth_query_decl::facade::worth_query_query_binding!(
+    pub EstateCustomerDisclosureQueryBinding for EstateCustomerDisclosureRequest, schema BankSchema,
+    identity "worth.bank.estate-customer-disclosure-query-binding.v1",
+    input EstateCustomerDisclosureRequestBinding,
+    query EstateCustomerDisclosureQuery,
+    parameters EstateCustomerDisclosureQueryParametersBinding => |_| worth_query_decl::facade::application_query::ApplicationQueryParameterSet::new(),
+    result EstateCustomerDisclosureQueryResultBinding,
+    principal crate::schema::BankPrincipalBinding, mapping crate::schema::ExternalPrincipalMapping, principal_entity crate::schema::Principal,
+        principal_identity crate::model::BankPrincipalId, identity_binding crate::schema::BankPrincipalIdBinding,
+    scope EstateCase, crate::schema::EstateCaseRecord, crate::schema::EstateCaseIdentityField,
+        EstateCaseId, worth_query_decl::facade::application_schema::ReadOnly,
+        worth_query_decl::facade::application_schema::NoApplicationUnit,
+    field crate::schema::EstateCaseIdentityField::reference(),
+    value EstateCustomerDisclosureRequest::estate,
+    limits results 1_024, work 100_000
 );
 
 pub fn estate_customer_disclosure_definition() -> ApplicationQueryDefinition<
@@ -92,22 +112,30 @@ pub fn estate_customer_disclosure_definition() -> ApplicationQueryDefinition<
     )
     .disclose_relation_by(
         estate_customer(),
-        crate::estate::RestrictedBankField::CustomerIdentity,
+        crate::schema::encoded_bank_value::<crate::schema::RestrictedBankFieldBinding>(
+            crate::estate::RestrictedBankField::CustomerIdentity,
+        ),
         influence.clone(),
     )
     .disclose_field_by(
         customer_identity(),
-        crate::estate::RestrictedBankField::CustomerIdentity,
+        crate::schema::encoded_bank_value::<crate::schema::RestrictedBankFieldBinding>(
+            crate::estate::RestrictedBankField::CustomerIdentity,
+        ),
         influence.clone(),
     )
     .disclose_relation_by(
         estate_beneficiaries(),
-        RestrictedBankField::BeneficiaryIdentity,
+        crate::schema::encoded_bank_value::<crate::schema::RestrictedBankFieldBinding>(
+            RestrictedBankField::BeneficiaryIdentity,
+        ),
         influence.clone(),
     )
     .disclose_field_by(
         beneficiary_identity(),
-        RestrictedBankField::BeneficiaryIdentity,
+        crate::schema::encoded_bank_value::<crate::schema::RestrictedBankFieldBinding>(
+            RestrictedBankField::BeneficiaryIdentity,
+        ),
         influence,
     );
     ApplicationQueryDefinitionBuilder::declare(EstateCustomerDisclosureQuery::reference())

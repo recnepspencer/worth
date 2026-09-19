@@ -2,6 +2,8 @@ use crate::data::aspect::Aspect;
 use crate::data::handle::NodeId;
 use crate::data::output::PartitionSubscription;
 
+mod retained_charge;
+
 #[derive(
     Debug,
     Clone,

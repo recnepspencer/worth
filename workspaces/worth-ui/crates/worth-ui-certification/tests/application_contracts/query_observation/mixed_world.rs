@@ -10,7 +10,9 @@ use worth_ui::facade::source::{
     WorthUiSourceEventIngress, WorthUiSourceProvider, WorthUiWatcherEvent,
 };
 use worth_ui_dsl::WorthUiRustAuthoredArtifactInput;
-use worth_ui_host_headless::{UiHeadlessRecorderCapacity, WorthUiHeadlessRecorder};
+use worth_ui_host_headless::{
+    UiHeadlessAppearanceMechanic, UiHeadlessRecorderCapacity, WorthUiHeadlessRecorder,
+};
 use worth_ui_query_binding::{
     UiCollectionProjectionBindingAdmission, UiCollectionProjectionBudget,
     UiCollectionProjectionOpenOutcome, UiProjectionObservation, WorthUiQueryWorkspaceExt,
@@ -22,8 +24,9 @@ use crate::mounted_application_lifecycle::published_mounted_world::{
     presented_epoch, PresentedObservationBasis,
 };
 use crate::projection_presentation::collection_query::{
-    collection_app, collection_module, collection_plan, collection_registration,
+    collection_appearance_app, collection_module, collection_plan, collection_registration,
 };
+use crate::projection_presentation::query_text_appearance::GREEN_RGBA;
 use crate::projection_presentation::scalar_query_only::mount_and_allocate;
 
 #[derive(Clone, Copy)]
@@ -38,7 +41,7 @@ pub(super) fn run_mixed_permutation(order: [MixedCause; 3], run: usize) -> UiAff
     let (mut workspace, entities) = seeded_workspace();
     let domain = workspace.worth_ui().expect("Worth UI domain installed");
     let registration = collection_registration(&domain);
-    let mut session = collection_app(registration.clone(), recorder.clone())
+    let mut session = collection_appearance_app(registration.clone(), recorder.clone())
         .launch()
         .expect("mixed Query observation application launches");
     mount_and_allocate(&mut session);
@@ -76,7 +79,7 @@ pub(super) fn run_mixed_permutation(order: [MixedCause; 3], run: usize) -> UiAff
     );
     let mixed_fact = refresh_fact(&mut live, &mut workspace);
     let viewport = validated_viewport(&mut session, &recorder);
-    let candidate = source_candidate(&session, &format!("phase-313-qp06-mixed-{run}"), true);
+    let candidate = source_candidate(&session, &format!("phase-313-qp06-mixed-{run}"));
     let mut query = Some(mixed_fact.into_observation());
     let mut source_candidate = Some(candidate);
     let mut viewport = Some(viewport);
@@ -177,6 +180,29 @@ pub(super) fn run_mixed_permutation(order: [MixedCause; 3], run: usize) -> UiAff
         .semantic_text()
         .iter()
         .any(|row| row.text() == "Bravo mixed"));
+    let appearance = transcripts[2]
+        .appearance_work()
+        .expect("the mixed successor carries its changed appearance role");
+    let foregrounds = appearance
+        .fragments()
+        .iter()
+        .flat_map(|fragment| fragment.work().successor().mechanics())
+        .map(|mechanic| match mechanic {
+            UiHeadlessAppearanceMechanic::TextForeground(foreground) => foreground,
+            _ => panic!("the mixed collection role declares only text foreground"),
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(foregrounds.len(), transcripts[2].semantic_text().len());
+    for text in transcripts[2].semantic_text() {
+        let foreground = foregrounds
+            .iter()
+            .find(|foreground| {
+                foreground.command() == text.command_identity()
+                    && foreground.paint_span() == text.foregrounds()[0].identity()
+            })
+            .expect("each successor text command retains its exact authored paint span");
+        assert_eq!(foreground.foreground().straight_srgba(), GREEN_RGBA);
+    }
     drop(receipt);
 
     close_live(live, &mut workspace);
@@ -228,6 +254,7 @@ fn execute_content_plan(
     plan: worth_ui::facade::rebind::UiRebindPlan,
     request: u64,
 ) {
+    crate::mounted_geometry_fixture::install_current_occurrence_geometry(session);
     let prepared = session
         .prepare_rebind(plan, UiRebindExecutionRequest::new(request))
         .expect("content plan prepares");
@@ -284,10 +311,15 @@ fn validated_viewport(
 fn source_candidate(
     session: &worth_ui::facade::app::WorthUiActiveApplicationSession,
     provider: &str,
-    with_region: bool,
 ) -> worth_ui::facade::source::WorthUiWatchedCandidateSubmission {
     let source = WorthUiSourceProvider::rust_authored(provider).with_rust_authored_input(
-        WorthUiRustAuthoredArtifactInput::from_modules([collection_module(with_region)]),
+        WorthUiRustAuthoredArtifactInput::from_modules([
+            crate::projection_presentation::query_text_appearance::attach(
+                collection_module(),
+                crate::projection_presentation::scalar_query_only::ACTIVE_COMPONENT,
+                true,
+            ),
+        ]),
     );
     WorthUiSourceEventIngress::new(source)
         .start()

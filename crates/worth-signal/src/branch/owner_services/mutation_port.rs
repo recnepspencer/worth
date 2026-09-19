@@ -155,6 +155,73 @@ where
         }
     }
 
+    pub(in crate::branch::owner_services) fn validate_conditional_definition_publication(
+        &self,
+        publication: &super::conditional_execution::SignalConditionalDefinitionPublicationOperation,
+        expected: &AdmittedSignalBranchBasis,
+    ) -> Result<(), SignalBranchAdvanceDenial> {
+        if !publication.admits_predecessor(expected) {
+            return Err(SignalBranchAdvanceDenial::ConditionalDefinitionPublicationMismatch);
+        }
+        let owner = self
+            .upgrade_owner()
+            .map_err(SignalBranchAdvanceDenial::OwnerUnavailable)?;
+        let admission = owner.admit().map_err(map_advance_admission_denial)?;
+        let branch_id = expected.owner_branch_id();
+        let cell = owner
+            .lookup_cell(&admission, branch_id)
+            .map_err(|denial| map_advance_registry_denial(denial, branch_id))?;
+        if publication.incarnation() != cell.incarnation() {
+            return Err(SignalBranchAdvanceDenial::ConditionalDefinitionPublicationMismatch);
+        }
+        Ok(())
+    }
+
+    /// Exact definition publication is reachable only through the dedicated
+    /// non-cloneable Runtime World port.
+    pub(in crate::branch::owner_services) fn advance_conditional_definition_exact_with_completion<
+        F,
+    >(
+        &self,
+        publication: super::conditional_execution::SignalConditionalDefinitionPublicationOperation,
+        expected: &AdmittedSignalBranchBasis,
+        runtime_ctx: &mut Ctx,
+        cancellation: &SignalOwnerCancellationToken,
+        apply: F,
+    ) -> crate::branch::SignalBranchAdvanceCompletion
+    where
+        F: FnOnce(&mut SignalTransaction<'_, D, I, E, Ctx, T>) -> Result<(), SignalError>,
+    {
+        use crate::branch::SignalBranchAdvanceCompletion;
+        let execution = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            self.validate_conditional_definition_publication(&publication, expected)?;
+            let owner = self
+                .upgrade_owner()
+                .map_err(SignalBranchAdvanceDenial::OwnerUnavailable)?;
+            let admission = owner.admit().map_err(map_advance_admission_denial)?;
+            let branch_id = expected.owner_branch_id();
+            let cell = owner
+                .lookup_cell(&admission, branch_id)
+                .map_err(|denial| map_advance_registry_denial(denial, branch_id))?;
+            if publication.incarnation() != cell.incarnation() {
+                return Err(SignalBranchAdvanceDenial::ConditionalDefinitionPublicationMismatch);
+            }
+            let output = owner.reserve_advance_output(&admission, &cell)?;
+            Ok(output.advance_conditional_definition(
+                expected,
+                runtime_ctx,
+                cancellation,
+                apply,
+                publication,
+            ))
+        }));
+        match execution {
+            Ok(Ok(completion)) => completion,
+            Ok(Err(denial)) => SignalBranchAdvanceCompletion::returned(Err(denial)),
+            Err(payload) => SignalBranchAdvanceCompletion::unwound(None, payload),
+        }
+    }
+
     pub fn capture_exact(
         &self,
         expected: &AdmittedSignalBranchBasis,

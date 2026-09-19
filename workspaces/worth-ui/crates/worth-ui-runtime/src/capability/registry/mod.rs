@@ -1,3 +1,8 @@
+#[allow(
+    dead_code,
+    reason = "Gate 0 freezes the non-current appearance-role registry contract"
+)]
+mod appearance_role;
 mod command;
 mod command_projection;
 mod component;
@@ -15,9 +20,17 @@ mod runtime_service;
 mod settings;
 mod surface;
 mod task_presentation;
+#[allow(
+    dead_code,
+    reason = "Gate 0 freezes the non-current appearance-theme registry contract"
+)]
+mod theme;
 mod theme_token;
 mod view_binding;
 
+pub use appearance_role::AppearanceRoleRegistrationDenial;
+pub use appearance_role::FrozenAppearanceRoleCapabilities;
+pub(crate) use appearance_role::{AppearanceRoleAcceptedRegistrationProof, AppearanceRoleRegistry};
 pub(crate) use command::CommandAcceptedRegistrationProof;
 pub(crate) use command::CommandRegistry;
 pub use command::{
@@ -42,24 +55,26 @@ pub use command_projection::{
 pub(crate) use component::{ComponentAcceptedRegistrationProof, ComponentRegistry};
 pub use component::{
     ComponentAccessibilitySupport, ComponentAllocationMeasurementContract,
-    ComponentCanvasSpatialContract, ComponentChildPolicy, ComponentDescriptor,
-    ComponentExecutionLane, ComponentFocusContainerPolicy, ComponentFocusNavigationAxis,
-    ComponentFocusSupport, ComponentHitTestClipContract, ComponentHitTestContract,
-    ComponentHitTestInset, ComponentHitTestOrder, ComponentPortalChildContract,
-    ComponentPropSchema, ComponentRealtimeOverlayContract, ComponentRealtimeOverlayContractDenial,
-    ComponentRealtimeOverlayContractDenialReason, ComponentRealtimeOverlayPriority,
-    ComponentSemanticTextContract, ComponentSemanticTextContractDenial,
-    ComponentSemanticTextSpanContract, ComponentStateOwnership, ComponentStaticPaintContract,
-    ComponentStaticPaintOrder, ComponentViewportAxisPlacement, ComponentViewportInset,
+    ComponentAppearanceAspectContractDenial, ComponentCanvasSpatialContract, ComponentChildPolicy,
+    ComponentDescriptor, ComponentExecutionLane, ComponentFocusContainerPolicy,
+    ComponentFocusNavigationAxis, ComponentFocusSupport, ComponentHitTestClipContract,
+    ComponentHitTestContract, ComponentHitTestInset, ComponentHitTestOrder,
+    ComponentPortalChildContract, ComponentPropSchema, ComponentRealtimeOverlayContract,
+    ComponentRealtimeOverlayContractDenial, ComponentRealtimeOverlayContractDenialReason,
+    ComponentRealtimeOverlayPriority, ComponentSemanticTextContract,
+    ComponentSemanticTextContractDenial, ComponentSemanticTextSpanContract,
+    ComponentStateOwnership, ComponentViewportAxisPlacement, ComponentViewportInset,
     ComponentViewportRegion, FrozenComponentCapabilities,
 };
 pub(crate) use family_names::{
-    COMMAND_FAMILY_NAME, COMMAND_PROJECTION_FAMILY_NAME, COMPONENT_FAMILY_NAME, ICON_FAMILY_NAME,
+    APPEARANCE_ROLE_FAMILY_NAME, APPEARANCE_THEME_FAMILY_NAME, COMMAND_FAMILY_NAME,
+    COMMAND_PROJECTION_FAMILY_NAME, COMPONENT_FAMILY_NAME, ICON_FAMILY_NAME,
     INTENT_DEFINITION_FAMILY_NAME, MOSAIC_PLACEMENT_POLICY_FAMILY_NAME,
-    MOSAIC_REGION_KIND_FAMILY_NAME, MOSAIC_SIZING_CONTRACT_FAMILY_NAME,
-    MOSAIC_STATE_SLOT_FAMILY_NAME, NATIVE_CAPABILITY_FAMILY_NAME, PLUGIN_SLOT_FAMILY_NAME,
-    RUNTIME_OUTCOME_PROJECTION_FAMILY_NAME, SETTING_FAMILY_NAME, SURFACE_FAMILY_NAME,
-    TASK_PRESENTATION_FAMILY_NAME, THEME_TOKEN_FAMILY_NAME, VIEW_BINDING_FAMILY_NAME,
+    MOSAIC_REGION_KIND_FAMILY_NAME, MOSAIC_SEAM_PAINT_FAMILY_NAME,
+    MOSAIC_SIZING_CONTRACT_FAMILY_NAME, MOSAIC_STATE_SLOT_FAMILY_NAME,
+    NATIVE_CAPABILITY_FAMILY_NAME, PLUGIN_SLOT_FAMILY_NAME, RUNTIME_OUTCOME_PROJECTION_FAMILY_NAME,
+    SETTING_FAMILY_NAME, SURFACE_FAMILY_NAME, TASK_PRESENTATION_FAMILY_NAME,
+    THEME_TOKEN_FAMILY_NAME, VIEW_BINDING_FAMILY_NAME,
 };
 pub use icon::{
     FrozenIconCapabilities, FrozenIconEntry, IconAccessibilityPosture, IconColorSupport,
@@ -95,11 +110,16 @@ pub(crate) use mosaic_placement::{
     MosaicPlacementAcceptedRegistrationProof, MosaicPlacementRegistry,
 };
 pub use mosaic_region::{
-    FrozenMosaicRegionCapabilities, MosaicChildRule, MosaicClippingPosture, MosaicFocusScopeKind,
-    MosaicHitTestPosture, MosaicRegionKindDescriptor, MosaicRegionPersistence, MosaicRegionRole,
-    MosaicScrollOwnership, MosaicSizingBehavior,
+    FrozenMosaicRegionCapabilities, MosaicChildRule, MosaicClippingPosture, MosaicExteriorCorner,
+    MosaicExteriorCornerPosture, MosaicFocusScopeKind, MosaicHitTestPosture,
+    MosaicRegionKindDescriptor, MosaicRegionPersistence, MosaicRegionRole, MosaicScrollOwnership,
+    MosaicSeamPaintContract, MosaicSeamPaintContractDenial, MosaicSeamPaintOwner, MosaicSharedEdge,
+    MosaicSizingBehavior,
 };
-pub(crate) use mosaic_region::{MosaicRegionAcceptedRegistrationProof, MosaicRegionRegistry};
+pub(crate) use mosaic_region::{
+    MosaicRegionAcceptedRegistrationProof, MosaicRegionRegistry,
+    MosaicSeamPaintAcceptedRegistrationProof,
+};
 pub use mosaic_sizing::{
     FrozenMosaicSizingCapabilities, MeasurementConstraint, MeasurementValue,
     MosaicMeasurementAuthority, MosaicOverflowBehavior, MosaicParentGrowthBehavior,
@@ -163,10 +183,17 @@ pub use task_presentation::{
 pub(crate) use task_presentation::{
     TaskPresentationAcceptedRegistrationProof, TaskPresentationRegistry,
 };
+pub(crate) use theme::{AppearanceThemeAcceptedRegistrationProof, ThemeRegistry};
+pub use theme::{
+    FrozenAppearanceThemeCapabilities, FrozenAppearanceThemeCapabilitiesDenial, UiThemeDefinition,
+    UiThemeDefinitionDenial, UiThemeDefinitionIdentity, UiThemeSlotCatalog,
+    UiThemeSlotCatalogDenial, UiThemeSlotDeclaration, UiThemeSlotDisclosure,
+    UiThemeSlotSuccessorCompatibility,
+};
 pub use theme_token::{
     FrozenThemeTokenCapabilities, FrozenThemeTokenEntry, RawColorOutsideTokenDefinition,
-    ThemeColorValue, ThemeColorValueError, ThemeTokenAlias, ThemeTokenDescriptor, ThemeTokenFamily,
-    ThemeTokenKey, ThemeTokenSource, ThemeTokenValue,
+    ThemeTokenAlias, ThemeTokenDescriptor, ThemeTokenFamily, ThemeTokenKey, ThemeTokenSource,
+    ThemeTokenValue, UiThemeColor, UiThemeColorParseDenial,
 };
 pub(crate) use theme_token::{ThemeTokenAcceptedRegistrationProof, ThemeTokenRegistry};
 pub use view_binding::{

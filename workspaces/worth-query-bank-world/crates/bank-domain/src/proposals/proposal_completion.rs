@@ -66,11 +66,11 @@ fn validate_effect_replay(
             }
             BankProposedEffect::AppendJournal(entry) => {
                 ensure_new_journal_identity(&replayed, entry)?;
-                replayed.append_journal(entry.clone());
+                replayed.append_proposed_journal(entry.clone())?;
             }
             BankProposedEffect::ReverseJournal { original, reversal } => {
                 ensure_new_journal_identity(&replayed, reversal)?;
-                replayed.append_journal(reversal.clone());
+                replayed.append_proposed_journal(reversal.clone())?;
                 replayed.mark_reversed(*original);
             }
             BankProposedEffect::CreatePayment(payment) => {

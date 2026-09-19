@@ -36,10 +36,11 @@ impl WorthQueryGraphProviderStep {
         contract: &WorthQueryInstalledBoundedStepContract,
         artifact_context: Option<super::WorthQueryGraphProviderStepArtifactContext>,
         memory: WorthQueryGraphProviderMemoryArena,
+        managed_retained_bytes: u64,
     ) -> Self {
         Self {
             call_kind,
-            budget: WorthQueryGraphProviderStepBudget::new(contract),
+            budget: WorthQueryGraphProviderStepBudget::new(contract, managed_retained_bytes),
             attempted_effect_count: 0,
             applied_effect_count: 0,
             projection: None,

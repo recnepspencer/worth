@@ -13,8 +13,7 @@ use worth_query_installation::facade::{
 use worth_runtime_bridge::facade::{
     BridgeConditionalComputeProvider, BridgeConditionalCondition, BridgeConditionalContract,
     BridgeConditionalContractParts, BridgeConditionalLocation, BridgeConditionalProviderSemantics,
-    BridgeConditionalProviderSet, BridgeInstalledConditionalLowering,
-    BridgeOwnedConditionalInstallationRequest, BridgeOwnedSignalRuntime,
+    BridgeConditionalProviderSet, BridgeOwnedConditionalInstallationRequest,
     BridgeSemanticDependencyCandidate, BridgeSemanticDependencyCandidateParts,
     BridgeSemanticLocality,
 };
@@ -26,82 +25,19 @@ use super::installation::{
 };
 use super::predicate_observation::QueryTemporalPredicateProvider;
 
-pub(in crate::domain_computation::primary_graph) struct QueryConditionalComputeContext {
-    pub(in crate::domain_computation::primary_graph) output_version: u64,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-struct QueryConditionalComputeSemanticContract(Arc<str>);
-
-struct QueryConditionalComputeProvider<Node> {
-    semantics: QueryConditionalComputeSemanticContract,
-    output_version: Option<Arc<dyn WorthQueryHostConditionalOutputVersionProvider<Node>>>,
-}
-
-impl<Node: 'static> BridgeConditionalProviderSemantics for QueryConditionalComputeProvider<Node> {
-    type SemanticContract = QueryConditionalComputeSemanticContract;
-
-    fn semantic_contract(&self) -> Self::SemanticContract {
-        self.semantics.clone()
-    }
-}
-
-impl<Node: 'static> BridgeConditionalComputeProvider for QueryConditionalComputeProvider<Node> {
-    fn compute(
-        &self,
-        context: &mut dyn std::any::Any,
-    ) -> Result<worth_signal::facade::NodeEvaluationResult, String> {
-        let context = context
-            .downcast_ref::<QueryConditionalComputeContext>()
-            .ok_or_else(|| {
-                "conditional execution lacked Query's governed re-entry context".to_string()
-            })?;
-        let output_version = self
-            .output_version
-            .as_ref()
-            .map(|provider| provider.output_version(context.output_version))
-            .transpose()
-            .map_err(|failure| failure.detail().to_owned())?
-            .unwrap_or(context.output_version);
-        Ok(worth_signal::facade::NodeEvaluationResult::from_version(
-            worth_signal::facade::AspectVersion::from_updates([(
-                worth_signal::facade::Aspect::new(0),
-                output_version,
-            )]),
-        ))
-    }
-}
-
-struct QueryHostOutputComparator<Node> {
-    identity: Arc<str>,
-    provider: Arc<dyn WorthQueryHostConditionalOutputComparatorProvider<Node>>,
-}
-
-impl<Node: 'static> BridgeConditionalProviderSemantics for QueryHostOutputComparator<Node> {
-    type SemanticContract = Arc<str>;
-
-    fn semantic_contract(&self) -> Self::SemanticContract {
-        Arc::clone(&self.identity)
-    }
-}
-
-impl<Node: 'static> worth_runtime_bridge::facade::BridgeConditionalComparatorProvider
-    for QueryHostOutputComparator<Node>
-{
-    fn has_meaningful_change(
-        &self,
-        _aspect: worth_signal::facade::Aspect,
-        cached: u64,
-        current: u64,
-    ) -> Result<bool, String> {
-        self.provider
-            .has_meaningful_change(cached, current)
-            .map_err(|failure| failure.detail().to_owned())
-    }
-}
+mod output_readiness_installation;
+mod providers;
+mod readiness_provider;
+pub(in crate::domain_computation::primary_graph) use output_readiness_installation::prepare_dependency_conditional_installation;
+pub(in crate::domain_computation::primary_graph) use providers::QueryConditionalComputeContext;
+use providers::{
+    QueryConditionalComputeProvider, QueryConditionalComputeSemanticContract,
+    QueryHostOutputComparator,
+};
+use readiness_provider::QueryOutputReadinessPredicate;
 
 #[allow(clippy::too_many_arguments)]
-pub(super) fn install_temporal_predicate_lowering<
+pub(super) fn prepare_temporal_predicate_installation<
     Schema,
     ApplicationOperation,
     Input,
@@ -136,8 +72,7 @@ pub(super) fn install_temporal_predicate_lowering<
         Projector,
     >,
     graph: &WorthQueryInstalledGraphParticipationAuthority,
-    bridge: &mut BridgeOwnedSignalRuntime,
-) -> Result<Arc<BridgeInstalledConditionalLowering>, WorthQueryConditionalRuntimeInstallationDenial>
+) -> Result<BridgeOwnedConditionalInstallationRequest, WorthQueryConditionalRuntimeInstallationDenial>
 where
     Provider: WorthQueryHostConditionalPredicateProvider<Node>,
     Clock: WorthQueryNamedClock,
@@ -180,14 +115,12 @@ where
         }
         None => providers,
     };
-    bridge
-        .install_owned_conditional(BridgeOwnedConditionalInstallationRequest {
-            contract,
-            location,
-            dependencies,
-            providers,
-        })
-        .map_err(|denial| bridge_denial(format!("{:?}: {}", denial.kind(), denial.detail())))
+    Ok(BridgeOwnedConditionalInstallationRequest {
+        contract,
+        location,
+        dependencies,
+        providers,
+    })
 }
 
 fn validate_output_comparator_identity<Node>(
@@ -316,6 +249,44 @@ fn lower_temporal_contract(
             dependency_count: declaration.dependencies().len(),
             condition_dependency_ordinals: (0..declaration.dependencies().len()).collect(),
             condition: BridgeConditionalCondition::TemporalWake,
+            dependency_comparator: lower_dependency_comparator(declaration.dependency_comparator()),
+            output_comparator: lower_output_comparator(declaration.output_equivalence()),
+            artifact_reuse: lower_artifact_reuse(declaration.artifact_reuse_equivalence()),
+        },
+    ))
+}
+
+fn lower_dependency_contract(
+    declaration: &WorthQueryPortableConditionalNodeDeclaration,
+) -> Result<BridgeConditionalContract, WorthQueryConditionalRuntimeInstallationDenial> {
+    if declaration.dependencies().is_empty() {
+        return Err(bridge_denial(
+            "output readiness conditional has no declared dependency",
+        ));
+    }
+    let condition_dependency_ordinals = declaration
+        .condition()
+        .dependencies()
+        .iter()
+        .map(|condition_dependency| {
+            declaration
+                .dependencies()
+                .iter()
+                .position(|dependency| dependency == condition_dependency)
+                .ok_or_else(|| bridge_denial("readiness condition dependency was not declared"))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    if condition_dependency_ordinals.is_empty() {
+        return Err(bridge_denial(
+            "output readiness condition has no declared observation dependency",
+        ));
+    }
+    Ok(BridgeConditionalContract::new(
+        BridgeConditionalContractParts {
+            identity: Arc::from(declaration.identity()),
+            dependency_count: declaration.dependencies().len(),
+            condition_dependency_ordinals,
+            condition: BridgeConditionalCondition::RuntimePredicate,
             dependency_comparator: lower_dependency_comparator(declaration.dependency_comparator()),
             output_comparator: lower_output_comparator(declaration.output_equivalence()),
             artifact_reuse: lower_artifact_reuse(declaration.artifact_reuse_equivalence()),

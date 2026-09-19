@@ -1,21 +1,15 @@
 //! Q8.20 — recovery authority is affine to its owning runtime.
 
-use worth_foundational::facade::CanonicalDigestId;
-use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
-use worth_relational::facade::history::BranchId;
-
 use super::authority::require_inspect_disclosure;
 use super::{
     require_fresh_effect_authority, WorthQueryRecoveryEffectAuthority,
     WorthQueryRecoveryInspectAuthority,
 };
 use crate::domain_computation::application_aftermath::recovery_handle::{
-    WorthQueryRecoveryHandle, WorthQueryRecoveryHandleBinding,
-    WorthQueryRecoveryHandleBindingAxisProbe, WorthQueryRecoveryHandleDenialKind,
+    WorthQueryRecoveryHandle, WorthQueryRecoveryHandleBindingAxisProbe,
+    WorthQueryRecoveryHandleDenialKind,
 };
-use crate::domain_computation::authorization::WorthQueryOperationScopeBinding;
 use crate::domain_computation::managed_run::WorthQueryRecoveryResourceTerminal;
-use crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding;
 
 fn probe_handle_with_runtime_instance(runtime_instance_id: u64) -> WorthQueryRecoveryHandle {
     probe_handle_expiring_at(runtime_instance_id, u64::MAX)
@@ -25,43 +19,12 @@ fn probe_handle_expiring_at(
     runtime_instance_id: u64,
     expires_at_unix_ms: u64,
 ) -> WorthQueryRecoveryHandle {
-    let schema = ApplicationSchemaBindingIdentity::from_installed_parts(
-        7,
-        3,
-        CanonicalDigestId::new([0x11; 32]),
-        CanonicalDigestId::new([0x22; 32]),
-    );
-    let principal_scope = WorthQueryOperationScopeBinding::axis_probe_scope(
-        42,
-        schema,
-        "notify-death-authority",
-        1,
-        10,
-        1,
-        2,
-        20,
-        1,
-    );
-    WorthQueryRecoveryHandle::axis_probe(WorthQueryRecoveryHandleBinding::axis_probe(
-        WorthQueryRecoveryHandleBindingAxisProbe {
-            runtime_instance_id,
-            schema_identity: [0x33; 32],
-            branch: BranchId("2".to_owned()),
-            application_binding_generation: 3,
-            installed_operation: [0x44; 32],
-            attempt_commit_id: 501,
-            mutation_work: None,
-            retained_preimage: None,
-            retained_governed_input_identity: None,
-            principal_scope,
-            idempotency: WorthQueryApplicationIdempotencyBinding::new([0x55; 32], [0x56; 32]),
-            provider_posture: None,
-            dispatch_outbox: None,
-            dispatch_outbox_record_ref: None,
-            installed_aftermath: crate::domain_computation::application_aftermath::aftermath_schema_fixture::notify_death(),
-            expires_at_unix_ms: Some(expires_at_unix_ms),
-        },
-    ))
+    WorthQueryRecoveryHandle::axis_probe(
+        WorthQueryRecoveryHandleBindingAxisProbe::real()
+            .runtime_instance_id(runtime_instance_id)
+            .expires_at_unix_ms(Some(expires_at_unix_ms))
+            .finish(),
+    )
 }
 
 #[test]

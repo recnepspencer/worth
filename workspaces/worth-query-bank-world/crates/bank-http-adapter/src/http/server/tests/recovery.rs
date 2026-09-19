@@ -7,11 +7,12 @@ use bank_domain::model::{AccountId, BankPrincipalId};
 
 use super::super::super::protocol::{
     BankHttpDenialKind, BankHttpEstateNotificationOutcome, BankHttpRecoveryInspectionOutcome,
-    BankHttpRecoveryPosture, BankHttpUndoAdmissionOutcome, BankHttpUndoCorrection,
-    BankHttpUndoProgressionOutcome,
+    BankHttpRecoveryPosture,
 };
 use super::fixture::application;
 use super::{bind_application, credential_json, BankHttpServerConfiguration};
+mod terminal_retry;
+mod transport;
 
 #[tokio::test]
 async fn authority_remains_behind_one_opaque_transport_handle() {
@@ -31,11 +32,12 @@ async fn authority_remains_behind_one_opaque_transport_handle() {
     )
     .await;
     let recovery = match notified {
-        BankHttpEstateNotificationOutcome::Applied { recovery, .. } => recovery,
+        BankHttpEstateNotificationOutcome::Applied { recovery, .. } => {
+            recovery.expect("first commit must issue a recovery token")
+        }
         other => panic!("notification did not commit: {other:?}"),
     };
     assert_recovery_inspects(&client, server.local_address(), &action, &recovery).await;
-    assert_undo_consumes_recovery(&client, server.local_address(), &action, &recovery).await;
     server.shutdown().await.expect("server should shut down");
 }
 
@@ -59,7 +61,7 @@ async fn lost_notification_response_replays_the_exact_opaque_handle() {
 }
 
 #[tokio::test]
-async fn expired_recovery_handle_opens_no_inspection_door() {
+async fn local_token_lifetime_cannot_discard_live_query_recovery() {
     let server = bind_application(
         Arc::new(application(AccountId::new(100).unwrap())),
         BankHttpServerConfiguration::local_ephemeral().with_opaque_handle_lifetime(Duration::ZERO),
@@ -76,12 +78,16 @@ async fn expired_recovery_handle_opens_no_inspection_door() {
     )
     .await;
     let (_, recovery) = applied_notification(notified);
-    let inspected = inspect_recovery(&client, server.local_address(), &action, &recovery).await;
-    assert!(matches!(
-        inspected,
-        BankHttpRecoveryInspectionOutcome::Denied { denial, .. }
-            if denial.kind == BankHttpDenialKind::Stale
-    ));
+    assert_recovery_inspects(&client, server.local_address(), &action, &recovery).await;
+    let replay = notify(
+        &client,
+        server.local_address(),
+        &action,
+        "expiring-notification-replay",
+    )
+    .await;
+    let (_, replay_recovery) = applied_notification(replay);
+    assert_eq!(replay_recovery, recovery);
     server.shutdown().await.expect("server should shut down");
 }
 
@@ -139,35 +145,6 @@ async fn assert_recovery_inspects(
             ..
         }
     ));
-}
-
-async fn assert_undo_consumes_recovery(
-    client: &reqwest::Client,
-    address: std::net::SocketAddr,
-    action: &RecoveryAction,
-    recovery: &str,
-) {
-    let undo = match admit_undo(client, address, action, recovery).await {
-        BankHttpUndoAdmissionOutcome::Admitted {
-            correction: BankHttpUndoCorrection::Reconciliation,
-            undo,
-            ..
-        } => undo,
-        other => panic!("reconciliation undo did not admit: {other:?}"),
-    };
-    let consumed = inspect_recovery(client, address, action, recovery).await;
-    assert!(matches!(
-        consumed,
-        BankHttpRecoveryInspectionOutcome::Denied { denial, .. }
-            if denial.kind == BankHttpDenialKind::Stale
-    ));
-    let progressed = progress_reconciliation(client, address, &undo, 5_000).await;
-    assert!(matches!(
-        progressed,
-        BankHttpUndoProgressionOutcome::Reconciled { .. }
-    ));
-    let replayed = progress_reconciliation(client, address, &undo, 5_000).await;
-    assert_eq!(replayed, progressed);
 }
 
 struct RecoveryAction {
@@ -257,7 +234,10 @@ fn applied_notification(
     match outcome {
         BankHttpEstateNotificationOutcome::Applied {
             commit, recovery, ..
-        } => (commit, recovery),
+        } => (
+            commit,
+            recovery.expect("first commit or live replay must retain its recovery token"),
+        ),
         other => panic!("notification did not commit: {other:?}"),
     }
 }
@@ -287,43 +267,6 @@ async fn inspect_recovery(
         address,
         "/v1/recovery/inspect",
         &recovery_request(action, "inspect-recovery-http", recovery),
-    )
-    .await
-}
-
-async fn admit_undo(
-    client: &reqwest::Client,
-    address: std::net::SocketAddr,
-    action: &RecoveryAction,
-    recovery: &str,
-) -> BankHttpUndoAdmissionOutcome {
-    post_typed(
-        client,
-        address,
-        "/v1/recovery/admit-undo",
-        &recovery_request(action, "admit-undo-http", recovery),
-    )
-    .await
-}
-
-async fn progress_reconciliation(
-    client: &reqwest::Client,
-    address: std::net::SocketAddr,
-    undo: &str,
-    deadline_milliseconds: u64,
-) -> BankHttpUndoProgressionOutcome {
-    post_typed(
-        client,
-        address,
-        "/v1/recovery/progress-undo",
-        &serde_json::json!({
-            "protocol": "v1",
-            "request_id": "progress-reconciliation-http",
-            "credential": credential_json(),
-            "controls": { "deadline_milliseconds": deadline_milliseconds },
-            "undo": undo,
-            "idempotency_key": "unused-reconciliation-key"
-        }),
     )
     .await
 }

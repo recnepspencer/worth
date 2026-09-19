@@ -3,8 +3,7 @@ use worth_ui::facade::{
     declaration::{
         ComponentAccessibilitySupport, ComponentChildPolicy, ComponentDescriptor,
         ComponentExecutionLane, ComponentFocusSupport, ComponentId, ComponentPropSchema,
-        ComponentStateOwnership, ThemeColorValue, ThemeTokenDescriptor, ThemeTokenFamily,
-        ThemeTokenSource, ThemeTokenValue,
+        ComponentStateOwnership,
     },
     diagnostics::CapabilityDiagnosticCode,
 };
@@ -82,29 +81,6 @@ fn rejected_alias_cycle_does_not_poison_valid_theme_token() {
     );
 }
 
-#[test]
-fn alias_to_registered_but_invalid_token_is_rejected() {
-    let report = WorthUi::app()
-        .with_change_profile(worth_ui_runtime::facade::rebind::UiChangeProfile::platform_pulse())
-        .register_theme_token(ThemeTokenDescriptor::define(
-            theme_token_id("theme.text.invalid"),
-            ThemeTokenFamily::text(),
-            ThemeTokenSource::application(),
-            ThemeTokenValue::color(ThemeColorValue::invalid_for_diagnostics("white")),
-        ))
-        .register_theme_token(alias_theme_token("theme.text.alias", "theme.text.invalid"))
-        .freeze_with_registration_report();
-
-    assert_diagnostic_codes(
-        &report,
-        &[
-            CapabilityDiagnosticCode::InvalidThemeTokenValue,
-            CapabilityDiagnosticCode::MissingDependency,
-        ],
-    );
-    assert!(report.accepted_snapshot().theme_tokens().is_empty());
-}
-
 fn component_referencing_token(component_id: &str, token_id: &str) -> ComponentDescriptor {
     ComponentDescriptor::new(
         ComponentId::new(component_id).unwrap(),
@@ -115,5 +91,10 @@ fn component_referencing_token(component_id: &str, token_id: &str) -> ComponentD
     .with_accessibility(ComponentAccessibilitySupport::semantic())
     .with_focus(ComponentFocusSupport::not_focusable())
     .with_execution_lane(ComponentExecutionLane::Passive)
-    .with_theme_token_dependency(theme_token_id(token_id))
+    .with_semantic_text(
+        worth_ui::facade::declaration::ComponentSemanticTextContract::body_default(
+            theme_token_id(token_id),
+            0,
+        ),
+    )
 }

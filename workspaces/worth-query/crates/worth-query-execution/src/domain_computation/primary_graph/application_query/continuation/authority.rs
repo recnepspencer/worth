@@ -6,17 +6,16 @@ use worth_query_installation::facade::{
     ApplicationSchemaBindingIdentity, WorthQueryInstalledApplicationQueryIdentity,
 };
 use worth_relational::facade::{
-    branch::RelationalBranchBasisDescriptor,
     identity::EntityId,
     indexes::{DerivedIndexGenerationId, DerivedIndexId, RelatedEntityOrderingBoundary},
 };
 
 /// Opaque, move-only description of the exact next application-query page.
 ///
-/// This value retains only the exact Relational component basis needed for
-/// owner readmission. It retains no authorization, snapshot, or provider
-/// session. Resuming consumes it and requires fresh principal, scope,
-/// parameter, controls, installed-query, and basis admission.
+/// This value retains the exact selected World product needed for owner
+/// readmission. It retains no authorization or provider session. Resuming
+/// consumes it and requires fresh principal, scope, parameter, controls, and
+/// installed-query admission.
 ///
 /// It cannot be copied or cloned:
 ///
@@ -81,8 +80,7 @@ pub struct WorthQueryApplicationQueryContinuation<Schema, Query, Parameters, Que
     pub(super) continuation_contract_digest: CanonicalDigestId,
     pub(super) graph_authority_identity: String,
     pub(super) provider_identity: String,
-    pub(super) basis_descriptor: RelationalBranchBasisDescriptor,
-    pub(super) basis_retention: worth_relational::facade::branch::RelationalBranchRetentionLease,
+    pub(super) product: crate::basis::WorthQueryProductObservationLease,
     pub(super) index_id: DerivedIndexId,
     pub(super) index_generation: DerivedIndexGenerationId,
     pub(super) boundary: RelatedEntityOrderingBoundary,

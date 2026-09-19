@@ -26,9 +26,14 @@ pub(crate) fn record_semantic_execution(
     let installed_policy = graph.installed_runtime_policy();
     let retention_budget = installed_policy.retention_budget();
     let profile = installed_policy.tier();
+    let has_pending_change = graph.diagnostics_state().has_pending_change_input();
+    let extends_transaction_flow = graph.diagnostics_state().extends_open_transaction_flow();
+    let noop_execution =
+        !extends_transaction_flow && !has_pending_change && report.tasks_executed == 0;
+    let performed_now = graph.invalidation_performed_counters();
     let (change, invalidation) = graph
         .diagnostics_state()
-        .pending_change_summary()
+        .pending_change_summary(performed_now)
         .unwrap_or_else(|| {
             (
                 ChangeInputSummary::new(Vec::new(), Vec::new(), 0, None),
@@ -44,6 +49,11 @@ pub(crate) fn record_semantic_execution(
     } else {
         None
     };
+    let cause_samples = if retention_budget.retain_stage_details {
+        sample_flow_causes(graph, report, retention_budget.detail_limit.get())
+    } else {
+        Vec::new()
+    };
     let flow = FlowSummary::new(
         profile,
         change,
@@ -51,11 +61,7 @@ pub(crate) fn record_semantic_execution(
         PlanningSummary::from_summary(plan_summary),
         PrecomputeSummary::from_report(report, profile),
         ApplySummary::from_report(report, profile),
-        if retention_budget.retain_stage_details {
-            sample_flow_causes(graph, report, retention_budget.detail_limit.get())
-        } else {
-            Vec::new()
-        },
+        cause_samples,
         Vec::new(),
         None,
         None,
@@ -106,9 +112,42 @@ pub(crate) fn record_semantic_execution(
     let _ = retention_budget;
     let _ = profile;
     let _ = OrdinaryAccessLane;
-    graph
-        .diagnostics_state_mut()
-        .complete_flow_without_graph_summary(flow, history);
+    if noop_execution {
+        // A clean read (no change input, nothing executed) is history, not a
+        // flow: keep the last real flow so latest_flow() stays the record of
+        // what changed rather than of the read that followed it.
+        graph
+            .diagnostics_state_mut()
+            .record_noop_execution_history(history);
+    } else if extends_transaction_flow {
+        // One transaction is one flow: a later execution of the open
+        // transaction (the demand pass after `evaluate_dirty`, a read inside
+        // the transaction) adds its work to the flow the first one recorded.
+        let FlowSummary {
+            change,
+            invalidation,
+            planning,
+            precompute,
+            apply,
+            cause_samples,
+            explanation,
+            ..
+        } = flow;
+        graph.diagnostics_state_mut().extend_flow_with_execution(
+            change,
+            invalidation,
+            planning,
+            precompute,
+            apply,
+            cause_samples,
+            explanation,
+            history,
+        );
+    } else {
+        graph
+            .diagnostics_state_mut()
+            .complete_flow_without_graph_summary(flow, history);
+    }
     if graph.captures_observation_surface(
         crate::logic::transaction::SignalObservationSurface::ReplayDetail,
     ) {

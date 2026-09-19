@@ -266,6 +266,12 @@ impl<'runtime> VisibilityReadContext<'runtime> {
                 actual_runtime_instance_id: observation.identity().runtime_instance_id(),
             });
         }
+        if observation
+            .selected_root()
+            .has_materialization_unavailable()
+        {
+            return Err(crate::branch::RelationalBranchBasisDenial::MaterializationUnavailable);
+        }
         let basis = crate::visibility::snapshot_states::VisibilitySnapshotBasis::from_observation(
             observation,
         );
@@ -326,6 +332,9 @@ impl<'runtime> VisibilityReadContext<'runtime> {
     ) -> Option<VisibilityProjectionView<'runtime>> {
         let basis =
             crate::visibility::snapshot_states::resolve_snapshot_basis(self.runtime(), handle)?;
+        if basis.root().has_materialization_unavailable() {
+            return None;
+        }
         Some(VisibilityProjectionView::new(
             self.runtime(),
             crate::visibility::snapshot_states::SnapshotStateBasis::Exact(basis),

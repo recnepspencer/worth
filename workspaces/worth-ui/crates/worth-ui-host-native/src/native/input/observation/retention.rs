@@ -1,7 +1,7 @@
 use worth_ui_host_contract::{
     UiHostObservationBatch, UiHostObservationBatchInput, UiHostObservationLoss,
     UiHostObservationPayload, UiHostObservationReport, UiHostObservationSequence,
-    UiHostObservationSequenceRange, UiHostObservationTimeBasis,
+    UiHostObservationSequenceRange, UiHostObservationTimeBasis, UiHostPointerDeviceKind,
 };
 
 use super::{
@@ -59,6 +59,17 @@ impl UiNativeInputObservationState {
                     UiHostObservationTimeBasis::HostMonotonicMillis(event_tick),
                     payload,
                 );
+                let report = if matches!(
+                    report.payload(),
+                    UiHostObservationPayload::PointerMotion { .. }
+                        | UiHostObservationPayload::PointerButton { .. }
+                ) {
+                    report
+                        .with_pointer_device_kind(UiHostPointerDeviceKind::Mouse)
+                        .expect("native pointer payloads must accept mouse provenance")
+                } else {
+                    report
+                };
                 if report_requires_input_affinity(report.payload()) {
                     let Some(binding) = self.current_input_recipient() else {
                         return report;
@@ -97,7 +108,7 @@ impl UiNativeInputObservationState {
         };
         let evidence_checkpoint = self.evidence.clone();
         self.evidence.record_batch(batch.reports());
-        if let Err(denial) = self.retention.retain(batch) {
+        if let Err(denial) = self.retention.retain_latest_pointer_motion(batch) {
             self.evidence = evidence_checkpoint;
             self.record_terminal_stop(UiNativeInputObservationStop::Retention(denial));
             return UiNativeInputObservationDisposition::Stopped;

@@ -115,6 +115,14 @@ fn append_parameters(
                 parameter.scalar_family().canonical_name(),
             ),
             text(format!("{path}.value-type"), parameter.value_type()),
+            parameter.unit().map_or_else(
+                || null(format!("{path}.unit")),
+                |unit| text(format!("{path}.unit"), unit),
+            ),
+            parameter.frame().map_or_else(
+                || null(format!("{path}.frame")),
+                |frame| text(format!("{path}.frame"), frame),
+            ),
         ]);
     }
 }
@@ -230,6 +238,13 @@ fn append_live_cause(
         text("live-cause.target-aspect", live.target_field().1),
         text("live-cause.target-field", live.target_field().2),
         text("live-cause.target-value-type", live.target_value_type()),
+        text(
+            "live-cause.target-mode",
+            match live.target_mode() {
+                super::super::ApplicationQueryLiveTargetMode::Root => "root",
+                super::super::ApplicationQueryLiveTargetMode::Collection => "collection",
+            },
+        ),
         unsigned_u64(
             "live-cause.maximum-buffered-causes",
             live.resources().maximum_buffered_causes(),

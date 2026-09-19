@@ -165,8 +165,12 @@ fn component_references_missing_theme_token_rejected() {
     let report = WorthUi::app()
         .with_change_profile(worth_ui_runtime::facade::rebind::UiChangeProfile::platform_pulse())
         .register_component(
-            component_descriptor("workspace.component.editor")
-                .with_theme_token_dependency(missing_token_id),
+            component_descriptor("workspace.component.editor").with_semantic_text(
+                worth_ui::facade::declaration::ComponentSemanticTextContract::body_default(
+                    missing_token_id,
+                    0,
+                ),
+            ),
         )
         .freeze_with_registration_report();
 
@@ -189,8 +193,11 @@ fn component_missing_theme_token_does_not_poison_valid_component() {
         .with_change_profile(worth_ui_runtime::facade::rebind::UiChangeProfile::platform_pulse())
         .register_component(component_descriptor("workspace.component.valid"))
         .register_component(
-            component_descriptor("workspace.component.editor").with_theme_token_dependency(
-                ThemeTokenId::new("workspace.theme_token.accent").expect("valid token id"),
+            component_descriptor("workspace.component.editor").with_semantic_text(
+                worth_ui::facade::declaration::ComponentSemanticTextContract::body_default(
+                    ThemeTokenId::new("workspace.theme_token.accent").expect("valid token id"),
+                    0,
+                ),
             ),
         )
         .freeze_with_registration_report();

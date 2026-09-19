@@ -1,6 +1,6 @@
 use worth_ui::facade::declaration::{
-    ThemeColorValue, ThemeTokenAlias, ThemeTokenDescriptor, ThemeTokenFamily, ThemeTokenId,
-    ThemeTokenSource, ThemeTokenValue,
+    ThemeTokenAlias, ThemeTokenDescriptor, ThemeTokenFamily, ThemeTokenId, ThemeTokenSource,
+    ThemeTokenValue, UiThemeColor,
 };
 
 pub(crate) fn theme_token_id(raw_text: &str) -> ThemeTokenId {
@@ -53,5 +53,5 @@ pub(crate) fn plugin_alias_theme_token(id: &str, target_id: &str) -> ThemeTokenD
 }
 
 pub(crate) fn color_value(hex: &str) -> ThemeTokenValue {
-    ThemeTokenValue::color(ThemeColorValue::hex(hex).expect("valid theme color value"))
+    ThemeTokenValue::color(UiThemeColor::parse(hex).expect("valid theme color value"))
 }

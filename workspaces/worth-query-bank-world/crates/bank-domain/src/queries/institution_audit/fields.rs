@@ -17,14 +17,23 @@ use crate::schema::{
 use super::InstitutionAuditQuery;
 
 pub(super) struct InstitutionIdentitySlot;
+worth_query_decl::facade::worth_query_portable_type!(InstitutionIdentitySlot => "InstitutionIdentitySlot");
 pub(super) struct AccountIdentitySlot;
+worth_query_decl::facade::worth_query_portable_type!(AccountIdentitySlot => "AccountIdentitySlot");
 pub(super) struct PostingSequenceSlot;
+worth_query_decl::facade::worth_query_portable_type!(PostingSequenceSlot => "PostingSequenceSlot");
 pub(super) struct PostingIdentitySlot;
+worth_query_decl::facade::worth_query_portable_type!(PostingIdentitySlot => "PostingIdentitySlot");
 pub(super) struct PostingAmountSlot;
+worth_query_decl::facade::worth_query_portable_type!(PostingAmountSlot => "PostingAmountSlot");
 pub(super) struct PostingPurposeSlot;
+worth_query_decl::facade::worth_query_portable_type!(PostingPurposeSlot => "PostingPurposeSlot");
 pub(super) struct JournalIdentitySlot;
+worth_query_decl::facade::worth_query_portable_type!(JournalIdentitySlot => "JournalIdentitySlot");
 pub(super) struct JournalPurposeSlot;
+worth_query_decl::facade::worth_query_portable_type!(JournalPurposeSlot => "JournalPurposeSlot");
 pub(super) struct ReversalIdentitySlot;
+worth_query_decl::facade::worth_query_portable_type!(ReversalIdentitySlot => "ReversalIdentitySlot");
 
 pub(super) fn institution_identity() -> ApplicationQueryResultFieldRef<
     InstitutionAuditQuery,

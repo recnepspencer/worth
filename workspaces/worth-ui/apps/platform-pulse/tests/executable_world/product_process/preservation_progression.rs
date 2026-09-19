@@ -49,6 +49,7 @@ impl PulseExecutableWorld<AwaitingPreservation> {
         let causal = CausalPredecessorPreservationObservationSet::new(
             action,
             green.evidence.identity().clone(),
+            green.snapshot.snapshot().affinity().frame(),
             envelope,
         );
         let evidence = match adjudicate_predecessor_preservation(causal.join_native(

@@ -78,20 +78,19 @@ fn whole_binding_pin_inventory_participates_in_query_request_identity() {
 }
 
 #[test]
-fn complete_empty_reconstruction_is_meaningful_but_an_empty_delta_is_denied() {
+fn complete_empty_reconstruction_and_currentness_only_delta_are_meaningful() {
     let complete = basis_input(Vec::new());
     assert!(WorthUiPresentationRequestBasis::from_runtime_correspondence(complete.clone()).is_ok());
 
-    assert_eq!(
-        WorthUiPresentationRequestBasis::from_runtime_correspondence(
-            WorthUiPresentationRequestBasisInput {
-                complete: false,
-                ..complete
-            }
-        )
-        .unwrap_err(),
-        WorthUiPresentationRequestBasisDenial::EmptyPresentationChange
-    );
+    let currentness = WorthUiPresentationRequestBasis::from_runtime_correspondence(
+        WorthUiPresentationRequestBasisInput {
+            complete: false,
+            ..complete
+        },
+    )
+    .unwrap();
+    assert!(!currentness.complete());
+    assert!(currentness.mechanics().is_empty());
 }
 
 #[test]

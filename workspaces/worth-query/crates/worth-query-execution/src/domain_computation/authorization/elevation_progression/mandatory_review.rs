@@ -18,7 +18,7 @@ use super::super::{
 };
 use super::context_identity::{selected_elevation_entity, selected_review_entity};
 use super::operation_role::installed_lifecycle_owner;
-use super::transition_contract::{lifecycle_decision_reads, review_program_targets};
+use super::transition_contract::{review_decision_reads, review_program_targets};
 use crate::domain_computation::primary_graph::{
     WorthQueryElevationClosureKind, WorthQueryMandatoryReview,
     WorthQueryPrimaryGraphApplicationRuntime,
@@ -33,6 +33,7 @@ pub(in crate::domain_computation) struct WorthQueryMandatoryReviewDraft {
     review: EntityId,
     reviewer: EntityId,
     reviewed_at: AspectValue,
+    reviewed_at_field: AspectFieldLocator,
     terminal_status: AspectValue,
     completed_status: AspectValue,
     review_entity: String,
@@ -84,7 +85,7 @@ where
         WorthQueryMandatoryReviewAuthorizationDenial,
     >
     where
-        Operation: ApplicationOperationMarkerIdentity,
+        Operation: ApplicationOperationMarkerIdentity<Schema>,
         Input: ApplicationCapabilityRequest<Schema, Capability>,
         Input: 'static,
     {
@@ -116,7 +117,7 @@ fn bind_review<Schema, Capability, Operation, Input>(
 ) -> Result<WorthQueryMandatoryReviewDraft, WorthQueryOperationAuthorizationDenial>
 where
     Schema: ApplicationSchema,
-    Operation: ApplicationOperationMarkerIdentity,
+    Operation: ApplicationOperationMarkerIdentity<Schema>,
     Input: ApplicationCapabilityRequest<Schema, Capability>,
     Input: 'static,
 {
@@ -163,13 +164,14 @@ where
         review,
         reviewer: access.principal_entity_id(),
         reviewed_at: sample.value().clone(),
+        reviewed_at_field: lifecycle.lifecycle.reviewed_at.clone(),
         terminal_status,
         completed_status: lifecycle.lifecycle.review_completed.clone(),
         review_entity: definition.review().status().entity().to_string(),
         review_status_field: lifecycle.lifecycle.review_status.clone(),
         approver_relation: lifecycle.lifecycle.approver_relation,
         reviewer_relation: lifecycle.lifecycle.reviewer_relation,
-        required_decision_reads: lifecycle_decision_reads(installed),
+        required_decision_reads: review_decision_reads(installed),
         required_program_targets: review_program_targets(installed),
         lifecycle_effect: super::lifecycle_effect::derive_lifecycle_effect(
             definition.lifecycle().complete_review(),

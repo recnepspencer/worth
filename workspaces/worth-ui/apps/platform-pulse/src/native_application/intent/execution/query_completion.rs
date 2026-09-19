@@ -46,7 +46,7 @@ impl PlatformPulseApplicationRuntime {
             self.fail_visual_identity(denial);
             return false;
         }
-        self.admit_query_predecessor(receipt) && self.refresh_product_story(shell)
+        self.admit_query_predecessor(receipt)
     }
 
     fn take_completed_query_action(
@@ -136,11 +136,11 @@ impl PlatformPulseApplicationRuntime {
         &mut self,
         receipt: worth_ui::facade::rebind::UiRebindReceipt,
     ) -> bool {
-        let observation = match receipt.release_scalar_projection_observation() {
+        let observation = match receipt.release_application_scalar_projection_observation() {
             Ok(observation) => observation,
             Err(_) => {
                 self.fail_intent_settlement(
-                    "intent consequence receipt omitted scalar Query predecessor",
+                    "intent consequence receipt omitted application scalar Query predecessor",
                 );
                 return false;
             }

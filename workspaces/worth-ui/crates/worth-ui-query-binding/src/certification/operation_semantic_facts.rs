@@ -64,7 +64,7 @@ impl WorthUiInstalledQueryTestFixture {
             .expect("Worth UI domain remains installed");
         let completed = self
             .workspace
-            .prepare_mutation_operating_world()
+            .prepare_mutation_operating_world(self.workspace.current_world())
             .expect("fixture prepares the Query-owned mutation world")
             .family(WorthUiMeasurementRecordingFamily)
             .bind(installed.handle(), WorthUiMeasurementRecording)

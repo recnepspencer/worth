@@ -1,5 +1,4 @@
 mod admission;
-mod conditional_delivery;
 mod delivery;
 mod invalidation_seed;
 mod lease;
@@ -14,7 +13,6 @@ pub use admission::{
     WorthQueryProjectionSharingOutcome, WorthQueryProjectionSharingStop,
     WorthQuerySharedLiveProjectionPair,
 };
-pub use conditional_delivery::WorthQuerySharedConditionalDeliveryStop;
 pub(crate) use delivery::{
     WorthQuerySharedImpactReadmissionDenial, WorthQuerySharedProjectionEpochEvidence,
     WorthQuerySharedProjectionLeaseViewAuthority,

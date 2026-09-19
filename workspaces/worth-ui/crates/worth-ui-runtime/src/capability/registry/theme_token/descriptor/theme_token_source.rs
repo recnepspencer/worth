@@ -39,10 +39,6 @@ impl ThemeTokenSource {
         )
     }
 
-    pub(crate) fn is_application_owned(&self) -> bool {
-        matches!(self, Self::Application)
-    }
-
     pub(crate) fn digest_basis(&self) -> &'static str {
         match self {
             Self::Platform => "platform",

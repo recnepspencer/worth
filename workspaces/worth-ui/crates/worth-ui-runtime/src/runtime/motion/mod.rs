@@ -1,6 +1,9 @@
 mod census;
 mod declaration;
+mod overlay_export;
+mod prepared_entrance;
 mod produced_fact;
+pub(crate) use prepared_entrance::UiPreparedMotionEntrance;
 mod rebind;
 mod receipt;
 mod retarget;
@@ -16,7 +19,11 @@ pub(crate) use declaration::{
     UiMotionDeclaration, UiMotionEasing, UiMotionFillPolicy, UiMotionInterruptionPolicy,
     UiMotionPropertyChannel, UiMotionPropertyChannels, UiMotionReducedMotionPolicy,
 };
+pub(crate) use overlay_export::{
+    UiMotionOverlayOwnerExport, UiMotionOverlayOwnerRow, UiMotionOverlayRows,
+};
 pub(crate) use produced_fact::{UiMotionProducedFact, UiMotionProducedFactKind};
+pub(crate) use rebind::UiPreparedMotionRebind;
 pub(crate) use receipt::{
     UiMotionSemanticGeometry, UiMotionTargetIdentity, UiMotionTransitionRequest,
     UiMotionTransitionRequestDenial,

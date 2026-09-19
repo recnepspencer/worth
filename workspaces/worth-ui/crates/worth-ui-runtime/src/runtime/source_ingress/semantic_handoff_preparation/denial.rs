@@ -17,9 +17,18 @@ pub enum WorthUiServiceDeclarationAdmissionCause {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthUiSemanticHandoffPreparationStop {
     UnsupportedProtocol,
+    AppearanceRoleRegistration(crate::capability::AppearanceRoleRegistrationDenial),
     CapabilityResolution,
     RuntimeStructuralAdmission,
     DeclarationProjection,
+    ComponentReference {
+        declaration_index: usize,
+        cause: crate::declaration::UiDeclarationComponentReferenceDenial,
+    },
+    AppearanceRoleAttachment {
+        declaration_index: usize,
+        cause: crate::declaration::UiAppearanceRoleAttachmentDenial,
+    },
     IntentDeclaration,
     ServiceDeclaration {
         declaration_index: usize,

@@ -2,10 +2,10 @@ use crate::capability::{
     CapabilitySnapshot, CapabilitySnapshotFreezeInput, CapabilitySupportCatalog,
     ComponentChildPolicy, ComponentDescriptor, ComponentId, ComponentPropSchema,
     ComponentStateOwnership, RegisteredCapabilitySet, RegistrationCandidate, SurfaceDescriptor,
-    SurfaceId, SurfaceKind, SurfacePlacementClass, SurfaceStateClass, ThemeColorValue,
-    ThemeTokenAlias, ThemeTokenDescriptor, ThemeTokenFamily, ThemeTokenId, ThemeTokenSource,
-    ThemeTokenValue, ViewBindingDescriptor, ViewBindingFamily, ViewBindingId,
-    COMPONENT_FAMILY_NAME, SURFACE_FAMILY_NAME, THEME_TOKEN_FAMILY_NAME, VIEW_BINDING_FAMILY_NAME,
+    SurfaceId, SurfaceKind, SurfacePlacementClass, SurfaceStateClass, ThemeTokenAlias,
+    ThemeTokenDescriptor, ThemeTokenFamily, ThemeTokenId, ThemeTokenSource, ThemeTokenValue,
+    UiThemeColor, ViewBindingDescriptor, ViewBindingFamily, ViewBindingId, COMPONENT_FAMILY_NAME,
+    SURFACE_FAMILY_NAME, THEME_TOKEN_FAMILY_NAME, VIEW_BINDING_FAMILY_NAME,
 };
 use crate::facade::{WorthUi, WorthUiApp};
 use crate::source::{WorthUiResolutionDiagnosticCode, WorthUiResolutionReport};
@@ -58,7 +58,7 @@ pub(super) fn admitted_app() -> WorthUiApp {
             ThemeTokenId::new("theme.text.primary").unwrap(),
             ThemeTokenFamily::text(),
             ThemeTokenSource::application(),
-            ThemeTokenValue::color(ThemeColorValue::hex("#101820").unwrap()),
+            ThemeTokenValue::color(UiThemeColor::parse("#101820").unwrap()),
         ))
         .register_theme_token(ThemeTokenDescriptor::alias(
             ThemeTokenId::new("theme.text.default").unwrap(),
@@ -94,6 +94,8 @@ pub(in crate::source::tests) fn snapshot_with_support_catalog(
 ) -> CapabilitySnapshot {
     CapabilitySnapshot::from_freeze_input(CapabilitySnapshotFreezeInput {
         registered_capabilities: clone_registered_capabilities(base),
+        appearance_roles: base.appearance_roles().clone(),
+        appearance_themes: base.appearance_themes().cloned(),
         commands: base.commands().clone(),
         command_projections: base.command_projections().clone(),
         components: base.components().clone(),

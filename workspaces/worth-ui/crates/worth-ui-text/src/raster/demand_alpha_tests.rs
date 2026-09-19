@@ -108,7 +108,7 @@ pub(super) fn demand_for_spans(
         layout,
         UiGlyphRasterDemandRequest {
             paint_spans,
-            logical_damage: scenario.damage,
+            selection: crate::UiGlyphRasterDemandSelection::LogicalDamage(scenario.damage),
             scale: UiGlyphRasterScale::new(
                 scenario.dpi_milli,
                 layout.view().text_scale_generation(),
@@ -129,7 +129,7 @@ fn demand_for_at(
         layout,
         UiGlyphRasterDemandRequest {
             paint_spans: &[paint_for(scenario.source, 31)],
-            logical_damage: scenario.damage,
+            selection: crate::UiGlyphRasterDemandSelection::LogicalDamage(scenario.damage),
             scale: UiGlyphRasterScale::new(
                 scenario.dpi_milli,
                 layout.view().text_scale_generation(),
@@ -346,6 +346,7 @@ pub(super) fn same_generation_foreign_lineage_is_denied_before_outline_work() {
         demand.scale(),
         demand.placement(),
         demand.lane(),
+        demand.scope(),
         &[forged],
     );
     let forged_demand = UiGlyphRasterDemandBatch::from_text_mechanics(
@@ -354,6 +355,7 @@ pub(super) fn same_generation_foreign_lineage_is_denied_before_outline_work() {
         demand.scale(),
         demand.placement(),
         demand.lane(),
+        demand.scope(),
         [forged],
     )
     .unwrap();

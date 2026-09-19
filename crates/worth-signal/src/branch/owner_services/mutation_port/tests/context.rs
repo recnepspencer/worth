@@ -103,16 +103,15 @@ fn non_clone_context_and_local_callback_borrows_return_on_every_advance_posture(
     context.caller_marker += 1;
     assert_eq!(context.caller_marker, 11);
     assert!(!dropped.load(Ordering::Acquire));
-    assert!(matches!(
-        world.port.advance_exact(
+    world
+        .port
+        .advance_exact(
             current.advanced_basis(),
             &mut context,
             &SignalOwnerCancellationSource::new().token(),
             |_| Ok(()),
-        ),
-        Err(SignalBranchAdvanceDenial::QuarantinedBranch { branch_id })
-            if branch_id == world.source_branch.id
-    ));
+        )
+        .expect("successful rollback keeps the source cell usable");
 
     let sibling_dropped = Arc::new(AtomicBool::new(false));
     let mut sibling_context = NonCloneRequestContext {

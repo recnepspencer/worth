@@ -63,3 +63,33 @@ fn visibility_aspect_versions_reject_stale_generation_ids() {
         .entity_aspect_versions(entity)
         .is_some());
 }
+
+#[test]
+fn selected_basis_aspect_revision_reads_only_the_requested_aspect() {
+    let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
+    let created = create_entity_outcome(&runtime, "alpha");
+    let entity = changed_entities(&created)[0];
+    let updated = update_entity(&runtime, entity, "beta");
+    let view = runtime
+        .read_truth()
+        .project_snapshot(&updated.snapshot)
+        .expect("the committed basis remains projectable");
+
+    assert_eq!(
+        view.entity_aspect_version(entity, &AspectKey::new("name").unwrap()),
+        Some(Some(updated.version_id.0))
+    );
+    assert_eq!(
+        view.entity_aspect_version(entity, &AspectKey::new("unrelated").unwrap()),
+        Some(None)
+    );
+    let stale = EntityId::new(
+        entity.partition_id,
+        entity.local_slot.0,
+        entity.generation.0 + 1,
+    );
+    assert_eq!(
+        view.entity_aspect_version(stale, &AspectKey::new("name").unwrap()),
+        None
+    );
+}

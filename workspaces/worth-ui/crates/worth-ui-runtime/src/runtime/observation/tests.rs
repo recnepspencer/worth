@@ -55,6 +55,10 @@ fn family_definitions_preserve_closed_owner_and_framework_order() {
             UiObservationOwner::HostDeviceScale,
         ),
         (
+            UiObservationFamily::PointerPresenceTarget,
+            UiObservationOwner::PointerPresenceRuntimeState,
+        ),
+        (
             UiObservationFamily::Measurement,
             UiObservationOwner::MeasurementExchange,
         ),
@@ -126,6 +130,7 @@ fn family_definitions_preserve_closed_owner_and_framework_order() {
     );
 
     for family in [
+        UiObservationFamily::PointerPresenceTarget,
         UiObservationFamily::CommittedFocus,
         UiObservationFamily::CommittedSelection,
         UiObservationFamily::CommittedMotionTrack,

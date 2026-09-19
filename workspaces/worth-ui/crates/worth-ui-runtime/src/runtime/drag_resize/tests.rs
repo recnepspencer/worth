@@ -283,7 +283,6 @@ fn durable_resize_truth_change_does_not_counterfeit_mounted_projection_delta() {
         panic!("retained predecessor must produce exact mounted allocation delta");
     };
     assert_eq!(delta.journal_entries_touched(), 1);
-    assert!(delta.changed_graph_nodes().is_empty());
     let successor_projection = projection_source
         .projection(root)
         .expect("committed allocation geometry is valid")

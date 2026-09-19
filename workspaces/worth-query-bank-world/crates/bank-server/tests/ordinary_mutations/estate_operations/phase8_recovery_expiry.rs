@@ -1,7 +1,7 @@
 //! Recovery expiry is evaluated and consumed through Bank-owned phases.
 
 use bank_external_rail::test_control::FaultScript;
-use bank_server::{BankRecoveryDenialKind, BankRecoveryExpiryEvaluation};
+use bank_server::{BankRecoveryClaimStatus, BankRecoveryDenialKind, BankRecoveryExpiryEvaluation};
 
 use super::phase8_cross_gate::world::{
     cross_gate_world, cross_gate_world_with_authorization_time, PATIENT,
@@ -16,6 +16,14 @@ fn current_expiry_evidence_remains_descriptive() {
         .under(FaultScript::CommitThenLoseResponse, PATIENT);
     let receipt = world.commit_notification(77);
     let handle = world.open_recovery(&receipt);
+    assert_eq!(
+        world
+            .fixture
+            .world
+            .runtime
+            .commit_recovery_claim_status(&receipt),
+        Ok(BankRecoveryClaimStatus::Live)
+    );
     assert!(matches!(
         world
             .fixture
@@ -56,6 +64,14 @@ fn clock_advanced_expiry_terminalizes_through_bank() {
         .runtime
         .expire_commit_recovery(handle, decision)
         .expect("expire terminal");
+    assert_eq!(
+        world
+            .fixture
+            .world
+            .runtime
+            .commit_recovery_claim_status(&receipt),
+        Ok(BankRecoveryClaimStatus::Expired)
+    );
     let denied = world
         .fixture
         .world

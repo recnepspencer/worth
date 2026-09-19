@@ -1,44 +1,61 @@
 use super::*;
 
+worth_query_structured_value_binding!(
+    HostActivityParametersBinding for ActivityQueryParameters {
+        identity: "ActivityQueryParameters"
+    }
+);
+worth_query_structured_value_binding!(
+    HostActivityResultBinding for ActivityQueryResult {
+        identity: "ActivityQueryResult"
+    }
+);
+
 worth_query_application_query!(
-    HostAuthoredQuery in QueryTestSchema,
+    HostAuthoredQuery for QueryTestSchema,
     identity "worth.query.test.installation.host-query.v1",
-    parameters ActivityQueryParameters => "ActivityQueryParameters",
-    result ActivityQueryResult => "ActivityQueryResult",
+    parameters HostActivityParametersBinding,
+    result HostActivityResultBinding,
     scope Account => "Account",
     name "account_activity"
 );
 struct HostParameters;
+worth_query_structured_value_binding!(
+    HostParametersBinding for HostParameters { identity: "HostParameters" }
+);
 worth_query_application_query!(
-    ChangedParametersQuery in QueryTestSchema,
+    ChangedParametersQuery for QueryTestSchema,
     identity "ActivityQuery",
-    parameters HostParameters => "HostParameters",
-    result ActivityQueryResult => "ActivityQueryResult",
+    parameters HostParametersBinding,
+    result HostActivityResultBinding,
     scope Account => "Account",
     name "account_activity"
 );
 struct HostResult;
+worth_query_structured_value_binding!(
+    HostResultBinding for HostResult { identity: "HostResult" }
+);
 worth_query_application_query!(
-    ChangedResultQuery in QueryTestSchema,
+    ChangedResultQuery for QueryTestSchema,
     identity "ActivityQuery",
-    parameters ActivityQueryParameters => "ActivityQueryParameters",
-    result HostResult => "HostResult",
+    parameters HostActivityParametersBinding,
+    result HostResultBinding,
     scope Account => "Account",
     name "account_activity"
 );
 worth_query_application_query!(
-    ChangedScopeQuery in QueryTestSchema,
+    ChangedScopeQuery for QueryTestSchema,
     identity "ActivityQuery",
-    parameters ActivityQueryParameters => "ActivityQueryParameters",
-    result ActivityQueryResult => "ActivityQueryResult",
+    parameters HostActivityParametersBinding,
+    result HostActivityResultBinding,
     scope Activity => "Activity",
     name "account_activity"
 );
 worth_query_application_query!(
-    MissingQuery in QueryTestSchema,
+    MissingQuery for QueryTestSchema,
     identity "ActivityQuery",
-    parameters ActivityQueryParameters => "ActivityQueryParameters",
-    result ActivityQueryResult => "ActivityQueryResult",
+    parameters HostActivityParametersBinding,
+    result HostActivityResultBinding,
     scope Account => "Account",
     name "host_query"
 );
@@ -53,10 +70,13 @@ fn installation_resolves_only_the_package_declared_typed_reference() {
     let changed_scope = ChangedScopeQuery::reference();
 
     for denial in [
-        schema.application_query(changed).err().unwrap(),
-        schema.application_query(changed_parameters).err().unwrap(),
-        schema.application_query(changed_result).err().unwrap(),
-        schema.application_query(changed_scope).err().unwrap(),
+        schema.certification_query(changed).err().unwrap(),
+        schema
+            .certification_query(changed_parameters)
+            .err()
+            .unwrap(),
+        schema.certification_query(changed_result).err().unwrap(),
+        schema.certification_query(changed_scope).err().unwrap(),
     ] {
         assert_eq!(
             denial.kind(),
@@ -64,7 +84,7 @@ fn installation_resolves_only_the_package_declared_typed_reference() {
         );
     }
     assert_eq!(
-        schema.application_query(missing).err().unwrap().kind(),
+        schema.certification_query(missing).err().unwrap().kind(),
         WorthQueryApplicationQueryInstallationDenialKind::QueryNotInstalled
     );
 }
@@ -75,7 +95,9 @@ fn installed_query_authority_is_exact_to_runtime_and_generation() {
     let current_schema = current
         .bind_application_schema(QueryTestSchema::declaration().unwrap())
         .unwrap();
-    let query = current_schema.application_query(query_reference()).unwrap();
+    let query = current_schema
+        .certification_query(query_reference())
+        .unwrap();
 
     let rebuilt_schema = current
         .rebuild()
@@ -114,7 +136,9 @@ fn installed_query_rejects_same_runtime_package_identity_drift() {
     let current_schema = current
         .bind_application_schema(QueryTestSchema::declaration().unwrap())
         .unwrap();
-    let query = current_schema.application_query(query_reference()).unwrap();
+    let query = current_schema
+        .certification_query(query_reference())
+        .unwrap();
     let drifted_schema = installed_index_with(runtime, true)
         .bind_application_schema(QueryTestSchema::declaration().unwrap())
         .unwrap();

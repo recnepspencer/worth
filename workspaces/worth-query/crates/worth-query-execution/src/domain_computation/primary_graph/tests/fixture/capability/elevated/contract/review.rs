@@ -19,9 +19,10 @@ use super::super::{
     CapabilityElevationReason, CapabilityElevationRequester, CapabilityElevationResource,
     CapabilityElevationReview, CapabilityElevationSlot, CapabilityElevationStatusField,
     CapabilityGrant, CapabilityGrantor, CapabilityResource, CapabilityReviewIdentity,
-    CapabilityReviewKindField, CapabilityReviewResource, CapabilityReviewSlot,
-    CapabilityReviewStatusField, CapabilityReviewer, CompleteCapabilityReviewOperation,
-    CompleteElevationReviewCapability, CompleteElevationReviewInput,
+    CapabilityReviewKindField, CapabilityReviewResource, CapabilityReviewReviewedAt,
+    CapabilityReviewSlot, CapabilityReviewStatusField, CapabilityReviewer,
+    CompleteCapabilityReviewOperation, CompleteElevationReviewCapability,
+    CompleteElevationReviewInput,
 };
 use super::{command_constraints, command_propagation, command_target, delegation};
 use crate::domain_computation::primary_graph::tests::fixture::{
@@ -33,7 +34,7 @@ pub(super) fn install(
 ) -> ApplicationSchemaDeclarationBuilder<IdentityExecutionSchema> {
     let operation = CompleteCapabilityReviewOperation::reference();
     schema
-        .operation_decision_fact_budget(operation, 15)
+        .operation_decision_fact_budget(operation, 16)
         .operation_projection_work_budget(operation, 96)
         .operation_read_field(operation, CapabilityElevationIdentity::reference())
         .operation_read_field(operation, CapabilityElevationReason::reference())
@@ -43,6 +44,7 @@ pub(super) fn install(
         .operation_read_field(operation, CapabilityReviewIdentity::reference())
         .operation_read_field(operation, CapabilityReviewKindField::reference())
         .operation_read_field(operation, CapabilityReviewStatusField::reference())
+        .operation_read_field(operation, CapabilityReviewReviewedAt::reference())
         .operation_read_relation(operation, CapabilityElevationRequester::reference())
         .operation_read_relation(operation, CapabilityElevationApprover::reference())
         .operation_read_relation(operation, CapabilityElevationGrant::reference())
@@ -51,6 +53,7 @@ pub(super) fn install(
         .operation_read_relation(operation, CapabilityReviewResource::reference())
         .operation_read_relation(operation, CapabilityReviewer::reference())
         .operation_write(operation, CapabilityReviewStatusField::reference())
+        .operation_write(operation, CapabilityReviewReviewedAt::reference())
         .operation_link(operation, CapabilityReviewer::reference())
         .capability(contract())
 }

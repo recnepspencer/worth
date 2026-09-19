@@ -5,6 +5,7 @@ const READINESS: &str = "phase3.operability.ready";
 const POLICY: &str = "phase3.operability.policy";
 const CONFIRMATION: &str = "phase3.operability.confirmation";
 
+#[derive(Clone)]
 pub(in crate::intent) struct OperabilityFacts {
     pub(in crate::intent) mutability: UiIntentApplicationFact<UiIntentBoolean>,
     pub(in crate::intent) readiness: UiIntentApplicationFact<UiIntentBoolean>,

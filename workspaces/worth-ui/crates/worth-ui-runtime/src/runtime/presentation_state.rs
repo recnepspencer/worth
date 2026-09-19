@@ -1,21 +1,36 @@
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::sync::Arc;
 
-#[path = "presentation_state/theme_values.rs"]
-mod theme_values;
-
+mod appearance_generation_succession;
+mod appearance_theme;
+mod overlay_export;
+mod projection;
+mod semantic_text_tokens;
+mod text_publication;
+mod text_succession;
+pub(crate) use text_publication::{
+    UiApplicationTextMountedCoverage, UiApplicationTextPublication,
+    UiApplicationTextRevisionSelection,
+};
+pub(crate) use text_succession::UiPreparedApplicationTextSuccession;
 #[cfg(test)]
 #[path = "presentation_state_tests.rs"]
 mod tests;
+
+pub(crate) use appearance_generation_succession::{
+    UiAppearanceGenerationSuccessionDenial, UiPreparedAppearanceGenerationSuccession,
+};
+pub(crate) use appearance_theme::UiAppearanceThemeBindingDenial;
+pub(crate) use overlay_export::UiApplicationPresentationOwnerExport;
 
 pub(crate) struct UiApplicationPresentationState {
     rows: HashMap<Box<str>, UiApplicationSemanticTextRow>,
     token_values:
         Arc<BTreeMap<crate::capability::ThemeTokenId, crate::capability::ThemeTokenValue>>,
-    resolved_targets: BTreeMap<crate::capability::ThemeTokenId, crate::capability::ThemeTokenId>,
-    mutable_token_revisions: BTreeMap<crate::capability::ThemeTokenId, u64>,
-    theme_revision: u64,
-    pending_theme_graph_nodes: std::collections::BTreeSet<crate::graph::UiGraphNodeIdentity>,
+    pending_appearance_invalidation:
+        Option<crate::runtime::appearance::UiAppearanceInvalidationBatch>,
+    next_appearance_batch_revision: u64,
+    appearance_theme_state: Option<crate::runtime::appearance::UiAppearanceThemeState>,
 }
 
 struct UiApplicationSemanticTextRow {
@@ -25,36 +40,18 @@ struct UiApplicationSemanticTextRow {
     semantic_revision: u64,
     presentation_revision: u64,
     projected_presentation_revision: Option<u64>,
+    pending_publication_coverage: Option<UiApplicationTextMountedCoverage>,
 }
 
 pub(crate) struct UiApplicationPresentationProjection {
     content: crate::mounting::UiMountedSemanticContentInput,
-    revisions: Box<[(Box<str>, u64)]>,
+    revisions: Box<[(Box<str>, crate::graph::UiGraphNodeIdentity, u64)]>,
     theme_values: crate::mounting::UiMountedThemeValueSource,
-    theme_revision: u64,
 }
 
 impl UiApplicationPresentationState {
     pub(crate) fn activate(capabilities: &crate::capability::CapabilitySnapshot) -> Self {
-        let mut token_values = BTreeMap::new();
-        let mut resolved_targets = BTreeMap::new();
-        let mut mutable_token_revisions = BTreeMap::new();
-        for entry in capabilities.theme_tokens().entries() {
-            let target = entry.resolved_target_id().clone();
-            let value = capabilities
-                .theme_tokens()
-                .get(&target)
-                .and_then(crate::capability::ThemeTokenDescriptor::value)
-                .expect("frozen theme-token alias target has a value")
-                .clone();
-            token_values.insert(entry.descriptor().id().clone(), value);
-            resolved_targets.insert(entry.descriptor().id().clone(), target);
-            if entry.descriptor().source().is_application_owned()
-                && entry.descriptor().alias_target().is_none()
-            {
-                mutable_token_revisions.insert(entry.descriptor().id().clone(), 0);
-            }
-        }
+        let token_values = semantic_text_tokens::admit(capabilities.theme_tokens());
         let rows = capabilities
             .components()
             .descriptors()
@@ -70,6 +67,7 @@ impl UiApplicationPresentationState {
                             semantic_revision: 0,
                             presentation_revision: 0,
                             projected_presentation_revision: None,
+                            pending_publication_coverage: None,
                         },
                     )
                 })
@@ -77,11 +75,10 @@ impl UiApplicationPresentationState {
             .collect();
         Self {
             rows,
-            token_values: Arc::new(token_values),
-            resolved_targets,
-            mutable_token_revisions,
-            theme_revision: 0,
-            pending_theme_graph_nodes: Default::default(),
+            token_values,
+            pending_appearance_invalidation: None,
+            next_appearance_batch_revision: 1,
+            appearance_theme_state: None,
         }
     }
 
@@ -134,6 +131,7 @@ impl UiApplicationPresentationState {
             row.contract = contract;
             if changed {
                 row.presentation_revision = row.presentation_revision.checked_add(1).ok_or(())?;
+                row.pending_publication_coverage = None;
             }
         }
         Ok(())
@@ -172,6 +170,15 @@ impl UiApplicationPresentationState {
         })
     }
 
+    pub(crate) fn requires_mounted_projection(&self) -> bool {
+        self.pending_appearance_invalidation.is_some()
+            || self.rows.values().any(|row| {
+                row.value.is_some()
+                    && row.graph_node.is_some()
+                    && row.projected_presentation_revision != Some(row.presentation_revision)
+            })
+    }
+
     pub(crate) fn project_complete(
         &self,
     ) -> Result<UiApplicationPresentationProjection, crate::mounting::UiMountedFramePreparationDenial>
@@ -184,95 +191,80 @@ impl UiApplicationPresentationState {
         include: impl Fn(&UiApplicationSemanticTextRow) -> bool,
     ) -> Result<UiApplicationPresentationProjection, crate::mounting::UiMountedFramePreparationDenial>
     {
-        let mut content = crate::mounting::UiMountedSemanticContentInput::empty();
-        let mut revisions = Vec::new();
-        for (identity, row) in &self.rows {
-            if !include(row) {
-                continue;
-            }
-            let (Some(value), Some(graph_node)) = (&row.value, row.graph_node) else {
-                continue;
-            };
-            let token_values = row
-                .contract
-                .foreground_tokens()
-                .map(|token| {
-                    self.token_values
-                        .get(token)
-                        .cloned()
-                        .map(|value| (token.clone(), value))
-                        .ok_or_else(unknown_graph_node)
-                })
-                .collect::<Result<BTreeMap<_, _>, _>>()?;
-            content
-                .insert_scalar_with_formatting(
-                    graph_node,
-                    crate::mounting::UiMountedSemanticTextValueDirective::Replace(Arc::clone(
-                        value,
-                    )),
-                    Arc::from(" "),
-                    Some(
-                        crate::mounting::UiMountedSemanticTextFormattingDirective::new(
-                            row.contract.clone(),
-                            token_values,
-                        ),
-                    ),
-                )
-                .map_err(|_| unknown_graph_node())?;
-            revisions.push((identity.clone(), row.presentation_revision));
-        }
-        Ok(UiApplicationPresentationProjection {
-            content,
-            revisions: revisions.into_boxed_slice(),
-            theme_values: self.theme_values_source(),
-            theme_revision: self.theme_revision,
-        })
-    }
-
-    pub(crate) fn theme_values_source(&self) -> crate::mounting::UiMountedThemeValueSource {
-        self.theme_values_source_with_graph_nodes(self.pending_theme_graph_nodes.iter().copied())
-    }
-
-    pub(crate) fn theme_values_source_with_graph_nodes(
-        &self,
-        graph_nodes: impl IntoIterator<Item = crate::graph::UiGraphNodeIdentity>,
-    ) -> crate::mounting::UiMountedThemeValueSource {
-        crate::mounting::UiMountedThemeValueSource::current(
+        UiApplicationPresentationProjection::project_rows(
+            self.rows.iter(),
             Arc::clone(&self.token_values),
-            graph_nodes,
+            include,
         )
     }
 
-    pub(crate) fn theme_token_ids(&self) -> impl Iterator<Item = &crate::capability::ThemeTokenId> {
-        self.token_values.keys()
+    pub(crate) fn appearance_invalidation_batch(
+        &self,
+    ) -> Option<crate::runtime::appearance::UiAppearanceInvalidationBatch> {
+        self.pending_appearance_invalidation.clone()
     }
 
-    pub(crate) fn commit(&mut self, projection: &UiApplicationPresentationProjection) {
-        for (identity, revision) in &projection.revisions {
-            if let Some(row) = self.rows.get_mut(identity.as_ref()) {
-                if row.presentation_revision == *revision {
-                    row.projected_presentation_revision = Some(*revision);
-                }
+    pub(crate) fn queue_appearance_invalidation(
+        &mut self,
+        batch: crate::runtime::appearance::UiAppearanceInvalidationBatch,
+    ) -> Result<(), ()> {
+        let (pending, next_revision) = self.prepare_appearance_invalidation(Some(batch))?;
+        self.pending_appearance_invalidation = pending;
+        self.next_appearance_batch_revision = next_revision;
+        Ok(())
+    }
+
+    pub(crate) fn prepare_appearance_invalidation(
+        &self,
+        batch: Option<crate::runtime::appearance::UiAppearanceInvalidationBatch>,
+    ) -> Result<
+        (
+            Option<crate::runtime::appearance::UiAppearanceInvalidationBatch>,
+            u64,
+        ),
+        (),
+    > {
+        let Some(batch) = batch else {
+            return Ok((
+                self.pending_appearance_invalidation.clone(),
+                self.next_appearance_batch_revision,
+            ));
+        };
+        let revision = self.next_appearance_batch_revision;
+        let next_revision = revision.checked_add(1).ok_or(())?;
+        let batch = batch.with_revision(revision);
+        let mut pending = self.pending_appearance_invalidation.clone();
+        if let Some(current) = pending.as_mut() {
+            if current.basis() == batch.basis() {
+                current.merge(batch);
+            } else {
+                *current = batch;
             }
+        } else {
+            pending = Some(batch);
         }
-        if self.theme_revision == projection.theme_revision {
-            self.pending_theme_graph_nodes.clear();
+        Ok((pending, next_revision))
+    }
+
+    pub(crate) fn settle_appearance_invalidation(
+        &mut self,
+        batch: &crate::runtime::appearance::UiAppearanceInvalidationBatch,
+    ) {
+        if self
+            .pending_appearance_invalidation
+            .as_ref()
+            .is_some_and(|pending| pending.revision() == batch.revision())
+        {
+            self.pending_appearance_invalidation = None;
         }
     }
-}
 
-impl UiApplicationPresentationProjection {
-    pub(crate) fn content(&self) -> crate::mounting::UiMountedSemanticContentInput {
-        self.content.clone()
+    pub(crate) fn preview_theme_observation(
+        &self,
+    ) -> crate::mounting::UiMountedPreviewThemeObservation {
+        crate::mounting::UiMountedPreviewThemeObservation::admit_from_presentation(
+            0,
+            Arc::clone(&self.token_values),
+        )
     }
-
-    pub(crate) fn theme_values(&self) -> crate::mounting::UiMountedThemeValueSource {
-        self.theme_values.clone()
-    }
-}
-
-fn unknown_graph_node() -> crate::mounting::UiMountedFramePreparationDenial {
-    crate::mounting::UiMountedFramePreparationDenial::Projection(
-        crate::mounting::UiMountedProjectionDenial::UnknownGraphNode,
-    )
 }

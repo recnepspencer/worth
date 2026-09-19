@@ -1,8 +1,7 @@
 use crate::adjudication::{
     ExecutableFirstFrameEvidence, ExecutableLifecycleCleanupEvidence,
     ExecutableNativeInputReachabilityEvidence, ExecutablePredecessorPreservationEvidence,
-    ExecutableReplacementEvidence, ExecutableVisualClearEvidence,
-    ExecutableVisualComparisonEvidence, ExecutableVisualOverlayEvidence,
+    ExecutableReplacementEvidence, ExecutableVisualClearEvidence, ExecutableVisualOverlayEvidence,
     ExecutableVisualRetirementEvidence, ExecutableVisualSnapshotEvidence,
     ExecutableVisualTraceEvidence,
 };
@@ -129,7 +128,7 @@ pub(crate) struct AwaitingReplacement {
 pub(crate) struct GreenSuccessor {
     pub(super) initial: SecondCurrent,
     pub(super) evidence: ExecutableReplacementEvidence<GreenPulseSourceDelta>,
-    pub(super) comparison: ExecutableVisualComparisonEvidence,
+    pub(super) snapshot: ExecutableVisualSnapshotEvidence,
     pub(super) retirement: ExecutableVisualRetirementEvidence,
 }
 
@@ -173,6 +172,7 @@ pub(crate) struct SchemaStopped {
     pub(super) evidence:
         crate::adjudication::ExecutableSchemaTransitionEvidence<RevisionSchemaSourceDelta>,
     pub(super) retirement: ExecutableVisualRetirementEvidence,
+    pub(super) snapshot: ExecutableVisualSnapshotEvidence,
 }
 
 pub(crate) struct AwaitingStatusRecovery {
@@ -281,8 +281,8 @@ impl PulseExecutableWorld<Published<GreenSuccessor>> {
         self.state.stage.retirement
     }
 
-    pub(crate) fn comparison_evidence(&self) -> ExecutableVisualComparisonEvidence {
-        self.state.stage.comparison
+    pub(crate) fn snapshot_evidence(&self) -> &ExecutableVisualSnapshotEvidence {
+        &self.state.stage.snapshot
     }
 }
 
@@ -330,6 +330,10 @@ impl PulseExecutableWorld<Published<SchemaStopped>> {
 
     pub(crate) fn retirement_evidence(&self) -> ExecutableVisualRetirementEvidence {
         self.state.stage.retirement
+    }
+
+    pub(crate) fn recovered_snapshot_evidence(&self) -> &ExecutableVisualSnapshotEvidence {
+        &self.state.stage.recovered.rebase_snapshot
     }
 }
 

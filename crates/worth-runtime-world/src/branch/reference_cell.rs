@@ -18,13 +18,15 @@ mod protection;
 mod publication;
 #[cfg(test)]
 pub(crate) mod publication_unwind;
+mod retirement;
 mod successor_validation;
+pub(crate) use retirement::ProductBranchReferenceRetirement;
 use successor_validation::validate_successor;
 
 #[derive(Debug)]
 struct ProductBranchReferenceImage {
     snapshot: ProductBranchReferenceSnapshot,
-    protection: ProductBranchHeadProtection,
+    protection: Option<ProductBranchHeadProtection>,
 }
 
 #[derive(Debug, Clone)]
@@ -62,6 +64,7 @@ pub(crate) struct ProductBranchReferenceCell {
 /// Why a reference movement could not replace the selected product head.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum ProductBranchReferenceCellDenial {
+    Retired,
     ExpectedHeadMismatch(ProductBranchObservationMismatch),
     SuccessorOwnerMismatch,
     SuccessorBranchMismatch,
@@ -100,6 +103,10 @@ impl ProductBranchReferenceLoss {
     pub(crate) fn observed_head(&self) -> &ProductBranchReferenceSnapshot {
         &self.observed_head
     }
+
+    pub(crate) fn is_retired(&self) -> bool {
+        matches!(self.denial, ProductBranchReferenceCellDenial::Retired)
+    }
 }
 
 #[cfg(test)]
@@ -121,6 +128,7 @@ impl ProductBranchReferencePublishFailure {
 }
 
 pub(crate) enum ProductBranchReferenceObservationFailure {
+    Retired,
     HistoryProtection(CompositeHistoryCatalogDenial),
     Retention(RetentionObligationDenial),
     ObservationBinding(ProductBranchObservationAdmissionFailure),
@@ -153,7 +161,7 @@ impl ProductBranchReferenceCell {
             Ok(()) => Ok(Self {
                 state: ReferenceCellState::new(ProductBranchReferenceImage {
                     snapshot: initial,
-                    protection,
+                    protection: Some(protection),
                 }),
             }),
             Err(denial) => Err(protection.into_admission_failure(denial)),
@@ -179,9 +187,10 @@ impl ProductBranchReferenceCell {
         f: impl FnOnce(A) -> R,
     ) -> Result<R, (ProductBranchReferenceSnapshot, A)> {
         let current = self.state.read();
-        if expected
-            .mismatch_against_snapshot(&current.snapshot)
-            .is_some()
+        if current.protection.is_none()
+            || expected
+                .mismatch_against_snapshot(&current.snapshot)
+                .is_some()
         {
             return Err((current.snapshot.clone(), argument));
         }
@@ -192,7 +201,7 @@ impl ProductBranchReferenceCell {
     /// registry never installed has exactly one holder, so for it this is
     /// total; a shared cell keeps its protection and answers `None`.
     pub(crate) fn into_protection(self) -> Option<ProductBranchHeadProtection> {
-        Arc::try_unwrap(self.state.current).ok().map(|image| {
+        Arc::try_unwrap(self.state.current).ok().and_then(|image| {
             image
                 .into_inner()
                 .unwrap_or_else(|poisoned| poisoned.into_inner())
@@ -214,11 +223,20 @@ impl ProductBranchReferenceCell {
         T: Copy + Ord + Send + Sync + 'static,
     {
         loop {
-            let candidate = self.atomic_snapshot();
+            let candidate = {
+                let current = self.state.read();
+                if current.protection.is_none() {
+                    return Err(ProductBranchReferenceObservationFailure::Retired);
+                }
+                current.snapshot.clone()
+            };
             let history_protection = match history.protect_explicit_commit(candidate.commit()) {
                 Ok(protection) => protection,
                 Err(denial) => {
                     let current = self.state.read();
+                    if current.protection.is_none() {
+                        return Err(ProductBranchReferenceObservationFailure::Retired);
+                    }
                     if current.snapshot != candidate {
                         drop(current);
                         continue;
@@ -229,6 +247,9 @@ impl ProductBranchReferenceCell {
                 }
             };
             let current = self.state.read();
+            if current.protection.is_none() {
+                return Err(ProductBranchReferenceObservationFailure::Retired);
+            }
             let still_selected = current.snapshot == candidate;
             drop(current);
             if !still_selected {
@@ -243,12 +264,24 @@ impl ProductBranchReferenceCell {
                     return Err(ProductBranchReferenceObservationFailure::Retention(denial));
                 }
             };
-            return ProductBranchObservation::owner_issued(
-                candidate,
-                components,
-                history_protection,
-            )
-            .map_err(ProductBranchReferenceObservationFailure::ObservationBinding);
+            let current = self.state.read();
+            if current.protection.is_none() {
+                drop(current);
+                drop(components);
+                drop(history_protection);
+                return Err(ProductBranchReferenceObservationFailure::Retired);
+            }
+            if current.snapshot != candidate {
+                drop(current);
+                drop(components);
+                drop(history_protection);
+                continue;
+            }
+            let observation =
+                ProductBranchObservation::owner_issued(candidate, components, history_protection)
+                    .map_err(ProductBranchReferenceObservationFailure::ObservationBinding);
+            drop(current);
+            return observation;
         }
     }
 
@@ -295,6 +328,7 @@ mod tests;
 impl std::fmt::Debug for ProductBranchReferenceObservationFailure {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::Retired => f.write_str("Retired"),
             Self::HistoryProtection(value) => {
                 f.debug_tuple("HistoryProtection").field(value).finish()
             }

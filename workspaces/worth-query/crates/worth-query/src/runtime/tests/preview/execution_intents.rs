@@ -4,8 +4,7 @@ use crate::WorthQueryEvidenceScope;
 #[test]
 fn preview_local_intent_is_policy_admitted_without_authoritative_execution() {
     let attempted = std::rc::Rc::new(std::cell::Cell::new(0));
-    let mut runtime = WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
         .snapshot_identity(TestSnapshotIdentityAdapter)
@@ -141,8 +140,7 @@ fn preview_local_intent_is_policy_admitted_without_authoritative_execution() {
 #[test]
 fn derive_only_preview_intent_denies_before_authoritative_execution() {
     let attempted = std::rc::Rc::new(std::cell::Cell::new(0));
-    let mut runtime = WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
         .snapshot_identity(TestSnapshotIdentityAdapter)
@@ -198,8 +196,7 @@ fn derive_only_preview_intent_denies_before_authoritative_execution() {
 #[test]
 fn preview_local_intent_requires_intent_support_for_preview_lane() {
     let attempted = std::rc::Rc::new(std::cell::Cell::new(0));
-    let mut runtime = WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
         .snapshot_identity(TestSnapshotIdentityAdapter)

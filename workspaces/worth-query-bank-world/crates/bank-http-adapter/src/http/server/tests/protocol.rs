@@ -54,7 +54,7 @@ async fn authenticated_account_summary_crosses_the_bounded_tcp_boundary() {
             assert_eq!(publication.parameter_binding_identity.len(), 64);
             assert_eq!(
                 publication.basis.posture,
-                BankHttpQueryBasisPosture::Current
+                BankHttpQueryBasisPosture::SelectedProduct
             );
             assert!(!publication.basis.branch.is_empty());
             assert_eq!(

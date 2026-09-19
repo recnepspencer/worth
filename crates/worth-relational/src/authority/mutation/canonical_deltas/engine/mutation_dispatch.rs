@@ -6,7 +6,9 @@ use crate::authority::mutation::canonical_deltas::data::{
 use crate::authority::mutation::outcomes::RecordMutation;
 use crate::authority::mutation::MutationWorkspace;
 
-use super::entity_delta::{evaluate_entity_lifecycle_delta, evaluate_entity_update_delta};
+use super::entity_delta::{
+    evaluate_entity_delta, evaluate_entity_lifecycle_delta, evaluate_entity_update_delta,
+};
 use super::relation_delta::{
     evaluate_relation_delta, evaluate_relation_lifecycle_delta, evaluate_relation_update_delta,
 };
@@ -60,6 +62,34 @@ pub(crate) fn canonical_delta_for_mutation(
             authoritative_patch.as_ref(),
             RecordStructuralChange::Deleted,
         ),
+        RecordMutation::EntityMaterializationSuspended {
+            entity_id,
+            kind_id,
+            old_authoritative_aspect_state,
+        } => evaluate_entity_delta(
+            workspace,
+            *entity_id,
+            *kind_id,
+            EntityAuthoritativeState {
+                authoritative_state: old_authoritative_aspect_state.as_ref(),
+            },
+            EntityAuthoritativeState {
+                authoritative_state: None,
+            },
+            RecordStructuralChange::MaterializationSuspended,
+        ),
+        RecordMutation::EntityRematerialized {
+            entity_id,
+            kind_id,
+            authoritative_patch,
+            ..
+        } => evaluate_entity_lifecycle_delta(
+            workspace,
+            *entity_id,
+            *kind_id,
+            authoritative_patch.as_ref(),
+            RecordStructuralChange::Rematerialized,
+        ),
         RecordMutation::RelationCreated {
             relation_id,
             kind_id,
@@ -74,6 +104,7 @@ pub(crate) fn canonical_delta_for_mutation(
             *source,
             *target,
             authoritative_patch.as_ref(),
+            RecordStructuralChange::Created,
         ),
         RecordMutation::RelationUpdated {
             relation_id,
@@ -146,6 +177,44 @@ pub(crate) fn canonical_delta_for_mutation(
                 authoritative_state: authoritative_aspect_state.as_ref(),
             },
             RecordStructuralChange::RetainedForAudit,
+        ),
+        RecordMutation::RelationMaterializationSuspended {
+            relation_id,
+            kind_id,
+            source,
+            target,
+            old_authoritative_aspect_state,
+        } => evaluate_relation_delta(
+            workspace,
+            *relation_id,
+            *kind_id,
+            RelationState {
+                source: Some(*source),
+                target: Some(*target),
+                authoritative_state: old_authoritative_aspect_state.as_ref(),
+            },
+            RelationState {
+                source: None,
+                target: None,
+                authoritative_state: None,
+            },
+            RecordStructuralChange::MaterializationSuspended,
+        ),
+        RecordMutation::RelationRematerialized {
+            relation_id,
+            kind_id,
+            source,
+            target,
+            authoritative_patch,
+            ..
+        } => evaluate_relation_lifecycle_delta(
+            workspace,
+            *relation_id,
+            *kind_id,
+            *source,
+            *target,
+            authoritative_patch.as_ref(),
+            RecordStructuralChange::Rematerialized,
         ),
     }
 }

@@ -1,7 +1,10 @@
 use worth_query::facade::domain;
 
 use super::conditional_node_contract::{conditional_node_result, dependency, GeometryCondition};
-use super::installed_operation_fixture::conditional_workspace;
+use super::installed_operation_fixture::{
+    conditional_installation_without_observation, conditional_workspace,
+    conditional_workspace_with, DirectConditionalCompute,
+};
 
 #[test]
 fn unsupported_eager_execution_is_denied_instead_of_degrading_to_lazy() {
@@ -58,7 +61,7 @@ fn unsupported_durable_artifact_is_denied_without_claiming_persistence() {
 }
 
 #[test]
-fn semantic_observation_topology_denies_during_installation() {
+fn partition_observation_requires_an_exact_observation_record() {
     let partition = worth_foundational::facade::TruthPartitionRole::new("model-main").unwrap();
     let dependency = dependency(domain::WorthQuerySemanticLocality::SourcePartition(
         partition,
@@ -73,8 +76,17 @@ fn semantic_observation_topology_denies_during_installation() {
     )
     .unwrap();
 
-    let Err(error) = conditional_workspace("unsupported-partition-observation", node) else {
-        panic!("unsupported semantic observation topology must fail runtime construction")
+    conditional_workspace("supported-partition-observation", node.clone())
+        .expect("partition invalidation with an exact observation record must install");
+
+    let installation = conditional_installation_without_observation(&node);
+    let Err(error) = conditional_workspace_with(
+        "missing-partition-observation",
+        node,
+        installation,
+        DirectConditionalCompute,
+    ) else {
+        panic!("missing semantic observation identity must fail runtime construction")
     };
     assert!(error.message().contains("SnapshotAdmission"));
 }

@@ -20,6 +20,7 @@ pub(crate) enum PlatformPulseSourceWatchShutdownDenial {
 }
 
 pub(crate) struct PlatformPulseSourceWatch {
+    pending: Option<PlatformPulseSourceEvent>,
     stop: Sender<()>,
     events: Receiver<PlatformPulseSourceEvent>,
     worker:
@@ -38,6 +39,7 @@ impl PlatformPulseSourceWatch {
             .spawn(move || run(watcher, stop_requests, event_publications, worker_readiness))
             .expect("platform pulse source worker should start");
         Self {
+            pending: None,
             stop,
             events,
             worker,
@@ -55,8 +57,15 @@ impl PlatformPulseSourceWatch {
             .expect("source readiness installation is not poisoned") = Some(readiness);
     }
 
-    pub(crate) fn try_next(&self) -> Option<PlatformPulseSourceEvent> {
-        self.events.try_recv().ok()
+    pub(crate) fn has_pending(&mut self) -> bool {
+        if self.pending.is_none() {
+            self.pending = self.events.try_recv().ok();
+        }
+        self.pending.is_some()
+    }
+
+    pub(crate) fn try_next(&mut self) -> Option<PlatformPulseSourceEvent> {
+        self.pending.take().or_else(|| self.events.try_recv().ok())
     }
 
     pub(crate) fn shutdown(

@@ -39,6 +39,7 @@ fn headless_translation_records_motion_metadata_without_synthesizing_a_host_mech
         UiMountedFrameConsumptionInput {
             qualified_text: &(),
             text_raster_work: None,
+            appearance_work: None,
             authority: std::rc::Rc::new(()),
             host_session_identity: 13,
             protocol,
@@ -126,7 +127,6 @@ fn admitted_effect_projection() -> UiMountedProjectionView {
         )],
         clips: worth_ui_host_contract::UiMountedClipTable::produced(Vec::new()),
         layers: worth_ui_host_contract::UiMountedLayerTable::produced(Vec::new()),
-        filled_rects: worth_ui_host_contract::UiMountedFilledRectTable::empty(),
         portal_overlays: worth_ui_host_contract::UiMountedPortalOverlayTable::empty(),
         semantic_text: worth_ui_host_contract::UiMountedSemanticTextTable::empty(),
         hit_tests: worth_ui_host_contract::UiMountedHitTestTable::from_runtime_mounting(Vec::new())

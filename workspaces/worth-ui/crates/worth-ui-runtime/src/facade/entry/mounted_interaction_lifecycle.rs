@@ -70,6 +70,8 @@ impl WorthUiActiveApplicationSession {
             identity,
             crate::runtime::intent::UiIntentConfirmationCancellationReason::MountedInstanceRemoved,
         );
+        self.intent_application_facts
+            .retire_validation_appearance_instance(identity);
         self.intent_admission
             .cancel_instance(&mut self.intent_execution, identity);
         let previous_input = self.interaction.active_input_binding();
@@ -95,13 +97,14 @@ impl WorthUiActiveApplicationSession {
         let interaction = self
             .interaction
             .cancel_binding(binding, UiInteractionLifecycleStopReason::SurfaceRebound);
+        if let Some(snapshot) = self.pointer_affordance_snapshot.as_mut() {
+            snapshot.invalidate_surface(semantic_surface);
+        }
         self.clear_displaced_input_recipient(previous_input);
         self.intent_confirmation.cancel_binding(
             binding,
             crate::runtime::intent::UiIntentConfirmationCancellationReason::SurfaceRebound,
         );
-        self.intent_admission
-            .cancel_binding(&mut self.intent_execution, binding);
         match self.mounted.register_rebound_host_surface(
             &self.host_session,
             binding,
@@ -110,16 +113,27 @@ impl WorthUiActiveApplicationSession {
             mode,
             profile,
         ) {
-            Ok(binding) => Ok(UiSurfaceRebindInteractionReceipt {
-                binding,
-                interaction,
-            }),
-            Err(denial) => Err(
-                UiSurfaceRebindInteractionDenial::AfterInteractionSettlement {
-                    denial,
-                    interaction: Box::new(interaction),
-                },
-            ),
+            Ok(rebound) => {
+                self.intent_admission.rebind_surface(
+                    &mut self.intent_execution,
+                    binding,
+                    rebound.binding_generation(),
+                );
+                Ok(UiSurfaceRebindInteractionReceipt {
+                    binding: rebound,
+                    interaction,
+                })
+            }
+            Err(denial) => {
+                self.intent_admission
+                    .cancel_binding(&mut self.intent_execution, binding);
+                Err(
+                    UiSurfaceRebindInteractionDenial::AfterInteractionSettlement {
+                        denial,
+                        interaction: Box::new(interaction),
+                    },
+                )
+            }
         }
     }
 }

@@ -1,3 +1,16 @@
+mod node_preparation;
+mod node_publication;
+mod prevalidation;
+mod produced_delta;
+#[cfg(test)]
+mod publication_work_tests;
+mod retained_publication;
+mod semantic_decision;
+mod snapshot_preparation;
+mod snapshot_publication;
+#[cfg(test)]
+mod waiter_tests;
+
 use crate::data::aspect::{Aspect, AspectMask};
 use crate::data::comparator::ComparatorPolicyResolver;
 use crate::data::error::SignalError;
@@ -9,19 +22,40 @@ use crate::data::proof::invalidation::progression::{
     CommittedDirectInvalidation, PreparedDirectInvalidation,
 };
 use crate::logic::evaluation::{
-    AppliedEffectReport, EvaluationEffect, EvaluationVerdict, SuppressionReason,
+    AppliedEffectReport, EvaluationEffect, EvaluationVerdict, EvaluationWork, SuppressionReason,
 };
 
 use super::{
-    ApplyCommitPacket, DirectInvalidationPreparationReceipt, OutputCommitPacket,
-    OutputCommitPublicationReceipt, PreparedParallelApplyCommitPacket, SignalGraph,
+    ApplyCommitPacket, DirectInvalidationPreparationReceipt, OutputCommitPublicationReceipt,
+    PreparedParallelApplyCommitPacket, SignalGraph,
 };
+
+/// Final storage-facing preparation never leaves this exclusive publication
+/// boundary. Parallel workers retain only semantic ApplyCommitPacket data;
+/// reduction prepares this packet against the graph after earlier commits.
+#[derive(Debug)]
+struct OutputCommitStorage {
+    apply: ApplyCommitPacket,
+    artifact_write: super::PreparedEffectArtifactWrite,
+    snapshot: Option<snapshot_preparation::MaterializedEffectSnapshot>,
+    prepared_direct: Option<PreparedDirectInvalidation>,
+    direct_causes: Option<super::super::graph::PreparedDirectCausePublication>,
+}
+
+#[derive(Debug)]
+struct OutputCommitPacket {
+    storage: OutputCommitStorage,
+    state: Option<super::PreparedEffectNodeState>,
+    retained_nodes: Option<retained_publication::PreparedRetainedOutputPublication>,
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum OutputCommitPreparationSeam {
     SemanticDecision,
     ProducedDelta,
     DirectCauseAdmission,
+    WaiterResolution,
+    ArtifactStorage,
     PacketPrevalidation,
 }
 
@@ -64,6 +98,7 @@ impl SignalGraph {
         output_equivalence: OutputEquivalencePolicy,
         comparator_resolver: &mut impl ComparatorPolicyResolver,
         defer_snapshot_commit: bool,
+        work: &mut EvaluationWork<'_>,
     ) -> Result<
         (
             AppliedEffectReport,
@@ -71,18 +106,23 @@ impl SignalGraph {
         ),
         SignalError,
     > {
-        let apply =
-            self.build_apply_commit_packet(effect, output_equivalence, defer_snapshot_commit)?;
-        let packet = self.prepare_output_commit_packet(apply, comparator_resolver)?;
+        let apply = self.build_apply_commit_packet(
+            effect,
+            output_equivalence,
+            defer_snapshot_commit,
+            work,
+        )?;
+        let packet = self.prepare_output_commit_packet(apply, comparator_resolver, work)?;
         Ok(self.publish_output_commit_packet(packet))
     }
 
-    pub(crate) fn prepare_output_commit_packet(
+    fn prepare_output_commit_packet(
         &mut self,
         apply: ApplyCommitPacket,
         comparator_resolver: &mut impl ComparatorPolicyResolver,
-    ) -> Result<OutputCommitPacket, SignalError> {
-        self.prepare_output_commit_packet_with_probe(apply, comparator_resolver, |_| Ok(()))
+        work: &mut EvaluationWork<'_>,
+    ) -> Result<Box<OutputCommitPacket>, SignalError> {
+        self.prepare_output_commit_packet_with_probe(apply, comparator_resolver, |_| Ok(()), work)
     }
 
     #[cfg_attr(not(test), allow(dead_code))]
@@ -91,15 +131,16 @@ impl SignalGraph {
         mut apply: ApplyCommitPacket,
         comparator_resolver: &mut impl ComparatorPolicyResolver,
         mut probe: impl FnMut(OutputCommitPreparationSeam) -> Result<(), SignalError>,
-    ) -> Result<OutputCommitPacket, SignalError> {
-        self.apply_semantic_output_commit_decision(&mut apply, comparator_resolver)?;
-        self.rebuild_semantic_artifact_write(&mut apply)?;
+        work: &mut EvaluationWork<'_>,
+    ) -> Result<Box<OutputCommitPacket>, SignalError> {
+        self.apply_semantic_output_commit_decision(&mut apply, comparator_resolver, work)?;
+        let artifact_write = self.build_semantic_artifact_write(&mut apply, work)?;
         probe(OutputCommitPreparationSeam::SemanticDecision)?;
-        let produced_delta = self.prepare_produced_delta(&apply)?;
+        let produced_delta = self.prepare_produced_delta(&apply, work)?;
         probe(OutputCommitPreparationSeam::ProducedDelta)?;
         let direct_causes = match (produced_delta.as_ref(), &apply.effect.operational.verdict) {
             (Some(delta), _) => {
-                Some(self.prepare_direct_output_causes(delta, comparator_resolver)?)
+                Some(self.prepare_direct_output_causes(delta, comparator_resolver, work)?)
             }
             (None, EvaluationVerdict::Deferred { .. }) => None,
             (None, _) => {
@@ -107,222 +148,121 @@ impl SignalGraph {
             }
         };
         probe(OutputCommitPreparationSeam::DirectCauseAdmission)?;
+        let direct_causes = direct_causes
+            .map(|admission| {
+                work.with_waiter_limit(
+                    self.installed_runtime_policy()
+                        .maximum_waiter_resolution_visits(),
+                    |work| {
+                        self.prepare_direct_cause_publication(
+                            admission,
+                            crate::data::graph::PendingRevalidationNodeProjection {
+                                state: crate::data::node::NodeState::Clean,
+                                pending: None,
+                                has_pending_causes: false,
+                                dirty_aspects: AspectMask::EMPTY,
+                                has_direct_basis: false,
+                            },
+                            super::vocabulary::verdict_transitions_clean(
+                                &apply.effect.operational.verdict,
+                            ),
+                            work,
+                        )
+                    },
+                )
+            })
+            .transpose()?;
+        probe(OutputCommitPreparationSeam::WaiterResolution)?;
+
         let prepared_direct = produced_delta.map(|delta| {
             PreparedDirectInvalidation::from_semantic_decision(
                 delta,
                 DirectInvalidationPreparationReceipt::after_preparation(),
             )
         });
-        let packet = OutputCommitPacket {
+        let artifact_write = self.prepare_effect_artifact_write(artifact_write, work)?;
+        probe(OutputCommitPreparationSeam::ArtifactStorage)?;
+        let snapshot = self.materialize_effect_snapshot(&apply, work)?;
+        let mut storage = OutputCommitStorage {
             apply,
+            artifact_write,
+            snapshot,
             prepared_direct,
             direct_causes,
         };
-        self.prevalidate_output_commit_packet(&packet)?;
+        self.prevalidate_output_commit_storage(&storage, work)?;
+        let mut state =
+            Some(self.prepare_effect_node_state(&storage.apply.effect, &storage.artifact_write)?);
         probe(OutputCommitPreparationSeam::PacketPrevalidation)?;
-        Ok(packet)
-    }
-
-    fn rebuild_semantic_artifact_write(
-        &self,
-        apply: &mut ApplyCommitPacket,
-    ) -> Result<(), SignalError> {
-        let previous = self
-            .node_runtime_artifact_reuse_boundary_snapshot(apply.effect.operational.node)?
-            .map(
-                |trace| crate::logic::evaluation::PreviousArtifactWarmSnapshot {
-                    output_identity: trace.output_identity,
-                    continuity_token: trace.continuity_token,
-                    reuse_boundary_authority: trace.reuse_boundary_authority,
-                },
-            );
-        let mut comparison = self.compare_effect(
-            &apply.effect,
-            previous.as_ref(),
-            self.node_eval_config(apply.effect.operational.node)?
-                .output_equivalence
-                .clone(),
-        )?;
-        if matches!(
-            apply.effect.operational.verdict,
-            EvaluationVerdict::Suppressed {
-                reason: SuppressionReason::ComparatorMatch
-                    | SuppressionReason::OutputIdentityUnchanged
-                    | SuppressionReason::ContinuityTokenUnchanged,
-            }
-        ) {
-            comparison.propagation_suppressed = true;
-        }
-        apply.comparison = comparison;
-        apply.artifact_write =
-            self.build_effect_artifact_write(&apply.effect, previous.as_ref(), apply.comparison)?;
-        Ok(())
-    }
-
-    fn prepare_produced_delta(
-        &self,
-        apply: &ApplyCommitPacket,
-    ) -> Result<Option<ProducedAspectDelta>, SignalError> {
-        if !matches!(
-            apply.effect.operational.verdict,
-            EvaluationVerdict::Recomputed
-        ) || apply.comparison.propagation_suppressed
-        {
-            return Ok(None);
-        }
-        let producer = apply.effect.operational.node;
-        Ok(ProducedAspectDelta::from_committed_result(
-            producer,
-            self.cause_sets.reserve_output_commit_ordinal(),
-            self.node_aspect_version(producer)?,
-            apply.effect.operational.aspect_version,
-            self.get_contract(producer)?.semantics.produces,
-            apply.effect.changed_aspect_regions(),
-            apply.effect.changed_regions(),
-        ))
-    }
-
-    fn apply_semantic_output_commit_decision(
-        &self,
-        apply: &mut ApplyCommitPacket,
-        comparator_resolver: &mut impl ComparatorPolicyResolver,
-    ) -> Result<(), SignalError> {
-        let node = apply.effect.operational.node;
-        let previous = self.node_aspect_version(node)?;
-        if matches!(
-            apply.effect.operational.verdict,
-            EvaluationVerdict::Suppressed {
-                reason: SuppressionReason::ComparatorMatch
-                    | SuppressionReason::OutputIdentityUnchanged
-                    | SuppressionReason::ContinuityTokenUnchanged,
-            }
-        ) {
-            apply.effect.operational.aspect_version = previous;
-            apply.effect.operational.output_change = crate::data::output::OutputChange::Unchanged;
-            return Ok(());
-        }
-        if !matches!(
-            apply.effect.operational.verdict,
-            EvaluationVerdict::Recomputed
-        ) {
-            return Ok(());
-        }
-        if !self.node_runtime_artifact_state_present(node)?
-            && apply.effect.operational.aspect_version != previous
-        {
-            return Ok(());
-        }
-        if apply.comparison.propagation_suppressed {
-            apply.effect.operational.aspect_version = previous;
-            apply.effect.operational.output_change = crate::data::output::OutputChange::Unchanged;
-            apply.effect.operational.verdict = EvaluationVerdict::Suppressed {
-                reason: SuppressionReason::OutputIdentityUnchanged,
-            };
-            return Ok(());
-        }
-        let candidate = apply.effect.operational.aspect_version;
-        let config = self.node_eval_config(node)?;
-        let produces = self.get_contract(node)?.semantics.produces;
-        let mut committed = previous;
-        for (index, (&cached, &current)) in
-            previous.slots().iter().zip(candidate.slots()).enumerate()
-        {
-            let aspect = Aspect::new(index as u8);
-            if produces.contains(AspectMask::from_aspect(aspect))
-                && config.output_equivalence.has_meaningful_change(
-                    aspect,
-                    cached,
-                    current,
-                    comparator_resolver,
-                )?
-            {
-                committed = committed.with(aspect, current);
-            }
-        }
-        apply.effect.operational.aspect_version = committed;
-        if committed == previous {
-            apply.effect.operational.output_change = crate::data::output::OutputChange::Unchanged;
-            apply.effect.operational.verdict = EvaluationVerdict::Suppressed {
-                reason: SuppressionReason::ComparatorMatch,
-            };
-        }
-        Ok(())
-    }
-
-    fn prevalidate_output_commit_packet(
-        &self,
-        packet: &OutputCommitPacket,
-    ) -> Result<(), SignalError> {
-        let producer = packet.apply.effect.operational.node;
-        self.validate_handle(producer)?;
-        if let Some(snapshot) = packet.apply.pending_snapshot.as_ref() {
-            if snapshot.node != producer {
-                return Err(SignalError::internal(
-                    "prepared output commit snapshot belongs to another producer",
-                ));
-            }
-            self.validate_handle(snapshot.node)?;
-        }
-        if let Some(delta) = packet
-            .prepared_direct
-            .as_ref()
-            .map(PreparedDirectInvalidation::delta)
-        {
-            if delta.producer != producer {
-                return Err(SignalError::internal(
-                    "prepared output delta belongs to another producer",
-                ));
-            }
-        }
-        if let Some(causes) = packet.direct_causes.as_ref() {
-            causes.validate_packet(
-                producer,
-                packet
-                    .prepared_direct
-                    .as_ref()
-                    .map(PreparedDirectInvalidation::delta),
-            )?;
-        }
-        Ok(())
+        let retained_nodes = self.prepare_retained_output_nodes(&mut storage, &mut state, work)?;
+        Ok(Box::new(OutputCommitPacket {
+            storage,
+            state,
+            retained_nodes,
+        }))
     }
 
     fn publish_output_commit_packet(
         &mut self,
-        packet: OutputCommitPacket,
+        packet: Box<OutputCommitPacket>,
     ) -> (
         AppliedEffectReport,
         Option<crate::logic::evaluation::PendingDependencySnapshot>,
     ) {
         let OutputCommitPacket {
+            storage,
+            state,
+            retained_nodes,
+        } = *packet;
+        let OutputCommitStorage {
             apply,
+            artifact_write,
+            snapshot,
             prepared_direct,
             direct_causes,
-        } = packet;
+        } = storage;
         let ApplyCommitPacket {
             mut effect,
             comparison,
-            artifact_write,
             pending_snapshot,
-            defer_snapshot_commit,
+            defer_snapshot_commit: _,
         } = apply;
-        let suppressed_downstream = direct_causes
-            .as_ref()
-            .map_or(0, |prepared| prepared.suppressed_downstream_count());
-        self.transition_effect_state(&mut effect, artifact_write)
+        let suppressed_downstream = retained_nodes.as_ref().map_or_else(
+            || {
+                direct_causes
+                    .as_ref()
+                    .map_or(0, |prepared| prepared.suppressed_downstream_count())
+            },
+            |nodes| nodes.suppressed_downstream,
+        );
+        let (direct_nodes, direct_stores) = match direct_causes {
+            Some(prepared) => {
+                let (nodes, stores) = prepared.split_node_changes();
+                (Some(nodes), Some(stores))
+            }
+            None => (None, None),
+        };
+        if let Some(nodes) = retained_nodes {
+            nodes.publish(self);
+        } else {
+            self.publish_output_node_changes(
+                &mut effect,
+                artifact_write,
+                state.expect("ordinary prepared node state"),
+                snapshot
+                    .as_ref()
+                    .and_then(|snapshot| snapshot.node_snapshot_id()),
+                direct_nodes,
+            )
             .expect("prevalidated output state publication must be non-fallible");
-        if !defer_snapshot_commit {
-            self.commit_effect_snapshot(&mut effect)
-                .expect("prevalidated dependency snapshot publication must be non-fallible");
         }
-        if let Some(direct_causes) = direct_causes {
-            self.publish_direct_output_causes(direct_causes)
+        if let Some(snapshot) = snapshot {
+            snapshot.publish(self);
+        }
+        if let Some(direct_stores) = direct_stores {
+            direct_stores
+                .publish(self)
                 .expect("prevalidated direct cause publication must be non-fallible");
-        }
-        if let Some(delta) = prepared_direct
-            .as_ref()
-            .map(PreparedDirectInvalidation::delta)
-        {
-            self.cause_sets.publish_output_commit(delta.clone());
         }
         let publication_receipt = OutputCommitPublicationReceipt::after_atomic_publication();
         let performed = prepared_direct.map_or(PerformedOutputPublication::Stable, |prepared| {
@@ -364,7 +304,11 @@ impl SignalGraph {
         ),
         SignalError,
     > {
-        let packet = self.prepare_output_commit_packet(packet.0, comparator_resolver)?;
+        let packet = self.prepare_output_commit_packet(
+            packet.0,
+            comparator_resolver,
+            &mut EvaluationWork::Ordinary,
+        )?;
         Ok(self.publish_output_commit_packet(packet))
     }
 }

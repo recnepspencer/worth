@@ -25,9 +25,10 @@ fn native_portal_opens_focuses_and_closes_through_intent_and_escape() {
     let closed = close_recovered_at_sequence(completed.into_ready(), shutdown_sequence);
     assert!(closed.evidence().successful_exit().status().success());
     assert_native_motion_samples(closed.evidence());
+    let elapsed = journey_started.elapsed();
     assert!(
-        journey_started.elapsed() <= std::time::Duration::from_secs(45),
-        "the complete RS-01 native product journey must finish within 45 seconds"
+        elapsed <= std::time::Duration::from_secs(45),
+        "the complete RS-01 native product journey must finish within 45 seconds; elapsed={elapsed:?}"
     );
 }
 
@@ -96,6 +97,13 @@ fn assert_native_motion_samples(evidence: &ExecutableLifecycleCleanupEvidence) {
 fn assert_portal_focus(evidence: &PlatformPulsePortalJourneyEvidence) {
     let [opened, escape_close] = evidence.focus_publications();
     let fallback = evidence.focus_rebind_inspection();
+    let traversed = evidence.focus_before_rebind();
+    assert_eq!(
+        traversed.cause(),
+        PlatformPulseSemanticFocusCause::KeyboardTraversal
+    );
+    assert_eq!(traversed.previous(), opened.current());
+    assert_ne!(traversed.current(), opened.current());
     assert_eq!(
         opened.cause(),
         PlatformPulseSemanticFocusCause::PortalInitial
@@ -112,7 +120,7 @@ fn assert_portal_focus(evidence: &PlatformPulsePortalJourneyEvidence) {
     );
     assert_eq!(
         fallback.previous_mounted_instance(),
-        opened
+        traversed
             .current()
             .map(|participant| participant.mounted_instance())
     );

@@ -62,7 +62,7 @@ impl<'session> WorthUiRebindRecoveryAuthority<'session> {
         self.session.cancel_mounted_presentation(in_flight)
     }
 
-    fn into_session(self) -> &'session mut WorthUiActiveApplicationSession {
+    pub(crate) fn into_session(self) -> &'session mut WorthUiActiveApplicationSession {
         self.session
     }
 }

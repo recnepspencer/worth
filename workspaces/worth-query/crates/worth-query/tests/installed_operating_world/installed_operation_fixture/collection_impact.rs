@@ -2,14 +2,9 @@ use std::sync::OnceLock;
 
 use worth_query::facade::{domain, read, runtime};
 
-use super::conditional_workspace::{
-    conditional_installation_with_change, conditional_model_graph_definition,
-    ConditionalModelGraph, ConditionalModelGraphProvider,
-};
 use super::{
     canonical_ordered_collection_bundle, configured_runtime_without_executors,
-    configured_runtime_without_executors_with_schema, operation_identity_contract,
-    semantic_closure, GeometryDomain, ReadFamily,
+    configured_runtime_without_executors_with_schema, semantic_closure, GeometryDomain, ReadFamily,
 };
 
 mod routing_contract;
@@ -87,112 +82,6 @@ impl domain::WorthQueryDomainOperationExecutor<GeometryDomain, ImpactCollectionR
     }
 }
 
-struct ImpactCollectionCompute;
-
-impl
-    domain::WorthQueryConditionalNodeComputeProvider<
-        GeometryDomain,
-        ImpactCollectionRead,
-        ReadFamily,
-    > for ImpactCollectionCompute
-{
-    type SemanticContract = ();
-
-    fn semantic_contract(&self) -> Self::SemanticContract {}
-
-    fn execution_resource_support(&self) -> domain::WorthQueryExecutionResourceSupport {
-        crate::suite::installed_operation_fixture::execution_resource_support()
-    }
-
-    fn compute(
-        &self,
-        _: &domain::WorthQueryConditionalComputeContext,
-    ) -> Result<worth_signal::facade::NodeEvaluationResult, String> {
-        Ok(worth_signal::facade::NodeEvaluationResult::from_version(
-            worth_signal::facade::AspectVersion::from_updates([(
-                worth_signal::facade::Aspect::new(0),
-                1,
-            )]),
-        ))
-    }
-}
-
-pub(crate) fn conditional_collection_workspace_with_change(
-    name: &str,
-    node: domain::WorthQueryPortableConditionalNodeDeclaration,
-    harness: &crate::support::public_bridge_runtime::PublicBridgeRuntimeHarness,
-) -> Result<
-    (
-        runtime::WorthQueryWorkspace,
-        worth_runtime_bridge::facade::RelationalCommittedPatchRequest,
-        [worth_runtime_bridge::facade::RelationalBridgeSnapshotIdentityParts; 2],
-    ),
-    runtime::WorthQueryRuntimeError,
-> {
-    let dependency_contract = node.dependencies()[0].contract().clone();
-    let (installation, request, snapshots) = conditional_installation_with_change(&node);
-    harness.set_relational_snapshot(snapshots[0].snapshot_id(), snapshots[0].version_id());
-    let node_location =
-        domain::WorthQueryConditionalNodeLocation::operation(installation.node_identity.clone())
-            .expect("collection conditional location is valid");
-    let builder = runtime::WorthQueryRuntime::builder()
-        .domain_package(collection_package(node))
-        .expect("collection impact package admits")
-        .graph_participation(conditional_model_graph_definition())
-        .graph_participation_provider(ConditionalModelGraph, ConditionalModelGraphProvider)
-        .conditional_signal_graph(installation.graph)
-        .conditional_node(
-            GeometryDomain,
-            ImpactCollectionRead,
-            ReadFamily,
-            ConditionalModelGraph,
-            node_location,
-            vec![installation.dependency],
-            installation.providers,
-            ImpactCollectionCompute,
-        )
-        .domain_operation_executor(
-            GeometryDomain,
-            ImpactCollectionRead,
-            ReadFamily,
-            ImpactCollectionExecutor::identity_ordered(),
-        )
-        .consumer_support_posture(
-            domain::WorthQueryConsumerSupportDimension::Continuation,
-            domain::WorthQueryConsumerSupportPosture::Supported,
-        )
-        .consumer_support_posture(
-            domain::WorthQueryConsumerSupportDimension::ConditionalEvaluation,
-            domain::WorthQueryConsumerSupportPosture::Supported,
-        )
-        .consumer_support_posture(
-            domain::WorthQueryConsumerSupportDimension::ConditionalComparator,
-            domain::WorthQueryConsumerSupportPosture::Supported,
-        )
-        .consumer_support_posture(
-            domain::WorthQueryConsumerSupportDimension::ConditionalTrigger,
-            domain::WorthQueryConsumerSupportPosture::Supported,
-        )
-        .consumer_support_posture(
-            domain::WorthQueryConsumerSupportDimension::ConditionalTemporalOrOnDemand,
-            domain::WorthQueryConsumerSupportPosture::Supported,
-        )
-        .consumer_support_posture(
-            domain::WorthQueryConsumerSupportDimension::Live,
-            domain::WorthQueryConsumerSupportPosture::Supported,
-        );
-    let runtime = harness
-        .configure_runtime_builder(
-            builder,
-            installation.bridge,
-            [operation_identity_contract(1), dependency_contract],
-            crate::support::public_bridge_runtime::public_graph_support_profile(),
-        )
-        .build_backend_from_parts()
-        .build()?;
-    Ok((runtime.workspace(name)?, request, snapshots))
-}
-
 pub(crate) fn impact_collection_workspace(
     name: &str,
 ) -> Result<
@@ -246,29 +135,6 @@ pub(crate) fn impact_collection_invalidation_workspace(
         ImpactCollectionExecutor::routing_ordered(),
     )
     .workspace(name)
-}
-
-fn collection_package(
-    node: domain::WorthQueryPortableConditionalNodeDeclaration,
-) -> domain::WorthQueryDomainPackage<GeometryDomain> {
-    let dependency = &node.dependencies()[0];
-    let mut semantics = collection_semantics();
-    if let domain::WorthQueryOperationGraphReadContract::DeclaredDomain { roles } =
-        &mut semantics.graph_reads
-    {
-        roles[0].semantic_reads.push(
-            domain::WorthQueryOperationNativeProjectionContract::new(
-                dependency.contract().clone(),
-                dependency.projection_mask().clone(),
-            )
-            .expect("conditional projection is valid"),
-        );
-    }
-    semantics.conditional_nodes = vec![node];
-    package(semantics)
-        .operation_graph_participation::<ImpactCollectionRead, ReadFamily, ConditionalModelGraph>(
-            "model",
-        )
 }
 
 fn plain_collection_package() -> domain::WorthQueryDomainPackage<GeometryDomain> {

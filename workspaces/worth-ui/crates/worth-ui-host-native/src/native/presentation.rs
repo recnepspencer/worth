@@ -8,6 +8,7 @@ use super::{
     UiNativeResourceClass, UiNativeResourceRegistry,
 };
 
+pub(crate) mod appearance;
 mod completed_effects;
 mod damage_index;
 mod damage_regions;
@@ -27,6 +28,7 @@ mod reconstruction;
 mod retained_draw_list;
 mod retained_evidence_copy;
 mod retained_order;
+mod retained_raster;
 mod retained_regions;
 mod sample;
 #[cfg(feature = "certification-support")]
@@ -36,21 +38,26 @@ pub(crate) mod surface_basis;
 mod surface_failure;
 pub(crate) mod text;
 mod transaction_state;
+mod unchanged;
 
 use initial_validation::{initial_operations, validate_initial};
 #[cfg(test)]
 pub(crate) use pending_wgpu_readback::prove_pending_readback_handoff;
-use pipeline::{
-    draw_presentation_operations, draw_retained_to_surface, presentation_pipelines,
-    retained_transfer, UiNativePresentationPipelines,
-};
+use pipeline::{draw_presentation_operations, draw_retained_to_surface, retained_transfer};
+pub(crate) use pipeline::{presentation_pipelines, UiNativePresentationPipelines};
 use raster::{rectangle_vertices, GlyphVertex, RasterRect, RasterVertex};
 use retained_evidence_copy::copy_evidence_pixels;
 
+#[cfg(feature = "certification-support")]
+pub use appearance::{
+    certify_mounted_surface_sample, UiNativeSurfaceSampleCertification,
+    UiNativeSurfaceSampleCertificationDenial,
+};
 pub(crate) use completed_effects::UiNativePresentationEffects;
 pub(crate) use delta::{present_delta, UiNativeDeltaPresentation};
 pub(crate) use pending_settlement::{
     UiNativePendingDeltaSettlement, UiNativePendingSurfaceSettlement,
+    UiNativePendingUnchangedSettlement,
 };
 pub(crate) use pending_wgpu_readback::{UiNativePendingWgpuObligation, UiNativeWgpuReadbackPoll};
 pub(crate) use port::{
@@ -88,6 +95,7 @@ pub(crate) use transaction_state::{
     reserve_presentation_owners, settle_port_result, UiNativePendingExternalObligation,
     UiNativePendingPresentationCompletion,
 };
+pub(crate) use unchanged::present_unchanged_appearance;
 
 pub(crate) const GPU_WAIT_DEADLINE: std::time::Duration = std::time::Duration::from_millis(5_000);
 
@@ -101,8 +109,7 @@ pub(crate) enum UiNativePresentationFailure {
 }
 
 pub(crate) struct UiNativePresentedFrame {
-    observation: UiNativePresentationObservation,
-    cost: UiHostPresentationCostReport,
+    observation: super::UiNativeRetainedFrameObservation,
     retained: UiNativeRetainedDrawList,
 }
 
@@ -110,11 +117,10 @@ impl UiNativePresentedFrame {
     pub(crate) fn into_parts(
         self,
     ) -> (
-        UiNativePresentationObservation,
-        UiHostPresentationCostReport,
+        super::UiNativeRetainedFrameObservation,
         UiNativeRetainedDrawList,
     ) {
-        (self.observation, self.cost, self.retained)
+        (self.observation, self.retained)
     }
 }
 
@@ -137,13 +143,34 @@ pub(crate) fn present_initial<Port: UiNativePresentationPort>(
         .text_raster_work()
         .map(|work| work.glyph_runs())
         .unwrap_or_default();
-    let retained = UiNativeRetainedDrawList::initial(initial_work, glyph_runs).map_err(|_| {
-        UiNativePresentationFailure::BeforeEffects(
-            UiHostSurfacePresentationDenial::MalformedProjection,
+    let mut retained =
+        UiNativeRetainedDrawList::initial(initial_work, glyph_runs).map_err(|_| {
+            UiNativePresentationFailure::BeforeEffects(
+                UiHostSurfacePresentationDenial::MalformedProjection,
+            )
+        })?;
+    if view.appearance_work().is_some() {
+        retained
+            .initialize_appearance(view, atlas, graphics.extent())
+            .map_err(|_| {
+                UiNativePresentationFailure::BeforeEffects(
+                    UiHostSurfacePresentationDenial::MalformedProjection,
+                )
+            })?;
+    }
+    let initial =
+        validate_initial(view, &retained).map_err(UiNativePresentationFailure::BeforeEffects)?;
+    let mut operations = initial_operations(&retained, graphics, atlas, &initial)?;
+    retained
+        .initialize_physical_coverage(
+            raster::UiNativeRasterBasis::from_presentation_access(graphics),
+            atlas,
         )
-    })?;
-    let initial = validate_initial(view).map_err(UiNativePresentationFailure::BeforeEffects)?;
-    let mut operations = initial_operations(view, graphics, atlas, &initial)?;
+        .map_err(|_| {
+            UiNativePresentationFailure::BeforeEffects(
+                UiHostSurfacePresentationDenial::MalformedProjection,
+            )
+        })?;
     operations.extend(
         retained
             .identity_overlay_operations(raster::UiNativeRasterBasis::from_presentation_access(
@@ -192,7 +219,7 @@ fn build_presented_frame(
     retained: UiNativeRetainedDrawList,
 ) -> UiNativePresentedFrame {
     let (pixels, cost, port_crossings) = external.into_parts();
-    let observation = observation_for_retained(
+    let (observation, intrinsic, alpha) = observation_for_retained(
         view,
         graphics,
         atlas,
@@ -200,11 +227,20 @@ fn build_presented_frame(
         pixels,
         cost,
         port_crossings,
-    )
-    .expect("validated initial presentation retains observable paint attribution");
+    );
     UiNativePresentedFrame {
-        observation,
-        cost,
+        observation: super::UiNativeRetainedFrameObservation::observed(
+            view.frame().diagnostic_value(),
+            super::physical_work_signal::UiNativePhysicalPresentationBasis::from_view(view),
+            super::UiNativePresentationWorkKind::Initial,
+            None,
+            pixels,
+            cost,
+            port_crossings,
+            observation,
+            intrinsic,
+            alpha,
+        ),
         retained,
     }
 }
@@ -217,19 +253,29 @@ pub(crate) fn observation_for_retained(
     pixels: [[u8; 4]; 2],
     cost: UiHostPresentationCostReport,
     port_crossings: u8,
-) -> Option<UiNativePresentationObservation> {
-    let (ordinal, attribution) = retained.top_paint_attribution()?;
-    Some(observation_for_attribution(
-        view,
-        graphics,
-        attribution,
-        ordinal,
-        pixels,
-        cost,
-        port_crossings,
-        glyph_observation::intrinsic(retained, atlas, graphics.extent()),
-        glyph_observation::alpha(retained, atlas, graphics.extent()),
-    ))
+) -> (
+    Option<UiNativePresentationObservation>,
+    Box<[super::UiNativeGlyphObservation]>,
+    Box<[super::UiNativeGlyphObservation]>,
+) {
+    let intrinsic = glyph_observation::intrinsic(retained, atlas, graphics.extent());
+    let alpha = glyph_observation::alpha(retained, atlas, graphics.extent());
+    let observation = retained
+        .top_paint_attribution()
+        .map(|(ordinal, attribution)| {
+            observation_for_attribution(
+                view,
+                graphics,
+                attribution,
+                ordinal,
+                pixels,
+                cost,
+                port_crossings,
+                intrinsic.clone(),
+                alpha.clone(),
+            )
+        });
+    (observation, intrinsic, alpha)
 }
 
 fn observation_for_attribution(
@@ -289,6 +335,10 @@ fn initial_presentation_cost(
             | UiNativeRasterOperation::FilledRect { rect, .. } => {
                 [rect.physical_width, rect.physical_height]
             }
+            UiNativeRasterOperation::Surface(surface) => {
+                let rect = surface.rect();
+                [rect.physical_width, rect.physical_height]
+            }
             UiNativeRasterOperation::Glyph(command) => [
                 command.target[2].ceil().max(0.0) as u32,
                 command.target[3].ceil().max(0.0) as u32,
@@ -320,3 +370,6 @@ mod pipeline_glyph_tests;
 #[cfg(test)]
 #[path = "presentation_tests.rs"]
 mod tests;
+
+#[cfg(feature = "certification-support")]
+pub use retained_draw_list::UiNativeTextReplayOperation;

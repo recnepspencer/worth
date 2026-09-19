@@ -80,7 +80,13 @@ fn sparse_speculative_overlay_reads_untouched_entity_truth_from_base_partition()
 
     let guarded = NoWorldPartitionEnumeration { state: &overlay };
     let guarded_view = InvariantStateView::new(&guarded, VersionId(1));
-    assert_eq!(guarded_view.touched_visible_entity_ids().unwrap().len(), 1);
+    assert_eq!(
+        guarded_view
+            .touched_visible_entity_ids_with_budget(|_| true)
+            .unwrap()
+            .len(),
+        1
+    );
 }
 
 struct NoWorldPartitionEnumeration<'a> {

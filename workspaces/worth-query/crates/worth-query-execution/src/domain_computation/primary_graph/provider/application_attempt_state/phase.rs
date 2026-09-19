@@ -107,6 +107,15 @@ impl WorthQueryApplicationAttemptPhase {
         matches!(self.0, PhaseState::InvariantApproved { .. })
     }
 
+    pub(super) fn approved_candidate(
+        &self,
+    ) -> Option<&worth_relational::facade::mvcc::ValidatedRelationalProposal> {
+        match &self.0 {
+            PhaseState::InvariantApproved { candidate, .. } => Some(candidate),
+            _ => None,
+        }
+    }
+
     pub(super) fn take_commit_ready(
         self,
     ) -> Option<(
@@ -182,15 +191,21 @@ impl WorthQueryApplicationAttemptState {
         self.phase.is_commit_ready()
     }
 
-    pub(super) fn take_commit_prepared(
+    pub(super) fn approved_candidate(
+        &self,
+    ) -> Option<&worth_relational::facade::mvcc::ValidatedRelationalProposal> {
+        self.phase.approved_candidate()
+    }
+
+    pub(super) fn take_commit_parts(
         self,
-    ) -> Option<super::WorthQueryPreparedProviderApplicationAttempt> {
+    ) -> Option<(
+        super::super::WorthQueryPrimaryGraphApplicationAttempt,
+        worth_relational::facade::mvcc::ValidatedRelationalProposal,
+        WorthQueryPrimaryMutationWorkCounters,
+    )> {
         let (candidate, work) = self.phase.take_commit_ready()?;
-        Some(super::WorthQueryPreparedProviderApplicationAttempt {
-            attempt: self.attempt,
-            candidate,
-            work,
-        })
+        Some((self.attempt, candidate, work))
     }
 
     pub(super) fn discard_overlay(

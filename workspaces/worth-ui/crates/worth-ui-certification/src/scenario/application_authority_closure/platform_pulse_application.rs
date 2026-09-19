@@ -1,11 +1,17 @@
 use super::fixed_application_builder::FixedCertificationApplicationBuilder;
 use super::fixed_host::FixedCertificationHostBinding;
 use worth_ui::facade::app::WorthUi;
+use worth_ui::facade::appearance::{
+    FrozenAppearanceThemeCapabilities, UiAppearanceAspect, UiAppearanceAspectContract,
+    UiAppearanceCell, UiAppearancePartitionAuthoring, UiAppearanceRole, UiAppearanceRoleIdentity,
+    UiDslComponentReference, UiThemeColor, UiThemeDefinition, UiThemeDefinitionIdentity,
+    UiThemeSlotCatalog, UiThemeSlotDeclaration, UiThemeSlotDisclosure, UiThemeSlotIdentity,
+    UiThemeSlotSuccessorCompatibility, UiThemeValue, UiThemeValueKind,
+};
 use worth_ui::facade::declaration::{
     ComponentAllocationMeasurementContract, ComponentChildPolicy, ComponentDescriptor, ComponentId,
-    ComponentPropSchema, ComponentStateOwnership, ComponentStaticPaintContract,
-    ComponentStaticPaintOrder, ComponentViewportInset, SurfaceDescriptor, SurfaceId, SurfaceKind,
-    SurfacePlacementClass, SurfaceStateClass, ThemeColorValue, ThemeTokenAlias,
+    ComponentPropSchema, ComponentStateOwnership, ComponentViewportInset, SurfaceDescriptor,
+    SurfaceId, SurfaceKind, SurfacePlacementClass, SurfaceStateClass, ThemeTokenAlias,
     ThemeTokenDescriptor, ThemeTokenFamily, ThemeTokenId, ThemeTokenSource, ThemeTokenValue,
 };
 
@@ -43,27 +49,21 @@ where
     let mut builder = WorthUi::app()
         .with_change_profile(worth_ui::facade::rebind::UiChangeProfile::platform_pulse())
         .register_component(
-            component(PLATFORM_PULSE_BACKGROUND_COMPONENT).with_static_paint(
-                ComponentStaticPaintContract::opaque_fill(
-                    token_id(PLATFORM_PULSE_FILL_TOKEN),
-                    ComponentStaticPaintOrder::back_to_front(0),
+            appearance_component(PLATFORM_PULSE_BACKGROUND_COMPONENT, 0)
+                .with_allocation_measurement_contract(
+                    ComponentAllocationMeasurementContract::fill_viewport(),
                 ),
-                ComponentAllocationMeasurementContract::fill_viewport(),
-            ),
         )
         .register_component(
-            component(PLATFORM_PULSE_IDENTITY_TARGET_COMPONENT).with_static_paint(
-                ComponentStaticPaintContract::opaque_fill(
-                    token_id(PLATFORM_PULSE_IDENTITY_TARGET_FILL_TOKEN),
-                    ComponentStaticPaintOrder::back_to_front(1),
-                ),
-                ComponentAllocationMeasurementContract::viewport_inset(
-                    ComponentViewportInset::symmetric(
-                        PLATFORM_PULSE_TARGET_HORIZONTAL_INSET,
-                        PLATFORM_PULSE_TARGET_VERTICAL_INSET,
+            appearance_component(PLATFORM_PULSE_IDENTITY_TARGET_COMPONENT, 1)
+                .with_allocation_measurement_contract(
+                    ComponentAllocationMeasurementContract::viewport_inset(
+                        ComponentViewportInset::symmetric(
+                            PLATFORM_PULSE_TARGET_HORIZONTAL_INSET,
+                            PLATFORM_PULSE_TARGET_VERTICAL_INSET,
+                        ),
                     ),
                 ),
-            ),
         )
         .register_surface(SurfaceDescriptor::new(
             SurfaceId::new(PLATFORM_PULSE_SURFACE).expect("valid platform pulse surface id"),
@@ -88,10 +88,125 @@ where
             ThemeTokenSource::application(),
             ThemeTokenAlias::to(token_id(PLATFORM_PULSE_BLUE_TOKEN)),
         ));
+    let background_role = appearance_role(
+        "cert.platform_pulse.background",
+        PLATFORM_PULSE_BACKGROUND_COMPONENT,
+        PLATFORM_PULSE_FILL_TOKEN,
+    );
+    let target_role = appearance_role(
+        "cert.platform_pulse.identity_target",
+        PLATFORM_PULSE_IDENTITY_TARGET_COMPONENT,
+        PLATFORM_PULSE_IDENTITY_TARGET_FILL_TOKEN,
+    );
+    builder = builder
+        .register_appearance_role(background_role.clone())
+        .expect("certification background appearance role is valid")
+        .register_appearance_role(target_role.clone())
+        .expect("certification target appearance role is valid")
+        .register_appearance_theme_bundle(appearance_theme())
+        .expect("certification appearance theme is valid")
+        .with_rust_authored_input(appearance_input(background_role, target_role));
     for index in 0..unrelated_width {
         builder = builder.register_component(component(&unrelated_component_id(index)));
     }
     FixedCertificationApplicationBuilder::new(builder, host)
+}
+
+fn appearance_component(id: &str, order: u32) -> ComponentDescriptor {
+    component(id)
+        .with_surface_paint_order(order)
+        .with_appearance_aspect_contract(
+            UiAppearanceAspectContract::component([UiAppearanceAspect::Background], []).unwrap(),
+        )
+        .unwrap()
+}
+
+fn appearance_role(
+    identity: &str,
+    component: &str,
+    slot: &str,
+) -> worth_ui::facade::appearance::UiAppearanceRoleDeclaration {
+    UiAppearanceRole::authoring(UiAppearanceRoleIdentity::new(identity).unwrap())
+        .applies_to_component(UiDslComponentReference::new(component).unwrap())
+        .cover(
+            UiAppearanceAspect::Background,
+            UiAppearancePartitionAuthoring::new([]).with_cell(
+                UiAppearanceCell::when([]).uses_slot(
+                    UiThemeSlotIdentity::new(slot).unwrap(),
+                    UiThemeValueKind::Color,
+                ),
+            ),
+        )
+        .unwrap()
+        .build()
+        .unwrap()
+}
+
+fn appearance_theme() -> FrozenAppearanceThemeCapabilities {
+    let slots = [
+        (PLATFORM_PULSE_FILL_TOKEN, [47, 129, 247, 255]),
+        (
+            PLATFORM_PULSE_IDENTITY_TARGET_FILL_TOKEN,
+            [242, 204, 96, 255],
+        ),
+    ];
+    let catalog = UiThemeSlotCatalog::admit(
+        1,
+        slots.map(|(identity, _)| {
+            UiThemeSlotDeclaration::new(
+                token_id(identity),
+                ThemeTokenFamily::surface(),
+                UiThemeValueKind::Color,
+                ThemeTokenSource::application(),
+                UiThemeSlotDisclosure::Public,
+                UiThemeSlotSuccessorCompatibility::ExactMeaning,
+                None,
+            )
+        }),
+    )
+    .unwrap();
+    let identity = UiThemeDefinitionIdentity::new("cert.platform_pulse.default").unwrap();
+    let definition = UiThemeDefinition::admit(
+        identity.clone(),
+        1,
+        &catalog,
+        slots.map(|(slot, channels)| {
+            (
+                token_id(slot),
+                UiThemeValue::Color(UiThemeColor::from_channels(channels)),
+            )
+        }),
+    )
+    .unwrap();
+    FrozenAppearanceThemeCapabilities::admit(catalog, identity, vec![definition]).unwrap()
+}
+
+fn appearance_input(
+    background: worth_ui::facade::appearance::UiAppearanceRoleDeclaration,
+    target: worth_ui::facade::appearance::UiAppearanceRoleDeclaration,
+) -> worth_ui::facade::declaration::WorthUiRustAuthoredArtifactInput {
+    let background_attachment =
+        worth_ui::facade::appearance::UiAppearanceRoleAttachmentDeclaration::new(
+            background.role().clone(),
+            background.revision(),
+        );
+    let target_attachment =
+        worth_ui::facade::appearance::UiAppearanceRoleAttachmentDeclaration::new(
+            target.role().clone(),
+            target.revision(),
+        );
+    let module = worth_ui::facade::declaration::WorthUiRustAuthoredArtifactInputModule::new(
+        "cert/platform-pulse-appearance.wui",
+    )
+    .with_appearance_role(background)
+    .with_appearance_role(target)
+    .with_component_authored_identity(PLATFORM_PULSE_BACKGROUND_COMPONENT, "background")
+    .with_component_authored_identity(PLATFORM_PULSE_IDENTITY_TARGET_COMPONENT, "target")
+    .with_component_appearance_role(PLATFORM_PULSE_BACKGROUND_COMPONENT, background_attachment)
+    .unwrap()
+    .with_component_appearance_role(PLATFORM_PULSE_IDENTITY_TARGET_COMPONENT, target_attachment)
+    .unwrap();
+    worth_ui::facade::declaration::WorthUiRustAuthoredArtifactInput::from_modules([module])
 }
 
 fn component(id: &str) -> ComponentDescriptor {
@@ -109,7 +224,7 @@ fn color_token(id: &str, color: &str) -> ThemeTokenDescriptor {
         ThemeTokenFamily::surface(),
         ThemeTokenSource::application(),
         ThemeTokenValue::color(
-            ThemeColorValue::hex(color).expect("valid platform pulse theme color"),
+            UiThemeColor::parse(color).expect("valid platform pulse theme color"),
         ),
     )
 }

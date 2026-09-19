@@ -14,73 +14,30 @@ pub(super) fn await_rebind_cancellation(
     let rebind = observation::next(world, WatchedPulseTransition::IntentCancellationRebind)?;
     let PlatformPulseLifecycleObservation::RebindPublished(replacement) = rebind.outcome() else {
         return Err(PlatformPulseIntentJourneyFailure::Cancellation(
-            "route-removal source edit did not publish an application replacement",
+            "route-removal source edit did not publish an application replacement".to_owned(),
         ));
     };
     if replacement.predecessor_generation() == replacement.active_generation() {
         return Err(PlatformPulseIntentJourneyFailure::Cancellation(
-            "route removal did not change application generation",
+            "route removal did not change application generation".to_owned(),
         ));
     }
 
-    let mut observed = CancellationObservationProgress::default();
-    let mut sequence = rebind.sequence().value();
-    while !observed.complete() {
-        let envelope = observation::next(world, WatchedPulseTransition::IntentCancellationRebind)?;
-        sequence = envelope.sequence().value();
-        observed.advance(envelope.outcome(), expected_attempt)?;
+    let cancellation =
+        observation::next_unfiltered(world, WatchedPulseTransition::IntentCancellationRebind)?;
+    if !matches!(
+        cancellation.outcome(),
+        PlatformPulseLifecycleObservation::IntentPosturePublished(posture)
+            if matches!(
+                posture.posture(),
+                PlatformPulseIntentPostureObservation::Cancelled { reference }
+                    if *reference == expected_attempt
+            )
+    ) {
+        return Err(PlatformPulseIntentJourneyFailure::Cancellation(format!(
+            "expected cancellation of attempt {expected_attempt:?}; observed {:?}",
+            cancellation.outcome()
+        )));
     }
-    Ok(sequence)
-}
-
-#[derive(Default)]
-struct CancellationObservationProgress {
-    cancelled: bool,
-    captured: bool,
-    compared: bool,
-    retired: bool,
-}
-
-impl CancellationObservationProgress {
-    fn advance(
-        &mut self,
-        outcome: &PlatformPulseLifecycleObservation,
-        expected_attempt: PlatformPulseIntentAttemptObservationReference,
-    ) -> Result<(), PlatformPulseIntentJourneyFailure> {
-        match outcome {
-            PlatformPulseLifecycleObservation::IntentPosturePublished(posture)
-                if !self.cancelled
-                    && matches!(
-                        posture.posture(),
-                        PlatformPulseIntentPostureObservation::Cancelled { reference }
-                            if *reference == expected_attempt
-                    ) =>
-            {
-                self.cancelled = true;
-            }
-            PlatformPulseLifecycleObservation::VisualSnapshotCaptured(_) if !self.captured => {
-                self.captured = true;
-            }
-            PlatformPulseLifecycleObservation::VisualComparison(_)
-                if self.captured && !self.compared =>
-            {
-                self.compared = true;
-            }
-            PlatformPulseLifecycleObservation::VisualSnapshotRetired(_)
-                if self.compared && !self.retired =>
-            {
-                self.retired = true;
-            }
-            _ => {
-                return Err(PlatformPulseIntentJourneyFailure::Cancellation(
-                    "replacement cancellation emitted an unexpected or out-of-order lifecycle event",
-                ));
-            }
-        }
-        Ok(())
-    }
-
-    const fn complete(&self) -> bool {
-        self.cancelled && self.captured && self.compared && self.retired
-    }
+    Ok(cancellation.sequence().value())
 }

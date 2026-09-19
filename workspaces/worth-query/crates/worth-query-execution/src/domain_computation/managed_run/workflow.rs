@@ -14,9 +14,9 @@ use crate::domain_computation::artifact_owner::{
     WorthQueryWorkflowArtifactRegistryEvidence,
 };
 use crate::domain_computation::{
-    WorthQueryArtifactDenial, WorthQueryExecutionBoundOperationAuthority,
-    WorthQueryExecutionResourceAttemptEvidence, WorthQueryGraphProviderCallRequest,
-    WorthQueryWorkflowExecutionResourceAttempt,
+    WorthQueryArtifactDenial, WorthQueryArtifactDenialKind,
+    WorthQueryExecutionBoundOperationAuthority, WorthQueryExecutionResourceAttemptEvidence,
+    WorthQueryGraphProviderCallRequest, WorthQueryWorkflowExecutionResourceAttempt,
 };
 
 mod provider_plan_admission;
@@ -91,9 +91,36 @@ impl WorthQueryAdmittedWorkflowRun {
                 return Err(WorthQueryWorkflowRunStartRejection {
                     denial,
                     admitted: self,
+                    artifacts: None,
                 });
             }
         };
+        self.finish_start(artifacts)
+    }
+
+    #[doc(hidden)]
+    pub fn start_with_artifacts(
+        self,
+        artifacts: WorthQueryWorkflowArtifactAuthority,
+    ) -> Result<WorthQueryRunningWorkflowRun, WorthQueryWorkflowRunStartRejection> {
+        if !artifacts.belongs_to_binding(self.affinity.binding_authority()) {
+            return Err(WorthQueryWorkflowRunStartRejection {
+                denial: WorthQueryArtifactDenial::new(
+                    WorthQueryArtifactDenialKind::RunMismatch,
+                    None,
+                    "managed workflow artifacts belong to a different operation binding",
+                ),
+                admitted: self,
+                artifacts: Some(artifacts),
+            });
+        }
+        self.finish_start(artifacts)
+    }
+
+    fn finish_start(
+        self,
+        artifacts: WorthQueryWorkflowArtifactAuthority,
+    ) -> Result<WorthQueryRunningWorkflowRun, WorthQueryWorkflowRunStartRejection> {
         let provider_artifact_occurrences = Arc::new(WorthQueryArtifactOccurrenceLedger::default());
         Ok(WorthQueryRunningWorkflowRun {
             affinity: self.affinity,
@@ -104,11 +131,18 @@ impl WorthQueryAdmittedWorkflowRun {
             provider_artifact_occurrences,
         })
     }
+
+    pub fn release(
+        self,
+    ) -> crate::domain_computation::WorthQueryWorkflowExecutionAttemptReleaseReceipt {
+        self.affinity.release_initial()
+    }
 }
 
 pub struct WorthQueryWorkflowRunStartRejection {
     denial: WorthQueryArtifactDenial,
     admitted: WorthQueryAdmittedWorkflowRun,
+    artifacts: Option<WorthQueryWorkflowArtifactAuthority>,
 }
 
 impl WorthQueryWorkflowRunStartRejection {
@@ -117,7 +151,19 @@ impl WorthQueryWorkflowRunStartRejection {
     }
 
     pub fn into_admitted(self) -> WorthQueryAdmittedWorkflowRun {
+        if let Some(artifacts) = self.artifacts {
+            artifacts.registry().close_cancelled();
+        }
         self.admitted
+    }
+
+    pub fn release(
+        self,
+    ) -> crate::domain_computation::WorthQueryWorkflowExecutionAttemptReleaseReceipt {
+        if let Some(artifacts) = self.artifacts {
+            artifacts.registry().close_cancelled();
+        }
+        self.admitted.release()
     }
 }
 
@@ -141,6 +187,10 @@ pub struct WorthQueryRunningWorkflowRun {
 }
 
 impl WorthQueryRunningWorkflowRun {
+    pub fn abandon(self) -> WorthQueryWorkflowRunTerminal {
+        self.terminal(WorthQueryManagedRunTerminalKind::Failed)
+    }
+
     pub(in crate::domain_computation::managed_run) fn owner_restore_readmission(
         affinity: WorthQueryWorkflowRunAffinity,
         bridge_basis: BridgeBoundExecutionBasis,

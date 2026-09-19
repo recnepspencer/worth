@@ -12,6 +12,13 @@ use super::{
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct UiGlyphRasterDemandIdentity([u8; 32]);
 
+/// Text-owner selection scope; damage-filtered records never prove full coverage.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum UiGlyphRasterDemandScope {
+    CompleteLayout,
+    DamageFiltered,
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum UiGlyphRasterLane {
     Ordinary,
@@ -32,13 +39,14 @@ pub struct UiGlyphRasterDemandRecord {
     staged_bytes: u64,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct UiGlyphRasterDemandBatchView<'demand> {
     identity: UiGlyphRasterDemandIdentity,
     layout: UiQualifiedTextLayoutIdentity,
     dpi_milli: u32,
     text_scale: UiTextScaleGeneration,
     lane: UiGlyphRasterLane,
+    scope: UiGlyphRasterDemandScope,
     records: &'demand [UiGlyphRasterDemandRecord],
 }
 
@@ -50,6 +58,7 @@ pub struct UiGlyphRasterDemandBatchViewInput<'demand> {
     pub dpi_milli: u32,
     pub text_scale: UiTextScaleGeneration,
     pub lane: UiGlyphRasterLane,
+    pub scope: UiGlyphRasterDemandScope,
     pub records: &'demand [UiGlyphRasterDemandRecord],
 }
 
@@ -138,6 +147,7 @@ impl<'demand> UiGlyphRasterDemandBatchView<'demand> {
             dpi_milli: input.dpi_milli,
             text_scale: input.text_scale,
             lane: input.lane,
+            scope: input.scope,
             records: input.records,
         })
     }
@@ -160,6 +170,10 @@ impl<'demand> UiGlyphRasterDemandBatchView<'demand> {
 
     pub const fn lane(self) -> UiGlyphRasterLane {
         self.lane
+    }
+
+    pub const fn scope(self) -> UiGlyphRasterDemandScope {
+        self.scope
     }
 
     pub const fn records(self) -> &'demand [UiGlyphRasterDemandRecord] {
@@ -217,6 +231,7 @@ mod tests {
                 dpi_milli: 1_000,
                 text_scale: UiTextScaleGeneration::new(3).unwrap(),
                 lane: UiGlyphRasterLane::Ordinary,
+                scope: UiGlyphRasterDemandScope::DamageFiltered,
                 records: &records,
             })
             .unwrap();
@@ -249,6 +264,7 @@ mod tests {
                 dpi_milli: 96,
                 text_scale: UiTextScaleGeneration::new(1).unwrap(),
                 lane: UiGlyphRasterLane::Reconstruction,
+                scope: UiGlyphRasterDemandScope::DamageFiltered,
                 records: &records,
             })
             .unwrap();

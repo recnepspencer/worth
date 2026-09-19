@@ -153,9 +153,13 @@ where
             destination_cell_incarnation,
             retention.take_one(),
         );
+        let retirement_reference = owner
+            .issue_managed_branch_reference_with_admission(&admission, &created_basis)
+            .expect("a just-created branch remains admitted in the same owner operation");
         Ok(SignalBranchForkOutcome::owner_issued(
             created_branch,
             created_basis,
+            retirement_reference,
         ))
     }
 }

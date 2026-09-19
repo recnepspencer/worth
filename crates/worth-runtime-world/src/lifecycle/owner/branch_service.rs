@@ -13,8 +13,10 @@ use super::super::ports::{RuntimeWorldBranchCreationOutcome, RuntimeWorldBranchC
 use super::RuntimeWorldOwnerRoot;
 
 mod creation;
+mod history;
 #[cfg(test)]
 mod install_control;
+mod observation;
 mod retirement;
 
 impl<D, I, E, Ctx, T> RuntimeWorldOwnerRoot<D, I, E, Ctx, T>
@@ -198,36 +200,6 @@ where
     }
 }
 
-impl<D, I, E, Ctx, T> super::super::ports::RuntimeWorldObservationService
-    for RuntimeWorldOwnerRoot<D, I, E, Ctx, T>
-where
-    D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
-    I: Copy + Ord + Send + Sync + 'static,
-    T: Copy + Ord + Send + Sync + 'static,
-{
-    fn observe_product_branch(
-        &self,
-        branch: &ProductBranchIdentity,
-    ) -> Result<ProductBranchObservation, RuntimeWorldBranchAdmissionDenial> {
-        if branch.owner_identity() != self.owner_identity() {
-            return Err(RuntimeWorldBranchAdmissionDenial::ForeignOwner);
-        }
-        if !self.branch_service_is_available() {
-            return Err(RuntimeWorldBranchAdmissionDenial::OwnerUnavailable);
-        }
-        let _operation = self
-            .reserve_creation_operation()
-            .map_err(|()| RuntimeWorldBranchAdmissionDenial::OwnerUnavailable)?;
-        let cell = self
-            .state
-            .branches
-            .branch_cell(branch)
-            .ok_or(RuntimeWorldBranchAdmissionDenial::RetiredBranch)?;
-        cell.observe(&self.state.history, &self.state.retention)
-            .map_err(|_| RuntimeWorldBranchAdmissionDenial::CapacityExhausted)
-    }
-}
-
 impl<D, I, E, Ctx, T> super::super::ports::RuntimeWorldBranchService
     for RuntimeWorldOwnerRoot<D, I, E, Ctx, T>
 where
@@ -337,6 +309,23 @@ fn map_retention_denial(
         | RetentionObligationDenial::UniquePinCapacityExhausted { .. }
         | RetentionObligationDenial::InFlightAcquisitionCapacityExhausted { .. }
         | RetentionObligationDenial::DependencyCountExhausted => {
+            RuntimeWorldBranchAdmissionDenial::CapacityExhausted
+        }
+    }
+}
+
+fn map_observation_denial(
+    denial: crate::branch::ProductBranchReferenceObservationFailure,
+) -> RuntimeWorldBranchAdmissionDenial {
+    use crate::branch::ProductBranchReferenceObservationFailure;
+
+    match denial {
+        ProductBranchReferenceObservationFailure::Retired => {
+            RuntimeWorldBranchAdmissionDenial::RetiredBranch
+        }
+        ProductBranchReferenceObservationFailure::HistoryProtection(_)
+        | ProductBranchReferenceObservationFailure::Retention(_)
+        | ProductBranchReferenceObservationFailure::ObservationBinding(_) => {
             RuntimeWorldBranchAdmissionDenial::CapacityExhausted
         }
     }

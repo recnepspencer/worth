@@ -6,8 +6,9 @@ use crate::diagnostics::replay::{
 };
 
 impl<'a> GraphObserver<'a> {
-    pub fn replay_events(&self) -> &'a std::collections::VecDeque<ReplayEvent> {
-        self.graph.observation.diagnostics.replay_events()
+    pub fn replay_events(&self) -> RetainedReplayView<'a> {
+        let frames = self.graph.observation.diagnostics.replay_events();
+        RetainedReplayView::new(None, None, frames, 0, frames.len())
     }
 
     pub fn replay_where(
@@ -42,7 +43,7 @@ impl<'a> GraphObserver<'a> {
             return RetainedReplayView::new(
                 start,
                 end,
-                self.replay_events(),
+                self.graph.observation.diagnostics.replay_events(),
                 start_index,
                 end_index.saturating_sub(start_index),
             );
@@ -50,7 +51,7 @@ impl<'a> GraphObserver<'a> {
         RetainedReplayView::new(
             start,
             end,
-            self.replay_events(),
+            self.graph.observation.diagnostics.replay_events(),
             0,
             self.replay_events().len(),
         )
@@ -108,11 +109,15 @@ impl<'a> GraphObserver<'a> {
         let start = index.saturating_sub(4);
         let end = (index + 5).min(self.replay_events().len());
         RetainedReplayView::new(
-            self.replay_events().get(start).map(|event| event.cursor),
             self.replay_events()
-                .get(end.saturating_sub(1))
+                .iter()
+                .nth(start)
                 .map(|event| event.cursor),
-            self.replay_events(),
+            self.replay_events()
+                .iter()
+                .nth(end.saturating_sub(1))
+                .map(|event| event.cursor),
+            self.graph.observation.diagnostics.replay_events(),
             start,
             end.saturating_sub(start),
         )

@@ -1,9 +1,8 @@
 use worth_ui::facade::declaration::{
     ComponentAllocationMeasurementContract, ComponentChildPolicy, ComponentDescriptor, ComponentId,
-    ComponentPropSchema, ComponentStateOwnership, ComponentStaticPaintContract,
-    ComponentStaticPaintOrder, ThemeColorValue, ThemeTokenDescriptor, ThemeTokenFamily,
-    ThemeTokenId, ThemeTokenSource, ThemeTokenValue, WorthUiRustAuthoredArtifactInput,
-    WorthUiRustAuthoredArtifactInputModule,
+    ComponentPropSchema, ComponentStateOwnership, ThemeTokenDescriptor, ThemeTokenFamily,
+    ThemeTokenId, ThemeTokenSource, ThemeTokenValue, UiThemeColor,
+    WorthUiRustAuthoredArtifactInput, WorthUiRustAuthoredArtifactInputModule,
 };
 use worth_ui_native_platform::{
     UiNativeApplicationDefinition, UiNativeApplicationFrame, UiNativeApplicationPreparation,
@@ -30,7 +29,7 @@ impl UiNativeApplicationDefinition for PlatformPulseNativePhase3Application {
                 let component = component_identity(index);
                 let token = token_identity(index);
                 builder.register_theme_token(theme_token(&token, color(index)))?;
-                builder.register_component(component_descriptor(&component, &token, index))?;
+                builder.register_component(component_descriptor(&component, index))?;
                 module = module
                     .with_token(&token, color(index))
                     .with_component_authored_identity(
@@ -78,20 +77,15 @@ fn presence_frame(
         .expect("Phase 3 frame stays within the qualified command capacity")
 }
 
-fn component_descriptor(component: &str, token: &str, index: usize) -> ComponentDescriptor {
+fn component_descriptor(component: &str, index: usize) -> ComponentDescriptor {
     ComponentDescriptor::new(
         ComponentId::new(component).expect("phase3 component identity"),
         ComponentPropSchema::named(format!("{component}.props")),
         ComponentChildPolicy::no_children(),
         ComponentStateOwnership::runtime_owned(),
     )
-    .with_static_paint(
-        ComponentStaticPaintContract::opaque_fill(
-            ThemeTokenId::new(token).expect("phase3 token identity"),
-            ComponentStaticPaintOrder::back_to_front(index as u32),
-        ),
-        ComponentAllocationMeasurementContract::fill_viewport(),
-    )
+    .with_allocation_measurement_contract(ComponentAllocationMeasurementContract::fill_viewport())
+    .with_surface_paint_order(index as u32)
 }
 
 fn theme_token(identity: &str, value: &str) -> ThemeTokenDescriptor {
@@ -99,7 +93,7 @@ fn theme_token(identity: &str, value: &str) -> ThemeTokenDescriptor {
         ThemeTokenId::new(identity).expect("phase3 token identity"),
         ThemeTokenFamily::surface(),
         ThemeTokenSource::application(),
-        ThemeTokenValue::color(ThemeColorValue::hex(value).expect("phase3 qualified color")),
+        ThemeTokenValue::color(UiThemeColor::parse(value).expect("phase3 qualified color")),
     )
 }
 

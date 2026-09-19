@@ -79,6 +79,48 @@ Support-gated neighbors:
 Preview and branch sessions are not separate products. They are lane-shifted
 contexts over the same retained runtime surfaces.
 
+A **product branch** is a separate public concept. Runtime World owns its
+identity, current composite commit, bounded single-parent history, and exact
+Relational/Signal component composition. Query exposes that owner through:
+
+```rust,ignore
+let source = application.current_world();
+let branch = application
+    .branches()
+    .fork(source)
+    .components(|components| {
+        components.fork_relational().reuse_exact_signal_basis()
+    })
+    .create()?;
+let selected = application.on_branch(branch).select()?;
+
+// After one or more successful transactions advance this branch:
+let page = application
+    .branches()
+    .history(branch, NonZeroUsize::new(1).unwrap())?;
+let prior = page.continue_ancestry(NonZeroUsize::new(1).unwrap())?;
+let entry = prior.entries().next().expect("the prior generation is retained");
+let historical = prior.select(&entry)?;
+```
+
+The component selector has four complete postures: reuse both exact bases,
+fork Relational and reuse Signal, reuse Relational and fork Signal, or fork both.
+The product identity never collapses into either component identity. Branches
+that share Signal may advance their Relational histories independently.
+
+A selected occurrence pins exact history for repeatable reads while the branch
+head advances. Closing a product retires its World history first and then any
+private component branches. Retained reads can defer cleanup; the returned
+pending cleanup retains the only retry authority. A retired occurrence cannot
+be selected again, even if an application later reuses the same display name.
+History pages are branch-occurrence scoped and bounded by the caller's nonzero
+limit. Their entries are descriptive until `select` asks World to issue an
+exact historical observation; copied commit identities cannot perform that
+admission. Drop history pages and historical reads before closing the branch
+whose ancestry they protect.
+See the executable
+[advanced product branching example](../../../worth-query-certification/examples/advanced_product_branching.rs).
+
 Preview:
 
 - binds existing handles into a preview lane
@@ -434,11 +476,12 @@ Look for:
   and typed branch-merge settlement repair are implemented owner capabilities.
   They do not make every Query branch-session effect family supported.
 - Signal owner services provide exact component bases and per-branch progress.
-  [Runtime World](../../../../../../crates/worth-runtime-world/README.md) implements
+  [Runtime World](../../../../../../crates/worth-runtime-world/README.md) owns
   memory-resident composite history and coordinated Relational-plus-Signal
-  publication in milestone 9.17.2. Query carriage, outbox gating, and public
-  product-branch integration remain milestone 9.17.3 work; existing Query branch
-  sessions do not acquire those guarantees merely because the owner exists.
+  publication. Query's product-branch facade carries that authority through
+  reads, mutations, aftermath, delivery, and inspection. Existing Query
+  preview and branch sessions remain lane controls and do not mint product
+  identity.
 - Durable preview replay and temporal/async branch-session behavior remain
   future work.
 

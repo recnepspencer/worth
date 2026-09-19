@@ -4,6 +4,7 @@
 //! consumers for one performed producer/aspect/scope change.
 
 mod buckets;
+pub(crate) mod candidates;
 mod membership;
 mod rebuild;
 
@@ -68,6 +69,7 @@ mod tests {
                     ]),
                 },
                 ScopePrecision::ExactAspectScopes,
+                &mut crate::logic::evaluation::EvaluationWork::Ordinary,
             )
             .unwrap();
 
@@ -93,7 +95,12 @@ mod tests {
 
         graph.destroy_reverse_subscription_index_for_test();
         assert!(graph
-            .query_reverse_subscriptions(producer, &change, ScopePrecision::ExactAspectScopes)
+            .query_reverse_subscriptions(
+                producer,
+                &change,
+                ScopePrecision::ExactAspectScopes,
+                &mut crate::logic::evaluation::EvaluationWork::Ordinary
+            )
             .is_err());
         let later_consumer = graph.create_node();
         graph
@@ -101,7 +108,12 @@ mod tests {
             .unwrap();
         assert!(
             graph
-                .query_reverse_subscriptions(producer, &change, ScopePrecision::ExactAspectScopes)
+                .query_reverse_subscriptions(
+                    producer,
+                    &change,
+                    ScopePrecision::ExactAspectScopes,
+                    &mut crate::logic::evaluation::EvaluationWork::Ordinary
+                )
                 .is_err(),
             "a partial membership update must not certify a destroyed index as rebuilt"
         );
@@ -110,7 +122,12 @@ mod tests {
             .unwrap();
         assert_eq!(
             graph
-                .query_reverse_subscriptions(producer, &change, ScopePrecision::ExactAspectScopes,)
+                .query_reverse_subscriptions(
+                    producer,
+                    &change,
+                    ScopePrecision::ExactAspectScopes,
+                    &mut crate::logic::evaluation::EvaluationWork::Ordinary
+                )
                 .unwrap()
                 .candidates,
             vec![consumer, later_consumer]
@@ -145,7 +162,21 @@ mod tests {
         .unwrap();
 
         let prepared = graph
-            .prepare_direct_output_causes(&delta, &mut DefaultComparatorPolicyResolver::default())
+            .prepare_direct_output_causes(
+                &delta,
+                &mut DefaultComparatorPolicyResolver::default(),
+                &mut crate::logic::evaluation::EvaluationWork::Ordinary,
+            )
+            .unwrap();
+        let mut work = crate::data::retained_storage::RetainedStoragePreparation::new(10_000);
+        let projection = crate::data::graph::PendingRevalidationNodeProjection::capture(
+            &graph,
+            delta.producer,
+            &mut work,
+        )
+        .unwrap();
+        let prepared = graph
+            .prepare_direct_cause_publication(prepared, projection, false, &mut work)
             .unwrap();
         graph.publish_direct_output_causes(prepared).unwrap();
 

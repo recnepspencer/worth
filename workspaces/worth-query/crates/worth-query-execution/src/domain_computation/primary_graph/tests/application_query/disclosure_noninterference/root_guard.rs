@@ -8,8 +8,8 @@ use super::super::super::fixture::{
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationEntityIdentity, WorthQueryApplicationQueryAccessContext,
-    WorthQueryApplicationQueryAdmissionDenialKind, WorthQueryApplicationQueryControls,
-    WorthQueryAuthenticatedPrincipal, WorthQueryPrincipalResolutionMode,
+    WorthQueryApplicationQueryAdmissionDenialKind, WorthQueryAuthenticatedPrincipal,
+    WorthQueryPrincipalResolutionMode,
 };
 use worth_query_declaration::facade::application_query::ApplicationQueryParameterSet;
 
@@ -36,7 +36,7 @@ fn forbidden_root_guard_influence_denies_before_result_construction() {
         .world
         .application
         .installed_schema()
-        .application_query(ForbiddenRootGuardQuery::reference())
+        .certification_query(ForbiddenRootGuardQuery::reference())
         .unwrap();
     let capability =
         admit_touch_account_capability(&context.world, &context.principal, &context.request)
@@ -44,7 +44,7 @@ fn forbidden_root_guard_influence_denies_before_result_construction() {
     let access = WorthQueryApplicationQueryAccessContext::new(&context.principal, &context.account);
     let denial = context
         .world
-        .application
+        .selected_product()
         .admit_governed_application_query(
             &query,
             &access,
@@ -67,7 +67,7 @@ fn execute_governed_root_guard(label: &str) -> usize {
         .world
         .application
         .installed_schema()
-        .application_query(GovernedRootGuardQuery::reference())
+        .certification_query(GovernedRootGuardQuery::reference())
         .unwrap();
     let capability =
         admit_touch_account_capability(&context.world, &context.principal, &context.request)
@@ -75,7 +75,7 @@ fn execute_governed_root_guard(label: &str) -> usize {
     let access = WorthQueryApplicationQueryAccessContext::new(&context.principal, &context.account);
     let plan = context
         .world
-        .application
+        .selected_product()
         .admit_governed_application_query(
             &query,
             &access,
@@ -102,15 +102,19 @@ fn root_guard_context(label: &str) -> RootGuardContext {
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
             &world.binding,
-            external,
+            &external,
             &request,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap();
     let account = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountIdentity::reference(),
             "account-1".to_owned(),
@@ -128,8 +132,8 @@ fn root_guard_context(label: &str) -> RootGuardContext {
 
 fn current_controls(
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
-) -> WorthQueryApplicationQueryControls<'_, IdentityExecutionSchema> {
-    WorthQueryApplicationQueryControls::current_one_shot(
+) -> crate::domain_computation::primary_graph::WorthQueryProductQueryControls<'_> {
+    crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
         NonZeroUsize::new(2).unwrap(),
         NonZeroUsize::new(512).unwrap(),
         request,

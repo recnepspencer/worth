@@ -74,15 +74,14 @@ fn individual_and_host_coalesced_batches_share_terminal_mechanics_and_exact_repl
 
     let mut batched = published_observation_world("observation-host-coalesced");
     let terminal = authored_trace.last().unwrap();
-    let survivor_identity = terminal
-        .payload()
-        .coalescing_identity()
-        .expect("authored pointer motion has a coalescing identity");
     let survivor = report(
         terminal.sequence(),
         terminal.payload().clone(),
         &batched.current,
     );
+    let survivor_identity = survivor
+        .coalescing_identity()
+        .expect("authored pointer motion has an explicit coalescing identity");
     let outcome = batched.session.validate_host_observation_batch(batch(
         source(&batched.session, batched.binding, &batched.current),
         (1, 4),

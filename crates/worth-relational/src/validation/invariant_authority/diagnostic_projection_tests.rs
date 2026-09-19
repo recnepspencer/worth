@@ -305,6 +305,7 @@ fn custom_provenance_with_visible_records(
 ) -> CustomInvariantProvenance {
     let touched_scope = TouchedStructuralSet::new(
         vec![visible_entity_id].into(),
+        vec![visible_entity_id].into(),
         vec![visible_relation_id].into(),
         vec![PartitionId::new(7), PartitionId::new(9)].into(),
         Vec::new().into(),
@@ -326,6 +327,8 @@ fn custom_provenance_with_visible_records(
             remaining_steps: 4,
             max_depth: 5,
         },
+        // Synthetic projection fixture; this value does not assert runtime metering.
+        work_units: std::num::NonZeroU64::new(17).unwrap(),
         proposal_identity: None,
     }
 }

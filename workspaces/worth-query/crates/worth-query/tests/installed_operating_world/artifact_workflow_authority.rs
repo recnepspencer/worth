@@ -83,7 +83,7 @@ fn stale_installation_generation_denies_artifact_transfer_before_consumer_access
         artifact_controlled_workspace("artifact-stale-generation").unwrap();
     let installed = workspace.domain(GeometryDomain).unwrap();
     let run = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed, WorkflowRead)
@@ -123,7 +123,7 @@ fn foreign_runtime_denies_artifact_progression_before_consumer_access() {
     let (mut owner, probe) = artifact_move_workspace("artifact-runtime-owner").unwrap();
     let installed = owner.domain(GeometryDomain).unwrap();
     let run = owner
-        .observe_operating_world()
+        .observe_operating_world(owner.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed, WorkflowRead)
@@ -176,7 +176,7 @@ fn undeclared_predecessor_denies_before_artifact_transfer_or_consumer_access() {
     let (mut workspace, probe) = artifact_move_workspace("artifact-stage-mismatch").unwrap();
     let installed = workspace.domain(GeometryDomain).unwrap();
     let run = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed, WorkflowRead)

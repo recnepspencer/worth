@@ -3,7 +3,6 @@ use std::sync::{Arc, RwLock};
 use crate::config::data::RelationalExecutionModel;
 use crate::durability::data::DurabilityMode;
 use crate::runtime::{RelationalRuntimeConfig, SchemaContractRuntimeSubsystem};
-use crate::schema::data::RelationalSchemaRegistry;
 
 /// The configuration one relational runtime is operating under, together with
 /// the schema contract runtime derived from it.
@@ -64,18 +63,6 @@ impl RelationalRuntimeConfiguration {
         self.read().clone()
     }
 
-    /// Replace the initial schema registry and the contract runtime lowered
-    /// from it as one change, so no reader can see one without the other.
-    pub(in crate::runtime) fn install_initial_schema(
-        &self,
-        registry: RelationalSchemaRegistry,
-        schema_contract_runtime: SchemaContractRuntimeSubsystem,
-    ) {
-        let mut state = self.write();
-        Arc::make_mut(&mut state.config).schema.registry = registry;
-        state.schema_contract_runtime = Arc::new(schema_contract_runtime);
-    }
-
     pub(in crate::runtime) fn set_execution_model(
         &self,
         execution_model: RelationalExecutionModel,
@@ -110,6 +97,24 @@ impl RelationalRuntimeConfiguration {
 }
 
 impl RelationalRuntimeConfigurationBinding {
+    /// Hold the configuration epoch through preparation or publication. The owner
+    /// takes the matching write guard across initial branch and schema cutover.
+    pub(crate) fn operation(
+        &self,
+    ) -> std::sync::RwLockReadGuard<'_, RelationalRuntimeConfigurationSnapshot> {
+        self.state
+            .read()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+    }
+
+    pub(in crate::runtime) fn initial_installation(
+        &self,
+    ) -> std::sync::RwLockWriteGuard<'_, RelationalRuntimeConfigurationSnapshot> {
+        self.state
+            .write()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+    }
+
     pub(crate) fn snapshot(&self) -> RelationalRuntimeConfigurationSnapshot {
         self.state
             .read()

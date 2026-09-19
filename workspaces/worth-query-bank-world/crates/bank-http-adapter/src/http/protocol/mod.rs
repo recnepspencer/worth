@@ -19,11 +19,7 @@ pub use account_summary::{
     BankHttpAccountKind, BankHttpAccountStatus, BankHttpAccountSummary,
     BankHttpAccountSummaryOutcome, BankHttpAccountSummaryRequest,
 };
-pub use aftermath::{
-    BankHttpEstateDisbursementOutcome, BankHttpEstateDisbursementRequest,
-    BankHttpRedoProgressionOutcome, BankHttpRedoProgressionRequest, BankHttpUndoProgressionOutcome,
-    BankHttpUndoProgressionRequest,
-};
+pub use aftermath::{BankHttpEstateDisbursementOutcome, BankHttpEstateDisbursementRequest};
 pub use controls::{BankHttpProtocolVersion, BankHttpRequestControls};
 pub use credential::BankHttpCredential;
 pub use denial::{BankHttpDenial, BankHttpDenialKind, BankHttpNextAction};
@@ -37,7 +33,7 @@ pub use elevation::{
 pub use mutation::{
     BankHttpCommitDescription, BankHttpCommitDisposition, BankHttpMutationControls,
     BankHttpMutationFailureKind, BankHttpMutationOperation, BankHttpMutationOutcome,
-    BankHttpMutationRequest,
+    BankHttpMutationRequest, BankHttpProviderRecoveryKind,
 };
 pub use query_publication::{
     BankHttpQueryBasis, BankHttpQueryBasisPosture, BankHttpQueryCapabilityPurpose,
@@ -47,5 +43,6 @@ pub use query_publication::{
 pub use recovery::{
     BankHttpEstateNotificationOutcome, BankHttpEstateNotificationRequest,
     BankHttpRecoveryInspectionOutcome, BankHttpRecoveryPosture, BankHttpRecoveryRequest,
-    BankHttpRecoveryWork, BankHttpUndoAdmissionOutcome, BankHttpUndoCorrection,
+    BankHttpRecoveryRetryDisposition, BankHttpRecoverySafeRetryOutcome, BankHttpRecoveryStatus,
+    BankHttpRecoveryWork,
 };

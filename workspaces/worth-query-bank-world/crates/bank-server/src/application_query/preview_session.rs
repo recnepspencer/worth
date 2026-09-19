@@ -1,97 +1,56 @@
-//! Bank-owned operational authority for one application preview session.
-
-use std::num::NonZeroUsize;
+//! Bank-owned read context for one exact product commit.
 
 use bank_domain::schema::BankSchema;
 use worth_query_host::facade::{
-    admission::authenticated_principal::WorthQueryRequestScope,
-    primary_graph::{
-        WorthQueryApplicationPreviewSession, WorthQueryApplicationQueryControls,
-        WorthQueryPrimaryGraphApplicationRuntime,
-    },
+    admission::authenticated_principal::{WorthQueryRequestInterruption, WorthQueryRequestScope},
+    application_entry::WorthQueryApplicationReadObservation,
+    primary_graph::WorthQueryPrimaryGraphApplicationRuntime,
 };
 
-use super::BankApplicationQueryDenial;
+use super::{BankApplicationPreviewSessionDenialKind, BankApplicationQueryDenial};
 
-/// Opaque Bank authority for admitting preview reads.
-///
-/// The underlying Query session never crosses the Bank facade. Callers can
-/// only use this value through Bank preview operations.
-///
-/// ```compile_fail,E0451
-/// use bank_server::BankPreviewSession;
-///
-/// let _ = BankPreviewSession { query: panic!("foreign Query session") };
-/// ```
-///
-/// The wrapper cannot be coerced to Query's operational authority:
-///
-/// ```compile_fail,E0308
-/// use bank_domain::schema::BankSchema;
-/// use bank_server::BankPreviewSession;
-/// use worth_query_host::facade::primary_graph::WorthQueryApplicationPreviewSession;
-///
-/// fn raw_query_session(
-///     session: &BankPreviewSession,
-/// ) -> &WorthQueryApplicationPreviewSession<BankSchema> {
-///     session
-/// }
-/// ```
-///
-/// Nor does it expose the former raw-authority accessor:
-///
-/// ```compile_fail,E0599
-/// use bank_domain::schema::BankSchema;
-/// use bank_server::BankPreviewSession;
-/// use worth_query_host::facade::primary_graph::WorthQueryApplicationPreviewSession;
-///
-/// fn raw_query_session(
-///     session: &BankPreviewSession,
-/// ) -> &WorthQueryApplicationPreviewSession<BankSchema> {
-///     session.query()
-/// }
-/// ```
+/// Opaque Bank read context retaining one exact product occurrence while
+/// every use receives fresh request admission.
 pub struct BankPreviewSession {
-    query: WorthQueryApplicationPreviewSession<BankSchema>,
+    observation: WorthQueryApplicationReadObservation,
 }
 
-/// Closed Bank description of a released preview authority.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct BankPreviewSessionDiscardReceipt {
     discarded: bool,
 }
 
 impl BankPreviewSession {
-    pub(crate) const fn from_query(query: WorthQueryApplicationPreviewSession<BankSchema>) -> Self {
-        Self { query }
+    pub(crate) fn open(
+        application: &WorthQueryPrimaryGraphApplicationRuntime<BankSchema>,
+        request: &WorthQueryRequestScope,
+    ) -> Result<Self, BankApplicationQueryDenial> {
+        match request.interruption() {
+            Some(WorthQueryRequestInterruption::Cancelled) => {
+                return Err(BankApplicationQueryDenial::PreviewSession(
+                    BankApplicationPreviewSessionDenialKind::Cancelled,
+                ));
+            }
+            Some(WorthQueryRequestInterruption::DeadlineExceeded) => {
+                return Err(BankApplicationQueryDenial::PreviewSession(
+                    BankApplicationPreviewSessionDenialKind::DeadlineExceeded,
+                ));
+            }
+            None => {}
+        }
+        let branch = application.current_world();
+        let observation =
+            WorthQueryApplicationReadObservation::retain_on_branch(application, branch)
+                .map_err(BankApplicationQueryDenial::from_product_selection)?;
+        Ok(Self { observation })
     }
 
-    pub(crate) fn admit_controls<'request>(
-        &self,
-        application: &WorthQueryPrimaryGraphApplicationRuntime<BankSchema>,
-        maximum_result_count: NonZeroUsize,
-        maximum_work: NonZeroUsize,
-        request: &'request WorthQueryRequestScope,
-    ) -> Result<WorthQueryApplicationQueryControls<'request, BankSchema>, BankApplicationQueryDenial>
-    {
-        let basis = application
-            .admit_application_preview_basis(&self.query, request)
-            .map_err(BankApplicationQueryDenial::from_admission)?;
-        Ok(WorthQueryApplicationQueryControls::preview(
-            basis,
-            maximum_result_count,
-            maximum_work,
-            request,
-        ))
+    pub(crate) const fn observation(&self) -> &WorthQueryApplicationReadObservation {
+        &self.observation
     }
 
     pub fn discard(self) -> Result<BankPreviewSessionDiscardReceipt, BankApplicationQueryDenial> {
-        self.query
-            .discard()
-            .map(|receipt| BankPreviewSessionDiscardReceipt {
-                discarded: receipt.discarded(),
-            })
-            .map_err(BankApplicationQueryDenial::from_preview_session)
+        Ok(BankPreviewSessionDiscardReceipt { discarded: true })
     }
 }
 

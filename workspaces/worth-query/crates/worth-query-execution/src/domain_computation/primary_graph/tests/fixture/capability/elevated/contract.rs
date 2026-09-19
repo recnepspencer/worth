@@ -18,8 +18,9 @@ use worth_query_declaration::facade::{
         ApplicationCapabilityValueBinding, ApplicationCapabilityWorkflowDefinition,
     },
     application_schema::{
-        ApplicationAuthorizationPathBuilder, ApplicationOperationDefinition,
-        ApplicationOperationRef, ApplicationSchemaDeclarationBuilder,
+        ApplicationAuthorizationPathBuilder, ApplicationEncodedScalarValue,
+        ApplicationOperationDefinition, ApplicationOperationRef,
+        ApplicationSchemaDeclarationBuilder,
     },
 };
 
@@ -40,23 +41,24 @@ use super::super::super::{
     Account, AccountLabel, AccountStatus, IdentityExecutionSchema, Principal,
 };
 use super::super::declaration::{
-    CapabilityAction, CapabilityActionField, CapabilityAmountField,
+    CapabilityAction, CapabilityActionBinding, CapabilityActionField, CapabilityAmountField,
     CapabilityConflictingBeneficiary, CapabilityCustodian, CapabilityDelegationLimitField,
-    CapabilityDisclosure, CapabilityDisclosureField, CapabilityGrant, CapabilityGrantee,
-    CapabilityGrantor, CapabilityNotAfterField, CapabilityNotBeforeField, CapabilityParent,
-    CapabilityProvenance, CapabilityPurpose, CapabilityPurposeField, CapabilityRequestContext,
-    CapabilityResource, CapabilityStatus, CapabilityStatusField, CapabilityWorkflowField,
+    CapabilityDisclosure, CapabilityDisclosureBinding, CapabilityDisclosureField, CapabilityGrant,
+    CapabilityGrantee, CapabilityGrantor, CapabilityNotAfterField, CapabilityNotBeforeField,
+    CapabilityParent, CapabilityProvenance, CapabilityPurpose, CapabilityPurposeBinding,
+    CapabilityPurposeField, CapabilityRequestContext, CapabilityResource, CapabilityStatus,
+    CapabilityStatusBinding, CapabilityStatusField, CapabilityWorkflowField,
 };
 use super::{
     ApproveCapabilityElevationOperation, CapabilityElevation, CapabilityElevationApprover,
-    CapabilityElevationFacts, CapabilityElevationGrant, CapabilityElevationIdentity,
-    CapabilityElevationNotAfter, CapabilityElevationNotBefore, CapabilityElevationReason,
-    CapabilityElevationRequester, CapabilityElevationResource, CapabilityElevationReview,
-    CapabilityElevationSlot, CapabilityElevationStatusField, CapabilityReview,
-    CapabilityReviewFacts, CapabilityReviewIdentity, CapabilityReviewKindField,
-    CapabilityReviewResource, CapabilityReviewSlot, CapabilityReviewStatusField,
-    CapabilityReviewer, CompleteCapabilityReviewOperation, ElevatedCapabilityTouchInput,
-    ElevatedCapabilityTouchOperation, ElevatedTouchAccountCapability,
+    CapabilityElevationClosedAt, CapabilityElevationFacts, CapabilityElevationGrant,
+    CapabilityElevationIdentity, CapabilityElevationNotAfter, CapabilityElevationNotBefore,
+    CapabilityElevationReason, CapabilityElevationRequester, CapabilityElevationResource,
+    CapabilityElevationReview, CapabilityElevationSlot, CapabilityElevationStatusField,
+    CapabilityReview, CapabilityReviewFacts, CapabilityReviewIdentity, CapabilityReviewKindField,
+    CapabilityReviewResource, CapabilityReviewReviewedAt, CapabilityReviewSlot,
+    CapabilityReviewStatusField, CapabilityReviewer, CompleteCapabilityReviewOperation,
+    ElevatedCapabilityTouchInput, ElevatedCapabilityTouchOperation, ElevatedTouchAccountCapability,
     RequestCapabilityElevationOperation, RevokeCapabilityElevationOperation,
 };
 
@@ -66,10 +68,13 @@ mod approval;
 mod close;
 #[path = "contract/elevation.rs"]
 mod elevation;
+#[path = "contract/propagation.rs"]
+mod propagation;
 #[path = "contract/request.rs"]
 mod request;
 #[path = "contract/review.rs"]
 mod review;
+pub(super) use propagation::{command_propagation, propagation};
 
 pub(in crate::domain_computation::primary_graph::tests::fixture::capability) fn install(
     schema: ApplicationSchemaDeclarationBuilder<IdentityExecutionSchema>,
@@ -100,6 +105,10 @@ pub(in crate::domain_computation::primary_graph::tests::fixture::capability) fn 
             CapabilityElevation::reference(),
             CapabilityElevationNotAfter::reference(),
         )
+        .field(
+            CapabilityElevation::reference(),
+            CapabilityElevationClosedAt::reference(),
+        )
         .entity(CapabilityReview::reference())
         .aspect(
             CapabilityReview::reference(),
@@ -116,6 +125,10 @@ pub(in crate::domain_computation::primary_graph::tests::fixture::capability) fn 
         .field(
             CapabilityReview::reference(),
             CapabilityReviewStatusField::reference(),
+        )
+        .field(
+            CapabilityReview::reference(),
+            CapabilityReviewReviewedAt::reference(),
         )
         .relation(
             CapabilityElevationRequester::reference(),
@@ -209,27 +222,40 @@ pub(super) fn target() -> ApplicationCapabilityTargetDefinition {
     ApplicationCapabilityTargetDefinition::new(
         ApplicationCapabilityValueBinding::new(
             CapabilityActionField::reference(),
-            CapabilityAction::Touch,
+            ApplicationEncodedScalarValue::<CapabilityActionBinding>::try_new(
+                CapabilityAction::Touch,
+            )
+            .expect("fixture capability action must encode"),
         ),
         ApplicationCapabilityRelationBinding::from_reference(CapabilityResource::reference()),
         ApplicationCapabilityRelationDimension::not_applicable(),
         ApplicationCapabilityFieldDimension::bound(CapabilityDisclosureField::reference()),
         ApplicationCapabilityValueBinding::new(
             CapabilityPurposeField::reference(),
-            CapabilityPurpose::AccountMaintenance,
+            ApplicationEncodedScalarValue::<CapabilityPurposeBinding>::try_new(
+                CapabilityPurpose::AccountMaintenance,
+            )
+            .expect("fixture capability purpose must encode"),
         ),
     )
 }
 
 pub(super) fn command_target(action: CapabilityAction) -> ApplicationCapabilityTargetDefinition {
     ApplicationCapabilityTargetDefinition::new(
-        ApplicationCapabilityValueBinding::new(CapabilityActionField::reference(), action),
+        ApplicationCapabilityValueBinding::new(
+            CapabilityActionField::reference(),
+            ApplicationEncodedScalarValue::<CapabilityActionBinding>::try_new(action)
+                .expect("fixture capability action must encode"),
+        ),
         ApplicationCapabilityRelationBinding::from_reference(CapabilityResource::reference()),
         ApplicationCapabilityRelationDimension::not_applicable(),
         ApplicationCapabilityFieldDimension::not_applicable(),
         ApplicationCapabilityValueBinding::new(
             CapabilityPurposeField::reference(),
-            CapabilityPurpose::AccountMaintenance,
+            ApplicationEncodedScalarValue::<CapabilityPurposeBinding>::try_new(
+                CapabilityPurpose::AccountMaintenance,
+            )
+            .expect("fixture capability purpose must encode"),
         ),
     )
 }
@@ -241,7 +267,10 @@ pub(super) fn constraints() -> ApplicationCapabilityConstraintDefinition {
         ApplicationCapabilityCurrentnessDefinition::new(
             ApplicationCapabilityValueBinding::new(
                 CapabilityStatusField::reference(),
-                CapabilityStatus::Active,
+                ApplicationEncodedScalarValue::<CapabilityStatusBinding>::try_new(
+                    CapabilityStatus::Active,
+                )
+                .expect("fixture capability status must encode"),
             ),
             ApplicationCapabilityWorkflowDefinition::new(
                 ApplicationCapabilityFieldBinding::from_reference(
@@ -270,7 +299,10 @@ pub(super) fn command_constraints() -> ApplicationCapabilityConstraintDefinition
         ApplicationCapabilityCurrentnessDefinition::new(
             ApplicationCapabilityValueBinding::new(
                 CapabilityStatusField::reference(),
-                CapabilityStatus::Active,
+                ApplicationEncodedScalarValue::<CapabilityStatusBinding>::try_new(
+                    CapabilityStatus::Active,
+                )
+                .expect("fixture capability status must encode"),
             ),
             ApplicationCapabilityWorkflowDefinition::new(
                 ApplicationCapabilityFieldBinding::from_reference(
@@ -342,28 +374,5 @@ fn composition_with_propagation(
             ApplicationCapabilityDistinctActorRule::not_applicable(),
         ),
         propagation,
-    )
-}
-
-pub(super) fn propagation() -> ApplicationCapabilityPropagationComposition {
-    ApplicationCapabilityPropagationComposition::new(
-        ApplicationCapabilityDelegationRule::narrow_all_dimensions(
-            ApplicationCapabilityDelegationDepth::new(2).unwrap(),
-        ),
-        ApplicationCapabilityDisclosureRule::permit([ApplicationCapabilityScopeGuard::requiring(
-            [ApplicationCapabilityAcceptedValues::one_of(
-                CapabilityDisclosureField::reference(),
-                [CapabilityDisclosure::AccountActivity],
-            )],
-        )]),
-    )
-}
-
-pub(super) fn command_propagation() -> ApplicationCapabilityPropagationComposition {
-    ApplicationCapabilityPropagationComposition::new(
-        ApplicationCapabilityDelegationRule::narrow_all_dimensions(
-            ApplicationCapabilityDelegationDepth::new(2).unwrap(),
-        ),
-        ApplicationCapabilityDisclosureRule::not_applicable(),
     )
 }

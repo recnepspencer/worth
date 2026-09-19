@@ -37,6 +37,7 @@ pub mod canonicalization_api;
 mod compatibility;
 mod diagnostics;
 pub mod facade;
+pub mod geometry_api;
 mod identities;
 mod locators;
 mod performance;

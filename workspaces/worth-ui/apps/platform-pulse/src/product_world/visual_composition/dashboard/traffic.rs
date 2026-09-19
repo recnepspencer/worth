@@ -1,0 +1,157 @@
+use super::{surface, text, DashboardElement, DashboardGraphic};
+
+pub(super) fn elements() -> Vec<DashboardElement> {
+    vec![
+        surface(
+            "service_stage",
+            [266, 269, 812, 348],
+            "raised_surface",
+            12,
+            true,
+            2,
+        ),
+        text(
+            "service_body",
+            "Traffic over time",
+            [291, 288, 310, 35],
+            18,
+            true,
+            "primary_text",
+        ),
+        surface(
+            "confirmation_target",
+            [930, 283, 130, 34],
+            "raised_surface",
+            10,
+            true,
+            3,
+        )
+        .action("period"),
+        text(
+            "confirmation_label",
+            "Last 24 hours",
+            [938, 283, 92, 34],
+            12,
+            false,
+            "primary_text",
+        )
+        .centered(),
+        surface(
+            "period_chevron",
+            [1033, 296, 10, 6],
+            "secondary_text",
+            12,
+            false,
+            4,
+        )
+        .graphic(DashboardGraphic::Chevron),
+        surface("chart_grid", [331, 347, 721, 216], "grid", 12, false, 3)
+            .graphic(DashboardGraphic::ChartGrid),
+        surface(
+            "chart_area",
+            [331, 347, 721, 216],
+            "chart_fill",
+            12,
+            false,
+            4,
+        )
+        .graphic(DashboardGraphic::TrafficArea),
+        surface(
+            "query_accent",
+            [331, 347, 721, 216],
+            "principal_accent",
+            12,
+            false,
+            5,
+        )
+        .graphic(DashboardGraphic::TrafficLine),
+        text(
+            "chart_y_0",
+            "300K",
+            [290, 338, 37, 21],
+            12,
+            false,
+            "secondary_text",
+        ),
+        text(
+            "chart_y_1",
+            "200K",
+            [290, 410, 37, 21],
+            12,
+            false,
+            "secondary_text",
+        ),
+        text(
+            "chart_y_2",
+            "100K",
+            [290, 482, 37, 21],
+            12,
+            false,
+            "secondary_text",
+        ),
+        text(
+            "chart_y_3",
+            "0",
+            [290, 554, 37, 21],
+            12,
+            false,
+            "secondary_text",
+        ),
+        text(
+            "chart_x_0",
+            "12 AM",
+            [312, 572, 55, 23],
+            12,
+            false,
+            "secondary_text",
+        ),
+        text(
+            "chart_x_1",
+            "4 AM",
+            [429, 572, 55, 23],
+            12,
+            false,
+            "secondary_text",
+        ),
+        text(
+            "chart_x_2",
+            "8 AM",
+            [546, 572, 55, 23],
+            12,
+            false,
+            "secondary_text",
+        ),
+        text(
+            "chart_x_3",
+            "12 PM",
+            [663, 572, 55, 23],
+            12,
+            false,
+            "secondary_text",
+        ),
+        text(
+            "chart_x_4",
+            "4 PM",
+            [780, 572, 55, 23],
+            12,
+            false,
+            "secondary_text",
+        ),
+        text(
+            "chart_x_5",
+            "8 PM",
+            [897, 572, 55, 23],
+            12,
+            false,
+            "secondary_text",
+        ),
+        text(
+            "chart_x_6",
+            "12 AM",
+            [1014, 572, 55, 23],
+            12,
+            false,
+            "secondary_text",
+        ),
+    ]
+}

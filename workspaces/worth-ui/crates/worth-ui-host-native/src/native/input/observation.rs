@@ -254,6 +254,11 @@ impl UiNativeInputObservationState {
         self.retention.pending_batch_count() != 0
     }
 
+    pub(crate) fn observation_drain_capacity_reached(&self) -> bool {
+        self.retention.pending_batch_count()
+            >= worth_ui_host_contract::UI_HOST_OBSERVATION_DRAIN_BATCH_LIMIT
+    }
+
     pub(crate) fn release_session(&mut self, host_session_identity: u64) {
         self.retention.release_session(host_session_identity);
         if self.active_host_session == Some(host_session_identity) {

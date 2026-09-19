@@ -866,10 +866,10 @@ certification-only and is not an ordinary UI binding dependency.
 The ordinary application path is:
 
 ```text
-prepare a WorthUiScalarProjectionHostPlan or another binding-owned installation
+install the authored WorthUiStatusSourceOwner (or another binding-owned source)
 -> express the requirement through the Query declaration audience
 -> install and progress its request through the Query host audience
--> complete installation into a shape-specific registration and initial advance
+-> obtain its shape-specific registration and initial advance
 -> register_scalar_projection(...) or register_collection_projection(...) on WorthUi::app()
 -> freeze and launch one active application session
 -> admit the Query-issued observation through begin_projection_rebind(...)

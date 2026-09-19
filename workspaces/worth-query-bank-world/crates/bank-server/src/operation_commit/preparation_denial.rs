@@ -18,12 +18,26 @@ pub enum BankApplicationAttemptDenialKind {
     DecisionDependencyMismatch,
     DecisionFactBudgetExceeded,
     MutationPreconditionMismatch,
+    SourceRetired,
+    SourceChanged,
     AmbiguousRelation,
     UndeclaredEffect,
+    InvalidEffectValue,
     ForeignEffectTarget,
+    InvalidOutputRole,
+    ForeignOutputRole,
+    UndeclaredOutputRole,
+    MissingOutputRole,
+    DuplicateOutputRole,
+    OutputRoleEntityMismatch,
+    OutputRoleActionMismatch,
     DuplicateEffectKey,
+    CandidateCapacityExceeded,
+    CandidateReservationExceeded,
     RetainedEffectBytesExceeded,
     ExternalEffectPayloadProjectionRejected,
+    ForeignConditionalDefinitionChange,
+    DuplicateConditionalDefinitionChange,
     IncompleteEffectBasis,
     DelegationActivationRequired,
     DelegationActivationProgramMismatch,
@@ -94,15 +108,41 @@ const fn application_attempt_kind(
         Query::MutationPreconditionMismatch => {
             BankApplicationAttemptDenialKind::MutationPreconditionMismatch
         }
+        Query::SourceRetired => BankApplicationAttemptDenialKind::SourceRetired,
+        Query::SourceChanged => BankApplicationAttemptDenialKind::SourceChanged,
         Query::AmbiguousRelation => BankApplicationAttemptDenialKind::AmbiguousRelation,
         Query::UndeclaredEffect => BankApplicationAttemptDenialKind::UndeclaredEffect,
+        Query::InvalidEffectValue => BankApplicationAttemptDenialKind::InvalidEffectValue,
         Query::ForeignEffectTarget => BankApplicationAttemptDenialKind::ForeignEffectTarget,
+        Query::InvalidOutputRole => BankApplicationAttemptDenialKind::InvalidOutputRole,
+        Query::ForeignOutputRole => BankApplicationAttemptDenialKind::ForeignOutputRole,
+        Query::UndeclaredOutputRole => BankApplicationAttemptDenialKind::UndeclaredOutputRole,
+        Query::MissingOutputRole => BankApplicationAttemptDenialKind::MissingOutputRole,
+        Query::DuplicateOutputRole => BankApplicationAttemptDenialKind::DuplicateOutputRole,
+        Query::OutputRoleEntityMismatch => {
+            BankApplicationAttemptDenialKind::OutputRoleEntityMismatch
+        }
+        Query::OutputRoleActionMismatch => {
+            BankApplicationAttemptDenialKind::OutputRoleActionMismatch
+        }
         Query::DuplicateEffectKey => BankApplicationAttemptDenialKind::DuplicateEffectKey,
+        Query::CandidateCapacityExceeded => {
+            BankApplicationAttemptDenialKind::CandidateCapacityExceeded
+        }
+        Query::CandidateReservationExceeded => {
+            BankApplicationAttemptDenialKind::CandidateReservationExceeded
+        }
         Query::RetainedEffectBytesExceeded => {
             BankApplicationAttemptDenialKind::RetainedEffectBytesExceeded
         }
         Query::ExternalEffectPayloadProjectionRejected => {
             BankApplicationAttemptDenialKind::ExternalEffectPayloadProjectionRejected
+        }
+        Query::ForeignConditionalDefinitionChange => {
+            BankApplicationAttemptDenialKind::ForeignConditionalDefinitionChange
+        }
+        Query::DuplicateConditionalDefinitionChange => {
+            BankApplicationAttemptDenialKind::DuplicateConditionalDefinitionChange
         }
         Query::IncompleteEffectBasis => BankApplicationAttemptDenialKind::IncompleteEffectBasis,
         Query::DelegationActivationRequired => {

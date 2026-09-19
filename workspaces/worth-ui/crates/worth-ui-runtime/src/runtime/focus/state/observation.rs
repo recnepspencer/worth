@@ -1,14 +1,26 @@
 impl super::UiFocusRuntimeState {
     pub(in crate::runtime) fn observe_window_focus(&mut self, focused: bool) {
-        self.window_focus = crate::runtime::focus::UiWindowFocus::from_host_observation(focused);
+        let next = crate::runtime::focus::UiWindowFocus::from_host_observation(focused);
+        if self.window_focus != next {
+            self.window_focus = next;
+            self.bump_appearance_revision();
+        }
     }
 
     pub(in crate::runtime) fn observe_keyboard_modality(&mut self) {
-        self.modality = crate::runtime::focus::UiFocusVisibleModality::Keyboard;
+        let next = crate::runtime::focus::UiFocusVisibleModality::Keyboard;
+        if self.modality != next {
+            self.modality = next;
+            self.bump_appearance_revision();
+        }
     }
 
     pub(in crate::runtime) fn observe_pointer_modality(&mut self) {
-        self.modality = crate::runtime::focus::UiFocusVisibleModality::Pointer;
+        let next = crate::runtime::focus::UiFocusVisibleModality::Pointer;
+        if self.modality != next {
+            self.modality = next;
+            self.bump_appearance_revision();
+        }
     }
 
     pub(crate) fn observe_host_payload(

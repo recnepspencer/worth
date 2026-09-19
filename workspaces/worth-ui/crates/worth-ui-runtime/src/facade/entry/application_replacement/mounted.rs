@@ -5,12 +5,18 @@ use super::{
 };
 
 mod admission;
+mod appearance_projection;
 mod detached;
+mod geometry;
+mod in_flight;
+mod native_layout;
+pub(crate) use native_layout::UiNativeReplacementLayoutSupplier;
 mod outcome;
 #[path = "mounted/published.rs"]
 mod published;
 use published::WorthUiPresentedApplicationReplacement;
 
+pub use native_layout::UiNativeReplacementLayoutInput;
 pub(crate) use outcome::{
     WorthUiDetachedMountedApplicationReplacementInFlight,
     WorthUiDetachedPreparedMountedApplicationReplacement,
@@ -40,6 +46,10 @@ impl WorthUiActiveApplicationSession {
             lane_parity_report,
             crate::mounting::UiMountedSemanticContentInput::empty(),
             request,
+            None,
+            &[],
+            None,
+            None,
         )
     }
 
@@ -51,8 +61,21 @@ impl WorthUiActiveApplicationSession {
         lane_parity_report: Option<crate::runtime::WorthUiLaneParityReport>,
         mut semantic_content: crate::mounting::UiMountedSemanticContentInput,
         request: crate::mounting::UiMountedFrameRequest,
+        native_surface: Option<worth_ui_host_contract::UiSemanticSurfaceIdentity>,
+        native_component_candidates: &[crate::graph::UiGraphNodeIdentity],
+        native_viewport: Option<worth_ui_host_contract::UiMountedCanonicalBox>,
+        native_layout: Option<&mut native_layout::UiNativeReplacementLayoutSupplier<'_>>,
     ) -> Result<WorthUiMountedReplacementPreparationOutcome<'_>, WorthUiApplicationCutoverDenial>
     {
+        if self
+            .mounted
+            .view()
+            .surface_bindings()
+            .iter()
+            .any(|binding| !request.includes_surface(binding.semantic_surface_identity()))
+        {
+            return Err(WorthUiApplicationCutoverDenial::IncompleteMountedSurfaceScope);
+        }
         let active_query_plan = self.application.prepared_authority().query_binding_plan();
         let candidate_query_plan = pending.next_app.prepared_authority().query_binding_plan();
         if active_query_plan != candidate_query_plan {
@@ -61,7 +84,6 @@ impl WorthUiActiveApplicationSession {
             );
         }
         let candidate_graph = pending.next_app.graph_snapshot().clone();
-        let candidate_generation = pending.next_app.generation_identity().clone();
         let prepared = self.prepare_application_cutover(
             pending,
             admitted_delta,
@@ -76,34 +98,66 @@ impl WorthUiActiveApplicationSession {
             }
             WorthUiPreparedApplicationCutoverOutcome::Activation(application) => application,
         };
-        let mounted_successor = self
+        let mut mounted_successor = self
             .mounted
             .prepare_graph_replacement_successor(crate::graph::UiGraphAuthority::new(
                 &candidate_graph,
             ))
             .map_err(WorthUiApplicationCutoverDenial::MountedIdentity)?;
-        let capability_report = self.host_session.capability_report();
-        let frame = super::mounted_frame::prepare_candidate_mounted_frame(
+        if let Some(surface) = native_surface {
+            mounted_successor
+                .mount_candidate_graph_nodes(
+                    crate::graph::UiGraphAuthority::new(&candidate_graph),
+                    surface,
+                    native_component_candidates,
+                )
+                .map_err(WorthUiApplicationCutoverDenial::MountedIdentity)?;
+        }
+        let mut lifecycle = self.prepare_application_lifecycle(&mounted_successor, &application)?;
+        geometry::prepare_successor(
+            self,
+            &application,
+            &mut mounted_successor,
+            &lifecycle.overlay_bindings,
+        )?;
+        if let (Some(surface), Some(layout)) = (native_surface, native_layout) {
+            let viewport = native_viewport
+                .or_else(|| mounted_successor.candidate_layout_viewport(surface))
+                .ok_or(WorthUiApplicationCutoverDenial::OccurrenceGeometry(
+                    crate::mounting::UiMountedOccurrenceGeometryDenial::MissingOccurrenceGeometry,
+                ))?;
+            let input = native_layout::prepare_input(
+                &application,
+                &mounted_successor,
+                &lifecycle.overlay_bindings,
+                surface,
+                viewport,
+            )
+            .map_err(WorthUiApplicationCutoverDenial::OccurrenceGeometry)?;
+            if let Some(batch) = layout(input) {
+                geometry::complete_candidate_surface(
+                    &application,
+                    &mut mounted_successor,
+                    &mut lifecycle,
+                    batch,
+                )?;
+            }
+        }
+        let (frame, owners) = appearance_projection::prepare_frame(
+            self,
             &application,
             &mounted_successor,
-            crate::graph::UiGraphAuthority::new(&candidate_graph),
-            super::mounted_frame::UiMountedReplacementReuseBasis {
-                generation: candidate_generation,
-                host_session: self.host_session.identity().as_u64(),
-                protocol: self.host_session.protocol(),
-                capability_generation: capability_report.observation_generation(),
-                capability_profile_digest: capability_report.profile_identity_digest(),
-            },
             semantic_content,
             request,
-        )
-        .map_err(WorthUiApplicationCutoverDenial::MountedFrame)?;
+        )?;
         Ok(WorthUiMountedReplacementPreparationOutcome::Prepared(
             Box::new(WorthUiPreparedMountedApplicationReplacement {
                 session: self,
                 application,
                 mounted_successor,
                 frame,
+                lifecycle,
+                owners,
             }),
         ))
     }
@@ -120,12 +174,16 @@ impl<'session> WorthUiPreparedMountedApplicationReplacement<'session> {
             application,
             mounted_successor,
             frame,
+            lifecycle,
+            owners,
         } = *self;
         WorthUiDetachedPreparedMountedApplicationReplacement {
             session_identity: session.session_identity(),
             application,
             mounted_successor,
             frame,
+            lifecycle,
+            owners,
         }
     }
 
@@ -178,6 +236,8 @@ impl<'session> WorthUiPreparedMountedApplicationReplacement<'session> {
             application,
             mounted_successor,
             frame,
+            lifecycle,
+            owners,
         } = *self;
         let admitted = match admission::prepare_replacement_presentation(
             admission::WorthUiMountedReplacementAdmissionInput {
@@ -185,6 +245,8 @@ impl<'session> WorthUiPreparedMountedApplicationReplacement<'session> {
                 application,
                 mounted_successor,
                 frame,
+                lifecycle,
+                owners,
             },
             deadline,
             now,
@@ -196,17 +258,21 @@ impl<'session> WorthUiPreparedMountedApplicationReplacement<'session> {
             session,
             application,
             mounted,
+            lifecycle,
+            owners,
         } = admitted;
         let outcome =
             session
                 .mounted
                 .present_graph_replacement(&session.host_session, mounted, now);
-        Self::finish(session, application, outcome, publish)
+        Self::finish(session, application, lifecycle, owners, outcome, publish)
     }
 
     fn finish(
         session: &'session mut WorthUiActiveApplicationSession,
         application: Box<WorthUiPreparedApplicationActivation>,
+        lifecycle: super::portal_lifecycle::WorthUiPreparedApplicationLifecycle,
+        owners: super::owner_succession::UiPreparedApplicationOwnerSuccession,
         outcome: crate::mounting::UiMountedGraphReplacementPresentation,
         publish: impl FnOnce(
             WorthUiPresentedApplicationReplacement<'session>,
@@ -219,19 +285,28 @@ impl<'session> WorthUiPreparedMountedApplicationReplacement<'session> {
             } => publish(WorthUiPresentedApplicationReplacement::new(
                 session,
                 application,
+                lifecycle,
+                owners,
                 successor,
                 receipt,
             )),
             crate::mounting::UiMountedGraphReplacementPresentation::RejectedBeforeEffects {
+                attempt,
                 successor,
                 frame,
                 rejections,
                 observation,
             } => {
+                session.overlay_composition_owners.discard(attempt);
                 crate::facade::entry::mounted_publication::record_mounted_observation(
                     &mut session.host_exchange,
                     observation,
                 );
+                if let Some(batch) = session.mounted.take_replacement_appearance_attempt(attempt) {
+                    session
+                        .appearance_inspection
+                        .record_pre_effect_denials(batch.into_parts().1);
+                }
                 WorthUiMountedApplicationReplacementOutcome::RejectedBeforeEffects(
                     WorthUiMountedReplacementHostRejection {
                         rejections,
@@ -240,6 +315,8 @@ impl<'session> WorthUiPreparedMountedApplicationReplacement<'session> {
                             application,
                             mounted_successor: successor,
                             frame,
+                            lifecycle,
+                            owners,
                         }),
                     },
                 )
@@ -250,6 +327,8 @@ impl<'session> WorthUiPreparedMountedApplicationReplacement<'session> {
                         session,
                         application,
                         mounted,
+                        lifecycle,
+                        owners,
                     },
                 ))
             }
@@ -257,120 +336,26 @@ impl<'session> WorthUiPreparedMountedApplicationReplacement<'session> {
                 frame,
                 observation,
             } => {
+                session
+                    .overlay_composition_owners
+                    .discard(frame.report().attempt());
                 crate::facade::entry::mounted_publication::record_mounted_observation(
                     &mut session.host_exchange,
                     observation,
                 );
+                session
+                    .mounted
+                    .take_replacement_appearance_attempt(frame.report().attempt());
                 WorthUiMountedApplicationReplacementOutcome::PresentationIndeterminate(Box::new(
                     WorthUiMountedApplicationReplacementIndeterminate {
                         session,
                         application,
                         frame,
+                        lifecycle,
+                        owners,
                     },
                 ))
             }
         }
-    }
-}
-
-impl<'session> WorthUiMountedApplicationReplacementInFlight<'session> {
-    pub fn attempt(&self) -> worth_ui_host_contract::UiMountedPresentationAttemptIdentity {
-        self.mounted.handle().attempt()
-    }
-
-    pub fn deadline(&self) -> worth_ui_host_contract::UiPresentationDeadline {
-        self.mounted.handle().deadline()
-    }
-
-    pub(crate) fn detach(self: Box<Self>) -> WorthUiDetachedMountedApplicationReplacementInFlight {
-        let Self {
-            session,
-            application,
-            mounted,
-        } = *self;
-        WorthUiDetachedMountedApplicationReplacementInFlight {
-            session_identity: session.session_identity(),
-            application,
-            mounted,
-        }
-    }
-
-    pub fn pending_bindings(
-        &self,
-    ) -> impl ExactSizeIterator<Item = worth_ui_host_contract::UiSurfaceBindingGeneration> + '_
-    {
-        self.mounted.handle().pending_bindings()
-    }
-
-    pub fn cost_report(&self) -> crate::mounting::UiMountCostReport {
-        self.mounted.handle().cost_report()
-    }
-
-    pub fn complete(
-        self: Box<Self>,
-        now: u64,
-    ) -> WorthUiMountedApplicationReplacementOutcome<'session> {
-        let Self {
-            session,
-            application,
-            mounted,
-        } = *self;
-        let outcome =
-            session
-                .mounted
-                .complete_graph_replacement(&session.host_session, mounted, now);
-        let outcome = match outcome {
-            Ok(outcome) => outcome,
-            Err(rejection) => {
-                return WorthUiMountedApplicationReplacementOutcome::CompletionDenied(Box::new(
-                    WorthUiMountedReplacementCompletionDenial {
-                        denial: rejection.denial,
-                        in_flight: WorthUiMountedApplicationReplacementInFlight {
-                            session,
-                            application,
-                            mounted: *rejection.in_flight,
-                        },
-                    },
-                ));
-            }
-        };
-        WorthUiPreparedMountedApplicationReplacement::finish(
-            session,
-            application,
-            outcome,
-            |presented| presented.commit_once(),
-        )
-    }
-
-    pub fn cancel(self: Box<Self>) -> WorthUiMountedApplicationReplacementOutcome<'session> {
-        let Self {
-            session,
-            application,
-            mounted,
-        } = *self;
-        let outcome = session
-            .mounted
-            .cancel_graph_replacement(&session.host_session, mounted);
-        let outcome = match outcome {
-            Ok(outcome) => outcome,
-            Err(rejection) => {
-                return WorthUiMountedApplicationReplacementOutcome::CompletionDenied(Box::new(
-                    WorthUiMountedReplacementCompletionDenial {
-                        denial: rejection.denial,
-                        in_flight: WorthUiMountedApplicationReplacementInFlight {
-                            session,
-                            application,
-                            mounted: *rejection.in_flight,
-                        },
-                    },
-                ));
-            }
-        };
-        WorthUiPreparedMountedApplicationReplacement::finish(
-            session,
-            application,
-            outcome,
-            |presented| presented.commit_once(),
-        )
     }
 }

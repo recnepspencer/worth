@@ -46,6 +46,11 @@ fn runtime_bridge_snapshot_reader_prefers_retained_observation_over_later_commit
     let reader = source
         .open_snapshot(&active_snapshot_identity)
         .expect("active snapshot should remain bridge-readable after later commit id collision");
+    drop(basis);
+    assert!(lease.release().released());
+    assert!(source.open_snapshot(&active_snapshot_identity).is_err());
+    // The already opened reader owns the selected root. This proves exact
+    // reading after registration removal, not retention accounting or close.
     let packet = worth_runtime_bridge::facade::SnapshotReadPacket::new(vec![
         worth_runtime_bridge::facade::SnapshotReadRequest::for_relational_record(
             active_entity_identity,
@@ -77,8 +82,10 @@ fn runtime_bridge_snapshot_reader_requires_a_retained_branch_observation() {
         .snapshots()
         .release_snapshot(&created.snapshot)
         .is_ok());
-    let source = RuntimeBridgeRelationalSource::for_graph_role(Arc::new(runtime), "model")
+    let runtime = Arc::new(runtime);
+    let source = RuntimeBridgeRelationalSource::for_graph_role(Arc::clone(&runtime), "model")
         .expect("test graph role");
+    let before = runtime.retention_cost_counters();
     let (_, basis) = source
         .observe_branch_basis(&branch_identity)
         .expect("Relational owner should admit its exact branch basis");
@@ -90,6 +97,14 @@ fn runtime_bridge_snapshot_reader_requires_a_retained_branch_observation() {
     let reader = source
         .open_snapshot(&identity)
         .expect("retained observation should authorize Bridge snapshot access");
+    let second_reader = source.open_snapshot(&identity).unwrap();
+    let opened = runtime.retention_cost_counters();
+    assert_eq!(opened.observation_acquires, before.observation_acquires + 1);
+    assert_eq!(
+        opened.external_pin_acquires,
+        before.external_pin_acquires + 1
+    );
+    drop(basis);
     let packet = worth_runtime_bridge::facade::SnapshotReadPacket::new(vec![
         worth_runtime_bridge::facade::SnapshotReadRequest::for_relational_record(
             entity_identity,
@@ -107,6 +122,32 @@ fn runtime_bridge_snapshot_reader_requires_a_retained_branch_observation() {
 
     assert!(lease.release().released());
     assert!(source.open_snapshot(&identity).is_err());
+    let unregistered = runtime.retention_cost_counters();
+    assert_eq!(
+        unregistered.external_pin_releases,
+        opened.external_pin_releases + 1
+    );
+    assert_eq!(
+        unregistered.observation_releases,
+        opened.observation_releases
+    );
+    assert_eq!(
+        second_reader.read_packet(&packet).unwrap().records()[0].scalar_aspect_value(),
+        Some(&AspectValue::String("managed".into()))
+    );
+    drop(reader);
+    assert_eq!(
+        runtime.retention_cost_counters().observation_releases,
+        opened.observation_releases
+    );
+    drop(second_reader);
+    let released = runtime.retention_cost_counters();
+    assert_eq!(
+        released.observation_releases,
+        opened.observation_releases + 1
+    );
+    assert_eq!(released.observation_acquires, opened.observation_acquires);
+    assert_eq!(released.external_pin_acquires, opened.external_pin_acquires);
 }
 
 fn active_entity_identity(

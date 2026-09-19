@@ -32,7 +32,7 @@ fn intent_causal_trace_reaches_pixels_without_becoming_authority() {
         trace.attempt().attempt_slot(),
         "admission and attempt remain one exact generational lane"
     );
-    assert_eq!(trace.query_projection().native_value(), Some("ACTION 1"));
+    assert_eq!(trace.query_projection().native_value(), Some("Deployed"));
     let reporting_copy = serde_json::to_vec(trace).expect("trace is disposable reporting data");
     let decoded: worth_ui_platform_pulse::observation_contract::
         PlatformPulseIntentCausalTraceObservation =

@@ -1,15 +1,18 @@
 use crate::capability::{
-    CapabilitySupportCatalog, FrozenCommandCapabilities, FrozenCommandProjectionCapabilities,
-    FrozenComponentCapabilities, FrozenIconCapabilities, FrozenIntentDefinitionCapabilities,
-    FrozenMosaicPlacementCapabilities, FrozenMosaicRegionCapabilities,
-    FrozenMosaicSizingCapabilities, FrozenMosaicStateCapabilities, FrozenNativeCapabilities,
-    FrozenPluginSlotCapabilities, FrozenRuntimeOutcomeProjectionCapabilities,
-    FrozenSettingCapabilities, FrozenSurfaceCapabilities, FrozenTaskPresentationCapabilities,
-    FrozenThemeTokenCapabilities, FrozenViewBindingCapabilities, RegisteredCapabilitySet,
+    CapabilitySupportCatalog, FrozenAppearanceRoleCapabilities, FrozenAppearanceThemeCapabilities,
+    FrozenCommandCapabilities, FrozenCommandProjectionCapabilities, FrozenComponentCapabilities,
+    FrozenIconCapabilities, FrozenIntentDefinitionCapabilities, FrozenMosaicPlacementCapabilities,
+    FrozenMosaicRegionCapabilities, FrozenMosaicSizingCapabilities, FrozenMosaicStateCapabilities,
+    FrozenNativeCapabilities, FrozenPluginSlotCapabilities,
+    FrozenRuntimeOutcomeProjectionCapabilities, FrozenSettingCapabilities,
+    FrozenSurfaceCapabilities, FrozenTaskPresentationCapabilities, FrozenThemeTokenCapabilities,
+    FrozenViewBindingCapabilities, RegisteredCapabilitySet,
 };
 
 pub(crate) struct CapabilitySnapshotFreezeInput {
     pub(crate) registered_capabilities: RegisteredCapabilitySet,
+    pub(crate) appearance_roles: FrozenAppearanceRoleCapabilities,
+    pub(crate) appearance_themes: Option<FrozenAppearanceThemeCapabilities>,
     pub(crate) commands: FrozenCommandCapabilities,
     pub(crate) command_projections: FrozenCommandProjectionCapabilities,
     pub(crate) components: FrozenComponentCapabilities,

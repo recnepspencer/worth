@@ -55,17 +55,4 @@ impl BankReadControls {
     pub const fn maximum_work(&self) -> NonZeroUsize {
         self.maximum_work
     }
-
-    pub(super) fn application_query_controls(
-        &self,
-    ) -> worth_query_host::facade::primary_graph::WorthQueryApplicationQueryControls<
-        '_,
-        bank_domain::schema::BankSchema,
-    > {
-        worth_query_host::facade::primary_graph::WorthQueryApplicationQueryControls::current_one_shot(
-            self.maximum_results,
-            self.maximum_work,
-            &self.request,
-        )
-    }
 }

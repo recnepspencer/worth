@@ -32,6 +32,7 @@ pub(crate) struct ExecutablePredecessorPreservationEvidence {
 pub(crate) struct CausalPredecessorPreservationObservationSet {
     action: AppliedPulseSourceDelta<MalformedPulseSourceDelta>,
     predecessor: ExecutablePublishedIdentity,
+    predecessor_frame: u64,
     envelope: PlatformPulseLifecycleObservationEnvelope,
 }
 
@@ -92,11 +93,13 @@ impl CausalPredecessorPreservationObservationSet {
     pub(crate) fn new(
         action: AppliedPulseSourceDelta<MalformedPulseSourceDelta>,
         predecessor: ExecutablePublishedIdentity,
+        predecessor_frame: u64,
         envelope: PlatformPulseLifecycleObservationEnvelope,
     ) -> Self {
         Self {
             action,
             predecessor,
+            predecessor_frame,
             envelope,
         }
     }
@@ -189,7 +192,7 @@ fn require_causal_preservation(
     if preserved.active_generation() != causal.predecessor.generation() {
         return Err(ExecutablePredecessorPreservationFailure::ActiveGenerationChanged);
     }
-    if preserved.active_frame() != causal.predecessor.frame() {
+    if preserved.active_frame().diagnostic_value() != causal.predecessor_frame {
         return Err(ExecutablePredecessorPreservationFailure::ActiveFrameChanged);
     }
     Ok(())

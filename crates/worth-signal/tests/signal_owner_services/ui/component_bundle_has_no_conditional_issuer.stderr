@@ -1,0 +1,5 @@
+error[E0599]: no method named `conditional_execution` found for struct `SignalOwnerServicePorts<D, I, E, Ctx, T>` in the current scope
+ --> tests/signal_owner_services/ui/component_bundle_has_no_conditional_issuer.rs:4:19
+  |
+4 |     let _ = ports.conditional_execution();
+  |                   ^^^^^^^^^^^^^^^^^^^^^ method not found in `SignalOwnerServicePorts<(), (), (), (), ()>`

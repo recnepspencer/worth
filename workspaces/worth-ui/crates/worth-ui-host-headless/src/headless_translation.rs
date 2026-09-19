@@ -14,14 +14,88 @@ use super::{
     UiHeadlessRecorderCapacity, UiHeadlessResolvedClip, UiHeadlessResourceContact,
 };
 
+pub(crate) mod appearance;
+mod nodes;
 mod portal_overlay;
 pub(super) mod semantic_text;
-pub(super) mod static_paint;
 mod unperformed_effects;
+
+use nodes::{resolve_layer, translate_nodes};
 
 use unperformed_effects::{
     has_accessibility, has_diagnostic, has_focus, has_motion, unperformed_effects,
 };
+
+#[cfg(test)]
+pub(crate) fn translate_appearance_fragment_work(
+    source: &worth_ui_host_contract::UiMountedAppearanceWork,
+) -> Result<
+    super::headless_transcript::appearance::UiHeadlessAppearanceWorkTranscript,
+    appearance::UiHeadlessAppearanceTranslationDenial,
+> {
+    appearance::translate(source)
+}
+
+pub(crate) fn translate_appearance_work(
+    source: &worth_ui_host_contract::UiMountedAppearancePresentationWork,
+) -> Result<
+    super::headless_transcript::appearance::UiHeadlessAppearancePresentationTranscript,
+    appearance::UiHeadlessAppearanceTranslationDenial,
+> {
+    let fragments = source
+        .fragments()
+        .iter()
+        .map(|fragment| {
+            appearance::translate(fragment.work()).map(|work| {
+                super::headless_transcript::appearance::UiHeadlessAppearanceFragmentTranscript::from_source(
+                    fragment, work,
+                )
+            })
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(super::headless_transcript::appearance::UiHeadlessAppearancePresentationTranscript::from_source(source, fragments))
+}
+
+pub(super) fn translate_view_appearance(
+    view: &UiMountedFrameConsumptionView<'_>,
+) -> Result<
+    Option<super::headless_transcript::appearance::UiHeadlessAppearancePresentationTranscript>,
+    UiHostSurfacePresentationDenial,
+> {
+    let Some(source) = view.appearance_work() else {
+        return Ok(None);
+    };
+    if source.frame() != view.frame()
+        || source.presentation() != view.attempt()
+        || source.requirement() != view.requirement()
+    {
+        return Err(UiHostSurfacePresentationDenial::MalformedProjection);
+    }
+    translate_appearance_work(source)
+        .map(Some)
+        .map_err(|_| UiHostSurfacePresentationDenial::MalformedProjection)
+}
+
+#[cfg(feature = "certification-support")]
+pub fn translate_appearance_projection_for_certification(
+    projection: &worth_ui_host_contract::UiUnpublishedAppearanceFrameProjection,
+) -> Result<
+    super::headless_transcript::appearance::UiHeadlessAppearanceProjectionTranscript,
+    appearance::UiHeadlessAppearanceTranslationDenial,
+> {
+    let fragments = projection
+        .fragments()
+        .iter()
+        .map(|fragment| {
+            appearance::translate(fragment.work()).map(|work| {
+                super::headless_transcript::appearance::UiHeadlessAppearanceFragmentTranscript::from_source(
+                    fragment, work,
+                )
+            })
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(super::headless_transcript::appearance::UiHeadlessAppearanceProjectionTranscript::from_source(projection, fragments))
+}
 
 pub(super) fn translate_headless_frame(
     view: &UiMountedFrameConsumptionView<'_>,
@@ -30,18 +104,20 @@ pub(super) fn translate_headless_frame(
     mounted_order: &[worth_ui_host_contract::UiMountedPaintOrderIdentity],
     logical_damage: &[worth_ui_host_contract::UiMountedLogicalDamage],
 ) -> Result<UiHeadlessMountedFrameTranscript, UiHostSurfacePresentationDenial> {
-    static_paint::validate_protocol(view, projection)?;
     portal_overlay::validate(view, projection)?;
-    validate_mechanic_capacity(projection, capacity)?;
+    validate_mechanic_capacity(projection, view.appearance_work(), capacity)?;
     validate_external_batch_alignment(projection)?;
     let clips = translate_clips(projection)?;
-    let filled_rects = static_paint::translate_filled_rects(projection)?;
+    let appearance_work = translate_view_appearance(view)?;
     let portal_overlays = projection.portal_overlays().rows().to_vec();
     let semantic_text = semantic_text::translate(view, projection)?;
     let mut paint_batches = translate_paint_batches(projection)?;
     paint_batches.sort_by_key(paint_order);
     let nodes = translate_nodes(projection)?;
-    let unperformed_effects = unperformed_effects(projection)?;
+    let unperformed_effects = unperformed_effects(
+        projection,
+        appearance_mechanic_count(view.appearance_work())?,
+    )?;
     Ok(UiHeadlessMountedFrameTranscript::new(
         UiHeadlessMountedFrameTranscriptInput {
             host_session_identity: view.host_session_identity(),
@@ -51,7 +127,7 @@ pub(super) fn translate_headless_frame(
             binding: view.requirement().binding(),
             nodes,
             clips,
-            filled_rects,
+            appearance_work,
             portal_overlays,
             semantic_text,
             paint_batches,
@@ -70,7 +146,12 @@ pub(super) fn translate_auxiliary_delta(
     mounted_order: &[worth_ui_host_contract::UiMountedPaintOrderIdentity],
     logical_damage: &[worth_ui_host_contract::UiMountedLogicalDamage],
 ) -> Result<UiHeadlessMountedFrameTranscript, UiHostSurfacePresentationDenial> {
-    validate_mechanic_capacity(projection, capacity)?;
+    let appearance_work = retained.appearance_work().cloned();
+    validate_translated_appearance_capacity(
+        appearance_work.as_ref(),
+        base_row_count(projection)?,
+        capacity,
+    )?;
     validate_external_batch_alignment(projection)?;
     let clips = translate_clips(projection)?;
     let mut paint_batches = translate_paint_batches(projection)?;
@@ -84,13 +165,18 @@ pub(super) fn translate_auxiliary_delta(
             binding: identity.binding,
             nodes: translate_nodes(projection)?,
             clips,
-            filled_rects: retained.filled_rects().to_vec(),
+            appearance_work,
             portal_overlays: retained.portal_overlays().to_vec(),
             semantic_text: retained.semantic_text().to_vec(),
             paint_batches,
             paint_order: mounted_order.to_vec(),
             logical_damage: logical_damage.to_vec(),
-            unperformed_effects: unperformed_effects(projection)?,
+            unperformed_effects: unperformed_effects(
+                projection,
+                retained
+                    .appearance_work()
+                    .map_or(Ok(0), |appearance| appearance.mechanic_count())?,
+            )?,
         },
     ))
 }
@@ -126,12 +212,18 @@ fn validate_external_batch_alignment(
 
 fn validate_mechanic_capacity(
     projection: &UiMountedProjectionView,
+    appearance: Option<&worth_ui_host_contract::UiMountedAppearancePresentationWork>,
     capacity: UiHeadlessRecorderCapacity,
 ) -> Result<(), UiHostSurfacePresentationDenial> {
-    let count = [
+    validate_appearance_capacity(appearance, base_row_count(projection)?, capacity)
+}
+
+pub(super) fn base_row_count(
+    projection: &UiMountedProjectionView,
+) -> Result<usize, UiHostSurfacePresentationDenial> {
+    [
         projection.nodes().len(),
         projection.clips().rows().len(),
-        projection.filled_rects().rows().len(),
         projection.portal_overlays().rows().len(),
         projection.semantic_text().rows().len(),
         projection.paint_batches().rows().len(),
@@ -145,12 +237,71 @@ fn validate_mechanic_capacity(
     ]
     .into_iter()
     .try_fold(0usize, usize::checked_add)
-    .ok_or(UiHostSurfacePresentationDenial::CapacityExceeded)?;
+    .ok_or(UiHostSurfacePresentationDenial::CapacityExceeded)
+}
+
+pub(super) fn validate_appearance_capacity(
+    appearance: Option<&worth_ui_host_contract::UiMountedAppearancePresentationWork>,
+    base_count: usize,
+    capacity: UiHeadlessRecorderCapacity,
+) -> Result<(), UiHostSurfacePresentationDenial> {
+    let count = base_count
+        .checked_add(appearance_row_count(appearance)?)
+        .ok_or(UiHostSurfacePresentationDenial::CapacityExceeded)?;
     if count > capacity.mechanics_per_frame() {
         Err(UiHostSurfacePresentationDenial::CapacityExceeded)
     } else {
         Ok(())
     }
+}
+
+fn validate_translated_appearance_capacity(
+    appearance: Option<
+        &super::headless_transcript::appearance::UiHeadlessAppearancePresentationTranscript,
+    >,
+    base_count: usize,
+    capacity: UiHeadlessRecorderCapacity,
+) -> Result<(), UiHostSurfacePresentationDenial> {
+    let appearance_count = appearance.map_or(Ok(0), |work| work.row_count())?;
+    let count = base_count
+        .checked_add(appearance_count)
+        .ok_or(UiHostSurfacePresentationDenial::CapacityExceeded)?;
+    if count > capacity.mechanics_per_frame() {
+        Err(UiHostSurfacePresentationDenial::CapacityExceeded)
+    } else {
+        Ok(())
+    }
+}
+
+pub(super) fn appearance_row_count(
+    appearance: Option<&worth_ui_host_contract::UiMountedAppearancePresentationWork>,
+) -> Result<usize, UiHostSurfacePresentationDenial> {
+    appearance.into_iter().try_fold(0usize, |total, work| {
+        let total = total
+            .checked_add(work.fragments().len())
+            .and_then(|value| value.checked_add(work.sample_overrides().len()))
+            .ok_or(UiHostSurfacePresentationDenial::CapacityExceeded)?;
+        work.fragments().iter().try_fold(total, |total, fragment| {
+            total
+                .checked_add(fragment.work().successor().mechanics().len())
+                .and_then(|value| value.checked_add(fragment.work().changes().len()))
+                .and_then(|value| value.checked_add(fragment.work().damage().len()))
+                .and_then(|value| value.checked_add(fragment.text_candidates().len()))
+                .ok_or(UiHostSurfacePresentationDenial::CapacityExceeded)
+        })
+    })
+}
+
+fn appearance_mechanic_count(
+    appearance: Option<&worth_ui_host_contract::UiMountedAppearancePresentationWork>,
+) -> Result<u32, UiHostSurfacePresentationDenial> {
+    let count = appearance
+        .into_iter()
+        .flat_map(|work| work.fragments())
+        .map(|fragment| fragment.work().successor().mechanics().len())
+        .try_fold(0usize, usize::checked_add)
+        .ok_or(UiHostSurfacePresentationDenial::CapacityExceeded)?;
+    u32::try_from(count).map_err(|_| UiHostSurfacePresentationDenial::CapacityExceeded)
 }
 
 fn translate_clips(
@@ -211,85 +362,6 @@ fn translate_paint_batches(
                 layer,
                 resource,
             ))
-        })
-        .collect()
-}
-
-fn resolve_layer(
-    projection: &UiMountedProjectionView,
-    layer: UiMountedLayerProjection,
-) -> Result<UiHeadlessLayerMechanic, UiHostSurfacePresentationDenial> {
-    match layer {
-        UiMountedLayerProjection::Omitted(reason) => Ok(UiHeadlessLayerMechanic::Omitted(reason)),
-        UiMountedLayerProjection::Layer(reference) => {
-            let row = projection
-                .layers()
-                .rows()
-                .get(usize::from(reference.index()))
-                .ok_or(UiHostSurfacePresentationDenial::MalformedProjection)?;
-            Ok(UiHeadlessLayerMechanic::Ordered {
-                semantic_order: row.semantic_order(),
-                clip: resolve_clip(projection, row.clip())?,
-            })
-        }
-    }
-}
-
-fn resolve_clip(
-    projection: &UiMountedProjectionView,
-    clip: UiMountedClipProjection,
-) -> Result<UiHeadlessResolvedClip, UiHostSurfacePresentationDenial> {
-    match clip {
-        UiMountedClipProjection::Unclipped => Ok(UiHeadlessResolvedClip::Unclipped),
-        UiMountedClipProjection::Omitted(reason) => Ok(UiHeadlessResolvedClip::Omitted(reason)),
-        UiMountedClipProjection::Clip(reference) => projection
-            .clips()
-            .rows()
-            .get(usize::from(reference.index()))
-            .map(|_| UiHeadlessResolvedClip::Clip(reference.index()))
-            .ok_or(UiHostSurfacePresentationDenial::MalformedProjection),
-    }
-}
-
-fn translate_nodes(
-    projection: &UiMountedProjectionView,
-) -> Result<Vec<UiHeadlessNodeMechanic>, UiHostSurfacePresentationDenial> {
-    projection
-        .nodes()
-        .iter()
-        .map(|node| {
-            let paint = match node.paint() {
-                UiMountedPaintProjection::Omitted(reason) => {
-                    UiHeadlessNodePaintMechanic::Omitted(reason)
-                }
-                UiMountedPaintProjection::CountOnlyBatch(reference) => {
-                    projection
-                        .paint_batches()
-                        .rows()
-                        .get(usize::from(reference.index()))
-                        .ok_or(UiHostSurfacePresentationDenial::MalformedProjection)?;
-                    UiHeadlessNodePaintMechanic::CountOnlyBatch(reference.index())
-                }
-                UiMountedPaintProjection::FilledRect(reference) => {
-                    projection
-                        .filled_rects()
-                        .resolve(reference)
-                        .ok_or(UiHostSurfacePresentationDenial::MalformedProjection)?;
-                    UiHeadlessNodePaintMechanic::FilledRect(reference.index())
-                }
-            };
-            Ok(UiHeadlessNodeMechanic::new(UiHeadlessNodeMechanicInput {
-                mounted_instance: node.mounted_instance(),
-                authored_position: node.authored_position(),
-                role: node.role(),
-                participation: node.participation(),
-                allocation: node.allocation(),
-                preview: node.preview(),
-                paint,
-                accessibility: node.accessibility(),
-                motion: node.motion(),
-                diagnostic: node.diagnostic(),
-            }))
         })
         .collect()
 }

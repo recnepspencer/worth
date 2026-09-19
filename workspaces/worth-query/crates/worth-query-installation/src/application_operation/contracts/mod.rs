@@ -3,6 +3,7 @@ mod compiled_contract;
 mod emissions;
 mod graph_reads;
 mod graph_touches;
+mod invariant_compilation;
 
 pub use compilation::{
     APPLICATION_AUTHORIZATION_FACT_FAMILY, APPLICATION_DECISION_FACT_FAMILY,

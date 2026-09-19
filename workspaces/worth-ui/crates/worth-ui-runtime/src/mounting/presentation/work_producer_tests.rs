@@ -23,7 +23,7 @@ mod total_order;
 #[path = "work_producer_tests/unchanged_progression.rs"]
 mod unchanged_progression;
 #[path = "work_producer_tests/world.rs"]
-mod world;
+pub(super) mod world;
 
 use super::work_producer::UiMountedPresentationState;
 use world::{rect_spec, rect_spec_with_clip, MountedPresentationWorld};

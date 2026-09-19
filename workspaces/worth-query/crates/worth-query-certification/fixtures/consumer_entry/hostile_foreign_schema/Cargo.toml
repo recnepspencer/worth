@@ -1,0 +1,9 @@
+[package]
+name = "worth-query-hostile-foreign-schema"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[dependencies]
+worth-query-decl.workspace = true
+worth-query-topology-entry.workspace = true

@@ -30,7 +30,7 @@ pub(super) fn validate(
         &[
             "self.window.title.is_empty",
             "self.window.title.len",
-            "worth_ui_host_native::UiNativePlatformProfileIdentity::WORTH_UI_WINDOWS_DX12_V1.as_str",
+            "worth_ui_host_native::UiNativePlatformProfileIdentity::WORTH_UI_WINDOWS_DX12_V2.as_str",
         ],
     )?;
     validate_function(profile_source, "validate_environment", &["Err", "Ok"], &[])?;

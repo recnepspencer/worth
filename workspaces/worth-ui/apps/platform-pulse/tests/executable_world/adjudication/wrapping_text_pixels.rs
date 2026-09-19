@@ -18,6 +18,10 @@ pub(crate) enum PlatformPulseWrappingTextFailure {
         bottom_pixels: usize,
         right_pixels: usize,
     },
+    InkReachedRowSeparation {
+        identity: &'static str,
+        separation_pixels: usize,
+    },
 }
 
 pub(crate) fn adjudicate_default_wrapping_text(
@@ -29,7 +33,21 @@ pub(crate) fn adjudicate_default_wrapping_text(
 pub(crate) fn adjudicate_resized_wrapping_text(
     capture: &NativeClientPixelCapture,
 ) -> Result<(), PlatformPulseWrappingTextFailure> {
-    adjudicate_wrapping_text(capture, RESIZED_LOGICAL_EXTENT, contracts(864))
+    adjudicate_open_wrapping_text(capture, RESIZED_LOGICAL_EXTENT, contracts(864))
+}
+
+fn adjudicate_open_wrapping_text(
+    capture: &NativeClientPixelCapture,
+    logical_extent: [u32; 2],
+    mut expected: [WrappingTextContract; 3],
+) -> Result<(), PlatformPulseWrappingTextFailure> {
+    // This checkpoint has one authored black, alpha-128 modal Backdrop.
+    // Expected sRGB backgrounds after linear-light compositing; text guards
+    // remain unchanged and must still distinguish ink from the dimmed surface.
+    expected[0].background = [9, 13, 17];
+    expected[1].background = [9, 13, 17];
+    expected[2].background = [14, 18, 24];
+    adjudicate_wrapping_text(capture, logical_extent, expected)
 }
 
 fn adjudicate_wrapping_text(
@@ -55,6 +73,13 @@ fn adjudicate_wrapping_text(
                 right_pixels,
             });
         }
+        let separation_pixels = changed_in_row_separation(capture, logical_extent, rect, contract);
+        if separation_pixels != 0 {
+            return Err(PlatformPulseWrappingTextFailure::InkReachedRowSeparation {
+                identity: contract.identity,
+                separation_pixels,
+            });
+        }
         require_inked_line_cells(capture, logical_extent, rect, contract)?;
     }
     Ok(())
@@ -66,6 +91,7 @@ struct WrappingTextContract {
     rect: [u32; 4],
     background: [u8; 3],
     required_lines: u32,
+    line_stride: u32,
     bottom_safety: u32,
 }
 
@@ -76,6 +102,7 @@ fn contracts(query_x: u32) -> [WrappingTextContract; 3] {
             rect: [48, 176, 168, 64],
             background: [17, 22, 28],
             required_lines: 2,
+            line_stride: LINE_HEIGHT,
             bottom_safety: 20,
         },
         WrappingTextContract {
@@ -83,6 +110,7 @@ fn contracts(query_x: u32) -> [WrappingTextContract; 3] {
             rect: [48, 256, 160, 48],
             background: [17, 22, 28],
             required_lines: 2,
+            line_stride: LINE_HEIGHT,
             bottom_safety: 8,
         },
         WrappingTextContract {
@@ -90,6 +118,7 @@ fn contracts(query_x: u32) -> [WrappingTextContract; 3] {
             rect: [query_x, 220, 184, 48],
             background: [23, 29, 37],
             required_lines: 2,
+            line_stride: 24,
             bottom_safety: 4,
         },
     ]
@@ -138,6 +167,25 @@ fn changed_in_right_guard(
     )
 }
 
+fn changed_in_row_separation(
+    capture: &NativeClientPixelCapture,
+    logical_extent: [u32; 2],
+    rect: [u32; 4],
+    contract: WrappingTextContract,
+) -> usize {
+    let logical_gap = contract.line_stride.saturating_sub(LINE_HEIGHT);
+    if logical_gap == 0 || contract.required_lines < 2 {
+        return 0;
+    }
+    let line_height = LINE_HEIGHT * capture.height() / logical_extent[1];
+    let gap_height = logical_gap * capture.height() / logical_extent[1];
+    count_changed(
+        capture,
+        [rect[0], rect[1] + line_height, rect[2], gap_height],
+        contract.background,
+    )
+}
+
 fn require_inked_line_cells(
     capture: &NativeClientPixelCapture,
     logical_extent: [u32; 2],
@@ -145,8 +193,9 @@ fn require_inked_line_cells(
     contract: WrappingTextContract,
 ) -> Result<(), PlatformPulseWrappingTextFailure> {
     let line_height = (LINE_HEIGHT * capture.height() / logical_extent[1]).max(1);
+    let line_stride = (contract.line_stride * capture.height() / logical_extent[1]).max(1);
     for line in 0..contract.required_lines {
-        let line_rect = [rect[0], rect[1] + line * line_height, rect[2], line_height];
+        let line_rect = [rect[0], rect[1] + line * line_stride, rect[2], line_height];
         if count_changed(capture, line_rect, contract.background) == 0 {
             return Err(
                 PlatformPulseWrappingTextFailure::RequiredWrappedLineMissing {
@@ -245,6 +294,20 @@ mod tests {
         ));
     }
 
+    #[test]
+    fn query_value_cannot_wrap_into_the_posture_row() {
+        let mut rgba = valid_capture();
+        paint(&mut rgba, [716, 240, 20, 4], [210, 153, 34, 255]);
+        let capture = NativeClientPixelCapture::new(1, 960, 600, rgba).unwrap();
+        assert!(matches!(
+            adjudicate_default_wrapping_text(&capture),
+            Err(PlatformPulseWrappingTextFailure::InkReachedRowSeparation {
+                identity: "platform.pulse.text.projected_status",
+                ..
+            })
+        ));
+    }
+
     fn base_capture() -> Vec<u8> {
         let mut rgba = vec![0; 960 * 600 * 4];
         for pixel in rgba.chunks_exact_mut(4) {
@@ -264,7 +327,7 @@ mod tests {
             (60, 260, [161, 169, 180, 255]),
             (60, 280, [161, 169, 180, 255]),
             (716, 224, [210, 153, 34, 255]),
-            (716, 244, [210, 153, 34, 255]),
+            (716, 248, [210, 153, 34, 255]),
         ] {
             paint(&mut rgba, [x, y, 20, 8], color);
         }

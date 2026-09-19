@@ -1,5 +1,7 @@
 //! Semantic integration suite. Individual responsibilities remain in named child modules.
 
+#[path = "../appearance_inspection_succession_facade_compile.rs"]
+mod appearance_inspection_succession_facade_compile;
 #[path = "../builder_lifecycle.rs"]
 mod builder_lifecycle;
 #[path = "../capability_snapshot.rs"]

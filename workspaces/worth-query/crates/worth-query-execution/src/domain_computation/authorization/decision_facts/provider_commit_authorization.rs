@@ -29,7 +29,7 @@ impl WorthQueryProviderCommitAuthorization {
         &self,
         application: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         admission: &'admission crate::domain_computation::authorization::WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
-        serialization: &'serialization crate::domain_computation::primary_graph::WorthQueryApplicationCommitSerialization<'_>,
+        serialization: &'serialization crate::domain_computation::primary_graph::WorthQueryApplicationBranchCommitCoordination<'_>,
     ) -> Result<
         crate::domain_computation::authorization::WorthQueryApplicationCommitAuthorization<
             'serialization,
@@ -99,7 +99,7 @@ impl WorthQueryRegisteredCommitAuthorization {
         &self,
         application: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         admission: &'admission crate::domain_computation::authorization::WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
-        serialization: &'serialization crate::domain_computation::primary_graph::WorthQueryApplicationCommitSerialization<'_>,
+        serialization: &'serialization crate::domain_computation::primary_graph::WorthQueryApplicationBranchCommitCoordination<'_>,
     ) -> Result<
         crate::domain_computation::authorization::WorthQueryApplicationCommitAuthorization<
             'serialization,

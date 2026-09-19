@@ -1,10 +1,8 @@
-use std::collections::VecDeque;
-
 use crate::data::proof::{InvalidationPlanningEstimate, InvalidationTraceRecord};
 use crate::diagnostics::failure::{FailureSummary, RollbackDiagnostic};
-use crate::diagnostics::flow::FlowSummary;
+use crate::diagnostics::flow::RetainedFlowSummaryView;
 use crate::diagnostics::profile::DiagnosticsTier;
-use crate::diagnostics::summary::{ExecutionHistorySummary, GraphSummary};
+use crate::diagnostics::summary::GraphSummary;
 use crate::logic::transaction::ObservationBoundarySummary;
 
 use super::GraphHealthDiagnostics;
@@ -26,7 +24,7 @@ impl<'a> GraphHealthDiagnostics<'a> {
         self.summary_now()
     }
 
-    pub fn latest_flow(&self) -> Option<&'a FlowSummary> {
+    pub fn latest_flow(&self) -> Option<RetainedFlowSummaryView<'a>> {
         self.graph.observe().latest_flow_diagnostics()
     }
 
@@ -52,7 +50,7 @@ impl<'a> GraphHealthDiagnostics<'a> {
         self.graph.observe().latest_invalidation_trace_records()
     }
 
-    pub fn recent_history(&self) -> &'a VecDeque<ExecutionHistorySummary> {
+    pub fn recent_history(&self) -> crate::diagnostics::summary::RetainedExecutionHistoryView<'a> {
         self.graph.observe().recent_execution_history_diagnostics()
     }
 }

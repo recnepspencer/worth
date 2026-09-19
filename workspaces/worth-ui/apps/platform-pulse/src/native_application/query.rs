@@ -206,13 +206,13 @@ impl PlatformPulseApplicationRuntime {
     }
 
     fn admit_query_publication(&mut self, receipt: worth_ui::facade::rebind::UiRebindReceipt) {
-        let observation = match receipt.release_scalar_projection_observation() {
+        let observation = match receipt.release_application_scalar_projection_observation() {
             Ok(observation) => observation,
             Err(_) => {
                 self.fail(
                     PlatformPulseTerminalError::NativeProjection(
                         PlatformPulseProjectionRebindDenial::ReceiptContract(
-                            "scalar predecessor absent from receipt",
+                            "application scalar predecessor absent from receipt",
                         ),
                     ),
                     Ok(()),

@@ -88,6 +88,22 @@ fn graph_composition_plan_does_not_execute_global_cost_custom_registration() {
     );
 }
 
+#[test]
+fn custom_registration_runs_only_for_its_declared_affected_kind() {
+    let runtime = RelationalRuntimeApi::builder()
+        .custom_invariant(scoped_registration("matching.rule", KindId(1)))
+        .custom_invariant(scoped_registration("unrelated.rule", KindId(2)))
+        .build();
+
+    let result = evaluate_main_commit_boundary_plan(&runtime, &graph_relevant_plan(73));
+
+    assert_custom_rule_ids(
+        &result,
+        InvariantExecutionPoint::CommitBoundary,
+        &["matching.rule"],
+    );
+}
+
 fn assert_custom_rule_ids(
     result: &crate::validation::engine::InvariantExecutionResult,
     execution_point: InvariantExecutionPoint,
@@ -135,6 +151,17 @@ fn registration(
         rule_id,
         execution_point,
         cost_class,
+        affected_entity_kind: None,
+    })
+    .unwrap()
+}
+
+fn scoped_registration(rule_id: &'static str, kind: KindId) -> CustomInvariantRegistration {
+    CustomInvariantRegistration::new(SelectionRule {
+        rule_id,
+        execution_point: InvariantExecutionPoint::CommitBoundary,
+        cost_class: InvariantCostClass::Touched,
+        affected_entity_kind: Some(kind),
     })
     .unwrap()
 }
@@ -144,6 +171,7 @@ struct SelectionRule {
     rule_id: &'static str,
     execution_point: InvariantExecutionPoint,
     cost_class: InvariantCostClass,
+    affected_entity_kind: Option<KindId>,
 }
 
 impl CustomInvariantRule for SelectionRule {
@@ -157,6 +185,16 @@ impl CustomInvariantRule for SelectionRule {
             },
             display_name: Arc::from(self.rule_id),
             operational: CustomInvariantOperationalMetadata {
+                maximum_work_units: std::num::NonZeroU64::new(4096).unwrap(),
+                access: self.affected_entity_kind.map_or_else(
+                    crate::validation::data::CustomInvariantAccessContract::default,
+                    |kind| crate::validation::data::CustomInvariantAccessContract {
+                        read_entity_kinds: vec![kind],
+                        read_relation_kinds: Vec::new(),
+                        affected_entity_kinds: vec![kind],
+                        affected_relation_kinds: Vec::new(),
+                    },
+                ),
                 execution_point: self.execution_point,
                 groups: InvariantGroupSet::of(InvariantGroup::SchemaCompliance),
                 cost_class: self.cost_class,

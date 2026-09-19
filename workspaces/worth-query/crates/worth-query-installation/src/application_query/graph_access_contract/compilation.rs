@@ -129,7 +129,7 @@ fn install_ordering(
     debug_assert_eq!(projection.value_type.as_str(), term.value_type());
     WorthQueryInstalledGraphOrdering {
         result_path: projection.result_path.to_string(),
-        collection_path: parent_path(&projection.result_path).to_string(),
+        collection_path: projection.parent_path().to_string(),
         query_type: projection.query_type.clone(),
         slot_type: projection.slot_type.clone(),
         entity: projection.entity.clone(),
@@ -152,6 +152,7 @@ fn flatten_shape(
     projections.extend(shape.fields().iter().enumerate().map(|(index, field)| {
         WorthQueryInstalledGraphProjection {
             slot_key: Arc::new(field.slot_key()),
+            parent_path: Arc::from(parent_path),
             result_path: format!("{parent_path}/field[{index}]").into(),
             query_type: field.query_identity(),
             slot_type: field.slot_identity(),
@@ -168,6 +169,7 @@ fn flatten_shape(
         let result_path = format!("{parent_path}/relation[{index}]");
         relations.push(WorthQueryInstalledGraphRelation {
             slot_key: Arc::new(relation.slot_key()),
+            parent_path: Arc::from(parent_path),
             result_path: result_path.clone().into(),
             query_type: relation.query_identity(),
             slot_type: relation.slot_identity(),
@@ -177,6 +179,16 @@ fn flatten_shape(
             direction: relation.direction(),
             output_name: relation.output_name().to_string(),
             cardinality: relation.cardinality(),
+            predicate: relation.predicate().map(|predicate| {
+                let (entity, aspect, field) = predicate.field();
+                WorthQueryInstalledGraphPredicate {
+                    entity: entity.to_owned(),
+                    aspect: admitted_aspect_key(aspect),
+                    field: admitted_field_key(field),
+                    parameter: predicate.parameter().to_owned(),
+                    scalar_family: predicate.scalar_family(),
+                }
+            }),
             depth: depth + 1,
         });
         flatten_shape(
@@ -187,12 +199,6 @@ fn flatten_shape(
             relations,
         );
     }
-}
-
-fn parent_path(path: &str) -> &str {
-    path.rsplit_once('/')
-        .map(|(parent, _)| parent)
-        .expect("installed projections always have a structural parent path")
 }
 
 fn admitted_aspect_key(value: &str) -> AspectKey {

@@ -23,7 +23,7 @@ impl WorthUiPreparedNativeHost {
     pub fn prepare_qualified() -> Self {
         Self {
             state: Rc::new(RefCell::new(UiNativeHostState::new())),
-            profile: super::UiNativePlatformProfileIdentity::WORTH_UI_WINDOWS_DX12_V1,
+            profile: super::UiNativePlatformProfileIdentity::WORTH_UI_WINDOWS_DX12_V2,
             event_loop_thread_posture:
                 crate::native::UiNativeEventLoopThreadPosture::MainThreadRequired,
         }
@@ -36,7 +36,7 @@ impl WorthUiPreparedNativeHost {
         let event_loop_thread_posture = plan.event_loop_thread_posture();
         Self {
             state: Rc::new(RefCell::new(UiNativeHostState::new_for_certification(plan))),
-            profile: super::UiNativePlatformProfileIdentity::WORTH_UI_WINDOWS_DX12_V1,
+            profile: super::UiNativePlatformProfileIdentity::WORTH_UI_WINDOWS_DX12_V2,
             event_loop_thread_posture,
         }
     }
@@ -49,7 +49,7 @@ impl WorthUiPreparedNativeHost {
     ) -> (WorthUiPreparedNativeMechanics, WorthUiNativeEventLoop) {
         debug_assert_eq!(
             self.profile,
-            super::UiNativePlatformProfileIdentity::WORTH_UI_WINDOWS_DX12_V1
+            super::UiNativePlatformProfileIdentity::WORTH_UI_WINDOWS_DX12_V2
         );
         let adapter =
             WorthUiNativeMechanicsAdapter::from_preparation(Rc::clone(&self.state), self.profile);

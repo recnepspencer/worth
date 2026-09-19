@@ -213,7 +213,6 @@ impl WorthUiPlanRegionStore {
         identity_trie::lookup(&self.identity_root, identity).map(|record| &record.handle)
     }
 
-    #[cfg(test)]
     pub(crate) fn handle_for_stable_slot(
         &self,
         stable_slot: u64,

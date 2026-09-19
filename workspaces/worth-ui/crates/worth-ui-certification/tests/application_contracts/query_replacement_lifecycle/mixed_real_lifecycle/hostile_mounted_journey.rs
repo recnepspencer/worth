@@ -194,6 +194,7 @@ fn one_real_predecessor_survives_ordered_hostile_seams_until_each_is_resolved() 
 fn prepare_all_lane_frame(
     session: &mut worth_ui::facade::app::WorthUiActiveApplicationSession,
 ) -> worth_ui_runtime::facade::mounted::UiPreparedMountedFrame {
+    crate::mounted_geometry_fixture::install_current_occurrence_geometry(session);
     session
         .execute_framework_turn(|_| {})
         .expect("no presentation lease is active")

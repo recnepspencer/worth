@@ -1,8 +1,8 @@
 pub use crate::correspondence::RuntimeWorldCorrespondenceInspectionCounters;
 use crate::correspondence::RuntimeWorldCorrespondenceInspectionLedger;
 use crate::correspondence::{
-    admit_installed_basis, compare_current_basis, AdmittedRuntimeWorldCorrespondenceBasis,
-    RuntimeWorldCorrespondenceAdmissionDenial,
+    admit_baseline, admit_installed_basis, compare_current_basis,
+    AdmittedRuntimeWorldCorrespondenceBasis, RuntimeWorldCorrespondenceAdmissionDenial,
 };
 use std::sync::Arc;
 
@@ -41,6 +41,13 @@ impl RuntimeWorldCorrespondencePort {
         admitted: &AdmittedRuntimeWorldCorrespondenceBasis,
     ) -> Result<(), RuntimeWorldCorrespondenceAdmissionDenial> {
         compare_current_basis(&self.runtime, admitted, &self.inspection)
+    }
+
+    pub fn admit_runtime_baseline(
+        &self,
+        signal_graph_instance_id: u64,
+    ) -> AdmittedRuntimeWorldCorrespondenceBasis {
+        admit_baseline(&self.runtime, signal_graph_instance_id)
     }
 
     pub fn inspection_counters(&self) -> RuntimeWorldCorrespondenceInspectionCounters {

@@ -11,14 +11,12 @@ use super::{
 
 #[derive(Clone, Debug, PartialEq)]
 enum WorthQueryGraphProjectionEvidence {
-    Materialized(Arc<WorthQueryExecutionGraphReadProduct>),
     Streamed(Arc<WorthQueryExecutionGraphReadStreamEvidence>),
 }
 
 impl WorthQueryGraphProjectionEvidence {
     fn authority_identity(&self) -> WorthQueryGraphCallAuthorityIdentity {
         match self {
-            Self::Materialized(product) => product.authority_identity(),
             Self::Streamed(stream) => stream.authority_identity(),
         }
     }
@@ -42,20 +40,6 @@ impl WorthQueryGraphProviderReceipt {
             authority_identity,
             provider_receipt: provider_receipt.into(),
             projection: None,
-            work_report,
-        }
-    }
-
-    pub(super) fn projected(
-        authority_identity: WorthQueryGraphCallAuthorityIdentity,
-        provider_receipt: impl Into<Arc<str>>,
-        projection: Arc<WorthQueryExecutionGraphReadProduct>,
-        work_report: WorthQueryProviderWorkReport,
-    ) -> Self {
-        Self {
-            authority_identity,
-            provider_receipt: provider_receipt.into(),
-            projection: Some(WorthQueryGraphProjectionEvidence::Materialized(projection)),
             work_report,
         }
     }
@@ -168,7 +152,7 @@ impl WorthQueryBoundGraphExecutionReceipt {
 
     pub fn graph_read_product(&self) -> Option<&WorthQueryExecutionGraphReadProduct> {
         match self.projection.as_ref() {
-            Some(WorthQueryGraphProjectionEvidence::Materialized(product)) => Some(product),
+            Some(WorthQueryGraphProjectionEvidence::Streamed(stream)) => Some(stream.product()),
             _ => None,
         }
     }

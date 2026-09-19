@@ -2,7 +2,7 @@ use super::ordinary_lane_test_support::{
     ordinary_lane_denial_for_missing_family, ordinary_lane_fixture,
     ordinary_lane_fixture_with_unrelated_diagnostics,
 };
-use crate::capability::{ThemeColorValue, ThemeTokenValue};
+use crate::capability::{ThemeTokenValue, UiThemeColor};
 use crate::runtime::execution::ordinary_lane::WorthUiOrdinaryLaneFrameExecutor;
 use crate::runtime::planning::execution_plan_input::WorthUiPlanOrdinaryMeaning;
 use crate::runtime::{
@@ -38,7 +38,7 @@ fn executable_rows_retain_exact_admitted_command_and_native_token_meaning() {
     }
 
     let expected_color =
-        ThemeTokenValue::color(ThemeColorValue::hex("#101820").expect("valid test color"));
+        ThemeTokenValue::color(UiThemeColor::parse("#101820").expect("valid test color"));
     match token
         .ordinary_meaning()
         .expect("the executable token row retains admitted native meaning")

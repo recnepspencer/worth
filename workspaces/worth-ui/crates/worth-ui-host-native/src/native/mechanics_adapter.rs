@@ -11,12 +11,14 @@ use worth_ui_host_contract::{
 use super::UiNativeHostState;
 
 mod capability;
+#[cfg(feature = "certification-support")]
+pub use capability::appearance_report;
 mod construction;
 mod measurement;
 mod presentation;
 #[path = "mechanics_adapter/presentation/text_atlas.rs"]
 mod presentation_text_atlas;
-mod text_atlas;
+pub(super) mod text_atlas;
 
 #[cfg(test)]
 pub(crate) use text_atlas::seed_pending_atlas_for_event_loop;
@@ -30,7 +32,7 @@ impl WorthUiHostMechanicsAdapter for WorthUiNativeMechanicsAdapter {
     fn mechanical_host_contract(&self) -> WorthUiHostContract {
         debug_assert_eq!(
             self.profile,
-            crate::UiNativePlatformProfileIdentity::WORTH_UI_WINDOWS_DX12_V1
+            crate::UiNativePlatformProfileIdentity::WORTH_UI_WINDOWS_DX12_V2
         );
         WorthUiHostContract::native()
     }

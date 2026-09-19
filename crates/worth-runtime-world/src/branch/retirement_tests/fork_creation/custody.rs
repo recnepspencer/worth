@@ -4,9 +4,7 @@
 
 use super::*;
 
-use crate::branch::{
-    ComponentBranchTarget, CustodyComponent, OwnerRetirementWork, ProductBranchRetirementReport,
-};
+use crate::branch::{CustodyComponent, ProductBranchRetirementReport};
 
 const RELATIONAL_TARGET: &str = "relational-branch-custody";
 const SIGNAL_TARGET: &str = "signal-branch-custody";
@@ -35,35 +33,29 @@ fn owner_created_component_branches_carry_custody_and_retirement_emits_typed_wor
         assert_eq!(record.product_branch(), forked.branch_identity());
         assert_eq!(record.incarnation(), forked.lifecycle_incarnation());
     }
-    assert_eq!(
-        records
-            .iter()
-            .map(|record| record.target().clone())
-            .collect::<Vec<_>>(),
-        vec![
-            ComponentBranchTarget::Relational(BranchId(RELATIONAL_TARGET.to_owned())),
-            ComponentBranchTarget::Signal(
-                validate_signal_branch_name(SIGNAL_TARGET).expect("valid Signal name")
-            ),
-        ]
-    );
+    assert_eq!(records[0].component(), CustodyComponent::Relational);
+    assert_eq!(records[0].target().name(), RELATIONAL_TARGET);
+    assert_eq!(records[1].component(), CustodyComponent::Signal);
+    assert_eq!(records[1].target().name(), SIGNAL_TARGET);
 
     let report = retire(&owner, &forked);
     assert_eq!(
         report.released_product_reference(),
         forked.branch_identity()
     );
+    assert_eq!(report.owner_retirement_work().len(), 2);
     assert_eq!(
-        report.owner_retirement_work(),
-        [
-            OwnerRetirementWork::RelationalBranchRetirement {
-                target: BranchId(RELATIONAL_TARGET.to_owned()),
-            },
-            OwnerRetirementWork::SignalBranchRetirement {
-                target: validate_signal_branch_name(SIGNAL_TARGET).expect("valid Signal name"),
-            },
-        ],
-        "retirement names exactly the component branches this occurrence created"
+        report.retirement_boundary(),
+        Some(source.selected_commit()),
+        "World issues the exact source boundary independently of component custody"
+    );
+    assert_eq!(
+        report.owner_retirement_work()[0].target_name(),
+        RELATIONAL_TARGET
+    );
+    assert_eq!(
+        report.owner_retirement_work()[1].target_name(),
+        SIGNAL_TARGET
     );
     assert_eq!(
         owner.state.custody.installed(),
@@ -93,6 +85,11 @@ fn exactly_reused_component_branches_never_enter_custody_and_retirement_emits_no
     assert!(
         report.owner_retirement_work().is_empty(),
         "an exact reuse never puts a component branch in Runtime World custody"
+    );
+    assert_eq!(
+        report.retirement_boundary(),
+        Some(root.selected_commit()),
+        "reuse still carries the exact history boundary needed by retirement"
     );
 }
 
@@ -184,18 +181,14 @@ fn close_reports_every_undrained_custody_record_as_outstanding_retirement_work()
         .close()
         .expect("undrained custody is a report row, never a close denial");
 
+    assert_eq!(report.outstanding_owner_retirement_work().len(), 2);
     assert_eq!(
-        report.outstanding_owner_retirement_work(),
-        [
-            OwnerRetirementWork::RelationalBranchRetirement {
-                target: BranchId("relational-branch-unretired".to_owned()),
-            },
-            OwnerRetirementWork::SignalBranchRetirement {
-                target: validate_signal_branch_name("signal-branch-unretired")
-                    .expect("valid Signal name"),
-            },
-        ],
-        "close names the exact component branches nothing retired"
+        report.outstanding_owner_retirement_work()[0].target_name(),
+        "relational-branch-unretired"
+    );
+    assert_eq!(
+        report.outstanding_owner_retirement_work()[1].target_name(),
+        "signal-branch-unretired"
     );
     assert_eq!(
         report.retired_owner_created_custody(),

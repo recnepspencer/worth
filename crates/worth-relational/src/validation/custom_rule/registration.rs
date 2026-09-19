@@ -38,6 +38,8 @@ pub(crate) trait PreparedCustomInvariantExecution: Send + Sync {
         &self,
         context: &CustomInvariantExecutionContext<'_>,
     ) -> PreparedCustomInvariantExecutionOutcome;
+
+    fn work_meter(&self) -> super::CustomInvariantWorkMeter;
 }
 
 pub(crate) trait ErasedCustomInvariantRule: Send + Sync {
@@ -57,10 +59,12 @@ struct PreparedCustomInvariantAdapter<R: CustomInvariantRule> {
     rule: Arc<R>,
     identity: CustomInvariantSemanticIdentity,
     scope: R::Scope,
+    work: super::CustomInvariantWorkMeter,
 }
 
 struct FailedPreparedCustomInvariantExecution {
     failure: CustomInvariantFailure,
+    work: super::CustomInvariantWorkMeter,
 }
 
 impl<R: CustomInvariantRule> PreparedCustomInvariantExecution
@@ -70,6 +74,16 @@ impl<R: CustomInvariantRule> PreparedCustomInvariantExecution
         &self,
         context: &CustomInvariantExecutionContext<'_>,
     ) -> PreparedCustomInvariantExecutionOutcome {
+        if self.work.exceeded() {
+            return PreparedCustomInvariantExecutionOutcome::Failure(
+                CustomInvariantFailure::execution_error(
+                    &self.identity,
+                    CustomInvariantExecutionError::new(
+                        "custom invariant execution exhausted its installed work budget",
+                    ),
+                ),
+            );
+        }
         context
             .performance_access()
             .count_custom_invariant_execution();
@@ -85,6 +99,10 @@ impl<R: CustomInvariantRule> PreparedCustomInvariantExecution
             Err(failure) => PreparedCustomInvariantExecutionOutcome::Failure(failure),
         }
     }
+
+    fn work_meter(&self) -> super::CustomInvariantWorkMeter {
+        self.work.clone()
+    }
 }
 
 impl PreparedCustomInvariantExecution for FailedPreparedCustomInvariantExecution {
@@ -93,6 +111,10 @@ impl PreparedCustomInvariantExecution for FailedPreparedCustomInvariantExecution
         _context: &CustomInvariantExecutionContext<'_>,
     ) -> PreparedCustomInvariantExecutionOutcome {
         PreparedCustomInvariantExecutionOutcome::Failure(self.failure.clone())
+    }
+
+    fn work_meter(&self) -> super::CustomInvariantWorkMeter {
+        self.work.clone()
     }
 }
 
@@ -103,6 +125,18 @@ impl<R: CustomInvariantRule> ErasedCustomInvariantRule for CustomInvariantAdapte
         planner: &mut CustomInvariantScopePlanner<'_>,
     ) -> Arc<dyn PreparedCustomInvariantExecution> {
         let identity = self.identity.clone();
+        let work = planner.work_meter();
+        if work.exceeded() {
+            return Arc::new(FailedPreparedCustomInvariantExecution {
+                failure: CustomInvariantFailure::preparation_error(
+                    &identity,
+                    CustomInvariantPreparationError::new(
+                        "custom invariant scope exhausted its installed work budget",
+                    ),
+                ),
+                work,
+            });
+        }
         runtime
             .performance_access()
             .count_custom_invariant_preparation();
@@ -115,15 +149,17 @@ impl<R: CustomInvariantRule> ErasedCustomInvariantRule for CustomInvariantAdapte
                 rule: Arc::clone(&self.rule),
                 identity,
                 scope,
+                work,
             }),
             Ok(Err(error)) => Arc::new(FailedPreparedCustomInvariantExecution {
                 failure: CustomInvariantFailure::preparation_error(&identity, error),
+                work,
             }),
             Err(failure) => {
                 if failure.kind == CustomInvariantFailureKind::Panic {
                     runtime.performance_access().count_custom_invariant_panic();
                 }
-                Arc::new(FailedPreparedCustomInvariantExecution { failure })
+                Arc::new(FailedPreparedCustomInvariantExecution { failure, work })
             }
         }
     }
@@ -198,6 +234,14 @@ impl CustomInvariantRegistration {
 
     pub fn failure_effect(&self) -> crate::validation::data::InvariantFailureEffect {
         self.descriptor.operational.failure_effect
+    }
+
+    pub fn maximum_work_units(&self) -> std::num::NonZeroU64 {
+        self.descriptor.operational.maximum_work_units
+    }
+
+    pub fn access_contract(&self) -> &crate::validation::data::CustomInvariantAccessContract {
+        &self.descriptor.operational.access
     }
 
     pub fn rule_id(&self) -> &CustomInvariantRuleId {

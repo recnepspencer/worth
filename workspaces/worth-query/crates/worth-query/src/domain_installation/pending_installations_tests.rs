@@ -65,6 +65,7 @@ where
             vec![KindId::new(2)],
             1,
         ),
+        std::num::NonZeroU64::new(4096).unwrap(),
     );
     let package = WorthQueryDomainPackage::declare(
         marker,
@@ -95,6 +96,7 @@ fn fully_populated_failing_package() -> WorthQueryAdmittedDomainPackage<FailingD
             vec![KindId::new(2)],
             1,
         ),
+        std::num::NonZeroU64::new(4096).unwrap(),
     ))
     .graph_read_operation(
         WorthQueryDomainGraphReadOperationDefinition::new(

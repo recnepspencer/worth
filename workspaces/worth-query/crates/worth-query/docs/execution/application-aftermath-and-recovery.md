@@ -9,6 +9,19 @@ declares the meaning. Query owns execution and its typed recovery surfaces.
 Relational owns branch movement, commit history, and durable settlement. The
 external service alone decides whether its effect completed.
 
+Runtime World owns the canonical composite product publication. `Performed`
+means it installed the exact product occurrence once. `ProductUnpublished`
+means one or more component effects may already exist while the product
+reference did not advance; its carrier preserves the only lawful settlement or
+cleanup path. A late cancellation cannot erase a performed occurrence or turn
+it into a pre-effect denial.
+
+External dispatch admission is tied to that original performed occurrence.
+Same-head losers, inherited idempotency rows, foreign branches, and descendants
+cannot claim its outbox entry. Retry consumes retained aftermath and revalidates
+the owning runtime; it does not rerun publication. A fresh composite aftermath
+write begins from a newly selected and admitted product occurrence.
+
 ## Why You Use It
 
 - Notify an external service without separating the local mutation from the
@@ -49,6 +62,15 @@ Hosts use `worth_query_host::facade`:
 Application hosts should normally wrap the generic host surface in domain-named
 operations, as Bank does with `BankCommitReceipt::aftermath()` and its recovery
 methods.
+
+The executable
+[ordinary product workflow](../../../worth-query-certification/examples/ordinary_product_workflow.rs)
+shows successful publication and exhaustively matches every typed commit
+terminal. Its `ProductUnpublished` arm performs bounded catalog inspection,
+continues owed owner settlement, and consumes the recovery carrier through
+public cleanup. Its `SettlementDeferred` arm invokes the exact public repair
+route, while cancellation and `NoEffect` remain explicit no-publication stops.
+The executable does not manufacture an owner failure to enter those arms.
 
 The `provisional_aftermath` facade contains the current undo/redo experiment.
 It is not part of the stable feature described here.
@@ -455,7 +477,8 @@ owner's ledger.
 - The accepted external-effect lane carries one declared typed effect per
   operation contract.
 - Durable cross-runtime recovery, branch-aware reversal, merge interaction,
-  rebase, and history navigation belong to the cross-runtime roadmap.
+  rebase, and restart-stable history navigation belong to the cross-runtime
+  roadmap.
 - Undo and redo behavior, eligibility, occurrence meaning, divergence policy,
   and public DX await the Query Undo/Redo Semantics milestone.
 

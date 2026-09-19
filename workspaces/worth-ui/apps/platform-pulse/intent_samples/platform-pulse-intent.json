@@ -3,5 +3,5 @@
   "schema_version": 1,
   "revision": 1,
   "operability": "ready",
-  "executor_gate": "held"
+  "executor_gate": "released"
 }

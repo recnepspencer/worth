@@ -97,4 +97,34 @@ mod tests {
             changed_atom.source_revision_digest()
         );
     }
+
+    #[test]
+    fn source_revision_digest_tracks_appearance_role_attachment() {
+        let declaration = |role: &str| {
+            crate::WorthUiSemanticArtifactDeclaration::new(
+                crate::UiDslSemanticKey::new("test.node"),
+                crate::UiDslSemanticFamily::Control,
+            )
+            .with_appearance_role_attachment(crate::UiAppearanceRoleAttachmentDeclaration::new(
+                crate::UiAppearanceRoleIdentity::new(role).unwrap(),
+                crate::UiAppearanceRoleRevision::new(1).unwrap(),
+            ))
+            .unwrap()
+            .with_component_reference(
+                crate::UiDslComponentReference::new("test.component").unwrap(),
+            )
+            .unwrap()
+        };
+        let input = |role| {
+            WorthUiRustAuthoredArtifactInput::from_modules([
+                WorthUiRustAuthoredArtifactInputModule::new("app/main.wui")
+                    .with_semantic_declaration(declaration(role)),
+            ])
+        };
+
+        assert_ne!(
+            input("test.role.one").source_revision_digest(),
+            input("test.role.two").source_revision_digest()
+        );
+    }
 }

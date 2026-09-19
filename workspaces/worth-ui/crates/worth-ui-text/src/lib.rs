@@ -63,9 +63,9 @@ pub use raster::{
     UiGlyphRasterAdmissionDenial, UiGlyphRasterAttribution, UiGlyphRasterBatch,
     UiGlyphRasterBearing, UiGlyphRasterCache, UiGlyphRasterContentDigest, UiGlyphRasterCost,
     UiGlyphRasterDemandBatch, UiGlyphRasterDemandDenial, UiGlyphRasterDemandRequest,
-    UiGlyphRasterExtent, UiGlyphRasterFormat, UiGlyphRasterKey, UiGlyphRasterLane,
-    UiGlyphRasterLaneCost, UiGlyphRasterPlacement, UiGlyphRasterRecord, UiGlyphRasterScale,
-    UiGlyphRasterSource, UiGlyphRasterizationDenial,
+    UiGlyphRasterDemandSelection, UiGlyphRasterExtent, UiGlyphRasterFormat, UiGlyphRasterKey,
+    UiGlyphRasterLane, UiGlyphRasterLaneCost, UiGlyphRasterPlacement, UiGlyphRasterRecord,
+    UiGlyphRasterScale, UiGlyphRasterSource, UiGlyphRasterizationDenial,
 };
 pub use reconstruction::{UiQualifiedTextReconstructionSource, UiTextReconstructionDenial};
 pub use request::{UiQualifiedTextLayoutRequest, UiQualifiedTextLayoutRequestIdentity};

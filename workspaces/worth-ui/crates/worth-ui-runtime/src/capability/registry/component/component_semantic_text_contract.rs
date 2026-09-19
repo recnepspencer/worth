@@ -20,6 +20,9 @@ pub struct ComponentSemanticTextContract {
     line_height_millipoints: Option<u32>,
     scalar_spans: Box<[ComponentSemanticTextSpanContract]>,
     default_paint_identity: [u8; 32],
+    appearance_foreground: bool,
+    lifecycle_caption: bool,
+    alignment: worth_ui_text::UiTextAlignment,
 }
 
 impl ComponentSemanticTextContract {
@@ -32,6 +35,9 @@ impl ComponentSemanticTextContract {
             line_height_millipoints: None,
             scalar_spans: Box::new([]),
             default_paint_identity,
+            appearance_foreground: false,
+            lifecycle_caption: true,
+            alignment: worth_ui_text::UiTextAlignment::Start,
         }
     }
 
@@ -48,6 +54,9 @@ impl ComponentSemanticTextContract {
             line_height_millipoints: None,
             scalar_spans: Box::new([]),
             default_paint_identity,
+            appearance_foreground: false,
+            lifecycle_caption: true,
+            alignment: worth_ui_text::UiTextAlignment::Start,
         }
     }
 
@@ -68,6 +77,9 @@ impl ComponentSemanticTextContract {
             line_height_millipoints: Some(line_height_millipoints),
             scalar_spans: Box::new([]),
             default_paint_identity,
+            appearance_foreground: false,
+            lifecycle_caption: true,
+            alignment: worth_ui_text::UiTextAlignment::Start,
         })
     }
 
@@ -86,7 +98,48 @@ impl ComponentSemanticTextContract {
             line_height_millipoints: None,
             scalar_spans: scalar_spans.into_boxed_slice(),
             default_paint_identity,
+            appearance_foreground: false,
+            lifecycle_caption: true,
+            alignment: worth_ui_text::UiTextAlignment::Start,
         })
+    }
+
+    pub fn with_scalar_spans(
+        mut self,
+        scalar_spans: impl IntoIterator<Item = ComponentSemanticTextSpanContract>,
+    ) -> Result<Self, ComponentSemanticTextContractDenial> {
+        let scalar_spans = scalar_spans.into_iter().collect::<Vec<_>>();
+        validate_spans(&scalar_spans)?;
+        self.scalar_spans = scalar_spans.into_boxed_slice();
+        Ok(self)
+    }
+
+    /// Controls the visible lifecycle caption; Query lifecycle evidence is retained.
+    pub fn with_lifecycle_caption(mut self, visible: bool) -> Self {
+        self.lifecycle_caption = visible;
+        self
+    }
+
+    pub const fn shows_lifecycle_caption(&self) -> bool {
+        self.lifecycle_caption
+    }
+
+    pub fn with_alignment(mut self, alignment: worth_ui_text::UiTextAlignment) -> Self {
+        self.alignment = alignment;
+        self
+    }
+
+    pub const fn alignment(&self) -> worth_ui_text::UiTextAlignment {
+        self.alignment
+    }
+
+    pub fn with_appearance_foreground(mut self) -> Self {
+        self.appearance_foreground = true;
+        self
+    }
+
+    pub const fn uses_appearance_foreground(&self) -> bool {
+        self.appearance_foreground
     }
 
     pub fn theme_token(&self) -> &ThemeTokenId {
@@ -110,8 +163,15 @@ impl ComponentSemanticTextContract {
     }
 
     pub fn foreground_tokens(&self) -> impl Iterator<Item = &ThemeTokenId> {
-        std::iter::once(&self.theme_token)
-            .chain(self.scalar_spans.iter().map(|span| span.foreground_token()))
+        (!self.appearance_foreground)
+            .then_some(&self.theme_token)
+            .into_iter()
+            .chain(
+                self.scalar_spans
+                    .iter()
+                    .filter(|span| !span.uses_appearance_foreground())
+                    .map(|span| span.foreground_token()),
+            )
     }
 
     pub(crate) const fn default_paint_identity(&self) -> [u8; 32] {
@@ -136,10 +196,11 @@ impl ComponentSemanticTextContract {
                 use std::fmt::Write;
                 let _ = write!(
                     digest,
-                    ":{}-{}:{}:",
+                    ":{}-{}:{}:appearance:{}:",
                     span.original_range().start(),
                     span.original_range().end(),
-                    span.foreground_token().as_str()
+                    span.foreground_token().as_str(),
+                    span.uses_appearance_foreground()
                 );
                 for byte in span.style().identity_digest() {
                     let _ = write!(digest, "{byte:02x}");
@@ -147,10 +208,13 @@ impl ComponentSemanticTextContract {
                 digest
             });
         format!(
-            "semantic-text:{}:{}:{style}:line-height:{:?}",
+            "semantic-text:{}:{}:{style}:line-height:{:?}:appearance:{}:caption:{}:alignment:{:?}",
             self.theme_token.as_str(),
             self.layer_semantic_order,
             self.line_height_millipoints,
+            self.appearance_foreground,
+            self.lifecycle_caption,
+            self.alignment,
         ) + &spans
     }
 }
@@ -237,6 +301,42 @@ mod tests {
             ComponentSemanticTextContract::qualified_with_line_height(token, 1, style, 36_000)
                 .unwrap();
         assert_eq!(contract.line_height_millipoints(), Some(36_000));
+    }
+
+    #[test]
+    fn qualified_contract_can_adopt_canonical_spans_without_losing_typography() {
+        let token = ThemeTokenId::new("theme.text").unwrap();
+        let constraints = worth_ui_text::UiTextParagraphConstraints::new(
+            worth_ui_text::UiTextParagraphConstraintsInput {
+                language: std::sync::Arc::from("und"),
+                base_direction: worth_ui_text::UiTextBaseDirection::Auto,
+                wrap: worth_ui_text::UiTextWrap::UnicodeWord,
+                alignment: worth_ui_text::UiTextAlignment::Start,
+                overflow: worth_ui_text::UiTextOverflow::Clip,
+                font_size_millipoints: 28_000,
+                width_millipoints: 320_000,
+                line_height_millipoints: 36_000,
+                letter_spacing_millipoints: 0,
+                word_spacing_millipoints: 0,
+                tab_interval_millipoints: 112_000,
+                maximum_lines: 1,
+            },
+        )
+        .unwrap();
+        let style = worth_ui_text::UiTextStyle::from_paragraph_constraints(&constraints);
+        let adopted = ComponentSemanticTextContract::qualified_with_line_height(
+            token.clone(),
+            1,
+            style.clone(),
+            36_000,
+        )
+        .unwrap()
+        .with_scalar_spans([span(0, 4, &token).with_appearance_foreground()])
+        .unwrap();
+
+        assert_eq!(adopted.style(), Some(&style));
+        assert_eq!(adopted.line_height_millipoints(), Some(36_000));
+        assert!(adopted.scalar_spans()[0].uses_appearance_foreground());
     }
 
     fn span(start: u32, end: u32, token: &ThemeTokenId) -> ComponentSemanticTextSpanContract {

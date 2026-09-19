@@ -20,7 +20,9 @@ fn partition_dependency_crosses_the_real_relational_source_and_signal_delivery_p
     )
     .unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
-    let operating_world = workspace.observe_operating_world().unwrap();
+    let operating_world = workspace
+        .observe_operating_world(workspace.current_world())
+        .unwrap();
     let operation = operating_world
         .family(ReadFamily)
         .bind(&installed_domain, ReadVertex)

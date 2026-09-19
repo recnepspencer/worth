@@ -37,7 +37,7 @@ fn operation_failure(
     let mut workspace = workspace(name, false).unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, ReadVertex)
@@ -63,13 +63,14 @@ fn operation_failure(
 fn unsupported_primary_read_basis_denies_before_execution_work() {
     let workspace = workspace("installed-foreign-basis-material", false).unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
+    let branch = workspace
+        .branches()
+        .fork(workspace.current_world())
+        .components(|components| components.reuse_exact_relational_basis().fork_signal())
+        .create()
+        .unwrap();
     let denial = match workspace
-        .observe_branch_operating_world(
-            worth_query::facade::installed::WorthQueryBranchHeadIdentity::new(
-                "branch:foreign-material",
-            )
-            .unwrap(),
-        )
+        .observe_operating_world(branch)
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, ReadVertex)
@@ -91,7 +92,7 @@ fn same_shaped_read_from_a_foreign_runtime_cannot_publish() {
     let mut workspace = foreign_material_workspace("foreign-runtime-material-owner").unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let executed = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, ReadVertex)

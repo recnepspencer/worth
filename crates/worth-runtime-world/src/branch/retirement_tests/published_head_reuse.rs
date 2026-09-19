@@ -93,11 +93,12 @@ fn retirement_accepts_an_older_head_from_the_same_installed_occurrence() {
         first.lifecycle_incarnation(),
         current.lifecycle_incarnation()
     );
-    assert!(owner
+    let report = owner
         .retire_product_branch(&first)
-        .unwrap()
-        .owner_retirement_work()
-        .is_empty());
+        .expect("the live occurrence accepts an older observation");
+    assert_eq!(report.retired_head(), current.selected_commit());
+    assert_ne!(report.retired_head(), first.selected_commit());
+    assert!(report.owner_retirement_work().is_empty());
     assert!(matches!(
         owner.retire_product_branch(&current),
         Err(super::RuntimeWorldBranchRetirementDenial::AlreadyRetired)

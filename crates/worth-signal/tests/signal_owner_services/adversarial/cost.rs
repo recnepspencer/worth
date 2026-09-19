@@ -7,6 +7,54 @@ use worth_signal::facade::branch::{
 use super::world::AdversarialWorld;
 
 #[test]
+fn public_advances_report_actual_diagnostic_retention_and_eviction() {
+    use worth_signal::facade::{SignalGraph, SignalRuntime, SignalRuntimePolicy};
+    for capture in [false, true] {
+        let policy = if capture {
+            SignalRuntimePolicy::forensic()
+        } else {
+            SignalRuntimePolicy::operational()
+        };
+        let mut runtime = SignalRuntime::<(), (), (), (), ()>::builder(SignalGraph::new())
+            .with_kernel_defaults()
+            .runtime_policy(policy.with_history_limit(1))
+            .build();
+        let mut basis = runtime
+            .observe_signal_branch_basis(runtime.current_branch())
+            .unwrap();
+        let services = runtime.owner_component_services().unwrap();
+        let before = services.basis_port().owner_service_cost_snapshot().unwrap();
+        for _ in 0..40 {
+            basis = services
+                .mutation_port()
+                .advance_exact(
+                    &basis,
+                    &mut (),
+                    &SignalOwnerCancellationSource::new().token(),
+                    |_| Ok(()),
+                )
+                .unwrap()
+                .into_basis();
+        }
+        let after = services.basis_port().owner_service_cost_snapshot().unwrap();
+        // One committed replay event per empty transaction; history_limit=1
+        // retains 32 replay events. Policy omission consumes no history slot.
+        assert_eq!(
+            after.diagnostic_events_recorded() - before.diagnostic_events_recorded(),
+            if capture { 40 } else { 0 }
+        );
+        assert_eq!(
+            after.diagnostic_events_dropped() - before.diagnostic_events_dropped(),
+            if capture { 8 } else { 0 }
+        );
+        assert_eq!(
+            after.canonical_movements() - before.canonical_movements(),
+            40
+        );
+    }
+}
+
+#[test]
 fn one_public_advance_reports_one_local_structural_delta() {
     let world = AdversarialWorld::new();
     let before = world

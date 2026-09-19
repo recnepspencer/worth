@@ -5,10 +5,9 @@ use worth_ui::facade::declaration::{
     ComponentAllocationMeasurementContract, ComponentChildPolicy, ComponentDescriptor,
     ComponentFocusSupport, ComponentHitTestContract, ComponentHitTestInset, ComponentHitTestOrder,
     ComponentId, ComponentPortalChildContract, ComponentPropSchema, ComponentSemanticTextContract,
-    ComponentStateOwnership, ComponentStaticPaintContract, ComponentStaticPaintOrder,
-    ComponentViewportInset, SurfaceDescriptor, SurfaceId, SurfaceKind, SurfacePlacementClass,
-    SurfaceStateClass, ThemeColorValue, ThemeTokenAlias, ThemeTokenDescriptor, ThemeTokenFamily,
-    ThemeTokenId, ThemeTokenSource, ThemeTokenValue,
+    ComponentStateOwnership, ComponentViewportInset, SurfaceDescriptor, SurfaceId, SurfaceKind,
+    SurfacePlacementClass, SurfaceStateClass, ThemeTokenAlias, ThemeTokenDescriptor,
+    ThemeTokenFamily, ThemeTokenId, ThemeTokenSource, ThemeTokenValue, UiThemeColor,
 };
 
 type WorthUiApplicationBuilder = FixedCertificationApplicationBuilder;
@@ -38,7 +37,7 @@ where
     visual_identity_builder(
         host,
         ComponentHitTestOrder::front_to_back(0),
-        ComponentStaticPaintOrder::back_to_front(7),
+        7,
         None,
         false,
     )
@@ -53,7 +52,7 @@ where
     visual_identity_builder(
         host,
         ComponentHitTestOrder::front_to_back(1),
-        ComponentStaticPaintOrder::back_to_front(7),
+        7,
         None,
         false,
     )
@@ -68,7 +67,7 @@ where
     visual_identity_builder(
         host,
         ComponentHitTestOrder::front_to_back(0),
-        ComponentStaticPaintOrder::back_to_front(1),
+        1,
         None,
         false,
     )
@@ -83,7 +82,7 @@ where
     visual_identity_builder(
         host,
         ComponentHitTestOrder::front_to_back(0),
-        ComponentStaticPaintOrder::back_to_front(7),
+        7,
         Some(ComponentHitTestInset::symmetric(12, 8)),
         false,
     )
@@ -98,7 +97,7 @@ where
     visual_identity_builder(
         host,
         ComponentHitTestOrder::front_to_back(0),
-        ComponentStaticPaintOrder::back_to_front(7),
+        7,
         Some(ComponentHitTestInset::symmetric(12, 8)),
         true,
     )
@@ -113,7 +112,7 @@ where
     visual_identity_builder_with_profile(
         host,
         ComponentHitTestOrder::front_to_back(0),
-        ComponentStaticPaintOrder::back_to_front(7),
+        7,
         Some(ComponentHitTestInset::symmetric(12, 8)),
         true,
         true,
@@ -130,7 +129,7 @@ where
     visual_identity_builder_with_profile_and_portal_child(
         host,
         ComponentHitTestOrder::front_to_back(0),
-        ComponentStaticPaintOrder::back_to_front(7),
+        7,
         Some(ComponentHitTestInset::symmetric(12, 8)),
         true,
         true,
@@ -146,28 +145,25 @@ where
     Host: FixedCertificationHostBinding,
 {
     let text_component = component(PHASE5_CANCELLATION_COMPONENT)
-        .with_static_paint(
-            ComponentStaticPaintContract::opaque_fill(
-                token_id(PHASE5_CANCELLATION_TOKEN),
-                ComponentStaticPaintOrder::back_to_front(1),
-            ),
+        .with_allocation_measurement_contract(
             ComponentAllocationMeasurementContract::viewport_inset(
                 ComponentViewportInset::symmetric(24, 16),
             ),
         )
+        .with_surface_paint_order(1)
         .with_semantic_text(ComponentSemanticTextContract::body_default(
             token_id(PHASE5_CANCELLATION_TOKEN),
             2,
         ));
     let builder = WorthUi::app()
         .with_change_profile(worth_ui::facade::rebind::UiChangeProfile::platform_pulse())
-        .register_component(component(PHASE5_CANCELLATION_BACKGROUND).with_static_paint(
-            ComponentStaticPaintContract::opaque_fill(
-                token_id(PHASE5_CANCELLATION_TOKEN),
-                ComponentStaticPaintOrder::back_to_front(0),
-            ),
-            ComponentAllocationMeasurementContract::fill_viewport(),
-        ))
+        .register_component(
+            component(PHASE5_CANCELLATION_BACKGROUND)
+                .with_allocation_measurement_contract(
+                    ComponentAllocationMeasurementContract::fill_viewport(),
+                )
+                .with_surface_paint_order(0),
+        )
         .register_component(text_component)
         .register_surface(SurfaceDescriptor::new(
             SurfaceId::new(PHASE5_CANCELLATION_SURFACE).expect("valid cancellation surface id"),
@@ -195,7 +191,7 @@ where
     visual_identity_builder_with_profile(
         host,
         ComponentHitTestOrder::front_to_back(0),
-        ComponentStaticPaintOrder::back_to_front(7),
+        7,
         Some(ComponentHitTestInset::symmetric(12, 8)),
         true,
         false,
@@ -206,7 +202,7 @@ where
 fn visual_identity_builder<Host>(
     host: Host,
     paint_and_hit_order: ComponentHitTestOrder,
-    paint_only_order: ComponentStaticPaintOrder,
+    paint_only_order: u32,
     hit_only_clip: Option<ComponentHitTestInset>,
     paint_and_hit_semantic_text: bool,
 ) -> WorthUiApplicationBuilder
@@ -227,7 +223,7 @@ where
 fn visual_identity_builder_with_profile<Host>(
     host: Host,
     paint_and_hit_order: ComponentHitTestOrder,
-    paint_only_order: ComponentStaticPaintOrder,
+    paint_only_order: u32,
     hit_only_clip: Option<ComponentHitTestInset>,
     paint_and_hit_semantic_text: bool,
     paint_and_hit_focusable: bool,
@@ -252,7 +248,7 @@ where
 fn visual_identity_builder_with_profile_and_portal_child<Host>(
     host: Host,
     paint_and_hit_order: ComponentHitTestOrder,
-    paint_only_order: ComponentStaticPaintOrder,
+    paint_only_order: u32,
     hit_only_clip: Option<ComponentHitTestInset>,
     paint_and_hit_semantic_text: bool,
     paint_and_hit_focusable: bool,
@@ -282,13 +278,8 @@ where
     .with_hit_test(hit_only_contract);
     let hit_only = match portal_child_owner {
         Some(owner) => hit_only
-            .with_static_paint(
-                ComponentStaticPaintContract::opaque_fill(
-                    token_id(VISUAL_PAINT_AND_HIT_TOKEN),
-                    ComponentStaticPaintOrder::back_to_front(4),
-                ),
-                hit_only_allocation,
-            )
+            .with_allocation_measurement_contract(hit_only_allocation)
+            .with_surface_paint_order(4)
             .with_semantic_text(ComponentSemanticTextContract::body_default(
                 token_id(VISUAL_PAINT_AND_HIT_TOKEN),
                 5,
@@ -299,13 +290,8 @@ where
         None => hit_only,
     };
     let paint_and_hit = component(VISUAL_PAINT_AND_HIT_COMPONENT)
-        .with_static_paint(
-            ComponentStaticPaintContract::opaque_fill(
-                token_id(VISUAL_PAINT_AND_HIT_TOKEN),
-                ComponentStaticPaintOrder::back_to_front(3),
-            ),
-            paint_and_hit_allocation,
-        )
+        .with_allocation_measurement_contract(paint_and_hit_allocation)
+        .with_surface_paint_order(3)
         .with_hit_test(ComponentHitTestContract::allocation_bounds(
             paint_and_hit_order,
             paint_and_hit_allocation,
@@ -325,13 +311,13 @@ where
     };
     let builder = WorthUi::app()
         .with_change_profile(profile)
-        .register_component(component(VISUAL_PAINT_ONLY_COMPONENT).with_static_paint(
-            ComponentStaticPaintContract::opaque_fill(
-                token_id(VISUAL_PAINT_ONLY_TOKEN),
-                paint_only_order,
-            ),
-            ComponentAllocationMeasurementContract::fill_viewport(),
-        ))
+        .register_component(
+            component(VISUAL_PAINT_ONLY_COMPONENT)
+                .with_allocation_measurement_contract(
+                    ComponentAllocationMeasurementContract::fill_viewport(),
+                )
+                .with_surface_paint_order(paint_only_order),
+        )
         .register_component(hit_only)
         .register_component(paint_and_hit)
         .register_component(component(VISUAL_NEITHER_COMPONENT))
@@ -380,7 +366,7 @@ fn color_token(id: &str, color: &str) -> ThemeTokenDescriptor {
         ThemeTokenFamily::surface(),
         ThemeTokenSource::application(),
         ThemeTokenValue::color(
-            ThemeColorValue::hex(color).expect("valid visual identity theme color"),
+            UiThemeColor::parse(color).expect("valid visual identity theme color"),
         ),
     )
 }

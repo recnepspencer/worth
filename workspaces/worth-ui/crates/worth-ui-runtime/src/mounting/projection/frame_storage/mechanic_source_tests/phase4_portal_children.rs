@@ -1,5 +1,11 @@
 use std::sync::Arc;
 
+mod appearance_geometry;
+mod clipping;
+mod lifecycle;
+mod membership;
+mod motion_index;
+
 use worth_ui_host_contract::{
     UiHostObservationPresentationBasis, UiHostPresentationEpoch, UiHostSurfaceIdentity,
     UiMountIncarnation, UiMountedAllocationBasis, UiMountedAllocationProjection,
@@ -17,98 +23,7 @@ use super::super::{
 use crate::mounting::projection::node_receipt::{UiMountedNodeReceipt, UiMountedNodeReceiptInput};
 use crate::mounting::projection::{
     hit_test::UiMountedHitTestSeed, semantic_text::UiMountedSemanticTextSeed,
-    static_paint::UiMountedStaticPaintSeed,
 };
-
-#[test]
-fn authored_portal_child_projects_only_during_the_exact_open_lifecycle() {
-    let owner = UiMountedInstanceIdentity::mint_unbound().unwrap();
-    let child = UiMountedInstanceIdentity::mint_unbound().unwrap();
-    let surface = UiSemanticSurfaceIdentity::mint_unbound().unwrap();
-    let binding = UiSurfaceBindingGeneration::mint_unbound().unwrap();
-    let semantic = portal_semantic_projection(owner, child, surface, binding);
-    let (fonts, _) = worth_ui_text::UiGlobalFontCollection::admit_qualified_profile().unwrap();
-    let fonts = Arc::new(fonts);
-
-    let closed = projection_frame(
-        semantic.clone(),
-        surface,
-        binding,
-        owner,
-        child,
-        Arc::clone(&fonts),
-        Default::default(),
-        Vec::new(),
-        1,
-    );
-    assert_child_suppressed(&closed, child, surface, binding);
-    let closed_owner_paint = owner_filled_rect(&closed, owner, surface, binding);
-
-    let open_frame = UiMountedFrameIdentity::mint_unbound().unwrap();
-    let overlay = portal_overlay(open_frame, owner, surface, binding);
-    let open = projection_frame_with_identity(
-        open_frame,
-        semantic.clone(),
-        surface,
-        binding,
-        owner,
-        child,
-        Arc::clone(&fonts),
-        closed.mechanic_source(),
-        vec![overlay],
-        2,
-    );
-    let affinity = open
-        .portal_presentation_affinity_for_instance(child, surface, binding)
-        .expect("the open authored child has exact Portal presentation affinity");
-    assert_eq!(affinity.owner(), owner);
-    let child_commands = open.presentation_commands_for_instance(child, surface, binding);
-    assert_eq!(
-        child_commands
-            .iter()
-            .filter(|command| matches!(command, UiMountedPaintCommand::FilledRect { .. }))
-            .count(),
-        1
-    );
-    assert_eq!(
-        child_commands
-            .iter()
-            .filter(|command| matches!(command, UiMountedPaintCommand::SemanticText { .. }))
-            .count(),
-        2,
-        "the authored body text and its paint move as one Portal group"
-    );
-    assert!(child_commands
-        .iter()
-        .all(|command| command_bounds(command).x() > 0.0));
-    let open_hits = open
-        .visual_region_basis()
-        .for_binding(binding, open.receipt_basis.clone())
-        .hit_test();
-    let child_hit = open_hits
-        .iter()
-        .find(|hit| hit.mechanic().mounted_instance() == child)
-        .expect("the open authored child contributes one translated hit region");
-    assert_eq!(child_hit.portal().map(|portal| portal.owner()), Some(owner));
-    assert_eq!(
-        owner_filled_rect(&open, owner, surface, binding).bounds(),
-        closed_owner_paint.bounds(),
-        "opening the Portal cannot move its ordinary trigger owner"
-    );
-
-    let closed_successor = projection_frame(
-        semantic,
-        surface,
-        binding,
-        owner,
-        child,
-        fonts,
-        open.mechanic_source(),
-        Vec::new(),
-        3,
-    );
-    assert_child_suppressed(&closed_successor, child, surface, binding);
-}
 
 fn projection_frame(
     semantic: UiMountedSemanticProjection,
@@ -187,7 +102,7 @@ fn portal_semantic_projection(
                 owner,
                 4_151,
                 surface,
-                bounds([20.0, 20.0, 80.0, 32.0]),
+                surface_bounds([20.0, 20.0, 80.0, 32.0]),
                 Some(owner_component.clone()),
                 None,
                 false,
@@ -196,13 +111,14 @@ fn portal_semantic_projection(
                 child,
                 4_152,
                 surface,
-                bounds([8.0, 12.0, 220.0, 120.0]),
+                surface_bounds([8.0, 12.0, 220.0, 120.0]),
                 Some(child_component),
                 Some(owner_component),
                 true,
             ),
         ],
         vec![UiMountedProjectionSurface {
+            coordinate_posture: crate::mounting::UiSurfaceBindingCoordinatePosture::LogicalPoints,
             surface,
             binding,
             audience: UiMountedProjectionAudience::full(),
@@ -220,6 +136,7 @@ fn node(
     semantic_text: bool,
 ) -> UiMountedProjectionNodeRecord {
     UiMountedProjectionNodeRecord {
+        surface_geometry: worth_ui_host_contract::UiSurfaceGeometry::default(),
         receipt: UiMountedNodeReceipt::from_input(UiMountedNodeReceiptInput {
             mounted_instance: instance,
             graph_node: crate::graph::UiGraphNodeIdentity::new(graph),
@@ -229,7 +146,12 @@ fn node(
             role: UiMountedMechanicalRole::Control,
             participation: super::admitted_participation(),
             allocation: UiMountedAllocationProjection::Known {
-                bounds: allocation,
+                bounds: bounds([
+                    allocation.x(),
+                    allocation.y(),
+                    allocation.width(),
+                    allocation.height(),
+                ]),
                 basis: UiMountedAllocationBasis::new(
                     1,
                     2,
@@ -239,9 +161,28 @@ fn node(
             },
         }),
         plan_index: Some((graph - 4_151) as u32),
-        static_paint: Some(UiMountedStaticPaintSeed::for_test(
-            worth_ui_host_contract::UiMountedRgba8::new(42, 36, 68, 255),
-        )),
+        occurrence_allocation: UiMountedAllocationProjection::Known {
+            bounds: allocation,
+            basis: UiMountedAllocationBasis::new(1, 2, 3, UiMountedTransformProjection::Identity),
+        },
+        appearance_geometry:
+            crate::mounting::projection::frame_storage::UiMountedAppearanceGeometry::from_occurrence(
+                UiMountedAllocationProjection::Known {
+                    bounds: allocation,
+                    basis: UiMountedAllocationBasis::new(
+                        1,
+                        2,
+                        3,
+                        UiMountedTransformProjection::Identity,
+                    ),
+                },
+                crate::mounting::projection::appearance::UiMountedAppearanceClip::Unclipped,
+            ),
+        surface_paint_order: Some(0),
+        portal_surface_appearance: true,
+        has_appearance_attachment: true,
+        appearance_clip:
+            crate::mounting::projection::appearance::UiMountedAppearanceClip::Unclipped,
         semantic_text: semantic_text.then(UiMountedSemanticTextSeed::scalar_for_test),
         hit_test: Some(UiMountedHitTestSeed::for_test((graph - 4_151) as u32)),
         focus_support: crate::capability::ComponentFocusSupport::not_focusable(),
@@ -258,6 +199,16 @@ fn portal_overlay(
     surface: UiSemanticSurfaceIdentity,
     binding: UiSurfaceBindingGeneration,
 ) -> crate::mounting::UiMountedPortalOverlayProjectionInput {
+    portal_overlay_for_graph(frame, owner, surface, binding, 4_151)
+}
+
+fn portal_overlay_for_graph(
+    frame: UiMountedFrameIdentity,
+    owner: UiMountedInstanceIdentity,
+    surface: UiSemanticSurfaceIdentity,
+    binding: UiSurfaceBindingGeneration,
+    graph: u64,
+) -> crate::mounting::UiMountedPortalOverlayProjectionInput {
     let presentation = UiHostObservationPresentationBasis::new(
         UiHostSurfaceIdentity::mint_unbound().unwrap(),
         frame,
@@ -266,7 +217,7 @@ fn portal_overlay(
     );
     let identity = crate::runtime::portal::UiPortalIdentity::for_owner(
         crate::runtime::portal::UiPortalOwnerIdentity::from_mounted_owner(
-            crate::graph::UiGraphNodeIdentity::new(4_151),
+            crate::graph::UiGraphNodeIdentity::new(graph),
             owner,
         ),
     );
@@ -286,12 +237,20 @@ fn portal_overlay(
         ),
         surface,
     );
-    let placement = crate::runtime::portal::UiPreparedPortalPlacement::for_request(&request, None)
-        .expect("the exact presented owner admits Portal placement")
-        .expect("an open request prepares Portal placement geometry");
+    let state = crate::runtime::portal::UiPortalRuntimeState::new(
+        crate::runtime::UiServiceStatePersistencePosture::SessionRestoreCandidate,
+    );
+    let transition = state
+        .prepare(request)
+        .expect("presented owner admits Portal opening");
+    let placement = transition.placement().expect("opening carries placement");
     crate::mounting::UiMountedPortalOverlayProjectionInput::new(
         identity.diagnostic_value(),
+        transition
+            .stack_ordinal()
+            .expect("opening carries issued order"),
         owner,
+        surface,
         placement,
         crate::runtime::portal::UiPortalLifecyclePosture::Visible,
     )
@@ -309,8 +268,8 @@ fn assert_child_suppressed(
     assert!(frame
         .portal_presentation_affinity_for_instance(child, surface, binding)
         .is_none());
-    assert!(!frame
-        .presentation_instance_order(surface, binding)
+    assert!(frame
+        .presentation_authored_order()
         .iter()
         .any(|instance| *instance == child));
     assert!(!frame
@@ -321,25 +280,8 @@ fn assert_child_suppressed(
         .any(|hit| hit.mechanic().mounted_instance() == child));
 }
 
-fn owner_filled_rect(
-    frame: &UiMountedProjectionFrame,
-    owner: UiMountedInstanceIdentity,
-    surface: UiSemanticSurfaceIdentity,
-    binding: UiSurfaceBindingGeneration,
-) -> worth_ui_host_contract::UiMountedFilledRectMechanic {
-    frame
-        .presentation_commands_for_instance(owner, surface, binding)
-        .iter()
-        .find_map(|command| match command {
-            UiMountedPaintCommand::FilledRect { mechanic, .. } => Some(*mechanic),
-            _ => None,
-        })
-        .unwrap()
-}
-
 fn command_bounds(command: &UiMountedPaintCommand) -> UiMountedCanonicalBox {
     match command {
-        UiMountedPaintCommand::FilledRect { mechanic, .. } => mechanic.bounds(),
         UiMountedPaintCommand::SemanticText { mechanic, .. } => mechanic.bounds(),
         UiMountedPaintCommand::PortalOverlay { mechanic, .. } => mechanic.bounds(),
     }
@@ -363,6 +305,17 @@ fn bounds(components: [f32; 4]) -> UiMountedCanonicalBox {
         width: components[2],
         height: components[3],
         coordinate_space: UiMountedCoordinateSpace::Viewport,
+    })
+    .unwrap()
+}
+
+fn surface_bounds(components: [f32; 4]) -> UiMountedCanonicalBox {
+    UiMountedCanonicalBox::canonicalize(UiMountedCanonicalBoxInput {
+        x: components[0],
+        y: components[1],
+        width: components[2],
+        height: components[3],
+        coordinate_space: UiMountedCoordinateSpace::HostSurface,
     })
     .unwrap()
 }

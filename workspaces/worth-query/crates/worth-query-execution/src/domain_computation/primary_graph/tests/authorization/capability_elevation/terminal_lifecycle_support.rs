@@ -1,7 +1,9 @@
 use worth_query_declaration::facade::application_schema::OperationReads;
 
 use super::super::super::application_attempt::idempotency;
-use super::super::super::fixture::capability::{CapabilityElevation, CapabilityReview};
+use super::super::super::fixture::capability::{
+    CapabilityElevation, CapabilityElevationClosedAt, CapabilityReview, CapabilityReviewReviewedAt,
+};
 use super::super::super::fixture::{
     Account, CapabilityElevationApprover, CapabilityElevationGrant, CapabilityElevationIdentity,
     CapabilityElevationNotAfter, CapabilityElevationNotBefore, CapabilityElevationReason,
@@ -80,7 +82,7 @@ pub(super) fn close_access_with_input(
         )
         .unwrap();
     world
-        .application
+        .selected_product()
         .admit_capability_access(principal, &capability, input, request)
 }
 
@@ -123,7 +125,7 @@ pub(super) fn review_access_with_input(
         )
         .unwrap();
     world
-        .application
+        .selected_product()
         .admit_capability_access(principal, &capability, input, request)
 }
 
@@ -160,7 +162,18 @@ pub(super) fn close_reads(
         .unwrap();
     let (_, projection, _) = world
         .invariant
-        .project_admitted_operation(&admission, |reader, _| seal_lifecycle_facts(reader))
+        .project_admitted_operation(&admission, |reader, _| {
+            seal_lifecycle_facts(reader);
+            let elevation = reader
+                .resolve_entity(
+                    CapabilityElevationIdentity::reference(),
+                    "elevation-2".to_owned(),
+                )
+                .unwrap();
+            reader
+                .require_decision_field(&elevation, CapabilityElevationClosedAt::reference())
+                .unwrap();
+        })
         .unwrap()
         .into_parts();
     world
@@ -219,7 +232,15 @@ pub(super) fn review_reads(
         .unwrap();
     let (_, projection, _) = world
         .invariant
-        .project_admitted_operation(&admission, |reader, _| seal_lifecycle_facts(reader))
+        .project_admitted_operation(&admission, |reader, _| {
+            seal_lifecycle_facts(reader);
+            let review = reader
+                .resolve_entity(CapabilityReviewIdentity::reference(), "review-2".to_owned())
+                .unwrap();
+            reader
+                .require_decision_field(&review, CapabilityReviewReviewedAt::reference())
+                .unwrap();
+        })
         .unwrap()
         .into_parts();
     world

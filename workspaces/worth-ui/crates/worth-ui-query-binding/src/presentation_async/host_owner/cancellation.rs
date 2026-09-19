@@ -82,16 +82,6 @@ impl WorthUiPresentationAsyncOwner {
             }
             pending.rejection.query_denial_observed = true;
         }
-        if !pending.rejection.semantic_retired {
-            self.registry
-                .retire(&mut self.workspace, &pending.admission)
-                .map_err(|_| {
-                    WorthUiPresentationSettlementDenial::Progress(
-                        WorthUiPresentationSettlementStop::SemanticRetirement,
-                    )
-                })?;
-            pending.rejection.semantic_retired = true;
-        }
         if !pending.rejection.query_closed {
             pending
                 .admission

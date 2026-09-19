@@ -226,9 +226,10 @@ pub(super) fn publish_with_hit_coordinate(
     )
 }
 
-fn prepare_frame(
+pub(super) fn prepare_frame(
     session: &mut worth_ui::facade::app::WorthUiActiveApplicationSession,
 ) -> worth_ui_runtime::facade::mounted::UiPreparedMountedFrame {
+    super::geometry::complete(session);
     session
         .execute_framework_turn(|_| {})
         .expect("current framework turn is available")

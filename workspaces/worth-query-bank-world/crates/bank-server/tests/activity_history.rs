@@ -12,17 +12,16 @@ use std::num::NonZeroUsize;
 
 use bank_domain::model::Money;
 use bank_domain::proposals::BankIdempotencyKey;
-use bank_domain::schema::{BankSchema, Deposit, RevokeAccountAuthorization};
+use bank_domain::schema::{Deposit, RevokeAccountAuthorization};
 use bank_server::{
     mutations, queries, BankApplicationQueryAdmissionDenialKind, BankApplicationQueryDenial,
-    BankMutationControls, BankMutationStatus, BankReadControls,
+    BankMutationControls, BankReadControls,
 };
 use fixture::{ordinary_read_world, OWNER, TELLER, VIEWER};
 use support::request_scope;
 use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope;
-use worth_query_host::facade::primary_graph::{
-    WorthQueryApplicationQueryControls, WorthQueryApplicationQueryResumeControls,
-};
+use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;
+use worth_query_host::facade::primary_graph::WorthQueryApplicationQueryResumeControls;
 
 #[test]
 fn activity_pages_keep_one_exact_basis_across_a_new_commit() {
@@ -61,8 +60,8 @@ fn activity_pages_keep_one_exact_basis_across_a_new_commit() {
         ))
         .execute();
     assert!(matches!(
-        mutation.status(),
-        BankMutationStatus::Committed(_)
+        mutation,
+        Ok(WorthQueryApplicationMutationOutcome::Committed { .. })
     ));
 
     let next_request = request_scope();
@@ -194,7 +193,10 @@ fn revocation_before_resume_denies_fresh_page_admission() {
             BankIdempotencyKey::new("revoke-continuation-viewer").unwrap(),
         ))
         .execute();
-    assert!(matches!(revoked.status(), BankMutationStatus::Committed(_)));
+    assert!(matches!(
+        revoked,
+        Ok(WorthQueryApplicationMutationOutcome::Committed { .. })
+    ));
 
     let resume_request = request_scope();
     let resumed = fixture
@@ -223,11 +225,7 @@ fn paged_and_one_shot_activity_have_identical_result_meaning() {
         .runtime
         .account_activity(fixture.personal_account)
         .as_principal(&owner)
-        .execute(WorthQueryApplicationQueryControls::current_one_shot(
-            NonZeroUsize::new(64).unwrap(),
-            NonZeroUsize::new(8_192).unwrap(),
-            &one_shot_request,
-        ))
+        .execute(BankReadControls::current(one_shot_request, 64, 8_192).unwrap())
         .expect("one-shot activity must execute");
     let expected = one_shot.rows()[0].entries().to_vec();
 
@@ -280,7 +278,10 @@ fn activity_order_follows_committed_account_sequence_not_derived_identity() {
                 BankIdempotencyKey::new(key).unwrap(),
             ))
             .execute();
-        assert!(matches!(outcome.status(), BankMutationStatus::Committed(_)));
+        assert!(matches!(
+            outcome,
+            Ok(WorthQueryApplicationMutationOutcome::Committed { .. })
+        ));
     }
 
     let request = request_scope();
@@ -308,15 +309,8 @@ fn activity_order_follows_committed_account_sequence_not_derived_identity() {
     assert!(history.receipt().inspect().terminal_resources_released());
 }
 
-fn page_controls<'a>(
-    request: &'a WorthQueryRequestScope,
-    page_width: usize,
-) -> WorthQueryApplicationQueryControls<'a, BankSchema> {
-    WorthQueryApplicationQueryControls::current_continuation_page(
-        NonZeroUsize::new(page_width).unwrap(),
-        NonZeroUsize::new(4_096).unwrap(),
-        request,
-    )
+fn page_controls(request: &WorthQueryRequestScope, page_width: usize) -> BankReadControls {
+    BankReadControls::current(request.clone(), page_width, 4_096).unwrap()
 }
 
 fn resume_controls<'a>(

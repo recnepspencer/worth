@@ -13,16 +13,22 @@ use super::{
 pub struct SignalBranchAdvanceOutcome {
     advanced_basis: AdmittedSignalBranchBasis,
     transaction: TransactionResult,
+    conditional_definition:
+        Option<super::owner_services::SignalConditionalDefinitionAdvanceBinding>,
 }
 
 impl SignalBranchAdvanceOutcome {
     pub(crate) fn owner_issued(
         advanced_basis: AdmittedSignalBranchBasis,
         transaction: TransactionResult,
+        conditional_definition: Option<
+            super::owner_services::SignalConditionalDefinitionAdvanceBinding,
+        >,
     ) -> Self {
         Self {
             advanced_basis,
             transaction,
+            conditional_definition,
         }
     }
 
@@ -36,6 +42,12 @@ impl SignalBranchAdvanceOutcome {
 
     pub fn into_parts(self) -> (AdmittedSignalBranchBasis, TransactionResult) {
         (self.advanced_basis, self.transaction)
+    }
+
+    pub fn take_conditional_definition_advance_binding(
+        &mut self,
+    ) -> Option<super::owner_services::SignalConditionalDefinitionAdvanceBinding> {
+        self.conditional_definition.take()
     }
 
     pub fn into_basis(self) -> AdmittedSignalBranchBasis {
@@ -85,6 +97,7 @@ pub enum SignalBranchAdvanceDenial {
     BasisMismatch {
         axes: Vec<FoundationalBranchReferenceMismatchAxis>,
     },
+    ConditionalDefinitionPublicationMismatch,
     RetentionUnavailable {
         denial: SignalBranchRetentionAcquisitionDenial,
     },

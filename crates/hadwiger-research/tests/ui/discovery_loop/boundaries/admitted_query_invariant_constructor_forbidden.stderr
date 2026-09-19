@@ -1,5 +1,0 @@
-error[E0599]: no function or associated item named `admitted_query_invariant` found for struct `hadwiger_research::facade::InvariantCandidate` in the current scope
- --> tests/ui/discovery_loop/boundaries/admitted_query_invariant_constructor_forbidden.rs:4:33
-  |
-4 |     let _ = InvariantCandidate::admitted_query_invariant();
-  |                                 ^^^^^^^^^^^^^^^^^^^^^^^^ function or associated item not found in `hadwiger_research::facade::InvariantCandidate`

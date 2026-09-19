@@ -126,7 +126,7 @@ fn claimed_output_mismatch_denies_before_a_direct_receipt_exists() {
     .unwrap();
     let installed = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(EvidenceFamily)
         .bind(&installed, EvidenceRead)

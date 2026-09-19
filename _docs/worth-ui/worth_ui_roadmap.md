@@ -2256,6 +2256,29 @@ is created.
 
 ### Milestone 3.16: Appearance, Theme, and Visual State Projection
 
+Detailed spec: [milestone-3.16.md](./milestone-3.16.md)
+
+Implementation spans the remaining production handoffs across Gates 4–6. The
+[detailed spec](./milestone-3.16.md#remaining-closure-sequence) orders that work
+as five vertical closure slices: replacement geometry, content publication,
+owner-state and live-theme succession, Motion and overlay succession, and the
+integrated closure. Gate 4's detailed technical acceptance remains governing.
+Gate 5's live protocol and static-paint deletion are the baseline; Gate 6 owns
+final live/native/design milestone closure.
+
+The governing design freezes explicit role attachment,
+surface-bound theme capability, coherent owner-issued state vectors, finite
+disjoint appearance resolution without selectors or cascade, a clean mounted
+appearance protocol cutover, and bounded pointer-affordance projection. A
+single compilable contract baseline precedes parallel worktrees; the first new
+appearance emission and final static-paint removal occur in one atomic cutover.
+Backdrops are independently authored overlay participants rather than a modal
+side effect. Applications explicitly declare each backdrop's extent, presence
+basis, appearance role, and before/after placement. Portal supplies sealed
+lifecycle and total-order inputs when referenced, while the overlay planner and
+native/headless hosts preserve the authored order and source-over composition
+without inventing or flattening backdrop meaning.
+
 This slice closes runtime-owned visual semantics before Milestone 9 broadens
 into a professional component set. Theme and style meaning already belong to
 Worth UI; this milestone makes that meaning admitted, inspectable, and
@@ -2270,6 +2293,15 @@ theme or appearance input and visibly update only the affected consumers;
 mounted appearance facts must explain the rendered background, foreground,
 border, radius, opacity, or outline. Adapter-default styling or a screenshot
 without appearance receipts does not close the pulse.
+
+The cumulative Pulse opens a real two-deep modal stack and separately declares
+two viewport backdrops whose presence follows and whose placement precedes the
+relevant portal. Each dialog keeps conventional title/body/action composition
+and Portal-owned shielding; the second authored backdrop visibly and correctly
+dims both the application and the first dialog. Zero-, one-, and two-modal
+worlds at both native sizes require separate recorded design acceptance against
+the contemporary Linear-or-Notion bar in addition to structural, input,
+retained-order, and external-pixel proofs.
 
 Executable-world closure extends the same world with appearance deltas and
 native input, and external client pixels must agree with mounted appearance
@@ -2299,6 +2331,10 @@ detached golden image cannot replace the cumulative world.
 - explicit theme-capability consumption and invalidation posture
 - mounted visual-projection facts that let hosts render runtime-decided visual
   outcomes without deciding semantic appearance locally
+- independently declared backdrop identity, surface-singleton/per-portal-
+  instance scope, extent, presence, optional Motion, appearance, and relational
+  overlay placement; Portal-issued stack/lifecycle inputs when referenced;
+  canonical cumulative source-over; and paint/shield independence
 - typed denial posture for missing appearance coverage, unsupported state axes,
   or wrong-world theme consumption
 
@@ -2310,8 +2346,33 @@ detached golden image cannot replace the cumulative world.
   widening immediately to unrelated structure or Query-binding neighborhoods
 - disabled, focused, selected, and validation-bearing visual states are runtime
   projections rather than host-local booleans or component conventions
+- nested and sibling modal layers preserve Portal order, cumulative pixels,
+  topmost-first dismissal, exact restoration, bounded locality, and separately
+  approved stacked-dialog visual quality
+- modal-without-backdrop and non-modal-with-backdrop proofs establish that
+  portal kind neither creates nor rejects authored backdrop composition
 - Milestone 9 can consume appearance and theme runtime lanes without reopening
   their authority as design-system folklore
+
+### Milestone 3.16.1: Responsive Scrolling and Scrollbars
+
+Detailed spec: [milestone-3.16.1.md](./milestone-3.16.1.md)
+
+Finish the native Pulse scrolling experience before resizing: themed functional
+scrollbars, real horizontal and vertical overflow, precise input, interruptible
+wheel Motion, stable anchors, and coherent accepted pixels/hit targets. Reuse
+Scroll offset authority and the existing Motion/presentation lifecycle. Reach a
+live two-axis endpoint first, then close recovery, locality, and measured cadence.
+
+### Milestone 3.16.2: Continuous Window Resize and Responsive Containers
+
+Detailed spec: [milestone-3.16.2.md](./milestone-3.16.2.md)
+
+Build on 3.16.1 with continuous native border-drag presentation and declared
+Mosaic allocation for the complete dashboard. Coalesce obsolete extent work,
+preserve exact viewport/owner succession, and verify text, scrollbars, overlays,
+recovery, and timing during the drag. Milestone 4 retains docking, persisted
+workspace layouts, and multi-window breadth; it consumes this responsive core.
 
 ### Milestone 3.17: DSL Expressions, Conditions, and Semantic Evaluation
 

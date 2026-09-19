@@ -1,5 +1,0 @@
-error[E0599]: no method named `progress_declaration` found for struct `CandidateGraphDeclaration` in the current scope
- --> tests/ui/phase1_query_entry/boundaries/facade_seal/raw_request_progression_forbidden.rs:5:21
-  |
-5 |     let _ = request.progress_declaration();
-  |                     ^^^^^^^^^^^^^^^^^^^^ method not found in `CandidateGraphDeclaration`

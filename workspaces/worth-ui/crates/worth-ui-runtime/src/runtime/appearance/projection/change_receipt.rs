@@ -1,0 +1,222 @@
+use crate::graph::UiGraphNodeIdentity;
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) struct UiAppearanceChangeReceipt {
+    input_evidence_changed: bool,
+    semantic_projection_changed: bool,
+    resolved_aspect_value_changed: bool,
+    mounted_mechanical_output_changed: bool,
+    equal_output_suppressed: bool,
+    denied_before_effects: bool,
+    mounting_result_available: bool,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(crate) struct UiAppearanceMountAffinity {
+    pub(crate) session: crate::facade::WorthUiActiveApplicationSessionIdentity,
+    pub(crate) generation: crate::runtime::WorthUiActiveApplicationGenerationIdentity,
+    pub(crate) frame: worth_ui_host_contract::UiMountedFrameIdentity,
+    pub(crate) surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+    pub(crate) graph_node: UiGraphNodeIdentity,
+    pub(crate) mounted_instance: worth_ui_host_contract::UiMountedInstanceIdentity,
+    pub(crate) incarnation: worth_ui_host_contract::UiMountIncarnation,
+    pub(crate) node_receipt: worth_ui_host_contract::UiMountedNodeReceiptIdentity,
+    pub(crate) issuer: worth_ui_host_contract::UiMountedNodeReceiptIssuer,
+    pub(crate) presentation: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum UiAppearanceMountAffinityDenial {
+    SuccessorFrameMismatch,
+    SuccessorSurfaceMismatch,
+    SuccessorNodeMismatch,
+    SuccessorSessionMismatch,
+    SuccessorGenerationMismatch,
+    SuccessorIncarnationMismatch,
+    SuccessorReceiptMismatch,
+    IssuerMismatch,
+    PresentationAttemptUnavailable,
+}
+
+impl UiAppearanceChangeReceipt {
+    pub(crate) const fn for_denial() -> Self {
+        Self {
+            input_evidence_changed: false,
+            semantic_projection_changed: false,
+            resolved_aspect_value_changed: false,
+            mounted_mechanical_output_changed: false,
+            equal_output_suppressed: false,
+            denied_before_effects: true,
+            mounting_result_available: false,
+        }
+    }
+
+    pub(crate) fn from_resolved_mount(
+        predecessor: Option<&super::UiAppearanceProjection>,
+        successor: &super::UiAppearanceProjection,
+        mounting: &worth_ui_host_contract::UiMountedAppearanceWork,
+        affinity: UiAppearanceMountAffinity,
+    ) -> Result<Self, UiAppearanceMountAffinityDenial> {
+        if affinity.presentation.diagnostic_value() == 0 {
+            return Err(UiAppearanceMountAffinityDenial::PresentationAttemptUnavailable);
+        }
+        if affinity.issuer.frame_identity() != affinity.frame
+            || affinity.issuer.receipt_for(affinity.mounted_instance) != affinity.node_receipt
+        {
+            return Err(UiAppearanceMountAffinityDenial::IssuerMismatch);
+        }
+        if mounting.successor().frame() != affinity.frame {
+            return Err(UiAppearanceMountAffinityDenial::SuccessorFrameMismatch);
+        }
+        if mounting.successor().semantic_surface() != affinity.surface {
+            return Err(UiAppearanceMountAffinityDenial::SuccessorSurfaceMismatch);
+        }
+        if successor.state().basis().graph_node() != affinity.graph_node {
+            return Err(UiAppearanceMountAffinityDenial::SuccessorNodeMismatch);
+        }
+        if successor.state().basis().session() != affinity.session {
+            return Err(UiAppearanceMountAffinityDenial::SuccessorSessionMismatch);
+        }
+        if successor.state().basis().generation() != &affinity.generation {
+            return Err(UiAppearanceMountAffinityDenial::SuccessorGenerationMismatch);
+        }
+        if mounting.successor().mechanics().iter().any(|mechanic| {
+            mechanic_identity_instance(mechanic)
+                .is_some_and(|instance| instance != affinity.mounted_instance)
+        }) {
+            return Err(UiAppearanceMountAffinityDenial::SuccessorNodeMismatch);
+        }
+        if successor.state().basis().surface() != affinity.surface
+            || successor.state().basis().mounted_instance() != affinity.mounted_instance
+        {
+            return Err(UiAppearanceMountAffinityDenial::SuccessorNodeMismatch);
+        }
+        if successor.state().basis().incarnation() != affinity.incarnation {
+            return Err(UiAppearanceMountAffinityDenial::SuccessorIncarnationMismatch);
+        }
+        if successor.state().basis().node_receipt() != affinity.node_receipt {
+            return Err(UiAppearanceMountAffinityDenial::SuccessorReceiptMismatch);
+        }
+        let Some(predecessor) = predecessor else {
+            return Ok(Self {
+                input_evidence_changed: true,
+                semantic_projection_changed: true,
+                resolved_aspect_value_changed: true,
+                mounted_mechanical_output_changed: mounted_mechanical_output_changed(mounting),
+                equal_output_suppressed: false,
+                denied_before_effects: false,
+                mounting_result_available: true,
+            });
+        };
+        let input_evidence_changed = predecessor.state().basis().evidence_digest()
+            != successor.state().basis().evidence_digest();
+        let semantic_projection_changed =
+            predecessor.semantic_digest() != successor.semantic_digest();
+        let resolved_aspect_value_changed = predecessor.aspects().len()
+            != successor.aspects().len()
+            || predecessor.aspects().iter().any(|left| {
+                successor
+                    .aspects()
+                    .iter()
+                    .find(|right| right.aspect() == left.aspect())
+                    .is_none_or(|right| right.value() != left.value())
+            });
+        let equal_output_suppressed = semantic_projection_changed
+            && !resolved_aspect_value_changed
+            && physical_output_suppressed(mounting);
+        Ok(Self {
+            input_evidence_changed,
+            semantic_projection_changed,
+            resolved_aspect_value_changed,
+            mounted_mechanical_output_changed: mounted_mechanical_output_changed(mounting),
+            equal_output_suppressed,
+            denied_before_effects: false,
+            mounting_result_available: true,
+        })
+    }
+
+    pub(crate) fn from_reconstruction_mount(
+        mounting: &worth_ui_host_contract::UiMountedAppearanceWork,
+    ) -> Option<Self> {
+        (mounting.posture()
+            == worth_ui_host_contract::UiMountedAppearanceWorkPosture::Reconstruction)
+            .then_some(Self {
+                input_evidence_changed: false,
+                semantic_projection_changed: false,
+                resolved_aspect_value_changed: false,
+                mounted_mechanical_output_changed: !mounting.changes().is_empty()
+                    || mounting.order_changed(),
+                equal_output_suppressed: false,
+                denied_before_effects: false,
+                mounting_result_available: true,
+            })
+    }
+
+    /// A current retained semantic projection was lowered against new mounted
+    /// text facts; no owner-state or theme resolution was performed.
+    pub(crate) fn from_retained_paint_mount(
+        mounting: &worth_ui_host_contract::UiMountedAppearanceWork,
+    ) -> Self {
+        Self {
+            input_evidence_changed: false,
+            semantic_projection_changed: false,
+            resolved_aspect_value_changed: false,
+            mounted_mechanical_output_changed: mounted_mechanical_output_changed(mounting),
+            equal_output_suppressed: false,
+            denied_before_effects: false,
+            mounting_result_available: true,
+        }
+    }
+
+    pub(crate) const fn mounted_mechanical_output_changed(self) -> bool {
+        self.mounted_mechanical_output_changed
+    }
+    pub(crate) const fn equal_output_suppressed(self) -> bool {
+        self.equal_output_suppressed
+    }
+    pub(crate) fn change_distinctions(
+        self,
+    ) -> worth_ui_inspection::UiAppearanceInspectionChangeDistinctions {
+        worth_ui_inspection::UiAppearanceInspectionChangeDistinctions::new(
+            self.input_evidence_changed,
+            self.semantic_projection_changed,
+            self.resolved_aspect_value_changed,
+            self.mounted_mechanical_output_changed,
+            self.equal_output_suppressed,
+            self.denied_before_effects,
+        )
+    }
+
+    pub(crate) const fn mounting_result_available(self) -> bool {
+        self.mounting_result_available
+    }
+}
+
+fn mechanic_identity_instance(
+    mechanic: &worth_ui_host_contract::UiMountedAppearanceMechanic,
+) -> Option<worth_ui_host_contract::UiMountedInstanceIdentity> {
+    match mechanic.identity() {
+        worth_ui_host_contract::UiMountedAppearanceMechanicIdentity::Surface(instance)
+        | worth_ui_host_contract::UiMountedAppearanceMechanicIdentity::PortalSurface(instance)
+        | worth_ui_host_contract::UiMountedAppearanceMechanicIdentity::Outline(instance)
+        | worth_ui_host_contract::UiMountedAppearanceMechanicIdentity::TextForeground {
+            target: instance,
+            ..
+        }
+        | worth_ui_host_contract::UiMountedAppearanceMechanicIdentity::Pointer {
+            target: instance,
+            ..
+        } => Some(instance),
+        worth_ui_host_contract::UiMountedAppearanceMechanicIdentity::Backdrop(_) => None,
+    }
+}
+
+fn mounted_mechanical_output_changed(
+    mounting: &worth_ui_host_contract::UiMountedAppearanceWork,
+) -> bool {
+    !mounting.changes().is_empty() || mounting.order_changed()
+}
+
+fn physical_output_suppressed(mounting: &worth_ui_host_contract::UiMountedAppearanceWork) -> bool {
+    mounting.posture() == worth_ui_host_contract::UiMountedAppearanceWorkPosture::Unchanged
+}

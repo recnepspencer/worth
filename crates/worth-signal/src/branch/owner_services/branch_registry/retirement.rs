@@ -71,6 +71,7 @@ where
         Ok(self.cell.retirement_planning_facts(self.admission))
     }
 
+    #[cfg(test)]
     pub(crate) fn execute_exact(
         mut self,
         plan: PlannedSignalBranchRetirement,

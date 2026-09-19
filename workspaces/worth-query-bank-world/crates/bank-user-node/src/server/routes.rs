@@ -15,7 +15,7 @@ use crate::protocol::{
     BankUserNodeDenialKind, BankUserNodeEstateNotificationOutcome,
     BankUserNodeEstateNotificationRequest, BankUserNodeMutationOutcome,
     BankUserNodeMutationRequest, BankUserNodeRecoveryInspectionOutcome,
-    BankUserNodeRecoveryRequest, BankUserNodeUndoAdmissionOutcome,
+    BankUserNodeRecoveryRequest, BankUserNodeRecoverySafeRetryOutcome,
 };
 
 mod aftermath;
@@ -46,7 +46,7 @@ pub(super) fn router() -> Router<UserNodeState> {
         .route("/v1/mutations", post(mutate))
         .route("/v1/estate/notify-death", post(notify_death))
         .route("/v1/recovery/inspect", post(inspect_recovery))
-        .route("/v1/recovery/admit-undo", post(admit_undo))
+        .route("/v1/recovery/safe-retry", post(safe_retry_recovery))
         .merge(aftermath::router())
         .merge(elevation::router())
         .merge(live::router())
@@ -175,21 +175,21 @@ async fn inspect_recovery(
     inspection_response(state.session.inspect_recovery(request).await)
 }
 
-async fn admit_undo(
+async fn safe_retry_recovery(
     State(state): State<UserNodeState>,
     request: Result<Json<BankUserNodeRecoveryRequest>, JsonRejection>,
-) -> (StatusCode, Json<BankUserNodeUndoAdmissionOutcome>) {
+) -> (StatusCode, Json<BankUserNodeRecoverySafeRetryOutcome>) {
     let Ok(Json(request)) = request else {
-        return undo_response(BankUserNodeUndoAdmissionOutcome::Denied {
+        return retry_response(BankUserNodeRecoverySafeRetryOutcome::Denied {
             denial: malformed(),
         });
     };
     let Ok(_permit) = Arc::clone(&state.requests).try_acquire_owned() else {
-        return undo_response(BankUserNodeUndoAdmissionOutcome::Denied {
+        return retry_response(BankUserNodeRecoverySafeRetryOutcome::Denied {
             denial: saturated(),
         });
     };
-    undo_response(state.session.admit_undo(request).await)
+    retry_response(state.session.safe_retry_recovery(request).await)
 }
 
 fn summary_response(
@@ -246,12 +246,12 @@ fn inspection_response(
     (status, Json(outcome))
 }
 
-fn undo_response(
-    outcome: BankUserNodeUndoAdmissionOutcome,
-) -> (StatusCode, Json<BankUserNodeUndoAdmissionOutcome>) {
+fn retry_response(
+    outcome: BankUserNodeRecoverySafeRetryOutcome,
+) -> (StatusCode, Json<BankUserNodeRecoverySafeRetryOutcome>) {
     let status = match &outcome {
-        BankUserNodeUndoAdmissionOutcome::Forwarded { .. } => StatusCode::OK,
-        BankUserNodeUndoAdmissionOutcome::Denied { denial } => node_denial_status(*denial),
+        BankUserNodeRecoverySafeRetryOutcome::Forwarded { .. } => StatusCode::OK,
+        BankUserNodeRecoverySafeRetryOutcome::Denied { denial } => node_denial_status(*denial),
     };
     (status, Json(outcome))
 }

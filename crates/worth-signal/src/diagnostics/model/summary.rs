@@ -4,6 +4,8 @@ mod graph;
 #[cfg(test)]
 mod graph_tests;
 mod history;
+mod history_view;
+pub use history_view::RetainedExecutionHistoryView;
 mod plan;
 mod temporal;
 

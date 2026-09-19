@@ -4,8 +4,8 @@ use super::{
     ExecutableVisualTraceEvidence,
 };
 use worth_ui_platform_pulse::observation_contract::{
-    PlatformPulseVisualComparison, PlatformPulseVisualPointTrace,
-    PlatformPulseVisualSnapshotCaptured, PlatformPulseVisualSnapshotRetired,
+    PlatformPulseVisualPointTrace, PlatformPulseVisualSnapshotCaptured,
+    PlatformPulseVisualSnapshotRetired,
 };
 
 impl ExecutableVisualSnapshotEvidence {
@@ -36,11 +36,12 @@ impl ExecutableVisualSnapshotEvidence {
     pub(crate) fn expected_target_region(
         &self,
     ) -> Result<[u32; 4], ExecutableVisualIdentityFailure> {
-        let manifest = super::super::platform_pulse_control_points::checked_in()
-            .map_err(ExecutableVisualIdentityFailure::ControlPointManifest)?;
+        let manifest = super::super::visual_contract_manifest::checked_in_adjudication_contract()
+            .map_err(ExecutableVisualIdentityFailure::VisualContract)?;
         let region = manifest.target_region();
         let [left, top] = self.project_logical_point([region[0], region[1]])?;
-        let [right, bottom] = self.project_logical_point([region[2], region[3]])?;
+        let [right, bottom] =
+            self.project_logical_point([region[0] + region[2], region[1] + region[3]])?;
         Ok([left, top, right, bottom])
     }
 }
@@ -68,9 +69,5 @@ impl ExecutableVisualRetirementEvidence {
 impl ExecutableVisualComparisonEvidence {
     pub(crate) fn sequence(self) -> u64 {
         self.sequence
-    }
-
-    pub(crate) fn comparison(self) -> PlatformPulseVisualComparison {
-        self.comparison
     }
 }

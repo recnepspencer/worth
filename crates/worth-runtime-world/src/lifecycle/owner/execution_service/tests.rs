@@ -40,6 +40,8 @@ mod cancellation;
 mod custody_final_cas;
 #[path = "tests/custody_phase_drop.rs"]
 mod custody_phase_drop;
+#[path = "tests/definition_publication.rs"]
+mod definition_publication;
 #[path = "tests/failures.rs"]
 mod failures;
 #[path = "tests/mixed_plans.rs"]

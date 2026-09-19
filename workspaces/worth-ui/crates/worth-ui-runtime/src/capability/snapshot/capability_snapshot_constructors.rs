@@ -1,8 +1,9 @@
 #[cfg(test)]
 use crate::capability::{
     CapabilitySnapshotBuilder, CapabilitySnapshotFreezeInput, CapabilitySupportCatalog,
-    FrozenCommandCapabilities, FrozenCommandProjectionCapabilities, FrozenComponentCapabilities,
-    FrozenIconCapabilities, FrozenIntentDefinitionCapabilities, FrozenMosaicPlacementCapabilities,
+    FrozenAppearanceRoleCapabilities, FrozenCommandCapabilities,
+    FrozenCommandProjectionCapabilities, FrozenComponentCapabilities, FrozenIconCapabilities,
+    FrozenIntentDefinitionCapabilities, FrozenMosaicPlacementCapabilities,
     FrozenMosaicRegionCapabilities, FrozenMosaicSizingCapabilities, FrozenMosaicStateCapabilities,
     FrozenNativeCapabilities, FrozenPluginSlotCapabilities,
     FrozenRuntimeOutcomeProjectionCapabilities, FrozenSettingCapabilities,
@@ -19,6 +20,8 @@ impl CapabilitySnapshot {
     ) -> Self {
         Self::from_freeze_input(CapabilitySnapshotFreezeInput {
             registered_capabilities,
+            appearance_roles: FrozenAppearanceRoleCapabilities::empty(),
+            appearance_themes: None,
             commands: FrozenCommandCapabilities::empty(),
             command_projections: FrozenCommandProjectionCapabilities::empty(),
             components: FrozenComponentCapabilities::empty(),

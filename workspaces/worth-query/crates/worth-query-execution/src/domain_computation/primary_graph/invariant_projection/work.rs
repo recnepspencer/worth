@@ -10,6 +10,8 @@ pub struct WorthQueryInvariantProjectionWork {
     aggregate_cache_hits: usize,
     aggregate_rebuild_input_rows: usize,
     reconstructive_scans: usize,
+    output_lineage_source_selections: usize,
+    output_lineage_role_lookups: usize,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -59,6 +61,14 @@ impl WorthQueryInvariantProjectionWork {
         self.aggregate_rebuild_input_rows
     }
 
+    pub const fn output_lineage_source_selections(self) -> usize {
+        self.output_lineage_source_selections
+    }
+
+    pub const fn output_lineage_role_lookups(self) -> usize {
+        self.output_lineage_role_lookups
+    }
+
     pub const fn provider_work_units(self) -> usize {
         self.equality_lookups
             + self.index_candidates_examined
@@ -68,6 +78,8 @@ impl WorthQueryInvariantProjectionWork {
             + self.field_reads
             + self.aggregate_lookups
             + self.reconstructive_scans
+            + self.output_lineage_source_selections
+            + self.output_lineage_role_lookups
     }
 
     pub(super) fn record_lookup(&mut self, examined: usize) {
@@ -89,6 +101,14 @@ impl WorthQueryInvariantProjectionWork {
         self.aggregate_lookups += 1;
         self.aggregate_cache_hits += usize::from(cache_hit);
         self.aggregate_rebuild_input_rows += rebuild_rows;
+    }
+
+    pub(super) fn record_output_lineage_selection(&mut self, lookups: usize) {
+        self.output_lineage_source_selections += lookups;
+    }
+
+    pub(super) fn record_output_lineage_role_lookup(&mut self) {
+        self.output_lineage_role_lookups += 1;
     }
 }
 

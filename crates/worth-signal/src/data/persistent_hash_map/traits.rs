@@ -11,12 +11,20 @@ where
     fn clone(&self) -> Self {
         match &self.storage {
             PersistentHashMapStorage::Exclusive(_) => self.operational_clone(),
-            PersistentHashMapStorage::ForkShared { base, changes, len } => Self {
+            PersistentHashMapStorage::ForkShared {
+                base,
+                changes,
+                collision_extents,
+                len,
+            } => Self {
                 storage: PersistentHashMapStorage::ForkShared {
                     base: Arc::clone(base),
                     changes: changes.clone(),
+                    collision_extents: collision_extents.clone(),
                     len: *len,
                 },
+                base_capacity: self.base_capacity,
+                retained_charge: self.retained_charge,
             },
         }
     }
@@ -38,8 +46,11 @@ where
     V: Clone,
 {
     fn from_iter<T: IntoIterator<Item = (K, V)>>(iter: T) -> Self {
+        let values: std::collections::HashMap<K, V> = iter.into_iter().collect();
         Self {
-            storage: PersistentHashMapStorage::Exclusive(iter.into_iter().collect()),
+            base_capacity: Some(values.capacity()),
+            storage: PersistentHashMapStorage::Exclusive(values),
+            retained_charge: None,
         }
     }
 }

@@ -9,6 +9,24 @@ pub struct RuntimeWorldRecoveryPort {
     owner: Weak<dyn RuntimeWorldRecoveryService + Send + Sync>,
 }
 impl RuntimeWorldRecoveryPort {
+    pub fn prepare_settled_relational_adoption(
+        &self,
+        effects: &crate::recovery::ProductUnpublishedOwnerEffects,
+        cancellation: &crate::publication::RuntimeWorldCancellationToken,
+        deadline: Option<crate::lifecycle::RuntimeWorldInstant>,
+    ) -> Result<
+        crate::publication::PreparedCompositePublicationWithoutSignal,
+        crate::recovery::RuntimeWorldSettledRelationalAdoptionDenial,
+    > {
+        self.service()
+            .map_err(|unavailable| {
+                crate::recovery::RuntimeWorldSettledRelationalAdoptionDenial::Recovery(
+                    unavailable.into(),
+                )
+            })?
+            .prepare_settled_relational_adoption(effects, cancellation, deadline)
+    }
+
     pub(in crate::lifecycle) fn new(
         owner: Weak<dyn RuntimeWorldRecoveryService + Send + Sync>,
     ) -> Self {
@@ -40,8 +58,10 @@ impl RuntimeWorldRecoveryPort {
         &self,
         handle: &crate::recovery::ProductUnpublishedRecoveryHandle,
         minimum_age_ticks: u64,
-    ) -> Result<Vec<crate::branch::OwnerRetirementWork>, crate::recovery::RuntimeWorldRecoveryDenial>
-    {
+    ) -> Result<
+        crate::recovery::ProductUnpublishedCleanup,
+        crate::recovery::RuntimeWorldRecoveryDenial,
+    > {
         self.service()?.release_effects(handle, minimum_age_ticks)
     }
     pub fn continue_effects(

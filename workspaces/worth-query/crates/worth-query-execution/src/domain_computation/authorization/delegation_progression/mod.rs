@@ -19,6 +19,7 @@ use super::{
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 mod binding;
+mod replay;
 pub(in crate::domain_computation) use binding::{
     WorthQueryDelegationActivationBinding, WorthQueryDelegationActivationEffect,
 };
@@ -68,7 +69,9 @@ where
     >
     where
         Operation:
-            worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity,
+            worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<
+                Schema,
+            >,
         Input: ApplicationCapabilityRequest<Schema, CommandCapability>
             + ApplicationCapabilityDelegationRequest<Schema, TargetCapability>,
     {

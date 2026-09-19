@@ -13,8 +13,7 @@ impl UiMountedIdentityState {
         mounted_instance: UiMountedInstanceIdentity,
     ) -> Option<UiPresentedAuthoredAttribution> {
         let (node, _) = self
-            .current_projection
-            .as_ref()?
+            .current_projection()?
             .semantic_projection()
             .node_receipt_with_probes(mounted_instance);
         let graph_node = node?.graph_node();

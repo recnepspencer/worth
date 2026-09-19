@@ -4,6 +4,7 @@ use worth_query_declaration::facade::application_query::{
     ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
     ApplicationQueryResultFieldRef, ApplicationQueryResultShapeBuilder,
 };
+use worth_query_declaration::facade::application_schema::U64ApplicationValueBinding;
 use worth_query_declaration::{
     worth_query_application_query, worth_query_application_schema, worth_query_aspect,
     worth_query_entity, worth_query_field,
@@ -31,16 +32,18 @@ worth_query_application_schema! {
     }
 }
 
-worth_query_entity!(pub Record in HostileConsumerSchema);
-worth_query_aspect!(pub RecordFacts in HostileConsumerSchema, Record; identity = AspectIdentity(0x91611041), revision = AspectContractRevision(1),);
+worth_query_entity!(pub Record for HostileConsumerSchema);
+worth_query_aspect!(pub RecordFacts for HostileConsumerSchema, Record; identity = AspectIdentity(0x91611041), revision = AspectContractRevision(1),);
 worth_query_field!(
-    pub RecordIdentity in HostileConsumerSchema, Record, RecordFacts:
-    u64, read_only, equality
+    pub RecordIdentity for HostileConsumerSchema, Record, RecordFacts:
+    u64 => U64ApplicationValueBinding, read_only, equality
 );
 
 struct RecordQueryParameters;
 struct RecordQueryResult;
 struct RecordIdentitySlot;
+worth_query_declaration::worth_query_structured_value_binding!(RecordQueryParametersBinding for RecordQueryParameters { identity: "RecordQueryParameters" });
+worth_query_declaration::worth_query_structured_value_binding!(RecordQueryResultBinding for RecordQueryResult { identity: "worth.query.test.host.record_query.result.v1" });
 worth_query_declaration::worth_query_portable_type!(
     RecordQueryResult => "worth.query.test.host.record_query.result.v1"
 );
@@ -49,10 +52,11 @@ worth_query_declaration::worth_query_portable_type!(
 );
 
 worth_query_application_query!(
-    RecordQuery in HostileConsumerSchema,
-    parameters RecordQueryParameters,
-    result RecordQueryResult,
-    scope Record,
+    RecordQuery for HostileConsumerSchema,
+    identity "RecordQuery",
+    parameters RecordQueryParametersBinding,
+    result RecordQueryResultBinding,
+    scope Record => "Record",
     name "record_query"
 );
 
@@ -68,6 +72,7 @@ fn record_query_definition() -> ApplicationQueryDefinition<
         RecordQuery,
         Record,
         RecordQueryResult,
+        RecordQueryResultBinding,
     >::new(Record::reference())
     .field(ApplicationQueryResultFieldRef::<
         RecordQuery,
@@ -121,7 +126,7 @@ fn external_host_consumer_has_one_obligation_and_one_graph_read_planning_path() 
         .bind_application_schema(declaration)
         .expect("hostile-consumer schema should bind");
     let query = schema
-        .application_query(RecordQuery::reference())
+        .certification_query(RecordQuery::reference())
         .expect("hostile-consumer query should be installed");
 
     let adoption =

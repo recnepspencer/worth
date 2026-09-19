@@ -1,6 +1,8 @@
 use std::collections::BTreeMap;
 
-const MAX_PRESENTATION_TRACKS: usize = 64;
+mod presented_samples;
+
+pub(super) const MAX_PRESENTATION_TRACKS: usize = 64;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum UiPresentationMotionSamplingDenial {
@@ -60,6 +62,36 @@ impl Default for UiMountedMotionSampler {
 }
 
 impl UiMountedMotionSampler {
+    pub(in crate::mounting) fn accept_published_entrance(
+        &mut self,
+        sample: super::UiPresentationMotionSampleReceipt,
+    ) {
+        self.tracks
+            .get_mut(&sample.target())
+            .expect("published entrance was installed from its exact Motion commit")
+            .accept_published_entrance(sample);
+    }
+
+    pub(in crate::mounting) fn retained_targets(
+        &self,
+    ) -> Vec<crate::runtime::motion::UiMotionTargetIdentity> {
+        self.tracks.keys().copied().collect()
+    }
+
+    pub(in crate::mounting) fn rebind_published_presentation(
+        &mut self,
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+        presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
+    ) {
+        for state in self
+            .tracks
+            .values_mut()
+            .filter(|state| state.track.target().semantic_surface() == surface)
+        {
+            state.rebind_published_presentation(presentation);
+        }
+    }
+
     pub(crate) fn install(
         &mut self,
         receipt: crate::runtime::motion::UiMotionCommitReceipt,
@@ -81,19 +113,19 @@ impl UiMountedMotionSampler {
         let current = self.tracks.get(&target).and_then(|state| {
             state
                 .active
-                .then_some((state.current_geometry, state.current_opacity))
+                .then_some((state.current_geometry, state.current_opacity_units))
         });
         match super::interruption::resolve(track, current, self.reduced_motion) {
             super::interruption::UiPresentationMotionInstallation::Install {
                 geometry,
-                opacity,
+                opacity_units,
                 duration_ticks,
             } => {
                 let state = match super::track_sampling::UiPresentationTrackState::new(
                     track,
                     None,
                     geometry,
-                    opacity,
+                    opacity_units,
                     duration_ticks,
                 ) {
                     Ok(state) => state,
@@ -227,38 +259,6 @@ impl UiMountedMotionSampler {
         ))
     }
 
-    pub(crate) fn current_sample_for(
-        &self,
-        mounted_instance: worth_ui_host_contract::UiMountedInstanceIdentity,
-        presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
-    ) -> Option<super::UiPresentationMotionSampleReceipt> {
-        let mut matches = self.tracks.values().filter_map(|state| {
-            if !state.presented {
-                return None;
-            }
-            let sample = state.current?;
-            (sample.target().mounted_instance() == mounted_instance
-                && same_surface_binding(sample.geometry()?.presentation_basis(), presentation))
-            .then_some(sample)
-        });
-        let sample = matches.next()?;
-        matches.next().is_none().then_some(sample)
-    }
-
-    pub(crate) fn current_sample_for_target(
-        &self,
-        target: crate::runtime::motion::UiMotionTargetIdentity,
-        presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
-    ) -> Option<super::UiPresentationMotionSampleReceipt> {
-        let state = self.tracks.get(&target)?;
-        if !state.presented {
-            return None;
-        }
-        let sample = state.current?;
-        same_surface_binding(sample.geometry()?.presentation_basis(), presentation)
-            .then_some(sample)
-    }
-
     pub(crate) fn retire_terminal_track(
         &mut self,
         track: crate::runtime::motion::UiMotionTrackIdentity,
@@ -270,10 +270,23 @@ impl UiMountedMotionSampler {
         target.is_some_and(|target| self.tracks.remove(&target).is_some())
     }
 
-    /// Tracks the sampler still retains, active or not. Retention is what makes
-    /// a zero `tracks_considered` meaningful rather than vacuous.
-    pub(crate) fn retained_track_count(&self) -> usize {
-        self.tracks.len()
+    pub(crate) fn retire_rebound_track(
+        &mut self,
+        track: crate::runtime::motion::UiMotionTrackIdentity,
+    ) -> bool {
+        let target = self.tracks.iter().find_map(|(target, state)| {
+            (state.queued.is_none() && state.track.identity() == track).then_some(*target)
+        });
+        target.is_some_and(|target| self.tracks.remove(&target).is_some())
+    }
+
+    pub(crate) fn contains_track(
+        &self,
+        track: crate::runtime::motion::UiMotionTrackIdentity,
+    ) -> bool {
+        self.tracks
+            .values()
+            .any(|state| state.track.identity() == track)
     }
 
     pub(crate) fn has_active_tracks(&self) -> bool {
@@ -285,6 +298,10 @@ impl UiMountedMotionSampler {
         posture: super::UiPresentationReducedMotionPosture,
     ) {
         self.reduced_motion = posture;
+    }
+
+    pub(crate) const fn reduced_motion(&self) -> super::UiPresentationReducedMotionPosture {
+        self.reduced_motion
     }
 
     pub(crate) fn shutdown(&mut self) -> usize {

@@ -122,12 +122,7 @@ fn observe(
 ) -> worth_query_host::facade::primary_graph::WorthQueryConditionalClockObservationReceipt<
     crate::adapters::CourtroomClock,
 > {
-    match world
-        .application
-        .conditional_clock(&world.clock)
-        .unwrap()
-        .observe()
-    {
+    match world.conditional_clock().observe() {
         WorthQueryConditionalClockObservationOutcome::Accepted(receipt) => receipt,
         _ => panic!("the convergence observation must be accepted"),
     }

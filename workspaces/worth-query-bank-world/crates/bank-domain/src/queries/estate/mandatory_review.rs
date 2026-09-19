@@ -43,12 +43,32 @@ pub const fn estate_mandatory_reviews(estate: EstateCaseId) -> EstateMandatoryRe
     EstateMandatoryReviewRequest { estate }
 }
 
+worth_query_decl::facade::worth_query_structured_value_binding!(pub EstateMandatoryReviewQueryParametersBinding for EstateMandatoryReviewQueryParameters { identity: "EstateMandatoryReviewQueryParameters" });
+worth_query_decl::facade::worth_query_structured_value_binding!(pub EstateMandatoryReviewQueryResultBinding for EstateMandatoryReviewResult { identity: "EstateMandatoryReviewResult" });
 worth_query_application_query!(
-    pub EstateMandatoryReviewQuery in BankSchema,
-    parameters EstateMandatoryReviewQueryParameters,
-    result EstateMandatoryReviewResult,
-    scope EstateCase,
+    pub EstateMandatoryReviewQuery for BankSchema,
+    identity "EstateMandatoryReviewQuery",
+    parameters EstateMandatoryReviewQueryParametersBinding,
+    result EstateMandatoryReviewQueryResultBinding,
+    scope EstateCase => "EstateCase",
     name "estate_mandatory_reviews"
+);
+worth_query_decl::facade::worth_query_structured_value_binding!(pub EstateMandatoryReviewRequestBinding for EstateMandatoryReviewRequest { identity: "EstateMandatoryReviewRequest" });
+worth_query_decl::facade::worth_query_query_binding!(
+    pub EstateMandatoryReviewQueryBinding for EstateMandatoryReviewRequest, schema BankSchema,
+    identity "worth.bank.estate-mandatory-review-query-binding.v1",
+    input EstateMandatoryReviewRequestBinding,
+    query EstateMandatoryReviewQuery,
+    parameters EstateMandatoryReviewQueryParametersBinding => |_| worth_query_decl::facade::application_query::ApplicationQueryParameterSet::new(),
+    result EstateMandatoryReviewQueryResultBinding,
+    principal crate::schema::BankPrincipalBinding, mapping crate::schema::ExternalPrincipalMapping, principal_entity crate::schema::Principal,
+        principal_identity crate::model::BankPrincipalId, identity_binding crate::schema::BankPrincipalIdBinding,
+    scope EstateCase, crate::schema::EstateCaseRecord, crate::schema::EstateCaseIdentityField,
+        EstateCaseId, worth_query_decl::facade::application_schema::ReadOnly,
+        worth_query_decl::facade::application_schema::NoApplicationUnit,
+    field crate::schema::EstateCaseIdentityField::reference(),
+    value EstateMandatoryReviewRequest::estate,
+    limits results 1_024, work 100_000
 );
 
 pub fn estate_mandatory_review_definition() -> ApplicationQueryDefinition<
@@ -73,17 +93,21 @@ pub fn estate_mandatory_review_definition() -> ApplicationQueryDefinition<
 }
 
 fn disclosure_contract() -> ApplicationQueryDisclosureContract {
-    let field = RestrictedBankField::AuditTrail;
+    let field = || {
+        crate::schema::encoded_bank_value::<crate::schema::RestrictedBankFieldBinding>(
+            RestrictedBankField::AuditTrail,
+        )
+    };
     let influence = ApplicationQueryInfluenceContract::forbid_all();
     ApplicationQueryDisclosureContract::governed_by(
         "estate-mandatory-review",
         ViewEstateMandatoryReviewCapability::reference(),
     )
-    .disclose_field_by(estate_identity(), field, influence.clone())
-    .disclose_relation_by(estate_reviews(), field, influence.clone())
-    .disclose_field_by(review_identity(), field, influence.clone())
-    .disclose_field_by(review_kind(), field, influence.clone())
-    .disclose_field_by(review_status(), field, influence.clone())
-    .disclose_relation_by(review_principal(), field, influence.clone())
-    .disclose_field_by(review_principal_identity(), field, influence)
+    .disclose_field_by(estate_identity(), field(), influence.clone())
+    .disclose_relation_by(estate_reviews(), field(), influence.clone())
+    .disclose_field_by(review_identity(), field(), influence.clone())
+    .disclose_field_by(review_kind(), field(), influence.clone())
+    .disclose_field_by(review_status(), field(), influence.clone())
+    .disclose_relation_by(review_principal(), field(), influence.clone())
+    .disclose_field_by(review_principal_identity(), field(), influence)
 }

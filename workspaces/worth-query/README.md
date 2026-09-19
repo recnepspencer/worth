@@ -14,6 +14,13 @@ For architecture and usage, start with:
 - [Installed Operation Lineage And Promotion](./crates/worth-query/docs/domain-capabilities/installed-operation-lineage-and-promotion.md)
 - [Application Aftermath, External Effects, And Recovery](./crates/worth-query/docs/execution/application-aftermath-and-recovery.md)
 - [Granular Live Invalidation](./crates/worth-query/docs/runtime-surfaces/granular-live-invalidation.md)
+- [Ordinary Product Workflow](./crates/worth-query-certification/examples/ordinary_product_workflow.rs)
+- [Advanced Product Branching](./crates/worth-query-certification/examples/advanced_product_branching.rs)
+
+Product branches, exact composite history, retained observations, live recovery
+handles, and pending cleanup are memory-resident. Process loss releases those
+capabilities. Restart durability belongs to Store and requires fresh owner
+readmission; Query does not serialize live authority.
 
 Use the smallest package that owns the change. Declaration work does not build
 installation, execution, publication, replay, or certification:

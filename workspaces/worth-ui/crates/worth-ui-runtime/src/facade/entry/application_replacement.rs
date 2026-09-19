@@ -11,8 +11,12 @@ mod candidate_pipeline;
 mod candidate_scroll_geometry;
 mod cutover;
 mod cutover_generation;
+#[cfg(test)]
+mod cutover_test_access;
 mod mounted;
 mod mounted_frame;
+mod owner_succession;
+mod portal_lifecycle;
 mod prepared_activation_access;
 mod publication_observation;
 mod rebind_preparation;
@@ -23,16 +27,16 @@ mod selection_replacement;
 mod service_installation_reconciliation;
 
 pub use candidate::{WorthUiReplacementCandidateSummary, WorthUiReplacementPlannedCostEnvelope};
-pub(crate) use mounted::{
-    WorthUiDetachedMountedApplicationReplacementInFlight,
-    WorthUiDetachedPreparedMountedApplicationReplacement,
-};
 pub use mounted::{
-    WorthUiMountedApplicationReplacementInFlight,
+    UiNativeReplacementLayoutInput, WorthUiMountedApplicationReplacementInFlight,
     WorthUiMountedApplicationReplacementIndeterminate, WorthUiMountedApplicationReplacementOutcome,
     WorthUiMountedReplacementAdmissionDenial, WorthUiMountedReplacementCompletionDenial,
     WorthUiMountedReplacementPreparationOutcome, WorthUiMountedReplacementRetentionDenial,
     WorthUiPreparedMountedApplicationReplacement,
+};
+pub(crate) use mounted::{
+    UiNativeReplacementLayoutSupplier, WorthUiDetachedMountedApplicationReplacementInFlight,
+    WorthUiDetachedPreparedMountedApplicationReplacement,
 };
 pub use publication_observation::WorthUiApplicationPublicationObservation;
 
@@ -109,6 +113,13 @@ pub struct WorthUiApplicationCutoverReceipt {
     intent_evidence: worth_ui_inspection::UiIntentEvidenceRetirementReport,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WorthUiPortalExitRetentionPendingKind {
+    InFlight,
+    Indeterminate,
+    Reconstruction,
+}
+
 enum WorthUiApplicationCutoverTransition {
     Prepared(crate::runtime::WorthUiPreparedApplicationPlanSwap),
     Committed {
@@ -129,6 +140,7 @@ pub(super) struct WorthUiPreparedApplicationActivation {
     candidate_application_authority:
         crate::facade::prepared_application_authority::WorthUiPreparedApplicationLoweringAuthority,
     candidate_service_policy_plan: crate::declaration::UiNormalizedServicePolicyPlan,
+    appearance_succession: Option<super::UiPreparedAppearanceGenerationSuccession>,
     reload_cost: Result<
         crate::runtime::WorthUiReloadLoweringCounterReceipt,
         crate::runtime::WorthUiReloadCounterBoundaryDenial,
@@ -172,7 +184,19 @@ pub enum WorthUiApplicationReplacementStagingDenial {
 #[derive(Debug)]
 pub enum WorthUiApplicationCutoverDenial {
     MountedPresentationInFlight,
+    IncompleteMountedSurfaceScope,
     ForeignActiveApplicationSession,
+    AppearanceOwnerUnavailable(worth_ui_dsl::UiAppearanceStateAxis),
+    AppearanceOwnerSuccessionUnavailable,
+    OverlayBindingSuccessionUnavailable,
+    OccurrenceGeometry(crate::mounting::UiMountedOccurrenceGeometryDenial),
+    AppearanceThemeAdmission(crate::runtime::appearance::UiThemeCapabilityReceiptDenial),
+    AppearanceThemeSuccession(
+        crate::runtime::presentation_state::UiAppearanceGenerationSuccessionDenial,
+    ),
+    AppearanceInspectionSuccession(
+        crate::runtime::appearance::UiAppearanceInspectionGenerationSuccessionDenial,
+    ),
     PreparedApplicationGraphMismatch,
     PreparedApplicationAuthorityMismatch,
     FrameBoundaryUnavailable {
@@ -182,6 +206,10 @@ pub enum WorthUiApplicationCutoverDenial {
     MountedIdentity(crate::mounting::UiMountedIdentityDenial),
     MountedFrame(crate::mounting::UiMountedFramePreparationDenial),
     MountedPresentationRequired {
+        retry: Box<WorthUiApplicationCutoverRetry>,
+    },
+    PortalExitRetentionPending {
+        kind: WorthUiPortalExitRetentionPendingKind,
         retry: Box<WorthUiApplicationCutoverRetry>,
     },
     MissingAllocationCatalogSuccessorReceipt,

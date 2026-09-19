@@ -13,7 +13,7 @@ use crate::storage::partition::{AdjacencyKindBasis, AdjacencySet};
 /// Charges accumulate locally and settle once, because the instrumentation sink
 /// is behind a mutex and a per-element charge would be its own hot-path defect.
 #[derive(Debug, Default)]
-pub(super) struct AdjacencyLeaseLedger {
+pub(crate) struct AdjacencyLeaseLedger {
     kind_slices_leased: usize,
 }
 
@@ -23,7 +23,7 @@ impl AdjacencyLeaseLedger {
     /// The returned slice is the substrate's own storage. Nothing is copied,
     /// so the caller may be handed a fanout far larger than its budget and
     /// still stop after the units it is allowed to spend.
-    pub(super) fn lease<'edition>(
+    pub(crate) fn lease<'edition>(
         &mut self,
         adjacency: Option<&'edition AdjacencySet>,
         basis: AdjacencyKindBasis,
@@ -37,7 +37,7 @@ impl AdjacencyLeaseLedger {
     }
 
     /// Settle the traversal's leases in one instrumentation visit.
-    pub(super) fn settle(self, runtime: &RelationalRuntime) {
+    pub(crate) fn settle(self, runtime: &RelationalRuntime) {
         if self.kind_slices_leased == 0 {
             return;
         }

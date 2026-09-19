@@ -32,6 +32,7 @@ mod native_phase_f_world_evidence;
 mod product_process;
 mod query_source;
 mod source_watch;
+mod theme_preference;
 mod visual_identity_adjudication;
 mod visual_identity_execution;
 mod visual_observation_publication;
@@ -132,7 +133,7 @@ fn run_native_gate_d_pin_world() -> ExitCode {
                 .collect::<Vec<_>>();
             let evidence = serde_json::json!({
                 "schema": "worth-ui-native-gate-d-pin-world-v3",
-                "mounted_bindings": usize::from(receipt.presentation().binding_generation() != 0),
+                "mounted_bindings": usize::from(receipt.presentation().is_some_and(|presentation| presentation.binding_generation() != 0)),
                 "pinned_layouts": receipt.peak_text_layout_count(),
                 "presentations": receipt.retained_frames().len(),
                 "atlas_transactions": receipt.text_atlas_transactions(),
@@ -261,8 +262,8 @@ fn run_native_phase2_world() -> ExitCode {
     match platform.run(worth_ui_platform_pulse::PlatformPulseNativeSeedApplication::new()) {
         UiNativePlatformOutcome::Closed(receipt)
             if receipt.terminal_census().is_zero()
-                && receipt.presentation().retained_center_rgba8() == [47, 129, 247, 255]
-                && receipt.presentation().retained_baseline_rgba8() == [0, 0, 0, 0] =>
+                && receipt.final_frame().retained_center_rgba8() == [47, 129, 247, 255]
+                && receipt.final_frame().retained_baseline_rgba8() == [0, 0, 0, 0] =>
         {
             println!(
                 "{}",

@@ -12,7 +12,7 @@ fn same_runtime_foreign_bridge_adapter_denies_before_lower_authority_admission()
         .start_direct_resource_attempt(&operation, plan)
         .expect("exact operation should start");
     let context = causal_fixture::source_profile_substitution_context();
-    let request = WorthQueryManagedTruthReadRequest::new(
+    let request = WorthQueryManagedTruthReadRequest::from_relational_basis(
         context.descriptor.clone(),
         worth_runtime_bridge::facade::SnapshotReadPacket::new(vec![]),
     );
@@ -31,7 +31,7 @@ fn same_runtime_foreign_bridge_adapter_denies_before_lower_authority_admission()
     assert!(rejection.detail().contains("authoritative adapter"));
 
     let attempt = rejection.into_resource_attempt();
-    let request = WorthQueryManagedTruthReadRequest::new(
+    let request = WorthQueryManagedTruthReadRequest::from_relational_basis(
         context.descriptor,
         worth_runtime_bridge::facade::SnapshotReadPacket::new(vec![]),
     );

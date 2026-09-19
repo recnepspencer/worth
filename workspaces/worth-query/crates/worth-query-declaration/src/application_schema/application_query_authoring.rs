@@ -1,8 +1,19 @@
-use crate::application_query::ApplicationQueryDefinition;
+use crate::application_query::{ApplicationQueryBinding, ApplicationQueryDefinition};
 
 use super::{ApplicationSchemaDeclarationBuilder, ApplicationSchemaMember};
 
 impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
+    /// Registers one complete typed query binding for installation.
+    pub fn application_query_binding<Binding>(mut self) -> Self
+    where
+        Schema: super::ApplicationSchema,
+        Binding: ApplicationQueryBinding<Schema>,
+    {
+        self.member_provenance
+            .register_query_binding(Binding::descriptor());
+        self
+    }
+
     /// Declares immutable application-query meaning as part of this package.
     ///
     /// Installed runtimes resolve typed query references against this retained

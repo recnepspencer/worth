@@ -227,14 +227,6 @@ impl SnapshotStateBasis {
             .and_then(|root| root.axes())
             .map(|axes| VersionId(axes.storage_version))
     }
-
-    #[cfg(test)]
-    pub(crate) fn exact(&self) -> Option<&VisibilitySnapshotBasis> {
-        match self {
-            Self::Exact(basis) => Some(basis),
-            Self::Historical(_) => None,
-        }
-    }
 }
 
 /// Derived pin set plus the exact immutable owner root it was built from.

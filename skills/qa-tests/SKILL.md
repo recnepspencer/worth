@@ -38,6 +38,14 @@ Give the reviewer the specification, relevant laws, current diff, fixtures,
 harnesses, assertions, production boundary, commands, results, timings, and
 known environment constraints. Verify every finding directly.
 
+Minimize ceremony and maximize pragmatic progress without relaxing substantive
+review standards. Strictness belongs in correctness and evidence, not
+coordination artifacts. Review the living branch and current diff; after a
+finding, the same implementer corrects it and the same reviewer rechecks only
+the correction and causally affected evidence. Do not create SHA checkpoints,
+detached review snapshots, replacement worktrees, approval ledgers, or restart
+the full review unless the correction invalidates earlier conclusions.
+
 ## Review lenses
 
 - **World honesty:** Authority, identity, relationships, revisions, and state

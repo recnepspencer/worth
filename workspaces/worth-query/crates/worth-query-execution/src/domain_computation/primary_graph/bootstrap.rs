@@ -3,10 +3,9 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 
 use worth_query_installation::facade::{
-    ApplicationSchema, ApplicationSchemaBindingIdentity, TypedApplicationIdentityValue,
-    WorthQueryExternalPrincipalIdentity, WorthQueryInstalledApplicationSchema,
-    WorthQueryInstalledPackageIndex, WorthQueryInstalledPrincipalBinding,
-    WorthQueryPrincipalBindingInstallationDenialKind, WorthQueryPrincipalMappingStatus,
+    ApplicationIdentityScalarValueBinding, ApplicationSchema, WorthQueryExternalPrincipalIdentity,
+    WorthQueryInstalledApplicationSchema, WorthQueryInstalledPackageIndex,
+    WorthQueryInstalledPrincipalBinding, WorthQueryPrincipalMappingStatus,
 };
 use worth_relational::facade::identity::KindId;
 use worth_relational::facade::runtime::{RelationalRuntime, RelationalRuntimeApi};
@@ -22,12 +21,18 @@ use crate::domain_computation::execution_runtime::{
 use super::bootstrap_publication::{build_identity_indexes, commit_bootstrap_rows};
 use super::initial_schema_denial::map_initial_schema_installation_denial;
 use super::schema_layout::{WorthQueryPrimaryGraphLayout, WorthQueryPrimaryPrincipalBindingLayout};
+use super::WorthQueryApplicationInvariantFactories;
 use super::{
     WorthQueryApplicationPrincipalKey, WorthQueryPrimaryGraph,
     WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphInstallationDenialKind,
 };
 
+mod binding_denial;
+mod publication;
+mod publication_target;
+use binding_denial::map_binding_denial_kind;
 mod truth_partition;
+pub use publication::WorthQueryPrimaryGraphPublication;
 
 pub(super) struct WorthQueryPrincipalBootstrapRow {
     pub(super) binding: String,
@@ -46,6 +51,8 @@ pub struct WorthQueryPrimaryGraphBootstrap<Schema> {
     pub(super) runtime_authority: WorthQueryRuntimeAuthorityIdentity,
     installed_packages: Arc<WorthQueryInstalledPackageIndex>,
     pub(super) graph: WorthQueryPrimaryGraph,
+    pub(super) product_world_resources:
+        crate::domain_computation::execution_runtime::product_world::WorthQueryProductWorldResources,
     rows: Vec<WorthQueryPrincipalBootstrapRow>,
     external_identities: BTreeSet<(String, WorthQueryExternalPrincipalIdentity)>,
     principal_identities: BTreeSet<(String, AuthoritativeFieldComparisonKey)>,
@@ -54,6 +61,10 @@ pub struct WorthQueryPrimaryGraphBootstrap<Schema> {
     pub(super) relation_keys: BTreeSet<(KindId, String)>,
     pub(super) entity_rows: Vec<super::typed_bootstrap::WorthQueryTypedEntityBootstrapRow>,
     pub(super) relation_rows: Vec<super::typed_bootstrap::WorthQueryTypedRelationBootstrapRow>,
+    pub(super) mutation_handlers: super::handler::PendingMutationHandlerRegistry<Schema>,
+    invariant_installation_receipt:
+        worth_relational::facade::runtime::RelationalInitialSchemaInstallationReceipt,
+    expected_invariant_inventory_digest: [u8; 32],
     _schema: PhantomData<fn() -> Schema>,
 }
 
@@ -62,14 +73,19 @@ impl WorthQueryExecutionInstallationAuthority {
         &self,
         runtime: &WorthQueryExecutionRuntime,
         installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
+        product_world_resources: crate::domain_computation::execution_runtime::product_world::WorthQueryProductWorldResources,
     ) -> Result<WorthQueryPrimaryGraphBootstrap<Schema>, WorthQueryPrimaryGraphInstallationDenial>
     where
         Schema: ApplicationSchema,
     {
-        self.prepare_primary_graph_with_relational_runtime(
+        let factories =
+            WorthQueryApplicationInvariantFactories::for_installed_schema(installed_schema);
+        self.prepare_primary_graph_with_relational_runtime_and_invariants(
             runtime,
             installed_schema,
             RelationalRuntimeApi::builder().build(),
+            product_world_resources,
+            factories,
         )
     }
 
@@ -77,7 +93,30 @@ impl WorthQueryExecutionInstallationAuthority {
         &self,
         runtime: &WorthQueryExecutionRuntime,
         installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
+        relational_runtime: RelationalRuntime,
+        product_world_resources: crate::domain_computation::execution_runtime::product_world::WorthQueryProductWorldResources,
+    ) -> Result<WorthQueryPrimaryGraphBootstrap<Schema>, WorthQueryPrimaryGraphInstallationDenial>
+    where
+        Schema: ApplicationSchema,
+    {
+        let factories =
+            WorthQueryApplicationInvariantFactories::for_installed_schema(installed_schema);
+        self.prepare_primary_graph_with_relational_runtime_and_invariants(
+            runtime,
+            installed_schema,
+            relational_runtime,
+            product_world_resources,
+            factories,
+        )
+    }
+
+    pub(crate) fn prepare_primary_graph_with_relational_runtime_and_invariants<Schema>(
+        &self,
+        runtime: &WorthQueryExecutionRuntime,
+        installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
         mut relational_runtime: RelationalRuntime,
+        product_world_resources: crate::domain_computation::execution_runtime::product_world::WorthQueryProductWorldResources,
+        invariant_factories: WorthQueryApplicationInvariantFactories<Schema>,
     ) -> Result<WorthQueryPrimaryGraphBootstrap<Schema>, WorthQueryPrimaryGraphInstallationDenial>
     where
         Schema: ApplicationSchema,
@@ -108,11 +147,23 @@ impl WorthQueryExecutionInstallationAuthority {
             installed_schema.native_contracts(),
             &relational_runtime.config().schema.registry,
         )?;
-        relational_runtime
+        let registrations =
+            invariant_factories.lower(installed_schema.binding_identity(), &layout)?;
+        let expected_invariant_inventory_digest =
+            worth_relational::facade::runtime::custom_invariant_inventory_digest(&registrations);
+        let invariant_installation_receipt = relational_runtime
             .prepare_initial_schema_installation()
             .map_err(map_initial_schema_installation_denial)?
-            .install(additions)
+            .install_with_custom_invariants(additions, registrations)
             .map_err(map_initial_schema_installation_denial)?;
+        if invariant_installation_receipt.custom_invariant_inventory_digest()
+            != &expected_invariant_inventory_digest
+        {
+            return Err(primary_graph_denial(
+                WorthQueryPrimaryGraphInstallationDenialKind::InvariantInstallationReceiptMismatch,
+                "Relational installed an invariant inventory outside the application catalog",
+            ));
+        }
         let graph = WorthQueryPrimaryGraph::new(
             runtime.authority_identity(),
             installed_schema.binding_identity(),
@@ -123,6 +174,7 @@ impl WorthQueryExecutionInstallationAuthority {
             runtime_authority: runtime.authority_identity(),
             installed_packages: runtime.retain_installed_packages(),
             graph,
+            product_world_resources,
             rows: Vec::new(),
             external_identities: BTreeSet::new(),
             principal_identities: BTreeSet::new(),
@@ -131,6 +183,9 @@ impl WorthQueryExecutionInstallationAuthority {
             relation_keys: BTreeSet::new(),
             entity_rows: Vec::new(),
             relation_rows: Vec::new(),
+            mutation_handlers: Default::default(),
+            invariant_installation_receipt,
+            expected_invariant_inventory_digest,
             _schema: PhantomData,
         })
     }
@@ -140,7 +195,13 @@ impl<Schema> WorthQueryPrimaryGraphBootstrap<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub fn bind_principal<Binding, Mapping, Principal, PrincipalIdentity>(
+    pub fn bind_principal<
+        Binding,
+        Mapping,
+        Principal,
+        PrincipalIdentity,
+        PrincipalIdentityBinding,
+    >(
         &mut self,
         installed_binding: &WorthQueryInstalledPrincipalBinding<
             Schema,
@@ -148,6 +209,7 @@ where
             Mapping,
             Principal,
             PrincipalIdentity,
+            PrincipalIdentityBinding,
         >,
         principal_key: WorthQueryApplicationPrincipalKey<Schema, Principal>,
         principal_identity: PrincipalIdentity,
@@ -155,7 +217,8 @@ where
         status: WorthQueryPrincipalMappingStatus,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>
     where
-        PrincipalIdentity: TypedApplicationIdentityValue,
+        PrincipalIdentityBinding: ApplicationIdentityScalarValueBinding<Value = PrincipalIdentity>,
+        PrincipalIdentity: 'static,
     {
         self.installed_packages
             .validate_principal_binding(installed_binding)
@@ -182,7 +245,15 @@ where
         self.admit_principal_row(WorthQueryPrincipalBootstrapRow {
             binding: installed_binding.binding().to_string(),
             principal_key: principal_key.as_str().to_string(),
-            principal_identity: principal_identity.into_foundational_value(),
+            principal_identity: installed_binding
+                .principal_identity_binding()
+                .encode(&principal_identity)
+                .map_err(|denial| {
+                    primary_graph_denial(
+                        WorthQueryPrimaryGraphInstallationDenialKind::BindingSchemaMismatch,
+                        format!("principal identity encoding was rejected: {denial:?}"),
+                    )
+                })?,
             identity,
             status,
             layout,
@@ -269,48 +340,6 @@ where
             policy_relation_count: relation_count,
         })
     }
-
-    fn validate_publication_target(
-        &self,
-        runtime: &WorthQueryExecutionRuntime,
-        authority: &WorthQueryExecutionInstallationAuthority,
-    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-        if self.runtime_authority != runtime.authority_identity() || !authority.belongs_to(runtime)
-        {
-            return Err(primary_graph_denial(
-                WorthQueryPrimaryGraphInstallationDenialKind::ForeignRuntime,
-                "primary graph bootstrap belongs to another execution runtime",
-            ));
-        }
-        if runtime.primary_graph().is_some() {
-            return Err(primary_graph_denial(
-                WorthQueryPrimaryGraphInstallationDenialKind::AlreadyInstalled,
-                "execution runtime already owns a primary graph",
-            ));
-        }
-        let declaration = Schema::declaration().map_err(|denial| {
-            primary_graph_denial(
-                WorthQueryPrimaryGraphInstallationDenialKind::StaleInstalledSchema,
-                format!("{denial:?}"),
-            )
-        })?;
-        let current = runtime
-            .installed_packages()
-            .bind_application_schema(declaration)
-            .map_err(|denial| {
-                primary_graph_denial(
-                    WorthQueryPrimaryGraphInstallationDenialKind::StaleInstalledSchema,
-                    denial.subject(),
-                )
-            })?;
-        if current.binding_identity() != *self.graph.binding_identity() {
-            return Err(primary_graph_denial(
-                WorthQueryPrimaryGraphInstallationDenialKind::StaleInstalledSchema,
-                "installed schema generation changed after bootstrap preparation",
-            ));
-        }
-        Ok(())
-    }
 }
 
 fn primary_graph_denial(
@@ -318,64 +347,4 @@ fn primary_graph_denial(
     subject: impl Into<String>,
 ) -> WorthQueryPrimaryGraphInstallationDenial {
     WorthQueryPrimaryGraphInstallationDenial::new(kind, subject)
-}
-
-fn map_binding_denial_kind(
-    kind: WorthQueryPrincipalBindingInstallationDenialKind,
-) -> WorthQueryPrimaryGraphInstallationDenialKind {
-    match kind {
-        WorthQueryPrincipalBindingInstallationDenialKind::ForeignRuntime => {
-            WorthQueryPrimaryGraphInstallationDenialKind::ForeignRuntime
-        }
-        WorthQueryPrincipalBindingInstallationDenialKind::StaleGeneration => {
-            WorthQueryPrimaryGraphInstallationDenialKind::StaleInstalledSchema
-        }
-        WorthQueryPrincipalBindingInstallationDenialKind::BindingMeaningChanged
-        | WorthQueryPrincipalBindingInstallationDenialKind::SchemaMeaningChanged => {
-            WorthQueryPrimaryGraphInstallationDenialKind::BindingSchemaMismatch
-        }
-        WorthQueryPrincipalBindingInstallationDenialKind::BindingNotInstalled
-        | WorthQueryPrincipalBindingInstallationDenialKind::PackageIdentityChanged
-        | WorthQueryPrincipalBindingInstallationDenialKind::AuthorityMismatch => {
-            WorthQueryPrimaryGraphInstallationDenialKind::BindingNotInstalled
-        }
-    }
-}
-
-/// Evidence that a consumed bootstrap published the primary graph and all
-/// declared identity indexes into one execution runtime.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthQueryPrimaryGraphPublication {
-    binding_identity: ApplicationSchemaBindingIdentity,
-    principal_binding_count: usize,
-    identity_index_count: usize,
-    application_equality_index_count: usize,
-    policy_entity_count: usize,
-    policy_relation_count: usize,
-}
-
-impl WorthQueryPrimaryGraphPublication {
-    pub fn binding_identity(&self) -> &ApplicationSchemaBindingIdentity {
-        &self.binding_identity
-    }
-
-    pub const fn principal_binding_count(&self) -> usize {
-        self.principal_binding_count
-    }
-
-    pub const fn identity_index_count(&self) -> usize {
-        self.identity_index_count
-    }
-
-    pub const fn application_equality_index_count(&self) -> usize {
-        self.application_equality_index_count
-    }
-
-    pub const fn policy_entity_count(&self) -> usize {
-        self.policy_entity_count
-    }
-
-    pub const fn policy_relation_count(&self) -> usize {
-        self.policy_relation_count
-    }
 }

@@ -17,6 +17,10 @@ pub(super) fn record(
     outcome: UiHostSurfacePresentationOutcome,
     text_candidate: Option<super::UiMountedTextPinCandidate>,
     semantic_receipts: Box<[worth_ui_query_binding::WorthUiPresentationRecoveryReceipt]>,
+    text_reuse: Option<
+        crate::native_platform::text_presentation::UiMountedTextForegroundReuseUpdate,
+    >,
+    text: &mut crate::native_platform::text_presentation::UiNativeMountedTextCoordinator,
     presentation_async: Option<
         &mut crate::native_platform::text_presentation::UiPresentationAsyncRuntime,
     >,
@@ -27,12 +31,14 @@ pub(super) fn record(
         expected_effects,
         progress,
         presentation_async,
+        text,
     }
     .record(
         outcome,
         PresentationOutcomeEvidence {
             text_candidate,
             semantic_receipts,
+            text_reuse,
         },
     )
 }
@@ -40,6 +46,8 @@ pub(super) fn record(
 struct PresentationOutcomeEvidence {
     text_candidate: Option<super::UiMountedTextPinCandidate>,
     semantic_receipts: Box<[worth_ui_query_binding::WorthUiPresentationRecoveryReceipt]>,
+    text_reuse:
+        Option<crate::native_platform::text_presentation::UiMountedTextForegroundReuseUpdate>,
 }
 
 struct PresentationOutcomeSettlement<'a, 'host, 'authority> {
@@ -49,6 +57,7 @@ struct PresentationOutcomeSettlement<'a, 'host, 'authority> {
     progress: &'a mut UiMountedPresentationProgress,
     presentation_async:
         Option<&'a mut crate::native_platform::text_presentation::UiPresentationAsyncRuntime>,
+    text: &'a mut crate::native_platform::text_presentation::UiNativeMountedTextCoordinator,
 }
 
 impl PresentationOutcomeSettlement<'_, '_, '_> {
@@ -60,20 +69,21 @@ impl PresentationOutcomeSettlement<'_, '_, '_> {
         let PresentationOutcomeEvidence {
             text_candidate,
             semantic_receipts,
+            text_reuse,
         } = evidence;
         match outcome {
             UiHostSurfacePresentationOutcome::RejectedBeforeEffects(denial) => {
-                self.record_rejected_before_effects(denial, semantic_receipts)
+                self.record_rejected_before_effects(denial, semantic_receipts, text_reuse)
             }
             UiHostSurfacePresentationOutcome::InFlight(token) => {
-                self.record_in_flight(token, text_candidate, semantic_receipts);
+                self.record_in_flight(token, text_candidate, semantic_receipts, text_reuse);
                 Ok(())
             }
             UiHostSurfacePresentationOutcome::PresentationIndeterminate => {
-                self.record_effects_indeterminate(semantic_receipts)
+                self.record_effects_indeterminate(semantic_receipts, text_reuse)
             }
             UiHostSurfacePresentationOutcome::Presented(completion) => {
-                self.record_presented(completion, semantic_receipts)
+                self.record_presented(completion, semantic_receipts, text_reuse)
             }
         }
     }
@@ -82,6 +92,9 @@ impl PresentationOutcomeSettlement<'_, '_, '_> {
         &mut self,
         denial: UiHostSurfacePresentationDenial,
         semantic_receipts: Box<[worth_ui_query_binding::WorthUiPresentationRecoveryReceipt]>,
+        _text_reuse: Option<
+            crate::native_platform::text_presentation::UiMountedTextForegroundReuseUpdate,
+        >,
     ) -> Result<(), UiIndeterminatePresentationEvidence> {
         if let Some(owner) = self.presentation_async.as_deref_mut() {
             if semantic_receipts
@@ -111,6 +124,9 @@ impl PresentationOutcomeSettlement<'_, '_, '_> {
         token: UiHostPresentationCompletionToken,
         text_candidate: Option<super::UiMountedTextPinCandidate>,
         semantic_receipts: Box<[worth_ui_query_binding::WorthUiPresentationRecoveryReceipt]>,
+        text_reuse: Option<
+            crate::native_platform::text_presentation::UiMountedTextForegroundReuseUpdate,
+        >,
     ) {
         self.progress
             .pending
@@ -120,12 +136,16 @@ impl PresentationOutcomeSettlement<'_, '_, '_> {
                 expected_effects: self.expected_effects.to_vec().into_boxed_slice(),
                 text_candidate,
                 semantic_receipts,
+                text_reuse,
             });
     }
 
     fn record_effects_indeterminate(
         &mut self,
         semantic_receipts: Box<[worth_ui_query_binding::WorthUiPresentationRecoveryReceipt]>,
+        _text_reuse: Option<
+            crate::native_platform::text_presentation::UiMountedTextForegroundReuseUpdate,
+        >,
     ) -> Result<(), UiIndeterminatePresentationEvidence> {
         let uncertainty =
             super::surface_uncertainty::PresentationSurfaceUncertainty::effects_indeterminate(
@@ -142,6 +162,9 @@ impl PresentationOutcomeSettlement<'_, '_, '_> {
         &mut self,
         completion: UiMountedSurfacePresentationCompletion,
         semantic_receipts: Box<[worth_ui_query_binding::WorthUiPresentationRecoveryReceipt]>,
+        text_reuse: Option<
+            crate::native_platform::text_presentation::UiMountedTextForegroundReuseUpdate,
+        >,
     ) -> Result<(), UiIndeterminatePresentationEvidence> {
         if !completion_satisfies(self.surface, self.expected_effects, &completion) {
             let uncertainty =
@@ -172,6 +195,11 @@ impl PresentationOutcomeSettlement<'_, '_, '_> {
                 effects,
                 adapter_cost,
             ));
+        if posture == super::presented_semantic_settlement::PresentedSemanticPosture::Current {
+            if let Some(update) = text_reuse {
+                self.text.commit_foreground_reuse(update);
+            }
+        }
         Ok(())
     }
 

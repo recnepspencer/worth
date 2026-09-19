@@ -46,12 +46,15 @@ pub use keyboard::{UiHostKey, UiHostKeyTransition, UiHostKeyboardModifiers};
 pub use payload::{UiHostObservationCoalescingIdentity, UiHostObservationPayload};
 pub use pointer::{
     UiHostPointerButton, UiHostPointerButtonTransition, UiHostPointerCaptureEpoch,
-    UiHostPointerIdentity, UiHostPressedPointerButtons, UiHostSurfaceCoordinateSpace,
-    UiHostSurfaceCoordinateUnit, UiHostSurfacePosition, UiHostSurfacePositionBasis,
-    UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
+    UiHostPointerDeviceKind, UiHostPointerIdentity, UiHostPressedPointerButtons,
+    UiHostSurfaceCoordinateSpace, UiHostSurfaceCoordinateUnit, UiHostSurfacePosition,
+    UiHostSurfacePositionBasis, UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
 };
 pub use presentation_basis::UiHostObservationPresentationBasis;
-pub use report::{UiHostObservationMountedBasis, UiHostObservationReport};
+pub use report::{
+    UiHostObservationMountedBasis, UiHostObservationPointerDeviceKindDenial,
+    UiHostObservationReport,
+};
 pub use scroll::{
     UiHostScrollDeltaPhase, UiHostScrollDeltaPrecision, UiHostScrollDeltaSource,
     UiHostScrollDeltaTargetAffinity,

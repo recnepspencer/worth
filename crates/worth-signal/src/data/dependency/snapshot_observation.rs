@@ -1,13 +1,17 @@
+mod shape_materialization;
 use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
+
+mod normalization;
+mod retained_charge;
 
 use crate::data::handle::NodeId;
 use crate::data::output::PartitionSubscription;
 
 use super::{DependencySnapshotId, DependencySnapshotShape, SnapshotShapeHandle};
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct DependencySnapshotEntry {
     pub source: NodeId,
     pub aspect: crate::data::aspect::Aspect,
@@ -17,6 +21,36 @@ pub struct DependencySnapshotEntry {
 }
 
 impl DependencySnapshotEntry {
+    pub(crate) fn compare_key(&self, other: &Self) -> std::cmp::Ordering {
+        (
+            self.source.index(),
+            self.source.generation(),
+            self.aspect.index(),
+            &self.scope,
+        )
+            .cmp(&(
+                other.source.index(),
+                other.source.generation(),
+                other.aspect.index(),
+                &other.scope,
+            ))
+    }
+
+    pub(crate) fn compare_dependency(&self, other: &super::DependencyEdge) -> std::cmp::Ordering {
+        (
+            self.source.index(),
+            self.source.generation(),
+            self.aspect.index(),
+            self.scope.as_ref(),
+        )
+            .cmp(&(
+                other.source().index(),
+                other.source().generation(),
+                other.aspect().index(),
+                other.scope_ref(),
+            ))
+    }
+
     pub fn sort_key(&self) -> super::DependencySortKey {
         super::DependencySortKey {
             source_index: self.source.index(),
@@ -31,7 +65,7 @@ impl DependencySnapshotEntry {
 ///
 /// Used by the pull phase to determine if a `MaybeStale` node can revert
 /// to `Clean`: if all upstream versions match the snapshot, no recomputation needed.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct DependencySnapshot {
     entries: Arc<Vec<DependencySnapshotEntry>>,
 }
@@ -70,6 +104,14 @@ impl DependencySnapshot {
         self
     }
 
+    pub(crate) fn canonicalize_with_work(
+        mut self,
+        work: &mut crate::logic::evaluation::EvaluationWork<'_>,
+    ) -> Result<Self, crate::data::error::SignalError> {
+        normalization::normalize(&mut self, work)?;
+        Ok(self)
+    }
+
     pub fn from_ordered_unique(entries: impl IntoIterator<Item = DependencySnapshotEntry>) -> Self {
         let entries = entries.into_iter().collect::<Vec<_>>();
         debug_assert!(is_strict_snapshot_entry_order(entries.as_slice()));
@@ -79,25 +121,11 @@ impl DependencySnapshot {
     }
 
     fn canonicalize_in_place(&mut self) {
-        let entries = Arc::make_mut(&mut self.entries);
-        entries.sort_by(|left, right| {
-            left.sort_key()
-                .cmp(&right.sort_key())
-                .then(left.cached_version.cmp(&right.cached_version))
-        });
-        let mut normalized: Vec<DependencySnapshotEntry> = Vec::with_capacity(entries.len());
-        for entry in entries.drain(..) {
-            if let Some(previous) = normalized.last_mut() {
-                if previous.sort_key() == entry.sort_key() {
-                    if previous.cached_version <= entry.cached_version {
-                        *previous = entry;
-                    }
-                    continue;
-                }
-            }
-            normalized.push(entry);
-        }
-        *entries = normalized;
+        normalization::normalize(
+            self,
+            &mut crate::logic::evaluation::EvaluationWork::Ordinary,
+        )
+        .expect("ordinary snapshot normalization must remain representable");
     }
 
     pub fn shared_entries(&self) -> Arc<Vec<DependencySnapshotEntry>> {
@@ -260,8 +288,7 @@ impl VersionOnlySnapshotUpdate {
 fn is_strict_snapshot_entry_order(entries: &[DependencySnapshotEntry]) -> bool {
     entries.windows(2).all(|pair| {
         pair[0]
-            .sort_key()
-            .cmp(&pair[1].sort_key())
+            .compare_key(&pair[1])
             .then(pair[0].cached_version.cmp(&pair[1].cached_version))
             .is_lt()
     })

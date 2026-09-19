@@ -37,7 +37,7 @@ pub(super) fn finalize_one_shot<
         PrincipalIdentity,
         Scope,
     >,
-    kernel: RawNonLiveKernelOutcome,
+    mut kernel: RawNonLiveKernelOutcome,
     authorization_work: WorthQueryApplicationAuthorizationWorkEvidence,
     read_proof: crate::domain_computation::provider_session::WorthQuerySessionGraphReadProof,
 ) -> Result<
@@ -48,9 +48,41 @@ where
     Schema: ApplicationSchema,
     QueryResult: WorthQueryApplicationProjection<Schema, Query>,
 {
+    let request_affinity =
+        super::super::admitted_result::WorthQueryApplicationQueryRequestAffinity::new(
+            plan.principal,
+            plan.controls.request_scope(),
+        );
+    let source_footprints = std::mem::take(&mut kernel.raw.source_footprints);
     let request = plan.controls.request_scope();
     let basis_identity = plan.basis.identity().clone();
     let basis_version = plan.basis.version_id();
+    let observed_sources = source_footprints
+        .into_iter()
+        .map(|footprint| {
+            let selection = basis_identity.selection().clone();
+            let source_identity =
+                super::super::observed_source::source_identity::derive_source_identity(
+                    plan.query.identity().as_bytes(),
+                    plan.parameters.identity().bytes(),
+                    &footprint,
+                    &selection,
+                );
+            super::super::WorthQueryObservedSource {
+                runtime_authority: plan.runtime_authority.as_u64(),
+                schema_binding: plan.query.binding_identity().clone(),
+                query_identity: plan.query.identity().clone(),
+                parameter_binding_identity: *plan.parameters.identity(),
+                query_identifier: plan.query.name().to_owned(),
+                branch: basis_identity.branch_id().clone(),
+                selection,
+                model_root: plan.scope.entity_id(),
+                footprint,
+                source_identity,
+                _marker: PhantomData,
+            }
+        })
+        .collect();
     let basis_release = plan.basis.release();
     let released = basis_release.released();
     if !released {
@@ -114,7 +146,8 @@ where
     );
     Ok(WorthQueryApplicationOneShotResult {
         rows,
+        observed_sources,
+        request_affinity,
         receipt,
-        _query: PhantomData,
     })
 }

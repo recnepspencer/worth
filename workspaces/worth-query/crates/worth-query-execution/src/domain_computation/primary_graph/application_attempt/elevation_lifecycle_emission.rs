@@ -54,7 +54,8 @@ mod tests {
         },
         application_schema::{
             ApplicationEffectMarkerIdentity, ApplicationEffectRef,
-            ApplicationOperationMarkerIdentity, ApplicationOperationRef, OperationEmits,
+            ApplicationOperationMarkerIdentity, ApplicationOperationRef,
+            ApplicationRetainedEffectBinding, OperationEmits,
         },
     };
 
@@ -63,21 +64,28 @@ mod tests {
     pub struct Schema;
     struct Operation;
     pub struct Effect;
+    worth_query_declaration::worth_query_structured_value_binding!(InputBinding for String { identity: "worth.rust.string" });
+    worth_query_declaration::worth_query_structured_value_binding!(pub PayloadBinding for String { identity: "worth.rust.string" });
+    impl ApplicationRetainedEffectBinding for PayloadBinding {
+        fn retained_bytes(value: &Self::Value) -> u64 {
+            u64::try_from(std::mem::size_of::<Self::Value>())
+                .unwrap_or(u64::MAX)
+                .saturating_add(u64::try_from(value.capacity()).unwrap_or(u64::MAX))
+        }
+    }
 
     worth_query_declaration::worth_query_capability!(
         Capability in Schema,
         identity "worth.query.execution-test.lifecycle-capability.v1"
     );
 
-    impl ApplicationOperationMarkerIdentity for Operation {
-        type Schema = Schema;
-        type Input = String;
+    impl ApplicationOperationMarkerIdentity<Schema> for Operation {
+        type InputBinding = InputBinding;
         const IDENTIFIER: &'static str = "Run";
     }
 
-    impl ApplicationEffectMarkerIdentity for Effect {
-        type Schema = Schema;
-        type Payload = String;
+    impl ApplicationEffectMarkerIdentity<Schema> for Effect {
+        type PayloadBinding = PayloadBinding;
         const IDENTIFIER: &'static str = "ActivityEffect";
     }
 
@@ -85,13 +93,13 @@ mod tests {
 
     impl ApplicationCapabilityLifecycleEffect<Schema, Operation> for String {
         type Effect = Effect;
-        type Payload = String;
+        type PayloadBinding = PayloadBinding;
 
-        fn effect() -> ApplicationEffectRef<Schema, Self::Effect, Self::Payload> {
+        fn effect() -> ApplicationEffectRef<Schema, Self::Effect, String> {
             ApplicationEffectRef::from_declaration()
         }
 
-        fn lifecycle_effect(&self) -> Option<Self::Payload> {
+        fn lifecycle_effect(&self) -> Option<String> {
             Some(self.clone())
         }
     }
@@ -129,7 +137,7 @@ mod tests {
         ));
 
         effects.push(WorthQueryApplicationRealizedEffect::Emit(
-            WorthQueryApplicationEmission::new("ExtraEffect", "extra".to_owned()),
+            WorthQueryApplicationEmission::new::<PayloadBinding>("ExtraEffect", "extra".to_owned()),
         ));
         assert!(!lifecycle_emission_is_exact(
             &effects,
@@ -139,7 +147,7 @@ mod tests {
         ));
 
         let retargeted = vec![WorthQueryApplicationRealizedEffect::Emit(
-            WorthQueryApplicationEmission::new("OtherEffect", input),
+            WorthQueryApplicationEmission::new::<PayloadBinding>("OtherEffect", input),
         )];
         assert!(!lifecycle_emission_is_exact(
             &retargeted,

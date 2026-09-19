@@ -33,12 +33,9 @@ impl BranchTargetedTransactionRequest {
         }
     }
 
+    #[cfg(test)]
     pub fn target_branch(&self) -> &SignalBranchHandle {
         &self.target_branch
-    }
-
-    pub(crate) fn expected_head(&self) -> &SignalBranchTransactionHead {
-        &self.expected_head
     }
 }
 
@@ -64,62 +61,51 @@ pub enum BranchTargetedTransactionDenial {
 #[derive(Debug, Clone)]
 pub struct ValidatedBranchTargetedTransactionRequest {
     request: BranchTargetedTransactionRequest,
-    observed_head: SignalBranchTransactionHead,
 }
 
 impl ValidatedBranchTargetedTransactionRequest {
     pub(crate) fn request(&self) -> &BranchTargetedTransactionRequest {
         &self.request
     }
-
-    pub(crate) fn observed_head(&self) -> &SignalBranchTransactionHead {
-        &self.observed_head
-    }
 }
 
 #[derive(Debug, Clone)]
 pub struct LoweredBranchTargetedTransactionPlan {
     validated: ValidatedBranchTargetedTransactionRequest,
-    active_branch_at_plan: SignalBranchHandle,
 }
 
-impl LoweredBranchTargetedTransactionPlan {
-    pub(crate) fn validated(&self) -> &ValidatedBranchTargetedTransactionRequest {
-        &self.validated
-    }
-
-    pub fn active_branch_at_plan(&self) -> &SignalBranchHandle {
-        &self.active_branch_at_plan
-    }
-}
+impl LoweredBranchTargetedTransactionPlan {}
 
 #[derive(Debug)]
 pub struct ExecutedBranchTargetedTransactionReceipt {
-    plan: LoweredBranchTargetedTransactionPlan,
+    #[cfg(test)]
     before_head: SignalBranchTransactionHead,
+    #[cfg(test)]
     after_head: SignalBranchTransactionHead,
+    #[cfg(test)]
     active_branch_before: SignalBranchHandle,
+    #[cfg(test)]
     active_branch_after: SignalBranchHandle,
     transaction: TransactionResult,
 }
 
 impl ExecutedBranchTargetedTransactionReceipt {
-    pub(crate) fn plan(&self) -> &LoweredBranchTargetedTransactionPlan {
-        &self.plan
-    }
-
+    #[cfg(test)]
     pub(crate) fn before_head(&self) -> &SignalBranchTransactionHead {
         &self.before_head
     }
 
+    #[cfg(test)]
     pub(crate) fn after_head(&self) -> &SignalBranchTransactionHead {
         &self.after_head
     }
 
+    #[cfg(test)]
     pub fn active_branch_before(&self) -> &SignalBranchHandle {
         &self.active_branch_before
     }
 
+    #[cfg(test)]
     pub fn active_branch_after(&self) -> &SignalBranchHandle {
         &self.active_branch_after
     }
@@ -162,19 +148,15 @@ where
         self.with_telemetry(|telemetry| {
             telemetry.transaction.branch_targeted_transaction_plan_count += 1;
         });
-        let observed_head = match self.validate_targeted_request(&request) {
-            Ok(head) => head,
+        match self.validate_targeted_request(&request) {
+            Ok(_) => (),
             Err(denial) => {
                 self.record_targeted_denial(&denial);
                 return TransitionOutcome::denied(denial);
             }
         };
         TransitionOutcome::success(LoweredBranchTargetedTransactionPlan {
-            validated: ValidatedBranchTargetedTransactionRequest {
-                request,
-                observed_head,
-            },
-            active_branch_at_plan: self.graph.current_branch(),
+            validated: ValidatedBranchTargetedTransactionRequest { request },
         })
     }
 
@@ -188,7 +170,7 @@ where
         F: FnOnce(&mut SignalTransaction<'_, D, I, E, Ctx, T>) -> Result<(), SignalError>,
     {
         let request = plan.validated.request();
-        let before_head = match self.validate_targeted_request(request) {
+        let _validated_head = match self.validate_targeted_request(request) {
             Ok(head) => head,
             Err(denial) => {
                 self.record_targeted_denial(&denial);
@@ -230,12 +212,14 @@ where
                 &mut telemetry.transaction,
             );
         });
+        #[cfg(test)]
         let active_branch_after = self.graph.current_branch();
 
         let transaction = match transaction_result {
             Ok(result) => result,
             Err(error) => return TransitionOutcome::failed(error),
         };
+        #[cfg(test)]
         let after_head = self
             .observe_branch_transaction_head(&plan.validated.request.target_branch)
             .expect("executed target branch must remain live after restoration");
@@ -252,10 +236,13 @@ where
                 .branch_targeted_transaction_touched_node_count += touched_nodes;
         });
         TransitionOutcome::success(ExecutedBranchTargetedTransactionReceipt {
-            plan,
-            before_head,
+            #[cfg(test)]
+            before_head: _validated_head,
+            #[cfg(test)]
             after_head,
+            #[cfg(test)]
             active_branch_before,
+            #[cfg(test)]
             active_branch_after,
             transaction,
         })
@@ -291,6 +278,7 @@ where
             branch_mutation_ledger,
             branch_head_generation,
             branch_restore_snapshot_id,
+            conditional_operation_scope: None,
             scratch: TransactionScratch::new(),
             rollback_packets: TransactionRollbackPacketSet::default(),
             poisoned: false,

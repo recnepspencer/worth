@@ -33,16 +33,6 @@ impl WorthUiTokenPlanMeaning {
         )
     }
 
-    pub(crate) fn resolved_color_text(&self) -> Option<&str> {
-        let value = self
-            .semantics
-            .resolved_target_entry()
-            .descriptor()
-            .value()?;
-        let crate::capability::ThemeTokenValue::Color(color) = value;
-        Some(color.as_str())
-    }
-
     pub(crate) fn entry(&self) -> &crate::capability::FrozenThemeTokenEntry {
         &self.entry
     }

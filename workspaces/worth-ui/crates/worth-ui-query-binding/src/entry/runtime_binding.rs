@@ -74,6 +74,18 @@ impl WorthUiRuntimeQueryBinding {
         }
     }
 
+    pub fn application_scalar_projection_registration(
+        &self,
+        identity: &crate::WorthUiQueryViewIdentity,
+    ) -> Option<&crate::UiApplicationScalarProjectionRegistration> {
+        match self {
+            Self::QueryFree => None,
+            Self::Installed(binding) => {
+                binding.application_scalar_projection_registration(identity)
+            }
+        }
+    }
+
     pub fn collection_projection_registration(
         &self,
         identity: &crate::WorthUiQueryViewIdentity,

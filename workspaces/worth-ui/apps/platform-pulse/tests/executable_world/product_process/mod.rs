@@ -75,5 +75,6 @@ pub(crate) use progression::{
 pub(crate) use quiescent_observation::PlatformPulseQuiescenceFailure;
 pub(crate) use shutdown::{PlatformPulseProcessExitFailure, SuccessfulPlatformPulseExit};
 pub(crate) use watched_observation::{
-    await_watched_observation, WatchedPulseObservationFailure, WatchedPulseTransition,
+    await_next_observation, await_watched_observation, WatchedPulseObservationFailure,
+    WatchedPulseTransition,
 };

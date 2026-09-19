@@ -12,8 +12,6 @@ use crate::BankIdentityRuntime;
 
 #[path = "world/delegation.rs"]
 mod delegation;
-#[path = "world/disbursement.rs"]
-mod disbursement;
 #[path = "world/disclosure.rs"]
 mod disclosure;
 #[path = "world/foreign_estate.rs"]
@@ -24,8 +22,6 @@ mod governance_projection;
 mod lifecycle;
 #[path = "world/product_projection.rs"]
 mod product_projection;
-#[path = "world/release.rs"]
-mod release;
 #[path = "world/seed.rs"]
 mod seed;
 #[path = "world/snapshot.rs"]
@@ -63,8 +59,6 @@ pub(super) enum FixtureWorldComposition {
         parent_context: DelegationParentContext,
     },
     ForeignEstateRevocation,
-    Release,
-    Disbursement,
 }
 
 #[derive(Clone, Copy)]
@@ -105,11 +99,7 @@ fn install_fixture_world_with_source(
     authorization_time: Option<AuthorizationTimeController>,
 ) -> InstalledFixtureWorld {
     let identities = seed::identities(spec.scenario);
-    let snapshot = if matches!(spec.composition, FixtureWorldComposition::Disbursement) {
-        disbursement::snapshot()
-    } else {
-        snapshot_fixture::snapshot(additional_principal_count(&spec))
-    };
+    let snapshot = snapshot_fixture::snapshot(additional_principal_count(&spec));
     let estate = compose_estate(&spec);
     let estate_world = estate.clone();
     let world_seed = seed::assemble(snapshot, estate, &identities, &spec);
@@ -170,8 +160,6 @@ fn install_scenario_truth(estate: BankEstateWorld, spec: &FixtureWorldSpec<'_>) 
         FixtureWorldComposition::ForeignEstateRevocation => {
             foreign_estate::install_foreign_estate_revocation(estate)
         }
-        FixtureWorldComposition::Release => release::install_truth(estate),
-        FixtureWorldComposition::Disbursement => disbursement::install_truth(estate),
     }
 }
 

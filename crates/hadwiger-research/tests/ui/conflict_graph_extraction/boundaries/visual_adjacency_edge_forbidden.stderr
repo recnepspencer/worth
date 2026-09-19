@@ -1,5 +1,0 @@
-error[E0599]: no function or associated item named `from_visual_adjacency` found for struct `TilingConflictEdge` in the current scope
- --> tests/ui/conflict_graph_extraction/boundaries/visual_adjacency_edge_forbidden.rs:4:33
-  |
-4 |     let _ = TilingConflictEdge::from_visual_adjacency("tile-a", "tile-b");
-  |                                 ^^^^^^^^^^^^^^^^^^^^^ function or associated item not found in `TilingConflictEdge`

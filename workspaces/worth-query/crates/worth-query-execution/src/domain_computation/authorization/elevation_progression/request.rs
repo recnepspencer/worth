@@ -53,7 +53,7 @@ where
         WorthQueryOperationAuthorizationDenial,
     >
     where
-        Operation: ApplicationOperationMarkerIdentity,
+        Operation: ApplicationOperationMarkerIdentity<Schema>,
         Input: ApplicationCapabilityRequest<Schema, Capability>
             + ApplicationCapabilityElevationRequest<Schema, Operation>
             + 'static,
@@ -100,12 +100,15 @@ fn installed_request_lifecycle<'runtime, Schema, Capability, Operation, Input>(
 >
 where
     Schema: ApplicationSchema,
-    Operation: ApplicationOperationMarkerIdentity,
+    Operation: ApplicationOperationMarkerIdentity<Schema>,
     Input: ApplicationCapabilityRequest<Schema, Capability>,
 {
     let Some((capability, command_capability, role)) = runtime
         .authorization
-        .elevation_lifecycle_operation::<Operation>(operation.operation(), operation.input_type())
+        .elevation_lifecycle_operation::<Schema, Operation>(
+            operation.operation(),
+            operation.input_type(),
+        )
         .map_err(|()| stale_operation(operation.operation()))?
     else {
         return Err(denial(

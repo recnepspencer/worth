@@ -8,6 +8,8 @@ pub(super) fn snapshot_with_support_catalog(
     support_catalog: CapabilitySupportCatalog,
 ) -> CapabilitySnapshot {
     CapabilitySnapshot::from_freeze_input(CapabilitySnapshotFreezeInput {
+        appearance_roles: base.appearance_roles().clone(),
+        appearance_themes: base.appearance_themes().cloned(),
         registered_capabilities: clone_registered_capabilities(base),
         commands: base.commands().clone(),
         command_projections: base.command_projections().clone(),

@@ -16,5 +16,6 @@ fn lifecycle_snapshot_label(lifecycle: RecordLifecycleState) -> &'static str {
         RecordLifecycleState::PinnedByReplayRetention => "pinned_by_replay_retention",
         RecordLifecycleState::Reclaimable => "reclaimable",
         RecordLifecycleState::Reusable => "reusable",
+        RecordLifecycleState::MaterializationUnavailable => "materialization_unavailable",
     }
 }

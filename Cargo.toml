@@ -3,11 +3,9 @@ resolver = "2"
 # Road 1 sub-workspaces under workspaces own their own package membership.
 # Keep them out of the root workspace so whole-world orchestration must route
 # through explicit --manifest-path calls rather than silent root ownership.
-exclude = ["workspaces/*", "crates/worth-geom"]
+exclude = ["workspaces/*"]
 members = [
     "crates/worth-harness",
-    "crates/worth-math",
-    "crates/hadwiger-research",
 
 
     "crates/worth-runtime-bridge",
@@ -35,11 +33,6 @@ license = "BUSL-1.1"
 
 [workspace.dependencies]
 worth-harness = { path = "crates/worth-harness", version = "0.1.0" }
-# Internal crates - kernel
-worth-math = { path = "crates/worth-math" }
-hadwiger-research = { path = "crates/hadwiger-research" }
-
-
 worth-runtime-bridge = { path = "crates/worth-runtime-bridge" }
 worth-server = { path = "crates/worth-server" }
 worth-server-client-generation = { path = "crates/worth-server-client-generation" }
@@ -56,14 +49,8 @@ worth-signal-wasm = { path = "crates/worth-signal-wasm" }
 worth-relational = { path = "crates/worth-relational" }
 worth-runtime-world = { path = "crates/worth-runtime-world" }
 
-# Benchmarking
-criterion = { version = "0.5", features = ["html_reports"] }
-
 # Testing
 trybuild = "1.0"
-varisat = "0.2.1"
-good_lp = { version = "1.15.2", default-features = false, features = ["minilp"] }
-clarabel = "0.11.1"
 
 # Observability
 tracing = "0.1"

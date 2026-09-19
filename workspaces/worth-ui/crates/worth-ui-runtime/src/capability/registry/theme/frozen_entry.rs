@@ -1,0 +1,357 @@
+use super::value_digest::{fold, fold_theme_value};
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct FrozenAppearanceThemeCapabilities {
+    catalog: super::UiThemeSlotCatalog,
+    initial_definition: super::UiThemeDefinitionIdentity,
+    definitions: Box<[super::UiThemeDefinition]>,
+    differences_from_initial: std::collections::BTreeMap<
+        super::UiThemeDefinitionIdentity,
+        Box<[crate::capability::ThemeTokenId]>,
+    >,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum FrozenAppearanceThemeCapabilitiesDenial {
+    EmptyDefinitions,
+    DuplicateDefinition,
+    CatalogBasisMismatch,
+    BundleAlreadyInstalled,
+    DefinitionCapacityExceeded,
+    MissingInitialDefinition,
+}
+
+impl FrozenAppearanceThemeCapabilities {
+    pub const DEFINITION_CAPACITY: usize = 32;
+    pub fn admit(
+        catalog: super::UiThemeSlotCatalog,
+        initial_definition: super::UiThemeDefinitionIdentity,
+        mut definitions: Vec<super::UiThemeDefinition>,
+    ) -> Result<Self, FrozenAppearanceThemeCapabilitiesDenial> {
+        if definitions.is_empty() {
+            return Err(FrozenAppearanceThemeCapabilitiesDenial::EmptyDefinitions);
+        }
+        if definitions.len() > Self::DEFINITION_CAPACITY {
+            return Err(FrozenAppearanceThemeCapabilitiesDenial::DefinitionCapacityExceeded);
+        }
+        if definitions
+            .iter()
+            .any(|definition| definition.catalog_basis() != &catalog)
+        {
+            return Err(FrozenAppearanceThemeCapabilitiesDenial::CatalogBasisMismatch);
+        }
+        definitions.sort_by(|left, right| left.identity().cmp(right.identity()));
+        if definitions
+            .windows(2)
+            .any(|pair| pair[0].identity() == pair[1].identity())
+        {
+            return Err(FrozenAppearanceThemeCapabilitiesDenial::DuplicateDefinition);
+        }
+        if definitions
+            .binary_search_by(|definition| definition.identity().cmp(&initial_definition))
+            .is_err()
+        {
+            return Err(FrozenAppearanceThemeCapabilitiesDenial::MissingInitialDefinition);
+        }
+        let initial = &definitions[definitions
+            .binary_search_by(|definition| definition.identity().cmp(&initial_definition))
+            .expect("initial definition presence was validated")];
+        let differences_from_initial = definitions
+            .iter()
+            .map(|definition| {
+                let changed = changed_slots(&catalog, initial, definition);
+                (definition.identity().clone(), changed)
+            })
+            .collect();
+        Ok(Self {
+            catalog,
+            initial_definition,
+            definitions: definitions.into_boxed_slice(),
+            differences_from_initial,
+        })
+    }
+
+    pub const fn catalog(&self) -> &super::UiThemeSlotCatalog {
+        &self.catalog
+    }
+    pub fn definitions(&self) -> &[super::UiThemeDefinition] {
+        &self.definitions
+    }
+    pub fn initial_definition_identity(&self) -> &super::UiThemeDefinitionIdentity {
+        &self.initial_definition
+    }
+    pub fn get(
+        &self,
+        identity: &super::UiThemeDefinitionIdentity,
+    ) -> Option<&super::UiThemeDefinition> {
+        self.definitions
+            .binary_search_by(|definition| definition.identity().cmp(identity))
+            .ok()
+            .map(|index| &self.definitions[index])
+    }
+
+    pub(crate) fn transition_candidates(
+        &self,
+        before: &super::UiThemeDefinitionIdentity,
+        after: &super::UiThemeDefinitionIdentity,
+    ) -> Option<Vec<crate::capability::ThemeTokenId>> {
+        let before = self.differences_from_initial.get(before)?;
+        let after = self.differences_from_initial.get(after)?;
+        let mut candidates = std::collections::BTreeSet::new();
+        candidates.extend(before.iter().cloned());
+        candidates.extend(after.iter().cloned());
+        Some(candidates.into_iter().collect())
+    }
+    pub fn digest_basis(&self) -> u64 {
+        let catalog = self
+            .catalog
+            .slots()
+            .fold(self.catalog.revision(), |mut digest, slot| {
+                for byte in slot.identity().as_str().as_bytes() {
+                    digest = fold(digest, u64::from(*byte));
+                }
+                for byte in slot.family().digest_basis().as_bytes() {
+                    digest = fold(digest, u64::from(*byte));
+                }
+                digest = fold(digest, slot.kind() as u64 + 1);
+                for byte in slot.source_owner().digest_basis().as_bytes() {
+                    digest = fold(digest, u64::from(*byte));
+                }
+                digest = fold(digest, slot.disclosure() as u64 + 1);
+                digest = fold(digest, slot.successor_compatibility() as u64 + 1);
+                if let Some(alias) = slot.alias_target() {
+                    for byte in alias.as_str().as_bytes() {
+                        digest = fold(digest, u64::from(*byte));
+                    }
+                }
+                digest
+            });
+        let catalog = self
+            .initial_definition
+            .as_str()
+            .bytes()
+            .fold(catalog, |digest, byte| fold(digest, u64::from(byte)));
+        self.definitions
+            .iter()
+            .fold(catalog, |mut digest, definition| {
+                for byte in definition.identity().as_str().as_bytes() {
+                    digest = fold(digest, u64::from(*byte));
+                }
+                digest ^= definition.revision().rotate_left(17);
+                for (slot, value) in definition.values() {
+                    for byte in slot.as_str().as_bytes() {
+                        digest = fold(digest, u64::from(*byte));
+                    }
+                    digest = fold_theme_value(digest, *value);
+                }
+                digest
+            })
+    }
+}
+
+fn changed_slots(
+    catalog: &super::UiThemeSlotCatalog,
+    initial: &super::UiThemeDefinition,
+    definition: &super::UiThemeDefinition,
+) -> Box<[crate::capability::ThemeTokenId]> {
+    catalog
+        .slots()
+        .filter_map(|slot| {
+            let terminal = terminal_slot(catalog, slot);
+            (initial.value(terminal) != definition.value(terminal)).then(|| slot.identity().clone())
+        })
+        .collect::<Vec<_>>()
+        .into_boxed_slice()
+}
+
+fn terminal_slot<'a>(
+    catalog: &'a super::UiThemeSlotCatalog,
+    slot: &'a super::UiThemeSlotDeclaration,
+) -> &'a crate::capability::ThemeTokenId {
+    let mut current = slot;
+    while let Some(target) = current.alias_target() {
+        current = catalog
+            .get(target)
+            .expect("admitted catalogs retain every alias target");
+    }
+    current.identity()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::capability::registry::theme::{
+        UiThemeDefinition, UiThemeDefinitionIdentity, UiThemeSlotCatalog, UiThemeSlotDeclaration,
+        UiThemeSlotDisclosure, UiThemeSlotSuccessorCompatibility,
+    };
+
+    fn slot(identity: &str, alias: Option<&str>) -> UiThemeSlotDeclaration {
+        UiThemeSlotDeclaration::new(
+            crate::capability::ThemeTokenId::new(identity).unwrap(),
+            crate::capability::ThemeTokenFamily::surface(),
+            worth_ui_dsl::UiThemeValueKind::Color,
+            crate::capability::ThemeTokenSource::application(),
+            UiThemeSlotDisclosure::Public,
+            UiThemeSlotSuccessorCompatibility::ExactMeaning,
+            alias.map(|target| crate::capability::ThemeTokenId::new(target).unwrap()),
+        )
+    }
+
+    #[test]
+    fn admitted_bundle_indexes_only_changed_terminal_slots_and_their_aliases() {
+        let catalog = UiThemeSlotCatalog::admit(
+            1,
+            [
+                slot("surface.base", None),
+                slot("surface.alias", Some("surface.base")),
+                slot("surface.stable", None),
+            ],
+        )
+        .unwrap();
+        let identity = |value| UiThemeDefinitionIdentity::new(value).unwrap();
+        let definition = |name, base| {
+            UiThemeDefinition::admit(
+                identity(name),
+                1,
+                &catalog,
+                [
+                    (
+                        crate::capability::ThemeTokenId::new("surface.base").unwrap(),
+                        worth_ui_dsl::UiThemeValue::Color(
+                            worth_ui_dsl::UiThemeColor::from_channels([base, 2, 3, 255]),
+                        ),
+                    ),
+                    (
+                        crate::capability::ThemeTokenId::new("surface.stable").unwrap(),
+                        worth_ui_dsl::UiThemeValue::Color(
+                            worth_ui_dsl::UiThemeColor::from_channels([7, 8, 9, 255]),
+                        ),
+                    ),
+                ],
+            )
+            .unwrap()
+        };
+        let definitions = vec![
+            definition("theme.initial", 1),
+            definition("theme.changed", 4),
+        ];
+        let bundle = FrozenAppearanceThemeCapabilities::admit(
+            catalog,
+            identity("theme.initial"),
+            definitions,
+        )
+        .unwrap();
+        let candidates = bundle
+            .transition_candidates(&identity("theme.initial"), &identity("theme.changed"))
+            .unwrap();
+        assert_eq!(
+            candidates
+                .iter()
+                .map(|slot| slot.as_str())
+                .collect::<Vec<_>>(),
+            ["surface.alias", "surface.base"]
+        );
+    }
+
+    #[test]
+    fn bundle_requires_the_exact_catalog_basis_not_only_its_revision() {
+        let first = catalog("surface.first");
+        let second = catalog("surface.second");
+        let definition = definition("theme.first", &first, [1, 2, 3, 255]);
+        assert_eq!(
+            FrozenAppearanceThemeCapabilities::admit(
+                second,
+                UiThemeDefinitionIdentity::new("theme.first").unwrap(),
+                vec![definition],
+            ),
+            Err(FrozenAppearanceThemeCapabilitiesDenial::CatalogBasisMismatch)
+        );
+    }
+
+    #[test]
+    fn registry_rejects_a_second_whole_bundle_with_an_exact_denial() {
+        let catalog = catalog("surface.base");
+        let first = FrozenAppearanceThemeCapabilities::admit(
+            catalog.clone(),
+            UiThemeDefinitionIdentity::new("theme.first").unwrap(),
+            vec![definition("theme.first", &catalog, [1, 2, 3, 255])],
+        )
+        .unwrap();
+        let second = FrozenAppearanceThemeCapabilities::admit(
+            catalog.clone(),
+            UiThemeDefinitionIdentity::new("theme.second").unwrap(),
+            vec![definition("theme.second", &catalog, [3, 2, 1, 255])],
+        )
+        .unwrap();
+        let mut registry = super::super::ThemeRegistry::default();
+
+        registry.install(first).unwrap();
+        assert_eq!(
+            registry.install(second),
+            Err(FrozenAppearanceThemeCapabilitiesDenial::BundleAlreadyInstalled)
+        );
+    }
+
+    #[test]
+    fn definition_capacity_and_digest_mutation_are_exact() {
+        let catalog = catalog("surface.base");
+        let definitions = (0..=FrozenAppearanceThemeCapabilities::DEFINITION_CAPACITY)
+            .map(|index| definition(&format!("theme.{index}"), &catalog, [1, 2, 3, 255]))
+            .collect();
+        assert_eq!(
+            FrozenAppearanceThemeCapabilities::admit(
+                catalog.clone(),
+                UiThemeDefinitionIdentity::new("theme.0").unwrap(),
+                definitions,
+            ),
+            Err(FrozenAppearanceThemeCapabilitiesDenial::DefinitionCapacityExceeded)
+        );
+
+        let first = FrozenAppearanceThemeCapabilities::admit(
+            catalog.clone(),
+            UiThemeDefinitionIdentity::new("theme.first").unwrap(),
+            vec![definition("theme.first", &catalog, [1, 2, 3, 255])],
+        )
+        .unwrap();
+        let changed = FrozenAppearanceThemeCapabilities::admit(
+            catalog.clone(),
+            UiThemeDefinitionIdentity::new("theme.first").unwrap(),
+            vec![definition("theme.first", &catalog, [3, 2, 1, 255])],
+        )
+        .unwrap();
+        assert_ne!(first.digest_basis(), changed.digest_basis());
+    }
+
+    fn catalog(identity: &str) -> super::super::UiThemeSlotCatalog {
+        super::super::UiThemeSlotCatalog::admit(
+            1,
+            [UiThemeSlotDeclaration::new(
+                crate::capability::ThemeTokenId::new(identity).unwrap(),
+                crate::capability::ThemeTokenFamily::surface(),
+                worth_ui_dsl::UiThemeValueKind::Color,
+                crate::capability::ThemeTokenSource::application(),
+                UiThemeSlotDisclosure::Public,
+                UiThemeSlotSuccessorCompatibility::ExactMeaning,
+                None,
+            )],
+        )
+        .unwrap()
+    }
+
+    fn definition(
+        identity: &str,
+        catalog: &super::super::UiThemeSlotCatalog,
+        color: [u8; 4],
+    ) -> super::super::UiThemeDefinition {
+        let slot = catalog.slots().next().unwrap().identity().clone();
+        super::super::UiThemeDefinition::admit(
+            UiThemeDefinitionIdentity::new(identity).unwrap(),
+            1,
+            catalog,
+            [(
+                slot,
+                worth_ui_dsl::UiThemeValue::Color(worth_ui_dsl::UiThemeColor::from_channels(color)),
+            )],
+        )
+        .unwrap()
+    }
+}

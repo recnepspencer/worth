@@ -61,6 +61,29 @@ pub struct FinancialCourtroomWorld {
 }
 
 impl FinancialCourtroomWorld {
+    pub fn conditional_clock<'world, Node>(
+        &'world self,
+        handle: &'world primary_graph::WorthQueryConditionalClockHandle<
+            FinancialHostSchema,
+            Node,
+            crate::adapters::CourtroomClock,
+        >,
+    ) -> Result<
+        primary_graph::WorthQueryConditionalClockObservationPort<
+            'world,
+            FinancialHostSchema,
+            Node,
+            crate::adapters::CourtroomClock,
+        >,
+        primary_graph::WorthQueryConditionalClockObservationDenial,
+    > {
+        self.application
+            .on_branch(self.application.current_world())
+            .select()
+            .unwrap()
+            .conditional_clock(handle)
+    }
+
     pub fn publish_curve() -> Self {
         Self::publish("curve-usd-rates-5y", 4_250, 100, 5_100)
     }
@@ -107,20 +130,24 @@ impl FinancialCourtroomWorld {
             .principal_binding(FinancialPrincipalBinding::reference())
             .unwrap();
         let curve_query = schema
-            .application_query(FinancialIntentQuery::reference())
+            .certification_query(FinancialIntentQuery::reference())
             .unwrap();
         let quote_query = schema
-            .application_query(FinancialIntentQuery::reference())
+            .certification_query(FinancialIntentQuery::reference())
             .unwrap();
         let portfolio_query = schema
-            .application_query(FinancialIntentQuery::reference())
+            .certification_query(FinancialIntentQuery::reference())
             .unwrap();
         let sibling_portfolio_query = schema
-            .application_query(FinancialIntentQuery::reference())
+            .certification_query(FinancialIntentQuery::reference())
             .unwrap();
 
         let mut graph = authority
-            .prepare_primary_graph(&installed_runtime, &schema)
+            .prepare_primary_graph(
+                &installed_runtime,
+                &schema,
+                worth_query_execution::facade::integration::product_world_resources_for_test(1_024),
+            )
             .unwrap()
             .semantic_truth_partition(
                 worth_foundational::facade::TruthPartitionRole::new("usd-rates").unwrap(),
@@ -164,7 +191,7 @@ impl FinancialCourtroomWorld {
                 curve_query,
                 ApplicationQueryParameterSet::new(),
                 FinancialIntentProjector,
-                domain::WorthQueryTemporalIntentBounds::new(8, 8, 8).unwrap(),
+                domain::WorthQueryTemporalIntentBounds::new(8, 16, 8).unwrap(),
             )
             .unwrap();
         let quote = installed_runtime
@@ -190,7 +217,7 @@ impl FinancialCourtroomWorld {
                 quote_query,
                 ApplicationQueryParameterSet::new(),
                 FinancialIntentProjector,
-                domain::WorthQueryTemporalIntentBounds::new(8, 8, 8).unwrap(),
+                domain::WorthQueryTemporalIntentBounds::new(8, 16, 8).unwrap(),
             )
             .unwrap();
         let portfolio = installed_runtime
@@ -212,7 +239,7 @@ impl FinancialCourtroomWorld {
                 portfolio_query,
                 ApplicationQueryParameterSet::new(),
                 FinancialIntentProjector,
-                domain::WorthQueryTemporalIntentBounds::new(8, 8, 8).unwrap(),
+                domain::WorthQueryTemporalIntentBounds::new(8, 16, 8).unwrap(),
             )
             .unwrap();
         let sibling_portfolio = installed_runtime
@@ -234,7 +261,7 @@ impl FinancialCourtroomWorld {
                 sibling_portfolio_query,
                 ApplicationQueryParameterSet::new(),
                 FinancialIntentProjector,
-                domain::WorthQueryTemporalIntentBounds::new(8, 8, 8).unwrap(),
+                domain::WorthQueryTemporalIntentBounds::new(8, 16, 8).unwrap(),
             )
             .unwrap();
 
@@ -255,7 +282,12 @@ impl FinancialCourtroomWorld {
         let portfolio_authentication = Arc::new(admitted_identity_adapter(&schema));
         let sibling_portfolio_authentication = Arc::new(admitted_identity_adapter(&schema));
         let mut conditional_installation = graph
-            .conditional_application_runtime_installation(installed_runtime, authority, schema)
+            .conditional_application_runtime_installation(
+                installed_runtime,
+                authority,
+                schema,
+                primary_graph::SignalConditionalEvaluationBudget::development(),
+            )
             .unwrap();
         let curve_clock = conditional_installation
             .bind_temporal_operation(
@@ -327,6 +359,9 @@ impl FinancialCourtroomWorld {
         &self,
     ) -> worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts {
         self.application
+            .on_branch(self.application.current_world())
+            .select()
+            .expect("the selected product branch remains admitted")
             .resolve_entity(
                 MarketIdentityField::reference(),
                 self.record_identity.to_string(),
@@ -341,6 +376,9 @@ impl FinancialCourtroomWorld {
         &self,
     ) -> worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts {
         self.application
+            .on_branch(self.application.current_world())
+            .select()
+            .expect("the selected product branch remains admitted")
             .resolve_entity(
                 MarketIdentityField::reference(),
                 "curve-usd-rates-10y".to_string(),

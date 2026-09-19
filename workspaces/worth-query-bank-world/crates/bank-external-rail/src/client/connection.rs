@@ -59,6 +59,7 @@ pub async fn dispatch(
                 | RailResponseFrame::StatusReport(_)
                 | RailResponseFrame::NoticeReport(_)
                 | RailResponseFrame::AdmissionCount(_)
+                | RailResponseFrame::DispatchContactCount(_)
                 | RailResponseFrame::CompletedEffectCount(_)
                 | RailResponseFrame::CompletedNoticeReport(_),
             ) => unreachable!(
@@ -71,6 +72,7 @@ pub async fn dispatch(
             | RailResponseFrame::StatusReport(_)
             | RailResponseFrame::NoticeReport(_)
             | RailResponseFrame::AdmissionCount(_)
+            | RailResponseFrame::DispatchContactCount(_)
             | RailResponseFrame::CompletedEffectCount(_)
             | RailResponseFrame::CompletedNoticeReport(_),
         ) => unreachable!(
@@ -103,6 +105,7 @@ pub async fn inquire_notice(
         | RailResponseFrame::Rejected(_)
         | RailResponseFrame::StatusReport(_)
         | RailResponseFrame::AdmissionCount(_)
+        | RailResponseFrame::DispatchContactCount(_)
         | RailResponseFrame::CompletedEffectCount(_)
         | RailResponseFrame::CompletedNoticeReport(_) => {
             unreachable!("the rail only ever answers InquireNotice with a NoticeReport frame")
@@ -131,6 +134,7 @@ pub async fn inquire_status(
         | RailResponseFrame::Rejected(_)
         | RailResponseFrame::NoticeReport(_)
         | RailResponseFrame::AdmissionCount(_)
+        | RailResponseFrame::DispatchContactCount(_)
         | RailResponseFrame::CompletedEffectCount(_)
         | RailResponseFrame::CompletedNoticeReport(_) => {
             unreachable!("the rail only ever answers InquireStatus with a StatusReport frame")
@@ -158,9 +162,32 @@ pub async fn inquire_admission_count(
         | RailResponseFrame::Rejected(_)
         | RailResponseFrame::StatusReport(_)
         | RailResponseFrame::NoticeReport(_)
+        | RailResponseFrame::DispatchContactCount(_)
         | RailResponseFrame::CompletedEffectCount(_)
         | RailResponseFrame::CompletedNoticeReport(_) => {
             unreachable!("the rail only ever answers InquireAdmissionCount with AdmissionCount")
+        }
+    }
+}
+
+/// Asks the rail how many dispatch frames crossed its TCP boundary, including duplicates.
+pub async fn inquire_dispatch_contact_count(
+    addr: SocketAddr,
+    frame_timeout: Duration,
+) -> Result<u64, RailTransportFailure> {
+    let mut stream = connect_and_write(addr, RailRequest::InquireDispatchContactCount).await?;
+    match read_response_frame(&mut stream, frame_timeout).await? {
+        RailResponseFrame::DispatchContactCount(count) => Ok(count),
+        RailResponseFrame::Ack
+        | RailResponseFrame::DuplicateAck
+        | RailResponseFrame::Completed
+        | RailResponseFrame::Rejected(_)
+        | RailResponseFrame::StatusReport(_)
+        | RailResponseFrame::NoticeReport(_)
+        | RailResponseFrame::AdmissionCount(_)
+        | RailResponseFrame::CompletedEffectCount(_)
+        | RailResponseFrame::CompletedNoticeReport(_) => {
+            unreachable!("the rail only answers InquireDispatchContactCount with its exact count")
         }
     }
 }
@@ -180,6 +207,7 @@ pub async fn inquire_completed_effect_count(
         | RailResponseFrame::StatusReport(_)
         | RailResponseFrame::NoticeReport(_)
         | RailResponseFrame::AdmissionCount(_)
+        | RailResponseFrame::DispatchContactCount(_)
         | RailResponseFrame::CompletedNoticeReport(_) => unreachable!(
             "the rail only ever answers InquireCompletedEffectCount with its exact count"
         ),
@@ -203,6 +231,7 @@ pub async fn inquire_completed_notice(
         | RailResponseFrame::StatusReport(_)
         | RailResponseFrame::NoticeReport(_)
         | RailResponseFrame::AdmissionCount(_)
+        | RailResponseFrame::DispatchContactCount(_)
         | RailResponseFrame::CompletedEffectCount(_) => {
             unreachable!("the rail only ever answers InquireCompletedNotice with its consequence")
         }

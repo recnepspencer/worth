@@ -1,11 +1,13 @@
 use std::sync::Arc;
 
 mod material;
+mod receipt_closure;
+mod work_admission;
 use material::{ApplicationInvariantCandidateMaterial, ApplicationInvariantSemanticMaterial};
+use work_admission::admit_candidate_validator_work;
 
 use super::invariant_execution_failure::{
-    map_branch_basis_failure, map_exact_basis_failure, map_transaction_admission_failure,
-    map_transaction_staging_failure, map_validation_failure,
+    map_transaction_admission_failure, map_transaction_staging_failure, map_validation_failure,
 };
 use super::WorthQueryPrimaryGraphProvider;
 use crate::domain_computation::{
@@ -72,16 +74,18 @@ impl WorthQueryInvariantExecutionProvider for Arc<WorthQueryPrimaryGraphProvider
         let material = self.semantic_invariant_material(session)?;
         let load_evidence = execution.state_load_evidence();
         material.validate_load(&execution, load_evidence)?;
-        if !self
+        let attempts = self
             .attempts
             .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .has_invariant_approved_candidate(session)
-        {
-            return Err(missing_candidate_failure());
-        }
-        let semantic_work = u64::try_from(load_evidence.loaded_fact_locators().len())
-            .map_err(|_| owner_failure())?;
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let candidate = attempts
+            .approved_candidate(session)
+            .ok_or_else(missing_candidate_failure)?;
+        let semantic_work = receipt_closure::requirement_work(
+            candidate.invariant_evidence(),
+            execution.requirement(),
+            load_evidence.loaded_fact_locators().len(),
+        )?;
         let evidence = WorthQueryInvariantVerdictEvidence::new(
             execution.requirement().slot(),
             "relational-installed-invariant-authority",
@@ -147,6 +151,7 @@ impl WorthQueryPrimaryGraphProvider {
         &self,
         batch: worth_relational::facade::transactions::WorkerIntentBatch,
         branch: &worth_relational::facade::history::BranchId,
+        product: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
         application_touches: &worth_query_installation::facade::WorthQueryOperationTouchContract,
         aftermath_causality: Option<
             &crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
@@ -171,27 +176,24 @@ impl WorthQueryPrimaryGraphProvider {
         } else {
             batch
         };
+        let basis = product.observation().basis().relational_basis();
+        if basis.identity().branch_id() != branch {
+            return Err(owner_failure());
+        }
         let candidate = self.graph.with_runtime_mut(|runtime| {
             if let Some(pending) = aftermath_causality {
-                let current =
-                    crate::domain_computation::primary_graph::exact_basis_access::current_branch_head(
-                        runtime, branch,
-                    )
-                    .map_err(map_exact_basis_failure)?
+                let observed_parent = basis
+                    .observation()
+                    .commit_receipt()
+                    .cloned()
                     .ok_or_else(aftermath_failure)?;
-                if pending.parent() != &current {
+                if pending.parent() != &observed_parent {
                     return Err(aftermath_failure());
                 }
             }
-            let identity = runtime
-                .branch_identity(branch)
-                .map_err(|_| owner_failure())?;
-            let options = runtime
-                .admit_branch_basis(&identity)
-                .map_err(map_branch_basis_failure)?;
             let mut transaction = runtime
                 .begin_branch_transaction(
-                    &options,
+                    basis,
                     worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
                 )
                 .map_err(map_transaction_admission_failure)?;
@@ -210,14 +212,28 @@ impl WorthQueryPrimaryGraphProvider {
         session: WorthQueryProviderSessionView<'_>,
         material: ApplicationInvariantCandidateMaterial,
     ) -> Result<(), WorthQueryInvariantExecutionFailure> {
-        let owner_work =
-            u64::try_from(material.semantic.expected.len()).map_err(|_| owner_failure())?;
+        let semantic_work = admit_candidate_validator_work(&material)?;
         let candidate = self.validate_relational_candidate(
             material.batch,
             &material.branch,
+            &material.product,
             &material.application_touches,
             material.aftermath_causality.as_ref(),
         )?;
+        let owner_work = receipt_closure::validate_receipt_closure(
+            candidate.invariant_evidence(),
+            &material.requirements,
+            semantic_work,
+        )?;
+        super::super::product_operation::admit_required_invariants(
+            candidate
+                .invariant_evidence()
+                .custom_invariant_execution_receipts(),
+            material.producer_required_invariants,
+        )
+        .map_err(|_| {
+            closure_failure("producer-required invariant did not pass before publication")
+        })?;
         let touch_admission =
             super::application_touch_admission::admit_validated_application_touches(
                 &candidate,

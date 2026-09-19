@@ -19,6 +19,14 @@ fn worker_output_delivery_packets_requested_public_outputs() {
         .apply_committed_transaction(set_counter(7.0))
         .unwrap();
 
+    // The published output is standing demand, so the commit already settled
+    // it: no read is needed for the value to be current, and reading it does
+    // not move the committed truth digest the delivery packet reports.
+    assert_eq!(
+        worker_shell.peek_value("doubleCounter").unwrap(),
+        SignalValue::Number(14.0)
+    );
+
     let packet = worker_shell
         .deliver_outputs(output_request(&["doubleCounter"]))
         .unwrap();

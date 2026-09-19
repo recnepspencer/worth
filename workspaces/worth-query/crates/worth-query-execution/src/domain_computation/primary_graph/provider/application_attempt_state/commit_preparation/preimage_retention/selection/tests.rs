@@ -115,6 +115,8 @@ fn owner_path_fixture() -> (
     let world = installed_authorization_world(true);
     let account = world
         .application
+        .select_product_branch(world.application.product_runtime().default_branch())
+        .expect("the selected product branch remains admitted")
         .resolve_entity(
             AccountStatus::reference(),
             "open".to_owned(),

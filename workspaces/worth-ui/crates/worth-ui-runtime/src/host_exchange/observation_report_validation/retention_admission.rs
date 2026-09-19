@@ -254,7 +254,7 @@ fn retain_report(
     host_replaced: Option<UiHostObservationSequenceRange>,
     mutation: &mut UiHostObservationRetentionMutation<'_>,
 ) -> UiValidatedHostObservationReport {
-    let coalescing_identity = report.payload().coalescing_identity();
+    let coalescing_identity = report.coalescing_identity();
     let replaced = partition.reports.back().and_then(|previous| {
         (coalescing_identity.is_some()
             && previous.coalescing_identity == coalescing_identity

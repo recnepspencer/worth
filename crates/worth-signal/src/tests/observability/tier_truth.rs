@@ -71,7 +71,10 @@ fn tier_matrix_public_observer_surfaces_preserve_truth_while_availability_change
             .explicit_cold_materialization_request_count;
         let summary = graph.observe().diagnostics_summary(policy.tier);
         let history = graph.observe().execution_history_summary(policy.tier);
-        let flow = graph.observe().latest_flow_diagnostics().cloned();
+        let flow = graph
+            .observe()
+            .latest_flow_diagnostics()
+            .map(|flow| flow.to_owned_summary());
         let replay = graph
             .observe()
             .replay_around_snapshot(snapshot.snapshot_id())

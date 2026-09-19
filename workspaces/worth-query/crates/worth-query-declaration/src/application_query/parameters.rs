@@ -2,15 +2,14 @@ use std::marker::PhantomData;
 
 use worth_foundational::facade::{AspectValue, ScalarAspectType};
 
-use crate::application_schema::TypedApplicationValue;
-use crate::portable_identity::WorthQueryPortableType;
+use crate::application_schema::{ApplicationScalarValueBinding, ApplicationValueEncodeDenial};
 
-pub struct ApplicationQueryParameterRef<Query, Parameter, Value> {
+pub struct ApplicationQueryParameterRef<Query, Parameter, Binding> {
     name: &'static str,
-    _marker: PhantomData<fn(Value) -> (Query, Parameter)>,
+    _marker: PhantomData<fn() -> (Query, Parameter, Binding)>,
 }
 
-impl<Query, Parameter, Value> ApplicationQueryParameterRef<Query, Parameter, Value> {
+impl<Query, Parameter, Binding> ApplicationQueryParameterRef<Query, Parameter, Binding> {
     #[doc(hidden)]
     pub const fn from_query_identifier(name: &'static str) -> Self {
         Self {
@@ -24,19 +23,21 @@ impl<Query, Parameter, Value> ApplicationQueryParameterRef<Query, Parameter, Val
     }
 }
 
-impl<Query, Parameter, Value> Clone for ApplicationQueryParameterRef<Query, Parameter, Value> {
+impl<Query, Parameter, Binding> Clone for ApplicationQueryParameterRef<Query, Parameter, Binding> {
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<Query, Parameter, Value> Copy for ApplicationQueryParameterRef<Query, Parameter, Value> {}
+impl<Query, Parameter, Binding> Copy for ApplicationQueryParameterRef<Query, Parameter, Binding> {}
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub struct ApplicationQueryParameterDefinition {
     name: String,
     scalar_family: ScalarAspectType,
     value_type: crate::portable_identity::WorthQueryPortableTypeIdentity,
+    unit: Option<String>,
+    frame: Option<String>,
 }
 
 impl ApplicationQueryParameterDefinition {
@@ -44,11 +45,15 @@ impl ApplicationQueryParameterDefinition {
         name: String,
         scalar_family: ScalarAspectType,
         value_type: crate::portable_identity::WorthQueryPortableTypeIdentity,
+        unit: Option<String>,
+        frame: Option<String>,
     ) -> Self {
         Self {
             name,
             scalar_family,
             value_type,
+            unit,
+            frame,
         }
     }
 
@@ -64,16 +69,26 @@ impl ApplicationQueryParameterDefinition {
         self.value_type.as_str()
     }
 
-    pub(super) fn typed<Query, Parameter, Value>(
-        parameter: ApplicationQueryParameterRef<Query, Parameter, Value>,
+    pub fn unit(&self) -> Option<&str> {
+        self.unit.as_deref()
+    }
+
+    pub fn frame(&self) -> Option<&str> {
+        self.frame.as_deref()
+    }
+
+    pub(super) fn typed<Query, Parameter, Binding>(
+        parameter: ApplicationQueryParameterRef<Query, Parameter, Binding>,
     ) -> Self
     where
-        Value: TypedApplicationValue + WorthQueryPortableType,
+        Binding: ApplicationScalarValueBinding,
     {
         Self {
             name: parameter.name().to_owned(),
-            scalar_family: Value::SCALAR_FAMILY,
-            value_type: Value::PORTABLE_TYPE_IDENTITY,
+            scalar_family: Binding::SCALAR_FAMILY,
+            value_type: Binding::IDENTITY,
+            unit: Binding::UNIT.map(|unit| unit.as_str().to_owned()),
+            frame: Binding::FRAME.map(|frame| frame.as_str().to_owned()),
         }
     }
 }
@@ -101,17 +116,18 @@ impl<Query> ApplicationQueryParameterSet<Query> {
         }
     }
 
-    pub fn bind<Parameter, Value>(
+    pub fn bind<Parameter, Binding>(
         mut self,
-        parameter: ApplicationQueryParameterRef<Query, Parameter, Value>,
-        value: Value,
-    ) -> Self
+        parameter: ApplicationQueryParameterRef<Query, Parameter, Binding>,
+        value: Binding::Value,
+    ) -> Result<Self, ApplicationValueEncodeDenial>
     where
-        Value: TypedApplicationValue,
+        Binding: ApplicationScalarValueBinding,
     {
+        Binding::validate(&value)?;
         self.bindings
-            .push((parameter.name(), value.into_foundational_value()));
-        self
+            .push((parameter.name(), Binding::encode(&value)?));
+        Ok(self)
     }
 
     pub fn bindings(&self) -> &[(&'static str, AspectValue)] {

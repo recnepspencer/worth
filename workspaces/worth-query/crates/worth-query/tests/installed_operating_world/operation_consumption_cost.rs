@@ -124,7 +124,7 @@ fn expected_nonzero_rows() -> BTreeMap<&'static str, u64> {
         ("query.resource_admission.resource_contract_lookups", 1),
         ("query.resource_admission.support_snapshot_checks", 1),
         ("query.resource_admission.strategy_checks", 1),
-        ("query.resource_admission.envelope_dimension_checks", 31),
+        ("query.resource_admission.envelope_dimension_checks", 32),
         ("query.resource_admission.provider_session_mints", 1),
         ("query.execution.runtime_authority_checks", 1),
         ("query.execution.primary_read_contacts", 1),

@@ -85,4 +85,8 @@ impl WorthUiPreparedApplicationGenerationIdentity {
     pub fn semantic_package_identity(&self) -> &worth_ui_dsl::WorthUiSemanticPackageIdentity {
         &self.inner.semantic_package
     }
+
+    pub(crate) fn matches_graph(&self, graph: crate::graph::UiGraphAuthority<'_>) -> bool {
+        self.inner.graph_authority_digest == graph.snapshot().authority_digest()
+    }
 }

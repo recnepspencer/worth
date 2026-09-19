@@ -8,8 +8,10 @@ use crate::facade::mounted::{
 };
 use worth_ui_host_contract::WorthUiHostCapabilityReport;
 
+mod accepted_text;
 mod adapter;
 mod measurement_adapter;
+mod paint_observations;
 mod visual_capture_script;
 
 use visual_capture_script::ScriptedVisualCapture;
@@ -32,6 +34,7 @@ pub enum ScriptedSurfaceCompletion {
     Pending,
     RejectedBeforeEffects(worth_ui_host_contract::UiHostSurfacePresentationDenial),
     Presented(worth_ui_host_contract::UiMountedSurfacePresentationCompletion),
+    Superseded(worth_ui_host_contract::UiMountedSurfacePresentationSupersession),
     PresentationIndeterminate,
 }
 
@@ -51,14 +54,21 @@ struct ScriptedPresentationState {
     wrong_next_deregistration_receipt: bool,
     cancellation_calls: Vec<u64>,
     presentation_calls: usize,
+    last_node_changes: Vec<worth_ui_host_contract::UiMountedPresentationNodeChange>,
+    last_surface_colors: Vec<worth_ui_host_contract::UiMountedRgba8>,
+    last_appearance_samples: Vec<worth_ui_host_contract::UiMountedPresentationSampleChange>,
+    accepted_text: accepted_text::ScriptedAcceptedText,
     last_presentation_correlation:
         Option<worth_ui_host_native::UiNativePhysicalPresentationCorrelation>,
+    #[cfg(feature = "certification-support")]
     next_physical_presentation_sequence: u64,
     last_focus_placement: Option<worth_ui_host_contract::UiHostFocusPlacementRequest>,
     requested_portal_overlay_commands:
         HashSet<worth_ui_host_contract::UiMountedPaintCommandIdentity>,
     requested_portal_overlay_counts: Vec<usize>,
     reconstruction_portal_overlay_counts: Vec<usize>,
+    reconstruction_sample_overrides:
+        Vec<Box<[worth_ui_host_contract::UiMountedPresentationSampleChange]>>,
     input_recipient: Option<worth_ui_host_contract::UiHostInputRecipientBindingReceipt>,
     viewport_extent: [f32; 2],
     viewport_measurement_calls: usize,
@@ -93,12 +103,18 @@ impl Default for ScriptedPresentationState {
             wrong_next_deregistration_receipt: false,
             cancellation_calls: Vec::new(),
             presentation_calls: 0,
+            last_node_changes: Vec::new(),
+            last_surface_colors: Vec::new(),
+            last_appearance_samples: Vec::new(),
+            accepted_text: Default::default(),
             last_presentation_correlation: None,
+            #[cfg(feature = "certification-support")]
             next_physical_presentation_sequence: 1,
             last_focus_placement: None,
             requested_portal_overlay_commands: HashSet::new(),
             requested_portal_overlay_counts: Vec::new(),
             reconstruction_portal_overlay_counts: Vec::new(),
+            reconstruction_sample_overrides: Vec::new(),
             input_recipient: None,
             viewport_extent: [800.0, 600.0],
             viewport_measurement_calls: 0,
@@ -196,6 +212,17 @@ impl ScriptedPresentationHost {
         ));
     }
 
+    pub fn push_native_display_settled_without_effects(&self) {
+        self.push_presentation(UiHostSurfacePresentationOutcome::Presented(
+            worth_ui_host_contract::UiMountedSurfacePresentationCompletion::new(
+                UiHostSurfacePresentationMode::NativeDisplay,
+                scripted_presentation_epoch(),
+                UiMountedCompletedEffects::new(Vec::new()),
+                worth_ui_host_contract::UiHostPresentationCostReport::default(),
+            ),
+        ));
+    }
+
     pub fn push_rejected(&self) {
         self.push_presentation(UiHostSurfacePresentationOutcome::RejectedBeforeEffects(
             worth_ui_host_contract::UiHostSurfacePresentationDenial::AdapterDeclined,
@@ -227,6 +254,10 @@ impl ScriptedPresentationHost {
 
     pub fn presentation_calls(&self) -> usize {
         self.state.lock().unwrap().presentation_calls
+    }
+
+    pub fn pending_presentation_count(&self) -> usize {
+        self.state.lock().unwrap().presentations.len()
     }
 
     pub fn last_presentation_correlation(

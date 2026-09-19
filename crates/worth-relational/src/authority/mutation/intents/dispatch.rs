@@ -5,8 +5,8 @@ use crate::transactions::data::{
 use super::{
     apply_entity_aspect_patch, apply_relation_aspect_patch, bulk_create_entities,
     bulk_create_relations, create_entity, create_entity_aspects, create_relation,
-    create_relation_aspects, delete_entity, delete_relation, replace_entity, update_entity_fields,
-    update_relation_endpoints,
+    create_relation_aspects, delete_entity, delete_relation, materialization, replace_entity,
+    update_entity_fields, update_relation_endpoints,
 };
 use crate::authority::mutation::outcomes::MutationOutcome;
 use crate::authority::mutation::MutationWorkspace;
@@ -53,5 +53,6 @@ pub(crate) fn dispatch_intent(
         MutationIntent::Relation(RelationMutationIntent::Delete(spec)) => {
             delete_relation::apply(spec, workspace)
         }
+        MutationIntent::Materialization(intent) => materialization::apply(intent, workspace),
     }
 }

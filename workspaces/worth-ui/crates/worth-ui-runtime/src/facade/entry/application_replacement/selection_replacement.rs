@@ -5,6 +5,14 @@ pub(super) struct UiPreparedSelectionReplacement(
 );
 
 impl UiPreparedSelectionReplacement {
+    pub(super) fn appearance_snapshot(
+        &self,
+    ) -> Option<crate::runtime::selection::UiSelectionAppearanceOwnerSnapshot> {
+        self.0
+            .as_ref()
+            .map(|owner| owner.appearance_owner_snapshot())
+    }
+
     pub(super) fn into_state(
         self,
     ) -> crate::runtime::UiRuntimeServiceInstallation<
@@ -19,7 +27,7 @@ impl WorthUiActiveApplicationSession {
         &self,
         application: &super::WorthUiPreparedApplicationActivation,
         successor: &crate::mounting::UiMountedGraphReplacementSuccessor,
-        publication_is_current: bool,
+        frame: Option<&crate::mounting::UiAssembledMountedFrame>,
     ) -> UiPreparedSelectionReplacement {
         if application
             .candidate_service_policy_plan()
@@ -56,8 +64,8 @@ impl WorthUiActiveApplicationSession {
                 ),
             );
         }
-        if publication_is_current {
-            reconcile_successor_catalogs(&mut selection, &self.mounted);
+        if let Some(frame) = frame {
+            reconcile_successor_catalogs(&mut selection, frame);
         } else {
             selection.suspend_projection_catalogs();
         }
@@ -67,14 +75,14 @@ impl WorthUiActiveApplicationSession {
 
 fn reconcile_successor_catalogs(
     selection: &mut crate::runtime::selection::UiSelectionRuntimeState,
-    mounted: &crate::mounting::WorthUiMountedSessionState,
+    frame: &crate::mounting::UiAssembledMountedFrame,
 ) {
     for family in selection.projection_families().iter().copied() {
         let Some(slot) = family.projection_input_slot() else {
             continue;
         };
         let Some(worth_ui_query_binding::UiProjectionInputFactReference::Collection(collection)) =
-            mounted.current_projection_input(slot)
+            frame.projection_input(slot)
         else {
             selection.retire_family(family);
             continue;

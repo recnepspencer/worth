@@ -115,7 +115,7 @@ fn unavailable_layer_truth_and_stale_binding_deny_without_moving_predecessor() {
             UiHostSurfacePresentationMode::RecordOnly,
             UiSurfaceBindingProfile::new(
                 2_000,
-                UiSurfaceBindingCoordinatePosture::PhysicalPixels,
+                UiSurfaceBindingCoordinatePosture::LogicalPoints,
                 2,
             )
             .unwrap(),
@@ -123,6 +123,7 @@ fn unavailable_layer_truth_and_stale_binding_deny_without_moving_predecessor() {
         .unwrap()
         .binding_generation();
     let predecessor = session.advance_mounted_identity_frame().unwrap();
+    crate::mounted_geometry_fixture::install_current_occurrence_geometry(&mut session);
     let candidate = session
         .execute_framework_turn(|_| {})
         .expect("no mounted presentation lease is active")
@@ -158,4 +159,45 @@ fn unavailable_layer_truth_and_stale_binding_deny_without_moving_predecessor() {
         .rows()
         .iter()
         .all(|row| matches!(row.layer(), UiMountedLayerProjection::Layer(_))));
+}
+
+#[test]
+fn physical_pixel_binding_denies_before_issuing_infallible_surface_receipts() {
+    use worth_ui_runtime::facade::mounted::{
+        UiMountedFramePreparationDenial, UiMountedProjectionDenial,
+    };
+    let mut session = active_session();
+    let surface = session.create_semantic_surface().unwrap();
+    session
+        .register_host_surface(
+            surface,
+            UiHostSurfacePresentationMode::RecordOnly,
+            UiSurfaceBindingProfile::new(
+                2_000,
+                UiSurfaceBindingCoordinatePosture::PhysicalPixels,
+                1,
+            )
+            .unwrap(),
+        )
+        .unwrap();
+    let node = first_node(&session);
+    session.mount_instance(node, surface).unwrap();
+    crate::mounted_geometry_fixture::install_current_occurrence_geometry(&mut session);
+    let predecessor = session.inspect_mounted_identity().current_frame();
+    let prepared = session
+        .execute_framework_turn(|_| {})
+        .unwrap()
+        .into_execution()
+        .unwrap_or_else(|_| panic!("empty source turn permits projection"))
+        .prepare_mounted_frame(UiMountedFrameRequest::all_bound_surfaces());
+    assert!(matches!(
+        prepared,
+        Err(UiMountedFramePreparationDenial::Projection(
+            UiMountedProjectionDenial::CoordinateBasisMismatch
+        ))
+    ));
+    assert_eq!(
+        session.inspect_mounted_identity().current_frame(),
+        predecessor
+    );
 }

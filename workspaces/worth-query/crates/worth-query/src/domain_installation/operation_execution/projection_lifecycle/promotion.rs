@@ -27,18 +27,18 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane>
     ) -> WorthQueryProjectionPromotionOutcome<D, O, F, L> {
         let admitted = match admit_projection_promotion(self, workspace) {
             WorthQueryProjectionPreflightOutcome::Admitted(admitted) => admitted,
-            WorthQueryProjectionPreflightOutcome::Stopped(outcome) => return outcome,
+            WorthQueryProjectionPreflightOutcome::Stopped(outcome) => return *outcome,
         };
-        let ready = match evaluate_fresh_conditionals(admitted, workspace) {
+        let ready = match evaluate_fresh_conditionals(*admitted, workspace) {
             WorthQueryConditionalPromotionOutcome::Ready(ready) => ready,
-            WorthQueryConditionalPromotionOutcome::Stopped(outcome) => return outcome,
+            WorthQueryConditionalPromotionOutcome::Stopped(outcome) => return *outcome,
         };
         open_managed_live_projection(ready, workspace)
     }
 }
 
 fn open_managed_live_projection<D: 'static, O: 'static, F: 'static, L: BasisOperationLane>(
-    ready: WorthQueryProjectionReadyToOpen<D, O, F, L>,
+    ready: Box<WorthQueryProjectionReadyToOpen<D, O, F, L>>,
     workspace: &mut WorthQueryWorkspace,
 ) -> WorthQueryProjectionPromotionOutcome<D, O, F, L> {
     let WorthQueryProjectionReadyToOpen {
@@ -49,7 +49,7 @@ fn open_managed_live_projection<D: 'static, O: 'static, F: 'static, L: BasisOper
         operational_identity,
         resource_name,
         conditional_provenance,
-    } = ready;
+    } = *ready;
     match open_lifecycle_read(resource_name.clone(), read, workspace) {
         WorthQueryLiveOpenOutcome::Opened(completion) => {
             retain_journey_counters(&mut counters, completion.journey_counters());
@@ -59,8 +59,7 @@ fn open_managed_live_projection<D: 'static, O: 'static, F: 'static, L: BasisOper
                 .snapshot()
                 .semantic_dependency_closure()
                 .expect("settled installed projection retains its dependency closure");
-            if let Err(error) = workspace.register_installed_live_route::<D, O, F>(&handle, closure)
-            {
+            if let Err(error) = workspace.register_installed_live_route(&handle, closure) {
                 let detail = error.to_string();
                 let _ = handle.close_with_cause(
                     workspace,
@@ -68,7 +67,7 @@ fn open_managed_live_projection<D: 'static, O: 'static, F: 'static, L: BasisOper
                 );
                 return WorthQueryProjectionPromotionOutcome::Failed(
                     WorthQueryProjectionPromotionStop::new(
-                        current,
+                        *current,
                         WorthQueryProjectionPromotionDenialKind::ManagedLiveOpen,
                         detail,
                         counters,
@@ -76,7 +75,7 @@ fn open_managed_live_projection<D: 'static, O: 'static, F: 'static, L: BasisOper
                 );
             }
             let settled_identity = current.settled.identity().to_string();
-            let (settled, basis, predecessor_identity) = current.into_live_parts();
+            let (settled, basis, predecessor_identity) = (*current).into_live_parts();
             let receipt = WorthQueryLiveProjectionReceipt::new(
                 operational_identity,
                 resource_name,
@@ -99,7 +98,7 @@ fn open_managed_live_projection<D: 'static, O: 'static, F: 'static, L: BasisOper
         WorthQueryLiveOpenOutcome::Stopped(stop) => {
             retain_journey_counters(&mut counters, stop.read_stop().journey_counters());
             WorthQueryProjectionPromotionOutcome::Failed(WorthQueryProjectionPromotionStop::new(
-                current,
+                *current,
                 WorthQueryProjectionPromotionDenialKind::ManagedLiveOpen,
                 format!("managed live open stopped at {:?}", stop.source()),
                 counters,

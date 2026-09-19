@@ -82,23 +82,21 @@ fn viewport_fit_keeps_a_portal_presentable_when_the_anchor_consumes_both_sides()
 fn changed_anchor_is_not_coalesced_as_an_exact_duplicate() {
     let mut state = state();
     let portal = portal(41, 42);
+    let first_request = open_request(portal, 43, [40.0, 40.0, 40.0, 20.0], viewport());
+    let first_surface = first_request.semantic_surface();
     let first = state
-        .prepare(open_request(
-            portal,
-            43,
-            [40.0, 40.0, 40.0, 20.0],
-            viewport(),
-        ))
+        .prepare(first_request)
         .expect("first placement prepares");
     state
         .commit_published(first)
         .expect("first placement commits");
     let moved = state
-        .prepare(open_request(
+        .prepare(open_request_on_surface(
             portal,
             43,
             [80.0, 40.0, 40.0, 20.0],
             viewport(),
+            first_surface,
         ))
         .expect("moved placement prepares");
 
@@ -164,6 +162,74 @@ fn state() -> UiPortalRuntimeState {
     )
 }
 
+#[test]
+fn shadow_gutter_does_not_change_body_anchor_gap() {
+    use worth_ui_host_contract::{
+        UiMountedCanonicalBox, UiMountedCanonicalBoxInput, UiMountedCoordinateSpace,
+    };
+    let local = |x, y, width, height| {
+        UiMountedCanonicalBox::canonicalize(UiMountedCanonicalBoxInput {
+            x,
+            y,
+            width,
+            height,
+            coordinate_space: UiMountedCoordinateSpace::GraphNodeLocal,
+        })
+        .unwrap()
+    };
+    let content = super::UiPortalContentBounds {
+        layout: local(36.0, 36.0, 307.0, 253.0),
+        paint: local(0.0, 0.0, 379.0, 325.0),
+    };
+    // Independent product rectangles: body starts eight pixels below the
+    // anchor, or ends eight pixels above it; shadow support extends 36 pixels.
+    for (anchor, body, paint) in [
+        (
+            [120.0, 80.0, 48.0, 24.0],
+            [120.0, 112.0, 307.0, 253.0],
+            [84.0, 76.0, 379.0, 325.0],
+        ),
+        (
+            [120.0, 500.0, 48.0, 24.0],
+            [120.0, 239.0, 307.0, 253.0],
+            [84.0, 203.0, 379.0, 325.0],
+        ),
+    ] {
+        let mut runtime = state();
+        let request =
+            open_request(portal(71, 72), 73, anchor, viewport()).with_content_extent(Some(content));
+        let surface = request.semantic_surface();
+        let transition = runtime.prepare(request).unwrap();
+        let placement = transition.placement().unwrap();
+        assert_eq!(placement.bounds().components(), body);
+        assert_eq!(placement.paint_bounds().components(), paint);
+        runtime.commit_published(transition).unwrap();
+        let press = |x: f32, y: f32| super::UiPortalDismissalTrigger::OutsidePress {
+            semantic_surface: surface,
+            viewport_point_bits: [x.to_bits(), y.to_bits()],
+        };
+        let idempotency =
+            crate::runtime::intent_execution::UiIntentExecutionIdempotencyIdentity::issued(1, 74);
+        assert!(matches!(
+            runtime
+                .prepare_dismissal(press(body[0] + 1.0, body[1] + 1.0), None, idempotency)
+                .unwrap(),
+            super::UiPortalDismissalPreparation::Ignored(
+                super::UiPortalDismissalIgnoreReason::InsideTopmostPortal
+            )
+        ));
+        assert!(
+            matches!(
+                runtime
+                    .prepare_dismissal(press(paint[0] + 1.0, paint[1] + 1.0), None, idempotency)
+                    .unwrap(),
+                super::UiPortalDismissalPreparation::Prepared(_)
+            ),
+            "paint gutter is not an input shield"
+        );
+    }
+}
+
 fn viewport() -> [f32; 4] {
     [0.0, 0.0, 960.0, 600.0]
 }
@@ -181,6 +247,23 @@ fn open_request(
     anchor: [f32; 4],
     clip: [f32; 4],
 ) -> UiPortalServiceRequest {
+    open_request_on_surface(
+        portal,
+        lineage,
+        anchor,
+        clip,
+        worth_ui_host_contract::UiSemanticSurfaceIdentity::mint_unbound()
+            .expect("test semantic surface identity capacity"),
+    )
+}
+
+fn open_request_on_surface(
+    portal: UiPortalIdentity,
+    lineage: u64,
+    anchor: [f32; 4],
+    clip: [f32; 4],
+    surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+) -> UiPortalServiceRequest {
     let presentation = presentation();
     UiPortalServiceRequest::open(
         portal,
@@ -191,8 +274,7 @@ fn open_request(
             anchor,
         ),
         Some(presented_viewport(clip, presentation)),
-        worth_ui_host_contract::UiSemanticSurfaceIdentity::mint_unbound()
-            .expect("test semantic surface identity capacity"),
+        surface,
     )
 }
 

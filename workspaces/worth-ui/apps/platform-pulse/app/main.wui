@@ -1,76 +1,4 @@
-component platform.pulse.component.seed {
-  region platform.pulse.mosaic.region.viewport {
-    sizing platform.pulse.mosaic.sizing.viewport;
-    region platform.pulse.mosaic.region.masthead {
-      sizing platform.pulse.mosaic.sizing.masthead;
-    }
-    region platform.pulse.mosaic.region.evidence_rail {
-      sizing platform.pulse.mosaic.sizing.evidence_rail;
-      mount platform.pulse.surface.evidence placement platform.pulse.mosaic.placement.evidence;
-    }
-    region platform.pulse.mosaic.region.service_stage {
-      sizing platform.pulse.mosaic.sizing.service_stage;
-      state platform.pulse.mosaic.state.focused_service_region;
-      mount platform.pulse.surface.service placement platform.pulse.mosaic.placement.service;
-    }
-    region platform.pulse.mosaic.region.status_band {
-      sizing platform.pulse.mosaic.sizing.status_band;
-      mount platform.pulse.surface.status placement platform.pulse.mosaic.placement.status;
-    }
-  }
-}
-component platform.pulse.component.masthead_border {}
-component platform.pulse.component.brand {}
-component platform.pulse.component.runtime_badge {}
-component platform.pulse.component.evidence_border {}
-component platform.pulse.component.evidence_rail {}
-component platform.pulse.component.evidence_title {}
-component platform.pulse.component.evidence_body {}
-component platform.pulse.component.source_signal_title {}
-component platform.pulse.component.source_signal_active {}
-component platform.pulse.component.evidence_service_label {}
-component platform.pulse.component.evidence_service_body {}
-component platform.pulse.component.service_stage {}
-component platform.pulse.component.service_stage_border {}
-component platform.pulse.component.query_accent {}
-component platform.pulse.component.lower_shelf_divider {}
-component platform.pulse.component.service_eyebrow {}
-component platform.pulse.component.service_title {}
-component platform.pulse.component.service_body {}
-component platform.pulse.component.query_card {}
-component platform.pulse.component.query_card_border {}
-component platform.pulse.component.query_label {}
-component platform.pulse.component.native_card {}
-component platform.pulse.component.native_card_border {}
-component platform.pulse.component.native_label {}
-component platform.pulse.component.native_body {}
-component platform.pulse.component.query_denial_label {}
-component platform.pulse.component.query_denial_body {}
 component platform.pulse.component.status_band {}
-component platform.pulse.component.status_text {}
-component platform.pulse.component.identity_target {
-  interaction activate routes platform.pulse.action.route;
-}
-component platform.pulse.component.action_label {}
-component platform.pulse.component.portal_target {
-  interaction activate routes platform.pulse.portal.open.route;
-  interaction submit routes platform.pulse.portal.close.route;
-}
-component platform.pulse.component.portal_label {}
-component platform.pulse.component.portal_surface {}
-component platform.pulse.component.portal_accent {}
-component platform.pulse.component.portal_icon_tile {}
-component platform.pulse.component.portal_icon_text {}
-component platform.pulse.component.portal_title {}
-component platform.pulse.component.portal_body {}
-component platform.pulse.component.portal_cancel_label {}
-component platform.pulse.component.portal_primary_label {}
-component platform.pulse.component.confirmation_target {
-  interaction activate confirms platform.pulse.action.route;
-}
-component platform.pulse.component.projected_status {
-  content projection platform.pulse.status
-}
 surface platform.pulse.surface.main {}
 surface platform.pulse.surface.evidence {}
 surface platform.pulse.surface.service {}
@@ -140,17 +68,13 @@ command platform.pulse.command.run.portal {
   scope active_portal;
   binding platform.pulse.component.portal_target;
 }
-token theme.platform_pulse.fill = "theme.platform_pulse.blue";
 token theme.platform_pulse.canvas = "theme.platform_pulse.palette.canvas";
-token theme.platform_pulse.raised_surface = "theme.platform_pulse.palette.raised_surface";
-token theme.platform_pulse.elevated_surface = "theme.platform_pulse.palette.elevated_surface";
-token theme.platform_pulse.structural_rule = "theme.platform_pulse.palette.structural_rule";
-token theme.platform_pulse.primary_text = "theme.platform_pulse.palette.primary_text";
-token theme.platform_pulse.secondary_text = "theme.platform_pulse.palette.secondary_text";
-token theme.platform_pulse.principal_accent = "theme.platform_pulse.palette.principal_accent";
-token theme.platform_pulse.action_text = "theme.platform_pulse.palette.action_text";
-token theme.platform_pulse.positive = "theme.platform_pulse.palette.positive";
-token theme.platform_pulse.caution = "theme.platform_pulse.palette.caution";
-token theme.platform_pulse.identity_target_fill = "theme.platform_pulse.yellow";
-token theme.platform_pulse.confirmation_fill = "theme.platform_pulse.purple";
-token theme.platform_pulse.projected_status.text = "theme.platform_pulse.palette.caution";
+
+portal platform.pulse.portal.details {
+  surface platform.pulse.surface.main
+  anchor platform.pulse.component.portal_target
+  layer transient
+  dismiss outside_press escape anchor_gone
+  focus first_enabled
+  motion system_popover
+}

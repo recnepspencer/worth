@@ -116,7 +116,9 @@ impl<'access, 'runtime> RelationIntegrityScopeAccumulator<'access, 'runtime> {
         &mut self,
         intent: &crate::transactions::data::MutationIntent,
     ) -> Result<(), PreparedRelationIntegrityScopeBudgetExceeded> {
-        use crate::transactions::data::{CreateIntent, EntityMutationIntent, MutationIntent};
+        use crate::transactions::data::{
+            CreateIntent, EntityMutationIntent, MaterializationMutationIntent, MutationIntent,
+        };
         match intent {
             MutationIntent::Create(CreateIntent::Relation(spec)) => {
                 self.collect_planned_edge(spec.kind_id, &spec.source, &spec.target)?;
@@ -141,6 +143,13 @@ impl<'access, 'runtime> RelationIntegrityScopeAccumulator<'access, 'runtime> {
             MutationIntent::Entity(EntityMutationIntent::Replace(spec)) => {
                 self.collect_entity_removal(spec.entity_id)?;
             }
+            MutationIntent::Materialization(
+                MaterializationMutationIntent::RematerializeRelation(spec),
+            ) => self.collect_planned_edge(
+                spec.kind_id,
+                &EntityReference::Existing(spec.source),
+                &EntityReference::Existing(spec.target),
+            )?,
             _ => {}
         }
         Ok(())

@@ -6,6 +6,7 @@ pub(in crate::runtime) enum UiFocusTraversalDirection {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum UiFocusCause {
+    #[cfg(any(test, feature = "certification-support"))]
     Direct,
     KeyboardTraversal,
     RovingMovement,
@@ -15,6 +16,7 @@ pub(crate) enum UiFocusCause {
     RebindFallback,
 }
 
+#[cfg(any(test, feature = "certification-support"))]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::runtime) enum UiFocusRequest {
     Direct {

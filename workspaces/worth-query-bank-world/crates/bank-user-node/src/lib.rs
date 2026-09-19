@@ -28,8 +28,6 @@ pub use protocol::{
     BankUserNodeMandatoryReviewOutcome, BankUserNodeMandatoryReviewRequest,
     BankUserNodeMutationOutcome, BankUserNodeMutationRequest,
     BankUserNodeRecoveryInspectionOutcome, BankUserNodeRecoveryRequest,
-    BankUserNodeRedoProgressionOutcome, BankUserNodeRedoProgressionRequest,
-    BankUserNodeUndoAdmissionOutcome, BankUserNodeUndoProgressionOutcome,
-    BankUserNodeUndoProgressionRequest,
+    BankUserNodeRecoverySafeRetryOutcome,
 };
 pub use server::{BankUserNode, BankUserNodeBinding, BankUserNodeInstallError};

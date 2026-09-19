@@ -2,6 +2,8 @@ use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
+mod retained_charge;
+
 use crate::data::core_profile::StableHashValue;
 use crate::data::output::{
     ArtifactContinuityToken, ChangedRegion, MemoizedResultOrigin, OutputChange, OutputIdentity,

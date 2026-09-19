@@ -24,6 +24,22 @@ impl crate::native_platform::UiNativeApplicationRuntime for OneOwnerRuntime {
         unreachable!("preparation must not activate the application runtime")
     }
 
+    fn native_pointer_affordance_ready(
+        &mut self,
+        application: crate::facade::WorthUiNativeApplicationShell,
+    ) -> Result<
+        (
+            crate::facade::WorthUiNativeApplicationShell,
+            crate::native_platform::UiNativeApplicationRuntimeDirective,
+        ),
+        super::super::UiNativeApplicationRuntimeProgressStopped,
+    > {
+        Ok((
+            application,
+            crate::native_platform::UiNativeApplicationRuntimeDirective::Continue,
+        ))
+    }
+
     fn readiness_ready(
         &mut self,
         _application: crate::facade::WorthUiNativeApplicationShell,
@@ -116,5 +132,25 @@ fn application_runtime_is_affine_and_remains_inert_during_preparation() {
             .readiness_owner_count()
             .get(),
         1
+    );
+}
+
+#[test]
+fn native_surface_declaration_is_explicit_affine_launch_input() {
+    let mut preparation = preparation(44);
+    preparation
+        .install_native_surface_declaration("workspace.surface.main")
+        .expect("the application selects its authored native surface");
+    assert_eq!(
+        preparation.install_native_surface_declaration("workspace.surface.secondary"),
+        Err(UiNativeApplicationPreparationDenialCause::NativeSurfaceDeclarationAlreadyInstalled)
+    );
+    install_change_profile(&mut preparation);
+    let UiNativeApplicationPreparationOutcome::Prepared(prepared) = preparation.complete() else {
+        panic!("the configured application should prepare")
+    };
+    assert_eq!(
+        prepared.native_surface_declaration.as_deref(),
+        Some("workspace.surface.main")
     );
 }

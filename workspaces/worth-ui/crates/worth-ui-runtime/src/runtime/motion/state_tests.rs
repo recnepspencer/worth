@@ -1,7 +1,5 @@
 use super::*;
 
-mod exit_retention;
-
 #[test]
 fn accepted_motion_publishes_once_and_terminalizes_once() {
     let mut state = runtime_state();
@@ -239,7 +237,7 @@ fn request(
 }
 
 fn target(owner_key: u64) -> UiMotionTargetIdentity {
-    UiMotionTargetIdentity::from_family_owner(
+    UiMotionTargetIdentity::from_mounted_owner(
         worth_ui_host_contract::UiSemanticSurfaceIdentity::mint_unbound().unwrap(),
         worth_ui_host_contract::UiMountedInstanceIdentity::mint_unbound().unwrap(),
         owner_key,
@@ -323,3 +321,5 @@ fn publication(
         disposition,
     )
 }
+
+mod exit_retention;

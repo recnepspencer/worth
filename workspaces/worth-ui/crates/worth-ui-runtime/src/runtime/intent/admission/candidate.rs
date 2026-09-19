@@ -98,6 +98,10 @@ impl UiPreparedIntentAdmissionCandidate {
         self.payload.input_basis().target()
     }
 
+    pub(crate) const fn portal_declaration(&self) -> Option<worth_ui_dsl::UiPortalDeclarationId> {
+        self.payload.portal_declaration()
+    }
+
     pub(crate) const fn command_route_receipt(
         &self,
     ) -> Option<&crate::runtime::UiCommandRouteReceipt> {
@@ -190,6 +194,10 @@ impl UiCurrentIntentAdmissionCandidate {
         &self,
     ) -> crate::runtime::interaction::UiPresentedInteractionTargetView {
         self.prepared.target()
+    }
+
+    pub(crate) const fn portal_declaration(&self) -> Option<worth_ui_dsl::UiPortalDeclarationId> {
+        self.prepared.portal_declaration()
     }
 
     pub(crate) const fn graph_node(&self) -> crate::graph::UiGraphNodeIdentity {

@@ -665,6 +665,7 @@ dependencies = [
  "worth-query-decl",
  "worth-query-execution",
  "worth-query-host",
+ "worth-query-installation",
  "worth-query-replay",
  "worth-relational",
  "worth-runtime-bridge",
@@ -700,6 +701,7 @@ dependencies = [
  "worth-query-installation",
  "worth-relational",
  "worth-runtime-bridge",
+ "worth-runtime-world",
  "worth-signal",
 ]
 
@@ -751,6 +753,7 @@ dependencies = [
  "worth-query-declaration",
  "worth-query-execution",
  "worth-query-installation",
+ "worth-runtime-world",
 ]
 
 [[package]]
@@ -786,6 +789,17 @@ dependencies = [
  "worth-foundational",
  "worth-harness",
  "worth-proof",
+ "worth-signal",
+]
+
+[[package]]
+name = "worth-runtime-world"
+version = "0.1.0"
+dependencies = [
+ "worth-foundational",
+ "worth-proof",
+ "worth-relational",
+ "worth-runtime-bridge",
  "worth-signal",
 ]
 

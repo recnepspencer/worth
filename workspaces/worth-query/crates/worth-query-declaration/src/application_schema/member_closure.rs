@@ -36,6 +36,7 @@ pub(super) fn validate_member_closure(
     for member in members {
         index.validate(member)?;
     }
+    super::mutation_description_validation::validate_dependencies(members)?;
     validate_application_query_members(members)?;
     validate_application_capability_members(members)?;
     validate_decision_fact_budgets(members, &index.operations)?;

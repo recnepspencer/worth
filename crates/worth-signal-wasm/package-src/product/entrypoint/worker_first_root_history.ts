@@ -69,6 +69,16 @@ export function createRootHistoryFacade(rootSession) {
       }
       return withNotification(rootSession.restoreExactHistorySnapshotEnvelope(restoreToken));
     },
+    discard_exact_artifact(artifact) {
+      const restoreToken =
+        artifact?.snapshotEnvelopeRestoreToken ?? artifact?.snapshotRestoreToken;
+      if (typeof restoreToken !== "string") {
+        throw new TypeError(
+          "history.discard_exact_artifact expects an artifact returned by history.snapshot(), history.branch_snapshot(), or history.branch_snapshot_envelope()",
+        );
+      }
+      return rootSession.bridge().discardRestoreToken(restoreToken);
+    },
     current_branch() {
       const branch = rootSession.currentBranchSummary();
       if (branch === null) {

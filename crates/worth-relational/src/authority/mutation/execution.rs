@@ -99,6 +99,10 @@ fn estimated_mutation_effect_shape(
                 change_count += 1;
                 event_count += 1;
             }
+            MutationIntent::Materialization(_) => {
+                change_count += 1;
+                event_count += 1;
+            }
         }
     }
 

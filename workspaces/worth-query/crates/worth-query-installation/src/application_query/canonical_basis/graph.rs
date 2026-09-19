@@ -140,6 +140,19 @@ fn append_relations(
             ),
             unsigned(format!("{path}.depth"), relation.depth()),
         ]);
+        if let Some(predicate) = relation.predicate() {
+            let (entity, aspect, field) = predicate.field();
+            entries.extend([
+                text(format!("{path}.predicate.entity"), entity),
+                text(format!("{path}.predicate.aspect"), aspect),
+                text(format!("{path}.predicate.field"), field),
+                text(format!("{path}.predicate.parameter"), predicate.parameter()),
+                text(
+                    format!("{path}.predicate.scalar"),
+                    predicate.scalar_family().canonical_name(),
+                ),
+            ]);
+        }
     }
 }
 

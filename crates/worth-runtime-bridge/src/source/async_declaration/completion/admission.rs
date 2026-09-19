@@ -28,7 +28,7 @@ impl ValidatedBridgeAsyncCompletionEnvelope {
         }
 
         let signal_report = signal_runtime.admit_resource_completion(self.raw());
-        Ok(map_signal_report(
+        Ok(map_owned_signal_report(
             request_identity.clone(),
             self.clone(),
             signal_report,
@@ -36,7 +36,7 @@ impl ValidatedBridgeAsyncCompletionEnvelope {
     }
 }
 
-fn map_signal_report(
+pub(crate) fn map_owned_signal_report(
     request_identity: AdmittedBridgeAsyncRequestIdentity,
     validated_envelope: ValidatedBridgeAsyncCompletionEnvelope,
     signal_report: ResourceCompletionAdmissionReport,

@@ -91,17 +91,40 @@ pub trait WorthUiMountedIdentityCertificationExt {
 }
 
 impl WorthUiActiveApplicationSession {
+    pub(crate) fn current_mounted_identity_basis(
+        &self,
+        instance: UiMountedInstanceIdentity,
+    ) -> Option<crate::mounting::UiMountedIdentityBasis> {
+        self.mounted.current_mounted_identity_basis(instance)
+    }
+
     pub(crate) fn create_semantic_surface(
         &mut self,
     ) -> Result<UiSemanticSurfaceIdentity, UiMountedIdentityDenial> {
-        self.mounted.create_semantic_surface()
+        let surface = self.mounted.create_semantic_surface()?;
+        self.materialize_initial_appearance_theme_binding(surface)?;
+        Ok(surface)
     }
 
     pub(crate) fn create_semantic_surface_for(
         &mut self,
         audience: UiMountedProjectionAudience,
     ) -> Result<UiSemanticSurfaceIdentity, UiMountedIdentityDenial> {
-        self.mounted.create_semantic_surface_for(audience)
+        let surface = self.mounted.create_semantic_surface_for(audience)?;
+        self.materialize_initial_appearance_theme_binding(surface)?;
+        Ok(surface)
+    }
+
+    pub(super) fn materialize_initial_appearance_theme_binding(
+        &mut self,
+        surface: UiSemanticSurfaceIdentity,
+    ) -> Result<(), UiMountedIdentityDenial> {
+        let Some(admission) = self.appearance_theme_admission.as_ref().cloned() else {
+            return Ok(());
+        };
+        self.presentation
+            .materialize_initial_appearance_theme_binding(admission.materialize(surface))
+            .map_err(|_| UiMountedIdentityDenial::SurfaceAlreadyBound)
     }
 
     pub(crate) fn mounted_graph_node(

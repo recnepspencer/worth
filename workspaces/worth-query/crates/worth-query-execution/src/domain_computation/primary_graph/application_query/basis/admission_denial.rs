@@ -2,6 +2,7 @@ use super::super::{
     WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryAdmissionDenialKind,
 };
 
+#[cfg(test)]
 pub(in crate::domain_computation::primary_graph::application_query) fn map_basis_denial(
     denial: worth_relational::facade::branch::RelationalBranchBasisDenial,
 ) -> WorthQueryApplicationQueryAdmissionDenial {
@@ -35,6 +36,9 @@ pub(in crate::domain_computation::primary_graph::application_query) fn map_basis
         worth_relational::facade::branch::RelationalBranchBasisDenial::SnapshotIdentityExhausted => {
             WorthQueryApplicationQueryAdmissionDenialKind::SnapshotIdentityExhausted
         }
+        worth_relational::facade::branch::RelationalBranchBasisDenial::MaterializationUnavailable => {
+            WorthQueryApplicationQueryAdmissionDenialKind::BranchMaterializationSuspended
+        }
         worth_relational::facade::branch::RelationalBranchBasisDenial::UnknownBranch(_)
         | worth_relational::facade::branch::RelationalBranchBasisDenial::ArchivedBranch(_)
         | worth_relational::facade::branch::RelationalBranchBasisDenial::DeletingBranch(_)
@@ -62,6 +66,18 @@ mod tests {
             WorthQueryApplicationQueryAdmissionDenialKind::BasisUnavailable
         );
     }
+
+    #[test]
+    fn suspended_materialization_is_preserved_as_a_query_basis_cause() {
+        let denial = map_basis_denial(
+            worth_relational::facade::branch::RelationalBranchBasisDenial::MaterializationUnavailable,
+        );
+
+        assert_eq!(
+            denial.kind(),
+            WorthQueryApplicationQueryAdmissionDenialKind::BranchMaterializationSuspended
+        );
+    }
 }
 
 pub(in crate::domain_computation::primary_graph::application_query) fn admission_denial(
@@ -71,6 +87,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn admission
     WorthQueryApplicationQueryAdmissionDenial::new(kind, subject)
 }
 
+#[cfg(test)]
 pub(in crate::domain_computation::primary_graph::application_query) fn map_registration_denial(
     denial: super::super::resource_lifecycle::WorthQueryApplicationBasisRegistrationDenial,
 ) -> WorthQueryApplicationQueryAdmissionDenial {
@@ -98,3 +115,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn map_regis
         }
     }
 }
+
+#[cfg(test)]
+#[path = "admission_denial/owner_unavailable.rs"]
+mod owner_unavailable_tests;

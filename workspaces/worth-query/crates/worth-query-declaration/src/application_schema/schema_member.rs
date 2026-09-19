@@ -6,6 +6,7 @@ use crate::application_query::ErasedApplicationQueryDefinition;
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
 
 use super::authorization_policy::ApplicationAuthorizationPath;
+use super::ApplicationRelationIntegrity;
 use super::WorthQueryExternalEffectCorrelationFamily;
 use super::{ApplicationFieldPresence, ApplicationMutationPreconditionTarget};
 
@@ -56,6 +57,22 @@ pub enum ApplicationOperationDecisionReadTarget {
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub enum ApplicationSchemaMember {
+    ApplicationMutation {
+        description: crate::application_operation::ApplicationMutationDescription,
+    },
+    ApplicationInvariant {
+        invariant: String,
+        major: u16,
+        minor: u16,
+        execution_point: super::ApplicationInvariantExecutionPoint,
+        maximum_work_units: std::num::NonZeroU64,
+        enforcement: super::ApplicationInvariantEnforcement,
+        required_groups: Vec<super::ApplicationInvariantGroup>,
+        read_closure: Vec<super::ApplicationInvariantScopeTarget>,
+        applicability: Vec<super::ApplicationInvariantScopeTarget>,
+        provider: String,
+        cost_posture: super::ApplicationInvariantCostPosture,
+    },
     Entity {
         entity: String,
     },
@@ -73,6 +90,7 @@ pub enum ApplicationSchemaMember {
         scalar_family: ScalarAspectType,
         value_type: String,
         unit: Option<String>,
+        frame: Option<String>,
         writable: bool,
         equality_queryable: bool,
     },
@@ -80,6 +98,7 @@ pub enum ApplicationSchemaMember {
         relation: String,
         from: String,
         to: String,
+        integrity: ApplicationRelationIntegrity,
     },
     PrincipalBinding {
         binding: String,

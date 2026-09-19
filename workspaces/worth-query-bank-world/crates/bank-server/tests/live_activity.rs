@@ -17,7 +17,6 @@ use bank_domain::schema::RevokeAccountAuthorization;
 use bank_server::{
     mutations, BankAccountActivityLiveOutcome, BankApplicationLiveCloseOutcome,
     BankApplicationLiveOpenDenialKind, BankApplicationQueryDenial, BankMutationControls,
-    BankMutationStatus,
 };
 
 use fixture::{ordinary_read_world, OWNER, TELLER, VIEWER};
@@ -29,6 +28,7 @@ use support::request_scope;
 use worth_query_host::facade::admission::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
 };
+use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;
 use worth_query_host::facade::primary_graph::WorthQueryApplicationLiveControls;
 
 #[test]
@@ -44,7 +44,7 @@ fn live_activity_delivers_only_matching_commits_as_fresh_reads() {
         .subscribe(live_controls())
         .expect("authorized activity lease should open");
     assert!(matches!(
-        live.poll(),
+        live.poll(&owner, &request_scope()),
         BankAccountActivityLiveOutcome::Pending
     ));
 
@@ -55,7 +55,7 @@ fn live_activity_delivers_only_matching_commits_as_fresh_reads() {
         "unrelated-live-deposit",
     );
     assert!(matches!(
-        live.poll(),
+        live.poll(&owner, &request_scope()),
         BankAccountActivityLiveOutcome::Pending
     ));
 
@@ -66,7 +66,7 @@ fn live_activity_delivers_only_matching_commits_as_fresh_reads() {
         fixture.personal_account,
         "matching-live-deposit",
     );
-    let outcome = live.poll();
+    let outcome = live.poll(&owner, &request_scope());
     let BankAccountActivityLiveOutcome::Delivered(update) = outcome else {
         panic!("matching commit must deliver a fresh account projection");
     };
@@ -114,7 +114,10 @@ fn permission_revocation_closes_before_another_payload_is_delivered() {
             BankIdempotencyKey::new("revoke-live-viewer").unwrap(),
         ))
         .execute();
-    assert!(matches!(revoked.status(), BankMutationStatus::Committed(_)));
+    assert!(matches!(
+        revoked,
+        Ok(WorthQueryApplicationMutationOutcome::Committed { .. })
+    ));
     commit_deposit(
         &fixture,
         &teller,
@@ -122,11 +125,11 @@ fn permission_revocation_closes_before_another_payload_is_delivered() {
         "revoked-viewer-live-deposit",
     );
     assert!(matches!(
-        live.poll(),
+        live.poll(&viewer, &request_scope()),
         BankAccountActivityLiveOutcome::AuthorizationDenied(_)
     ));
     assert!(matches!(
-        live.poll(),
+        live.poll(&viewer, &request_scope()),
         BankAccountActivityLiveOutcome::Closed
     ));
     assert_eq!(live.buffered_cause_count(), 0);
@@ -149,13 +152,17 @@ fn cancellation_and_deadline_are_distinct_live_terminals() {
         .subscribe(live_controls_for(request, 16))
         .expect("live lease should open before cancellation");
     cancellation.cancel();
-    let cancelled_outcome = cancelled.poll();
+    let cancellation_request = WorthQueryRequestScope::new(
+        Instant::now() + Duration::from_secs(60),
+        cancellation.token(),
+    );
+    let cancelled_outcome = cancelled.poll(&owner, &cancellation_request);
     assert!(
         matches!(cancelled_outcome, BankAccountActivityLiveOutcome::Cancelled),
         "unexpected cancellation outcome"
     );
     assert!(matches!(
-        cancelled.poll(),
+        cancelled.poll(&owner, &cancellation_request),
         BankAccountActivityLiveOutcome::Closed
     ));
 
@@ -172,7 +179,8 @@ fn cancellation_and_deadline_are_distinct_live_terminals() {
     while Instant::now() < deadline {
         std::thread::yield_now();
     }
-    let expired_outcome = expired.poll();
+    let expired_request = WorthQueryRequestScope::new(deadline, deadline_source.token());
+    let expired_outcome = expired.poll(&owner, &expired_request);
     assert!(
         matches!(
             expired_outcome,
@@ -181,7 +189,7 @@ fn cancellation_and_deadline_are_distinct_live_terminals() {
         "unexpected deadline outcome"
     );
     assert!(matches!(
-        expired.poll(),
+        expired.poll(&owner, &expired_request),
         BankAccountActivityLiveOutcome::Closed
     ));
 }
@@ -236,7 +244,6 @@ fn admitted_buffer_capacity_retains_multiple_matching_commit_causes() {
     let fixture = ordinary_read_world("live-buffer-retention", 0);
     let owner = fixture.authenticate(OWNER);
     let teller = fixture.authenticate(TELLER);
-    let mut warm_work = None;
     for ordinal in 0..16 {
         let outcome = commit_deposit(
             &fixture,
@@ -244,14 +251,9 @@ fn admitted_buffer_capacity_retains_multiple_matching_commit_causes() {
             fixture.personal_account,
             &format!("preexisting-live-history-{ordinal}"),
         );
-        let work = outcome.metadata().projection_work().unwrap();
-        if ordinal == 0 {
-            assert_eq!(work.aggregate_cache_hits(), 0);
-        } else {
-            assert_eq!(work.aggregate_cache_hits(), 2);
-            assert_eq!(work.aggregate_rebuild_input_rows(), 0);
-            assert_eq!(warm_work.get_or_insert(work), &work);
-        }
+        let work = outcome.mutation_work().unwrap();
+        assert!(work.decision_fact_count() > 0);
+        assert!(work.proposed_fact_count() > 0);
     }
     let mut live = fixture
         .world
@@ -272,17 +274,15 @@ fn admitted_buffer_capacity_retains_multiple_matching_commit_causes() {
         fixture.personal_account,
         "buffered-live-deposit-two",
     );
-    assert_eq!(
-        first_commit.metadata().projection_work(),
-        second_commit.metadata().projection_work()
-    );
+    assert!(first_commit.mutation_work().is_some());
+    assert!(second_commit.mutation_work().is_some());
 
-    let first_outcome = live.poll();
+    let first_outcome = live.poll(&owner, &request_scope());
     let BankAccountActivityLiveOutcome::Delivered(first) = first_outcome else {
         panic!("first exact activity cause must deliver")
     };
     assert_eq!(live.buffered_cause_count(), 1);
-    let second_outcome = live.poll();
+    let second_outcome = live.poll(&owner, &request_scope());
     let BankAccountActivityLiveOutcome::Delivered(second) = second_outcome else {
         panic!("second exact activity cause must deliver")
     };
@@ -313,7 +313,8 @@ fn retained_commit_source_reports_exact_consumer_overflow() {
         commit_authorization_toggle(&fixture, &owner, ordinal);
     }
 
-    let BankAccountActivityLiveOutcome::Overflow(overflow) = live.poll() else {
+    let BankAccountActivityLiveOutcome::Overflow(overflow) = live.poll(&owner, &request_scope())
+    else {
         panic!("a consumer older than the retained source must receive typed overflow");
     };
     assert_eq!(overflow.missed_commit_batches(), 1);

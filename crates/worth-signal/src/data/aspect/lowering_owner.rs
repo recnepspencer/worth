@@ -2,6 +2,8 @@ use std::sync::Arc;
 
 use crate::data::graph::SignalGraph;
 
+mod retained_charge;
+
 /// Opaque identity for the one external authority allowed to allocate
 /// semantic aspect correspondences in a Signal graph.
 ///

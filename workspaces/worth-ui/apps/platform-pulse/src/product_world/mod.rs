@@ -27,3 +27,7 @@ pub use visual_composition::{
     PlatformPulseServiceStoryGate, PlatformPulseSourceSignalRole, PlatformPulseStaticCopy,
     PlatformPulseTextRole, PlatformPulseTextStyleContract,
 };
+
+pub use visual_composition::{
+    dashboard_elements, DashboardContent, DashboardElement, DashboardGraphic, DashboardScrollPanel,
+};

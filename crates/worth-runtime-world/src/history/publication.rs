@@ -4,7 +4,7 @@
 mod delivery;
 
 use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
-use std::sync::{Arc, OnceLock};
+use std::sync::{Arc, Mutex, OnceLock};
 
 use crate::branch::{ProductBranchReferenceMovement, ProductBranchReferenceSnapshot};
 use crate::identity::{CompositeCommitIdentity, CompositePublicationAttemptIdentity};
@@ -25,6 +25,7 @@ pub(crate) struct CanonicalPublicationEnvelope {
     facts: OnceLock<PerformedPublicationFacts>,
     committed: AtomicBool,
     delivery: AtomicU8,
+    successor_observation: Mutex<Option<crate::branch::ProductBranchObservation>>,
 }
 
 #[derive(Debug)]
@@ -59,6 +60,7 @@ impl CanonicalPublicationEnvelope {
             facts: OnceLock::new(),
             committed: AtomicBool::new(false),
             delivery: AtomicU8::new(delivery::AVAILABLE),
+            successor_observation: Mutex::new(None),
         })
     }
 
@@ -102,6 +104,32 @@ impl CanonicalPublicationEnvelope {
             .load(Ordering::Acquire)
             .then(|| self.facts.get())
             .flatten()
+    }
+
+    pub(crate) fn install_successor_observation(
+        &self,
+        observation: crate::branch::ProductBranchObservation,
+    ) {
+        let mut slot = self
+            .successor_observation
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        assert!(slot.replace(observation).is_none());
+    }
+
+    fn take_successor_observation(&self) -> Option<crate::branch::ProductBranchObservation> {
+        self.successor_observation
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .take()
+    }
+
+    fn restore_successor_observation(&self, observation: crate::branch::ProductBranchObservation) {
+        let mut slot = self
+            .successor_observation
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        assert!(slot.replace(observation).is_none());
     }
 }
 

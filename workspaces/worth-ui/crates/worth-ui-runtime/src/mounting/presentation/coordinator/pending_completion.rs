@@ -45,6 +45,7 @@ pub(super) fn observe_pending_surface(
         expected_effects,
         text_candidate,
         semantic_receipts,
+        text_reuse,
     } = pending;
     match host
         .adapter()
@@ -57,6 +58,7 @@ pub(super) fn observe_pending_surface(
                 expected_effects,
                 text_candidate,
                 semantic_receipts,
+                text_reuse,
             });
             None
         }
@@ -95,6 +97,7 @@ pub(super) fn observe_pending_surface(
                 expected_effects,
                 text_candidate,
                 semantic_receipts,
+                text_reuse,
             },
             completion,
             context,

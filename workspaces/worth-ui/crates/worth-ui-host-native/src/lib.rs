@@ -8,27 +8,27 @@ mod qualification;
 mod text_profile;
 
 #[cfg(feature = "certification-support")]
+pub use native::appearance_capability_report;
+#[cfg(feature = "certification-support")]
 pub use native::{
     certify_client_close_with_queued_readiness, UiNativeQueuedReadinessCloseCertification,
 };
 #[cfg(feature = "certification-support")]
 pub use native::{
-    certify_portal_sample_replay, classify_presentation_fault,
+    certify_mounted_surface_sample, certify_portal_sample_replay, classify_presentation_fault,
     UiNativePortalSampleReplayCertification, UiNativePortalSampleReplayCertificationDenial,
     UiNativePresentationFault, UiNativePresentationFaultDisposition,
-    UiNativePresentationRecoveryClass,
+    UiNativePresentationRecoveryClass, UiNativeSurfaceSampleCertification,
+    UiNativeSurfaceSampleCertificationDenial,
 };
 pub use native::{
     UiNativeApplicationReadinessGrant, UiNativeApplicationReadinessOwnerCount,
     UiNativeApplicationReadinessOwnerCountDenial, UiNativeApplicationReadinessPort,
     UiNativeApplicationReadinessSignalDenial, UiNativeApplicationReadinessSignalDisposition,
-    UiNativeClientAuthoredMountedInstanceObservation, UiNativeClientConditionalOutcome,
-    UiNativeClientDerivedStateLossClass, UiNativeClientDerivedStateReconstructionObservation,
+    UiNativeClientAuthoredMountedInstanceObservation, UiNativeClientDerivedStateLossClass,
+    UiNativeClientDerivedStateReconstructionObservation,
     UiNativeClientObservationIngressObservation, UiNativeClientPresentationAttribution,
     UiNativeClientPresentationMechanicIdentityObservation,
-    UiNativeClientPresentationSemanticChange,
-    UiNativeClientPresentationSemanticFrontierObservation,
-    UiNativeClientPresentationSemanticSubscriberObservation,
     UiNativeClientPresentationTransitionKind, UiNativeClientPresentationTransitionObservation,
     UiNativeClientResourceObservation, UiNativeClientShutdownAttemptDisposition,
     UiNativeClientShutdownAttemptObservation, UiNativeClientShutdownObservation,
@@ -43,16 +43,16 @@ pub use native::{
     UiNativeEventLoopStopReport, UiNativeEventLoopThreadPosture, UiNativeGlyphObservation,
     UiNativeGraphicsObservation, UiNativeInputObservationEventFamily,
     UiNativeInputObservationReport, UiNativeInputObservationStop, UiNativeInputReachability,
-    UiNativeObservationReadinessGrant, UiNativePhysicalPresentationCorrelation,
-    UiNativePhysicalProgressClass, UiNativePhysicalProgressGrant,
-    UiNativePhysicalSignalExternalStatusClass, UiNativePhysicalSignalLifecycleObservation,
-    UiNativePhysicalSignalObservationOriginClass, UiNativePhysicalSignalSettlementClass,
-    UiNativePhysicalSignalTransitionObservation, UiNativePhysicalSignalWorkClass,
-    UiNativePointerButtonObservation, UiNativePresentationEffectPhase,
-    UiNativePresentationObservation, UiNativePresentationWorkKind, UiNativeReadinessGrant,
-    UiNativeReducedMotionPosture, UiNativeResourceCensus, UiNativeRetainedFrameObservation,
-    UiNativeScrollDeltaObservation, UiNativeTextAtlasPlanObservation, UiNativeTextPinObservation,
-    WorthUiNativeEventLoop,
+    UiNativeObservationClock, UiNativeObservationReadinessGrant, UiNativeObservationTimeProgress,
+    UiNativePhysicalPresentationCorrelation, UiNativePhysicalProgressClass,
+    UiNativePhysicalProgressGrant, UiNativePhysicalSignalExternalStatusClass,
+    UiNativePhysicalSignalLifecycleObservation, UiNativePhysicalSignalObservationOriginClass,
+    UiNativePhysicalSignalSettlementClass, UiNativePhysicalSignalTransitionObservation,
+    UiNativePhysicalSignalWorkClass, UiNativePointerButtonObservation,
+    UiNativePresentationEffectPhase, UiNativePresentationObservation, UiNativePresentationWorkKind,
+    UiNativeReadinessGrant, UiNativeReducedMotionPosture, UiNativeResourceCensus,
+    UiNativeRetainedFrameObservation, UiNativeScrollDeltaObservation,
+    UiNativeTextAtlasPlanObservation, UiNativeTextPinObservation, WorthUiNativeEventLoop,
 };
 #[cfg(feature = "certification-support")]
 pub use native::{UiNativeCaptureExternalObservation, UiNativeCaptureProtocolWorld};
@@ -91,3 +91,10 @@ pub use text_profile::{
 
 #[cfg(test)]
 mod qualification_tests;
+
+#[cfg(feature = "certification-support")]
+pub use native::{
+    UiNativeTextForegroundAtlasModel, UiNativeTextForegroundCoverageCertification,
+    UiNativeTextForegroundFinalizationDenial, UiNativeTextForegroundJoinCost,
+    UiNativeTextReplayOperation, UiNativeTextRetentionCertificationDenial,
+};

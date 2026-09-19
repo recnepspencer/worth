@@ -15,7 +15,8 @@ Canonical reading order:
 7. [Application inspection](./docs/inspection.md)
 8. [Runtime subsystem map](./docs/runtime-subsystems.md)
 9. [Query-backed UI views](./docs/query-binding.md)
-10. [Milestone 3.10.1 migration](./docs/migration-3.10.1.md)
+10. [Appearance and themes](./docs/appearance-and-themes.md)
+11. [Milestone 3.10.1 migration](./docs/migration-3.10.1.md)
 
 The longer contributor orientation remains in
 [worth-ui-readme.md](./docs/worth-ui-readme.md).
@@ -85,6 +86,16 @@ restoration, and continuation do not pretend to be intents. Cross-family work
 passes through the non-publishing proposal compiler, then the existing
 publication and host-settlement owners. See
 [Runtime services](./docs/runtime-services.md).
+
+For appearance, application authors declare component-scoped roles whose
+finite cells cover supported aspects and state partitions. A typed slot catalog
+defines value kinds; complete theme definitions supply values; an active theme
+binding is surface-scoped. The runtime resolves those inputs with current
+UI-owned state and concrete mounted occurrence geometry, then composes accepted
+Motion samples and Portal-issued overlay relations. Presentation consumes the
+completed prepared phase, and acceptance commits the same owner succession used
+to derive its pixels. Start with
+[Appearance and themes](./docs/appearance-and-themes.md).
 
 ## Authority Boundaries
 

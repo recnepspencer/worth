@@ -15,6 +15,12 @@ impl CapabilitySnapshotDigest {
             value: 0x9e37_79b9_7f4a_7c15
                 ^ metrics.registered_family_count() as u64
                 ^ ((metrics.total_width() as u64) << 32)
+                ^ input.appearance_roles.digest_basis().rotate_left(2)
+                ^ input
+                    .appearance_themes
+                    .as_ref()
+                    .map_or(0, |themes| themes.digest_basis())
+                    .rotate_left(19)
                 ^ input.commands.digest_basis().rotate_left(17)
                 ^ input.command_projections.digest_basis().rotate_left(13)
                 ^ input.components.digest_basis().rotate_left(29)

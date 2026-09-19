@@ -43,6 +43,13 @@ pub(super) const fn stale() -> BankHttpDenial {
     BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh)
 }
 
+pub(super) const fn idempotency_drift() -> BankHttpDenial {
+    BankHttpDenial::new(
+        BankHttpDenialKind::Stale,
+        BankHttpNextAction::CorrectRequest,
+    )
+}
+
 pub(super) const fn cancelled() -> BankHttpDenial {
     BankHttpDenial::new(BankHttpDenialKind::Cancelled, BankHttpNextAction::Retry)
 }

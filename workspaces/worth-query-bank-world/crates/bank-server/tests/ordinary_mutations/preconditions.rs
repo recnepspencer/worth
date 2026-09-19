@@ -1,4 +1,10 @@
 use bank_domain::schema::{AccountStatus, AccountingRevision, Status};
+use worth_query_host::facade::application_entry::{
+    WorthQueryApplicationMutationOutcome, WorthQueryApplicationRequestMutationDenial,
+};
+use worth_query_host::facade::primary_graph::{
+    MutationHandlerExecutionDenial, WorthQueryApplicationAttemptDenialKind,
+};
 
 use super::*;
 
@@ -22,21 +28,23 @@ fn ordinary_send_money_carries_typed_preconditions_through_retry_receipts() {
             AccountingRevision::reference(),
             before.accounting_revision(),
         )
+        .unwrap()
         .expect_fact(Status::reference(), AccountStatus::Closed)
+        .unwrap()
         .controls(BankMutationControls::new(
             request_scope(),
             key("typed-mismatch"),
         ))
         .execute();
-    assert!(matches!(
-        mismatch.status(),
-        BankMutationStatus::Denied(bank_server::BankMutationDenial::Preparation(
-            bank_server::BankCommitPreparationDenial::Application {
-                kind: bank_server::BankApplicationAttemptDenialKind::MutationPreconditionMismatch,
-                ..
-            }
-        ))
-    ));
+    assert!(
+        matches!(
+            mismatch,
+            Err(WorthQueryApplicationRequestMutationDenial::Handler(
+                MutationHandlerExecutionDenial::Attempt(ref denial)
+            )) if denial.kind() == WorthQueryApplicationAttemptDenialKind::MutationPreconditionMismatch
+        ),
+        "unexpected mismatch outcome: {mismatch:?}"
+    );
     assert_eq!(
         account_summary(&fixture, &owner, fixture.personal_account)
             .current_balance()
@@ -53,17 +61,22 @@ fn ordinary_send_money_carries_typed_preconditions_through_retry_receipts() {
             AccountingRevision::reference(),
             before.accounting_revision(),
         )
+        .unwrap()
         .expect_fact(Status::reference(), before.status())
+        .unwrap()
         .controls(BankMutationControls::new(
             request_scope(),
             key("typed-send"),
         ))
         .execute();
-    let BankMutationStatus::Committed(receipt) = committed.status() else {
+    let Ok(WorthQueryApplicationMutationOutcome::Committed { receipt, .. }) = &committed else {
         panic!("typed send must commit: {committed:?}");
     };
-    assert_eq!(receipt.expected_version_count(), 1);
-    assert_eq!(receipt.expected_fact_count(), 1);
+    assert_eq!(
+        receipt.precondition_comparison().expected_version_count(),
+        1
+    );
+    assert_eq!(receipt.precondition_comparison().expected_fact_count(), 1);
     assert_warm_canonical_work_is_zero(receipt.canonical_work());
 
     let retried = fixture
@@ -75,13 +88,15 @@ fn ordinary_send_money_carries_typed_preconditions_through_retry_receipts() {
             AccountingRevision::reference(),
             before.accounting_revision(),
         )
+        .unwrap()
         .expect_fact(Status::reference(), before.status())
+        .unwrap()
         .controls(BankMutationControls::new(
             request_scope(),
             key("typed-send"),
         ))
         .execute();
-    let BankMutationStatus::AlreadyCommitted(recovered) = retried.status() else {
+    let Ok(WorthQueryApplicationMutationOutcome::AlreadyCommitted(recovered)) = &retried else {
         panic!("lost-response retry must recover the commit: {retried:?}");
     };
     assert_eq!(recovered.canonical_work(), receipt.canonical_work());
@@ -102,7 +117,9 @@ fn ordinary_send_money_carries_typed_preconditions_through_retry_receipts() {
             AccountingRevision::reference(),
             before.accounting_revision().next().unwrap(),
         )
+        .unwrap()
         .expect_fact(Status::reference(), before.status())
+        .unwrap()
         .controls(BankMutationControls::new(
             request_scope(),
             key("typed-send"),
@@ -110,8 +127,8 @@ fn ordinary_send_money_carries_typed_preconditions_through_retry_receipts() {
         .execute();
     assert!(
         matches!(
-            intent_drift.status(),
-            BankMutationStatus::Denied(bank_server::BankMutationDenial::IdempotencyIntentDrift)
+            intent_drift,
+            Ok(WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift)
         ),
         "changed precondition outcome: {intent_drift:?}"
     );
@@ -123,8 +140,10 @@ fn ordinary_send_money_carries_typed_preconditions_through_retry_receipts() {
     );
 }
 
-fn assert_warm_canonical_work_is_zero(phases: bank_server::BankCommitCanonicalWorkPhases) {
-    let zero = bank_server::BankCommitCanonicalWorkEvidence::default();
+fn assert_warm_canonical_work_is_zero(
+    phases: worth_query_host::facade::domain::WorthQueryCanonicalWorkPhases,
+) {
+    let zero = worth_query_host::facade::domain::WorthQueryCanonicalWorkEvidence::default();
     assert!(phases.installation().basis_preparations() > 0);
     assert!(phases.installation().canonical_encoded_bytes() > 0);
     assert!(phases.admission().basis_preparations() > 0);

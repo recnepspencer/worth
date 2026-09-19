@@ -1,7 +1,8 @@
 use worth_query_installation::facade::{
-    ApplicationFieldUnit, ApplicationSchema, OperationReads, OperationWrites,
-    TypedApplicationReadableValue, WorthQueryTemporalIntentCandidate,
-    WorthQueryTemporalIntentRevisionValue, WritableCapability, WritePosture,
+    ApplicationFieldUnit, ApplicationReadableScalarValueBinding, ApplicationScalarValueBinding,
+    ApplicationSchema, DeclaredApplicationFieldValue, OperationReads, OperationWrites,
+    WorthQueryTemporalIntentCandidate, WorthQueryTemporalIntentRevisionValue, WritableCapability,
+    WritePosture,
 };
 
 use super::{
@@ -21,17 +22,22 @@ impl<Schema, Operation, Input, Scope, Invoker, IntentEntity, IdentityAspect, Ide
     WorthQueryTemporalOperationExecution<Schema, Operation, Input, Scope, Invoker, IntentEntity, IdentityAspect, IdentityField, IdentityValue, IdentityWrite, IdentityUnit, RevisionAspect, RevisionField, RevisionValue, RevisionWrite, RevisionEquality, RevisionUnit, LifecycleAspect, LifecycleField, LifecycleValue, LifecycleWrite, LifecycleEquality, LifecycleUnit, Authorization>
 where
     Schema: ApplicationSchema,
+    Operation: 'static,
     Input: Clone + Send + Sync + 'static,
     Invoker: WorthQueryTemporalOperationInvoker<Schema, Operation, Input, Scope>,
-    IdentityValue: TypedApplicationReadableValue,
+    IdentityField: DeclaredApplicationFieldValue<Value = IdentityValue>,
+    IdentityField::Binding: ApplicationReadableScalarValueBinding<Value = IdentityValue>,
     IdentityWrite: WritePosture,
     IdentityUnit: ApplicationFieldUnit,
-    RevisionField: OperationWrites<Operation>,
-    RevisionValue: WorthQueryTemporalIntentRevisionValue,
+    RevisionField: OperationWrites<Operation>
+        + DeclaredApplicationFieldValue<Value = RevisionValue>,
+    RevisionField::Binding: ApplicationReadableScalarValueBinding<Value = RevisionValue>
+        + WorthQueryTemporalIntentRevisionValue,
     RevisionWrite: WritableCapability,
     RevisionUnit: ApplicationFieldUnit,
     LifecycleField: OperationWrites<Operation>,
-    LifecycleValue: worth_query_installation::facade::TypedApplicationValue,
+    LifecycleField: DeclaredApplicationFieldValue<Value = LifecycleValue>,
+    LifecycleField::Binding: ApplicationScalarValueBinding<Value = LifecycleValue>,
     LifecycleWrite: WritableCapability,
     LifecycleUnit: ApplicationFieldUnit,
 {
@@ -45,9 +51,12 @@ where
     ) -> Result<WorthQueryTemporalReentryOutcome, String>
     where
         RevisionField: OperationReads<Operation>,
-        RevisionValue: TypedApplicationReadableValue + Clone,
+        RevisionField: DeclaredApplicationFieldValue<Value = RevisionValue>,
+        RevisionField::Binding: ApplicationReadableScalarValueBinding<Value = RevisionValue> + worth_query_installation::facade::WorthQueryTemporalIntentRevisionValue,
+        RevisionValue: Clone,
         LifecycleField: OperationReads<Operation>,
-        LifecycleValue: TypedApplicationReadableValue + Clone,
+        LifecycleField::Binding: ApplicationReadableScalarValueBinding<Value = LifecycleValue>,
+        LifecycleValue: Clone,
     {
         let reads = runtime
             .begin_projected_application_read_attempt(projected.admission, projected.projection)
@@ -68,7 +77,7 @@ where
         let next_revision = candidate
             .revision()
             .checked_add(1)
-            .and_then(RevisionValue::from_revision)
+            .and_then(RevisionField::Binding::from_revision)
             .ok_or_else(|| "temporal intent revision cannot advance".to_string())?;
         effects
             .write_field(&target, self.revision_field, next_revision)
@@ -82,7 +91,7 @@ where
             .map_err(|denial| denial.to_string())?;
         let program = effects.finish().map_err(|denial| denial.to_string())?;
         Ok(classify_commit(
-            runtime.compare_and_commit_application(program, idempotency.binding()),
+            runtime.compare_and_commit_conditional_operation(program, idempotency.binding()),
         ))
     }
 }
@@ -91,6 +100,15 @@ fn classify_commit(
     outcome: WorthQueryApplicationCommitOutcome,
 ) -> WorthQueryTemporalReentryOutcome {
     match outcome {
+        WorthQueryApplicationCommitOutcome::ProductStale(stale) => {
+            WorthQueryTemporalReentryOutcome::ProductStale(stale)
+        }
+        WorthQueryApplicationCommitOutcome::ProductUnpublished(unpublished) => {
+            WorthQueryTemporalReentryOutcome::ProductUnpublished(unpublished)
+        }
+        WorthQueryApplicationCommitOutcome::NoEffect(no_effect) => {
+            WorthQueryTemporalReentryOutcome::NoEffect(no_effect.cause())
+        }
         WorthQueryApplicationCommitOutcome::Committed(_) => {
             WorthQueryTemporalReentryOutcome::Committed
         }

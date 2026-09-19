@@ -1,5 +1,17 @@
+#[path = "appearance_validation.rs"]
+mod appearance_validation;
+#[path = "sealed_semantic_package/authored_route_validation.rs"]
+mod authored_route_validation;
+#[path = "sealed_semantic_package/region_bindings.rs"]
+mod region_bindings;
+#[path = "sealed_semantic_accessors.rs"]
+mod sealed_semantic_accessors;
+#[path = "sealed_semantic_appearance.rs"]
+mod sealed_semantic_appearance;
 mod sealing;
-
+pub use sealed_semantic_appearance::{
+    WorthUiSemanticAppearanceRoleDeclaration, WorthUiSemanticBackdropDeclaration,
+};
 use std::collections::{BTreeMap, BTreeSet};
 
 use super::{
@@ -10,10 +22,9 @@ use crate::source::{
     WorthUiArtifactInput, WorthUiArtifactInputModule, WorthUiArtifactInputNode,
     WorthUiArtifactInputProvenance, WorthUiArtifactInputReference, WorthUiAuthoredStructuralBody,
     WorthUiDslCompileDiagnostic, WorthUiDslCompileReport, WorthUiProjectionRequirement,
-    WorthUiSourceModuleId,
+    WorthUiSealedOverlayDeclarationBindings, WorthUiSourceModuleId,
 };
 use crate::UiDslLoweringReceipt;
-
 #[derive(Debug)]
 pub struct WorthUiSealedSemanticPackage {
     modules: BTreeMap<WorthUiSourceModuleId, WorthUiSemanticModule>,
@@ -22,6 +33,8 @@ pub struct WorthUiSealedSemanticPackage {
     identity: WorthUiSemanticPackageIdentity,
     protocol: WorthUiDslProtocolIdentity,
     authored_mode: WorthUiAuthoredMode,
+    overlay_declaration_bindings: WorthUiSealedOverlayDeclarationBindings,
+    overlay_relation_graph: Option<crate::UiOverlayRelationGraph>,
     _seal: WorthUiSemanticPackageSeal,
 }
 
@@ -40,6 +53,8 @@ pub enum WorthUiSemanticDeclaration {
     Projection(WorthUiSemanticProjectionDeclaration),
     Token(WorthUiSemanticToken),
     SemanticArtifact(WorthUiSealedSemanticArtifact),
+    AppearanceRole(WorthUiSemanticAppearanceRoleDeclaration),
+    Backdrop(WorthUiSemanticBackdropDeclaration),
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -53,6 +68,7 @@ pub struct WorthUiSemanticBlock {
     name_text: String,
     authored_identity: Option<String>,
     structure: WorthUiAuthoredStructuralBody,
+    appearance_role_attachment: Option<crate::UiAppearanceRoleAttachmentDeclaration>,
     provenance_ref: WorthUiSemanticProvenanceRef,
 }
 
@@ -92,6 +108,16 @@ struct WorthUiSemanticPackageSealingState {
     diagnostics: Vec<WorthUiDslCompileDiagnostic>,
     projection_identities: BTreeSet<String>,
     projection_content_references: Vec<(String, WorthUiArtifactInputProvenance)>,
+    appearance_roles: BTreeMap<
+        String,
+        (
+            crate::UiAppearanceRoleDeclaration,
+            WorthUiArtifactInputProvenance,
+        ),
+    >,
+    backdrops: Vec<(crate::UiBackdropDeclaration, WorthUiArtifactInputProvenance)>,
+    overlay_declaration_bindings: WorthUiSealedOverlayDeclarationBindings,
+    overlay_relation_graph: Option<crate::UiOverlayRelationGraph>,
 }
 
 impl WorthUiSealedSemanticPackage {
@@ -100,7 +126,8 @@ impl WorthUiSealedSemanticPackage {
         authored_mode: WorthUiAuthoredMode,
     ) -> Result<Self, WorthUiDslCompileReport> {
         let canonical_module_order = semantic_input.module_ids().to_vec();
-        let mut state = WorthUiSemanticPackageSealingState::new();
+        let overlay_declaration_bindings = semantic_input.overlay_declaration_bindings().clone();
+        let mut state = WorthUiSemanticPackageSealingState::new(overlay_declaration_bindings);
         for module_id in &canonical_module_order {
             let input_module = semantic_input
                 .module(module_id)
@@ -108,9 +135,12 @@ impl WorthUiSealedSemanticPackage {
             state.seal_module(module_id, input_module);
         }
         state.validate_projection_content_references();
+        authored_route_validation::validate(&mut state);
+        state.validate_appearance_declarations();
         if !state.diagnostics.is_empty() {
             return Err(WorthUiDslCompileReport::new(state.diagnostics));
         }
+        state.seal_region_bindings()?;
         let identity = WorthUiSemanticPackageIdentity::from_modules(
             canonical_module_order.iter().map(|module_id| {
                 (
@@ -129,6 +159,8 @@ impl WorthUiSealedSemanticPackage {
             identity,
             protocol: WorthUiDslProtocolIdentity::current(),
             authored_mode,
+            overlay_declaration_bindings: state.overlay_declaration_bindings,
+            overlay_relation_graph: state.overlay_relation_graph,
             _seal: WorthUiSemanticPackageSeal,
         })
     }
@@ -177,42 +209,6 @@ impl WorthUiSealedSemanticPackage {
         super::semantic_package_lowering_receipts::lower(self)
     }
 
-    pub fn projection_requirements(&self) -> impl Iterator<Item = &WorthUiProjectionRequirement> {
-        self.canonical_module_order.iter().flat_map(|module_id| {
-            self.modules[module_id].declarations.iter().filter_map(
-                |declaration| match declaration {
-                    WorthUiSemanticDeclaration::Projection(projection) => {
-                        Some(projection.requirement())
-                    }
-                    _ => None,
-                },
-            )
-        })
-    }
-
-    pub fn service_declarations(
-        &self,
-    ) -> impl Iterator<
-        Item = (
-            &crate::WorthUiServiceDeclarationMeaning,
-            &WorthUiArtifactInputProvenance,
-        ),
-    > {
-        self.canonical_module_order.iter().flat_map(|module_id| {
-            self.declaration_views(module_id)
-                .into_iter()
-                .flatten()
-                .filter_map(|view| {
-                    let service = match view.declaration() {
-                        WorthUiSemanticDeclaration::SemanticArtifact(artifact) => {
-                            artifact.declaration().service_declaration()
-                        }
-                        _ => None,
-                    }?;
-                    Some((service, view.provenance()))
-                })
-        })
-    }
     #[cfg(feature = "certification-support")]
     pub(super) fn with_protocol_for_certification(
         mut self,
@@ -224,13 +220,17 @@ impl WorthUiSealedSemanticPackage {
 }
 
 impl WorthUiSemanticPackageSealingState {
-    fn new() -> Self {
+    fn new(overlay_declaration_bindings: WorthUiSealedOverlayDeclarationBindings) -> Self {
         Self {
             modules: BTreeMap::new(),
             provenance_table: Vec::new(),
             diagnostics: Vec::new(),
             projection_identities: BTreeSet::new(),
             projection_content_references: Vec::new(),
+            appearance_roles: BTreeMap::new(),
+            backdrops: Vec::new(),
+            overlay_declaration_bindings,
+            overlay_relation_graph: None,
         }
     }
 
@@ -273,6 +273,7 @@ impl WorthUiSemanticPackageSealingState {
                     ));
             }
             Ok(declaration) => {
+                self.collect_appearance_declaration(&declaration, input);
                 if let WorthUiSemanticDeclaration::Component(component) = &declaration {
                     self.projection_content_references.extend(
                         component
@@ -338,6 +339,12 @@ impl WorthUiSemanticBlock {
         &self.structure
     }
 
+    pub fn appearance_role_attachment(
+        &self,
+    ) -> Option<&crate::UiAppearanceRoleAttachmentDeclaration> {
+        self.appearance_role_attachment.as_ref()
+    }
+
     pub fn provenance_ref(&self) -> WorthUiSemanticProvenanceRef {
         self.provenance_ref
     }
@@ -381,20 +388,8 @@ impl WorthUiSemanticDeclaration {
             Self::Projection(declaration) => declaration.provenance_ref(),
             Self::Token(declaration) => declaration.provenance_ref(),
             Self::SemanticArtifact(declaration) => declaration.provenance_ref(),
+            Self::AppearanceRole(declaration) => declaration.provenance_ref(),
+            Self::Backdrop(declaration) => declaration.provenance_ref(),
         }
-    }
-}
-
-impl<'package> WorthUiSemanticDeclarationView<'package> {
-    pub fn declaration(&self) -> &'package WorthUiSemanticDeclaration {
-        self.declaration
-    }
-
-    pub fn provenance_ref(&self) -> WorthUiSemanticProvenanceRef {
-        self.provenance_ref
-    }
-
-    pub fn provenance(&self) -> &'package WorthUiArtifactInputProvenance {
-        self.provenance
     }
 }

@@ -10,9 +10,7 @@ use worth_ui::facade::{
 use worth_ui_host_contract::{
     UiHostObservationPresentationBasis, UiHostPresentationEpoch, UiSurfaceBindingGeneration,
 };
-use worth_ui_runtime::facade::mounted::UiHostSurfacePresentationMode;
 use worth_ui_runtime::facade::mounted::{UiMountedInstanceIdentity, UiMountedNodeReceiptIdentity};
-use worth_ui_test_support::WorthUiMountedIdentityCertificationExt;
 
 use crate::{
     host_observation_fixture::protocol,
@@ -24,7 +22,7 @@ use crate::{
     },
     mounted_application_lifecycle::known_empty_surface_world::profile,
     mounted_application_lifecycle::published_mounted_world::{
-        publish, published_observation_world, PresentedObservationBasis, PublishedObservationWorld,
+        published_observation_world, PresentedObservationBasis, PublishedObservationWorld,
     },
 };
 
@@ -105,20 +103,8 @@ fn exercise_host_protocol_faults() -> HostProtocolFaultEvidence {
         stale_presentation_denial(&mut ordering),
         stale_incarnation_denial(&mut ordering),
     ];
-    let successor_binding = ordering
-        .session
-        .rebind_host_surface(
-            ordering.binding,
-            UiHostSurfacePresentationMode::RecordOnly,
-            profile(2),
-        )
-        .expect("RS-07 hot rebind issues one successor binding")
-        .binding_generation();
-    let successor_basis = publish(
-        &mut ordering.session,
-        &ordering.host,
-        ordering.current.instance,
-    );
+    let successor_binding = ordering.rebind_surface(profile(2));
+    let successor_basis = ordering.current;
     let current_batch = observation_batch(
         &ordering,
         ordering.session.host_session_identity().as_u64(),

@@ -16,6 +16,7 @@ impl UiPortalDismissalPublicationCompletion<'_> {
                 .proposal
                 .expect("live dismissal completion retains proposal"),
             mounted: state.mounted,
+            retain_exit: state.admitted.retain_exit,
         }
     }
 }
@@ -66,12 +67,14 @@ impl DetachedUiPortalDismissalInFlight {
         now_tick: u64,
     ) -> UiPortalDismissalPublicationOutcome<'session> {
         let outcome = session.complete_mounted_presentation(self.mounted, now_tick);
-        finish(
+        super::completion::finish_presented(
             UiPortalDismissalAdmitted {
                 session,
                 proposal: Some(self.proposal),
+                retain_exit: self.retain_exit,
             },
             outcome,
+            now_tick,
         )
     }
 
@@ -84,6 +87,7 @@ impl DetachedUiPortalDismissalInFlight {
             UiPortalDismissalAdmitted {
                 session,
                 proposal: Some(self.proposal),
+                retain_exit: self.retain_exit,
             },
             outcome,
         )
@@ -91,6 +95,27 @@ impl DetachedUiPortalDismissalInFlight {
 }
 
 impl DetachedUiPortalDismissalIndeterminate {
+    pub(in crate::facade::entry) fn matches_native_physical(
+        &self,
+        class: worth_ui_host_native::UiNativePhysicalProgressClass,
+        presentation: Option<worth_ui_host_native::UiNativePhysicalPresentationCorrelation>,
+    ) -> bool {
+        // An exit gets first refusal in the driver. Claim only its own recovery;
+        // another pending presentation must receive its completion unchanged.
+        matches!(
+            class,
+            worth_ui_host_native::UiNativePhysicalProgressClass::PresentationRecovery
+                | worth_ui_host_native::UiNativePhysicalProgressClass::Presentation
+        ) && presentation.is_some_and(|presentation| {
+            presentation.attempt() == self.frame.report().attempt()
+                && self
+                    .frame
+                    .report()
+                    .physical_recovery_bindings()
+                    .contains(&presentation.binding())
+        })
+    }
+
     pub(in crate::facade::entry) const fn session_identity(
         &self,
     ) -> crate::facade::WorthUiActiveApplicationSessionIdentity {

@@ -61,6 +61,7 @@ where
     let (fork, target_basis) = fork_port
         .fork_reserved_with_basis(reservation, source)
         .map_err(|denial| relational_fork_failure(&denial))?;
+    let target_identity = fork.target_identity().clone();
     let progress = RelationalAttemptProgress::forked(fork, target_basis);
     attempt.record_progress(&crate::publication::CompositeAttemptProgress::new(
         progress.retained_image(),
@@ -69,7 +70,10 @@ where
     install_custody(
         custody,
         destination,
-        ComponentBranchTarget::Relational(target),
+        ComponentBranchTarget::Relational {
+            target,
+            identity: target_identity,
+        },
     );
     Ok(progress)
 }
@@ -187,13 +191,24 @@ where
     let fork = mutation_port
         .fork_reserved_exact(reservation, cancellation.signal_token())
         .map_err(|denial| signal_fork_failure(&denial))?;
+    let retirement_reference = fork
+        .retirement_reference()
+        .expect("Runtime World forks through the owner service that issues cleanup authority")
+        .clone();
     let progress = SignalAttemptProgress::forked(fork);
     let (relational, _) = attempt.progress().retained_image().into_parts();
     attempt.record_progress(&crate::publication::CompositeAttemptProgress::new(
         relational,
         progress.retained_image(),
     ));
-    install_custody(custody, destination, ComponentBranchTarget::Signal(target));
+    install_custody(
+        custody,
+        destination,
+        ComponentBranchTarget::Signal {
+            target,
+            reference: retirement_reference,
+        },
+    );
     Ok(progress)
 }
 

@@ -5,6 +5,8 @@ pub struct UiPortalRuntimeCertificationSnapshot {
     visible_portals: usize,
     closing_portals: usize,
     indeterminate_portals: usize,
+    portal_exit_retentions: usize,
+    pending_track_coordinated: bool,
     committed_requests: u64,
     committed_idempotent_requests: u64,
     revision: u64,
@@ -12,6 +14,7 @@ pub struct UiPortalRuntimeCertificationSnapshot {
 
 pub trait WorthUiPortalRuntimeCertificationExt {
     fn inspect_portal_runtime_for_certification(&self) -> UiPortalRuntimeCertificationSnapshot;
+
     fn publish_escape_portal_dismissal_for_certification(
         &mut self,
         now_tick: u64,
@@ -45,6 +48,7 @@ pub enum UiPortalDismissalCertificationOutcome {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum UiPortalDismissalCertificationStop {
+    StalePresentation,
     IdentityExhausted,
     Transition,
     Proposal,
@@ -124,6 +128,7 @@ fn map_stop(
     use crate::facade::entry::portal_dismissal::UiPortalDismissalPublicationStop as Stop;
     match stop {
         Stop::IdentityExhausted => UiPortalDismissalCertificationStop::IdentityExhausted,
+        Stop::StalePresentation => UiPortalDismissalCertificationStop::StalePresentation,
         Stop::Transition => UiPortalDismissalCertificationStop::Transition,
         Stop::Proposal => UiPortalDismissalCertificationStop::Proposal,
         Stop::Preparation => UiPortalDismissalCertificationStop::Preparation,
@@ -138,7 +143,7 @@ fn map_stop(
 
 impl UiPortalRuntimeCertificationSnapshot {
     pub(crate) const fn uninstalled() -> Self {
-        Self::new(0, 0, 0, 0, 0, 0, 0, 0)
+        Self::new(0, 0, 0, 0, 0, 0, true, 0, 0, 0)
     }
 
     pub(crate) const fn new(
@@ -147,6 +152,8 @@ impl UiPortalRuntimeCertificationSnapshot {
         visible_portals: usize,
         closing_portals: usize,
         indeterminate_portals: usize,
+        portal_exit_retentions: usize,
+        pending_track_coordinated: bool,
         committed_requests: u64,
         committed_idempotent_requests: u64,
         revision: u64,
@@ -157,6 +164,8 @@ impl UiPortalRuntimeCertificationSnapshot {
             visible_portals,
             closing_portals,
             indeterminate_portals,
+            portal_exit_retentions,
+            pending_track_coordinated,
             committed_requests,
             committed_idempotent_requests,
             revision,
@@ -181,6 +190,14 @@ impl UiPortalRuntimeCertificationSnapshot {
 
     pub const fn indeterminate_portals(self) -> usize {
         self.indeterminate_portals
+    }
+
+    pub const fn portal_exit_retentions(self) -> usize {
+        self.portal_exit_retentions
+    }
+
+    pub const fn pending_track_coordinated(self) -> bool {
+        self.pending_track_coordinated
     }
 
     pub const fn committed_requests(self) -> u64 {

@@ -16,7 +16,8 @@ mod derivation;
 mod graph_successor;
 use derivation::derive_prepared_application_authorities;
 pub(crate) use graph_successor::{
-    WorthUiPreparedApplicationGraphSuccessor, WorthUiPreparedApplicationGraphSuccessorDenial,
+    WorthUiPreparedApplicationGenerationSuccession, WorthUiPreparedApplicationGraphSuccessor,
+    WorthUiPreparedApplicationGraphSuccessorDenial,
 };
 
 pub(crate) struct WorthUiPreparedApplicationAuthorityInput {
@@ -176,6 +177,10 @@ impl WorthUiPreparedApplicationAuthority {
 
     pub fn semantic_handoff(&self) -> &crate::runtime::WorthUiSemanticHandoffEvidence {
         &self.semantic_handoff
+    }
+
+    pub fn authored_overlay_material(&self) -> &crate::runtime::WorthUiAuthoredOverlayMaterial {
+        self.semantic_handoff.authored_overlay_material()
     }
 
     pub fn application_artifact_posture(&self) -> WorthUiPreparedApplicationArtifactPosture {

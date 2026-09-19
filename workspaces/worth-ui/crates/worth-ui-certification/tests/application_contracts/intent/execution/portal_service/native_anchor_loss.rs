@@ -13,7 +13,7 @@ use worth_ui_runtime::{
 };
 
 use super::super::{execution_deadline, execution_reading};
-use super::native_recovery::native_activation_drain;
+use super::native_activation::native_activation_drain;
 use crate::intent::operability::{build_open_portal_application_with_host, PrimaryIntent};
 
 const PORTAL_ANCHOR: &str = "component:visual.identity.component.paint_and_hit";
@@ -36,8 +36,9 @@ fn anchor_loss_defers_native_unmount_until_portal_dismissal_is_physically_commit
     host.push_native_display_presented();
     let (application, _) = build_open_portal_application_with_host(host.clone());
     let mut shell = application
-        .launch_native_surface()
+        .launch_native_declared_surface("visual.identity.surface.main")
         .expect("the production native composition root launches");
+    crate::mounted_geometry_fixture::install_native_occurrence_geometry(&mut shell);
     assert!(matches!(
         shell
             .present_frame(10, 1)

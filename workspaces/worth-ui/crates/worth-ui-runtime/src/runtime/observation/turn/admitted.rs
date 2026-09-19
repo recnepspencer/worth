@@ -14,6 +14,7 @@ pub struct UiAdmittedObservation {
 pub(in crate::runtime::observation) enum UiAdmittedObservationPayload {
     Source(crate::runtime::WorthUiWatchedCandidateSubmission),
     Host(super::super::admission::UiHostObservation),
+    PointerPresence(crate::runtime::interaction::UiPointerPresenceTargetTransition),
     Measurement(crate::host_exchange::measurement_admission::UiSolicitedHostMeasurementResult),
     Query(UiAdmittedQueryObservation),
     IntentPosture(crate::mounting::UiIntentPostureObservation),
@@ -86,6 +87,7 @@ impl UiAdmittedObservation {
                 super::super::admission::UiAdmittedSourceObservation::new(candidate),
             ),
             UiAdmittedObservationPayload::Host(_)
+            | UiAdmittedObservationPayload::PointerPresence(_)
             | UiAdmittedObservationPayload::Measurement(_)
             | UiAdmittedObservationPayload::Query(_)
             | UiAdmittedObservationPayload::IntentPosture(_)
@@ -104,6 +106,7 @@ impl UiAdmittedObservation {
             )) => Some(observation.owner_order()),
             UiAdmittedObservationPayload::Source(_)
             | UiAdmittedObservationPayload::Host(_)
+            | UiAdmittedObservationPayload::PointerPresence(_)
             | UiAdmittedObservationPayload::Measurement(_)
             | UiAdmittedObservationPayload::IntentPosture(_)
             | UiAdmittedObservationPayload::CommittedScrollExtent(_)
@@ -115,11 +118,21 @@ impl UiAdmittedObservation {
         match &self.payload {
             UiAdmittedObservationPayload::Host(observation) => Some(observation),
             UiAdmittedObservationPayload::Source(_)
+            | UiAdmittedObservationPayload::PointerPresence(_)
             | UiAdmittedObservationPayload::Measurement(_)
             | UiAdmittedObservationPayload::Query(_)
             | UiAdmittedObservationPayload::IntentPosture(_)
             | UiAdmittedObservationPayload::CommittedScrollExtent(_)
             | UiAdmittedObservationPayload::CommittedPortalAnchor(_) => None,
+        }
+    }
+
+    pub(crate) fn pointer_presence_transition(
+        &self,
+    ) -> Option<&crate::runtime::interaction::UiPointerPresenceTargetTransition> {
+        match &self.payload {
+            UiAdmittedObservationPayload::PointerPresence(transition) => Some(transition),
+            _ => None,
         }
     }
 

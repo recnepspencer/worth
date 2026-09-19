@@ -52,6 +52,13 @@ pub(crate) fn tokenize_module_source(
             continue;
         }
 
+        if next.is_ascii_digit() {
+            let (token, next_position) = consume_number(module_id, source_text, position);
+            tokens.push(token);
+            position = next_position;
+            continue;
+        }
+
         diagnostics.push(WorthUiParseDiagnostic::new(
             WorthUiParseDiagnosticCode::InvalidCharacter,
             format!("invalid source character '{next}'"),
@@ -90,10 +97,33 @@ fn consume_identifier(
         "query_scalar" => WorthUiSourceTokenKind::KeywordQueryScalar,
         "query_collection" => WorthUiSourceTokenKind::KeywordQueryCollection,
         "token" => WorthUiSourceTokenKind::KeywordToken,
+        "appearance" => WorthUiSourceTokenKind::KeywordAppearance,
+        "backdrop" => WorthUiSourceTokenKind::KeywordBackdrop,
         _ => WorthUiSourceTokenKind::Identifier(raw_text.to_owned()),
     };
     (
         WorthUiSourceToken::new(kind, WorthUiSourceSpan::new(module_id.clone(), start, end)),
+        end,
+    )
+}
+
+fn consume_number(
+    module_id: &WorthUiSourceModuleId,
+    source_text: &str,
+    start: usize,
+) -> (WorthUiSourceToken, usize) {
+    let mut end = start;
+    for character in source_text[start..].chars() {
+        if !character.is_ascii_digit() {
+            break;
+        }
+        end += character.len_utf8();
+    }
+    (
+        WorthUiSourceToken::new(
+            WorthUiSourceTokenKind::NumberLiteral(source_text[start..end].to_owned()),
+            WorthUiSourceSpan::new(module_id.clone(), start, end),
+        ),
         end,
     )
 }
@@ -153,6 +183,11 @@ fn consume_punctuation(
         ';' => WorthUiSourceTokenKind::Semicolon,
         '=' => WorthUiSourceTokenKind::Equals,
         '+' => WorthUiSourceTokenKind::Plus,
+        '[' => WorthUiSourceTokenKind::LeftBracket,
+        ']' => WorthUiSourceTokenKind::RightBracket,
+        '(' => WorthUiSourceTokenKind::LeftParen,
+        ')' => WorthUiSourceTokenKind::RightParen,
+        ',' => WorthUiSourceTokenKind::Comma,
         _ => return None,
     };
     let end = position + character.len_utf8();

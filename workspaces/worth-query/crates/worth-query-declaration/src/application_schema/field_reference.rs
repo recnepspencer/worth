@@ -5,21 +5,20 @@ use std::marker::PhantomData;
 use worth_foundational::facade::ScalarAspectType;
 
 use super::capabilities::{ApplicationFieldUnit, NoApplicationUnit, NoEqualityPredicate, ReadOnly};
-use super::values::TypedApplicationValue;
-use super::ApplicationAspectMarkerIdentity;
-use crate::portable_identity::WorthQueryPortableType;
+use super::{
+    ApplicationAspectMarkerIdentity, ApplicationFieldBindingLocus, ApplicationFieldBindingRecipe,
+    ApplicationScalarValueBinding, DeclaredApplicationFieldValue,
+};
 
 /// Schema-declared entity marker identity used to mint exact typed field references.
-pub trait ApplicationEntityMarkerIdentity {
-    type Schema;
+pub trait ApplicationEntityMarkerIdentity<Schema> {
     const IDENTIFIER: &'static str;
 }
 
 /// Schema-declared field marker identity used to mint exact typed field references.
-pub trait ApplicationFieldMarkerIdentity {
-    type Schema;
-    type Entity;
-    type Aspect;
+pub trait ApplicationFieldMarkerIdentity<Schema, Entity, Aspect>:
+    DeclaredApplicationFieldValue
+{
     const IDENTIFIER: &'static str;
 }
 
@@ -36,6 +35,8 @@ pub struct ApplicationFieldRef<
     entity: &'static str,
     aspect: &'static str,
     field: &'static str,
+    scalar_family: ScalarAspectType,
+    value_type_name: &'static str,
     _marker: PhantomData<fn() -> (Schema, Entity, Aspect, Field, Value, Write, Equality, Unit)>,
 }
 
@@ -81,24 +82,8 @@ impl<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit> Eq
 impl<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>
     ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>
 where
-    Value: TypedApplicationValue + WorthQueryPortableType,
     Unit: ApplicationFieldUnit,
 {
-    #[doc(hidden)]
-    #[cfg(test)]
-    pub(crate) const fn from_schema_identifiers(
-        entity: &'static str,
-        aspect: &'static str,
-        field: &'static str,
-    ) -> Self {
-        Self {
-            entity,
-            aspect,
-            field,
-            _marker: PhantomData,
-        }
-    }
-
     pub const fn entity(&self) -> &'static str {
         self.entity
     }
@@ -112,11 +97,11 @@ where
     }
 
     pub const fn scalar_family(&self) -> ScalarAspectType {
-        Value::SCALAR_FAMILY
+        self.scalar_family
     }
 
     pub fn value_type_name(&self) -> &'static str {
-        Value::PORTABLE_TYPE_NAME
+        self.value_type_name
     }
 
     pub const fn unit(&self) -> Option<&'static str> {
@@ -127,10 +112,33 @@ where
 impl<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>
     ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>
 where
-    Entity: ApplicationEntityMarkerIdentity<Schema = Schema>,
-    Aspect: ApplicationAspectMarkerIdentity<Schema = Schema, Entity = Entity>,
-    Field: ApplicationFieldMarkerIdentity<Schema = Schema, Entity = Entity, Aspect = Aspect>,
-    Value: TypedApplicationValue + WorthQueryPortableType,
+    Field: DeclaredApplicationFieldValue<Value = Value>,
+    Unit: ApplicationFieldUnit,
+{
+    #[doc(hidden)]
+    #[cfg(test)]
+    pub(crate) const fn from_schema_identifiers(
+        entity: &'static str,
+        aspect: &'static str,
+        field: &'static str,
+    ) -> Self {
+        Self {
+            entity,
+            aspect,
+            field,
+            scalar_family: <Field::Binding as ApplicationScalarValueBinding>::SCALAR_FAMILY,
+            value_type_name: <Field::Binding as ApplicationScalarValueBinding>::IDENTITY_NAME,
+            _marker: PhantomData,
+        }
+    }
+}
+
+impl<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>
+    ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>
+where
+    Entity: ApplicationEntityMarkerIdentity<Schema>,
+    Aspect: ApplicationAspectMarkerIdentity<Schema, Entity>,
+    Field: ApplicationFieldMarkerIdentity<Schema, Entity, Aspect, Value = Value>,
     Unit: ApplicationFieldUnit,
 {
     /// Mint a field reference whose semantic axes are fixed by its declared marker types.
@@ -139,7 +147,17 @@ where
             entity: Entity::IDENTIFIER,
             aspect: Aspect::IDENTIFIER,
             field: Field::IDENTIFIER,
+            scalar_family: <Field::Binding as ApplicationScalarValueBinding>::SCALAR_FAMILY,
+            value_type_name: <Field::Binding as ApplicationScalarValueBinding>::IDENTITY_NAME,
             _marker: PhantomData,
         }
+    }
+
+    pub(crate) fn binding_recipe(&self) -> ApplicationFieldBindingRecipe {
+        ApplicationFieldBindingRecipe::of::<Field::Binding>(ApplicationFieldBindingLocus::new(
+            self.entity,
+            self.aspect,
+            self.field,
+        ))
     }
 }

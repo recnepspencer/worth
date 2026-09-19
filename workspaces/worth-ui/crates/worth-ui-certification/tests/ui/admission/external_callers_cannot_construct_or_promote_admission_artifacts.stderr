@@ -125,7 +125,7 @@ error[E0308]: mismatched types
 error[E0624]: associated function `new` is private
  --> tests/ui/declaration_graph_handoff/external_callers_cannot_construct_or_substitute_graph_handoff.rs
 
-error[E0061]: this function takes 5 arguments but 3 arguments were supplied
+error[E0061]: this function takes 7 arguments but 3 arguments were supplied
  --> tests/ui/declaration_graph_handoff/external_callers_cannot_construct_or_substitute_graph_handoff.rs
  note: associated function defined here
  help: provide the arguments
@@ -166,7 +166,7 @@ error[E0061]: this function takes 1 argument but 6 arguments were supplied
 error[E0624]: associated function `new` is private
  --> tests/ui/declaration_structural/external_callers_cannot_construct_structural_semantics_or_handoff.rs
 
-error[E0061]: this function takes 5 arguments but 3 arguments were supplied
+error[E0061]: this function takes 7 arguments but 3 arguments were supplied
  --> tests/ui/declaration_structural/external_callers_cannot_construct_structural_semantics_or_handoff.rs
  note: associated function defined here
  help: provide the arguments

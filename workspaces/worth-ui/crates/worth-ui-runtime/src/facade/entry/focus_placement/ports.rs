@@ -41,19 +41,16 @@ impl UiFocusPlacementPorts<'_> {
             return Ok(None);
         };
         let target = current.mounted_target();
-        let inspected = self.inspect_target(target, publication)?;
-        let surface = inspected
-            .presentation()
-            .surfaces()
-            .iter()
-            .find(|surface| surface.semantic_surface() == current.scope().semantic_surface())
+        let presentation = self
+            .mounted
+            .current_presentation_for_surface(current.scope().semantic_surface())
             .ok_or(UiFocusPlacementExecutionDenial::SurfaceUnavailable)?;
-        let presentation = worth_ui_host_contract::UiHostObservationPresentationBasis::new(
-            surface.host_surface(),
-            inspected.frame(),
-            surface.binding(),
-            surface.epoch(),
-        );
+        self.inspect_target(
+            target,
+            current.scope().semantic_surface(),
+            presentation,
+            publication,
+        )?;
         let supported = self
             .host_session
             .capability_report()
@@ -64,8 +61,8 @@ impl UiFocusPlacementPorts<'_> {
                 crate::mounting::UiMountedFocusPlacementRequestBasis {
                     protocol: self.host_session.protocol(),
                     host_session: self.host_session.identity().as_u64(),
-                    host_surface: surface.host_surface(),
-                    binding: surface.binding(),
+                    host_surface: presentation.host_surface(),
+                    binding: presentation.binding(),
                     presentation,
                     target,
                 },
@@ -115,27 +112,28 @@ impl UiFocusPlacementPorts<'_> {
     fn inspect_target(
         &self,
         target: worth_ui_host_contract::UiHostFocusPlacementTarget,
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+        presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
         publication: &crate::mounting::UiMountedFramePublicationReceipt,
-    ) -> Result<
-        Box<crate::inspection::mounted_frame::UiMountedInspectedFrame>,
-        UiFocusPlacementExecutionDenial,
-    > {
-        let inspected = match self.mounted.inspect_frame(
-            crate::inspection::mounted_frame::UiMountedInspectionRequest::current()
-                .for_instance(target.mounted_instance()),
-        ) {
-            crate::inspection::mounted_frame::UiMountedInspectionReceipt::Available(frame) => frame,
-            crate::inspection::mounted_frame::UiMountedInspectionReceipt::Omitted(_) => {
-                return Err(UiFocusPlacementExecutionDenial::MountedFrameUnavailable);
-            }
-        };
-        if inspected.frame() != publication.frame() {
-            return Err(UiFocusPlacementExecutionDenial::ForeignPublishedFrame);
-        }
-        if inspected.selected_node_receipt() != Some(target.node_receipt()) {
+    ) -> Result<(), UiFocusPlacementExecutionDenial> {
+        self.mounted
+            .validate_current_frame(publication.frame())
+            .map_err(|_| UiFocusPlacementExecutionDenial::ForeignPublishedFrame)?;
+        let receipt = self
+            .mounted
+            .current_presented_incarnation_receipt(
+                crate::mounting::UiMountedIncarnationAffinityInput {
+                    surface,
+                    binding: presentation.binding(),
+                    mounted_instance: target.mounted_instance(),
+                },
+                presentation,
+            )
+            .map_err(|_| UiFocusPlacementExecutionDenial::MissingInteractionTarget)?;
+        if receipt != target.node_receipt() {
             return Err(UiFocusPlacementExecutionDenial::TargetReceiptMismatch);
         }
-        Ok(inspected)
+        Ok(())
     }
 
     fn bind_current(

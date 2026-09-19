@@ -46,14 +46,6 @@ pub(crate) fn adjudicate_authored_portal_pixels(
         )?,
         require_surface(
             opened,
-            manifest.portal_icon_tile_region(),
-            logical_client_extent,
-            manifest.raised_surface_rgba(),
-            manifest.channel_tolerance(),
-            "icon tile",
-        )?,
-        require_surface(
-            opened,
             manifest.portal_cancel_region(),
             logical_client_extent,
             manifest.raised_surface_rgba(),
@@ -64,7 +56,7 @@ pub(crate) fn adjudicate_authored_portal_pixels(
             opened,
             manifest.portal_primary_region(),
             logical_client_extent,
-            manifest.principal_accent_rgba(),
+            manifest.target_rgba(),
             manifest.channel_tolerance(),
             "primary action",
         )?,
@@ -73,14 +65,6 @@ pub(crate) fn adjudicate_authored_portal_pixels(
     .sum();
     let tolerance = manifest.channel_tolerance();
     let semantic_ink_pixels = [
-        require_ink(
-            opened,
-            manifest.portal_icon_text_region(),
-            logical_client_extent,
-            manifest.principal_accent_rgba(),
-            tolerance,
-            "icon",
-        )?,
         require_ink(
             opened,
             manifest.portal_title_region(),

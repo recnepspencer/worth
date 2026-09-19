@@ -14,7 +14,6 @@ use presentation_sources::PresentationSources;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum UiMountedDrawableReference {
-    FilledRect(super::UiMountedFilledRectReference),
     PortalOverlay(super::UiMountedPortalOverlayReference),
     SemanticText(super::UiMountedSemanticTextReference),
 }
@@ -47,7 +46,6 @@ pub struct UiMountedProjectionView {
     nodes: Arc<[UiMountedNodeProjectionView]>,
     clips: super::UiMountedClipTable,
     layers: super::UiMountedLayerTable,
-    filled_rects: super::UiMountedFilledRectTable,
     portal_overlays: super::UiMountedPortalOverlayTable,
     semantic_text: super::UiMountedSemanticTextTable,
     hit_tests: super::UiMountedHitTestTable,
@@ -94,7 +92,6 @@ pub struct UiMountedProjectionViewInput {
     pub nodes: Vec<UiMountedNodeProjectionView>,
     pub clips: super::UiMountedClipTable,
     pub layers: super::UiMountedLayerTable,
-    pub filled_rects: super::UiMountedFilledRectTable,
     pub portal_overlays: super::UiMountedPortalOverlayTable,
     pub semantic_text: super::UiMountedSemanticTextTable,
     pub hit_tests: super::UiMountedHitTestTable,
@@ -190,7 +187,6 @@ impl UiMountedProjectionView {
         );
         let presentation = PresentationSources::admit(
             &input.nodes,
-            &input.filled_rects,
             &input.portal_overlays,
             &input.semantic_text,
             input.authored_paint_commands,
@@ -204,7 +200,6 @@ impl UiMountedProjectionView {
             nodes: input.nodes.into(),
             clips: input.clips,
             layers: input.layers,
-            filled_rects: input.filled_rects,
             portal_overlays: input.portal_overlays,
             semantic_text: input.semantic_text,
             hit_tests: input.hit_tests,
@@ -247,9 +242,6 @@ impl UiMountedProjectionView {
     }
     pub fn layers(&self) -> &super::UiMountedLayerTable {
         &self.layers
-    }
-    pub fn filled_rects(&self) -> &super::UiMountedFilledRectTable {
-        &self.filled_rects
     }
     pub fn portal_overlays(&self) -> &super::UiMountedPortalOverlayTable {
         &self.portal_overlays

@@ -129,6 +129,7 @@ fn atlas_correlation(
 impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
     pub(super) fn advance_physical_signal_clock(&mut self, event_loop: &ActiveEventLoop) {
         let tick = self.physical_clock.current_tick();
+
         if self
             .shared
             .borrow_mut()
@@ -144,6 +145,7 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
 
     pub(super) fn schedule_physical_signal_deadline(&self, event_loop: &ActiveEventLoop) {
         let due_tick = self.shared.borrow().physical_signal.next_due_tick();
+
         let Some(deadline) = due_tick.and_then(|tick| self.physical_clock.deadline(tick)) else {
             return;
         };

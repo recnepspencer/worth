@@ -2,8 +2,7 @@ use super::support::*;
 
 #[test]
 fn runtime_live_view_denies_when_schema_boundary_receipt_drifts_from_request() {
-    let mut runtime = WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let mut runtime = test_product_runtime_builder()
         .schema_adapter(DriftingSchemaReceiptAdapter)
         .source_adapter(TestSourceAdapter::default())
         .write_authority(TestWriteAuthority)
@@ -53,8 +52,7 @@ fn runtime_write_denies_when_write_authority_route_receipt_drifts_from_command()
         }
     }
 
-    let mut runtime = WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
         .write_authority(DriftingWriteAuthority)

@@ -205,6 +205,8 @@ pub enum BridgeCommittedRecordChangeKind {
     Updated,
     Deleted,
     RetainedForAudit,
+    MaterializationSuspended,
+    Rematerialized,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -239,6 +241,10 @@ impl BridgeCommittedRecordChange {
                 BridgeCommittedRecordChangeKind::Updated => "updated",
                 BridgeCommittedRecordChangeKind::Deleted => "deleted",
                 BridgeCommittedRecordChangeKind::RetainedForAudit => "retained-for-audit",
+                BridgeCommittedRecordChangeKind::MaterializationSuspended => {
+                    "materialization-suspended"
+                }
+                BridgeCommittedRecordChangeKind::Rematerialized => "rematerialized",
             }
             .to_string(),
         ])

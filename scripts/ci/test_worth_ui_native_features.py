@@ -41,6 +41,18 @@ class WorthUiNativeFeatureAuditTests(TestCase):
                 ("worth-ui-host-native", "0.1.0")
             ],
         )
+        self.assertNotIn(
+            "windows",
+            native_features.expected_dependencies(native_features.LINUX_TARGET)[
+                ("worth-ui-host-native", "0.1.0")
+            ],
+        )
+        self.assertIn(
+            "windows",
+            native_features.expected_dependencies(native_features.WINDOWS_TARGET)[
+                ("worth-ui-host-native", "0.1.0")
+            ],
+        )
 
     def test_feature_tree_parser_keeps_the_target_resolved_feature_closure(self) -> None:
         parsed = native_features.parse_feature_tree(

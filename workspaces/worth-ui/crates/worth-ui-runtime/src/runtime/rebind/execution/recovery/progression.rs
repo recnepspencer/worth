@@ -153,6 +153,18 @@ impl<'session> UiRebindRecoveryDenial<'session> {
 }
 
 impl UiRebindRecoveryReceipt {
+    pub(super) fn from_reconciled(
+        plan: crate::runtime::rebind::UiRebindPlan,
+        mounted: crate::mounting::UiMountedFramePublicationReceipt,
+        affected_bindings: Box<[crate::mounting::UiSurfaceBindingGeneration]>,
+    ) -> Self {
+        Self {
+            plan,
+            mounted,
+            affected_bindings,
+        }
+    }
+
     pub const fn plan(&self) -> &crate::runtime::rebind::UiRebindPlan {
         &self.plan
     }

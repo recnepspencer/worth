@@ -33,6 +33,9 @@ pub(super) fn rule(
             ApplicationCapabilityFieldBinding::from_reference(
                 EmergencyAccessStatusField::reference(),
             ),
+            ApplicationCapabilityFieldBinding::from_reference(
+                EmergencyAccessClosedAtField::reference(),
+            ),
             ApplicationCapabilityElevationStates::new(
                 elevation_status(EmergencyAccessStatus::Requested),
                 elevation_status(EmergencyAccessStatus::Approved),
@@ -83,12 +86,15 @@ pub(super) fn rule(
                 ),
                 ApplicationCapabilityValueBinding::new(
                     MandatoryReviewKindField::reference(),
-                    MandatoryReviewKind::EmergencyAccess,
+                    crate::schema::encoded_bank_value(MandatoryReviewKind::EmergencyAccess),
                 ),
                 ApplicationCapabilityRelationBinding::from_reference(ReviewEstate::reference()),
                 ApplicationCapabilityRelationBinding::from_reference(ReviewPrincipal::reference()),
                 ApplicationCapabilityFieldBinding::from_reference(
                     MandatoryReviewStatusField::reference(),
+                ),
+                ApplicationCapabilityFieldBinding::from_reference(
+                    MandatoryReviewReviewedAtField::reference(),
                 ),
                 review_status(MandatoryReviewStatus::Required),
                 review_status(MandatoryReviewStatus::Completed),
@@ -101,9 +107,15 @@ pub(super) fn rule(
 }
 
 fn elevation_status(status: EmergencyAccessStatus) -> ApplicationCapabilityValueBinding {
-    ApplicationCapabilityValueBinding::new(EmergencyAccessStatusField::reference(), status)
+    ApplicationCapabilityValueBinding::new(
+        EmergencyAccessStatusField::reference(),
+        crate::schema::encoded_bank_value(status),
+    )
 }
 
 fn review_status(status: MandatoryReviewStatus) -> ApplicationCapabilityValueBinding {
-    ApplicationCapabilityValueBinding::new(MandatoryReviewStatusField::reference(), status)
+    ApplicationCapabilityValueBinding::new(
+        MandatoryReviewStatusField::reference(),
+        crate::schema::encoded_bank_value(status),
+    )
 }

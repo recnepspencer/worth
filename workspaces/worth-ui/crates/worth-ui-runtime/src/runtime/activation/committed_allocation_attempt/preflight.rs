@@ -75,12 +75,11 @@ pub(super) fn preflight_committed_allocation(
         .regional_evidence()
         .clone();
     let payload =
-        PreparedActiveSuccessor::prepare(active, ready, candidate_bundle, active.snapshot_digest())
-            .map_err(
-                |_| UiCommittedAllocationPreflightDenial::CandidatePlanDigestMismatch {
-                    counters: Box::new(counters),
-                },
-            )?;
+        PreparedActiveSuccessor::prepare(active, ready, candidate_bundle).map_err(|_| {
+            UiCommittedAllocationPreflightDenial::CandidatePlanDigestMismatch {
+                counters: Box::new(counters),
+            }
+        })?;
     let previous = active.observation();
     let (next_active, ledger_transition, committed) =
         prepare_active_successor(active, payload, runtime_frame_epoch);

@@ -140,7 +140,7 @@ mod tests {
             .unwrap();
 
         let mut partial = basis.clone();
-        partial.append_journal(BankJournalEntry::new(
+        partial.append_projected_journal(BankJournalEntry::new(
             JournalEntryId::new(1).unwrap(),
             PostingPurpose::Deposit,
             vec![BankPosting::new(
@@ -156,7 +156,7 @@ mod tests {
         ));
 
         let mut unbalanced = basis.clone();
-        unbalanced.append_journal(BankJournalEntry::new(
+        unbalanced.append_projected_journal(BankJournalEntry::new(
             JournalEntryId::new(2).unwrap(),
             PostingPurpose::Deposit,
             vec![

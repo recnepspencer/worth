@@ -22,7 +22,7 @@ pub(super) fn validate_progression_authority<Schema, Capability, Operation, Inpu
 ) -> Result<(), WorthQueryOperationAuthorizationDenial>
 where
     Schema: ApplicationSchema,
-    Operation: ApplicationOperationMarkerIdentity,
+    Operation: ApplicationOperationMarkerIdentity<Schema>,
     Input: ApplicationCapabilityRequest<Schema, Capability>,
 {
     validate_access_lifecycle(access)?;
@@ -38,12 +38,15 @@ fn validate_installed_operation_identity<Schema, Capability, Operation, Input>(
 ) -> Result<(), WorthQueryOperationAuthorizationDenial>
 where
     Schema: ApplicationSchema,
-    Operation: ApplicationOperationMarkerIdentity,
+    Operation: ApplicationOperationMarkerIdentity<Schema>,
     Input: ApplicationCapabilityRequest<Schema, Capability>,
 {
     let lifecycle = runtime
         .authorization
-        .elevation_lifecycle_operation::<Operation>(operation.operation(), operation.input_type())
+        .elevation_lifecycle_operation::<Schema, Operation>(
+            operation.operation(),
+            operation.input_type(),
+        )
         .map_err(|()| stale_operation(operation.operation()))?;
     if lifecycle.is_some()
         && progression != WorthQueryCapabilityOperationProgression::ElevationLifecycle

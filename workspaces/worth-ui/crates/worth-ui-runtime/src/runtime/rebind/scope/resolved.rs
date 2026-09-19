@@ -12,6 +12,7 @@ pub struct UiResolvedAffectedScope {
     lookups: Box<[UiAffectedFactLookup]>,
     cost: UiAffectedScopeCost,
     source_succession: Option<UiAuthoredSourceSuccession>,
+    theme_switch: Option<crate::runtime::appearance::UiThemeSwitchChange>,
 }
 
 pub(crate) struct UiResolvedAffectedScopeInput {
@@ -22,6 +23,7 @@ pub(crate) struct UiResolvedAffectedScopeInput {
     pub(crate) lookups: Box<[UiAffectedFactLookup]>,
     pub(crate) cost: UiAffectedScopeCost,
     pub(crate) source_succession: Option<UiAuthoredSourceSuccession>,
+    pub(crate) theme_switch: Option<crate::runtime::appearance::UiThemeSwitchChange>,
 }
 
 impl UiResolvedAffectedScope {
@@ -34,6 +36,7 @@ impl UiResolvedAffectedScope {
             lookups: input.lookups,
             cost: input.cost,
             source_succession: input.source_succession,
+            theme_switch: input.theme_switch,
         }
     }
 
@@ -67,6 +70,12 @@ impl UiResolvedAffectedScope {
 
     pub(crate) fn source_succession(&self) -> Option<&UiAuthoredSourceSuccession> {
         self.source_succession.as_ref()
+    }
+
+    pub(crate) fn take_theme_switch(
+        &mut self,
+    ) -> Option<crate::runtime::appearance::UiThemeSwitchChange> {
+        self.theme_switch.take()
     }
 
     pub(crate) fn take_source_succession(&mut self) -> Option<UiAuthoredSourceSuccession> {

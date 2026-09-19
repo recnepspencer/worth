@@ -18,6 +18,10 @@ impl WorthQueryGraphWorkBranchAffinity {
         Self::from_relational_branch(snapshot.branch_id().clone())
     }
 
+    pub(super) fn from_product(product: &crate::basis::WorthQueryProductObservationLease) -> Self {
+        Self::from_relational_branch(product.relational_basis_descriptor().branch_id().clone())
+    }
+
     fn from_relational_branch(relational: BranchId) -> Self {
         let truth = TruthBranchIdentity::from_relational_branch_id(relational.0.clone());
         Self { relational, truth }

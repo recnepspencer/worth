@@ -3,6 +3,7 @@ use crate::application::{
 };
 use crate::source_watch::PlatformPulseSourceWatch;
 use crate::visual_identity_execution::PlatformPulseVisualIdentityExecution;
+use worth_ui_platform_pulse::product_world::PlatformPulseMosaicSurface;
 
 pub(crate) struct PlatformPulseApplication {
     launch: crate::launch_configuration::AdmittedPlatformPulseLaunchConfiguration,
@@ -26,6 +27,7 @@ impl worth_ui_native_platform::UiNativeApplicationDefinition for PlatformPulseAp
         let composition = match prepare_composition(&self.launch) {
             Ok(composition) => composition,
             Err(denial) => {
+                eprintln!("WORTH UI application preparation failed: {denial}");
                 publish_preparation_failure(&self.publisher, &denial);
                 return preparation.deny(
                     worth_ui_native_platform::UiNativeApplicationPreparationDenialCause::ApplicationRejected,
@@ -48,6 +50,11 @@ impl worth_ui_native_platform::UiNativeApplicationDefinition for PlatformPulseAp
         if let Err(cause) = preparation.install_application_composition(builder) {
             return preparation.deny(cause);
         }
+        if let Err(cause) =
+            preparation.install_native_surface_declaration(PlatformPulseMosaicSurface::Main.id())
+        {
+            return preparation.deny(cause);
+        }
         if let Err(cause) = preparation.install_application_runtime(runtime) {
             return preparation.deny(cause);
         }
@@ -67,6 +74,7 @@ impl super::PlatformPulseApplicationRuntime {
         Self,
     ) {
         let PreparedPlatformPulseComposition {
+            theme_watcher,
             builder,
             watcher,
             initial_source,
@@ -77,7 +85,9 @@ impl super::PlatformPulseApplicationRuntime {
             intent_action_owner,
         } = composition;
         let runtime = Self {
+            theme_watch: Some(theme_watcher),
             initial_source: Some(initial_source),
+            startup_ready: false,
             shell: None,
             source_watch: Some(PlatformPulseSourceWatch::spawn(watcher)),
             query_watch: Some(query_watcher),
@@ -89,7 +99,7 @@ impl super::PlatformPulseApplicationRuntime {
             pending_query_denial_story: None,
             pending_frame_presentation: None,
             pending_managed_rebind: None,
-            pending_intent_postures: std::collections::VecDeque::new(),
+            pending_native_publications: std::collections::VecDeque::new(),
             pending_intent_execution_transitions: std::collections::VecDeque::new(),
             intent_evidence_index: super::intent::PlatformPulseIntentEvidenceIndex::new(),
             native_input: super::input::PlatformPulseNativeInputIngress::default(),
@@ -100,6 +110,7 @@ impl super::PlatformPulseApplicationRuntime {
             visual_identity: PlatformPulseVisualIdentityExecution::new(),
             intent_clock: super::intent::PlatformPulseIntentClock::new(),
             presentation_tick: 0,
+            frame_time_origin: std::time::Instant::now(),
             product_story: super::product_story::PlatformPulseProductStory::default(),
         };
         (builder, runtime)

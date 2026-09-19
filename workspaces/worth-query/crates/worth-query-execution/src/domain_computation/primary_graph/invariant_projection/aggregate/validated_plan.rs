@@ -2,7 +2,7 @@
 
 use worth_query_installation::facade::{
     ApplicationFieldRef, ApplicationFieldUnit, ApplicationRelationRef, ApplicationSchema,
-    TypedApplicationSignedAggregateValue, WritePosture,
+    ApplicationSignedAggregateValueBinding, DeclaredApplicationFieldValue, WritePosture,
 };
 use worth_relational::facade::identity::{EntityId, KindId, VersionId};
 
@@ -45,7 +45,8 @@ impl ValidatedAggregatePlan {
     ) -> Result<Self, WorthQueryInvariantAggregateDenial>
     where
         Schema: ApplicationSchema,
-        Value: TypedApplicationSignedAggregateValue,
+        Field: DeclaredApplicationFieldValue<Value = Value>,
+        Field::Binding: ApplicationSignedAggregateValueBinding,
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {

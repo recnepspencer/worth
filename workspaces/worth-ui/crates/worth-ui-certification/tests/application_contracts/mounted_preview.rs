@@ -39,6 +39,7 @@ fn real_wui_preview_records_and_publishes_through_the_mounted_contract() {
     let handle = session.mounted_graph_node(target).unwrap();
     let instance = session.mount_instance(handle, surface).unwrap();
 
+    crate::mounted_geometry_fixture::install_current_occurrence_geometry(&mut session);
     let pending = submit_preview(&mut session, target, 320.0);
     let prepared = match pending.prepare(instance) {
         Ok(prepared) => prepared,
@@ -55,6 +56,16 @@ fn real_wui_preview_records_and_publishes_through_the_mounted_contract() {
         .iter()
         .filter(|cell| cell.lane() != UiMountedLaneParticipation::Preview)
         .all(|cell| cell.status() == UiRequiredLaneContributionStatus::ExplicitEmpty));
+    assert_eq!(
+        frame
+            .manifest()
+            .lane_contributions()
+            .iter()
+            .filter(|cell| cell.lane() == UiMountedLaneParticipation::Preview)
+            .count(),
+        1,
+        "the existing mounted-preview contract has one preview lane"
+    );
     assert!(matches!(
         frame.surfaces()[0].projection().nodes()[0].preview(),
         UiMountedPreviewProjection::Resize {

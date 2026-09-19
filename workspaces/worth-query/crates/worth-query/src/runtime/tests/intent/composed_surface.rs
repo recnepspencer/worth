@@ -2,8 +2,7 @@ use super::*;
 
 #[test]
 fn composed_runtime_surface_proves_facade_handles_stay_proof_bearing_across_preview_and_intents() {
-    let mut runtime = WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
         .snapshot_identity(TestSnapshotIdentityAdapter)

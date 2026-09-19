@@ -9,7 +9,7 @@ use crate::failure_teardown::{
 };
 use crate::source_delta::{QueryStatusV1, QueryStatusV2};
 
-use super::watched_native_observation::observe_watched_native;
+use super::watched_native_observation::observe_watched_native_until_schema_posture_changes;
 use super::{
     await_watched_observation, AwaitingQueryCurrent, ComparisonBasisRefreshed, FirstCurrent,
     InitialBlue, NativeInputReached, OverlayCleared, Published, PulseExecutableWorld, QueryCurrent,
@@ -61,7 +61,7 @@ impl PulseExecutableWorld<AwaitingQueryCurrent<NativeInputReached<InitialBlue>, 
                 requires_wrapping_text: false,
                 deadline,
             },
-            |prior| prior.prior.evidence.pixels().rgba(),
+            |prior| prior.prior.evidence.pixels(),
         )
     }
 }
@@ -80,7 +80,7 @@ impl PulseExecutableWorld<AwaitingQueryCurrent<OverlayCleared<FirstCurrent>, Que
                 requires_wrapping_text: true,
                 deadline,
             },
-            |prior| prior.overlay.trace.snapshot.prior.evidence.pixels().rgba(),
+            |prior| prior.overlay.trace.snapshot.prior.evidence.pixels(),
         )?;
         await_comparison_basis_refresh(current, deadline)
     }
@@ -180,7 +180,7 @@ fn apply_query<Stage, Kind>(
 fn await_query<Stage, Kind>(
     world: PulseExecutableWorld<AwaitingQueryCurrent<Stage, Kind>>,
     expectation: QueryExpectation<'_>,
-    predecessor: impl FnOnce(&Stage) -> &[u8],
+    predecessor: impl FnOnce(&Stage) -> &crate::external_observation::NativeClientPixelCapture,
 ) -> Result<
     PulseExecutableWorld<Published<QueryCurrent<Stage, Kind>>>,
     PulseExecutableWorldFailureReport,
@@ -205,7 +205,13 @@ fn await_query<Stage, Kind>(
             expectation.deadline,
         )
         .map_err(PulseExecutableWorldFailure::WatchedObservation)?;
-        let native = observe_watched_native(&mut world)?;
+        let predecessor = predecessor(&prior);
+        let native = observe_watched_native_until_schema_posture_changes(
+            &mut world,
+            predecessor,
+            expectation.deadline,
+            "Query-current pixels",
+        )?;
         let evidence = adjudicate_query_current(
             issued,
             published,
@@ -213,7 +219,7 @@ fn await_query<Stage, Kind>(
             expectation.owner_order,
             native.client,
             native.pixels,
-            predecessor(&prior),
+            predecessor.rgba(),
         )
         .map_err(PulseExecutableWorldFailure::QueryCurrent)?;
         if expectation.requires_wrapping_text {

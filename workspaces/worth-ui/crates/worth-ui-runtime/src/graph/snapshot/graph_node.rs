@@ -13,6 +13,8 @@ pub struct UiGraphNode {
     graph_node_identity: UiGraphNodeIdentity,
     declaration_identity: UiDeclarationIdentity,
     aspect_contract: UiAspectContract,
+    component_reference: Option<crate::capability::ComponentId>,
+    appearance_role_attachment: Option<crate::declaration::UiAppearanceRoleAttachment>,
     structural_digest: UiDeclarationStructuralDigest,
     structural_role: UiDeclarationStructuralRole,
     operator_kind: UiDeclarationPlanningOperatorKind,
@@ -29,6 +31,8 @@ pub(crate) struct UiGraphNodeInput {
     pub(crate) graph_node_identity: UiGraphNodeIdentity,
     pub(crate) declaration_identity: UiDeclarationIdentity,
     pub(crate) aspect_contract: UiAspectContract,
+    pub(crate) component_reference: Option<crate::capability::ComponentId>,
+    pub(crate) appearance_role_attachment: Option<crate::declaration::UiAppearanceRoleAttachment>,
     pub(crate) structural_digest: UiDeclarationStructuralDigest,
     pub(crate) structural_role: UiDeclarationStructuralRole,
     pub(crate) operator_kind: UiDeclarationPlanningOperatorKind,
@@ -47,6 +51,8 @@ impl UiGraphNode {
             graph_node_identity,
             declaration_identity,
             aspect_contract,
+            component_reference,
+            appearance_role_attachment,
             structural_digest,
             structural_role,
             operator_kind,
@@ -62,6 +68,8 @@ impl UiGraphNode {
             graph_node_identity,
             declaration_identity,
             aspect_contract,
+            component_reference,
+            appearance_role_attachment,
             structural_digest,
             structural_role,
             operator_kind,
@@ -85,6 +93,16 @@ impl UiGraphNode {
 
     pub fn aspect_contract(&self) -> &UiAspectContract {
         &self.aspect_contract
+    }
+
+    pub(crate) const fn appearance_role_attachment(
+        &self,
+    ) -> Option<&crate::declaration::UiAppearanceRoleAttachment> {
+        self.appearance_role_attachment.as_ref()
+    }
+
+    pub(crate) const fn component_reference(&self) -> Option<&crate::capability::ComponentId> {
+        self.component_reference.as_ref()
     }
 
     pub fn repeated_instance_basis(&self) -> &UiRepeatedInstanceBasis {
@@ -133,6 +151,23 @@ impl UiGraphNode {
         stable_text_digest("graph-node")
             ^ self.graph_node_identity.digest().rotate_left(7)
             ^ self.aspect_contract.digest_raw().rotate_left(8)
+            ^ self
+                .component_reference
+                .as_ref()
+                .map_or(0, |component| {
+                    crate::declaration::stable_text_digest(component.as_str())
+                })
+                .rotate_left(6)
+            ^ self
+                .appearance_role_attachment
+                .as_ref()
+                .map_or(0, |attachment| {
+                    crate::declaration::stable_text_digest(attachment.target().as_str())
+                        ^ crate::declaration::stable_text_digest(attachment.role().as_str())
+                            .rotate_left(2)
+                        ^ attachment.revision().value().rotate_left(3)
+                })
+                .rotate_left(10)
             ^ self.structural_digest.raw().rotate_left(9)
             ^ (self.structural_role as u64).rotate_left(11)
             ^ (self.operator_kind as u64).rotate_left(12)

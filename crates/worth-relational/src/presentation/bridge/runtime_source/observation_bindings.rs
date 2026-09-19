@@ -201,6 +201,31 @@ pub struct RelationalBridgeObservationLease {
 }
 
 impl RelationalBridgeObservationLease {
+    /// Confirm that this retained Bridge observation was issued from the exact
+    /// Relational basis carried by a composite product observation.
+    pub fn admits_basis(&self, basis: &crate::branch::AdmittedRelationalBranchBasis) -> bool {
+        self.bindings
+            .as_ref()
+            .and_then(|bindings| self.resolve_for(bindings).ok())
+            .is_some_and(|selected| selected.observation().admitted_basis() == *basis)
+    }
+
+    pub(super) fn resolve_for(
+        &self,
+        bindings: &Arc<RelationalBridgeObservationBindings>,
+    ) -> Result<RelationalBridgeSelectedObservation, RelationalBridgeSourceError> {
+        if !self
+            .bindings
+            .as_ref()
+            .is_some_and(|issuer| Arc::ptr_eq(issuer, bindings))
+        {
+            return Err(RelationalBridgeSourceError::new(
+                "retained Bridge observation belongs to another source registration owner",
+            ));
+        }
+        bindings.resolve(&self.snapshot_identity)
+    }
+
     pub fn snapshot_identity(&self) -> &TruthSnapshotIdentity {
         &self.snapshot_identity
     }

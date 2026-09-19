@@ -47,9 +47,13 @@ pub use resource_retirement::{
 };
 pub use resource_snapshot::UiObservationResourceSnapshot;
 pub(crate) use state::UiObservationRuntimeState;
-pub(crate) use turn::UiPreparedObservationProgressCommit;
 pub use turn::{
     UiAdmittedObservation, UiAdmittedObservationSet, UiObservationAdmissionDenial,
     UiObservationAdmissionReceipt, UiObservationSetSummary, UiObservationTurn,
     UiObservationTurnDenial, UiObservationTurnIdentity, UiQueryObservationAdmissionStop,
+};
+pub(crate) use turn::{
+    UiAppearanceObservationCloseInput, UiObservationTurnCloseAuthority,
+    UiPointerAffordanceObservationCloseInput, UiPointerAffordanceObservationOwners,
+    UiPreparedObservationProgressCommit,
 };

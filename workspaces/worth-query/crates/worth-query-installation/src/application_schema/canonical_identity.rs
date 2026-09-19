@@ -4,10 +4,12 @@ use worth_foundational::facade::{
 };
 use worth_query_declaration::facade::application_schema::ApplicationSchemaIdentity;
 
-use crate::canonical_work::WorthQueryCanonicalWorkEvidence;
+use crate::canonical_work::{
+    WorthQueryCanonicalWorkEvidence, INSTALLATION_MAXIMUM_CANONICAL_BYTES,
+};
 
 const INSTALLATION_BUDGET: CanonicalDigestWorkBudget =
-    match CanonicalDigestWorkBudget::new(32_768, 4 * 1_024 * 1_024) {
+    match CanonicalDigestWorkBudget::new(32_768, INSTALLATION_MAXIMUM_CANONICAL_BYTES) {
         Some(budget) => budget,
         None => panic!("fixed application-schema installation budget is valid"),
     };

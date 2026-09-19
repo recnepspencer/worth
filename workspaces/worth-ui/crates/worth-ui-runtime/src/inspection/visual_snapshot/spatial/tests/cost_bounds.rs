@@ -25,7 +25,7 @@ fn production_maximum_overlap_is_exactly_bounded_and_fully_accounted() {
         .collect::<Vec<_>>();
     let observed = paint
         .iter()
-        .map(|row| observed_paint(*row, row.layer_semantic_order()))
+        .map(|row| observed_paint(*row, row.semantic_order()))
         .collect::<Vec<_>>();
     let basis =
         crate::mounting::UiMountedVisualRegionBasis::new(paint.into_boxed_slice(), Box::new([]));
@@ -65,7 +65,7 @@ fn generated_record_limits_have_exact_representation_costs() {
             .collect::<Vec<_>>();
         let observed = paint
             .iter()
-            .map(|row| observed_paint(*row, row.layer_semantic_order()))
+            .map(|row| observed_paint(*row, row.semantic_order()))
             .collect::<Vec<_>>();
         let basis = crate::mounting::UiMountedVisualRegionBasis::new(
             paint.into_boxed_slice(),

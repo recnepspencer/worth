@@ -23,10 +23,10 @@ pub(super) fn evidence(
         "retained_frames": retained_frames,
         "post_restore_presentation": post_restore_presentation,
         "presentation": {
-            "frame": receipt.presentation().presented_frame(),
-            "attempt": receipt.presentation().presentation_attempt(),
-            "binding": receipt.presentation().binding_generation(),
-            "client_physical_size": receipt.presentation().client_physical_size(),
+            "frame": receipt.presentation().map(|value| value.presented_frame()),
+            "attempt": receipt.presentation().map(|value| value.presentation_attempt()),
+            "binding": receipt.presentation().map(|value| value.binding_generation()),
+            "client_physical_size": receipt.presentation().map(|value| value.client_physical_size()),
         },
         "snapshot": {
             "affinity": snapshot.affinity(),

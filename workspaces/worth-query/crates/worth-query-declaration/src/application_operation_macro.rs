@@ -1,19 +1,54 @@
 #[macro_export]
 macro_rules! worth_query_operation {
-    ($vis:vis $Operation:ident($Input:ty) in $Schema:ty) => {
+    (
+        $vis:vis $Operation:ident for $Schema:ty,
+        input $InputBinding:path
+    ) => {
         #[derive(Clone, Copy, Debug, Eq, PartialEq)]
         $vis struct $Operation;
 
-        impl $crate::facade::application_schema::ApplicationOperationMarkerIdentity
+        impl $crate::facade::application_schema::ApplicationOperationMarkerIdentity<$Schema>
             for $Operation
         {
-            type Schema = $Schema;
-            type Input = $Input;
+            type InputBinding = $InputBinding;
             const IDENTIFIER: &'static str = stringify!($Operation);
         }
 
         impl $Operation {
-            pub const fn reference() -> $crate::facade::application_schema::ApplicationOperationRef<$Schema, Self, $Input> {
+            pub const fn reference() -> $crate::facade::application_schema::ApplicationOperationRef<
+                $Schema,
+                Self,
+                <$InputBinding as $crate::facade::application_schema::ApplicationStructuredValueBinding>::Value,
+            > {
+                $crate::facade::application_schema::ApplicationOperationRef::from_declaration()
+            }
+        }
+    };
+    (
+        $vis:vis $Operation:ident for Schema: $BindingTrait:path,
+        input $InputBinding:path
+    ) => {
+        #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+        $vis struct $Operation;
+
+        impl<Schema> $crate::facade::application_schema::ApplicationOperationMarkerIdentity<Schema>
+            for $Operation
+        where
+            Schema: $BindingTrait,
+        {
+            type InputBinding = $InputBinding;
+            const IDENTIFIER: &'static str = stringify!($Operation);
+        }
+
+        impl $Operation {
+            pub const fn reference<Schema>() -> $crate::facade::application_schema::ApplicationOperationRef<
+                Schema,
+                Self,
+                <$InputBinding as $crate::facade::application_schema::ApplicationStructuredValueBinding>::Value,
+            >
+            where
+                Schema: $BindingTrait,
+            {
                 $crate::facade::application_schema::ApplicationOperationRef::from_declaration()
             }
         }
@@ -70,6 +105,27 @@ macro_rules! worth_query_operation_requires {
 
 #[macro_export]
 macro_rules! worth_query_unit {
+    ($vis:vis $Unit:ident($DomainUnit:ty) for $Schema:ident : $Binding:path) => {
+        #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+        $vis struct $Unit;
+
+        impl $crate::facade::application_schema::ApplicationUnitMarker<$DomainUnit>
+            for $Unit
+        {
+            const NAME: &'static str = stringify!($Unit);
+        }
+
+        impl $Unit {
+            pub const fn reference<$Schema>() -> $crate::facade::application_schema::ApplicationUnitRef<$Schema, Self>
+            where
+                $Schema: $Binding,
+            {
+                $crate::facade::application_schema::ApplicationUnitRef::from_schema_identifier(
+                    stringify!($Unit),
+                )
+            }
+        }
+    };
     ($vis:vis $Unit:ident($DomainUnit:ty) in $Schema:ty) => {
         #[derive(Clone, Copy, Debug, Eq, PartialEq)]
         $vis struct $Unit;
@@ -92,26 +148,55 @@ macro_rules! worth_query_unit {
 
 #[macro_export]
 macro_rules! worth_query_effect {
-    ($vis:vis $Effect:ident($Payload:ty) in $Schema:ty) => {
+    (
+        $vis:vis $Effect:ident for $Schema:ty,
+        payload $PayloadBinding:path
+    ) => {
         #[derive(Clone, Copy, Debug, Eq, PartialEq)]
         $vis struct $Effect;
 
-        impl $crate::facade::application_schema::ApplicationEffectMarkerIdentity for $Effect {
-            type Schema = $Schema;
-            type Payload = $Payload;
+        impl $crate::facade::application_schema::ApplicationEffectMarkerIdentity<$Schema>
+            for $Effect
+        {
+            type PayloadBinding = $PayloadBinding;
             const IDENTIFIER: &'static str = stringify!($Effect);
         }
 
-        const _: () = {
-            fn assert_payload_contract<
-                Payload: $crate::facade::application_schema::ApplicationEffectPayload,
-            >() {
+        impl $Effect {
+            pub const fn reference() -> $crate::facade::application_schema::ApplicationEffectRef<
+                $Schema,
+                Self,
+                <$PayloadBinding as $crate::facade::application_schema::ApplicationStructuredValueBinding>::Value,
+            > {
+                $crate::facade::application_schema::ApplicationEffectRef::from_declaration()
             }
-            let _ = assert_payload_contract::<$Payload>;
-        };
+        }
+    };
+    (
+        $vis:vis $Effect:ident for Schema: $BindingTrait:path,
+        payload $PayloadBinding:path
+    ) => {
+        #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+        $vis struct $Effect;
+
+        impl<Schema> $crate::facade::application_schema::ApplicationEffectMarkerIdentity<Schema>
+            for $Effect
+        where
+            Schema: $BindingTrait,
+        {
+            type PayloadBinding = $PayloadBinding;
+            const IDENTIFIER: &'static str = stringify!($Effect);
+        }
 
         impl $Effect {
-            pub const fn reference() -> $crate::facade::application_schema::ApplicationEffectRef<$Schema, Self, $Payload> {
+            pub const fn reference<Schema>() -> $crate::facade::application_schema::ApplicationEffectRef<
+                Schema,
+                Self,
+                <$PayloadBinding as $crate::facade::application_schema::ApplicationStructuredValueBinding>::Value,
+            >
+            where
+                Schema: $BindingTrait,
+            {
                 $crate::facade::application_schema::ApplicationEffectRef::from_declaration()
             }
         }

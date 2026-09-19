@@ -2,10 +2,10 @@ world_identity = "mounted-presentation-world"
 world_version = 1
 width = 160
 height = 96
-maximum_rectangles = 2048
+maximum_surfaces = 2048
 transparent_baseline = [0, 0, 0, 0]
 
-[[filled_rect]]
+[[surface]]
 x = 0
 y = 0
 width = 160
@@ -13,7 +13,7 @@ height = 96
 rgba = [47, 129, 247, 255]
 order = 0
 
-[[filled_rect]]
+[[surface]]
 x = 48
 y = 24
 width = 64

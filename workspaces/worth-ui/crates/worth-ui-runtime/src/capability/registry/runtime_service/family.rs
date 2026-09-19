@@ -9,6 +9,7 @@ pub(crate) enum UiRuntimeServiceFamily {
 }
 
 impl UiRuntimeServiceFamily {
+    #[cfg(any(test, feature = "certification-support"))]
     pub(crate) const ALL: [Self; 6] = [
         Self::Portal,
         Self::Focus,

@@ -4,6 +4,7 @@ struct PlatformPulseIntentEvidenceEntry {
     idempotency_session: u64,
     idempotency_lineage: u64,
     reference: worth_ui::facade::inspection::UiIntentEvidenceReference,
+    mounted_instance: worth_ui::facade::app::UiMountedInstanceIdentity,
 }
 
 pub(in crate::native_application) struct PlatformPulseIntentEvidenceIndex {
@@ -28,6 +29,7 @@ impl PlatformPulseIntentEvidenceIndex {
     pub(super) fn retain(
         &mut self,
         dispatch: worth_ui::facade::intent::UiIntentExecutionDispatchReceipt,
+        mounted_instance: worth_ui::facade::app::UiMountedInstanceIdentity,
     ) -> Result<(), PlatformPulseIntentEvidenceIndexDenial> {
         let reference = dispatch
             .evidence_reference()
@@ -44,6 +46,7 @@ impl PlatformPulseIntentEvidenceIndex {
             idempotency_session: dispatch.idempotency().session(),
             idempotency_lineage: dispatch.idempotency().lineage(),
             reference,
+            mounted_instance,
         });
         Ok(())
     }
@@ -61,6 +64,18 @@ impl PlatformPulseIntentEvidenceIndex {
             && entry.idempotency_session == product.idempotency_session()
             && entry.idempotency_lineage == product.idempotency_lineage())
         .then_some(entry.reference)
+    }
+
+    pub(super) fn target_for_execution(
+        &self,
+        attempt: worth_ui::facade::intent::UiIntentExecutionAttemptIdentity,
+        idempotency: worth_ui::facade::intent::UiIntentExecutionIdempotencyIdentity,
+    ) -> Option<worth_ui::facade::app::UiMountedInstanceIdentity> {
+        let entry = self.slots.get(usize::from(attempt.slot()))?.as_ref()?;
+        (entry.attempt_generation == attempt.generation()
+            && entry.idempotency_session == idempotency.session()
+            && entry.idempotency_lineage == idempotency.lineage())
+        .then_some(entry.mounted_instance)
     }
 
     pub(super) fn retire_execution(

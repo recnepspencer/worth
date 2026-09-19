@@ -34,8 +34,12 @@ impl UiNativePlatformCloseReceipt {
         Self { report }
     }
 
-    pub fn presentation(&self) -> &worth_ui_host_native::UiNativePresentationObservation {
+    pub fn presentation(&self) -> Option<&worth_ui_host_native::UiNativePresentationObservation> {
         self.report.presentation()
+    }
+
+    pub fn final_frame(&self) -> &worth_ui_host_native::UiNativeRetainedFrameObservation {
+        self.report.final_frame()
     }
 
     pub fn input_observations(&self) -> &worth_ui_host_native::UiNativeInputObservationReport {
@@ -66,7 +70,7 @@ impl UiNativePlatformCloseReceipt {
 
     pub const fn client_attribution(
         &self,
-    ) -> worth_ui_host_native::UiNativeClientPresentationAttribution {
+    ) -> Option<worth_ui_host_native::UiNativeClientPresentationAttribution> {
         self.report.client_attribution()
     }
 

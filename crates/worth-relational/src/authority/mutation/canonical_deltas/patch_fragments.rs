@@ -303,5 +303,7 @@ fn structural_change_label(change: RecordStructuralChange) -> &'static str {
         RecordStructuralChange::Updated => "update",
         RecordStructuralChange::Deleted => "delete",
         RecordStructuralChange::RetainedForAudit => "retain_for_audit",
+        RecordStructuralChange::MaterializationSuspended => "materialization_suspended",
+        RecordStructuralChange::Rematerialized => "rematerialized",
     }
 }

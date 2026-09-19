@@ -7,18 +7,22 @@ use worth_query_declaration::facade::application_query::{
     ApplicationQueryResultRelationRef, ApplicationQueryResultShapeBuilder, ForwardResultTraversal,
     ManyResults,
 };
+use worth_query_declaration::facade::application_schema::ApplicationEncodedScalarValue;
 use worth_query_declaration::worth_query_application_query;
 
 use super::application_queries::AccountSummaryParameters;
 use super::{
     Account, AccountAllActivity, Activity, ActivityFacts, ActivityIdentity, ActivitySequence,
-    CapabilityDisclosure, IdentityExecutionSchema, TouchAccountCapability,
+    CapabilityDisclosure, CapabilityDisclosureBinding, IdentityExecutionSchema,
+    TouchAccountCapability,
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationDisclosed, WorthQueryApplicationProjection,
     WorthQueryApplicationProjectionDenial, WorthQueryApplicationProjectionDenialKind,
     WorthQueryApplicationProjectionRow,
 };
+
+worth_query_declaration::worth_query_structured_value_binding!(NestedUnitResultBinding for () { identity: "worth.rust.unit" });
 
 pub struct ActivitiesSlot;
 pub struct ActivityIdentitySlot;
@@ -62,11 +66,14 @@ impl GovernedHiddenOrderingResult {
     }
 }
 
+worth_query_declaration::worth_query_structured_value_binding!(pub GovernedHiddenOrderingQueryParametersBinding for AccountSummaryParameters { identity: "AccountSummaryParameters" });
+worth_query_declaration::worth_query_structured_value_binding!(pub GovernedHiddenOrderingQueryResultBinding for GovernedHiddenOrderingResult { identity: "worth.query.test.execution.governed_hidden.result.v1" });
 worth_query_application_query!(
-    pub GovernedHiddenOrderingQuery in IdentityExecutionSchema,
-    parameters AccountSummaryParameters,
-    result GovernedHiddenOrderingResult,
-    scope Account,
+    pub GovernedHiddenOrderingQuery for IdentityExecutionSchema,
+    identity "GovernedHiddenOrderingQuery",
+    parameters GovernedHiddenOrderingQueryParametersBinding,
+    result GovernedHiddenOrderingQueryResultBinding,
+    scope Account => "Account",
     name "governed_hidden_ordering"
 );
 
@@ -82,6 +89,7 @@ pub(super) fn governed_hidden_ordering_definition() -> ApplicationQueryDefinitio
         GovernedHiddenOrderingQuery,
         Activity,
         (),
+        NestedUnitResultBinding,
     >::new(Activity::reference())
     .field(activity_identity())
     .field(activity_sequence());
@@ -90,6 +98,7 @@ pub(super) fn governed_hidden_ordering_definition() -> ApplicationQueryDefinitio
         GovernedHiddenOrderingQuery,
         Account,
         GovernedHiddenOrderingResult,
+        GovernedHiddenOrderingQueryResultBinding,
     >::new(Account::reference())
     .relation(activities(), activity)
     .build();
@@ -99,22 +108,22 @@ pub(super) fn governed_hidden_ordering_definition() -> ApplicationQueryDefinitio
     )
     .use_field_by(
         ActivitySequence::reference(),
-        CapabilityDisclosure::AccountActivity,
+        encoded_disclosure(CapabilityDisclosure::AccountActivity),
         ApplicationQueryInfluenceContract::permit([ApplicationQueryObservableInfluence::Ordering]),
     )
     .disclose_relation_by(
         activities(),
-        CapabilityDisclosure::AccountActivity,
+        encoded_disclosure(CapabilityDisclosure::AccountActivity),
         ApplicationQueryInfluenceContract::permit_all(),
     )
     .disclose_field_by(
         activity_identity(),
-        CapabilityDisclosure::AccountActivity,
+        encoded_disclosure(CapabilityDisclosure::AccountActivity),
         ApplicationQueryInfluenceContract::permit_all(),
     )
     .disclose_field_by(
         activity_sequence(),
-        CapabilityDisclosure::PrivateLabel,
+        encoded_disclosure(CapabilityDisclosure::PrivateLabel),
         ApplicationQueryInfluenceContract::forbid_all(),
     );
     ApplicationQueryDefinitionBuilder::declare(GovernedHiddenOrderingQuery::reference())
@@ -212,4 +221,10 @@ fn activities() -> ApplicationQueryResultRelationRef<
     ManyResults,
 > {
     ApplicationQueryResultRelationRef::forward_many("activities", AccountAllActivity::reference())
+}
+
+fn encoded_disclosure(
+    value: CapabilityDisclosure,
+) -> ApplicationEncodedScalarValue<CapabilityDisclosureBinding> {
+    ApplicationEncodedScalarValue::try_new(value).expect("fixture disclosure must encode")
 }

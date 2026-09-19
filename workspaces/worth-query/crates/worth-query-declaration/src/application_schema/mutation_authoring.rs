@@ -9,12 +9,12 @@ use super::capabilities::{
 };
 use super::field_reference::ApplicationFieldRef;
 use super::references::{ApplicationEntityRef, ApplicationOperationRef, ApplicationRelationRef};
-use super::values::TypedApplicationValue;
+use super::values::DeclaredApplicationFieldValue;
 use super::{
+    ApplicationEncodedScalarValue, ApplicationOperationMarkerIdentity,
     ApplicationSchemaAuthoringContext, ApplicationSchemaAuthoringDenial,
-    ApplicationSchemaBindingIdentity,
+    ApplicationSchemaBindingIdentity, ApplicationStructuredValueBinding,
 };
-use crate::portable_identity::WorthQueryPortableType;
 
 pub struct TypedOperationBuilder<Schema, Operation, Input> {
     operation: &'static str,
@@ -25,7 +25,9 @@ pub struct TypedOperationBuilder<Schema, Operation, Input> {
 
 impl<Schema, Operation: 'static, Input> TypedOperationBuilder<Schema, Operation, Input>
 where
-    Input: WorthQueryPortableType + 'static,
+    Operation: ApplicationOperationMarkerIdentity<Schema>,
+    Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
+    Input: 'static,
 {
     pub fn new(operation: ApplicationOperationRef<Schema, Operation, Input>) -> Self {
         Self {
@@ -39,7 +41,7 @@ where
     #[doc(hidden)]
     pub fn with_installed_context(mut self, context: ApplicationSchemaAuthoringContext) -> Self {
         self.denial = context
-            .admit_operation::<Operation, Input>(self.operation, Input::PORTABLE_TYPE_IDENTITY)
+            .admit_operation::<Operation, Input>(self.operation, Operation::InputBinding::IDENTITY)
             .err();
         self.context = Some(context);
         self
@@ -264,11 +266,10 @@ impl<Schema, Operation, Input> TypedMutationIntentBuilder<Schema, Operation, Inp
     pub fn set<Entity, Aspect, Field, Value, Write, Equality, Unit>(
         mut self,
         field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
-        value: Value,
+        value: ApplicationEncodedScalarValue<Field::Binding>,
     ) -> Self
     where
-        Field: OperationWrites<Operation>,
-        Value: TypedApplicationValue,
+        Field: OperationWrites<Operation> + DeclaredApplicationFieldValue<Value = Value>,
         Write: WritableCapability,
         Unit: ApplicationFieldUnit,
     {

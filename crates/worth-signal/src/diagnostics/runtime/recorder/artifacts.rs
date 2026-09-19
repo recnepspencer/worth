@@ -95,6 +95,7 @@ pub(crate) fn record_lineage_transition(
         &after_finalize_image,
         execution_record_id,
         semantic_segment_id,
+        &mut crate::logic::evaluation::EvaluationWork::Ordinary,
     )
 }
 
@@ -105,6 +106,7 @@ pub(crate) fn stamp_trace_summary_and_record_lineage_transition_from_image(
     after_finalize_image: &RuntimeArtifactFinalizeImage,
     execution_record_id: ExecutionRecordId,
     semantic_segment_id: SemanticSegmentId,
+    work: &mut crate::logic::evaluation::EvaluationWork<'_>,
 ) -> Result<(), crate::data::error::SignalError> {
     let (artifact_id, previous_artifact_id, transition) =
         derive_lineage_transition(graph, before_trace, after_finalize_image);
@@ -113,6 +115,7 @@ pub(crate) fn stamp_trace_summary_and_record_lineage_transition_from_image(
         artifact_id,
         execution_record_id,
         semantic_segment_id,
+        work,
     )?;
     if !graph.captures_observation_surface(
         crate::logic::transaction::SignalObservationSurface::DescriptiveLineage,
@@ -121,9 +124,8 @@ pub(crate) fn stamp_trace_summary_and_record_lineage_transition_from_image(
     }
     let sequence = graph.diagnostics_state_mut().allocate_lineage_sequence();
     let emitted_on_branch_id = graph.observe().current_branch().id;
-    graph
-        .diagnostics_state_mut()
-        .record_lineage_record(LineageRecord::artifact_transition(
+    graph.record_evaluation_lineage(
+        LineageRecord::artifact_transition(
             sequence,
             emitted_on_branch_id,
             node,
@@ -132,7 +134,9 @@ pub(crate) fn stamp_trace_summary_and_record_lineage_transition_from_image(
             execution_record_id,
             semantic_segment_id,
             transition,
-        ));
+        ),
+        work,
+    )?;
     Ok(())
 }
 
@@ -140,24 +144,19 @@ pub(crate) fn record_invalidation_lineage(
     graph: &mut SignalGraph,
     node: NodeId,
     cause: InvalidationCause,
-) {
+) -> Result<(), crate::data::error::SignalError> {
     if !graph.captures_observation_surface(
         crate::logic::transaction::SignalObservationSurface::DescriptiveLineage,
     ) {
-        return;
+        return Ok(());
     }
     let Some(artifact_id) = graph.node_lineage_artifact_id(node).ok().flatten() else {
-        return;
+        return Ok(());
     };
     let sequence = graph.diagnostics_state_mut().allocate_lineage_sequence();
     let emitted_on_branch_id = graph.observe().current_branch().id;
-    graph
-        .diagnostics_state_mut()
-        .record_lineage_record(LineageRecord::invalidation(
-            sequence,
-            emitted_on_branch_id,
-            node,
-            artifact_id,
-            cause,
-        ));
+    graph.record_evaluation_lineage(
+        LineageRecord::invalidation(sequence, emitted_on_branch_id, node, artifact_id, cause),
+        &mut crate::logic::evaluation::EvaluationWork::Ordinary,
+    )
 }

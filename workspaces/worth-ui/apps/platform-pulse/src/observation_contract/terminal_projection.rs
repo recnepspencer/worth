@@ -22,6 +22,15 @@ use super::projection::{
 };
 
 impl PlatformPulseLifecycleObservationStream {
+    pub fn project_appearance_preparation_failure(
+        &mut self,
+    ) -> Result<
+        PlatformPulseLifecycleObservationEnvelope,
+        PlatformPulseLifecycleObservationProjectionDenial,
+    > {
+        self.project_terminal(PlatformPulseTerminalFailureFamily::ApplicationPreparation)
+    }
+
     pub fn project_intent_preparation_failure(
         &mut self,
     ) -> Result<
@@ -54,6 +63,7 @@ impl PlatformPulseLifecycleObservationStream {
         watcher: &WorthUiFilesystemWatcherShutdownReceipt,
         query: super::query::PlatformPulseQueryShutdownEvidence,
         intent: super::intent::PlatformPulseIntentWatcherShutdownEvidence,
+        theme_watch_released: bool,
         application: &WorthUiNativeApplicationShutdownReceipt,
     ) -> Result<
         PlatformPulseLifecycleObservationEnvelope,
@@ -63,8 +73,6 @@ impl PlatformPulseLifecycleObservationStream {
         let visual_capture = application.visual_capture();
         let visual_overlay = application.visual_overlay();
         let query_watcher = query.watcher();
-        let query_live = query.live();
-        let query_projection = query.projection();
         let outcome =
             PlatformPulseLifecycleObservation::ShutdownCompleted(PlatformPulseShutdownCompleted {
                 watcher_backend: watcher_backend(watcher.backend()),
@@ -73,15 +81,10 @@ impl PlatformPulseLifecycleObservationStream {
                 pending_query_observation_count: query_watcher.pending_observation_count(),
                 intent_watcher_joined: intent.worker_joined(),
                 pending_intent_input_count: intent.pending_input_count(),
+                theme_watch_released,
                 intent_resources_empty: application.intent_resources_empty(),
                 query_close_complete: application.query_close_complete(),
                 query_owner_terminal: query.owner_terminal(),
-                live_query_source_count: query_live.source_count(),
-                live_query_attempt_count: query_live.attempt_count(),
-                live_query_resource_count: query_live.resource_count(),
-                live_query_consumer_lease_count: query_live.consumer_lease_count(),
-                retained_query_projection_count: query_projection.retained_projection_count(),
-                query_projection_receipt_count: query_projection.projection_receipt_count(),
                 mounted_shutdown_attempt_count: application.mounted_shutdown_attempt_count() as u64,
                 host_session_released: application.host_session_released(),
                 released_surface_count: application.released_surface_count() as u64,
@@ -317,6 +320,9 @@ fn project_rebind_preparation_denial(
         UiRebindPreparationDenial::CandidateMountedPreparation(_) => {
             Projected::CandidateMountedPreparation
         }
+        UiRebindPreparationDenial::CandidateOccurrenceGeometry(_) => {
+            Projected::CandidateOccurrenceGeometry
+        }
         UiRebindPreparationDenial::CandidateCutoverPreparation => {
             Projected::CandidateCutoverPreparation
         }
@@ -324,7 +330,18 @@ fn project_rebind_preparation_denial(
             Projected::PlannedChangeBecameSemanticNoOp
         }
         UiRebindPreparationDenial::UnsupportedNonSourcePlan => Projected::UnsupportedNonSourcePlan,
+        UiRebindPreparationDenial::ThemeSwitch(_) => Projected::ThemeSwitch,
+        UiRebindPreparationDenial::ConsequenceFrameMismatch => Projected::ConsequenceFrameMismatch,
+        UiRebindPreparationDenial::StaleConsequenceOwnerSnapshot => {
+            Projected::StaleConsequenceOwnerSnapshot
+        }
         UiRebindPreparationDenial::InvalidSemanticProof => Projected::InvalidSemanticProof,
+        UiRebindPreparationDenial::AppearanceThemeSuccession(_) => {
+            Projected::CandidateCutoverPreparation
+        }
+        UiRebindPreparationDenial::AppearanceInspectionSuccession(_) => {
+            Projected::CandidateCutoverPreparation
+        }
     }
 }
 
@@ -348,13 +365,28 @@ fn watcher_backend(
 mod tests {
     use super::project_rebind_preparation_denial;
     use crate::observation_contract::PlatformPulseNativeRebindPreparationDenial;
-    use worth_ui::facade::rebind::UiRebindPreparationDenial;
+    use worth_ui::facade::{
+        appearance::UiAppearanceInspectionGenerationSuccessionDenial,
+        rebind::UiRebindPreparationDenial,
+    };
 
     #[test]
     fn terminal_projection_preserves_the_exact_preparation_denial() {
         assert_eq!(
             project_rebind_preparation_denial(&UiRebindPreparationDenial::CandidateAllocation),
             PlatformPulseNativeRebindPreparationDenial::CandidateAllocation
+        );
+    }
+
+    #[test]
+    fn terminal_projection_groups_appearance_inspection_succession_under_candidate_cutover() {
+        assert_eq!(
+            project_rebind_preparation_denial(
+                &UiRebindPreparationDenial::AppearanceInspectionSuccession(
+                    UiAppearanceInspectionGenerationSuccessionDenial::StaleInspectionGeneration,
+                ),
+            ),
+            PlatformPulseNativeRebindPreparationDenial::CandidateCutoverPreparation
         );
     }
 }

@@ -276,6 +276,7 @@ pub(in crate::branch::owner_services) fn map_retirement_registry_denial(
         SignalBranchRegistryDenial::OwnerMetadataOrdering => {
             SignalBranchRetirementDenial::OwnerCellMisuse { branch_id }
         }
+        #[cfg(test)]
         SignalBranchRegistryDenial::TargetCellDenied(denial) => {
             super::super::branch_execution_cell::retirement::map_retirement_cell_denial(
                 denial, branch_id,

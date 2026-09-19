@@ -25,6 +25,7 @@ pub use outcome::{
 pub use preparation::{UiPreparedRebind, UiPreparedRebindPosture};
 pub use projection_request::UiProjectionRebindRequest;
 pub use receipt::{UiRebindDisposition, UiRebindReceipt};
+pub(crate) use recovery::UiDetachedRebindRecovery;
 pub use recovery::{
     UiRebindReconciliation, UiRebindReconciliationRequest, UiRebindRecoveryCompletionHandle,
     UiRebindRecoveryDenial, UiRebindRecoveryDenialCause, UiRebindRecoveryHandle,

@@ -58,6 +58,12 @@ impl std::fmt::Debug for ReservedCompositePublicationAttempt {
 }
 
 impl ReservedCompositePublicationAttempt {
+    pub(crate) fn reserve_conditional_definition_custody(
+        &mut self,
+    ) -> std::sync::Arc<super::ConditionalDefinitionAttemptCustody> {
+        self.custody.reserve_conditional_definition_custody()
+    }
+
     pub(crate) fn new(
         identity: CompositePublicationAttemptIdentity,
         expected_head: ProductBranchObservation,
@@ -116,6 +122,12 @@ impl ReservedCompositePublicationAttempt {
         &self.progress
     }
 
+    pub(crate) fn unpublished_recovery_handle(
+        &self,
+    ) -> crate::recovery::ProductUnpublishedRecoveryHandle {
+        self.custody.unpublished_recovery_handle()
+    }
+
     pub(crate) fn record_progress(&mut self, progress: &CompositeAttemptProgress) {
         self.progress = self.custody.record_progress(progress.retained_image());
     }
@@ -148,6 +160,12 @@ impl ReservedCompositePublicationAttempt {
         &mut self,
     ) -> Option<worth_relational::facade::mvcc::PreparedRelationalCommitCandidate> {
         self.plan.take_relational_candidate()
+    }
+
+    pub(crate) fn take_settled_relational_adoption(
+        &mut self,
+    ) -> Option<super::SettledRelationalPublicationAdoption> {
+        self.plan.take_settled_relational_adoption()
     }
 
     /// Consume a still-pre-effect reservation into the only no-effect

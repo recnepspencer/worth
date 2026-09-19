@@ -127,8 +127,7 @@ fn batch_update_existing_verified_preserves_aggregate_assertion_digest() {
 fn primary_multi_verified_update_batch_shares_one_commit_boundary() {
     let attempted_writes = std::rc::Rc::new(std::cell::Cell::new(0usize));
     let attempted_batches = std::rc::Rc::new(std::cell::Cell::new(0usize));
-    let runtime = WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
         .snapshot_identity(TestSnapshotIdentityAdapter)

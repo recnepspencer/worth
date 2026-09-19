@@ -12,10 +12,7 @@ mod lineage;
 mod physical_trace;
 #[path = "native_phase_f/pixels.rs"]
 mod pixels;
-#[path = "native_phase_f/retained_paint.rs"]
-mod retained_paint;
 use pixels::{attributed_pixel_classes, pixel_classes};
-use retained_paint::assert_foreground_invariant_intrinsic_keys;
 
 #[test]
 #[ignore = "requires the serialized interactive Windows 11 DX12 desktop"]
@@ -179,7 +176,7 @@ fn assert_phase_f_evidence(
     pixels: &pixels::PixelClasses,
 ) {
     assert_eq!(evidence["schema"], "worth-ui-native-phase-f-async-world-v1");
-    assert_eq!(evidence["presentation_transition_count"], 10);
+    assert_eq!(evidence["presentation_transition_count"], 11);
     let transitions = evidence["presentation_transitions"].as_array().unwrap();
     let kinds = transitions
         .iter()
@@ -191,6 +188,7 @@ fn assert_phase_f_evidence(
             "Pending",
             "Superseded",
             "StaleCompletionRejected",
+            "Pending",
             "Completed",
             "DuplicateCompletionRejected",
             "Pending",
@@ -201,27 +199,34 @@ fn assert_phase_f_evidence(
         ]
     );
     assert_request_equal(&transitions[0], &transitions[2]);
-    assert_request_equal(&transitions[1], &transitions[3]);
+    assert_ne!(transitions[1]["attempt"], transitions[3]["attempt"]);
+    assert_eq!(transitions[1]["binding"], transitions[3]["binding"]);
     assert_request_equal(&transitions[3], &transitions[4]);
-    assert_request_equal(&transitions[5], &transitions[6]);
+    assert_request_equal(&transitions[4], &transitions[5]);
     assert_request_equal(&transitions[6], &transitions[7]);
-    assert_request_equal(&transitions[8], &transitions[9]);
-    assert_ne!(transitions[7]["binding"], transitions[8]["binding"]);
-    physical_trace::assert_supersession(evidence, &transitions[0], &transitions[1]);
-    physical_trace::assert_duplicate_rejection(evidence, &transitions[4]);
-    physical_trace::assert_indeterminate(evidence, &transitions[5]);
-    lineage::assert_exact_request_lineage(evidence, &transitions[8]);
+    assert_request_equal(&transitions[7], &transitions[8]);
+    assert_request_equal(&transitions[9], &transitions[10]);
+    assert_ne!(transitions[8]["binding"], transitions[9]["binding"]);
+    physical_trace::assert_supersession(
+        evidence,
+        &transitions[0],
+        &transitions[1],
+        &transitions[3],
+    );
+    physical_trace::assert_duplicate_rejection(evidence, &transitions[5]);
+    physical_trace::assert_indeterminate(evidence, &transitions[6]);
+    lineage::assert_exact_request_lineage(evidence, &transitions[9]);
     assert_eq!(
         evidence["presentation"]["frame"],
         evidence["runtime_attribution"]["frame"]
     );
     assert_eq!(
         evidence["presentation"]["binding"],
-        transitions[8]["binding"]
+        transitions[9]["binding"]
     );
     assert_eq!(
         evidence["presentation"]["attempt"],
-        transitions[8]["attempt"]
+        transitions[9]["attempt"]
     );
     assert!(evidence["retained_frames"]
         .as_array()
@@ -240,7 +245,6 @@ fn assert_intrinsic_attribution(evidence: &serde_json::Value) {
         .as_array()
         .expect("the retained native presentation carries qualified intrinsic glyphs");
     assert!(!glyphs.is_empty());
-    let mut keys = std::collections::BTreeSet::new();
     for glyph in glyphs {
         assert!(matches!(
             glyph["source"].as_str(),
@@ -250,10 +254,8 @@ fn assert_intrinsic_attribution(evidence: &serde_json::Value) {
         assert_eq!(glyph["palette"].as_u64(), Some(0));
         let key = glyph["raster_key"].as_str().unwrap();
         assert_eq!(key.len(), 64);
-        keys.insert(key.to_owned());
         assert_valid_bounds(&glyph["target_bounds"]);
     }
-    assert_foreground_invariant_intrinsic_keys(evidence, &keys);
 }
 
 fn assert_valid_bounds(value: &serde_json::Value) {

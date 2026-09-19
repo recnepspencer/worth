@@ -7,9 +7,11 @@ pub(crate) struct UiPortalServiceRequest {
     presented_viewport: Option<crate::runtime::interaction::UiPresentedViewportGeometry>,
     placement_geometry: Option<crate::declaration::UiDeclaredPortalPlacementGeometry>,
     semantic_surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+    declared_portal: Option<worth_ui_dsl::UiPortalDeclarationId>,
     parent: Option<super::UiPortalIdentity>,
     shielding: super::UiPortalInputShielding,
     shielding_uses_policy_default: bool,
+    content_extent: Option<super::UiPortalContentBounds>,
 }
 
 // Presented viewport boxes are canonical finite geometry, so equality is reflexive.
@@ -39,9 +41,11 @@ impl UiPortalServiceRequest {
                 crate::declaration::UiDeclaredPortalPlacementGeometry::dropdown(),
             ),
             semantic_surface,
+            declared_portal: None,
             parent: None,
             shielding: super::UiPortalInputShielding::ContentBounds,
             shielding_uses_policy_default: true,
+            content_extent: None,
         }
     }
 
@@ -64,9 +68,11 @@ impl UiPortalServiceRequest {
                 crate::declaration::UiDeclaredPortalPlacementGeometry::dropdown(),
             ),
             semantic_surface,
+            declared_portal: None,
             parent: Some(parent),
             shielding,
             shielding_uses_policy_default: false,
+            content_extent: None,
         }
     }
 
@@ -84,9 +90,11 @@ impl UiPortalServiceRequest {
             presented_viewport: None,
             placement_geometry: None,
             semantic_surface,
+            declared_portal: None,
             parent: None,
             shielding: super::UiPortalInputShielding::ContentBounds,
             shielding_uses_policy_default: false,
+            content_extent: None,
         }
     }
 
@@ -132,23 +140,67 @@ impl UiPortalServiceRequest {
         self.semantic_surface
     }
 
+    pub(crate) const fn declared_portal(self) -> Option<worth_ui_dsl::UiPortalDeclarationId> {
+        self.declared_portal
+    }
+
+    pub(crate) const fn with_declared_portal(
+        mut self,
+        declared_portal: Option<worth_ui_dsl::UiPortalDeclarationId>,
+    ) -> Self {
+        self.declared_portal = declared_portal;
+        if declared_portal.is_some() {
+            self.shielding_uses_policy_default = true;
+        }
+        self
+    }
+
     pub(crate) const fn shielding(self) -> super::UiPortalInputShielding {
         self.shielding
     }
 
-    pub(super) const fn with_policy(mut self, policy: crate::declaration::UiPortalPolicy) -> Self {
-        if matches!(self.operation, UiPortalServiceOperation::Open)
-            && self.shielding_uses_policy_default
-        {
-            self.shielding = match policy.kind() {
+    pub(crate) const fn with_content_extent(
+        mut self,
+        extent: Option<super::UiPortalContentBounds>,
+    ) -> Self {
+        self.content_extent = extent;
+        self
+    }
+
+    pub(super) const fn content_bounds(self) -> Option<super::UiPortalContentBounds> {
+        self.content_extent
+    }
+
+    pub(super) fn with_policy(mut self, policy: crate::declaration::UiPortalPolicy) -> Self {
+        if matches!(self.operation, UiPortalServiceOperation::Open) {
+            self.placement_geometry = Some(match policy.kind() {
                 crate::declaration::UiPortalPolicyKind::ModalDialog => {
-                    super::UiPortalInputShielding::ModalSurface
+                    crate::declaration::UiDeclaredPortalPlacementGeometry::modal_dialog()
                 }
                 crate::declaration::UiPortalPolicyKind::Dropdown
                 | crate::declaration::UiPortalPolicyKind::Popover => {
-                    super::UiPortalInputShielding::ContentBounds
+                    crate::declaration::UiDeclaredPortalPlacementGeometry::dropdown()
                 }
-            };
+            });
+            if let Some(extent) = self.content_extent {
+                self.placement_geometry = self.placement_geometry.map(|geometry| {
+                    geometry.with_content_extent([
+                        extent.layout.width() as u16,
+                        extent.layout.height() as u16,
+                    ])
+                });
+            }
+            if self.shielding_uses_policy_default {
+                self.shielding = match policy.kind() {
+                    crate::declaration::UiPortalPolicyKind::ModalDialog => {
+                        super::UiPortalInputShielding::ModalSurface
+                    }
+                    crate::declaration::UiPortalPolicyKind::Dropdown
+                    | crate::declaration::UiPortalPolicyKind::Popover => {
+                        super::UiPortalInputShielding::ContentBounds
+                    }
+                };
+            }
         }
         self
     }

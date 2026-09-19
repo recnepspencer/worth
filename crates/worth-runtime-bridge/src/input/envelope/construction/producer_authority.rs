@@ -56,7 +56,10 @@ pub(super) fn validate_producer_metadata(
             ));
         }
         super::validate_identity("authoritative graph role", source.graph_role())?;
-        super::validate_identity("authoritative adapter identity", source.adapter_identity())?;
+        super::validate_identity(
+            "authoritative adapter semantic identity",
+            source.adapter_semantic_identity(),
+        )?;
         super::validate_identity("authoritative source basis", source.source_basis())?;
     }
     if let Some(feedback_context) = metadata.writeback_feedback_context() {

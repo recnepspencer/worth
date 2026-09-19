@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+mod retained_charge;
+
 use super::identity::{ArtifactFamilyId, PersistentCorrespondenceKind};
 use crate::data::comparator::VersionComparatorPolicy;
 use crate::data::core_profile::StableHashValue;

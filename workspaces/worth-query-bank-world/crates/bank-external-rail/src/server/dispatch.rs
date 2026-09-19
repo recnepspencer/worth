@@ -1,6 +1,7 @@
 //! Per-connection request handling: one connection carries exactly one
 //! request, then the rail closes it.
 
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -27,6 +28,7 @@ struct DispatchOwners<'a> {
 
 pub(super) struct RailDispatchState {
     ledger: Arc<Ledger>,
+    dispatch_contacts: AtomicU64,
     completed_effects: Arc<CompletedEffects>,
     fault_selection: Arc<FaultSelection>,
     protocol_support: RailProtocolSupportProfile,
@@ -39,6 +41,7 @@ impl RailDispatchState {
     ) -> Self {
         Self {
             ledger: Arc::new(Ledger::new()),
+            dispatch_contacts: AtomicU64::new(0),
             completed_effects: Arc::new(CompletedEffects::default()),
             fault_selection,
             protocol_support,
@@ -71,7 +74,10 @@ pub async fn handle_connection(mut stream: TcpStream, state: Arc<RailDispatchSta
     };
 
     let _ = match request {
-        RailRequest::Dispatch(dispatch) => serve_dispatch(&mut stream, &dispatch, &state).await,
+        RailRequest::Dispatch(dispatch) => {
+            state.dispatch_contacts.fetch_add(1, Ordering::Relaxed);
+            serve_dispatch(&mut stream, &dispatch, &state).await
+        }
         RailRequest::InquireStatus { correlation } => {
             fault_behavior::report_status(&mut stream, &correlation, &state.ledger).await
         }
@@ -82,6 +88,15 @@ pub async fn handle_connection(mut stream: TcpStream, state: Arc<RailDispatchSta
             write_frame(
                 &mut stream,
                 &RailResponseFrame::AdmissionCount(state.ledger.admission_count()),
+            )
+            .await
+        }
+        RailRequest::InquireDispatchContactCount => {
+            write_frame(
+                &mut stream,
+                &RailResponseFrame::DispatchContactCount(
+                    state.dispatch_contacts.load(Ordering::Relaxed),
+                ),
             )
             .await
         }

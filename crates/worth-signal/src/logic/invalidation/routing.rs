@@ -139,7 +139,7 @@ fn mark_source_seed(graph: &mut SignalGraph, seed: &InvalidationSeed) -> Result<
             InvalidationCause::SourceAspectChanged {
                 aspect_index: seed.aspect.index(),
             },
-        );
+        )?;
     }
     Ok(())
 }

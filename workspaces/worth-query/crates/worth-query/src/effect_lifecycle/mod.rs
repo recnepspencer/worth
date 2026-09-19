@@ -51,7 +51,6 @@ pub use batch_admission::{
 pub use batch_execution::{
     EffectBatchExecutionControlStopped, EffectBatchExecutionDeferred, EffectBatchExecutionDenial,
     EffectBatchExecutionDenialKind, EffectBatchExecutionStop, EffectBatchSettlementDeferred,
-    ExecutedEffectBatchPlan,
 };
 pub use certification::{
     certify_effect_execution_pipeline, EffectExecutionCertificationBundle,

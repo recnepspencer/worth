@@ -322,7 +322,6 @@ fn direct_dirty_seed_supersedes_dependency_causes_before_topology_repair() {
 #[test]
 fn dependency_output_cannot_overwrite_an_active_direct_dirty_obligation() {
     use crate::data::comparator::DefaultComparatorPolicyResolver;
-    use crate::data::proof::invalidation::binding::OutputCommitOrdinal;
     use crate::data::proof::invalidation::output_commit::ProducedAspectDelta;
 
     let mut graph = SignalGraph::new();
@@ -338,7 +337,7 @@ fn dependency_output_cannot_overwrite_an_active_direct_dirty_obligation() {
 
     let delta = ProducedAspectDelta::from_committed_result(
         upstream,
-        OutputCommitOrdinal(1),
+        graph.cause_sets.reserve_output_commit_ordinal(),
         version_ab(1, 0),
         version_ab(2, 0),
         AspectMask::from_aspect(ASPECT_A),
@@ -347,7 +346,21 @@ fn dependency_output_cannot_overwrite_an_active_direct_dirty_obligation() {
     )
     .unwrap();
     let prepared = graph
-        .prepare_direct_output_causes(&delta, &mut DefaultComparatorPolicyResolver::default())
+        .prepare_direct_output_causes(
+            &delta,
+            &mut DefaultComparatorPolicyResolver::default(),
+            &mut crate::logic::evaluation::EvaluationWork::Ordinary,
+        )
+        .unwrap();
+    let mut work = crate::data::retained_storage::RetainedStoragePreparation::new(10_000);
+    let projection = crate::data::graph::PendingRevalidationNodeProjection::capture(
+        &graph,
+        delta.producer,
+        &mut work,
+    )
+    .unwrap();
+    let prepared = graph
+        .prepare_direct_cause_publication(prepared, projection, false, &mut work)
         .unwrap();
     graph.publish_direct_output_causes(prepared).unwrap();
 

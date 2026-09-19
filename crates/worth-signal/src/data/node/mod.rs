@@ -19,7 +19,7 @@ pub use contract::{
     NodeProjectionContract, NodeSemanticContract,
 };
 pub(crate) use entry::{
-    node_hot_inline_size_bytes, node_warm_inline_size_bytes, NodeColdData, NodeHotData,
-    NodeWarmData,
+    node_hot_inline_size_bytes, node_warm_inline_size_bytes, NodeColdData, NodeDefinitionData,
+    NodeHotData, NodeWarmData,
 };
 pub use entry::{NodeEntry, NodeState};

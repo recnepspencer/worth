@@ -20,6 +20,7 @@ pub(super) fn assert_exact_resource_evidence(evidence: &serde_json::Value) {
         ("physical_signal_transition_observations", 1),
         ("retained_draw_lists", 1),
         ("presentation_epochs", 1),
+        ("reconstruction_requirements", 1),
         ("retained_frame_observations", 1),
     ] {
         expected.insert(field.to_owned(), count.into());

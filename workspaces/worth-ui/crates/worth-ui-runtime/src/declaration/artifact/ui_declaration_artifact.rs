@@ -13,6 +13,9 @@ use crate::declaration::{
     UiDeclaredPostureAdmissionDenial, UiDeclaredPostureContract, UiDeclaredPostureLane,
 };
 
+#[path = "ui_declaration_artifact/appearance.rs"]
+mod appearance;
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct UiDeclarationArtifact {
     identity: UiDeclarationIdentity,
@@ -29,6 +32,11 @@ pub struct UiDeclarationArtifact {
     source_backed_measurement_mode: Option<crate::declaration::UiDeclaredMeasurementMode>,
     source_backed_measurement_basis_source:
         Option<crate::declaration::UiDeclaredMeasurementBasisSource>,
+    appearance_role_attachment: Option<crate::declaration::UiAppearanceRoleAttachment>,
+    component_reference: Option<crate::capability::ComponentId>,
+    authored_component_reference: Option<worth_ui_dsl::UiDslComponentReference>,
+    authored_appearance_role_attachment:
+        Option<worth_ui_dsl::UiAppearanceRoleAttachmentDeclaration>,
 }
 
 pub(crate) struct UiDeclarationArtifactInput {
@@ -40,6 +48,9 @@ pub(crate) struct UiDeclarationArtifactInput {
     pub(crate) structural_semantics_admission: UiDeclarationStructuralSemanticsAdmission,
     pub(crate) family_admission: UiDeclarationFamilyAdmission,
     pub(crate) provenance: UiDeclarationProvenance,
+    pub(crate) authored_appearance_role_attachment:
+        Option<worth_ui_dsl::UiAppearanceRoleAttachmentDeclaration>,
+    pub(crate) authored_component_reference: Option<worth_ui_dsl::UiDslComponentReference>,
 }
 
 impl UiDeclarationArtifact {
@@ -53,6 +64,8 @@ impl UiDeclarationArtifact {
             structural_semantics_admission,
             family_admission,
             provenance,
+            authored_appearance_role_attachment,
+            authored_component_reference,
         } = input;
         Self {
             identity,
@@ -68,6 +81,10 @@ impl UiDeclarationArtifact {
             source_backed_measurement_constraint_modifier: None,
             source_backed_measurement_mode: None,
             source_backed_measurement_basis_source: None,
+            appearance_role_attachment: None,
+            component_reference: None,
+            authored_component_reference,
+            authored_appearance_role_attachment,
         }
     }
 
@@ -144,6 +161,14 @@ impl UiDeclarationArtifact {
     pub fn graph_handoff(
         &self,
     ) -> Result<UiDeclarationGraphHandoff, UiDeclarationGraphHandoffDenial> {
+        if self.authored_component_reference.is_some() && self.component_reference.is_none() {
+            return Err(UiDeclarationGraphHandoffDenial::ComponentReferenceNotAdmitted);
+        }
+        if self.authored_appearance_role_attachment.is_some()
+            && self.appearance_role_attachment.is_none()
+        {
+            return Err(UiDeclarationGraphHandoffDenial::AppearanceRoleAttachmentNotAdmitted);
+        }
         let admitted = self.admitted_graph_handoff_inputs()?;
         let semantics = self.effective_structural_semantics(admitted.semantics)?;
         let declared_posture = self.effective_declared_posture(admitted.declared_posture);
@@ -156,6 +181,8 @@ impl UiDeclarationArtifact {
             self.digests.structural(),
             &semantics,
             &declared_posture,
+            self.component_reference.clone(),
+            self.appearance_role_attachment.clone(),
         ))
     }
 

@@ -6,6 +6,7 @@ use crate::{
     WorthUiHostCapabilityObservationGeneration,
 };
 
+mod appearance_clip;
 mod foreground;
 mod frame_affinity;
 mod table;
@@ -90,6 +91,7 @@ pub struct UiMountedSemanticTextMechanic {
     surface: UiSemanticSurfaceIdentity,
     binding: UiSurfaceBindingGeneration,
     mounted_instance: UiMountedInstanceIdentity,
+    portal_group: Option<UiMountedInstanceIdentity>,
     node_receipt: UiMountedNodeReceiptIdentity,
     allocation_basis: super::UiMountedAllocationBasis,
     bounds: super::UiMountedCanonicalBox,
@@ -122,6 +124,7 @@ pub struct UiMountedSemanticTextCompletionInput<'layout> {
     pub surface: UiSemanticSurfaceIdentity,
     pub binding: UiSurfaceBindingGeneration,
     pub mounted_instance: UiMountedInstanceIdentity,
+    pub portal_group: Option<UiMountedInstanceIdentity>,
     pub node_receipt: UiMountedNodeReceiptIdentity,
     pub allocation_basis: super::UiMountedAllocationBasis,
     pub bounds: super::UiMountedCanonicalBox,
@@ -146,10 +149,10 @@ pub struct UiMountedSemanticTextTable {
 }
 
 impl UiMountedTextSchemaVersion {
-    pub const REQUIRED_MOUNTED_FRAME_REVISION: u16 = 5;
+    pub const REQUIRED_MOUNTED_FRAME_REVISION: u16 = 6;
 
     pub const fn current() -> Self {
-        Self(3)
+        Self(4)
     }
 
     pub const fn revision(self) -> u16 {
@@ -236,6 +239,7 @@ impl UiMountedSemanticTextMechanic {
             surface: input.surface,
             binding: input.binding,
             mounted_instance: input.mounted_instance,
+            portal_group: input.portal_group,
             node_receipt: input.node_receipt,
             allocation_basis: input.allocation_basis,
             bounds: input.bounds,
@@ -278,6 +282,10 @@ impl UiMountedSemanticTextMechanic {
     }
     pub const fn mounted_instance(&self) -> UiMountedInstanceIdentity {
         self.mounted_instance
+    }
+
+    pub const fn portal_group(&self) -> Option<UiMountedInstanceIdentity> {
+        self.portal_group
     }
     pub const fn node_receipt(&self) -> UiMountedNodeReceiptIdentity {
         self.node_receipt
@@ -350,21 +358,24 @@ impl UiMountedSemanticTextMechanic {
     pub fn presented_within_portal(
         &self,
         portal: super::UiMountedPortalOverlayMechanic,
-    ) -> Result<Self, UiMountedSemanticTextCompletionDenial> {
-        let bounds =
-            super::UiMountedCanonicalBox::canonicalize(super::UiMountedCanonicalBoxInput {
-                x: portal.bounds().x() + self.bounds.x(),
-                y: portal.bounds().y() + self.bounds.y(),
-                width: self.bounds.width(),
-                height: self.bounds.height(),
-                coordinate_space: portal.bounds().coordinate_space(),
-            })
-            .map_err(|_| UiMountedSemanticTextCompletionDenial::NonAreaGeometry)?;
+        source_anchor: super::UiMountedCanonicalBox,
+    ) -> Result<Option<Self>, UiMountedSemanticTextCompletionDenial> {
+        let Some(geometry) = super::portal_child_geometry::project(
+            self.bounds,
+            self.clip_bounds,
+            portal,
+            source_anchor,
+        )
+        .map_err(|_| UiMountedSemanticTextCompletionDenial::NonAreaGeometry)?
+        else {
+            return Ok(None);
+        };
+        let bounds = geometry.bounds;
         let mut presented = self.clone();
         presented.bounds = bounds;
-        presented.clip_bounds = portal.bounds();
-        presented.origin_x = portal.bounds().x() + self.origin_x;
-        presented.origin_y = portal.bounds().y() + self.origin_y;
+        presented.clip_bounds = geometry.clip;
+        presented.origin_x = self.origin_x + portal.paint_bounds().x() - source_anchor.x();
+        presented.origin_y = self.origin_y + portal.paint_bounds().y() - source_anchor.y();
         presented.layer_semantic_order = portal
             .layer_semantic_order()
             .saturating_add(1 + self.layer_semantic_order.min(1_024));
@@ -378,10 +389,10 @@ impl UiMountedSemanticTextMechanic {
             return Err(UiMountedSemanticTextCompletionDenial::InvalidTextOrigin);
         }
         presented.semantic_digest = validation::semantic_digest_mechanic(&presented);
-        Ok(presented)
+        Ok(Some(presented))
     }
 }
 
 #[cfg(test)]
 #[path = "semantic_text_tests.rs"]
-mod tests;
+pub(super) mod tests;

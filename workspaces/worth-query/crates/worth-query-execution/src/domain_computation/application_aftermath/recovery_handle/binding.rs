@@ -29,6 +29,8 @@ pub struct WorthQueryRecoveryHandleBinding {
     runtime_instance_id: u64,
     schema_identity: [u8; 32],
     commit: RelationalCommitReceipt,
+    committed_product_publication:
+        crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication,
     /// Generation of the installed application schema binding.
     application_binding_generation: u64,
     installed_operation: [u8; 32],
@@ -75,6 +77,7 @@ impl WorthQueryRecoveryHandleBinding {
             runtime_instance_id: receipt.provider_runtime_instance_id(),
             schema_identity,
             commit,
+            committed_product_publication: receipt.committed_product_publication().clone(),
             application_binding_generation,
             installed_operation: *receipt.installed_operation(),
             mutation_work: receipt.mutation_work().cloned(),
@@ -112,13 +115,15 @@ impl WorthQueryRecoveryHandleBinding {
         &self.installed_operation
     }
 
-    pub const fn attempt_commit_id(&self) -> u64 {
-        self.commit.commit_id.0
-    }
-
     /// Exact Relational commit identity retained from the ordinary commit.
     pub const fn commit_reference(&self) -> &RelationalCommitReceipt {
         &self.commit
+    }
+
+    pub const fn committed_product_publication(
+        &self,
+    ) -> &crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication {
+        &self.committed_product_publication
     }
 
     pub const fn principal_scope(&self) -> &WorthQueryOperationScopeBinding {
@@ -200,63 +205,104 @@ impl WorthQueryRecoveryHandleBinding {
     pub const fn expires_at_unix_ms(&self) -> Option<u64> {
         self.expires_at_unix_ms
     }
-
-    /// Named corruption fixture for per-axis drift proof (R8.28). Not production.
-    #[cfg(test)]
-    pub(crate) fn axis_probe(parts: WorthQueryRecoveryHandleBindingAxisProbe) -> Self {
-        Self {
-            runtime_instance_id: parts.runtime_instance_id,
-            schema_identity: parts.schema_identity,
-            commit: RelationalCommitReceipt {
-                commit_id: CommitId(parts.attempt_commit_id),
-                version_id: VersionId(parts.attempt_commit_id),
-                branch_id: parts.branch,
-                parents: Vec::new(),
-            },
-            application_binding_generation: parts.application_binding_generation,
-            installed_operation: parts.installed_operation,
-            mutation_work: parts.mutation_work,
-            retained_preimage: parts.retained_preimage,
-            retained_governed_input: parts
-                .retained_governed_input_identity
-                .map(WorthQueryRetainedGovernedInput::axis_probe),
-            principal_scope: parts.principal_scope,
-            idempotency: parts.idempotency,
-            provider_posture: parts.provider_posture,
-            committed_dispatch_outbox: match (parts.dispatch_outbox, parts.dispatch_outbox_record_ref) {
-                (Some(record), Some(record_ref)) => Some(
-                    crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxBinding::fixture(
-                        record,
-                        record_ref,
-                    ),
-                ),
-                (None, None) => None,
-                _ => panic!("dispatch outbox record and record identity must travel together"),
-            },
-            installed_aftermath: parts.installed_aftermath,
-            expires_at_unix_ms: parts.expires_at_unix_ms,
-        }
-    }
 }
 
-/// Parts for [`WorthQueryRecoveryHandleBinding::axis_probe`].
+/// Test-only editor whose baseline is a production World commit.
+///
+/// Each method corrupts one named axis for a negative proof. `finish` cannot
+/// create the World publication identity or its Relational pairing.
 #[cfg(test)]
-#[derive(Clone)]
 pub(crate) struct WorthQueryRecoveryHandleBindingAxisProbe {
-    pub runtime_instance_id: u64,
-    pub schema_identity: [u8; 32],
-    pub branch: BranchId,
-    pub application_binding_generation: u64,
-    pub installed_operation: [u8; 32],
-    pub attempt_commit_id: u64,
-    pub mutation_work: Option<WorthQueryPrimaryMutationWorkEvidence>,
-    pub retained_preimage: Option<WorthQueryRetainedPreImage>,
-    pub retained_governed_input_identity: Option<[u8; 32]>,
-    pub principal_scope: WorthQueryOperationScopeBinding,
-    pub idempotency: WorthQueryApplicationIdempotencyBinding,
-    pub provider_posture: Option<WorthQueryExternalDispatchPosture>,
-    pub dispatch_outbox: Option<WorthQueryDispatchOutboxRecord>,
-    pub dispatch_outbox_record_ref: Option<worth_relational::facade::transactions::RecordRef>,
-    pub installed_aftermath: WorthQueryInstalledAftermathContract,
-    pub expires_at_unix_ms: Option<u64>,
+    binding: WorthQueryRecoveryHandleBinding,
+}
+
+#[cfg(test)]
+impl WorthQueryRecoveryHandleBindingAxisProbe {
+    pub(crate) fn real() -> Self {
+        static BASELINE: std::sync::OnceLock<WorthQueryRecoveryHandleBinding> =
+            std::sync::OnceLock::new();
+        let binding = BASELINE
+            .get_or_init(|| {
+                let receipt =
+                    crate::domain_computation::primary_graph::committed_recoverable_application();
+                WorthQueryRecoveryHandleBinding::from_receipt(&receipt, Some(u64::MAX))
+                    .expect("the real fixture operation admits recovery")
+            })
+            .clone();
+        Self { binding }
+    }
+
+    pub(crate) fn from_binding(binding: WorthQueryRecoveryHandleBinding) -> Self {
+        Self { binding }
+    }
+
+    pub(crate) fn runtime_instance_id(mut self, value: u64) -> Self {
+        self.binding.runtime_instance_id = value;
+        self
+    }
+
+    pub(crate) fn schema_identity(mut self, value: [u8; 32]) -> Self {
+        self.binding.schema_identity = value;
+        self
+    }
+
+    pub(crate) fn branch(mut self, value: BranchId) -> Self {
+        self.binding.commit.branch_id = value;
+        self
+    }
+
+    pub(crate) fn relational_commit_id(mut self, value: u64) -> Self {
+        self.binding.commit.commit_id = CommitId(value);
+        self.binding.commit.version_id = VersionId(value);
+        self.binding.commit.parents.clear();
+        self
+    }
+
+    pub(crate) fn application_binding_generation(mut self, value: u64) -> Self {
+        self.binding.application_binding_generation = value;
+        self
+    }
+
+    pub(crate) fn installed_operation(mut self, value: [u8; 32]) -> Self {
+        self.binding.installed_operation = value;
+        self
+    }
+
+    pub(crate) fn retained_governed_input_identity(mut self, value: Option<[u8; 32]>) -> Self {
+        self.binding.retained_governed_input =
+            value.map(WorthQueryRetainedGovernedInput::axis_probe);
+        self
+    }
+
+    pub(crate) fn principal_scope(mut self, value: WorthQueryOperationScopeBinding) -> Self {
+        self.binding.principal_scope = value;
+        self
+    }
+
+    pub(crate) fn idempotency(mut self, value: WorthQueryApplicationIdempotencyBinding) -> Self {
+        self.binding.idempotency = value;
+        self
+    }
+
+    pub(crate) fn installed_aftermath(
+        mut self,
+        value: WorthQueryInstalledAftermathContract,
+    ) -> Self {
+        self.binding.installed_aftermath = value;
+        self
+    }
+
+    pub(crate) fn without_dispatch_outbox(mut self) -> Self {
+        self.binding.committed_dispatch_outbox = None;
+        self
+    }
+
+    pub(crate) fn expires_at_unix_ms(mut self, value: Option<u64>) -> Self {
+        self.binding.expires_at_unix_ms = value;
+        self
+    }
+
+    pub(crate) fn finish(self) -> WorthQueryRecoveryHandleBinding {
+        self.binding
+    }
 }

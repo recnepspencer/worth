@@ -1,16 +1,12 @@
-use std::collections::VecDeque;
-
-use crate::data::aspect::Aspect;
 use crate::data::error::SignalError;
-use crate::diagnostics::{LineageEvent, ReplayView, SynthesizedLineageChain};
+use crate::diagnostics::{ReplayView, SynthesizedLineageChain};
 use crate::state::{SignalBranchHandle, SignalBranchId};
 
 use super::merge::{
-    AspectMergePolicyBinding, AspectMergePolicyName, BranchMergeRequest, BranchMergeRequestDenial,
-    BranchMergeRequestScope, BranchMergeResult, BranchMergeStrategy, ConflictIsolationPolicyName,
-    ConflictPolicyName, DeletionPolicyName, IdentityMatcherName, LoweredFoundationalMergeRequest,
-    MergeBaseStrategyName, MergeStrategyName, NormalizedBranchMergeRequest,
-    SignalSelectedAspectRequestEntry, SourceOnlyPolicyName,
+    AspectMergePolicyBinding, BranchMergeRequest, BranchMergeRequestDenial,
+    BranchMergeRequestScope, BranchMergeStrategy, ConflictIsolationPolicyName, ConflictPolicyName,
+    DeletionPolicyName, IdentityMatcherName, MergeBaseStrategyName, MergeStrategyName,
+    NormalizedBranchMergeRequest, SourceOnlyPolicyName,
 };
 use super::runtime_state::SignalRuntime;
 
@@ -52,6 +48,7 @@ where
         &self.lowered_request
     }
 
+    #[cfg(test)]
     pub fn execute(self) -> Result<BranchMergeResult, SignalError> {
         self.runtime
             .execute_branch_merge_request_plan(&self.lowered_request, &self.plan)
@@ -118,7 +115,7 @@ where
         self.runtime.observe().lineage_chain_for_node(node)
     }
 
-    pub fn latest_lineage(&self) -> &VecDeque<LineageEvent> {
+    pub fn latest_lineage(&self) -> crate::diagnostics::lineage::RetainedLineageView<'_> {
         self.runtime.graph().observe().lineage_records()
     }
 }
@@ -178,50 +175,60 @@ where
         self
     }
 
+    #[cfg(test)]
     pub fn into(self, branch: SignalBranchHandle) -> Self {
         self.into_branch(branch)
     }
 
+    #[cfg(test)]
     pub fn strategy_hint(mut self, strategy: BranchMergeStrategy) -> Self {
         self.strategy_hint = Some(strategy);
         self
     }
 
+    #[cfg(test)]
     pub fn strategy_named(mut self, strategy_name: impl Into<String>) -> Self {
         self.strategy_name = Some(MergeStrategyName::new(strategy_name));
         self
     }
 
+    #[cfg(test)]
     pub fn conflict_policy_named(mut self, policy_name: impl Into<String>) -> Self {
         self.conflict_policy_name = Some(ConflictPolicyName::new(policy_name));
         self
     }
 
+    #[cfg(test)]
     pub fn conflict_isolation_policy_named(mut self, policy_name: impl Into<String>) -> Self {
         self.conflict_isolation_policy_name = Some(ConflictIsolationPolicyName::new(policy_name));
         self
     }
 
+    #[cfg(test)]
     pub fn merge_base_named(mut self, strategy_name: impl Into<String>) -> Self {
         self.merge_base_name = Some(MergeBaseStrategyName::new(strategy_name));
         self
     }
 
+    #[cfg(test)]
     pub fn identity_matcher_named(mut self, matcher_name: impl Into<String>) -> Self {
         self.identity_matcher_name = Some(IdentityMatcherName::new(matcher_name));
         self
     }
 
+    #[cfg(test)]
     pub fn source_only_policy_named(mut self, policy_name: impl Into<String>) -> Self {
         self.source_only_policy_name = Some(SourceOnlyPolicyName::new(policy_name));
         self
     }
 
+    #[cfg(test)]
     pub fn deletion_policy_named(mut self, policy_name: impl Into<String>) -> Self {
         self.deletion_policy_name = Some(DeletionPolicyName::new(policy_name));
         self
     }
 
+    #[cfg(test)]
     pub fn aspect_policy_named(mut self, aspect: Aspect, policy_name: impl Into<String>) -> Self {
         self.aspect_policy_bindings
             .push(AspectMergePolicyBinding::new(
@@ -231,11 +238,13 @@ where
         self
     }
 
+    #[cfg(test)]
     pub fn full_branch(mut self) -> Self {
         self.scope = Some(BranchMergeRequestScope::full_branch());
         self
     }
 
+    #[cfg(test)]
     pub fn selected_nodes(
         mut self,
         selected_nodes: impl IntoIterator<Item = crate::data::handle::NodeId>,
@@ -244,6 +253,7 @@ where
         self
     }
 
+    #[cfg(test)]
     pub fn selected_aspects(
         mut self,
         selected_aspects: impl IntoIterator<Item = SignalSelectedAspectRequestEntry>,
@@ -285,6 +295,7 @@ where
         })
     }
 
+    #[cfg(test)]
     pub fn build_lowered_foundational_request(
         self,
     ) -> Result<LoweredFoundationalMergeRequest, SignalError> {
@@ -305,11 +316,16 @@ where
         })
     }
 
+    #[cfg(test)]
     pub fn run(self) -> Result<BranchMergeResult, SignalError> {
         self.plan()?.execute()
     }
-
-    pub fn execute(self) -> Result<BranchMergeResult, SignalError> {
-        self.run()
-    }
 }
+
+#[cfg(test)]
+use super::merge::{
+    AspectMergePolicyName, BranchMergeResult, LoweredFoundationalMergeRequest,
+    SignalSelectedAspectRequestEntry,
+};
+#[cfg(test)]
+use crate::data::aspect::Aspect;

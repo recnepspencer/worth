@@ -2,7 +2,6 @@
 
 use worth_query_installation::facade::WorthQueryCanonicalWorkEvidence;
 
-use super::super::WorthQueryAftermathDerivationFailure;
 use super::causal_event::{
     observe_acknowledgement, observe_completion, DispatchAttemptEvent,
     ExternalAcknowledgementEvent, ExternalCompletionEvent, ExternalEffectPosture,
@@ -21,13 +20,25 @@ pub(super) fn classify_dispatch_observation(
     observed: WorthQueryExternalTransportOutcome,
     attempt: &DispatchAttemptEvent<'_>,
     clock: &crate::domain_computation::runtime_time::WorthQueryRuntimeClock,
-) -> Result<ClassifiedDispatchObservation, WorthQueryAftermathDerivationFailure> {
+) -> ClassifiedDispatchObservation {
     match observed {
-        WorthQueryExternalTransportOutcome::Completed => {
-            completed_observation(observe_completion(attempt)?)
-        }
+        WorthQueryExternalTransportOutcome::Completed => match observe_completion(attempt) {
+            Ok(observation) => completed_observation(observation),
+            Err(_) => unresolved_observation(
+                ExternalRailTransportFault::ObservationDerivationDenied,
+                attempt,
+                clock,
+            ),
+        },
         WorthQueryExternalTransportOutcome::Acknowledged => {
-            acknowledged_observation(observe_acknowledgement(attempt)?)
+            match observe_acknowledgement(attempt) {
+                Ok(observation) => acknowledged_observation(observation),
+                Err(_) => unresolved_observation(
+                    ExternalRailTransportFault::ObservationDerivationDenied,
+                    attempt,
+                    clock,
+                ),
+            }
         }
         other => {
             let fault = match other {
@@ -50,27 +61,35 @@ pub(super) fn classify_dispatch_observation(
                 WorthQueryExternalTransportOutcome::Completed
                 | WorthQueryExternalTransportOutcome::Acknowledged => unreachable!(),
             };
-            Ok(ClassifiedDispatchObservation {
-                posture: WorthQueryExternalDispatchPosture::unresolved(classify_transport_fault(
-                    fault, attempt, clock,
-                )?),
-                observation: None,
-                canonical_work: WorthQueryCanonicalWorkEvidence::zero(),
-            })
+            unresolved_observation(fault, attempt, clock)
         }
+    }
+}
+
+fn unresolved_observation(
+    fault: ExternalRailTransportFault,
+    attempt: &DispatchAttemptEvent<'_>,
+    clock: &crate::domain_computation::runtime_time::WorthQueryRuntimeClock,
+) -> ClassifiedDispatchObservation {
+    ClassifiedDispatchObservation {
+        posture: WorthQueryExternalDispatchPosture::unresolved(classify_transport_fault(
+            fault, attempt, clock,
+        )),
+        observation: None,
+        canonical_work: WorthQueryCanonicalWorkEvidence::zero(),
     }
 }
 
 fn completed_observation(
     observed: (ExternalCompletionEvent, WorthQueryCanonicalWorkEvidence),
-) -> Result<ClassifiedDispatchObservation, WorthQueryAftermathDerivationFailure> {
+) -> ClassifiedDispatchObservation {
     let (observation, canonical_work) = observed;
     let projection = observation.posture().clone();
-    Ok(ClassifiedDispatchObservation {
+    ClassifiedDispatchObservation {
         posture: WorthQueryExternalDispatchPosture::completed(observation),
         observation: Some(projection),
         canonical_work,
-    })
+    }
 }
 
 fn acknowledged_observation(
@@ -78,12 +97,12 @@ fn acknowledged_observation(
         ExternalAcknowledgementEvent,
         WorthQueryCanonicalWorkEvidence,
     ),
-) -> Result<ClassifiedDispatchObservation, WorthQueryAftermathDerivationFailure> {
+) -> ClassifiedDispatchObservation {
     let (observation, canonical_work) = observed;
     let projection = observation.posture().clone();
-    Ok(ClassifiedDispatchObservation {
+    ClassifiedDispatchObservation {
         posture: WorthQueryExternalDispatchPosture::acknowledged(observation),
         observation: Some(projection),
         canonical_work,
-    })
+    }
 }

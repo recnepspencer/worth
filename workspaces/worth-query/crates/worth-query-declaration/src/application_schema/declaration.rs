@@ -1,23 +1,24 @@
 use std::marker::PhantomData;
 
 use super::aspect_contract_identity::ApplicationAspectMarkerIdentity;
-use super::authorization_policy::ApplicationAuthorizationPath;
-use super::canonical_identity::{canonical_identity, ApplicationSchemaCanonicalHeader};
 use super::capabilities::{ApplicationFieldUnit, EqualityPosture, WritePosture};
+use super::contribution::{
+    ApplicationSchemaContributionIdentity, ApplicationSchemaContributionProvenance,
+    AuthoredApplicationSchemaContribution,
+};
 use super::declaration_denial::ApplicationSchemaDeclarationDenial;
 use super::field_reference::ApplicationFieldRef;
-use super::identifier_validation::{validate_member_identifiers, validate_schema_header};
-use super::member_closure::validate_member_closure;
 use super::member_provenance::ApplicationSchemaMemberProvenance;
-use super::operation_contract_cardinality::validate_operation_contract_cardinality;
 use super::principal_binding_reference::ApplicationPrincipalBindingRef;
 use super::references::{
-    ApplicationAbilityRef, ApplicationAspectRef, ApplicationEffectRef, ApplicationEntityRef,
-    ApplicationOperationRef, ApplicationPolicyRef, ApplicationRelationRef, ApplicationUnitRef,
+    ApplicationAspectRef, ApplicationEffectRef, ApplicationEntityRef, ApplicationOperationRef,
+    ApplicationRelationRef, ApplicationUnitRef,
 };
 use super::schema_identity::ApplicationSchemaIdentity;
 use super::schema_member::ApplicationSchemaMember;
-use super::values::{DeclaredApplicationFieldValue, TypedApplicationValue};
+
+mod authorization;
+mod finalization;
 
 pub trait ApplicationSchema: Sized + 'static {
     const OWNER: &'static str;
@@ -37,6 +38,7 @@ pub struct ErasedApplicationSchemaDeclaration {
     minor: u32,
     identity: ApplicationSchemaIdentity,
     members: Vec<ApplicationSchemaMember>,
+    contributions: Vec<ApplicationSchemaContributionProvenance>,
 }
 
 impl ErasedApplicationSchemaDeclaration {
@@ -47,6 +49,7 @@ impl ErasedApplicationSchemaDeclaration {
         minor: u32,
         identity: ApplicationSchemaIdentity,
         members: Vec<ApplicationSchemaMember>,
+        contributions: Vec<ApplicationSchemaContributionProvenance>,
     ) -> Self {
         Self {
             owner,
@@ -55,6 +58,7 @@ impl ErasedApplicationSchemaDeclaration {
             minor,
             identity,
             members,
+            contributions,
         }
     }
 
@@ -80,6 +84,10 @@ impl ErasedApplicationSchemaDeclaration {
 
     pub fn members(&self) -> &[ApplicationSchemaMember] {
         &self.members
+    }
+
+    pub fn contributions(&self) -> &[ApplicationSchemaContributionProvenance] {
+        &self.contributions
     }
 }
 
@@ -129,6 +137,10 @@ impl<Schema> ApplicationSchemaDeclaration<Schema> {
         self.erased
     }
 
+    pub fn contributions(&self) -> &[ApplicationSchemaContributionProvenance] {
+        self.erased.contributions()
+    }
+
     #[doc(hidden)]
     pub fn member_provenance(&self) -> &ApplicationSchemaMemberProvenance {
         &self.member_provenance
@@ -142,11 +154,38 @@ pub struct ApplicationSchemaDeclarationBuilder<Schema> {
     major: u32,
     minor: u32,
     members: Vec<ApplicationSchemaMember>,
+    contributions: Vec<AuthoredApplicationSchemaContribution>,
     pub(super) member_provenance: ApplicationSchemaMemberProvenance,
     _schema: PhantomData<fn() -> Schema>,
 }
 
 impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
+    pub fn invariant<Invariant>(
+        mut self,
+        definition: super::ApplicationInvariantDefinition<Schema, Invariant>,
+    ) -> Self
+    where
+        Invariant: super::ApplicationInvariantMarkerIdentity<Schema>,
+    {
+        let reference = definition.reference();
+        let operational = definition.operational();
+        self.members
+            .push(ApplicationSchemaMember::ApplicationInvariant {
+                invariant: reference.identifier().to_owned(),
+                major: reference.major(),
+                minor: reference.minor(),
+                execution_point: definition.execution_point(),
+                maximum_work_units: definition.work_budget().maximum_work_units(),
+                enforcement: operational.enforcement(),
+                required_groups: operational.required_groups().to_vec(),
+                read_closure: operational.read_closure().to_vec(),
+                applicability: operational.applicability().to_vec(),
+                provider: operational.provider().to_owned(),
+                cost_posture: operational.cost_posture(),
+            });
+        self
+    }
+
     #[cfg(test)]
     pub(crate) fn from_test_members(members: Vec<ApplicationSchemaMember>) -> Self {
         Self {
@@ -155,6 +194,7 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
             major: 1,
             minor: 0,
             members,
+            contributions: Vec::new(),
             member_provenance: ApplicationSchemaMemberProvenance::default(),
             _schema: PhantomData,
         }
@@ -169,6 +209,22 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
         self.members.push(member);
     }
 
+    pub(super) fn contribution_member_count(&self) -> usize {
+        self.members.len()
+    }
+
+    pub(super) fn retain_contribution_closure(
+        &mut self,
+        identity: ApplicationSchemaContributionIdentity,
+        first_member: usize,
+    ) {
+        let members = self.members[first_member..].to_vec();
+        self.contributions
+            .push(AuthoredApplicationSchemaContribution::new(
+                identity, members,
+            ));
+    }
+
     pub fn for_schema() -> Self
     where
         Schema: ApplicationSchema,
@@ -179,6 +235,7 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
             major: Schema::MAJOR,
             minor: Schema::MINOR,
             members: Vec::new(),
+            contributions: Vec::new(),
             member_provenance: ApplicationSchemaMemberProvenance::default(),
             _schema: PhantomData,
         }
@@ -197,7 +254,7 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
         aspect: ApplicationAspectRef<Schema, Entity, Aspect>,
     ) -> Self
     where
-        Aspect: ApplicationAspectMarkerIdentity<Schema = Schema, Entity = Entity>,
+        Aspect: ApplicationAspectMarkerIdentity<Schema, Entity>,
     {
         self.members.push(ApplicationSchemaMember::Aspect {
             entity: entity.name().to_string(),
@@ -214,12 +271,16 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
         field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
     ) -> Self
     where
-        Field: DeclaredApplicationFieldValue<Value = Value>,
-        Value: TypedApplicationValue,
+        Entity: super::ApplicationEntityMarkerIdentity<Schema>,
+        Aspect: ApplicationAspectMarkerIdentity<Schema, Entity>,
+        Field: super::ApplicationFieldMarkerIdentity<Schema, Entity, Aspect, Value = Value>,
         Write: WritePosture,
         Equality: EqualityPosture,
         Unit: ApplicationFieldUnit,
     {
+        let recipe = field.binding_recipe();
+        self.member_provenance
+            .register_field_binding(recipe.clone());
         self.members.push(ApplicationSchemaMember::Field {
             entity: entity.name().to_string(),
             aspect: field.aspect().to_string(),
@@ -228,6 +289,7 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
             scalar_family: field.scalar_family(),
             value_type: field.value_type_name().to_string(),
             unit: field.unit().map(str::to_string),
+            frame: recipe.frame().map(|frame| frame.as_str().to_owned()),
             writable: Write::WRITABLE,
             equality_queryable: Equality::QUERYABLE,
         });
@@ -244,11 +306,18 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
             relation: relation.name().to_string(),
             from: from.name().to_string(),
             to: to.name().to_string(),
+            integrity: relation.integrity(),
         });
         self
     }
 
-    pub fn principal_binding<Binding, Mapping, Principal, PrincipalIdentity>(
+    pub fn principal_binding<
+        Binding,
+        Mapping,
+        Principal,
+        PrincipalIdentity,
+        PrincipalIdentityBinding,
+    >(
         mut self,
         binding: ApplicationPrincipalBindingRef<
             Schema,
@@ -256,11 +325,9 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
             Mapping,
             Principal,
             PrincipalIdentity,
+            PrincipalIdentityBinding,
         >,
-    ) -> Self
-    where
-        PrincipalIdentity: TypedApplicationValue,
-    {
+    ) -> Self {
         self.members
             .push(ApplicationSchemaMember::PrincipalBinding {
                 binding: binding.name().to_string(),
@@ -276,59 +343,6 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
                 principal_identity_scalar_family: binding.principal_identity_scalar_family(),
                 principal_identity_value_type: binding.principal_identity_value_type().to_string(),
             });
-        self
-    }
-
-    pub fn policy<Policy>(mut self, policy: ApplicationPolicyRef<Schema, Policy>) -> Self {
-        self.members.push(ApplicationSchemaMember::Policy {
-            policy: policy.name().to_string(),
-        });
-        self
-    }
-
-    pub fn ability<Ability, Scope>(
-        mut self,
-        ability: ApplicationAbilityRef<Schema, Ability, Scope>,
-    ) -> Self {
-        self.members.push(ApplicationSchemaMember::Ability {
-            ability: ability.name().to_string(),
-            scope_entity: ability.scope().to_string(),
-        });
-        self
-    }
-
-    pub fn operation_requires_ability<Operation, Input, Ability, Scope>(
-        mut self,
-        operation: ApplicationOperationRef<Schema, Operation, Input>,
-        ability: ApplicationAbilityRef<Schema, Ability, Scope>,
-    ) -> Self
-    where
-        Ability: super::capabilities::OperationRequiresAbility<Operation>,
-    {
-        self.members
-            .push(ApplicationSchemaMember::OperationAbility {
-                operation: operation.name().to_string(),
-                ability: ability.name().to_string(),
-                scope_entity: ability.scope().to_string(),
-            });
-        self
-    }
-
-    pub fn ability_policy<Ability, Scope, Policy>(
-        mut self,
-        ability: ApplicationAbilityRef<Schema, Ability, Scope>,
-        policy: ApplicationPolicyRef<Schema, Policy>,
-        paths: impl IntoIterator<Item = ApplicationAuthorizationPath>,
-    ) -> Self {
-        let mut paths = paths.into_iter().collect::<Vec<_>>();
-        paths.sort();
-        paths.dedup();
-        self.members.push(ApplicationSchemaMember::AbilityPolicy {
-            ability: ability.name().to_string(),
-            scope_entity: ability.scope().to_string(),
-            policy: policy.name().to_string(),
-            paths,
-        });
         self
     }
 
@@ -354,41 +368,5 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
             payload_type: effect.payload_identity(),
         });
         self
-    }
-
-    pub fn build(
-        mut self,
-    ) -> Result<ApplicationSchemaDeclaration<Schema>, ApplicationSchemaDeclarationDenial> {
-        validate_schema_header(self.owner, self.name)?;
-        validate_member_identifiers(&self.members)?;
-        super::member_identity_uniqueness::validate_member_identity_uniqueness(&self.members)?;
-        validate_operation_contract_cardinality(&self.members)?;
-        self.members.sort();
-        self.member_provenance.normalize();
-        if self.members.windows(2).any(|pair| pair[0] == pair[1]) {
-            return Err(ApplicationSchemaDeclarationDenial::DuplicateMember);
-        }
-        validate_member_closure(&self.members)?;
-        let identity = canonical_identity(
-            ApplicationSchemaCanonicalHeader {
-                owner: self.owner,
-                name: self.name,
-                major: self.major,
-                minor: self.minor,
-            },
-            &self.members,
-        );
-        Ok(ApplicationSchemaDeclaration {
-            erased: ErasedApplicationSchemaDeclaration {
-                owner: self.owner.to_string(),
-                name: self.name.to_string(),
-                major: self.major,
-                minor: self.minor,
-                identity,
-                members: self.members,
-            },
-            member_provenance: self.member_provenance,
-            _schema: PhantomData,
-        })
     }
 }

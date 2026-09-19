@@ -30,7 +30,6 @@ impl<
     >
     WorthQueryApplicationLiveLease<
         '_,
-        '_,
         Schema,
         Query,
         Parameters,
@@ -92,7 +91,7 @@ where
                 self.acknowledge_and_terminate(WorthQueryApplicationLiveOutcome::StalePrincipal)
             }
             WorthQueryAuthorizedApplicationReadDenial::StaleScope
-            | WorthQueryAuthorizedApplicationReadDenial::StaleBasisScope(_) => {
+            | WorthQueryAuthorizedApplicationReadDenial::StaleBasisScope => {
                 self.acknowledge_and_terminate(WorthQueryApplicationLiveOutcome::StaleScope)
             }
             WorthQueryAuthorizedApplicationReadDenial::Authorization(authorization) => {

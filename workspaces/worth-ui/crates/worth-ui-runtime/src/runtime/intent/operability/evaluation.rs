@@ -1,6 +1,6 @@
 use super::{
-    UiInoperableIntentCandidate, UiIntentAffinityPosture, UiIntentOperabilityDecision,
-    UiIntentOperabilityDecisionInput, UiIntentOperabilityOutcome, UiIntentOperabilityProof,
+    UiInoperableIntentCandidate, UiIntentAffinityPosture, UiIntentOperabilityOutcome,
+    UiIntentOperabilityProof,
 };
 
 pub(crate) fn evaluate_intent_operability(
@@ -9,17 +9,7 @@ pub(crate) fn evaluate_intent_operability(
     mounted: &crate::mounting::WorthUiMountedSessionState,
 ) -> UiIntentOperabilityOutcome {
     let basis = candidate.operability_basis();
-    let decision = UiIntentOperabilityDecision::new(UiIntentOperabilityDecisionInput {
-        contract_identity: basis.contract_identity().into(),
-        support: basis.support(),
-        mutability: basis.mutability(),
-        readiness: basis.readiness(),
-        occupancy: basis.occupancy().posture(),
-        policy: basis.policy(),
-        affinity: affinity(&candidate, generation, mounted),
-        confirmation: basis.confirmation(),
-        selected_dependencies_visited: 7,
-    });
+    let decision = basis.decision(affinity(&candidate, generation, mounted));
     if decision.is_operable() {
         UiIntentOperabilityOutcome::Operable(UiIntentOperabilityProof::new(candidate, decision))
     } else {

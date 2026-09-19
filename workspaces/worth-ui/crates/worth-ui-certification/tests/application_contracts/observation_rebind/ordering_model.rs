@@ -1,6 +1,6 @@
 use worth_ui::facade::observation::{
     UiObservationCoalescingPolicy, UiObservationDuplicatePolicy, UiObservationFamily,
-    UiObservationLossPolicy, UiObservationResetPolicy,
+    UiObservationLossPolicy, UiObservationOwner, UiObservationResetPolicy,
 };
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -8,11 +8,16 @@ enum ModelFamily {
     Source,
     HostViewport,
     HostDeviceScale,
+    PointerPresence,
     Measurement,
     Query,
     IntentPosture,
     Scroll,
     Portal,
+    Focus,
+    Selection,
+    Motion,
+    CommandRoute,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -49,7 +54,7 @@ struct ModelLaw {
     coalescing: ModelCoalescing,
 }
 
-const LAWS: [ModelLaw; 8] = [
+const LAWS: [ModelLaw; 13] = [
     law(
         ModelFamily::Source,
         0,
@@ -75,8 +80,16 @@ const LAWS: [ModelLaw; 8] = [
         ModelCoalescing::OwnerEquivalentOnly,
     ),
     law(
-        ModelFamily::Measurement,
+        ModelFamily::PointerPresence,
         3,
+        ModelDuplicate::OwnerEquivalentMayCoalesce,
+        ModelLoss::Lossless,
+        ModelReset::NoReset,
+        ModelCoalescing::OwnerEquivalentOnly,
+    ),
+    law(
+        ModelFamily::Measurement,
+        4,
         ModelDuplicate::Reject,
         ModelLoss::Lossless,
         ModelReset::NoReset,
@@ -84,7 +97,7 @@ const LAWS: [ModelLaw; 8] = [
     ),
     law(
         ModelFamily::Query,
-        4,
+        5,
         ModelDuplicate::Reject,
         ModelLoss::OwnerDeclaredLoss,
         ModelReset::OwnerIssuedReset,
@@ -92,7 +105,7 @@ const LAWS: [ModelLaw; 8] = [
     ),
     law(
         ModelFamily::IntentPosture,
-        5,
+        6,
         ModelDuplicate::Reject,
         ModelLoss::Lossless,
         ModelReset::NoReset,
@@ -100,7 +113,7 @@ const LAWS: [ModelLaw; 8] = [
     ),
     law(
         ModelFamily::Scroll,
-        6,
+        7,
         ModelDuplicate::OwnerEquivalentMayCoalesce,
         ModelLoss::Lossless,
         ModelReset::NoReset,
@@ -108,7 +121,39 @@ const LAWS: [ModelLaw; 8] = [
     ),
     law(
         ModelFamily::Portal,
-        7,
+        8,
+        ModelDuplicate::OwnerEquivalentMayCoalesce,
+        ModelLoss::Lossless,
+        ModelReset::NoReset,
+        ModelCoalescing::OwnerEquivalentOnly,
+    ),
+    law(
+        ModelFamily::Focus,
+        9,
+        ModelDuplicate::OwnerEquivalentMayCoalesce,
+        ModelLoss::Lossless,
+        ModelReset::NoReset,
+        ModelCoalescing::OwnerEquivalentOnly,
+    ),
+    law(
+        ModelFamily::Selection,
+        10,
+        ModelDuplicate::OwnerEquivalentMayCoalesce,
+        ModelLoss::Lossless,
+        ModelReset::NoReset,
+        ModelCoalescing::OwnerEquivalentOnly,
+    ),
+    law(
+        ModelFamily::Motion,
+        11,
+        ModelDuplicate::OwnerEquivalentMayCoalesce,
+        ModelLoss::Lossless,
+        ModelReset::NoReset,
+        ModelCoalescing::OwnerEquivalentOnly,
+    ),
+    law(
+        ModelFamily::CommandRoute,
+        12,
         ModelDuplicate::OwnerEquivalentMayCoalesce,
         ModelLoss::Lossless,
         ModelReset::NoReset,
@@ -138,6 +183,8 @@ const fn law(
 fn closed_owner_laws_match_production_definitions() {
     for expected in LAWS {
         let actual = production_family(expected.family).definition();
+        assert_eq!(actual.family(), production_family(expected.family));
+        assert_eq!(actual.owner(), expected_owner(expected.family));
         assert_eq!(actual.framework_rank(), expected.rank);
         assert_eq!(
             actual.duplicate_policy(),
@@ -185,11 +232,34 @@ fn production_family(family: ModelFamily) -> UiObservationFamily {
         ModelFamily::Source => UiObservationFamily::AuthoredSource,
         ModelFamily::HostViewport => UiObservationFamily::HostViewport,
         ModelFamily::HostDeviceScale => UiObservationFamily::HostDeviceScale,
+        ModelFamily::PointerPresence => UiObservationFamily::PointerPresenceTarget,
         ModelFamily::Measurement => UiObservationFamily::Measurement,
         ModelFamily::Query => UiObservationFamily::Query,
         ModelFamily::IntentPosture => UiObservationFamily::IntentPosture,
         ModelFamily::Scroll => UiObservationFamily::CommittedScrollExtent,
         ModelFamily::Portal => UiObservationFamily::CommittedPortalAnchor,
+        ModelFamily::Focus => UiObservationFamily::CommittedFocus,
+        ModelFamily::Selection => UiObservationFamily::CommittedSelection,
+        ModelFamily::Motion => UiObservationFamily::CommittedMotionTrack,
+        ModelFamily::CommandRoute => UiObservationFamily::CommittedCommandRoute,
+    }
+}
+
+fn expected_owner(family: ModelFamily) -> UiObservationOwner {
+    match family {
+        ModelFamily::Source => UiObservationOwner::SourceIngress,
+        ModelFamily::HostViewport => UiObservationOwner::HostViewport,
+        ModelFamily::HostDeviceScale => UiObservationOwner::HostDeviceScale,
+        ModelFamily::PointerPresence => UiObservationOwner::PointerPresenceRuntimeState,
+        ModelFamily::Measurement => UiObservationOwner::MeasurementExchange,
+        ModelFamily::Query => UiObservationOwner::QueryBinding,
+        ModelFamily::IntentPosture => UiObservationOwner::IntentRuntime,
+        ModelFamily::Scroll => UiObservationOwner::ScrollRuntimeState,
+        ModelFamily::Portal => UiObservationOwner::PortalRuntimeState,
+        ModelFamily::Focus => UiObservationOwner::FocusRuntimeState,
+        ModelFamily::Selection => UiObservationOwner::SelectionRuntimeState,
+        ModelFamily::Motion => UiObservationOwner::MotionRuntimeState,
+        ModelFamily::CommandRoute => UiObservationOwner::CommandRoutingRuntimeState,
     }
 }
 

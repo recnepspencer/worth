@@ -8,7 +8,7 @@ fn complete_projection_retains_current_paint_after_incremental_projection_commit
     let token =
         crate::capability::ThemeTokenId::new("theme.test.text").expect("test theme-token identity");
     let color = crate::capability::ThemeTokenValue::color(
-        crate::capability::ThemeColorValue::hex("#ffffff").expect("test theme-token value"),
+        crate::capability::UiThemeColor::parse("#ffffff").expect("test theme-token value"),
     );
     let node = crate::graph::UiGraphNodeIdentity::new(91_001);
     let row = UiApplicationSemanticTextRow {
@@ -18,18 +18,18 @@ fn complete_projection_retains_current_paint_after_incremental_projection_commit
         semantic_revision: 1,
         presentation_revision: 2,
         projected_presentation_revision: None,
+        pending_publication_coverage: None,
     };
     let mut state = UiApplicationPresentationState {
         rows: HashMap::from([(Box::<str>::from("component:test"), row)]),
         token_values: Arc::new(BTreeMap::from([(token.clone(), color.clone())])),
-        resolved_targets: BTreeMap::from([(token.clone(), token.clone())]),
-        mutable_token_revisions: BTreeMap::from([(token.clone(), 1)]),
-        theme_revision: 0,
-        pending_theme_graph_nodes: Default::default(),
+        pending_appearance_invalidation: None,
+        next_appearance_batch_revision: 1,
+        appearance_theme_state: Default::default(),
     };
 
     let incremental = state.project().expect("current row projects incrementally");
-    state.commit(&incremental);
+    state.settle_published_text(&scoped(incremental.text_publication(), true));
     assert!(state
         .project()
         .expect("committed projection")
@@ -55,63 +55,60 @@ fn complete_projection_retains_current_paint_after_incremental_projection_commit
         content.posture().trim().is_empty(),
         "application-authored copy has no synthetic user-visible posture"
     );
+
+    let older_publication = scoped(complete.text_publication(), true);
+    state
+        .admit_semantic_text(&[
+            crate::facade::entry::UiNativeComponentSemanticTextChange::successor(
+                "component:test",
+                1,
+                "newer text",
+            )
+            .unwrap(),
+        ])
+        .unwrap();
+    state.settle_published_text(&older_publication);
+    assert_eq!(state.rows["component:test"].presentation_revision, 3);
+    assert_eq!(
+        state.rows["component:test"].projected_presentation_revision,
+        Some(2)
+    );
+    assert!(!state.project().unwrap().content().is_empty());
+    let incomplete_scope = scoped(state.project().unwrap().text_publication(), false);
+    state.settle_published_text(&incomplete_scope);
+    assert!(!state.project().unwrap().content().is_empty());
+    let current_publication = scoped(state.project().unwrap().text_publication(), true);
+    state.settle_published_text(&current_publication);
+    assert_eq!(
+        state.rows["component:test"].projected_presentation_revision,
+        Some(3)
+    );
+    assert!(state.project().unwrap().content().is_empty());
 }
 
-#[test]
-fn theme_update_is_transactional_and_fans_out_to_alias_consumers() {
-    let root = crate::capability::ThemeTokenId::new("theme.test.root").expect("root token");
-    let alias = crate::capability::ThemeTokenId::new("theme.test.alias").expect("alias token");
-    let initial = crate::capability::ThemeTokenValue::color(
-        crate::capability::ThemeColorValue::hex("#2f81f7").expect("initial color"),
-    );
-    let successor = crate::capability::ThemeTokenValue::color(
-        crate::capability::ThemeColorValue::hex("#3fb950").expect("successor color"),
-    );
-    let node = crate::graph::UiGraphNodeIdentity::new(91_002);
-    let row = UiApplicationSemanticTextRow {
-        graph_node: Some(node),
-        value: Some(Arc::from("current text")),
-        contract: crate::capability::ComponentSemanticTextContract::body_default(alias.clone(), 1),
-        semantic_revision: 1,
-        presentation_revision: 2,
-        projected_presentation_revision: Some(2),
-    };
-    let mut state = UiApplicationPresentationState {
-        rows: HashMap::from([(Box::<str>::from("component:test"), row)]),
-        token_values: Arc::new(BTreeMap::from([
-            (root.clone(), initial.clone()),
-            (alias.clone(), initial),
-        ])),
-        resolved_targets: BTreeMap::from([
-            (root.clone(), root.clone()),
-            (alias.clone(), root.clone()),
-        ]),
-        mutable_token_revisions: BTreeMap::from([(root.clone(), 0)]),
-        theme_revision: 0,
-        pending_theme_graph_nodes: Default::default(),
-    };
-
-    let change =
-        crate::facade::entry::UiNativeThemeTokenValueChange::new(root.clone(), successor.clone())
-            .expect("valid successor");
-    let update = state
-        .prepare_theme_values(std::slice::from_ref(&change))
-        .expect("current revision prepares");
-    assert_eq!(update.changed_tokens(), &[alias.clone(), root.clone()]);
-    state
-        .commit_theme_values(update, [node])
-        .expect("prepared transaction commits");
-
-    assert_eq!(state.token_values.get(&root), Some(&successor));
-    assert_eq!(state.token_values.get(&alias), Some(&successor));
-    assert_eq!(state.mutable_token_revisions.get(&root), Some(&1));
-    assert_eq!(state.theme_revision, 1);
-    assert_eq!(state.rows["component:test"].presentation_revision, 3);
-    assert!(state.pending_theme_graph_nodes.contains(&node));
-
-    let before_values = Arc::clone(&state.token_values);
-    let before_revisions = state.mutable_token_revisions.clone();
-    assert!(state.prepare_theme_values(&[change]).is_err());
-    assert!(Arc::ptr_eq(&before_values, &state.token_values));
-    assert_eq!(state.mutable_token_revisions, before_revisions);
+fn scoped(
+    selection: super::UiApplicationTextRevisionSelection,
+    selected: bool,
+) -> super::UiApplicationTextPublication {
+    let instance = worth_ui_host_contract::UiMountedInstanceIdentity::mint_unbound().unwrap();
+    let incarnation = worth_ui_host_contract::UiMountIncarnation::mint_unbound().unwrap();
+    super::UiApplicationTextPublication {
+        revisions: selection
+            .revisions
+            .into_vec()
+            .into_iter()
+            .map(|(identity, graph, revision)| {
+                (
+                    identity,
+                    graph,
+                    revision,
+                    super::UiApplicationTextMountedCoverage::from_occurrences([(
+                        instance,
+                        incarnation,
+                        selected,
+                    )]),
+                )
+            })
+            .collect(),
+    }
 }

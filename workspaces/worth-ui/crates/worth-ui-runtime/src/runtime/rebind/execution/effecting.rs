@@ -60,7 +60,7 @@ impl<'session> UiEffectingRebind<'session> {
 
     pub fn complete(self, now_tick: u64) -> UiEffectingRebindCompletion<'session> {
         let Self {
-            plan,
+            mut plan,
             reservation,
             kind,
             observations,
@@ -71,19 +71,34 @@ impl<'session> UiEffectingRebind<'session> {
                 let outcome = replacement.present(deadline, now_tick);
                 super::outcome::map_changed_first_attempt(plan, reservation, outcome)
             }
-            UiPreparedRebindKind::Content(content) => {
+            UiPreparedRebindKind::Content(mut content) => {
+                let preparation = content.refresh_before_effects(&mut plan);
                 let deadline = presentation_deadline(&plan);
                 let generation = plan.basis().candidate_generation().clone();
-                let outcome = content.present(deadline, now_tick);
+                let outcome = match preparation {
+                    Ok(()) => content.present(deadline, now_tick),
+                    Err(_) => crate::facade::entry::WorthUiMountedContentRebindOutcome::AdmissionDenied {
+                        denial: crate::mounting::UiMountedPresentationAdmissionDenial::PreparedFrameBasisChanged,
+                        retry: content,
+                    },
+                };
                 super::outcome::map_content_first_attempt(plan, reservation, generation, outcome)
             }
-            UiPreparedRebindKind::EvidenceOnly(prepared) => {
-                let (prior, active) = prepared.commit();
-                match super::UiRebindReceipt::evidence_only(plan, reservation, prior, active) {
-                    Ok(receipt) => super::UiRebindOutcome::Published(receipt),
-                    Err(defect) => super::UiRebindOutcome::InternalDefect(defect),
+            UiPreparedRebindKind::EvidenceOnly(prepared) => match prepared.commit() {
+                Ok((prior, active)) => {
+                    match super::UiRebindReceipt::evidence_only(plan, reservation, prior, active) {
+                        Ok(receipt) => super::UiRebindOutcome::Published(receipt),
+                        Err(defect) => super::UiRebindOutcome::InternalDefect(defect),
+                    }
                 }
-            }
+                Err(prepared) => super::UiRebindOutcome::RejectedBeforeEffects(
+                    super::UiRebindDenialReceipt::prepared_basis_changed(UiPreparedRebind {
+                        plan,
+                        reservation,
+                        kind: UiPreparedRebindKind::EvidenceOnly(*prepared),
+                    }),
+                ),
+            },
         };
         UiEffectingRebindCompletion {
             outcome,

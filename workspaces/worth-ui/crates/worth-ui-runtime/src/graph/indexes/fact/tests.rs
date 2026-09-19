@@ -5,11 +5,16 @@ use worth_ui_dsl::{
     UiDslSourceProvenance, UiDslStructuralToken,
 };
 
+#[path = "tests/appearance_attachment.rs"]
+mod appearance_attachment;
+#[path = "tests/appearance_slot_oracle.rs"]
+mod appearance_slot_oracle;
+#[path = "tests/appearance_state.rs"]
+mod appearance_state;
+
 use crate::capability::{
-    ComponentAllocationMeasurementContract, ComponentChildPolicy, ComponentDescriptor, ComponentId,
-    ComponentPropSchema, ComponentStateOwnership, ComponentStaticPaintContract,
-    ComponentStaticPaintOrder, ThemeColorValue, ThemeTokenDescriptor, ThemeTokenFamily,
-    ThemeTokenId, ThemeTokenSource, ThemeTokenValue,
+    ThemeTokenDescriptor, ThemeTokenFamily, ThemeTokenId, ThemeTokenSource, ThemeTokenValue,
+    UiThemeColor,
 };
 use crate::facade::{WorthUi, WorthUiRustAuthoredDeclarationFixture};
 use crate::fact_contract::{
@@ -24,6 +29,7 @@ use crate::graph::{
 const PUBLISHER: &str = "pulse.identity.publisher";
 const CONSUMER: &str = "pulse.identity.consumer";
 const STATIC_PAINT_COMPONENT: &str = "pulse.component.static";
+const STATIC_PAINT_PEER: &str = "pulse.component.static.peer";
 const STATIC_PAINT_TOKEN: &str = "theme.pulse.static";
 
 #[test]
@@ -94,29 +100,6 @@ fn subsystem_lookup_selects_only_declared_matching_aspect_family() {
         entry
             .affected_aspect()
             .is_some_and(|aspect| aspect.canonical_label() == "appearance.background")
-    }));
-}
-
-#[test]
-fn static_paint_token_dependency_selects_only_its_component_consumers() {
-    let app = static_paint_app();
-    let authority = app.prepared_authority();
-    let index = authority.consumed_fact_index();
-    let fact = UiProducedFact::AuthoredSource(UiAuthoredChangedFact::new(
-        UiAuthoredFactSelector::node(STATIC_PAINT_TOKEN),
-        UiAuthoredFactKind::SemanticsChanged,
-    ));
-
-    let receipt = index
-        .lookup(index.basis(), &fact)
-        .expect("declared static-paint token should resolve");
-
-    assert_eq!(receipt.entries().len(), 2);
-    assert!(receipt.entries().iter().all(|entry| {
-        entry.consumer_key().authored_identity() == STATIC_PAINT_COMPONENT
-            && entry
-                .affected_aspect()
-                .is_some_and(|aspect| aspect.canonical_label() == "appearance.background")
     }));
 }
 
@@ -270,28 +253,24 @@ fn indexed_app(package: &str) -> crate::facade::WorthUiApp {
 
 fn static_paint_app() -> crate::facade::WorthUiApp {
     let token = ThemeTokenId::new(STATIC_PAINT_TOKEN).unwrap();
+    let role = crate::runtime::tests::appearance_component_session_test_support::validation_background_role(
+        STATIC_PAINT_TOKEN,
+    );
     WorthUi::app()
         .with_change_profile(crate::runtime::rebind::UiChangeProfile::platform_pulse())
         .register_component(
-            ComponentDescriptor::new(
-                ComponentId::new(STATIC_PAINT_COMPONENT).unwrap(),
-                ComponentPropSchema::named("pulse.static.props"),
-                ComponentChildPolicy::no_children(),
-                ComponentStateOwnership::runtime_owned(),
-            )
-            .with_static_paint(
-                ComponentStaticPaintContract::opaque_fill(
-                    token.clone(),
-                    ComponentStaticPaintOrder::back_to_front(0),
-                ),
-                ComponentAllocationMeasurementContract::fill_viewport(),
+            crate::runtime::tests::appearance_component_session_test_support::appearance_component(
+                STATIC_PAINT_COMPONENT,
+                token.clone(),
             ),
         )
+        .register_appearance_role(role.clone())
+        .unwrap()
         .register_theme_token(ThemeTokenDescriptor::define(
             token,
             ThemeTokenFamily::surface(),
             ThemeTokenSource::application(),
-            ThemeTokenValue::color(ThemeColorValue::hex("#112233").unwrap()),
+            ThemeTokenValue::color(UiThemeColor::parse("#112233").unwrap()),
         ))
         .with_rust_authored_declaration_fixture(
             WorthUiRustAuthoredDeclarationFixture::named("static-paint-fact-index")
@@ -301,7 +280,30 @@ fn static_paint_app() -> crate::facade::WorthUiApp {
                         UiDslSemanticFamily::Control,
                         UiDslSourceProvenance::file_authored("app/static.wui", 0),
                     )
-                    .with_structural_token(UiDslStructuralToken::new("control:static-paint")),
+                    .with_structural_token(UiDslStructuralToken::new("control:static-paint"))
+                    .with_component_reference(
+                        worth_ui_dsl::UiDslComponentReference::new(STATIC_PAINT_COMPONENT).unwrap(),
+                    )
+                    .unwrap()
+                    .with_appearance_role_attachment(
+                        worth_ui_dsl::UiAppearanceRoleAttachmentDeclaration::new(
+                            role.role().clone(),
+                            role.revision(),
+                        ),
+                    )
+                    .unwrap(),
+                )
+                .with_semantic_artifact_spec(
+                    UiDslSemanticArtifactSpec::new(
+                        UiDslSemanticKey::new(STATIC_PAINT_PEER),
+                        UiDslSemanticFamily::Control,
+                        UiDslSourceProvenance::file_authored("app/static.wui", 1),
+                    )
+                    .with_structural_token(UiDslStructuralToken::new("control:static-paint-peer"))
+                    .with_component_reference(
+                        worth_ui_dsl::UiDslComponentReference::new(STATIC_PAINT_COMPONENT).unwrap(),
+                    )
+                    .unwrap(),
                 ),
         )
         .freeze()
@@ -348,5 +350,16 @@ fn graph_node_for(
         .iter()
         .find(|node| node.declaration_identity().authored_semantic_name() == authored_identity)
         .map(crate::graph::UiGraphNode::graph_node_identity)
+        .unwrap_or_else(|| panic!("expected graph node for {authored_identity}"))
+}
+
+fn graph_node_named<'snapshot>(
+    snapshot: &'snapshot crate::graph::UiGraphSnapshot,
+    authored_identity: &str,
+) -> &'snapshot crate::graph::UiGraphNode {
+    snapshot
+        .nodes()
+        .iter()
+        .find(|node| node.declaration_identity().authored_semantic_name() == authored_identity)
         .unwrap_or_else(|| panic!("expected graph node for {authored_identity}"))
 }

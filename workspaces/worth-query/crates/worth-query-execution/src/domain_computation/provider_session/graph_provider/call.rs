@@ -4,10 +4,9 @@ use worth_query_installation::facade::WorthQueryExecutionResourceEnvelope;
 
 use super::call_identity::WorthQueryGraphCallAuthorityIdentity;
 use super::{
-    WorthQueryBoundGraphExecutionReceipt, WorthQueryExecutionGraphReadProduct,
-    WorthQueryExecutionGraphReadStreamEvidence, WorthQueryGraphCallBindingDenial,
-    WorthQueryGraphProviderCallKind, WorthQueryGraphProviderFailure,
-    WorthQueryGraphProviderReceipt, WorthQueryGraphReadMaterial,
+    WorthQueryBoundGraphExecutionReceipt, WorthQueryExecutionGraphReadStreamEvidence,
+    WorthQueryGraphCallBindingDenial, WorthQueryGraphProviderCallKind,
+    WorthQueryGraphProviderFailure, WorthQueryGraphProviderReceipt,
     WorthQueryGraphReceiptAdmissionDenial, WorthQueryProviderWorkReport,
 };
 use crate::domain_computation::domain_evidence_binding::WorthQueryBoundExecutionSnapshotIdentity;
@@ -55,11 +54,10 @@ impl WorthQueryGraphProviderCallRequest {
         }
     }
 
-    /// Legacy operational snapshot binding retained until Phase 19 removes
-    /// monolith-owned provider invocation. This request does not carry or mint
-    /// managed-run authority.
-    #[doc(hidden)]
-    pub fn bind_execution_snapshot(mut self, snapshot_identity: impl Into<Arc<str>>) -> Self {
+    pub(in crate::domain_computation) fn with_managed_execution_snapshot(
+        mut self,
+        snapshot_identity: impl Into<Arc<str>>,
+    ) -> Self {
         self.snapshot_identity = Some(snapshot_identity.into());
         self
     }
@@ -256,26 +254,6 @@ impl WorthQueryGraphProviderCall {
         )
     }
 
-    pub(crate) fn projected(
-        &self,
-        provider_receipt: impl Into<Arc<str>>,
-        material: WorthQueryGraphReadMaterial,
-        work_report: WorthQueryProviderWorkReport,
-    ) -> Result<WorthQueryGraphProviderReceipt, WorthQueryGraphProviderFailure> {
-        if self.kind() != WorthQueryGraphProviderCallKind::Project {
-            return Err(WorthQueryGraphProviderFailure::new(
-                WorthQueryGraphReceiptAdmissionDenial::UnexpectedProjection.detail(),
-            ));
-        }
-        let product = Arc::new(WorthQueryExecutionGraphReadProduct::seal(self, material));
-        Ok(WorthQueryGraphProviderReceipt::projected(
-            self.authority_identity,
-            provider_receipt,
-            product,
-            work_report,
-        ))
-    }
-
     pub(crate) fn streamed(
         &self,
         provider_receipt: impl Into<Arc<str>>,
@@ -308,6 +286,26 @@ impl WorthQueryGraphProviderCall {
 
     pub(crate) fn call_identity(&self) -> &str {
         &self.call_identity
+    }
+
+    pub(super) fn call_identity_arc(&self) -> Arc<str> {
+        Arc::clone(&self.call_identity)
+    }
+
+    pub(super) fn provider_session_identity_arc(&self) -> Arc<str> {
+        self.provider_session_identity.description()
+    }
+
+    pub(super) fn canonical_query_digest_arc(&self) -> Arc<str> {
+        Arc::clone(&self.spec.read_binding.canonical_query_digest)
+    }
+
+    pub(super) fn basis_identity_arc(&self) -> Arc<str> {
+        Arc::clone(&self.spec.read_binding.basis_identity)
+    }
+
+    pub(super) fn snapshot_identity_arc(&self) -> Arc<str> {
+        self.spec.read_binding.snapshot_identity.description()
     }
 
     pub(super) fn provider_session_identity(&self) -> &str {

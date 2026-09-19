@@ -91,42 +91,62 @@ fn project(
     }
     ApplicationCapabilityDelegationRequestProjection::new(
         target(scope),
-        ApplicationCapabilityEntitySelector::new(CapabilityGrantIdentityField::reference(), parent),
+        ApplicationCapabilityEntitySelector::new(
+            CapabilityGrantIdentityField::reference(),
+            crate::schema::encoded_bank_value::<crate::schema::CapabilityGrantIdBinding>(parent),
+        ),
         ApplicationCapabilityEntitySelector::new(
             PrincipalIdentityField::reference(),
-            child.grantee,
+            crate::schema::encoded_bank_value::<crate::schema::BankPrincipalIdBinding>(
+                child.grantee,
+            ),
         ),
         format!("bank-capability-grant:{}", child.id.get()),
-        ApplicationCapabilityValueBinding::new(CapabilityGrantIdentityField::reference(), child.id),
+        ApplicationCapabilityValueBinding::new(
+            CapabilityGrantIdentityField::reference(),
+            crate::schema::encoded_bank_value::<crate::schema::CapabilityGrantIdBinding>(child.id),
+        ),
         ApplicationCapabilityValueBinding::new(
             CapabilityWorkflowStageField::reference(),
-            scope.workflow_stage,
+            crate::schema::encoded_bank_value::<crate::schema::EstateWorkflowStageBinding>(
+                scope.workflow_stage,
+            ),
         ),
         ApplicationCapabilityValueBinding::new(
             CapabilityValidFromField::reference(),
-            scope.validity.not_before(),
+            crate::schema::encoded_bank_value::<crate::schema::EstateMomentBinding>(
+                scope.validity.not_before(),
+            ),
         ),
         ApplicationCapabilityValueBinding::new(
             CapabilityValidThroughField::reference(),
-            scope.validity.not_after(),
+            crate::schema::encoded_bank_value::<crate::schema::EstateMomentBinding>(
+                scope.validity.not_after(),
+            ),
         ),
         ApplicationCapabilityValueBinding::new(
             CapabilityDelegationLimitField::reference(),
-            scope.delegation,
+            crate::schema::encoded_bank_value::<crate::schema::DelegationLimitBinding>(
+                scope.delegation,
+            ),
         ),
         [
             ApplicationCapabilityRelatedEntitySelector::new(
                 CapabilityInstitution::reference(),
                 ApplicationCapabilityEntitySelector::new(
                     InstitutionIdentityField::reference(),
-                    scope.institution,
+                    crate::schema::encoded_bank_value::<crate::schema::InstitutionIdBinding>(
+                        scope.institution,
+                    ),
                 ),
             ),
             ApplicationCapabilityRelatedEntitySelector::new(
                 CapabilityBranch::reference(),
                 ApplicationCapabilityEntitySelector::new(
                     BranchIdentityField::reference(),
-                    scope.branch,
+                    crate::schema::encoded_bank_value::<crate::schema::BranchIdBinding>(
+                        scope.branch,
+                    ),
                 ),
             ),
         ],
@@ -139,23 +159,34 @@ fn target(
     let mut target = ApplicationCapabilityRequestProjection::new(
         ApplicationCapabilityEntitySelector::new(
             EstateCaseIdentityField::reference(),
-            scope.estate,
+            crate::schema::encoded_bank_value::<crate::schema::EstateCaseIdBinding>(scope.estate),
         ),
-        scope.operation,
-        scope.purpose,
+        crate::schema::encoded_bank_value::<crate::schema::EstateCapabilityOperationBinding>(
+            scope.operation,
+        ),
+        crate::schema::encoded_bank_value::<crate::schema::EstateCapabilityPurposeBinding>(
+            scope.purpose,
+        ),
         ApplicationCapabilityRequestContext::new(EstateActionContext::reference()),
     );
     if let Some(account) = scope.account {
         target = target.related_entity(ApplicationCapabilityRelatedEntitySelector::new(
             CapabilityAccount::reference(),
-            ApplicationCapabilityEntitySelector::new(AccountIdentity::reference(), account),
+            ApplicationCapabilityEntitySelector::new(
+                AccountIdentity::reference(),
+                crate::schema::encoded_bank_value::<crate::schema::AccountIdBinding>(account),
+            ),
         ));
     }
     if let Some(field) = scope.field {
-        target = target.field(field);
+        target = target.field(crate::schema::encoded_bank_value::<
+            crate::schema::RestrictedBankFieldBinding,
+        >(field));
     }
     if let Some(amount) = scope.amount_ceiling {
-        target = target.magnitude(amount);
+        target = target.magnitude(crate::schema::encoded_bank_value::<
+            crate::schema::UsdMoneyBinding,
+        >(amount));
     }
     target
 }

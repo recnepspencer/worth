@@ -70,6 +70,7 @@ struct BranchInstallation<'a> {
     lifecycle: ProductBranchIncarnation,
     cell: &'a mut Option<ProductBranchReferenceCell>,
     snapshot: ProductBranchReferenceSnapshot,
+    retirement_boundary: Option<crate::identity::CompositeCommitIdentity>,
 }
 
 impl ProductBranchRegistryReservation {
@@ -136,6 +137,7 @@ impl ProductBranchRegistryReservation {
             lifecycle,
             cell: &mut cell,
             snapshot,
+            retirement_boundary: None,
         };
         if let Err(denial) = self.admits_installation(&installed, true) {
             return Err((self, denial));
@@ -191,6 +193,7 @@ impl ProductBranchRegistryReservation {
             lifecycle,
             cell,
             snapshot,
+            retirement_boundary: Some(source.selected_commit().clone()),
         };
         self.admits_installation(&installed, false)
             .map_err(ProductBranchSourceInstallDenial::Registry)?;
@@ -252,7 +255,7 @@ impl ProductBranchRegistryReservation {
         if state.entries.contains_key(&installed.branch) {
             return Err(ProductBranchRegistryDenial::BranchAlreadyInstalled);
         }
-        if state.lifecycles.contains(&installed.lifecycle) {
+        if state.lifecycles.contains_key(&installed.lifecycle) {
             return Err(ProductBranchRegistryDenial::LifecycleAlreadyInstalled);
         }
         if self.root && state.reserved_names.contains(installed.name.as_str()) {
@@ -272,9 +275,12 @@ impl ProductBranchRegistryReservation {
             ProductBranchRegistryEntry {
                 lifecycle: installed.lifecycle,
                 cell,
+                retirement_boundary: installed.retirement_boundary.clone(),
             },
         );
-        state.lifecycles.insert(installed.lifecycle);
+        state
+            .lifecycles
+            .insert(installed.lifecycle, installed.branch.clone());
         state.reserved_branches -= 1;
         self.armed = false;
         if let Some(witness) = &self.installation {

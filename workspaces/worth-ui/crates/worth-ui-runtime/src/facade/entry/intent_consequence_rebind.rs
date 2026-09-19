@@ -1,13 +1,48 @@
 use super::WorthUiActiveApplicationSession;
 
-pub(super) struct WorthUiIntentConsequenceRebindTransfer {
-    pub(super) observation: crate::runtime::observation::UiPreparedObservationProgressCommit,
+pub(super) struct WorthUiIntentConsequenceRebindTransfer<Observation = super::intent_consequence_observation::WorthUiPreparedConsequenceObservationCommit> {
+    pub(super) observation: Observation,
     pub(super) posture: Option<crate::mounting::UiIntentPostureCommit>,
     pub(super) consequence: crate::runtime::intent_execution::UiIntentConsequenceHandoff,
     pub(super) portal_transition: Option<crate::runtime::portal::UiPreparedPortalServiceTransition>,
+    pub(super) portal_binding_stage: Option<crate::runtime::portal::UiPortalOverlayBindingStage>,
     pub(super) portal_proposal: Option<crate::runtime::session::UiStagedPortalProposalTransaction>,
     pub(super) query_reference:
         Option<worth_ui_query_binding::WorthUiInstalledQueryBindingReference>,
+}
+
+impl<Observation> WorthUiIntentConsequenceRebindTransfer<Observation> {
+    fn take_observation(self) -> (Observation, WorthUiIntentConsequenceRebindTransfer<()>) {
+        (
+            self.observation,
+            WorthUiIntentConsequenceRebindTransfer {
+                observation: (),
+                posture: self.posture,
+                consequence: self.consequence,
+                portal_transition: self.portal_transition,
+                portal_binding_stage: self.portal_binding_stage,
+                portal_proposal: self.portal_proposal,
+                query_reference: self.query_reference,
+            },
+        )
+    }
+}
+
+impl WorthUiIntentConsequenceRebindTransfer<()> {
+    fn with_prepared_observation(
+        self,
+        observation: super::intent_consequence_observation::WorthUiPreparedConsequenceObservationCommit,
+    ) -> WorthUiIntentConsequenceRebindTransfer {
+        WorthUiIntentConsequenceRebindTransfer {
+            observation,
+            posture: self.posture,
+            consequence: self.consequence,
+            portal_transition: self.portal_transition,
+            portal_binding_stage: self.portal_binding_stage,
+            portal_proposal: self.portal_proposal,
+            query_reference: self.query_reference,
+        }
+    }
 }
 
 impl WorthUiActiveApplicationSession {
@@ -15,11 +50,14 @@ impl WorthUiActiveApplicationSession {
         &mut self,
         plan: crate::runtime::rebind::UiRebindPlan,
         request: crate::runtime::rebind::UiRebindExecutionRequest,
-        mut transfer: WorthUiIntentConsequenceRebindTransfer,
+        transfer: WorthUiIntentConsequenceRebindTransfer<
+            super::intent_consequence_observation::WorthUiClosedConsequenceObservation,
+        >,
     ) -> Result<
         super::intent_consequence_publication::WorthUiPreparedIntentConsequenceRebind<'_>,
         crate::runtime::intent_execution::UiIntentConsequenceStop,
     > {
+        let (observation, mut transfer) = transfer.take_observation();
         if !plan.has_non_source_semantic_proof() {
             return Err(self.retain_intent_consequence_preparation_stop(
                 crate::runtime::rebind::UiRebindPreparationDenial::InvalidSemanticProof,
@@ -39,7 +77,7 @@ impl WorthUiActiveApplicationSession {
         ) {
             Ok(reservation) => reservation,
             Err(denial) => {
-                return Err(self.retain_intent_consequence_preparation_stop(denial, plan, transfer))
+                return Err(self.retain_intent_consequence_preparation_stop(denial, plan, transfer));
             }
         };
         let semantic_content = plan.content().clone();
@@ -100,6 +138,7 @@ impl WorthUiActiveApplicationSession {
                     &transfer.consequence,
                     transition,
                     generation,
+                    transfer.portal_binding_stage.take(),
                     declared_selection,
                     self.selection.as_ref(),
                     self.motion
@@ -118,10 +157,11 @@ impl WorthUiActiveApplicationSession {
             }
             None => None,
         };
-        let frame = match self.prepare_intent_consequence_frame(
+        let (frame, observation) = match self.prepare_observed_intent_consequence_frame(
             semantic_content,
             portal_overlay_revision,
             portal_overlays,
+            observation,
         ) {
             Ok(frame) => frame,
             Err(denial) => {
@@ -137,6 +177,7 @@ impl WorthUiActiveApplicationSession {
                 return Err(self.retain_intent_consequence_preparation_stop(denial, plan, transfer));
             }
         };
+        let mut transfer = transfer.with_prepared_observation(observation);
         let scroll_incarnation = self.scroll_owner_incarnation();
         transfer.portal_proposal = match portal_preparation {
             Some(preparation) => match self.application.bind_portal_service_proposal_frame(
@@ -184,31 +225,41 @@ impl WorthUiActiveApplicationSession {
         let frame_request = self
             .mounted_frame_request()
             .with_portal_overlays(portal_overlay_revision, portal_overlays);
-        let completion = self.execute_framework_turn(|_| {}).map_err(|_| {
-            crate::runtime::rebind::UiRebindPreparationDenial::FrameBoundaryUnavailable
-        })?;
-        let execution = completion.into_execution().map_err(|_| {
-            crate::runtime::rebind::UiRebindPreparationDenial::FrameBoundaryUnavailable
-        })?;
-        let theme_values = execution.presentation.theme_values_source();
-        execution
-            .prepare_mounted_frame_with_content_internal(
-                frame_request,
-                semantic_content,
-                theme_values,
-            )
-            .map_err(|denial| {
-                crate::runtime::rebind::UiRebindPreparationDenial::ContentMountedPreparation(
-                    Box::new(denial),
-                )
-            })
+        self.prepare_intent_consequence_frame_with_request(semantic_content, frame_request)
     }
 
-    fn retain_intent_consequence_preparation_stop(
+    #[cfg(test)]
+    pub(in crate::facade::entry) fn prepare_intent_consequence_frame_for_surface_for_test(
+        &mut self,
+        semantic_content: crate::mounting::UiMountedSemanticContentInput,
+        portal_overlay_revision: u64,
+        portal_overlays: Vec<crate::mounting::UiMountedPortalOverlayProjectionInput>,
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+    ) -> Result<
+        crate::mounting::UiPreparedMountedFrame,
+        crate::runtime::rebind::UiRebindPreparationDenial,
+    > {
+        let frame_request = crate::mounting::UiMountedFrameRequest::exact_surfaces(vec![surface])
+            .with_portal_overlays(portal_overlay_revision, portal_overlays);
+        self.prepare_intent_consequence_frame_with_request(semantic_content, frame_request)
+    }
+
+    fn prepare_intent_consequence_frame_with_request(
+        &mut self,
+        semantic_content: crate::mounting::UiMountedSemanticContentInput,
+        frame_request: crate::mounting::UiMountedFrameRequest,
+    ) -> Result<
+        crate::mounting::UiPreparedMountedFrame,
+        crate::runtime::rebind::UiRebindPreparationDenial,
+    > {
+        self.prepare_content_rebind_frame(semantic_content, frame_request)
+    }
+
+    fn retain_intent_consequence_preparation_stop<Observation>(
         &mut self,
         denial: crate::runtime::rebind::UiRebindPreparationDenial,
         plan: crate::runtime::rebind::UiRebindPlan,
-        mut transfer: WorthUiIntentConsequenceRebindTransfer,
+        mut transfer: WorthUiIntentConsequenceRebindTransfer<Observation>,
     ) -> crate::runtime::intent_execution::UiIntentConsequenceStop {
         transfer
             .consequence
@@ -221,11 +272,11 @@ impl WorthUiActiveApplicationSession {
         )
     }
 
-    fn retain_intent_consequence_service_proposal_stop(
+    fn retain_intent_consequence_service_proposal_stop<Observation>(
         &mut self,
         denial: crate::runtime::session::UiPortalProposalPreparationDenial,
         plan: crate::runtime::rebind::UiRebindPlan,
-        mut transfer: WorthUiIntentConsequenceRebindTransfer,
+        mut transfer: WorthUiIntentConsequenceRebindTransfer<Observation>,
     ) -> crate::runtime::intent_execution::UiIntentConsequenceStop {
         transfer
             .consequence

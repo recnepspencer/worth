@@ -3,6 +3,9 @@ use crate::fact_contract::{UiAuthoredFactKind, UiProducedFact};
 use crate::runtime::tests::active_application_session_test_support::{
     component_candidate_submission, source_backed_component_session,
 };
+use crate::runtime::tests::appearance_component_session_test_support::{
+    attached_appearance_candidate_submission, source_backed_appearance_consumer_session,
+};
 
 #[test]
 fn exact_repeated_authored_observation_is_terminal_no_change() {
@@ -19,15 +22,40 @@ fn exact_repeated_authored_observation_is_terminal_no_change() {
     turn.admit_source(candidate)
         .expect("production source observation admits");
     let observations = turn.seal().expect("non-empty turn seals");
+    assert!(
+        !observations.carries_appearance_owner_snapshot_for_test(),
+        "an appearance-free turn must perform no owner capture at seal"
+    );
     let outcome = session
         .classify_observations(observations)
         .expect("admitted source observation classifies");
+    assert!(
+        !session.has_appearance_owner_snapshot_for_test(),
+        "appearance-free applications retain zero per-turn owner snapshots"
+    );
     let receipt = match outcome {
         UiChangeClassificationOutcome::ObservedNoChange(receipt) => receipt,
         _ => panic!("the exact current source observation must be a no-change receipt"),
     };
 
     assert_eq!(receipt.observation_count(), 1);
+    let _ = session.shutdown();
+}
+
+#[test]
+fn admitted_appearance_consumers_close_one_coherent_owner_snapshot() {
+    let mut session = source_backed_appearance_consumer_session();
+    let candidate = attached_appearance_candidate_submission(
+        &session,
+        "appearance-current",
+        "workspace.component.active_session_current",
+    );
+    let mut turn = session.begin_observation_turn().unwrap();
+    turn.admit_source(candidate).unwrap();
+    let observations = turn.seal().unwrap();
+    assert!(observations.carries_appearance_owner_snapshot_for_test());
+    session.classify_observations(observations).unwrap();
+    assert!(session.has_appearance_owner_snapshot_for_test());
     let _ = session.shutdown();
 }
 

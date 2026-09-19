@@ -49,7 +49,9 @@ fn adjudicate(receipt: worth_ui_native_platform::UiNativePlatformCloseReceipt) -
             Kind::Unresolved | Kind::RecoveryRequired | Kind::ReconstructionCurrent
         )
     });
-    let presentation = receipt.presentation();
+    let Some(presentation) = receipt.presentation() else {
+        return ExitCode::from(3);
+    };
     let retained_payload_exact = receipt.retained_frames().last().is_some_and(|retained| {
         retained.frame() == presentation.presented_frame()
             && retained.retained_baseline_rgba8() == presentation.retained_baseline_rgba8()
@@ -127,19 +129,19 @@ fn evidence(
     let shutdown = receipt
         .client_shutdown()
         .expect("deferred completion evidence follows client shutdown validation");
-    let cost = presentation.cost();
+    let cost = receipt.final_frame().cost();
     serde_json::json!({
         "schema": "worth-ui-native-phase-f-deferred-completion-world-v1",
         "presentation_transitions": transitions.iter().map(|transition| format!("{:?}", transition.kind())).collect::<Vec<_>>(),
         "pending_completed_same_request": adjudication.completed_deferred_request,
         "no_recovery_path": adjudication.terminal_without_recovery,
-        "source_rgba8": presentation.source_rgba8(),
-        "client_physical_size": presentation.client_physical_size(),
-        "retained_baseline_rgba8": presentation.retained_baseline_rgba8(),
-        "retained_center_rgba8": presentation.retained_center_rgba8(),
+        "source_rgba8": presentation.map(|value| value.source_rgba8()),
+        "client_physical_size": presentation.map(|value| value.client_physical_size()),
+        "retained_baseline_rgba8": presentation.map(|value| value.retained_baseline_rgba8()),
+        "retained_center_rgba8": presentation.map(|value| value.retained_center_rgba8()),
         "retained_payload_exact": adjudication.retained_payload_exact,
         "physical_identity_exact": adjudication.physical_identity_exact,
-        "port_crossings": presentation.port_crossings(),
+        "port_crossings": presentation.map(|value| value.port_crossings()),
         "exact_async_cost": adjudication.exact_async_cost,
         "cost": {
             "presented_surfaces": cost.presented_surfaces(),

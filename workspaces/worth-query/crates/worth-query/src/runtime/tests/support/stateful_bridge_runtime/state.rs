@@ -1,9 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
-use worth_relational::facade::runtime::RelationalRuntime;
 use worth_runtime_bridge::facade::RuntimeBridge;
 
 use crate::memory_workspace::WorthQueryEntityIdentity;
-use crate::runtime::tests::support::test_bridge_with_writeback_authority;
 use crate::runtime::{WorthQueryLiveArtifactTarget, WorthQueryMutationTargetCollectionIdentity};
 use worth_foundational::facade::{AspectValue, CanonicalFieldPath};
 
@@ -22,20 +20,15 @@ pub(super) struct StatefulBridgeState {
     pub(super) next_commit_identity: usize,
     pub(super) next_snapshot_token: usize,
     pub(super) bridge: RuntimeBridge,
-    pub(super) relational_runtime: Option<RelationalRuntime>,
+    pub(super) relational_source:
+        worth_query_execution::facade::integration::WorthQueryRelationalSourceOwner,
 }
 
 impl StatefulBridgeState {
-    pub(super) fn new(installed_collections: BTreeSet<String>) -> Self {
-        Self::with_bridge(
-            installed_collections,
-            test_bridge_with_writeback_authority(),
-        )
-    }
-
-    pub(super) fn with_bridge(
+    pub(super) fn new(
         installed_collections: BTreeSet<String>,
         bridge: RuntimeBridge,
+        relational_source: worth_query_execution::facade::integration::WorthQueryRelationalSourceOwner,
     ) -> Self {
         Self {
             installed_collections,
@@ -49,12 +42,7 @@ impl StatefulBridgeState {
             next_commit_identity: 0,
             next_snapshot_token: 0,
             bridge,
-            relational_runtime: None,
+            relational_source,
         }
-    }
-
-    pub(super) fn with_relational_runtime(mut self, runtime: RelationalRuntime) -> Self {
-        self.relational_runtime = Some(runtime);
-        self
     }
 }

@@ -1,7 +1,9 @@
 use worth_foundational::facade::{BoundaryProtocolIdentity, BoundaryProtocolVersion};
 use worth_query_decl::facade::application_schema::{
-    ApplicationEffectPayload, ApplicationExternalEffectPayload, ApplicationExternalEffectProtocol,
+    ApplicationExternalEffectBinding, ApplicationExternalEffectProtocol,
+    ApplicationRetainedEffectBinding,
 };
+use worth_query_decl::facade::worth_query_structured_value_binding;
 
 use crate::estate::EstateDeathNotificationRequest;
 
@@ -20,34 +22,36 @@ impl From<EstateDeathNotificationRequest> for EstateDeathNotificationV2Payload {
     }
 }
 
-impl ApplicationEffectPayload for EstateDeathNotificationV2Payload {
-    fn retained_bytes(&self) -> u64 {
-        u64::try_from(std::mem::size_of::<Self>()).unwrap_or(u64::MAX)
+worth_query_structured_value_binding!(pub EstateDeathNotificationV2PayloadBinding for EstateDeathNotificationV2Payload { identity: "bank.estate.effect.death-notification.payload.v2" });
+
+impl ApplicationRetainedEffectBinding for EstateDeathNotificationV2PayloadBinding {
+    fn retained_bytes(_: &Self::Value) -> u64 {
+        u64::try_from(std::mem::size_of::<EstateDeathNotificationV2Payload>()).unwrap_or(u64::MAX)
     }
 }
 
-impl ApplicationExternalEffectPayload for EstateDeathNotificationV2Payload {
+impl ApplicationExternalEffectBinding for EstateDeathNotificationV2PayloadBinding {
     const PROTOCOL: ApplicationExternalEffectProtocol = ApplicationExternalEffectProtocol::new(
         BoundaryProtocolIdentity::new("bank.estate.death-notification"),
         BoundaryProtocolVersion::new(2),
     );
     const MAX_EXTERNAL_BYTES: u64 = 32;
 
-    fn external_effect_bytes(&self) -> Vec<u8> {
+    fn external_effect_bytes(value: &Self::Value) -> Vec<u8> {
         let mut bytes = Vec::with_capacity(Self::MAX_EXTERNAL_BYTES as usize);
         bytes.extend_from_slice(b"DEATHV2!");
-        bytes.extend_from_slice(&self.0.estate().get().to_be_bytes());
-        bytes.extend_from_slice(&self.0.notice().get().to_be_bytes());
-        bytes.extend_from_slice(&self.0.subject().get().to_be_bytes());
+        bytes.extend_from_slice(&value.0.estate().get().to_be_bytes());
+        bytes.extend_from_slice(&value.0.notice().get().to_be_bytes());
+        bytes.extend_from_slice(&value.0.subject().get().to_be_bytes());
         bytes
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use worth_query_decl::facade::application_schema::ApplicationExternalEffectPayload;
+    use worth_query_decl::facade::application_schema::ApplicationExternalEffectBinding;
 
-    use super::EstateDeathNotificationV2Payload;
+    use super::{EstateDeathNotificationV2Payload, EstateDeathNotificationV2PayloadBinding};
     use crate::{
         estate::{DeathNoticeId, EstateCaseId, EstateDeathNotificationRequest},
         model::BankPrincipalId,
@@ -62,21 +66,24 @@ mod tests {
         ));
         let corpus =
             include_str!("../../../../../../protocol-corpus/estate-death-notification/v2.hex");
-        let encoded = payload.external_effect_bytes();
+        let encoded = EstateDeathNotificationV2PayloadBinding::external_effect_bytes(&payload);
         assert_eq!(
-            EstateDeathNotificationV2Payload::PROTOCOL.identity(),
+            EstateDeathNotificationV2PayloadBinding::PROTOCOL.identity(),
             &worth_foundational::facade::BoundaryProtocolIdentity::new(
                 "bank.estate.death-notification"
             )
         );
         assert_eq!(
-            EstateDeathNotificationV2Payload::PROTOCOL.version(),
+            EstateDeathNotificationV2PayloadBinding::PROTOCOL.version(),
             worth_foundational::facade::BoundaryProtocolVersion::new(2)
         );
-        assert_eq!(EstateDeathNotificationV2Payload::MAX_EXTERNAL_BYTES, 32);
+        assert_eq!(
+            EstateDeathNotificationV2PayloadBinding::MAX_EXTERNAL_BYTES,
+            32
+        );
         assert_eq!(
             encoded.len() as u64,
-            EstateDeathNotificationV2Payload::MAX_EXTERNAL_BYTES
+            EstateDeathNotificationV2PayloadBinding::MAX_EXTERNAL_BYTES
         );
         assert_eq!(encoded, decode_hex(corpus));
     }

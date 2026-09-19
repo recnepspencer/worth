@@ -1,5 +1,9 @@
+use worth_foundational::facade::AspectKey;
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 use worth_relational::facade::identity::{EntityId, KindId, RelationId};
+
+mod source_currentness;
+pub(in crate::domain_computation::primary_graph) use source_currentness::WorthQuerySourceCurrentnessFailure;
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub(in crate::domain_computation) enum WorthQueryApplicationAdjacencyDirection {
@@ -40,6 +44,22 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryApplicationFactK
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation) enum WorthQueryApplicationObservedFact {
+    SourceEntity {
+        entity_id: EntityId,
+    },
+    SourceAspectRevision {
+        entity_id: EntityId,
+        aspect: AspectKey,
+        native_revision: Option<u64>,
+    },
+    SourceAdjacencyRevision {
+        relation_kind: KindId,
+        anchor: EntityId,
+        direction: worth_relational::facade::runtime::RelationalAdjacencyDirection,
+        native_revision: Option<worth_relational::facade::identity::VersionId>,
+        comparison_work_limit: usize,
+        endpoints: Vec<EntityId>,
+    },
     Entity {
         entity_id: EntityId,
         kind: KindId,
@@ -80,6 +100,33 @@ impl WorthQueryApplicationObservedFact {
 
     pub(crate) fn locator_identity(&self) -> String {
         match self {
+            Self::SourceEntity { entity_id } => format!(
+                "application-source-entity:{}:{}:{}",
+                entity_id.partition_value(),
+                entity_id.local_slot_value(),
+                entity_id.generation_value()
+            ),
+            Self::SourceAspectRevision {
+                entity_id, aspect, ..
+            } => format!(
+                "application-source-aspect:{}:{}:{}:{}",
+                entity_id.partition_value(),
+                entity_id.local_slot_value(),
+                entity_id.generation_value(),
+                aspect.as_str()
+            ),
+            Self::SourceAdjacencyRevision {
+                relation_kind,
+                anchor,
+                direction,
+                ..
+            } => format!(
+                "application-source-adjacency:{direction:?}:{}:{}:{}:kind:{}",
+                anchor.partition_value(),
+                anchor.local_slot_value(),
+                anchor.generation_value(),
+                relation_kind.as_u32()
+            ),
             Self::Entity {
                 entity_id, kind, ..
             } => format!(
@@ -139,6 +186,11 @@ impl WorthQueryApplicationObservedFact {
 
     pub(super) fn touches_entity(&self, candidate: EntityId) -> bool {
         match self {
+            Self::SourceEntity { entity_id } => *entity_id == candidate,
+            Self::SourceAspectRevision { entity_id, .. } => *entity_id == candidate,
+            Self::SourceAdjacencyRevision {
+                anchor, endpoints, ..
+            } => *anchor == candidate || endpoints.contains(&candidate),
             Self::Entity { entity_id, .. }
             | Self::Field { entity_id, .. }
             | Self::AbsentField { entity_id, .. } => *entity_id == candidate,
@@ -160,6 +212,50 @@ impl WorthQueryApplicationObservedFact {
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     ) -> bool {
         match self {
+            Self::SourceEntity { entity_id } => runtime
+                .read_truth()
+                .project_snapshot(snapshot)
+                .is_some_and(|view| {
+                    view.entity_record_with_projection_scope(
+                        *entity_id,
+                        worth_relational::facade::runtime::ProjectionAspectScope::empty(),
+                        |record| {
+                            Some(
+                                record.lifecycle()
+                                    == worth_relational::facade::storage::RecordLifecycleState::Live,
+                            )
+                        },
+                    ) == Some(true)
+                }),
+            Self::SourceAspectRevision {
+                entity_id,
+                aspect,
+                native_revision,
+            } => runtime
+                .read_truth()
+                .project_snapshot(snapshot)
+                .and_then(|view| view.entity_aspect_version(*entity_id, aspect))
+                == Some(*native_revision),
+            Self::SourceAdjacencyRevision {
+                relation_kind,
+                anchor,
+                direction,
+                native_revision,
+                comparison_work_limit,
+                ..
+            } => runtime
+                .read_truth()
+                .project_snapshot(snapshot)
+                .and_then(|view| {
+                    view.bounded_adjacency_structural_revision(
+                        *anchor,
+                        *relation_kind,
+                        *direction,
+                        *comparison_work_limit,
+                    )
+                    .ok()
+                })
+                .is_some_and(|current| current.revision() == *native_revision),
             Self::Entity {
                 entity_id, kind, ..
             } => runtime

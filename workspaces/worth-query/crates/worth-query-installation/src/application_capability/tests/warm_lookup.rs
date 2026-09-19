@@ -17,9 +17,12 @@ use worth_query_declaration::facade::{
         ApplicationPrincipalMappingStatusRequirement, ApplicationPrincipalTargetRequirement,
         ApplicationSchema, ApplicationSchemaDeclaration, ApplicationSchemaDeclarationBuilder,
         ApplicationSchemaDeclarationDenial, DeclaredApplicationFieldValue, EqualityPredicate,
-        NoEqualityPredicate, ReadOnly, ReadWrite,
+        NoEqualityPredicate, ReadOnly, ReadWrite, U64ApplicationValueBinding,
     },
-    authentication::{WorthQueryExternalPrincipalIdentity, WorthQueryPrincipalMappingStatus},
+    authentication::{
+        WorthQueryExternalPrincipalIdentity, WorthQueryExternalPrincipalIdentityBinding,
+        WorthQueryPrincipalMappingStatus, WorthQueryPrincipalMappingStatusBinding,
+    },
 };
 
 struct OtherCapability;
@@ -39,9 +42,7 @@ impl ApplicationCapabilityMarkerIdentity for OtherCapability {
     const IDENTIFIER: &'static str = "Capability";
 }
 
-impl ApplicationAspectMarkerIdentity for PrincipalFacts {
-    type Schema = Schema;
-    type Entity = Principal;
+impl ApplicationAspectMarkerIdentity<Schema, Principal> for PrincipalFacts {
     const IDENTIFIER: &'static str = "PrincipalFacts";
     const ASPECT_IDENTITY: worth_query_declaration::facade::application_schema::AspectIdentity =
         worth_query_declaration::facade::application_schema::AspectIdentity(0x9161_2203);
@@ -51,15 +52,13 @@ impl ApplicationAspectMarkerIdentity for PrincipalFacts {
 }
 
 macro_rules! principal_field {
-    ($field:ty, $entity:ty, $aspect:ty, $identifier:literal, $value:ty) => {
-        impl ApplicationFieldMarkerIdentity for $field {
-            type Schema = Schema;
-            type Entity = $entity;
-            type Aspect = $aspect;
+    ($field:ty, $entity:ty, $aspect:ty, $identifier:literal, $value:ty, $binding:ty) => {
+        impl ApplicationFieldMarkerIdentity<Schema, $entity, $aspect> for $field {
             const IDENTIFIER: &'static str = $identifier;
         }
         impl DeclaredApplicationFieldValue for $field {
             type Value = $value;
+            type Binding = $binding;
             const PRESENCE: ApplicationFieldPresence = ApplicationFieldPresence::Required;
         }
     };
@@ -70,25 +69,34 @@ principal_field!(
     Grant,
     Facts,
     "MappingIdentity",
-    WorthQueryExternalPrincipalIdentity
+    WorthQueryExternalPrincipalIdentity,
+    WorthQueryExternalPrincipalIdentityBinding
 );
 principal_field!(
     MappingStatus,
     Grant,
     Facts,
     "MappingStatus",
-    WorthQueryPrincipalMappingStatus
+    WorthQueryPrincipalMappingStatus,
+    WorthQueryPrincipalMappingStatusBinding
 );
 principal_field!(
     PrincipalIdentity,
     Principal,
     PrincipalFacts,
     "PrincipalIdentity",
-    u64
+    u64,
+    U64ApplicationValueBinding
 );
 
-fn principal_binding(
-) -> ApplicationPrincipalBindingRef<Schema, PrincipalBinding, Grant, Principal, u64> {
+fn principal_binding() -> ApplicationPrincipalBindingRef<
+    Schema,
+    PrincipalBinding,
+    Grant,
+    Principal,
+    u64,
+    U64ApplicationValueBinding,
+> {
     let mapping_identity = ApplicationFieldRef::<
         Schema,
         Grant,
@@ -108,7 +116,9 @@ fn principal_binding(
         NoEqualityPredicate,
     >::from_schema_types();
     let target = ApplicationRelationRef::<Schema, MapsToPrincipal, Grant, Principal>::
-        from_schema_identifiers("MapsToPrincipal", "Grant", "Principal");
+        from_schema_identifiers("MapsToPrincipal", "Grant", "Principal",
+                worth_query_declaration::facade::application_schema::ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
+            );
     let principal_identity = ApplicationFieldRef::<
         Schema,
         Principal,
@@ -183,44 +193,57 @@ impl ApplicationSchema for Schema {
             .field(principal, principal_identity_field())
             .relation(
                 ApplicationRelationRef::<Schema, ResourceRelation, Grant, Resource>::
-                    from_schema_identifiers("ResourceRelation", "Grant", "Resource"),
+                    from_schema_identifiers("ResourceRelation", "Grant", "Resource",
+                worth_query_declaration::facade::application_schema::ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
+            ),
                 grant,
                 resource,
             )
             .relation(
                 ApplicationRelationRef::<Schema, ScopedRelation, Grant, Resource>::
-                    from_schema_identifiers("ScopedRelation", "Grant", "Resource"),
+                    from_schema_identifiers("ScopedRelation", "Grant", "Resource",
+                worth_query_declaration::facade::application_schema::ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
+            ),
                 grant,
                 resource,
             )
             .relation(
                 ApplicationRelationRef::<Schema, PrincipalResource, Principal, Resource>::
-                    from_schema_identifiers("PrincipalResource", "Principal", "Resource"),
+                    from_schema_identifiers("PrincipalResource", "Principal", "Resource",
+                worth_query_declaration::facade::application_schema::ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
+            ),
                 principal,
                 resource,
             )
             .relation(
                 ApplicationRelationRef::<Schema, Parent, Grant, Grant>::from_schema_identifiers(
                     "Parent", "Grant", "Grant",
+                    worth_query_declaration::facade::application_schema::ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
                 ),
                 grant,
                 grant,
             )
             .relation(
                 ApplicationRelationRef::<Schema, Grantor, Principal, Grant>::
-                    from_schema_identifiers("Grantor", "Principal", "Grant"),
+                    from_schema_identifiers("Grantor", "Principal", "Grant",
+                worth_query_declaration::facade::application_schema::ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
+            ),
                 principal,
                 grant,
             )
             .relation(
                 ApplicationRelationRef::<Schema, Grantee, Principal, Grant>::
-                    from_schema_identifiers("Grantee", "Principal", "Grant"),
+                    from_schema_identifiers("Grantee", "Principal", "Grant",
+                worth_query_declaration::facade::application_schema::ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
+            ),
                 principal,
                 grant,
             )
             .relation(
                 ApplicationRelationRef::<Schema, MapsToPrincipal, Grant, Principal>::
-                    from_schema_identifiers("MapsToPrincipal", "Grant", "Principal"),
+                    from_schema_identifiers("MapsToPrincipal", "Grant", "Principal",
+                worth_query_declaration::facade::application_schema::ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
+            ),
                 grant,
                 principal,
             )

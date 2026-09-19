@@ -182,8 +182,22 @@ fn verify_changed_consumer_lifecycle(
         readmitted_scopes[1],
     ] {
         assert_eq!(
-            reconstructed.query_scope(producer, aspect, scope),
-            destination.query_scope(producer, aspect, scope),
+            reconstructed
+                .query_scope(
+                    producer,
+                    aspect,
+                    scope,
+                    &mut crate::logic::evaluation::EvaluationWork::Ordinary
+                )
+                .unwrap(),
+            destination
+                .query_scope(
+                    producer,
+                    aspect,
+                    scope,
+                    &mut crate::logic::evaluation::EvaluationWork::Ordinary
+                )
+                .unwrap(),
             "operational clone must deeply materialize exact overlay membership truth"
         );
     }
@@ -214,7 +228,15 @@ fn assert_scope(
     expected: &[NodeId],
 ) {
     assert_eq!(
-        index.query_scope(producer, aspect, scope).candidates,
+        index
+            .query_scope(
+                producer,
+                aspect,
+                scope,
+                &mut crate::logic::evaluation::EvaluationWork::Ordinary
+            )
+            .unwrap()
+            .candidates,
         expected,
         "scope {scope:?} candidates"
     );

@@ -7,7 +7,7 @@ use crate::domain_computation::primary_graph::application_attempt::{
     snapshot_lease::WorthQueryApplicationSnapshotLease, WorthQueryApplicationIdempotencyBinding,
 };
 use crate::domain_computation::primary_graph::provider::{
-    WorthQueryApplicationCommitSerialization, WorthQueryPrimaryGraphProvider,
+    WorthQueryApplicationBranchCommitCoordination, WorthQueryPrimaryGraphProvider,
 };
 
 mod authorized;
@@ -21,7 +21,7 @@ mod session_admission;
 
 pub(in crate::domain_computation::primary_graph::application_attempt) use authorized::WorthQueryManagedEquivalentCommitReceiptPermit;
 pub(in crate::domain_computation::primary_graph::application_attempt) use commit_resolution::WorthQueryFreshCommitReceiptPermit;
-pub(in crate::domain_computation::primary_graph::application_attempt) use fresh::WorthQueryStaleEquivalentCommitReceiptPermit;
+pub(in crate::domain_computation::primary_graph::application_attempt) use fresh::WorthQueryRegisteredEquivalentCommitReceiptPermit;
 use mutation_cleanup::WorthQueryApplicationMutationCleanupOwner;
 pub(in crate::domain_computation) use registered::{
     WorthQueryProviderAttemptRegistrationContext, WorthQueryRegisteredProviderAttempt,
@@ -35,7 +35,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt::provider_e
     cleanup: WorthQueryApplicationMutationCleanupOwner,
 }
 
-struct WorthQueryProviderProgression<'a, 'provider, Schema, Operation, Input, Scope> {
+struct WorthQueryProviderProgression<'a, Schema, Operation, Input, Scope> {
     application:
         &'a crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
             Schema,
@@ -53,7 +53,6 @@ struct WorthQueryProviderProgression<'a, 'provider, Schema, Operation, Input, Sc
     attempt_basis: WorthQueryApplicationAttemptBasis,
     authorization: crate::domain_computation::authorization::WorthQueryProviderCommitAuthorization,
     idempotency: WorthQueryApplicationIdempotencyBinding,
-    serialization: &'a WorthQueryApplicationCommitSerialization<'provider>,
     aftermath_causality: Option<
         crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
     >,
@@ -102,7 +101,7 @@ struct WorthQueryApplicationCommitProgressionAuthority<
     authorization:
         crate::domain_computation::authorization::WorthQueryRegisteredCommitAuthorization,
     idempotency: WorthQueryApplicationIdempotencyBinding,
-    serialization: &'a WorthQueryApplicationCommitSerialization<'provider>,
+    coordination: &'a WorthQueryApplicationBranchCommitCoordination<'provider>,
     aftermath_causality: Option<
         crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
     >,
@@ -138,8 +137,10 @@ impl<'a, 'provider, Schema, Operation, Input, Scope>
         self.idempotency
     }
 
-    pub(super) fn serialization(&self) -> &'a WorthQueryApplicationCommitSerialization<'provider> {
-        self.serialization
+    pub(super) fn coordination(
+        &self,
+    ) -> &'a WorthQueryApplicationBranchCommitCoordination<'provider> {
+        self.coordination
     }
 
     pub(super) fn aftermath_causality(
@@ -177,7 +178,6 @@ where
         attempt_basis,
         aftermath_causality,
     } = running_commit;
-    let serialization = application.primary_provider.serialize_application_commit();
     progress_provider_application(
         WorthQueryProviderProgression {
             application,
@@ -189,7 +189,6 @@ where
             attempt_basis,
             authorization,
             idempotency,
-            serialization: &serialization,
             aftermath_causality,
         },
         mutation_run,
@@ -198,7 +197,7 @@ where
 }
 
 fn progress_provider_application<Schema, Operation, Input, Scope>(
-    progression: WorthQueryProviderProgression<'_, '_, Schema, Operation, Input, Scope>,
+    progression: WorthQueryProviderProgression<'_, Schema, Operation, Input, Scope>,
     mutation_run: crate::domain_computation::provider_session::WorthQueryMutationRunBinding,
 ) -> WorthQueryProviderProgressionCompletion
 where
@@ -215,13 +214,14 @@ where
         attempt_basis,
         mut authorization,
         idempotency,
-        serialization,
         aftermath_causality,
     } = progression;
-    let admitted_session = match admit_provider_session(running, graph, mutation_run) {
-        Ok(admitted) => admitted,
-        Err(failure) => return failure.into_completion(),
-    };
+    let product = attempt_basis.retained_product();
+    let admitted_session =
+        match admit_provider_session(running, graph, product.retained_clone(), mutation_run) {
+            Ok(admitted) => admitted,
+            Err(failure) => return failure.into_completion(),
+        };
     let registered_session = match admitted_session.register(
         &mut authorization,
         prepared,
@@ -243,13 +243,19 @@ where
             ),
         );
     };
+    #[cfg(feature = "test-world-operation-control")]
+    provider.after_application_attempt_registration_for_test();
+    let commit_lane = application
+        .primary_provider
+        .application_branch_commit_lane(product.observation());
+    let coordination = commit_lane.enter();
     let authority = WorthQueryApplicationCommitProgressionAuthority {
         application,
         provider,
         admission,
         authorization,
         idempotency,
-        serialization,
+        coordination: &coordination,
         aftermath_causality,
     };
     registered_session.progress(&authority)

@@ -154,7 +154,8 @@ fn planner_packets_only_include_relation_integrity_registrations_authorized_by_p
             crate::authority::commit::preparation::packets::invariant::InvariantPacketRegistration::Native(registration) => {
                 relation_kind_for_rule(&registration.rule)
             }
-            crate::authority::commit::preparation::packets::invariant::InvariantPacketRegistration::Custom { .. } => None,
+            crate::authority::commit::preparation::packets::invariant::InvariantPacketRegistration::Custom { .. }
+            | crate::authority::commit::preparation::packets::invariant::InvariantPacketRegistration::CustomNotApplicable { .. } => None,
         })
         .collect::<Vec<_>>();
 

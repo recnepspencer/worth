@@ -99,6 +99,15 @@ impl UiCommittedAllocationSuccessors {
 }
 
 impl UiPreparedCommittedAllocationActivation {
+    pub(crate) fn candidate_replacement_authority(
+        &self,
+    ) -> Option<&crate::facade::prepared_application_authority::WorthUiPreparedApplicationAuthority>
+    {
+        self.application_publication
+            .as_ref()?
+            .replacement_authority()
+    }
+
     pub(crate) fn candidate_plan(&self) -> &crate::runtime::WorthUiActiveExecutionPlan {
         self.next_active.active_plan_ref()
     }

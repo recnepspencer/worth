@@ -24,6 +24,21 @@ impl SignalRuntime<(), (), (), (), ()> {
         SignalRuntimeBuilder::new(graph)
     }
 
+    /// Create a runtime builder while preserving a heap-owned composition root.
+    pub fn builder_from_boxed_graph(
+        graph: Box<SignalGraph>,
+    ) -> SignalRuntimeBuilder<
+        super::super::super::builder::Missing,
+        super::super::super::builder::Missing,
+        (),
+        (),
+        (),
+        (),
+        (),
+    > {
+        SignalRuntimeBuilder::new_boxed(graph)
+    }
+
     /// Build a runtime with the recommended default setup for a typed app context.
     pub fn build_for<Ctx>(graph: SignalGraph) -> SignalRuntime<(), (), (), Ctx, ()> {
         SignalRuntime::<(), (), (), Ctx, ()>::build(graph)

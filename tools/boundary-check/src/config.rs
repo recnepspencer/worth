@@ -10,6 +10,8 @@ pub(crate) struct Road1Config {
     pub(crate) born_crates: Vec<BornCrateConfig>,
     pub(crate) seed_skeletons: Vec<SeedSkeletonConfig>,
     pub(crate) subworkspaces: Vec<SubworkspaceConfig>,
+    #[serde(default)]
+    pub(crate) context_workspaces: Vec<ContextWorkspaceConfig>,
     pub(crate) legacy_reference_ratchet: LegacyReferenceRatchetConfig,
     /// Compile-time law substrates legal outside the band grammar (e.g. worth-proof).
     #[serde(default)]
@@ -22,6 +24,14 @@ pub(crate) struct Road1Config {
     pub(crate) source_dependency_allowlists: Vec<SourceDependencyAllowlistConfig>,
     #[serde(default)]
     pub(crate) source_identifier_denials: Vec<SourceIdentifierDenialConfig>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub(crate) struct ContextWorkspaceConfig {
+    pub(crate) path: String,
+    pub(crate) package_prefix: String,
+    #[serde(default)]
+    pub(crate) certification_packages: Vec<String>,
 }
 
 #[derive(Clone, Debug, Deserialize)]

@@ -1,4 +1,10 @@
+mod apply;
+mod retained_charge;
+
 use serde::{Deserialize, Serialize};
+
+mod retained_view;
+pub use retained_view::RetainedFlowSummaryView;
 
 use crate::data::aspect::Aspect;
 use crate::data::handle::NodeId;
@@ -223,6 +229,30 @@ impl InvalidationSummary {
         }
     }
 
+    /// Overlays the direct-hop invalidation actually performed for one flow.
+    ///
+    /// Since Milestone 13 the runtime invalidates one producer hop at a time
+    /// from committed output deltas and never plans reachability waves, so the
+    /// wave-derived fields are always empty. The honest values are the
+    /// performed counters: `invalidated_direct_subscribers` is the number of
+    /// direct settlements produced (a subscriber admitted because a changed
+    /// source output reached it through validated aspect/scope causality) and
+    /// `narrowed_frontier_width` is the number of distinct ready work items
+    /// enqueued. `maybe_stale_direct_subscribers` and
+    /// `transitive_frontier_width` have no direct-hop counterpart and stay 0.
+    pub(crate) fn with_performed_direct_hop(
+        mut self,
+        baseline: crate::data::telemetry::SignalInvalidationRealizedCounters,
+        now: crate::data::telemetry::SignalInvalidationRealizedCounters,
+    ) -> Self {
+        use crate::data::telemetry::InvalidationPerformedCounter as Counter;
+        let delta =
+            |counter: Counter| now.value(counter).saturating_sub(baseline.value(counter)) as u32;
+        self.invalidated_direct_subscribers = delta(Counter::DirectSettlementsProduced);
+        self.narrowed_frontier_width = delta(Counter::ReadyItemsEnqueued);
+        self
+    }
+
     pub fn with_frontier_counters(
         mut self,
         frontier_seed_count: u32,
@@ -288,9 +318,33 @@ impl PlanningSummary {
     pub fn from_summary(plan: EvaluationPlanSummary) -> Self {
         Self { plan }
     }
+
+    /// Adds the plan of a later execution of the same flow.
+    pub fn absorb(&mut self, other: PlanningSummary, detail_limit: usize) {
+        self.plan.absorb(other.plan, detail_limit);
+    }
 }
 
 impl PrecomputeSummary {
+    /// Adds the precompute work of a later execution of the same flow. The
+    /// executor is the first one that ran.
+    pub fn absorb(&mut self, other: PrecomputeSummary) {
+        if self.executor.is_none() {
+            self.executor = other.executor;
+        }
+        self.stage_count = self.stage_count.saturating_add(other.stage_count);
+        self.task_count = self.task_count.saturating_add(other.task_count);
+        self.prepared_evaluations_produced = self
+            .prepared_evaluations_produced
+            .saturating_add(other.prepared_evaluations_produced);
+        self.tasks_deferred_by_condition = self
+            .tasks_deferred_by_condition
+            .saturating_add(other.tasks_deferred_by_condition);
+        self.tasks_satisfied_by_memoization = self
+            .tasks_satisfied_by_memoization
+            .saturating_add(other.tasks_satisfied_by_memoization);
+    }
+
     pub fn from_report(report: &ExecutionReport, _profile: DiagnosticsTier) -> Self {
         let executor = report.stages.first().map(|stage| match stage.outcome {
             crate::logic::planner::StageExecutionOutcome::CompletedSerial => StageExecutor::Serial,
@@ -306,19 +360,6 @@ impl PrecomputeSummary {
             prepared_evaluations_produced: report.prepared_evaluations_produced,
             tasks_deferred_by_condition: report.tasks_deferred_by_condition,
             tasks_satisfied_by_memoization: report.tasks_satisfied_by_memoization,
-        }
-    }
-}
-
-impl ApplySummary {
-    pub fn from_report(report: &ExecutionReport, profile: DiagnosticsTier) -> Self {
-        Self {
-            report: ExecutionReportSummary::from_report(report, profile),
-            prepared_evaluations_applied: report.prepared_evaluations_applied,
-            dependency_capture_updates: report.dependency_capture_updates,
-            tasks_validated_clean: report.tasks_validated_clean,
-            tasks_pruned: report.tasks_pruned,
-            tasks_with_suppressed_propagation: report.tasks_with_suppressed_propagation,
         }
     }
 }

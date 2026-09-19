@@ -272,15 +272,6 @@ impl NativeExpectation {
                     presented_pixels: 34_560,
                 }
             }
-            Axis::PaintValue => Self::local(
-                paragraphs,
-                2 * paragraphs,
-                2,
-                6,
-                4 * paragraphs - 1,
-                7_776,
-                34_560,
-            ),
             Axis::Content | Axis::PaintBoundary | Axis::AtlasMiss => Self::local(
                 paragraphs,
                 2 * paragraphs,
@@ -328,7 +319,7 @@ fn expected_rendered_pixels(case: Phase5LocalityCase) -> u64 {
     match case.axis() {
         Axis::Content => 2_551 * paragraphs - 476,
         Axis::Width => 9_282,
-        Axis::PaintValue | Axis::PaintBoundary => 2_551 * paragraphs,
+        Axis::PaintBoundary => 2_551 * paragraphs,
         Axis::Dpi => 3_402 * paragraphs,
         Axis::AtlasMiss => 2_551 * paragraphs - 51,
         Axis::UploadCompletion => 2_500 * paragraphs,

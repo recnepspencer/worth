@@ -74,6 +74,16 @@ pub(crate) fn inspect_staging_surface(
                         }
                     }
                 }
+                MutationIntent::Materialization(intent) => match intent.record() {
+                    RecordRef::Entity(entity_id) => {
+                        intent_counts.entity_mutation_count += 1;
+                        touched_records.insert(RecordRef::Entity(entity_id));
+                    }
+                    RecordRef::Relation(relation_id) => {
+                        intent_counts.relation_mutation_count += 1;
+                        touched_records.insert(RecordRef::Relation(relation_id));
+                    }
+                },
             }
         }
     }

@@ -56,10 +56,6 @@ impl<'runtime> DiagnosticArtifactBuilder<'runtime> {
         self.kind(DiagnosticsArtifactKind::Failure)
     }
 
-    pub(crate) fn rollback(self) -> Self {
-        self.kind(DiagnosticsArtifactKind::Rollback)
-    }
-
     pub(crate) fn comparison(self) -> Self {
         self.kind(DiagnosticsArtifactKind::Comparison)
     }

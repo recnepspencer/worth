@@ -1,6 +1,7 @@
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum UiMountedProjectionDenial {
     Identity(super::super::UiMountedIdentityDenial),
+    OccurrenceGeometry(super::super::UiMountedOccurrenceGeometryDenial),
     UnknownGraphNode,
     MissingSurfaceBinding,
     MissingMosaicFocusScope(crate::graph::UiGraphNodeIdentity),
@@ -14,17 +15,6 @@ pub enum UiMountedProjectionDenial {
     NonFiniteGeometry,
     NegativeExtent,
     TableCapacityExceeded,
-    AmbiguousStaticPaintToken,
-    MissingStaticPaintToken,
-    ForeignStaticPaintToken,
-    MissingStaticPaintColor,
-    InvalidStaticPaintColor,
-    MissingStaticPaintAllocation(crate::graph::UiGraphNodeIdentity),
-    UnsupportedStaticPaintAllocation(crate::graph::UiGraphNodeIdentity),
-    StaticPaintParticipationWithheld(crate::graph::UiGraphNodeIdentity),
-    StaticPaintNodeReceiptMismatch,
-    StaticPaintCapacityExceeded,
-    StaticPaintCompletion(worth_ui_host_contract::UiMountedFilledRectCompletionDenial),
     PortalOverlayOwnerMissing,
     PortalOverlayCapacityExceeded,
     PortalOverlayCompletion(worth_ui_host_contract::UiMountedPortalOverlayCompletionDenial),
@@ -73,6 +63,11 @@ pub enum UiMountedProjectionDenial {
     VisualOverlaySurfaceMismatch,
     DuplicateLaneContribution,
     CostCounterOverflow,
+    AppearanceSelectionBatchMismatch,
+    AppearanceSelectionFrameMismatch,
+    AppearanceRetainedProjectionUnavailable,
+    AppearanceTextCandidatesUnavailable,
+    ProjectionOwnerUnavailable,
 }
 
 impl From<super::super::UiMountedIdentityDenial> for UiMountedProjectionDenial {

@@ -11,6 +11,7 @@ pub(in crate::runtime) struct UiFocusParticipantIdentity(
 );
 
 impl UiFocusScopeIdentity {
+    #[cfg(any(test, feature = "certification-support"))]
     pub(in crate::runtime) const fn for_surface(
         surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
     ) -> Self {

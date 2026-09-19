@@ -9,6 +9,27 @@ pub(super) fn install(
 > {
     schema
         .operation(
+            ProgramRequiredOperation::reference()
+                .definition()
+                .no_external_effect()
+                .no_aftermath()
+                .finish(),
+        )
+        .operation_decision_fact_budget(ProgramRequiredOperation::reference(), 1)
+        .operation_projection_work_budget(ProgramRequiredOperation::reference(), 8)
+        .operation_requires_ability(
+            ProgramRequiredOperation::reference(),
+            ViewAccount::reference(),
+        )
+        .operation_write(
+            ProgramRequiredOperation::reference(),
+            AccountStatus::reference(),
+        )
+        .operation_read_field(
+            ProgramRequiredOperation::reference(),
+            AccountStatus::reference(),
+        )
+        .operation(
             TouchAccountOperation::reference()
                 .definition()
                 .no_external_effect()
@@ -17,6 +38,7 @@ pub(super) fn install(
         )
         .operation_decision_fact_budget(TouchAccountOperation::reference(), 2)
         .operation_projection_work_budget(TouchAccountOperation::reference(), 32)
+        .operation_read_entity(TouchAccountOperation::reference(), Account::reference())
         .operation_requires_ability(TouchAccountOperation::reference(), ViewAccount::reference())
         .operation_write(
             TouchAccountOperation::reference(),
@@ -26,6 +48,7 @@ pub(super) fn install(
             TouchAccountOperation::reference(),
             AccountLabel::reference(),
         )
+        .operation_delete(TouchAccountOperation::reference(), Account::reference())
         .operation_emit(
             TouchAccountOperation::reference(),
             AccountActivityEffect::reference(),

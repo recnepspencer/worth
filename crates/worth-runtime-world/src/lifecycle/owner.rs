@@ -23,6 +23,7 @@ mod construction;
 mod execution_service;
 mod inspection_service;
 mod operation;
+mod owned_async_product;
 mod publication_service;
 mod recovery_service;
 #[cfg(test)]
@@ -34,6 +35,9 @@ pub(crate) use construction::{
 pub(crate) use operation::{
     ReservedPublicationAttemptCapacity, RuntimeWorldOperationLedger,
     RuntimeWorldOperationReservation, RuntimeWorldPublicationCapacityLedger,
+};
+pub use owned_async_product::{
+    RuntimeWorldOwnedAsyncRequestAdmissionDenial, RuntimeWorldOwnedAsyncRevalidationDenial,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -81,6 +85,8 @@ where
     pub(super) identities: Mutex<RuntimeWorldIdentityIssuer>,
     pub(super) relational: RelationalOwnerServicePorts,
     pub(super) signal: SignalOwnerServicePorts<D, I, E, Ctx, T>,
+    pub(super) signal_definition_publication:
+        worth_signal::facade::branch::SignalConditionalDefinitionPublicationPort<D, I, E, Ctx, T>,
     pub(super) bridge: RuntimeWorldCorrespondencePort,
     pub(super) clock: RuntimeWorldClock,
     pub(super) history: CompositeHistoryCatalog,
@@ -108,7 +114,8 @@ where
     pub fn new(
         inputs: RuntimeWorldOwnerInputs<D, I, E, Ctx, T>,
     ) -> Result<Self, RuntimeWorldIdentityExhaustion> {
-        let (relational, signal, bridge, budgets, clock) = inputs.into_parts();
+        let (relational, signal, signal_definition_publication, bridge, budgets, clock) =
+            inputs.into_parts();
         let construction = RuntimeWorldOwnerConstructionContract::new()?;
         let owner_identity = construction.owner_identity();
         let identities = construction.into_issuer();
@@ -147,6 +154,7 @@ where
                 identities: Mutex::new(identities),
                 relational,
                 signal,
+                signal_definition_publication,
                 bridge,
                 clock,
                 history,

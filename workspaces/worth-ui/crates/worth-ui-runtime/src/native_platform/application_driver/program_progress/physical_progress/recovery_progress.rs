@@ -17,8 +17,8 @@ impl UiNativeApplicationProgramProgress {
         {
             return Ok(());
         }
-        let recovery_program_frame = self.next_frame.saturating_sub(1);
-        self.resume_reconstruction(shell, recovery_program_frame, presentation)
+        let source = self.recovery_source.ok_or(())?;
+        self.resume_reconstruction(shell, source, presentation)
     }
 }
 

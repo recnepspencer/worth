@@ -1,4 +1,12 @@
 impl super::WorthUiActiveApplicationSession {
+    /// Completed sampling and hit-index work for the last accepted Motion tick.
+    /// Rejection and pending physical work preserve the prior accepted report.
+    pub fn last_motion_sampling_cost(
+        &self,
+    ) -> Option<crate::facade::mounted::UiPresentationMotionSamplingCost> {
+        self.mounted.last_motion_sampling_cost()
+    }
+
     pub(in crate::facade::entry) fn install_portal_exit_retention(
         &mut self,
         retention: Option<(
@@ -39,6 +47,54 @@ impl super::WorthUiActiveApplicationSession {
         }
     }
 
+    pub(in crate::facade::entry) fn release_rebound_portal_retention(
+        &mut self,
+        portal: crate::runtime::portal::UiPortalIdentity,
+    ) {
+        let Some(motion) = self
+            .portal_exit_retention
+            .remove_rebound_portal(portal)
+            .expect("rebound Portal exit retention has no in-flight physical work")
+        else {
+            return;
+        };
+        assert!(self
+            .motion
+            .as_mut()
+            .expect("rebound Portal exit retention retains Motion installation")
+            .release_exit_retention(motion));
+        self.retire_rebound_motion_sample(motion.track());
+    }
+
+    pub(in crate::facade::entry) fn release_rebound_motion_retention(
+        &mut self,
+        terminal: crate::runtime::motion::UiMotionTerminalReceipt,
+    ) {
+        let Some(retention) = terminal.exit_retention() else {
+            return;
+        };
+        self.portal_exit_retention
+            .remove_displaced(retention)
+            .expect("rebound Motion exit retention has exact Portal coordination");
+        assert!(self
+            .motion
+            .as_mut()
+            .expect("rebound exit retention retains Motion installation")
+            .release_exit_retention(retention));
+    }
+
+    pub(in crate::facade::entry) fn retire_rebound_motion_sample(
+        &mut self,
+        track: crate::runtime::motion::UiMotionTrackIdentity,
+    ) {
+        if !self.mounted.retire_rebound_motion_sample(track) {
+            assert!(
+                !self.mounted.contains_motion_track(track),
+                "rebound Motion terminal left an active or queued mounted sample"
+            );
+        }
+    }
+
     pub(in crate::facade::entry) fn prepare_motion_tick(
         &mut self,
         tick: u64,
@@ -75,9 +131,26 @@ impl super::WorthUiActiveApplicationSession {
         &mut self,
         settlement: crate::mounting::UiMountedMotionSampleSettlement,
     ) {
-        if let crate::mounting::UiMountedMotionSampleSettlement::Committed(sampling) = settlement {
+        if let crate::mounting::UiMountedMotionSampleSettlement::Committed(mut sampling) =
+            settlement
+        {
+            if let (Some(presented), Some(portal)) =
+                (sampling.presented_surface(), self.portal.as_mut())
+            {
+                portal.rebind_presented_motion_presentation(
+                    presented.semantic_surface(),
+                    presented.presentation(),
+                );
+            }
+            if let Some(transition) = sampling.take_hit_transition() {
+                self.interaction
+                    .observe_presented_hit_transition(&transition, &self.mounted);
+            }
             for terminal in sampling.terminals().iter().copied() {
                 self.settle_motion_terminal_request(terminal);
+            }
+            if sampling.presented_surface().is_some() {
+                self.refresh_motion_appearance_owner_receipt_sources();
             }
         }
     }
@@ -114,7 +187,7 @@ impl super::WorthUiActiveApplicationSession {
             last_tick,
             self.motion.as_ref().map_or(0, |motion| motion.publication_count()),
             sample.and_then(|sample| sample.geometry().map(|geometry| geometry.components())),
-            sample.map(|sample| sample.opacity()),
+            sample.map(|sample| sample.opacity_units()),
             sample.map(|sample| sample.hit_test_visible()),
             presentation,
             self.mounted.has_active_motion_samples(),

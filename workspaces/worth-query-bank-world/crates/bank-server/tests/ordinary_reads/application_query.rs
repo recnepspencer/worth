@@ -1,11 +1,7 @@
-use std::num::NonZeroUsize;
-
 use bank_server::{
     BankApplicationQueryAdmissionDenialKind, BankApplicationQueryDenial,
-    BankAuthorizationDenialKind,
+    BankAuthorizationDenialKind, BankReadControls,
 };
-use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope;
-use worth_query_host::facade::primary_graph::WorthQueryApplicationQueryControls;
 use worth_query_host::facade::publication::domain_computation::{
     WorthQueryPublishedApplicationQueryReleasePosture,
     WorthQueryPublishedApplicationQueryResultBufferRelease,
@@ -18,13 +14,12 @@ use crate::support::request_scope;
 fn installed_account_activity_is_a_real_ordered_bank_query() {
     let fixture = ordinary_read_world("installed-account-activity", 0);
     let owner = fixture.authenticate(OWNER);
-    let request = request_scope();
     let result = fixture
         .world
         .runtime
         .account_activity(fixture.personal_account)
         .as_principal(&owner)
-        .execute(current_controls(&request))
+        .execute(current_controls())
         .expect("account owner should execute the installed query");
 
     assert_eq!(result.rows().len(), 1);
@@ -79,13 +74,12 @@ fn installed_account_activity_is_a_real_ordered_bank_query() {
 fn installed_account_activity_denies_a_mapped_stranger_before_plan_authority() {
     let fixture = ordinary_read_world("installed-account-activity-stranger", 0);
     let stranger = fixture.authenticate(STRANGER);
-    let request = request_scope();
     let outcome = fixture
         .world
         .runtime
         .account_activity(fixture.personal_account)
         .as_principal(&stranger)
-        .execute(current_controls(&request));
+        .execute(current_controls());
     let denial = match outcome {
         Err(denial) => denial,
         Ok(_) => panic!("mapped stranger received account query authority"),
@@ -101,12 +95,6 @@ fn installed_account_activity_denies_a_mapped_stranger_before_plan_authority() {
     ));
 }
 
-fn current_controls(
-    request: &WorthQueryRequestScope,
-) -> WorthQueryApplicationQueryControls<'_, bank_domain::schema::BankSchema> {
-    WorthQueryApplicationQueryControls::current_one_shot(
-        NonZeroUsize::new(64).expect("result ceiling is nonzero"),
-        NonZeroUsize::new(100_000).expect("work ceiling is nonzero"),
-        request,
-    )
+fn current_controls() -> BankReadControls {
+    BankReadControls::current(request_scope(), 64, 100_000).unwrap()
 }

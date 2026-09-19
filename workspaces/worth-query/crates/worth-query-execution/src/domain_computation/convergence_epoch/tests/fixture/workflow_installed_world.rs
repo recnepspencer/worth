@@ -238,7 +238,7 @@ fn workflow_admission_fixture_with_provider(
     );
     let basis = admitted_basis();
     let bound = runtime
-        .bind_domain_operation(
+        .bind_standalone_test_domain_operation(
             &installation_authority,
             &operation,
             &basis,

@@ -1,0 +1,40 @@
+impl super::super::WorthUiActiveApplicationSession {
+    pub(super) fn scroll_bounds_for_mounted_owner(
+        &self,
+        owner: crate::runtime::scroll::UiScrollOwnerIdentity,
+        target: worth_ui_host_contract::UiMountedInstanceIdentity,
+        graph_node: crate::graph::UiGraphNodeIdentity,
+        slot: usize,
+    ) -> Result<
+        crate::runtime::scroll::UiScrollBounds,
+        crate::runtime::scroll::UiScrollBoundsResolutionDenial,
+    > {
+        if let Some((_, content, viewport)) = self.mounted.scroll_region_geometry(target, slot) {
+            return crate::runtime::scroll::UiScrollBounds::from_mounted_region(content, viewport)
+                .ok_or(crate::runtime::scroll::UiScrollBoundsResolutionDenial::OutOfRange);
+        }
+        if matches!(
+            owner,
+            crate::runtime::scroll::UiScrollOwnerIdentity::Region { .. }
+        ) {
+            return Err(
+                crate::runtime::scroll::UiScrollBoundsResolutionDenial::AllocationUnavailable,
+            );
+        }
+        self.application.scroll_bounds_for(owner, graph_node)
+    }
+
+    pub(super) fn scroll_region_incarnation(
+        &self,
+        target: worth_ui_host_contract::UiMountedInstanceIdentity,
+        slot: usize,
+    ) -> Option<crate::runtime::scroll::UiScrollOwnerIncarnation> {
+        let (owner, _, _) = self.mounted.scroll_region_geometry(target, slot)?;
+        let basis = self.mounted.current_mounted_identity_basis(owner)?;
+        Some(
+            crate::runtime::scroll::UiScrollOwnerIncarnation::from_mount_incarnation(
+                basis.mount_incarnation(),
+            ),
+        )
+    }
+}

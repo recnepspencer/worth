@@ -2,10 +2,13 @@ use std::marker::PhantomData;
 
 use worth_foundational::facade::ScalarAspectType;
 use worth_query_declaration::facade::application_schema::{
-    ApplicationSchema, ApplicationSchemaBindingIdentity, ApplicationSchemaMember,
+    ApplicationIdentityScalarValueBinding, ApplicationSchema, ApplicationSchemaBindingIdentity,
+    ApplicationSchemaMember, ApplicationValueDecodeDenial,
 };
 
-use crate::application_schema::WorthQueryInstalledApplicationSchema;
+use crate::application_schema::{
+    WorthQueryInstalledApplicationSchema, WorthQueryInstalledApplicationValueBinding,
+};
 use crate::authority_cryptography::{
     AuthoritySeal, AuthoritySealDomain, AuthorityTranscript, PackageAuthorityKey,
 };
@@ -21,6 +24,7 @@ pub struct WorthQueryInstalledPrincipalBinding<
     Mapping,
     Principal,
     PrincipalIdentity,
+    PrincipalIdentityBinding,
 > {
     binding_identity: ApplicationSchemaBindingIdentity,
     owner: String,
@@ -37,12 +41,29 @@ pub struct WorthQueryInstalledPrincipalBinding<
     principal_identity_field: String,
     principal_identity_scalar_family: ScalarAspectType,
     principal_identity_value_type: String,
+    principal_identity_binding: WorthQueryInstalledApplicationValueBinding,
     authority_identity: AuthoritySeal,
-    _marker: PhantomData<fn() -> (Schema, Binding, Mapping, Principal, PrincipalIdentity)>,
+    _marker: PhantomData<
+        fn() -> (
+            Schema,
+            Binding,
+            Mapping,
+            Principal,
+            PrincipalIdentity,
+            PrincipalIdentityBinding,
+        ),
+    >,
 }
 
-impl<Schema, Binding, Mapping, Principal, PrincipalIdentity>
-    WorthQueryInstalledPrincipalBinding<Schema, Binding, Mapping, Principal, PrincipalIdentity>
+impl<Schema, Binding, Mapping, Principal, PrincipalIdentity, PrincipalIdentityBinding>
+    WorthQueryInstalledPrincipalBinding<
+        Schema,
+        Binding,
+        Mapping,
+        Principal,
+        PrincipalIdentity,
+        PrincipalIdentityBinding,
+    >
 {
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn from_installed_schema(
@@ -59,6 +80,7 @@ impl<Schema, Binding, Mapping, Principal, PrincipalIdentity>
         principal_identity_field: &str,
         principal_identity_scalar_family: ScalarAspectType,
         principal_identity_value_type: &str,
+        principal_identity_binding: WorthQueryInstalledApplicationValueBinding,
     ) -> Self
     where
         Schema: ApplicationSchema,
@@ -96,6 +118,7 @@ impl<Schema, Binding, Mapping, Principal, PrincipalIdentity>
             principal_identity_field: principal_identity_field.to_string(),
             principal_identity_scalar_family,
             principal_identity_value_type: principal_identity_value_type.to_string(),
+            principal_identity_binding,
             authority_identity,
             _marker: PhantomData,
         }
@@ -161,6 +184,21 @@ impl<Schema, Binding, Mapping, Principal, PrincipalIdentity>
         &self.principal_identity_value_type
     }
 
+    pub fn principal_identity_binding(&self) -> &WorthQueryInstalledApplicationValueBinding {
+        &self.principal_identity_binding
+    }
+
+    pub fn decode_principal_identity(
+        &self,
+        value: &worth_foundational::facade::AspectValue,
+    ) -> Result<PrincipalIdentity, ApplicationValueDecodeDenial>
+    where
+        PrincipalIdentityBinding: ApplicationIdentityScalarValueBinding<Value = PrincipalIdentity>,
+        PrincipalIdentity: 'static,
+    {
+        self.principal_identity_binding.decode(value)
+    }
+
     pub fn authority_identity(&self) -> &str {
         self.authority_identity.as_str()
     }
@@ -219,8 +257,16 @@ impl<Schema, Binding, Mapping, Principal, PrincipalIdentity>
     }
 }
 
-impl<Schema, Binding, Mapping, Principal, PrincipalIdentity> std::fmt::Debug
-    for WorthQueryInstalledPrincipalBinding<Schema, Binding, Mapping, Principal, PrincipalIdentity>
+impl<Schema, Binding, Mapping, Principal, PrincipalIdentity, PrincipalIdentityBinding>
+    std::fmt::Debug
+    for WorthQueryInstalledPrincipalBinding<
+        Schema,
+        Binding,
+        Mapping,
+        Principal,
+        PrincipalIdentity,
+        PrincipalIdentityBinding,
+    >
 {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         formatter

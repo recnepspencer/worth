@@ -22,6 +22,19 @@ struct ScopeIdentity;
 struct AccountIdentity;
 struct GrantAccount;
 
+macro_rules! declare_u64_field {
+    ($($field:ty),+ $(,)?) => {$ (
+        impl crate::application_schema::DeclaredApplicationFieldValue for $field {
+            type Value = u64;
+            type Binding = crate::application_schema::U64ApplicationValueBinding;
+            const PRESENCE: crate::application_schema::ApplicationFieldPresence =
+                crate::application_schema::ApplicationFieldPresence::Required;
+        }
+    )+};
+}
+
+declare_u64_field!(ScopeIdentity, AccountIdentity);
+
 type QueryableField<Entity, Field> = ApplicationFieldRef<
     Schema,
     Entity,
@@ -63,12 +76,29 @@ impl ApplicationCapabilityRequest<Schema, Capability> for Input {
                 "wrong input variant",
             ));
         };
-        let account_selector =
-            ApplicationCapabilityEntitySelector::new(account_identity(), *account);
+        let account_selector = ApplicationCapabilityEntitySelector::new(
+            account_identity(),
+            crate::application_schema::ApplicationEncodedScalarValue::<
+                crate::application_schema::U64ApplicationValueBinding,
+            >::try_new(*account)
+            .unwrap(),
+        );
         Ok(ApplicationCapabilityRequestProjection::new(
-            ApplicationCapabilityEntitySelector::new(scope_identity(), *scope),
-            7_u64,
-            11_u64,
+            ApplicationCapabilityEntitySelector::new(
+                scope_identity(),
+                crate::application_schema::ApplicationEncodedScalarValue::<
+                    crate::application_schema::U64ApplicationValueBinding,
+                >::try_new(*scope)
+                .unwrap(),
+            ),
+            crate::application_schema::ApplicationEncodedScalarValue::<
+                crate::application_schema::U64ApplicationValueBinding,
+            >::try_new(7_u64)
+            .unwrap(),
+            crate::application_schema::ApplicationEncodedScalarValue::<
+                crate::application_schema::U64ApplicationValueBinding,
+            >::try_new(11_u64)
+            .unwrap(),
             ApplicationCapabilityRequestContext::new(context())
                 .entity(account_slot(), account_selector.clone()),
         )
@@ -76,8 +106,18 @@ impl ApplicationCapabilityRequest<Schema, Capability> for Input {
             grant_account(),
             account_selector,
         ))
-        .field(13_u64)
-        .magnitude(*amount)
+        .field(
+            crate::application_schema::ApplicationEncodedScalarValue::<
+                crate::application_schema::U64ApplicationValueBinding,
+            >::try_new(13_u64)
+            .unwrap(),
+        )
+        .magnitude(
+            crate::application_schema::ApplicationEncodedScalarValue::<
+                crate::application_schema::U64ApplicationValueBinding,
+            >::try_new(*amount)
+            .unwrap(),
+        )
         .cardinality(2))
     }
 }
@@ -138,5 +178,8 @@ fn account_slot() -> ApplicationCapabilityContextEntitySlotRef<Schema, Context, 
 }
 
 fn grant_account() -> ApplicationRelationRef<Schema, GrantAccount, Scope, Account> {
-    ApplicationRelationRef::from_schema_identifiers("GrantAccount", "Scope", "Account")
+    ApplicationRelationRef::from_schema_identifiers(
+        "GrantAccount", "Scope", "Account",
+        crate::facade::application_schema::ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
+    )
 }

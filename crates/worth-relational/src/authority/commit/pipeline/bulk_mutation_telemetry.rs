@@ -117,6 +117,14 @@ impl BulkMutationTelemetryAccumulator {
                 self.relation_target_count += 1;
                 self.lineage_transition_count += 1;
             }
+            MutationIntent::Materialization(intent) => match intent.record() {
+                crate::transactions::data::RecordRef::Entity(_) => {
+                    self.entity_target_count += 1;
+                }
+                crate::transactions::data::RecordRef::Relation(_) => {
+                    self.relation_target_count += 1;
+                }
+            },
         }
     }
 

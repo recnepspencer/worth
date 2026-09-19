@@ -1,6 +1,7 @@
 mod bootstrap;
 mod creation;
 mod custody;
+mod history;
 mod name;
 pub(crate) mod observation;
 mod reference_cell;
@@ -26,6 +27,7 @@ pub use custody::{
     OwnerRetirementWork, ProductBranchRetirementReport,
 };
 pub(crate) use custody::{OwnerCreatedComponentCustodyRegistry, ReservedCustodySlot};
+pub use history::ProductBranchHistoryTraversal;
 pub use name::{ProductBranchName, ProductBranchNameDenial};
 pub use observation::{
     ProductBranchObservation, ProductBranchObservationMismatch,
@@ -33,7 +35,8 @@ pub use observation::{
 };
 pub(crate) use reference_cell::{
     ProductBranchHeadProtection, ProductBranchReferenceCell, ProductBranchReferenceLoss,
-    ProductBranchReferenceMovement,
+    ProductBranchReferenceMovement, ProductBranchReferenceObservationFailure,
+    ProductBranchReferenceRetirement,
 };
 pub use reference_snapshot::ProductBranchReferenceSnapshot;
 pub use retirement::RuntimeWorldBranchRetirementDenial;

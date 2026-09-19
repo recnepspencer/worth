@@ -1,12 +1,17 @@
 use bank_domain::{
-    estate::{EstateAction, EstateCapabilityDelegationRequest},
+    estate::{
+        EstateAction, EstateCapabilityDelegationRequest, EstateCapabilityOperation,
+        EstateCapabilityPurpose,
+    },
+    proposals::BankIdempotencyKey,
     schema::*,
 };
 use worth_query_host::facade::{
     admission::authenticated_principal::WorthQueryRequestScope,
+    application_entry::WorthQueryApplicationCapabilityDelegationDenial,
+    declaration::application_schema::TypedMutationPreconditions,
     primary_graph::{
-        WorthQueryAdmittedApplicationCapabilityAccess, WorthQueryAdmittedApplicationOperation,
-        WorthQueryApplicationIdempotencyBinding,
+        WorthQueryAdmittedApplicationOperation,
         WorthQueryApplicationOperationInvariantProjectionReader,
         WorthQueryDelegationActivationProgram, WorthQueryEntityResolutionDenial,
         WorthQueryInvariantDecisionPlanDenial, WorthQueryInvariantEntityIdentity,
@@ -15,16 +20,22 @@ use worth_query_host::facade::{
 };
 
 use super::BankEstateProgressionDenial;
-use crate::{BankAuthenticatedPrincipal, BankIdentityRuntime, BankMutationCommitOutcome};
+use crate::{
+    BankAuthenticatedPrincipal, BankCommitDenialKind, BankCommitDenialStage, BankIdentityRuntime,
+    BankMutationCommitOutcome,
+};
 
+#[cfg(test)]
 use super::authorization::authorize_target;
 
-pub(super) type DelegationAccess = WorthQueryAdmittedApplicationCapabilityAccess<
-    BankSchema,
-    DelegateEstateCapability,
-    DelegateEstateCapabilityOperation,
-    EstateAction,
->;
+#[cfg(test)]
+pub(super) type DelegationAccess =
+    worth_query_host::facade::primary_graph::WorthQueryAdmittedApplicationCapabilityAccess<
+        BankSchema,
+        DelegateEstateCapability,
+        DelegateEstateCapabilityOperation,
+        EstateAction,
+    >;
 pub(super) type AdmittedDelegation = WorthQueryAdmittedApplicationOperation<
     BankSchema,
     DelegateEstateCapabilityOperation,
@@ -61,27 +72,18 @@ impl std::fmt::Display for BankCapabilityDelegationProjectionDenial {
 impl std::error::Error for BankCapabilityDelegationProjectionDenial {}
 
 impl BankIdentityRuntime {
-    pub fn delegate_estate_capability(
+    pub fn delegate_estate_capability_with_key(
         &self,
         principal: &BankAuthenticatedPrincipal,
         action: EstateAction,
-        idempotency: WorthQueryApplicationIdempotencyBinding,
+        key: &BankIdempotencyKey,
         request: &WorthQueryRequestScope,
     ) -> Result<BankMutationCommitOutcome, BankEstateProgressionDenial> {
         let command = delegation_command(action)?;
-        let admission = self.admit_delegation(principal, action, command.child, request)?;
-        if let Some(outcome) =
-            super::super::idempotency::resolve_admitted_idempotency(self, &admission, idempotency)?
-        {
-            return Ok(outcome);
-        }
-        let program = self.materialize_delegation(admission, command.child)?;
-        Ok(self
-            .application_runtime()
-            .compare_and_commit_capability_delegation(program, idempotency)
-            .into())
+        self.execute_delegation_target(principal, action, command.child, key, request)
     }
 
+    #[cfg(test)]
     fn admit_delegation(
         &self,
         principal: &BankAuthenticatedPrincipal,
@@ -97,7 +99,10 @@ impl BankIdentityRuntime {
                 DelegateEstateCapabilityOperation::reference(),
             )
             .map_err(BankEstateProgressionDenial::from_capability_installation)?;
-        let access = application
+        let selected = self
+            .select_current_product()
+            .map_err(BankEstateProgressionDenial::from_product_selection)?;
+        let access = selected
             .admit_capability_access(principal.query(), &capability, action, request)
             .map_err(BankEstateProgressionDenial::from_authorization)?;
         let operation = application
@@ -105,6 +110,147 @@ impl BankIdentityRuntime {
             .installed_operation(DelegateEstateCapabilityOperation::reference())
             .map_err(BankEstateProgressionDenial::from_operation_installation)?;
         authorize_target(self, access, &operation, child)
+    }
+
+    fn execute_delegation_target(
+        &self,
+        principal: &BankAuthenticatedPrincipal,
+        action: EstateAction,
+        child: EstateCapabilityDelegationRequest,
+        key: &BankIdempotencyKey,
+        request: &WorthQueryRequestScope,
+    ) -> Result<BankMutationCommitOutcome, BankEstateProgressionDenial> {
+        macro_rules! execute {
+            ($capability:ty, $operation:ty) => {{
+                self.request(principal, request)
+                    .execute_capability_delegation_in_program(
+                        self.application_program(),
+                        BankPrincipalBinding::reference(),
+                        DelegateEstateCapability::reference(),
+                        <$capability>::reference(),
+                        <$operation>::reference(),
+                        DelegateEstateCapabilityOperation::reference(),
+                        action,
+                        key,
+                        TypedMutationPreconditions::<
+                            BankSchema,
+                            DelegateEstateCapabilityOperation,
+                            EstateCase,
+                        >::default(),
+                        |admission| self.materialize_delegation(admission, child),
+                    )
+            }};
+        }
+        let outcome = match (child.scope.operation, child.scope.purpose) {
+            (
+                EstateCapabilityOperation::NotifyDeath,
+                EstateCapabilityPurpose::EstateAdministration,
+            ) => {
+                execute!(NotifyDeathEstateCapability, NotifyDeathEstateOperation)
+            }
+            (
+                EstateCapabilityOperation::RetransmitDeathNotice,
+                EstateCapabilityPurpose::EstateAdministration,
+            ) => {
+                execute!(
+                    RetransmitDeathNoticeEstateCapability,
+                    RetransmitDeathNoticeEstateOperation
+                )
+            }
+            (
+                EstateCapabilityOperation::FreezeAccount,
+                EstateCapabilityPurpose::EstateAdministration,
+            ) => {
+                execute!(FreezeEstateAccountCapability, FreezeEstateAccountOperation)
+            }
+            (
+                EstateCapabilityOperation::OpenEstateCase,
+                EstateCapabilityPurpose::EstateAdministration,
+            ) => {
+                execute!(OpenEstateCaseCapability, OpenEstateCaseOperation)
+            }
+            (
+                EstateCapabilityOperation::RecognizeExecutor,
+                EstateCapabilityPurpose::LegalCompliance,
+            ) => {
+                execute!(
+                    RecognizeEstateExecutorCapability,
+                    RecognizeEstateExecutorOperation
+                )
+            }
+            (
+                EstateCapabilityOperation::ReleaseEstate,
+                EstateCapabilityPurpose::EstateAdministration,
+            ) => {
+                execute!(ReleaseEstateCapability, ReleaseEstateOperation)
+            }
+            (
+                EstateCapabilityOperation::DisburseEstate,
+                EstateCapabilityPurpose::EstateDisbursement,
+            ) => {
+                execute!(DisburseEstateCapability, DisburseEstateOperation)
+            }
+            (
+                EstateCapabilityOperation::ViewRestrictedEstate,
+                EstateCapabilityPurpose::EstateAdministration,
+            ) => {
+                execute!(
+                    ViewEstateAdministrationCapability,
+                    ViewRestrictedEstateOperation
+                )
+            }
+            (
+                EstateCapabilityOperation::ViewRestrictedEstate,
+                EstateCapabilityPurpose::IdentityVerification,
+            ) => {
+                execute!(
+                    ViewEstateIdentityVerificationCapability,
+                    ViewRestrictedEstateOperation
+                )
+            }
+            (
+                EstateCapabilityOperation::ViewRestrictedEstate,
+                EstateCapabilityPurpose::LegalCompliance,
+            ) => {
+                execute!(
+                    ViewEstateLegalComplianceCapability,
+                    ViewRestrictedEstateOperation
+                )
+            }
+            (
+                EstateCapabilityOperation::ViewRestrictedEstate,
+                EstateCapabilityPurpose::EmergencyProtection,
+            ) => {
+                execute!(
+                    ViewEstateEmergencyProtectionCapability,
+                    ViewRestrictedEstateOperation
+                )
+            }
+            (
+                EstateCapabilityOperation::ViewRestrictedEstate,
+                EstateCapabilityPurpose::MandatoryReview,
+            ) => {
+                execute!(
+                    ViewEstateMandatoryReviewCapability,
+                    ViewRestrictedEstateOperation
+                )
+            }
+            _ => {
+                return Err(BankEstateProgressionDenial::CommandInput(
+                    "delegated capability target",
+                ))
+            }
+        };
+        match outcome {
+            Ok(outcome) => Ok(outcome.into()),
+            Err(WorthQueryApplicationCapabilityDelegationDenial::IdempotencyIntentDrift) => {
+                Ok(BankMutationCommitOutcome::Denied {
+                    kind: BankCommitDenialKind::IdempotencyIntentDrift,
+                    stage: BankCommitDenialStage::Idempotency,
+                })
+            }
+            Err(denial) => Err(map_delegation_denial(denial)),
+        }
     }
 
     fn materialize_delegation(
@@ -190,5 +336,37 @@ impl From<WorthQueryInvariantProjectionTraversalDenial>
         Self::Traversal(crate::BankInvariantProjectionTraversalDenial::from_query(
             value.kind(),
         ))
+    }
+}
+
+fn map_delegation_denial(
+    denial: WorthQueryApplicationCapabilityDelegationDenial<BankEstateProgressionDenial>,
+) -> BankEstateProgressionDenial {
+    use WorthQueryApplicationCapabilityDelegationDenial as Query;
+    match denial {
+        Query::Program(denial) => BankEstateProgressionDenial::ProgramAction(denial),
+        Query::ProgramMismatch => BankEstateProgressionDenial::ProgramMismatch,
+        Query::PrincipalBindingInstallation(denial) => {
+            BankEstateProgressionDenial::PrincipalBindingInstallation(denial)
+        }
+        Query::CapabilityInstallation(denial) => {
+            BankEstateProgressionDenial::from_capability_installation(denial)
+        }
+        Query::OperationInstallation(denial) => {
+            BankEstateProgressionDenial::from_operation_installation(denial)
+        }
+        Query::ProductSelection(denial) => {
+            BankEstateProgressionDenial::from_product_selection(denial)
+        }
+        Query::PrincipalResolution(denial) => {
+            BankEstateProgressionDenial::PrincipalResolution(denial)
+        }
+        Query::PrincipalIdentityEncoding(denial) => {
+            BankEstateProgressionDenial::PrincipalIdentityEncoding(denial)
+        }
+        Query::Authorization(denial) => BankEstateProgressionDenial::from_authorization(denial),
+        Query::Idempotency(denial) => BankEstateProgressionDenial::from_idempotency(denial),
+        Query::IdempotencyIntentDrift => BankEstateProgressionDenial::IdempotencyIntentDrift,
+        Query::Preparation(denial) => denial,
     }
 }

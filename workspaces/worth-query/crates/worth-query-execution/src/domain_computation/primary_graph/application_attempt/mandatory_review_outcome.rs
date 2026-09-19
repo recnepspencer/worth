@@ -103,6 +103,15 @@ impl WorthQueryReviewedElevation {
 
 #[derive(Debug)]
 pub enum WorthQueryMandatoryReviewOutcome {
+    ProductStale(
+        crate::domain_computation::WorthQueryProductStaleApplication,
+        WorthQueryMandatoryReview,
+    ),
+    ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
+    NoEffect(
+        super::WorthQueryApplicationNoEffect,
+        WorthQueryMandatoryReview,
+    ),
     Reviewed(WorthQueryReviewedElevation),
     AlreadyReviewed(WorthQueryReviewedElevation),
     Stale(WorthQueryApplicationStaleAttempt, WorthQueryMandatoryReview),
@@ -124,10 +133,28 @@ pub(in crate::domain_computation::primary_graph) fn reviewed_outcome(
             WorthQueryMandatoryReviewOutcome::Reviewed(reviewed(binding, commit))
         }
         WorthQueryApplicationCommitOutcome::AlreadyCommitted(commit) => {
-            WorthQueryMandatoryReviewOutcome::AlreadyReviewed(reviewed(binding, commit))
+            match commit
+                .committed_changes()
+                .committed_field_values(binding.review(), &[binding.reviewed_at_field()])
+            {
+                Some(values) => WorthQueryMandatoryReviewOutcome::AlreadyReviewed(reviewed(
+                    binding.restore_committed_review(values[0].clone()),
+                    commit,
+                )),
+                None => WorthQueryMandatoryReviewOutcome::Denied(
+                    WorthQueryApplicationCommitDenial::provider_rejected_with_detail(
+                        super::WorthQueryApplicationCommitDenialStage::Idempotency,
+                        "committed review field is unavailable",
+                    ),
+                    binding.into_mandatory(),
+                ),
+            }
         }
         WorthQueryApplicationCommitOutcome::Stale(stale) => {
             WorthQueryMandatoryReviewOutcome::Stale(stale, binding.into_mandatory())
+        }
+        WorthQueryApplicationCommitOutcome::ProductStale(stale) => {
+            WorthQueryMandatoryReviewOutcome::ProductStale(stale, binding.into_mandatory())
         }
         WorthQueryApplicationCommitOutcome::Cancelled => {
             WorthQueryMandatoryReviewOutcome::Cancelled(binding.into_mandatory())
@@ -141,6 +168,12 @@ pub(in crate::domain_computation::primary_graph) fn reviewed_outcome(
         }
         WorthQueryApplicationCommitOutcome::Deferred(deferred) => {
             WorthQueryMandatoryReviewOutcome::Deferred(deferred)
+        }
+        WorthQueryApplicationCommitOutcome::ProductUnpublished(unpublished) => {
+            WorthQueryMandatoryReviewOutcome::ProductUnpublished(unpublished)
+        }
+        WorthQueryApplicationCommitOutcome::NoEffect(no_effect) => {
+            WorthQueryMandatoryReviewOutcome::NoEffect(no_effect, binding.into_mandatory())
         }
         WorthQueryApplicationCommitOutcome::SettlementDeferred(deferred) => {
             WorthQueryMandatoryReviewOutcome::SettlementDeferred(deferred)

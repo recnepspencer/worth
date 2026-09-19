@@ -2,7 +2,7 @@ use wasm_bindgen::prelude::*;
 use worth_signal::facade::history::RuntimeSnapshot;
 
 use crate::boundary::restore_tokens::{
-    ensure_restore_token_capacity_available, load_snapshot, load_snapshot_envelope, store_snapshot,
+    discard_restore_token, load_snapshot, load_snapshot_envelope, store_snapshot,
     store_snapshot_envelope,
 };
 use crate::boundary::serde::{
@@ -38,8 +38,14 @@ impl SignalHistory {
         to_js_structured(&snapshot).map_err(JsValue::from)
     }
 
+    /// Releases one pending exact restore artifact minted by this realm's
+    /// `snapshot_wire`, `branch_snapshot_wire`, or
+    /// `branch_snapshot_envelope_wire`. `false` when it is not pending.
+    pub fn discard_restore_token(&self, token: String) -> bool {
+        discard_restore_token(token)
+    }
+
     pub fn snapshot_wire(&self) -> Result<String, JsValue> {
-        ensure_restore_token_capacity_available().map_err(JsValue::from)?;
         let snapshot = self.core.borrow_mut().snapshot().map_err(JsValue::from)?;
         store_snapshot_envelope(snapshot).map_err(JsValue::from)
     }
@@ -122,7 +128,6 @@ impl SignalHistory {
     }
 
     pub fn branch_snapshot_wire(&self, branch_id: u64) -> Result<String, JsValue> {
-        ensure_restore_token_capacity_available().map_err(JsValue::from)?;
         let snapshot = self
             .core
             .borrow_mut()
@@ -157,7 +162,6 @@ impl SignalHistory {
     }
 
     pub fn branch_snapshot_envelope_wire(&self, branch_id: u64) -> Result<String, JsValue> {
-        ensure_restore_token_capacity_available().map_err(JsValue::from)?;
         let snapshot = self
             .core
             .borrow_mut()

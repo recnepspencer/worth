@@ -16,12 +16,14 @@ pub(super) fn emergency_account_details_shape() -> TypedApplicationQueryResultSh
     EstateEmergencyAccountDetailsQuery,
     EstateCase,
     EstateEmergencyAccountDetails,
+    super::emergency_account_details::EstateEmergencyAccountDetailsQueryResultBinding,
 > {
     let account = ApplicationQueryResultShapeBuilder::<
         BankSchema,
         EstateEmergencyAccountDetailsQuery,
         Account,
         (),
+        crate::queries::UnitQueryResultBinding,
     >::new(Account::reference())
     .field(account_identity())
     .field(account_name())

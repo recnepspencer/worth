@@ -16,6 +16,8 @@ pub struct UiDeclarationGraphHandoff {
     structural: UiStructuralDeclarationPayload,
     aspect_contract: UiDeclaredAspectPayload,
     declared_posture: UiDeclaredPosturePayload,
+    component_reference: Option<crate::capability::ComponentId>,
+    appearance_role_attachment: Option<crate::declaration::UiAppearanceRoleAttachment>,
 }
 
 impl UiDeclarationGraphHandoff {
@@ -25,6 +27,8 @@ impl UiDeclarationGraphHandoff {
         structural: UiStructuralDeclarationPayload,
         aspect_contract: UiDeclaredAspectPayload,
         declared_posture: UiDeclaredPosturePayload,
+        component_reference: Option<crate::capability::ComponentId>,
+        appearance_role_attachment: Option<crate::declaration::UiAppearanceRoleAttachment>,
     ) -> Self {
         Self {
             identity,
@@ -32,6 +36,8 @@ impl UiDeclarationGraphHandoff {
             structural,
             aspect_contract,
             declared_posture,
+            component_reference,
+            appearance_role_attachment,
         }
     }
 
@@ -117,5 +123,15 @@ impl UiDeclarationGraphHandoff {
 
     pub const fn host_capability(&self) -> &UiDeclaredPostureLane<UiDeclaredHostCapabilityPosture> {
         self.declared_posture.host_capability()
+    }
+
+    pub(crate) const fn appearance_role_attachment(
+        &self,
+    ) -> Option<&crate::declaration::UiAppearanceRoleAttachment> {
+        self.appearance_role_attachment.as_ref()
+    }
+
+    pub(crate) const fn component_reference(&self) -> Option<&crate::capability::ComponentId> {
+        self.component_reference.as_ref()
     }
 }

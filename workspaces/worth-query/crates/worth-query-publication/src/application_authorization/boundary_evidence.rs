@@ -17,7 +17,7 @@ use worth_query_execution::facade::primary_graph::{
     WorthQueryReviewedElevation,
 };
 
-use crate::domain_computation::WorthQueryApplicationCommitPublicationReceipt;
+use crate::application_aftermath::WorthQueryPublishedApplicationCommitBoundaryEvidence;
 
 use super::explanation::{
     materialize_explanation, WorthQueryPublishedApplicationAuthorizationKind,
@@ -157,7 +157,7 @@ pub enum WorthQueryApplicationAuthorizationPublicationDenial {
 #[derive(Debug)]
 pub struct WorthQueryPublishedApplicationAuthorization {
     kind: WorthQueryPublishedApplicationAuthorizationKind,
-    query_receipt: WorthQueryApplicationCommitPublicationReceipt,
+    query_boundary_evidence: WorthQueryPublishedApplicationCommitBoundaryEvidence,
     boundary: BoundaryProfiledArtifact<FoundationalBoundaryReceiptSurface>,
     explanation: FoundationalDiagnosticExplanationBundle,
     provenance: FoundationalBoundaryEvidenceProvenanceArtifact,
@@ -169,8 +169,10 @@ impl WorthQueryPublishedApplicationAuthorization {
         self.kind
     }
 
-    pub const fn query_receipt(&self) -> &WorthQueryApplicationCommitPublicationReceipt {
-        &self.query_receipt
+    pub const fn query_boundary_evidence(
+        &self,
+    ) -> &WorthQueryPublishedApplicationCommitBoundaryEvidence {
+        &self.query_boundary_evidence
     }
 
     pub const fn boundary(&self) -> &BoundaryProfiledArtifact<FoundationalBoundaryReceiptSurface> {
@@ -280,8 +282,8 @@ fn publish_transition(
     let lowered = lower_boundary_material(kind, identity, source.emitted_effect_count(), profile)?;
     Ok(WorthQueryPublishedApplicationAuthorization {
         kind,
-        query_receipt: crate::domain_computation::publish_application_commit_source(source)
-            .into_receipt(),
+        query_boundary_evidence:
+            WorthQueryPublishedApplicationCommitBoundaryEvidence::from_publication_source(source),
         boundary: lowered.boundary,
         explanation: lowered.explanation,
         provenance: lowered.provenance,

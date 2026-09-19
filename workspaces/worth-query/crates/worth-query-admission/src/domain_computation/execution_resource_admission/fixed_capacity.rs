@@ -29,6 +29,11 @@ impl WorthQueryFixedExecutionCapacity {
             active_attempts: Arc::new(AtomicUsize::new(0)),
         })
     }
+
+    /// Current reservations held by admitted execution attempts.
+    pub fn active_attempts(&self) -> usize {
+        self.active_attempts.load(Ordering::Acquire)
+    }
 }
 
 impl WorthQueryExecutionCapacityPort for WorthQueryFixedExecutionCapacity {

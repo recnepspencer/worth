@@ -11,26 +11,23 @@ use std::sync::{Arc, Mutex};
 
 use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
 use crate::domain_computation::runtime_time::WorthQueryRuntimeClock;
-use worth_relational::facade::history::{BranchId, CommitId};
+use worth_runtime_world::facade::CompositeCommitIdentity;
 
 /// Authoritative commit identity claimed exactly once for recovery minting.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub(crate) struct WorthQueryRecoveryMintClaim {
     provider_runtime_instance_id: u64,
-    branch: BranchId,
-    commit: CommitId,
+    product_commit: CompositeCommitIdentity,
 }
 
 impl WorthQueryRecoveryMintClaim {
     pub(crate) fn new(
         provider_runtime_instance_id: u64,
-        branch: BranchId,
-        commit: CommitId,
+        product_commit: CompositeCommitIdentity,
     ) -> Self {
         Self {
             provider_runtime_instance_id,
-            branch,
-            commit,
+            product_commit,
         }
     }
 }
@@ -43,6 +40,8 @@ pub(crate) struct WorthQueryRecoveryMintAlreadyClaimed;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum WorthQueryRecoveryResourceTerminal {
     Consumed,
+    /// Safe retry observed external completion before consuming the handle.
+    Completed,
     Expired,
     Disposed,
     ForceTerminated,
@@ -60,6 +59,7 @@ impl worth_proof::TerminalState for WorthQueryRecoveryResourceTerminal {
     fn label(&self) -> &'static str {
         match self {
             Self::Consumed => "consumed",
+            Self::Completed => "completed",
             Self::Expired => "expired",
             Self::Disposed => "disposed",
             Self::ForceTerminated => "force-terminated",
@@ -86,6 +86,7 @@ struct RecoveryRegistryState {
     /// Which live slot holds which claim, so a relinquished attempt can give
     /// its claim back. Only `register_once` adds; every exit path removes.
     claims_by_slot: HashMap<WorthQueryRecoveryRegistrySlot, WorthQueryRecoveryMintClaim>,
+    terminal_by_claim: HashMap<WorthQueryRecoveryMintClaim, WorthQueryRecoveryResourceTerminal>,
     live: HashMap<WorthQueryRecoveryRegistrySlot, ()>,
     terminated: HashMap<WorthQueryRecoveryRegistrySlot, WorthQueryRecoveryResourceTerminal>,
 }
@@ -98,6 +99,7 @@ impl RecoveryRegistryState {
             next_slot: 1,
             claimed_commits: HashSet::new(),
             claims_by_slot: HashMap::new(),
+            terminal_by_claim: HashMap::new(),
             live: HashMap::new(),
             terminated: HashMap::new(),
         }
@@ -175,6 +177,17 @@ impl WorthQueryRecoveryHandleRegistry {
         state.claims_by_slot.insert(slot, claim);
         state.live.insert(slot, ());
         Ok(slot)
+    }
+
+    pub(crate) fn claim_state(
+        &self,
+        claim: &WorthQueryRecoveryMintClaim,
+    ) -> (bool, Option<WorthQueryRecoveryResourceTerminal>) {
+        let state = self.state.lock().expect("recovery registry lock");
+        (
+            state.claimed_commits.contains(claim),
+            state.terminal_by_claim.get(claim).copied(),
+        )
     }
 
     /// Retire a slot *without* consuming the recovery it stands for.
@@ -260,7 +273,9 @@ impl WorthQueryRecoveryHandleRegistry {
             // real terminal, so the commit's one recovery was exercised and no
             // second handle may be minted for it. Only `relinquish` gives a
             // claim back.
-            state.claims_by_slot.remove(&slot);
+            if let Some(claim) = state.claims_by_slot.remove(&slot) {
+                state.terminal_by_claim.insert(claim, terminal);
+            }
             state.terminated.insert(slot, terminal);
             true
         } else {

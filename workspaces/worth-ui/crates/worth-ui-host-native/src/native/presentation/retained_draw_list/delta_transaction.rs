@@ -1,12 +1,18 @@
 use worth_ui_host_contract::{
-    UiMountedPaintCommand, UiMountedPaintCommandIdentity, UiMountedPresentationDelta,
+    UiMountedPaintCommand, UiMountedPaintCommandIdentity, UiMountedPaintOrderIdentity,
+    UiMountedPresentationDelta,
 };
 
-use super::mutation::{change_identity, visible_bounds};
+use super::mutation::visible_bounds;
 use super::{UiNativeRetainedDrawList, UiNativeRetainedDrawListDenial, UiNativeRetainedReplayPlan};
 use crate::native::presentation::retained_order::UiNativeRetainedOrderSnapshot;
 
 pub(crate) struct UiNativeRetainedDeltaUndo {
+    pub(super) physical_coverage: Vec<(
+        UiMountedPaintCommandIdentity,
+        Option<super::physical_coverage::UiNativeCommandImageCoverage>,
+    )>,
+    text_coverage: Vec<crate::native::presentation::appearance::UiNativeTextCoverageUndo>,
     frame: worth_ui_host_contract::UiMountedFrameIdentity,
     content: worth_ui_host_contract::UiMountedContentGeneration,
     commands: Vec<(UiMountedPaintCommandIdentity, Option<UiMountedPaintCommand>)>,
@@ -23,6 +29,7 @@ pub(crate) struct UiNativeRetainedDeltaUndo {
         UiMountedPaintCommandIdentity,
         Option<worth_ui_host_contract::UiMountedPresentationSampleChange>,
     )>,
+    appearance_sample_overrides: Vec<super::sample_transaction::UiNativeAppearanceSampleUndo>,
 }
 
 impl UiNativeRetainedDrawList {
@@ -41,27 +48,28 @@ impl UiNativeRetainedDrawList {
         self.validate_damage(delta.changes(), delta.damage())?;
         let changed_identities = changed_identities(delta.changes());
         let undo = UiNativeRetainedDeltaUndo {
+            physical_coverage: Vec::new(),
+            text_coverage: Vec::new(),
             frame: self.frame,
             content: self.content,
-            commands: delta
-                .changes()
+            commands: changed_identities
                 .iter()
-                .map(|change| {
-                    let identity = change_identity(change);
-                    (identity, self.commands.get(&identity).cloned())
-                })
+                .copied()
+                .map(|identity| (identity, self.commands.get(&identity).cloned()))
                 .collect(),
-            glyph_runs: delta
-                .changes()
+            glyph_runs: changed_identities
                 .iter()
-                .map(|change| {
-                    let identity = change_identity(change);
-                    (identity, self.glyph_runs.get(&identity).cloned())
-                })
+                .copied()
+                .map(|identity| (identity, self.glyph_runs.get(&identity).cloned()))
                 .collect(),
-            order: self
-                .order
-                .snapshot(delta.order().iter().map(|edit| edit.identity())),
+            order: self.order.snapshot(
+                delta.order().iter().map(|edit| edit.identity()).chain(
+                    changed_identities
+                        .iter()
+                        .copied()
+                        .map(UiMountedPaintOrderIdentity::for_command),
+                ),
+            ),
             order_integrity: self.order_integrity,
             regions: self.regions.clone(),
             identity_overlay: self.identity_overlay,
@@ -71,7 +79,9 @@ impl UiNativeRetainedDrawList {
                 .copied()
                 .map(|identity| (identity, self.sample_overrides.get(&identity).copied()))
                 .collect(),
+            appearance_sample_overrides: Vec::new(),
         };
+        self.retain_current_paint_attribution();
         self.retire_sample_overrides_for_semantic_delta(&changed_identities)?;
         if let Err(error) = self
             .apply_changes(delta.changes(), glyph_runs)
@@ -119,7 +129,6 @@ impl UiNativeRetainedDrawList {
             .rebind_receipt_affinity(delta.affinity().receipt_affinity());
         self.frame = delta.affinity().successor();
         self.content = delta.affinity().content();
-        self.retain_current_paint_attribution();
         let mut replay_damage = delta.damage().to_vec();
         let overlay_damage =
             match super::super::identity_overlay::UiNativeRetainedIdentityOverlay::transition_damage(
@@ -151,6 +160,22 @@ impl UiNativeRetainedDrawList {
         &mut self,
         undo: UiNativeRetainedDeltaUndo,
     ) -> Result<(), UiNativeRetainedDrawListDenial> {
+        for sample in undo.appearance_sample_overrides.into_iter().rev() {
+            self.rollback_appearance_sample_overrides(sample)?;
+        }
+        self.restore_physical_coverage(undo.physical_coverage)?;
+        if !undo.text_coverage.is_empty() {
+            let appearance = self
+                .staged_appearance
+                .as_mut()
+                .map(|(_, commands)| commands)
+                .ok_or(UiNativeRetainedDrawListDenial::CommandMismatch)?;
+            for text in undo.text_coverage.into_iter().rev() {
+                appearance
+                    .rollback_text(text)
+                    .map_err(|_| UiNativeRetainedDrawListDenial::CommandMismatch)?;
+            }
+        }
         for (identity, _) in &undo.commands {
             if let Some(current) = self.commands.remove(identity) {
                 if visible_bounds(&current).is_some() {
@@ -201,26 +226,55 @@ impl UiNativeRetainedDrawList {
     }
 }
 
-fn changed_identities(
+pub(super) fn changed_identities(
     changes: &[worth_ui_host_contract::UiMountedPaintCommandChange],
 ) -> Vec<UiMountedPaintCommandIdentity> {
-    let mut identities = std::collections::HashSet::new();
+    let mut seen = std::collections::HashSet::new();
+    let mut identities = Vec::new();
+    let mut include = |identity| {
+        if seen.insert(identity) {
+            identities.push(identity);
+        }
+    };
     for change in changes {
         match change {
             worth_ui_host_contract::UiMountedPaintCommandChange::Insert(command) => {
-                identities.insert(command.identity());
+                include(command.identity());
             }
             worth_ui_host_contract::UiMountedPaintCommandChange::Replace {
                 predecessor,
                 successor,
             } => {
-                identities.insert(*predecessor);
-                identities.insert(successor.identity());
+                include(*predecessor);
+                include(successor.identity());
             }
             worth_ui_host_contract::UiMountedPaintCommandChange::Remove(identity) => {
-                identities.insert(*identity);
+                include(*identity);
             }
         }
     }
-    identities.into_iter().collect()
+    identities
+}
+
+impl UiNativeRetainedDeltaUndo {
+    pub(in crate::native::presentation) fn retain_appearance_samples(
+        &mut self,
+        undo: super::sample_transaction::UiNativeAppearanceSampleUndo,
+    ) {
+        self.appearance_sample_overrides.push(undo);
+    }
+
+    pub(super) fn retain_text_coverage(
+        &mut self,
+        undo: crate::native::presentation::appearance::UiNativeTextCoverageUndo,
+    ) {
+        self.text_coverage.push(undo);
+    }
+
+    pub(in crate::native::presentation) fn retain_appearance_command(
+        &mut self,
+        undo: crate::native::presentation::appearance::UiNativeAppearanceCommandUndo,
+    ) {
+        self.text_coverage.push(undo);
+    }
 }

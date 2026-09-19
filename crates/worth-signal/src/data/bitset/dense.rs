@@ -1,3 +1,8 @@
+mod reserved_fork;
+mod retained_charge;
+#[cfg(test)]
+mod retained_charge_tests;
+
 /// Dense bitset for deterministic, allocation-light index marking.
 #[derive(Debug, Clone, Default)]
 pub struct DenseBitset {
@@ -23,7 +28,9 @@ impl DenseBitset {
         let word_len = len.div_ceil(64);
         if self.words.len() < word_len {
             let missing = word_len - self.words.len();
-            self.words.extend(std::iter::repeat_n(0, missing));
+            for _ in 0..missing {
+                self.append_zero_word();
+            }
         }
     }
 
@@ -32,11 +39,13 @@ impl DenseBitset {
         let word_idx = idx / 64;
         if word_idx >= self.words.len() {
             let missing = word_idx + 1 - self.words.len();
-            self.words.extend(std::iter::repeat_n(0, missing));
+            for _ in 0..missing {
+                self.append_zero_word();
+            }
         }
         let bit = 1u64 << (idx % 64);
         let before = self.words[word_idx];
-        self.words[word_idx] |= bit;
+        self.write_word(word_idx, before | bit);
         before != self.words[word_idx]
     }
 
@@ -47,7 +56,7 @@ impl DenseBitset {
             return;
         }
         let bit = 1u64 << (idx % 64);
-        self.words[word_idx] &= !bit;
+        self.write_word(word_idx, self.words[word_idx] & !bit);
     }
 
     /// Return whether index is marked.
@@ -65,6 +74,7 @@ impl DenseBitset {
         for word in self.words.iter_mut() {
             *word = 0;
         }
+        self.charge_cleared_words();
     }
 
     /// Merge `other` into this bitset.
@@ -72,10 +82,12 @@ impl DenseBitset {
     pub fn merge(&mut self, other: &Self) {
         if self.words.len() < other.words.len() {
             let missing = other.words.len() - self.words.len();
-            self.words.extend(std::iter::repeat_n(0, missing));
+            for _ in 0..missing {
+                self.append_zero_word();
+            }
         }
         for (idx, word) in other.words.iter().copied().enumerate() {
-            self.words[idx] |= word;
+            self.write_word(idx, self.words[idx] | word);
         }
     }
 

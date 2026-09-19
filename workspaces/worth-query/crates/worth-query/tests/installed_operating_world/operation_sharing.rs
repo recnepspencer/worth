@@ -355,7 +355,7 @@ fn failed_last_close_retains_the_exact_lease_and_backend_until_retry() {
 pub(super) fn settle(workspace: &mut runtime::WorthQueryWorkspace) -> SettledProjection {
     let installed = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed, ReadVertex)

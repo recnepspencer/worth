@@ -22,3 +22,11 @@ error[E0624]: associated function `new` is private
 
 error[E0624]: associated function `activate` is private
  --> tests/ui/host/external_callers_cannot_forge_mounted_runtime_authority.rs
+
+error[E0599]: no method named `into_attempt` found for struct `UiMountedPresentationAdmission` in the current scope
+ --> tests/ui/host/incomplete_frame_cannot_reach_presentation.rs
+ help: there is a method `attempt` with a similar name
+
+error[E0308]: mismatched types
+ --> tests/ui/host/incomplete_frame_cannot_reach_presentation.rs
+ note: expected `UiPreparedMountedFrame`, found `UiAssembledMountedFrame`

@@ -44,6 +44,11 @@ pub enum WorthUiRuntimeLaunchDenial {
         released_surface_count: usize,
     },
     MountedIdentityExhausted,
+    AppearanceThemeAdmission(crate::runtime::appearance::UiThemeCapabilityReceiptDenial),
+    AppearanceOwnerUnavailable(worth_ui_dsl::UiAppearanceStateAxis),
+    InitialAppearanceObservationTurn(crate::runtime::observation::UiObservationTurnDenial),
+    InitialAppearanceObservationClose(crate::runtime::observation::UiObservationAdmissionDenial),
+    InitialAppearanceObservationClassification,
     InitialAllocationGraphAuthorityMismatch,
     InitialAllocationObligationsUnsettled {
         node_count: usize,

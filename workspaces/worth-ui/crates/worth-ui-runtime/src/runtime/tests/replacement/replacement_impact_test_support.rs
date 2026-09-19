@@ -6,8 +6,8 @@ use worth_ui_dsl::{
 use crate::capability::{
     CommandDescriptor, CommandId, ComponentChildPolicy, ComponentDescriptor, ComponentId,
     ComponentPropSchema, ComponentStateOwnership, SurfaceDescriptor, SurfaceId, SurfaceKind,
-    SurfacePlacementClass, SurfaceStateClass, ThemeColorValue, ThemeTokenDescriptor,
-    ThemeTokenFamily, ThemeTokenId, ThemeTokenSource, ThemeTokenValue,
+    SurfacePlacementClass, SurfaceStateClass, ThemeTokenDescriptor, ThemeTokenFamily, ThemeTokenId,
+    ThemeTokenSource, ThemeTokenValue, UiThemeColor,
 };
 use crate::facade::{WorthUi, WorthUiApp};
 use crate::runtime::replacement::candidate::rust_authored_replacement_candidate;
@@ -200,7 +200,7 @@ fn theme_token(id: &str, color: &str) -> ThemeTokenDescriptor {
         ThemeTokenId::new(id).expect("valid token id"),
         ThemeTokenFamily::text(),
         ThemeTokenSource::application(),
-        ThemeTokenValue::color(ThemeColorValue::hex(color).expect("valid color")),
+        ThemeTokenValue::color(UiThemeColor::parse(color).expect("valid color")),
     )
 }
 

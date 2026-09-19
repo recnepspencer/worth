@@ -119,6 +119,7 @@ impl WorthQueryCommittedDispatchOutboxBinding {
             crate::domain_computation::application_aftermath::bind_dispatch_outbox_create_intent(
                 Some(layout),
                 record,
+                worth_relational::facade::identity::PartitionId::main(),
             );
         Self::from_commit(pending.as_ref().map(|(_, pending)| pending), committed)
     }

@@ -2,13 +2,13 @@ use crate::data::error::SignalError;
 use crate::data::graph::signal_graph::{stale_error, SignalGraph};
 use crate::data::graph::storage::Slot;
 use crate::data::handle::NodeId;
-use crate::data::node::{NodeEntry, NodeWarmData};
+use crate::data::node::{NodeDefinitionData, NodeEntry, NodeWarmData};
 
 const NODE_ARENA_RESERVE_CHUNK: usize = 1024;
 
 impl SignalGraph {
     pub(in crate::data::graph) fn allocate_node(&mut self, entry: NodeEntry) -> NodeId {
-        let (hot, warm, cold) = entry.into_storage_parts();
+        let (definition, hot, warm, cold) = entry.into_storage_parts();
         while let Some(index) = self.arena.free_list.pop_back() {
             if index as usize >= self.arena.nodes.len() {
                 continue;
@@ -18,6 +18,7 @@ impl SignalGraph {
             if slot.is_retired() {
                 continue;
             }
+            self.arena.definitions[index as usize] = definition.clone();
             self.arena.hot[index as usize] = Some(hot.clone());
             self.arena.warm[index as usize] = warm.clone();
             self.arena.cold[index as usize] = cold.clone();
@@ -35,6 +36,7 @@ impl SignalGraph {
         let mut slot = Slot::vacant();
         let generation = slot.occupy();
         self.arena.nodes.push_back(slot);
+        self.arena.definitions.push_back(definition);
         self.arena.hot.push_back(Some(hot));
         self.arena.warm.push_back(warm);
         self.arena.cold.push_back(cold);
@@ -66,6 +68,7 @@ impl SignalGraph {
             };
             if slot.is_occupied() {
                 slot.vacate();
+                self.arena.definitions[index] = NodeDefinitionData::default();
                 self.arena.hot[index] = None;
                 self.arena.warm[index] = NodeWarmData::default();
                 self.arena.cold[index] = None;
@@ -89,6 +92,7 @@ impl SignalGraph {
             }
             self.arena.free_slots.clear(last_index);
             self.arena.nodes.pop_back();
+            self.arena.definitions.pop_back();
             self.arena.hot.pop_back();
             self.arena.warm.pop_back();
             self.arena.cold.pop_back();
@@ -112,6 +116,9 @@ impl SignalGraph {
         self.reserve_node_capacity(missing);
         for _ in 0..missing {
             self.arena.nodes.push_back(Slot::retired_placeholder());
+            self.arena
+                .definitions
+                .push_back(NodeDefinitionData::default());
             self.arena.hot.push_back(None);
             self.arena.warm.push_back(NodeWarmData::default());
             self.arena.cold.push_back(None);
@@ -120,6 +127,7 @@ impl SignalGraph {
 
     pub(crate) fn reserve_node_capacity(&mut self, additional: usize) {
         self.arena.nodes.reserve_exclusive(additional);
+        self.arena.definitions.reserve_exclusive(additional);
         self.arena.hot.reserve_exclusive(additional);
         self.arena.warm.reserve_exclusive(additional);
         self.arena.cold.reserve_exclusive(additional);

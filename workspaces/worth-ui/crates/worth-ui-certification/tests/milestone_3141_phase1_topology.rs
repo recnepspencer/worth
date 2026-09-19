@@ -33,7 +33,7 @@ fn assert_current_protocol_rejects_mixed_revision() {
         UiMountedPresentationSchemaVersion,
     };
     let current = UiHostProtocolContract::current();
-    assert_eq!(current.protocol().revision(), 6);
+    assert_eq!(current.protocol().revision(), 9);
     let mixed = UiHostProtocolContract::new(
         UiHostProtocolIdentity::worth_ui(),
         UiHostProtocolVersion::new(3),
@@ -55,15 +55,16 @@ fn phase_one_consumer_inventory_rejects_legacy_protocol_branches() {
     let protocol = repository_document(
         "workspaces/worth-ui/crates/worth-ui-host-contract/src/mounted_frame/protocol.rs",
     );
-    assert!(protocol.contains("const COMPATIBLE_FLOOR: u16 = 6;"));
-    assert!(protocol.contains("const CURRENT: u16 = 6;"));
-    assert!(protocol.contains("const CURRENT_PRESENTATION_SCHEMA: u16 = 5;"));
+    assert!(protocol.contains("const COMPATIBLE_FLOOR: u16 = 9;"));
+    assert!(protocol.contains("const CURRENT: u16 = 9;"));
+    assert!(protocol.contains("const CURRENT_FRAME_SCHEMA: u16 = 8;"));
+    assert!(protocol.contains("const CURRENT_PRESENTATION_SCHEMA: u16 = 8;"));
     assert!(protocol.contains("const CURRENT_OBSERVATION_SCHEMA: u16 = 7;"));
     let inventory = workspace_source_inventory();
     let consumers = [
         (
-            "crates/worth-ui-host-headless/src/headless_translation/static_paint.rs",
-            "UiMountedStaticPaintSchemaVersion::REQUIRED_MOUNTED_FRAME_REVISION",
+            "crates/worth-ui-host-headless/src/headless_translation.rs",
+            "UiMountedAppearancePresentationWork",
         ),
         (
             "crates/worth-ui-certification/tests/application_contracts/host_platform/world/production.rs",
@@ -202,8 +203,8 @@ fn independent_oracle_has_no_disputed_production_imports() {
         "workspaces/worth-ui/crates/worth-ui-certification/tests/application_contracts/host_platform/control_points.toml",
     );
     assert!(manifest.contains("world_version = 1"));
-    assert!(manifest.contains("maximum_rectangles = 2048"));
-    assert_eq!(manifest.matches("[[filled_rect]]").count(), 2);
+    assert!(manifest.contains("maximum_surfaces = 2048"));
+    assert_eq!(manifest.matches("[[surface]]").count(), 2);
 }
 
 #[test]

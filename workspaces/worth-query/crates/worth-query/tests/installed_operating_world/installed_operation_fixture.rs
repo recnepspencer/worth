@@ -38,18 +38,15 @@ pub use conditional_workflow::{
 pub(crate) use conditional_workflow::{
     operation_conditional_workflow_workspace_with, stage_conditional_workflow_workspace_with,
 };
+pub(super) use conditional_workspace::conditional_workspace_with_builder;
 pub(crate) use conditional_workspace::{
-    conditional_causal_mismatch_installation, conditional_controlled_workspace,
-    conditional_controlled_workspace_with_donor, conditional_installation,
-    conditional_installation_with_change, conditional_installation_with_repeated_value_changes,
-    conditional_public_observe_workspace_with_invalidation, conditional_public_workspace_with,
-    conditional_workspace_with, fixture_record_identity, DirectConditionalCompute,
+    conditional_controlled_workspace, conditional_controlled_workspace_with_donor,
+    conditional_installation, conditional_installation_without_observation,
+    conditional_resource_workspace, conditional_workspace_with, fixture_record_identity,
+    ConditionalResourceFamily, ConditionalResourceOperation, DirectConditionalCompute,
 };
 pub use conditional_workspace::{conditional_workspace, ConditionalModelGraph};
-pub(super) use correspondence_bridge::{
-    conditional_runtime_bridge, conditional_runtime_bridge_with_change,
-    conditional_runtime_bridge_with_repeated_value_changes, correspondence_bridge,
-};
+pub(super) use correspondence_bridge::correspondence_bridge;
 pub use count_vertices::{CountVertices, CountVerticesInput};
 pub use domain_evidence::{
     evidence_graph_workflow_workspace, evidence_graph_workspace, evidence_workflow_intent,
@@ -73,9 +70,7 @@ pub(crate) use invalidation::{
     settle_native_derived, shared_native_leases, shared_native_leases_with_invalidation,
     InvalidationLease,
 };
-pub(crate) use lineage_workflow::{
-    grouped_lineage_workflow_workspace, lineage_invalidation_workspace,
-};
+pub(crate) use lineage_workflow::lineage_invalidation_workspace;
 pub use lineage_workflow::{lineage_workflow_workspace, LineageEvidenceScenario};
 pub use mutation_workflow::{
     mixed_mutation_workflow_runtime, mutation_workflow_workspace, MutationFamily, WorkflowMutation,

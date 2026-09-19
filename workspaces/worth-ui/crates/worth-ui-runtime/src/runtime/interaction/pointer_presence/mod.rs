@@ -1,0 +1,34 @@
+mod capacity;
+mod current_target;
+#[allow(
+    dead_code,
+    reason = "Gate 0 freezes primary-pointer admission before host consumption"
+)]
+mod inspection;
+mod owner;
+#[cfg(test)]
+mod presentation;
+#[allow(
+    dead_code,
+    reason = "Gate 0 exposes owner-issued transitions before Gate 1 live resolver threading"
+)]
+mod transition;
+
+pub use capacity::UiPointerPresenceAdmissionDenial;
+pub(crate) use capacity::UiPointerPresenceCapacity;
+pub(crate) use current_target::{
+    UiPointerPresenceAppearanceOwnerSnapshot, UiPointerPresenceAppearancePosture,
+    UiPointerPresenceClass,
+};
+pub(crate) use inspection::UiPrimaryPointerKind;
+pub(crate) use owner::UiPointerPresenceOwner;
+#[allow(
+    unused_imports,
+    reason = "Gate 1 retains sealed pointer-presence geometry types for later presentation consumers"
+)]
+#[cfg(test)]
+pub(crate) use presentation::{
+    UiPointerPresenceGeometry, UiPointerPresenceGeometryCandidate,
+    UiPointerPresencePresentationTrigger, UiPointerPresencePresentationTriggerDenial,
+};
+pub use transition::UiPointerPresenceTargetTransition;

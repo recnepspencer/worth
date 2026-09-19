@@ -134,6 +134,10 @@ impl UiMountedTextPinState {
 }
 
 impl UiMountedTextPinCandidate {
+    pub(crate) fn has_no_pin_churn(&self) -> bool {
+        self.additions.is_empty() && self.releases.is_empty()
+    }
+
     #[cfg(test)]
     pub(crate) const fn changes_binding(&self) -> bool {
         self.binding_changed

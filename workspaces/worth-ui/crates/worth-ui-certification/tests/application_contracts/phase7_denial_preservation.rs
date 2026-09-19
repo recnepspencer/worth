@@ -97,6 +97,7 @@ fn publish_predecessor(
     session
         .mount_instance(first_node(session), surface)
         .unwrap();
+    crate::mounted_geometry_fixture::install_current_occurrence_geometry(session);
     match session
         .execute_mounted_frame(
             UiMountedFrameRequest::all_bound_surfaces(),

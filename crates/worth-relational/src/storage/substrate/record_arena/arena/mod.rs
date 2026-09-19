@@ -165,6 +165,7 @@ pub(crate) type RelationArena = RecordArena<RelationRecordKind>;
 
 #[derive(Clone, Copy)]
 pub(crate) enum PinClass {
+    #[cfg(test)]
     Branch,
     Replay,
 }
@@ -174,6 +175,7 @@ pub(crate) fn lifecycle_counts(lifecycle: &[RecordLifecycleState]) -> LifecycleC
     for state in lifecycle {
         match state {
             RecordLifecycleState::Live => counts.live += 1,
+            RecordLifecycleState::MaterializationUnavailable => counts.unavailable += 1,
             RecordLifecycleState::Reusable => counts.reusable += 1,
             RecordLifecycleState::DeletedRetained
             | RecordLifecycleState::RetainedDanglingForAudit

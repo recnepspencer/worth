@@ -20,6 +20,7 @@ impl UiSelectionStableKey {
         self.0.family()
     }
 
+    #[cfg(any(test, feature = "certification-support"))]
     pub(in crate::runtime) const fn application_value(self) -> core::num::NonZeroU64 {
         self.0.value()
     }

@@ -3,11 +3,13 @@ use std::sync::Arc;
 use worth_query::facade::runtime::WorthQueryEvidenceIdentity;
 
 use super::{
-    UiCollectionCompleteness, UiCollectionProjectionChange, UiCollectionProjectionDelivery,
-    UiCollectionProjectionFactReceipt, UiCollectionProjectionRowReference, UiPresentProjection,
-    UiProjectionAvailability, UiProjectionFactReceipt, UiProjectionFactStopKind,
-    UiProjectionRetainedActivityKind, UiProjectionUnavailableKind, UiScalarProjectionFactReceipt,
+    UiApplicationScalarProjectionFactReceipt, UiCollectionCompleteness,
+    UiCollectionProjectionChange, UiCollectionProjectionDelivery,
+    UiCollectionProjectionFactReceipt, UiCollectionProjectionRowReference, UiProjectionFactReceipt,
+    UiProjectionFactStopKind, UiProjectionRetainedActivityKind, UiProjectionUnavailableKind,
+    UiScalarProjectionFactReceipt,
 };
+use worth_query_host::facade::publication::domain_computation::WorthQueryApplicationQueryPublicationReceipt;
 
 #[path = "intent_input/collection_catalog.rs"]
 mod collection_catalog;
@@ -15,6 +17,8 @@ mod collection_catalog;
 mod collection_reference;
 #[path = "intent_input/collection_transition.rs"]
 mod collection_transition;
+#[path = "intent_input/scalar_input.rs"]
+mod scalar_input;
 #[path = "intent_input/transition_work.rs"]
 mod transition_work;
 
@@ -23,6 +27,7 @@ pub use collection_reference::{
     UiProjectionInputCollectionRow, UiProjectionOptionReference, UiProjectionOptionStableKey,
 };
 pub use collection_transition::UiProjectionInputFactTransition;
+use scalar_input::scalar_input;
 pub use transition_work::UiProjectionInputTransitionWork;
 
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -38,10 +43,18 @@ struct UiProjectionInputRevisionInner {
     slot: UiProjectionInputSlot,
     projection: crate::WorthUiQueryViewIdentity,
     observation_order: u64,
-    query_world: WorthQueryEvidenceIdentity,
-    binding: WorthQueryEvidenceIdentity,
-    source_generation: WorthQueryEvidenceIdentity,
-    result_generation: WorthQueryEvidenceIdentity,
+    authority: UiProjectionInputAuthority,
+}
+
+#[derive(Debug, Eq, PartialEq)]
+enum UiProjectionInputAuthority {
+    Legacy {
+        query_world: WorthQueryEvidenceIdentity,
+        binding: WorthQueryEvidenceIdentity,
+        source_generation: WorthQueryEvidenceIdentity,
+        result_generation: WorthQueryEvidenceIdentity,
+    },
+    Application(WorthQueryApplicationQueryPublicationReceipt),
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -91,10 +104,26 @@ impl UiProjectionInputRevision {
                 slot,
                 projection: fact.projection_identity().clone(),
                 observation_order: fact.observation_order(),
-                query_world: fact.query_world_identity().clone(),
-                binding: fact.binding_identity().clone(),
-                source_generation: fact.source_generation_identity().clone(),
-                result_generation: fact.result_generation_identity().clone(),
+                authority: UiProjectionInputAuthority::Legacy {
+                    query_world: fact.query_world_identity().clone(),
+                    binding: fact.binding_identity().clone(),
+                    source_generation: fact.source_generation_identity().clone(),
+                    result_generation: fact.result_generation_identity().clone(),
+                },
+            }),
+        }
+    }
+
+    fn from_application_fact(
+        slot: UiProjectionInputSlot,
+        fact: &UiApplicationScalarProjectionFactReceipt,
+    ) -> Self {
+        Self {
+            inner: Arc::new(UiProjectionInputRevisionInner {
+                slot,
+                projection: fact.projection_identity().clone(),
+                observation_order: fact.owner_order(),
+                authority: UiProjectionInputAuthority::Application(fact.query_receipt().clone()),
             }),
         }
     }
@@ -111,27 +140,71 @@ impl UiProjectionInputRevision {
         self.inner.observation_order
     }
 
-    pub fn query_world_identity(&self) -> &WorthQueryEvidenceIdentity {
-        &self.inner.query_world
+    pub fn query_world_identity(&self) -> Option<&WorthQueryEvidenceIdentity> {
+        match &self.inner.authority {
+            UiProjectionInputAuthority::Legacy { query_world, .. } => Some(query_world),
+            UiProjectionInputAuthority::Application(_) => None,
+        }
     }
 
-    pub fn binding_identity(&self) -> &WorthQueryEvidenceIdentity {
-        &self.inner.binding
+    pub fn binding_identity(&self) -> Option<&WorthQueryEvidenceIdentity> {
+        match &self.inner.authority {
+            UiProjectionInputAuthority::Legacy { binding, .. } => Some(binding),
+            UiProjectionInputAuthority::Application(_) => None,
+        }
     }
 
-    pub fn source_generation_identity(&self) -> &WorthQueryEvidenceIdentity {
-        &self.inner.source_generation
+    pub fn source_generation_identity(&self) -> Option<&WorthQueryEvidenceIdentity> {
+        match &self.inner.authority {
+            UiProjectionInputAuthority::Legacy {
+                source_generation, ..
+            } => Some(source_generation),
+            UiProjectionInputAuthority::Application(_) => None,
+        }
     }
 
-    pub fn result_generation_identity(&self) -> &WorthQueryEvidenceIdentity {
-        &self.inner.result_generation
+    pub fn result_generation_identity(&self) -> Option<&WorthQueryEvidenceIdentity> {
+        match &self.inner.authority {
+            UiProjectionInputAuthority::Legacy {
+                result_generation, ..
+            } => Some(result_generation),
+            UiProjectionInputAuthority::Application(_) => None,
+        }
+    }
+
+    pub fn has_same_authority(&self, other: &Self) -> bool {
+        match (&self.inner.authority, &other.inner.authority) {
+            (
+                UiProjectionInputAuthority::Legacy {
+                    query_world: left_world,
+                    binding: left_binding,
+                    ..
+                },
+                UiProjectionInputAuthority::Legacy {
+                    query_world: right_world,
+                    binding: right_binding,
+                    ..
+                },
+            ) => left_world == right_world && left_binding == right_binding,
+            (
+                UiProjectionInputAuthority::Application(left),
+                UiProjectionInputAuthority::Application(right),
+            ) => {
+                let left = left.inspect();
+                let right = right.inspect();
+                left.query_identity() == right.query_identity()
+                    && left.parameter_binding_identity() == right.parameter_binding_identity()
+                    && left.basis().runtime_instance() == right.basis().runtime_instance()
+                    && left.basis().branch() == right.basis().branch()
+            }
+            _ => false,
+        }
     }
 
     pub(super) fn has_same_projection_owner(&self, other: &Self) -> bool {
         self.inner.slot == other.inner.slot
             && self.inner.projection == other.inner.projection
-            && self.inner.query_world == other.inner.query_world
-            && self.inner.binding == other.inner.binding
+            && self.has_same_authority(other)
             && self.inner.observation_order < other.inner.observation_order
     }
 }
@@ -247,6 +320,33 @@ impl UiScalarProjectionFactReceipt {
     }
 }
 
+impl UiApplicationScalarProjectionFactReceipt {
+    pub fn intent_input_transition(
+        &self,
+        slot: UiProjectionInputSlot,
+    ) -> UiProjectionInputFactTransition {
+        let revision = UiProjectionInputRevision::from_application_fact(slot, self);
+        let (posture, value) = if self.value().revision == 0 {
+            (
+                UiProjectionInputPosture::Unavailable(UiProjectionUnavailableKind::Pending),
+                None,
+            )
+        } else {
+            (
+                UiProjectionInputPosture::Current,
+                Some(Arc::from(self.value().status.as_str())),
+            )
+        };
+        UiProjectionInputFactTransition::replace(UiProjectionInputFactReference::Scalar(Arc::new(
+            UiScalarProjectionInputFact {
+                revision,
+                posture,
+                value,
+            },
+        )))
+    }
+}
+
 impl UiCollectionProjectionFactReceipt {
     pub fn intent_input_transition(
         &self,
@@ -269,81 +369,4 @@ impl UiProjectionInputSlot {
     pub const fn for_certification(index: u32) -> Self {
         Self(index)
     }
-}
-
-fn scalar_input(
-    availability: &UiProjectionAvailability<super::UiNativeTextValue>,
-) -> (UiProjectionInputPosture, Option<Arc<str>>) {
-    match availability {
-        UiProjectionAvailability::Present(UiPresentProjection::Current(value)) => (
-            UiProjectionInputPosture::Current,
-            Some(Arc::from(value.as_str())),
-        ),
-        UiProjectionAvailability::Present(UiPresentProjection::RetainedStale {
-            value,
-            activity,
-        }) => (
-            UiProjectionInputPosture::RetainedStale(activity.kind()),
-            Some(Arc::from(value.as_str())),
-        ),
-        UiProjectionAvailability::Unavailable(receipt) => {
-            (UiProjectionInputPosture::Unavailable(receipt.kind()), None)
-        }
-        UiProjectionAvailability::Stopped(receipt) => {
-            (UiProjectionInputPosture::Stopped(receipt.kind()), None)
-        }
-    }
-}
-
-pub(super) fn collection_input(
-    availability: &UiProjectionAvailability<super::UiCollectionProjectionValue>,
-) -> (
-    UiProjectionInputPosture,
-    Option<UiCollectionCompleteness>,
-    Box<[UiProjectionInputCollectionRow]>,
-) {
-    match availability {
-        UiProjectionAvailability::Present(UiPresentProjection::Current(value)) => (
-            UiProjectionInputPosture::Current,
-            Some(value.completeness()),
-            collection_rows(value),
-        ),
-        UiProjectionAvailability::Present(UiPresentProjection::RetainedStale {
-            value,
-            activity,
-        }) => (
-            UiProjectionInputPosture::RetainedStale(activity.kind()),
-            Some(value.completeness()),
-            collection_rows(value),
-        ),
-        UiProjectionAvailability::Unavailable(receipt) => (
-            UiProjectionInputPosture::Unavailable(receipt.kind()),
-            None,
-            Box::default(),
-        ),
-        UiProjectionAvailability::Stopped(receipt) => (
-            UiProjectionInputPosture::Stopped(receipt.kind()),
-            None,
-            Box::default(),
-        ),
-    }
-}
-
-fn collection_rows(
-    value: &super::UiCollectionProjectionValue,
-) -> Box<[UiProjectionInputCollectionRow]> {
-    value
-        .rows()
-        .iter()
-        .map(|row| {
-            UiProjectionInputCollectionRow::query_issued(
-                row.row().clone(),
-                row.selected_values()
-                    .iter()
-                    .map(|value| Arc::from(value.as_str()))
-                    .collect(),
-                row.application_item_key(),
-            )
-        })
-        .collect()
 }

@@ -42,7 +42,9 @@ pub(super) fn lower_relation_layouts(
         .members()
         .iter()
         .filter_map(|member| match member {
-            ApplicationSchemaMember::Relation { relation, from, to } => Some((relation, from, to)),
+            ApplicationSchemaMember::Relation {
+                relation, from, to, ..
+            } => Some((relation, from, to)),
             _ => None,
         })
         .map(|(relation, from, to)| {

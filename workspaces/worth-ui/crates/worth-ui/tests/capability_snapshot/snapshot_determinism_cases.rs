@@ -12,9 +12,12 @@ fn snapshot_digest_stable_under_registration_permutation() {
         .register_component(
             component("component.editor")
                 .with_command_binding_slot(super::snapshot_fixtures::command_id("command.save"))
-                .with_theme_token_dependency(super::snapshot_fixtures::theme_token_id(
-                    "theme.text.primary",
-                )),
+                .with_semantic_text(
+                    worth_ui::facade::declaration::ComponentSemanticTextContract::body_default(
+                        super::snapshot_fixtures::theme_token_id("theme.text.primary"),
+                        0,
+                    ),
+                ),
         )
         .freeze()
         .expect("application preparation should succeed");
@@ -22,9 +25,12 @@ fn snapshot_digest_stable_under_registration_permutation() {
         .with_change_profile(worth_ui_runtime::facade::rebind::UiChangeProfile::platform_pulse())
         .register_component(
             component("component.editor")
-                .with_theme_token_dependency(super::snapshot_fixtures::theme_token_id(
-                    "theme.text.primary",
-                ))
+                .with_semantic_text(
+                    worth_ui::facade::declaration::ComponentSemanticTextContract::body_default(
+                        super::snapshot_fixtures::theme_token_id("theme.text.primary"),
+                        0,
+                    ),
+                )
                 .with_command_binding_slot(super::snapshot_fixtures::command_id("command.save")),
         )
         .register_command(command_with_icon("command.save", "icon.save"))

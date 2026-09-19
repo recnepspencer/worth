@@ -15,8 +15,6 @@ pub struct WorthQueryConsumerInvalidationDelta {
     pub(super) impact: Arc<crate::domain_installation::WorthQueryImpactDecision>,
     pub(super) conditional_provenance:
         Arc<[crate::domain_installation::WorthQueryConditionalProvenance]>,
-    pub(super) conditional_decision:
-        Option<Arc<crate::domain_installation::WorthQueryConditionalProvenance>>,
     pub(super) sharing:
         Arc<crate::domain_installation::operation_execution::WorthQueryAdmittedProjectionSharing>,
     pub(super) epoch_work:
@@ -46,12 +44,6 @@ impl WorthQueryConsumerInvalidationDelta {
         &self,
     ) -> &[crate::domain_installation::WorthQueryConditionalProvenance] {
         &self.conditional_provenance
-    }
-
-    pub fn conditional_decision(
-        &self,
-    ) -> Option<&crate::domain_installation::WorthQueryConditionalProvenance> {
-        self.conditional_decision.as_deref()
     }
 
     pub fn affected_native_keys(&self) -> &[crate::domain_installation::WorthQueryNativeAccessKey] {
@@ -96,14 +88,6 @@ impl WorthQueryConsumerInvalidationDelta {
         Arc::ptr_eq(&self.impact, &other.impact)
     }
 
-    pub fn retains_same_conditional_decision_as(&self, other: &Self) -> bool {
-        match (&self.conditional_decision, &other.conditional_decision) {
-            (Some(left), Some(right)) => Arc::ptr_eq(left, right),
-            (None, None) => true,
-            _ => false,
-        }
-    }
-
     pub fn retains_same_compatibility_evidence_as(&self, other: &Self) -> bool {
         Arc::ptr_eq(&self.sharing, &other.sharing)
     }
@@ -136,11 +120,6 @@ impl WorthQueryAdmittedConsumerInvalidation<'_> {
             &self.delta.impact,
             &self.delta.epoch_work,
             &self.delta.sharing,
-            self.delta.conditional_decision.as_ref(),
         )
-    }
-
-    pub(crate) fn into_delta(self) -> WorthQueryConsumerInvalidationDelta {
-        self.delta
     }
 }

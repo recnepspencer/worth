@@ -30,12 +30,22 @@ pub enum UiRebindPreparationDenial {
     CandidateLowering,
     CandidateStaging,
     FrameBoundaryUnavailable,
+    ConsequenceFrameMismatch,
+    StaleConsequenceOwnerSnapshot,
+    ThemeSwitch(crate::runtime::appearance::UiThemeSwitchDenial),
     ContentMountedPreparation(Box<crate::mounting::UiMountedFramePreparationDenial>),
     CandidateMountedPreparation(Box<crate::mounting::UiMountedFramePreparationDenial>),
+    CandidateOccurrenceGeometry(crate::mounting::UiMountedOccurrenceGeometryDenial),
     CandidateCutoverPreparation,
     PlannedChangeBecameSemanticNoOp,
     UnsupportedNonSourcePlan,
     InvalidSemanticProof,
+    AppearanceThemeSuccession(
+        crate::runtime::presentation_state::UiAppearanceGenerationSuccessionDenial,
+    ),
+    AppearanceInspectionSuccession(
+        crate::runtime::appearance::UiAppearanceInspectionGenerationSuccessionDenial,
+    ),
 }
 
 impl UiRebindExecutionRequest {

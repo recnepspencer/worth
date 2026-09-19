@@ -1,21 +1,31 @@
+mod input_shielding;
+mod text_paint;
+
 #[derive(Clone)]
 pub(crate) struct UiMountedVisualRegionBasis {
-    paint: crate::runtime::persistent_index::UiPersistentOrdMap<
-        worth_ui_host_contract::UiMountedInstanceIdentity,
-        worth_ui_host_contract::UiMountedFilledRectMechanic,
-    >,
-    hit_test: crate::runtime::persistent_index::UiPersistentOrdMap<
-        worth_ui_host_contract::UiMountedInstanceIdentity,
-        worth_ui_host_contract::UiMountedHitTestMechanic,
-    >,
+    hit_test: crate::mounting::projection::UiMountedHitMechanicSource,
+    pub(in crate::mounting) presented_hits:
+        crate::mounting::presented_hit_index::UiPresentedHitIndex,
     semantic_text: crate::mounting::projection::UiMountedSemanticMechanicSource,
     portal_overlays: std::rc::Rc<[worth_ui_host_contract::UiMountedPortalOverlayMechanic]>,
+    portal_input_order:
+        std::rc::Rc<std::collections::BTreeMap<u64, crate::runtime::portal::UiPortalStackOrdinal>>,
     portal_children: std::rc::Rc<
         std::collections::BTreeMap<
             worth_ui_host_contract::UiMountedInstanceIdentity,
-            Option<worth_ui_host_contract::UiMountedPortalOverlayMechanic>,
+            Option<(
+                worth_ui_host_contract::UiMountedPortalOverlayMechanic,
+                worth_ui_host_contract::UiMountedCanonicalBox,
+            )>,
         >,
     >,
+    text_clips: std::rc::Rc<
+        std::collections::BTreeMap<
+            worth_ui_host_contract::UiMountedInstanceIdentity,
+            crate::mounting::projection::UiMountedAppearanceClip,
+        >,
+    >,
+    appearance_paint: std::sync::Arc<[super::UiMountedAppearancePaintBasis]>,
     binding: Option<worth_ui_host_contract::UiSurfaceBindingGeneration>,
     receipts: Option<super::UiMountedNodeReceiptBasis>,
     #[cfg(test)]
@@ -31,7 +41,6 @@ pub(crate) struct UiMountedHitTestPresentation {
 #[cfg(test)]
 #[derive(Clone)]
 struct UiMaterializedVisualRegionBasis {
-    paint: std::sync::Arc<[worth_ui_host_contract::UiMountedFilledRectMechanic]>,
     hit_test: std::sync::Arc<[worth_ui_host_contract::UiMountedHitTestMechanic]>,
     unsupported_paint: std::sync::Arc<[UiMountedUnsupportedPaintBasis]>,
 }
@@ -47,22 +56,19 @@ pub(crate) struct UiMountedUnsupportedPaintBasis {
 
 impl UiMountedVisualRegionBasis {
     pub(in crate::mounting) fn from_persistent(
-        paint: crate::runtime::persistent_index::UiPersistentOrdMap<
-            worth_ui_host_contract::UiMountedInstanceIdentity,
-            worth_ui_host_contract::UiMountedFilledRectMechanic,
-        >,
-        hit_test: crate::runtime::persistent_index::UiPersistentOrdMap<
-            worth_ui_host_contract::UiMountedInstanceIdentity,
-            worth_ui_host_contract::UiMountedHitTestMechanic,
-        >,
+        hit_test: crate::mounting::projection::UiMountedHitMechanicSource,
         semantic_text: crate::mounting::projection::UiMountedSemanticMechanicSource,
+        presented_hits: crate::mounting::presented_hit_index::UiPresentedHitIndex,
     ) -> Self {
         Self {
-            paint,
             hit_test,
+            presented_hits,
             semantic_text,
             portal_overlays: std::rc::Rc::from([]),
+            portal_input_order: Default::default(),
             portal_children: Default::default(),
+            text_clips: Default::default(),
+            appearance_paint: std::sync::Arc::from([]),
             binding: None,
             receipts: None,
             #[cfg(test)]
@@ -72,21 +78,23 @@ impl UiMountedVisualRegionBasis {
 
     #[cfg(test)]
     pub(crate) fn new(
-        paint: Box<[worth_ui_host_contract::UiMountedFilledRectMechanic]>,
+        unsupported_paint: Box<[UiMountedUnsupportedPaintBasis]>,
         hit_test: Box<[worth_ui_host_contract::UiMountedHitTestMechanic]>,
     ) -> Self {
         Self {
-            paint: Default::default(),
             hit_test: Default::default(),
+            presented_hits: Default::default(),
             semantic_text: Default::default(),
             portal_overlays: std::rc::Rc::from([]),
+            portal_input_order: Default::default(),
             portal_children: Default::default(),
+            text_clips: Default::default(),
+            appearance_paint: std::sync::Arc::from([]),
             binding: None,
             receipts: None,
             materialized: Some(UiMaterializedVisualRegionBasis {
-                paint: paint.into(),
                 hit_test: hit_test.into(),
-                unsupported_paint: std::sync::Arc::from([]),
+                unsupported_paint: unsupported_paint.into(),
             }),
         }
     }
@@ -97,11 +105,14 @@ impl UiMountedVisualRegionBasis {
         receipts: super::UiMountedNodeReceiptBasis,
     ) -> Self {
         Self {
-            paint: self.paint.clone(),
             hit_test: self.hit_test.clone(),
+            presented_hits: self.presented_hits.clone(),
             semantic_text: self.semantic_text.clone(),
             portal_overlays: std::rc::Rc::clone(&self.portal_overlays),
+            portal_input_order: std::rc::Rc::clone(&self.portal_input_order),
             portal_children: std::rc::Rc::clone(&self.portal_children),
+            text_clips: std::rc::Rc::clone(&self.text_clips),
+            appearance_paint: std::sync::Arc::clone(&self.appearance_paint),
             binding: Some(binding),
             receipts: Some(receipts),
             #[cfg(test)]
@@ -143,9 +154,9 @@ impl UiMountedVisualRegionBasis {
                 let (mechanic, portal) = match self.portal_children.get(&row.mounted_instance()) {
                     None => Some((row, None)),
                     Some(None) => None,
-                    Some(Some(portal)) => Some((
-                        row.presented_within_portal(*portal)
-                            .expect("validated Portal-relative hit region remains canonical"),
+                    Some(Some((portal, source_anchor))) => Some((
+                        row.presented_within_portal(*portal, *source_anchor)
+                            .expect("validated Portal-relative hit region remains canonical")?,
                         Some(*portal),
                     )),
                 }?;
@@ -158,87 +169,50 @@ impl UiMountedVisualRegionBasis {
             .collect()
     }
 
-    pub(crate) fn paint(&self) -> Box<[worth_ui_host_contract::UiMountedFilledRectMechanic]> {
-        #[cfg(test)]
-        if let Some(materialized) = &self.materialized {
-            return materialized.paint.iter().copied().collect();
-        }
-        self.paint
+    pub(crate) fn appearance_paint(&self) -> Box<[super::UiMountedAppearancePaintBasis]> {
+        self.appearance_paint
             .iter()
-            .map(|(_, row)| *row)
+            .copied()
             .filter(|row| self.binding.is_none_or(|binding| row.binding() == binding))
             .filter_map(|row| {
-                let Some(receipts) = self.receipts.as_ref() else {
-                    return Some(row);
-                };
-                let row = crate::mounting::projection::reattribute_filled_rect(
-                    row,
-                    receipts.frame(),
-                    receipts,
-                )
-                .expect("retained paint rows belong to the presented receipt basis");
-                match self.portal_children.get(&row.mounted_instance()) {
-                    None => Some(row),
-                    Some(None) => None,
-                    Some(Some(portal)) => Some(
-                        row.presented_within_portal(*portal)
-                            .expect("validated Portal-relative paint remains canonical"),
-                    ),
-                }
+                self.receipts
+                    .as_ref()
+                    .map_or(Some(row), |receipts| row.reattribute(receipts))
             })
             .collect()
     }
 
-    pub(crate) fn unsupported_paint(&self) -> Box<[UiMountedUnsupportedPaintBasis]> {
-        #[cfg(test)]
-        if let Some(materialized) = &self.materialized {
-            return materialized.unsupported_paint.iter().copied().collect();
-        }
-        self.semantic_text
-            .visual_mechanics()
-            .filter(|row| self.binding.is_none_or(|binding| row.binding() == binding))
-            .filter_map(|row| {
-                let presented = match self.portal_children.get(&row.mounted_instance()) {
-                    None => Some(row.clone()),
-                    Some(None) => None,
-                    Some(Some(portal)) => Some(
-                        row.presented_within_portal(*portal)
-                            .expect("validated Portal-relative text remains canonical"),
-                    ),
-                }?;
-                Some(UiMountedUnsupportedPaintBasis {
-                    node_receipt: self
-                        .receipts
-                        .as_ref()
-                        .and_then(|receipts| receipts.receipt_for(presented.mounted_instance()))
-                        .unwrap_or_else(|| presented.node_receipt()),
-                    bounds: presented.bounds(),
-                    clip: presented.clip_bounds(),
-                    semantic_order: presented.layer_semantic_order(),
-                    source_digest: presented.semantic_digest(),
-                })
+    pub(in crate::mounting) fn with_appearance_paint(
+        mut self,
+        mechanics: Vec<super::UiMountedRetainedAppearanceVisualMechanic>,
+        bindings: &[(
+            worth_ui_host_contract::UiSemanticSurfaceIdentity,
+            worth_ui_host_contract::UiSurfaceBindingGeneration,
+        )],
+    ) -> Self {
+        self.appearance_paint = mechanics
+            .into_iter()
+            .filter_map(|mechanic| {
+                let binding = bindings.iter().find_map(|(surface, binding)| {
+                    (*surface == mechanic.semantic_surface()).then_some(*binding)
+                })?;
+                mechanic.into_paint_basis(binding)
             })
-            .chain(
-                self.portal_overlays
-                    .iter()
-                    .copied()
-                    .filter(|row| self.binding.is_none_or(|binding| row.binding() == binding))
-                    .map(|row| UiMountedUnsupportedPaintBasis {
-                        node_receipt: row.owner_receipt(),
-                        bounds: row.bounds(),
-                        clip: row.clip_bounds(),
-                        semantic_order: row.layer_semantic_order(),
-                        source_digest: row.semantic_digest(),
-                    }),
-            )
-            .collect()
+            .collect::<Vec<_>>()
+            .into();
+        self
     }
 
     pub(in crate::mounting) fn with_portal_overlays(
         mut self,
         portal_overlays: Vec<worth_ui_host_contract::UiMountedPortalOverlayMechanic>,
+        portal_input_order: std::collections::BTreeMap<
+            u64,
+            crate::runtime::portal::UiPortalStackOrdinal,
+        >,
     ) -> Self {
         self.portal_overlays = portal_overlays.into();
+        self.portal_input_order = std::rc::Rc::new(portal_input_order);
         self
     }
 
@@ -246,47 +220,53 @@ impl UiMountedVisualRegionBasis {
         mut self,
         portal_children: std::collections::BTreeMap<
             worth_ui_host_contract::UiMountedInstanceIdentity,
-            Option<worth_ui_host_contract::UiMountedPortalOverlayMechanic>,
+            Option<(
+                worth_ui_host_contract::UiMountedPortalOverlayMechanic,
+                worth_ui_host_contract::UiMountedCanonicalBox,
+            )>,
         >,
     ) -> Self {
         self.portal_children = std::rc::Rc::new(portal_children);
         self
     }
 
-    #[cfg(test)]
-    pub(crate) fn with_unsupported_paint(
-        mut self,
-        unsupported_paint: Box<[UiMountedUnsupportedPaintBasis]>,
-    ) -> Self {
-        self.materialized
-            .as_mut()
-            .expect("test visual region basis is materialized")
-            .unsupported_paint = unsupported_paint.into();
-        self
+    /// Admission ceiling includes commands later suppressed by Portal clipping.
+    pub(in crate::mounting) fn motion_acceptance_reserved_bytes(&self) -> Option<usize> {
+        let commands = self
+            .semantic_text
+            .len()
+            .checked_add(self.portal_overlays.len())?;
+        super::presentation::work_producer::motion_acceptance_reserved_bytes(commands)
     }
 
     pub(crate) fn retained_structural_bytes(&self) -> Option<usize> {
         #[cfg(test)]
         if let Some(materialized) = &self.materialized {
-            return materialized
-                .paint
-                .len()
-                .checked_mul(std::mem::size_of::<
-                    worth_ui_host_contract::UiMountedFilledRectMechanic,
-                >())?
-                .checked_add(
-                    materialized
-                        .hit_test
-                        .len()
-                        .checked_mul(std::mem::size_of::<
-                            worth_ui_host_contract::UiMountedHitTestMechanic,
-                        >())?,
-                );
+            return materialized.hit_test.len().checked_mul(std::mem::size_of::<
+                worth_ui_host_contract::UiMountedHitTestMechanic,
+            >());
         }
-        self.paint
+        self.hit_test
             .retained_structural_bytes()?
-            .checked_add(self.hit_test.retained_structural_bytes()?)?
+            .checked_add(self.presented_hits.retained_structural_bytes()?)?
+            .checked_add(
+                self.portal_input_order
+                    .len()
+                    .checked_mul(std::mem::size_of::<(
+                        u64,
+                        crate::runtime::portal::UiPortalStackOrdinal,
+                    )>())?,
+            )?
             .checked_add(self.semantic_text.retained_structural_bytes()?)?
+            .checked_add(self.text_clips.len().checked_mul(std::mem::size_of::<(
+                worth_ui_host_contract::UiMountedInstanceIdentity,
+                crate::mounting::projection::UiMountedAppearanceClip,
+            )>())?)?
+            .checked_add(
+                self.appearance_paint
+                    .len()
+                    .checked_mul(std::mem::size_of::<super::UiMountedAppearancePaintBasis>())?,
+            )?
             .checked_add(self.portal_overlays.len().checked_mul(std::mem::size_of::<
                 worth_ui_host_contract::UiMountedPortalOverlayMechanic,
             >())?)?
@@ -302,6 +282,17 @@ impl UiMountedVisualRegionBasis {
 }
 
 impl UiMountedHitTestPresentation {
+    pub(in crate::mounting) fn completed(
+        mechanic: worth_ui_host_contract::UiMountedHitTestMechanic,
+        portal: Option<worth_ui_host_contract::UiMountedPortalOverlayMechanic>,
+        owns_presented_portal: bool,
+    ) -> Self {
+        Self {
+            mechanic,
+            portal,
+            owns_presented_portal,
+        }
+    }
     pub(crate) const fn mechanic(&self) -> worth_ui_host_contract::UiMountedHitTestMechanic {
         self.mechanic
     }

@@ -63,6 +63,36 @@ pub(crate) enum UiPortalProposalPreparationDenial {
 }
 
 impl UiStagedPortalProposalTransaction {
+    pub(crate) fn prepared_motion_entrance(
+        &self,
+    ) -> Option<crate::runtime::motion::UiPreparedMotionEntrance> {
+        self.motion
+            .as_ref()
+            .and_then(|motion| motion.prepared_entrance())
+    }
+
+    pub(crate) fn overlay_appearance_sources(
+        &self,
+    ) -> (
+        &crate::runtime::portal::UiPreparedPortalServiceTransition,
+        Option<&crate::runtime::portal::UiPortalOverlayBindingStage>,
+        Option<crate::runtime::motion::UiMotionOverlayOwnerRow>,
+    ) {
+        (
+            self.portal.transition(),
+            self.portal.overlay_binding_stage(),
+            self.motion.as_ref().map(|motion| motion.overlay_row()),
+        )
+    }
+}
+
+impl UiStagedPortalProposalTransaction {
+    pub(crate) fn overlay_binding_commit(
+        &self,
+    ) -> crate::runtime::portal::UiPortalOverlayBindingCommit {
+        self.portal.overlay_binding_commit()
+    }
+
     /// The compiled reveal witness must name exactly the Scroll owner whose
     /// staged replan this transaction is about to commit.
     pub(super) fn reveal_refinement_agrees(&self) -> bool {

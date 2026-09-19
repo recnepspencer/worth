@@ -10,8 +10,8 @@ use worth_ui::facade::{
         UiTextStyleInput,
     },
     declaration::{
-        ComponentSemanticTextContract, ComponentSemanticTextSpanContract, ThemeColorValue,
-        ThemeTokenDescriptor, ThemeTokenFamily, ThemeTokenId, ThemeTokenSource, ThemeTokenValue,
+        ComponentSemanticTextContract, ComponentSemanticTextSpanContract, ThemeTokenDescriptor,
+        ThemeTokenFamily, ThemeTokenId, ThemeTokenSource, ThemeTokenValue, UiThemeColor,
     },
     observation::UiChangeClassificationOutcome,
     rebind::{UiRebindExecutionPolicy, UiRebindExecutionRequest, UiRebindOutcome},
@@ -117,6 +117,7 @@ fn authored_application_stack_and_emoji_fallback_cross_mounted_headless_consumer
     let plan = session
         .compile_rebind_plan(lifecycle, UiRebindExecutionPolicy::ordinary())
         .unwrap();
+    crate::mounted_geometry_fixture::install_current_occurrence_geometry(&mut session);
     let prepared = session
         .prepare_rebind(plan, UiRebindExecutionRequest::new(414))
         .unwrap();
@@ -246,7 +247,7 @@ fn accent_token_descriptor() -> ThemeTokenDescriptor {
         ThemeTokenId::new(ACCENT_COLOR).unwrap(),
         ThemeTokenFamily::surface(),
         ThemeTokenSource::application(),
-        ThemeTokenValue::color(ThemeColorValue::hex("#f7812f").unwrap()),
+        ThemeTokenValue::color(UiThemeColor::parse("#f7812f").unwrap()),
     )
 }
 

@@ -39,7 +39,9 @@ fn unrelated_grant_population_does_not_enter_warm_capability_work() {
             ViewRestrictedEstateOperation::reference(),
         )
         .unwrap();
-    let baseline_access = baseline_runtime
+    let baseline_selected = baseline.runtime.select_current_product().unwrap();
+    let expanded_selected = expanded.runtime.select_current_product().unwrap();
+    let baseline_access = baseline_selected
         .admit_capability_access(
             baseline_principal.query(),
             &baseline_capability,
@@ -47,7 +49,7 @@ fn unrelated_grant_population_does_not_enter_warm_capability_work() {
             &request_scope(),
         )
         .unwrap();
-    let expanded_access = expanded_runtime
+    let expanded_access = expanded_selected
         .admit_capability_access(
             expanded_principal.query(),
             &expanded_capability,

@@ -13,6 +13,8 @@ mod query;
 mod query_projection;
 mod schema_transition;
 mod terminal_projection;
+mod theme;
+pub use theme::{PlatformPulseThemeSettlementPosture, PlatformPulseThemeSwitchSettled};
 mod visual;
 mod visual_projection;
 #[cfg(test)]
@@ -68,9 +70,8 @@ pub use projection::{
     PlatformPulseLifecycleObservationProjectionDenial, PlatformPulseLifecycleObservationStream,
 };
 pub use query::{
-    PlatformPulseLiveQueryResidue, PlatformPulseQueryProjectionEvidence,
-    PlatformPulseQueryProjectionPosture, PlatformPulseQueryProjectionPublished,
-    PlatformPulseQueryProjectionResidue, PlatformPulseQueryShutdownEvidence,
+    PlatformPulseQueryProjectionEvidence, PlatformPulseQueryProjectionPosture,
+    PlatformPulseQueryProjectionPublished, PlatformPulseQueryShutdownEvidence,
     PlatformPulseQueryWatcherShutdownEvidence,
 };
 pub use schema_transition::{

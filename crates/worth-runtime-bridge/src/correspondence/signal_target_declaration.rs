@@ -79,35 +79,6 @@ impl BridgeSignalAspectTargetDeclaration {
         self.node_capability.graph_instance_id()
     }
 
-    pub(crate) fn rebind_to_graph(
-        &self,
-        graph: &worth_signal::facade::SignalGraph,
-    ) -> Option<Self> {
-        let worth_proof::TransitionOutcome::Success(node_capability) =
-            graph.admit_installed_node(self.node)
-        else {
-            return None;
-        };
-        let slot = match &self.slot {
-            BridgeSignalSlotRequest::Allocate => BridgeSignalSlotRequest::Allocate,
-            BridgeSignalSlotRequest::Exact(aspect) => {
-                let worth_proof::TransitionOutcome::Success(aspect_capability) =
-                    graph.admit_installed_aspect(self.node, aspect.aspect())
-                else {
-                    return None;
-                };
-                BridgeSignalSlotRequest::Exact(Arc::new(aspect_capability))
-            }
-        };
-        Some(Self {
-            aspect_registration_id: self.aspect_registration_id.clone(),
-            node_capability: Arc::new(node_capability),
-            partition: self.partition.clone(),
-            node: self.node,
-            slot,
-        })
-    }
-
     pub(crate) fn canonical_registration_key(&self) -> String {
         let slot = match &self.slot {
             BridgeSignalSlotRequest::Allocate => "allocate".to_string(),

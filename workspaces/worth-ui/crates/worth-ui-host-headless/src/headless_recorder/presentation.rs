@@ -6,24 +6,15 @@ use worth_ui_host_contract::{
     UiMountedPaintOrderIdentity, UiMountedPresentationWorkView,
 };
 
-pub(super) fn production_cost(
-    work: UiMountedPresentationWorkView<'_>,
-) -> worth_ui_host_contract::UiMountedPresentationProductionCost {
-    match work {
-        UiMountedPresentationWorkView::Initial(work) => work.production_cost(),
-        UiMountedPresentationWorkView::Delta(work) => work.production_cost(),
-        UiMountedPresentationWorkView::Reconstruction(work) => work.production_cost(),
-        UiMountedPresentationWorkView::Sample(work) => work.production_cost(),
-        UiMountedPresentationWorkView::Unchanged(work) => work.production_cost(),
-    }
-}
-
 use super::recorded_frame::UiHeadlessRecordedFrame;
 use super::retained_order::UiHeadlessRetainedOrder;
 use super::{UiHeadlessRecorderCapacity, UiHeadlessRetainedPresentation};
 use crate::headless_translation::translate_headless_frame;
 
+mod cost;
 mod delta;
+
+pub(super) use cost::{add_order_cost, production_cost};
 mod node_delta;
 
 pub(super) fn apply_work(
@@ -69,6 +60,7 @@ pub(super) fn apply_work(
                 initial_node_positions(initial.projection())?,
                 initial_nodes_by_position(initial.projection())?,
                 initial.auxiliary().clone(),
+                crate::headless_translation::base_row_count(initial.projection())?,
             ));
             Ok((Some(recorded), order_cost))
         }
@@ -105,7 +97,7 @@ pub(super) fn apply_work(
             )
             .map_err(|_| malformed())?;
             let order_cost = order.take_cost();
-            *current = Some(UiHeadlessRetainedPresentation::initial(
+            let mut retained = UiHeadlessRetainedPresentation::initial(
                 view.frame(),
                 view.surface(),
                 view.binding(),
@@ -116,14 +108,24 @@ pub(super) fn apply_work(
                 initial_node_positions(work.projection())?,
                 initial_nodes_by_position(work.projection())?,
                 work.auxiliary().clone(),
-            ));
+                crate::headless_translation::base_row_count(work.projection())?,
+            );
+            retained
+                .install_reconstruction_sample_overrides(work.sample_overrides(), work.damage())?;
+            *current = Some(retained);
             Ok((Some(recorded), order_cost))
         }
         UiMountedPresentationWorkView::Sample(sample) => {
             let current = current.as_mut().ok_or_else(malformed)?;
+            crate::headless_translation::validate_appearance_capacity(
+                view.appearance_work(),
+                current.base_row_count,
+                capacity,
+            )?;
+            let recorded = UiHeadlessRecordedFrame::appearance(view)?;
             current.apply_sample(sample)?;
             Ok((
-                None,
+                recorded,
                 worth_ui_retained_order::UiRetainedOrderCost::default(),
             ))
         }
@@ -132,11 +134,17 @@ pub(super) fn apply_work(
             if !affinity_matches(current, unchanged.affinity()) {
                 return Err(malformed());
             }
+            crate::headless_translation::validate_appearance_capacity(
+                view.appearance_work(),
+                current.base_row_count,
+                capacity,
+            )?;
+            let recorded = UiHeadlessRecordedFrame::appearance(view)?;
             current.frame = view.frame();
             current.content = unchanged.affinity().content();
             current.receipt_affinity = unchanged.affinity().receipt_affinity();
             Ok((
-                None,
+                recorded,
                 worth_ui_retained_order::UiRetainedOrderCost::default(),
             ))
         }
@@ -225,17 +233,12 @@ fn validate_initial_projection(
     commands: &super::retained_command_store::UiHeadlessRetainedCommandStore,
     projection: &worth_ui_host_contract::UiMountedProjectionView,
 ) -> Result<(), UiHostSurfacePresentationDenial> {
-    let expected_count = projection.filled_rects().rows().len()
-        + projection.portal_overlays().rows().len()
-        + projection.semantic_text().rows().len();
+    let expected_count =
+        projection.portal_overlays().rows().len() + projection.semantic_text().rows().len();
     if commands.len() != expected_count {
         return Err(UiHostSurfacePresentationDenial::MalformedProjection);
     }
     let aligned = commands.values().all(|command| match command {
-        UiMountedPaintCommand::FilledRect { identity, mechanic } => {
-            *identity == UiMountedPaintCommandIdentity::filled_rect(mechanic)
-                && projection.filled_rects().rows().contains(mechanic)
-        }
         UiMountedPaintCommand::SemanticText { identity, mechanic } => {
             *identity == UiMountedPaintCommandIdentity::semantic_text(mechanic)
                 && projection.semantic_text().rows().contains(mechanic)
@@ -268,10 +271,10 @@ fn validate_order(
 }
 
 pub(super) fn work_cost(
-    work: UiMountedPresentationWorkView<'_>,
+    view: &UiMountedFrameConsumptionView<'_>,
 ) -> Result<UiHostPresentationCostReport, UiHostSurfacePresentationDenial> {
     let (presented_surfaces, rows, bytes, delta_rows, draw_mutations, order_mutations, damage) =
-        match work {
+        match view.presentation_work() {
             UiMountedPresentationWorkView::Initial(initial) => (
                 1,
                 initial.commands().len(),
@@ -313,45 +316,83 @@ pub(super) fn work_cost(
             ),
             UiMountedPresentationWorkView::Unchanged(_) => (0, 0, 0, 0, 0, 0, 0),
         };
-    Ok(UiHostPresentationCostReport::from_adapter(
-        UiHostPresentationCostInput {
-            presented_surfaces,
-            translated_rows: u64::try_from(rows)
-                .map_err(|_| UiHostSurfacePresentationDenial::CapacityExceeded)?,
-            translated_bytes: u64::try_from(bytes)
-                .map_err(|_| UiHostSurfacePresentationDenial::CapacityExceeded)?,
-            native_resource_cache_hits: 0,
-            native_resource_cache_misses: 0,
-            asynchronous_handoffs: 0,
-            delta_rows_carried: u64::try_from(delta_rows)
-                .map_err(|_| UiHostSurfacePresentationDenial::CapacityExceeded)?,
-            draw_list_mutations: u64::try_from(draw_mutations)
-                .map_err(|_| UiHostSurfacePresentationDenial::CapacityExceeded)?,
-            order_mutations: u64::try_from(order_mutations)
-                .map_err(|_| UiHostSurfacePresentationDenial::CapacityExceeded)?,
-            logical_damage_regions: u64::try_from(damage)
-                .map_err(|_| UiHostSurfacePresentationDenial::CapacityExceeded)?,
-            ..Default::default()
-        },
-    ))
-}
-
-pub(super) fn add_order_cost(
-    base: UiHostPresentationCostReport,
-    order: worth_ui_retained_order::UiRetainedOrderCost,
-) -> UiHostPresentationCostReport {
-    base.checked_add(UiHostPresentationCostReport::from_adapter(
-        UiHostPresentationCostInput {
-            order_index_lookups: order.identity_lookups(),
-            order_index_node_touches: order.node_touches(),
-            order_index_rotations: order.rotations(),
-            order_index_high_water: order.high_water_entries(),
-            ..Default::default()
-        },
-    ))
-    .expect("profile-bounded retained-order evidence cannot overflow")
+    let base = UiHostPresentationCostReport::from_adapter(UiHostPresentationCostInput {
+        presented_surfaces,
+        translated_rows: u64::try_from(rows)
+            .map_err(|_| UiHostSurfacePresentationDenial::CapacityExceeded)?,
+        translated_bytes: u64::try_from(bytes)
+            .map_err(|_| UiHostSurfacePresentationDenial::CapacityExceeded)?,
+        native_resource_cache_hits: 0,
+        native_resource_cache_misses: 0,
+        asynchronous_handoffs: 0,
+        delta_rows_carried: u64::try_from(delta_rows)
+            .map_err(|_| UiHostSurfacePresentationDenial::CapacityExceeded)?,
+        draw_list_mutations: u64::try_from(draw_mutations)
+            .map_err(|_| UiHostSurfacePresentationDenial::CapacityExceeded)?,
+        order_mutations: u64::try_from(order_mutations)
+            .map_err(|_| UiHostSurfacePresentationDenial::CapacityExceeded)?,
+        logical_damage_regions: u64::try_from(damage)
+            .map_err(|_| UiHostSurfacePresentationDenial::CapacityExceeded)?,
+        ..Default::default()
+    });
+    let Some(appearance) = view.appearance_work() else {
+        return Ok(base);
+    };
+    let mut rows = appearance.fragments().len();
+    let mut bytes = std::mem::size_of_val(appearance.fragments());
+    let mut delta_rows = appearance.sample_overrides().len();
+    let mut draw_mutations = 0usize;
+    let mut damage = 0usize;
+    bytes = bytes
+        .checked_add(std::mem::size_of_val(appearance.sample_overrides()))
+        .ok_or(UiHostSurfacePresentationDenial::CapacityExceeded)?;
+    for fragment in appearance.fragments() {
+        let work = fragment.work();
+        rows = rows
+            .checked_add(work.successor().mechanics().len())
+            .and_then(|count| count.checked_add(work.changes().len()))
+            .and_then(|count| count.checked_add(work.damage().len()))
+            .and_then(|count| count.checked_add(fragment.text_candidates().len()))
+            .ok_or(UiHostSurfacePresentationDenial::CapacityExceeded)?;
+        bytes = bytes
+            .checked_add(std::mem::size_of_val(work.successor().mechanics()))
+            .and_then(|count| count.checked_add(std::mem::size_of_val(work.changes())))
+            .and_then(|count| count.checked_add(std::mem::size_of_val(work.damage())))
+            .and_then(|count| count.checked_add(std::mem::size_of_val(fragment.text_candidates())))
+            .ok_or(UiHostSurfacePresentationDenial::CapacityExceeded)?;
+        delta_rows = delta_rows
+            .checked_add(work.changes().len())
+            .and_then(|count| count.checked_add(work.damage().len()))
+            .ok_or(UiHostSurfacePresentationDenial::CapacityExceeded)?;
+        draw_mutations = draw_mutations
+            .checked_add(work.changes().len())
+            .ok_or(UiHostSurfacePresentationDenial::CapacityExceeded)?;
+        damage = damage
+            .checked_add(work.damage().len())
+            .ok_or(UiHostSurfacePresentationDenial::CapacityExceeded)?;
+    }
+    let appearance = UiHostPresentationCostReport::from_adapter(UiHostPresentationCostInput {
+        presented_surfaces: 0,
+        translated_rows: u64::try_from(rows)
+            .map_err(|_| UiHostSurfacePresentationDenial::CapacityExceeded)?,
+        translated_bytes: u64::try_from(bytes)
+            .map_err(|_| UiHostSurfacePresentationDenial::CapacityExceeded)?,
+        delta_rows_carried: u64::try_from(delta_rows)
+            .map_err(|_| UiHostSurfacePresentationDenial::CapacityExceeded)?,
+        draw_list_mutations: u64::try_from(draw_mutations)
+            .map_err(|_| UiHostSurfacePresentationDenial::CapacityExceeded)?,
+        logical_damage_regions: u64::try_from(damage)
+            .map_err(|_| UiHostSurfacePresentationDenial::CapacityExceeded)?,
+        ..Default::default()
+    });
+    base.checked_add(appearance)
+        .map_err(|_| UiHostSurfacePresentationDenial::CapacityExceeded)
 }
 
 #[cfg(test)]
 #[path = "presentation_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "presentation_reconstruction_tests.rs"]
+mod reconstruction_tests;

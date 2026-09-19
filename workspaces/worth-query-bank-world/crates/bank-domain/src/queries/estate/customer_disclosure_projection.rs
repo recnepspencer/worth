@@ -1,11 +1,11 @@
-use worth_query_decl::facade::application_schema::TypedApplicationReadableValue;
+use worth_query_decl::facade::application_schema::ApplicationReadableScalarValueBinding;
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationDisclosed, WorthQueryApplicationOmission, WorthQueryApplicationProjection,
     WorthQueryApplicationProjectionDenial, WorthQueryApplicationProjectionRow,
 };
 
 use crate::estate::{BankDisclosure, RestrictedBankField};
-use crate::schema::BankSchema;
+use crate::schema::{BankSchema, RestrictedBankFieldBinding};
 
 use super::customer_disclosure::{EstateCustomerDisclosure, EstateCustomerDisclosureQuery};
 use super::customer_disclosure_selectors::{
@@ -67,7 +67,8 @@ fn omission_value<T>(
     omission: WorthQueryApplicationOmission,
     expected: RestrictedBankField,
 ) -> Result<BankDisclosure<T>, WorthQueryApplicationProjectionDenial> {
-    let field = RestrictedBankField::from_foundational_value(omission.required_disclosure())
+    let field = RestrictedBankFieldBinding::decode(omission.required_disclosure())
+        .ok()
         .filter(|field| *field == expected)
         .ok_or_else(|| WorthQueryApplicationProjectionDenial::reject("customer-disclosure"))?;
     Ok(BankDisclosure::Omitted(field.classification()))

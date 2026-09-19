@@ -41,6 +41,11 @@ fn declaration_geometry_is_a_checked_portal_preference_not_runtime_geometry() {
     assert_eq!(geometry.maximum_height(), 320);
     assert_eq!(geometry.anchor_gap(), 8);
     assert_eq!(geometry.viewport_margin(), 16);
+    let modal = super::portal::UiDeclaredPortalPlacementGeometry::modal_dialog();
+    assert_eq!(modal.preferred_width(), 280);
+    assert_eq!(modal.maximum_height(), 320);
+    assert_eq!(modal.anchor_gap(), 8);
+    assert_eq!(modal.viewport_margin(), 24);
     assert_eq!(
         super::portal::UiDeclaredPortalPlacementGeometry::checked(0, 320, 8, 16),
         Err(super::portal::UiDeclaredPortalPlacementGeometryDenial::EmptyExtent)

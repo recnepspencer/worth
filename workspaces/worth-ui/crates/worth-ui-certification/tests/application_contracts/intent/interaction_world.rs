@@ -5,16 +5,17 @@ use worth_ui::facade::observation_report::{
     UiHostObservationMountedBasis, UiHostObservationPayload, UiHostObservationPresentationBasis,
     UiHostObservationReport, UiHostObservationSequence, UiHostObservationSequenceRange,
     UiHostObservationTimeBasis, UiHostPointerButton, UiHostPointerButtonTransition,
-    UiHostPointerCaptureEpoch, UiHostPointerIdentity, UiHostProtocolContract,
-    UiHostProtocolNegotiation, UiHostSurfacePosition, UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
+    UiHostPointerCaptureEpoch, UiHostPointerDeviceKind, UiHostPointerIdentity,
+    UiHostProtocolContract, UiHostProtocolNegotiation, UiHostSurfacePosition,
+    UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
 };
 use worth_ui_host_contract::{
     UiHostScrollDeltaPhase, UiHostScrollDeltaPrecision, UiHostScrollDeltaSource,
     UiHostScrollDeltaTargetAffinity,
 };
 use worth_ui_runtime::facade::mounted::{
-    UiMountedFrameOutcome, UiMountedHitTestMechanic, UiPresentationDeadline,
-    UiSurfaceBindingGeneration,
+    UiMountedFrameOutcome, UiMountedHitTestMechanic, UiPreparedMountedFrame,
+    UiPresentationDeadline, UiSurfaceBindingGeneration,
 };
 use worth_ui_test_support::{
     WorthUiMountedIdentityCertificationExt, WorthUiMountedPublicationCertificationExt,
@@ -33,6 +34,12 @@ pub(super) struct InteractionWorld {
     next_sequence: u64,
 }
 
+type PublishedFrame = (
+    UiHostObservationPresentationBasis,
+    UiSurfaceBindingGeneration,
+    Box<[UiMountedHitTestMechanic]>,
+);
+
 impl InteractionWorld {
     pub(super) fn canonical() -> Self {
         Self::launch(launch_world())
@@ -46,9 +53,22 @@ impl InteractionWorld {
         Self::launch(session)
     }
 
+    pub(super) fn from_prepared_frame(
+        mut session: WorthUiActiveApplicationSession,
+        frame: UiPreparedMountedFrame,
+    ) -> Self {
+        let published = publish_prepared(&mut session, frame);
+        Self::from_published(session, published)
+    }
+
     fn launch(mut session: WorthUiActiveApplicationSession) -> Self {
         establish_allocation(&mut session, 3);
-        let (presentation, binding, hit_rows) = publish(&mut session);
+        let published = publish(&mut session);
+        Self::from_published(session, published)
+    }
+
+    fn from_published(session: WorthUiActiveApplicationSession, published: PublishedFrame) -> Self {
+        let (presentation, binding, hit_rows) = published;
         Self {
             session,
             binding,
@@ -60,6 +80,13 @@ impl InteractionWorld {
 
     pub(super) fn publish_successor(&mut self) {
         let (presentation, binding, hit_rows) = publish(&mut self.session);
+        assert_eq!(binding, self.binding);
+        self.presentation = presentation;
+        self.hit_rows = hit_rows;
+    }
+
+    pub(super) fn publish_prepared_successor(&mut self, frame: UiPreparedMountedFrame) {
+        let (presentation, binding, hit_rows) = publish_prepared(&mut self.session, frame);
         assert_eq!(binding, self.binding);
         self.presentation = presentation;
         self.hit_rows = hit_rows;
@@ -105,7 +132,9 @@ impl InteractionWorld {
                 transition,
                 position: position(point),
             },
-        );
+        )
+        .with_pointer_device_kind(UiHostPointerDeviceKind::Mouse)
+        .expect("button reports carry an explicit pointer device kind");
         self.admit_range(
             self.presentation,
             (sequence, sequence),
@@ -242,7 +271,9 @@ impl InteractionWorld {
                 position: position(point),
             },
         )
-        .with_mounted_basis(mounted);
+        .with_mounted_basis(mounted)
+        .with_pointer_device_kind(UiHostPointerDeviceKind::Mouse)
+        .expect("mounted button reports carry an explicit pointer device kind");
         self.admit_range(
             self.presentation,
             (sequence, sequence),
@@ -263,11 +294,23 @@ impl InteractionWorld {
             .map(|payload| {
                 let sequence = UiHostObservationSequence::new(self.next_sequence);
                 self.next_sequence += 1;
-                UiHostObservationReport::new(
+                let is_pointer = matches!(
+                    &payload,
+                    UiHostObservationPayload::PointerMotion { .. }
+                        | UiHostObservationPayload::PointerButton { .. }
+                );
+                let report = UiHostObservationReport::new(
                     sequence,
                     UiHostObservationTimeBasis::HostMonotonicMillis(sequence.value()),
                     payload,
-                )
+                );
+                if is_pointer {
+                    report
+                        .with_pointer_device_kind(UiHostPointerDeviceKind::Mouse)
+                        .expect("pointer reports carry an explicit pointer device kind")
+                } else {
+                    report
+                }
             })
             .collect::<Vec<_>>();
         let last = reports
@@ -296,14 +339,15 @@ impl InteractionWorld {
     }
 }
 
-fn publish(
-    session: &mut WorthUiActiveApplicationSession,
-) -> (
-    UiHostObservationPresentationBasis,
-    UiSurfaceBindingGeneration,
-    Box<[UiMountedHitTestMechanic]>,
-) {
+fn publish(session: &mut WorthUiActiveApplicationSession) -> PublishedFrame {
     let prepared = prepare_frame(session).expect("gesture world completes mounted projection");
+    publish_prepared(session, prepared)
+}
+
+fn publish_prepared(
+    session: &mut WorthUiActiveApplicationSession,
+    prepared: UiPreparedMountedFrame,
+) -> PublishedFrame {
     let hit_rows = prepared.surfaces()[0]
         .projection()
         .hit_tests()
@@ -340,14 +384,12 @@ fn publish(
     );
     (presentation, binding, hit_rows)
 }
-
 fn position(point: [i64; 2]) -> UiHostSurfacePosition {
     UiHostSurfacePosition::viewport_logical(
         point[0] * UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
         point[1] * UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
     )
 }
-
 fn protocol() -> worth_ui::facade::observation_report::UiHostProtocolAgreement {
     match UiHostProtocolContract::current().negotiate() {
         UiHostProtocolNegotiation::Compatible(agreement) => agreement,

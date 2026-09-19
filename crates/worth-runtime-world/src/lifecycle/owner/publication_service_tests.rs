@@ -126,3 +126,5 @@ fn ready_relational(
 mod outcomes;
 #[path = "publication_service_tests/performed_recovery.rs"]
 mod performed_recovery;
+#[path = "publication_service_tests/retirement_race.rs"]
+mod retirement_race;

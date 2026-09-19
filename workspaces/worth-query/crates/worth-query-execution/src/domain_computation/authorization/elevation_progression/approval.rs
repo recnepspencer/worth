@@ -25,7 +25,9 @@ use super::context_identity::{
 use super::operation_role::installed_lifecycle_owner;
 use super::transition_contract::{approval_program_targets, lifecycle_decision_reads};
 use crate::domain_computation::primary_graph::{
-    WorthQueryPrimaryGraphApplicationRuntime, WorthQueryRequestedElevation,
+    WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationIdempotencyResolutionDenial,
+    WorthQueryElevationApprovalOutcome, WorthQueryPrimaryGraphApplicationRuntime,
+    WorthQueryRequestedElevation,
 };
 
 mod support_currentness;
@@ -75,6 +77,60 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema,
 {
+    /// Only returns an exact committed replay. A fresh approval cannot leave
+    /// this path as an admitted operation when its original support is stale.
+    pub fn replay_elevation_approval_after_fresh_denial<Capability, Operation, Input>(
+        &self,
+        requested: WorthQueryRequestedElevation,
+        access: WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
+        operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
+        preconditions: TypedMutationPreconditions<
+            Schema,
+            Operation,
+            <Input as ApplicationCapabilityRequest<Schema, Capability>>::Scope,
+        >,
+        idempotency: WorthQueryApplicationIdempotencyBinding,
+    ) -> Result<
+        WorthQueryElevationApprovalOutcome,
+        (
+            Option<WorthQueryApplicationIdempotencyResolutionDenial>,
+            WorthQueryRequestedElevation,
+        ),
+    >
+    where
+        Operation: ApplicationOperationMarkerIdentity<Schema>,
+        Input: ApplicationCapabilityRequest<Schema, Capability> + Clone + Send + Sync + 'static,
+    {
+        let draft = match bind_approval(self, &requested, &access, operation) {
+            Ok(draft) => draft,
+            Err(_) => return Err((None, requested)),
+        };
+        let admission = match progress_capability_operation(
+            self,
+            access,
+            operation,
+            preconditions,
+            WorthQueryCapabilityOperationProgression::ElevationLifecycle,
+        ) {
+            Ok(admission) => admission,
+            Err(_) => return Err((None, requested)),
+        };
+        let mut admission = admission
+            .bind_elevation_approval(draft.bind(requested))
+            .map_err(|(_, binding)| (None, binding.into_requested()))?;
+        match self.resolve_admitted_elevation_approval_replay(&mut admission, idempotency) {
+            Ok(Some(outcome)) => Ok(outcome),
+            Ok(None) => Err((
+                None,
+                admission
+                    .take_elevation_approval_binding()
+                    .expect("the replay probe retains its approval binding")
+                    .into_requested(),
+            )),
+            Err((denial, requested)) => Err((Some(denial), requested)),
+        }
+    }
+
     pub fn authorize_elevation_approval<Capability, Operation, Input>(
         &self,
         mut requested: WorthQueryRequestedElevation,
@@ -100,7 +156,7 @@ where
         WorthQueryElevationApprovalAuthorizationDenial,
     >
     where
-        Operation: ApplicationOperationMarkerIdentity,
+        Operation: ApplicationOperationMarkerIdentity<Schema>,
         Input: ApplicationCapabilityRequest<Schema, Capability>,
         Input: 'static,
     {
@@ -141,7 +197,7 @@ fn bind_approval<Schema, Capability, Operation, Input>(
 ) -> Result<WorthQueryElevationApprovalDraft, WorthQueryOperationAuthorizationDenial>
 where
     Schema: ApplicationSchema,
-    Operation: ApplicationOperationMarkerIdentity,
+    Operation: ApplicationOperationMarkerIdentity<Schema>,
     Input: ApplicationCapabilityRequest<Schema, Capability>,
     Input: 'static,
 {

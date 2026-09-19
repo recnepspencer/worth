@@ -1,6 +1,7 @@
 use super::WorthUiMountedSessionState;
 
 impl WorthUiMountedSessionState {
+    #[cfg(any(test, feature = "certification-support"))]
     pub(crate) fn require_current_layout_reconstruction(
         &mut self,
         binding: worth_ui_host_contract::UiSurfaceBindingGeneration,

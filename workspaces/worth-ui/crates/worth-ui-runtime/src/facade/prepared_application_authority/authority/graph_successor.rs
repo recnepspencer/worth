@@ -12,7 +12,34 @@ pub(crate) struct WorthUiPreparedApplicationGraphSuccessor {
     predecessor_authority: crate::graph::UiGraphAuthorityIdentity,
     graph_snapshot: crate::graph::UiGraphSnapshot,
     generation_identity: WorthUiPreparedApplicationGenerationIdentity,
+    generation_succession: WorthUiPreparedApplicationGenerationSuccession,
     lowering_authority: WorthUiPreparedApplicationLoweringAuthority,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(crate) struct WorthUiPreparedApplicationGenerationSuccession {
+    predecessor: WorthUiPreparedApplicationGenerationIdentity,
+    successor: WorthUiPreparedApplicationGenerationIdentity,
+}
+
+impl WorthUiPreparedApplicationGenerationSuccession {
+    pub(crate) fn new(
+        predecessor: WorthUiPreparedApplicationGenerationIdentity,
+        successor: WorthUiPreparedApplicationGenerationIdentity,
+    ) -> Self {
+        Self {
+            predecessor,
+            successor,
+        }
+    }
+
+    pub(crate) fn predecessor(&self) -> &WorthUiPreparedApplicationGenerationIdentity {
+        &self.predecessor
+    }
+
+    pub(crate) fn successor(&self) -> &WorthUiPreparedApplicationGenerationIdentity {
+        &self.successor
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -32,6 +59,10 @@ impl WorthUiPreparedApplicationGraphSuccessor {
 
     pub(crate) fn lowering_authority(&self) -> WorthUiPreparedApplicationLoweringAuthority {
         self.lowering_authority.clone()
+    }
+
+    pub(crate) fn generation_succession(&self) -> WorthUiPreparedApplicationGenerationSuccession {
+        self.generation_succession.clone()
     }
 }
 
@@ -108,6 +139,7 @@ impl WorthUiPreparedApplicationAuthority {
         if committed.predecessor_authority() != Some(predecessor_authority) {
             return Err(WorthUiPreparedApplicationGraphSuccessorDenial::StaleGraphPredecessor);
         }
+        let predecessor_generation = self.generation_identity.clone();
         let graph_snapshot = committed.into_committed_snapshot();
         let generation_identity = self.derive_generation_identity(&graph_snapshot);
         let lowering_authority =
@@ -115,7 +147,11 @@ impl WorthUiPreparedApplicationAuthority {
         Ok(WorthUiPreparedApplicationGraphSuccessor {
             predecessor_authority,
             graph_snapshot,
-            generation_identity,
+            generation_identity: generation_identity.clone(),
+            generation_succession: WorthUiPreparedApplicationGenerationSuccession::new(
+                predecessor_generation,
+                generation_identity.clone(),
+            ),
             lowering_authority,
         })
     }
@@ -128,6 +164,9 @@ impl WorthUiPreparedApplicationAuthority {
         WorthUiPreparedApplicationGraphSuccessorDenial,
     > {
         if self.graph_snapshot.authority_identity() != successor.predecessor_authority {
+            return Err(WorthUiPreparedApplicationGraphSuccessorDenial::StaleGraphPredecessor);
+        }
+        if self.generation_identity != *successor.generation_succession.predecessor() {
             return Err(WorthUiPreparedApplicationGraphSuccessorDenial::StaleGraphPredecessor);
         }
         self.graph_snapshot = successor.graph_snapshot;

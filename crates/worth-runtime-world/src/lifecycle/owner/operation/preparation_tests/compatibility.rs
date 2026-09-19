@@ -29,7 +29,12 @@ fn incompatible_posture_and_intent_is_rejected_before_reservation() {
         // retains a component the intent declares as changing.
         let plan = retained_relational_plan(owner.as_ref(), &expected, intent, signal);
         let denied = owner
-            .reserve(plan, &RuntimeWorldCancellationSource::new().token(), None)
+            .reserve(
+                plan,
+                &RuntimeWorldCancellationSource::new().token(),
+                None,
+                false,
+            )
             .expect_err("a retained Relational leg cannot carry a Relational change");
         assert_eq!(denied.cause(), NoEffectCause::PreEffectFailure);
         assert_eq!(denied.expected_head(), Some(&expected));
@@ -60,7 +65,12 @@ fn retain_retain_publication_is_denied_before_any_reservation() {
         SignalComponentPlanPosture::RetainExact
     );
     let denied = owner
-        .reserve(plan, &RuntimeWorldCancellationSource::new().token(), None)
+        .reserve(
+            plan,
+            &RuntimeWorldCancellationSource::new().token(),
+            None,
+            false,
+        )
         .expect_err("a publication that moves neither owner has nothing to publish");
     assert_eq!(denied.cause(), NoEffectCause::PreEffectFailure);
     assert_eq!(reservation_counts(owner.as_ref()), (0, 0, 0, 0, 0));
@@ -85,7 +95,12 @@ fn plan_pinning_a_superseded_component_basis_is_rejected_before_reservation() {
 
     let plan = plan_pinning_signal_basis(owner.as_ref(), &advanced, superseded);
     let denied = owner
-        .reserve(plan, &RuntimeWorldCancellationSource::new().token(), None)
+        .reserve(
+            plan,
+            &RuntimeWorldCancellationSource::new().token(),
+            None,
+            false,
+        )
         .expect_err("a leg pinning a superseded component basis cannot reserve");
     assert_eq!(denied.cause(), NoEffectCause::PreEffectFailure);
     assert_eq!(denied.expected_head(), Some(&advanced));

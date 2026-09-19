@@ -2,20 +2,18 @@
 pub(super) mod fixture;
 #[path = "disburse_estate/hostility.rs"]
 mod hostility;
+#[path = "disburse_estate/recovery.rs"]
+mod recovery;
 
 use bank_domain::{
-    estate::{EstateAction, EstateDisbursement},
-    model::SignedMoney,
-    proposals::BankProposalDenial,
+    estate::EstateAction,
+    proposals::{BankIdempotencyKey, BankProposalDenial},
     reads::AccountActivityItem,
     schema::PostingPurpose,
 };
 use bank_server::{
-    queries, BankAuthenticatedPrincipal, BankCommitDenialKind, BankCommitDenialStage,
-    BankCommitReceipt, BankEstateProgressionDenial, BankMutationCommitOutcome, BankReadControls,
-};
-use worth_query_host::facade::primary_graph::{
-    WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationQueryControls,
+    queries, BankAuthenticatedPrincipal, BankCommitReceipt, BankEstateProgressionDenial,
+    BankMutationCommitOutcome, BankReadControls,
 };
 
 use self::fixture::{disbursement_drift_world, disbursement_world, DisbursementFixture};
@@ -25,8 +23,8 @@ use crate::support::request_scope;
 fn public_progression_disburses_through_a_distinct_authoritative_journal() {
     let fixture = disbursement_world("estate-disbursement-commit", 1_000);
     let specialist = fixture.authenticate_actor();
-    let binding = idempotency(11);
-    let outcome = disburse(&fixture, &specialist, fixture.action(250), binding)
+    let key = idempotency(11);
+    let outcome = disburse(&fixture, &specialist, fixture.action(250), key.clone())
         .expect("the exact lawful estate disbursement should execute through Query");
     let BankMutationCommitOutcome::Committed(receipt) = outcome else {
         panic!("the first disbursement must commit: {outcome:?}");
@@ -34,30 +32,31 @@ fn public_progression_disburses_through_a_distinct_authoritative_journal() {
 
     assert_eq!(receipt.emitted_effect_count(), 2);
     assert_eq!(receipt.decision_fact_count(), Some(36));
+    assert!(
+        !receipt.retained_preimage(),
+        "compensation operations must not promise an inverse pre-image"
+    );
     assert_single_admission_digest(&receipt);
     assert_authoritative_activity(&fixture);
-    assert_equivalent_retry(&fixture, &specialist, binding, &receipt);
+    assert_equivalent_retry(&fixture, &specialist, &key, &receipt);
 }
 
 #[test]
-fn idempotency_binds_raw_intent_and_all_nine_disbursement_dimensions() {
+fn idempotency_rejects_a_different_authorized_disbursement_input() {
     let fixture = disbursement_drift_world("estate-disbursement-drift");
     let specialist = fixture.authenticate_actor();
-    let binding = idempotency(31);
+    let key = idempotency(31);
     let action = fixture.action(250);
-    let committed = disburse(&fixture, &specialist, action, binding)
+    let committed = disburse(&fixture, &specialist, action, key.clone())
         .expect("the baseline disbursement should execute");
     assert!(matches!(committed, BankMutationCommitOutcome::Committed(_)));
 
-    assert_drift(
-        &fixture,
-        &specialist,
-        action,
-        WorthQueryApplicationIdempotencyBinding::new(*binding.key_identity(), [99; 32]),
-    );
-    for drifted in payload_drifts(action) {
-        assert_drift(&fixture, &specialist, drifted, binding);
-    }
+    let drift = disburse(&fixture, &specialist, fixture.action(251), key)
+        .expect_err("the same key with a different amount must retain typed drift");
+    assert!(matches!(
+        drift,
+        BankEstateProgressionDenial::IdempotencyIntentDrift
+    ));
 }
 
 #[test]
@@ -101,21 +100,21 @@ fn disburse(
     fixture: &DisbursementFixture,
     specialist: &BankAuthenticatedPrincipal,
     action: EstateAction,
-    binding: WorthQueryApplicationIdempotencyBinding,
+    key: BankIdempotencyKey,
 ) -> Result<BankMutationCommitOutcome, BankEstateProgressionDenial> {
     fixture
         .world
         .runtime
-        .disburse_estate(specialist, action, binding, &request_scope())
+        .disburse_estate_with_key(specialist, action, &key, &request_scope())
 }
 
 fn assert_equivalent_retry(
     fixture: &DisbursementFixture,
     specialist: &BankAuthenticatedPrincipal,
-    binding: WorthQueryApplicationIdempotencyBinding,
+    key: &BankIdempotencyKey,
     committed: &BankCommitReceipt,
 ) {
-    let retry = disburse(fixture, specialist, fixture.action(250), binding)
+    let retry = disburse(fixture, specialist, fixture.action(250), key.clone())
         .expect("an equivalent authorized retry must resolve before reprojection");
     let BankMutationCommitOutcome::AlreadyCommitted(recovered) = retry else {
         panic!("the retry must recover the authoritative commit: {retry:?}");
@@ -157,11 +156,7 @@ fn account_activity(
         .runtime
         .account_activity(account)
         .as_principal(principal)
-        .execute(WorthQueryApplicationQueryControls::current_one_shot(
-            std::num::NonZeroUsize::new(16).unwrap(),
-            std::num::NonZeroUsize::new(1_024).unwrap(),
-            &request_scope(),
-        ))
+        .execute(BankReadControls::current(request_scope(), 16, 1_024).unwrap())
         .expect("an exact account owner should read authoritative activity")
         .rows()[0]
         .entries()
@@ -231,66 +226,6 @@ fn assert_single_admission_digest(receipt: &BankCommitReceipt) {
     }
 }
 
-fn assert_drift(
-    fixture: &DisbursementFixture,
-    specialist: &BankAuthenticatedPrincipal,
-    action: EstateAction,
-    binding: WorthQueryApplicationIdempotencyBinding,
-) {
-    let outcome = disburse(fixture, specialist, action, binding)
-        .expect("governed-input drift should remain a typed commit outcome");
-    assert!(matches!(
-        outcome,
-        BankMutationCommitOutcome::Denied {
-            kind: BankCommitDenialKind::IdempotencyIntentDrift,
-            stage: BankCommitDenialStage::Idempotency,
-        }
-    ));
-}
-
-fn payload_drifts(action: EstateAction) -> [EstateAction; 9] {
-    let EstateAction::DisburseEstate(input) = action else {
-        unreachable!("the fixture always constructs a disbursement")
-    };
-    let alternate_estate = bank_domain::estate::EstateCaseId::new(input.estate.get() + 15).unwrap();
-    [
-        changed(input, |value| value.estate = alternate_estate),
-        changed(input, |value| {
-            value.source_account = input.destination_account
-        }),
-        changed(input, |value| {
-            value.destination_account = input.source_account
-        }),
-        changed(input, |value| {
-            value.beneficiary =
-                bank_domain::model::BankPrincipalId::new(input.beneficiary.get() + 1).unwrap()
-        }),
-        changed(input, |value| {
-            value.amount = bank_domain::model::Money::from_minor(251).unwrap()
-        }),
-        changed(input, |value| {
-            value.postings[0].account = input.destination_account
-        }),
-        changed(input, |value| {
-            value.postings[0].amount = SignedMoney::from_minor(-251)
-        }),
-        changed(input, |value| {
-            value.postings[1].account = input.source_account
-        }),
-        changed(input, |value| {
-            value.postings[1].amount = SignedMoney::from_minor(251)
-        }),
-    ]
-}
-
-fn changed(
-    mut input: EstateDisbursement,
-    change: impl FnOnce(&mut EstateDisbursement),
-) -> EstateAction {
-    change(&mut input);
-    EstateAction::DisburseEstate(input)
-}
-
-fn idempotency(identity: u8) -> WorthQueryApplicationIdempotencyBinding {
-    WorthQueryApplicationIdempotencyBinding::new([identity; 32], [identity + 1; 32])
+fn idempotency(identity: u8) -> BankIdempotencyKey {
+    BankIdempotencyKey::new(format!("estate-disbursement-{identity}")).unwrap()
 }

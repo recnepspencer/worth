@@ -10,6 +10,30 @@ use std::panic::{catch_unwind, resume_unwind, AssertUnwindSafe};
 use super::super::super::runtime_observation::RuntimeObservationRegistry;
 use super::authority::BranchState;
 
+/// Private distinction for an original caller unwind whose transaction
+/// rollback completed successfully. Only this module can mint the tag.
+pub(crate) struct SignalCanonicalCallerUnwind {
+    payload: Box<dyn std::any::Any + Send + 'static>,
+}
+
+impl std::fmt::Debug for SignalCanonicalCallerUnwind {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("SignalCanonicalCallerUnwind")
+            .finish_non_exhaustive()
+    }
+}
+
+impl SignalCanonicalCallerUnwind {
+    fn after_successful_rollback(payload: Box<dyn std::any::Any + Send + 'static>) -> Self {
+        Self { payload }
+    }
+
+    pub(crate) fn resume(self) -> ! {
+        resume_unwind(self.payload)
+    }
+}
+
 impl<D, I, T> BranchState<D, I, T>
 where
     D: Copy + Ord + std::fmt::Debug + 'static,
@@ -25,9 +49,12 @@ where
         &mut self,
         branch_head_generation: &mut u64,
         branch_restore_snapshot_id: &mut Option<crate::state::SignalSnapshotId>,
+        conditional_operation_scope: Option<
+            crate::branch::owner_services::conditional_execution::SignalConditionalOperationScopeBinding,
+        >,
         runtime_ctx: &mut Ctx,
         apply: F,
-    ) -> Result<TransactionResult, SignalError>
+    ) -> Result<Result<TransactionResult, SignalError>, SignalCanonicalCallerUnwind>
     where
         F: FnOnce(&mut SignalTransaction<'_, D, I, E, Ctx, T>) -> Result<(), SignalError>,
     {
@@ -57,6 +84,7 @@ where
             branch_mutation_ledger: &mut self.mutation_ledger,
             branch_head_generation,
             branch_restore_snapshot_id,
+            conditional_operation_scope,
             scratch: TransactionScratch::new(),
             rollback_packets: TransactionRollbackPacketSet::default(),
             poisoned: false,
@@ -66,20 +94,23 @@ where
             commit_posture: TransactionCommitPosture::Visible,
         };
         match catch_unwind(AssertUnwindSafe(|| apply(&mut transaction))) {
-            Ok(Ok(())) => transaction.commit(),
-            Ok(Err(error)) => match transaction.rollback() {
-                Ok(_) => Err(error),
-                Err(rollback_error) => Err(rollback_error),
+            Ok(Ok(())) => Ok(transaction.commit()),
+            Ok(Err(error)) => match transaction.rollback_for_canonical_owner() {
+                Ok(_) => Ok(Err(error)),
+                Err(rollback_error) => panic!(
+                    "Signal canonical transaction rollback failed while containing a caller error: {rollback_error}"
+                ),
             },
-            Err(payload) => {
-                let rollback = transaction.rollback();
-                if let Err(rollback_error) = rollback {
+            Err(payload) => match transaction.rollback_for_canonical_owner() {
+                Ok(_) => Err(SignalCanonicalCallerUnwind::after_successful_rollback(
+                    payload,
+                )),
+                Err(rollback_error) => {
                     panic!(
                         "Signal canonical transaction rollback failed while containing a caller panic: {rollback_error}"
                     );
                 }
-                resume_unwind(payload)
-            }
+            },
         }
     }
 }

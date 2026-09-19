@@ -1,13 +1,13 @@
 use crate::declaration::UiAspectName;
 use crate::fact_contract::UiConsumedFactContract;
 
-use super::{UiGraphFactConsumerIdentity, UiGraphFactConsumerKey};
+use super::{UiGraphFactConsumerIdentity, UiGraphFactConsumerKey, UiGraphFactConsumptionRelation};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct UiGraphFactIndexEntry {
     consumer_key: UiGraphFactConsumerKey,
     consumer: UiGraphFactConsumerIdentity,
-    affected_aspect: Option<UiAspectName>,
+    consumption_relation: UiGraphFactConsumptionRelation,
     consumed_fact_contract: UiConsumedFactContract,
 }
 
@@ -18,10 +18,24 @@ impl UiGraphFactIndexEntry {
         affected_aspect: Option<UiAspectName>,
         consumed_fact_contract: UiConsumedFactContract,
     ) -> Self {
+        Self::new_with_relation(
+            consumer_key,
+            consumer,
+            UiGraphFactConsumptionRelation::general(affected_aspect),
+            consumed_fact_contract,
+        )
+    }
+
+    pub(crate) fn new_with_relation(
+        consumer_key: UiGraphFactConsumerKey,
+        consumer: UiGraphFactConsumerIdentity,
+        consumption_relation: UiGraphFactConsumptionRelation,
+        consumed_fact_contract: UiConsumedFactContract,
+    ) -> Self {
         Self {
             consumer_key,
             consumer,
-            affected_aspect,
+            consumption_relation,
             consumed_fact_contract,
         }
     }
@@ -35,7 +49,11 @@ impl UiGraphFactIndexEntry {
     }
 
     pub const fn affected_aspect(&self) -> Option<&UiAspectName> {
-        self.affected_aspect.as_ref()
+        self.consumption_relation.affected_aspect()
+    }
+
+    pub(crate) const fn consumption_relation(&self) -> &UiGraphFactConsumptionRelation {
+        &self.consumption_relation
     }
 
     pub const fn consumed_fact_contract(&self) -> &UiConsumedFactContract {

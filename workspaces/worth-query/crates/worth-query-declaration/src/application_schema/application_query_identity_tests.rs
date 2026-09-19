@@ -2,10 +2,11 @@ use crate::application_query::{
     ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
     ApplicationQueryDefinitionBuilder, ApplicationQueryDefinitionDenial,
     ApplicationQueryDependencyCeiling, ApplicationQueryDisclosureContract,
-    ApplicationQueryLaneEligibility, ApplicationQueryOrderingDirection, ApplicationQueryReference,
-    ApplicationQueryResultFieldRef, ApplicationQueryResultRelationRef,
-    ApplicationQueryResultShapeBuilder, ApplicationQueryResultTraversalEndpoints,
-    ErasedApplicationQueryDefinition, ForwardResultTraversal, ManyResults, ReverseResultTraversal,
+    ApplicationQueryLaneEligibility, ApplicationQueryOrderingDirection,
+    ApplicationQueryParameterRef, ApplicationQueryReference, ApplicationQueryResultFieldRef,
+    ApplicationQueryResultRelationRef, ApplicationQueryResultShapeBuilder,
+    ApplicationQueryResultTraversalEndpoints, ErasedApplicationQueryDefinition,
+    ForwardResultTraversal, ManyResults, ReverseResultTraversal,
 };
 
 use super::canonical_identity::{canonical_identity, ApplicationSchemaCanonicalHeader};
@@ -25,13 +26,21 @@ struct FirstSlot;
 struct SecondSlot;
 struct Relation;
 struct RelationSlot;
+struct PredicateParameter;
 struct ViewEntity;
 
+crate::worth_query_structured_value_binding!(QueryParametersBinding for Parameters { identity: "Parameters" });
+crate::worth_query_structured_value_binding!(QueryResultBinding for QueryResult { identity: "worth.query.test.identity-query-result.v1" });
+crate::worth_query_structured_value_binding!(
+    NestedResultBinding for () {
+        identity: "worth.rust.unit"
+    }
+);
 crate::worth_query_application_query!(
-    Query in Schema,
+    Query for Schema,
     identity "Query",
-    parameters Parameters => "Parameters",
-    result QueryResult => "worth.query.test.identity-query-result.v1",
+    parameters QueryParametersBinding,
+    result QueryResultBinding,
     scope Entity => "Entity",
     name "query"
 );
@@ -42,6 +51,7 @@ worth_query_portable_type!(RelationSlot => "worth.query.test.identity-relation-s
 
 impl crate::application_schema::DeclaredApplicationFieldValue for Field {
     type Value = u64;
+    type Binding = crate::application_schema::U64ApplicationValueBinding;
     const PRESENCE: crate::application_schema::ApplicationFieldPresence =
         crate::application_schema::ApplicationFieldPresence::Required;
 }
@@ -60,11 +70,16 @@ fn result_slot_type_changes_definition_and_schema_identity() {
 #[test]
 fn duplicate_result_slot_denies_definition_authority() {
     let entity = ApplicationEntityRef::<Schema, Entity>::from_schema_identifier("Entity");
-    let shape =
-        ApplicationQueryResultShapeBuilder::<Schema, Query, Entity, QueryResult>::new(entity)
-            .field(selector::<FirstSlot>("first"))
-            .field(selector::<FirstSlot>("second"))
-            .build();
+    let shape = ApplicationQueryResultShapeBuilder::<
+        Schema,
+        Query,
+        Entity,
+        QueryResult,
+        QueryResultBinding,
+    >::new(entity)
+    .field(selector::<FirstSlot>("first"))
+    .field(selector::<FirstSlot>("second"))
+    .build();
     let denial = ApplicationQueryDefinitionBuilder::declare(query_reference())
         .root(entity)
         .scope(entity)
@@ -141,6 +156,8 @@ fn result_traversal_direction_changes_definition_identity() {
     assert_ne!(forward.canonical_basis(), reverse.canonical_basis());
 }
 
+mod relation_predicate_identity;
+
 #[test]
 fn ordering_selector_must_name_a_projected_result_slot() {
     let denial = ordering_definition(selector::<SecondSlot>("value"))
@@ -206,7 +223,16 @@ fn selector<Slot: crate::portable_identity::WorthQueryPortableType>(
 > {
     ApplicationQueryResultFieldRef::new(
         output,
-        ApplicationFieldRef::from_schema_identifiers("Entity", "Aspect", "Field"),
+        ApplicationFieldRef::<
+            Schema,
+            Entity,
+            Aspect,
+            Field,
+            u64,
+            ReadOnly,
+            EqualityPredicate,
+            NoApplicationUnit,
+        >::from_schema_identifiers("Entity", "Aspect", "Field"),
     )
 }
 
@@ -226,11 +252,19 @@ where
     Direction: ApplicationQueryResultTraversalEndpoints<Entity, Entity, Entity, Entity>,
 {
     let entity = ApplicationEntityRef::<Schema, Entity>::from_schema_identifier("Entity");
-    let nested = ApplicationQueryResultShapeBuilder::<Schema, Query, Entity, ()>::new(entity);
-    let shape =
-        ApplicationQueryResultShapeBuilder::<Schema, Query, Entity, QueryResult>::new(entity)
-            .relation(relation, nested)
-            .build();
+    let nested =
+        ApplicationQueryResultShapeBuilder::<Schema, Query, Entity, (), NestedResultBinding>::new(
+            entity,
+        );
+    let shape = ApplicationQueryResultShapeBuilder::<
+        Schema,
+        Query,
+        Entity,
+        QueryResult,
+        QueryResultBinding,
+    >::new(entity)
+    .relation(relation, nested)
+    .build();
     ApplicationQueryDefinitionBuilder::declare(query_reference())
         .root(entity)
         .scope(entity)
@@ -282,7 +316,10 @@ fn ordering_definition<Slot: crate::portable_identity::WorthQueryPortableType>(
 }
 
 fn relation_reference() -> ApplicationRelationRef<Schema, Relation, Entity, Entity> {
-    ApplicationRelationRef::from_schema_identifiers("Relation", "Entity", "Entity")
+    ApplicationRelationRef::from_schema_identifiers(
+        "Relation", "Entity", "Entity",
+        crate::facade::application_schema::ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
+    )
 }
 
 fn schema_identity(definition: ErasedApplicationQueryDefinition) -> ApplicationSchemaIdentity {
@@ -294,5 +331,6 @@ fn schema_identity(definition: ErasedApplicationQueryDefinition) -> ApplicationS
             minor: 0,
         },
         &[ApplicationSchemaMember::ApplicationQuery { definition }],
+        &[],
     )
 }

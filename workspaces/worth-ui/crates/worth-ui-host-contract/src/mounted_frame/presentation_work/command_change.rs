@@ -8,17 +8,14 @@ pub struct UiMountedPaintCommandIdentity {
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 enum UiMountedPaintCommandFamily {
-    FilledRect,
     PortalOverlay,
     SemanticText,
+    /// The painted surface of an instance that owns no paint command.
+    AppearanceSurface,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum UiMountedPaintCommand {
-    FilledRect {
-        identity: UiMountedPaintCommandIdentity,
-        mechanic: crate::UiMountedFilledRectMechanic,
-    },
     PortalOverlay {
         identity: UiMountedPaintCommandIdentity,
         mechanic: crate::UiMountedPortalOverlayMechanic,
@@ -67,16 +64,6 @@ impl UiMountedPaintCommandIdentity {
     }
 
     #[doc(hidden)]
-    pub fn filled_rect(mechanic: &crate::UiMountedFilledRectMechanic) -> Self {
-        Self {
-            mounted_instance: mechanic.mounted_instance(),
-            family: UiMountedPaintCommandFamily::FilledRect,
-            semantic_slot: 0,
-            collection_row: None,
-        }
-    }
-
-    #[doc(hidden)]
     pub fn semantic_text(mechanic: &crate::UiMountedSemanticTextMechanic) -> Self {
         let semantic_slot = match mechanic.slot() {
             crate::UiSemanticTextSlot::Value => 0,
@@ -105,8 +92,24 @@ impl UiMountedPaintCommandIdentity {
         }
     }
 
+    /// Addresses the surface paint of an appearance-only mounted instance, so
+    /// accepted Motion can sample it without a retained paint command.
+    #[doc(hidden)]
+    pub const fn appearance_surface(mounted_instance: crate::UiMountedInstanceIdentity) -> Self {
+        Self {
+            mounted_instance,
+            family: UiMountedPaintCommandFamily::AppearanceSurface,
+            semantic_slot: 0,
+            collection_row: None,
+        }
+    }
+
     pub const fn mounted_instance(self) -> crate::UiMountedInstanceIdentity {
         self.mounted_instance
+    }
+
+    pub const fn is_appearance_surface(self) -> bool {
+        matches!(self.family, UiMountedPaintCommandFamily::AppearanceSurface)
     }
 
     #[doc(hidden)]
@@ -115,16 +118,16 @@ impl UiMountedPaintCommandIdentity {
             UiMountedPaintCommandFamily::SemanticText => {
                 Some((self.semantic_slot, self.collection_row))
             }
-            UiMountedPaintCommandFamily::FilledRect
-            | UiMountedPaintCommandFamily::PortalOverlay => None,
+            UiMountedPaintCommandFamily::PortalOverlay
+            | UiMountedPaintCommandFamily::AppearanceSurface => None,
         }
     }
 
     pub(super) fn order_fingerprint(self) -> u64 {
         let family = match self.family {
-            UiMountedPaintCommandFamily::FilledRect => 1_u64,
-            UiMountedPaintCommandFamily::PortalOverlay => 2_u64,
-            UiMountedPaintCommandFamily::SemanticText => 3_u64,
+            UiMountedPaintCommandFamily::PortalOverlay => 1_u64,
+            UiMountedPaintCommandFamily::SemanticText => 2_u64,
+            UiMountedPaintCommandFamily::AppearanceSurface => 3_u64,
         };
         let mut digest = self
             .mounted_instance
@@ -145,15 +148,12 @@ impl UiMountedPaintCommandIdentity {
 impl UiMountedPaintCommand {
     pub fn identity(&self) -> UiMountedPaintCommandIdentity {
         match self {
-            Self::FilledRect { identity, .. }
-            | Self::PortalOverlay { identity, .. }
-            | Self::SemanticText { identity, .. } => *identity,
+            Self::PortalOverlay { identity, .. } | Self::SemanticText { identity, .. } => *identity,
         }
     }
 
     pub fn layer_semantic_order(&self) -> u32 {
         match self {
-            Self::FilledRect { mechanic, .. } => mechanic.layer_semantic_order(),
             Self::PortalOverlay { mechanic, .. } => mechanic.layer_semantic_order(),
             Self::SemanticText { mechanic, .. } => mechanic.layer_semantic_order(),
         }
@@ -161,7 +161,6 @@ impl UiMountedPaintCommand {
 
     pub fn bounds(&self) -> crate::UiMountedCanonicalBox {
         match self {
-            Self::FilledRect { mechanic, .. } => mechanic.bounds(),
             Self::PortalOverlay { mechanic, .. } => mechanic.bounds(),
             Self::SemanticText { mechanic, .. } => mechanic.bounds(),
         }
@@ -169,7 +168,6 @@ impl UiMountedPaintCommand {
 
     pub fn clip_bounds(&self) -> crate::UiMountedCanonicalBox {
         match self {
-            Self::FilledRect { mechanic, .. } => mechanic.clip_bounds(),
             Self::PortalOverlay { mechanic, .. } => mechanic.clip_bounds(),
             Self::SemanticText { mechanic, .. } => mechanic.clip_bounds(),
         }
@@ -177,7 +175,6 @@ impl UiMountedPaintCommand {
 
     pub fn semantic_digest(&self) -> u64 {
         match self {
-            Self::FilledRect { mechanic, .. } => mechanic.semantic_digest(),
             Self::PortalOverlay { mechanic, .. } => mechanic.semantic_digest(),
             Self::SemanticText { mechanic, .. } => mechanic.semantic_digest(),
         }

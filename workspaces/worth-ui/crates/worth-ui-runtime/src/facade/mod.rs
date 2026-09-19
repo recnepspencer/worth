@@ -43,24 +43,27 @@ pub mod text;
 pub(crate) use crate::declaration::WorthUiRustAuthoredDeclarationFixture;
 pub(crate) use inspection::foreign_evidence_refs_for_obligation_record;
 
+pub use crate::capability::AppearanceRoleRegistrationDenial;
 pub use entry::{
-    CapabilityRegistrationBuilder, UiChangeProfileInstalled, UiChangeProfileMissing,
-    UiFocusHostPlacementReconciliationDenial, UiFocusHostPlacementReconciliationOutcome,
-    UiFocusHostPlacementReconciliationReceipt, UiFocusHostPlacementShutdownReport,
-    UiFocusPlacementReconciliationExecutionDenial, UiPortalDismissalPublicationReceipt,
-    UiSemanticFocusParticipantObservation, UiSemanticFocusPhysicalPlacementOutcome,
-    UiSemanticFocusPublicationCause, UiSemanticFocusPublicationOutcome,
-    UiSemanticFocusPublicationReceipt, WorthUi, WorthUiActiveApplicationGenerationIdentity,
-    WorthUiActiveApplicationSession, WorthUiActiveApplicationSessionIdentity,
-    WorthUiActiveCanvasSpatialFrameCompletion, WorthUiActiveFrameworkTurnCompletion,
-    WorthUiActiveFrameworkTurnExecution, WorthUiActiveInspectionReceipt,
-    WorthUiActiveOrdinaryFrameCompletion, WorthUiActiveRealtimeFrameCompletion,
-    WorthUiActiveVirtualizedDataFrameCompletion, WorthUiAllocationCatalogActivationDenial,
-    WorthUiApp, WorthUiApplicationBuilder, WorthUiApplicationCutoverDenial,
-    WorthUiApplicationCutoverReceipt, WorthUiApplicationReplacementLoweringDenial,
-    WorthUiApplicationReplacementOutcome, WorthUiApplicationReplacementPreparationDenial,
-    WorthUiApplicationReplacementStagingDenial, WorthUiApplicationSemanticNoOpReceipt,
-    WorthUiCandidateInspectionReceipt, WorthUiHostNeutralApp, WorthUiLoweredApplicationReplacement,
+    CapabilityRegistrationBuilder, UiAppearanceInspectionGenerationSuccessionDenial,
+    UiChangeProfileInstalled, UiChangeProfileMissing, UiFocusHostPlacementReconciliationDenial,
+    UiFocusHostPlacementReconciliationOutcome, UiFocusHostPlacementReconciliationReceipt,
+    UiFocusHostPlacementSettlementDenial, UiFocusHostPlacementShutdownReport,
+    UiFocusPlacementExecutionDenial, UiFocusPlacementReconciliationExecutionDenial,
+    UiPortalDismissalPublicationReceipt, UiSemanticFocusParticipantObservation,
+    UiSemanticFocusPhysicalPlacementOutcome, UiSemanticFocusPublicationCause,
+    UiSemanticFocusPublicationOutcome, UiSemanticFocusPublicationReceipt, WorthUi,
+    WorthUiActiveApplicationGenerationIdentity, WorthUiActiveApplicationSession,
+    WorthUiActiveApplicationSessionIdentity, WorthUiActiveCanvasSpatialFrameCompletion,
+    WorthUiActiveFrameworkTurnCompletion, WorthUiActiveFrameworkTurnExecution,
+    WorthUiActiveInspectionReceipt, WorthUiActiveOrdinaryFrameCompletion,
+    WorthUiActiveRealtimeFrameCompletion, WorthUiActiveVirtualizedDataFrameCompletion,
+    WorthUiAllocationCatalogActivationDenial, WorthUiApp, WorthUiApplicationBuilder,
+    WorthUiApplicationCutoverDenial, WorthUiApplicationCutoverReceipt,
+    WorthUiApplicationReplacementLoweringDenial, WorthUiApplicationReplacementOutcome,
+    WorthUiApplicationReplacementPreparationDenial, WorthUiApplicationReplacementStagingDenial,
+    WorthUiApplicationSemanticNoOpReceipt, WorthUiCandidateInspectionReceipt,
+    WorthUiHostNeutralApp, WorthUiLoweredApplicationReplacement,
     WorthUiMountedApplicationReplacementInFlight,
     WorthUiMountedApplicationReplacementIndeterminate, WorthUiMountedApplicationReplacementOutcome,
     WorthUiMountedFrameExecutionStop, WorthUiMountedFrameFrameworkTransitionStop,
@@ -90,10 +93,10 @@ pub use entry::{
     WorthUiNativePredecessorRecovery, WorthUiNativePresentationRecoveryDenial,
     WorthUiNativeProjectionRebindDenial, WorthUiNativeReducedMotionPosture,
     WorthUiNativeSourceRebindDenial, WorthUiPendingApplicationCutover,
-    WorthUiPendingMountedPreview, WorthUiPreparedApplicationReplacement,
-    WorthUiPreparedMountedApplicationReplacement, WorthUiPreparedMountedPreview,
-    WorthUiReplacementCandidateSummary, WorthUiReplacementPlannedCostEnvelope,
-    WorthUiResolvedMountedPreview,
+    WorthUiPendingMountedPreview, WorthUiPortalExitRetentionPendingKind,
+    WorthUiPreparedApplicationReplacement, WorthUiPreparedMountedApplicationReplacement,
+    WorthUiPreparedMountedPreview, WorthUiReplacementCandidateSummary,
+    WorthUiReplacementPlannedCostEnvelope, WorthUiResolvedMountedPreview,
 };
 pub(crate) use entry::{
     WorthUiDetachedMountedApplicationReplacementInFlight,
@@ -107,3 +110,14 @@ pub use host_session_authority::{
     WorthUiHostSessionIdentity, WorthUiHostSessionReleaseRecovery,
 };
 pub use lifecycle::{WorthUiRuntimeSupportInventory, RUNTIME_SUPPORT_INVENTORY};
+
+pub use crate::runtime::appearance::{
+    UiActiveThemeBinding, UiThemeCapabilityReceipt, UiThemeCapabilityReceiptDenial,
+    UiThemeResolutionDenial, UiThemeSwitchDenial, UiThemeSwitchOrigin,
+    UiThemeSwitchOriginAdmissionDenial, UiThemeSwitchOriginFamily, UiThemeSwitchOutcome,
+    UiThemeSwitchRequest, UiThemeSwitchSelectionDenial,
+};
+pub use entry::{
+    UiNativeThemeSwitchDenial, UiProgrammaticThemeSwitchPreparationDenial,
+    UiThemeSwitchPreparationDenial,
+};

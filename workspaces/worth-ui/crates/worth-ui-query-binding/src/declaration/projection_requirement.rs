@@ -107,9 +107,9 @@ impl UiProjectionFieldRequirement {
     ///         members: |schema| { schema.entity(OtherRecord::reference()).aspect(OtherRecord::reference(), OtherAspect::reference()).field(OtherRecord::reference(), OtherField::reference()) }
     ///     }
     /// }
-    /// worth_query_entity!(pub OtherRecord in OtherSchema);
-    /// worth_query_aspect!(pub OtherAspect in OtherSchema, OtherRecord; identity = AspectIdentity(0x9161105b), revision = AspectContractRevision(1),);
-    /// worth_query_field!(pub OtherField in OtherSchema, OtherRecord, OtherAspect: String, read_only, equality);
+    /// worth_query_entity!(pub OtherRecord for OtherSchema);
+    /// worth_query_aspect!(pub OtherAspect for OtherSchema, OtherRecord; identity = AspectIdentity(0x9161105b), revision = AspectContractRevision(1),);
+    /// worth_query_field!(pub OtherField for OtherSchema, OtherRecord, OtherAspect: String => worth_query_decl::facade::application_schema::StringApplicationValueBinding, read_only, equality);
     /// let _ = UiProjectionFieldRequirement::from_worth_ui_field(OtherField::reference());
     /// ```
     ///

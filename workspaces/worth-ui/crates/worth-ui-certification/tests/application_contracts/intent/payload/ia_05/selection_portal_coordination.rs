@@ -15,8 +15,9 @@ use worth_ui_query_binding::{
 use worth_ui_runtime::facade::measurement_exchange::UiViewportExtentObservation;
 use worth_ui_runtime::facade::mounted::{UiMountedFrameRequest, UiPresentationDeadline};
 use worth_ui_test_support::{
-    WorthUiFocusRuntimeCertificationExt, WorthUiFrameworkTurnCertificationExt,
-    WorthUiMountedIdentityCertificationExt, WorthUiServiceStateCertificationExt,
+    WorthUiActiveSessionCertificationExt, WorthUiFocusRuntimeCertificationExt,
+    WorthUiFrameworkTurnCertificationExt, WorthUiMountedIdentityCertificationExt,
+    WorthUiServiceStateCertificationExt,
 };
 
 use super::super::payload_types::{SelectionIntent, SELECTION_FIELD};
@@ -24,7 +25,7 @@ use super::super::world::{
     launch_scroll_portal, routed_scroll_selection_input, PayloadApplicationFacts,
     PayloadProjectionRegistration, DECLARATION,
 };
-use super::selection_identity::{collection_registration, open_collection, publish_collection};
+use super::selection_identity::{collection_registration, open_collection};
 
 #[test]
 fn declared_selection_portal_rejects_atomically_then_commits_selection_and_focus_reveal() {
@@ -56,7 +57,17 @@ fn declared_selection_portal_rejects_atomically_then_commits_selection_and_focus
         PayloadApplicationFacts::default(),
         recorder.clone(),
     );
-    publish_collection(&mut world, snapshot, 315_051);
+    super::publish_projection(
+        &mut world,
+        worth_ui_query_binding::UiProjectionObservation::Collection(snapshot.into_observation()),
+        315_051,
+    );
+    let frame = world
+        .interaction
+        .session
+        .prepare_application_presentation_frame(UiMountedFrameRequest::all_bound_surfaces())
+        .expect("Query publication reuses the complete Selection Portal geometry");
+    world.interaction.publish_prepared_successor(frame);
     let option = world
         .interaction
         .session
@@ -93,6 +104,12 @@ fn declared_selection_portal_rejects_atomically_then_commits_selection_and_focus
         "the proof requires a nonzero predecessor offset beyond the clip-relative target: expected={expected_reveal_offset}, geometry={:?}",
         scrolled.owner_geometry(),
     );
+    let target_receipt = activation.target().node_receipt();
+    world
+        .interaction
+        .session
+        .bind_selection_item(target_receipt, target_receipt, option.clone())
+        .expect("the declared single-item owner binds its current option");
     let selection = world
         .interaction
         .session
@@ -149,7 +166,13 @@ fn declared_selection_portal_rejects_atomically_then_commits_selection_and_focus
         worth_ui::facade::rebind::UiRebindExecutionPolicy::ordinary(),
         worth_ui::facade::rebind::UiRebindExecutionRequest::new(315_052),
     ) {
-        UiIntentConsequencePublicationOutcome::Stopped(stop) => stop.into_recovery(),
+        UiIntentConsequencePublicationOutcome::Stopped(stop) => {
+            assert!(
+                matches!(stop.reason(), worth_ui::facade::intent::UiIntentConsequenceStopReason::HostRejectedBeforeEffects { rejection_count: 1 }),
+                "expected recorder rejection, got {:?}", stop.reason(),
+            );
+            stop.into_recovery()
+        }
         _ => panic!("the full recorder must reject before effects"),
     };
     assert_eq!(
@@ -175,14 +198,17 @@ fn declared_selection_portal_rejects_atomically_then_commits_selection_and_focus
     );
     assert_eq!(recorder.drain_transcripts().len(), 1);
 
-    assert!(matches!(
-        world.interaction.session.retry_intent_consequences(
-            recovery,
-            worth_ui::facade::rebind::UiRebindExecutionPolicy::ordinary(),
-            worth_ui::facade::rebind::UiRebindExecutionRequest::new(315_053),
-        ),
-        UiIntentConsequencePublicationOutcome::Published(_)
-    ));
+    match world.interaction.session.retry_intent_consequences(
+        recovery,
+        worth_ui::facade::rebind::UiRebindExecutionPolicy::ordinary(),
+        worth_ui::facade::rebind::UiRebindExecutionRequest::new(315_053),
+    ) {
+        UiIntentConsequencePublicationOutcome::Published(_) => {}
+        UiIntentConsequencePublicationOutcome::Stopped(stop) => {
+            panic!("selection Portal retry stopped: {:?}", stop.reason())
+        }
+        _ => panic!("selection Portal retry did not publish"),
+    }
     let selected = world
         .interaction
         .session

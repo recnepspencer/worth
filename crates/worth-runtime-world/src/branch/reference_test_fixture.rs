@@ -56,6 +56,13 @@ pub(crate) struct RealReferenceFixture {
     _correspondence_port: worth_runtime_bridge::facade::RuntimeWorldCorrespondencePort,
 }
 
+impl RealReferenceFixture {
+    #[cfg(feature = "test-durability-faults")]
+    pub(crate) fn fail_next_relational_durable_append(&self) {
+        self._relational_runtime.fail_next_durable_append_for_test();
+    }
+}
+
 pub(crate) fn real_fixture(unique_pin_limit: u64, reservation_limit: u64) -> RealReferenceFixture {
     let relational_runtime = Arc::new(RelationalRuntimeApi::builder().build());
     let relational_port = relational_runtime.owner_component_services().basis_port();

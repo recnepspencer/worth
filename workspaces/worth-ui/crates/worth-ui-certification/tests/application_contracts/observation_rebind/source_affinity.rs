@@ -6,7 +6,7 @@ use worth_ui::facade::source::{
     WorthUiFilesystemSourceWatcher, WorthUiSourcePackageRevision,
 };
 use worth_ui_certification::scenario::filesystem_application_lifecycle::FilesystemApplicationLifecycleScenario;
-use worth_ui_host_headless::WorthUiHeadlessHost;
+use worth_ui_host_headless::WorthUiHeadlessRecorder;
 
 use crate::filesystem_contract_workspace::FilesystemContractWorkspace;
 
@@ -26,14 +26,15 @@ fn settled_revision_survives_compile_admission_and_a_later_file_write() {
         .take_initial_snapshot()
         .expect("watcher owns initial settled revision");
     let stale_snapshot = initial.clone();
+    let recorder = WorthUiHeadlessRecorder::default();
     let capabilities =
-        scenario.platform_pulse_capability_application_with_unrelated_width(WorthUiHeadlessHost, 0);
+        scenario.platform_pulse_capability_application_with_unrelated_width(recorder.clone(), 0);
     let submission = FilesystemApplicationLifecycleScenario::lower_snapshot(
         initial,
         capabilities.capabilities(),
     );
     let mut session = scenario
-        .prepare_platform_pulse_application_with_unrelated_width(submission, WorthUiHeadlessHost, 0)
+        .prepare_platform_pulse_application_with_unrelated_width(submission, recorder, 0)
         .launch()
         .expect("filesystem-authored application launches");
 
@@ -108,8 +109,9 @@ fn candidate_compiled_for_a_foreign_capability_basis_denies_before_admission() {
         "app/main.wui",
         &FilesystemApplicationLifecycleScenario::platform_pulse_source_text_with_unrelated_width(0),
     );
+    let recorder = WorthUiHeadlessRecorder::default();
     let current_capabilities =
-        current.platform_pulse_capability_application_with_unrelated_width(WorthUiHeadlessHost, 0);
+        current.platform_pulse_capability_application_with_unrelated_width(recorder.clone(), 0);
     let current_submission = FilesystemApplicationLifecycleScenario::lower_snapshot(
         WorthUiFilesystemSourceProvider::new(current_workspace.root())
             .read()
@@ -117,11 +119,7 @@ fn candidate_compiled_for_a_foreign_capability_basis_denies_before_admission() {
         current_capabilities.capabilities(),
     );
     let mut session = current
-        .prepare_platform_pulse_application_with_unrelated_width(
-            current_submission,
-            WorthUiHeadlessHost,
-            0,
-        )
+        .prepare_platform_pulse_application_with_unrelated_width(current_submission, recorder, 0)
         .launch()
         .expect("current application launches");
 
@@ -131,8 +129,10 @@ fn candidate_compiled_for_a_foreign_capability_basis_denies_before_admission() {
         "app/main.wui",
         &FilesystemApplicationLifecycleScenario::platform_pulse_source_text_with_unrelated_width(1),
     );
-    let foreign_capabilities =
-        foreign.platform_pulse_capability_application_with_unrelated_width(WorthUiHeadlessHost, 1);
+    let foreign_capabilities = foreign.platform_pulse_capability_application_with_unrelated_width(
+        WorthUiHeadlessRecorder::default(),
+        1,
+    );
     let foreign_candidate = WorthUiFilesystemSourceProvider::new(foreign_workspace.root())
         .read()
         .expect("foreign filesystem revision reads")

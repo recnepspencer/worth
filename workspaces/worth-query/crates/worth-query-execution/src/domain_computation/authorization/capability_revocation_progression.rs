@@ -102,7 +102,9 @@ where
     >
     where
         Operation:
-            worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity,
+            worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<
+                Schema,
+            >,
         Input: ApplicationCapabilityRequest<Schema, Capability>
             + ApplicationCapabilityRevocationRequest<Schema, Capability>,
     {

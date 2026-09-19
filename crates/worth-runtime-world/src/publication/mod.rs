@@ -1,9 +1,13 @@
 mod cancellation;
 mod component_plan;
+mod conditional_definition;
 mod cost_counters;
 mod custody;
+#[cfg(test)]
+pub(crate) use custody::AttemptProductMovementFailure;
 pub(crate) use custody::{
-    ActiveAttemptCustody, ActiveAttemptRecord, ActiveAttemptResources, RetainedCommitDisposition,
+    ActiveAttemptCustody, ActiveAttemptRecord, ActiveAttemptResources,
+    ConditionalDefinitionAttemptCustody, RetainedCommitDisposition,
 };
 mod intent;
 mod no_effect;
@@ -16,6 +20,7 @@ mod product_comparison;
 mod progress;
 mod progression;
 mod reservation;
+mod settled_adoption;
 
 pub(crate) use cancellation::RuntimeWorldCancellationBoundary;
 pub use cancellation::{RuntimeWorldCancellationSource, RuntimeWorldCancellationToken};
@@ -23,6 +28,10 @@ pub(crate) use component_plan::lower_component_plans;
 pub use component_plan::{
     LoweredOwnerComponentPlan, RelationalComponentPlan, RelationalComponentPlanPosture,
     SignalComponentPlan, SignalComponentPlanPosture,
+};
+pub use conditional_definition::{
+    RuntimeWorldConditionalDefinitionPublicationOutcome,
+    RuntimeWorldUnpublishedConditionalDefinition,
 };
 pub use cost_counters::CompositePublicationCostCounters;
 pub(crate) use intent::CompositePublicationStage;
@@ -57,6 +66,7 @@ pub(crate) use reservation::{
     ReservedAttemptCapacities, ReservedAttemptCapacityInputs, ReservedBranchCreationAttempt,
     ReservedBranchCreationInputs, ReservedPublicationAttemptParts,
 };
+pub(crate) use settled_adoption::SettledRelationalPublicationAdoption;
 
 mod movement_cutoff;
 pub(crate) use movement_cutoff::{ProductMovementCutoff, ProductMovementCutoffDenial};

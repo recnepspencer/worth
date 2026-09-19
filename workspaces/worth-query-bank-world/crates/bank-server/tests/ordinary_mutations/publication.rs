@@ -1,7 +1,7 @@
-use bank_server::{mutations, BankMutationControls, BankMutationStatus};
+use bank_server::{mutations, BankMutationControls};
+use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;
 
 use super::{
-    assertions::assert_fresh_publication,
     fixture::{ordinary_read_world, OWNER},
     key, send_for,
 };
@@ -33,21 +33,25 @@ fn unrelated_graph_population_does_not_widen_commit_publication() {
             key("mutation-publication-expanded"),
         ))
         .execute();
-    let BankMutationStatus::Committed(baseline_receipt) = baseline_outcome.status() else {
+    let Ok(WorthQueryApplicationMutationOutcome::Committed {
+        receipt: baseline_receipt,
+        ..
+    }) = &baseline_outcome
+    else {
         panic!("baseline mutation did not commit: {baseline_outcome:?}");
     };
-    let BankMutationStatus::Committed(expanded_receipt) = expanded_outcome.status() else {
+    let Ok(WorthQueryApplicationMutationOutcome::Committed {
+        receipt: expanded_receipt,
+        ..
+    }) = &expanded_outcome
+    else {
         panic!("expanded mutation did not commit: {expanded_outcome:?}");
     };
 
-    assert_fresh_publication(baseline_receipt);
-    assert_fresh_publication(expanded_receipt);
-    let baseline_publication = baseline_receipt.publication().inspect();
-    let expanded_publication = expanded_receipt.publication().inspect();
-    let baseline_work = baseline_publication
+    let baseline_work = baseline_receipt
         .mutation_work()
         .expect("baseline mutation work");
-    let expanded_work = expanded_publication
+    let expanded_work = expanded_receipt
         .mutation_work()
         .expect("expanded mutation work");
     // Counters and touched-record *count* are invariant to unrelated population.
@@ -82,11 +86,11 @@ fn unrelated_graph_population_does_not_widen_commit_publication() {
     );
     assert!(baseline_work.touched_record_count() > 0);
     assert_eq!(
-        baseline_publication.changed_record_count(),
-        expanded_publication.changed_record_count()
+        baseline_receipt.changed_record_count(),
+        expanded_receipt.changed_record_count()
     );
     assert_eq!(
-        baseline_publication.emitted_effect_count(),
-        expanded_publication.emitted_effect_count()
+        baseline_receipt.emitted_effect_count(),
+        expanded_receipt.emitted_effect_count()
     );
 }

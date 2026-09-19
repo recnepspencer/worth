@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+mod retained_charge;
+
 use crate::data::dependency::DependencySnapshotId;
 
 use super::context::{ArtifactFamilyId, ReuseBoundaryAuthority, ReuseBoundaryContext};

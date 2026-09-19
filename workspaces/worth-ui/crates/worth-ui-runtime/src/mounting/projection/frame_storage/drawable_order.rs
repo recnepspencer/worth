@@ -1,6 +1,6 @@
 use worth_ui_host_contract::{
-    UiMountedDrawableReference, UiMountedFilledRectMechanic, UiMountedFilledRectReference,
-    UiMountedInstanceIdentity, UiMountedSemanticTextMechanic, UiMountedSemanticTextReference,
+    UiMountedDrawableReference, UiMountedInstanceIdentity, UiMountedSemanticTextMechanic,
+    UiMountedSemanticTextReference,
 };
 
 use super::super::UiMountedProjectionDenial;
@@ -9,21 +9,10 @@ pub(super) type UiMountedDrawableReferenceIndex =
     std::collections::BTreeMap<UiMountedInstanceIdentity, Box<[UiMountedDrawableReference]>>;
 
 pub(super) fn drawable_reference_index(
-    filled_rects: &[UiMountedFilledRectMechanic],
     portal_overlays: &[worth_ui_host_contract::UiMountedPortalOverlayMechanic],
     semantic_text: &[UiMountedSemanticTextMechanic],
 ) -> Result<UiMountedDrawableReferenceIndex, UiMountedProjectionDenial> {
     let mut sources = std::collections::BTreeMap::<_, Vec<_>>::new();
-    for (index, row) in filled_rects.iter().enumerate() {
-        let reference = UiMountedFilledRectReference::from_runtime_mounting(
-            u16::try_from(index)
-                .map_err(|_| UiMountedProjectionDenial::StaticPaintCapacityExceeded)?,
-        );
-        sources.entry(row.mounted_instance()).or_default().push((
-            row.layer_semantic_order(),
-            UiMountedDrawableReference::FilledRect(reference),
-        ));
-    }
     for (index, row) in portal_overlays.iter().enumerate() {
         let reference =
             worth_ui_host_contract::UiMountedPortalOverlayReference::from_runtime_mounting(
@@ -115,31 +104,12 @@ mod tests {
     use super::*;
 
     #[test]
-    fn equal_layer_cross_family_sources_are_ambiguous_within_one_node() {
-        let sources = [
-            (
-                7,
-                UiMountedDrawableReference::FilledRect(
-                    UiMountedFilledRectReference::from_runtime_mounting(0),
-                ),
-            ),
-            (
-                7,
-                UiMountedDrawableReference::SemanticText(
-                    UiMountedSemanticTextReference::from_runtime_mounting(0),
-                ),
-            ),
-        ];
-        assert_eq!(duplicate_layer(&sources), Some(7));
-    }
-
-    #[test]
     fn orphan_drawable_source_is_rejected_before_projection_issuance() {
         let instance = UiMountedInstanceIdentity::mint_unbound().expect("mounted instance");
         let sources = std::collections::BTreeMap::from([(
             instance,
-            vec![UiMountedDrawableReference::FilledRect(
-                UiMountedFilledRectReference::from_runtime_mounting(0),
+            vec![UiMountedDrawableReference::SemanticText(
+                UiMountedSemanticTextReference::from_runtime_mounting(0),
             )]
             .into_boxed_slice(),
         )]);

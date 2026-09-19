@@ -13,6 +13,8 @@ impl super::WorthUiActiveApplicationSession {
             portal.posture_count(crate::runtime::portal::UiPortalLifecyclePosture::Visible),
             portal.posture_count(crate::runtime::portal::UiPortalLifecyclePosture::Closing),
             0,
+            portal.exit_retention_count(),
+            self.portal_exit_retention.pending_track_is_coordinated(),
             portal.admitted_requests(),
             portal.idempotent_requests(),
             portal.revision(),

@@ -235,6 +235,7 @@ mod tests {
             deadline: UiPresentationDeadline::at_tick(100),
             requirement,
             presentation_work: UiMountedPresentationWorkView::Initial(mechanics),
+            appearance_work: None,
             qualified_text: &(),
             text_raster_work: None,
         })

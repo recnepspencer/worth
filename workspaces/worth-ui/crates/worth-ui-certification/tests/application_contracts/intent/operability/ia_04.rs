@@ -86,7 +86,7 @@ fn ia_04_payload_and_operability_retain_one_exact_predecessor_basis() {
 fn ia_04_affinity_postures_are_distinct_closed_axes() {
     let mut source = OperabilityWorld::scoped(OccupancyLayout::TargetRoute);
     let candidate = source.prepare(PRIMARY_POINT);
-    let foreign = OperabilityWorld::scoped(OccupancyLayout::TargetRoute);
+    let mut foreign = OperabilityWorld::scoped(OccupancyLayout::TargetRoute);
     let decision = inoperable(
         foreign
             .interaction

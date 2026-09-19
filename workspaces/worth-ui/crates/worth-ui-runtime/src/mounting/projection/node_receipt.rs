@@ -87,6 +87,45 @@ impl UiMountedNodeReceipt {
     pub fn diagnostic(&self) -> UiMountedDiagnosticProjection {
         self.diagnostic
     }
+
+    pub(super) fn rebind_allocation(
+        &mut self,
+        binding: worth_ui_host_contract::UiSurfaceBindingGeneration,
+    ) {
+        self.allocation = rebound_allocation(self.allocation, binding, self.incarnation);
+    }
+}
+
+pub(super) fn rebound_allocation(
+    allocation: UiMountedAllocationProjection,
+    binding: worth_ui_host_contract::UiSurfaceBindingGeneration,
+    incarnation: UiMountIncarnation,
+) -> UiMountedAllocationProjection {
+    let rebind = |basis: worth_ui_host_contract::UiMountedAllocationBasis| {
+        worth_ui_host_contract::UiMountedAllocationBasis::new(
+            basis.receipt_identity(),
+            basis.receipt_generation(),
+            binding.diagnostic_value() ^ incarnation.diagnostic_value(),
+            basis.transform(),
+        )
+    };
+    match allocation {
+        UiMountedAllocationProjection::Known { bounds, basis } => {
+            UiMountedAllocationProjection::Known {
+                bounds,
+                basis: rebind(basis),
+            }
+        }
+        UiMountedAllocationProjection::PortalAnchorObservation { bounds, basis } => {
+            UiMountedAllocationProjection::PortalAnchorObservation {
+                bounds,
+                basis: rebind(basis),
+            }
+        }
+        UiMountedAllocationProjection::Omitted(reason) => {
+            UiMountedAllocationProjection::Omitted(reason)
+        }
+    }
 }
 
 fn projection_from_participation(

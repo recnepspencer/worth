@@ -20,9 +20,11 @@ mod semantic;
 #[cfg(test)]
 #[path = "envelope/semantic_tests.rs"]
 mod semantic_tests;
+mod source_authority;
 mod target;
 
 pub use canonical::*;
 pub use core::*;
 pub use semantic::*;
+pub use source_authority::*;
 pub use target::*;

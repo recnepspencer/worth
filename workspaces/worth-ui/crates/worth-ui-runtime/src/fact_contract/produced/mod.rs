@@ -4,6 +4,7 @@ mod fact;
 mod host;
 mod intent;
 mod measurement;
+mod pointer_presence;
 mod query;
 mod runtime_state;
 
@@ -15,6 +16,7 @@ pub use fact::UiProducedFact;
 pub use host::{UiHostDeviceScaleChangedFact, UiHostViewportChangedFact};
 pub use intent::{UiIntentPostureChangedFact, UiIntentPostureKind, UiIntentPostureReference};
 pub use measurement::UiMeasurementChangedFact;
+pub use pointer_presence::UiPointerPresenceTargetChangedFact;
 pub use query::{
     UiQueryChangedFact, UiQueryChangedFactKind, UiQueryIncrementalChangedFact,
     UiQueryResetChangedFact,

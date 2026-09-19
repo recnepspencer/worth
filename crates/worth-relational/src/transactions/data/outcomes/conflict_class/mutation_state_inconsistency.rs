@@ -1,5 +1,6 @@
 use crate::identity::data::EntityId;
 use crate::symbols::data::ClientKeySymbolPolicy;
+use crate::transactions::data::RecordRef;
 use crate::transactions::data::TransactionId;
 use serde::{Deserialize, Serialize};
 
@@ -12,6 +13,9 @@ pub enum MutationStateInconsistencyEvidence {
     BulkMutationAdmission {
         transaction_id: TransactionId,
         denial: BulkMutationAdmissionDenial,
+    },
+    MaterializationTransition {
+        record: RecordRef,
     },
 }
 

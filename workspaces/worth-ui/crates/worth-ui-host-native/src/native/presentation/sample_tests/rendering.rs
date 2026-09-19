@@ -122,6 +122,7 @@ fn raster_vertex_buffer(
                 rectangle_vertices(rect, source_rgba8)
             }
             UiNativeRasterOperation::Glyph(_) => continue,
+            UiNativeRasterOperation::Surface(_) => continue,
         };
         for vertex in vertices {
             for value in vertex.position.into_iter().chain(vertex.color) {

@@ -18,6 +18,8 @@ where
 {
     relational: RelationalOwnerServicePorts,
     signal: SignalOwnerServicePorts<D, I, E, Ctx, T>,
+    signal_definition_publication:
+        worth_signal::facade::branch::SignalConditionalDefinitionPublicationPort<D, I, E, Ctx, T>,
     bridge: RuntimeWorldCorrespondencePort,
     budgets: RuntimeWorldBudgets,
     clock: RuntimeWorldClock,
@@ -32,6 +34,9 @@ where
     pub fn new(
         relational: RelationalOwnerServicePorts,
         signal: SignalOwnerServicePorts<D, I, E, Ctx, T>,
+        signal_definition_publication: worth_signal::facade::branch::SignalConditionalDefinitionPublicationPort<
+            D, I, E, Ctx, T,
+        >,
         bridge: RuntimeWorldCorrespondencePort,
         budgets: RuntimeWorldBudgets,
         clock: RuntimeWorldClock,
@@ -39,6 +44,7 @@ where
         Self {
             relational,
             signal,
+            signal_definition_publication,
             bridge,
             budgets,
             clock,
@@ -70,6 +76,7 @@ where
     ) -> (
         RelationalOwnerServicePorts,
         SignalOwnerServicePorts<D, I, E, Ctx, T>,
+        worth_signal::facade::branch::SignalConditionalDefinitionPublicationPort<D, I, E, Ctx, T>,
         RuntimeWorldCorrespondencePort,
         RuntimeWorldBudgets,
         RuntimeWorldClock,
@@ -77,6 +84,7 @@ where
         (
             self.relational,
             self.signal,
+            self.signal_definition_publication,
             self.bridge,
             self.budgets,
             self.clock,

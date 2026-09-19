@@ -104,8 +104,9 @@ export interface ResourceLineDiagnostics {
     | "manualLineInvalidate"
     | "manualFamilyInvalidate"
     | "manualFamilyInvalidateAll"
+    | "manualRuntimeInvalidateAll"
     | null;
-  readonly lastInvalidationScope: "line" | "familyMember" | "familyAll" | null;
+  readonly lastInvalidationScope: "line" | "familyMember" | "familyAll" | "runtimeAll" | null;
   readonly lastPatchKind:
     | "replace"
     | "field"

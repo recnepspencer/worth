@@ -9,15 +9,19 @@ use super::BankCommitReceipt;
 
 pub(super) struct BankCommitPublicationProjection {
     publication: WorthQueryApplicationCommitPublicationReceipt,
-    execution: WorthQueryApplicationCommitReceipt,
+    recovery_description: WorthQueryApplicationCommitReceipt,
 }
 
 impl BankCommitPublicationProjection {
     fn from_execution(execution: WorthQueryApplicationCommitReceipt) -> Self {
-        let publication = publish_application_commit(execution.clone()).into_receipt();
+        // The fresh terminal is consumed by publication. Its descriptive clone
+        // deliberately drops the move-only performed-product-change witness and
+        // therefore cannot become a second publication authority lane.
+        let recovery_description = execution.clone();
+        let publication = publish_application_commit(execution).into_receipt();
         Self {
             publication,
-            execution,
+            recovery_description,
         }
     }
 
@@ -27,7 +31,7 @@ impl BankCommitPublicationProjection {
         WorthQueryApplicationCommitPublicationReceipt,
         WorthQueryApplicationCommitReceipt,
     ) {
-        (self.publication, self.execution)
+        (self.publication, self.recovery_description)
     }
 }
 

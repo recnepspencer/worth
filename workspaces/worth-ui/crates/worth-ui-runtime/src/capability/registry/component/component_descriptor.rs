@@ -21,13 +21,48 @@ pub struct ComponentDescriptor {
     realtime_overlay_contract: Option<super::ComponentRealtimeOverlayContract>,
     allocation_contracts:
         super::component_allocation_contract_state::ComponentAllocationContractState,
-    static_paint_contract: Option<super::ComponentStaticPaintContract>,
+    surface_paint_order: Option<u32>,
+    surface_geometry: worth_ui_host_contract::UiSurfaceGeometry,
+    portal_surface_appearance: bool,
     semantic_text_contract: Option<super::ComponentSemanticTextContract>,
     hit_test_contract: Option<super::ComponentHitTestContract>,
     portal_child_contract: Option<super::ComponentPortalChildContract>,
+    appearance_aspect_contract: Option<worth_ui_dsl::UiAppearanceAspectContract>,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[allow(
+    dead_code,
+    reason = "Gate 0 freezes component appearance contract denials"
+)]
+pub enum ComponentAppearanceAspectContractDenial {
+    BackdropContractOnComponent,
 }
 
 impl ComponentDescriptor {
+    pub fn with_surface_geometry(
+        mut self,
+        geometry: worth_ui_host_contract::UiSurfaceGeometry,
+    ) -> Self {
+        self.surface_geometry = geometry;
+        self
+    }
+
+    /// Declares that mounted Portal children supply the complete placed card composition.
+    /// The anchor's ordinary appearance and Portal interaction authority are unchanged.
+    pub fn with_portal_surface_from_children(mut self) -> Self {
+        self.portal_surface_appearance = false;
+        self
+    }
+
+    pub(crate) const fn portal_surface_appearance(&self) -> bool {
+        self.portal_surface_appearance
+    }
+
+    pub fn surface_geometry(&self) -> &worth_ui_host_contract::UiSurfaceGeometry {
+        &self.surface_geometry
+    }
+
     pub fn new(
         id: ComponentId,
         prop_schema: ComponentPropSchema,
@@ -49,10 +84,13 @@ impl ComponentDescriptor {
             allocation_contracts:
                 super::component_allocation_contract_state::ComponentAllocationContractState::empty(
                 ),
-            static_paint_contract: None,
+            surface_paint_order: None,
+            surface_geometry: Default::default(),
+            portal_surface_appearance: true,
             semantic_text_contract: None,
             hit_test_contract: None,
             portal_child_contract: None,
+            appearance_aspect_contract: None,
         }
     }
 
@@ -76,10 +114,13 @@ impl ComponentDescriptor {
             allocation_contracts:
                 super::component_allocation_contract_state::ComponentAllocationContractState::empty(
                 ),
-            static_paint_contract: None,
+            surface_paint_order: None,
+            surface_geometry: Default::default(),
+            portal_surface_appearance: true,
             semantic_text_contract: None,
             hit_test_contract: None,
             portal_child_contract: None,
+            appearance_aspect_contract: None,
         }
     }
 
@@ -103,10 +144,13 @@ impl ComponentDescriptor {
             allocation_contracts:
                 super::component_allocation_contract_state::ComponentAllocationContractState::empty(
                 ),
-            static_paint_contract: None,
+            surface_paint_order: None,
+            surface_geometry: Default::default(),
+            portal_surface_appearance: true,
             semantic_text_contract: None,
             hit_test_contract: None,
             portal_child_contract: None,
+            appearance_aspect_contract: None,
         }
     }
 
@@ -117,11 +161,6 @@ impl ComponentDescriptor {
 
     pub fn with_focus(mut self, focus: ComponentFocusSupport) -> Self {
         self.focus = focus;
-        self
-    }
-
-    pub fn with_theme_token_dependency(mut self, token_id: ThemeTokenId) -> Self {
-        self.theme_token_dependencies.push(token_id);
         self
     }
 
@@ -169,21 +208,15 @@ impl ComponentDescriptor {
         self
     }
 
-    pub fn with_static_paint(
-        mut self,
-        contract: super::ComponentStaticPaintContract,
-        allocation: super::ComponentAllocationMeasurementContract,
-    ) -> Self {
-        if !self
-            .theme_token_dependencies
-            .contains(contract.theme_token())
-        {
-            self.theme_token_dependencies
-                .push(contract.theme_token().clone());
-        }
-        self.allocation_contracts = self.allocation_contracts.record(allocation);
-        self.static_paint_contract = Some(contract);
+    /// Declares back-to-front order for this component's appearance surface and outline.
+    /// This is independent of bootstrap static paint and does not order interaction.
+    pub fn with_surface_paint_order(mut self, rank: u32) -> Self {
+        self.surface_paint_order = Some(rank);
         self
+    }
+
+    pub const fn surface_paint_order(&self) -> Option<u32> {
+        self.surface_paint_order
     }
 
     pub fn with_semantic_text(mut self, contract: super::ComponentSemanticTextContract) -> Self {
@@ -209,6 +242,23 @@ impl ComponentDescriptor {
 
     pub fn id(&self) -> &ComponentId {
         &self.id
+    }
+
+    pub fn with_appearance_aspect_contract(
+        mut self,
+        contract: worth_ui_dsl::UiAppearanceAspectContract,
+    ) -> Result<Self, ComponentAppearanceAspectContractDenial> {
+        if contract.applicability() != worth_ui_dsl::UiAppearanceAspectApplicability::Component {
+            return Err(ComponentAppearanceAspectContractDenial::BackdropContractOnComponent);
+        }
+        self.appearance_aspect_contract = Some(contract);
+        Ok(self)
+    }
+
+    pub(crate) const fn appearance_aspect_contract(
+        &self,
+    ) -> Option<&worth_ui_dsl::UiAppearanceAspectContract> {
+        self.appearance_aspect_contract.as_ref()
     }
 
     pub fn prop_schema(&self) -> Option<&ComponentPropSchema> {
@@ -255,10 +305,6 @@ impl ComponentDescriptor {
         &self,
     ) -> Option<super::ComponentAllocationMeasurementContract> {
         self.allocation_contracts.resolved()
-    }
-
-    pub fn static_paint_contract(&self) -> Option<&super::ComponentStaticPaintContract> {
-        self.static_paint_contract.as_ref()
     }
 
     pub fn semantic_text_contract(&self) -> Option<&super::ComponentSemanticTextContract> {

@@ -1,6 +1,8 @@
 mod batch;
 pub(crate) mod draft;
 pub(crate) mod gesture;
+mod pointer_admission;
+mod pointer_presence;
 mod semantic;
 mod service_event;
 mod settlement;
@@ -26,6 +28,17 @@ pub use gesture::{
     UiPointerGestureContinuityKind, UiPointerGesturePressReceipt, UiPointerGestureStop,
     UiPointerGestureStopReason, UiTargetedPointerGesture, UI_ACTIVE_POINTER_GESTURE_LIMIT,
 };
+pub use pointer_presence::UiPointerPresenceAdmissionDenial;
+pub use pointer_presence::UiPointerPresenceTargetTransition;
+#[allow(
+    unused_imports,
+    reason = "Gate 1 retains sealed pointer-presence presentation types for later mounting consumers"
+)]
+pub(crate) use pointer_presence::{
+    UiPointerPresenceAppearanceOwnerSnapshot, UiPointerPresenceAppearancePosture,
+    UiPointerPresenceCapacity, UiPointerPresenceClass, UiPointerPresenceOwner,
+    UiPrimaryPointerKind,
+};
 pub(crate) use semantic::{
     selection_evidence_input, semantic_evidence_input, UiEditCommitInput, UiKeyboardSemanticInput,
 };
@@ -39,10 +52,24 @@ pub use settlement::UiInteractionLifecycleSettlementReceipt;
 pub use snapshot::{UiInteractionLifecycleCounters, UiInteractionStateSnapshot};
 pub use source::UiIntentRouteSource;
 pub(crate) use source::{command_evidence_input, UiIntentRouteSourceMaterial};
-pub(crate) use state::{UiInteractionLifecycleStopReason, UiInteractionRuntimeState};
+pub(crate) use state::{
+    UiInteractionLifecycleStopReason, UiInteractionRuntimeState,
+    UiPreparedInteractionApplicationRebind,
+};
 pub use targeting::{
     UiInteractionTargetingDenial, UiPresentedInteractionTarget, UiPresentedInteractionTargetView,
     UiPresentedTargetFrameRelation,
 };
 pub(crate) use targeting::{UiPresentedInteractionGeometry, UiPresentedViewportGeometry};
 pub use transition::{UiInteractionStop, UiInteractionTransition};
+
+mod presentation_refresh;
+pub(crate) use presentation_refresh::{
+    UiInteractionPresentationRefreshSnapshot, UiPointerPresentationRefreshReport,
+};
+
+#[cfg(test)]
+pub(crate) use pointer_presence::{
+    UiPointerPresenceGeometry, UiPointerPresenceGeometryCandidate,
+    UiPointerPresencePresentationTrigger,
+};

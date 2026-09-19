@@ -169,31 +169,8 @@ impl BankAccountActivityContinuation {
         Self { query }
     }
 
-    pub(super) fn resume(
-        self,
-        prepared: super::PreparedAccountActivity<'_, '_>,
-        controls: worth_query_host::facade::primary_graph::WorthQueryApplicationQueryResumeControls<
-            '_,
-        >,
-    ) -> Result<BankAccountActivityPageResult, crate::BankApplicationQueryDenial> {
-        let access = prepared.access();
-        let plan = prepared
-            .runtime
-            .application_runtime()
-            .readmit_application_query_continuation(
-                &prepared.query,
-                &access,
-                worth_query_host::facade::declaration::application_query::ApplicationQueryParameterSet::<AccountActivityQuery>::new(),
-                self.query,
-                controls,
-            )
-            .map_err(crate::BankApplicationQueryDenial::from_admission)?;
-        let page = prepared
-            .runtime
-            .application_runtime()
-            .execute_application_query_continuation_page(plan)
-            .map_err(crate::BankApplicationQueryDenial::from_continuation_execution)?;
-        Ok(publish_page(page))
+    pub(super) fn into_query(self) -> QueryAccountActivityContinuation {
+        self.query
     }
 }
 

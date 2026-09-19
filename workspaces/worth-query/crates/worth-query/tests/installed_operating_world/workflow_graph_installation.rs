@@ -94,7 +94,7 @@ fn installed_graph(name: &str, reversed: bool) -> Vec<String> {
     .unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     workspace
-        .observe_operating_world()
+        .observe_operating_world(workspace.current_world())
         .unwrap()
         .family(ReadFamily)
         .bind(&installed_domain, WorkflowRead)

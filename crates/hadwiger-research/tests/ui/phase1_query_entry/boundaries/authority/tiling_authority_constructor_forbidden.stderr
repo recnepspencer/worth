@@ -1,5 +1,0 @@
-error[E0432]: unresolved import `hadwiger_research::facade::AdmittedTilingCandidate`
- --> tests/ui/phase1_query_entry/boundaries/authority/tiling_authority_constructor_forbidden.rs:1:5
-  |
-1 | use hadwiger_research::facade::AdmittedTilingCandidate;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `AdmittedTilingCandidate` in `facade`

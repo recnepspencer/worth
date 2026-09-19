@@ -1,8 +1,8 @@
 use std::collections::BTreeMap;
 
 use crate::authority::intent_merge::{
-    canonical_intent_key, collect_created_entity_refs, detect_conflicting_updates,
-    validate_branch_locality, validate_intent,
+    canonical_intent_key, collect_created_entity_refs, collect_deleted_relation_ids,
+    detect_conflicting_updates, validate_branch_locality, validate_intent,
 };
 use crate::capabilities::{InstrumentationSource, RuntimeConfigSource};
 use crate::runtime::PartitionAccess;
@@ -70,6 +70,7 @@ impl crate::mvcc::BranchBoundRelationalTransaction {
         mut intents: Vec<MutationIntent>,
     ) -> Result<(MergedCommitPlan, MergedPlanPreparationTiming), CommitConflict> {
         let created_entities = collect_created_entity_refs(&intents);
+        let deleted_relations = collect_deleted_relation_ids(&intents);
         let validation_started = Instant::now();
         for intent in &intents {
             validate_intent(
@@ -78,6 +79,7 @@ impl crate::mvcc::BranchBoundRelationalTransaction {
                 runtime.runtime_config().storage.cross_context_policy,
                 runtime.runtime_instrumentation(),
                 &created_entities,
+                &deleted_relations,
                 intent,
             )?;
         }

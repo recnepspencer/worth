@@ -40,6 +40,32 @@ fn test_root() -> PathBuf {
     }
     fs::create_dir_all(root.join("workspaces/worth-query/crates/worth-query-certification"))
         .expect("create Query certification fixture root");
+    let app_root = root.join("workspaces/worth-ui/apps/platform-pulse");
+    let crate_root = root.join("workspaces/worth-ui/crates/worth-ui-runtime");
+    fs::create_dir_all(app_root.join("src")).expect("create Worth UI application fixture root");
+    fs::create_dir_all(crate_root.join("src")).expect("create Worth UI crate fixture root");
+    fs::write(
+        root.join("workspaces/worth-ui/Cargo.toml"),
+        "[workspace]\nmembers = [\"apps/platform-pulse\", \"crates/worth-ui-runtime\"]\n",
+    )
+    .expect("write Worth UI workspace fixture");
+    fs::write(
+        app_root.join("Cargo.toml"),
+        "[package]\nname = \"worth-ui-platform-pulse\"\nversion = \"0.1.0\"\nedition = \"2021\"\n",
+    )
+    .expect("write Worth UI application manifest fixture");
+    fs::write(app_root.join("src/main.rs"), "fn main() {}\n")
+        .expect("write Worth UI application source fixture");
+    fs::write(app_root.join("src/application.rs"), "\n")
+        .expect("write Worth UI application module fixture");
+    fs::create_dir_all(app_root.join("src/application"))
+        .expect("write Worth UI application submodule fixture");
+    fs::write(
+        crate_root.join("Cargo.toml"),
+        "[package]\nname = \"worth-ui-runtime\"\nversion = \"0.1.0\"\nedition = \"2021\"\n",
+    )
+    .expect("write Worth UI crate manifest fixture");
+    fs::write(crate_root.join("src/lib.rs"), "\n").expect("write Worth UI crate source fixture");
     root
 }
 
@@ -145,6 +171,42 @@ fn generation_is_stable_and_check_passes() {
         "`worth-entry-adoption` -> Query-native declaration/adoption facade (Milestone 3)"
     ));
     assert!(first.contains("Public surface: facade-only"));
+    let app_context =
+        fs::read_to_string(root.join("workspaces/worth-ui/apps/platform-pulse/AGENT_CONTEXT.md"))
+            .expect("read generated application context");
+    assert_eq!(
+        app_context.lines().next(),
+        Some("# worth-ui-platform-pulse")
+    );
+    assert!(app_context.contains("Must not depend on worthy-* crates."));
+    assert!(app_context.contains(
+        "Public surface: workspace-owned; package targets remain the explicit export or composition owners"
+    ));
+    let owned_modules = app_context
+        .lines()
+        .find_map(|line| line.strip_prefix("- Owned internal modules: `"))
+        .and_then(|line| line.strip_suffix('`'))
+        .expect("owned application modules");
+    let modules = owned_modules.split(", ").collect::<Vec<_>>();
+    let unique_modules = modules
+        .iter()
+        .copied()
+        .collect::<std::collections::BTreeSet<_>>();
+    assert_eq!(modules.len(), unique_modules.len());
+    assert_eq!(
+        modules
+            .iter()
+            .filter(|module| **module == "application")
+            .count(),
+        1
+    );
+    let runtime_context = fs::read_to_string(
+        root.join("workspaces/worth-ui/crates/worth-ui-runtime/AGENT_CONTEXT.md"),
+    )
+    .expect("read generated crate context");
+    assert_eq!(runtime_context.lines().next(), Some("# worth-ui-runtime"));
+    assert!(runtime_context
+        .contains("Replay dependencies are admitted only for configured certification packages"));
 
     let generate_again = run_tool(&root, "generate");
     assert!(

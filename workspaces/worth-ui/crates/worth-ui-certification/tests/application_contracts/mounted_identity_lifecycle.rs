@@ -214,19 +214,39 @@ fn application_replacement_retires_one_removed_scroll_neighborhood_and_retains_i
         .prepare_application_with_host(initial_submission, host.clone())
         .launch()
         .expect("two-component predecessor launches");
-    let nodes = session
-        .graph()
+    let expected_components = [
+        "component:workspace.component.authority_candidate",
+        "component:workspace.component.authority_current",
+    ];
+    let graph = session.graph();
+    let mut declared_components = graph
         .node_identities()
-        .map(|identity| {
-            session
-                .mounted_graph_node(identity)
-                .expect("active graph node has a mounted handle")
+        .filter_map(|identity| {
+            let record = graph.lookup().graph_node(identity)?;
+            let value = record.value();
+            let declaration = value.declaration_identity().authored_semantic_name();
+            expected_components
+                .contains(&declaration)
+                .then_some((declaration.to_owned(), identity))
         })
         .collect::<Vec<_>>();
-    assert!(
-        nodes.len() > 1,
-        "the predecessor has multiple mount neighborhoods"
+    declared_components.sort_by(|left, right| left.0.cmp(&right.0));
+    assert_eq!(
+        declared_components
+            .iter()
+            .map(|(declaration, _)| declaration.as_str())
+            .collect::<Vec<_>>(),
+        expected_components,
+        "the predecessor exposes exactly the retained and removed authored components"
     );
+    let nodes = declared_components
+        .into_iter()
+        .map(|(_, identity)| {
+            session
+                .mounted_graph_node(identity)
+                .expect("declared component has a mounted handle")
+        })
+        .collect::<Vec<_>>();
     let predecessor_neighborhoods = nodes.len();
     let surface = session.create_semantic_surface().unwrap();
     session

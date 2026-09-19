@@ -27,6 +27,7 @@ pub(super) struct FinishScopeInput {
     pub(super) classification: crate::runtime::observation::UiChangeClassificationBasis,
     pub(super) facts: Box<[UiProducedFact]>,
     pub(super) source_succession: Option<crate::runtime::observation::UiAuthoredSourceSuccession>,
+    pub(super) theme_switch: Option<crate::runtime::appearance::UiThemeSwitchChange>,
     pub(super) predecessor_graph: UiGraphFactIndexBasis,
     pub(super) candidate_generation:
         crate::facade::prepared_application_authority::WorthUiPreparedApplicationGenerationIdentity,
@@ -109,7 +110,7 @@ pub(super) fn prepare_resolution(
         change.facts().len(),
     )?;
 
-    let accumulation = accumulate_scope(ScopeLookupInput {
+    let mut accumulation = accumulate_scope(ScopeLookupInput {
         facts: change.facts(),
         predecessor,
         candidate,
@@ -118,6 +119,36 @@ pub(super) fn prepare_resolution(
         budget,
     })?;
 
+    if let Some(theme) = change.theme_switch() {
+        for (node, _) in theme.invalidation().mounted_consumers() {
+            let snapshot = predecessor.graph_snapshot();
+            let node = snapshot
+                .core_indexes()
+                .node_identity()
+                .node(snapshot.nodes(), *node)
+                .expect("theme selection carries a current indexed consumer");
+            let identity = UiGraphFactConsumerIdentity::GraphNode(node.graph_node_identity());
+            let key = UiGraphFactConsumerKey::new(
+                crate::graph::UiGraphFactConsumerKind::GraphNode,
+                node.declaration_identity().authored_semantic_name(),
+                node.repeated_instance_basis().identity_digest(),
+            );
+            accumulation
+                .consumers
+                .entry(key)
+                .or_insert_with(|| ConsumerAccumulator {
+                    predecessor: Some(identity),
+                    candidate: Some(identity),
+                    aspects: BTreeSet::new(),
+                });
+        }
+        enforce_scope_limits(&accumulation.consumers, &accumulation.aspects, budget)?;
+        enforce_limit(
+            UiRebindLimit::GraphAndMountedEntries,
+            budget.graph_and_mounted_entries,
+            selected_entry_count(&accumulation.consumers) + theme.cost().graph_and_mounted_entries,
+        )?;
+    }
     Ok(PreparedScopeResolution {
         predecessor_graph,
         candidate_generation,
@@ -315,82 +346,5 @@ fn selected_entry_count(
         .sum()
 }
 
-pub(super) fn finish_scope(
-    input: FinishScopeInput,
-) -> Result<UiResolvedAffectedScope, UiAffectedScopeDenial> {
-    let FinishScopeInput {
-        classification,
-        facts,
-        source_succession,
-        predecessor_graph,
-        candidate_generation,
-        candidate_graph,
-        lookups,
-        consumers,
-        aspects,
-    } = input;
-    let indexed_consumers = consumers.len();
-    let graph_and_mounted_entries = selected_entry_count(&consumers);
-    let (index_probes, contract_checks) = lookup_cost(&lookups);
-    let affected_aspects = aspects.into_iter().collect::<Vec<_>>().into_boxed_slice();
-    let consumers = materialize_consumers(consumers);
-    let basis = UiAffectedScopeBasis::new(
-        classification,
-        predecessor_graph,
-        candidate_generation,
-        candidate_graph,
-    );
-    let cost = UiAffectedScopeCost::exact(UiAffectedScopeCostInput {
-        observations: basis.classification().observation_count(),
-        changed_facts: facts.len(),
-        affected_aspects: affected_aspects.len(),
-        indexed_consumers,
-        lookup_receipts: lookups.len() * 2,
-        index_probes,
-        contract_checks,
-        graph_and_mounted_entries,
-    });
-    Ok(UiResolvedAffectedScope::new(UiResolvedAffectedScopeInput {
-        basis,
-        facts,
-        affected_aspects,
-        consumers,
-        lookups: lookups.into_boxed_slice(),
-        cost,
-        source_succession,
-    }))
-}
-
-fn materialize_consumers(
-    consumers: BTreeMap<UiGraphFactConsumerKey, ConsumerAccumulator>,
-) -> Box<[UiAffectedConsumer]> {
-    consumers
-        .into_iter()
-        .map(|(key, consumer)| {
-            UiAffectedConsumer::new(
-                key,
-                consumer.predecessor,
-                consumer.candidate,
-                consumer
-                    .aspects
-                    .into_iter()
-                    .collect::<Vec<_>>()
-                    .into_boxed_slice(),
-            )
-        })
-        .collect::<Vec<_>>()
-        .into_boxed_slice()
-}
-
-fn lookup_cost(lookups: &[UiAffectedFactLookup]) -> (usize, usize) {
-    lookups.iter().fold((0, 0), |cost, lookup| {
-        (
-            cost.0
-                + lookup.predecessor().cost().index_probes()
-                + lookup.candidate().cost().index_probes(),
-            cost.1
-                + lookup.predecessor().cost().contract_checks()
-                + lookup.candidate().cost().contract_checks(),
-        )
-    })
-}
+mod materialization;
+pub(super) use materialization::finish_scope;

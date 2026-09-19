@@ -72,29 +72,31 @@ fn exact_support_revocation_after_materialization_denies_provider_commit() {
 }
 
 #[test]
-fn unrelated_lifecycle_drift_does_not_stale_exact_support() {
+fn unrelated_published_lifecycle_drift_stales_the_selected_product_mutation() {
     let (world, request, requested) =
         super::approval_transition::requested_world(CapabilityElevationScenario::Active);
-    let approver = super::approval_transition::authenticated(&world, "bob", &request);
     let program =
         super::approval_transition::materialize_exact_approval(&world, &request, requested);
     super::mutation::set_status(&world, "elevation-1", CapabilityElevationStatus::Revoked);
 
-    let WorthQueryElevationApprovalOutcome::Approved(_) = world
+    let outcome = world
         .application
-        .compare_and_commit_elevation_approval(program, idempotency(176, 176))
-    else {
-        panic!("drift outside the exact support and requested lifecycle must still commit");
+        .compare_and_commit_elevation_approval(program, idempotency(176, 176));
+    let WorthQueryElevationApprovalOutcome::Denied(denial, _requested) = outcome else {
+        panic!("the mutation bound to the older product must deny before effects: {outcome:?}");
     };
-
+    assert_eq!(
+        denial.kind(),
+        WorthQueryApplicationCommitDenialKind::ProductBasisStale
+    );
+    assert_eq!(
+        denial.stage(),
+        WorthQueryApplicationCommitDenialStage::InvariantExecution
+    );
     assert_eq!(
         super::terminal_state::elevation_status(&world),
-        CapabilityElevationStatus::Approved
+        CapabilityElevationStatus::Requested
     );
-    assert!(super::terminal_state::has_exact_approver(
-        &world,
-        approver.principal_entity_id()
-    ));
 }
 
 #[test]
@@ -178,7 +180,7 @@ fn replacement_policy_path_for_the_same_grant_cuts_off_approved_use() {
     world.authorization_time.script([time(100)]);
     let capability = super::installed_capability(&world);
 
-    let Err(denial) = world.application.admit_approved_elevation_access(
+    let Err(denial) = world.selected_product().admit_approved_elevation_access(
         &approved,
         &requester,
         &capability,

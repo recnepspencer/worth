@@ -1,22 +1,24 @@
 use worth_ui_host_contract::{
-    UiHostSurfaceIdentity, UiHostSurfacePresentationMode, UiMountedAllocationBasis,
-    UiMountedCanonicalBox, UiMountedCanonicalBoxInput, UiMountedClipTable,
-    UiMountedContentGeneration, UiMountedCoordinateSpace, UiMountedFilledRectCompletionInput,
-    UiMountedFilledRectMechanic, UiMountedFilledRectReference, UiMountedFilledRectTable,
-    UiMountedFrameIdentity, UiMountedHitTestProjection, UiMountedHitTestTable,
-    UiMountedInstanceIdentity, UiMountedLayerTable, UiMountedLogicalDamage,
+    UiHostObservationPresentationBasis, UiHostPresentationEpoch, UiHostSurfaceIdentity,
+    UiHostSurfacePresentationMode, UiMountedAllocationBasis, UiMountedCanonicalBox,
+    UiMountedCanonicalBoxInput, UiMountedClipTable, UiMountedContentGeneration,
+    UiMountedCoordinateSpace, UiMountedFrameIdentity, UiMountedHitTestProjection,
+    UiMountedHitTestTable, UiMountedInstanceIdentity, UiMountedLayerTable, UiMountedLogicalDamage,
     UiMountedMechanicalRole, UiMountedNodeProjectionView, UiMountedNodeProjectionViewInput,
     UiMountedNodeReceiptIssuer, UiMountedOmissionReason, UiMountedPaintBatchTable,
     UiMountedPaintCommand, UiMountedPaintCommandChange, UiMountedPaintOrderEdit,
     UiMountedPaintOrderIdentity, UiMountedPaintOrderIntegrity, UiMountedPaintProjection,
     UiMountedParticipation, UiMountedParticipationFact, UiMountedParticipationInput,
-    UiMountedParticipationStatus, UiMountedPresentationDelta, UiMountedPresentationDeltaInput,
-    UiMountedPresentationInitial, UiMountedPresentationInitialInput,
-    UiMountedPresentationUnchanged, UiMountedPresentationUnchangedInput, UiMountedProjectionView,
-    UiMountedProjectionViewInput, UiMountedRealtimeBatchTable, UiMountedResourceTable,
-    UiMountedRgba8, UiMountedSemanticTextTable, UiMountedSpatialBatchTable,
-    UiMountedSurfaceBindingRequirement, UiMountedTransformProjection, UiSemanticSurfaceIdentity,
-    UiSurfaceBindingGeneration, WorthUiHostCapabilityObservationGeneration,
+    UiMountedParticipationStatus, UiMountedPortalInputShielding,
+    UiMountedPortalOverlayCompletionInput, UiMountedPortalOverlayLifecyclePosture,
+    UiMountedPortalOverlayMechanic, UiMountedPortalOverlayReference, UiMountedPortalOverlayTable,
+    UiMountedPresentationDelta, UiMountedPresentationDeltaInput, UiMountedPresentationInitial,
+    UiMountedPresentationInitialInput, UiMountedPresentationUnchanged,
+    UiMountedPresentationUnchangedInput, UiMountedProjectionView, UiMountedProjectionViewInput,
+    UiMountedRealtimeBatchTable, UiMountedResourceTable, UiMountedRgba8,
+    UiMountedSemanticTextTable, UiMountedSpatialBatchTable, UiMountedSurfaceBindingRequirement,
+    UiMountedTransformProjection, UiSemanticSurfaceIdentity, UiSurfaceBindingGeneration,
+    WorthUiHostCapabilityObservationGeneration,
 };
 
 use super::{UiNativeRetainedDrawList, UiNativeRetainedDrawListDenial};
@@ -103,7 +105,7 @@ pub(in crate::native) struct DrawListWorld {
     pub(in crate::native) content: UiMountedContentGeneration,
     pub(in crate::native) first: UiMountedInstanceIdentity,
     second: UiMountedInstanceIdentity,
-    third: UiMountedInstanceIdentity,
+    pub(in crate::native::presentation) third: UiMountedInstanceIdentity,
     pub(in crate::native) requirement: UiMountedSurfaceBindingRequirement,
 }
 
@@ -136,27 +138,44 @@ impl DrawListWorld {
         instance: UiMountedInstanceIdentity,
         x: f32,
         color: UiMountedRgba8,
-    ) -> UiMountedFilledRectMechanic {
+    ) -> UiMountedPortalOverlayMechanic {
+        self.rect_at_order(frame, instance, x, color, 0)
+    }
+
+    pub(in crate::native::presentation) fn rect_at_order(
+        &self,
+        frame: UiMountedFrameIdentity,
+        instance: UiMountedInstanceIdentity,
+        x: f32,
+        color: UiMountedRgba8,
+        layer_semantic_order: u32,
+    ) -> UiMountedPortalOverlayMechanic {
         let bounds = canonical_box(x, 0.0, 32.0, 24.0);
-        UiMountedFilledRectMechanic::complete_from_runtime_mounting(
-            UiMountedFilledRectCompletionInput {
+        UiMountedPortalOverlayMechanic::complete_from_runtime_mounting(
+            UiMountedPortalOverlayCompletionInput {
                 frame,
                 surface: self.surface,
                 binding: self.binding,
-                mounted_instance: instance,
-                node_receipt: UiMountedNodeReceiptIssuer::mint_for(frame)
+                owner: instance,
+                owner_receipt: UiMountedNodeReceiptIssuer::mint_for(frame)
                     .unwrap()
                     .receipt_for(instance),
-                allocation_basis: UiMountedAllocationBasis::new(
-                    1,
-                    2,
-                    3,
-                    UiMountedTransformProjection::Identity,
+                portal_identity: instance.diagnostic_value(),
+                anchor_presentation: UiHostObservationPresentationBasis::new(
+                    self.requirement.host_surface(),
+                    frame,
+                    self.binding,
+                    UiHostPresentationEpoch::issued_by_host(1),
                 ),
+                anchor_bounds: bounds,
                 bounds,
+                paint_bounds: bounds,
                 color,
-                layer_semantic_order: 0,
+                layer_semantic_order,
+                layer_depth: 0,
                 clip_bounds: bounds,
+                lifecycle: UiMountedPortalOverlayLifecyclePosture::Visible,
+                shielding: UiMountedPortalInputShielding::ContentBounds,
             },
         )
         .unwrap()
@@ -165,7 +184,7 @@ impl DrawListWorld {
     pub(in crate::native::presentation) fn initial<const N: usize>(
         &self,
         frame: UiMountedFrameIdentity,
-        rows: [UiMountedFilledRectMechanic; N],
+        rows: [UiMountedPortalOverlayMechanic; N],
     ) -> UiMountedPresentationInitial {
         let commands = rows
             .iter()
@@ -203,8 +222,8 @@ impl DrawListWorld {
     ) {
         let row = self.rect(frame, self.first, 0.0, UiMountedRgba8::new(9, 17, 31, 255));
         let target = worth_ui_host_contract::UiHostFocusPlacementTarget::new(
-            row.mounted_instance(),
-            row.node_receipt(),
+            row.owner(),
+            row.owner_receipt(),
         );
         (
             super::UiNativeRetainedDrawList::initial(&self.initial(frame, [row]), &[]).unwrap(),
@@ -214,10 +233,10 @@ impl DrawListWorld {
 }
 
 pub(in crate::native::presentation) fn command(
-    mechanic: UiMountedFilledRectMechanic,
+    mechanic: UiMountedPortalOverlayMechanic,
 ) -> UiMountedPaintCommand {
-    UiMountedPaintCommand::FilledRect {
-        identity: worth_ui_host_contract::UiMountedPaintCommandIdentity::filled_rect(&mechanic),
+    UiMountedPaintCommand::PortalOverlay {
+        identity: worth_ui_host_contract::UiMountedPaintCommandIdentity::portal_overlay(&mechanic),
         mechanic,
     }
 }
@@ -225,7 +244,7 @@ pub(in crate::native::presentation) fn command(
 fn projection(
     world: &DrawListWorld,
     frame: UiMountedFrameIdentity,
-    rows: Vec<UiMountedFilledRectMechanic>,
+    rows: Vec<UiMountedPortalOverlayMechanic>,
 ) -> UiMountedProjectionView {
     let nodes = rows
         .iter()
@@ -257,8 +276,7 @@ fn projection(
         nodes,
         clips: UiMountedClipTable::produced(Vec::new()),
         layers: UiMountedLayerTable::produced(Vec::new()),
-        filled_rects: UiMountedFilledRectTable::from_runtime_mounting(rows).unwrap(),
-        portal_overlays: worth_ui_host_contract::UiMountedPortalOverlayTable::empty(),
+        portal_overlays: UiMountedPortalOverlayTable::from_runtime_mounting(rows).unwrap(),
         semantic_text: UiMountedSemanticTextTable::empty(),
         hit_tests: UiMountedHitTestTable::empty(),
         paint_batches: UiMountedPaintBatchTable::new(Vec::new()),
@@ -270,14 +288,14 @@ fn projection(
     })
 }
 
-fn rect_node(index: usize, row: &UiMountedFilledRectMechanic) -> UiMountedNodeProjectionView {
+fn rect_node(index: usize, row: &UiMountedPortalOverlayMechanic) -> UiMountedNodeProjectionView {
     let admitted = UiMountedParticipationFact::new(UiMountedParticipationStatus::Admitted);
     let withheld = UiMountedParticipationFact::new(UiMountedParticipationStatus::Withheld);
     let omitted = UiMountedOmissionReason::NotDefinedByCurrentRuntime;
-    let reference = UiMountedFilledRectReference::from_runtime_mounting(index as u16);
+    let reference = UiMountedPortalOverlayReference::from_runtime_mounting(index as u16);
     UiMountedNodeProjectionView::new(UiMountedNodeProjectionViewInput {
-        mounted_instance: row.mounted_instance(),
-        node_receipt: row.node_receipt(),
+        mounted_instance: row.owner(),
+        node_receipt: row.owner_receipt(),
         authored_position: u64::try_from(index).expect("fixture authored position"),
         role: UiMountedMechanicalRole::Control,
         participation: UiMountedParticipation::new(UiMountedParticipationInput {
@@ -292,15 +310,17 @@ fn rect_node(index: usize, row: &UiMountedFilledRectMechanic) -> UiMountedNodePr
         }),
         allocation: worth_ui_host_contract::UiMountedAllocationProjection::Known {
             bounds: row.bounds(),
-            basis: row.allocation_basis(),
+            basis: UiMountedAllocationBasis::new(1, 2, 3, UiMountedTransformProjection::Identity),
         },
         preview: worth_ui_host_contract::UiMountedPreviewProjection::Omitted(omitted),
-        paint: UiMountedPaintProjection::FilledRect(reference),
+        paint: UiMountedPaintProjection::Omitted(omitted),
         hit_test: UiMountedHitTestProjection::Omitted(omitted),
         accessibility: worth_ui_host_contract::UiMountedAccessibilityProjection::Omitted(omitted),
         motion: worth_ui_host_contract::UiMountedMotionProjection::Omitted(omitted),
         diagnostic: worth_ui_host_contract::UiMountedDiagnosticProjection::Omitted(omitted),
-        drawables: vec![worth_ui_host_contract::UiMountedDrawableReference::FilledRect(reference)],
+        drawables: vec![
+            worth_ui_host_contract::UiMountedDrawableReference::PortalOverlay(reference),
+        ],
         semantic_text: Vec::new(),
         portal_presentation: None,
     })
@@ -312,7 +332,7 @@ fn canonical_box(x: f32, y: f32, width: f32, height: f32) -> UiMountedCanonicalB
         y,
         width,
         height,
-        coordinate_space: UiMountedCoordinateSpace::HostSurface,
+        coordinate_space: UiMountedCoordinateSpace::Viewport,
     })
     .unwrap()
 }

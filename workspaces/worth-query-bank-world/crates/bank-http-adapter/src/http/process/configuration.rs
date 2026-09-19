@@ -1,4 +1,5 @@
 use std::time::{Duration, Instant};
+use std::{net::SocketAddr, sync::Arc};
 
 use serde::Deserialize;
 use worth_query_host::facade::admission::authenticated_principal::{
@@ -10,6 +11,7 @@ use crate::{
     AuthentikOidcConfigurationError,
 };
 
+use super::rail_transport::BankProcessRailTransport;
 use super::BankHttpProcessWorld;
 
 #[derive(Deserialize)]
@@ -18,6 +20,8 @@ pub struct BankHttpProcessConfiguration {
     pub world: BankHttpProcessWorld,
     #[serde(default)]
     pub cold_certification: bool,
+    #[serde(default)]
+    pub external_rail: Option<SocketAddr>,
 }
 
 #[derive(Deserialize)]
@@ -36,12 +40,14 @@ pub enum BankHttpProcessConfigurationError {
     World,
     Identity(AuthentikBankIdentityBuildError),
     ColdCertificationUnavailable,
+    ExternalRail(bank_server::BankExternalEffectTransportDenial),
 }
 
 impl BankHttpProcessConfiguration {
     pub async fn install_identity(
         self,
     ) -> Result<AuthentikBankIdentity, BankHttpProcessConfigurationError> {
+        let external_rail = self.external_rail;
         let oidc = self
             .oidc
             .build()
@@ -55,7 +61,16 @@ impl BankHttpProcessConfiguration {
             Instant::now() + Duration::from_secs(300),
             cancellation.token(),
         );
-        install_identity(oidc, world, self.cold_certification, &scope).await
+        let identity = install_identity(oidc, world, self.cold_certification, &scope).await?;
+        if let Some(address) = external_rail {
+            identity
+                .runtime()
+                .install_external_effect_transport(Arc::new(
+                    BankProcessRailTransport::connected_to(address),
+                ))
+                .map_err(BankHttpProcessConfigurationError::ExternalRail)?;
+        }
+        Ok(identity)
     }
 }
 
@@ -115,6 +130,7 @@ impl std::fmt::Display for BankHttpProcessConfigurationError {
             Self::ColdCertificationUnavailable => {
                 formatter.write_str("cold certification was not compiled into this process")
             }
+            Self::ExternalRail(error) => error.fmt(formatter),
         }
     }
 }

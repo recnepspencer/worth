@@ -1,7 +1,7 @@
+mod materialized;
 use crate::clock::RuntimeInstant;
 use crate::data::dependency::{
-    CommittedSnapshotUpdate, DependencySnapshot, DependencySnapshotShapeStore, SnapshotDeltaRecord,
-    SnapshotStorageStrategy,
+    CommittedSnapshotUpdate, DependencySnapshot, SnapshotDeltaRecord, SnapshotStorageStrategy,
 };
 use crate::data::error::SignalError;
 use crate::data::graph::signal_graph::{DependencySnapshotStructuralDelta, SignalGraph};
@@ -19,10 +19,6 @@ impl SignalGraph {
             .get(self.hot_ref(id)?.dep_snapshot_id))
     }
 
-    pub(crate) fn dependency_snapshot_shapes_mut(&mut self) -> &mut DependencySnapshotShapeStore {
-        &mut self.topology.dependency_snapshot_shapes
-    }
-
     pub(crate) fn dependency_snapshot_shape_handle(
         &mut self,
         id: crate::data::dependency::DependencySnapshotId,
@@ -30,6 +26,29 @@ impl SignalGraph {
         self.topology
             .dependency_snapshots
             .shape_handle_for(id, &mut self.topology.dependency_snapshot_shapes)
+    }
+
+    pub(crate) fn dependency_snapshot_shape_handle_for_evaluation(
+        &mut self,
+        id: crate::data::dependency::DependencySnapshotId,
+        work: &mut crate::logic::evaluation::EvaluationWork<'_>,
+    ) -> Result<crate::data::dependency::SnapshotShapeHandle, SignalError> {
+        match work {
+            crate::logic::evaluation::EvaluationWork::Ordinary => {
+                Ok(self.dependency_snapshot_shape_handle(id))
+            }
+            crate::logic::evaluation::EvaluationWork::Conditional(_) => {
+                work.reserve(Some(
+                    self.topology
+                        .dependency_snapshots
+                        .retained_shape_handle_lookup_steps(),
+                ))?;
+                self.topology
+                    .dependency_snapshots
+                    .retained_shape_handle_for(id, &self.topology.dependency_snapshot_shapes)
+                    .map_err(|_| SignalError::SnapshotIndexUnavailable)
+            }
+        }
     }
 
     fn insert_dependency_snapshot(
@@ -56,7 +75,6 @@ impl SignalGraph {
             previous_shape_handle,
             &previous,
             snapshot,
-            self.dependency_snapshot_shapes_mut(),
         );
         if !delta.changed() {
             return Ok(());
@@ -87,51 +105,30 @@ impl SignalGraph {
         Ok(())
     }
 
+    #[cfg(test)]
     pub(crate) fn replace_dep_snapshot_committed(
         &mut self,
         id: NodeId,
         update: CommittedSnapshotUpdate,
     ) -> Result<SnapshotDeltaRecord, SignalError> {
-        let previous = self.get_dep_snapshot(id)?.clone();
+        let previous = self.get_dep_snapshot(id)?;
         let delta = match &update {
-            CommittedSnapshotUpdate::VersionOnly(version_only) => {
-                SnapshotDeltaRecord::for_version_update(
-                    id,
-                    &previous,
-                    version_only.versions().as_slice(),
-                )
+            CommittedSnapshotUpdate::VersionOnly(version) => {
+                SnapshotDeltaRecord::for_version_update(id, previous, version.versions().as_slice())
             }
             CommittedSnapshotUpdate::Replace(replacement) => {
-                SnapshotDeltaRecord::between(id, &previous, replacement.snapshot())
+                SnapshotDeltaRecord::between(id, previous, replacement.snapshot())
             }
         };
-        match update.storage_strategy() {
-            SnapshotStorageStrategy::SharedReplacement => {
-                self.with_telemetry(|telemetry| {
-                    telemetry.storage.shared_snapshot_replacement_count += 1;
-                    telemetry.storage.structural_replace_batch_commit_count += 1;
-                });
-            }
-            SnapshotStorageStrategy::VersionOnlyDelta => {
-                self.with_telemetry(|telemetry| {
-                    telemetry.storage.version_only_snapshot_update_count += 1;
-                    telemetry.storage.stable_shape_batch_commit_count += 1;
-                    telemetry.storage.snapshot_shape_reuse_count += 1;
-                });
-            }
-        }
-        if !delta.changed() {
-            return Ok(delta);
-        }
-        let next_snapshot = update.apply_to(&previous);
-        let snapshot_id = self.insert_dependency_snapshot(next_snapshot.into_snapshot());
-        self.set_dep_snapshot_id_direct(id, snapshot_id)?;
-        self.record_branch_mutation_snapshot(
-            id,
-            DependencySnapshotStructuralDelta::from_snapshot_delta(delta),
-        );
-        self.record_graph_storage_pressure();
-        Ok(delta)
+        let snapshot = update.materialize_with_work(
+            previous,
+            &mut crate::logic::evaluation::EvaluationWork::Ordinary,
+        )?;
+        let insertion = self.prepare_dependency_snapshot_insertion(
+            snapshot.into_snapshot(),
+            &mut crate::logic::evaluation::EvaluationWork::Ordinary,
+        )?;
+        self.replace_dep_snapshot_materialized(id, insertion, delta, update.storage_strategy())
     }
 
     pub(crate) fn apply_stable_shape_snapshot_batch_commit(
@@ -290,7 +287,6 @@ impl SignalGraph {
                 previous_shape_handle,
                 &previous,
                 next,
-                &mut shape_store,
             );
             if delta.changed() {
                 entries.push(crate::data::proof::PendingSnapshotCommit {
@@ -303,3 +299,6 @@ impl SignalGraph {
         Ok(SnapshotBatchCommit::new(PendingSnapshotBatch::new(entries)))
     }
 }
+
+#[cfg(test)]
+mod lookup_work_tests;

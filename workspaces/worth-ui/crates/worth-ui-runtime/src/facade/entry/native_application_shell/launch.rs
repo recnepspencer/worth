@@ -29,10 +29,26 @@ impl WorthUiApp {
         self.launch_native_surface_at_scale(1_000)
     }
 
+    /// Launch one native surface bound to its authored surface declaration.
+    pub fn launch_native_declared_surface(
+        self,
+        authored_name: &str,
+    ) -> Result<WorthUiNativeApplicationShell, WorthUiNativeApplicationShellLaunchDenial> {
+        self.launch_native_surface_at_scale_for(1_000, Some(authored_name))
+    }
+
     #[doc(hidden)]
     pub fn launch_native_surface_at_scale(
         self,
         scale_factor_milli: u32,
+    ) -> Result<WorthUiNativeApplicationShell, WorthUiNativeApplicationShellLaunchDenial> {
+        self.launch_native_surface_at_scale_for(scale_factor_milli, None)
+    }
+
+    pub(crate) fn launch_native_surface_at_scale_for(
+        self,
+        scale_factor_milli: u32,
+        native_surface_declaration: Option<&str>,
     ) -> Result<WorthUiNativeApplicationShell, WorthUiNativeApplicationShellLaunchDenial> {
         let mut session = self.launch().map_err(|denial| match denial {
             crate::runtime::WorthUiRuntimeLaunchDenial::HostSessionReleaseIndeterminate {
@@ -43,7 +59,11 @@ impl WorthUiApp {
             }
             _ => WorthUiNativeApplicationShellLaunchDenial::RuntimeLaunch,
         })?;
-        let configured = match configure_native_surface(&mut session, scale_factor_milli) {
+        let configured = match configure_native_surface(
+            &mut session,
+            scale_factor_milli,
+            native_surface_declaration,
+        ) {
             Ok(configured) => configured,
             Err(failure) => {
                 let client_resource_peaks = session.mounted.native_client_resource_peaks();
@@ -67,14 +87,6 @@ impl WorthUiApp {
                                             .query_transitions()
                                             .to_vec()
                                             .into_boxed_slice(),
-                                        semantic_frontiers: cleanup
-                                            .mounted_presentation()
-                                            .query_semantic_frontiers()
-                                            .to_vec()
-                                            .into_boxed_slice(),
-                                        semantic_frontier_trace_complete: cleanup
-                                            .mounted_presentation()
-                                            .query_semantic_frontier_trace_complete(),
                                         text_work: cleanup
                                             .mounted_presentation()
                                             .text_presentation_work()
@@ -130,13 +142,37 @@ impl WorthUiApp {
 fn configure_native_surface(
     session: &mut crate::facade::entry::WorthUiActiveApplicationSession,
     scale_factor_milli: u32,
+    native_surface_declaration: Option<&str>,
 ) -> Result<ConfiguredNativeSurface, NativeSurfaceConfigurationFailure> {
-    let surface = session.create_semantic_surface().map_err(|_| {
-        configuration_failure(
-            WorthUiNativeApplicationShellLaunchDenial::SemanticSurfaceCreation,
-            0,
-        )
-    })?;
+    let surface = match native_surface_declaration {
+        Some(authored_name) => {
+            let declaration = session
+                .application
+                .authored_overlay_material()
+                .overlay_declaration_bindings()
+                .surface_named(authored_name)
+                .ok_or_else(|| {
+                    configuration_failure(
+                        WorthUiNativeApplicationShellLaunchDenial::SemanticSurfaceCreation,
+                        0,
+                    )
+                })?;
+            session
+                .create_declared_semantic_surface(declaration)
+                .map_err(|_| {
+                    configuration_failure(
+                        WorthUiNativeApplicationShellLaunchDenial::SemanticSurfaceCreation,
+                        0,
+                    )
+                })?
+        }
+        None => session.create_semantic_surface().map_err(|_| {
+            configuration_failure(
+                WorthUiNativeApplicationShellLaunchDenial::SemanticSurfaceCreation,
+                0,
+            )
+        })?,
+    };
     let profile = UiSurfaceBindingProfile::new(
         scale_factor_milli,
         UiSurfaceBindingCoordinatePosture::LogicalPoints,
@@ -211,8 +247,7 @@ fn configure_native_surface(
             ));
         }
         mounted_rows.push(NativeMountedRow {
-            graph_node,
-            mounted: Some(mounted),
+            authored_semantic_identity,
             latest_mounted: mounted,
         });
     }

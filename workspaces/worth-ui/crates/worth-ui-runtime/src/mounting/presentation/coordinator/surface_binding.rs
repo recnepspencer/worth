@@ -18,6 +18,7 @@ impl UiMountedPresentationCoordinator {
         self.text.commit_surface_candidate(candidate);
         if !preserve_for_rebind {
             self.presentation_states.remove(&binding);
+            self.reconstruction_bindings.remove(&binding);
         }
     }
 
@@ -26,6 +27,7 @@ impl UiMountedPresentationCoordinator {
         prior: UiSurfaceBindingGeneration,
         successor: crate::mounting::UiSurfaceBindingIdentityView,
     ) {
+        self.reconstruction_bindings.remove(&prior);
         if let Some(mut state) = self.presentation_states.remove(&prior) {
             state.rebind_surface(successor);
             self.presentation_states
@@ -37,5 +39,6 @@ impl UiMountedPresentationCoordinator {
 
     pub(crate) fn abandon_surface_rebind(&mut self, prior: UiSurfaceBindingGeneration) {
         self.presentation_states.remove(&prior);
+        self.reconstruction_bindings.remove(&prior);
     }
 }

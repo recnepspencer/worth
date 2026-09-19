@@ -16,6 +16,7 @@ pub struct UiInteractionLifecycleCounters {
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct UiInteractionStateSnapshot {
     active_gestures: usize,
+    pointer_presence_records: usize,
     active_recipients: usize,
     active_draft_sessions: usize,
     retained_draft_utf8_bytes: usize,
@@ -25,11 +26,13 @@ pub struct UiInteractionStateSnapshot {
 impl UiInteractionStateSnapshot {
     pub(super) fn from_parts(
         pointer: super::gesture::UiPointerGestureStateSnapshot,
+        pointer_presence_records: usize,
         draft: super::draft::UiDraftStateSnapshot,
         semantic_interactions: u64,
     ) -> Self {
         Self {
             active_gestures: pointer.active_gestures,
+            pointer_presence_records,
             active_recipients: draft.active_recipients,
             active_draft_sessions: draft.active_sessions,
             retained_draft_utf8_bytes: draft.retained_utf8_bytes,
@@ -55,6 +58,10 @@ impl UiInteractionStateSnapshot {
 
     pub const fn active_recipients(self) -> usize {
         self.active_recipients
+    }
+
+    pub const fn pointer_presence_records(self) -> usize {
+        self.pointer_presence_records
     }
 
     pub const fn active_draft_sessions(self) -> usize {

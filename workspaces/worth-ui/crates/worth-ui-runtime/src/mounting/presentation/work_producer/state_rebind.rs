@@ -3,6 +3,8 @@ impl super::UiMountedPresentationState {
         &mut self,
         successor: crate::mounting::UiSurfaceBindingIdentityView,
     ) {
+        self.rebound_from_binding
+            .get_or_insert(self.requirement.binding());
         self.requirement =
             worth_ui_host_contract::UiMountedSurfaceBindingRequirement::with_baseline(
                 successor.semantic_surface_identity(),

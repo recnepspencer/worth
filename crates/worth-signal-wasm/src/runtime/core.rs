@@ -5,9 +5,6 @@ use std::sync::{Arc, Mutex};
 
 use worth_signal::facade::branch::AdmittedSignalBranchSnapshot;
 use worth_signal::facade::history::RuntimeSnapshot;
-use worth_signal::facade::runtime::{
-    ObservationListener, ObservationNotice, ObservationReadContext,
-};
 use worth_signal::facade::{DependencyEdge, NodeId, SignalGraph, SignalRuntime as NativeRuntime};
 
 use crate::boundary::errors::WorthSignalJsError;
@@ -30,6 +27,7 @@ mod keyed_runtime;
 mod merge;
 mod merge_caller_restoration;
 mod merge_state;
+mod observation_listeners;
 mod runtime_async_lifecycle_certification;
 mod signals;
 mod snapshots;
@@ -50,6 +48,7 @@ mod worker_placement_declaration_candidates;
 use self::aspects::resolve_selected_aspects;
 pub(crate) use self::envelopes::ExactRuntimeRestoreArtifact;
 use self::evaluation::canonicalize_callback_reads;
+use self::observation_listeners::{WasmEffectListener, WasmWatchListener};
 pub(crate) use self::state::SharedStore;
 use self::state::{
     dispose_callback_recipe_token, BranchRuntimeState, CallbackDiagnosticState, CatalogEntry,
@@ -69,7 +68,6 @@ pub(crate) use self::worker_callback_reattachment_import::RuntimeEnvelopeCallbac
 pub(crate) use self::worker_main_thread_hosted_callbacks::{
     MainThreadHostedCallbackAdmission, MainThreadHostedCallbackClosedInput,
 };
-use crate::runtime::web_callbacks::ObservationCallbackToken;
 
 const DEFAULT_ASPECT: worth_signal::facade::Aspect = worth_signal::facade::Aspect::new(0);
 
@@ -167,6 +165,54 @@ impl RuntimeCore {
         }
         self.sync_callback_diagnostics_from_store()?;
         self.restore_callback_dependency_shapes(&snapshot)?;
+        self.recompute_uninitialized_recipes(&snapshot)?;
+        Ok(())
+    }
+
+    /// A restored store may carry recipes without a value: a merged branch
+    /// state resets every recipe so the merged inputs recompute it, while the
+    /// native graph still records those nodes as clean. A read invalidates
+    /// only the node it asks for, so an uninitialized recipe upstream of it
+    /// would feed `Null` into the evaluation instead of recomputing. When the
+    /// store is restored, every uninitialized recipe is invalidated and the
+    /// standing demand (published outputs) is evaluated at once, so the branch
+    /// is complete before anything observes it and the first read after a
+    /// switch, merge, or restore sees the merged truth. Other computeds stay
+    /// on-demand and recompute on their next read. O(recipes) once per restore
+    /// (the restore already clones every recipe) plus one evaluation of the
+    /// demanded nodes, which is the same work a read would have done.
+    fn recompute_uninitialized_recipes(
+        &mut self,
+        snapshot: &RuntimeStoreSnapshot,
+    ) -> Result<(), WorthSignalJsError> {
+        let mut invalidated = false;
+        for recipe in &snapshot.recipes {
+            if recipe.initialized {
+                continue;
+            }
+            let Some(node) = self.catalog.get(&recipe.id).map(|entry| entry.node) else {
+                continue;
+            };
+            worth_signal::facade::core::mark_dirty(self.runtime.graph_mut(), node, DEFAULT_ASPECT)
+                .map_err(WorthSignalJsError::from)?;
+            invalidated = true;
+        }
+        if !invalidated {
+            return Ok(());
+        }
+        let standing_demand = self.standing_demand_nodes();
+        if standing_demand.is_empty() {
+            return Ok(());
+        }
+        let evaluator = self.evaluator();
+        let _ = self
+            .runtime
+            .targets(standing_demand)
+            .on_demand()
+            .read_many(&self.store, &evaluator)
+            .map_err(WorthSignalJsError::from)?;
+        self.runtime.clear_live_branch_mutation_residue();
+        self.apply_pending_callback_dependency_patches()?;
         Ok(())
     }
 
@@ -327,39 +373,4 @@ impl RuntimeCore {
 
 pub fn new_shared_core(policy: RuntimePolicySpec) -> Result<SharedCore, WorthSignalJsError> {
     Ok(Rc::new(RefCell::new(RuntimeCore::new(policy)?)))
-}
-
-struct WasmWatchListener {
-    callback_scope_id: u64,
-    callback_token: ObservationCallbackToken,
-    signal_id: String,
-}
-
-impl ObservationListener<(), (), (), SharedStore, ()> for WasmWatchListener {
-    fn on_observation(
-        &self,
-        ctx: ObservationReadContext<'_, (), (), (), SharedStore, ()>,
-        notice: &ObservationNotice<'_>,
-    ) {
-        web_callbacks::invoke_watch(
-            self.callback_scope_id,
-            self.callback_token,
-            web_callbacks::notice_from_runtime(&self.signal_id, ctx, notice),
-        );
-    }
-}
-
-struct WasmEffectListener {
-    callback_scope_id: u64,
-    callback_token: ObservationCallbackToken,
-}
-
-impl ObservationListener<(), (), (), SharedStore, ()> for WasmEffectListener {
-    fn on_observation(
-        &self,
-        _ctx: ObservationReadContext<'_, (), (), (), SharedStore, ()>,
-        _notice: &ObservationNotice<'_>,
-    ) {
-        web_callbacks::invoke_effect(self.callback_scope_id, self.callback_token);
-    }
 }

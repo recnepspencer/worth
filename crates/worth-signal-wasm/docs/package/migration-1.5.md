@@ -27,5 +27,21 @@ await signals.settleAuthoredWork();
 await line.awaitSettlement({ drainAuthoredWork: true });
 ```
 
+## Host tip ingress exists on `mainThreadCompatibility` too
+
+`commitHostTipAndNotify`, `applyCommittedTipWorkerBatch`,
+`publishAuthoredTipProjection`, and `settleAuthoredWork` are present on the
+root and on scoped namespaces of both deployments. Code that branched on
+deployment before calling them can drop the branch: compatibility applies the
+writes in one synchronous transaction (empty `projectedReadableIds`, the
+worker batch only validates epochs, `settleAuthoredWork()` resolves at once).
+
+## Exact restore artifacts are root-branch evidence
+
+`adapters().exportRuntimeEnvelope()` and `graph.exportSnapshot()` throw
+`invalidInput` while a child runtime branch is active, on both deployments.
+Exact restore tokens are also single-use and each realm keeps the 64 most
+recent pending ones; see [history](../core/history.md).
+
 See also [worker-first default](../router/runtime_placement/worker_first_default.md)
 and [resource line](../api-reference/resource-line.md).

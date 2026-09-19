@@ -5,9 +5,10 @@ use super::super::super::fixture::{
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationCommitDenialKind,
-    WorthQueryApplicationCommitOutcome, WorthQueryCompleteApplicationReadSet,
-    WorthQueryElevationApprovalOutcome, WorthQueryOperationAuthorizationDenialKind,
-    WorthQueryProjectedApplicationMutation, WorthQueryRequestedElevation,
+    WorthQueryApplicationCommitDenialStage, WorthQueryApplicationCommitOutcome,
+    WorthQueryCompleteApplicationReadSet, WorthQueryElevationApprovalOutcome,
+    WorthQueryOperationAuthorizationDenialKind, WorthQueryProjectedApplicationMutation,
+    WorthQueryRequestedElevation,
 };
 
 #[test]
@@ -78,13 +79,20 @@ fn lifecycle_drift_before_approval_commit_is_stale_and_returns_request_authority
         .unwrap();
     super::mutation::set_status(&world, "elevation-2", CapabilityElevationStatus::Revoked);
 
-    let WorthQueryElevationApprovalOutcome::Stale(stale, requested) = world
+    let outcome = world
         .application
-        .compare_and_commit_elevation_approval(program, idempotency(174, 174))
-    else {
-        panic!("provider re-comparison must stale lifecycle drift");
+        .compare_and_commit_elevation_approval(program, idempotency(174, 174));
+    let WorthQueryElevationApprovalOutcome::Denied(denial, requested) = outcome else {
+        panic!("the prior-product approval must deny before effects: {outcome:?}");
     };
-    assert_eq!(stale.stale_fact_count(), 1);
+    assert_eq!(
+        denial.kind(),
+        WorthQueryApplicationCommitDenialKind::ProductBasisStale
+    );
+    assert_eq!(
+        denial.stage(),
+        WorthQueryApplicationCommitDenialStage::InvariantExecution
+    );
     assert_eq!(requested.elevation_identity(), &string("elevation-2"));
 }
 

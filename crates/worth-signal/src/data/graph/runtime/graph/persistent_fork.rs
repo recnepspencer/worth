@@ -40,8 +40,10 @@ pub(crate) struct SignalGraphPersistentIdentity {
     cause_sets: crate::data::graph::storage::invalidation_causes::CanonicalCauseSetStore,
     schema_registry: Arc<crate::schema::data::SignalSchemaRegistry>,
     partition_interner: crate::data::output::PartitionInterner,
-    conditional_dependency_versions:
-        crate::data::persistent_ord_map::PersistentOrdMap<crate::data::handle::NodeId, Vec<u64>>,
+    conditional_dependency_versions: crate::data::persistent_ord_map::PersistentOrdMap<
+        crate::data::handle::NodeId,
+        crate::data::conditional_execution::SignalConditionalVersionObservation,
+    >,
     authorization_policy_identities: crate::data::persistent_ord_set::PersistentOrdSet<[u8; 32]>,
 }
 
@@ -67,6 +69,31 @@ impl SignalGraphPersistentIdentity {
 }
 
 impl SignalGraph {
+    /// Fork one owner-managed branch while retaining the installed external
+    /// lowering owner that gives copied definition custody its meaning.
+    /// Branch-local pending admissions remain reset by `fork_persistent`.
+    pub(crate) fn fork_owner_branch(&mut self) -> (Self, SignalGraphForkWork) {
+        let lowering_owner = self.aspect_lowering_owner.clone();
+        let (mut successor, work) = self.fork_persistent();
+        successor.aspect_lowering_owner = lowering_owner;
+        (successor, work)
+    }
+
+    /// Build an isolated, persistent candidate for a same-cell conditional
+    /// mutation. Unlike a branch fork, this candidate retains definition
+    /// claimant and pending-admission state because it represents the next
+    /// basis of the same graph lineage.
+    pub(crate) fn fork_conditional_successor(&mut self) -> (Self, SignalGraphForkWork) {
+        let lowering_owner = self.aspect_lowering_owner.clone();
+        let repeated_admissions = self
+            .pending_repeated_invalidation_admissions
+            .fork_persistent();
+        let (mut successor, work) = self.fork_persistent();
+        successor.aspect_lowering_owner = lowering_owner;
+        successor.pending_repeated_invalidation_admissions = repeated_admissions;
+        (successor, work)
+    }
+
     pub(crate) fn fork_persistent(&mut self) -> (Self, SignalGraphForkWork) {
         let observation_sessions: crate::logic::transaction::SignalObservationSessionState =
             Default::default();
@@ -101,6 +128,9 @@ impl SignalGraph {
                 conditional_dependency_versions: self
                     .conditional_dependency_versions
                     .fork_persistent(),
+                conditional_dependency_versions_custody: self
+                    .conditional_dependency_versions_custody
+                    .clone(),
                 authorization_policy_identities: self
                     .authorization_policy_identities
                     .fork_persistent(),

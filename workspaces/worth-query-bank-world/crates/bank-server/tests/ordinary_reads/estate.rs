@@ -6,7 +6,8 @@ use bank_domain::{
     model::EmployeeRole,
 };
 use bank_server::{
-    queries, BankApplicationQueryDenial, BankAuthorizationDenialKind, BankReadControls,
+    queries, BankApplicationQueryDenial, BankAuthorizationDenialKind,
+    BankProductSelectionDenialKind, BankReadControls,
 };
 
 use super::estate_fixture::estate_read_world;
@@ -84,7 +85,7 @@ fn executor_uses_the_same_query_and_scope_authority() {
 }
 
 #[test]
-fn estate_preview_preserves_canonical_query_meaning_and_releases_authority() {
+fn estate_preview_preserves_canonical_query_meaning() {
     let fixture = estate_read_world("estate-preview-overview");
     let specialist = fixture.authenticate(1);
     let preview_request = request_scope();
@@ -121,6 +122,31 @@ fn estate_preview_preserves_canonical_query_meaning_and_releases_authority() {
         .discard()
         .expect("the Query-owned preview session should discard cleanly");
     assert!(discard.discarded());
+}
+
+#[test]
+fn estate_preview_rejects_a_foreign_product_occurrence() {
+    let source = estate_read_world("estate-preview-source");
+    let target = estate_read_world("estate-preview-target");
+    let session = source.world.runtime.open_preview(&request_scope()).unwrap();
+    let specialist = target.authenticate(1);
+
+    let denial = match target
+        .world
+        .runtime
+        .query(queries::estate_case(target.estate))
+        .as_principal(&specialist)
+        .controls(controls())
+        .preview(&session)
+    {
+        Ok(_) => panic!("a foreign preview occurrence must not read target data"),
+        Err(denial) => denial,
+    };
+    assert!(matches!(
+        denial,
+        BankApplicationQueryDenial::ProductSelection(BankProductSelectionDenialKind::ForeignOwner)
+    ));
+    assert!(session.discard().unwrap().discarded());
 }
 
 #[test]

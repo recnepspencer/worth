@@ -104,7 +104,7 @@ pub(super) fn evaluate_entity_update_delta(
     }
 }
 
-fn evaluate_entity_delta(
+pub(super) fn evaluate_entity_delta(
     workspace: &MutationWorkspace<'_>,
     entity_id: crate::identity::data::EntityId,
     kind_id: crate::identity::data::KindId,

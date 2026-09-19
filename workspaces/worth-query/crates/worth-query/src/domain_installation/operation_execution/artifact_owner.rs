@@ -26,5 +26,5 @@ pub use worth_query_execution::facade::domain_computation::{
 };
 pub(crate) use worth_query_execution::facade::integration::{
     WorthQueryArtifactAccessAuthority, WorthQueryArtifactProductionAuthority,
-    WorthQueryWorkflowArtifactAuthority, WorthQueryWorkflowArtifactRegistry,
+    WorthQueryWorkflowArtifactRegistry,
 };

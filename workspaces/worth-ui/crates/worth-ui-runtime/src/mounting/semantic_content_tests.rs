@@ -48,6 +48,45 @@ fn application_presentation_merge_rejects_overlap_without_partial_mutation() {
     assert!(content.get(new_row).is_none());
 }
 
+#[test]
+fn unchanged_application_source_cannot_override_a_predecessor_or_query_owner() {
+    let node = crate::graph::UiGraphNodeIdentity::new(80_006);
+    let mut application = scalar(node, "published copy", "");
+    application.retain_application_text_source(node);
+    assert!(
+        application.is_empty(),
+        "a completion source is not a content change"
+    );
+    assert_eq!(application.graph_nodes().len(), 0);
+    assert_eq!(application.text_for_lowering(node, true), (None, 0));
+    let (Some(super::UiMountedSemanticTextContent::Scalar(restored)), 1) =
+        application.text_for_lowering(node, false)
+    else {
+        panic!("missing occurrence obtains the captured scalar source");
+    };
+    assert_eq!(
+        restored.value(),
+        &UiMountedSemanticTextValueDirective::Replace(Arc::from("published copy"))
+    );
+    assert!(
+        application
+            .insert_scalar(
+                node,
+                UiMountedSemanticTextValueDirective::Preserve,
+                Arc::from("")
+            )
+            .is_err(),
+        "duplicate graph ownership must deny even when the first row is unchanged"
+    );
+    let mut query = scalar(node, "query copy", "");
+    let previous = query.clone();
+    assert_eq!(
+        query.merge_application_presentation(application),
+        Err(crate::mounting::UiMountedProjectionDenial::DuplicateLaneContribution)
+    );
+    assert_eq!(query, previous, "ownership denial is atomic");
+}
+
 fn scalar(
     node: crate::graph::UiGraphNodeIdentity,
     value: &'static str,

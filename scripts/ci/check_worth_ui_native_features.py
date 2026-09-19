@@ -43,6 +43,7 @@ EXPECTED_DEPENDENCIES = {
         "wgpu",
         "winit",
         "winsafe",
+        "windows",
         "worth_proof",
         "worth_signal",
         "worth_ui_host_contract",
@@ -167,6 +168,7 @@ def expected_dependencies(target: str) -> dict[tuple[str, str], set[str]]:
     }
     if target == LINUX_TARGET:
         expected[("worth-ui-host-native", "0.1.0")].remove("winsafe")
+        expected[("worth-ui-host-native", "0.1.0")].remove("windows")
     return expected
 
 

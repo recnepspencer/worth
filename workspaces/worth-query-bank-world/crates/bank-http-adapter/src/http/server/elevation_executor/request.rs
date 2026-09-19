@@ -1,4 +1,4 @@
-use bank_server::BankEstateElevationRequestOutcome;
+use bank_server::{BankCommitDenialKind, BankEstateElevationRequestOutcome};
 use worth_query_host::facade::admission::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
 };
@@ -38,7 +38,7 @@ where
             );
         }
         BankHttpElevationReplay::Conflicting => {
-            return request_denied(Some(request_id), malformed());
+            return request_denied(Some(request_id), idempotency_drift());
         }
         BankHttpElevationReplay::Missing => {}
     }
@@ -57,6 +57,15 @@ where
         Err(denial) => return request_denied(Some(request_id), estate_denial(denial)),
     };
     let (authority, disposition) = match outcome {
+        BankEstateElevationRequestOutcome::ProductStale(_) => {
+            return request_denied(Some(request_id), stale());
+        }
+        BankEstateElevationRequestOutcome::ProductUnpublished(_) => {
+            return request_denied(Some(request_id), indeterminate());
+        }
+        BankEstateElevationRequestOutcome::NoEffect(_) => {
+            return request_denied(Some(request_id), unavailable());
+        }
         BankEstateElevationRequestOutcome::Requested(authority) => {
             (authority, BankHttpCommitDisposition::Committed)
         }
@@ -69,11 +78,21 @@ where
         BankEstateElevationRequestOutcome::Cancelled => {
             return request_denied(Some(request_id), cancelled());
         }
+        BankEstateElevationRequestOutcome::TimedOut => {
+            return request_denied(Some(request_id), deadline_exceeded());
+        }
+        BankEstateElevationRequestOutcome::Denied {
+            kind: BankCommitDenialKind::IdempotencyIntentDrift,
+            ..
+        } => {
+            return request_denied(Some(request_id), idempotency_drift());
+        }
         BankEstateElevationRequestOutcome::Denied { .. }
         | BankEstateElevationRequestOutcome::Aborted => {
             return request_denied(Some(request_id), unavailable());
         }
-        BankEstateElevationRequestOutcome::PartialEffect
+        BankEstateElevationRequestOutcome::Deferred(_)
+        | BankEstateElevationRequestOutcome::SettlementDeferred(_)
         | BankEstateElevationRequestOutcome::Indeterminate => {
             return request_denied(Some(request_id), indeterminate());
         }

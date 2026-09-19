@@ -8,6 +8,10 @@ pub enum BankEstateIdempotencyResolutionDenial {
     Authorization(crate::BankAuthorizationDenial),
     AuthorizationLineageUnavailable,
     ForeignAdmission,
+    ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
+    RetentionCapacityExhausted,
+    RetentionIdentityExhausted,
+    SnapshotIdentityExhausted,
     ProviderUnavailable,
 }
 
@@ -23,6 +27,20 @@ pub(super) fn from_query(
             .unwrap_or(BankEstateIdempotencyResolutionDenial::AuthorizationLineageUnavailable),
         WorthQueryApplicationIdempotencyResolutionDenialKind::ForeignAdmission => {
             BankEstateIdempotencyResolutionDenial::ForeignAdmission
+        }
+        WorthQueryApplicationIdempotencyResolutionDenialKind::ActiveSnapshotCapacityExhausted {
+            maximum_active_snapshots,
+        } => BankEstateIdempotencyResolutionDenial::ActiveSnapshotCapacityExhausted {
+            maximum_active_snapshots,
+        },
+        WorthQueryApplicationIdempotencyResolutionDenialKind::RetentionCapacityExhausted => {
+            BankEstateIdempotencyResolutionDenial::RetentionCapacityExhausted
+        }
+        WorthQueryApplicationIdempotencyResolutionDenialKind::RetentionIdentityExhausted => {
+            BankEstateIdempotencyResolutionDenial::RetentionIdentityExhausted
+        }
+        WorthQueryApplicationIdempotencyResolutionDenialKind::SnapshotIdentityExhausted => {
+            BankEstateIdempotencyResolutionDenial::SnapshotIdentityExhausted
         }
         WorthQueryApplicationIdempotencyResolutionDenialKind::ProviderUnavailable => {
             BankEstateIdempotencyResolutionDenial::ProviderUnavailable

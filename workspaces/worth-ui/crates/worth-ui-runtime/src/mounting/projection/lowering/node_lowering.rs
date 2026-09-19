@@ -14,20 +14,25 @@ impl super::UiMountedNodeLoweringContext<'_, '_> {
             .plan
             .plan_index(provenance)
             .map_err(|_| super::UiMountedProjectionDenial::ForeignPlan)?;
+        let appearance_allocation = self
+            .occurrence_geometry
+            .projection(instance)
+            .map_err(super::UiMountedProjectionDenial::OccurrenceGeometry)?
+            .ok_or(super::UiMountedProjectionDenial::OccurrenceGeometry(
+                super::super::super::UiMountedOccurrenceGeometryDenial::MissingOccurrenceGeometry,
+            ))?;
+        let surface_paint_posture = self.occurrence_geometry.surface_paint_posture(instance);
         let allocation = super::lower_allocation(
             self.allocation_source
                 .projection(instance.graph_node_identity()),
-        )?;
-        let static_paint = super::super::static_paint::lower_static_paint_seed(
-            self.plan,
-            self.theme_values,
-            plan_index,
         )?;
         let predecessor = self
             .predecessor
             .and_then(|semantic| semantic.node(instance.identity()))
             .and_then(|node| node.semantic_text.as_ref());
-        let semantic_input = self.semantic_content.get(instance.graph_node_identity());
+        let (semantic_input, text_source_lookups) = self
+            .semantic_content
+            .text_for_lowering(instance.graph_node_identity(), predecessor.is_some());
         let semantic_text_formatting = super::super::semantic_text::lower_semantic_text_formatting(
             self.plan,
             self.theme_values,
@@ -35,6 +40,7 @@ impl super::UiMountedNodeLoweringContext<'_, '_> {
             plan_index,
             semantic_input,
             predecessor,
+            self.theme_value_changed(instance.graph_node_identity()),
         )?;
         if semantic_text_formatting.is_none() && (semantic_input.is_some() || predecessor.is_some())
         {
@@ -44,9 +50,7 @@ impl super::UiMountedNodeLoweringContext<'_, '_> {
                     plan_index_available: plan_index.is_some(),
                     predecessor_available: predecessor.is_some(),
                     semantic_input_available: semantic_input.is_some(),
-                    theme_value_changed: self
-                        .theme_values
-                        .changes_graph_node(instance.graph_node_identity()),
+                    theme_value_changed: self.theme_value_changed(instance.graph_node_identity()),
                 },
             );
         }
@@ -90,20 +94,29 @@ impl super::UiMountedNodeLoweringContext<'_, '_> {
             } else {
                 None
             };
-        let (component_id, portal_child_owner) = plan_index
+        let (component_id, portal_child_owner, surface_paint_order, surface_geometry, portal_surface_appearance) = plan_index
             .and_then(|index| self.plan.ordinary_meaning(index))
             .and_then(|meaning| match meaning.as_ref() {
                 crate::runtime::planning::execution_plan_input::WorthUiPlanOrdinaryMeaning::Component(
                     component,
-                ) => Some((component.descriptor().id().clone(), component.portal_child_owner().cloned())),
+                ) => Some((component.descriptor().id().clone(), component.portal_child_owner().cloned(), component.surface_paint_order(), component.descriptor().surface_geometry().clone(), component.descriptor().portal_surface_appearance())),
                 _ => None,
             })
-            .map_or((None, None), |(component, owner)| (Some(component), owner));
+            .map_or((None, None, None, Default::default(), true), |(component, owner, order, geometry, portal_paint)| (Some(component), owner, order, geometry, portal_paint));
         let participation = super::lower_participation(
             graph_node.participation_posture(),
-            static_paint.is_some() || semantic_text.is_some(),
+            semantic_text.is_some() || graph_node.has_appearance_attachment(),
             hit_test.is_some(),
         );
+        let (appearance_clip, clip_ancestry_entries) =
+            super::super::appearance::derive_unbound_ancestry(
+                self.graph,
+                self.plan,
+                instance.graph_node_identity(),
+                portal_child_owner.is_some(),
+                self.occurrence_geometry.mosaic_clips(instance),
+                self.occurrence_geometry.scroll_clips(instance),
+            )?;
         Ok(super::UiMountedProjectionNodeDraft {
             mounted_instance: instance.identity(),
             graph_node: instance.graph_node_identity(),
@@ -113,8 +126,16 @@ impl super::UiMountedNodeLoweringContext<'_, '_> {
             role: super::mechanical_role(graph_node.operator_kind()),
             participation,
             allocation,
+            appearance_allocation,
+            appearance_clip,
+            surface_paint_posture,
+            surface_paint_order,
+            surface_geometry,
+            portal_surface_appearance,
+            has_appearance_attachment: graph_node.has_appearance_attachment(),
+            clip_ancestry_entries,
+            text_source_lookups,
             plan_index,
-            static_paint,
             semantic_text,
             hit_test,
             focus_support,

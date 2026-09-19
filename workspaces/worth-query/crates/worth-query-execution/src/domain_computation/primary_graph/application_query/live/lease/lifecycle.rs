@@ -16,7 +16,6 @@ impl<
     >
     WorthQueryApplicationLiveLease<
         '_,
-        '_,
         Schema,
         Query,
         Parameters,
@@ -30,6 +29,17 @@ impl<
 where
     Binding: ApplicationQueryLiveCauseBinding<Schema, Query, Scope, Target>,
 {
+    /// Ends a live lease when fresh principal resolution fails before delivery admission.
+    pub fn terminate_stale_principal(
+        &mut self,
+    ) -> super::super::outcome::WorthQueryApplicationLiveOutcome<Query, QueryResult> {
+        if self.terminate(BridgeExecutionBasisTerminalDisposition::Cancelled) {
+            super::super::outcome::WorthQueryApplicationLiveOutcome::StalePrincipal
+        } else {
+            super::super::outcome::WorthQueryApplicationLiveOutcome::Unavailable
+        }
+    }
+
     pub(super) fn terminate(
         &mut self,
         disposition: BridgeExecutionBasisTerminalDisposition,
@@ -44,6 +54,7 @@ where
         let crate::domain_computation::managed_run::WorthQueryManagedLowerExecutionBasis {
             bridge,
             relational,
+            product_observation,
         } = basis;
         match bridge.finalize(disposition) {
             Ok(_) => {
@@ -72,6 +83,7 @@ where
                     crate::domain_computation::managed_run::WorthQueryManagedLowerExecutionBasis {
                         bridge: failure.into_basis(),
                         relational,
+                        product_observation,
                     },
                 );
                 false
@@ -92,7 +104,6 @@ impl<
         Binding,
     > Drop
     for WorthQueryApplicationLiveLease<
-        '_,
         '_,
         Schema,
         Query,

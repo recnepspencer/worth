@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-pub(super) struct UiPortalExitRetentionCoordinator {
+pub(in crate::facade::entry) struct UiPortalExitRetentionCoordinator {
     retentions:
         BTreeMap<crate::runtime::motion::UiMotionTrackIdentity, UiPortalMotionExitRetention>,
     pending: Option<UiPortalExitTerminalPending>,
@@ -21,6 +21,13 @@ pub(in crate::facade::entry) enum UiPortalExitTerminalPending {
         proposal: crate::runtime::session::UiIndeterminatePortalProposalTransaction,
         in_flight: crate::mounting::UiMountedPresentationInFlight,
     },
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(in crate::facade::entry) enum UiPortalExitTerminalPendingKind {
+    InFlight,
+    Indeterminate,
+    Reconstruction,
 }
 
 pub(super) struct UiPortalMotionExitRetention {
@@ -87,6 +94,30 @@ impl UiPortalExitRetentionCoordinator {
         self.pending.as_ref()
     }
 
+    pub(in crate::facade::entry) fn pending_replacement_kind(
+        &self,
+    ) -> Option<UiPortalExitTerminalPendingKind> {
+        match self.pending.as_ref()? {
+            UiPortalExitTerminalPending::Retry(_) => None,
+            UiPortalExitTerminalPending::InFlight { .. } => {
+                Some(UiPortalExitTerminalPendingKind::InFlight)
+            }
+            UiPortalExitTerminalPending::Indeterminate { .. } => {
+                Some(UiPortalExitTerminalPendingKind::Indeterminate)
+            }
+            UiPortalExitTerminalPending::Reconstruction { .. } => {
+                Some(UiPortalExitTerminalPendingKind::Reconstruction)
+            }
+        }
+    }
+
+    #[cfg(any(test, feature = "certification-support"))]
+    pub(in crate::facade::entry) fn pending_track_is_coordinated(&self) -> bool {
+        self.pending
+            .as_ref()
+            .is_none_or(|pending| self.retentions.contains_key(&pending.track()))
+    }
+
     pub(super) fn take_pending(&mut self) -> Option<UiPortalExitTerminalPending> {
         self.pending.take()
     }
@@ -132,6 +163,50 @@ impl UiPortalExitRetentionCoordinator {
             .retentions
             .remove(&motion.track())
             .expect("validated displaced portal exit remains retained"))
+    }
+
+    pub(super) fn remove_rebound_portal(
+        &mut self,
+        portal: crate::runtime::portal::UiPortalIdentity,
+    ) -> Result<Option<crate::runtime::motion::UiMotionExitRetentionReceipt>, ()> {
+        let motion = self.retentions.values().find_map(|retention| {
+            (retention.portal.portal() == portal).then_some(retention.motion)
+        });
+        let Some(motion) = motion else {
+            return Ok(None);
+        };
+        self.remove_displaced(motion)
+            .map(|retention| Some(retention.motion()))
+    }
+
+    pub(in crate::facade::entry) fn has_portal(
+        &self,
+        portal: crate::runtime::portal::UiPortalIdentity,
+    ) -> bool {
+        self.retentions
+            .values()
+            .any(|retention| retention.portal.portal() == portal)
+    }
+
+    pub(in crate::facade::entry) fn retentions_for_portals(
+        &self,
+        portals: &[crate::runtime::portal::UiPortalIdentity],
+    ) -> Box<
+        [(
+            crate::runtime::portal::UiPortalIdentity,
+            crate::runtime::motion::UiMotionExitRetentionReceipt,
+        )],
+    > {
+        self.retentions
+            .values()
+            .filter_map(|retention| {
+                let portal = retention.portal.portal();
+                portals
+                    .contains(&portal)
+                    .then_some((portal, retention.motion))
+            })
+            .collect::<Vec<_>>()
+            .into_boxed_slice()
     }
 
     pub(super) fn clear_for_shutdown(&mut self) -> usize {
@@ -224,11 +299,9 @@ impl UiPortalExitTerminalPending {
             Self::InFlight { completion, .. } => {
                 completion.matches_native_physical(class, presentation)
             }
-            Self::Indeterminate { .. } => matches!(
-                class,
-                worth_ui_host_native::UiNativePhysicalProgressClass::PresentationRecovery
-                    | worth_ui_host_native::UiNativePhysicalProgressClass::Presentation
-            ),
+            Self::Indeterminate { recovery, .. } => {
+                recovery.matches_native_physical(class, presentation)
+            }
             Self::Reconstruction { in_flight, .. } => {
                 let progress_class = match class {
                     worth_ui_host_native::UiNativePhysicalProgressClass::Presentation => {
@@ -288,7 +361,7 @@ mod tests {
     #[test]
     fn an_idle_coordinator_blocks_no_target_and_awaits_no_physical_work() {
         let coordinator = UiPortalExitRetentionCoordinator::new();
-        let target = crate::runtime::motion::UiMotionTargetIdentity::from_family_owner(
+        let target = crate::runtime::motion::UiMotionTargetIdentity::from_mounted_owner(
             worth_ui_host_contract::UiSemanticSurfaceIdentity::mint_unbound()
                 .expect("fixture semantic surface"),
             worth_ui_host_contract::UiMountedInstanceIdentity::mint_unbound()

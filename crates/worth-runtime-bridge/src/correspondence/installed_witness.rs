@@ -247,10 +247,6 @@ impl BridgeInstalledCorrespondenceTarget<'_> {
     pub(crate) const fn aspect(&self) -> Aspect {
         self.0.aspect
     }
-
-    pub(crate) fn allocation_sources(&self) -> impl ExactSizeIterator<Item = &str> {
-        self.0.allocation_sources.iter().map(String::as_str)
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]

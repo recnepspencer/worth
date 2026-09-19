@@ -1,3 +1,5 @@
+mod appearance_compiler_denial_tests;
+mod appearance_lowering_equivalence_tests;
 mod phase1_source_package_tests;
 mod phase2_parse_tests;
 mod phase3_artifact_input_tests;
@@ -8,3 +10,7 @@ mod phase7_projection_declaration_tests;
 mod phase7_projection_expectation;
 mod phase7_rust_projection_declaration_tests;
 mod phase8_service_declaration_tests;
+mod phase9_appearance_diagnostic_tests;
+mod phase9_declaration_dsl_tests;
+mod phase9_overlay_identity_binding_tests;
+mod phase9_overlay_relation_tests;

@@ -71,6 +71,7 @@ fn publication_workflow() {
         .observe_signal_branch_basis(signal.current_branch())
         .unwrap();
     let signal_services = signal.owner_component_services().unwrap();
+    let signal_definition_publication = signal.runtime_world_definition_publication_port().unwrap();
     let reference = signal_services
         .basis_port()
         .issue_managed_branch_reference(&initial_signal)
@@ -91,6 +92,7 @@ fn publication_workflow() {
         .with_bridge_correspondence(bridge_port)
         .with_relational_services(relational_services.clone())
         .with_signal_services(signal_services.clone())
+        .with_signal_definition_publication(signal_definition_publication)
         .with_budgets(budgets())
         .with_clock(RuntimeWorldClock::from_source(Clock))
         .build()

@@ -97,11 +97,13 @@ impl WorthQueryPendingWorkflowGraphChunk {
             let _ = active.release_pending_chunk(retained_bytes);
             return active.abandoned_terminal(WorthQueryManagedRunTerminalKind::Failed);
         }
-        if !active.release_pending_chunk(retained_bytes) {
-            return active.abandoned_terminal(WorthQueryManagedRunTerminalKind::Failed);
-        }
         if let Some(kind) = terminal {
+            drop(material);
+            let _ = active.release_pending_chunk(retained_bytes);
             return active.interrupted_terminal(kind);
+        }
+        if !active.retain_pending_chunk(material) {
+            return active.abandoned_terminal(WorthQueryManagedRunTerminalKind::Failed);
         }
         match report.completion() {
             WorthQueryGraphProviderStepCompletion::Continue => active.continue_after_safe_point(),

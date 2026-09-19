@@ -3,6 +3,7 @@ use crate::fact_contract::{
 };
 use crate::source::{WorthUiArtifactDifference, WorthUiArtifactSemanticDelta};
 
+mod appearance;
 mod intent;
 
 #[derive(Clone, Copy)]
@@ -35,6 +36,7 @@ pub(crate) fn lower_differences(
         enforce_fact_capacity(&facts, fact_limit)?;
     }
     lower_projection_requirement_differences(worlds, &mut facts, fact_limit)?;
+    appearance::lower_differences(predecessor, candidate, &mut facts, fact_limit)?;
     intent::lower_differences(predecessor, candidate, &mut facts, fact_limit)?;
     Ok(facts.into_boxed_slice())
 }

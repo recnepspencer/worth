@@ -20,6 +20,9 @@ pub enum ExternalRailTransportFault {
     PayloadRejected,
     UnsupportedProtocolVersion(worth_foundational::facade::BoundaryProtocolUnsupportedVersion),
     UnknownProviderOutcome,
+    /// A transport response was observed, but its causal observation could not
+    /// be derived after contact; the performed effect remains unresolved.
+    ObservationDerivationDenied,
 }
 
 /// First-class classification of an unresolved external effect.
@@ -58,18 +61,13 @@ pub(super) fn classify_transport_fault(
     fault: ExternalRailTransportFault,
     attempt: &DispatchAttemptEvent<'_>,
     clock: &crate::domain_computation::runtime_time::WorthQueryRuntimeClock,
-) -> Result<
-    ExternalEffectClassification,
-    crate::domain_computation::application_aftermath::WorthQueryAftermathDerivationFailure,
-> {
+) -> ExternalEffectClassification {
     let decision_time = clock
         .sample(ApplicationCapabilityValidityTimeline::UnixEpochMilliseconds)
-        .map_err(|_| {
-            crate::domain_computation::application_aftermath::WorthQueryAftermathDerivationFailure::RuntimeTimeUnavailable
-        })?;
-    Ok(ExternalEffectClassification {
+        .ok();
+    ExternalEffectClassification {
         fault,
         attempt: attempt.attempt().clone(),
-        decision_time: Some(decision_time),
-    })
+        decision_time,
+    }
 }

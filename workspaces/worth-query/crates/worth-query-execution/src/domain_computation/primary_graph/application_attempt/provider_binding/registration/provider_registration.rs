@@ -23,6 +23,23 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphAp
     >,
     dispatch_outbox:
         Option<crate::domain_computation::application_aftermath::WorthQueryPendingDispatchOutbox>,
+    conditional_definition:
+        Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
+    validator_work_admission:
+        super::super::super::effect_program::WorthQueryCandidateValidatorWorkAdmission,
+    live_delivery_reservation: Option<
+        crate::domain_computation::primary_graph::live_delivery::WorthQueryLivePublicationReservation,
+    >,
+    publication_recovery_reservation: Option<
+        crate::domain_computation::primary_graph::provider::WorthQueryApplicationPublicationRecoveryReservation,
+    >,
+    retain_output_demand_observation: bool,
+    retain_client_observation: bool,
+    producer_required_invariants:
+        &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement],
+    output_currentness_facts: Option<
+        std::sync::Arc<[super::super::super::WorthQueryApplicationObservedFact]>,
+    >,
 }
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryPublishedApplicationCausality {
@@ -55,6 +72,19 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
         self.decision_facts.facts()
     }
 
+    pub(in crate::domain_computation::primary_graph) fn observed_source_facts(
+        &self,
+    ) -> Vec<super::super::super::WorthQueryApplicationObservedFact> {
+        if let Some(facts) = &self.output_currentness_facts {
+            return facts.to_vec();
+        }
+        self.decision_facts
+            .facts()
+            .values()
+            .filter_map(|fact| fact.observed_source_fact().cloned())
+            .collect()
+    }
+
     pub(in crate::domain_computation::primary_graph) fn expected_steps(
         &self,
     ) -> Vec<crate::domain_computation::WorthQueryProvisionalEffectStep> {
@@ -83,8 +113,28 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
         self.effects.emissions().len()
     }
 
+    pub(in crate::domain_computation::primary_graph) fn seal_output_correspondence(
+        &self,
+        commit: &worth_relational::facade::transactions::CommitResult,
+    ) -> crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence {
+        self.effects.seal_output_correspondence(commit)
+    }
+
     pub(in crate::domain_computation::primary_graph) fn decision_fact_count(&self) -> usize {
         self.decision_facts.decision_fact_count()
+    }
+
+    pub(in crate::domain_computation::primary_graph) const fn validator_work_admission(
+        &self,
+    ) -> super::super::super::effect_program::WorthQueryCandidateValidatorWorkAdmission {
+        self.validator_work_admission
+    }
+
+    pub(in crate::domain_computation::primary_graph) const fn producer_required_invariants(
+        &self,
+    ) -> &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement]
+    {
+        self.producer_required_invariants
     }
 
     pub(in crate::domain_computation::primary_graph) const fn preimage_demand(
@@ -108,17 +158,58 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
         self.aftermath_causality.as_ref()
     }
 
+    pub(in crate::domain_computation::primary_graph) fn take_conditional_definition(
+        &mut self,
+    ) -> Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>
+    {
+        self.conditional_definition.take()
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn reserve_successor_observations(
+        &mut self,
+        provider: &WorthQueryPrimaryGraphProvider,
+    ) -> Result<(bool, bool, bool), &'static str> {
+        assert!(self.live_delivery_reservation.is_none());
+        assert!(self.publication_recovery_reservation.is_none());
+        let publication_recovery = provider.reserve_application_publication_recovery(
+            self.affinity.product_publication().observation(),
+        )?;
+        let reservation = provider.reserve_application_commit_causality(
+            self.affinity.product_publication().observation(),
+            self.effects.emissions().retained_bytes(),
+        )?;
+        let live = reservation.requires_successor_observation();
+        let demand = self.retain_output_demand_observation;
+        let client = self.retain_client_observation;
+        self.live_delivery_reservation = Some(reservation);
+        self.publication_recovery_reservation = Some(publication_recovery);
+        Ok((live, demand, client))
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn take_publication_recovery_reservation(
+        &mut self,
+    ) -> crate::domain_computation::primary_graph::provider::WorthQueryApplicationPublicationRecoveryReservation
+    {
+        self.publication_recovery_reservation
+            .take()
+            .expect("World publication reserved bounded recovery custody before owner effects")
+    }
+
     pub(in crate::domain_computation::primary_graph) fn publish_causality(
         self,
         provider: &WorthQueryPrimaryGraphProvider,
-        commit_id: worth_relational::facade::history::CommitId,
-    ) -> Result<WorthQueryPublishedApplicationCausality, &'static str> {
-        let emitted_effect_count = provider
-            .publish_application_commit_causality(commit_id, self.effects.into_emissions())?;
-        Ok(WorthQueryPublishedApplicationCausality {
+        publication: crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication,
+    ) -> WorthQueryPublishedApplicationCausality {
+        let emitted_effect_count = provider.publish_application_commit_causality(
+            self.live_delivery_reservation
+                .expect("World publication reserved live causality before owner effects"),
+            publication,
+            self.effects.into_emissions(),
+        );
+        WorthQueryPublishedApplicationCausality {
             outcome_identity: self.outcome_identity,
             emitted_effect_count,
-        })
+        }
     }
 }
 
@@ -185,6 +276,12 @@ impl WorthQueryPrimaryGraphProvider {
             external_effect,
             preimage_demand,
             aftermath_causality,
+            conditional_definition,
+            validator_work_admission,
+            retain_output_demand_observation,
+            retain_client_observation,
+            producer_required_invariants,
+            output_currentness_facts,
         } = registration;
         let emitted_effect_count = u64::try_from(effects.emissions().len())
             .map_err(|_| "application emission count exceeds provider representation")?;
@@ -223,6 +320,14 @@ impl WorthQueryPrimaryGraphProvider {
                 preimage_demand: preimage_demand.cloned(),
                 aftermath_causality,
                 dispatch_outbox,
+                conditional_definition,
+                validator_work_admission,
+                live_delivery_reservation: None,
+                publication_recovery_reservation: None,
+                retain_output_demand_observation,
+                retain_client_observation,
+                producer_required_invariants,
+                output_currentness_facts,
             },
             requests,
             dispatch_outbox: dispatch_outbox_record,

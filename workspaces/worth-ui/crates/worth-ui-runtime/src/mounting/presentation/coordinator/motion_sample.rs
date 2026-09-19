@@ -19,6 +19,7 @@ pub(super) struct UiPendingMotionSamplePresentation {
     requirement: UiMountedSurfaceBindingRequirement,
     presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
     expected_effects: Box<[worth_ui_host_contract::UiMountedEffectFamily]>,
+    acceptance: super::super::work_producer::UiPreparedCommandMotionAcceptance,
 }
 
 pub(crate) enum UiMotionSamplePresentationOutcome {
@@ -84,7 +85,7 @@ impl UiMountedPresentationCoordinator {
         {
             return UiMotionSamplePresentationOutcome::RejectedBeforeEffects;
         }
-        let work = match state.issue_motion_sample(
+        let (work, acceptance) = match state.prepare_motion_sample(
             prepared.receipt(),
             presentation,
             authority.presentation(),
@@ -124,6 +125,7 @@ impl UiMountedPresentationCoordinator {
             requirement,
             presentation,
             expected_effects,
+            acceptance,
             outcome,
         )
     }
@@ -171,6 +173,7 @@ impl UiMountedPresentationCoordinator {
         requirement: UiMountedSurfaceBindingRequirement,
         presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
         expected_effects: Box<[worth_ui_host_contract::UiMountedEffectFamily]>,
+        acceptance: super::super::work_producer::UiPreparedCommandMotionAcceptance,
         outcome: UiHostSurfacePresentationOutcome,
     ) -> UiMotionSamplePresentationOutcome {
         match outcome {
@@ -187,13 +190,7 @@ impl UiMountedPresentationCoordinator {
                     &expected_effects,
                     completion,
                 );
-                if matches!(
-                    settled,
-                    UiMotionSamplePresentationOutcome::PresentationIndeterminate
-                ) {
-                    self.reconstruction_bindings.insert(requirement.binding());
-                }
-                settled
+                self.accept_motion_evidence(settled, acceptance, requirement.binding())
             }
             UiHostSurfacePresentationOutcome::InFlight(token) => {
                 self.motion_sample_in_flight = Some(UiPendingMotionSamplePresentation {
@@ -203,6 +200,7 @@ impl UiMountedPresentationCoordinator {
                     requirement,
                     presentation,
                     expected_effects,
+                    acceptance,
                 });
                 UiMotionSamplePresentationOutcome::InFlight
             }
@@ -238,14 +236,11 @@ impl UiMountedPresentationCoordinator {
                     &pending.expected_effects,
                     completion,
                 );
-                if matches!(
+                self.accept_motion_evidence(
                     settled,
-                    UiMotionSamplePresentationOutcome::PresentationIndeterminate
-                ) {
-                    self.reconstruction_bindings
-                        .insert(pending.requirement.binding());
-                }
-                settled
+                    pending.acceptance,
+                    pending.requirement.binding(),
+                )
             }
             UiHostSurfaceInFlightCompletion::Superseded(_) => {
                 self.active.borrow_mut().remove(&pending.attempt);

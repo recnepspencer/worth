@@ -35,6 +35,44 @@ pub(crate) struct PublishedObservationWorld {
     pub(crate) current: PresentedObservationBasis,
 }
 
+impl PublishedObservationWorld {
+    pub(crate) fn rebind_surface(
+        &mut self,
+        profile: worth_ui_runtime::facade::mounted::UiSurfaceBindingProfile,
+    ) -> UiSurfaceBindingGeneration {
+        let binding = self.session.inspect_mounted_identity().surface_bindings()[0];
+        let successor = self
+            .session
+            .rebind_host_surface(self.binding, binding.presentation_mode(), profile)
+            .expect("the observation surface admits its successor binding");
+        self.host.push_presented();
+        let outcome = self
+            .session
+            .present_current_mounted_frame_for_reconciliation(
+                &[
+                    worth_ui_runtime::facade::mounted::UiMountedSurfaceReconciliationBinding::new(
+                        self.binding,
+                        successor.binding_generation(),
+                    ),
+                ],
+                UiPresentationDeadline::at_tick(1_000),
+                0,
+            )
+            .expect("the exact accepted frame admits binding reconciliation");
+        let UiMountedFrameOutcome::Reconciled(receipt) = outcome else {
+            panic!("the observation binding must physically reconcile before accepting reports");
+        };
+        assert_eq!(receipt.frame(), self.current.frame);
+        self.binding = successor.binding_generation();
+        self.current = PresentedObservationBasis {
+            host_surface: successor.host_surface_identity(),
+            epoch: presented_epoch(&self.session, receipt.frame(), self.binding),
+            ..self.current
+        };
+        self.binding
+    }
+}
+
 pub(crate) fn published_observation_world(label: &str) -> PublishedObservationWorld {
     published_observation_world_with_host(label, ScriptedPresentationHost::default())
 }

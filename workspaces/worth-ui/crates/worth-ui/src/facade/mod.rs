@@ -1,5 +1,6 @@
 pub mod admission;
 pub mod app;
+pub mod appearance;
 #[cfg(feature = "certification-support")]
 #[doc(hidden)]
 pub mod certification;

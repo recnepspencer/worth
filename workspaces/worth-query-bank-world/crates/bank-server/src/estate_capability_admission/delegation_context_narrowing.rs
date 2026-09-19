@@ -1,9 +1,11 @@
-use bank_domain::estate::{
-    CapabilityGrantId, CapabilityValidity, DelegationLimit, EstateAction,
-    EstateCapabilityDelegationRequest, EstateCapabilityOperation, EstateCapabilityPurpose,
-    EstateCapabilityScope, EstateMoment, EstateWorkflowStage, RestrictedBankField,
+use bank_domain::{
+    estate::{
+        CapabilityGrantId, CapabilityValidity, DelegationLimit, EstateAction,
+        EstateCapabilityDelegationRequest, EstateCapabilityOperation, EstateCapabilityPurpose,
+        EstateCapabilityScope, EstateMoment, EstateWorkflowStage, RestrictedBankField,
+    },
+    proposals::BankIdempotencyKey,
 };
-use worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyBinding;
 
 use super::fixture::{
     delegation_world_with_parent_branch_mismatch,
@@ -36,10 +38,10 @@ fn child_institution_must_be_carried_by_the_exact_parent() {
 fn assert_context_denied(fixture: CapabilityFixture, child: CapabilityGrantId, seed: u8) {
     let denial = fixture
         .runtime
-        .delegate_estate_capability(
+        .delegate_estate_capability_with_key(
             &fixture.authenticate(),
             delegated_action(child),
-            WorthQueryApplicationIdempotencyBinding::new([seed; 32], [seed + 1; 32]),
+            &BankIdempotencyKey::new(format!("delegation-context-{seed}")).unwrap(),
             &request_scope(),
         )
         .expect_err("a child cannot replace an exact parent activation context");

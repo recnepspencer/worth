@@ -6,8 +6,11 @@ use bank_domain::model::{BankPrincipalId, BusinessId, CustomerRole, InstitutionI
 use bank_domain::proposals::{BankProposalDenial, BankProposalEngine};
 use bank_domain::schema::{ApprovePayment, RevokeAccountAuthorization};
 use bank_server::{
-    BankBusinessOwnerSeed, BankEmployeeAssignmentSeed, BankOperationAdmissionError,
-    BankOperationProposalError, BankOperationProposals, BankPrincipalSeed, BankWorldSeed,
+    BankBusinessOwnerSeed, BankEmployeeAssignmentSeed, BankPaymentDecisionExecution,
+    BankPrincipalSeed, BankWorldSeed,
+};
+use worth_query_host::facade::application_entry::{
+    WorthQueryApplicationMutationOutcome, WorthQueryApplicationRequestMutationDenialKind,
 };
 
 use business_authorization_fixture::{binding, id, key, pending_business_payment_world};
@@ -45,21 +48,20 @@ fn real_graph_allows_distinct_approver_and_deny_precedence_blocks_initiator() {
         &request,
     ))
     .unwrap();
-    let admission = world
+    let approved = world
         .runtime
-        .authorize_approve_payment(&approver_actor, payment, Default::default(), &request)
-        .unwrap();
-    let approved = BankOperationProposals::prepare_approve_payment(
-        &world.runtime,
-        admission,
-        &key("approve"),
-        &ApprovePayment {
+        .request(&approver_actor, &request)
+        .mutate(ApprovePayment {
             payment,
             approver: id(BankPrincipalId::new, 3),
-        },
-    )
-    .unwrap();
-    assert_eq!(approved.invariant().effects().len(), 2);
+        })
+        .idempotency(&key("approve"))
+        .execute_in_program(world.runtime.application_program())
+        .unwrap();
+    assert!(matches!(
+        approved,
+        WorthQueryApplicationMutationOutcome::Committed { .. }
+    ));
 
     let initiator_actor = block_on(world.runtime.authenticate_with(
         &world.authentication,
@@ -67,16 +69,17 @@ fn real_graph_allows_distinct_approver_and_deny_precedence_blocks_initiator() {
         &request,
     ))
     .unwrap();
-    let denial = world
-        .runtime
-        .authorize_approve_payment(&initiator_actor, payment, Default::default(), &request)
-        .err()
-        .expect("initiator deny path must override approver role");
-    assert!(matches!(
-        denial,
-        BankOperationAdmissionError::Authorization(ref denial)
-            if denial.code() == "permission-denied"
-    ));
+    assert_permission_denied(
+        world
+            .runtime
+            .request(&initiator_actor, &request)
+            .mutate(ApprovePayment {
+                payment,
+                approver: id(BankPrincipalId::new, 1),
+            })
+            .idempotency(&key("initiator-denied"))
+            .execute_in_program(world.runtime.application_program()),
+    );
 }
 
 #[test]
@@ -111,25 +114,22 @@ fn authenticated_actor_cannot_be_relabelled_in_payment_input() {
         &request,
     ))
     .unwrap();
-    let admission = world
+    let denial = world
         .runtime
-        .authorize_approve_payment(&actor, payment, Default::default(), &request)
-        .unwrap();
-    let denial = BankOperationProposals::prepare_approve_payment(
-        &world.runtime,
-        admission,
-        &key("relabel"),
-        &ApprovePayment {
+        .request(&actor, &request)
+        .mutate(ApprovePayment {
             payment,
             approver: id(BankPrincipalId::new, 2),
-        },
-    )
-    .err()
-    .expect("input actor cannot differ from authenticated actor");
-    assert_eq!(
+        })
+        .idempotency(&key("relabel"))
+        .execute_in_program(world.runtime.application_program())
+        .unwrap();
+    assert!(matches!(
         denial,
-        BankOperationProposalError::Invariant(BankProposalDenial::AuthenticatedActorMismatch)
-    );
+        WorthQueryApplicationMutationOutcome::DomainDenied(
+            BankProposalDenial::AuthenticatedActorMismatch
+        )
+    ));
 }
 
 #[test]
@@ -166,12 +166,17 @@ fn viewer_cross_business_and_employee_roles_do_not_combine_into_approval() {
         &request,
     ))
     .unwrap();
-    assert_permission_denied(world.runtime.authorize_approve_payment(
-        &actor,
-        payment,
-        Default::default(),
-        &request,
-    ));
+    assert_permission_denied(
+        world
+            .runtime
+            .request(&actor, &request)
+            .mutate(ApprovePayment {
+                payment,
+                approver: id(BankPrincipalId::new, 2),
+            })
+            .idempotency(&key("cross-business-denied"))
+            .execute_in_program(world.runtime.application_program()),
+    );
 }
 
 #[test]
@@ -222,18 +227,23 @@ fn revoked_approver_membership_is_absent_from_current_authorization_graph() {
         &request,
     ))
     .unwrap();
-    assert_permission_denied(world.runtime.authorize_approve_payment(
-        &actor,
-        payment,
-        Default::default(),
-        &request,
-    ));
+    assert_permission_denied(
+        world
+            .runtime
+            .request(&actor, &request)
+            .mutate(ApprovePayment {
+                payment,
+                approver: id(BankPrincipalId::new, 3),
+            })
+            .idempotency(&key("revoked-denied"))
+            .execute_in_program(world.runtime.application_program()),
+    );
 }
 
-fn assert_permission_denied<T>(result: Result<T, BankOperationAdmissionError>) {
+fn assert_permission_denied(result: BankPaymentDecisionExecution) {
     assert!(matches!(
         result,
-        Err(BankOperationAdmissionError::Authorization(ref denial))
-            if denial.code() == "permission-denied"
+        Err(ref denial)
+            if denial.kind() == WorthQueryApplicationRequestMutationDenialKind::Authorization
     ));
 }

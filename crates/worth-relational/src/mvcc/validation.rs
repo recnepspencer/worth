@@ -1,6 +1,8 @@
 //! Owner-private inputs carried from exact transaction admission through
 //! schema, invariant, footprint, and publication validation.
 
+#[path = "validation/custom_invariant_execution_receipt.rs"]
+mod custom_invariant_execution_receipt;
 #[path = "validation/invariant_plan.rs"]
 mod invariant_plan;
 #[path = "validation/proposal_footprint/mod.rs"]
@@ -18,6 +20,7 @@ mod proposal_validation;
 #[path = "validation/validated_proposal.rs"]
 mod validated_proposal;
 
+pub use custom_invariant_execution_receipt::CustomInvariantExecutionReceipt;
 pub use proposal_footprint::{
     ValidatedMutationFootprint, ValidatedMutationFootprintNotRequested,
     ValidatedMutationFootprintProjection, ValidatedMutationFootprintWork,
@@ -117,6 +120,14 @@ impl RelationalTransactionValidationInput {
         bases: Vec<AdmittedRelationalBranchBasis>,
     ) -> Self {
         self.merge_parent_bases = bases;
+        self
+    }
+
+    pub(crate) fn with_materialization_mode(
+        mut self,
+        mode: crate::mvcc::RelationalMaterializationTransactionMode,
+    ) -> Self {
+        self.intent = crate::mvcc::RelationalTransactionIntent::materialization(mode);
         self
     }
 

@@ -1,9 +1,7 @@
 //! Bank-owned authority for the approved emergency-access phase.
 
-use worth_query_host::facade::domain::TypedApplicationValue;
-use worth_query_host::facade::primary_graph::{
-    WorthQueryApplicationHistoricalRead, WorthQueryApprovedElevation,
-};
+use worth_query_host::facade::declaration::application_schema::ApplicationScalarValueBinding;
+use worth_query_host::facade::primary_graph::WorthQueryApprovedElevation;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct BankEstateElevationRetentionWork {
@@ -57,10 +55,6 @@ impl BankApprovedEstateElevation {
         self.query
     }
 
-    pub(crate) fn historical_read(&self) -> WorthQueryApplicationHistoricalRead {
-        self.query.historical_read()
-    }
-
     pub fn requester_differs_from_approver(&self) -> bool {
         self.query.requester() != self.query.approver()
     }
@@ -89,7 +83,11 @@ impl BankApprovedEstateElevation {
             .approval_retained_preimage()
             .and_then(|preimage| preimage.field_for(EmergencyAccessStatusField::reference()))
             .is_some_and(|field| {
-                field.value() == &EmergencyAccessStatus::Requested.into_foundational_value()
+                field.value()
+                    == &bank_domain::schema::EmergencyAccessStatusBinding::encode(
+                        &EmergencyAccessStatus::Requested,
+                    )
+                    .expect("declared emergency-access status must encode")
             })
     }
 

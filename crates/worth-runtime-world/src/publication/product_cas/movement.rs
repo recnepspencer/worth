@@ -21,16 +21,25 @@ pub(super) fn attempt_product_movement(
         cutoff,
     ) {
         Ok(performed) => RuntimeWorldPublicationOutcome::Performed(performed),
-        Err(loss) => {
-            let cause = match loss.cutoff_denial() {
-                Some(crate::publication::ProductMovementCutoffDenial::Cancelled) => {
+        Err(crate::publication::custody::AttemptProductMovementFailure::Observation(denial)) => {
+            let cause = ProductUnpublishedCause::from_retention_denial(&denial);
+            RuntimeWorldPublicationOutcome::ProductUnpublished(ready.custody.retain(
+                cause,
+                None,
+                RetainedCommitDisposition::ReleaseUnused,
+            ))
+        }
+        Err(crate::publication::custody::AttemptProductMovementFailure::Reference(loss)) => {
+            let cause = match (loss.is_retired(), loss.cutoff_denial()) {
+                (true, _) => ProductUnpublishedCause::StaleProductHead,
+                (false, Some(crate::publication::ProductMovementCutoffDenial::Cancelled)) => {
                     ready.counters.record_cancellation_observation();
                     ProductUnpublishedCause::CancellationAfterEffect
                 }
-                Some(crate::publication::ProductMovementCutoffDenial::Deadline) => {
+                (false, Some(crate::publication::ProductMovementCutoffDenial::Deadline)) => {
                     ProductUnpublishedCause::DeadlineAfterEffect
                 }
-                None => ProductUnpublishedCause::ProductPublicationLost,
+                (false, None) => ProductUnpublishedCause::ProductPublicationLost,
             };
             RuntimeWorldPublicationOutcome::ProductUnpublished(ready.custody.retain(
                 cause,

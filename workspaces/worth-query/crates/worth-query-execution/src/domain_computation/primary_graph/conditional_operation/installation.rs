@@ -1,55 +1,52 @@
-use std::{collections::BTreeSet, marker::PhantomData, sync::Arc};
-
-use crate::domain_computation::primary_graph::application_runtime::installation::ApplicationRuntimePublication;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
-use worth_query_installation::facade::{
-    ApplicationFieldUnit, ApplicationSchema, OperationReads, OperationWrites,
-    TypedApplicationIdentityValue, TypedApplicationReadableValue, TypedApplicationValue,
-    WorthQueryHostConditionalPredicateProvider, WorthQueryInstalledTemporalConditionalOperation,
-    WorthQueryNamedClock, WorthQueryNamedClockSource, WorthQueryTemporalIntentProjector,
-    WorthQueryTemporalIntentRevisionValue, WritableCapability, WritePosture,
-};
-
 use super::operation_invocation::{
     WorthQueryTemporalOperationExecution, WorthQueryTemporalOperationInvoker,
 };
 use super::reconstruction_authority::{
     WorthQueryTemporalPrincipalSource, WorthQueryTemporalReconstructionAccess,
 };
-
+use crate::domain_computation::primary_graph::application_runtime::installation::ApplicationRuntimePublication;
+use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
+use std::{collections::BTreeSet, marker::PhantomData, sync::Arc};
+use worth_query_installation::facade::{
+    ApplicationFieldUnit, ApplicationSchema, OperationReads, OperationWrites,
+    WorthQueryHostConditionalPredicateProvider, WorthQueryInstalledTemporalConditionalOperation,
+    WorthQueryNamedClock, WorthQueryNamedClockSource,
+    WorthQueryPortableApplicationConditionalOperationBinding, WorthQueryTemporalIntentProjector,
+    WritableCapability, WritePosture,
+};
+mod clock_handle;
+pub(in crate::domain_computation::primary_graph) use clock_handle::ConditionalClockLease;
+pub use clock_handle::WorthQueryConditionalClockHandle;
 mod denial;
+use denial::foreign_binding_denial;
 pub use denial::{
     WorthQueryConditionalRuntimeInstallationDenial,
     WorthQueryConditionalRuntimeInstallationDenialKind,
 };
-
-pub struct WorthQueryConditionalClockHandle<Schema, Node, Clock> {
-    binding_identity: Arc<str>,
-    binding_canonical_work: worth_query_installation::facade::WorthQueryCanonicalWorkEvidence,
-    pub(super) lease: Arc<ConditionalClockLease>,
-    marker: PhantomData<fn() -> (Schema, Node, Clock)>,
+mod pending_operation;
+pub(in crate::domain_computation::primary_graph) use pending_operation::WorthQueryPendingConditionalOperation;
+mod application_binding_scope;
+mod output_producer_installation;
+mod output_readiness;
+type InstalledOutputProducers<Schema> =
+    super::super::application_contribution::WorthQueryInstalledApplicationProducerRegistry<Schema>;
+struct ApplicationConditionalBindingScope {
+    binding: WorthQueryPortableApplicationConditionalOperationBinding,
+    operation_type: std::any::TypeId,
+    node_identity: String,
+    initial_binding_count: usize,
+    initial_readiness_count: usize,
+    required_producers: Vec<String>,
 }
-
-pub(in crate::domain_computation::primary_graph) struct ConditionalClockLease;
-
-impl<Schema, Node, Clock> WorthQueryConditionalClockHandle<Schema, Node, Clock> {
-    pub fn binding_identity(&self) -> &str {
-        &self.binding_identity
-    }
-
-    pub const fn binding_canonical_work(
-        &self,
-    ) -> worth_query_installation::facade::WorthQueryCanonicalWorkEvidence {
-        self.binding_canonical_work
-    }
-}
-
 pub struct WorthQueryConditionalApplicationRuntimeInstallation<Schema> {
     publication: ApplicationRuntimePublication<Schema>,
+    output_producers: InstalledOutputProducers<Schema>,
     binding_identities: BTreeSet<Arc<str>>,
     bindings: Vec<Box<dyn WorthQueryPendingConditionalOperation<Schema>>>,
+    output_readiness:
+        Vec<Box<dyn super::super::application_contribution::PendingOutputReadiness<Schema>>>,
+    application_binding_scope: Option<ApplicationConditionalBindingScope>,
 }
-
 impl<Schema> WorthQueryConditionalApplicationRuntimeInstallation<Schema>
 where
     Schema: ApplicationSchema + 'static,
@@ -69,11 +66,13 @@ where
             })?;
         Ok(Self {
             publication,
+            output_producers: Default::default(),
             binding_identities: BTreeSet::new(),
             bindings: Vec::new(),
+            output_readiness: Vec::new(),
+            application_binding_scope: None,
         })
     }
-
     pub fn bind_temporal_operation<
         ApplicationOperation,
         Input,
@@ -93,6 +92,7 @@ where
         PrincipalMapping,
         Principal,
         PrincipalIdentity,
+        PrincipalIdentityBinding,
         ScopeAspect,
         ScopeField,
         ScopeValue,
@@ -171,6 +171,7 @@ where
             PrincipalMapping,
             Principal,
             PrincipalIdentity,
+            PrincipalIdentityBinding,
             Scope,
             ScopeAspect,
             ScopeField,
@@ -195,13 +196,21 @@ where
             + 'static,
         Scope: 'static,
         Projector: WorthQueryTemporalIntentProjector<Node, Clock, QueryResult, Input>,
-        PrincipalIdentity: TypedApplicationIdentityValue + 'static,
-        ScopeValue: TypedApplicationValue + Clone + Send + 'static,
+        PrincipalIdentityBinding:
+            worth_query_installation::facade::ApplicationIdentityScalarValueBinding<
+                    Value = PrincipalIdentity,
+                > + 'static,
+        ScopeField:
+            worth_query_installation::facade::DeclaredApplicationFieldValue<Value = ScopeValue>,
+        ScopeField::Binding:
+            worth_query_installation::facade::ApplicationScalarValueBinding<Value = ScopeValue>,
+        ScopeValue: Clone + Send + Sync + 'static,
         ScopeWrite: WritePosture + 'static,
         ScopeUnit: ApplicationFieldUnit + 'static,
         PrincipalBinding: 'static,
         PrincipalMapping: 'static,
         Principal: 'static,
+        PrincipalIdentity: 'static,
         ScopeAspect: 'static,
         ScopeField: 'static,
         PrincipalSource: WorthQueryTemporalPrincipalSource<Schema>,
@@ -217,25 +226,39 @@ where
         Invoker: WorthQueryTemporalOperationInvoker<Schema, ApplicationOperation, Input, Scope>,
         IntentEntity: 'static,
         IdentityAspect: 'static,
-        IdentityField: OperationReads<ApplicationOperation> + 'static,
-        IdentityValue: TypedApplicationReadableValue + Clone + Send + 'static,
+        IdentityField: OperationReads<ApplicationOperation>
+            + worth_query_installation::facade::DeclaredApplicationFieldValue<Value = IdentityValue>
+            + 'static,
+        IdentityField::Binding:
+            worth_query_installation::facade::ApplicationReadableScalarValueBinding<
+                Value = IdentityValue,
+            >,
+        IdentityValue: Clone + Send + 'static,
         IdentityWrite: WritePosture + 'static,
         IdentityUnit: ApplicationFieldUnit + 'static,
         RevisionAspect: 'static,
-        RevisionField:
-            OperationReads<ApplicationOperation> + OperationWrites<ApplicationOperation> + 'static,
-        RevisionValue: WorthQueryTemporalIntentRevisionValue
-            + TypedApplicationReadableValue
-            + Clone
-            + Send
+        RevisionField: OperationReads<ApplicationOperation>
+            + OperationWrites<ApplicationOperation>
+            + worth_query_installation::facade::DeclaredApplicationFieldValue<Value = RevisionValue>
             + 'static,
+        RevisionField::Binding:
+            worth_query_installation::facade::ApplicationReadableScalarValueBinding<
+                    Value = RevisionValue,
+                > + worth_query_installation::facade::WorthQueryTemporalIntentRevisionValue,
+        RevisionValue: Clone + Send + 'static,
         RevisionWrite: WritableCapability + 'static,
         RevisionEquality: 'static,
         RevisionUnit: ApplicationFieldUnit + 'static,
         LifecycleAspect: 'static,
-        LifecycleField:
-            OperationReads<ApplicationOperation> + OperationWrites<ApplicationOperation> + 'static,
-        LifecycleValue: TypedApplicationReadableValue + Clone + Send + 'static,
+        LifecycleField: OperationReads<ApplicationOperation>
+            + OperationWrites<ApplicationOperation>
+            + worth_query_installation::facade::DeclaredApplicationFieldValue<Value = LifecycleValue>
+            + 'static,
+        LifecycleField::Binding:
+            worth_query_installation::facade::ApplicationReadableScalarValueBinding<
+                Value = LifecycleValue,
+            >,
+        LifecycleValue: Clone + Send + Sync + 'static,
         LifecycleWrite: WritableCapability + 'static,
         LifecycleEquality: 'static,
         LifecycleUnit: ApplicationFieldUnit + 'static,
@@ -251,6 +274,7 @@ where
         F: 'static,
         Node: 'static,
     {
+        self.validate_application_binding_scope(&binding)?;
         self.validate_temporal_binding(&binding)?;
         super::access_validation::validate_reconstruction_access(
             &self.publication,
@@ -282,6 +306,13 @@ where
         }
         let binding_canonical_work = identity.canonical_work();
         let lease = Arc::new(ConditionalClockLease);
+        let node_authority = Arc::from(
+            binding
+                .clocked_node()
+                .provider()
+                .node()
+                .authority_identity(),
+        );
         self.bindings.push(Box::new(
             super::pending_binding::PendingTemporalOperation::new(
                 Arc::clone(&identity),
@@ -293,12 +324,13 @@ where
         ));
         Ok(WorthQueryConditionalClockHandle {
             binding_identity: support_identity,
+            binding_identity_digest: *identity.digest().bytes(),
+            node_authority,
             binding_canonical_work,
             lease,
             marker: PhantomData,
         })
     }
-
     pub fn publish(
         self,
     ) -> Result<
@@ -308,9 +340,10 @@ where
         super::super::application_runtime::installation::publish_application_runtime_with_conditionals(
             self.publication,
             self.bindings,
+            self.output_readiness,
+            &self.output_producers,
         )
     }
-
     fn validate_temporal_binding<
         ApplicationOperation,
         Input,
@@ -361,28 +394,4 @@ where
             .validate_installed_query(binding.query())
             .map_err(|denial| foreign_binding_denial(denial.subject()))
     }
-}
-
-pub(in crate::domain_computation::primary_graph) trait WorthQueryPendingConditionalOperation<Schema>
-{
-    fn binding_identity(&self) -> &str;
-
-    fn install(
-        self: Box<Self>,
-        bridge: &mut worth_runtime_bridge::facade::BridgeOwnedSignalRuntime,
-        graph: &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
-        affinity: &super::publication::ConditionalRuntimeAffinity,
-    ) -> Result<
-        Box<dyn super::lifecycle::WorthQueryInstalledConditionalOperation<Schema>>,
-        WorthQueryConditionalRuntimeInstallationDenial,
-    >;
-}
-
-fn foreign_binding_denial(
-    subject: impl Into<String>,
-) -> WorthQueryConditionalRuntimeInstallationDenial {
-    WorthQueryConditionalRuntimeInstallationDenial::new(
-        WorthQueryConditionalRuntimeInstallationDenialKind::ForeignBinding,
-        subject,
-    )
 }

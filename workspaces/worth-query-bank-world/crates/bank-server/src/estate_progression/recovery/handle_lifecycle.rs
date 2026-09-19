@@ -12,12 +12,23 @@ use worth_query_host::facade::primary_graph::{
 
 use super::super::{
     recovery_types::map_expiry, BankCommitRecoveryHandle, BankEstateProgressionDenial,
-    BankRecoveryDenial, BankRecoveryExpiryDecision, BankRecoveryExpiryEvaluation,
-    BankRecoveryInspection, BankRecoveryTransitionReceipt,
+    BankRecoveryClaimStatus, BankRecoveryDenial, BankRecoveryExpiryDecision,
+    BankRecoveryExpiryEvaluation, BankRecoveryInspection, BankRecoveryTransitionReceipt,
 };
 use crate::{BankAuthenticatedPrincipal, BankCommitReceipt, BankIdentityRuntime};
 
 impl BankIdentityRuntime {
+    pub fn commit_recovery_claim_status(
+        &self,
+        receipt: &BankCommitReceipt,
+    ) -> Result<BankRecoveryClaimStatus, BankRecoveryDenial> {
+        receipt
+            .recovery_evidence()
+            .recovery_claim_status(self.application_runtime())
+            .map(BankRecoveryClaimStatus::from_query)
+            .map_err(BankRecoveryDenial::from_query)
+    }
+
     pub fn open_commit_recovery(
         &self,
         receipt: &BankCommitReceipt,
@@ -36,6 +47,13 @@ impl BankIdentityRuntime {
         action: EstateAction,
         request: &WorthQueryRequestScope,
     ) -> Result<WorthQueryRecoveryEffectAuthority, BankEstateProgressionDenial> {
+        if matches!(action, EstateAction::DisburseEstate(_)) {
+            let admission = self.admit_estate_disbursement(principal, action, request)?;
+            return self
+                .application_runtime()
+                .admit_recovery_effect_authority(handle, &admission)
+                .map_err(BankEstateProgressionDenial::from_recovery);
+        }
         let admission = self.admit_notification_operation(principal, action, request)?;
         self.application_runtime()
             .admit_recovery_effect_authority(handle, &admission)
@@ -61,8 +79,10 @@ impl BankIdentityRuntime {
                 NotifyDeathEstateOperation::reference(),
             )
             .map_err(BankEstateProgressionDenial::from_capability_installation)?;
-        let access = self
-            .application_runtime()
+        let selected = self
+            .select_current_product()
+            .map_err(BankEstateProgressionDenial::from_product_selection)?;
+        let access = selected
             .admit_capability_access(principal.query(), &capability, action, request)
             .map_err(BankEstateProgressionDenial::from_authorization)?;
         let disclosure = self
@@ -90,8 +110,10 @@ impl BankIdentityRuntime {
                 DisburseEstateOperation::reference(),
             )
             .map_err(BankEstateProgressionDenial::from_capability_installation)?;
-        let access = self
-            .application_runtime()
+        let selected = self
+            .select_current_product()
+            .map_err(BankEstateProgressionDenial::from_product_selection)?;
+        let access = selected
             .admit_capability_access(principal.query(), &capability, action, request)
             .map_err(BankEstateProgressionDenial::from_authorization)?;
         let disclosure = self

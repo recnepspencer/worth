@@ -8,17 +8,17 @@ use crate::data::reuse::{
 };
 use crate::data::temporal::LoweredTemporalEligibility;
 use crate::logic::evaluation::{
-    EffectDependencyInputs, EvaluationVerdict, PreparedApplyResult, PreviousArtifactWarmSnapshot,
+    EffectDependencyInputs, EvaluationVerdict, EvaluationWork, PreparedApplyResult,
+    PreviousArtifactWarmSnapshot,
 };
 use crate::logic::prepared::{PreparedEvaluation, PreparedEvaluationOutcome};
 
 use super::super::apply::{apply_effect_with_policy_and_condition, provisional_evaluated_verdict};
 use super::super::metadata::EvaluationExecutionMetadata;
-use super::input::{
-    apply_prepared_dependencies, ensure_temporal_outcome_alignment, lower_passive_prepared_effect,
-};
+use super::input::{ensure_temporal_outcome_alignment, lower_passive_prepared_effect};
 use super::reuse_admission::{resolve_evaluated_reuse_admission, EvaluatedReuseAdmission};
 
+#[cfg(test)]
 pub(crate) fn apply_prepared_evaluation_with_policy(
     graph: &mut SignalGraph,
     node: NodeId,
@@ -36,6 +36,7 @@ pub(crate) fn apply_prepared_evaluation_with_policy(
         dependency_updates,
         None,
         false,
+        &mut EvaluationWork::Ordinary,
     )
 }
 
@@ -48,6 +49,7 @@ pub(crate) fn apply_prepared_evaluation_after_dependencies_with_policy(
     dependency_updates: u32,
     dependency_inputs: Option<EffectDependencyInputs>,
     defer_snapshot_commit: bool,
+    work: &mut EvaluationWork<'_>,
 ) -> Result<PreparedApplyResult, SignalError> {
     if !matches!(prepared.outcome, PreparedEvaluationOutcome::Evaluate) {
         return apply_passive_prepared_evaluation(
@@ -59,6 +61,7 @@ pub(crate) fn apply_prepared_evaluation_after_dependencies_with_policy(
             dependency_updates,
             dependency_inputs,
             defer_snapshot_commit,
+            work,
         );
     }
 
@@ -71,6 +74,7 @@ pub(crate) fn apply_prepared_evaluation_after_dependencies_with_policy(
         dependency_updates,
         dependency_inputs,
         defer_snapshot_commit,
+        work,
     )
 }
 
@@ -83,6 +87,7 @@ fn apply_passive_prepared_evaluation(
     dependency_updates: u32,
     dependency_inputs: Option<EffectDependencyInputs>,
     defer_snapshot_commit: bool,
+    work: &mut EvaluationWork<'_>,
 ) -> Result<PreparedApplyResult, SignalError> {
     let passive =
         lower_passive_prepared_effect(graph, node, prepared, |graph, node, result, keyed| {
@@ -110,6 +115,7 @@ fn apply_passive_prepared_evaluation(
         dependency_inputs,
         defer_snapshot_commit,
         None,
+        work,
     )?;
     apply_result.dependency_updates = dependency_updates;
     apply_result.report.temporal_eligibility = passive.temporal_eligibility.clone();
@@ -126,6 +132,7 @@ fn apply_evaluated_prepared_evaluation(
     dependency_updates: u32,
     dependency_inputs: Option<EffectDependencyInputs>,
     defer_snapshot_commit: bool,
+    work: &mut EvaluationWork<'_>,
 ) -> Result<PreparedApplyResult, SignalError> {
     let application = build_evaluated_prepared_application(
         graph,
@@ -150,6 +157,7 @@ fn apply_evaluated_prepared_evaluation(
         dependency_inputs,
         defer_snapshot_commit,
         application.previous_artifact_warm,
+        work,
     )?;
     apply_result.dependency_updates = dependency_updates;
     apply_result.report.temporal_eligibility = application.temporal_eligibility.clone();
@@ -241,3 +249,6 @@ fn metadata_for_evaluated_application(
             reuse_origin: admission.decision.origin,
         })
 }
+
+#[cfg(test)]
+use super::input::apply_prepared_dependencies;

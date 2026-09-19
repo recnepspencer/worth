@@ -1,7 +1,9 @@
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct UiMountedPortalOverlayProjectionInput {
     portal_identity: u64,
+    stack_ordinal: crate::runtime::portal::UiPortalStackOrdinal,
     owner: worth_ui_host_contract::UiMountedInstanceIdentity,
+    surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
     placement: crate::runtime::portal::UiPreparedPortalPlacement,
     lifecycle: crate::runtime::portal::UiPortalLifecyclePosture,
 }
@@ -9,13 +11,17 @@ pub(crate) struct UiMountedPortalOverlayProjectionInput {
 impl UiMountedPortalOverlayProjectionInput {
     pub(crate) const fn new(
         portal_identity: u64,
+        stack_ordinal: crate::runtime::portal::UiPortalStackOrdinal,
         owner: worth_ui_host_contract::UiMountedInstanceIdentity,
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
         placement: crate::runtime::portal::UiPreparedPortalPlacement,
         lifecycle: crate::runtime::portal::UiPortalLifecyclePosture,
     ) -> Self {
         Self {
             portal_identity,
+            stack_ordinal,
             owner,
+            surface,
             placement,
             lifecycle,
         }
@@ -25,7 +31,32 @@ impl UiMountedPortalOverlayProjectionInput {
         self.owner
     }
 
-    #[cfg(test)]
+    pub(crate) const fn input_order(self) -> (u64, crate::runtime::portal::UiPortalStackOrdinal) {
+        (self.portal_identity, self.stack_ordinal)
+    }
+
+    pub(crate) const fn surface(self) -> worth_ui_host_contract::UiSemanticSurfaceIdentity {
+        self.surface
+    }
+
+    pub(crate) fn same_mounted_projection_meaning(self, other: Self) -> bool {
+        let left_presentation = self.placement.presentation();
+        let right_presentation = other.placement.presentation();
+        self.portal_identity == other.portal_identity
+            && self.stack_ordinal == other.stack_ordinal
+            && self.owner == other.owner
+            && self.surface == other.surface
+            && left_presentation.host_surface() == right_presentation.host_surface()
+            && left_presentation.binding() == right_presentation.binding()
+            && self.placement.anchor() == other.placement.anchor()
+            && self.placement.clip_bounds() == other.placement.clip_bounds()
+            && self.placement.bounds() == other.placement.bounds()
+            && self.placement.paint_bounds() == other.placement.paint_bounds()
+            && self.placement.layer() == other.placement.layer()
+            && self.placement.shielding() == other.placement.shielding()
+            && self.lifecycle == other.lifecycle
+    }
+
     pub(crate) const fn lifecycle(self) -> crate::runtime::portal::UiPortalLifecyclePosture {
         self.lifecycle
     }
@@ -33,7 +64,6 @@ impl UiMountedPortalOverlayProjectionInput {
     pub(crate) fn mechanic_for(
         self,
         frame: worth_ui_host_contract::UiMountedFrameIdentity,
-        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
         binding: worth_ui_host_contract::UiSurfaceBindingGeneration,
         owner_receipt: worth_ui_host_contract::UiMountedNodeReceiptIdentity,
     ) -> Result<
@@ -45,7 +75,7 @@ impl UiMountedPortalOverlayProjectionInput {
         worth_ui_host_contract::UiMountedPortalOverlayMechanic::complete_from_runtime_mounting(
             worth_ui_host_contract::UiMountedPortalOverlayCompletionInput {
                 frame,
-                surface,
+                surface: self.surface,
                 binding,
                 owner: self.owner,
                 owner_receipt,
@@ -53,6 +83,7 @@ impl UiMountedPortalOverlayProjectionInput {
                 anchor_presentation: self.placement.presentation(),
                 anchor_bounds: self.placement.anchor(),
                 bounds,
+                paint_bounds: self.placement.paint_bounds().mounted_box(),
                 clip_bounds: self.placement.clip_bounds(),
                 color: worth_ui_host_contract::UiMountedRgba8::new(0, 0, 0, 0),
                 layer_semantic_order: u32::MAX - 4_096 + u32::from(layer.depth()),

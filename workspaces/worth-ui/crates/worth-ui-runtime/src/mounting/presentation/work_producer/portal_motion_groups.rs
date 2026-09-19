@@ -10,6 +10,10 @@ use crate::runtime::{motion::UiMotionTargetIdentity, persistent_index::UiPersist
 
 use super::command_bundle::UiMountedPresentationCommandBundle;
 
+#[cfg(test)]
+#[path = "portal_motion_group_tests.rs"]
+mod tests;
+
 #[derive(Clone, Default)]
 pub(super) struct UiMountedPortalMotionGroups {
     targets_by_instance:
@@ -28,7 +32,7 @@ struct UiMountedPortalMotionContribution {
     viewport_clip: Option<UiMountedCanonicalBox>,
 }
 
-pub(super) struct UiMountedPortalMotionGroupView<'a> {
+pub(in crate::mounting::presentation) struct UiMountedPortalMotionGroupView<'a> {
     group: &'a UiMountedPortalMotionGroup,
 }
 
@@ -55,6 +59,7 @@ impl UiMountedPortalMotionGroups {
                 Some(commands),
                 affinities.get(instance).copied(),
                 projection.surface(),
+                false,
             );
         }
         groups
@@ -66,11 +71,9 @@ impl UiMountedPortalMotionGroups {
         commands: Option<&UiMountedPresentationCommandBundle>,
         affinity: Option<UiMountedPortalPresentationAffinity>,
         surface: UiSemanticSurfaceIdentity,
+        appearance_surface: bool,
     ) {
         self.remove_instance(instance);
-        let Some(commands) = commands else {
-            return;
-        };
         let mut contributions = std::collections::BTreeMap::<
             UiMotionTargetIdentity,
             (
@@ -78,7 +81,7 @@ impl UiMountedPortalMotionGroups {
                 Option<UiMountedCanonicalBox>,
             ),
         >::new();
-        for command in commands.iter() {
+        for command in commands.into_iter().flat_map(|bundle| bundle.iter()) {
             let classified = match command {
                 UiMountedPaintCommand::PortalOverlay { mechanic, .. } => Some((
                     target(
@@ -88,8 +91,7 @@ impl UiMountedPortalMotionGroups {
                     ),
                     Some(mechanic.clip_bounds()),
                 )),
-                UiMountedPaintCommand::FilledRect { .. }
-                | UiMountedPaintCommand::SemanticText { .. } => affinity.map(|affinity| {
+                UiMountedPaintCommand::SemanticText { .. } => affinity.map(|affinity| {
                     (
                         target(surface, affinity.owner(), affinity.portal_identity()),
                         None,
@@ -104,6 +106,17 @@ impl UiMountedPortalMotionGroups {
             if clip.is_some() {
                 entry.1 = clip;
             }
+        }
+        if let Some(affinity) = affinity.filter(|_| appearance_surface) {
+            contributions
+                .entry(target(
+                    surface,
+                    affinity.owner(),
+                    affinity.portal_identity(),
+                ))
+                .or_default()
+                .0
+                .push(UiMountedPaintCommandIdentity::appearance_surface(instance));
         }
         if contributions.is_empty() {
             return;
@@ -152,7 +165,9 @@ impl UiMountedPortalMotionGroups {
 }
 
 impl UiMountedPortalMotionGroupView<'_> {
-    pub(super) fn commands(&self) -> impl Iterator<Item = UiMountedPaintCommandIdentity> + '_ {
+    pub(in crate::mounting::presentation) fn commands(
+        &self,
+    ) -> impl Iterator<Item = UiMountedPaintCommandIdentity> + '_ {
         self.group
             .contributions
             .iter()
@@ -172,5 +187,5 @@ fn target(
     owner: UiMountedInstanceIdentity,
     portal_identity: u64,
 ) -> UiMotionTargetIdentity {
-    UiMotionTargetIdentity::from_family_owner(surface, owner, portal_identity)
+    UiMotionTargetIdentity::from_portal_owner(surface, owner, portal_identity)
 }

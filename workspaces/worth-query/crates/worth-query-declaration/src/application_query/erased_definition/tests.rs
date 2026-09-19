@@ -24,11 +24,13 @@ struct Entity;
 struct Parameters;
 struct Result;
 
+crate::worth_query_structured_value_binding!(QueryParametersBinding for Parameters { identity: "worth.query.test.portable-query-parameters.v1" });
+crate::worth_query_structured_value_binding!(QueryResultBinding for Result { identity: "worth.query.test.portable-query-result.v1" });
 crate::worth_query_application_query!(
-    Query in Schema,
+    Query for Schema,
     identity "worth.query.test.portable-query.v1",
-    parameters Parameters => "worth.query.test.portable-query-parameters.v1",
-    result Result => "worth.query.test.portable-query-result.v1",
+    parameters QueryParametersBinding,
+    result QueryResultBinding,
     scope Entity => "worth.query.test.portable-query-scope.v1",
     name "portable_query"
 );
@@ -102,6 +104,7 @@ fn noncanonical_untrusted_sequences_are_preserved_and_fail_fresh_schema_readmiss
             major: 1,
             minor: 0,
             members,
+            contributions: Vec::new(),
         },
     );
 
@@ -167,8 +170,14 @@ fn disclosure_field_masks_must_match_the_typed_selector_contract() {
 
 fn typed_definition() -> ErasedApplicationQueryDefinition {
     let entity = ApplicationEntityRef::<Schema, Entity>::from_schema_identifier("Entity");
-    let shape =
-        ApplicationQueryResultShapeBuilder::<Schema, Query, Entity, Result>::new(entity).build();
+    let shape = ApplicationQueryResultShapeBuilder::<
+        Schema,
+        Query,
+        Entity,
+        Result,
+        QueryResultBinding,
+    >::new(entity)
+    .build();
     ApplicationQueryDefinitionBuilder::declare(Query::reference())
         .root(entity)
         .scope(entity)
@@ -206,5 +215,46 @@ fn parameter(name: &str) -> ApplicationQueryParameterDefinition {
         name.to_owned(),
         ScalarAspectType::String,
         WorthQueryPortableTypeIdentity::from_untrusted("worth.rust.string".to_owned()),
+        None,
+        None,
     )
+}
+
+#[test]
+fn query_parameter_dimensions_change_canonical_meaning_and_reject_malformed_identity() {
+    let source = typed_definition();
+    let mut parts = source.clone().into_parts();
+    parts.parameters = vec![ApplicationQueryParameterDefinition::from_untrusted_fields(
+        "distance".to_owned(),
+        ScalarAspectType::UInt64,
+        WorthQueryPortableTypeIdentity::declared("worth.tests.distance.v1"),
+        Some("worth.units.metre.v1".to_owned()),
+        Some("worth.frames.model.v1".to_owned()),
+    )];
+    let framed = ErasedApplicationQueryDefinition::from_untrusted_parts(parts.clone());
+    assert_eq!(
+        validate_portable_application_query_freshly(framed.parts()),
+        Ok(())
+    );
+    parts.parameters = vec![ApplicationQueryParameterDefinition::from_untrusted_fields(
+        "distance".to_owned(),
+        ScalarAspectType::UInt64,
+        WorthQueryPortableTypeIdentity::declared("worth.tests.distance.v1"),
+        Some("worth.units.millimetre.v1".to_owned()),
+        Some("worth.frames.model.v1".to_owned()),
+    )];
+    let changed = ErasedApplicationQueryDefinition::from_untrusted_parts(parts.clone());
+    assert_ne!(framed.canonical_basis(), changed.canonical_basis());
+    parts.parameters = vec![ApplicationQueryParameterDefinition::from_untrusted_fields(
+        "distance".to_owned(),
+        ScalarAspectType::UInt64,
+        WorthQueryPortableTypeIdentity::declared("worth.tests.distance.v1"),
+        Some(" ".to_owned()),
+        None,
+    )];
+    let invalid = ErasedApplicationQueryDefinition::from_untrusted_parts(parts);
+    assert_eq!(
+        validate_portable_application_query_freshly(invalid.parts()),
+        Err(ApplicationQueryDefinitionDenial::InvalidPortableIdentity)
+    );
 }

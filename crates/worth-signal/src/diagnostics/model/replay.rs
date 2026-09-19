@@ -1,4 +1,6 @@
-use std::collections::VecDeque;
+mod retained_charge;
+
+use crate::diagnostics::state::DiagnosticHistory;
 
 use serde::{Deserialize, Serialize};
 
@@ -138,16 +140,16 @@ pub type ReplayFrame = ReplayEvent;
 pub struct RetainedReplayView<'a> {
     start: Option<ReplayCursor>,
     end: Option<ReplayCursor>,
-    frames: Option<&'a VecDeque<ReplayEvent>>,
+    frames: Option<&'a DiagnosticHistory<ReplayEvent>>,
     offset: usize,
     len: usize,
 }
 
 impl<'a> RetainedReplayView<'a> {
-    pub fn new(
+    pub(crate) fn new(
         start: Option<ReplayCursor>,
         end: Option<ReplayCursor>,
-        frames: &'a VecDeque<ReplayEvent>,
+        frames: &'a DiagnosticHistory<ReplayEvent>,
         offset: usize,
         len: usize,
     ) -> Self {
@@ -186,11 +188,12 @@ impl<'a> RetainedReplayView<'a> {
         self.len == 0
     }
 
-    pub fn iter(&self) -> Box<dyn Iterator<Item = &'a ReplayEvent> + 'a> {
-        match self.frames {
-            Some(frames) => Box::new(frames.iter().skip(self.offset).take(self.len)),
-            None => Box::new(std::iter::empty()),
-        }
+    pub fn iter(&self) -> impl DoubleEndedIterator<Item = &'a ReplayEvent> + ExactSizeIterator {
+        self.frames
+            .map(DiagnosticHistory::iter)
+            .unwrap_or_default()
+            .skip(self.offset)
+            .take(self.len)
     }
 
     pub fn first(&self) -> Option<&'a ReplayEvent> {
@@ -198,7 +201,7 @@ impl<'a> RetainedReplayView<'a> {
     }
 
     pub fn last(&self) -> Option<&'a ReplayEvent> {
-        self.iter().last()
+        self.iter().next_back()
     }
 
     pub fn to_owned_slice(&self) -> ReplaySlice {

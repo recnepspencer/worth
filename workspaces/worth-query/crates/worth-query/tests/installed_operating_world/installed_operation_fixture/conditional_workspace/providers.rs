@@ -38,6 +38,16 @@ impl worth_runtime_bridge::facade::BridgeConditionalProviderSemantics for Eligib
     type SemanticContract = ();
 
     fn semantic_contract(&self) -> Self::SemanticContract {}
+
+    fn retained_heap_bytes(
+        &self,
+        _: &Self::SemanticContract,
+    ) -> Result<
+        worth_runtime_bridge::facade::BridgeConditionalProviderHeapRetention,
+        worth_runtime_bridge::facade::BridgeConditionalProviderRetentionOverflow,
+    > {
+        Ok(worth_runtime_bridge::facade::BridgeConditionalProviderHeapRetention::none())
+    }
 }
 
 impl worth_runtime_bridge::facade::BridgeConditionalConditionProvider for EligibleCondition {
@@ -64,6 +74,16 @@ impl worth_runtime_bridge::facade::BridgeConditionalProviderSemantics for Reques
     type SemanticContract = ();
 
     fn semantic_contract(&self) -> Self::SemanticContract {}
+
+    fn retained_heap_bytes(
+        &self,
+        _: &Self::SemanticContract,
+    ) -> Result<
+        worth_runtime_bridge::facade::BridgeConditionalProviderHeapRetention,
+        worth_runtime_bridge::facade::BridgeConditionalProviderRetentionOverflow,
+    > {
+        Ok(worth_runtime_bridge::facade::BridgeConditionalProviderHeapRetention::none())
+    }
 }
 
 impl worth_runtime_bridge::facade::BridgeConditionalTriggerProvider for RequestedTrigger {
@@ -78,6 +98,16 @@ impl worth_runtime_bridge::facade::BridgeConditionalProviderSemantics for ExactC
     type SemanticContract = ();
 
     fn semantic_contract(&self) -> Self::SemanticContract {}
+
+    fn retained_heap_bytes(
+        &self,
+        _: &Self::SemanticContract,
+    ) -> Result<
+        worth_runtime_bridge::facade::BridgeConditionalProviderHeapRetention,
+        worth_runtime_bridge::facade::BridgeConditionalProviderRetentionOverflow,
+    > {
+        Ok(worth_runtime_bridge::facade::BridgeConditionalProviderHeapRetention::none())
+    }
 }
 
 impl worth_runtime_bridge::facade::BridgeConditionalComparatorProvider for ExactComparator {
@@ -99,6 +129,16 @@ impl domain::WorthQueryConditionalNodeComputeProvider<GeometryDomain, ReadVertex
     type SemanticContract = ();
 
     fn semantic_contract(&self) -> Self::SemanticContract {}
+
+    fn retained_heap_bytes(
+        &self,
+        _: &Self::SemanticContract,
+    ) -> Result<
+        worth_runtime_bridge::facade::BridgeConditionalProviderHeapRetention,
+        worth_runtime_bridge::facade::BridgeConditionalProviderRetentionOverflow,
+    > {
+        Ok(worth_runtime_bridge::facade::BridgeConditionalProviderHeapRetention::none())
+    }
 
     fn execution_resource_support(&self) -> domain::WorthQueryExecutionResourceSupport {
         crate::suite::installed_operation_fixture::execution_resource_support()

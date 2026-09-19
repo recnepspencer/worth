@@ -10,7 +10,25 @@ use super::super::{
     SignalDeltaThresholdContract, SignalThresholdBoundary, SignalThresholdComparisonDomain,
     SignalThresholdValueFamily,
 };
-use super::decision_projection_basis;
+fn decision_projection_basis(
+    contract: &super::InstalledSignalConditionalContract,
+    snapshot: &str,
+    execution: &str,
+    attempt: u64,
+    class: SignalConditionalDecisionClass,
+    dependencies: &[super::SignalConditionalDependencyVersion],
+) -> String {
+    super::decision_projection_basis(
+        contract,
+        snapshot,
+        execution,
+        attempt,
+        class,
+        dependencies,
+        &mut crate::data::retained_storage::RetainedStoragePreparation::new(usize::MAX),
+    )
+    .unwrap()
+}
 
 #[test]
 fn identical_owner_material_produces_stable_operational_identity() {
@@ -214,5 +232,61 @@ fn threshold_definition(value: u64, unit: &str) -> SignalConditionalContractDefi
             SignalThresholdBoundary::Inclusive,
         )),
         ..definition(SignalConditionalVersionComparator::Exact)
+    }
+}
+
+#[test]
+fn projection_admission_covers_long_text_before_rendering_and_keeps_installed_meaning() {
+    use crate::data::error::SignalError;
+    use crate::data::output::PartitionSubscription;
+    use crate::data::retained_storage::RetainedStoragePreparation;
+    let (_graph, contract) = installed(threshold_definition(u64::MAX, &"unit-λ|=:".repeat(400)));
+    let dependencies = [super::SignalConditionalDependencyVersion {
+        node: contract.node(),
+        aspect: Aspect::new(3),
+        version: u64::MAX,
+        scope: Some(PartitionSubscription::partition_and_detail(
+            "p|λ".repeat(800),
+            "d:=λ".repeat(900),
+        )),
+    }];
+    let snapshot = "snapshot-λ|=:".repeat(300);
+    let execution = "execution-λ|=:".repeat(200);
+    let mut full = RetainedStoragePreparation::new(1_000_000);
+    let material = super::decision_projection_basis(
+        &contract,
+        &snapshot,
+        &execution,
+        u64::MAX,
+        SignalConditionalDecisionClass::ComputedChanged,
+        &dependencies,
+        &mut full,
+    )
+    .unwrap();
+    assert!(material.ends_with(&super::contract_projection_basis(&contract)));
+    assert!(material.contains(&format!("snapshot={}:{}", snapshot.len(), snapshot)));
+    let consumed = full.visits();
+    for limit in [consumed - 1, consumed] {
+        let mut work = RetainedStoragePreparation::new(limit);
+        let result = super::decision_projection_basis(
+            &contract,
+            &snapshot,
+            &execution,
+            u64::MAX,
+            SignalConditionalDecisionClass::ComputedChanged,
+            &dependencies,
+            &mut work,
+        );
+        if limit == consumed {
+            assert_eq!(result.unwrap(), material);
+        } else {
+            assert_eq!(
+                result,
+                Err(SignalError::ConditionalEvaluationWorkExhausted {
+                    maximum_visits: limit
+                })
+            );
+            assert_eq!(work.visits(), dependencies.len() + 1);
+        }
     }
 }

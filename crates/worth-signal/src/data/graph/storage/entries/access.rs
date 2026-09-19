@@ -3,8 +3,8 @@ use crate::data::error::SignalError;
 use crate::data::graph::signal_graph::{stale_error, SignalGraph};
 use crate::data::handle::NodeId;
 use crate::data::node::{
-    CheckpointNodeImage, CheckpointNodeImageParts, NodeColdData, NodeEvaluationConfig, NodeHotData,
-    NodeState, NodeWarmData,
+    CheckpointNodeImage, CheckpointNodeImageParts, NodeColdData, NodeDefinitionData,
+    NodeEvaluationConfig, NodeHotData, NodeState, NodeWarmData,
 };
 use crate::data::output::PartitionSubscription;
 use crate::data::trace::{
@@ -69,7 +69,7 @@ impl SignalGraph {
         &self,
         id: NodeId,
     ) -> Result<&NodeEvaluationConfig, SignalError> {
-        Ok(&self.warm_ref(id)?.eval_config)
+        Ok(&self.definition_ref(id)?.eval_config)
     }
 
     pub(crate) fn node_invalidation_consistency_view(
@@ -134,6 +134,30 @@ impl SignalGraph {
             .runtime_artifact_state
             .as_ref()
             .map(|state| state.warm()))
+    }
+
+    /// Narrow borrowed output projection. Like the owned reuse-boundary
+    /// snapshot below, this does not expose the full warm artifact companion.
+    pub(crate) fn node_runtime_artifact_output_tokens(
+        &self,
+        id: NodeId,
+    ) -> Result<
+        (
+            Option<&crate::data::output::OutputIdentity>,
+            Option<&crate::data::output::ArtifactContinuityToken>,
+        ),
+        SignalError,
+    > {
+        Ok(self
+            .warm_ref(id)?
+            .runtime_artifact_state
+            .as_ref()
+            .map_or((None, None), |state| {
+                (
+                    state.warm().output_identity.as_ref(),
+                    state.warm().continuity_token.as_ref(),
+                )
+            }))
     }
 
     pub(crate) fn node_runtime_artifact_reuse_boundary_snapshot(
@@ -207,12 +231,18 @@ impl SignalGraph {
             pending_dependency_revalidation: warm.pending_dependency_revalidation.clone(),
             direct_invalidation_basis: warm.direct_invalidation_basis.clone(),
             direct_invalidation_generation: warm.direct_invalidation_generation,
-            tombstoned: warm.tombstoned,
+            tombstoned: self.definition_ref(id)?.tombstoned,
+            conditional_contract_generation: self
+                .definition_ref(id)?
+                .conditional_contract_generation,
+            conditional_contract_occurrence: self
+                .definition_ref(id)?
+                .conditional_contract_occurrence,
             runtime_artifact_state: warm.runtime_artifact_state.clone(),
             retained_artifact: cold.and_then(|cold| cold.retained_artifact.clone()),
             causality: cold.and_then(|cold| cold.causality.clone()),
             execution_trace: cold.and_then(|cold| cold.execution_trace),
-            eval_config: warm.eval_config.clone(),
+            eval_config: self.definition_ref(id)?.eval_config.clone(),
         }))
     }
 
@@ -220,7 +250,7 @@ impl SignalGraph {
         &self,
         id: NodeId,
     ) -> Result<crate::data::node::EvaluationCondition, SignalError> {
-        Ok(self.warm_ref(id)?.eval_config.condition.clone())
+        Ok(self.definition_ref(id)?.eval_config.condition.clone())
     }
 
     pub fn node_aspect_version(
@@ -266,6 +296,14 @@ impl SignalGraph {
             .ok_or_else(|| stale_error(id, id.generation()))
     }
 
+    pub(super) fn definition_ref(&self, id: NodeId) -> Result<&NodeDefinitionData, SignalError> {
+        self.validate_handle(id)?;
+        self.arena
+            .definitions
+            .get(id.index() as usize)
+            .ok_or_else(|| stale_error(id, id.generation()))
+    }
+
     pub(super) fn warm_ref(&self, id: NodeId) -> Result<&NodeWarmData, SignalError> {
         self.validate_handle(id)?;
         self.arena
@@ -300,22 +338,12 @@ impl SignalGraph {
             .ok_or_else(|| stale_error(id, id.generation()))
     }
 
+    #[cfg(test)]
     pub(super) fn cold_mut(&mut self, id: NodeId) -> Result<&mut NodeColdData, SignalError> {
         self.validate_handle(id)?;
         Ok(self.arena.cold[id.index() as usize]
             .get_or_insert_with(|| Box::new(NodeColdData::default()))
             .as_mut())
-    }
-
-    pub(super) fn trim_cold_if_empty(&mut self, id: NodeId) {
-        let index = id.index() as usize;
-        if self.arena.cold[index].as_ref().is_some_and(|cold| {
-            cold.retained_artifact.is_none()
-                && cold.causality.is_none()
-                && cold.execution_trace.is_none()
-        }) {
-            self.arena.cold[index] = None;
-        }
     }
 
     pub(super) fn set_dep_snapshot_id_direct(

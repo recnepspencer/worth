@@ -20,6 +20,14 @@ pub(crate) struct UiChangeClassificationRequest<F> {
 }
 
 impl UiChangeClassifier {
+    pub(crate) fn validate_basis(
+        set: &UiAdmittedObservationSet,
+        expected_session: crate::facade::WorthUiActiveApplicationSessionIdentity,
+        expected_source_basis: u64,
+    ) -> Result<(), UiChangeClassificationDenial> {
+        require_basis(set, expected_session, expected_source_basis)
+    }
+
     pub(crate) fn classify<F>(
         request: UiChangeClassificationRequest<F>,
     ) -> Result<UiChangeClassificationOutcome, UiChangeClassificationDenial>
@@ -65,6 +73,21 @@ impl UiChangeClassifier {
                 }
                 UiAdmittedObservationPayload::Host(observation) => {
                     push_bounded(&mut facts, owner::host::classify(observation)?, fact_limit)?;
+                }
+                UiAdmittedObservationPayload::PointerPresence(transition) => {
+                    let expected_generation =
+                        crate::runtime::WorthUiActiveApplicationGenerationIdentity::current(
+                            expected_session,
+                            &predecessor_generation,
+                        );
+                    if transition.generation() != &expected_generation {
+                        return Err(UiChangeClassificationDenial::ForeignApplicationGeneration);
+                    }
+                    push_bounded(
+                        &mut facts,
+                        owner::pointer_presence::classify(transition),
+                        fact_limit,
+                    )?;
                 }
                 UiAdmittedObservationPayload::Measurement(result) => {
                     push_bounded(&mut facts, owner::measurement::classify(result), fact_limit)?;

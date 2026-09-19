@@ -13,7 +13,10 @@ pub(super) struct WorthQueryGraphProviderStepBudget {
 }
 
 impl WorthQueryGraphProviderStepBudget {
-    pub(super) fn new(contract: &WorthQueryInstalledBoundedStepContract) -> Self {
+    pub(super) fn new(
+        contract: &WorthQueryInstalledBoundedStepContract,
+        managed_retained_bytes: u64,
+    ) -> Self {
         Self {
             max_work_units: contract.max_work_units_per_step(),
             completed_work_units: 0,
@@ -21,7 +24,7 @@ impl WorthQueryGraphProviderStepBudget {
             scratch_bytes_ceiling: contract.scratch_bytes_ceiling(),
             retained_bytes_ceiling: contract.retained_bytes_ceiling(),
             peak_scratch_bytes: 0,
-            retained_bytes: 0,
+            retained_bytes: managed_retained_bytes,
         }
     }
 

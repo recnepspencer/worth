@@ -40,7 +40,7 @@ impl WorthQueryDecisionFactProvider for Arc<WorthQueryPrimaryGraphProvider> {
             self.attempts
                 .lock()
                 .unwrap_or_else(|poisoned| poisoned.into_inner())
-                .observed_fact_and_branch(session, evidence.locator().identity())
+                .observed_fact_and_product(session, evidence.locator().identity())
                 .ok_or_else(provider_rejected)?
         };
         let fresh = self

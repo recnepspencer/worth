@@ -65,6 +65,9 @@ fn main() {
 fn exact_generic_contract<D, I, E, Ctx, T, F>(
     relational: RelationalOwnerServicePorts,
     signal: SignalOwnerServicePorts<D, I, E, Ctx, T>,
+    signal_definition_publication: worth_signal::facade::branch::SignalConditionalDefinitionPublicationPort<
+        D, I, E, Ctx, T,
+    >,
     bridge: RuntimeWorldCorrespondencePort,
     budgets: worth_runtime_world::facade::RuntimeWorldBudgets,
     clock: worth_runtime_world::facade::RuntimeWorldClock,
@@ -85,6 +88,7 @@ where
         .with_bridge_correspondence(bridge)
         .with_relational_services(relational)
         .with_signal_services(signal)
+        .with_signal_definition_publication(signal_definition_publication)
         .with_budgets(budgets)
         .with_clock(clock)
         .build()

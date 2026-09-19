@@ -1,5 +1,3 @@
-use std::collections::BTreeSet;
-
 use super::{PinClass, RecordArena, RecordKind};
 
 impl<K: RecordKind> RecordArena<K> {
@@ -18,44 +16,12 @@ impl<K: RecordKind> RecordArena<K> {
             .and_then(|physical| self.replay_pins.get(physical).copied())
     }
 
-    pub(crate) fn increment_snapshot_pin(&mut self, slot: usize) -> Option<u32> {
-        let physical = self.physical_index(slot)?;
-        let count = self.snapshot_pins.get_mut(physical)?;
-        *count = count.saturating_add(1);
-        Some(*count)
-    }
-
-    pub(crate) fn decrement_snapshot_pin(&mut self, slot: usize) -> Option<u32> {
-        let physical = self.physical_index(slot)?;
-        let count = self.snapshot_pins.get_mut(physical)?;
-        if *count == 0 {
-            return None;
-        }
-        *count -= 1;
-        Some(*count)
-    }
-
     pub(crate) fn adjust_named_pin(&mut self, slot: usize, class: PinClass) -> Option<&mut u32> {
         let physical = self.physical_index(slot)?;
         match class {
+            #[cfg(test)]
             PinClass::Branch => self.branch_pins.get_mut(physical),
             PinClass::Replay => self.replay_pins.get_mut(physical),
-        }
-    }
-
-    pub(crate) fn increment_named_pins_bulk(&mut self, slots: &BTreeSet<usize>, class: PinClass) {
-        for &slot in slots {
-            let Some(physical) = self.physical_index(slot) else {
-                continue;
-            };
-            let pin_count = match class {
-                PinClass::Branch => self.branch_pins.get_mut(physical),
-                PinClass::Replay => self.replay_pins.get_mut(physical),
-            };
-            let Some(pin_count) = pin_count else {
-                continue;
-            };
-            *pin_count = pin_count.saturating_add(1);
         }
     }
 
@@ -88,6 +54,7 @@ impl<K: RecordKind> RecordArena<K> {
         }
     }
 
+    #[cfg(test)]
     pub(crate) fn clear_named_pins(&mut self, class: PinClass) {
         match class {
             PinClass::Branch => self.branch_pins.fill(0),

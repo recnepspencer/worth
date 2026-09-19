@@ -33,6 +33,7 @@ impl UiNativeRetainedDrawList {
             initial.order(),
             initial.order_integrity(),
             glyph_runs,
+            &[],
             initial.projection(),
         )
     }
@@ -57,6 +58,7 @@ impl UiNativeRetainedDrawList {
             work.order(),
             work.order_integrity(),
             glyph_runs,
+            work.sample_overrides(),
             work.projection(),
         )
     }
@@ -83,6 +85,7 @@ impl UiNativeRetainedDrawList {
             source_order,
             order_integrity,
             source_glyph_runs,
+            &[],
             super::super::retained_regions::UiNativeRetainedRegions::paint_only(source_commands),
             super::super::identity_overlay::UiNativeRetainedIdentityOverlay::default(),
         )
@@ -99,6 +102,7 @@ impl UiNativeRetainedDrawList {
         source_order: &[UiMountedPaintOrderIdentity],
         order_integrity: UiMountedPaintOrderIntegrity,
         source_glyph_runs: &[worth_ui_host_contract::UiGlyphRunView],
+        source_sample_overrides: &[worth_ui_host_contract::UiMountedPresentationSampleChange],
         projection: &worth_ui_host_contract::UiMountedProjectionView,
     ) -> Result<Self, UiNativeRetainedDrawListDenial> {
         let regions = super::super::retained_regions::UiNativeRetainedRegions::prepare(
@@ -119,6 +123,7 @@ impl UiNativeRetainedDrawList {
             source_order,
             order_integrity,
             source_glyph_runs,
+            source_sample_overrides,
             regions,
             identity_overlay,
         )
@@ -135,6 +140,7 @@ impl UiNativeRetainedDrawList {
         source_order: &[UiMountedPaintOrderIdentity],
         order_integrity: UiMountedPaintOrderIntegrity,
         source_glyph_runs: &[worth_ui_host_contract::UiGlyphRunView],
+        source_sample_overrides: &[worth_ui_host_contract::UiMountedPresentationSampleChange],
         regions: super::super::retained_regions::UiNativeRetainedRegions,
         identity_overlay: super::super::identity_overlay::UiNativeRetainedIdentityOverlay,
     ) -> Result<Self, UiNativeRetainedDrawListDenial> {
@@ -162,8 +168,7 @@ impl UiNativeRetainedDrawList {
             .iter()
             .filter_map(|command| match command {
                 UiMountedPaintCommand::SemanticText { identity, .. } => Some(*identity),
-                UiMountedPaintCommand::FilledRect { .. }
-                | UiMountedPaintCommand::PortalOverlay { .. } => None,
+                UiMountedPaintCommand::PortalOverlay { .. } => None,
             })
             .collect::<std::collections::HashSet<_>>();
         if source_glyph_runs
@@ -186,18 +191,41 @@ impl UiNativeRetainedDrawList {
                 )
             })
             .collect();
+        let sample_overrides = source_sample_overrides
+            .iter()
+            .copied()
+            .map(|sample| (sample.command(), sample))
+            .collect::<HashMap<_, _>>();
+        if sample_overrides.len() != source_sample_overrides.len()
+            || sample_overrides
+                .keys()
+                .any(|identity| !identity.is_appearance_surface() && !commands.contains(identity))
+        {
+            return Err(UiNativeRetainedDrawListDenial::CommandMismatch);
+        }
+        let order = UiNativeRetainedOrder::initial_weighted(source_order.iter().map(|identity| {
+            (
+                *identity,
+                commands
+                    .get(&identity.command())
+                    .expect("complete order membership was validated")
+                    .layer_semantic_order(),
+            )
+        }))?;
         let mut retained = Self {
+            physical_coverage: None,
+            staged_appearance: None,
             frame,
             surface,
             binding,
             content,
             baseline,
             commands,
-            order: UiNativeRetainedOrder::initial(source_order.iter().copied())?,
+            order,
             order_integrity,
             damage,
             glyph_runs,
-            sample_overrides: HashMap::new(),
+            sample_overrides,
             regions,
             identity_overlay,
             last_paint_attribution: None,

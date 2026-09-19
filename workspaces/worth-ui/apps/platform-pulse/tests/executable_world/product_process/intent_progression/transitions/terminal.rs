@@ -105,7 +105,7 @@ impl<'a> IntentJourney<'a, FinalHeld> {
         let sequence = await_rebind_cancellation(self.world, self.state.attempt)?;
         self.evidence.record_sequence(sequence);
         self.evidence.record_cancelled_attempt(self.state.attempt);
-        self.record_rebase()?;
+        self.record_refresh()?;
         self.visible(self.action.region())?;
         self.advance_action("observe-rebind-cancellation")?;
         Ok(self.with_state(Cancelled))

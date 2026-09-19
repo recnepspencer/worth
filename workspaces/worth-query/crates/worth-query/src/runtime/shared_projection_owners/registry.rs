@@ -29,12 +29,6 @@ impl WorthQuerySharedProjectionOwner {
     pub(crate) fn handle(&self) -> &WorthQueryManagedLiveHandle {
         &self.handle
     }
-
-    pub(crate) fn closure(
-        &self,
-    ) -> &crate::domain_installation::WorthQueryCompiledSemanticAspectDependencyClosure {
-        &self.closure
-    }
 }
 
 pub(super) struct WorthQuerySharedProjectionLeaseRecord {

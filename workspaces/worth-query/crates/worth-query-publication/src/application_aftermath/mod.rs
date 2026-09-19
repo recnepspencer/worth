@@ -6,7 +6,6 @@ mod external_effect;
 mod outcome;
 mod recovery;
 
-pub(crate) use access_and_disclosure::publish_application_aftermath_source;
 pub use access_and_disclosure::{publish_application_aftermath, publish_recovery_support};
 pub use boundary_evidence::{
     WorthQueryPublishedApplicationCommitBoundaryEvidence, WorthQueryPublishedApplicationCommitKind,

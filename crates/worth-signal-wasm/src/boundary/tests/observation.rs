@@ -1,5 +1,103 @@
 use super::support::*;
 
+/// `double` is an on-demand computed recipe. Watching it must deliver on the
+/// committing transaction exactly like watching the eager `panel` output.
+#[test]
+fn watched_on_demand_computed_is_delivered_by_the_committing_transaction() {
+    let signals = build_signals();
+    build_phase3_graph(&signals);
+    let _ = signals.core.borrow_mut().read_value("double").unwrap();
+
+    let notices = Arc::new(Mutex::new(Vec::<WebObservationNotice>::new()));
+    let notices_clone = notices.clone();
+    let _handle = signals
+        .watch_for_test("double", move |notice| {
+            notices_clone
+                .lock()
+                .expect("computed watch notices mutex poisoned")
+                .push(notice);
+        })
+        .unwrap();
+
+    set_signal_value(&signals, "count", 4.0);
+
+    let notices_locked = notices
+        .lock()
+        .expect("computed watch notices mutex poisoned");
+    assert_eq!(notices_locked.len(), 1);
+    assert_eq!(notices_locked[0].signal_id, "double");
+    assert!(notices_locked[0].recomputed);
+    assert!(notices_locked[0].meaningful_change);
+    drop(notices_locked);
+    assert_eq!(
+        signals.core.borrow_mut().read_value("double").unwrap(),
+        SignalValue::Number(8.0)
+    );
+
+    // Same value again: recomputed but not meaningfully changed, so silent.
+    set_signal_value(&signals, "count", 4.0);
+    assert_eq!(
+        notices
+            .lock()
+            .expect("computed watch notices mutex poisoned")
+            .len(),
+        1
+    );
+}
+
+/// Only the tail of an on-demand chain is watched; the whole chain must be
+/// recomputed inside the transaction for the tail to be delivered.
+#[test]
+fn watched_tail_of_on_demand_chain_is_delivered_by_the_committing_transaction() {
+    let signals = build_signals();
+    build_phase3_graph(&signals);
+    signals
+        .computed_for_test(
+            "quadruple",
+            ComputedSpec {
+                reads: vec![RecipeReadSpec::LegacyId("double".to_owned())],
+                expr: Expr::Multiply {
+                    args: vec![
+                        Expr::Read {
+                            id: "double".to_owned(),
+                        },
+                        Expr::Value {
+                            value: SignalValue::Number(2.0),
+                        },
+                    ],
+                },
+                when: None,
+                identity: None,
+                produces_aspects: None,
+            },
+        )
+        .unwrap();
+    let _ = signals.core.borrow_mut().read_value("quadruple").unwrap();
+
+    let notices = Arc::new(Mutex::new(Vec::<WebObservationNotice>::new()));
+    let notices_clone = notices.clone();
+    let _handle = signals
+        .watch_for_test("quadruple", move |notice| {
+            notices_clone
+                .lock()
+                .expect("chain watch notices mutex poisoned")
+                .push(notice);
+        })
+        .unwrap();
+
+    set_signal_value(&signals, "count", 3.0);
+
+    let notices_locked = notices.lock().expect("chain watch notices mutex poisoned");
+    assert_eq!(notices_locked.len(), 1);
+    assert_eq!(notices_locked[0].signal_id, "quadruple");
+    assert!(notices_locked[0].meaningful_change);
+    drop(notices_locked);
+    assert_eq!(
+        signals.core.borrow_mut().read_value("quadruple").unwrap(),
+        SignalValue::Number(12.0)
+    );
+}
+
 #[test]
 fn signals_phase3_watch_and_nuke_follow_committed_delivery_semantics() {
     let signals = build_signals();

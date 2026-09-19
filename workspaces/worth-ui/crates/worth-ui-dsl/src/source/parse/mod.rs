@@ -1,3 +1,4 @@
+mod appearance_parser;
 mod worth_ui_parse_diagnostic;
 mod worth_ui_parse_report;
 mod worth_ui_parsed_source_module;
@@ -10,8 +11,9 @@ mod worth_ui_source_token_stream;
 pub(crate) use worth_ui_parse_diagnostic::{WorthUiParseDiagnostic, WorthUiParseDiagnosticCode};
 pub(crate) use worth_ui_parse_report::WorthUiParseReport;
 pub(crate) use worth_ui_parsed_source_module::{
-    WorthUiParsedBlockBody, WorthUiParsedBlockDeclaration, WorthUiParsedImportDeclaration,
-    WorthUiParsedSourceDeclaration, WorthUiParsedSourceModule, WorthUiParsedTokenDeclaration,
+    WorthUiParsedAppearanceRoleDeclaration, WorthUiParsedBlockBody, WorthUiParsedBlockDeclaration,
+    WorthUiParsedImportDeclaration, WorthUiParsedSourceDeclaration, WorthUiParsedSourceModule,
+    WorthUiParsedTokenDeclaration,
 };
 pub(crate) use worth_ui_parsed_source_package::WorthUiParsedSourcePackage;
 pub(crate) use worth_ui_source_parser::WorthUiSourceParser;

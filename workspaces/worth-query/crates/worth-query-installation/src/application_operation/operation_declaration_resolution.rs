@@ -1,7 +1,7 @@
 use worth_query_declaration::facade::application_schema::{
-    ApplicationSchema, ApplicationSchemaMember,
+    ApplicationOperationMarkerIdentity, ApplicationSchema, ApplicationSchemaMember,
+    ApplicationStructuredValueBinding,
 };
-use worth_query_declaration::facade::portable_identity::WorthQueryPortableType;
 
 use super::installed_contract_support::operation_denial;
 use super::{
@@ -35,13 +35,14 @@ pub(super) fn resolve_operation_declaration<Schema, Operation, Input>(
 ) -> Result<ResolvedApplicationOperationDeclaration, WorthQueryApplicationOperationInstallationDenial>
 where
     Schema: ApplicationSchema,
-    Operation: 'static,
-    Input: WorthQueryPortableType + 'static,
+    Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
+    Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
+    Input: 'static,
 {
-    let input_type = Input::PORTABLE_TYPE_NAME;
+    let input_type = Operation::InputBinding::IDENTITY_NAME;
     if !schema
         .member_provenance
-        .admits_operation::<Operation, Input>(operation, &Input::PORTABLE_TYPE_IDENTITY)
+        .admits_operation::<Operation, Input>(operation, &Operation::InputBinding::IDENTITY)
     {
         return Err(operation_denial(
             WorthQueryApplicationOperationInstallationDenialKind::OperationMeaningChanged,

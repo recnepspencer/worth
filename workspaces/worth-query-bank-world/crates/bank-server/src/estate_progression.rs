@@ -4,24 +4,20 @@ mod delegation;
 mod denial;
 mod disburse_estate;
 mod elevation_lifecycle;
-mod freeze_account;
-mod idempotency;
+pub(crate) mod freeze_account;
 mod lifecycle_facts;
-mod notify_death;
-mod open_estate_case;
+pub(crate) mod notify_death;
+pub(crate) mod open_estate_case;
+mod program_outcome;
 mod progression_failure;
 mod projection_denial;
-mod recognize_executor;
+pub(crate) mod recognize_executor;
 mod recovery;
 mod recovery_types;
-mod redo;
-mod redo_admission;
-mod release_estate;
+pub(crate) mod release_estate;
 mod request;
-mod retransmit_death_notice;
+pub(crate) mod retransmit_death_notice;
 mod review;
-mod undo;
-mod undo_admission;
 
 pub use delegation::{
     BankCapabilityDelegationProjectionDenial, BankCapabilityRevocationProjectionDenial,
@@ -47,17 +43,9 @@ pub use projection_denial::{
 };
 pub use recognize_executor::BankExecutorRecognitionProjectionDenial;
 pub use recovery_types::{
-    BankCommitRecoveryHandle, BankRecoveryDurability, BankRecoveryExpiryDecision,
-    BankRecoveryExpiryEvaluation, BankRecoveryIdempotencyResolution, BankRecoveryInspection,
-    BankRecoveryPosture, BankRecoverySafeRetryReceipt, BankRecoverySupportTruth,
-    BankRecoveryTransitionReceipt,
+    BankCommitRecoveryHandle, BankRecoveryClaimStatus, BankRecoveryDurability,
+    BankRecoveryExpiryDecision, BankRecoveryExpiryEvaluation, BankRecoveryIdempotencyResolution,
+    BankRecoveryInspection, BankRecoveryPosture, BankRecoverySafeRetryDenial,
+    BankRecoverySafeRetryReceipt, BankRecoverySupportTruth, BankRecoveryTransitionReceipt,
 };
-pub use redo::{BankRedoCommitOutcome, BankRedoIntent};
-pub use redo_admission::BankDisbursementRedoAdmission;
 pub use release_estate::BankEstateReleaseProjectionDenial;
-pub use undo::{
-    compensating_reverse_journal, BankRedoRecovery, BankUndoCommitOutcome, BankUndoRetry,
-};
-pub use undo_admission::{
-    BankCompensationUndoAdmission, BankRecordedInverseUndoAdmission, BankUndoCorrection,
-};

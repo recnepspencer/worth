@@ -1,0 +1,2 @@
+error[E0599]: no variant or associated item named `Appearance` found for enum `UiMountedPaintCommand` in the current scope
+ --> tests/ui/appearance/appearance_is_not_a_live_paint_command.rs

@@ -32,6 +32,7 @@ pub(crate) struct SignalBranchRestoreCellOutcome {
 }
 
 impl SignalBranchRestoreCellOutcome {
+    #[cfg(test)]
     pub(crate) fn into_observation(self) -> SignalBranchObservation {
         self.observation
     }
@@ -77,6 +78,7 @@ where
     }
 
     /// Restores one owner-admitted snapshot into its exact target cell.
+    #[cfg(test)]
     pub(crate) fn restore_exact(
         &self,
         admission: &SignalOwnerOperationAdmission<'_>,

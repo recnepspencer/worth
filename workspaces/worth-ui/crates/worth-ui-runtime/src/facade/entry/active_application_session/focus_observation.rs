@@ -9,6 +9,15 @@ impl super::WorthUiActiveApplicationSession {
         &mut self,
         payload: &worth_ui_host_contract::UiHostObservationPayload,
         presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
+        publications: &mut Vec<
+            Result<
+                (
+                    super::super::UiSemanticFocusPublicationReceipt,
+                    crate::mounting::UiMountedFramePublicationReceipt,
+                ),
+                super::super::UiFocusPlacementExecutionDenial,
+            >,
+        >,
     ) -> bool {
         if self.ime_composing {
             return false;
@@ -19,7 +28,10 @@ impl super::WorthUiActiveApplicationSession {
         let Some(publication) = self.mounted.current_publication().cloned() else {
             return false;
         };
-        let Some(surface) = publication.semantic_surface_for_presentation(presentation) else {
+        let Ok(surface) = self
+            .mounted
+            .current_semantic_surface_for_presentation(presentation)
+        else {
             return false;
         };
         if let UiHostFocusNavigation::Traverse(direction) = navigation {
@@ -29,6 +41,7 @@ impl super::WorthUiActiveApplicationSession {
                 };
                 let scope = focus
                     .current_semantic_focus()
+                    .filter(|current| current.scope().semantic_surface() == surface)
                     .map(crate::runtime::focus::UiSemanticKeyboardFocus::scope)
                     .or_else(|| focus.default_scope_for_surface(surface));
                 let Some(scope) = scope else {
@@ -43,7 +56,10 @@ impl super::WorthUiActiveApplicationSession {
                 };
                 transition
             };
-            let _placement = self.place_committed_semantic_focus(transition, &publication);
+            publications.push(
+                self.place_committed_semantic_focus(transition, &publication)
+                    .map(|focus| (focus, publication.clone())),
+            );
             return true;
         }
         let UiHostFocusNavigation::Container(key) = navigation else {
@@ -53,7 +69,7 @@ impl super::WorthUiActiveApplicationSession {
             let Some(focus) = self.focus.as_mut() else {
                 return false;
             };
-            match focus.navigate_container(key) {
+            match focus.navigate_container(surface, key) {
                 Ok(Some(navigation)) => navigation,
                 Ok(None) | Err(_) => return false,
             }
@@ -61,7 +77,10 @@ impl super::WorthUiActiveApplicationSession {
         if let crate::runtime::focus::UiFocusContainerNavigationReceipt::Roving(transition) =
             navigation
         {
-            let _placement = self.place_committed_semantic_focus(transition, &publication);
+            publications.push(
+                self.place_committed_semantic_focus(transition, &publication)
+                    .map(|focus| (focus, publication.clone())),
+            );
         }
         true
     }

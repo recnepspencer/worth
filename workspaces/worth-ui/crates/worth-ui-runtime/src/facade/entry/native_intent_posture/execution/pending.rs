@@ -118,6 +118,13 @@ impl DetachedNativeIntentPostureRetry {
         session: &'session mut WorthUiActiveApplicationSession,
         now_tick: u64,
     ) -> WorthUiNativeIntentPosturePublicationOutcome<'session> {
+        if let Err(denial) = self.transfer.observation.validate(session, &self.frame) {
+            return stopped(
+                crate::runtime::intent_execution::UiIntentConsequenceStopReason::Preparation(
+                    Box::new(denial),
+                ),
+            );
+        }
         if let Err(denial) = self.reservation.begin_effecting() {
             return stopped(
                 crate::runtime::intent_execution::UiIntentConsequenceStopReason::RebindAdmission(
@@ -126,8 +133,15 @@ impl DetachedNativeIntentPostureRetry {
             );
         }
         let deadline = presentation_deadline(&self.plan);
-        let outcome =
-            session.present_prepared_mounted_frame_internal(self.frame, deadline, now_tick);
+        let outcome = session
+            .present_prepared_observed_frame(
+                self.frame,
+                &self.transfer.observation,
+                None,
+                deadline,
+                now_tick,
+            )
+            .expect("exclusive detached retry preserves the validated observation/frame bond");
         drop(self.rejections);
         finish(
             NativeIntentPostureAdmitted {

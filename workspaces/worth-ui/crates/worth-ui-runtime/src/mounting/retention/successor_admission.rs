@@ -50,10 +50,26 @@ pub(super) fn admit_successor(
         None => {}
     }
     let candidate = prepare_candidate(frame)?;
+    let mut successor = authority.frames.clone();
+    for surface in frame.surfaces() {
+        successor
+            .surface_frames
+            .insert(surface.requirement().semantic_surface(), candidate.frame());
+    }
+    let structural_bytes = candidate
+        .structural_bytes()
+        .checked_add(successor.surface_frames.retained_structural_bytes().ok_or(
+            UiMountedFrameRetentionDenial::AccountingOverflow {
+                class: UiMountedRetentionClass::Current,
+            },
+        )?)
+        .ok_or(UiMountedFrameRetentionDenial::AccountingOverflow {
+            class: UiMountedRetentionClass::Current,
+        })?;
     require_capacity(
         UiMountedRetentionClass::Current,
         1,
-        candidate.structural_bytes(),
+        structural_bytes,
         authority.budget.current(),
     )?;
     let required_in_flight_frames = authority.reservations.len().checked_add(1).ok_or(
@@ -63,7 +79,7 @@ pub(super) fn admit_successor(
     )?;
     let required_in_flight_bytes = authority
         .in_flight_structural_bytes
-        .checked_add(candidate.structural_bytes())
+        .checked_add(structural_bytes)
         .ok_or(UiMountedFrameRetentionDenial::AccountingOverflow {
             class: UiMountedRetentionClass::InFlight,
         })?;
@@ -73,14 +89,19 @@ pub(super) fn admit_successor(
         required_in_flight_bytes,
         authority.budget.in_flight(),
     )?;
-    let structural_bytes = candidate.structural_bytes();
     let successor_revision = authority.revision.checked_add(1).ok_or(
         UiMountedFrameRetentionDenial::AccountingOverflow {
             class: UiMountedRetentionClass::Current,
         },
     )?;
-    let mut successor = authority.frames.clone();
-    if reconciliation {
+    // Reconstructing a distinct frame still succeeds a presented predecessor.
+    // Its event-time evidence remains subject to the ordinary retention budget.
+    if reconciliation
+        && successor
+            .current
+            .as_ref()
+            .is_some_and(|current| current.frame() == candidate.frame())
+    {
         successor.current = Some(candidate);
     } else {
         retain_current_as_predecessor(&mut successor, candidate)?;
@@ -212,11 +233,13 @@ fn enforce_predecessor_budget(
 ) -> Result<(), UiMountedFrameRetentionDenial> {
     let class_budget = authority.budget.predecessor_inspection();
     while !class_budget.admits(state.predecessors.len(), state.predecessor_structural_bytes) {
-        let Some(position) = state
-            .predecessor_order
-            .iter()
-            .position(|frame| !authority.frame_is_pinned(*frame))
-        else {
+        let Some(position) = state.predecessor_order.iter().position(|frame| {
+            !authority.frame_is_pinned(*frame)
+                && !state
+                    .surface_frames
+                    .iter()
+                    .any(|(_, current)| current == frame)
+        }) else {
             return Err(capacity_denial(
                 UiMountedRetentionClass::PredecessorInspection,
                 state.predecessors.len(),

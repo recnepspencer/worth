@@ -97,14 +97,14 @@ fn fold_component_descriptor(accumulator: u64, descriptor: &ComponentDescriptor)
             .map_or(0, super::ComponentRealtimeOverlayContract::digest_basis)
             .to_le_bytes(),
     );
-    let with_static_paint = fold_optional_str(
-        with_realtime,
+    let with_surface_order = fold_optional_str(
+        fold_bytes(with_realtime, b"surface_paint_order"),
         descriptor
-            .static_paint_contract()
-            .map(|contract| contract.digest_basis()),
+            .surface_paint_order()
+            .map(|rank| rank.to_string()),
     );
     let with_semantic_text = fold_optional_str(
-        with_static_paint,
+        with_surface_order,
         descriptor
             .semantic_text_contract()
             .map(|contract| contract.digest_basis()),
@@ -121,11 +121,25 @@ fn fold_component_descriptor(accumulator: u64, descriptor: &ComponentDescriptor)
             .portal_child_contract()
             .map(super::ComponentPortalChildContract::digest_basis),
     );
-    fold_optional_str(
+    let with_allocation = fold_optional_str(
         with_portal_child,
         descriptor
             .allocation_measurement_contract()
             .map(|contract| contract.digest_basis()),
+    );
+    descriptor.appearance_aspect_contract().map_or_else(
+        || fold_bytes(with_allocation, b"appearance-contract:none"),
+        |contract| {
+            let with_applicability = fold_bytes(with_allocation, &[contract.applicability() as u8]);
+            let required = contract.required().iter().fold(
+                fold_bytes(with_applicability, b"appearance-contract:required"),
+                |digest, aspect| fold_bytes(digest, &[*aspect as u8]),
+            );
+            contract.optional().iter().fold(
+                fold_bytes(required, b"appearance-contract:optional"),
+                |digest, aspect| fold_bytes(digest, &[*aspect as u8]),
+            )
+        },
     )
 }
 
@@ -189,27 +203,6 @@ mod tests {
     }
 
     #[test]
-    fn static_paint_order_participates_in_the_frozen_descriptor_digest() {
-        use crate::capability::{
-            ComponentStaticPaintContract, ComponentStaticPaintOrder, ThemeTokenId,
-        };
-
-        let component_with_order = |rank| {
-            component_descriptor("workspace.component.pulse").with_static_paint(
-                ComponentStaticPaintContract::opaque_fill(
-                    ThemeTokenId::new("theme.pulse.fill").expect("valid token"),
-                    ComponentStaticPaintOrder::back_to_front(rank),
-                ),
-                ComponentAllocationMeasurementContract::fill_viewport(),
-            )
-        };
-        let back = freeze_component(component_with_order(0));
-        let front = freeze_component(component_with_order(1));
-
-        assert_ne!(back.digest_basis(), front.digest_basis());
-    }
-
-    #[test]
     fn hit_test_order_participates_in_the_frozen_descriptor_digest() {
         use crate::capability::{ComponentHitTestContract, ComponentHitTestOrder};
 
@@ -225,6 +218,25 @@ mod tests {
         let back = freeze_component(component_with_order(1));
 
         assert_ne!(front.digest_basis(), back.digest_basis());
+    }
+
+    #[test]
+    fn surface_paint_order_distinguishes_absence_zero_and_full_width_ranks() {
+        let variants = [None, Some(0), Some(65_536), Some(u32::MAX)].map(|order| {
+            let descriptor = component_descriptor("workspace.component.surface");
+            let descriptor = match order {
+                Some(rank) => descriptor.with_surface_paint_order(rank),
+                None => descriptor,
+            };
+            let frozen = freeze_component(descriptor);
+            assert_eq!(frozen.descriptors()[0].surface_paint_order(), order);
+            frozen
+        });
+        for (index, left) in variants.iter().enumerate() {
+            for right in &variants[index + 1..] {
+                assert_ne!(left.digest_basis(), right.digest_basis());
+            }
+        }
     }
 
     fn freeze_component(descriptor: ComponentDescriptor) -> FrozenComponentCapabilities {

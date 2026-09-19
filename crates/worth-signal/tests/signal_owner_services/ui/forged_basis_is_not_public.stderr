@@ -7,5 +7,9 @@ error[E0423]: cannot initialize a tuple struct which contains private fields
 note: constructor is not visible here due to private fields
  --> src/branch/basis.rs
   |
-  | pub struct AdmittedSignalBranchBasis(Arc<AdmittedSignalBranchBasisInner>);
-  |                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ private field
+  | pub struct AdmittedSignalBranchBasis(pub(crate) Arc<AdmittedSignalBranchBasisInner>);
+  |                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ private field
+help: you might have meant to use the `from_inner` associated function
+  |
+4 |     AdmittedSignalBranchBasis::from_inner(std::sync::Arc::new(descriptor))
+  |                              ++++++++++++

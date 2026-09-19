@@ -3,26 +3,34 @@ pub use worth_ui_runtime::facade::application::{
 };
 pub use worth_ui_runtime::facade::entry::{
     UiFocusHostPlacementReconciliationDenial, UiFocusHostPlacementReconciliationOutcome,
-    UiFocusHostPlacementReconciliationReceipt, UiFocusHostPlacementShutdownReport,
+    UiFocusHostPlacementReconciliationReceipt, UiFocusHostPlacementSettlementDenial,
+    UiFocusHostPlacementShutdownReport, UiFocusPlacementExecutionDenial,
     UiFocusPlacementReconciliationExecutionDenial, UiIntentWiringSatisfied,
     UiMountedHostMeasurementTransitionDenial, UiMountedHostMeasurementUnexpectedTransition,
-    UiPortalDismissalPublicationReceipt, UiSemanticFocusParticipantObservation,
-    UiSemanticFocusPhysicalPlacementOutcome, UiSemanticFocusPublicationCause,
-    UiSemanticFocusPublicationOutcome, UiSemanticFocusPublicationReceipt,
-    WorthUiApplicationCutoverRetry, WorthUiApplicationPublicationObservation,
+    UiNativeMountedComponentLayoutInput, UiNativeMountedRegionLayoutInput,
+    UiNativeReplacementLayoutInput, UiPortalDismissalPublicationReceipt,
+    UiSemanticFocusParticipantObservation, UiSemanticFocusPhysicalPlacementOutcome,
+    UiSemanticFocusPublicationCause, UiSemanticFocusPublicationOutcome,
+    UiSemanticFocusPublicationReceipt, WorthUiApplicationCutoverRetry,
+    WorthUiApplicationPublicationObservation,
 };
 pub use worth_ui_runtime::facade::lifecycle::{
     WorthUiApplicationPreparationDenial, WorthUiApplicationPreparationPhase,
 };
 pub use worth_ui_runtime::facade::mounted::{
-    UiHostPresentationCostReport, UiHostSurfaceBaselineIdentity, UiMountedFrameOutcome,
-    UiMountedFramePublicationReceipt, UiMountedFrameRequest, UiMountedFrameRetentionBudget,
-    UiMountedFrameRetentionBudgetInput, UiMountedFrameRetentionRejection,
-    UiMountedIndeterminateFrame, UiMountedInspectedFrame, UiMountedInspectionOmission,
-    UiMountedInspectionReceipt, UiMountedInspectionRequest,
-    UiMountedPresentationAdmissionRejection, UiMountedPresentationCompletionDenial,
-    UiMountedPresentationInFlight, UiMountedRejectedFrame, UiMountedSupersededFrame,
-    UiMountedVisualTargetDenial, UiPresentationDeadline,
+    UiHitTestSpatialWork, UiHostPresentationCostReport, UiHostSurfaceBaselineIdentity,
+    UiMountedFrameOutcome, UiMountedFramePublicationReceipt, UiMountedFrameRequest,
+    UiMountedFrameRetentionBudget, UiMountedFrameRetentionBudgetInput,
+    UiMountedFrameRetentionRejection, UiMountedIndeterminateFrame, UiMountedInspectedFrame,
+    UiMountedInspectionOmission, UiMountedInspectionReceipt, UiMountedInspectionRequest,
+    UiMountedInstanceIdentity, UiMountedLayoutBasis, UiMountedLayoutRevision,
+    UiMountedOccurrenceGeometry, UiMountedPresentationAdmissionRejection,
+    UiMountedPresentationCompletionDenial, UiMountedPresentationInFlight, UiMountedRejectedFrame,
+    UiMountedSupersededFrame, UiMountedSurfaceGeometryBatch, UiMountedVisualTargetDenial,
+    UiPresentationDeadline, UiPresentationMotionSamplingCost,
+};
+pub use worth_ui_runtime::facade::mounted::{
+    UiMountedCanonicalBox, UiMountedCanonicalBoxInput, UiMountedCoordinateSpace,
 };
 pub use worth_ui_runtime::facade::prepared_application_authority::WorthUiPreparedApplicationGenerationIdentity;
 pub use worth_ui_runtime::facade::text::{
@@ -72,6 +80,7 @@ pub use worth_ui_runtime::facade::{
     WorthUiNativePredecessorRecovery, WorthUiNativePresentationRecoveryDenial,
     WorthUiNativeProjectionRebindDenial, WorthUiNativeReducedMotionPosture,
     WorthUiNativeSourceRebindDenial, WorthUiPendingApplicationCutover,
-    WorthUiPreparedApplicationReplacement, WorthUiPreparedMountedApplicationReplacement,
-    WorthUiReplacementCandidateSummary, WorthUiReplacementPlannedCostEnvelope,
+    WorthUiPortalExitRetentionPendingKind, WorthUiPreparedApplicationReplacement,
+    WorthUiPreparedMountedApplicationReplacement, WorthUiReplacementCandidateSummary,
+    WorthUiReplacementPlannedCostEnvelope,
 };

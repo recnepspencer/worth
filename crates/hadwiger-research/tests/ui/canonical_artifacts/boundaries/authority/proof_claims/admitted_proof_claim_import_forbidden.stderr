@@ -1,5 +1,0 @@
-error[E0432]: unresolved import `hadwiger_research::facade::AdmittedProofClaim`
- --> tests/ui/canonical_artifacts/boundaries/authority/proof_claims/admitted_proof_claim_import_forbidden.rs:1:5
-  |
-1 | use hadwiger_research::facade::AdmittedProofClaim;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `AdmittedProofClaim` in `facade`

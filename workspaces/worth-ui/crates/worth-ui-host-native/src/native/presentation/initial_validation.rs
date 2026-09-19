@@ -3,10 +3,7 @@ use worth_ui_host_contract::{
     UiMountedPresentationWorkView,
 };
 
-use super::{
-    raster::raster_rect, text, UiNativePresentationAccess, UiNativePresentationFailure,
-    UiNativeRasterOperation,
-};
+use super::{UiNativePresentationAccess, UiNativePresentationFailure, UiNativeRasterOperation};
 
 pub(super) struct ValidatedInitial {
     commands: Box<[UiMountedPaintCommand]>,
@@ -14,11 +11,12 @@ pub(super) struct ValidatedInitial {
 
 pub(super) fn validate_initial(
     view: &UiMountedFrameConsumptionView<'_>,
+    retained: &super::UiNativeRetainedDrawList,
 ) -> Result<ValidatedInitial, UiHostSurfacePresentationDenial> {
     let UiMountedPresentationWorkView::Initial(initial) = view.presentation_work() else {
         return Err(UiHostSurfacePresentationDenial::AdapterDeclined);
     };
-    if initial.commands().is_empty()
+    if (initial.commands().is_empty() && !retained.has_appearance())
         || initial.order().len() != initial.commands().len()
         || !initial.order_integrity().admits(initial.order())
     {
@@ -28,19 +26,6 @@ pub(super) fn validate_initial(
         .commands()
         .iter()
         .map(|command| match command {
-            UiMountedPaintCommand::FilledRect { identity, mechanic }
-                if *identity
-                    == worth_ui_host_contract::UiMountedPaintCommandIdentity::filled_rect(
-                        mechanic,
-                    )
-                    && initial
-                        .projection()
-                        .filled_rects()
-                        .rows()
-                        .contains(mechanic) =>
-            {
-                Ok((*identity, command.clone()))
-            }
             UiMountedPaintCommand::SemanticText { identity, mechanic }
                 if *identity
                     == worth_ui_host_contract::UiMountedPaintCommandIdentity::semantic_text(
@@ -89,36 +74,30 @@ pub(super) fn validate_initial(
 }
 
 pub(super) fn initial_operations(
-    view: &UiMountedFrameConsumptionView<'_>,
+    retained: &super::UiNativeRetainedDrawList,
     graphics: &UiNativePresentationAccess,
     atlas: &crate::native::text_atlas::UiNativeTextAtlas,
     initial: &ValidatedInitial,
 ) -> Result<Vec<UiNativeRasterOperation>, UiNativePresentationFailure> {
-    let runs = view
-        .text_raster_work()
-        .map(|work| work.glyph_runs())
-        .unwrap_or_default();
-    let glyphs = text::plan_glyph_commands(runs, atlas, graphics.extent())
-        .map_err(|_| before_effects_malformed())?;
-    if glyphs.iter().any(|glyph| {
-        !initial.commands.iter().any(|command| {
-            matches!(command, UiMountedPaintCommand::SemanticText { identity, .. } if *identity == glyph.run.mechanic())
-        })
-    }) {
-        return Err(before_effects_malformed());
+    if retained.has_appearance() {
+        return retained
+            .complete_appearance_operations(
+                super::raster::UiNativeRasterBasis::from_presentation_access(graphics),
+                atlas,
+            )
+            .map_err(|_| before_effects_malformed());
     }
     let mut operations = Vec::new();
     for command in &initial.commands {
         match command {
-            UiMountedPaintCommand::FilledRect { mechanic, .. } => {
-                let rect =
-                    raster_rect(*mechanic, graphics).map_err(|_| before_effects_malformed())?;
-                operations.push(UiNativeRasterOperation::FilledRect {
-                    rect,
-                    source_rgba8: mechanic.color().channels(),
-                });
-            }
             UiMountedPaintCommand::PortalOverlay { mechanic, .. } => {
+                if let Some(operation) = retained
+                    .appearance_portal_surface_operation(mechanic.owner(), graphics.extent())
+                    .map_err(|_| before_effects_malformed())?
+                {
+                    operations.push(operation);
+                    continue;
+                }
                 let rect = super::raster::raster_portal_overlay(*mechanic, graphics)
                     .map_err(|_| before_effects_malformed())?;
                 operations.push(UiNativeRasterOperation::FilledRect {
@@ -127,10 +106,15 @@ pub(super) fn initial_operations(
                 });
             }
             UiMountedPaintCommand::SemanticText { identity, .. } => operations.extend(
-                glyphs
+                retained
+                    .plan_text_commands(
+                        *identity,
+                        atlas,
+                        super::raster::UiNativeRasterBasis::from_presentation_access(graphics),
+                    )
+                    .map_err(|_| before_effects_malformed())?
                     .iter()
                     .copied()
-                    .filter(|glyph| glyph.run.mechanic() == *identity)
                     .map(UiNativeRasterOperation::Glyph),
             ),
         }

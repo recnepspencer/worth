@@ -91,6 +91,7 @@ const FOREIGN_OWNER: BankPrincipalId = BankPrincipalId::new(8).unwrap();
 const ASSIGNMENT: EmployeeAssignmentId = EmployeeAssignmentId::new(9).unwrap();
 const NOTICE: DeathNoticeId = DeathNoticeId::new(10).unwrap();
 const GRANT: CapabilityGrantId = CapabilityGrantId::new(11).unwrap();
+const ALTERNATE_GRANT: CapabilityGrantId = CapabilityGrantId::new(12).unwrap();
 
 fn freeze_world(
     scenario: &str,
@@ -149,6 +150,11 @@ fn freeze_world(
 }
 
 fn estate_world(granted_account: AccountId) -> BankEstateWorld {
+    let alternate_account = if granted_account == ESTATE_ACCOUNT {
+        FOREIGN_ACCOUNT
+    } else {
+        ESTATE_ACCOUNT
+    };
     BankEstateWorld::default()
         .with_branch(EstateBranch {
             id: BRANCH,
@@ -177,12 +183,13 @@ fn estate_world(granted_account: AccountId) -> BankEstateWorld {
             role: EmployeeRole::EstateSpecialist,
         })
         .with_estate_assignment(ESTATE, ASSIGNMENT)
-        .with_grant(freeze_grant(granted_account))
+        .with_grant(freeze_grant(GRANT, granted_account))
+        .with_grant(freeze_grant(ALTERNATE_GRANT, alternate_account))
 }
 
-fn freeze_grant(account: AccountId) -> EstateCapabilityGrant {
+fn freeze_grant(id: CapabilityGrantId, account: AccountId) -> EstateCapabilityGrant {
     EstateCapabilityGrant {
-        id: GRANT,
+        id,
         grantor: DECEASED,
         grantee: SPECIALIST,
         scope: EstateCapabilityScope {

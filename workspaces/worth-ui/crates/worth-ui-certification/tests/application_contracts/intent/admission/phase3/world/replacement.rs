@@ -7,7 +7,6 @@ use worth_ui::facade::source::{
 };
 
 use super::AdmissionWorld;
-use crate::intent::operability::replacement_input;
 
 impl AdmissionWorld {
     pub(in crate::intent) fn rebind_application(
@@ -16,7 +15,7 @@ impl AdmissionWorld {
         worth_ui::facade::observation::UiObservationResourceRetirementReport,
         worth_ui_inspection::UiIntentEvidenceRetirementReport,
     ) {
-        let input = replacement_input(&self.facts);
+        let input = self.replacement_input.clone();
         self.rebind_application_with_input(input)
     }
 
@@ -64,7 +63,7 @@ impl AdmissionWorld {
     pub(in crate::intent) fn begin_replacement_observation_turn(
         &mut self,
     ) -> worth_ui::facade::observation::UiObservationTurn<'_> {
-        let input = replacement_input(&self.facts);
+        let input = self.replacement_input.clone();
         self.begin_replacement_observation_turn_with_input("phase-4-execution-replacement", input)
     }
 
@@ -72,7 +71,7 @@ impl AdmissionWorld {
         &mut self,
         provider: &'static str,
     ) -> worth_ui::facade::observation::UiObservationTurn<'_> {
-        let input = replacement_input(&self.facts);
+        let input = self.replacement_input.clone();
         self.begin_replacement_observation_turn_with_input(provider, input)
     }
 

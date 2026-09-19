@@ -1,0 +1,232 @@
+appearance role platform.pulse.appearance.native_card applies_to platform.pulse.component.native_card {
+  background use token(theme.platform_pulse.raised_surface)
+  radius use token(theme.platform_pulse.radius.r12)
+  border use token(theme.platform_pulse.border.card)
+}
+component platform.pulse.component.native_card {
+  appearance { role platform.pulse.appearance.native_card }
+}
+appearance role platform.pulse.appearance.native_label applies_to platform.pulse.component.native_label {
+  foreground use token(theme.platform_pulse.primary_text)
+}
+component platform.pulse.component.native_label {
+  appearance { role platform.pulse.appearance.native_label }
+}
+appearance role platform.pulse.appearance.health_dot_0 applies_to platform.pulse.component.health_dot_0 {
+  background use token(theme.platform_pulse.positive)
+  radius use token(theme.platform_pulse.radius.r32)
+}
+component platform.pulse.component.health_dot_0 {
+  appearance { role platform.pulse.appearance.health_dot_0 }
+}
+appearance role platform.pulse.appearance.health_name_0 applies_to platform.pulse.component.health_name_0 {
+  foreground use token(theme.platform_pulse.primary_text)
+}
+component platform.pulse.component.health_name_0 {
+  appearance { role platform.pulse.appearance.health_name_0 }
+}
+appearance role platform.pulse.appearance.health_badge_0 applies_to platform.pulse.component.health_badge_0 {
+  background use token(theme.platform_pulse.mint_pale)
+  radius use token(theme.platform_pulse.radius.r8)
+}
+component platform.pulse.component.health_badge_0 {
+  appearance { role platform.pulse.appearance.health_badge_0 }
+}
+appearance role platform.pulse.appearance.health_status_0 applies_to platform.pulse.component.health_status_0 {
+  foreground use token(theme.platform_pulse.positive)
+}
+component platform.pulse.component.health_status_0 {
+  appearance { role platform.pulse.appearance.health_status_0 }
+}
+appearance role platform.pulse.appearance.health_rule_0 applies_to platform.pulse.component.health_rule_0 {
+  background use token(theme.platform_pulse.grid)
+}
+component platform.pulse.component.health_rule_0 {
+  appearance { role platform.pulse.appearance.health_rule_0 }
+}
+appearance role platform.pulse.appearance.health_dot_1 applies_to platform.pulse.component.health_dot_1 {
+  background use token(theme.platform_pulse.positive)
+  radius use token(theme.platform_pulse.radius.r32)
+}
+component platform.pulse.component.health_dot_1 {
+  appearance { role platform.pulse.appearance.health_dot_1 }
+}
+appearance role platform.pulse.appearance.health_name_1 applies_to platform.pulse.component.health_name_1 {
+  foreground use token(theme.platform_pulse.primary_text)
+}
+component platform.pulse.component.health_name_1 {
+  appearance { role platform.pulse.appearance.health_name_1 }
+}
+appearance role platform.pulse.appearance.health_badge_1 applies_to platform.pulse.component.health_badge_1 {
+  background use token(theme.platform_pulse.mint_pale)
+  radius use token(theme.platform_pulse.radius.r8)
+}
+component platform.pulse.component.health_badge_1 {
+  appearance { role platform.pulse.appearance.health_badge_1 }
+}
+appearance role platform.pulse.appearance.health_status_1 applies_to platform.pulse.component.health_status_1 {
+  foreground use token(theme.platform_pulse.positive)
+}
+component platform.pulse.component.health_status_1 {
+  appearance { role platform.pulse.appearance.health_status_1 }
+}
+appearance role platform.pulse.appearance.health_rule_1 applies_to platform.pulse.component.health_rule_1 {
+  background use token(theme.platform_pulse.grid)
+}
+component platform.pulse.component.health_rule_1 {
+  appearance { role platform.pulse.appearance.health_rule_1 }
+}
+appearance role platform.pulse.appearance.health_dot_2 applies_to platform.pulse.component.health_dot_2 {
+  background use token(theme.platform_pulse.positive)
+  radius use token(theme.platform_pulse.radius.r32)
+}
+component platform.pulse.component.health_dot_2 {
+  appearance { role platform.pulse.appearance.health_dot_2 }
+}
+appearance role platform.pulse.appearance.health_name_2 applies_to platform.pulse.component.health_name_2 {
+  foreground use token(theme.platform_pulse.primary_text)
+}
+component platform.pulse.component.health_name_2 {
+  appearance { role platform.pulse.appearance.health_name_2 }
+}
+appearance role platform.pulse.appearance.health_badge_2 applies_to platform.pulse.component.health_badge_2 {
+  background use token(theme.platform_pulse.mint_pale)
+  radius use token(theme.platform_pulse.radius.r8)
+}
+component platform.pulse.component.health_badge_2 {
+  appearance { role platform.pulse.appearance.health_badge_2 }
+}
+appearance role platform.pulse.appearance.health_status_2 applies_to platform.pulse.component.health_status_2 {
+  foreground use token(theme.platform_pulse.positive)
+}
+component platform.pulse.component.health_status_2 {
+  appearance { role platform.pulse.appearance.health_status_2 }
+}
+appearance role platform.pulse.appearance.health_rule_2 applies_to platform.pulse.component.health_rule_2 {
+  background use token(theme.platform_pulse.grid)
+}
+component platform.pulse.component.health_rule_2 {
+  appearance { role platform.pulse.appearance.health_rule_2 }
+}
+appearance role platform.pulse.appearance.health_dot_3 applies_to platform.pulse.component.health_dot_3 {
+  background use token(theme.platform_pulse.positive)
+  radius use token(theme.platform_pulse.radius.r32)
+}
+component platform.pulse.component.health_dot_3 {
+  appearance { role platform.pulse.appearance.health_dot_3 }
+}
+appearance role platform.pulse.appearance.health_name_3 applies_to platform.pulse.component.health_name_3 {
+  foreground use token(theme.platform_pulse.primary_text)
+}
+component platform.pulse.component.health_name_3 {
+  appearance { role platform.pulse.appearance.health_name_3 }
+}
+appearance role platform.pulse.appearance.health_badge_3 applies_to platform.pulse.component.health_badge_3 {
+  background use token(theme.platform_pulse.mint_pale)
+  radius use token(theme.platform_pulse.radius.r8)
+}
+component platform.pulse.component.health_badge_3 {
+  appearance { role platform.pulse.appearance.health_badge_3 }
+}
+appearance role platform.pulse.appearance.health_status_3 applies_to platform.pulse.component.health_status_3 {
+  foreground use token(theme.platform_pulse.positive)
+}
+component platform.pulse.component.health_status_3 {
+  appearance { role platform.pulse.appearance.health_status_3 }
+}
+appearance role platform.pulse.appearance.health_rule_3 applies_to platform.pulse.component.health_rule_3 {
+  background use token(theme.platform_pulse.grid)
+}
+component platform.pulse.component.health_rule_3 {
+  appearance { role platform.pulse.appearance.health_rule_3 }
+}
+appearance role platform.pulse.appearance.health_dot_4 applies_to platform.pulse.component.health_dot_4 {
+  background use token(theme.platform_pulse.positive)
+  radius use token(theme.platform_pulse.radius.r32)
+}
+component platform.pulse.component.health_dot_4 {
+  appearance { role platform.pulse.appearance.health_dot_4 }
+}
+appearance role platform.pulse.appearance.health_name_4 applies_to platform.pulse.component.health_name_4 {
+  foreground use token(theme.platform_pulse.primary_text)
+}
+component platform.pulse.component.health_name_4 {
+  appearance { role platform.pulse.appearance.health_name_4 }
+}
+appearance role platform.pulse.appearance.health_badge_4 applies_to platform.pulse.component.health_badge_4 {
+  background use token(theme.platform_pulse.mint_pale)
+  radius use token(theme.platform_pulse.radius.r8)
+}
+component platform.pulse.component.health_badge_4 {
+  appearance { role platform.pulse.appearance.health_badge_4 }
+}
+appearance role platform.pulse.appearance.health_status_4 applies_to platform.pulse.component.health_status_4 {
+  foreground use token(theme.platform_pulse.positive)
+}
+component platform.pulse.component.health_status_4 {
+  appearance { role platform.pulse.appearance.health_status_4 }
+}
+appearance role platform.pulse.appearance.health_rule_4 applies_to platform.pulse.component.health_rule_4 {
+  background use token(theme.platform_pulse.grid)
+}
+component platform.pulse.component.health_rule_4 {
+  appearance { role platform.pulse.appearance.health_rule_4 }
+}
+appearance role platform.pulse.appearance.health_dot_5 applies_to platform.pulse.component.health_dot_5 {
+  background use token(theme.platform_pulse.caution)
+  radius use token(theme.platform_pulse.radius.r32)
+}
+component platform.pulse.component.health_dot_5 {
+  appearance { role platform.pulse.appearance.health_dot_5 }
+}
+appearance role platform.pulse.appearance.health_name_5 applies_to platform.pulse.component.health_name_5 {
+  foreground use token(theme.platform_pulse.primary_text)
+}
+component platform.pulse.component.health_name_5 {
+  appearance { role platform.pulse.appearance.health_name_5 }
+}
+appearance role platform.pulse.appearance.health_badge_5 applies_to platform.pulse.component.health_badge_5 {
+  background use token(theme.platform_pulse.amber_pale)
+  radius use token(theme.platform_pulse.radius.r8)
+}
+component platform.pulse.component.health_badge_5 {
+  appearance { role platform.pulse.appearance.health_badge_5 }
+}
+appearance role platform.pulse.appearance.health_status_5 applies_to platform.pulse.component.health_status_5 {
+  foreground use token(theme.platform_pulse.caution)
+}
+component platform.pulse.component.health_status_5 {
+  appearance { role platform.pulse.appearance.health_status_5 }
+}
+appearance role platform.pulse.appearance.health_rule_5 applies_to platform.pulse.component.health_rule_5 {
+  background use token(theme.platform_pulse.grid)
+}
+component platform.pulse.component.health_rule_5 {
+  appearance { role platform.pulse.appearance.health_rule_5 }
+}
+appearance role platform.pulse.appearance.health_dot_6 applies_to platform.pulse.component.health_dot_6 {
+  background use token(theme.platform_pulse.positive)
+  radius use token(theme.platform_pulse.radius.r32)
+}
+component platform.pulse.component.health_dot_6 {
+  appearance { role platform.pulse.appearance.health_dot_6 }
+}
+appearance role platform.pulse.appearance.health_name_6 applies_to platform.pulse.component.health_name_6 {
+  foreground use token(theme.platform_pulse.primary_text)
+}
+component platform.pulse.component.health_name_6 {
+  appearance { role platform.pulse.appearance.health_name_6 }
+}
+appearance role platform.pulse.appearance.health_badge_6 applies_to platform.pulse.component.health_badge_6 {
+  background use token(theme.platform_pulse.mint_pale)
+  radius use token(theme.platform_pulse.radius.r8)
+}
+component platform.pulse.component.health_badge_6 {
+  appearance { role platform.pulse.appearance.health_badge_6 }
+}
+appearance role platform.pulse.appearance.health_status_6 applies_to platform.pulse.component.health_status_6 {
+  foreground use token(theme.platform_pulse.positive)
+}
+component platform.pulse.component.health_status_6 {
+  appearance { role platform.pulse.appearance.health_status_6 }
+}

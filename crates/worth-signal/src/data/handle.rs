@@ -11,6 +11,8 @@
 
 use serde::{Deserialize, Serialize};
 
+mod retained_charge;
+
 /// A typed, generational handle for a signal graph node.
 ///
 /// - `index`: slot position in the graph's node arena

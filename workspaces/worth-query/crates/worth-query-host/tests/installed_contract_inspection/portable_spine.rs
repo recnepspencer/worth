@@ -118,7 +118,7 @@ fn assert_external_contract(
     assert_eq!(external.maximum_payload_bytes(), 8);
     assert_eq!(
         external.protocol(),
-        &<AccountNotice as ApplicationExternalEffectPayload>::PROTOCOL
+        &<AccountNoticeBinding as ApplicationExternalEffectBinding>::PROTOCOL
     );
     assert_eq!(
         notice.reconciliation().unwrap().procedure_slot(),

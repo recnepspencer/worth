@@ -7,6 +7,10 @@ use crate::runtime::{
     WorthUiSourceProvider, WorthUiWatchedCandidateSubmission, WorthUiWatcherEvent,
 };
 
+#[path = "active_application_session_test_support/declared_surface.rs"]
+mod declared_surface;
+pub(crate) use declared_surface::source_backed_declared_surface_component_app_with_host;
+
 pub(crate) use super::active_application_candidate_catalog_test_support::{
     admit_candidate_catalog, admit_candidate_complete_catalog,
     admit_first_candidate_catalog_row_with_viewport_width,
@@ -96,25 +100,7 @@ where
         .expect("viewport component source application should prepare")
 }
 
-pub(crate) fn source_backed_component_app_with_host_and_scalar_projection<Host>(
-    host: Host,
-    registration: worth_ui_query_binding::UiScalarProjectionRegistration,
-) -> WorthUiApp
-where
-    Host: crate::facade::host::WorthUiHostAdapter + 'static,
-{
-    let builder = component_builder()
-        .register_scalar_projection(registration)
-        .expect("test projection registration should match its installed Query view");
-    source_backed_component_app_from_builder(builder, move |application| {
-        crate::facade::entry::WorthUiCertificationApplicationTransition::activate_test_host(
-            application,
-            host,
-        )
-    })
-}
-
-fn source_backed_component_app_from_builder(
+pub(crate) fn source_backed_component_app_from_builder(
     builder: crate::facade::entry::WorthUiCertificationApplicationBuilder,
     activate: impl FnOnce(crate::facade::entry::WorthUiHostNeutralApp) -> WorthUiApp,
 ) -> WorthUiApp {
@@ -172,7 +158,7 @@ pub(crate) fn scaled_component_candidate_submission(
     )
 }
 
-fn component_builder() -> crate::facade::entry::WorthUiApplicationBuilder {
+pub(crate) fn component_builder() -> crate::facade::entry::WorthUiApplicationBuilder {
     component_builder_with_allocation(false)
 }
 
@@ -202,7 +188,7 @@ fn component_builder_with_focus() -> crate::facade::entry::WorthUiApplicationBui
             crate::capability::ThemeTokenFamily::text(),
             crate::capability::ThemeTokenSource::application(),
             crate::capability::ThemeTokenValue::color(
-                crate::capability::ThemeColorValue::hex("#101820")
+                crate::capability::UiThemeColor::parse("#101820")
                     .expect("removal-only fixture token color is valid"),
             ),
         ))
@@ -242,7 +228,7 @@ fn component_builder_with_allocation(
             crate::capability::ThemeTokenFamily::text(),
             crate::capability::ThemeTokenSource::application(),
             crate::capability::ThemeTokenValue::color(
-                crate::capability::ThemeColorValue::hex("#101820")
+                crate::capability::UiThemeColor::parse("#101820")
                     .expect("removal-only fixture token color is valid"),
             ),
         ))
@@ -385,8 +371,7 @@ fn scaled_unrelated_token(index: usize) -> crate::capability::ThemeTokenDescript
         crate::capability::ThemeTokenFamily::text(),
         crate::capability::ThemeTokenSource::application(),
         crate::capability::ThemeTokenValue::color(
-            crate::capability::ThemeColorValue::hex("#101820")
-                .expect("scaled token color is valid"),
+            crate::capability::UiThemeColor::parse("#101820").expect("scaled token color is valid"),
         ),
     )
 }

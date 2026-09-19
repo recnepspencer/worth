@@ -12,6 +12,8 @@ use super::super::super::merge::{BranchMergeKind, BranchMergeStrategy, BranchMut
 use super::super::super::reconstructability::{AuthorityState, DerivedState};
 use super::super::super::temporal::TemporalRuntimeState;
 
+#[path = "authority/conditional_owned_async.rs"]
+mod conditional_owned_async;
 #[cfg(test)]
 #[path = "authority/replacement_test_observation.rs"]
 mod replacement_test_observation;
@@ -146,6 +148,9 @@ where
     pub(super) derived: DerivedState<D, I>,
     ancestry: BranchAncestryState,
     pub(super) mutation_ledger: BranchMutationLedger,
+    pub(super) installed_definition: Option<
+        crate::branch::owner_services::conditional_execution::SignalInstalledDefinitionBinding,
+    >,
 }
 
 impl<D, I, T> BranchState<D, I, T>
@@ -159,7 +164,7 @@ where
         parent: &crate::state::SignalBranchHandle,
         destination: crate::state::SignalBranchHandle,
     ) -> SignalForkedBranchState<D, I, T> {
-        let (graph, work) = self.authority.graph.fork_persistent();
+        let (graph, work) = self.authority.graph.fork_owner_branch();
         let config = self.authority.config.fork_persistent();
         let mut fork = Self::new(
             AuthorityState { graph, config },
@@ -171,6 +176,9 @@ where
             ),
             BranchMutationLedger::default().with_baseline_snapshot(destination.head_snapshot_id),
         );
+        // Only this admitted owner fork carries installed lineage. Ordinary
+        // graph forks deliberately clear their construction lowering claim.
+        fork.installed_definition = self.installed_definition.clone();
         let catalog = std::iter::once((destination.id, destination.clone())).collect();
         fork.graph_mut()
             .diagnostics_state_mut()
@@ -206,7 +214,26 @@ where
             derived,
             ancestry,
             mutation_ledger,
+            installed_definition: None,
         }
+    }
+
+    pub(crate) fn seal_definition_custody(&mut self, definition_basis: u64) {
+        if self.installed_definition.is_none() {
+            self.installed_definition = Some(
+                crate::branch::owner_services::conditional_execution::SignalInstalledDefinitionBinding::capture(
+                    self.graph(), definition_basis,
+                ),
+            );
+        }
+    }
+
+    pub(crate) fn installed_definition(
+        &self,
+    ) -> Option<
+        &crate::branch::owner_services::conditional_execution::SignalInstalledDefinitionBinding,
+    > {
+        self.installed_definition.as_ref()
     }
 
     pub fn graph(&self) -> &SignalGraph {

@@ -1,0 +1,66 @@
+use super::{
+    UiMountedCanonicalBox, UiMountedCanonicalBoxInput, UiMountedGeometryDenial,
+    UiMountedPortalOverlayMechanic,
+};
+
+pub(super) struct UiPortalChildGeometry {
+    pub(super) bounds: UiMountedCanonicalBox,
+    pub(super) clip: UiMountedCanonicalBox,
+}
+
+/// A Portal translates child geometry and narrows its authored clip. Empty
+/// visible coverage suppresses the mechanic; malformed geometry remains a denial.
+pub(super) fn project(
+    bounds: UiMountedCanonicalBox,
+    clip: UiMountedCanonicalBox,
+    portal: UiMountedPortalOverlayMechanic,
+    source_anchor: UiMountedCanonicalBox,
+) -> Result<Option<UiPortalChildGeometry>, UiMountedGeometryDenial> {
+    let bounds = translate(bounds, portal, source_anchor)?;
+    let clip = translate(clip, portal, source_anchor)?;
+    let Some(clip) = intersect(clip, portal.paint_bounds())? else {
+        return Ok(None);
+    };
+    let Some(clip) = intersect(clip, portal.clip_bounds())? else {
+        return Ok(None);
+    };
+    if intersect(bounds, clip)?.is_none() {
+        return Ok(None);
+    }
+    Ok(Some(UiPortalChildGeometry { bounds, clip }))
+}
+
+fn translate(
+    occurrence: UiMountedCanonicalBox,
+    portal: UiMountedPortalOverlayMechanic,
+    source_anchor: UiMountedCanonicalBox,
+) -> Result<UiMountedCanonicalBox, UiMountedGeometryDenial> {
+    UiMountedCanonicalBox::canonicalize(UiMountedCanonicalBoxInput {
+        x: occurrence.x() + portal.paint_bounds().x() - source_anchor.x(),
+        y: occurrence.y() + portal.paint_bounds().y() - source_anchor.y(),
+        width: occurrence.width(),
+        height: occurrence.height(),
+        coordinate_space: portal.paint_bounds().coordinate_space(),
+    })
+}
+
+fn intersect(
+    a: UiMountedCanonicalBox,
+    b: UiMountedCanonicalBox,
+) -> Result<Option<UiMountedCanonicalBox>, UiMountedGeometryDenial> {
+    let x = a.x().max(b.x());
+    let y = a.y().max(b.y());
+    let right = (a.x() + a.width()).min(b.x() + b.width());
+    let bottom = (a.y() + a.height()).min(b.y() + b.height());
+    if right <= x || bottom <= y {
+        return Ok(None);
+    }
+    UiMountedCanonicalBox::canonicalize(UiMountedCanonicalBoxInput {
+        x,
+        y,
+        width: right - x,
+        height: bottom - y,
+        coordinate_space: a.coordinate_space(),
+    })
+    .map(Some)
+}

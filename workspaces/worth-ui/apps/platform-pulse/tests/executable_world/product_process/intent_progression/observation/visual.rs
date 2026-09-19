@@ -37,22 +37,6 @@ pub(in crate::product_process::intent_progression) fn await_visual_refresh(
     Ok(captured.sequence().value())
 }
 
-pub(in crate::product_process::intent_progression) fn await_visual_rebase(
-    world: &mut NativeBoundExecutableWorld,
-) -> Result<u64, IntentObservationFailure> {
-    let captured = next(world, WatchedPulseTransition::IntentVisualRefreshCaptured)?;
-    if !matches!(
-        captured.outcome(),
-        PlatformPulseLifecycleObservation::VisualSnapshotCaptured(_)
-    ) {
-        return Err(super::unexpected(
-            "captured visual snapshot after retired comparison",
-            captured.outcome(),
-        ));
-    }
-    Ok(captured.sequence().value())
-}
-
 pub(in crate::product_process::intent_progression) fn capture_visible_change(
     world: &mut NativeBoundExecutableWorld,
     baseline: &NativeClientPixelCapture,

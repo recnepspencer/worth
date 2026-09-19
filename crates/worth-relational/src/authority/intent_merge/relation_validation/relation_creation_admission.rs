@@ -17,6 +17,7 @@ pub(super) fn validate_relation_creation_intent(
     default_cross_context_policy: crate::config::data::CrossContextPolicy,
     instrumentation: &RuntimeInstrumentation,
     created_entities: &BTreeSet<CreatedEntityRef>,
+    deleted_relations: &BTreeSet<crate::identity::data::RelationId>,
     spec: &RelationSpec,
 ) -> Result<(), CommitConflict> {
     validate_relation_creation(
@@ -25,6 +26,7 @@ pub(super) fn validate_relation_creation_intent(
         default_cross_context_policy,
         instrumentation,
         created_entities,
+        deleted_relations,
         spec.partition_id,
         spec.kind_id,
         &spec.source,
@@ -39,6 +41,7 @@ pub(super) fn validate_relation_creation(
     default_cross_context_policy: crate::config::data::CrossContextPolicy,
     instrumentation: &RuntimeInstrumentation,
     created_entities: &BTreeSet<CreatedEntityRef>,
+    deleted_relations: &BTreeSet<crate::identity::data::RelationId>,
     partition_id: crate::identity::data::PartitionId,
     kind_id: crate::identity::data::KindId,
     source: &EntityReference,
@@ -60,6 +63,7 @@ pub(super) fn validate_relation_creation(
         kind_id,
         source,
         &BTreeSet::from([target.clone()]),
+        deleted_relations,
     )
 }
 
@@ -69,6 +73,7 @@ pub(super) fn validate_bulk_relation_creation_intent(
     default_cross_context_policy: crate::config::data::CrossContextPolicy,
     instrumentation: &RuntimeInstrumentation,
     created_entities: &BTreeSet<CreatedEntityRef>,
+    deleted_relations: &BTreeSet<crate::identity::data::RelationId>,
     partition_id: crate::identity::data::PartitionId,
     kind_id: crate::identity::data::KindId,
     endpoints: &[(EntityReference, EntityReference)],
@@ -92,6 +97,7 @@ pub(super) fn validate_bulk_relation_creation_intent(
             kind_id,
             &source,
             &targets,
+            deleted_relations,
         )?;
     }
     Ok(())
@@ -163,6 +169,7 @@ fn reject_existing_relation_identity(
     kind_id: crate::identity::data::KindId,
     source: &EntityReference,
     targets: &BTreeSet<EntityReference>,
+    deleted_relations: &BTreeSet<crate::identity::data::RelationId>,
 ) -> Result<(), CommitConflict> {
     if existing_relation_targets_for_source(
         state,
@@ -171,7 +178,7 @@ fn reject_existing_relation_identity(
         kind_id,
         source,
         targets,
-        None,
+        deleted_relations,
     ) {
         return Err(CommitConflict::new(
             ConflictClass::DuplicateRelationIdentity {

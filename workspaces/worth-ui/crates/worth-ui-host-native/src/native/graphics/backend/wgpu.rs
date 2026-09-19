@@ -68,7 +68,7 @@ impl UiNativeGraphicsPort for UiWgpuNativeGraphicsPort {
         let adapter_info = adapter.get_info();
         validate_surface_capabilities(&surface.get_capabilities(&adapter))?;
         let descriptor = wgpu::DeviceDescriptor {
-            label: Some("worth-ui-windows-dx12-v1-device"),
+            label: Some("worth-ui-windows-dx12-v2-device"),
             required_features: wgpu::Features::empty(),
             required_limits: qualified_required_limits(&adapter),
             ..Default::default()
@@ -153,7 +153,7 @@ impl UiNativeGraphicsPort for UiWgpuNativeGraphicsPort {
             }
             UiNativeGraphicsRecovery::DeviceLost => {
                 let descriptor = wgpu::DeviceDescriptor {
-                    label: Some("worth-ui-windows-dx12-v1-recovered-device"),
+                    label: Some("worth-ui-windows-dx12-v2-recovered-device"),
                     required_features: wgpu::Features::empty(),
                     required_limits: qualified_required_limits(&device.state().mechanics.adapter),
                     ..Default::default()

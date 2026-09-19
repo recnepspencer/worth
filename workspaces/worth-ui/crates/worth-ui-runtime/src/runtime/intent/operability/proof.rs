@@ -53,6 +53,12 @@ impl UiIntentOperabilityProof {
     ) {
         (self.candidate, self.decision)
     }
+
+    pub(crate) const fn candidate_for_standing_fact(
+        &self,
+    ) -> &super::super::payload::UiPreparedIntentPayload {
+        &self.candidate
+    }
 }
 
 impl UiInoperableIntentCandidate {

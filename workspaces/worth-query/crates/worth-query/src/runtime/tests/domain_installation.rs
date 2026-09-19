@@ -170,7 +170,7 @@ fn runtime_installation_reports_package_validation_before_admission() {
             .accepts_relation(RelationName::new("mentor").unwrap()),
         );
 
-    let error = WorthQueryRuntimeBuilder::new()
+    let error = WorthQueryRuntimeBuilder::new(test_product_world_resources())
         .domain_package(invalid)
         .err()
         .expect("conflicting package meaning must not reach admission");
@@ -187,7 +187,7 @@ fn runtime_installation_reports_platform_support_admission_before_compilation() 
     let unsupported = WorthQueryDomainPackage::declare(InstalledDomain, identity())
         .requires_capability(WorthQueryCapabilityFamily::DurableArtifacts);
 
-    let error = WorthQueryRuntimeBuilder::new()
+    let error = WorthQueryRuntimeBuilder::new(test_product_world_resources())
         .domain_package(unsupported)
         .err()
         .expect("deferred platform capability must not reach package compilation");

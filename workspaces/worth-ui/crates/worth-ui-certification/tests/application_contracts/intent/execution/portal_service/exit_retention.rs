@@ -25,6 +25,7 @@ fn exit_motion_retains_closing_overlay_until_terminal_portal_publication() {
     let mut world = launch_scripted_motion_world(host);
 
     terminalize_portal_exit_motion(&mut world);
+    assert_retention_census(&world.session);
     let closing = world.session.inspect_portal_runtime_for_certification();
     assert_eq!(closing.active_portals(), 1);
     assert_eq!(closing.closing_portals(), 1);
@@ -38,6 +39,7 @@ fn exit_motion_retains_closing_overlay_until_terminal_portal_publication() {
     let closed = world.session.inspect_portal_runtime_for_certification();
     assert_eq!(closed.active_portals(), 0);
     assert_eq!(closed.closing_portals(), 0);
+    assert_retention_census(&world.session);
     assert!(world
         .session
         .inspect_service_proposals_for_certification()
@@ -76,6 +78,11 @@ fn shutdown_cancels_in_flight_terminal_portal_proposal_without_motion_owner_leak
             .progress_portal_exit_terminal_for_certification(113),
         UiPortalExitTerminalCertificationOutcome::AwaitingPhysical
     );
+    assert_retention_census(&world.session);
+    assert!(world
+        .session
+        .inspect_portal_runtime_for_certification()
+        .pending_track_coordinated(),);
     assert_eq!(
         world
             .session
@@ -99,7 +106,7 @@ fn shutdown_cancels_in_flight_terminal_portal_proposal_without_motion_owner_leak
     assert!(shutdown.motion_final_census_is_zero());
 }
 
-fn terminalize_portal_exit_motion(world: &mut AdmissionWorld) {
+pub(super) fn terminalize_portal_exit_motion(world: &mut AdmissionWorld) {
     assert_eq!(
         world
             .session
@@ -149,5 +156,31 @@ fn terminalize_portal_exit_motion(world: &mut AdmissionWorld) {
             .inspect_motion_presentation_for_certification()
             .active_tracks(),
         0
+    );
+}
+
+pub(super) fn assert_retention_census(
+    session: &worth_ui::facade::app::WorthUiActiveApplicationSession,
+) {
+    let portal = session.inspect_portal_runtime_for_certification();
+    let census = session.runtime_service_resource_census();
+    assert_eq!(
+        portal.portal_exit_retentions(),
+        census.portal_exit_retentions(),
+        "Portal receipt rows equal coordinator rows"
+    );
+    assert_eq!(
+        usize::from(census.motion_exit_retentions()),
+        census.portal_exit_retentions(),
+        "Motion exit-retention rows equal coordinator rows"
+    );
+    assert_eq!(
+        portal.closing_portals(),
+        portal.portal_exit_retentions(),
+        "only receipt-backed Portal rows remain Closing"
+    );
+    assert!(
+        portal.pending_track_coordinated(),
+        "a pending terminal retains its coordinator row"
     );
 }

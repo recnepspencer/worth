@@ -2,9 +2,10 @@ use worth_foundational::facade::AspectValue;
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestInterruption, WorthQueryRequestScope,
 };
+use worth_query_declaration::facade::authentication::WorthQueryExternalPrincipalIdentityBinding;
 use worth_query_installation::facade::{
-    ApplicationSchema, ApplicationSchemaBindingIdentity, TypedApplicationIdentityValue,
-    TypedApplicationValue, WorthQueryInstalledPrincipalBinding,
+    ApplicationIdentityScalarValueBinding, ApplicationScalarValueBinding, ApplicationSchema,
+    ApplicationSchemaBindingIdentity, WorthQueryInstalledPrincipalBinding,
 };
 use worth_relational::facade::identity::EntityId;
 use worth_relational::facade::indexes::{BoundedEntityFieldLookupRequest, BoundedIndexParityMode};
@@ -43,102 +44,8 @@ struct WorthQueryPrincipalSnapshotResolution<'a> {
     binding_identity: ApplicationSchemaBindingIdentity,
 }
 
-impl WorthQueryExecutionRuntime {
-    pub fn resolve_authenticated_principal<Schema, Binding, Mapping, Principal, PrincipalIdentity>(
-        &self,
-        installed_binding: &WorthQueryInstalledPrincipalBinding<
-            Schema,
-            Binding,
-            Mapping,
-            Principal,
-            PrincipalIdentity,
-        >,
-        external: WorthQueryAuthenticatedExternalPrincipal<Schema>,
-        scope: &WorthQueryRequestScope,
-        mode: WorthQueryPrincipalResolutionMode,
-    ) -> Result<
-        WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
-        WorthQueryPrincipalResolutionDenial,
-    >
-    where
-        Schema: ApplicationSchema,
-        PrincipalIdentity: TypedApplicationIdentityValue,
-    {
-        admit_resolution_request(scope, installed_binding.binding(), external.is_expired())?;
-        self.installed_packages()
-            .validate_principal_binding(installed_binding)
-            .map_err(|denial| {
-                principal_binding_resolution_denial(denial.kind(), installed_binding.binding())
-            })?;
-        let (graph, layout) = principal_graph_binding(self, installed_binding.binding())?;
-        if graph.binding_identity() != installed_binding.binding_identity()
-            || external.binding_identity() != installed_binding.binding_identity()
-        {
-            return Err(resolution_denial(
-                WorthQueryPrincipalResolutionDenialKind::ForeignRuntime,
-                installed_binding.binding(),
-            ));
-        }
-        let expected_identity = external.identity().clone().into_foundational_value();
-        let evidence = resolve_principal_snapshot::<PrincipalIdentity>(
-            graph,
-            WorthQueryPrincipalSnapshotResolution {
-                binding: installed_binding.binding(),
-                layout: &layout,
-                expected_identity: &expected_identity,
-                mode,
-                runtime_authority: self.authority_identity(),
-                binding_identity: graph.binding_identity().clone(),
-            },
-        )?;
-        admit_resolution_request(scope, installed_binding.binding(), external.is_expired())?;
-        Ok(WorthQueryAuthenticatedPrincipal::mint(external, evidence))
-    }
-
-    pub fn validate_authenticated_principal<Schema, Principal, PrincipalIdentity>(
-        &self,
-        principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
-        scope: &WorthQueryRequestScope,
-    ) -> Result<(), WorthQueryPrincipalResolutionDenial>
-    where
-        Schema: ApplicationSchema,
-    {
-        admit_resolution_request(scope, principal.binding(), principal.is_expired())?;
-        if principal.runtime_authority() != self.authority_identity() {
-            return Err(resolution_denial(
-                WorthQueryPrincipalResolutionDenialKind::ForeignRuntime,
-                principal.binding(),
-            ));
-        }
-        let (graph, layout) = principal_graph_binding(self, principal.binding())?;
-        validate_current_schema_binding::<Schema>(
-            self,
-            graph.binding_identity(),
-            principal.binding_identity(),
-            principal.binding(),
-        )?;
-        let expected_identity = principal
-            .external_identity()
-            .clone()
-            .into_foundational_value();
-        graph.integration_handle().with_runtime_mut(|runtime| {
-            let snapshot = super::exact_basis_access::open_current_main_snapshot(runtime).map_err(
-                |basis_denial| principal_snapshot_denial(basis_denial, principal.binding()),
-            )?;
-            let result = validate_freshness_at_snapshot(
-                runtime,
-                &snapshot,
-                principal,
-                &layout,
-                &expected_identity,
-            );
-            crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
-            result
-        })?;
-        admit_resolution_request(scope, principal.binding(), principal.is_expired())?;
-        Ok(())
-    }
-}
+#[path = "resolution/selected_product.rs"]
+mod selected_product;
 
 fn principal_graph_binding<'a>(
     runtime: &'a WorthQueryExecutionRuntime,
@@ -169,59 +76,32 @@ fn principal_graph_binding<'a>(
     Ok((graph, layout))
 }
 
-fn resolve_principal_snapshot<PrincipalIdentity>(
-    graph: &WorthQueryPrimaryGraph,
-    resolution: WorthQueryPrincipalSnapshotResolution<'_>,
-) -> Result<
-    WorthQueryResolvedPrincipalEvidence<PrincipalIdentity>,
-    WorthQueryPrincipalResolutionDenial,
->
-where
-    PrincipalIdentity: TypedApplicationIdentityValue,
-{
-    graph.integration_handle().with_runtime_mut(|runtime| {
-        let snapshot = super::exact_basis_access::open_current_main_snapshot(runtime)
-            .map_err(|basis_denial| principal_snapshot_denial(basis_denial, resolution.binding))?;
-        let result = resolve_at_snapshot(runtime, &snapshot, &resolution);
-        crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
-        result
-    })
-}
-
-fn principal_snapshot_denial(
-    basis_denial: super::WorthQueryExactBasisSnapshotDenial,
-    binding: &str,
-) -> WorthQueryPrincipalResolutionDenial {
-    let kind = match basis_denial {
-        super::WorthQueryExactBasisSnapshotDenial::ActiveSnapshotCapacityExhausted {
-            maximum_active_snapshots,
-        } => WorthQueryPrincipalResolutionDenialKind::ActiveSnapshotCapacityExhausted {
-            maximum_active_snapshots,
-        },
-        super::WorthQueryExactBasisSnapshotDenial::RetentionCapacityExhausted => {
-            WorthQueryPrincipalResolutionDenialKind::RetentionCapacityExhausted
-        }
-        super::WorthQueryExactBasisSnapshotDenial::RetentionIdentityExhausted => {
-            WorthQueryPrincipalResolutionDenialKind::RetentionIdentityExhausted
-        }
-        super::WorthQueryExactBasisSnapshotDenial::SnapshotIdentityExhausted => {
-            WorthQueryPrincipalResolutionDenialKind::SnapshotIdentityExhausted
-        }
-        _ => WorthQueryPrincipalResolutionDenialKind::StalePrincipalProof,
-    };
-    resolution_denial(kind, binding)
-}
-
-fn resolve_at_snapshot<PrincipalIdentity>(
+fn resolve_at_snapshot<
+    Schema,
+    Binding,
+    Mapping,
+    Principal,
+    PrincipalIdentity,
+    PrincipalIdentityBinding,
+>(
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,
     resolution: &WorthQueryPrincipalSnapshotResolution<'_>,
+    installed_binding: &WorthQueryInstalledPrincipalBinding<
+        Schema,
+        Binding,
+        Mapping,
+        Principal,
+        PrincipalIdentity,
+        PrincipalIdentityBinding,
+    >,
 ) -> Result<
     WorthQueryResolvedPrincipalEvidence<PrincipalIdentity>,
     WorthQueryPrincipalResolutionDenial,
 >
 where
-    PrincipalIdentity: TypedApplicationIdentityValue,
+    PrincipalIdentityBinding: ApplicationIdentityScalarValueBinding<Value = PrincipalIdentity>,
+    PrincipalIdentity: 'static,
 {
     let (mapping_id, examined_candidate_count) =
         resolve_unique_mapping_candidate(runtime, snapshot, resolution)?;
@@ -241,8 +121,9 @@ where
         resolution.binding,
     )?;
     let freshness = WorthQueryPrincipalFreshnessEvidence::new(mapping.clone(), target.clone());
-    let principal_identity = PrincipalIdentity::from_foundational_value(&target.principal_identity)
-        .ok_or_else(|| {
+    let principal_identity = installed_binding
+        .decode_principal_identity(&target.principal_identity)
+        .map_err(|_| {
             resolution_denial(
                 WorthQueryPrincipalResolutionDenialKind::StalePrincipalProof,
                 resolution.binding,

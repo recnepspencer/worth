@@ -42,6 +42,12 @@ pub(super) fn run_platform_command(
     keyboard(world, NativeKeyboardCommand::PrimaryShiftP)
 }
 
+pub(super) fn focus_next(
+    world: &mut NativeBoundExecutableWorld,
+) -> Result<(), PlatformPulsePortalJourneyFailure> {
+    keyboard(world, NativeKeyboardCommand::Tab)
+}
+
 pub(super) fn require_intent_quiet_after_occupancy_click(
     world: &mut NativeBoundExecutableWorld,
 ) -> Result<(), PlatformPulsePortalJourneyFailure> {
@@ -82,7 +88,7 @@ fn keyboard(
         .deliver_keyboard_command(&world.native_client, command)
         .map_err(PlatformPulsePortalJourneyFailure::Native)?;
     let expected_event_count = match command {
-        NativeKeyboardCommand::Escape => 2,
+        NativeKeyboardCommand::Escape | NativeKeyboardCommand::Tab => 2,
         NativeKeyboardCommand::PrimaryShiftP => 6,
     };
     require_delivery(

@@ -3,8 +3,7 @@ use crate::installation::{CanonicalPlatformPulse, IsolatedPulseInstallation};
 use super::atomic_replacement::{self, AppliedPulseSourceDelta, PulseSourceActionFailure};
 use super::{PulseSourceDeltaDefinitionFailure, PulseSourceDeltaIdentity};
 
-const PORTAL_PRIMARY_COMPONENT: &[u8] = b"component platform.pulse.component.portal_primary_target {\n  interaction activate routes platform.pulse.action.route;\n}\n";
-const RETIRED_PORTAL_PRIMARY_SOURCE: &[u8] = b"\n";
+const PORTAL_PRIMARY_COMPONENT: &[u8] = b"component platform.pulse.component.portal_primary_target {\n  appearance { role platform.pulse.appearance.portal_primary_target }\n  interaction activate routes platform.pulse.action.route;\n}\n";
 
 #[derive(Debug)]
 pub(crate) struct PortalFocusFallbackSourceDelta {
@@ -15,20 +14,26 @@ impl PortalFocusFallbackSourceDelta {
     pub(crate) fn from_checked_in(
         canonical: CanonicalPlatformPulse,
     ) -> Result<Self, PulseSourceDeltaDefinitionFailure> {
-        let source = canonical.portal_primary_source_bytes();
+        let source = canonical.signals_source_bytes();
         let component = token_for_source_line_endings(source, PORTAL_PRIMARY_COMPONENT);
         let count = source
             .windows(component.len())
             .filter(|candidate| *candidate == component)
             .count();
-        if count != 1 || source.len() != component.len() {
+        if count != 1 {
             return Err(match count {
                 0 => PulseSourceDeltaDefinitionFailure::PortalPrimaryComponentMissing,
                 count => PulseSourceDeltaDefinitionFailure::PortalPrimaryComponentAmbiguous(count),
             });
         }
+        let offset = source
+            .windows(component.len())
+            .position(|row| row == component)
+            .unwrap();
+        let mut bytes = source[..offset].to_vec();
+        bytes.extend_from_slice(&source[offset + component.len()..]);
         Ok(Self {
-            bytes: RETIRED_PORTAL_PRIMARY_SOURCE.into(),
+            bytes: bytes.into_boxed_slice(),
         })
     }
 
@@ -37,7 +42,7 @@ impl PortalFocusFallbackSourceDelta {
         installation: &IsolatedPulseInstallation,
     ) -> Result<AppliedPulseSourceDelta<Self>, PulseSourceActionFailure> {
         atomic_replacement::apply_path(
-            installation.portal_primary_source(),
+            installation.signals_source(),
             PulseSourceDeltaIdentity::PortalFocusFallback,
             &self.bytes,
         )
@@ -59,18 +64,4 @@ fn token_for_source_line_endings(source: &[u8], token: &[u8]) -> Vec<u8> {
         adapted.push(*byte);
     }
     adapted
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn fallback_retires_the_only_declaration_in_its_independent_source_module() {
-        let canonical = CanonicalPlatformPulse::checked_in();
-        let delta = PortalFocusFallbackSourceDelta::from_checked_in(canonical)
-            .expect("independent Portal primary source module");
-        assert_eq!(delta.bytes.as_ref(), RETIRED_PORTAL_PRIMARY_SOURCE);
-        assert!(!canonical.source_bytes().is_empty());
-    }
 }

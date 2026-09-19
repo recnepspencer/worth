@@ -192,6 +192,19 @@ fn shape_is_closed(
             relation.query_type() == query_type
                 && relation_shape_endpoints_match(relation, shape)
                 && relation_exists(members, relation.relation(), relation.from(), relation.to())
+                && relation.predicate().is_none_or(|predicate| {
+                    let (entity, aspect, field) = predicate.field();
+                    entity == relation.nested_shape().root_entity()
+                        && field_matches(
+                            members,
+                            entity,
+                            aspect,
+                            field,
+                            predicate.scalar_family(),
+                            None,
+                            true,
+                        )
+                })
                 && shape_is_closed(members, query_type, relation.nested_shape())
         })
 }
@@ -282,7 +295,7 @@ fn relation_exists(
     members.iter().any(|member| {
         matches!(
             member,
-            ApplicationSchemaMember::Relation { relation, from, to }
+            ApplicationSchemaMember::Relation { relation, from, to, .. }
                 if relation == expected_relation
                     && from == expected_from
                     && to == expected_to

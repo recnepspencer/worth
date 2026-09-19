@@ -14,11 +14,18 @@ pub(crate) struct WorthQueryManagedSemanticBasisObservation<'a> {
     pub(crate) bridge_kind: BridgeAsyncRequestTruthViewBasisKind,
     pub(crate) bridge_authority_basis_digest: &'a str,
     pub(crate) relational_current_at_admission: bool,
+    pub(crate) product_observation:
+        Option<&'a worth_runtime_world::facade::ProductBranchObservation>,
 }
 
 pub(crate) fn validate_managed_semantic_basis(
     observation: WorthQueryManagedSemanticBasisObservation<'_>,
 ) -> Result<(), WorthQueryManagedSemanticBasisDenial> {
+    // Exact Product affinity is compared with the operation before lower
+    // planning. The surviving observation keeps that World authority concrete.
+    if observation.product_observation.is_some() {
+        return Ok(());
+    }
     match observation.semantic.family() {
         BasisFamily::CurrentHead => validate_current_head(observation),
         BasisFamily::BranchSnapshot => validate_branch_snapshot(observation),
@@ -201,6 +208,7 @@ mod tests {
             bridge_kind,
             bridge_authority_basis_digest,
             relational_current_at_admission,
+            product_observation: None,
         }
     }
 }

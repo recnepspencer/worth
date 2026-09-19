@@ -69,7 +69,7 @@ fn semantic_delta_retires_invisible_sample_override_and_rollback_restores_it() {
             changes: vec![UiMountedPresentationSampleChange::from_runtime_sampling(
                 identity,
                 None,
-                UiMountedPresentationOpacity::from_runtime_sampling(0.0).unwrap(),
+                UiMountedPresentationOpacity::from_runtime_composition(0),
             )],
             damage: vec![UiMountedLogicalDamage::from_runtime_mounting(
                 mechanic.bounds(),

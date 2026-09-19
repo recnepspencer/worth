@@ -10,10 +10,7 @@ mod capture;
 #[path = "native_application_program/changes.rs"]
 mod changes;
 
-pub use changes::{
-    UiNativeComponentPresenceChange, UiNativeComponentSemanticTextChange,
-    UiNativeThemeTokenValueChange,
-};
+pub use changes::{UiNativeComponentPresenceChange, UiNativeComponentSemanticTextChange};
 
 #[must_use]
 pub struct UiNativeApplicationProgram {
@@ -23,9 +20,9 @@ pub struct UiNativeApplicationProgram {
 
 #[must_use]
 pub struct UiNativeApplicationFrame {
+    theme_switch: Option<crate::capability::UiThemeDefinitionIdentity>,
     component_presence: Box<[UiNativeComponentPresenceChange]>,
     semantic_text: Box<[UiNativeComponentSemanticTextChange]>,
-    theme_values: Box<[UiNativeThemeTokenValueChange]>,
     start: UiNativeApplicationFrameStart,
     completion: UiNativeApplicationFrameCompletion,
     capture_presented_source_pixels: bool,
@@ -46,12 +43,12 @@ enum UiNativeApplicationFrameCompletion {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum UiNativeApplicationProgramDenial {
+    ThemeSwitchRequiresPriorSettlement,
     Empty,
     FrameCapacityExceeded,
     ChangeCapacityExceeded,
     InvalidComponentIdentity,
     InvalidSemanticTextSpans,
-    InvalidThemeTokenValue,
     SemanticTextUpdateRejected,
     PresentedSourceCaptureCapacityExceeded,
 }
@@ -67,6 +64,16 @@ impl UiNativeApplicationProgram {
         if frames.len() > MAXIMUM_FRAMES {
             return Err(UiNativeApplicationProgramDenial::FrameCapacityExceeded);
         }
+        if frames.iter().any(|frame| {
+            frame.theme_switch.is_some()
+                && (frame.starts_by_superseding_pending()
+                    || frame.cancels_after_external_submission())
+        }) || frames
+            .windows(2)
+            .any(|pair| pair[0].theme_switch.is_some() && pair[1].starts_by_superseding_pending())
+        {
+            return Err(UiNativeApplicationProgramDenial::ThemeSwitchRequiresPriorSettlement);
+        }
         if frames
             .iter()
             .filter(|frame| frame.capture_presented_source_pixels)
@@ -76,19 +83,11 @@ impl UiNativeApplicationProgram {
             return Err(UiNativeApplicationProgramDenial::PresentedSourceCaptureCapacityExceeded);
         }
         let mut revisions = std::collections::HashMap::<Box<str>, u64>::new();
-        let mut theme_revisions = std::collections::BTreeMap::new();
         for frame in &mut frames {
             for change in &mut frame.semantic_text {
                 let revision = revisions
                     .entry(change.authored_semantic_identity.clone())
                     .or_default();
-                change.expected_revision = *revision;
-                *revision = revision
-                    .checked_add(1)
-                    .ok_or(UiNativeApplicationProgramDenial::ChangeCapacityExceeded)?;
-            }
-            for change in &mut frame.theme_values {
-                let revision = theme_revisions.entry(change.token.clone()).or_insert(0_u64);
                 change.expected_revision = *revision;
                 *revision = revision
                     .checked_add(1)
@@ -132,13 +131,26 @@ impl UiNativeApplicationProgram {
 impl UiNativeApplicationFrame {
     pub fn present_current() -> Self {
         Self {
+            theme_switch: None,
             component_presence: Box::new([]),
             semantic_text: Box::new([]),
-            theme_values: Box::new([]),
             start: UiNativeApplicationFrameStart::AfterPriorSettlement,
             completion: UiNativeApplicationFrameCompletion::Settle,
             capture_presented_source_pixels: false,
         }
+    }
+
+    /// Request a theme on this native surface through ordinary observation,
+    /// capability admission and rebind settlement when the frame becomes ready.
+    pub fn switch_theme(definition: crate::capability::UiThemeDefinitionIdentity) -> Self {
+        Self {
+            theme_switch: Some(definition),
+            ..Self::present_current()
+        }
+    }
+
+    pub(crate) fn theme_switch(&self) -> Option<&crate::capability::UiThemeDefinitionIdentity> {
+        self.theme_switch.as_ref()
     }
 
     pub fn with_component_presence(
@@ -150,8 +162,8 @@ impl UiNativeApplicationFrame {
         }
         Ok(Self {
             component_presence: changes.into_boxed_slice(),
+            theme_switch: None,
             semantic_text: Box::new([]),
-            theme_values: Box::new([]),
             start: UiNativeApplicationFrameStart::AfterPriorSettlement,
             completion: UiNativeApplicationFrameCompletion::Settle,
             capture_presented_source_pixels: false,
@@ -167,8 +179,8 @@ impl UiNativeApplicationFrame {
         }
         Ok(Self {
             component_presence: Box::new([]),
+            theme_switch: None,
             semantic_text: changes.into_boxed_slice(),
-            theme_values: Box::new([]),
             start: UiNativeApplicationFrameStart::AfterPriorSettlement,
             completion: UiNativeApplicationFrameCompletion::Settle,
             capture_presented_source_pixels: false,
@@ -186,8 +198,8 @@ impl UiNativeApplicationFrame {
         }
         Ok(Self {
             component_presence: presence.into_boxed_slice(),
+            theme_switch: None,
             semantic_text: semantic_text.into_boxed_slice(),
-            theme_values: Box::new([]),
             start: UiNativeApplicationFrameStart::AfterPriorSettlement,
             completion: UiNativeApplicationFrameCompletion::Settle,
             capture_presented_source_pixels: false,
@@ -216,33 +228,12 @@ impl UiNativeApplicationFrame {
         self
     }
 
-    pub fn with_theme_token_values(
-        changes: impl IntoIterator<Item = UiNativeThemeTokenValueChange>,
-    ) -> Result<Self, UiNativeApplicationProgramDenial> {
-        let changes = changes.into_iter().collect::<Vec<_>>();
-        if changes.len() > MAXIMUM_CHANGES_PER_FRAME {
-            return Err(UiNativeApplicationProgramDenial::ChangeCapacityExceeded);
-        }
-        Ok(Self {
-            component_presence: Box::new([]),
-            semantic_text: Box::new([]),
-            theme_values: changes.into_boxed_slice(),
-            start: UiNativeApplicationFrameStart::AfterPriorSettlement,
-            completion: UiNativeApplicationFrameCompletion::Settle,
-            capture_presented_source_pixels: false,
-        })
-    }
-
     pub(crate) fn component_presence(&self) -> &[UiNativeComponentPresenceChange] {
         &self.component_presence
     }
 
     pub(crate) fn semantic_text(&self) -> &[UiNativeComponentSemanticTextChange] {
         &self.semantic_text
-    }
-
-    pub(crate) fn theme_values(&self) -> &[UiNativeThemeTokenValueChange] {
-        &self.theme_values
     }
 
     pub(crate) const fn starts_by_superseding_pending(&self) -> bool {

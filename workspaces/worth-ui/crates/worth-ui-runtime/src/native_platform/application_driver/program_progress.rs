@@ -6,25 +6,40 @@ use super::physical_recovery_tracker::{
 use super::program_reconstruction::{is_text_atlas_deferred, retry_text_atlas_deferred};
 use crate::facade::WorthUiNativeApplicationShell;
 
+#[path = "program_progress/layout.rs"]
+mod layout;
 #[path = "program_progress/physical_progress.rs"]
 mod physical_progress;
+#[path = "program_progress/pointer_refresh.rs"]
+mod pointer_refresh;
 #[path = "program_progress/presentation_outcome.rs"]
 mod presentation_outcome;
 #[path = "program_progress/superseding_pair.rs"]
 mod superseding_pair;
+#[path = "program_progress/theme_switch.rs"]
+mod theme_switch;
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(super) enum UiNativePresentationSource {
+    Program(usize),
+    PointerRefresh,
+}
 
 pub(super) struct UiNativeApplicationProgramProgress {
     program: crate::facade::entry::UiNativeApplicationProgram,
     pub(super) next_frame: usize,
+    pending_theme_frame: Option<usize>,
     next_change_frame: usize,
     next_present_tick: u64,
     pub(super) pending: VecDeque<UiNativePendingProgramFrame>,
     pub(super) next_completion_tick: u64,
+    pub(super) recovery_source: Option<UiNativePresentationSource>,
     pub(super) physical_recovery: UiNativePhysicalRecoveryTracker,
     pub(super) pending_retry: Option<UiNativePendingProgramRetry>,
     pub(super) readiness_generation: u64,
     surface_basis_generation: u64,
     surface_basis_barrier: Option<(usize, u64)>,
+    #[cfg(feature = "certification-support")]
     runtime_qualification: super::runtime_qualification::UiNativeRuntimeQualificationState,
     pub(super) staged_superseding_successor: Option<UiNativeStagedSupersedingSuccessor>,
     pub(super) staged_superseding_predecessor: Option<crate::mounting::UiPreparedMountedFrame>,
@@ -33,7 +48,7 @@ pub(super) struct UiNativeApplicationProgramProgress {
 }
 
 pub(super) struct UiNativePendingProgramFrame {
-    pub(super) program_frame: usize,
+    pub(super) source: UiNativePresentationSource,
     pub(super) presentation: crate::mounting::UiMountedPresentationInFlight,
     pub(super) reconstruction_authority: Option<UiNativeProgramReconstructionAuthority>,
     pub(super) cancel_after_external_submission: bool,
@@ -45,7 +60,7 @@ pub(super) struct UiNativeStagedSupersedingSuccessor {
 }
 
 pub(super) struct UiNativePendingProgramRetry {
-    pub(super) program_frame: usize,
+    pub(super) source: UiNativePresentationSource,
     pub(super) rejected: crate::mounting::UiMountedRejectedFrame,
     pub(super) reconstruction_authority: Option<UiNativeProgramReconstructionAuthority>,
     pub(super) cancel_after_external_submission: bool,
@@ -83,22 +98,25 @@ pub(super) enum FrameProgress {
 impl UiNativeApplicationProgramProgress {
     pub(super) fn new(
         program: crate::facade::entry::UiNativeApplicationProgram,
-        runtime_qualification: Option<
+        #[cfg(feature = "certification-support")] runtime_qualification: Option<
             super::super::runtime_qualification::UiNativeRuntimeQualificationPlan,
         >,
     ) -> Self {
         Self {
             program,
             next_frame: 0,
+            pending_theme_frame: None,
             next_change_frame: 0,
             next_present_tick: 1,
             pending: VecDeque::new(),
             next_completion_tick: 1,
+            recovery_source: None,
             physical_recovery: UiNativePhysicalRecoveryTracker::default(),
             pending_retry: None,
             readiness_generation: 0,
             surface_basis_generation: 0,
             surface_basis_barrier: None,
+            #[cfg(feature = "certification-support")]
             runtime_qualification:
                 super::runtime_qualification::UiNativeRuntimeQualificationState::new(
                     runtime_qualification,
@@ -122,6 +140,7 @@ impl UiNativeApplicationProgramProgress {
         let program_finished =
             self.program.closes_after_program() && self.next_frame >= self.program.frames().len();
         program_finished
+            && self.pending_theme_frame.is_none()
             && self.pending.is_empty()
             && self.staged_superseding_successor.is_none()
             && self.staged_superseding_predecessor.is_none()
@@ -150,7 +169,7 @@ impl UiNativeApplicationProgramProgress {
             return Ok(());
         }
         while self.next_frame < self.program.frames().len() {
-            if self.physical_recovery.has_pending() {
+            if self.physical_recovery.has_pending() || self.pending_theme_frame.is_some() {
                 break;
             }
             if self.pending.is_empty()
@@ -166,7 +185,8 @@ impl UiNativeApplicationProgramProgress {
                     self.program.frames()[self.next_frame].starts_by_superseding_pending();
                 let may_supersede = starts_by_superseding
                     && self.pending.iter().all(|pending| {
-                        pending.presentation.awaits_progress_class(
+                        matches!(pending.source, UiNativePresentationSource::Program(_))
+                            && pending.presentation.awaits_progress_class(
                         worth_ui_host_contract::UiHostPresentationProgressClass::PhysicalSurface,
                     )
                     });
@@ -205,16 +225,22 @@ impl UiNativeApplicationProgramProgress {
                 shell
                     .apply_component_semantic_text(frame.semantic_text())
                     .map_err(|_| ())?;
-                shell
-                    .apply_theme_token_values(frame.theme_values())
-                    .map_err(|_| ())?;
                 self.next_change_frame = self.next_change_frame.saturating_add(1);
             } else if program_frame > self.next_change_frame {
                 return Err(());
             }
+            layout::complete_program_layout(shell)?;
             let tick = self.next_present_tick;
             self.next_present_tick = self.next_present_tick.checked_add(1).ok_or(())?;
+            if let Some(definition) = frame.theme_switch().cloned() {
+                self.begin_theme_switch(shell, definition, program_frame, tick)?;
+                self.next_frame = self.next_frame.saturating_add(1);
+                continue;
+            }
+            #[cfg(feature = "certification-support")]
             let reconstruction = self.runtime_qualification.reconstruction_required();
+            #[cfg(not(feature = "certification-support"))]
+            let reconstruction = false;
             let outcome = if reconstruction {
                 shell.reconstruct_current_presentation(u64::MAX, tick)?
             } else {
@@ -225,7 +251,7 @@ impl UiNativeApplicationProgramProgress {
             let progress = self.retain_or_attribute(
                 shell,
                 outcome,
-                program_frame,
+                UiNativePresentationSource::Program(program_frame),
                 None,
                 reconstruction_authority,
                 frame.cancels_after_external_submission(),
@@ -250,7 +276,7 @@ impl UiNativeApplicationProgramProgress {
 
     pub(super) fn retain_retry(
         &mut self,
-        program_frame: usize,
+        source: UiNativePresentationSource,
         rejected: crate::mounting::UiMountedRejectedFrame,
         reconstruction_authority: Option<UiNativeProgramReconstructionAuthority>,
         cancel_after_external_submission: bool,
@@ -260,7 +286,7 @@ impl UiNativeApplicationProgramProgress {
             return Err(());
         }
         self.pending_retry = Some(UiNativePendingProgramRetry {
-            program_frame,
+            source,
             rejected,
             reconstruction_authority,
             cancel_after_external_submission,
@@ -282,22 +308,28 @@ impl UiNativeApplicationProgramProgress {
         }
         let pending = self.pending_retry.take().expect("observed pending retry");
         self.next_completion_tick = self.next_completion_tick.checked_add(1).ok_or(())?;
-        let outcome = shell.retry_rejected_frame_presentation(
-            pending.rejected,
-            worth_ui_host_contract::UiPresentationDeadline::at_tick(u64::MAX),
-            self.next_completion_tick,
-        );
+        // A parked retry crosses observation closes: owner facts may have
+        // expired since rejection. Re-enter preparation with the retained
+        // presentation purpose, including reconstruction when required.
+        drop(pending.rejected);
+        let outcome = match pending.reconstruction_authority {
+            Some(_) => shell.reconstruct_current_presentation(u64::MAX, self.next_completion_tick),
+            None => shell
+                .present_frame(u64::MAX, self.next_completion_tick)
+                .map_err(|_| ()),
+        }
+        .map_err(|_| ())?;
         let progress = self.retain_or_attribute(
             shell,
             outcome,
-            pending.program_frame,
+            pending.source,
             None,
             pending.reconstruction_authority,
             pending.cancel_after_external_submission,
         )?;
         match progress {
             FrameProgress::Retained => {
-                if self.next_frame == pending.program_frame {
+                if pending.source == UiNativePresentationSource::Program(self.next_frame) {
                     self.next_frame = self.next_frame.saturating_add(1);
                 }
                 Ok(false)
@@ -306,11 +338,9 @@ impl UiNativeApplicationProgramProgress {
                 if let Some(UiNativeProgramReconstructionAuthority::Physical(correlation)) =
                     pending.reconstruction_authority
                 {
-                    self.physical_recovery
-                        .commit_settlement(correlation)
-                        .map_err(|_| ())?;
+                    self.settle_physical_reconstruction(correlation)?;
                 }
-                if self.next_frame == pending.program_frame {
+                if pending.source == UiNativePresentationSource::Program(self.next_frame) {
                     self.next_frame = self.next_frame.saturating_add(1);
                 }
                 Ok(true)

@@ -1,21 +1,27 @@
 use crate::capability::{
     CapabilitySnapshotFreezeInput, CapabilitySnapshotIndex, CapabilitySnapshotIndexParts,
-    CapabilitySupportCatalog, FrozenCommandCapabilities, FrozenCommandProjectionCapabilities,
-    FrozenComponentCapabilities, FrozenIconCapabilities, FrozenIntentDefinitionCapabilities,
-    FrozenMosaicPlacementCapabilities, FrozenMosaicRegionCapabilities,
-    FrozenMosaicSizingCapabilities, FrozenMosaicStateCapabilities, FrozenNativeCapabilities,
-    FrozenPluginSlotCapabilities, FrozenRuntimeOutcomeProjectionCapabilities,
-    FrozenSettingCapabilities, FrozenSurfaceCapabilities, FrozenTaskPresentationCapabilities,
-    FrozenThemeTokenCapabilities, FrozenViewBindingCapabilities, RegisteredCapabilitySet,
-    SnapshotFreezeReport, SnapshotReferenceValidationReport,
+    CapabilitySupportCatalog, FrozenAppearanceRoleCapabilities, FrozenAppearanceThemeCapabilities,
+    FrozenCommandCapabilities, FrozenCommandProjectionCapabilities, FrozenComponentCapabilities,
+    FrozenIconCapabilities, FrozenIntentDefinitionCapabilities, FrozenMosaicPlacementCapabilities,
+    FrozenMosaicRegionCapabilities, FrozenMosaicSizingCapabilities, FrozenMosaicStateCapabilities,
+    FrozenNativeCapabilities, FrozenPluginSlotCapabilities,
+    FrozenRuntimeOutcomeProjectionCapabilities, FrozenSettingCapabilities,
+    FrozenSurfaceCapabilities, FrozenTaskPresentationCapabilities, FrozenThemeTokenCapabilities,
+    FrozenViewBindingCapabilities, RegisteredCapabilitySet, SnapshotFreezeReport,
+    SnapshotReferenceValidationReport,
 };
 
 use super::{CapabilitySnapshotDigest, SnapshotMetrics};
+
+#[path = "authored_role_succession.rs"]
+mod authored_role_succession;
 
 /// Immutable capability snapshot consumed by later lowering phases.
 #[derive(Debug, Eq, PartialEq)]
 pub struct CapabilitySnapshot {
     registered_capabilities: RegisteredCapabilitySet,
+    appearance_roles: FrozenAppearanceRoleCapabilities,
+    appearance_themes: Option<FrozenAppearanceThemeCapabilities>,
     commands: FrozenCommandCapabilities,
     command_projections: FrozenCommandProjectionCapabilities,
     components: FrozenComponentCapabilities,
@@ -50,6 +56,8 @@ impl CapabilitySnapshot {
     ) -> Self {
         Self {
             registered_capabilities: input.registered_capabilities,
+            appearance_roles: input.appearance_roles,
+            appearance_themes: input.appearance_themes,
             commands: input.commands,
             command_projections: input.command_projections,
             components: input.components,
@@ -77,6 +85,18 @@ impl CapabilitySnapshot {
 
     pub fn registered_capabilities(&self) -> &RegisteredCapabilitySet {
         &self.registered_capabilities
+    }
+
+    pub fn appearance_roles(&self) -> &FrozenAppearanceRoleCapabilities {
+        &self.appearance_roles
+    }
+
+    #[allow(
+        dead_code,
+        reason = "Gate 0 retains frozen themes without selecting one live"
+    )]
+    pub(crate) const fn appearance_themes(&self) -> Option<&FrozenAppearanceThemeCapabilities> {
+        self.appearance_themes.as_ref()
     }
 
     pub fn commands(&self) -> &FrozenCommandCapabilities {

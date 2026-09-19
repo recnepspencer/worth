@@ -10,6 +10,8 @@ pub enum RelationalBranchTransactionAdmissionDenial {
     Archived,
     Deleting,
     StaleBasis,
+    MaterializationUnavailable,
+    MaterializationAlreadyAvailable,
     RetentionCapacityExhausted,
     RetentionOwnerUnavailable,
     RetentionIdentityExhausted,
@@ -69,6 +71,23 @@ impl crate::runtime::RelationalRuntime {
         }
         if !basis.is_current() {
             return Err(RelationalBranchTransactionAdmissionDenial::StaleBasis);
+        }
+        let unavailable = basis.inner.root.has_materialization_unavailable();
+        match intent.materialization_mode() {
+            None if unavailable => {
+                return Err(RelationalBranchTransactionAdmissionDenial::MaterializationUnavailable)
+            }
+            Some(super::RelationalMaterializationTransactionMode::Suspend) if unavailable => {
+                return Err(RelationalBranchTransactionAdmissionDenial::MaterializationUnavailable)
+            }
+            Some(super::RelationalMaterializationTransactionMode::Rematerialize)
+                if !unavailable =>
+            {
+                return Err(
+                    RelationalBranchTransactionAdmissionDenial::MaterializationAlreadyAvailable,
+                )
+            }
+            _ => {}
         }
         match control.observe(crate::mvcc::RelationalInterruptionBoundary::TransactionAdmission) {
             Some(event)

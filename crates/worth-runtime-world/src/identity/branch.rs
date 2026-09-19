@@ -41,6 +41,11 @@ impl ProductBranchIncarnation {
     pub const fn owner_identity(self) -> RuntimeWorldOwnerIdentity {
         self.owner
     }
+
+    /// Descriptive lifecycle ordinal; this value cannot create a branch.
+    pub const fn ordinal(self) -> u64 {
+        self.ordinal
+    }
 }
 
 /// Generation of one mutable product reference cell. It advances only after
@@ -65,6 +70,11 @@ impl ProductBranchReferenceGeneration {
             .ok_or(RuntimeWorldIdentityExhaustion::new(
                 super::RuntimeWorldIdentityFamily::ProductBranchReferenceGeneration,
             ))
+    }
+
+    pub(crate) fn retreat(self, steps: usize) -> Option<Self> {
+        let steps = u64::try_from(steps).ok()?;
+        self.0.checked_sub(steps).map(Self)
     }
 }
 

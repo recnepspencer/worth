@@ -22,6 +22,8 @@ pub(super) fn construct_instantiation_entry(
             .admitted()
             .and_then(|policy| policy.basis_source()),
         aspect_contract: handoff.aspect_contract().clone(),
+        component_reference: handoff.component_reference().cloned(),
+        appearance_role_attachment: handoff.appearance_role_attachment().cloned(),
         repeated_instance_basis,
         topology_seed: UiGraphTopologySeed::new(UiGraphTopologySeedInput {
             structural_digest: handoff.structural_digest(),

@@ -195,7 +195,7 @@ fn duplicate_family_poisons_the_turn_without_committing_owner_progress() {
 }
 
 #[test]
-fn successor_host_families_are_typed_and_cannot_enter_the_set() {
+fn raw_pointer_motion_requires_pointer_presence_owner_progression() {
     let mut world = published_observation_world("phase-312-host-unavailable");
     let raw = batch(
         source(&world.session, world.binding, &world.current),
@@ -210,7 +210,7 @@ fn successor_host_families_are_typed_and_cannot_enter_the_set() {
     assert_eq!(receipt.unavailable().len(), 1);
     assert_eq!(
         receipt.unavailable()[0].successor(),
-        UiHostObservationSuccessorOwner::Intent
+        UiHostObservationSuccessorOwner::PointerPresence
     );
     assert!(matches!(
         turn.seal(),

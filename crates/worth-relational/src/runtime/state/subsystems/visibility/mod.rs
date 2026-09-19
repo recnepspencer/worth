@@ -125,14 +125,6 @@ impl VisibilitySubsystem {
         self.handles.active_versions()
     }
 
-    #[cfg(test)]
-    pub(crate) fn retains_published_version(
-        &self,
-        version_id: crate::identity::data::VersionId,
-    ) -> bool {
-        self.handles.retains_published_version(version_id)
-    }
-
     pub(crate) fn retention_fence_version(
         &self,
         published_version: crate::identity::data::VersionId,

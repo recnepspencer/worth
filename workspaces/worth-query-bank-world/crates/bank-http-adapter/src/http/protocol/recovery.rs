@@ -25,7 +25,8 @@ pub enum BankHttpEstateNotificationOutcome {
         request_id: String,
         disposition: BankHttpCommitDisposition,
         commit: BankHttpCommitDescription,
-        recovery: String,
+        recovery: Option<String>,
+        recovery_status: BankHttpRecoveryStatus,
     },
     Denied {
         request_id: Option<String>,
@@ -75,19 +76,27 @@ pub enum BankHttpRecoveryInspectionOutcome {
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
-pub enum BankHttpUndoCorrection {
-    Compensation,
-    RecordedInverse,
-    Reconciliation,
+pub enum BankHttpRecoveryStatus {
+    TokenIssued,
+    Completed,
+    OperatorRequired,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum BankHttpRecoveryRetryDisposition {
+    Retried,
+    AlreadyRetried,
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(tag = "outcome", rename_all = "snake_case")]
-pub enum BankHttpUndoAdmissionOutcome {
-    Admitted {
+pub enum BankHttpRecoverySafeRetryOutcome {
+    Applied {
         request_id: String,
-        undo: String,
-        correction: BankHttpUndoCorrection,
+        disposition: BankHttpRecoveryRetryDisposition,
+        external_completion: bool,
+        fresh_attempt: bool,
     },
     Denied {
         request_id: Option<String>,

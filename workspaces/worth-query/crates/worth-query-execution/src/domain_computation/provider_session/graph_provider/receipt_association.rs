@@ -248,7 +248,7 @@ mod tests {
         let expected_snapshot =
             WorthQueryBoundExecutionSnapshotIdentity::capture(Arc::from("snapshot"));
         let authority = exact_attempt.attempt.binding_authority();
-        let session = exact_attempt.attempt.provider_session();
+        let session = exact_attempt.attempt.provider_session_for_test();
 
         assert!(exact.admits_execution(authority, session, None, &expected_snapshot));
 

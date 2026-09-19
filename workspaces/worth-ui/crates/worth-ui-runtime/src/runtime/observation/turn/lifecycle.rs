@@ -5,6 +5,8 @@ use super::{
     UiObservationAdmissionReceipt, UiObservationTurnDenial, UiObservationTurnIdentity,
 };
 
+mod close;
+
 pub struct UiObservationTurn<'state> {
     pub(in crate::runtime::observation) runtime: &'state mut crate::runtime::WorthUiRuntime,
     identity: UiObservationTurnIdentity,
@@ -15,6 +17,19 @@ pub struct UiObservationTurn<'state> {
     observations: Vec<UiAdmittedObservation>,
     retained_bytes: usize,
     poisoned: bool,
+    appearance_close: Option<super::UiAppearanceObservationCloseInput<'state>>,
+    pointer_close: Option<super::UiPointerAffordanceObservationCloseInput<'state>>,
+}
+
+pub(crate) struct UiObservationTurnCloseAuthority {
+    _private: (),
+}
+
+#[cfg(test)]
+impl UiObservationTurnCloseAuthority {
+    pub(crate) const fn for_test() -> Self {
+        Self { _private: () }
+    }
 }
 
 pub(crate) struct UiPreparedObservationProgressCommit {
@@ -28,6 +43,8 @@ impl<'state> UiObservationTurn<'state> {
         source_basis: u64,
         identity: u64,
         profile: UiObservationProfile,
+        appearance_close: Option<super::UiAppearanceObservationCloseInput<'state>>,
+        pointer_close: Option<super::UiPointerAffordanceObservationCloseInput<'state>>,
     ) -> Self {
         Self {
             runtime,
@@ -38,6 +55,8 @@ impl<'state> UiObservationTurn<'state> {
             observations: Vec::new(),
             retained_bytes: 0,
             poisoned: false,
+            appearance_close,
+            pointer_close,
         }
     }
 
@@ -240,83 +259,6 @@ impl<'state> UiObservationTurn<'state> {
             .observation
             .update_active_resources(self.observations.len(), self.retained_bytes);
     }
-
-    pub fn seal(mut self) -> Result<UiAdmittedObservationSet, UiObservationAdmissionDenial> {
-        if self.poisoned {
-            return Err(UiObservationAdmissionDenial::PoisonedTurn);
-        }
-        if self.observations.is_empty() {
-            return Err(UiObservationAdmissionDenial::EmptyTurn);
-        }
-        self.observations.sort_by_key(|observation| {
-            (
-                observation.family().definition().framework_rank(),
-                observation.owner_order(),
-            )
-        });
-        self.runtime.observation.finish_committed(
-            self.observations
-                .iter()
-                .filter_map(UiAdmittedObservation::progress),
-        );
-        let lease = self
-            .runtime
-            .observation
-            .retain_set(self.observations.len(), self.retained_bytes);
-        let observations = std::mem::take(&mut self.observations).into_boxed_slice();
-        Ok(UiAdmittedObservationSet::seal(
-            self.identity,
-            self.session,
-            self.source_basis,
-            observations,
-            self.retained_bytes,
-            lease,
-        ))
-    }
-
-    pub(crate) fn prepare_seal(
-        mut self,
-    ) -> Result<
-        (
-            UiAdmittedObservationSet,
-            UiPreparedObservationProgressCommit,
-        ),
-        UiObservationAdmissionDenial,
-    > {
-        if self.poisoned {
-            return Err(UiObservationAdmissionDenial::PoisonedTurn);
-        }
-        if self.observations.is_empty() {
-            return Err(UiObservationAdmissionDenial::EmptyTurn);
-        }
-        self.observations.sort_by_key(|observation| {
-            (
-                observation.family().definition().framework_rank(),
-                observation.owner_order(),
-            )
-        });
-        let progress = self
-            .observations
-            .iter()
-            .filter_map(UiAdmittedObservation::progress)
-            .cloned()
-            .collect::<Vec<_>>()
-            .into_boxed_slice();
-        let lease = self
-            .runtime
-            .observation
-            .retain_set(self.observations.len(), self.retained_bytes);
-        let observations = std::mem::take(&mut self.observations).into_boxed_slice();
-        let set = UiAdmittedObservationSet::seal(
-            self.identity,
-            self.session,
-            self.source_basis,
-            observations,
-            self.retained_bytes,
-            lease,
-        );
-        Ok((set, UiPreparedObservationProgressCommit { progress }))
-    }
 }
 
 pub(in crate::runtime::observation) struct UiObservationBatchAdmissionStop {
@@ -350,11 +292,25 @@ impl Drop for UiObservationTurn<'_> {
 }
 
 impl crate::runtime::WorthUiRuntime {
-    pub(crate) fn begin_observation_turn(
-        &mut self,
+    #[allow(
+        dead_code,
+        reason = "runtime-only tests may begin a turn without facade owner capture"
+    )]
+    pub(crate) fn begin_observation_turn<'state>(
+        &'state mut self,
         session: crate::facade::WorthUiActiveApplicationSessionIdentity,
         source_basis: u64,
-    ) -> Result<UiObservationTurn<'_>, UiObservationTurnDenial> {
+    ) -> Result<UiObservationTurn<'state>, UiObservationTurnDenial> {
+        self.begin_observation_turn_with_owner_close(session, source_basis, None, None)
+    }
+
+    pub(crate) fn begin_observation_turn_with_owner_close<'state>(
+        &'state mut self,
+        session: crate::facade::WorthUiActiveApplicationSessionIdentity,
+        source_basis: u64,
+        appearance_close: Option<super::UiAppearanceObservationCloseInput<'state>>,
+        pointer_close: Option<super::UiPointerAffordanceObservationCloseInput<'state>>,
+    ) -> Result<UiObservationTurn<'state>, UiObservationTurnDenial> {
         let profile = self.change_profile.observation();
         let (identity, profile) = self.observation.begin(profile)?;
         Ok(UiObservationTurn::new(
@@ -363,6 +319,8 @@ impl crate::runtime::WorthUiRuntime {
             source_basis,
             identity,
             profile,
+            appearance_close,
+            pointer_close,
         ))
     }
 

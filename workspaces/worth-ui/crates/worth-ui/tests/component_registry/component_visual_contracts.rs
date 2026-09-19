@@ -2,9 +2,7 @@ use worth_ui::facade::{
     app::WorthUi,
     declaration::{
         ComponentAllocationMeasurementContract, ComponentDescriptor, ComponentHitTestContract,
-        ComponentHitTestOrder, ComponentStaticPaintContract, ComponentStaticPaintOrder,
-        ComponentViewportInset, ThemeColorValue, ThemeTokenDescriptor, ThemeTokenFamily,
-        ThemeTokenId, ThemeTokenSource, ThemeTokenValue,
+        ComponentHitTestOrder, ComponentViewportInset,
     },
     diagnostics::CapabilityDiagnosticCode,
 };
@@ -13,8 +11,6 @@ use super::component_registry_assertions::{
     assert_diagnostic_codes_and_identities, assert_registered_component_ids,
 };
 use super::component_registry_fixtures::component_descriptor;
-
-const TOKEN: &str = "theme.component.visual_contract";
 
 #[test]
 fn matching_paint_and_hit_allocations_admit_in_either_builder_order() {
@@ -25,7 +21,6 @@ fn matching_paint_and_hit_allocations_admit_in_either_builder_order() {
         .with_change_profile(worth_ui_runtime::facade::rebind::UiChangeProfile::platform_pulse())
         .register_component(first)
         .register_component(second)
-        .register_theme_token(theme_token())
         .freeze()
         .expect("matching visual allocation contracts should freeze");
 
@@ -56,7 +51,6 @@ fn conflicting_paint_and_hit_allocations_reject_in_either_builder_order() {
             fill,
             inset,
         ))
-        .register_theme_token(theme_token())
         .freeze_with_registration_report();
 
     assert!(report.has_errors());
@@ -82,7 +76,8 @@ fn paint_then_hit(
     hit_allocation: ComponentAllocationMeasurementContract,
 ) -> ComponentDescriptor {
     component_descriptor(id)
-        .with_static_paint(paint_contract(), paint_allocation)
+        .with_allocation_measurement_contract(paint_allocation)
+        .with_surface_paint_order(0)
         .with_hit_test(hit_contract(hit_allocation))
 }
 
@@ -93,29 +88,10 @@ fn hit_then_paint(
 ) -> ComponentDescriptor {
     component_descriptor(id)
         .with_hit_test(hit_contract(hit_allocation))
-        .with_static_paint(paint_contract(), paint_allocation)
-}
-
-fn paint_contract() -> ComponentStaticPaintContract {
-    ComponentStaticPaintContract::opaque_fill(
-        token_id(),
-        ComponentStaticPaintOrder::back_to_front(0),
-    )
+        .with_allocation_measurement_contract(paint_allocation)
+        .with_surface_paint_order(0)
 }
 
 fn hit_contract(allocation: ComponentAllocationMeasurementContract) -> ComponentHitTestContract {
     ComponentHitTestContract::allocation_bounds(ComponentHitTestOrder::front_to_back(0), allocation)
-}
-
-fn theme_token() -> ThemeTokenDescriptor {
-    ThemeTokenDescriptor::define(
-        token_id(),
-        ThemeTokenFamily::surface(),
-        ThemeTokenSource::application(),
-        ThemeTokenValue::color(ThemeColorValue::hex("#2f81f7").unwrap()),
-    )
-}
-
-fn token_id() -> ThemeTokenId {
-    ThemeTokenId::new(TOKEN).unwrap()
 }

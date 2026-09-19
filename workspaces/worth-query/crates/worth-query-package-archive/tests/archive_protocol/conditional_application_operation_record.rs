@@ -13,7 +13,7 @@ use worth_query_installation::facade::{
 };
 use worth_query_package_archive::facade::*;
 
-const VERSION_ONE_CONDITIONAL_BINDING_HEX: &str = "0001000900000003000000cc00000013617263686976652e636f6e646974696f6e616c00000011436f6e646974696f6e616c536368656d610000001b436f6e646974696f6e616c417263686976654f7065726174696f6e00000025776f7274682e71756572792e617263686976652e636f6e646974696f6e616c2d696e707574000000106c65646765722d62616c616e63653a310000004035616331333563613538336631343538643632353030326633316366383866633565633036346339343533356237623530626633356462386337613133373037";
+const VERSION_FOUR_CONDITIONAL_BINDING_HEX: &str = "0004000900000003000000cc00000013617263686976652e636f6e646974696f6e616c00000011436f6e646974696f6e616c536368656d610000001b436f6e646974696f6e616c417263686976654f7065726174696f6e00000025776f7274682e71756572792e617263686976652e636f6e646974696f6e616c2d696e707574000000106c65646765722d62616c616e63653a310000004066356337363266396237616165373466643039373238373536396361363063313062356537316164623732303232373032343933316164363363373338353531";
 
 struct Schema;
 struct Operation;
@@ -22,10 +22,14 @@ struct Input;
 worth_query_declaration::worth_query_portable_type!(
     Input => "worth.query.archive.conditional-input"
 );
+worth_query_declaration::worth_query_structured_value_binding!(
+    InputBinding for Input {
+        identity: "worth.query.archive.conditional-input"
+    }
+);
 
-impl ApplicationOperationMarkerIdentity for Operation {
-    type Schema = Schema;
-    type Input = Input;
+impl ApplicationOperationMarkerIdentity<Schema> for Operation {
+    type InputBinding = InputBinding;
     const IDENTIFIER: &'static str = "ConditionalArchiveOperation";
 }
 
@@ -61,12 +65,12 @@ fn conditional_application_operation_frame_is_deterministic_and_exact() {
 
     let first = encode_record_frame(view, limits).unwrap();
     assert_eq!(encode_record_frame(view, limits).unwrap(), first);
-    assert_eq!(encode_hex(&first), VERSION_ONE_CONDITIONAL_BINDING_HEX);
+    assert_eq!(encode_hex(&first), VERSION_FOUR_CONDITIONAL_BINDING_HEX);
     assert_eq!(u16::from_be_bytes(first[2..4].try_into().unwrap()), 9);
 
     let mut decoder = WorthQueryPackageArchiveRecordDecoder::new(limits);
     let decoded = decoder
-        .decode_frame(&decode_hex(VERSION_ONE_CONDITIONAL_BINDING_HEX))
+        .decode_frame(&decode_hex(VERSION_FOUR_CONDITIONAL_BINDING_HEX))
         .unwrap();
     assert_eq!(decoded.canonical_index(), view.canonical_index());
     assert_eq!(decoded.record(), view.record());

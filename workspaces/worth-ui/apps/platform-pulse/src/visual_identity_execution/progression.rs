@@ -270,16 +270,12 @@ fn clear_overlay(
     let mut retained = overlay.retained;
     retained.overlay_clear = Some(cleared);
     if overlay.replacement.is_pending() {
-        if super::replacement::portal_active(shell) {
-            Ok(PlatformPulseVisualIdentityState::DeferredRefresh(retained))
-        } else {
-            Ok(PlatformPulseVisualIdentityState::AwaitingRefresh {
-                predecessor: retained,
-                budget: super::capture_restart::PlatformPulseAwaitingCaptureBudget::fresh(
-                    super::replacement_frame_deadline(now)?,
-                ),
-            })
-        }
+        Ok(PlatformPulseVisualIdentityState::AwaitingRefresh {
+            predecessor: retained,
+            budget: super::capture_restart::PlatformPulseAwaitingCaptureBudget::fresh(
+                super::replacement_frame_deadline(now)?,
+            ),
+        })
     } else {
         Ok(PlatformPulseVisualIdentityState::ComparisonReady(retained))
     }

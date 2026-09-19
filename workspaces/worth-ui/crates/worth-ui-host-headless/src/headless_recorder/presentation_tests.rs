@@ -203,7 +203,7 @@ fn sample_for(
         changes: vec![UiMountedPresentationSampleChange::from_runtime_sampling(
             command,
             Some(UiMountedPresentationTransform::from_runtime_sampling(bounds, bounds).unwrap()),
-            UiMountedPresentationOpacity::from_runtime_sampling(0.5).unwrap(),
+            UiMountedPresentationOpacity::from_runtime_composition(32_768),
         )],
         damage: vec![UiMountedLogicalDamage::from_runtime_mounting(bounds)],
         production_cost: Default::default(),
@@ -224,6 +224,7 @@ fn view<'work>(
         UiMountedFrameConsumptionInput {
             qualified_text: text,
             text_raster_work: None,
+            appearance_work: None,
             authority: std::rc::Rc::new(()),
             host_session_identity: 13,
             protocol,
@@ -258,9 +259,6 @@ fn command_with_identity(
     identity: worth_ui_host_contract::UiMountedPaintCommandIdentity,
 ) -> UiMountedPaintCommand {
     match command {
-        UiMountedPaintCommand::FilledRect { mechanic, .. } => {
-            UiMountedPaintCommand::FilledRect { identity, mechanic }
-        }
         UiMountedPaintCommand::SemanticText { mechanic, .. } => {
             UiMountedPaintCommand::SemanticText { identity, mechanic }
         }
@@ -275,10 +273,6 @@ fn command_with_payload(
     donor: UiMountedPaintCommand,
 ) -> UiMountedPaintCommand {
     match (command, donor) {
-        (
-            UiMountedPaintCommand::FilledRect { identity, .. },
-            UiMountedPaintCommand::FilledRect { mechanic, .. },
-        ) => UiMountedPaintCommand::FilledRect { identity, mechanic },
         (
             UiMountedPaintCommand::SemanticText { identity, .. },
             UiMountedPaintCommand::SemanticText { mechanic, .. },

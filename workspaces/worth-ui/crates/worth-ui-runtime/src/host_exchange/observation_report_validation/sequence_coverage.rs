@@ -6,6 +6,10 @@ use worth_ui_host_contract::{
 use super::structural_admission::UiStructurallyAdmittedObservationBatch;
 use super::{UiHostObservationBatchDisposition, UiHostObservationReportDenial};
 
+#[cfg(test)]
+#[path = "sequence_coverage/retention_tests.rs"]
+mod retention_tests;
+
 pub(super) struct UiSequenceCoveredObservationBatch {
     batch: UiHostObservationBatch,
     disposition: UiHostObservationBatchDisposition,
@@ -81,7 +85,7 @@ fn classify_loss(
             if report.family() != family {
                 return Err(UiHostObservationReportDenial::UnsupportedCoalescing(family));
             }
-            if report.payload().coalescing_identity() != Some(survivor) {
+            if report.coalescing_identity() != Some(survivor) {
                 return Err(UiHostObservationReportDenial::CoalescingIdentityMismatch);
             }
             Ok((
@@ -243,6 +247,7 @@ mod tests {
                 pressed_buttons: worth_ui_host_contract::UiHostPressedPointerButtons::from_buttons(
                     [worth_ui_host_contract::UiHostPointerButton::Primary],
                 ),
+                device_kind: Some(worth_ui_host_contract::UiHostPointerDeviceKind::Mouse),
             },
         };
         assert_eq!(

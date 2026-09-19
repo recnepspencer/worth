@@ -1,6 +1,6 @@
 use worth_ui_host_contract::{
     UiMountedCanonicalBox, UiMountedCanonicalBoxInput, UiMountedCoordinateSpace,
-    UiMountedLogicalDamage, UiMountedPresentationOpacity, UiMountedPresentationSampleChange,
+    UiMountedLogicalDamage, UiMountedPaintCommandIdentity, UiMountedPresentationSampleChange,
     UiMountedPresentationSampleInput, UiMountedPresentationTransform,
 };
 
@@ -10,18 +10,21 @@ use super::{production_cost, LocalWorkCost, RetainedTraversalCost, UiMountedPres
 pub(crate) enum UiMountedMotionSampleWorkDenial {
     PresentationBasisMismatch,
     UnknownTargetCommands,
+    AmbiguousTargetCommands,
     InvalidGeometry,
-    InvalidOpacity,
 }
 
 impl UiMountedPresentationState {
-    pub(crate) fn issue_motion_sample(
+    pub(in crate::mounting::presentation) fn prepare_motion_sample(
         &self,
         sampling: &crate::mounting::presentation::motion_sampling::UiPresentationMotionSamplingReceipt,
         presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
         lease: &crate::mounting::presentation::UiMountedPresentationLease,
     ) -> Result<
-        crate::mounting::presentation::UiMountedPresentationWork,
+        (
+            crate::mounting::presentation::UiMountedPresentationWork,
+            super::motion_evidence::UiPreparedCommandMotionAcceptance,
+        ),
         UiMountedMotionSampleWorkDenial,
     > {
         if self.frame != presentation.frame()
@@ -32,44 +35,100 @@ impl UiMountedPresentationState {
         }
         let mut changes = Vec::new();
         let mut damage = Vec::new();
+        let mut acceptance = Vec::new();
+        let mut selected = std::collections::HashSet::new();
         for sample in sampling.samples() {
+            if sample.presentation_basis() != presentation
+                || sample.target().semantic_surface() != self.requirement.semantic_surface()
+            {
+                return Err(UiMountedMotionSampleWorkDenial::PresentationBasisMismatch);
+            }
             let portal_group = self.portal_motion_group(sample.target());
+            if sample.target().is_portal_contents() && portal_group.is_none() {
+                return Err(UiMountedMotionSampleWorkDenial::UnknownTargetCommands);
+            }
             let portal_clip = portal_group
                 .as_ref()
                 .and_then(|group| group.viewport_clip());
+            let instance = sample.target().mounted_instance();
             let identities = portal_group.map_or_else(
                 || {
-                    self.command_identities_for_instance(sample.target().mounted_instance())
+                    self.command_identities_for_instance(instance)
+                        .filter(|identity| {
+                            !matches!(
+                                self.command_option(*identity),
+                                Some(worth_ui_host_contract::UiMountedPaintCommand::PortalOverlay { .. })
+                            )
+                        })
                         .collect::<Vec<_>>()
                 },
                 |group| group.commands().collect::<Vec<_>>(),
             );
-            if identities.is_empty() {
-                return Err(UiMountedMotionSampleWorkDenial::UnknownTargetCommands);
-            }
-            let opacity = UiMountedPresentationOpacity::from_runtime_sampling(sample.opacity())
-                .map_err(|_| UiMountedMotionSampleWorkDenial::InvalidOpacity)?;
+            let mut targets = Vec::with_capacity(identities.len().max(1));
             for identity in identities {
+                if identity.is_appearance_surface() {
+                    let target = self
+                        .appearance_surface_sample_target(identity.mounted_instance())
+                        .ok_or(UiMountedMotionSampleWorkDenial::UnknownTargetCommands)?;
+                    targets.push((
+                        identity,
+                        target.geometry().clip(),
+                        Some(target.geometry().bounds()),
+                    ));
+                    continue;
+                }
                 let command = self
                     .command_option(identity)
                     .ok_or(UiMountedMotionSampleWorkDenial::UnknownTargetCommands)?;
-                let transform =
-                    sample_transform(*sample, command.clip_bounds().coordinate_space())?;
+                targets.push((
+                    identity,
+                    command.clip_bounds(),
+                    super::command_visible_bounds(command),
+                ));
+            }
+            if targets.is_empty() && portal_clip.is_none() {
+                // An appearance-only instance is sampled through its painted surface.
+                if let Some(target) = self.appearance_surface_sample_target(instance) {
+                    let geometry = target.geometry();
+                    targets.push((
+                        UiMountedPaintCommandIdentity::appearance_surface(instance),
+                        geometry.clip(),
+                        Some(geometry.bounds()),
+                    ));
+                }
+            }
+            if targets.is_empty() {
+                return Err(UiMountedMotionSampleWorkDenial::UnknownTargetCommands);
+            }
+            for (identity, clip, visible) in targets {
+                if !selected.insert(identity) {
+                    return Err(UiMountedMotionSampleWorkDenial::AmbiguousTargetCommands);
+                }
+                let transform = sample_transform(*sample, clip.coordinate_space())?;
+                let opacity = super::super::compose_opacity(
+                    self.appearance_opacity_for_command(identity),
+                    sample.opacity_units(),
+                );
                 changes.push(UiMountedPresentationSampleChange::from_runtime_sampling(
                     identity, transform, opacity,
                 ));
-                if portal_clip.is_none() {
-                    append_clipped_damage(&mut damage, *sample, command.clip_bounds())?;
+                acceptance.push(self.prepare_command_motion_update(identity, *sample));
+                if sample.geometry().is_none() {
+                    damage.extend(visible.map(UiMountedLogicalDamage::from_runtime_mounting));
+                } else if portal_clip.is_none() {
+                    append_clipped_damage(&mut damage, *sample, clip)?;
                 }
             }
             if let Some(portal_clip) = portal_clip {
                 append_clipped_damage(&mut damage, *sample, portal_clip)?;
             }
         }
-        if changes.is_empty() || damage.is_empty() {
+        // Text image coverage may remain visible outside its logical allocation.
+        // The host derives physical damage from retained admitted images.
+        if changes.is_empty() {
             return Err(UiMountedMotionSampleWorkDenial::UnknownTargetCommands);
         }
-        Ok(lease.issue_sample(UiMountedPresentationSampleInput {
+        let work = lease.issue_sample(UiMountedPresentationSampleInput {
             frame: self.frame,
             surface: self.requirement.semantic_surface(),
             binding: self.requirement.binding(),
@@ -79,7 +138,8 @@ impl UiMountedPresentationState {
                 LocalWorkCost {
                     source_instances: sampling.samples().len(),
                     commands_considered: changes.len(),
-                    command_index_lookups: sampling.samples().len(),
+                    // Target selection plus command and acceptance-slot lookups.
+                    command_index_lookups: sampling.samples().len() + 2 * changes.len(),
                     order_lookups: 0,
                 },
                 RetainedTraversalCost::default(),
@@ -87,7 +147,11 @@ impl UiMountedPresentationState {
             ),
             changes,
             damage,
-        }))
+        });
+        Ok((
+            work,
+            super::motion_evidence::UiPreparedCommandMotionAcceptance::new(acceptance),
+        ))
     }
 
     pub(crate) const fn motion_sample_requirement(
@@ -118,7 +182,7 @@ fn append_clipped_damage(
     Ok(())
 }
 
-fn sample_transform(
+pub(super) fn sample_transform(
     sample: crate::mounting::presentation::motion_sampling::UiPresentationMotionSampleReceipt,
     coordinate_space: UiMountedCoordinateSpace,
 ) -> Result<Option<UiMountedPresentationTransform>, UiMountedMotionSampleWorkDenial> {

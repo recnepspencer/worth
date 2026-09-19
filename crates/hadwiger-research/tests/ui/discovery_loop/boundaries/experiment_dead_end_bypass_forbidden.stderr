@@ -1,5 +1,0 @@
-error[E0599]: no function or associated item named `from_dead_end_without_suppression_check` found for struct `hadwiger_research::facade::ExperimentPlan` in the current scope
- --> tests/ui/discovery_loop/boundaries/experiment_dead_end_bypass_forbidden.rs:4:29
-  |
-4 |     let _ = ExperimentPlan::from_dead_end_without_suppression_check("dead");
-  |                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ function or associated item not found in `hadwiger_research::facade::ExperimentPlan`

@@ -55,7 +55,7 @@ pub enum WorthUiNativeManagedIntentPosturePublicationOutcome {
 }
 
 struct NativeIntentPostureTransfer {
-    observation: crate::runtime::observation::UiPreparedObservationProgressCommit,
+    observation: super::intent_consequence_observation::WorthUiPreparedConsequenceObservationCommit,
     posture: crate::mounting::UiIntentPostureCommit,
 }
 
@@ -67,6 +67,13 @@ impl WorthUiNativeApplicationShell {
         posture: WorthUiNativeIntentPosture,
         now_tick: u64,
     ) -> WorthUiNativeIntentPosturePublicationOutcome<'_> {
+        if self.pending_managed_rebind.is_some() {
+            return stopped(
+                crate::runtime::intent_execution::UiIntentConsequenceStopReason::RebindAdmission(
+                    crate::runtime::rebind::UiRebindReservationDenial::AdmissionClosed,
+                ),
+            );
+        }
         self.session.publish_native_intent_posture(
             posture,
             crate::runtime::rebind::UiRebindExecutionPolicy::ordinary(),
@@ -112,6 +119,12 @@ impl WorthUiNativeApplicationShell {
             {
                 self.begin_intent_posture_predecessor_reconstruction(retry)
             }
+            super::native_managed_rebind::ManagedIntentPostureNormalization::Indeterminate { recovery, frame } => {
+                self.pending_managed_rebind = Some(
+                    super::native_managed_rebind::WorthUiNativePendingManagedRebind::Indeterminate { recovery, frame },
+                );
+                Ok(WorthUiNativeManagedIntentPosturePublicationOutcome::Pending)
+            }
             super::native_managed_rebind::ManagedIntentPostureNormalization::Stopped(stop) => {
                 Ok(WorthUiNativeManagedIntentPosturePublicationOutcome::Stopped(stop))
             }
@@ -120,7 +133,7 @@ impl WorthUiNativeApplicationShell {
 }
 
 impl WorthUiActiveApplicationSession {
-    fn publish_native_intent_posture(
+    pub(in crate::facade::entry) fn publish_native_intent_posture(
         &mut self,
         posture: WorthUiNativeIntentPosture,
         policy: crate::runtime::rebind::UiRebindExecutionPolicy,
@@ -131,11 +144,7 @@ impl WorthUiActiveApplicationSession {
             None,
             None,
         );
-        let observation = match prepare_intent_consequence_observation(
-            &mut self.application,
-            self.identity,
-            batch,
-        ) {
+        let observation = match prepare_intent_consequence_observation(self, batch) {
             Ok(observation) => observation,
             Err(stop) => return stopped(stop.reason),
         };
@@ -184,13 +193,15 @@ impl WorthUiActiveApplicationSession {
                 );
             }
         };
-        let transfer = NativeIntentPostureTransfer {
-            observation: observation.progress,
-            posture: observation
-                .posture
-                .expect("posture-only observation retains one posture commit"),
-        };
-        match self.prepare_native_intent_posture_rebind(plan, execution, transfer) {
+        let posture = observation
+            .posture
+            .expect("posture-only observation retains one posture commit");
+        match self.prepare_native_intent_posture_rebind(
+            plan,
+            execution,
+            observation.progress,
+            posture,
+        ) {
             Ok(prepared) => prepared.execute(),
             Err(reason) => stopped(reason),
         }
@@ -200,7 +211,8 @@ impl WorthUiActiveApplicationSession {
         &mut self,
         plan: crate::runtime::rebind::UiRebindPlan,
         request: crate::runtime::rebind::UiRebindExecutionRequest,
-        transfer: NativeIntentPostureTransfer,
+        observation: super::intent_consequence_observation::WorthUiClosedConsequenceObservation,
+        posture: crate::mounting::UiIntentPostureCommit,
     ) -> Result<
         PreparedNativeIntentPostureRebind<'_>,
         crate::runtime::intent_execution::UiIntentConsequenceStopReason,
@@ -234,17 +246,22 @@ impl WorthUiActiveApplicationSession {
             || (0, Vec::new()),
             |owner| (owner.revision(), owner.current_mounted_projection_inputs()),
         );
-        let frame = self
-            .prepare_intent_consequence_frame(
+        let (frame, observation) = self
+            .prepare_observed_intent_consequence_frame(
                 plan.content().clone(),
                 portal_overlay_revision,
                 portal_overlays,
+                observation,
             )
             .map_err(|denial| {
                 crate::runtime::intent_execution::UiIntentConsequenceStopReason::Preparation(
                     Box::new(denial),
                 )
             })?;
+        let transfer = NativeIntentPostureTransfer {
+            observation,
+            posture,
+        };
         Ok(PreparedNativeIntentPostureRebind {
             session: self,
             plan,

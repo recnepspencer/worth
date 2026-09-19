@@ -20,7 +20,7 @@ pub(super) fn compile_content_plan(
     }
     retain_projection_inputs(candidate, scope, &mut content)?;
     let governed_nodes = schema_transition::compile(predecessor, candidate, scope, &mut content)?;
-    project_intent_postures(scope, &governed_nodes, &mut content)?;
+    project_intent_postures(candidate, scope, &governed_nodes, &mut content)?;
     for lookup in scope.lookups() {
         project_query_content(candidate, scope, lookup, &governed_nodes, &mut content)?;
     }
@@ -74,17 +74,25 @@ fn projected_query_content(
     super::UiRebindPlanningDenial,
 > {
     Ok(
-        match (query.scalar_projection(), query.collection_projection()) {
-            (Some(scalar), None) => Some((
+        match (
+            query.scalar_projection(),
+            query.application_scalar_projection(),
+            query.collection_projection(),
+        ) {
+            (Some(scalar), None, None) => Some((
                 scalar.core().projection_identity(),
                 UiProjectedSemanticContent::Scalar(project_scalar(scalar)),
             )),
-            (None, Some(collection)) => Some((
+            (None, Some(scalar), None) => Some((
+                scalar.projection_identity(),
+                UiProjectedSemanticContent::Scalar(project_application_scalar(scalar)),
+            )),
+            (None, None, Some(collection)) => Some((
                 collection.core().projection_identity(),
                 UiProjectedSemanticContent::Collection(collection::project_collection(collection)?),
             )),
-            (None, None) => None,
-            (Some(_), Some(_)) => unreachable!("a Query projection fact has one sealed shape"),
+            (None, None, None) => None,
+            _ => unreachable!("a Query projection fact has one sealed shape"),
         },
     )
 }
@@ -106,6 +114,7 @@ fn insert_projected_content(
 }
 
 fn project_intent_postures(
+    candidate: &crate::facade::prepared_application_authority::WorthUiPreparedApplicationAuthority,
     scope: &super::super::UiResolvedAffectedScope,
     governed_nodes: &std::collections::BTreeSet<crate::graph::UiGraphNodeIdentity>,
     content: &mut crate::mounting::UiMountedSemanticContentInput,
@@ -123,6 +132,26 @@ fn project_intent_postures(
                 continue;
             };
             if graph_node != posture.graph_node() || governed_nodes.contains(&graph_node) {
+                continue;
+            }
+            // Posture observation does not itself grant text presentation. A
+            // component must have admitted semantic text before receiving the
+            // existing textual posture projection; appearance-only owners keep
+            // their separately authored paint and product-owned copy.
+            let snapshot = candidate.graph_snapshot();
+            let renders_text = snapshot
+                .core_indexes()
+                .node_identity()
+                .node(snapshot.nodes(), graph_node)
+                .and_then(|node| {
+                    crate::graph::component_capability_for_node(
+                        node,
+                        candidate.capabilities(),
+                        &candidate.authored_declaration_lookup(),
+                    )
+                })
+                .is_some_and(|component| component.semantic_text_contract().is_some());
+            if !renders_text {
                 continue;
             }
             let label: Arc<str> = match posture.posture() {
@@ -160,19 +189,28 @@ fn retain_projection_inputs(
         let Some(query) = fact.query() else {
             continue;
         };
-        let input = match (query.scalar_projection(), query.collection_projection()) {
-            (Some(scalar), None) => {
+        let input = match (
+            query.scalar_projection(),
+            query.application_scalar_projection(),
+            query.collection_projection(),
+        ) {
+            (Some(scalar), None, None) => {
                 projection_input(candidate, scalar.core().projection_identity(), |slot| {
                     scalar.intent_input_transition(slot)
                 })?
             }
-            (None, Some(collection)) => {
+            (None, Some(scalar), None) => {
+                projection_input(candidate, scalar.projection_identity(), |slot| {
+                    scalar.intent_input_transition(slot)
+                })?
+            }
+            (None, None, Some(collection)) => {
                 projection_input(candidate, collection.core().projection_identity(), |slot| {
                     collection.intent_input_transition(slot)
                 })?
             }
-            (None, None) => continue,
-            (Some(_), Some(_)) => unreachable!("a Query projection fact has one sealed shape"),
+            (None, None, None) => continue,
+            _ => unreachable!("a Query projection fact has one sealed shape"),
         };
         let projection = input.revision().projection_identity().clone();
         content
@@ -243,6 +281,27 @@ fn project_scalar(
             crate::mounting::UiMountedSemanticTextValueDirective::Preserve,
             stopped_label(receipt.kind()),
         ),
+    }
+}
+
+fn project_application_scalar(
+    fact: &worth_ui_query_binding::UiApplicationScalarProjectionFactReceipt,
+) -> (
+    crate::mounting::UiMountedSemanticTextValueDirective,
+    Arc<str>,
+) {
+    if fact.value().revision == 0 {
+        (
+            crate::mounting::UiMountedSemanticTextValueDirective::Clear,
+            Arc::from("PENDING"),
+        )
+    } else {
+        (
+            crate::mounting::UiMountedSemanticTextValueDirective::Replace(Arc::from(
+                fact.value().status.as_str(),
+            )),
+            Arc::from("CURRENT"),
+        )
     }
 }
 

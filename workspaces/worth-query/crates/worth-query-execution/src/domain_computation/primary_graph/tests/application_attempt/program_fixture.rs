@@ -1,4 +1,6 @@
-use worth_query_declaration::facade::application_schema::TypedMutationPreconditions;
+use worth_query_declaration::facade::application_schema::{
+    ApplicationEncodedScalarValue, StringApplicationValueBinding, TypedMutationPreconditions,
+};
 
 use super::super::fixture::{
     MutationFreeEmitInput, MutationFreeEmitOperation, MutationFreeExternalEffect,
@@ -7,7 +9,7 @@ use super::super::fixture::{
 use super::{AccountStatus, TouchAccountOperation};
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationEffectProgram, WorthQueryApplicationEntityIdentity,
-    WorthQueryAuthenticatedPrincipal,
+    WorthQueryAuthenticatedPrincipal, WorthQuerySelectedProductOperation,
 };
 
 type Schema = super::super::fixture::IdentityExecutionSchema;
@@ -42,7 +44,7 @@ pub(super) fn admitted_mutation_free_program(
         .requirements()
         .is_empty());
     let admission = world
-        .application
+        .selected_product()
         .authorize_operation(
             principal,
             account,
@@ -67,7 +69,7 @@ pub(super) fn admitted_mutation_free_program(
     effects
         .emit_external(
             MutationFreeExternalEffect::reference(),
-            MutationFreeNotice("mutation-free".to_owned()),
+            MutationFreeNotice(13),
         )
         .unwrap();
     effects.finish().unwrap()
@@ -132,8 +134,33 @@ pub(super) fn admitted_program_with_expected_status(
             emissions: Vec::new(),
             preconditions: Preconditions::new().expect_fact(
                 AccountStatus::reference(),
-                status_and_replacement.0.to_owned(),
+                ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
+                    status_and_replacement.0.to_owned(),
+                )
+                .expect("fixture account status must encode"),
             ),
+        },
+    )
+}
+
+pub(super) fn admitted_program_on_selected(
+    world: &World,
+    selected: &WorthQuerySelectedProductOperation<'_, Schema>,
+    principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, u64>,
+    account: &WorthQueryApplicationEntityIdentity<Schema, Account>,
+    request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+    replacement: &str,
+) -> Program {
+    admitted_program_from_selected(
+        world,
+        selected,
+        principal,
+        account,
+        request,
+        ProgramOptions {
+            replacement,
+            emissions: Vec::new(),
+            preconditions: Preconditions::new(),
         },
     )
 }
@@ -151,13 +178,24 @@ fn admitted_program_from_options(
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     options: ProgramOptions<'_>,
 ) -> Program {
+    let selected = world.selected_product();
+    admitted_program_from_selected(world, &selected, principal, account, request, options)
+}
+
+fn admitted_program_from_selected(
+    world: &World,
+    selected: &WorthQuerySelectedProductOperation<'_, Schema>,
+    principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, u64>,
+    account: &WorthQueryApplicationEntityIdentity<Schema, Account>,
+    request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+    options: ProgramOptions<'_>,
+) -> Program {
     let operation = world
         .application
         .installed_schema()
         .installed_operation(TouchAccountOperation::reference())
         .unwrap();
-    let admission = world
-        .application
+    let admission = selected
         .authorize_operation(
             principal,
             account,

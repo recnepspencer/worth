@@ -2,6 +2,10 @@
 
 mod application;
 mod application_driver;
+#[cfg(test)]
+pub(crate) use application_driver::pointer_refresh_tests::{
+    exercise_custom_pointer_expiry, exercise_pointer_expiry, PointerExpiryPresentation,
+};
 mod application_runtime;
 #[cfg(any(test, feature = "certification-support"))]
 pub(crate) use application_driver::shutdown_observation::map_shutdown_attempts;
@@ -10,13 +14,13 @@ mod native_platform_binding;
 mod outcome;
 mod platform;
 mod profile;
+#[cfg(feature = "certification-support")]
 mod runtime_qualification;
 pub(crate) mod text_presentation;
 
 pub use crate::facade::entry::{
     UiNativeApplicationFrame, UiNativeApplicationProgram, UiNativeApplicationProgramDenial,
     UiNativeComponentPresenceChange, UiNativeComponentSemanticTextChange,
-    UiNativeThemeTokenValueChange,
 };
 pub use application::{
     UiNativeApplicationBuilder, UiNativeApplicationDefinition, UiNativeApplicationPreparation,
@@ -45,18 +49,15 @@ pub use runtime_qualification::{
 };
 #[cfg(feature = "certification-support")]
 pub use worth_ui_host_native::{
-    UiNativeClientAuthoredMountedInstanceObservation, UiNativeClientConditionalOutcome,
-    UiNativeClientDerivedStateLossClass, UiNativeClientDerivedStateReconstructionObservation,
-    UiNativeClientPresentationSemanticChange,
-    UiNativeClientPresentationSemanticFrontierObservation,
-    UiNativeClientPresentationSemanticSubscriberObservation,
-    UiNativeClientPresentationTransitionKind, UiNativeClientPresentationTransitionObservation,
-    UiNativeClientShutdownObservation, UiNativeClientTextPresentationWorkObservation,
-    UiNativeDerivedStateLossClass, UiNativeDerivedStateReconstructionObservation,
-    UiNativePhysicalSignalExternalStatusClass, UiNativePhysicalSignalObservationOriginClass,
-    UiNativePhysicalSignalSettlementClass, UiNativePhysicalSignalTransitionObservation,
-    UiNativePhysicalSignalWorkClass, UiNativePresentationObservation, UiNativePresentationWorkKind,
-    UiNativeQualificationPlan, UiNativeQualificationPlanDenial, UiNativeRetainedFrameObservation,
+    UiNativeClientAuthoredMountedInstanceObservation, UiNativeClientDerivedStateLossClass,
+    UiNativeClientDerivedStateReconstructionObservation, UiNativeClientPresentationTransitionKind,
+    UiNativeClientPresentationTransitionObservation, UiNativeClientShutdownObservation,
+    UiNativeClientTextPresentationWorkObservation, UiNativeDerivedStateLossClass,
+    UiNativeDerivedStateReconstructionObservation, UiNativePhysicalSignalExternalStatusClass,
+    UiNativePhysicalSignalObservationOriginClass, UiNativePhysicalSignalSettlementClass,
+    UiNativePhysicalSignalTransitionObservation, UiNativePhysicalSignalWorkClass,
+    UiNativePresentationObservation, UiNativePresentationWorkKind, UiNativeQualificationPlan,
+    UiNativeQualificationPlanDenial, UiNativeRetainedFrameObservation,
 };
 pub use worth_ui_host_native::{
     UiNativeClientVisualCoordinateOrientation, UiNativeClientVisualCoordinateRounding,

@@ -9,6 +9,8 @@ mod request_identity;
 mod retry_revalidation;
 mod writeback;
 
+pub(crate) use completion::map_owned_signal_report;
+
 pub use completion::{
     AdmittedBridgeAsyncCompletion, BridgeAsyncClassifiedDeniedCompletion,
     BridgeAsyncCompletionAdmissionReport, BridgeAsyncCompletionClass,
@@ -35,11 +37,11 @@ pub use rejection::{
     BridgeAsyncSourceDeclarationRejection, BridgeAsyncSourceDeclarationRejectionKind,
 };
 pub(crate) use request_identity::state::{
-    retire_owned_async_declaration_for_lowering, retire_owned_resource_declaration_for_lowering,
-    with_signal_runtime as with_async_request_signal_runtime, BridgeAsyncDeclarationRegistry,
-    BridgeSignalRuntime,
+    with_signal_runtime as with_async_request_signal_runtime, BridgeSignalRuntime,
 };
-pub(crate) use request_identity::SignalRuntimeThreadAffinityError;
+pub(crate) use request_identity::{
+    admit_from_owned_signal_request, SignalRuntimeThreadAffinityError,
+};
 pub use request_identity::{
     AdmittedBridgeAsyncRequestIdentity, BridgeAsyncInFlightRequestIdentity,
     BridgeAsyncRequestAdmissionRequest, BridgeAsyncRequestBasisBindingIdentity,
@@ -51,7 +53,10 @@ pub use request_identity::{
     BridgeAsyncRequestTruthViewBasisIdentity, BridgeAsyncRequestTruthViewBasisKind,
     ValidatedBridgeAsyncRequestBasisBinding,
 };
-pub(crate) use retry_revalidation::{admit_retry_lineage, admit_revalidation_lineage};
+pub(crate) use retry_revalidation::{
+    admit_owned_retry_lineage, admit_owned_revalidation_lineage, admit_retry_lineage,
+    admit_revalidation_lineage,
+};
 pub use retry_revalidation::{
     BridgeAsyncForwardCausalityClass, BridgeAsyncForwardCausalityCounters,
     BridgeAsyncForwardCausalityIdentity, BridgeAsyncForwardCausalityReceipt,

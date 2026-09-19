@@ -23,4 +23,8 @@ impl CompositeHistoryTraversal {
     pub fn visited_count(&self) -> usize {
         self.commits.len()
     }
+
+    pub(crate) fn shared_commit(&self, index: usize) -> Option<Arc<CompositeRuntimeWorldCommit>> {
+        self.commits.get(index).map(Arc::clone)
+    }
 }

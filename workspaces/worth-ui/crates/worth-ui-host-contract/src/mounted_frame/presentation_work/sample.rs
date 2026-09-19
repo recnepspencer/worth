@@ -2,8 +2,6 @@ use super::{UiMountedLogicalDamage, UiMountedPaintCommandIdentity, UiMountedPres
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum UiMountedPresentationSampleConstructionDenial {
-    NonFiniteOpacity,
-    OpacityOutOfRange,
     CoordinateSpaceMismatch,
     EmptyTransformSource,
     EmptyChanges,
@@ -11,7 +9,10 @@ pub enum UiMountedPresentationSampleConstructionDenial {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct UiMountedPresentationOpacity(u16);
+pub struct UiMountedPresentationOpacity {
+    appearance_units: u16,
+    motion_units: u16,
+}
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct UiMountedPresentationTransform {
@@ -48,20 +49,42 @@ pub struct UiMountedPresentationSampleInput {
 
 impl UiMountedPresentationOpacity {
     #[doc(hidden)]
-    pub fn from_runtime_sampling(
-        opacity: f32,
-    ) -> Result<Self, UiMountedPresentationSampleConstructionDenial> {
-        if !opacity.is_finite() {
-            return Err(UiMountedPresentationSampleConstructionDenial::NonFiniteOpacity);
+    pub const fn from_runtime_composition(units: u16) -> Self {
+        Self {
+            appearance_units: units,
+            motion_units: u16::MAX,
         }
-        if !(0.0..=1.0).contains(&opacity) {
-            return Err(UiMountedPresentationSampleConstructionDenial::OpacityOutOfRange);
+    }
+
+    /// Preserve the two factors so dependent paint can reuse Motion without
+    /// inheriting another component's appearance opacity.
+    #[doc(hidden)]
+    pub const fn from_runtime_appearance_motion(
+        appearance: crate::UiMountedAppearanceOpacity,
+        motion_units: u16,
+    ) -> Self {
+        Self {
+            appearance_units: appearance.units(),
+            motion_units,
         }
-        Ok(Self((opacity * f32::from(u16::MAX)).round() as u16))
+    }
+
+    pub const fn appearance_units(self) -> u16 {
+        self.appearance_units
+    }
+
+    pub const fn motion_units(self) -> u16 {
+        self.motion_units
+    }
+
+    pub const fn units(self) -> u16 {
+        let product = self.appearance_units as u32 * self.motion_units as u32;
+        // 65535 is odd: an integer product cannot be exactly halfway.
+        ((product + 32_767) / 65_535) as u16
     }
 
     pub fn factor(self) -> f32 {
-        f32::from(self.0) / f32::from(u16::MAX)
+        f32::from(self.units()) / f32::from(u16::MAX)
     }
 }
 

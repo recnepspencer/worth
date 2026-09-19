@@ -10,6 +10,21 @@ use crate::data::proof::invalidation::binding::{
 use crate::data::proof::invalidation::source_seed::DirectInvalidationBasis;
 
 impl SignalGraph {
+    pub(crate) fn admit_pending_cause_handle_reads(
+        &self,
+        count: usize,
+        work: &mut crate::logic::evaluation::EvaluationWork<'_>,
+    ) -> Result<(), SignalError> {
+        work.reserve(
+            self.arena
+                .nodes
+                .lookup_steps()
+                .checked_add(self.arena.hot.lookup_steps())
+                .and_then(|n| n.checked_add(4))
+                .and_then(|n| n.checked_mul(count)),
+        )
+    }
+
     pub(crate) fn node_dependency_revision(
         &self,
         node: NodeId,
@@ -67,34 +82,6 @@ impl SignalGraph {
         Ok(())
     }
 
-    pub(crate) fn advance_node_dependency_revision(
-        &mut self,
-        node: NodeId,
-    ) -> Result<(), SignalError> {
-        let invalidates_dependency_causes = {
-            let hot = self.hot_mut(node)?;
-            let invalidates = hot.pending_cause_set_id != PendingCauseSetId::EMPTY;
-            hot.dependency_revision.0 = hot
-                .dependency_revision
-                .0
-                .checked_add(1)
-                .expect("dependency revision overflow");
-            hot.pending_cause_set_id = PendingCauseSetId::EMPTY;
-            if invalidates {
-                hot.state = crate::data::node::NodeState::MaybeStale;
-                hot.dirty_aspects = AspectMask::EMPTY;
-                hot.dirty_partition_scope_aspects = AspectMask::EMPTY;
-            }
-            invalidates
-        };
-        let warm = self.warm_mut(node)?;
-        warm.pending_dependency_revalidation = None;
-        if invalidates_dependency_causes {
-            warm.dirty_partition_scope_payload.clear();
-        }
-        Ok(())
-    }
-
     pub(crate) fn replace_node_invalidation_cache(
         &mut self,
         node: NodeId,
@@ -144,23 +131,27 @@ impl SignalGraph {
         Ok(())
     }
 
-    pub(crate) fn resolve_node_dependency_revalidation_producer(
+    #[cfg(test)]
+    pub(crate) fn publish_node_revalidation_resolution(
         &mut self,
         node: NodeId,
-        producer: NodeId,
-    ) -> Result<bool, SignalError> {
-        let Some(pending) = self
-            .warm_mut(node)?
-            .pending_dependency_revalidation
-            .as_mut()
-        else {
-            return Ok(false);
-        };
-        pending.resolve_producer(producer);
-        if pending.is_resolved() && !pending.requires_structural_recompute() {
-            self.warm_mut(node)?.pending_dependency_revalidation = None;
-            return Ok(true);
-        }
-        Ok(false)
+        projected: crate::data::graph::PendingRevalidationNodeProjection,
+    ) -> Result<(), SignalError> {
+        self.node_evaluation_mutation(node)?
+            .apply_revalidation_resolution(projected);
+        Ok(())
+    }
+
+    #[cfg(test)]
+    pub(crate) fn publish_node_cause_resolution(
+        &mut self,
+        node: NodeId,
+        cause_set: PendingCauseSetId,
+        cache: super::PreparedInvalidationCache,
+        projected: crate::data::graph::PendingRevalidationNodeProjection,
+    ) -> Result<(), SignalError> {
+        self.node_evaluation_mutation(node)?
+            .apply_cause_resolution(cause_set, cache, projected);
+        Ok(())
     }
 }

@@ -246,8 +246,6 @@ fn cell_work_records_exact_semantic_deltas_without_reconstruction() {
         with_movement_permit(|permit| work.record_canonical_movement(permit));
         work.record_retention_registry_contact();
         work.record_fork_source_capture(fork_work);
-        work.record_diagnostic_event();
-        work.record_dropped_diagnostic_event();
     })
     .expect("cell operation completes");
 
@@ -263,8 +261,6 @@ fn cell_work_records_exact_semantic_deltas_without_reconstruction() {
     );
     assert_eq!(snapshot.retention_registry_contacts(), 1);
     assert_eq!(snapshot.fork_source_captures(), 1);
-    assert_eq!(snapshot.diagnostic_events_recorded(), 1);
-    assert_eq!(snapshot.diagnostic_events_dropped(), 1);
     assert_eq!(snapshot.forked_mutable_graph_nodes_copied(), 0);
     assert_eq!(snapshot.branch_registry_entries_scanned(), 0);
 }

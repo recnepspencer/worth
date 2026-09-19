@@ -5,12 +5,16 @@ use worth_query_declaration::facade::application_query::{
     ApplicationQueryLaneEligibility, ApplicationQueryResultFieldRef,
     ApplicationQueryResultShapeBuilder, ApplicationQueryRootPath,
 };
+use worth_query_declaration::facade::application_schema::{
+    ApplicationEncodedScalarValue, ApplicationStructuredValueBinding, StringApplicationValueBinding,
+};
 use worth_query_declaration::worth_query_application_query;
 
 use super::application_queries::AccountSummaryParameters;
 use super::{
     Account, AccountAllActivity, AccountLabel, Activity, ActivityFacts, ActivitySequence,
-    CapabilityDisclosure, IdentityExecutionSchema, TouchAccountCapability,
+    CapabilityDisclosure, CapabilityDisclosureBinding, IdentityExecutionSchema,
+    TouchAccountCapability,
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationProjection, WorthQueryApplicationProjectionDenial,
@@ -26,19 +30,25 @@ pub struct RootGuardResult {
 }
 worth_query_declaration::worth_query_portable_type!(RootGuardResult => "worth.query.test.execution.root_guard.result.v1");
 
+worth_query_declaration::worth_query_structured_value_binding!(pub GovernedRootGuardQueryParametersBinding for AccountSummaryParameters { identity: "AccountSummaryParameters" });
+worth_query_declaration::worth_query_structured_value_binding!(pub GovernedRootGuardQueryResultBinding for RootGuardResult { identity: "worth.query.test.execution.root_guard.result.v1" });
 worth_query_application_query!(
-    pub GovernedRootGuardQuery in IdentityExecutionSchema,
-    parameters AccountSummaryParameters,
-    result RootGuardResult,
-    scope Account,
+    pub GovernedRootGuardQuery for IdentityExecutionSchema,
+    identity "GovernedRootGuardQuery",
+    parameters GovernedRootGuardQueryParametersBinding,
+    result GovernedRootGuardQueryResultBinding,
+    scope Account => "Account",
     name "governed_root_guard"
 );
 
+worth_query_declaration::worth_query_structured_value_binding!(pub ForbiddenRootGuardQueryParametersBinding for AccountSummaryParameters { identity: "AccountSummaryParameters" });
+worth_query_declaration::worth_query_structured_value_binding!(pub ForbiddenRootGuardQueryResultBinding for RootGuardResult { identity: "worth.query.test.execution.root_guard.result.v1" });
 worth_query_application_query!(
-    pub ForbiddenRootGuardQuery in IdentityExecutionSchema,
-    parameters AccountSummaryParameters,
-    result RootGuardResult,
-    scope Account,
+    pub ForbiddenRootGuardQuery for IdentityExecutionSchema,
+    identity "ForbiddenRootGuardQuery",
+    parameters ForbiddenRootGuardQueryParametersBinding,
+    result ForbiddenRootGuardQueryResultBinding,
+    scope Account => "Account",
     name "forbidden_root_guard"
 );
 
@@ -69,7 +79,9 @@ pub(super) fn forbidden_root_guard_definition() -> ApplicationQueryDefinition<
 }
 
 fn definition<
-    Query: worth_query_declaration::facade::application_query::ApplicationQueryMarkerIdentity + 'static,
+    Query: worth_query_declaration::facade::application_query::ApplicationQueryMarkerIdentity<
+            IdentityExecutionSchema,
+        > + 'static,
 >(
     reference: worth_query_declaration::facade::application_query::ApplicationQueryReference<
         IdentityExecutionSchema,
@@ -85,12 +97,16 @@ fn definition<
     AccountSummaryParameters,
     RootGuardResult,
     Account,
-> {
+>
+where
+    Query::ResultBinding: ApplicationStructuredValueBinding<Value = RootGuardResult>,
+{
     let shape = ApplicationQueryResultShapeBuilder::<
         IdentityExecutionSchema,
         Query,
         Activity,
         RootGuardResult,
+        Query::ResultBinding,
     >::new(Activity::reference())
     .field(sequence::<Query>())
     .build();
@@ -100,12 +116,12 @@ fn definition<
     )
     .use_field_by(
         AccountLabel::reference(),
-        CapabilityDisclosure::AccountActivity,
+        encoded_disclosure(CapabilityDisclosure::AccountActivity),
         guard_influence,
     )
     .disclose_field_by(
         sequence::<Query>(),
-        CapabilityDisclosure::AccountActivity,
+        encoded_disclosure(CapabilityDisclosure::AccountActivity),
         ApplicationQueryInfluenceContract::permit_all(),
     );
     ApplicationQueryDefinitionBuilder::declare(reference)
@@ -120,15 +136,24 @@ fn definition<
         .public()
         .root_path(
             ApplicationQueryRootPath::from(Account::reference())
-                .where_equal(AccountLabel::reference(), "guard-match".to_owned())
+                .where_equal(
+                    AccountLabel::reference(),
+                    ApplicationEncodedScalarValue::<StringApplicationValueBinding>::try_new(
+                        "guard-match".to_owned(),
+                    )
+                    .expect("fixture root guard must encode"),
+                )
                 .forward(AccountAllActivity::reference()),
         )
         .build()
         .unwrap()
 }
 
-impl<Query: worth_query_declaration::facade::application_query::ApplicationQueryMarkerIdentity>
-    WorthQueryApplicationProjection<IdentityExecutionSchema, Query> for RootGuardResult
+impl<
+        Query: worth_query_declaration::facade::application_query::ApplicationQueryMarkerIdentity<
+            IdentityExecutionSchema,
+        >,
+    > WorthQueryApplicationProjection<IdentityExecutionSchema, Query> for RootGuardResult
 {
     fn project(
         row: &WorthQueryApplicationProjectionRow<'_, IdentityExecutionSchema, Query>,
@@ -140,7 +165,9 @@ impl<Query: worth_query_declaration::facade::application_query::ApplicationQuery
 }
 
 fn sequence<
-    Query: worth_query_declaration::facade::application_query::ApplicationQueryMarkerIdentity,
+    Query: worth_query_declaration::facade::application_query::ApplicationQueryMarkerIdentity<
+        IdentityExecutionSchema,
+    >,
 >() -> ApplicationQueryResultFieldRef<
     Query,
     RootGuardSequenceSlot,
@@ -154,4 +181,10 @@ fn sequence<
     worth_query_declaration::facade::application_schema::NoApplicationUnit,
 > {
     ApplicationQueryResultFieldRef::new("sequence", ActivitySequence::reference())
+}
+
+fn encoded_disclosure(
+    value: CapabilityDisclosure,
+) -> ApplicationEncodedScalarValue<CapabilityDisclosureBinding> {
+    ApplicationEncodedScalarValue::try_new(value).expect("fixture disclosure must encode")
 }

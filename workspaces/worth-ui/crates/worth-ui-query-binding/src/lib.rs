@@ -3,6 +3,20 @@
 //! The ordinary surface follows installed reference, consumer progression,
 //! exact settlement, operation-native live delivery, and downstream
 //! observation.
+//!
+//! Callers use the authored status application owner:
+//!
+//! ```
+//! use worth_ui_query_binding::{WorthUiStatusOwnerError, WorthUiStatusSourceOwner};
+//! let _install: fn() -> Result<WorthUiStatusSourceOwner, WorthUiStatusOwnerError> =
+//!     WorthUiStatusSourceOwner::install;
+//! ```
+//!
+//! ```compile_fail
+//! use worth_ui_query_binding::WorthUiScalarProjectionHostPlan;
+//! let _ = WorthUiScalarProjectionHostPlan::prepare();
+//! ```
+//!
 
 mod application_binding;
 #[cfg(test)]
@@ -32,6 +46,8 @@ mod projection_binding;
 mod projection_consumption;
 mod projection_invalidation;
 mod projection_observation;
+mod query_bridge_support;
+mod query_runtime_resources;
 mod reporting_projection;
 #[cfg(test)]
 mod scalar_projection_async_fixture;
@@ -90,9 +106,9 @@ pub use declaration::{
     CollectionItemAspect, CollectionItemKeyField, CollectionItemStatusField, IdentityAspect,
     IdentityIdField, MeasurementAspect, MeasurementValueField, QueryRevisionAspect,
     QueryRevisionValueField, QueryTextAspect, QueryTextStatusField, SizeAspect, SizeValueField,
-    UiCollectionProjectionRegistration, UiCollectionSchemaRequirement,
-    UiCollectionSchemaRequirementError, UiInstalledProjectionView, UiMeasurementValue,
-    UiProjectionFieldRequirement, UiProjectionFieldRequirementError,
+    UiApplicationScalarProjectionRegistration, UiCollectionProjectionRegistration,
+    UiCollectionSchemaRequirement, UiCollectionSchemaRequirementError, UiInstalledProjectionView,
+    UiMeasurementValue, UiProjectionFieldRequirement, UiProjectionFieldRequirementError,
     UiProjectionLifecycleRequirement, UiProjectionNativeFamily, UiProjectionShape,
     UiScalarProjectionRegistration, UiScalarSchemaRequirement, UiSizeValue,
     WorthUiApplicationSchema, WorthUiInstalledLiveQueryView, WorthUiInstalledQueryView,
@@ -100,6 +116,7 @@ pub use declaration::{
     WorthUiQueryViewDefinition, WorthUiQueryViewDefinitionDigest, WorthUiQueryViewIdentity,
     WorthUiQueryViewIdentityError, WorthUiQueryViewLifecycle, WorthUiQueryViewShape, WorthUiRecord,
 };
+pub use declaration::{WorthUiStatusQueryRequest, WorthUiStatusQueryResult};
 pub use domain_marker::WorthUiDomainEntry;
 pub use domain_package::worth_ui_domain_package;
 pub use entry::{
@@ -160,38 +177,31 @@ pub use presentation_async::{
     WorthUiPresentationAsyncObservation, WorthUiPresentationAsyncOwner,
     WorthUiPresentationAsyncPosture, WorthUiPresentationAsyncTerminalProjection,
     WorthUiPresentationCancellationEffectsObservation, WorthUiPresentationCleanupProgress,
-    WorthUiPresentationCleanupRecovery, WorthUiPresentationConditionalOutcomeClass,
-    WorthUiPresentationCorrespondenceIssuanceDenial, WorthUiPresentationCorrespondenceIssuer,
-    WorthUiPresentationEffectsIndeterminateObservation, WorthUiPresentationIncompleteAdmission,
-    WorthUiPresentationMechanicBasis, WorthUiPresentationMechanicBasisInput,
-    WorthUiPresentationPaintSpanBasis, WorthUiPresentationPendingAdmissionDenial,
-    WorthUiPresentationPendingReceipt, WorthUiPresentationPinBasis,
-    WorthUiPresentationPresentedReceipt, WorthUiPresentationQueryHostInstallationRequest,
-    WorthUiPresentationRasterKeySetBasis, WorthUiPresentationRecoveryReceipt,
-    WorthUiPresentationRecoveryRequiredReceipt, WorthUiPresentationRequestBasis,
-    WorthUiPresentationRequestBasisDenial, WorthUiPresentationRequestBasisInput,
-    WorthUiPresentationRuntimeCleanupStop, WorthUiPresentationRuntimeCorrespondence,
-    WorthUiPresentationScopeRejectionCounters, WorthUiPresentationSemanticChange,
-    WorthUiPresentationSemanticFrontierObservation, WorthUiPresentationSemanticSubscriberIdentity,
-    WorthUiPresentationSettlementDenial, WorthUiPresentationSettlementStop,
-    WorthUiPresentationSupersededPhysicalObservation, WorthUiPresentationTransitionKind,
-    WorthUiPresentationTransitionObservation, WorthUiPresentationUnresolvedReceipt,
-    WorthUiPresentationValidatedCompletion, WORTH_UI_PRESENTATION_PENDING_CAPACITY,
-    WORTH_UI_PRESENTATION_TRANSITION_CAPACITY,
+    WorthUiPresentationCleanupRecovery, WorthUiPresentationCorrespondenceIssuanceDenial,
+    WorthUiPresentationCorrespondenceIssuer, WorthUiPresentationEffectsIndeterminateObservation,
+    WorthUiPresentationIncompleteAdmission, WorthUiPresentationMechanicBasis,
+    WorthUiPresentationMechanicBasisInput, WorthUiPresentationPaintSpanBasis,
+    WorthUiPresentationPendingAdmissionDenial, WorthUiPresentationPendingReceipt,
+    WorthUiPresentationPinBasis, WorthUiPresentationPresentedReceipt,
+    WorthUiPresentationQueryHostInstallationRequest, WorthUiPresentationRasterKeySetBasis,
+    WorthUiPresentationRecoveryReceipt, WorthUiPresentationRecoveryRequiredReceipt,
+    WorthUiPresentationRequestBasis, WorthUiPresentationRequestBasisDenial,
+    WorthUiPresentationRequestBasisInput, WorthUiPresentationRuntimeCleanupStop,
+    WorthUiPresentationRuntimeCorrespondence, WorthUiPresentationSettlementDenial,
+    WorthUiPresentationSettlementStop, WorthUiPresentationSupersededPhysicalObservation,
+    WorthUiPresentationTransitionKind, WorthUiPresentationTransitionObservation,
+    WorthUiPresentationUnresolvedReceipt, WorthUiPresentationValidatedCompletion,
+    WORTH_UI_PRESENTATION_PENDING_CAPACITY, WORTH_UI_PRESENTATION_TRANSITION_CAPACITY,
 };
 pub use product_projection::{
-    WorthUiQueryHostInstallationRequest, WorthUiScalarProjectionActionAdvance,
-    WorthUiScalarProjectionActionDenied, WorthUiScalarProjectionActionEvidence,
-    WorthUiScalarProjectionActionExecution, WorthUiScalarProjectionActionIndeterminate,
-    WorthUiScalarProjectionActionInstallation, WorthUiScalarProjectionActionLiveOwner,
-    WorthUiScalarProjectionActionOutcome, WorthUiScalarProjectionActionPreconditionDenial,
-    WorthUiScalarProjectionActionPublicationCompletion, WorthUiScalarProjectionActionRequest,
-    WorthUiScalarProjectionAdvance, WorthUiScalarProjectionAdvanceError,
-    WorthUiScalarProjectionHostCompletion, WorthUiScalarProjectionHostPlan,
-    WorthUiScalarProjectionInstallation, WorthUiScalarProjectionInstallationError,
-    WorthUiScalarProjectionLiveOwner, WorthUiScalarProjectionPublicationCompletion,
-    WorthUiScalarProjectionSourceCloseError, WorthUiScalarProjectionSourceCloseReceipt,
+    WorthUiScalarProjectionActionEvidence, WorthUiScalarProjectionActionPreconditionDenial,
     WorthUiScalarProjectionSourceRecord,
+};
+pub use product_projection::{
+    WorthUiStatusActionExecution, WorthUiStatusActionIdentity, WorthUiStatusActionMutationOutcome,
+    WorthUiStatusActionOutcome, WorthUiStatusActionRequest, WorthUiStatusLiveDeliveryStop,
+    WorthUiStatusMutationOutcome, WorthUiStatusOwnerCloseReceipt, WorthUiStatusOwnerError,
+    WorthUiStatusPublication, WorthUiStatusSourceOwner,
 };
 pub use projection_binding::{
     UiCollectionProjectionBinding, UiCollectionProjectionBindingAdmission,
@@ -208,8 +218,8 @@ pub use projection_binding::{
     UiScalarProjectionReplacementStop,
 };
 pub use projection_consumption::{
-    UiCollectionCompleteness, UiCollectionContinuation, UiCollectionProjectionBudget,
-    UiCollectionProjectionBudgetError, UiCollectionProjectionChange,
+    UiApplicationScalarProjectionFactReceipt, UiCollectionCompleteness, UiCollectionContinuation,
+    UiCollectionProjectionBudget, UiCollectionProjectionBudgetError, UiCollectionProjectionChange,
     UiCollectionProjectionDelivery, UiCollectionProjectionFactReceipt,
     UiCollectionProjectionInputFact, UiCollectionProjectionRowReference,
     UiCollectionProjectionTextRow, UiCollectionProjectionValue, UiCollectionProjectionWorkCounters,
@@ -229,7 +239,8 @@ pub use projection_invalidation::{
     UiScalarProjectionTransitionReceipt, UiScalarProjectionUnchangedReceipt,
 };
 pub use projection_observation::{
-    UiCollectionProjectionObservation, UiProjectionObservation, UiScalarProjectionObservation,
+    UiApplicationScalarProjectionObservation, UiCollectionProjectionObservation,
+    UiProjectionObservation, UiScalarProjectionObservation,
 };
 pub use reporting_projection::{
     UiQueryIdentityReportingProjection, UiQueryObservationReportingProjection,

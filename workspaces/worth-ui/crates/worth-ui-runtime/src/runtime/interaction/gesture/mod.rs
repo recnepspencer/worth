@@ -7,6 +7,12 @@ pub use pointer::{
 };
 pub use stop::{UiPointerGestureStop, UiPointerGestureStopReason};
 
+#[allow(
+    unused_imports,
+    reason = "milestone 3.16 Gate 0 exposes the sealed pressed appearance contract internally"
+)]
 pub(crate) use pointer::{
     UiPointerGestureOutcome, UiPointerGestureRuntimeState, UiPointerGestureStateSnapshot,
+    UiPreparedPointerGestureCancellation, UiPressedAppearanceClass,
+    UiPressedAppearanceOwnerSnapshot, UiPressedAppearancePosture,
 };

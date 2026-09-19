@@ -3,6 +3,7 @@ pub(super) fn settle_published_portal_proposal(
     mounted: &crate::mounting::UiMountedFramePublicationReceipt,
 ) -> Option<crate::facade::entry::focus_placement::UiSemanticFocusPublicationReceipt> {
     let transaction = admitted.transfer.portal_proposal.take()?;
+    let binding_commit = transaction.overlay_binding_commit();
     let (focus, motion, exit_retention) = admitted
         .session
         .application
@@ -28,6 +29,11 @@ pub(super) fn settle_published_portal_proposal(
                 .expect("staged proposal retains Motion installation"),
         )
         .expect("exact staged portal proposal accepts its publication receipt");
+    let binding_commit = binding_commit.with_retained_exit(exit_retention.is_some());
+    admitted
+        .session
+        .commit_authored_overlay_binding(binding_commit)
+        .expect("published Portal transition retains its exact overlay binding stage");
     admitted
         .session
         .rebind_portal_after_current_published_frame();

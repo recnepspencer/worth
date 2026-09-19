@@ -135,16 +135,18 @@ fn demand(layout: &UiQualifiedTextLayout, source: &str) -> UiGlyphRasterDemandBa
                 UiMountedRgba8::new(255, 255, 255, 255),
                 UiMountedTextPaintSpanIdentity::from_runtime_mounting([0x51; 32]),
             )],
-            logical_damage: &[UiMountedLogicalDamage::from_runtime_mounting(
-                UiMountedCanonicalBox::canonicalize(UiMountedCanonicalBoxInput {
-                    x: -4.0,
-                    y: -24.0,
-                    width: 220.0,
-                    height: 80.0,
-                    coordinate_space: UiMountedCoordinateSpace::HostSurface,
-                })
-                .unwrap(),
-            )],
+            selection: crate::UiGlyphRasterDemandSelection::LogicalDamage(&[
+                UiMountedLogicalDamage::from_runtime_mounting(
+                    UiMountedCanonicalBox::canonicalize(UiMountedCanonicalBoxInput {
+                        x: -4.0,
+                        y: -24.0,
+                        width: 220.0,
+                        height: 80.0,
+                        coordinate_space: UiMountedCoordinateSpace::HostSurface,
+                    })
+                    .unwrap(),
+                ),
+            ]),
             scale: UiGlyphRasterScale::new(1_000, layout.view().text_scale_generation()).unwrap(),
             placement: UiGlyphRasterPlacement::default(),
             lane: UiGlyphRasterLane::Ordinary,

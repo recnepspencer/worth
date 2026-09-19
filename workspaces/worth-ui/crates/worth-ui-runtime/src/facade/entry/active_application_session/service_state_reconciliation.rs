@@ -75,17 +75,25 @@ impl WorthUiActiveApplicationSession {
                     target.mount_incarnation(),
                 );
             let mut registrations = Vec::with_capacity(chain.owners().len());
-            for owner in chain.owners().iter().copied() {
-                let Ok(bounds) = self
-                    .application
-                    .scroll_bounds_for(owner, target.graph_node_identity())
-                else {
+            for (slot, owner) in chain.owners().iter().copied().enumerate() {
+                let Ok(bounds) = self.scroll_bounds_for_mounted_owner(
+                    owner,
+                    mounted_instance,
+                    target.graph_node_identity(),
+                    slot,
+                ) else {
                     registrations.clear();
                     break;
                 };
                 let incarnation = match owner {
                     crate::runtime::scroll::UiScrollOwnerIdentity::Region { .. } => {
-                        mounted_incarnation
+                        let Some(incarnation) =
+                            self.scroll_region_incarnation(mounted_instance, slot)
+                        else {
+                            registrations.clear();
+                            break;
+                        };
+                        incarnation
                     }
                     crate::runtime::scroll::UiScrollOwnerIdentity::Surface(_)
                     | crate::runtime::scroll::UiScrollOwnerIdentity::Viewport(_) => {
@@ -95,7 +103,7 @@ impl WorthUiActiveApplicationSession {
                 registrations.push(crate::runtime::scroll::UiScrollOwnerRegistration::new(
                     owner,
                     incarnation,
-                    axes_for(bounds),
+                    bounds.axes(),
                     bounds,
                     crate::runtime::scroll::UiScrollOffset::origin(),
                 ));
@@ -110,18 +118,16 @@ impl WorthUiActiveApplicationSession {
             for (owner, registration) in chain.owners().iter().copied().zip(registrations) {
                 match owner {
                     crate::runtime::scroll::UiScrollOwnerIdentity::Region { .. } => {
-                        let policy = if anchor.is_some() {
-                            crate::runtime::scroll::UiScrollAnchorPolicy::Rebase
-                        } else {
-                            crate::runtime::scroll::UiScrollAnchorPolicy::Clamp
-                        };
+                        // Mounted preparation already applied this offset to
+                        // descendants. A newly observed anchor must not rebase
+                        // the owner after the corresponding pixels are accepted.
                         self.scroll
                             .as_mut()
                             .expect("mounted Scroll ownership was checked above")
                             .reconcile_rebind(crate::runtime::scroll::UiScrollRebindRequest::new(
                                 registration,
-                                anchor,
-                                policy,
+                                None,
+                                crate::runtime::scroll::UiScrollAnchorPolicy::Clamp,
                             ))
                             .expect(
                                 "published allocation produces a valid Scroll owner reconciliation",
@@ -168,6 +174,7 @@ impl WorthUiActiveApplicationSession {
             let Some(slot) = family.projection_input_slot() else {
                 continue;
             };
+            self.mounted.refresh_selection_bindings(slot);
             let Some(worth_ui_query_binding::UiProjectionInputFactReference::Collection(
                 collection,
             )) = self.mounted.current_projection_input(slot)
@@ -244,19 +251,6 @@ impl WorthUiActiveApplicationSession {
             signed_subpixels(bounds.x())?.max(0),
             signed_subpixels(bounds.y())?.max(0),
         )
-    }
-}
-
-fn axes_for(
-    bounds: crate::runtime::scroll::UiScrollBounds,
-) -> crate::runtime::scroll::UiScrollAxes {
-    match (
-        bounds.max_inline_subpixels() > 0,
-        bounds.max_block_subpixels() > 0,
-    ) {
-        (true, false) => crate::runtime::scroll::UiScrollAxes::Inline,
-        (false, true) => crate::runtime::scroll::UiScrollAxes::Block,
-        (true, true) | (false, false) => crate::runtime::scroll::UiScrollAxes::Both,
     }
 }
 

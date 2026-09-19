@@ -7,6 +7,7 @@ use crate::binary_encoding::{BinaryEncodingMeasure, BinaryEncodingSink};
 use crate::binary_input::BinaryInput;
 use crate::binary_output::BinaryOutput;
 use crate::denial::WorthQueryPackageArchiveDenial as Denial;
+use crate::denial::WorthQueryPackageArchiveDenialKind as Kind;
 use crate::limits::WorthQueryPackageArchiveLimits;
 
 use super::decode_budget::RecordDecodeAttempt;
@@ -14,8 +15,12 @@ use super::encoding_budget::RecordPayloadEncodingWork;
 use super::sequence::{decode_sequence, write_sequence};
 
 mod authorization_path;
+mod contribution;
 mod member;
 mod wire_vocabulary;
+
+const CONTRIBUTION_EXTENSION_MARKER: &[u8; 4] = b"WQAS";
+const CONTRIBUTION_EXTENSION_VERSION: u16 = 1;
 
 #[cfg(test)]
 mod tests;
@@ -57,6 +62,15 @@ pub(super) fn decode_payload(
     let major = input.u32()?;
     let minor = input.u32()?;
     let members = decode_sequence(input, budget, 2, member::decode)?;
+    let contributions = if input.remaining_starts_with(CONTRIBUTION_EXTENSION_MARKER) {
+        input.take(CONTRIBUTION_EXTENSION_MARKER.len())?;
+        if input.u16()? != CONTRIBUTION_EXTENSION_VERSION {
+            return Err(Denial::new(Kind::UnsupportedRecordVersion));
+        }
+        decode_sequence(input, budget, 8, contribution::decode)?
+    } else {
+        Vec::new()
+    };
     Ok(WorthQueryPortablePackageRecord::ApplicationSchema(
         WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(
             WorthQueryPortableApplicationSchemaParts {
@@ -65,6 +79,7 @@ pub(super) fn decode_payload(
                 major,
                 minor,
                 members,
+                contributions,
             },
         ),
     ))
@@ -78,7 +93,14 @@ fn write_record(
     output.text(record.name())?;
     output.u32(record.major())?;
     output.u32(record.minor())?;
-    write_sequence(output, record.members(), member::write)
+    write_sequence(output, record.members(), member::write)?;
+    if record.contributions().is_empty() {
+        Ok(())
+    } else {
+        output.raw_bytes(CONTRIBUTION_EXTENSION_MARKER)?;
+        output.u16(CONTRIBUTION_EXTENSION_VERSION)?;
+        write_sequence(output, record.contributions(), contribution::write)
+    }
 }
 
 fn require_nesting_depth(

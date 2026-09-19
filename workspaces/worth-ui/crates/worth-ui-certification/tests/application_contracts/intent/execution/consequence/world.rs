@@ -216,6 +216,9 @@ impl ConsequenceWorld {
         worth_ui_host_contract::UiMountedFrameIdentity,
         worth_ui_host_contract::UiMountedFrameIdentity,
     ) {
+        crate::mounted_geometry_fixture::install_current_occurrence_geometry(
+            &mut self.interaction.session,
+        );
         let prepared = self
             .interaction
             .session

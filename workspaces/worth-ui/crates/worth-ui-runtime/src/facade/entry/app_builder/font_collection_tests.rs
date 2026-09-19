@@ -35,11 +35,24 @@ fn public_builder_retains_the_exact_qualified_application_font_generation() {
     let (collection, receipt, _) = profile
         .register_application_pack(UiFontCollectionGeneration::new(2).unwrap(), definition)
         .unwrap();
-    let builder = WorthUi::app().with_font_collection(Arc::new(collection));
+    let collection = Arc::new(collection);
+    let builder = WorthUi::app();
+    assert!(
+        builder.font_collection.is_none(),
+        "an override must not pay default font admission"
+    );
+    let app = builder
+        .with_font_collection(Arc::clone(&collection))
+        .with_change_profile(crate::runtime::rebind::UiChangeProfile::platform_pulse())
+        .freeze()
+        .unwrap();
+    let app =
+        crate::facade::entry::WorthUiCertificationApplicationTransition::activate_builder_host(app);
+    assert!(Arc::ptr_eq(app.font_collection(), &collection));
 
-    assert_eq!(builder.font_collection.generation().get(), 2);
+    assert_eq!(app.font_collection().generation().get(), 2);
     assert_eq!(
-        builder.font_collection.application_packs()[0].identity(),
+        app.font_collection().application_packs()[0].identity(),
         receipt.identity()
     );
 }

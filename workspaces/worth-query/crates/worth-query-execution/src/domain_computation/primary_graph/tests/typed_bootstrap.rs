@@ -15,6 +15,7 @@ use super::fixture::{
 use worth_foundational::facade::AspectIdentity;
 use worth_query_declaration::facade::application_schema::{
     ApplicationSchema, ApplicationSchemaDeclaration, ApplicationSchemaDeclarationBuilder,
+    U64ApplicationValueBinding,
 };
 
 #[test]
@@ -49,7 +50,7 @@ fn authenticated_bootstrap_registers_the_exact_installed_native_contract() {
         .unwrap()
         .0;
 
-    let bootstrap = authority.prepare_primary_graph(&runtime, &schema).unwrap();
+    let bootstrap = authority.prepare_primary_graph(&runtime, &schema, crate::domain_computation::execution_runtime::product_world::test_product_world_resources()).unwrap();
     let registered = bootstrap
         .graph
         .registered_entity_aspect("Principal", "PrincipalIdentity")
@@ -68,15 +69,15 @@ fn authenticated_bootstrap_registers_the_exact_installed_native_contract() {
 }
 
 struct ExhaustedProviderIdentitySchema;
-worth_query_declaration::worth_query_entity!(ExhaustedEntity in ExhaustedProviderIdentitySchema);
+worth_query_declaration::worth_query_entity!(ExhaustedEntity for ExhaustedProviderIdentitySchema);
 worth_query_declaration::worth_query_aspect!(
-    ExhaustedAspect in ExhaustedProviderIdentitySchema, ExhaustedEntity;
+    ExhaustedAspect for ExhaustedProviderIdentitySchema, ExhaustedEntity;
     identity = AspectIdentity(u64::MAX - 2),
     revision = AspectContractRevision(1),
 );
 worth_query_declaration::worth_query_field!(
-    ExhaustedField in ExhaustedProviderIdentitySchema, ExhaustedEntity, ExhaustedAspect:
-    u64, read_only, no_equality
+    ExhaustedField for ExhaustedProviderIdentitySchema, ExhaustedEntity, ExhaustedAspect:
+    u64 => U64ApplicationValueBinding, read_only, no_equality
 );
 
 impl ApplicationSchema for ExhaustedProviderIdentitySchema {
@@ -120,7 +121,7 @@ fn provider_identity_exhaustion_denies_before_relational_installation() {
         .bind_application_schema(declaration)
         .unwrap();
     let denial = authority
-        .prepare_primary_graph(&runtime, &schema)
+        .prepare_primary_graph(&runtime, &schema, crate::domain_computation::execution_runtime::product_world::test_product_world_resources())
         .err()
         .unwrap();
 
@@ -141,9 +142,9 @@ fn typed_policy_facts_publish_atomically_with_principal_identity() {
         true,
     );
 
-    assert_eq!(world.publication.principal_binding_count(), 1);
-    assert_eq!(world.publication.policy_entity_count(), 1);
-    assert_eq!(world.publication.policy_relation_count(), 1);
+    assert_eq!(world.application.publication().principal_binding_count(), 1);
+    assert_eq!(world.application.publication().policy_entity_count(), 1);
+    assert_eq!(world.application.publication().policy_relation_count(), 1);
 }
 
 #[test]
@@ -171,7 +172,7 @@ fn duplicate_typed_principal_identity_denies_without_poisoning_bootstrap() {
     let binding = schema
         .principal_binding(IdentityBinding::reference())
         .unwrap();
-    let mut bootstrap = authority.prepare_primary_graph(&runtime, &schema).unwrap();
+    let mut bootstrap = authority.prepare_primary_graph(&runtime, &schema, crate::domain_computation::execution_runtime::product_world::test_product_world_resources()).unwrap();
 
     bootstrap
         .bind_principal(

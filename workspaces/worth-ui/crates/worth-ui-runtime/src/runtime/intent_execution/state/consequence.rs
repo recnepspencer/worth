@@ -303,6 +303,12 @@ impl UiIntentConsequenceHandoff {
         self.basis.declaration.interaction()
     }
 
+    pub(crate) const fn authored_portal_declaration(
+        &self,
+    ) -> Option<worth_ui_dsl::UiPortalDeclarationId> {
+        self.basis.portal_declaration
+    }
+
     pub(crate) fn selection_option(
         &self,
     ) -> Option<&worth_ui_query_binding::UiProjectionOptionReference> {

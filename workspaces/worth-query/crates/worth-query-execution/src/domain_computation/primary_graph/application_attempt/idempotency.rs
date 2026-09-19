@@ -22,11 +22,15 @@ struct WorthQueryIdempotencyScopeIdentity {
 pub struct WorthQueryApplicationIdempotencyBinding {
     key_identity: [u8; 32],
     intent_identity: [u8; 32],
+    source_identity: Option<[u8; 32]>,
+    source_partition_identity: Option<[u8; 32]>,
+    producer_dependency_identity: Option<[u8; 32]>,
     operation_identity: Option<[u8; 32]>,
     operation_scope_identity: Option<WorthQueryIdempotencyScopeIdentity>,
     precondition_identity: Option<[u8; 32]>,
     governed_input_identity: Option<[u8; 32]>,
     governed_proposal_identity: Option<[u8; 32]>,
+    conditional_definition_identity: Option<[u8; 32]>,
 }
 
 impl WorthQueryApplicationIdempotencyBinding {
@@ -34,11 +38,15 @@ impl WorthQueryApplicationIdempotencyBinding {
         Self {
             key_identity,
             intent_identity,
+            source_identity: None,
+            source_partition_identity: None,
+            producer_dependency_identity: None,
             operation_identity: None,
             operation_scope_identity: None,
             precondition_identity: None,
             governed_input_identity: None,
             governed_proposal_identity: None,
+            conditional_definition_identity: None,
         }
     }
 
@@ -50,18 +58,66 @@ impl WorthQueryApplicationIdempotencyBinding {
         &self.intent_identity
     }
 
+    pub(in crate::domain_computation::primary_graph) const fn source_identity(
+        &self,
+    ) -> Option<[u8; 32]> {
+        self.source_identity
+    }
+
+    pub(in crate::domain_computation::primary_graph) const fn source_partition_identity(
+        &self,
+    ) -> Option<[u8; 32]> {
+        self.source_partition_identity
+    }
+
+    pub(in crate::domain_computation::primary_graph) const fn producer_dependency_identity(
+        &self,
+    ) -> Option<[u8; 32]> {
+        self.producer_dependency_identity
+    }
+
     pub(in crate::domain_computation::primary_graph) fn key_text(self) -> String {
         encode_identity(self.key_identity)
     }
 
     pub(in crate::domain_computation::primary_graph) fn intent_text(self) -> String {
         let mut encoded = encode_identity(self.intent_identity);
+        append_identity_slot(&mut encoded, "source", self.source_identity);
         append_identity_slot(&mut encoded, "operation", self.operation_identity);
         append_scope_slot(&mut encoded, self.operation_scope_identity);
         append_identity_slot(&mut encoded, "precondition", self.precondition_identity);
         append_identity_slot(&mut encoded, "input", self.governed_input_identity);
         append_identity_slot(&mut encoded, "proposal", self.governed_proposal_identity);
+        append_identity_slot(
+            &mut encoded,
+            "conditional-definition",
+            self.conditional_definition_identity,
+        );
         encoded
+    }
+
+    pub const fn bind_source(mut self, source_identity: Option<&[u8; 32]>) -> Self {
+        self.source_identity = match source_identity {
+            Some(identity) => Some(*identity),
+            None => None,
+        };
+        self
+    }
+
+    pub(in crate::domain_computation::primary_graph) const fn bind_source_partition(
+        mut self,
+        partition_identity: &[u8; 32],
+    ) -> Self {
+        self.source_partition_identity = Some(*partition_identity);
+        self
+    }
+
+    pub(in crate::domain_computation::primary_graph) const fn bind_producer_dependency(
+        mut self,
+        dependency_identity: &[u8; 32],
+    ) -> Self {
+        self.producer_dependency_identity = Some(*dependency_identity);
+        self
     }
 
     pub(in crate::domain_computation::primary_graph) const fn bind_operation(
@@ -71,11 +127,15 @@ impl WorthQueryApplicationIdempotencyBinding {
         Self {
             key_identity: self.key_identity,
             intent_identity: self.intent_identity,
+            source_identity: self.source_identity,
+            source_partition_identity: self.source_partition_identity,
+            producer_dependency_identity: self.producer_dependency_identity,
             operation_identity: Some(*operation_identity),
             operation_scope_identity: self.operation_scope_identity,
             precondition_identity: self.precondition_identity,
             governed_input_identity: self.governed_input_identity,
             governed_proposal_identity: self.governed_proposal_identity,
+            conditional_definition_identity: self.conditional_definition_identity,
         }
     }
 
@@ -88,6 +148,9 @@ impl WorthQueryApplicationIdempotencyBinding {
         Self {
             key_identity: self.key_identity,
             intent_identity: self.intent_identity,
+            source_identity: self.source_identity,
+            source_partition_identity: self.source_partition_identity,
+            producer_dependency_identity: self.producer_dependency_identity,
             operation_identity: self.operation_identity,
             operation_scope_identity: Some(WorthQueryIdempotencyScopeIdentity {
                 runtime_authority: binding.runtime_authority(),
@@ -109,6 +172,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             precondition_identity: self.precondition_identity,
             governed_input_identity: self.governed_input_identity,
             governed_proposal_identity: self.governed_proposal_identity,
+            conditional_definition_identity: self.conditional_definition_identity,
         }
     }
 
@@ -119,6 +183,9 @@ impl WorthQueryApplicationIdempotencyBinding {
         Self {
             key_identity: self.key_identity,
             intent_identity: self.intent_identity,
+            source_identity: self.source_identity,
+            source_partition_identity: self.source_partition_identity,
+            producer_dependency_identity: self.producer_dependency_identity,
             operation_identity: self.operation_identity,
             operation_scope_identity: self.operation_scope_identity,
             precondition_identity: match precondition_identity {
@@ -127,6 +194,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             },
             governed_input_identity: self.governed_input_identity,
             governed_proposal_identity: self.governed_proposal_identity,
+            conditional_definition_identity: self.conditional_definition_identity,
         }
     }
 
@@ -137,6 +205,9 @@ impl WorthQueryApplicationIdempotencyBinding {
         Self {
             key_identity: self.key_identity,
             intent_identity: self.intent_identity,
+            source_identity: self.source_identity,
+            source_partition_identity: self.source_partition_identity,
+            producer_dependency_identity: self.producer_dependency_identity,
             operation_identity: self.operation_identity,
             operation_scope_identity: self.operation_scope_identity,
             precondition_identity: self.precondition_identity,
@@ -145,6 +216,7 @@ impl WorthQueryApplicationIdempotencyBinding {
                 None => None,
             },
             governed_proposal_identity: self.governed_proposal_identity,
+            conditional_definition_identity: self.conditional_definition_identity,
         }
     }
 
@@ -155,11 +227,37 @@ impl WorthQueryApplicationIdempotencyBinding {
         Self {
             key_identity: self.key_identity,
             intent_identity: self.intent_identity,
+            source_identity: self.source_identity,
+            source_partition_identity: self.source_partition_identity,
+            producer_dependency_identity: self.producer_dependency_identity,
             operation_identity: self.operation_identity,
             operation_scope_identity: self.operation_scope_identity,
             precondition_identity: self.precondition_identity,
             governed_input_identity: self.governed_input_identity,
             governed_proposal_identity: match governed_proposal_identity {
+                Some(identity) => Some(*identity),
+                None => None,
+            },
+            conditional_definition_identity: self.conditional_definition_identity,
+        }
+    }
+
+    pub(in crate::domain_computation::primary_graph) const fn bind_conditional_definition(
+        self,
+        identity: Option<&[u8; 32]>,
+    ) -> Self {
+        Self {
+            key_identity: self.key_identity,
+            intent_identity: self.intent_identity,
+            source_identity: self.source_identity,
+            source_partition_identity: self.source_partition_identity,
+            producer_dependency_identity: self.producer_dependency_identity,
+            operation_identity: self.operation_identity,
+            operation_scope_identity: self.operation_scope_identity,
+            precondition_identity: self.precondition_identity,
+            governed_input_identity: self.governed_input_identity,
+            governed_proposal_identity: self.governed_proposal_identity,
+            conditional_definition_identity: match identity {
                 Some(identity) => Some(*identity),
                 None => None,
             },

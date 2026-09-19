@@ -36,6 +36,9 @@ pub struct UiMountCostReport {
     replaced_batch_bytes: u64,
     surface_instance_pairs: u64,
     changed_binding_generations: u64,
+    appearance_motion_commands_visited: u64,
+    appearance: super::projection::UiMountedAppearanceSelectionCostReport,
+    hit_index: super::hit_test_work::UiHitTestSpatialWork,
     named: UiMountNamedCounters,
     adapter: UiHostPresentationCostReport,
 }
@@ -60,6 +63,9 @@ impl UiMountStageCounters {
                 replaced_batch_bytes: 0,
                 surface_instance_pairs: 0,
                 changed_binding_generations: 0,
+                appearance_motion_commands_visited: 0,
+                appearance: Default::default(),
+                hit_index: Default::default(),
                 named: UiMountNamedCounters::default(),
                 adapter: UiHostPresentationCostReport::default(),
             },
@@ -179,6 +185,40 @@ impl UiMountCostReport {
 
     pub const fn changed_binding_generations(self) -> u64 {
         self.changed_binding_generations
+    }
+
+    pub const fn appearance_motion_commands_visited(self) -> u64 {
+        self.appearance_motion_commands_visited
+    }
+
+    pub const fn appearance(self) -> super::projection::UiMountedAppearanceSelectionCostReport {
+        self.appearance
+    }
+
+    pub const fn hit_index(self) -> super::hit_test_work::UiHitTestSpatialWork {
+        self.hit_index
+    }
+
+    pub(in crate::mounting) fn with_projection_work(
+        mut self,
+        appearance: super::projection::UiMountedAppearanceSelectionCostReport,
+        hit_index: super::hit_test_work::UiHitTestSpatialWork,
+    ) -> Self {
+        self.appearance = appearance;
+        self.hit_index = hit_index;
+        self
+    }
+
+    pub(in crate::mounting) fn record_text_publication_coverage_work(
+        &mut self,
+        count: usize,
+    ) -> Result<(), UiMountCostOverflow> {
+        add(&mut self.index_entries_touched, count)
+    }
+
+    pub(crate) fn record_appearance_motion_commands_visited(&mut self, count: usize) {
+        self.appearance_motion_commands_visited =
+            u64::try_from(count).expect("mounted command count fits the u64 cost surface");
     }
 
     pub const fn adapter(self) -> UiHostPresentationCostReport {

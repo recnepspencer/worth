@@ -1,8 +1,14 @@
+#![allow(
+    dead_code,
+    reason = "Gate 1 retains the motion receipt seam for later overlay publication"
+)]
+
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub(crate) struct UiMotionTargetIdentity {
     semantic_surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
     mounted_instance: worth_ui_host_contract::UiMountedInstanceIdentity,
     owner_key: u64,
+    portal_contents: bool,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -52,7 +58,7 @@ pub(crate) enum UiMotionTransitionRequestDenial {
 }
 
 impl UiMotionTargetIdentity {
-    pub(crate) const fn from_family_owner(
+    pub(crate) const fn from_mounted_owner(
         semantic_surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
         mounted_instance: worth_ui_host_contract::UiMountedInstanceIdentity,
         owner_key: u64,
@@ -61,10 +67,28 @@ impl UiMotionTargetIdentity {
             semantic_surface,
             mounted_instance,
             owner_key,
+            portal_contents: false,
         }
     }
 
-    #[cfg(test)]
+    /// The owner's separately placed Portal content, not its ordinary mounted surface.
+    pub(crate) const fn from_portal_owner(
+        semantic_surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+        mounted_instance: worth_ui_host_contract::UiMountedInstanceIdentity,
+        portal_identity: u64,
+    ) -> Self {
+        Self {
+            semantic_surface,
+            mounted_instance,
+            owner_key: portal_identity,
+            portal_contents: true,
+        }
+    }
+
+    pub(crate) const fn is_portal_contents(self) -> bool {
+        self.portal_contents
+    }
+
     pub(crate) const fn semantic_surface(
         self,
     ) -> worth_ui_host_contract::UiSemanticSurfaceIdentity {
@@ -252,6 +276,14 @@ impl UiMotionTransitionRequest {
         }
         self.successor.presentation = presentation;
         Ok(self)
+    }
+
+    pub(in crate::runtime) fn rebind_published_successor(
+        mut self,
+        presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
+    ) -> Self {
+        self.successor.presentation = presentation;
+        self
     }
 }
 

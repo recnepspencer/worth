@@ -1,8 +1,8 @@
 use super::binding_app_fixture::admitted_app;
 use super::binding_phase_fixture::bound_artifact_input;
 use crate::capability::{
-    ThemeColorValue, ThemeTokenAlias, ThemeTokenDescriptor, ThemeTokenFamily, ThemeTokenId,
-    ThemeTokenSource, ThemeTokenValue,
+    ThemeTokenAlias, ThemeTokenDescriptor, ThemeTokenFamily, ThemeTokenId, ThemeTokenSource,
+    ThemeTokenValue, UiThemeColor,
 };
 use crate::facade::{WorthUi, WorthUiApp};
 use crate::source::{
@@ -212,6 +212,6 @@ fn color_token(id: &str, color: &str) -> ThemeTokenDescriptor {
         ThemeTokenId::new(id).expect("valid test token"),
         ThemeTokenFamily::surface(),
         ThemeTokenSource::application(),
-        ThemeTokenValue::color(ThemeColorValue::hex(color).expect("valid test color")),
+        ThemeTokenValue::color(UiThemeColor::parse(color).expect("valid test color")),
     )
 }

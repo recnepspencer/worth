@@ -1,6 +1,10 @@
 use crate::basis::AdmittedCompositeRuntimeWorldBasis;
-use crate::retention::component_obligation::PublicationRetentionObligation;
+use crate::history::CompositeRuntimeWorldCommit;
+use crate::retention::component_obligation::{
+    ObservationRetentionObligation, PublicationRetentionObligation,
+};
 use crate::retention::ComponentBasisDependencyClass;
+use crate::retention::ReservedObservationCapacity;
 
 use super::super::RetentionObligationDenial;
 use super::RuntimeWorldRetentionOwner;
@@ -10,6 +14,12 @@ trait ComponentPinPairCapacityControl: Send + Sync {
         &self,
         basis: &AdmittedCompositeRuntimeWorldBasis,
     ) -> Result<PublicationRetentionObligation, RetentionObligationDenial>;
+
+    fn bind_observation(
+        &self,
+        commit: &CompositeRuntimeWorldCommit,
+        capacity: ReservedObservationCapacity,
+    ) -> Result<ObservationRetentionObligation, RetentionObligationDenial>;
 
     fn release_pair_capacity(&self);
 }
@@ -73,6 +83,17 @@ impl ReservedComponentPinPairCapacity {
         let pair = self.control.bind_publication(basis)?;
         self.armed = false;
         Ok(pair)
+    }
+
+    pub(crate) fn try_bind_observation(
+        &mut self,
+        commit: &CompositeRuntimeWorldCommit,
+        capacity: ReservedObservationCapacity,
+    ) -> Result<ObservationRetentionObligation, RetentionObligationDenial> {
+        assert!(self.armed, "a reserved pair binds exactly once");
+        let observation = self.control.bind_observation(commit, capacity)?;
+        self.armed = false;
+        Ok(observation)
     }
 }
 
@@ -164,6 +185,23 @@ where
         );
         match pair {
             Ok(pair) => Ok(PublicationRetentionObligation::owner_issued(pair)),
+            Err(denial) => Err(denial),
+        }
+    }
+
+    fn bind_observation(
+        &self,
+        commit: &CompositeRuntimeWorldCommit,
+        capacity: ReservedObservationCapacity,
+    ) -> Result<ObservationRetentionObligation, RetentionObligationDenial> {
+        let pair = self.issue_pair_with_reserved_capacity(
+            commit.basis(),
+            ComponentBasisDependencyClass::AdmittedObservation,
+        );
+        match pair {
+            Ok(pair) => Ok(ObservationRetentionObligation::owner_issued(
+                commit, pair, capacity,
+            )),
             Err(denial) => Err(denial),
         }
     }

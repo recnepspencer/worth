@@ -1,5 +1,10 @@
 use worth_foundational::facade::CanonicalDigestWorkEvidence;
 
+// Complete application installation includes package and schema meaning. Keep
+// this finite while admitting the measured House composition that first
+// crossed the former 4 MiB ceiling through ordinary typed declarations.
+pub(crate) const INSTALLATION_MAXIMUM_CANONICAL_BYTES: usize = 8 * 1_024 * 1_024;
+
 #[derive(Clone, Copy, Debug, Default, Eq, Ord, PartialEq, PartialOrd)]
 pub struct WorthQueryCanonicalWorkEvidence {
     basis_preparations: u32,

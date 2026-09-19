@@ -2,8 +2,7 @@ use super::*;
 
 #[test]
 fn intent_support_profile_claim_requires_executable_authority_adapter() {
-    let error = match WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let error = match test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
         .snapshot_identity(TestSnapshotIdentityAdapter)
@@ -31,8 +30,7 @@ fn intent_support_profile_claim_requires_executable_authority_adapter() {
 #[test]
 fn intent_source_lanes_that_need_policy_deny_before_authority_execution() {
     let attempted = std::rc::Rc::new(std::cell::Cell::new(0));
-    let mut runtime = WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
         .snapshot_identity(TestSnapshotIdentityAdapter)
@@ -95,8 +93,7 @@ fn intent_source_lanes_that_need_policy_deny_before_authority_execution() {
 #[test]
 fn intent_execution_strategy_drift_denies_before_signal_routing() {
     let routed = std::rc::Rc::new(std::cell::Cell::new(0));
-    let mut runtime = WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
         .snapshot_identity(TestSnapshotIdentityAdapter)
@@ -158,8 +155,7 @@ fn intent_execution_strategy_drift_denies_before_signal_routing() {
 
 #[test]
 fn strategy_drift_denial_inspection_keeps_declared_and_returned_strategy_separate() {
-    let mut runtime = WorthQueryRuntime::builder()
-        .runtime_bridge(test_bridge())
+    let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
         .snapshot_identity(TestSnapshotIdentityAdapter)

@@ -47,11 +47,18 @@ impl Fingerprint {
         self.fold_u64(u64::from(value));
     }
 
+    pub(super) fn fold_bytes(&mut self, values: &[u8]) {
+        self.fold_usize(values.len());
+        for value in values {
+            self.fold_u64(u64::from(*value));
+        }
+    }
+
     pub(super) fn fold_u16(&mut self, value: u16) {
         self.fold_u64(u64::from(value));
     }
 
-    fn fold_u64(&mut self, value: u64) {
+    pub(super) fn fold_u64(&mut self, value: u64) {
         for byte in value.to_le_bytes() {
             self.0 ^= u64::from(byte);
             self.0 = self.0.wrapping_mul(0x100_0000_01b3);

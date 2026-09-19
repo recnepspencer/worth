@@ -161,6 +161,7 @@ impl PreparationInvariantAuthority<'_> {
             | InvariantRequestProfile::SnapshotPublication => {
                 InvariantObservation::speculative_with_proposal(
                     crate::storage::overlay::OverlayStateView::new(selected.state(), working),
+                    selected.version_id(),
                     proposal.cloned(),
                 )
             }

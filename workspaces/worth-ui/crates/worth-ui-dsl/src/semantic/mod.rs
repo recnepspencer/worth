@@ -1,4 +1,6 @@
+mod appearance;
 mod intent;
+mod overlay;
 mod service;
 mod ui_dsl_lowering_receipt;
 mod ui_dsl_semantic_artifact;
@@ -6,6 +8,7 @@ mod ui_dsl_semantic_artifact_spec;
 mod ui_dsl_semantic_atoms;
 mod ui_dsl_source_provenance;
 
+pub use appearance::*;
 pub use intent::{
     WorthUiIntentConcurrencyScope, WorthUiIntentConfirmationContractSpec,
     WorthUiIntentConfirmationSourceSpec, WorthUiIntentConsequenceContractSpec,
@@ -16,6 +19,7 @@ pub use intent::{
     WorthUiIntentPayloadSourceSpec, WorthUiIntentPolicySourceSpec,
     WorthUiIntentReadinessSourceSpec, WorthUiIntentSchemaExpectation,
 };
+pub use overlay::*;
 pub use service::{
     WorthUiCommandDeclaration, WorthUiCommandKey, WorthUiCommandModifier, WorthUiCommandScope,
     WorthUiCommandShortcutStrokeSpec, WorthUiFocusDeclaration, WorthUiFocusScope,
@@ -33,3 +37,5 @@ pub use ui_dsl_semantic_atoms::{
     UiDslStructuralToken, UiDslSupportToken,
 };
 pub use ui_dsl_source_provenance::UiDslSourceProvenance;
+mod component_reference;
+pub use component_reference::{UiDslComponentReference, UiDslComponentReferenceDenial};

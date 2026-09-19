@@ -165,6 +165,11 @@ pub use crate::subscription::{
     SubscriptionLifecycleCloseout, SubscriptionLifecycleCloseoutKind,
     SubscriptionLifecyclePreviewCertification,
 };
+pub use worth_query_execution::facade::certification::{
+    WorthQueryCertificationApplicationWork, WorthQueryCertificationCostObservation,
+    WorthQueryCertificationCostRuntimeExt, WorthQueryCertificationCostScope,
+    WorthQueryCertificationWorldHistory, WorthQueryCertificationWorldRetention,
+};
 
 /// Certification-only constructor for fixtures that compare a retained basis
 /// with authority returned by an ordinary consumer journey.

@@ -45,11 +45,14 @@ impl WorthQueryDirectExecutionResourceAttempt {
         self.reserved.resources()
     }
 
-    /// Legacy operational integration retained until the Phase 19 audience-
-    /// facade cutover. Possession of this session does not mint managed-run
-    /// admission, terminal, cleanup, or recovery authority.
-    #[doc(hidden)]
-    pub fn provider_session(&self) -> &WorthQueryExecutionProviderSession {
+    pub(in crate::domain_computation) fn managed_provider_session(
+        &self,
+    ) -> &WorthQueryExecutionProviderSession {
+        &self.provider_session
+    }
+
+    #[cfg(test)]
+    pub(crate) fn provider_session_for_test(&self) -> &WorthQueryExecutionProviderSession {
         &self.provider_session
     }
 

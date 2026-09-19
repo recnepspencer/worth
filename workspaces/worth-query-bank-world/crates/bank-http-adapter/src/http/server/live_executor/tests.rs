@@ -1,8 +1,9 @@
 use tokio_stream::StreamExt;
 
 use crate::http::protocol::{
-    BankHttpQueryBasis, BankHttpQueryBasisPosture, BankHttpQueryDisclosure,
-    BankHttpQueryDisclosurePosture, BankHttpQueryOmissionPosture, BankHttpQueryPublication,
+    BankHttpAccountActivity, BankHttpQueryBasis, BankHttpQueryBasisPosture,
+    BankHttpQueryCapabilityPurpose, BankHttpQueryDisclosure, BankHttpQueryDisclosurePosture,
+    BankHttpQueryOmissionPosture, BankHttpQueryPublication,
 };
 
 use super::*;
@@ -63,7 +64,7 @@ fn test_publication() -> BankHttpQueryPublication {
             branch: "main".to_owned(),
             snapshot: 1,
             version: 1,
-            posture: BankHttpQueryBasisPosture::Current,
+            posture: BankHttpQueryBasisPosture::SelectedProduct,
         },
         capability_purpose: BankHttpQueryCapabilityPurpose::AccountActivityReview,
         disclosure: BankHttpQueryDisclosure {

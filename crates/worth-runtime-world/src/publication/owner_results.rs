@@ -54,6 +54,27 @@ pub struct CompositeOwnerExecutionResults {
 }
 
 impl CompositeOwnerExecutionResults {
+    pub(crate) fn settled_relational_parts(
+        &self,
+    ) -> Option<(
+        RelationalCommitIdentity,
+        AdmittedRelationalBranchBasis,
+        std::sync::Arc<CommitResult>,
+    )> {
+        match &self.relational.result {
+            CompositeRelationalOwnerResultKind::Published {
+                commit_identity,
+                successor_basis,
+                result: Some(result),
+                ..
+            } => Some((
+                commit_identity.clone(),
+                successor_basis.clone(),
+                std::sync::Arc::clone(result),
+            )),
+            _ => None,
+        }
+    }
     /// Share immutable owner-issued evidence without duplicating a phase or
     /// performed authority. The public result remains non-Clone.
     pub(crate) fn evidence_image(&self) -> Self {
@@ -249,6 +270,10 @@ impl CompositeOwnerExecutionResults {
                         | CompositeRelationalOwnerResultKind::SettlementPending { .. }
                 )
             }
+            RelationalComponentPlanPosture::AdoptSettled => matches!(
+                self.relational.result,
+                CompositeRelationalOwnerResultKind::Published { .. }
+            ),
         };
         let signal_matches = self.signal.matches_plan(plan.signal().posture());
         relational_matches && signal_matches

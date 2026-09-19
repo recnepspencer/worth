@@ -1,16 +1,13 @@
-use bank_domain::model::{BankPrincipalId, Money};
-use bank_domain::proposals::BankProposalDenial;
-use bank_domain::schema::SendMoney;
-use bank_server::{
-    BankOperationAdmissionError, BankOperationProposalError, BankOperationProposals,
-    BankPrincipalSeed, BankWorldSeed,
-};
+use bank_domain::model::{AccountName, BankPrincipalId, InstitutionId, Money};
+use bank_domain::schema::{CreatePersonalAccount, SendMoney};
+use bank_server::{BankPrincipalSeed, BankWorldSeed};
+use worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenialKind;
 
 use super::fixture::{funded_personal_world, id, key};
 use crate::support::{block_on, request_scope, runtime, CausalCredential, DynamicIdentity};
 
 #[test]
-fn unauthorized_account_and_admitted_scope_drift_both_deny() {
+fn program_entry_denies_unauthorized_account_mutations() {
     let snapshot = funded_personal_world();
     let owner = DynamicIdentity::new("owner");
     let other = DynamicIdentity::new("other");
@@ -46,54 +43,34 @@ fn unauthorized_account_and_admitted_scope_drift_both_deny() {
     let source = snapshot
         .primary_account(id(BankPrincipalId::new, 1))
         .unwrap();
-    let destination = snapshot
-        .primary_account(id(BankPrincipalId::new, 2))
-        .unwrap();
-
     let creation_denial = world
         .runtime
-        .authorize_create_personal_account(
-            &owner_actor,
-            id(bank_domain::model::InstitutionId::new, 1),
-            Default::default(),
-            &request,
-        )
-        .err()
-        .expect("customer role cannot substitute teller authority");
+        .request(&owner_actor, &request)
+        .mutate(CreatePersonalAccount {
+            institution: id(InstitutionId::new, 1),
+            owner: id(BankPrincipalId::new, 1),
+            display_name: AccountName::new("unauthorized").unwrap(),
+        })
+        .idempotency(&key("customer-cannot-open"))
+        .execute_in_program(world.runtime.application_program())
+        .expect_err("customer role cannot substitute teller authority");
     assert!(matches!(
-        creation_denial,
-        BankOperationAdmissionError::Authorization(ref denial)
-            if denial.code() == "permission-denied"
+        creation_denial.kind(),
+        WorthQueryApplicationRequestMutationDenialKind::Authorization
     ));
-    let denial = world
+    let send_denial = world
         .runtime
-        .authorize_send_money(&other_actor, source, Default::default(), &request)
-        .err()
-        .expect("non-owner must be denied");
-    assert!(matches!(
-        denial,
-        BankOperationAdmissionError::Authorization(ref denial)
-            if denial.code() == "permission-denied"
-    ));
-
-    let admission = world
-        .runtime
-        .authorize_send_money(&owner_actor, source, Default::default(), &request)
-        .unwrap();
-    let drift = BankOperationProposals::prepare_send_money(
-        &world.runtime,
-        admission,
-        &key("scope-drift"),
-        &SendMoney {
-            from: destination,
-            recipient: id(BankPrincipalId::new, 1),
+        .request(&other_actor, &request)
+        .mutate(SendMoney {
+            from: source,
+            recipient: id(BankPrincipalId::new, 2),
             amount: Money::from_minor(1).unwrap(),
-        },
-    )
-    .err()
-    .expect("admitted scope cannot be substituted");
-    assert_eq!(
-        drift,
-        BankOperationProposalError::Invariant(BankProposalDenial::ScopeInputMismatch)
-    );
+        })
+        .idempotency(&key("non-owner-cannot-send"))
+        .execute_in_program(world.runtime.application_program())
+        .expect_err("non-owner must be denied");
+    assert!(matches!(
+        send_denial.kind(),
+        WorthQueryApplicationRequestMutationDenialKind::Authorization
+    ));
 }

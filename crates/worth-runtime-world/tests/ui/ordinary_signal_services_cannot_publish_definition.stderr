@@ -1,0 +1,16 @@
+error[E0624]: method `advance_conditional_definition_exact_with_completion` is private
+  --> tests/ui/ordinary_signal_services_cannot_publish_definition.rs:14:10
+   |
+14 |           .advance_conditional_definition_exact_with_completion(
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ private method
+   |
+  ::: $WORKSPACE/crates/worth-signal/src/branch/owner_services/mutation_port.rs
+   |
+   | /     pub(in crate::branch::owner_services) fn advance_conditional_definition_exact_with_completion<
+   | |         F,
+   | |     >(
+   | |         &self,
+...  |
+   | |     where
+   | |         F: FnOnce(&mut SignalTransaction<'_, D, I, E, Ctx, T>) -> Result<(), SignalError>,
+   | |__________________________________________________________________________________________- private method defined here

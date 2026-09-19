@@ -30,6 +30,7 @@ pub(super) struct UiReservedIntentConsequenceBasis {
     pub(super) target: crate::runtime::interaction::UiPresentedInteractionTargetView,
     pub(super) generation: crate::runtime::WorthUiActiveApplicationGenerationIdentity,
     pub(super) declaration: Arc<crate::declaration::UiCanonicalIntentDeclaration>,
+    pub(super) portal_declaration: Option<worth_ui_dsl::UiPortalDeclarationId>,
     pub(super) selection_option: Option<worth_ui_query_binding::UiProjectionOptionReference>,
     pub(super) command_route: Option<crate::runtime::command_routing::UiCommandRouteEvidence>,
 }
@@ -42,6 +43,7 @@ pub(super) struct UiIntentConsequenceBasis {
         crate::runtime::interaction::targeting::UiIntentExecutionTargetAffinity,
     pub(super) generation: crate::runtime::WorthUiActiveApplicationGenerationIdentity,
     pub(super) declaration: Arc<crate::declaration::UiCanonicalIntentDeclaration>,
+    pub(super) portal_declaration: Option<worth_ui_dsl::UiPortalDeclarationId>,
     pub(super) selection_option: Option<worth_ui_query_binding::UiProjectionOptionReference>,
     pub(super) command_route: Option<crate::runtime::command_routing::UiCommandRouteEvidence>,
 }
@@ -56,6 +58,7 @@ impl UiReservedIntentExecutionReservation {
             target,
             generation,
             declaration,
+            portal_declaration,
             selection_option,
             command_route,
         } = self.consequence_basis;
@@ -67,6 +70,7 @@ impl UiReservedIntentExecutionReservation {
                 target_affinity,
                 generation,
                 declaration,
+                portal_declaration,
                 selection_option,
                 command_route,
             },

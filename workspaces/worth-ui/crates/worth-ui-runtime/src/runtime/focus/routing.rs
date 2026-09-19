@@ -55,6 +55,7 @@ impl UiFocusPlan {
 }
 
 impl super::UiFocusRuntimeState {
+    #[cfg(any(test, feature = "certification-support"))]
     pub(in crate::runtime) fn plan(
         &self,
         request: super::UiFocusRequest,
@@ -142,6 +143,7 @@ impl super::UiFocusRuntimeState {
         ))
     }
 
+    #[cfg(test)]
     pub(super) fn first_in_scope(
         &self,
         scope: super::UiFocusScopeIdentity,

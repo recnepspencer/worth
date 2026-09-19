@@ -31,13 +31,9 @@ pub use event_loop::{
 pub use event_loop::{
     UiNativeApplicationReadinessGrant, UiNativeApplicationReadinessOwnerCount,
     UiNativeApplicationReadinessOwnerCountDenial, UiNativeClientAuthoredMountedInstanceObservation,
-    UiNativeClientConditionalOutcome, UiNativeClientDerivedStateLossClass,
-    UiNativeClientDerivedStateReconstructionObservation,
+    UiNativeClientDerivedStateLossClass, UiNativeClientDerivedStateReconstructionObservation,
     UiNativeClientObservationIngressObservation, UiNativeClientPresentationAttribution,
     UiNativeClientPresentationMechanicIdentityObservation,
-    UiNativeClientPresentationSemanticChange,
-    UiNativeClientPresentationSemanticFrontierObservation,
-    UiNativeClientPresentationSemanticSubscriberObservation,
     UiNativeClientPresentationTransitionKind, UiNativeClientPresentationTransitionObservation,
     UiNativeClientResourceObservation, UiNativeClientShutdownAttemptDisposition,
     UiNativeClientShutdownAttemptObservation, UiNativeClientShutdownObservation,
@@ -48,7 +44,8 @@ pub use event_loop::{
     UiNativeEventLoopClientCleanup, UiNativeEventLoopClientClose, UiNativeEventLoopClientFailure,
     UiNativeEventLoopDirective, UiNativeEventLoopRunDenial, UiNativeEventLoopRunReport,
     UiNativeEventLoopShutdownOverlapObservation, UiNativeEventLoopStopReport,
-    UiNativeEventLoopThreadPosture, UiNativeInputReachability, UiNativeObservationReadinessGrant,
+    UiNativeEventLoopThreadPosture, UiNativeInputReachability, UiNativeObservationClock,
+    UiNativeObservationReadinessGrant, UiNativeObservationTimeProgress,
     UiNativePhysicalPresentationCorrelation, UiNativePhysicalProgressClass,
     UiNativePhysicalProgressGrant, UiNativeReadinessGrant, UiNativeReducedMotionPosture,
     WorthUiNativeEventLoop,
@@ -90,6 +87,8 @@ pub use lifecycle_protocol::{
     UiNativeLifecycleEffect, UiNativeLifecyclePhase, UiNativeLifecycleProtocol,
     UiNativeLifecycleRequiredAction, UiNativeLifecycleTransition,
 };
+#[cfg(feature = "certification-support")]
+pub use mechanics_adapter::appearance_report as appearance_capability_report;
 pub(crate) use mechanics_adapter::WorthUiNativeMechanicsAdapter;
 pub(crate) use observation::UiNativePresentationInput;
 pub use observation::{
@@ -102,14 +101,17 @@ pub use physical_work_signal::{
     UiNativePhysicalSignalTransitionObservation, UiNativePhysicalSignalWorkClass,
 };
 pub(crate) use platform::UiNativePointerInputPort;
+#[cfg(all(test, feature = "certification-support"))]
+pub(crate) use presentation::appearance::APPEARANCE_MECHANICS;
 #[cfg(test)]
 pub(crate) use presentation::GPU_WAIT_DEADLINE;
 #[cfg(feature = "certification-support")]
 pub use presentation::{
-    certify_portal_sample_replay, classify_presentation_fault,
+    certify_mounted_surface_sample, certify_portal_sample_replay, classify_presentation_fault,
     UiNativePortalSampleReplayCertification, UiNativePortalSampleReplayCertificationDenial,
     UiNativePresentationFault, UiNativePresentationFaultDisposition,
-    UiNativePresentationRecoveryClass,
+    UiNativePresentationRecoveryClass, UiNativeSurfaceSampleCertification,
+    UiNativeSurfaceSampleCertificationDenial,
 };
 pub(crate) use presentation::{
     UiNativeOwnedPresentationSurface, UiNativePendingPresentation, UiNativeRetainedDrawList,
@@ -128,3 +130,10 @@ pub use readiness_certification::{
 };
 pub use text_atlas::UiNativeTextAtlasPlanObservation;
 pub use text_atlas::UiNativeTextPinObservation;
+
+#[cfg(feature = "certification-support")]
+pub use mechanics_adapter::text_atlas::{
+    UiNativeTextForegroundAtlasModel, UiNativeTextForegroundCoverageCertification,
+    UiNativeTextForegroundFinalizationDenial, UiNativeTextForegroundJoinCost,
+    UiNativeTextReplayOperation, UiNativeTextRetentionCertificationDenial,
+};

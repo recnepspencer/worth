@@ -69,6 +69,7 @@ fn observe_stop(stop: &WorthUiMountedFrameExecutionStop<'_>) {
         WorthUiMountedFrameExecutionStop::FrameworkTransition(transition) => {
             let _ = transition.generation_identity();
         }
+        WorthUiMountedFrameExecutionStop::OccurrenceGeometry(_) => {}
         WorthUiMountedFrameExecutionStop::Preparation(_) => {}
     }
 }
@@ -123,4 +124,12 @@ fn observe_host_measurement_transition(denial: &UiMountedHostMeasurementTransiti
             | Unexpected::DragResizePreviewPending => {}
         },
     }
+}
+
+fn present_prepared_replacement<'session>(
+    prepared: Box<
+        worth_ui_runtime::facade::entry::WorthUiPreparedMountedApplicationReplacement<'session>,
+    >,
+) -> worth_ui_runtime::facade::entry::WorthUiMountedApplicationReplacementOutcome<'session> {
+    prepared.present(UiPresentationDeadline::at_tick(100), 1)
 }

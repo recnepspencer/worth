@@ -136,7 +136,7 @@ where
 
     #[doc(hidden)]
     pub fn observe_for_runtime(
-        &mut self,
+        &self,
     ) -> Result<WorthQueryNamedClockObservation<Clock>, WorthQueryNamedClockFailure> {
         let reading = self.source.observe()?;
         Ok(WorthQueryNamedClockObservation::from_admitted_source(

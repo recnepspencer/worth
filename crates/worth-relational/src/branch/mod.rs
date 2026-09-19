@@ -17,6 +17,7 @@ mod fork_port;
 mod fork_source_basis;
 mod identity;
 mod lifecycle;
+mod materialization;
 mod owner_services;
 mod reference;
 mod reference_publication_cell;
@@ -65,10 +66,18 @@ pub use lifecycle::{
     RelationalBranchDeleteDenial, RelationalBranchDeletionOutcome, RelationalBranchDeletionPending,
     RelationalBranchLifecyclePosture,
 };
+pub use materialization::{
+    PreparedRelationalMaterializationSuspension, PreparedRelationalRematerialization,
+    RelationalEntityMaterialization, RelationalMaterializationCustody,
+    RelationalMaterializationError, RelationalMaterializationRecord,
+    RelationalMaterializationSuspension, RelationalMaterializationSuspensionCompletion,
+    RelationalRelationMaterialization, RelationalRematerializationCompletion,
+    RelationalRematerializationFailure, SuspendRelationalMaterialization,
+};
 pub use owner_services::{
     RelationalBranchBasisPort, RelationalBranchLifecyclePort,
-    RelationalBranchTransactionAdmissionPort, RelationalOwnerLifecycleObservation,
-    RelationalOwnerServicePorts,
+    RelationalBranchTransactionAdmissionPort, RelationalMaterializationPort,
+    RelationalOwnerLifecycleObservation, RelationalOwnerServicePorts,
 };
 pub use reference::RelationalBranchCellDenial;
 pub use reference::{

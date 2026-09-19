@@ -1,9 +1,10 @@
 use crate::capability::{
     CapabilitySnapshot, CapabilitySnapshotDigest, CapabilitySnapshotFreezeInput,
-    FrozenCapabilityFamily, SnapshotFreezeReport, SnapshotMetrics, COMMAND_FAMILY_NAME,
-    COMMAND_PROJECTION_FAMILY_NAME, COMPONENT_FAMILY_NAME, ICON_FAMILY_NAME,
-    INTENT_DEFINITION_FAMILY_NAME, MOSAIC_PLACEMENT_POLICY_FAMILY_NAME,
-    MOSAIC_REGION_KIND_FAMILY_NAME, MOSAIC_SIZING_CONTRACT_FAMILY_NAME,
+    FrozenCapabilityFamily, SnapshotFreezeReport, SnapshotMetrics, APPEARANCE_ROLE_FAMILY_NAME,
+    APPEARANCE_THEME_FAMILY_NAME, COMMAND_FAMILY_NAME, COMMAND_PROJECTION_FAMILY_NAME,
+    COMPONENT_FAMILY_NAME, ICON_FAMILY_NAME, INTENT_DEFINITION_FAMILY_NAME,
+    MOSAIC_PLACEMENT_POLICY_FAMILY_NAME, MOSAIC_REGION_KIND_FAMILY_NAME,
+    MOSAIC_SEAM_PAINT_FAMILY_NAME, MOSAIC_SIZING_CONTRACT_FAMILY_NAME,
     MOSAIC_STATE_SLOT_FAMILY_NAME, NATIVE_CAPABILITY_FAMILY_NAME, PLUGIN_SLOT_FAMILY_NAME,
     RUNTIME_OUTCOME_PROJECTION_FAMILY_NAME, SETTING_FAMILY_NAME, SURFACE_FAMILY_NAME,
     TASK_PRESENTATION_FAMILY_NAME, THEME_TOKEN_FAMILY_NAME, VIEW_BINDING_FAMILY_NAME,
@@ -45,6 +46,19 @@ fn digest_for_input(
 fn freeze_report_for_input(input: &CapabilitySnapshotFreezeInput) -> SnapshotFreezeReport {
     SnapshotFreezeReport::new(vec![
         family(
+            APPEARANCE_ROLE_FAMILY_NAME,
+            input.appearance_roles.len(),
+            input.appearance_roles.digest_basis(),
+        ),
+        family(
+            APPEARANCE_THEME_FAMILY_NAME,
+            usize::from(input.appearance_themes.is_some()),
+            input
+                .appearance_themes
+                .as_ref()
+                .map_or(0, |themes| themes.digest_basis()),
+        ),
+        family(
             COMMAND_FAMILY_NAME,
             input.commands.len(),
             input.commands.digest_basis(),
@@ -77,7 +91,12 @@ fn freeze_report_for_input(input: &CapabilitySnapshotFreezeInput) -> SnapshotFre
         family(
             MOSAIC_REGION_KIND_FAMILY_NAME,
             input.mosaic_regions.len(),
-            input.mosaic_regions.digest_basis(),
+            input.mosaic_regions.region_kind_digest_basis(),
+        ),
+        family(
+            MOSAIC_SEAM_PAINT_FAMILY_NAME,
+            usize::from(input.mosaic_regions.seam_paint().is_some()),
+            input.mosaic_regions.seam_paint_digest_basis(),
         ),
         family(
             MOSAIC_PLACEMENT_POLICY_FAMILY_NAME,

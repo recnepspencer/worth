@@ -459,3 +459,19 @@ path = "../../../../worth-ui/tests/ui/facade/service/fail/proposal_compiler_is_n
 [[bin]]
 name = "product-service-family-not-public-payload"
 path = "../../../../worth-ui/tests/ui/facade/service/fail/service_family_is_not_a_public_payload_enum.rs"
+
+[[bin]]
+name = "cert-appearance-snapshot-coherence"
+path = "../../../../worth-ui-certification/tests/ui/appearance_snapshot/independent_owner_reads_cannot_construct_coherent_snapshot.rs"
+
+[[bin]]
+name = "host-appearance-command-not-live"
+path = "../../../../worth-ui-host-contract/tests/ui/appearance/appearance_is_not_a_live_paint_command.rs"
+
+[[bin]]
+name = "product-resolved-appearance-not-gate-one"
+path = "../../../../worth-ui/tests/ui/facade/appearance/fail/resolved_appearance_is_not_a_gate_one_facade.rs"
+
+[[bin]]
+name = "product-gate-one-appearance-contract"
+path = "../../../../worth-ui/tests/ui/facade/appearance/pass/gate_one_appearance_contract.rs"

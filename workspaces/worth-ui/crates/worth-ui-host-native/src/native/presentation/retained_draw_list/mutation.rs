@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use worth_ui_host_contract::{
     UiMountedCanonicalBox, UiMountedLogicalDamage, UiMountedPaintCommand,
     UiMountedPaintCommandChange, UiMountedPaintCommandIdentity, UiMountedPaintOrderEdit,
-    UiMountedPresentationDelta,
+    UiMountedPaintOrderIdentity, UiMountedPresentationDelta,
 };
 
 use super::{UiNativeRetainedDrawList, UiNativeRetainedDrawListDenial};
@@ -247,7 +247,14 @@ impl UiNativeRetainedDrawList {
             visible_bounds(old),
             visible_bounds(&command),
         )?;
+        let semantic_order = command.layer_semantic_order();
         self.commands.insert(identity, command);
+        if !self.order.update_weight(
+            UiMountedPaintOrderIdentity::for_command(identity),
+            semantic_order,
+        ) {
+            return Err(UiNativeRetainedDrawListDenial::OrderMismatch);
+        }
         Ok(())
     }
 
@@ -292,8 +299,15 @@ impl UiNativeRetainedDrawList {
                     .order_integrity
                     .insert_edge(edit.predecessor(), edit.identity(), successor)
                     .ok_or(UiNativeRetainedDrawListDenial::OrderMismatch)?;
-                self.order
-                    .place_after(edit.identity(), edit.predecessor())?;
+                let command = self
+                    .commands
+                    .get(&edit.identity().command())
+                    .ok_or(UiNativeRetainedDrawListDenial::CommandMismatch)?;
+                self.order.place_after_weighted(
+                    edit.identity(),
+                    edit.predecessor(),
+                    command.layer_semantic_order(),
+                )?;
             }
         }
         Ok(())

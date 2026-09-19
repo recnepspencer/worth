@@ -19,6 +19,7 @@ pub(crate) struct UiNativePendingPresentation {
     physical_work: Box<crate::native::physical_work_signal::UiNativePhysicalPresentationIdentity>,
     physical_token: Box<crate::native::physical_work_signal::UiNativePhysicalSignalRequestToken>,
     completion_identity: Option<u64>,
+    cursor: Option<winit::window::CursorIcon>,
     settlement: Option<Box<super::UiNativePendingSurfaceSettlement>>,
     completion: UiNativePendingPresentationCompletion,
 }
@@ -66,6 +67,7 @@ impl UiNativePendingPresentation {
             physical_work: Box::new(physical_work),
             physical_token: Box::new(physical_token),
             completion_identity: None,
+            cursor: None,
             settlement: None,
             completion: UiNativePendingPresentationCompletion::Pending,
         }
@@ -80,12 +82,21 @@ impl UiNativePendingPresentation {
         self
     }
 
-    pub(crate) fn bind_completion_identity(&mut self, identity: u64) -> bool {
+    pub(crate) fn bind_completion_identity(
+        &mut self,
+        identity: u64,
+        cursor: Option<winit::window::CursorIcon>,
+    ) -> bool {
         if self.completion_identity.is_some() || identity == 0 {
             return false;
         }
         self.completion_identity = Some(identity);
+        self.cursor = cursor;
         true
+    }
+
+    pub(crate) const fn prepared_cursor(&self) -> Option<winit::window::CursorIcon> {
+        self.cursor
     }
 
     pub(crate) const fn completion_identity(&self) -> Option<u64> {
@@ -118,11 +129,14 @@ impl UiNativePendingPresentation {
     pub(crate) fn inherit_predecessor_settlement(
         &mut self,
         predecessor: super::UiNativePendingSurfaceSettlement,
-    ) -> Result<(), super::UiNativePendingSurfaceSettlement> {
+        cursor: Option<winit::window::CursorIcon>,
+    ) -> Result<(), Box<super::UiNativePendingSurfaceSettlement>> {
         let Some(successor) = self.settlement.as_mut() else {
-            return Err(predecessor);
+            return Err(Box::new(predecessor));
         };
-        successor.inherit_predecessor(predecessor)
+        successor.inherit_predecessor(predecessor)?;
+        self.cursor = self.cursor.or(cursor);
+        Ok(())
     }
 
     pub(crate) const fn has_settlement(&self) -> bool {

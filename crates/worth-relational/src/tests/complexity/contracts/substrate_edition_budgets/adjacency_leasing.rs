@@ -93,6 +93,47 @@ fn complexity_budget_frontier_adjacency_acquires_one_edition_for_the_whole_front
     assert_eq!(counters.adjacency_relation_ids_copied, 0);
 }
 
+#[test]
+fn projected_frontier_adjacency_uses_the_selected_branch_root() {
+    let runtime = runtime_with_test_schema();
+    create_entity(&runtime, "fork-source");
+    let child = create_branch_from_main(&runtime, "projected-adjacency-child");
+    let source = create_entity_in_partition_on_branch(
+        &runtime,
+        "child-source",
+        crate::facade::identity::PartitionId::main(),
+        child.clone(),
+    );
+    let target = create_entity_in_partition_on_branch(
+        &runtime,
+        "child-target",
+        crate::facade::identity::PartitionId::main(),
+        child.clone(),
+    );
+    create_relation_in_partition_on_branch(
+        &runtime,
+        source,
+        target,
+        "child-edge",
+        "child-edge",
+        crate::facade::identity::PartitionId::main(),
+        child.clone(),
+    );
+    let snapshot = snapshot_for_owner_branch(&runtime, &child);
+    let projection = runtime.read_truth().project_snapshot(&snapshot).unwrap();
+    let records = projection
+        .bounded_outgoing_relations_for_frontier(
+            &std::collections::BTreeSet::from([source]),
+            RELATION_KIND,
+            8,
+        )
+        .unwrap()
+        .into_records();
+    assert_eq!(records.len(), 1);
+    assert_eq!((records[0].source, records[0].target), (source, target));
+    runtime.snapshots().release_snapshot(&snapshot).unwrap();
+}
+
 fn fanned_out_anchor(
     runtime: &mut crate::runtime::RelationalRuntime,
     degree: usize,

@@ -65,4 +65,12 @@ impl UiPresentationSampledGeometry {
         self.presentation_basis = presentation_basis;
         Ok(self)
     }
+
+    pub(super) fn rebind_presentation_basis(
+        mut self,
+        presentation_basis: worth_ui_host_contract::UiHostObservationPresentationBasis,
+    ) -> Self {
+        self.presentation_basis = presentation_basis;
+        self
+    }
 }

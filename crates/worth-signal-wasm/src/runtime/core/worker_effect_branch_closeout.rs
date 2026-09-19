@@ -75,20 +75,15 @@ impl RuntimeCore {
     ) -> Result<WorkerCloseoutEffectBranchReceipt, WorthSignalJsError> {
         let effect_request = request.effect_retirement;
         let dependency_request = request.dependency_basis_retirement;
-        let canonical_target_id = request.canonical_transaction.branch_id;
-        let canonical_target = self
-            .runtime
-            .branch_handle(RuntimeBranchId(canonical_target_id))
-            .ok_or_else(|| {
-                WorthSignalJsError::invalid_input(format!(
-                    "closeoutEffectBranch references unknown canonical transaction branch `{canonical_target_id}`"
-                ))
-            })?;
-        if canonical_target.parent_branch_id.is_some() {
-            return Err(WorthSignalJsError::invalid_input(format!(
-                "closeoutEffectBranch canonical transaction target `{canonical_target_id}` must be the canonical root branch"
-            )));
+        let mut retirement_branch_ids = vec![effect_request.branch_id];
+        if let Some(dependency) = &dependency_request {
+            retirement_branch_ids.push(dependency.branch_id);
         }
+        self.require_effect_closeout_canonical_target(
+            request.canonical_transaction.branch_id,
+            effect_request.branch_id,
+            &retirement_branch_ids,
+        )?;
         let terminal_basis = self.worker_branch_basis(effect_request.branch_id)?;
         require_basis(
             &effect_request.expected_basis,
@@ -121,10 +116,6 @@ impl RuntimeCore {
                 dependency.branch_id,
             );
             retirement_requests.push((branch, basis, snapshots, reason));
-        }
-        let mut retirement_branch_ids = vec![effect_request.branch_id];
-        if let Some(dependency) = &dependency_request {
-            retirement_branch_ids.push(dependency.branch_id);
         }
         let retirement_plan = match expect_success(
             self.runtime
@@ -169,6 +160,66 @@ impl RuntimeCore {
             effect_retirement,
             dependency_basis_retirement,
         })
+    }
+
+    /// The canonical target of an effect closeout is the branch the effect's
+    /// work settles into: the nearest ancestor of the effect branch that this
+    /// closeout does not retire. Resource effects fork from whatever branch
+    /// the product treats as canonical (the root, or a branch head the app
+    /// switched to), so the target is defined by lineage, not by root-ness.
+    /// A retiring branch cannot receive the canonical transaction (its truth
+    /// is released in the same closeout), and an unrelated live branch (a
+    /// coordinator, a sibling effect) is not where this effect's work belongs.
+    fn require_effect_closeout_canonical_target(
+        &self,
+        canonical_target_id: u64,
+        effect_branch_id: u64,
+        retiring_branch_ids: &[u64],
+    ) -> Result<(), WorthSignalJsError> {
+        if self
+            .runtime
+            .branch_handle(RuntimeBranchId(canonical_target_id))
+            .is_none()
+        {
+            return Err(WorthSignalJsError::invalid_input(format!(
+                "closeoutEffectBranch references unknown canonical transaction branch `{canonical_target_id}`"
+            )));
+        }
+        if retiring_branch_ids.contains(&canonical_target_id) {
+            return Err(WorthSignalJsError::invalid_input(format!(
+                "closeoutEffectBranch canonical transaction target `{canonical_target_id}` is retired by this closeout; the canonical target must be the nearest surviving ancestor of effect branch `{effect_branch_id}`"
+            )));
+        }
+        let mut cursor = self
+            .runtime
+            .branch_handle(RuntimeBranchId(effect_branch_id))
+            .ok_or_else(|| {
+                WorthSignalJsError::invalid_input(format!(
+                    "closeoutEffectBranch references unknown effect branch `{effect_branch_id}`"
+                ))
+            })?;
+        loop {
+            let Some(parent_id) = cursor.parent_branch_id else {
+                return Err(WorthSignalJsError::invalid_input(format!(
+                    "closeoutEffectBranch effect branch `{effect_branch_id}` has no surviving ancestor to settle into"
+                )));
+            };
+            if !retiring_branch_ids.contains(&parent_id.0) {
+                if parent_id.0 == canonical_target_id {
+                    return Ok(());
+                }
+                return Err(WorthSignalJsError::invalid_input(format!(
+                    "closeoutEffectBranch canonical transaction target `{canonical_target_id}` must be the nearest surviving ancestor `{}` of effect branch `{effect_branch_id}`",
+                    parent_id.0
+                )));
+            }
+            cursor = self.runtime.branch_handle(parent_id).ok_or_else(|| {
+                WorthSignalJsError::internal(format!(
+                    "closeoutEffectBranch retiring branch `{}` is in the lineage of effect branch `{effect_branch_id}` but has no branch handle",
+                    parent_id.0
+                ))
+            })?;
+        }
     }
 
     fn native_retirement_basis(

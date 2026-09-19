@@ -29,6 +29,7 @@ pub(crate) mod persistent_paged_vector;
 pub(crate) mod persistent_vector;
 pub mod proof;
 pub mod resource;
+pub(crate) mod retained_storage;
 pub mod reuse;
 pub mod subscriber_context;
 pub mod telemetry;

@@ -179,7 +179,7 @@ pub fn admit_undo(
             let derived_request = derive_request_from_axes(aftermath)?;
             let evidence = prepare_undo_evidence(&binding, aftermath, derived_request)?;
             let intent = WorthQueryUndoIntentIdentity::derive_parts(
-                binding.attempt_commit_id(),
+                binding.committed_product_publication(),
                 *binding.installed_operation(),
                 *aftermath.identity().digest(),
                 binding.runtime_instance_id(),

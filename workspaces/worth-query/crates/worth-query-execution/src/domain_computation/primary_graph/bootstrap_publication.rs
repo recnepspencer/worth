@@ -1,6 +1,9 @@
 use std::collections::BTreeMap;
 
-use worth_query_installation::facade::TypedApplicationValue;
+use worth_query_declaration::facade::authentication::{
+    WorthQueryExternalPrincipalIdentityBinding, WorthQueryPrincipalMappingStatusBinding,
+};
+use worth_query_installation::facade::ApplicationScalarValueBinding;
 use worth_relational::facade::identity::PartitionId;
 use worth_relational::facade::indexes::{DerivedIndexBuildRequest, DerivedIndexId};
 use worth_relational::facade::symbols::ClientKey;
@@ -130,6 +133,9 @@ fn map_bootstrap_staging_denial(
         },
         Denial::SavepointIdentityExhausted => {
             WorthQueryPrimaryGraphInstallationDenialKind::SavepointIdentityExhausted
+        }
+        Denial::MaterializationAuthorityRequired | Denial::MaterializationModeMismatch => {
+            WorthQueryPrimaryGraphInstallationDenialKind::RelationalCommitRejected
         }
     };
     primary_graph_denial(
@@ -261,11 +267,13 @@ fn append_principal_row(
     let mapping_fields = BTreeMap::from([
         (
             row.layout.identity_locator,
-            row.identity.into_foundational_value(),
+            WorthQueryExternalPrincipalIdentityBinding::encode(&row.identity)
+                .expect("admitted external principal identity remains encodable"),
         ),
         (
             row.layout.status_locator,
-            row.status.into_foundational_value(),
+            WorthQueryPrincipalMappingStatusBinding::encode(&row.status)
+                .expect("declared principal mapping status remains encodable"),
         ),
     ]);
     batch

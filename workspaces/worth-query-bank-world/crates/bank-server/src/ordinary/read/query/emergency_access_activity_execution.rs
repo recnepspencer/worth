@@ -81,10 +81,8 @@ impl<'runtime, 'principal>
         self,
         approved: &BankApprovedEstateElevation,
         controls: WorthQueryApplicationLiveControls,
-    ) -> Result<
-        BankEstateEmergencyAccessActivityLiveLease<'runtime, 'principal>,
-        BankApplicationQueryDenial,
-    > {
+    ) -> Result<BankEstateEmergencyAccessActivityLiveLease<'runtime>, BankApplicationQueryDenial>
+    {
         self.admission(approved).subscribe(controls)
     }
 

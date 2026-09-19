@@ -17,6 +17,7 @@ const CONSUMED: u8 = 2;
 pub(crate) struct PublicationDeliveryClaim {
     envelope: Arc<CanonicalPublicationEnvelope>,
     _history: ExplicitCommitHistoryProtectionObligation,
+    successor_observation: Option<crate::branch::ProductBranchObservation>,
     consumed: bool,
 }
 
@@ -47,6 +48,7 @@ impl CanonicalPublicationEnvelope {
                 }
             })?;
         Ok(PublicationDeliveryClaim {
+            successor_observation: self.take_successor_observation(),
             envelope: Arc::clone(self),
             _history: history,
             consumed: false,
@@ -67,11 +69,24 @@ impl PublicationDeliveryClaim {
         self.consumed = true;
         self
     }
+
+    pub(crate) fn take_successor_observation(
+        &mut self,
+    ) -> Option<crate::branch::ProductBranchObservation> {
+        assert!(
+            self.consumed,
+            "only consumed delivery exposes product custody"
+        );
+        self.successor_observation.take()
+    }
 }
 
 impl Drop for PublicationDeliveryClaim {
     fn drop(&mut self) {
         if !self.consumed {
+            if let Some(observation) = self.successor_observation.take() {
+                self.envelope.restore_successor_observation(observation);
+            }
             self.envelope.delivery.store(AVAILABLE, Ordering::Release);
         }
     }

@@ -1,3 +1,5 @@
+mod correspondence;
+
 use std::cell::Cell;
 use std::marker::PhantomData;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -49,7 +51,7 @@ static NEXT_BOUND_CAPABILITY_IDENTITY: AtomicU64 = AtomicU64::new(1);
 
 pub struct WorthQueryBoundDomainOperation<D, O, F, L: BasisOperationLane> {
     operation: WorthQueryInstalledDomainOperation<D, O, F>,
-    basis: AdmittedBasisCapability<L>,
+    basis: super::WorthQueryOperatingWorldBasis<L>,
     execution_authority:
         worth_query_execution::facade::runtime::WorthQueryExecutionBoundOperationAuthority,
     graph_participations: Vec<WorthQueryBoundGraphParticipation>,
@@ -70,7 +72,7 @@ pub struct WorthQueryBoundDomainOperation<D, O, F, L: BasisOperationLane> {
 impl<D, O, F, L: BasisOperationLane> WorthQueryBoundDomainOperation<D, O, F, L> {
     pub(super) fn mint(
         operation: WorthQueryInstalledDomainOperation<D, O, F>,
-        basis: AdmittedBasisCapability<L>,
+        basis: super::WorthQueryOperatingWorldBasis<L>,
         execution_authority:
             worth_query_execution::facade::runtime::WorthQueryExecutionBoundOperationAuthority,
         authorities: WorthQueryBoundAuthoritySet,
@@ -117,7 +119,7 @@ impl<D, O, F, L: BasisOperationLane> WorthQueryBoundDomainOperation<D, O, F, L> 
                 operation_identity: operation.definition().canonical_identity().into(),
                 binding_identity: binding_identity.clone(),
                 capability_identity,
-                basis_identity: basis.capability_digest().into(),
+                basis_identity: basis.lane().capability_digest().into(),
                 graph_authority_identities,
                 required_domain_authority_identities,
                 resource_admission_identity: None,
@@ -150,11 +152,17 @@ impl<D, O, F, L: BasisOperationLane> WorthQueryBoundDomainOperation<D, O, F, L> 
     }
 
     pub fn basis_identity(&self) -> &str {
-        self.basis.capability_digest()
+        self.basis.lane().capability_digest()
     }
 
     pub(crate) fn basis(&self) -> &AdmittedBasisCapability<L> {
-        &self.basis
+        self.basis.lane()
+    }
+
+    pub(crate) fn product(
+        &self,
+    ) -> &Arc<worth_query_execution::facade::primary_graph::WorthQueryProductBranchLease> {
+        self.basis.product()
     }
 
     pub fn commit_posture(&self) -> WorthQueryBoundCommitPosture {
@@ -349,50 +357,5 @@ where
         }
         WorthQueryConsumerProjectionContract::mint(self, &self.consumer_support_profile, counters)
             .map_err(Into::into)
-    }
-}
-
-impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane>
-    WorthQueryBoundDomainOperation<D, O, F, L>
-{
-    pub fn semantic_correspondence_registration<G: 'static>(
-        &self,
-        location: worth_query_installation::facade::WorthQueryConditionalNodeLocation,
-        dependency_ordinal: usize,
-        graph: &super::super::WorthQueryInstalledGraphParticipation<G>,
-        source_record_identity: Option<
-            worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts,
-        >,
-        targets: Vec<worth_runtime_bridge::facade::BridgeSignalAspectTargetDeclaration>,
-    ) -> Result<
-        worth_runtime_bridge::facade::BridgeSemanticCorrespondenceRegistration,
-        worth_runtime_bridge::facade::BridgeCorrespondenceDenial,
-    > {
-        self.operation.semantic_correspondence_registration(
-            location,
-            dependency_ordinal,
-            graph,
-            source_record_identity,
-            targets,
-        )
-    }
-
-    pub fn install_semantic_correspondence<G: 'static>(
-        &self,
-        location: worth_query_installation::facade::WorthQueryConditionalNodeLocation,
-        dependency_ordinal: usize,
-        graph_participation: &super::super::WorthQueryInstalledGraphParticipation<G>,
-        source_record_identity: Option<
-            worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts,
-        >,
-        graph: &mut worth_runtime_bridge::facade::BridgeSignalGraphBinding<'_, '_>,
-    ) -> super::super::WorthQueryInstalledSemanticCorrespondenceOutcome<D, O, F, G> {
-        self.operation.install_semantic_correspondence(
-            location,
-            dependency_ordinal,
-            graph_participation,
-            source_record_identity,
-            graph,
-        )
     }
 }

@@ -1,8 +1,7 @@
 use bank_domain::queries::{
     AccountAuthorizedUsersQuery, AccountAuthorizedUsersQueryResult, AccountAuthorizedUsersRequest,
     AccountDetailQuery, AccountDetailRequest, AccountDiscoveryQuery, AccountDiscoveryRequest,
-    EstateCaseOverviewQuery, EstateCaseOverviewRequest, EstateCustomerDisclosure,
-    EstateCustomerDisclosureQuery, EstateCustomerDisclosureRequest, EstateEmergencyAccountDetails,
+    EstateCaseOverviewQuery, EstateCaseOverviewRequest, EstateEmergencyAccountDetails,
     EstateEmergencyAccountDetailsQuery, EstateEmergencyAccountDetailsRequest,
     InstitutionAuditQuery, InstitutionAuditRequest, PaymentDetailQuery, PaymentDetailRequest,
     PendingPaymentsQuery, PendingPaymentsRequest,
@@ -12,23 +11,64 @@ use bank_domain::reads::{
     AccountDetail, AccountSummary, EstateCaseOverview, InstitutionAuditView, PaymentSummary,
     VisibleAccount,
 };
-use bank_domain::schema::{
-    AccountIdentity, EstateCaseIdentityField, InstitutionIdentityField, PaymentIdentityField,
-    PrincipalIdentityField,
-};
+use bank_domain::schema::BankSchema;
 use worth_query_host::facade::{
-    declaration::application_query::ApplicationQueryParameterSet,
+    application_entry::WorthQueryApplicationRequestExt,
+    declaration::{
+        application_query::{
+            ApplicationQueryBinding, ApplicationQueryIntent, ApplicationQueryScopeResolution,
+        },
+        application_schema::ApplicationStructuredValueBinding,
+    },
+    primary_graph::WorthQueryApplicationProjection,
     publication::domain_computation::WorthQueryPublishedApplicationResult,
 };
 
 use super::BankReadyQuery;
 use crate::application_query::{
-    execute_estate_customer_disclosure, execute_estate_emergency_account_details, execute_one_shot,
-    execute_preview, BankAdmittedEstateEmergencyAccountDetailsHistorical,
+    execute_estate_emergency_account_details, BankAdmittedEstateEmergencyAccountDetailsHistorical,
     BankAdmittedEstateEmergencyAccountDetailsPreview, BankApplicationQueryDenial,
-    BankApplicationQueryInvocation, BankEstateEmergencyAccountDetailsAdmission, BankPreviewSession,
+    BankEstateEmergencyAccountDetailsAdmission, BankPreviewSession,
 };
 use crate::BankApprovedEstateElevation;
+
+impl<QueryInput> BankReadyQuery<'_, '_, QueryInput>
+where
+    QueryInput: ApplicationQueryIntent<BankSchema>,
+    <QueryInput::Binding as ApplicationQueryBinding<BankSchema>>::ScopeBinding:
+        ApplicationQueryScopeResolution<
+            BankSchema,
+            <QueryInput::Binding as ApplicationQueryBinding<BankSchema>>::PrincipalIdentity,
+        >,
+    <<QueryInput::Binding as ApplicationQueryBinding<BankSchema>>::ResultBinding as ApplicationStructuredValueBinding>::Value:
+        WorthQueryApplicationProjection<
+            BankSchema,
+            <QueryInput::Binding as ApplicationQueryBinding<BankSchema>>::Query,
+        >,
+{
+    fn execute_current(
+        self,
+    ) -> Result<
+        WorthQueryPublishedApplicationResult<
+            <QueryInput::Binding as ApplicationQueryBinding<BankSchema>>::Query,
+            <<QueryInput::Binding as ApplicationQueryBinding<BankSchema>>::ResultBinding as ApplicationStructuredValueBinding>::Value,
+        >,
+        BankApplicationQueryDenial,
+    > {
+        let result = self
+            .runtime
+            .application_runtime()
+            .request(self.principal.external(), self.controls.request())
+            .query(self.query)
+            .limits(
+                self.controls.maximum_result_count(),
+                self.controls.maximum_work(),
+            )
+            .execute()
+            .map_err(BankApplicationQueryDenial::from_request_query)?;
+        Ok(result)
+    }
+}
 
 impl BankReadyQuery<'_, '_, AccountSummaryRequest> {
     pub fn execute(
@@ -37,18 +77,7 @@ impl BankReadyQuery<'_, '_, AccountSummaryRequest> {
         WorthQueryPublishedApplicationResult<AccountSummaryQuery, AccountSummary>,
         BankApplicationQueryDenial,
     > {
-        let controls = self.controls.application_query_controls();
-        execute_one_shot(
-            self.runtime,
-            self.principal,
-            BankApplicationQueryInvocation::new(
-                AccountSummaryQuery::reference(),
-                AccountIdentity::reference(),
-                self.query.account(),
-                ApplicationQueryParameterSet::<AccountSummaryQuery>::new(),
-                controls,
-            ),
-        )
+        self.execute_current()
     }
 }
 
@@ -59,18 +88,7 @@ impl BankReadyQuery<'_, '_, AccountDiscoveryRequest> {
         WorthQueryPublishedApplicationResult<AccountDiscoveryQuery, VisibleAccount>,
         BankApplicationQueryDenial,
     > {
-        let controls = self.controls.application_query_controls();
-        execute_one_shot(
-            self.runtime,
-            self.principal,
-            BankApplicationQueryInvocation::new(
-                AccountDiscoveryQuery::reference(),
-                PrincipalIdentityField::reference(),
-                self.principal.principal_id(),
-                ApplicationQueryParameterSet::<AccountDiscoveryQuery>::new(),
-                controls,
-            ),
-        )
+        self.execute_current()
     }
 }
 
@@ -81,18 +99,7 @@ impl BankReadyQuery<'_, '_, AccountDetailRequest> {
         WorthQueryPublishedApplicationResult<AccountDetailQuery, AccountDetail>,
         BankApplicationQueryDenial,
     > {
-        let controls = self.controls.application_query_controls();
-        execute_one_shot(
-            self.runtime,
-            self.principal,
-            BankApplicationQueryInvocation::new(
-                AccountDetailQuery::reference(),
-                AccountIdentity::reference(),
-                self.query.account(),
-                ApplicationQueryParameterSet::<AccountDetailQuery>::new(),
-                controls,
-            ),
-        )
+        self.execute_current()
     }
 }
 
@@ -106,18 +113,7 @@ impl BankReadyQuery<'_, '_, AccountAuthorizedUsersRequest> {
         >,
         BankApplicationQueryDenial,
     > {
-        let controls = self.controls.application_query_controls();
-        execute_one_shot(
-            self.runtime,
-            self.principal,
-            BankApplicationQueryInvocation::new(
-                AccountAuthorizedUsersQuery::reference(),
-                AccountIdentity::reference(),
-                self.query.account(),
-                ApplicationQueryParameterSet::<AccountAuthorizedUsersQuery>::new(),
-                controls,
-            ),
-        )
+        self.execute_current()
     }
 }
 
@@ -128,18 +124,7 @@ impl BankReadyQuery<'_, '_, PaymentDetailRequest> {
         WorthQueryPublishedApplicationResult<PaymentDetailQuery, PaymentSummary>,
         BankApplicationQueryDenial,
     > {
-        let controls = self.controls.application_query_controls();
-        execute_one_shot(
-            self.runtime,
-            self.principal,
-            BankApplicationQueryInvocation::new(
-                PaymentDetailQuery::reference(),
-                PaymentIdentityField::reference(),
-                self.query.payment(),
-                ApplicationQueryParameterSet::<PaymentDetailQuery>::new(),
-                controls,
-            ),
-        )
+        self.execute_current()
     }
 }
 
@@ -150,18 +135,7 @@ impl BankReadyQuery<'_, '_, PendingPaymentsRequest> {
         WorthQueryPublishedApplicationResult<PendingPaymentsQuery, PaymentSummary>,
         BankApplicationQueryDenial,
     > {
-        let controls = self.controls.application_query_controls();
-        execute_one_shot(
-            self.runtime,
-            self.principal,
-            BankApplicationQueryInvocation::new(
-                PendingPaymentsQuery::reference(),
-                PrincipalIdentityField::reference(),
-                self.principal.principal_id(),
-                ApplicationQueryParameterSet::<PendingPaymentsQuery>::new(),
-                controls,
-            ),
-        )
+        self.execute_current()
     }
 }
 
@@ -172,18 +146,7 @@ impl BankReadyQuery<'_, '_, EstateCaseOverviewRequest> {
         WorthQueryPublishedApplicationResult<EstateCaseOverviewQuery, EstateCaseOverview>,
         BankApplicationQueryDenial,
     > {
-        let controls = self.controls.application_query_controls();
-        execute_one_shot(
-            self.runtime,
-            self.principal,
-            BankApplicationQueryInvocation::new(
-                EstateCaseOverviewQuery::reference(),
-                EstateCaseIdentityField::reference(),
-                self.query.estate(),
-                ApplicationQueryParameterSet::<EstateCaseOverviewQuery>::new(),
-                controls,
-            ),
-        )
+        self.execute_current()
     }
 
     pub fn preview(
@@ -193,43 +156,17 @@ impl BankReadyQuery<'_, '_, EstateCaseOverviewRequest> {
         WorthQueryPublishedApplicationResult<EstateCaseOverviewQuery, EstateCaseOverview>,
         BankApplicationQueryDenial,
     > {
-        let application = self.runtime.application_runtime();
-        let controls = session.admit_controls(
-            application,
-            self.controls.maximum_result_count(),
-            self.controls.maximum_work(),
-            self.controls.request(),
-        )?;
-        execute_preview(
-            self.runtime,
-            self.principal,
-            BankApplicationQueryInvocation::new(
-                EstateCaseOverviewQuery::reference(),
-                EstateCaseIdentityField::reference(),
-                self.query.estate(),
-                ApplicationQueryParameterSet::<EstateCaseOverviewQuery>::new(),
-                controls,
-            ),
-        )
-    }
-}
-
-impl BankReadyQuery<'_, '_, EstateCustomerDisclosureRequest> {
-    pub fn execute(
-        self,
-    ) -> Result<
-        WorthQueryPublishedApplicationResult<
-            EstateCustomerDisclosureQuery,
-            EstateCustomerDisclosure,
-        >,
-        BankApplicationQueryDenial,
-    > {
-        execute_estate_customer_disclosure(
-            self.runtime,
-            self.principal,
-            self.query,
-            self.controls.application_query_controls(),
-        )
+        self.runtime
+            .application_runtime()
+            .request(self.principal.external(), self.controls.request())
+            .at(session.observation())
+            .query(self.query)
+            .limits(
+                self.controls.maximum_result_count(),
+                self.controls.maximum_work(),
+            )
+            .execute()
+            .map_err(BankApplicationQueryDenial::from_request_query)
     }
 }
 
@@ -298,17 +235,6 @@ impl BankReadyQuery<'_, '_, InstitutionAuditRequest> {
         WorthQueryPublishedApplicationResult<InstitutionAuditQuery, InstitutionAuditView>,
         BankApplicationQueryDenial,
     > {
-        let controls = self.controls.application_query_controls();
-        execute_one_shot(
-            self.runtime,
-            self.principal,
-            BankApplicationQueryInvocation::new(
-                InstitutionAuditQuery::reference(),
-                InstitutionIdentityField::reference(),
-                self.query.institution(),
-                ApplicationQueryParameterSet::<InstitutionAuditQuery>::new(),
-                controls,
-            ),
-        )
+        self.execute_current()
     }
 }

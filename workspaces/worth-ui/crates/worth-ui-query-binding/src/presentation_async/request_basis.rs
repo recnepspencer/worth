@@ -129,7 +129,6 @@ pub struct WorthUiPresentationRequestBasisInput {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthUiPresentationRequestBasisDenial {
     ZeroDpi,
-    EmptyPresentationChange,
     EmptyPaintSpan,
     DuplicatePaintSpan,
     OverlappingPaintSpan,

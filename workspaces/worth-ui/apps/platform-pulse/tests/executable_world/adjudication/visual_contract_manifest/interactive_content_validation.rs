@@ -137,14 +137,14 @@ fn expected_targets(
             "platform.pulse.target.run_live_action",
             "intent:platform.pulse.action.route:activate",
             "platform.pulse.text.action_label",
-            "principal-accent",
+            "action-fill",
             [296, 416, 216, 48],
         ),
         (
             "platform.pulse.target.open_portal",
             "intent:platform.pulse.portal.open.route:activate",
             "platform.pulse.text.portal_label",
-            "raised-surface",
+            "elevated-surface",
             [528, 416, 112, 48],
         ),
         (

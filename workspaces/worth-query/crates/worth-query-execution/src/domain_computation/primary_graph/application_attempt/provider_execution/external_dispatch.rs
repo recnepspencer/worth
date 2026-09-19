@@ -12,7 +12,7 @@
 
 use std::sync::Arc;
 
-use worth_query_installation::facade::ApplicationSchema;
+use worth_query_installation::facade::{ApplicationSchema, InstalledAftermathRecoveryContract};
 
 use super::super::WorthQueryApplicationCommitOutcome;
 use crate::domain_computation::application_aftermath::{
@@ -47,6 +47,7 @@ pub enum WorthQueryExternalDispatchPreparationDenial {
 pub enum WorthQueryExternalRedispatchDenial {
     /// Fresh effect authority or current admission failed before transport.
     AdmissionDenied,
+    RecoveryNotAdmitted,
     /// The live handle binding carries no co-committed outbox record.
     BindingOutboxMissing,
     /// No host transport is installed on this runtime.
@@ -114,6 +115,11 @@ impl From<WorthQueryExternalRedispatchDenial> for WorthQueryRecoveryHandleDenial
                     WorthQueryRecoveryHandleDenialKind::CorrelationMismatch,
                 )
             }
+            WorthQueryExternalRedispatchDenial::RecoveryNotAdmitted => {
+                WorthQueryRecoveryHandleDenial::new(
+                    WorthQueryRecoveryHandleDenialKind::TransitionNotAdmitted,
+                )
+            }
             WorthQueryExternalRedispatchDenial::TransportNotInstalled
             | WorthQueryExternalRedispatchDenial::OwnerReadDenied(_)
             | WorthQueryExternalRedispatchDenial::AttemptAdmissionDenied
@@ -160,6 +166,12 @@ where
     ) -> Result<WorthQueryPerformedExternalRedispatch, WorthQueryExternalRedispatchDenial> {
         require_fresh_effect_authority(handle, authority)
             .map_err(|_| WorthQueryExternalRedispatchDenial::AdmissionDenied)?;
+        if matches!(
+            handle.binding().installed_aftermath().recovery(),
+            InstalledAftermathRecoveryContract::NotAdmitted
+        ) {
+            return Err(WorthQueryExternalRedispatchDenial::RecoveryNotAdmitted);
+        }
         admission
             .validate_current_authority()
             .map_err(|_| WorthQueryExternalRedispatchDenial::AdmissionDenied)?;
@@ -256,6 +268,8 @@ where
 }
 
 #[cfg(test)]
+mod composite_dispatch_tests;
+#[cfg(test)]
 mod safe_retry_affinity_tests;
 
 #[cfg(test)]
@@ -264,12 +278,9 @@ mod tests {
 
     use super::*;
     use crate::domain_computation::application_aftermath::{
-        external_effect::tests::outbox_record, WorthQueryExternalDispatchRequest,
-        WorthQueryExternalTransportOutcome,
+        WorthQueryExternalDispatchRequest, WorthQueryExternalTransportOutcome,
     };
-    use crate::domain_computation::primary_graph::{
-        commit_and_observe_fixture, tests::fixture::installed_authorization_world,
-    };
+    use crate::domain_computation::primary_graph::recoverable_application_world;
 
     struct RetryTransport(AtomicUsize);
 
@@ -287,10 +298,13 @@ mod tests {
 
     #[test]
     fn production_fresh_attempt_operation_distinguishes_safe_redispatch() {
-        let world = installed_authorization_world(true);
+        let (world, receipt) = recoverable_application_world(181, "dispatch-retry");
         let transport = RetryTransport(AtomicUsize::new(0));
-        let original_observation =
-            commit_and_observe_fixture(&world.application.primary_provider, &outbox_record(11));
+        let original_observation = world
+            .application
+            .observe_committed_dispatch_outbox(&receipt)
+            .unwrap()
+            .unwrap();
         let retry_observation = original_observation.clone();
         assert_eq!(
             original_observation.record().correlation(),
@@ -317,12 +331,30 @@ mod tests {
 
     #[test]
     fn foreign_owner_observation_denies_before_transport_and_preserves_cause() {
-        let world = installed_authorization_world(true);
-        let foreign_world = installed_authorization_world(true);
+        let (world, local_receipt) = recoverable_application_world(184, "local-dispatch");
+        let (foreign_world, foreign_receipt) =
+            recoverable_application_world(182, "foreign-dispatch");
         let transport = RetryTransport(AtomicUsize::new(0));
-        let foreign = commit_and_observe_fixture(
-            &foreign_world.application.primary_provider,
-            &outbox_record(17),
+        let local = world
+            .application
+            .observe_committed_dispatch_outbox(&local_receipt)
+            .unwrap()
+            .unwrap();
+        let foreign = foreign_world
+            .application
+            .observe_committed_dispatch_outbox(&foreign_receipt)
+            .unwrap()
+            .unwrap()
+            .with_relational_runtime_instance_for_test(local.relational_runtime_instance_id());
+        assert_ne!(
+            foreign
+                .committed_product_publication()
+                .product_branch()
+                .owner_identity(),
+            local
+                .committed_product_publication()
+                .product_branch()
+                .owner_identity()
         );
 
         assert_eq!(
@@ -336,11 +368,14 @@ mod tests {
 
     #[test]
     fn unavailable_runtime_time_is_a_typed_dispatch_preparation_denial() {
-        let world = installed_authorization_world(true);
+        let (world, receipt) = recoverable_application_world(183, "unavailable-time");
         world.authorization_time.script([]);
         let transport = RetryTransport(AtomicUsize::new(0));
-        let observation =
-            commit_and_observe_fixture(&world.application.primary_provider, &outbox_record(18));
+        let observation = world
+            .application
+            .observe_committed_dispatch_outbox(&receipt)
+            .unwrap()
+            .unwrap();
 
         assert_eq!(
             world
@@ -348,6 +383,6 @@ mod tests {
                 .perform_committed_external_dispatch(&transport, observation),
             Err(WorthQueryExternalDispatchPreparationDenial::TimeObservationDenied)
         );
-        assert_eq!(transport.0.load(Ordering::Acquire), 1);
+        assert_eq!(transport.0.load(Ordering::Acquire), 0);
     }
 }

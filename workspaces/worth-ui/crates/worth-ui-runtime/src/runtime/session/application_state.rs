@@ -2,19 +2,23 @@ mod change_classification;
 mod framework_turn;
 mod inspection;
 mod mounted_allocation;
+mod mounted_layout_reuse;
+pub(crate) use mounted_layout_reuse::UiMountedLayoutSuccession;
+mod mounted_region;
+pub(crate) use mounted_region::UiMountedRegionDeclarationBinding;
 #[path = "application_state/service_proposal.rs"]
 mod service_proposal;
 pub(crate) use service_proposal::{
     UiIndeterminatePortalProposalTransaction, UiPortalProposalPreparationDenial,
     UiStagedPortalProposalTransaction,
 };
+mod appearance_consumers;
 #[cfg(any(test, feature = "certification-support"))]
 mod planning;
 mod rebind_planning;
 mod rebind_publication;
 mod replacement;
 mod selection_mapping;
-mod theme_token_consumers;
 
 pub(crate) use selection_mapping::UiDeclaredSelectionMappingDenial;
 
@@ -48,6 +52,12 @@ impl WorthUiApplicationSessionState {
         self.app.generation_identity()
     }
 
+    pub(crate) fn authored_overlay_material(
+        &self,
+    ) -> &crate::runtime::WorthUiAuthoredOverlayMaterial {
+        self.app.prepared_authority().authored_overlay_material()
+    }
+
     pub(crate) fn host_session_plan(
         &self,
     ) -> &crate::facade::prepared_application_authority::WorthUiHostSessionPlan {
@@ -76,6 +86,10 @@ impl WorthUiApplicationSessionState {
         self.app.graph_snapshot()
     }
 
+    pub(crate) fn mounted_geometry_plan(&self) -> &crate::runtime::WorthUiActiveExecutionPlan {
+        self.runtime.active.active_plan_ref()
+    }
+
     #[cfg(any(test, feature = "certification-support"))]
     pub(crate) fn lookup_consumed_fact(
         &self,
@@ -93,15 +107,35 @@ impl WorthUiApplicationSessionState {
         self.runtime.source_event_ingress(provider)
     }
 
-    pub(crate) fn begin_observation_turn(
-        &mut self,
+    pub(crate) fn begin_observation_turn<'state>(
+        &'state mut self,
         session: crate::facade::WorthUiActiveApplicationSessionIdentity,
+        appearance_close: Option<
+            crate::runtime::observation::UiAppearanceObservationCloseInput<'state>,
+        >,
+        pointer_owners: Option<
+            crate::runtime::observation::UiPointerAffordanceObservationOwners<'state>,
+        >,
     ) -> Result<
-        crate::facade::observation::UiObservationTurn<'_>,
+        crate::facade::observation::UiObservationTurn<'state>,
         crate::facade::observation::UiObservationTurnDenial,
     > {
         let source_basis = self.app.capabilities().digest().as_u64();
-        self.runtime.begin_observation_turn(session, source_basis)
+        let prepared = self.app.prepared_authority();
+        let pointer_close = pointer_owners.map(|owners| {
+            crate::runtime::observation::UiPointerAffordanceObservationCloseInput::new(
+                owners,
+                prepared.intent_catalog(),
+                prepared.capabilities().intent_definitions(),
+                prepared.intent_execution_bindings(),
+            )
+        });
+        self.runtime.begin_observation_turn_with_owner_close(
+            session,
+            source_basis,
+            appearance_close,
+            pointer_close,
+        )
     }
 
     pub(crate) fn observation_resource_snapshot(

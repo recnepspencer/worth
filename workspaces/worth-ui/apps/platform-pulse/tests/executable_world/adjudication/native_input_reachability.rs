@@ -192,7 +192,7 @@ fn require_delivery_target(
             delivered: delivery.delivered_event_count(),
         });
     }
-    let (x, y) = delivery.screen_point();
+    let (x, y) = delivery.qualified_screen_point();
     let bounds = client.bounds();
     if x < bounds.left() || x >= bounds.right() || y < bounds.top() || y >= bounds.bottom() {
         return Err(ExecutableNativeInputReachabilityFailure::DeliveryPointOutsideClient);

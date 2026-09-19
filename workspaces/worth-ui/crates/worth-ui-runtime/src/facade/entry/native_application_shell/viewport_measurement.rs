@@ -14,6 +14,26 @@ struct UiPendingNativeViewportMeasurements {
 }
 
 impl WorthUiNativeApplicationShell {
+    /// Return the latest observed client viewport in logical host-surface
+    /// coordinates for application-owned native layout.
+    pub fn native_layout_viewport(&self) -> Option<worth_ui_host_contract::UiMountedCanonicalBox> {
+        let basis = self.observed_viewport_basis?;
+        if basis.scale_factor_milli == 0 {
+            return None;
+        }
+        let scale = basis.scale_factor_milli as f32;
+        worth_ui_host_contract::UiMountedCanonicalBox::canonicalize(
+            worth_ui_host_contract::UiMountedCanonicalBoxInput {
+                x: 0.0,
+                y: 0.0,
+                width: basis.client_physical_extent[0] as f32 * 1_000.0 / scale,
+                height: basis.client_physical_extent[1] as f32 * 1_000.0 / scale,
+                coordinate_space: worth_ui_host_contract::UiMountedCoordinateSpace::HostSurface,
+            },
+        )
+        .ok()
+    }
+
     /// Reports whether host-owned viewport evidence requires one successor
     /// presentation. The extent and measurement authority remain inside the
     /// runtime; applications use this only to avoid idle duplicate frames.
@@ -115,19 +135,99 @@ mod tests {
     use crate::runtime::tests::active_application_session_test_support::source_backed_component_app_with_host_and_viewport_allocation;
 
     #[test]
+    fn same_scale_readiness_preserves_binding_and_leaves_real_rebind_available() {
+        let host = ScriptedPresentationHost::native_display();
+        let mut shell = source_backed_component_app_with_host_and_viewport_allocation(host)
+            .launch_native_surface()
+            .expect("native viewport shell should launch");
+        let initial_binding = shell.binding;
+
+        shell
+            .rebind_native_surface_scale(1_000)
+            .expect("equal scale should already be ready");
+
+        assert_eq!(shell.binding, initial_binding);
+        assert!(shell.pending_surface_reconciliation.is_none());
+        shell
+            .rebind_native_surface_scale(2_000)
+            .expect("equal-scale readiness must leave a real scale successor available");
+        assert_ne!(shell.binding, initial_binding);
+        assert!(shell.pending_surface_reconciliation.is_some());
+    }
+
+    #[test]
+    fn prepared_frame_uses_the_reconciliation_lane_after_scale_rebind() {
+        let host = ScriptedPresentationHost::native_display();
+        let mut shell = source_backed_component_app_with_host_and_viewport_allocation(host.clone())
+            .launch_native_surface()
+            .expect("native viewport shell should launch");
+        crate::facade::entry::native_application_identity_trace_test_support::
+            install_bound_surface_geometry(&mut shell);
+        host.push_native_display_presented();
+        let Ok(crate::mounting::UiMountedFrameOutcome::Published(_)) = shell.present_frame(1, 0)
+        else {
+            panic!("baseline frame should publish before scale reconciliation");
+        };
+        shell
+            .rebind_native_surface_scale(2_000)
+            .expect("new scale should establish a replacement binding");
+        crate::facade::entry::native_application_identity_trace_test_support::
+            install_bound_surface_geometry(&mut shell);
+        let Ok(frame) = shell.prepare_frame() else {
+            panic!("replacement binding should prepare a reconciliation frame");
+        };
+        host.push_native_display_presented();
+
+        let outcome = shell
+            .present_prepared_frame(frame, u64::MAX, 2)
+            .expect("prepared reconciliation frame should use its matching lane");
+
+        match outcome {
+            crate::mounting::UiMountedFrameOutcome::Reconciled(_)
+            | crate::mounting::UiMountedFrameOutcome::Published(_)
+            | crate::mounting::UiMountedFrameOutcome::Unchanged(_) => {}
+            crate::mounting::UiMountedFrameOutcome::AdmissionDenied(rejection) => {
+                panic!("reconciliation admission denied: {:?}", rejection.denial())
+            }
+            _ => panic!("prepared reconciliation did not settle"),
+        }
+        assert!(shell.pending_surface_reconciliation.is_none());
+    }
+
+    #[test]
     fn same_physical_extent_with_new_scale_and_binding_remeasures_before_projection() {
         let host = ScriptedPresentationHost::native_display();
         let mut shell = source_backed_component_app_with_host_and_viewport_allocation(host.clone())
             .launch_native_surface()
             .expect("native viewport shell should launch");
+        crate::facade::entry::native_application_identity_trace_test_support::
+            install_bound_surface_geometry(&mut shell);
         let baseline_calls = host.viewport_measurement_calls();
         shell.observe_native_viewport_readiness([800, 600], 1_000, false);
+        let initial_layout_viewport = shell.native_layout_viewport().unwrap();
+        assert_eq!(
+            [
+                initial_layout_viewport.width(),
+                initial_layout_viewport.height()
+            ],
+            [800.0, 600.0]
+        );
 
         host.set_viewport_extent([400.0, 300.0]);
         shell
             .rebind_native_surface_scale(2_000)
             .expect("scale successor should rebind the native surface");
+        crate::facade::entry::native_application_identity_trace_test_support::
+            install_bound_surface_geometry(&mut shell);
         shell.observe_native_viewport_readiness([800, 600], 2_000, true);
+        let rebound_layout_viewport = shell.native_layout_viewport().unwrap();
+        assert_eq!(
+            [
+                rebound_layout_viewport.width(),
+                rebound_layout_viewport.height()
+            ],
+            [400.0, 300.0]
+        );
         assert!(shell.native_viewport_presentation_pending());
         let pending = shell
             .pending_viewport_basis
@@ -157,6 +257,8 @@ mod tests {
         let mut shell = source_backed_component_app_with_host_and_viewport_allocation(host.clone())
             .launch_native_surface()
             .expect("native viewport shell should launch");
+        crate::facade::entry::native_application_identity_trace_test_support::
+            install_bound_surface_geometry(&mut shell);
         let baseline_calls = host.viewport_measurement_calls();
         host.push_in_flight(
             vec![crate::certification_support::ScriptedSurfaceCompletion::Pending],

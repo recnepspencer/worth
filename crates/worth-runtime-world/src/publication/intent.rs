@@ -4,6 +4,8 @@ use worth_relational::facade::mvcc::{
     PreparedRelationalCommitCandidate, RelationalTransactionIntent,
 };
 
+use super::SettledRelationalPublicationAdoption;
+
 #[path = "intent/prepared.rs"]
 mod prepared;
 
@@ -59,6 +61,8 @@ impl CompositeComponentIntent {
 pub struct CompositePublicationIntent<S> {
     change: CompositeComponentIntent,
     prepared_relational_candidate: Option<PreparedRelationalCommitCandidate>,
+    settled_relational_adoption: Option<SettledRelationalPublicationAdoption>,
+    successor_observation_requested: bool,
     _stage: PhantomData<S>,
 }
 
@@ -70,6 +74,8 @@ impl CompositePublicationIntent<WithoutSignal> {
         Self {
             change: CompositeComponentIntent::RelationalOnly(change),
             prepared_relational_candidate: None,
+            settled_relational_adoption: None,
+            successor_observation_requested: false,
             _stage: PhantomData,
         }
     }
@@ -86,12 +92,22 @@ impl CompositePublicationIntent<WithSignal> {
         Self {
             change,
             prepared_relational_candidate: None,
+            settled_relational_adoption: None,
+            successor_observation_requested: false,
             _stage: PhantomData,
         }
     }
 }
 
 impl<S> CompositePublicationIntent<S> {
+    /// Reserve and carry the exact successor observation in the performed
+    /// delivery. Callers request this only when an admitted downstream lane
+    /// already owns bounded capacity for that observation.
+    pub fn with_successor_observation(mut self) -> Self {
+        self.successor_observation_requested = true;
+        self
+    }
+
     /// Attach the one owner-issued Relational candidate that corresponds to
     /// this intent. The candidate remains move-only and is consumed by plan
     /// lowering or dropped with the intent on a rejected route.
@@ -100,6 +116,14 @@ impl<S> CompositePublicationIntent<S> {
         candidate: PreparedRelationalCommitCandidate,
     ) -> Self {
         self.prepared_relational_candidate = Some(candidate);
+        self
+    }
+
+    pub(crate) fn with_settled_relational_adoption(
+        mut self,
+        adoption: SettledRelationalPublicationAdoption,
+    ) -> Self {
+        self.settled_relational_adoption = Some(adoption);
         self
     }
 
@@ -112,7 +136,14 @@ impl<S> CompositePublicationIntent<S> {
     ) -> (
         CompositeComponentIntent,
         Option<PreparedRelationalCommitCandidate>,
+        Option<SettledRelationalPublicationAdoption>,
+        bool,
     ) {
-        (self.change, self.prepared_relational_candidate)
+        (
+            self.change,
+            self.prepared_relational_candidate,
+            self.settled_relational_adoption,
+            self.successor_observation_requested,
+        )
     }
 }

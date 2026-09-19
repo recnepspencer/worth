@@ -1,9 +1,7 @@
-use std::sync::Arc;
-
 use crate::state::{SignalBranchHandle, SignalBranchId, SignalSnapshotId};
 
 use super::super::branch_execution_cell::SignalBranchCellAdmissionDenial;
-use super::{SignalOwner, SignalOwnerRoot, SignalOwnerRootState};
+use super::SignalOwnerRoot;
 
 impl<D, I, T> SignalOwnerRoot<D, I, T>
 where
@@ -95,12 +93,5 @@ where
         branch_id: SignalBranchId,
     ) -> Option<SignalSnapshotId> {
         self.branch_handle(branch_id)?.head_snapshot_id
-    }
-
-    fn sealed_owner(&self) -> Option<Arc<SignalOwner<D, I, T>>> {
-        match &self.state {
-            SignalOwnerRootState::Unsealed { .. } => None,
-            SignalOwnerRootState::Sealed(owner) => Some(Arc::clone(owner)),
-        }
     }
 }

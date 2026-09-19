@@ -4,10 +4,11 @@ use super::UiNativeRetainedDrawList;
 pub(crate) enum UiNativePendingSurfaceSettlement {
     Initial(Box<UiNativeRetainedDrawList>),
     Delta(UiNativePendingDeltaSettlement),
+    Unchanged(Box<UiNativePendingUnchangedSettlement>),
     Sample(super::retained_draw_list::UiNativeRetainedSampleUndo),
     Reconstruction {
         retained: Box<UiNativeRetainedDrawList>,
-        recovery: crate::native::UiNativeRecoveryRequirement,
+        recovery: Option<crate::native::UiNativeRecoveryRequirement>,
     },
     SupersededDeltaResolved,
 }
@@ -15,6 +16,24 @@ pub(crate) enum UiNativePendingSurfaceSettlement {
 pub(crate) struct UiNativePendingDeltaSettlement {
     rollback_lineage: Vec<UiNativeRetainedDeltaUndo>,
     effects: super::UiNativePresentationEffects,
+}
+
+pub(crate) struct UiNativePendingUnchangedSettlement {
+    undo: super::retained_draw_list::UiNativeRetainedUnchangedUndo,
+    effects: super::UiNativePresentationEffects,
+}
+
+impl UiNativePendingUnchangedSettlement {
+    pub(super) fn new(
+        undo: super::retained_draw_list::UiNativeRetainedUnchangedUndo,
+        effects: super::UiNativePresentationEffects,
+    ) -> Self {
+        Self { undo, effects }
+    }
+
+    fn rollback(self, retained: &mut UiNativeRetainedDrawList) -> Result<(), ()> {
+        retained.rollback_unchanged(self.undo).map_err(|_| ())
+    }
 }
 
 impl UiNativePendingDeltaSettlement {
@@ -47,6 +66,7 @@ impl UiNativePendingSurfaceSettlement {
         match self {
             Self::Initial(_) => crate::native::UiNativePresentationWorkKind::Initial,
             Self::Delta(_) => crate::native::UiNativePresentationWorkKind::Delta,
+            Self::Unchanged(_) => crate::native::UiNativePresentationWorkKind::Unchanged,
             Self::Sample(_) => crate::native::UiNativePresentationWorkKind::Sample,
             Self::Reconstruction { .. } => {
                 crate::native::UiNativePresentationWorkKind::Reconstruction
@@ -55,13 +75,13 @@ impl UiNativePendingSurfaceSettlement {
         }
     }
 
-    pub(crate) fn inherit_predecessor(&mut self, predecessor: Self) -> Result<(), Self> {
+    pub(crate) fn inherit_predecessor(&mut self, predecessor: Self) -> Result<(), Box<Self>> {
         match (self, predecessor) {
             (Self::Delta(successor), Self::Delta(predecessor)) => {
                 successor.inherit(predecessor);
                 Ok(())
             }
-            (_, predecessor) => Err(predecessor),
+            (_, predecessor) => Err(Box::new(predecessor)),
         }
     }
 
@@ -73,6 +93,7 @@ impl UiNativePendingSurfaceSettlement {
         match self {
             Self::Initial(_)
             | Self::Delta(_)
+            | Self::Unchanged(_)
             | Self::Sample(_)
             | Self::Reconstruction { .. }
             | Self::SupersededDeltaResolved => {}
@@ -91,6 +112,19 @@ impl UiNativePendingSurfaceSettlement {
                     .retained_draw_lists
                     .get_mut(&key)
                     .is_some_and(|retained| lineage.rollback(retained).is_ok());
+                if !restored {
+                    state.retained_draw_lists.remove(&key);
+                    state.lifecycle.require_recovery(
+                        key,
+                        crate::native::UiNativeRecoveryCause::PresentationIndeterminate,
+                    );
+                }
+            }
+            Self::Unchanged(settlement) => {
+                let restored = state
+                    .retained_draw_lists
+                    .get_mut(&key)
+                    .is_some_and(|retained| settlement.rollback(retained).is_ok());
                 if !restored {
                     state.retained_draw_lists.remove(&key);
                     state.lifecycle.require_recovery(
@@ -135,6 +169,13 @@ impl UiNativePendingSurfaceSettlement {
                         .expect("pending delta rollback must restore exact predecessor truth");
                 }
             }
+            Self::Unchanged(settlement) => {
+                if let Some(retained) = state.retained_draw_lists.get_mut(&key) {
+                    settlement
+                        .rollback(retained)
+                        .expect("pending unchanged appearance rollback must restore exact predecessor truth");
+                }
+            }
             Self::Sample(undo) => {
                 if let Some(retained) = state.retained_draw_lists.get_mut(&key) {
                     retained
@@ -164,6 +205,7 @@ impl UiNativePendingSurfaceSettlement {
                 super::UiNativePresentationEffects::new(true, retained.identity_overlay_active())
             }
             Self::Delta(delta) => delta.effects,
+            Self::Unchanged(unchanged) => unchanged.effects,
             Self::Sample(_) => super::UiNativePresentationEffects::new(true, false),
             Self::SupersededDeltaResolved => super::UiNativePresentationEffects::default(),
         };
@@ -174,12 +216,17 @@ impl UiNativePendingSurfaceSettlement {
                 true
             }
             Self::Reconstruction { retained, recovery } => {
-                debug_assert_eq!(recovery.binding(), key);
+                debug_assert!(recovery
+                    .as_ref()
+                    .is_none_or(|recovery| recovery.binding() == key));
                 state.retained_draw_lists.insert(key, *retained);
-                let _current_recovery = state.lifecycle.settle_recovery(recovery);
+                if let Some(recovery) = recovery {
+                    let _current_recovery = state.lifecycle.settle_recovery(recovery);
+                }
                 false
             }
             Self::Delta(_) => true,
+            Self::Unchanged(_) => true,
             Self::Sample(_) => true,
             Self::SupersededDeltaResolved => return None,
         };
@@ -195,28 +242,34 @@ impl UiNativePendingSurfaceSettlement {
             basis.attempt().diagnostic_value(),
         );
         let access = state.presentation_access();
-        let last_presentation = access.as_ref().and_then(|graphics| {
-            observation_for_physical_basis(
-                basis,
-                graphics,
-                &state.text_atlas,
-                retained,
-                pixels,
-                cost,
-                port_crossings,
-            )
-        });
+        let (last_presentation, intrinsic, alpha) = access
+            .as_ref()
+            .map(|graphics| {
+                observation_for_physical_basis(
+                    basis,
+                    graphics,
+                    &state.text_atlas,
+                    retained,
+                    pixels,
+                    cost,
+                    port_crossings,
+                )
+            })
+            .unwrap_or_else(|| (None, Box::new([]), Box::new([])));
         state.record_retained_frame_observation(
             crate::native::UiNativeRetainedFrameObservation::observed(
                 frame.diagnostic_value(),
+                basis,
                 kind,
                 (kind == crate::native::UiNativePresentationWorkKind::Sample).then_some(epoch),
                 pixels,
                 cost,
-                last_presentation.clone(),
+                port_crossings,
+                last_presentation,
+                intrinsic,
+                alpha,
             ),
         );
-        state.last_presentation = last_presentation;
         if resolve_required {
             state.lifecycle.resolve_recovery(key);
         }
@@ -253,42 +306,49 @@ fn observation_for_physical_basis(
     pixels: [[u8; 4]; 2],
     cost: worth_ui_host_contract::UiHostPresentationCostReport,
     port_crossings: u8,
-) -> Option<crate::native::UiNativePresentationObservation> {
-    let (order_ordinal, attribution) = retained.top_paint_attribution()?;
+) -> (
+    Option<crate::native::UiNativePresentationObservation>,
+    Box<[crate::native::UiNativeGlyphObservation]>,
+    Box<[crate::native::UiNativeGlyphObservation]>,
+) {
+    let intrinsic = super::glyph_observation::intrinsic(retained, atlas, graphics.extent());
+    let alpha = super::glyph_observation::alpha(retained, atlas, graphics.extent());
     let [retained_baseline_rgba8, retained_center_rgba8] = pixels;
-    let bounds = attribution.bounds;
-    Some(crate::native::UiNativePresentationObservation::new(
-        crate::native::UiNativePresentationInput {
-            client_physical_size: graphics.extent(),
-            scale_factor_milli: (graphics.scale_factor() * 1_000.0).round() as u32,
-            source_rgba8: attribution.color.channels(),
-            retained_center_rgba8,
-            retained_baseline_rgba8,
-            presented_frame: retained.frame().diagnostic_value(),
-            semantic_surface: basis.surface().diagnostic_value(),
-            host_surface: basis.host_surface().diagnostic_value(),
-            binding_generation: basis.binding().diagnostic_value(),
-            mounted_instance: attribution.mounted_instance.diagnostic_value(),
-            node_receipt: attribution.node_receipt.diagnostic_value(),
-            presentation_attempt: basis.attempt().diagnostic_value(),
-            logical_bounds_milli: [
-                milli(bounds.x()),
-                milli(bounds.y()),
-                milli(bounds.width()),
-                milli(bounds.height()),
-            ],
-            order_ordinal: u16::try_from(order_ordinal).expect("native profile bounds paint order"),
-            port_crossings,
-            production_cost: basis.production_cost(),
-            cost,
-            alpha_glyphs: super::glyph_observation::alpha(retained, atlas, graphics.extent()),
-            intrinsic_glyphs: super::glyph_observation::intrinsic(
-                retained,
-                atlas,
-                graphics.extent(),
-            ),
-        },
-    ))
+    let observation = retained
+        .top_paint_attribution()
+        .map(|(order_ordinal, attribution)| {
+            let bounds = attribution.bounds;
+            crate::native::UiNativePresentationObservation::new(
+                crate::native::UiNativePresentationInput {
+                    client_physical_size: graphics.extent(),
+                    scale_factor_milli: (graphics.scale_factor() * 1_000.0).round() as u32,
+                    source_rgba8: attribution.color.channels(),
+                    retained_center_rgba8,
+                    retained_baseline_rgba8,
+                    presented_frame: retained.frame().diagnostic_value(),
+                    semantic_surface: basis.surface().diagnostic_value(),
+                    host_surface: basis.host_surface().diagnostic_value(),
+                    binding_generation: basis.binding().diagnostic_value(),
+                    mounted_instance: attribution.mounted_instance.diagnostic_value(),
+                    node_receipt: attribution.node_receipt.diagnostic_value(),
+                    presentation_attempt: basis.attempt().diagnostic_value(),
+                    logical_bounds_milli: [
+                        milli(bounds.x()),
+                        milli(bounds.y()),
+                        milli(bounds.width()),
+                        milli(bounds.height()),
+                    ],
+                    order_ordinal: u16::try_from(order_ordinal)
+                        .expect("native profile bounds paint order"),
+                    port_crossings,
+                    production_cost: basis.production_cost(),
+                    cost,
+                    alpha_glyphs: alpha.clone(),
+                    intrinsic_glyphs: intrinsic.clone(),
+                },
+            )
+        });
+    (observation, intrinsic, alpha)
 }
 
 fn milli(value: f32) -> i64 {

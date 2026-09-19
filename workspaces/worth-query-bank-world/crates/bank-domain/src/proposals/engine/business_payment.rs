@@ -20,21 +20,7 @@ impl BankProposalEngine {
         initiator: BankPrincipalId,
         input: &InitiateBusinessPayment,
     ) -> Result<BankInvariantApprovedProposal, BankProposalDenial> {
-        if !snapshot.is_known_principal(initiator) {
-            return Err(BankProposalDenial::UnknownPrincipal);
-        }
-        if snapshot.business_account(input.business) != Some(input.from) {
-            return Err(BankProposalDenial::AccountOwnershipMismatch);
-        }
-        let destination = snapshot
-            .primary_account(input.recipient)
-            .ok_or(BankProposalDenial::UnknownRecipient)?;
-        ensure_open(snapshot, input.from)?;
-        ensure_open(snapshot, destination)?;
-        if destination == input.from {
-            return Err(BankProposalDenial::SelfTransfer);
-        }
-
+        let destination = validate_business_payment(snapshot, initiator, input)?;
         let payload = CanonicalProposalPayload::new("initiate-business-payment")
             .u64("initiator", initiator.get())
             .u64("business", input.business.get())
@@ -42,15 +28,8 @@ impl BankProposalEngine {
             .text("destination", &destination.canonical_text())
             .i64("amount-minor-units", input.amount.minor_units());
         let intent = BankIdempotencyClaim::derive(binding, key, payload);
+        let payment = business_payment(intent, destination, initiator, input);
         let mut proposed = snapshot.clone();
-        let payment = BusinessPayment::pending(
-            crate::model::PaymentId::from_operation(intent.key().bytes(), 0),
-            input.business,
-            input.from,
-            destination,
-            initiator,
-            input.amount,
-        );
         proposed.insert_payment(payment.clone());
         complete_proposal(
             snapshot,
@@ -58,6 +37,16 @@ impl BankProposalEngine {
             intent,
             vec![BankProposedEffect::CreatePayment(payment)],
         )
+    }
+
+    pub fn decide_initiate_business_payment_from_application(
+        snapshot: &BankSnapshot,
+        idempotency: BankIdempotencyClaim,
+        initiator: BankPrincipalId,
+        input: &InitiateBusinessPayment,
+    ) -> Result<BusinessPayment, BankProposalDenial> {
+        let destination = validate_business_payment(snapshot, initiator, input)?;
+        Ok(business_payment(idempotency, destination, initiator, input))
     }
 
     pub fn prepare_approve_payment(
@@ -211,6 +200,44 @@ impl BankProposalEngine {
             }],
         )
     }
+}
+
+fn validate_business_payment(
+    snapshot: &BankSnapshot,
+    initiator: BankPrincipalId,
+    input: &InitiateBusinessPayment,
+) -> Result<crate::model::AccountId, BankProposalDenial> {
+    if !snapshot.is_known_principal(initiator) {
+        return Err(BankProposalDenial::UnknownPrincipal);
+    }
+    if snapshot.business_account(input.business) != Some(input.from) {
+        return Err(BankProposalDenial::AccountOwnershipMismatch);
+    }
+    let destination = snapshot
+        .primary_account(input.recipient)
+        .ok_or(BankProposalDenial::UnknownRecipient)?;
+    ensure_open(snapshot, input.from)?;
+    ensure_open(snapshot, destination)?;
+    if destination == input.from {
+        return Err(BankProposalDenial::SelfTransfer);
+    }
+    Ok(destination)
+}
+
+fn business_payment(
+    idempotency: BankIdempotencyClaim,
+    destination: crate::model::AccountId,
+    initiator: BankPrincipalId,
+    input: &InitiateBusinessPayment,
+) -> BusinessPayment {
+    BusinessPayment::pending(
+        crate::model::PaymentId::from_operation(idempotency.key().bytes(), 0),
+        input.business,
+        input.from,
+        destination,
+        initiator,
+        input.amount,
+    )
 }
 
 fn pending_payment(

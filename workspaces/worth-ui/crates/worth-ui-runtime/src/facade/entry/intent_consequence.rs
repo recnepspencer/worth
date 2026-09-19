@@ -12,6 +12,11 @@ use crate::runtime::intent_execution::{
 #[path = "intent_consequence/portal_service_request.rs"]
 mod portal_service_request;
 use portal_service_request::{portal_placement_stop_reason, portal_service_request};
+#[path = "intent_consequence/query_restoration.rs"]
+mod query_restoration;
+use query_restoration::{restore_query_from_batch, restore_query_from_facts};
+#[path = "intent_consequence/stop.rs"]
+mod stop;
 
 impl WorthUiActiveApplicationSession {
     pub fn publish_intent_consequences(
@@ -74,6 +79,8 @@ impl WorthUiActiveApplicationSession {
         policy: crate::runtime::rebind::UiRebindExecutionPolicy,
         execution: crate::runtime::rebind::UiRebindExecutionRequest,
     ) -> UiIntentConsequencePublicationOutcome<'_> {
+        let mut portal_binding_stage = None;
+        let mut authored_portal_policy = None;
         let explicit_portal_transition = match handoff.runtime_service_destination() {
             Some(crate::capability::UiIntentRuntimeServiceDestination::InvokeCommand) => {
                 if handoff.command_route().is_none() {
@@ -117,12 +124,29 @@ impl WorthUiActiveApplicationSession {
                 let resolved_owner = self
                     .mounted
                     .current_portal_owner_for_child(handoff.target().mounted_instance());
-                let request = portal_service_request(
+                let request = match portal_service_request(
                     &handoff,
                     destination,
                     presented_viewport,
                     resolved_owner,
-                );
+                ) {
+                    Ok(request) => request,
+                    Err(denial) => {
+                        return self.stop_intent_consequence(
+                            handoff,
+                            UiIntentConsequenceStopReason::RuntimeServicePortalPlacement(
+                                portal_placement_stop_reason(denial),
+                            ),
+                        )
+                    }
+                };
+                let extent = match self.mounted.current_portal_content_extent(handoff.target().mounted_instance()) {
+                    Ok(extent) => extent,
+                    Err(_) => return self.stop_intent_consequence(handoff,
+                        UiIntentConsequenceStopReason::RuntimeServicePortalPlacement(
+                            crate::runtime::intent_execution::UiIntentPortalPlacementStopReason::IncompatibleCoordinateSpace)),
+                };
+                let request = request.with_content_extent(extent);
                 let Some(portal) = self.portal.as_ref() else {
                     return self.stop_intent_consequence(
                         handoff,
@@ -131,10 +155,39 @@ impl WorthUiActiveApplicationSession {
                         ),
                     );
                 };
-                match portal.prepare(request) {
+                if let Some(declaration) = request.declared_portal() {
+                    portal_binding_stage = match self.admit_authored_portal_open(
+                        declaration,
+                        request.portal(),
+                        request.semantic_surface(),
+                    ) {
+                        Ok(stage) => Some(stage),
+                        Err(denial) => {
+                            return self.stop_intent_consequence(
+                                handoff,
+                                UiIntentConsequenceStopReason::RuntimeServicePortalBinding(
+                                    denial.stop_reason(),
+                                ),
+                            );
+                        }
+                    };
+                    authored_portal_policy = self.authored_portal_policy(declaration);
+                }
+                let prepared = match authored_portal_policy {
+                    Some(policy) => portal.prepare_authored(request, policy),
+                    None => portal.prepare(request),
+                };
+                match prepared {
                     Ok(transition) => Some(transition),
                     Err(
-                        crate::runtime::portal::UiPortalServiceTransitionDenial::RevisionExhausted,
+                        crate::runtime::portal::UiPortalServiceTransitionDenial::RevisionExhausted
+                        | crate::runtime::portal::UiPortalServiceTransitionDenial::StackOrdinalExhausted
+                        | crate::runtime::portal::UiPortalServiceTransitionDenial::LiveRowCapacityExceeded { .. }
+                        | crate::runtime::portal::UiPortalServiceTransitionDenial::StackOrdinalConflict
+                        | crate::runtime::portal::UiPortalServiceTransitionDenial::PortalNotLive
+                        | crate::runtime::portal::UiPortalServiceTransitionDenial::PortalSurfaceMismatch
+                        | crate::runtime::portal::UiPortalServiceTransitionDenial::ReplacementNotTopmost
+                        | crate::runtime::portal::UiPortalServiceTransitionDenial::DescendantExitRetentionPending,
                     ) => {
                         return self.stop_intent_consequence(
                             handoff,
@@ -162,9 +215,23 @@ impl WorthUiActiveApplicationSession {
             && handoff.interaction_family()
                 == crate::capability::UiSemanticInteractionFamily::SelectionCommit
         {
+            let semantic_surface = match self
+                .mounted
+                .current_semantic_surface_for_presentation(handoff.target().presentation())
+            {
+                Ok(surface) => surface,
+                Err(_) => {
+                    return self.stop_intent_consequence(
+                        handoff,
+                        UiIntentConsequenceStopReason::RuntimeServiceTransitionExhausted,
+                    );
+                }
+            };
             match self.portal.as_ref().map(|portal| {
                 portal.prepare_dismissal(
-                    crate::runtime::portal::UiPortalDismissalTrigger::AcceptedSelection,
+                    crate::runtime::portal::UiPortalDismissalTrigger::AcceptedSelection {
+                        semantic_surface,
+                    },
                     None,
                     handoff.idempotency(),
                 )
@@ -187,6 +254,17 @@ impl WorthUiActiveApplicationSession {
                 Some(Err(crate::runtime::portal::UiPortalServiceTransitionDenial::StalePlan)) => {
                     unreachable!("portal dismissal preparation does not mutate its revision")
                 }
+                Some(Err(
+                    crate::runtime::portal::UiPortalServiceTransitionDenial::StackOrdinalExhausted,
+                )) => unreachable!("portal dismissal does not reserve a stack ordinal"),
+                Some(Err(
+                    crate::runtime::portal::UiPortalServiceTransitionDenial::LiveRowCapacityExceeded { .. }
+                    | crate::runtime::portal::UiPortalServiceTransitionDenial::PortalNotLive
+                    | crate::runtime::portal::UiPortalServiceTransitionDenial::PortalSurfaceMismatch
+                    | crate::runtime::portal::UiPortalServiceTransitionDenial::ReplacementNotTopmost
+                    | crate::runtime::portal::UiPortalServiceTransitionDenial::StackOrdinalConflict
+                    | crate::runtime::portal::UiPortalServiceTransitionDenial::DescendantExitRetentionPending,
+                )) => unreachable!("portal dismissal targets one current live row"),
                 Some(Err(crate::runtime::portal::UiPortalServiceTransitionDenial::Placement(
                     denial,
                 ))) => {
@@ -233,7 +311,7 @@ impl WorthUiActiveApplicationSession {
                     return self.stop_intent_consequence(
                         handoff,
                         UiIntentConsequenceStopReason::IntentPostureIdentityExhausted,
-                    )
+                    );
                 }
             }
         } else {
@@ -246,11 +324,7 @@ impl WorthUiActiveApplicationSession {
             handoff.take_query_projection(),
         );
         debug_assert!(!batch.is_empty());
-        let observation = match prepare_intent_consequence_observation(
-            &mut self.application,
-            self.identity,
-            batch,
-        ) {
+        let observation = match prepare_intent_consequence_observation(self, batch) {
             Ok(observation) => observation,
             Err(stop) => {
                 restore_query_from_batch(&mut handoff, *stop.batch);
@@ -269,7 +343,7 @@ impl WorthUiActiveApplicationSession {
             Ok(scope) => scope,
             Err(stop) => {
                 let (denial, change) = stop.into_parts();
-                let (_, facts, _) = change.into_parts();
+                let (_, facts, _, _) = change.into_parts();
                 return self.stop_intent_consequence_from_facts(
                     handoff,
                     UiIntentConsequenceStopReason::AffectedScope(Box::new(denial)),
@@ -311,6 +385,7 @@ impl WorthUiActiveApplicationSession {
             posture: observation.posture,
             consequence: handoff,
             portal_transition,
+            portal_binding_stage,
             portal_proposal: None,
             query_reference,
         };
@@ -319,45 +394,4 @@ impl WorthUiActiveApplicationSession {
             Err(stop) => UiIntentConsequencePublicationOutcome::Stopped(stop),
         }
     }
-
-    fn stop_intent_consequence(
-        &mut self,
-        handoff: UiIntentConsequenceHandoff,
-        reason: UiIntentConsequenceStopReason,
-    ) -> UiIntentConsequencePublicationOutcome<'_> {
-        UiIntentConsequencePublicationOutcome::Stopped(
-            self.intent_execution
-                .retain_consequence_handoff(handoff, reason),
-        )
-    }
-
-    fn stop_intent_consequence_from_facts(
-        &mut self,
-        mut handoff: UiIntentConsequenceHandoff,
-        reason: UiIntentConsequenceStopReason,
-        facts: Box<[crate::fact_contract::UiProducedFact]>,
-    ) -> UiIntentConsequencePublicationOutcome<'_> {
-        restore_query_from_facts(&mut handoff, facts);
-        self.stop_intent_consequence(handoff, reason)
-    }
-}
-
-fn restore_query_from_batch(
-    handoff: &mut UiIntentConsequenceHandoff,
-    batch: crate::runtime::observation::UiIntentConsequenceObservationBatch,
-) {
-    let (_, query, projection) = batch.into_parts();
-    if let Some(query) = query {
-        handoff.restore_query_consequence(query);
-    }
-    if let Some(projection) = projection {
-        handoff.restore_query_projection(projection);
-    }
-}
-
-fn restore_query_from_facts(
-    handoff: &mut UiIntentConsequenceHandoff,
-    facts: Box<[crate::fact_contract::UiProducedFact]>,
-) {
-    handoff.restore_query_from_facts(facts);
 }

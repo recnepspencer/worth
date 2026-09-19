@@ -54,8 +54,9 @@ impl WorthQueryDirectRunAffinity {
     pub(super) fn initial(attempt: WorthQueryDirectExecutionResourceAttempt) -> Self {
         let ordinal = next_managed_logical_run_ordinal(&NEXT_MANAGED_LOGICAL_RUN)
             .expect("managed logical-run identity space must not be exhausted");
-        let provider_work =
-            WorthQueryManagedProviderWorkLedger::new(attempt.provider_session().closed_identity());
+        let provider_work = WorthQueryManagedProviderWorkLedger::new(
+            attempt.managed_provider_session().closed_identity(),
+        );
         Self {
             logical: Arc::from(format!("managed-logical-run:{ordinal}")),
             attempt,
@@ -124,7 +125,7 @@ impl WorthQueryDirectRunAffinity {
     }
 
     pub(super) fn provider_session_description(&self) -> &str {
-        self.attempt.provider_session().identity()
+        self.attempt.managed_provider_session().identity()
     }
 
     pub(super) fn retained_capacity_reservation_count(&self) -> usize {
@@ -180,7 +181,7 @@ impl WorthQueryDirectRunAffinity {
     pub(super) fn provider_plan_session(
         &self,
     ) -> &crate::domain_computation::WorthQueryExecutionProviderSession {
-        self.attempt.provider_session()
+        self.attempt.managed_provider_session()
     }
 
     pub(super) fn provider_plan_resources(
@@ -212,12 +213,14 @@ impl WorthQueryDirectRunAffinity {
         crate::domain_computation::WorthQueryGraphProviderCall,
         crate::domain_computation::WorthQueryGraphCallBindingDenial,
     > {
-        self.attempt.provider_session().bind_graph_provider_call(
-            graph_authority,
-            request,
-            self.attempt.evidence(),
-            self.attempt.resources().shared_envelope(),
-        )
+        self.attempt
+            .managed_provider_session()
+            .bind_graph_provider_call(
+                graph_authority,
+                request,
+                self.attempt.evidence(),
+                self.attempt.resources().shared_envelope(),
+            )
     }
 
     pub(super) fn preflight_readmission_call(

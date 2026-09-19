@@ -1,4 +1,10 @@
+mod fork_growth;
+mod insertion;
+mod persistent_fork;
+use crate::data::retained_storage::RetainedStorageBacking;
 use serde::{Deserialize, Serialize};
+
+mod retained_charge;
 use std::hash::{Hash, Hasher};
 use std::marker::PhantomData;
 use std::sync::Arc;
@@ -37,7 +43,7 @@ struct FlatSegments<T> {
 enum SegmentedStorage<T: Clone> {
     Exclusive(FlatSegments<T>),
     ForkShared {
-        base: Arc<FlatSegments<T>>,
+        base: Arc<RetainedStorageBacking<FlatSegments<T>>>,
         appended: crate::data::persistent_vector::PersistentVector<Vec<T>>,
     },
 }
@@ -90,6 +96,19 @@ where
         }
     }
 
+    /// Constant-time guard against entering the lazy reconstruction branch.
+    /// This is not a validation of arbitrary interner contents or provenance.
+    pub(crate) fn retained_interner_requires_reconstruction(&self) -> bool {
+        self.interner.is_empty() && self.live_segment_count() != 0
+    }
+
+    pub(crate) fn lookup_steps(&self) -> usize {
+        match &self.storage {
+            SegmentedStorage::Exclusive(_) => 4,
+            SegmentedStorage::ForkShared { appended, .. } => appended.lookup_steps() + 4,
+        }
+    }
+
     pub fn get(&self, id: Id) -> &[T] {
         match id.index() {
             Some(index) => self.segment_at(index - 1),
@@ -98,32 +117,7 @@ where
     }
 
     pub fn insert_from_slice(&mut self, items: &[T]) -> Id {
-        if items.is_empty() {
-            return Id::EMPTY;
-        }
-        self.rebuild_interner_if_needed();
-        let hash = hash_slice(items);
-        if let Some(candidates) = self.interner.get(&hash) {
-            for &candidate in candidates {
-                if self.get(candidate) == items {
-                    return candidate;
-                }
-            }
-        }
-        match &mut self.storage {
-            SegmentedStorage::Exclusive(flat) => {
-                let start = checked_segment_component(flat.items.len(), "segment start");
-                flat.items.extend_from_slice(items);
-                flat.segments.push(Segment {
-                    start,
-                    len: checked_segment_component(items.len(), "segment length"),
-                });
-            }
-            SegmentedStorage::ForkShared { appended, .. } => appended.push_back(items.to_vec()),
-        }
-        let id = Id::from_index(self.live_segment_count());
-        self.interner.entry(hash).or_default().push(id);
-        id
+        self.prepare_insertion(items).publish()
     }
 
     #[cfg(test)]
@@ -175,31 +169,6 @@ where
         Self {
             storage: SegmentedStorage::Exclusive(flat),
             interner: self.interner.operational_clone(),
-            id: PhantomData,
-        }
-    }
-
-    pub(crate) fn fork_persistent(&mut self) -> Self {
-        if let SegmentedStorage::Exclusive(flat) = &mut self.storage {
-            let base = Arc::new(FlatSegments {
-                items: std::mem::take(&mut flat.items),
-                segments: std::mem::take(&mut flat.segments),
-            });
-            self.storage = SegmentedStorage::ForkShared {
-                base,
-                appended: crate::data::persistent_vector::PersistentVector::new(),
-            };
-        }
-        let storage = match &mut self.storage {
-            SegmentedStorage::ForkShared { base, appended } => SegmentedStorage::ForkShared {
-                base: Arc::clone(base),
-                appended: appended.fork_persistent(),
-            },
-            SegmentedStorage::Exclusive(_) => unreachable!("fork converts segmented storage"),
-        };
-        Self {
-            storage,
-            interner: self.interner.fork_persistent(),
             id: PhantomData,
         }
     }

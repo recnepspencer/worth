@@ -1,3 +1,11 @@
+mod focus_settlement;
+use focus_settlement::{place_reconciled_focus, reconcile_focus_after_published_frame_with_ports};
+mod observation;
+mod prepared;
+mod reconciliation;
+
+pub(super) use observation::record_mounted_observation;
+
 use crate::mounting::{
     UiMountedFrameOutcome, UiMountedFramePublicationReceipt, UiMountedPresentationInFlight,
     UiMountedPresentationOutcome,
@@ -6,65 +14,11 @@ use crate::mounting::{
 use super::WorthUiActiveApplicationSession;
 
 impl WorthUiActiveApplicationSession {
-    pub(crate) fn present_prepared_mounted_frame_internal(
-        &mut self,
-        frame: crate::mounting::UiPreparedMountedFrame,
-        deadline: worth_ui_host_contract::UiPresentationDeadline,
-        now: u64,
-    ) -> UiMountedFrameOutcome {
-        let transition =
-            self.mounted
-                .present_prepared_frame(&self.host_session, frame, deadline, now);
-        self.finish_mounted_transition(transition)
-    }
-
-    pub(crate) fn present_prepared_superseding_mounted_frame_internal(
-        &mut self,
-        frame: crate::mounting::UiPreparedMountedFrame,
-        predecessor: crate::mounting::UiMountedSupersedingPresentationBasis,
-        deadline: worth_ui_host_contract::UiPresentationDeadline,
-        now: u64,
-    ) -> UiMountedFrameOutcome {
-        let transition = self.mounted.present_prepared_superseding_frame(
-            &self.host_session,
-            frame,
-            predecessor,
-            deadline,
-            now,
-        );
-        self.finish_mounted_transition(transition)
-    }
-
-    pub fn present_current_mounted_frame_for_reconciliation(
-        &mut self,
-        replacements: &[crate::mounting::UiMountedSurfaceReconciliationBinding],
-        deadline: worth_ui_host_contract::UiPresentationDeadline,
-        now: u64,
-    ) -> Result<UiMountedFrameOutcome, crate::mounting::UiMountedIdentityDenial> {
-        let transition = self.mounted.present_current_for_reconciliation(
-            &self.host_session,
-            replacements,
-            deadline,
-            now,
-        )?;
-        Ok(self.finish_mounted_transition(transition))
-    }
-
-    pub(crate) fn present_prepared_mounted_frame_for_reconciliation(
-        &mut self,
-        frame: crate::mounting::UiPreparedMountedFrame,
-        replacements: &[crate::mounting::UiMountedSurfaceReconciliationBinding],
-        deadline: worth_ui_host_contract::UiPresentationDeadline,
-        now: u64,
-    ) -> Result<UiMountedFrameOutcome, crate::mounting::UiMountedIdentityDenial> {
-        let transition = self.mounted.present_prepared_for_reconciliation(
-            &self.host_session,
-            frame,
-            replacements,
-            deadline,
-            now,
-        )?;
-        Ok(self.finish_mounted_transition(transition))
+    #[cfg(test)]
+    pub(crate) fn current_mounted_projection_rc_for_test(
+        &self,
+    ) -> Option<std::rc::Rc<crate::mounting::UiMountedProjectionFrame>> {
+        self.mounted.current_projection_rc_for_test()
     }
 
     pub fn complete_mounted_presentation(
@@ -72,6 +26,12 @@ impl WorthUiActiveApplicationSession {
         in_flight: UiMountedPresentationInFlight,
         now: u64,
     ) -> UiMountedFrameOutcome {
+        if !self.pending_mounted_owner_receipt_succession_is_current(in_flight.attempt()) {
+            let transition = self
+                .mounted
+                .supersede_presentation(&self.host_session, in_flight);
+            return self.finish_mounted_transition(transition);
+        }
         let transition = self
             .mounted
             .complete_presentation(&self.host_session, in_flight, now);
@@ -141,13 +101,17 @@ impl WorthUiActiveApplicationSession {
                 host_exchange: &mut self.host_exchange,
             },
             transition,
+            Some(&mut self.appearance_inspection),
+            Some(&mut self.presentation),
         );
+        self.overlay_composition_owners.settle(&outcome);
         if matches!(
             outcome,
             UiMountedFrameOutcome::Published(_) | UiMountedFrameOutcome::Reconciled(_)
         ) {
             self.reconcile_service_state_after_mounted_publication();
         }
+        self.settle_pending_mounted_owner_receipt_succession(&outcome);
         outcome
     }
 
@@ -213,12 +177,19 @@ pub(super) fn finish_mounted_transition(
     generation: &crate::facade::prepared_application_authority::WorthUiPreparedApplicationGenerationIdentity,
     host_exchange: &mut crate::host_exchange::WorthUiHostExchangeSessionState,
     transition: crate::mounting::UiMountedPublicationTransition,
+    appearance_inspection: Option<&mut crate::runtime::appearance::UiAppearanceInspectionProducer>,
+    appearance_presentation: Option<
+        &mut crate::runtime::presentation_state::UiApplicationPresentationState,
+    >,
+    overlay_composition_owners: Option<
+        &mut super::active_application_session::UiActiveOverlayCompositionOwners,
+    >,
 ) -> UiMountedFrameOutcome {
     let active_generation = crate::runtime::WorthUiActiveApplicationGenerationIdentity::current(
         application_session,
         generation,
     );
-    finish_mounted_transition_with_ports(
+    let outcome = finish_mounted_transition_with_ports(
         UiMountedPublicationSettlementPorts {
             mounted,
             focus,
@@ -229,18 +200,36 @@ pub(super) fn finish_mounted_transition(
             host_exchange,
         },
         transition,
-    )
+        appearance_inspection,
+        appearance_presentation,
+    );
+    if let Some(owners) = overlay_composition_owners {
+        owners.settle(&outcome);
+    }
+    outcome
 }
 
 fn finish_mounted_transition_with_ports(
     mut ports: UiMountedPublicationSettlementPorts<'_>,
     transition: crate::mounting::UiMountedPublicationTransition,
+    appearance_inspection: Option<&mut crate::runtime::appearance::UiAppearanceInspectionProducer>,
+    mut appearance_presentation: Option<
+        &mut crate::runtime::presentation_state::UiApplicationPresentationState,
+    >,
 ) -> UiMountedFrameOutcome {
-    let (outcome, observation) = transition.into_parts();
+    let (outcome, observation, appearance, hit_transition) = transition.into_parts();
     match &outcome {
         UiMountedFrameOutcome::Published(receipt)
         | UiMountedFrameOutcome::Unchanged(receipt)
         | UiMountedFrameOutcome::Reconciled(receipt) => {
+            if let (Some(presentation), Some(publication)) = (
+                appearance_presentation.as_deref_mut(),
+                ports
+                    .mounted
+                    .current_text_publication_for_frame(receipt.frame()),
+            ) {
+                presentation.settle_published_text(publication);
+            }
             ports.host_exchange.record_presented_frame(receipt.frame());
             reconcile_focus_after_published_frame_with_ports(&mut ports, receipt);
         }
@@ -249,52 +238,36 @@ fn finish_mounted_transition_with_ports(
     if let Some(observation) = observation {
         record_mounted_observation(ports.host_exchange, observation);
     }
-    outcome
-}
-
-fn reconcile_focus_after_published_frame_with_ports(
-    ports: &mut UiMountedPublicationSettlementPorts<'_>,
-    publication: &crate::mounting::UiMountedFramePublicationReceipt,
-) {
-    if let Some(portal) = ports.portal.as_deref_mut() {
-        rebind_portal_after_published_frame(portal, publication);
+    if let Some(appearance) = appearance {
+        let (invalidation, records) = appearance.into_parts();
+        match &outcome {
+            UiMountedFrameOutcome::Published(_)
+            | UiMountedFrameOutcome::Unchanged(_)
+            | UiMountedFrameOutcome::Reconciled(_) => {
+                if let Some(producer) = appearance_inspection {
+                    producer.record_frame_attempts(records);
+                }
+                if let (Some(presentation), Some(invalidation)) =
+                    (appearance_presentation, invalidation.as_ref())
+                {
+                    presentation.settle_appearance_invalidation(invalidation);
+                }
+            }
+            UiMountedFrameOutcome::RejectedBeforeEffects(_)
+            | UiMountedFrameOutcome::AdmissionDenied(_) => {
+                if let Some(producer) = appearance_inspection {
+                    producer.record_pre_effect_denials(records);
+                }
+            }
+            _ => {}
+        }
     }
-    let Some(focus) = ports.focus.as_deref_mut() else {
-        return;
-    };
-    let Some(snapshot) = ports.mounted.focus_participation_snapshot() else {
-        return;
-    };
-    let transition = focus
-        .reconcile_mounted_participation(&snapshot)
-        .expect("mounted participant bounds fit the focus owner counters")
-        .transition();
-    let Some(transition) = transition else {
-        return;
-    };
-    place_reconciled_focus(ports, Some(transition), publication);
-}
-
-fn place_reconciled_focus(
-    ports: &mut UiMountedPublicationSettlementPorts<'_>,
-    transition: Option<crate::runtime::focus::UiFocusTransitionReceipt>,
-    publication: &crate::mounting::UiMountedFramePublicationReceipt,
-) {
-    let Some(transition) = transition else {
-        return;
-    };
-    super::focus_placement::ports::UiFocusPlacementPorts::new(
-        ports.mounted,
+    if let Some(transition) = hit_transition {
         ports
-            .focus
-            .as_deref_mut()
-            .expect("focus placement requires installed Focus support"),
-        ports.interaction,
-        ports.host_session,
-        ports.active_generation.clone(),
-    )
-    .place(transition, publication)
-    .expect("reconciled Focus successor retains exact mounted presentation basis");
+            .interaction
+            .observe_presented_hit_transition(&transition, ports.mounted);
+    }
+    outcome
 }
 
 fn rebind_portal_after_published_frame(
@@ -307,21 +280,4 @@ fn rebind_portal_after_published_frame(
     publication.with_surface_presentations(|surfaces| {
         portal.rebind_published_presentations(publication.frame(), surfaces)
     });
-}
-
-pub(super) fn record_mounted_observation(
-    host_exchange: &mut crate::host_exchange::WorthUiHostExchangeSessionState,
-    observation: crate::mounting::UiMountedHostObservationTransition,
-) {
-    match observation {
-        crate::mounting::UiMountedHostObservationTransition::NeverPresented(frame) => {
-            host_exchange.record_never_presented_frame(frame);
-        }
-        crate::mounting::UiMountedHostObservationTransition::Rejected(frame) => {
-            host_exchange.record_rejected_frame(frame);
-        }
-        crate::mounting::UiMountedHostObservationTransition::Indeterminate { frame, bindings } => {
-            host_exchange.record_indeterminate_frame(frame, &bindings);
-        }
-    }
 }

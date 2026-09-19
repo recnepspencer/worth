@@ -45,7 +45,7 @@ pub use external_effect::{
     WorthQueryExternalTransportOutcome,
 };
 pub use recovery_handle::{
-    WorthQueryOpaqueRecoveryWireIdentity, WorthQueryRecoveryHandle,
+    WorthQueryOpaqueRecoveryWireIdentity, WorthQueryRecoveryClaimStatus, WorthQueryRecoveryHandle,
     WorthQueryRecoveryHandleBinding, WorthQueryRecoveryHandleDenial,
     WorthQueryRecoveryHandleDenialKind,
 };
@@ -63,6 +63,7 @@ pub use recovery_progression::{
     WorthQueryRecoveryExpiryDecision, WorthQueryRecoveryExpiryEvaluation,
     WorthQueryRecoveryInspectAuthority, WorthQueryRecoveryInspectionView,
     WorthQueryRecoveryReconcileAdmission, WorthQueryRecoverySafeRetryAdmission,
+    WorthQueryRecoverySafeRetryDenial,
 };
 pub use redo_admission::WorthQueryRedoAdmission;
 pub use redo_denial::{WorthQueryRedoDenial, WorthQueryRedoDenialKind};

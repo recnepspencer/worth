@@ -150,3 +150,89 @@ fn worker_portable_publication_rejects_invalid_recipe_aspect_without_partial_sou
     assert!(worker_shell.read_value("base").is_err());
     assert!(worker_shell.read_value("derived").is_err());
 }
+
+#[test]
+fn definition_envelope_publication_marks_the_envelope_public_outputs() {
+    let mut exporter = RuntimeCore::new(RuntimePolicySpec::default()).unwrap();
+    exporter
+        .define_source(SourceSpec {
+            id: "counter".to_owned(),
+            initial: SignalValue::Number(1.0),
+            produces_aspects: None,
+        })
+        .unwrap();
+    exporter
+        .define_web_output(
+            "doubleCounter".to_owned(),
+            RecipeSpec {
+                id: "doubleCounter".to_owned(),
+                reads: vec![RecipeReadSpec::LegacyId("counter".to_owned())],
+                expr: Expr::Sum {
+                    args: vec![read("counter"), read("counter")],
+                },
+                when: None,
+                identity: Some(IdentitySpec::Exact),
+                produces_aspects: None,
+            },
+        )
+        .unwrap();
+    exporter
+        .define_recipe(RecipeSpec {
+            id: "privateTriple".to_owned(),
+            reads: vec![RecipeReadSpec::LegacyId("counter".to_owned())],
+            expr: Expr::Sum {
+                args: vec![read("counter"), read("counter"), read("counter")],
+            },
+            when: None,
+            identity: Some(IdentitySpec::Exact),
+            produces_aspects: None,
+        })
+        .unwrap();
+    let envelope = exporter.export_definitions().unwrap();
+    assert_eq!(
+        envelope.worker_public_output_ids,
+        vec!["doubleCounter".to_owned()]
+    );
+
+    let mut imported = RuntimeCore::new(RuntimePolicySpec::default()).unwrap();
+    imported
+        .publish_callback_free_definition_envelope(envelope)
+        .unwrap();
+    assert!(imported.is_web_output_signal("doubleCounter"));
+    assert!(!imported.is_web_output_signal("privateTriple"));
+    assert_eq!(
+        imported
+            .export_definitions()
+            .unwrap()
+            .worker_public_output_ids,
+        vec!["doubleCounter".to_owned()]
+    );
+
+    // Same transaction, same committed truth: the published output is
+    // standing demand in both runtimes, so both settle it at commit.
+    let transaction = vec![TransactionOp::Set {
+        id: "counter".to_owned(),
+        value: SignalValue::Number(4.0),
+        aspect: None,
+        aspects: None,
+    }];
+    exporter.apply_transaction(transaction.clone()).unwrap();
+    imported.apply_transaction(transaction).unwrap();
+    assert_eq!(
+        exporter.peek_value("doubleCounter").unwrap(),
+        SignalValue::Number(8.0)
+    );
+    assert_eq!(
+        imported.peek_value("doubleCounter").unwrap(),
+        SignalValue::Number(8.0)
+    );
+    let exporter_digest = exporter
+        .branch_state_proof(exporter.current_branch().id.0)
+        .unwrap()
+        .state_digest;
+    let imported_digest = imported
+        .branch_state_proof(imported.current_branch().id.0)
+        .unwrap()
+        .state_digest;
+    assert_eq!(exporter_digest, imported_digest);
+}

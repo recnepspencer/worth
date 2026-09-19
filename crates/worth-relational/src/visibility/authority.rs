@@ -1,10 +1,4 @@
 use crate::runtime::RelationalRuntime;
-#[cfg(test)]
-use crate::runtime::SnapshotGuard;
-#[cfg(test)]
-use crate::snapshots::data::SnapshotReadPolicy;
-#[cfg(test)]
-use crate::visibility::cache_state::retained_state;
 use crate::visibility::exact_commit_snapshot::{
     open_retained_commit_snapshot, projection_binding_denial,
     RelationalRetainedCommitEntityProjection, RelationalRetainedCommitSnapshot,
@@ -136,18 +130,5 @@ impl<'runtime> VisibilityAuthority<'runtime> {
         let work = crate::visibility::exact_commit_snapshot::RelationalRetainedCommitProjectionWork::opened_snapshot()
             .record_projection(usize::from(value.is_some()), projected_fields);
         Ok(RelationalRetainedCommitEntityProjection::new(value, work))
-    }
-
-    #[cfg(test)]
-    pub(crate) fn pin_snapshot(
-        &self,
-        version_id: crate::identity::data::VersionId,
-    ) -> Option<SnapshotGuard> {
-        let state = retained_state(self.runtime, version_id)?;
-        let basis = state.basis.exact()?.clone();
-        let handle = self
-            .open_active_snapshot_for_basis(basis, SnapshotReadPolicy::ImmutablePinned)
-            .ok()?;
-        Some(SnapshotGuard::new(handle))
     }
 }

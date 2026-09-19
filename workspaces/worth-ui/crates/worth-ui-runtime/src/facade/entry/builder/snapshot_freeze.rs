@@ -1,9 +1,11 @@
 use crate::capability::{
-    validate_registration_candidates, CapabilityRegistrationReport, CapabilitySnapshotBuilder,
-    CapabilitySnapshotFreezeInput, CapabilitySupportCatalog, CommandAcceptedRegistrationProof,
-    CommandProjectionAcceptedRegistrationProof, ComponentAcceptedRegistrationProof,
-    IconAcceptedRegistrationProof, IntentDefinitionAcceptedRegistrationProof,
-    MosaicPlacementAcceptedRegistrationProof, MosaicRegionAcceptedRegistrationProof,
+    validate_registration_candidates, AppearanceRoleAcceptedRegistrationProof,
+    AppearanceThemeAcceptedRegistrationProof, CapabilityRegistrationReport,
+    CapabilitySnapshotBuilder, CapabilitySnapshotFreezeInput, CapabilitySupportCatalog,
+    CommandAcceptedRegistrationProof, CommandProjectionAcceptedRegistrationProof,
+    ComponentAcceptedRegistrationProof, IconAcceptedRegistrationProof,
+    IntentDefinitionAcceptedRegistrationProof, MosaicPlacementAcceptedRegistrationProof,
+    MosaicRegionAcceptedRegistrationProof, MosaicSeamPaintAcceptedRegistrationProof,
     MosaicSizingAcceptedRegistrationProof, MosaicStateSlotAcceptedRegistrationProof,
     NativeCapabilityAcceptedRegistrationProof, PluginSlotAcceptedRegistrationProof,
     RegisteredCapabilitySet, RegistrationValidationReport, RegistryFamily,
@@ -16,7 +18,8 @@ use super::CapabilityRegistrationBuilder;
 
 impl CapabilityRegistrationBuilder {
     /// Freeze registered capabilities and return structured registration diagnostics.
-    pub fn freeze_with_registration_report(self) -> CapabilityRegistrationReport {
+    pub fn freeze_with_registration_report(mut self) -> CapabilityRegistrationReport {
+        self.record_mosaic_seam_diagnostics();
         let validation = validate_registration_candidates(
             &self.registration_candidates,
             self.diagnostic_richness,
@@ -33,6 +36,27 @@ impl CapabilityRegistrationBuilder {
         )
     }
 
+    fn record_mosaic_seam_diagnostics(&mut self) {
+        if self
+            .mosaic_region_registry
+            .seam_paint_matches_registered_regions()
+        {
+            return;
+        }
+        if let Some(candidate) = self.registration_candidates.iter_mut().find(|candidate| {
+            candidate.family_name() == crate::capability::MOSAIC_SEAM_PAINT_FAMILY_NAME
+                && candidate.identity_text()
+                    == crate::capability::MosaicRegionRegistry::SEAM_REGISTRATION_IDENTITY
+        }) {
+            candidate.record_descriptor_diagnostic(
+                crate::capability::RegistrationCandidateDiagnostic::new(
+                    crate::capability::CapabilityDiagnosticCode::MosaicSeamPaintRegionSetMismatch,
+                    "mosaic seam-paint contract must name exactly the registered region-kind set",
+                ),
+            );
+        }
+    }
+
     fn freeze_input(
         self,
         accepted: &AcceptedRegistryProofs,
@@ -41,6 +65,12 @@ impl CapabilityRegistrationBuilder {
     ) -> CapabilitySnapshotFreezeInput {
         CapabilitySnapshotFreezeInput {
             registered_capabilities,
+            appearance_roles: self
+                .appearance_role_registry
+                .freeze(&accepted.appearance_roles),
+            appearance_themes: self
+                .appearance_theme_registry
+                .freeze(&accepted.appearance_themes),
             commands: self.command_registry.freeze(&accepted.commands),
             command_projections: self
                 .command_projection_registry
@@ -51,7 +81,9 @@ impl CapabilityRegistrationBuilder {
                 .intent_definition_registry
                 .freeze(&accepted.intent_definitions),
             surfaces: self.surface_registry.freeze(&accepted.surfaces),
-            mosaic_regions: self.mosaic_region_registry.freeze(&accepted.mosaic_regions),
+            mosaic_regions: self
+                .mosaic_region_registry
+                .freeze(&accepted.mosaic_regions, &accepted.mosaic_seam_paint),
             mosaic_placement_policies: self
                 .mosaic_placement_registry
                 .freeze(&accepted.mosaic_placements),
@@ -78,6 +110,8 @@ impl CapabilityRegistrationBuilder {
 }
 
 struct AcceptedRegistryProofs {
+    appearance_roles: AppearanceRoleAcceptedRegistrationProof,
+    appearance_themes: AppearanceThemeAcceptedRegistrationProof,
     commands: CommandAcceptedRegistrationProof,
     command_projections: CommandProjectionAcceptedRegistrationProof,
     components: ComponentAcceptedRegistrationProof,
@@ -85,6 +119,7 @@ struct AcceptedRegistryProofs {
     intent_definitions: IntentDefinitionAcceptedRegistrationProof,
     surfaces: SurfaceAcceptedRegistrationProof,
     mosaic_regions: MosaicRegionAcceptedRegistrationProof,
+    mosaic_seam_paint: MosaicSeamPaintAcceptedRegistrationProof,
     mosaic_placements: MosaicPlacementAcceptedRegistrationProof,
     mosaic_sizing: MosaicSizingAcceptedRegistrationProof,
     mosaic_state_slots: MosaicStateSlotAcceptedRegistrationProof,
@@ -100,6 +135,8 @@ struct AcceptedRegistryProofs {
 impl AcceptedRegistryProofs {
     fn from_validation(validation: &RegistrationValidationReport) -> Self {
         Self {
+            appearance_roles: accepted(validation, RegistryFamily::AppearanceRole),
+            appearance_themes: accepted(validation, RegistryFamily::AppearanceTheme),
             commands: accepted(validation, RegistryFamily::Command),
             command_projections: accepted(validation, RegistryFamily::CommandProjection),
             components: accepted(validation, RegistryFamily::Component),
@@ -107,6 +144,7 @@ impl AcceptedRegistryProofs {
             intent_definitions: accepted(validation, RegistryFamily::IntentDefinition),
             surfaces: accepted(validation, RegistryFamily::Surface),
             mosaic_regions: accepted(validation, RegistryFamily::MosaicRegionKind),
+            mosaic_seam_paint: accepted(validation, RegistryFamily::MosaicSeamPaint),
             mosaic_placements: accepted(validation, RegistryFamily::MosaicPlacementPolicy),
             mosaic_sizing: accepted(validation, RegistryFamily::MosaicSizingContract),
             mosaic_state_slots: accepted(validation, RegistryFamily::MosaicStateSlot),
@@ -150,12 +188,15 @@ macro_rules! accepted_identity_proof {
 }
 
 accepted_identity_proof!(CommandAcceptedRegistrationProof);
+accepted_identity_proof!(AppearanceRoleAcceptedRegistrationProof);
+accepted_identity_proof!(AppearanceThemeAcceptedRegistrationProof);
 accepted_identity_proof!(CommandProjectionAcceptedRegistrationProof);
 accepted_identity_proof!(ComponentAcceptedRegistrationProof);
 accepted_identity_proof!(IconAcceptedRegistrationProof);
 accepted_identity_proof!(IntentDefinitionAcceptedRegistrationProof);
 accepted_identity_proof!(MosaicPlacementAcceptedRegistrationProof);
 accepted_identity_proof!(MosaicRegionAcceptedRegistrationProof);
+accepted_identity_proof!(MosaicSeamPaintAcceptedRegistrationProof);
 accepted_identity_proof!(MosaicSizingAcceptedRegistrationProof);
 accepted_identity_proof!(MosaicStateSlotAcceptedRegistrationProof);
 accepted_identity_proof!(NativeCapabilityAcceptedRegistrationProof);
@@ -166,3 +207,7 @@ accepted_identity_proof!(SurfaceAcceptedRegistrationProof);
 accepted_identity_proof!(TaskPresentationAcceptedRegistrationProof);
 accepted_identity_proof!(ThemeTokenAcceptedRegistrationProof);
 accepted_identity_proof!(ViewBindingAcceptedRegistrationProof);
+
+#[cfg(test)]
+#[path = "snapshot_freeze/mosaic_seam_region_set_mismatch_tests.rs"]
+mod mosaic_seam_region_set_mismatch_tests;

@@ -36,6 +36,7 @@ pub enum RelationalBranchBasisDenial {
     EmptyCommittedTargetMismatch,
     WrongImmutableTarget,
     MixedAxis(RelationalBranchBasisMismatchAxis),
+    MaterializationUnavailable,
     UnavailableRetainedTarget,
     RetentionCapacityExhausted,
     RetentionIdentityExhausted,

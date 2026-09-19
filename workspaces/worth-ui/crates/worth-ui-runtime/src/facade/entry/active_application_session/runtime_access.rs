@@ -20,6 +20,12 @@ impl super::WorthUiActiveApplicationSession {
         self.application.viewport_measurement_witnesses()
     }
 
+    pub(crate) fn host_measurement_capability(
+        &self,
+    ) -> crate::facade::WorthUiHostMeasurementCapability {
+        self.host_session.measurement_capability()
+    }
+
     #[cfg(any(test, feature = "certification-support"))]
     pub(crate) fn inspect_runtime(&self) -> crate::runtime::WorthUiActiveRuntimeObservation {
         self.application.inspect_active_runtime()

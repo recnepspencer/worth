@@ -1,6 +1,9 @@
 use std::fmt;
 
 pub(super) enum PlatformPulseTerminalError {
+    FocusPlacement(worth_ui::facade::app::UiFocusPlacementExecutionDenial),
+    ThemePreference(crate::theme_preference::PlatformPulseThemePreferenceDenial),
+    ThemeSwitch(super::theme::PlatformPulseThemeSwitchDenial),
     SourceWatcher(worth_ui::facade::source::WorthUiFilesystemWatcherDenial),
     FrameExecution(String),
     ProductCopy(worth_ui_native_platform::UiNativeApplicationProgramDenial),
@@ -9,6 +12,7 @@ pub(super) enum PlatformPulseTerminalError {
     NativeManagedSourceRebind(worth_ui::facade::app::WorthUiNativeManagedRebindStop),
     NativeManagedProgress(worth_ui::facade::app::WorthUiNativeManagedRebindDenial),
     NativeManagedAttribution(&'static str),
+    NativeRecoveredWithoutPublication,
     NativeProjection(super::projection::PlatformPulseProjectionRebindDenial),
     QueryLifecycle(crate::query_source::PlatformPulseQueryLifecycleDenial),
     QueryWatch(crate::query_source::PlatformPulseExternalValueWatchDenial),
@@ -25,6 +29,9 @@ pub(super) enum PlatformPulseTerminalError {
 impl fmt::Display for PlatformPulseTerminalError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::FocusPlacement(denial) => write!(formatter, "native Focus placement: {denial:?}"),
+            Self::ThemePreference(denial) => write!(formatter, "theme preference: {denial:?}"),
+            Self::ThemeSwitch(denial) => write!(formatter, "theme switch: {denial}"),
             Self::SourceWatcher(denial) => write!(formatter, "source watcher: {denial:?}"),
             Self::FrameExecution(detail) => {
                 write!(formatter, "mounted frame execution: {detail}")
@@ -39,6 +46,9 @@ impl fmt::Display for PlatformPulseTerminalError {
             }
             Self::NativeManagedProgress(denial) => {
                 write!(formatter, "native managed publication progress: {denial:?}")
+            }
+            Self::NativeRecoveredWithoutPublication => {
+                formatter.write_str("native predecessor recovered; successor remained unpublished")
             }
             Self::NativeManagedAttribution(detail) => {
                 write!(

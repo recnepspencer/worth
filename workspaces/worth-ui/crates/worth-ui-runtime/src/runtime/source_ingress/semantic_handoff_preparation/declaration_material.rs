@@ -20,6 +20,24 @@ pub(crate) struct WorthUiPreparedDeclarationMaterial {
 }
 
 impl WorthUiPreparedDeclarationMaterial {
+    pub(crate) fn admit_authored_component_references(
+        &mut self,
+        snapshot: &crate::capability::CapabilitySnapshot,
+    ) -> Result<
+        (),
+        (
+            usize,
+            crate::declaration::UiDeclarationComponentReferenceDenial,
+        ),
+    > {
+        for (declaration_index, artifact) in self.artifacts.iter_mut().enumerate() {
+            if let Err(reason) = artifact.admit_component_reference(snapshot) {
+                return Err((declaration_index, reason));
+            }
+        }
+        Ok(())
+    }
+
     pub(crate) fn identity(&self) -> &WorthUiPreparedDeclarationSourceIdentity {
         &self.identity
     }
@@ -31,6 +49,21 @@ impl WorthUiPreparedDeclarationMaterial {
         WorthUiPreparedDeclarationSourceIdentity,
     ) {
         (self.artifacts.into_vec(), self.identity)
+    }
+
+    pub(crate) fn admit_authored_appearance_attachments(
+        &mut self,
+        snapshot: &crate::capability::CapabilitySnapshot,
+    ) -> Result<(), (usize, crate::declaration::UiAppearanceRoleAttachmentDenial)> {
+        for (declaration_index, artifact) in self.artifacts.iter_mut().enumerate() {
+            if artifact.authored_appearance_role_attachment().is_none() {
+                continue;
+            }
+            if let Err(reason) = artifact.admit_appearance_role_attachment(snapshot) {
+                return Err((declaration_index, reason));
+            }
+        }
+        Ok(())
     }
 }
 

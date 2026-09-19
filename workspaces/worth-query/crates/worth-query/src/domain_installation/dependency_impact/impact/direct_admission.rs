@@ -78,12 +78,6 @@ impl WorthQueryAdmittedInvalidationImpact {
         self.delivery.performed_signal().is_some()
     }
 
-    pub(crate) fn correspondence_receipt(
-        &self,
-    ) -> &worth_runtime_bridge::facade::BridgeCorrespondenceDeliveryReceipt {
-        self.delivery.correspondence_receipt()
-    }
-
     pub(crate) fn observation(&self) -> WorthQueryAdmittedInvalidationObservation {
         WorthQueryAdmittedInvalidationObservation {
             truth: self.delivery.truth().clone(),

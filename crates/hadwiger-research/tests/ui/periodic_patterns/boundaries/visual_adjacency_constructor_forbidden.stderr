@@ -1,5 +1,0 @@
-error[E0599]: no function or associated item named `from_visual_adjacency_unchecked` found for struct `hadwiger_research::facade::PeriodicQuotientCell` in the current scope
- --> tests/ui/periodic_patterns/boundaries/visual_adjacency_constructor_forbidden.rs:4:35
-  |
-4 |     let _ = PeriodicQuotientCell::from_visual_adjacency_unchecked("looks-adjacent");
-  |                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ function or associated item not found in `hadwiger_research::facade::PeriodicQuotientCell`

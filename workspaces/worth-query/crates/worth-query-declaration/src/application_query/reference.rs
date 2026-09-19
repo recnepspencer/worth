@@ -1,6 +1,7 @@
 use std::marker::PhantomData;
 
 use super::ApplicationQueryMarkerIdentity;
+use crate::application_schema::ApplicationStructuredValueBinding;
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
 
 #[derive(Clone, Copy)]
@@ -21,18 +22,15 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
 {
     pub const fn from_declaration() -> Self
     where
-        Query: ApplicationQueryMarkerIdentity<
-            Schema = Schema,
-            Parameters = Parameters,
-            QueryResult = QueryResult,
-            Scope = Scope,
-        >,
+        Query: ApplicationQueryMarkerIdentity<Schema, Scope = Scope>,
+        Query::ParameterBinding: ApplicationStructuredValueBinding<Value = Parameters>,
+        Query::ResultBinding: ApplicationStructuredValueBinding<Value = QueryResult>,
     {
         Self {
             name: Query::IDENTIFIER,
             query_type: Query::QUERY_TYPE_NAME,
-            parameter_type: Query::PARAMETER_TYPE_NAME,
-            result_type: Query::RESULT_TYPE_NAME,
+            parameter_type: Query::ParameterBinding::IDENTITY_NAME,
+            result_type: Query::ResultBinding::IDENTITY_NAME,
             scope_type: Query::SCOPE_TYPE_NAME,
             _membership: ApplicationQueryDeclarationMembership,
             _marker: PhantomData,

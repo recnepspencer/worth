@@ -20,6 +20,12 @@ impl PulseExecutableWorld<Published<FinalRecovered>> {
         &self.state.stage.rebase_snapshot
     }
 
+    pub(crate) fn stopped_snapshot_evidence(
+        &self,
+    ) -> &crate::adjudication::ExecutableVisualSnapshotEvidence {
+        &self.state.stage.stopped.snapshot
+    }
+
     pub(crate) fn source_action_count(&self) -> u32 {
         let green = &self.state.stage.stopped.recovered.preserved.green;
         green.initial.prior.action.action_count()

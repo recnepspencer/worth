@@ -67,6 +67,27 @@ impl<'state> InvariantStateView<'state> {
         }
         relation_ids.into_iter().collect()
     }
+
+    pub(crate) fn relation_candidate_count(&self, entity_id: EntityId, outgoing: bool) -> usize {
+        [
+            self.state().get_partition(entity_id.partition_id),
+            self.state().base_partition(entity_id.partition_id),
+        ]
+        .into_iter()
+        .flatten()
+        .fold(0usize, |count, partition| {
+            let table = if outgoing {
+                &partition.adjacency
+            } else {
+                &partition.reverse_adjacency
+            };
+            count.saturating_add(
+                table
+                    .get(entity_id.slot_index())
+                    .map_or(0, |relations| relations.as_slice().len()),
+            )
+        })
+    }
 }
 
 struct SinglePartitionAccess<'partition> {

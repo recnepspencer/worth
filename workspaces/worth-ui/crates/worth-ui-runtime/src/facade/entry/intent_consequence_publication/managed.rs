@@ -237,9 +237,20 @@ impl DetachedUiIntentConsequenceInFlight {
         now_tick: u64,
     ) -> UiIntentConsequencePublicationOutcome<'session> {
         let (admitted, mounted) = self.into_admitted(session);
-        let outcome = admitted
-            .session
-            .complete_mounted_presentation(mounted, now_tick);
+        let outcome =
+            match admitted.session.complete_prepared_observed_frame(
+                mounted,
+                &admitted.transfer.observation,
+                now_tick,
+            ) {
+                Ok(outcome) => outcome,
+                Err(denial) => return stop_admitted(
+                    admitted,
+                    crate::runtime::intent_execution::UiIntentConsequenceStopReason::Preparation(
+                        Box::new(denial),
+                    ),
+                ),
+            };
         finish_progressed(admitted, outcome, now_tick)
     }
 
@@ -313,10 +324,23 @@ fn finish_progressed<'session>(
         );
     }
     let deadline = presentation_deadline(&admitted.plan);
-    let outcome = admitted.session.present_prepared_mounted_frame_internal(
-        rejected.into_frame(),
+    let frame = rejected.into_frame();
+    let outcome = match admitted.session.present_prepared_observed_frame(
+        frame,
+        &admitted.transfer.observation,
+        admitted.transfer.portal_proposal.as_ref(),
         deadline,
         now_tick,
-    );
+    ) {
+        Ok(outcome) => outcome,
+        Err(denial) => {
+            return stop_admitted(
+                admitted,
+                crate::runtime::intent_execution::UiIntentConsequenceStopReason::Preparation(
+                    Box::new(denial),
+                ),
+            )
+        }
+    };
     super::finish_completion(admitted, outcome)
 }

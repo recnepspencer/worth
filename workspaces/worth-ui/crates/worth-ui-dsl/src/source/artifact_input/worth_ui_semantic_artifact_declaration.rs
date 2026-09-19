@@ -16,6 +16,8 @@ pub struct WorthUiSemanticArtifactDeclaration {
     structural_tokens: Vec<UiDslStructuralToken>,
     posture_tokens: Vec<UiDslPostureToken>,
     support_tokens: Vec<UiDslSupportToken>,
+    component_reference: Option<crate::UiDslComponentReference>,
+    appearance_role_attachment: Option<crate::UiAppearanceRoleAttachmentDeclaration>,
     intent: Option<crate::WorthUiIntentDeclarationMeaning>,
     service: Option<crate::WorthUiServiceDeclarationMeaning>,
 }
@@ -30,6 +32,8 @@ impl WorthUiSemanticArtifactDeclaration {
             structural_tokens: Vec::new(),
             posture_tokens: Vec::new(),
             support_tokens: Vec::new(),
+            component_reference: None,
+            appearance_role_attachment: None,
             intent: None,
             service: None,
         }
@@ -60,6 +64,28 @@ impl WorthUiSemanticArtifactDeclaration {
         self
     }
 
+    pub fn with_component_reference(
+        mut self,
+        component: crate::UiDslComponentReference,
+    ) -> Result<Self, crate::UiDslComponentReferenceDenial> {
+        if self.component_reference.is_some() {
+            return Err(crate::UiDslComponentReferenceDenial::DuplicateReference);
+        }
+        self.component_reference = Some(component);
+        Ok(self)
+    }
+
+    pub fn with_appearance_role_attachment(
+        mut self,
+        attachment: crate::UiAppearanceRoleAttachmentDeclaration,
+    ) -> Result<Self, crate::UiAppearanceRoleAttachmentDeclarationDenial> {
+        if self.appearance_role_attachment.is_some() {
+            return Err(crate::UiAppearanceRoleAttachmentDeclarationDenial::DuplicateAttachment);
+        }
+        self.appearance_role_attachment = Some(attachment);
+        Ok(self)
+    }
+
     pub fn key(&self) -> &UiDslSemanticKey {
         &self.key
     }
@@ -86,6 +112,16 @@ impl WorthUiSemanticArtifactDeclaration {
 
     pub fn support_tokens(&self) -> &[UiDslSupportToken] {
         &self.support_tokens
+    }
+
+    pub fn component_reference(&self) -> Option<&crate::UiDslComponentReference> {
+        self.component_reference.as_ref()
+    }
+
+    pub fn appearance_role_attachment(
+        &self,
+    ) -> Option<&crate::UiAppearanceRoleAttachmentDeclaration> {
+        self.appearance_role_attachment.as_ref()
     }
 
     pub fn intent_declaration(&self) -> Option<&crate::WorthUiIntentDeclarationMeaning> {
@@ -132,6 +168,20 @@ impl WorthUiSemanticArtifactDeclaration {
         fold_values(digest, &self.structural_tokens);
         fold_values(digest, &self.posture_tokens);
         fold_values(digest, &self.support_tokens);
+        match &self.component_reference {
+            Some(component) => {
+                fold_u64(digest, 1);
+                component.fold_source_revision(digest);
+            }
+            None => fold_u64(digest, 0),
+        }
+        match &self.appearance_role_attachment {
+            Some(attachment) => {
+                fold_u64(digest, 1);
+                attachment.fold_source_revision(digest);
+            }
+            None => fold_u64(digest, 0),
+        }
         if let Some(intent) = &self.intent {
             intent.fold_source_revision(digest);
         }

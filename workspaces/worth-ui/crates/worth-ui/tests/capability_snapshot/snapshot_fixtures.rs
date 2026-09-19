@@ -4,8 +4,8 @@ use worth_ui::facade::declaration::{
     IconSourceDescriptor, NativeCapabilityDescriptor, NativeCapabilityFamily, NativeCapabilityId,
     NativePlatformPosture, PluginCapabilityPermission, PluginContributionFamily,
     PluginSlotContributionReference, PluginSlotDescriptor, PluginSlotDiagnostics, PluginSlotId,
-    PluginSlotOrdering, PluginSlotSupportPosture, ThemeColorValue, ThemeTokenDescriptor,
-    ThemeTokenFamily, ThemeTokenId, ThemeTokenSource, ThemeTokenValue,
+    PluginSlotOrdering, PluginSlotSupportPosture, ThemeTokenDescriptor, ThemeTokenFamily,
+    ThemeTokenId, ThemeTokenSource, ThemeTokenValue, UiThemeColor,
 };
 
 pub(crate) fn command(id: &str, label: &str) -> CommandDescriptor {
@@ -50,7 +50,7 @@ pub(crate) fn theme_token(id: &str) -> ThemeTokenDescriptor {
         theme_token_id(id),
         ThemeTokenFamily::text(),
         ThemeTokenSource::application(),
-        ThemeTokenValue::color(ThemeColorValue::hex("#3366ff").expect("valid color")),
+        ThemeTokenValue::color(UiThemeColor::parse("#3366ff").expect("valid color")),
     )
 }
 

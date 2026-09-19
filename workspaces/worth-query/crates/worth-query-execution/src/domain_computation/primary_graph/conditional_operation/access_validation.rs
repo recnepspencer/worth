@@ -1,6 +1,5 @@
 use worth_query_installation::facade::{
-    ApplicationFieldUnit, ApplicationSchema, ApplicationSchemaMember,
-    TypedApplicationIdentityValue, TypedApplicationValue, WritePosture,
+    ApplicationFieldUnit, ApplicationSchema, ApplicationSchemaMember, WritePosture,
 };
 
 use super::{
@@ -20,6 +19,7 @@ pub(super) fn validate_reconstruction_access<
     PrincipalMapping,
     Principal,
     PrincipalIdentity,
+    PrincipalIdentityBinding,
     Scope,
     ScopeAspect,
     ScopeField,
@@ -36,6 +36,7 @@ pub(super) fn validate_reconstruction_access<
         PrincipalMapping,
         Principal,
         PrincipalIdentity,
+        PrincipalIdentityBinding,
         Scope,
         ScopeAspect,
         ScopeField,
@@ -48,8 +49,13 @@ pub(super) fn validate_reconstruction_access<
 ) -> Result<(), WorthQueryConditionalRuntimeInstallationDenial>
 where
     Schema: ApplicationSchema,
-    PrincipalIdentity: TypedApplicationIdentityValue,
-    ScopeValue: TypedApplicationValue,
+    PrincipalIdentityBinding:
+        worth_query_installation::facade::ApplicationIdentityScalarValueBinding<
+            Value = PrincipalIdentity,
+        >,
+    ScopeField: worth_query_installation::facade::DeclaredApplicationFieldValue<Value = ScopeValue>,
+    ScopeField::Binding:
+        worth_query_installation::facade::ApplicationScalarValueBinding<Value = ScopeValue>,
     ScopeWrite: WritePosture,
     ScopeUnit: ApplicationFieldUnit,
     PrincipalSource: WorthQueryTemporalPrincipalSource<Schema>,

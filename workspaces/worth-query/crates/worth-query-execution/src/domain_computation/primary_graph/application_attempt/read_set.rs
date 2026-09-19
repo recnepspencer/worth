@@ -3,8 +3,9 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 
 use worth_query_installation::facade::{
-    ApplicationFieldRef, ApplicationFieldUnit, ApplicationSchema, EqualityPredicate,
-    OperationReads, TypedApplicationValue, WorthQueryOperationGraphReadScope, WritePosture,
+    ApplicationFieldRef, ApplicationFieldUnit, ApplicationScalarValueBinding, ApplicationSchema,
+    DeclaredApplicationFieldValue, EqualityPredicate, OperationReads,
+    WorthQueryOperationGraphReadScope, WritePosture,
 };
 
 use super::fact::{WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact};
@@ -24,6 +25,10 @@ use crate::domain_computation::primary_graph::{
 mod observation_admission;
 mod observations;
 mod projected_completion;
+mod relation_observation;
+mod source_facts;
+
+use source_facts::{merge_source_facts, validate_source_facts};
 
 pub struct WorthQueryApplicationReadAttempt<
     Schema,
@@ -41,6 +46,7 @@ pub struct WorthQueryApplicationReadAttempt<
     installed_read_scopes:
         BTreeMap<WorthQueryApplicationFactKey, WorthQueryOperationGraphReadScope>,
     facts: BTreeMap<WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact>,
+    source_facts: Vec<WorthQueryApplicationObservedFact>,
     _phase: PhantomData<fn() -> Phase>,
 }
 
@@ -116,6 +122,7 @@ where
                     admission.operation(),
                 )
             })?;
+        let source_facts = validate_source_facts(&mut admission, &lease)?;
         Ok(WorthQueryApplicationReadAttempt {
             admission,
             lease,
@@ -125,6 +132,7 @@ where
             expected_facts: None,
             installed_read_scopes: BTreeMap::new(),
             facts: BTreeMap::new(),
+            source_facts,
             _phase: PhantomData,
         })
     }
@@ -203,7 +211,14 @@ where
             )
         })?;
         let root = admission.scope_entity_id();
-        let (lease, projected_scope, expected_facts) = projection.into_lease_and_realized_scope();
+        let (lease, projected_scope, expected_facts, dependent_source_facts) =
+            projection.into_lease_and_realized_scope();
+        let mut admission = admission;
+        let source_facts = merge_source_facts(
+            validate_source_facts(&mut admission, &lease)?,
+            dependent_source_facts,
+            admission.operation(),
+        )?;
         let layout = Arc::clone(&lease.layout);
         Ok(WorthQueryApplicationReadAttempt {
             admission,
@@ -214,6 +229,7 @@ where
             expected_facts: Some(expected_facts),
             installed_read_scopes: BTreeMap::new(),
             facts: BTreeMap::new(),
+            source_facts,
             _phase: PhantomData,
         })
     }
@@ -240,11 +256,16 @@ impl<Schema, Operation, Input, Scope, Phase>
         WorthQueryApplicationAttemptDenial,
     >
     where
-        Field: OperationReads<Operation>,
-        Value: TypedApplicationValue,
+        Field: OperationReads<Operation> + DeclaredApplicationFieldValue<Value = Value>,
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
+        let value = Field::Binding::encode(&value).map_err(|_| {
+            denial(
+                WorthQueryApplicationAttemptDenialKind::InvalidAuthoritativeValue,
+                field.field(),
+            )
+        })?;
         let resolved = self
             .lease
             .handle()
@@ -256,12 +277,7 @@ impl<Schema, Operation, Input, Scope, Phase>
                         WorthQueryPrincipalResolutionMode::Ordinary,
                     )
                     .and_then(|truth| {
-                        truth.resolve(
-                            field.entity(),
-                            field.aspect(),
-                            field.field(),
-                            value.into_foundational_value(),
-                        )
+                        truth.resolve(field.entity(), field.aspect(), field.field(), value)
                     })
             })
             .map_err(|_| {
@@ -285,7 +301,7 @@ impl<Schema, Operation, Input, Scope, Phase>
         WorthQueryCompleteApplicationReadSet<Schema, Operation, Input, Scope, Phase>,
         WorthQueryApplicationAttemptDenial,
     > {
-        if self.facts.len()
+        if self.facts.len().saturating_add(self.source_facts.len())
             > self
                 .admission
                 .allowed_graph_contract()
@@ -354,7 +370,7 @@ impl<Schema, Operation, Input, Scope, Phase>
             admission: self.admission,
             lease: self.lease,
             installed_read_scopes: self.installed_read_scopes.into_values().collect(),
-            facts: self.facts.into_values().collect(),
+            facts: self.facts.into_values().chain(self.source_facts).collect(),
             _phase: PhantomData,
         })
     }

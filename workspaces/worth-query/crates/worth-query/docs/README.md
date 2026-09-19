@@ -15,6 +15,14 @@ artifact, orchestration, grouping, continuation, and typed-stop model.
 
 ## Start Here
 
+For the current product-branch entry path, start with
+[Ordinary Application Front Door](./foundations/ordinary-application-front-door.md)
+and [Branches And Previews](./foundations/branches-and-previews.md). The
+certification package contains executable
+[ordinary](../../worth-query-certification/examples/ordinary_product_workflow.rs)
+and [advanced](../../worth-query-certification/examples/advanced_product_branching.rs)
+public journeys.
+
 - [Ordinary Application Front Door](./foundations/ordinary-application-front-door.md)
   The supported declaration, host installation, request admission, execution,
   recovery, conditional-operation, and publication journey.
@@ -130,6 +138,7 @@ artifact, orchestration, grouping, continuation, and typed-stop model.
 
 ## Authoring (feature docs)
 
+- [Feature Capsule Authoring](./authoring/feature-capsule-authoring.md)
 - [Collections, ordering, aggregates, and cursors](./authoring/collections-cursors-ordering-and-aggregations.md)
 - [Graph Composition Authoring](./authoring/graph-composition-authoring.md)
 - [Graph Read Access Planning](./authoring/graph-read-access-planning.md)

@@ -4,7 +4,8 @@ use worth_foundational::facade::AspectValue;
 
 use super::capabilities::{ApplicationFieldUnit, OperationExpectsFact, OperationExpectsVersion};
 use super::field_reference::ApplicationFieldRef;
-use super::values::TypedApplicationValue;
+use super::values::DeclaredApplicationFieldValue;
+use super::ApplicationEncodedScalarValue;
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum ApplicationMutationPreconditionFamily {
@@ -96,10 +97,19 @@ impl TypedMutationPrecondition {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct TypedMutationPreconditions<Schema, Operation, Scope> {
     entries: Vec<TypedMutationPrecondition>,
     _marker: PhantomData<fn() -> (Schema, Operation, Scope)>,
+}
+
+impl<Schema, Operation, Scope> Clone for TypedMutationPreconditions<Schema, Operation, Scope> {
+    fn clone(&self) -> Self {
+        Self {
+            entries: self.entries.clone(),
+            _marker: PhantomData,
+        }
+    }
 }
 
 impl<Schema, Operation, Scope> Default for TypedMutationPreconditions<Schema, Operation, Scope> {
@@ -119,11 +129,10 @@ impl<Schema, Operation, Scope> TypedMutationPreconditions<Schema, Operation, Sco
     pub fn expect_version<Aspect, Field, Value, Write, Equality, Unit>(
         self,
         field: ApplicationFieldRef<Schema, Scope, Aspect, Field, Value, Write, Equality, Unit>,
-        expected: Value,
+        expected: ApplicationEncodedScalarValue<Field::Binding>,
     ) -> Self
     where
-        Field: OperationExpectsVersion<Operation>,
-        Value: TypedApplicationValue,
+        Field: OperationExpectsVersion<Operation> + DeclaredApplicationFieldValue<Value = Value>,
         Unit: ApplicationFieldUnit,
     {
         self.push(
@@ -136,11 +145,10 @@ impl<Schema, Operation, Scope> TypedMutationPreconditions<Schema, Operation, Sco
     pub fn expect_fact<Aspect, Field, Value, Write, Equality, Unit>(
         self,
         field: ApplicationFieldRef<Schema, Scope, Aspect, Field, Value, Write, Equality, Unit>,
-        expected: Value,
+        expected: ApplicationEncodedScalarValue<Field::Binding>,
     ) -> Self
     where
-        Field: OperationExpectsFact<Operation>,
-        Value: TypedApplicationValue,
+        Field: OperationExpectsFact<Operation> + DeclaredApplicationFieldValue<Value = Value>,
         Unit: ApplicationFieldUnit,
     {
         self.push(
@@ -163,10 +171,10 @@ impl<Schema, Operation, Scope> TypedMutationPreconditions<Schema, Operation, Sco
         mut self,
         family: ApplicationMutationPreconditionFamily,
         field: ApplicationFieldRef<Schema, Scope, Aspect, Field, Value, Write, Equality, Unit>,
-        expected: Value,
+        expected: ApplicationEncodedScalarValue<Field::Binding>,
     ) -> Self
     where
-        Value: TypedApplicationValue,
+        Field: DeclaredApplicationFieldValue<Value = Value>,
         Unit: ApplicationFieldUnit,
     {
         let expected_value = expected.into_foundational_value();

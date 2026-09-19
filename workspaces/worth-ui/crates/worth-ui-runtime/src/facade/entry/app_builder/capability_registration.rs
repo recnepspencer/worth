@@ -26,6 +26,22 @@ impl<ChangeProfileState, IntentWiringState>
         self
     }
 
+    pub fn register_appearance_role(
+        mut self,
+        role: worth_ui_dsl::UiAppearanceRoleDeclaration,
+    ) -> Result<Self, crate::capability::AppearanceRoleRegistrationDenial> {
+        self.inner = self.inner.register_appearance_role(role)?;
+        Ok(self)
+    }
+
+    pub fn register_appearance_theme_bundle(
+        mut self,
+        bundle: crate::capability::FrozenAppearanceThemeCapabilities,
+    ) -> Result<Self, crate::capability::FrozenAppearanceThemeCapabilitiesDenial> {
+        self.inner = self.inner.register_appearance_theme_bundle(bundle)?;
+        Ok(self)
+    }
+
     pub fn register_icon(mut self, descriptor: IconDescriptor) -> Self {
         self.inner = self.inner.register_icon(descriptor);
         self
@@ -39,6 +55,14 @@ impl<ChangeProfileState, IntentWiringState>
     pub fn register_mosaic_region_kind(mut self, descriptor: MosaicRegionKindDescriptor) -> Self {
         self.inner = self.inner.register_mosaic_region_kind(descriptor);
         self
+    }
+
+    pub fn register_mosaic_seam_paint_contract(
+        mut self,
+        contract: crate::capability::MosaicSeamPaintContract,
+    ) -> Result<Self, crate::capability::MosaicSeamPaintContractDenial> {
+        self.inner = self.inner.register_mosaic_seam_paint_contract(contract)?;
+        Ok(self)
     }
 
     pub fn register_mosaic_placement_policy(

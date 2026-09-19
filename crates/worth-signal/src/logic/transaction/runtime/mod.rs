@@ -4,30 +4,31 @@ mod config;
 mod execution;
 mod state;
 mod transaction;
+pub(crate) use state::TemporalRuntimeState;
 
 pub use computation::{DefinedComputation, DefinedKeyedComputation, Recipe};
 pub use config::SignalRuntimeConfig;
-pub use execution::{RuntimeExecutionRequest, TransactionExecutionRequest};
+pub use execution::{ObservedDemandSummary, RuntimeExecutionRequest, TransactionExecutionRequest};
 pub(crate) use state::admit_signal_observation_request;
 pub(crate) use state::RuntimeObservationRegistry;
+pub(crate) use state::SignalCanonicalCallerUnwind;
 pub use state::{branch_state_proof_report, canonical_digest};
 #[allow(unused_imports)]
 pub use state::{
-    bridge_signal_branch_basis_trust_boundary, bridge_signal_merge_compatibility_trust_boundary,
-    lowered_strategy_bundle_digest, merge_lineage_digest, replay_artifact_proof_report,
-    replay_parity_proof_report,
+    bridge_signal_merge_compatibility_trust_boundary, lowered_strategy_bundle_digest,
+    merge_lineage_digest, replay_artifact_proof_report, replay_parity_proof_report,
 };
 pub use state::{
     merge_plan_proof_report, merge_result_proof_report, runtime_proof_report, ArtifactMergeAction,
     ArtifactMergeComparable, AspectMergeDecisionOutcome, AspectMergePolicy,
     AspectMergePolicyBinding, AspectMergePolicyDescriptor, AspectMergePolicyId,
     AspectMergePolicyName, AspectMergePolicyRegistration, AspectMergePolicySelectionBasis,
-    AspectMergePolicyVersion, BoundaryBridgedSignalBranchBasisArtifact,
-    BoundaryBridgedSignalMergeCompatibilityArtifact, BranchConflictResolutionPlan, BranchMergeBase,
-    BranchMergeConflictEvidence, BranchMergeConflictKind, BranchMergeConflictRecord,
-    BranchMergeConflictSummary, BranchMergeCounters, BranchMergeDeletionFailureEvidence,
-    BranchMergeDivergence, BranchMergeExecutionSummary, BranchMergeFailureEvidence,
-    BranchMergeFailureKind, BranchMergeIdentityFailureEvidence, BranchMergeKind, BranchMergePlan,
+    AspectMergePolicyVersion, BoundaryBridgedSignalMergeCompatibilityArtifact,
+    BranchConflictResolutionPlan, BranchMergeBase, BranchMergeConflictEvidence,
+    BranchMergeConflictKind, BranchMergeConflictRecord, BranchMergeConflictSummary,
+    BranchMergeCounters, BranchMergeDeletionFailureEvidence, BranchMergeDivergence,
+    BranchMergeExecutionSummary, BranchMergeFailureEvidence, BranchMergeFailureKind,
+    BranchMergeIdentityFailureEvidence, BranchMergeKind, BranchMergePlan,
     BranchMergeReconciliationPolicy, BranchMergeRequest, BranchMergeRequestDenial,
     BranchMergeRequestScope, BranchMergeRequestScopeFamily, BranchMergeResolutionRequirement,
     BranchMergeResult, BranchMergeScopedDenialFailureEvidence, BranchMergeScopedDenialKind,
@@ -136,4 +137,9 @@ pub use transaction::{
     ObservationBoundaryOutcome, ObservationBoundarySummary, SignalTransaction,
     TemporalEligibilityFact, TemporalTransactionEvidence, TransactionOutcome,
     TransactionReplayEntry, TransactionResult, TransactionTiming,
+};
+
+#[cfg(test)]
+pub use state::{
+    bridge_signal_branch_basis_trust_boundary, BoundaryBridgedSignalBranchBasisArtifact,
 };

@@ -29,6 +29,7 @@ pub(super) fn register_mosaic(
         .fold(builder, |builder, region| {
             builder.register_mosaic_region_kind(region_descriptor(region))
         });
+
     let builder = PlatformPulseMosaicSizing::ALL
         .into_iter()
         .fold(builder, |builder, sizing| {
@@ -98,6 +99,22 @@ fn region_descriptor(region: PlatformPulseMosaicRegion) -> MosaicRegionKindDescr
             MosaicChildRule::accepts_surfaces(),
             Some(SurfacePlacementClass::status_region()),
         ),
+        PlatformPulseMosaicRegion::ServiceList | PlatformPulseMosaicRegion::ActivityList => (
+            MosaicRegionRole::auxiliary(),
+            MosaicSizingBehavior::viewport_bounded(),
+            MosaicScrollOwnership::region_owned(),
+            MosaicFocusScopeKind::region_scope(),
+            MosaicChildRule::leaf_only(),
+            None,
+        ),
+        PlatformPulseMosaicRegion::ServiceTile | PlatformPulseMosaicRegion::NativeTile => (
+            MosaicRegionRole::auxiliary(),
+            MosaicSizingBehavior::fills_available_space(),
+            MosaicScrollOwnership::no_scrolling(),
+            MosaicFocusScopeKind::region_scope(),
+            MosaicChildRule::leaf_only(),
+            None,
+        ),
     };
     let descriptor = MosaicRegionKindDescriptor::new(region_id(region), role)
         .with_sizing_behavior(sizing)
@@ -121,6 +138,7 @@ fn sizing_descriptor(sizing: PlatformPulseMosaicSizing) -> MosaicSizingContractD
         }
         PlatformPulseMosaicSizing::Masthead
         | PlatformPulseMosaicSizing::EvidenceRail
+        | PlatformPulseMosaicSizing::DashboardList
         | PlatformPulseMosaicSizing::StatusBand => MosaicSizingKind::fixed(),
     };
     let descriptor = MosaicSizingContractDescriptor::new(sizing_id(sizing), kind)

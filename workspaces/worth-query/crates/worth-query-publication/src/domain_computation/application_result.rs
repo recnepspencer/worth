@@ -1,4 +1,5 @@
 use worth_query_execution::facade::primary_graph::WorthQueryAdmittedDisclosedApplicationResult;
+use worth_query_execution::facade::primary_graph::WorthQueryApplicationOutputDemandSource;
 
 mod basis;
 mod disclosure;
@@ -25,9 +26,8 @@ pub use terminal_release::{
 /// Publication-owned result whose input was already governed before domain
 /// projection. Publication performs no field-policy decision or redaction.
 pub struct WorthQueryPublishedApplicationResult<Query, QueryResult> {
-    rows: Vec<QueryResult>,
+    source: WorthQueryApplicationOutputDemandSource<Query, QueryResult>,
     receipt: WorthQueryApplicationQueryPublicationReceipt,
-    _query: std::marker::PhantomData<fn() -> Query>,
 }
 
 /// Accepts only Query's admitted disclosed shape.
@@ -64,25 +64,32 @@ pub fn publish_application_result<Query, QueryResult>(
     admitted: WorthQueryAdmittedDisclosedApplicationResult<Query, QueryResult>,
 ) -> WorthQueryPublishedApplicationResult<Query, QueryResult> {
     let receipt = WorthQueryApplicationQueryPublicationReceipt::from_terminal(admitted.receipt());
-    let (rows, execution_receipt) = admitted.into_parts();
-    drop(execution_receipt);
-    WorthQueryPublishedApplicationResult {
-        rows,
-        receipt,
-        _query: std::marker::PhantomData,
-    }
+    let source = admitted.into_output_demand_source();
+    WorthQueryPublishedApplicationResult { source, receipt }
 }
 
 impl<Query, QueryResult> WorthQueryPublishedApplicationResult<Query, QueryResult> {
     pub fn rows(&self) -> &[QueryResult] {
-        &self.rows
+        self.source.rows()
     }
 
     pub const fn receipt(&self) -> &WorthQueryApplicationQueryPublicationReceipt {
         &self.receipt
     }
 
+    pub fn observed_sources(
+        &self,
+    ) -> &[worth_query_execution::facade::primary_graph::WorthQueryObservedSource<Query>] {
+        self.source.observed_sources()
+    }
+
     pub fn into_rows(self) -> Vec<QueryResult> {
-        self.rows
+        self.source.into_rows()
+    }
+
+    pub(crate) fn into_output_demand_source(
+        self,
+    ) -> WorthQueryApplicationOutputDemandSource<Query, QueryResult> {
+        self.source
     }
 }

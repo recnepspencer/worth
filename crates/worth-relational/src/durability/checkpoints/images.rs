@@ -44,6 +44,7 @@ pub(crate) fn partition_to_image_with_contracts(
                 |(slot, adjacency)| crate::durability::data::DurableAdjacencyEntry {
                     slot: slot as u64,
                     relations: adjacency.ids(),
+                    structural_revisions: adjacency.structural_revisions(),
                 },
             )
             .collect(),
@@ -54,6 +55,7 @@ pub(crate) fn partition_to_image_with_contracts(
                 |(slot, adjacency)| crate::durability::data::DurableAdjacencyEntry {
                     slot: slot as u64,
                     relations: adjacency.ids(),
+                    structural_revisions: adjacency.structural_revisions(),
                 },
             )
             .collect(),
@@ -88,7 +90,10 @@ pub(crate) fn partition_from_image(
             image.adjacency.into_iter().map(|entry| {
                 (
                     entry.slot as usize,
-                    AdjacencySet::compressed_from_current(entry.relations),
+                    AdjacencySet::compressed_from_checkpoint(
+                        entry.relations,
+                        entry.structural_revisions,
+                    ),
                 )
             }),
         ),
@@ -96,7 +101,10 @@ pub(crate) fn partition_from_image(
             image.reverse_adjacency.into_iter().map(|entry| {
                 (
                     entry.slot as usize,
-                    AdjacencySet::compressed_from_current(entry.relations),
+                    AdjacencySet::compressed_from_checkpoint(
+                        entry.relations,
+                        entry.structural_revisions,
+                    ),
                 )
             }),
         ),

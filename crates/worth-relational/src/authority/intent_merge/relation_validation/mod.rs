@@ -19,6 +19,7 @@ pub(super) fn validate_relation_intent(
     default_cross_context_policy: crate::config::data::CrossContextPolicy,
     instrumentation: &RuntimeInstrumentation,
     created_entities: &BTreeSet<CreatedEntityRef>,
+    deleted_relations: &BTreeSet<crate::identity::data::RelationId>,
     intent: &MutationIntent,
 ) -> Result<(), crate::transactions::data::CommitConflict> {
     match intent {
@@ -29,6 +30,7 @@ pub(super) fn validate_relation_intent(
                 default_cross_context_policy,
                 instrumentation,
                 created_entities,
+                deleted_relations,
                 spec,
             )
         }
@@ -39,6 +41,7 @@ pub(super) fn validate_relation_intent(
                 default_cross_context_policy,
                 instrumentation,
                 created_entities,
+                deleted_relations,
                 spec.partition_id,
                 spec.kind_id,
                 &spec.source,
@@ -52,6 +55,7 @@ pub(super) fn validate_relation_intent(
                 default_cross_context_policy,
                 instrumentation,
                 created_entities,
+                deleted_relations,
                 spec.partition_id,
                 spec.kind_id,
                 &spec.endpoints,
@@ -76,6 +80,7 @@ pub(super) fn validate_relation_intent(
         MutationIntent::Create(CreateIntent::Entity(_))
         | MutationIntent::Create(CreateIntent::EntityAspects(_))
         | MutationIntent::Create(CreateIntent::BulkEntities(_))
-        | MutationIntent::Entity(_) => Ok(()),
+        | MutationIntent::Entity(_)
+        | MutationIntent::Materialization(_) => Ok(()),
     }
 }

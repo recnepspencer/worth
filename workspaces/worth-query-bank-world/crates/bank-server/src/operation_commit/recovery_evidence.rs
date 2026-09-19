@@ -2,13 +2,9 @@
 
 use bank_domain::schema::BankSchema;
 use worth_query_host::facade::primary_graph::{
-    WorthQueryAftermathDerivationFailure, WorthQueryApplicationCommitReceipt,
-    WorthQueryApplicationHistoricalRead, WorthQueryCommittedDispatchOutboxObservation,
+    WorthQueryApplicationCommitReceipt, WorthQueryCommittedDispatchOutboxObservation,
     WorthQueryCommittedDispatchOutboxReadDenial, WorthQueryPrimaryGraphApplicationRuntime,
-    WorthQueryRecoveryHandle, WorthQueryRecoveryHandleDenial,
-};
-use worth_query_host::facade::provisional_aftermath::{
-    WorthQueryRedoRecovery, WorthQueryUndoProgressionHandoff,
+    WorthQueryRecoveryClaimStatus, WorthQueryRecoveryHandle, WorthQueryRecoveryHandleDenial,
 };
 
 #[derive(Clone)]
@@ -19,10 +15,6 @@ pub(crate) struct BankCommitRecoveryEvidence {
 impl BankCommitRecoveryEvidence {
     pub(super) const fn from_execution(execution: WorthQueryApplicationCommitReceipt) -> Self {
         Self { execution }
-    }
-
-    pub(crate) fn historical_read(&self) -> WorthQueryApplicationHistoricalRead {
-        WorthQueryApplicationHistoricalRead::at_application_commit(&self.execution)
     }
 
     pub(crate) fn observe_dispatch_outbox(
@@ -42,10 +34,10 @@ impl BankCommitRecoveryEvidence {
         runtime.mint_recovery_handle(&self.execution)
     }
 
-    pub(crate) fn seal_redo_recovery(
+    pub(crate) fn recovery_claim_status(
         &self,
-        handoff: WorthQueryUndoProgressionHandoff,
-    ) -> Result<WorthQueryRedoRecovery, WorthQueryAftermathDerivationFailure> {
-        WorthQueryRedoRecovery::from_completed_undo(handoff, &self.execution)
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<BankSchema>,
+    ) -> Result<WorthQueryRecoveryClaimStatus, WorthQueryRecoveryHandleDenial> {
+        runtime.recovery_claim_status(&self.execution)
     }
 }

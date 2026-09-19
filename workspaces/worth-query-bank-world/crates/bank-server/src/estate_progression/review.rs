@@ -2,18 +2,18 @@ use bank_domain::{
     estate::EstateAction,
     proposals::BankIdempotencyKey,
     schema::{
-        BankSchema, CompleteEstateMandatoryReviewCapability, CompleteEstateMandatoryReviewOperation,
+        BankPrincipalBinding, BankSchema, CompleteEstateMandatoryReviewCapability,
+        CompleteEstateMandatoryReviewOperation,
     },
 };
 use worth_query_host::facade::{
     admission::authenticated_principal::WorthQueryRequestScope,
+    application_entry::WorthQueryApplicationMandatoryReviewDenial,
     declaration::application_schema::TypedMutationPreconditions,
-    primary_graph::WorthQueryApplicationIdempotencyBinding,
 };
 
 use super::{
-    idempotency::{elevation_binding, EstateElevationTransition},
-    lifecycle_facts::seal_review_lifecycle_facts,
+    lifecycle_facts::seal_review_lifecycle_facts, BankEstateLifecycleProjectionDenial,
     BankEstateMandatoryReview, BankEstateMandatoryReviewOutcome, BankEstateProgressionDenial,
     BankEstateProgressionFailure,
 };
@@ -31,143 +31,81 @@ impl BankIdentityRuntime {
         BankEstateMandatoryReviewOutcome,
         BankEstateProgressionFailure<BankEstateMandatoryReview>,
     > {
-        let idempotency = match elevation_binding(
-            idempotency_key,
-            EstateElevationTransition::CompleteReview,
-            action,
-        ) {
-            Ok(idempotency) => idempotency,
-            Err(denial) => {
-                return Err(BankEstateProgressionFailure::retained(denial, mandatory));
-            }
-        };
-        self.complete_estate_mandatory_review_retaining(
-            principal,
-            mandatory,
-            action,
-            idempotency,
-            request,
-        )
-    }
-
-    pub fn complete_estate_mandatory_review(
-        &self,
-        principal: &BankAuthenticatedPrincipal,
-        mandatory: BankEstateMandatoryReview,
-        action: EstateAction,
-        idempotency: WorthQueryApplicationIdempotencyBinding,
-        request: &WorthQueryRequestScope,
-    ) -> Result<BankEstateMandatoryReviewOutcome, BankEstateProgressionDenial> {
-        self.complete_estate_mandatory_review_retaining(
-            principal,
-            mandatory,
-            action,
-            idempotency,
-            request,
-        )
-        .map_err(BankEstateProgressionFailure::into_denial)
-    }
-
-    fn complete_estate_mandatory_review_retaining(
-        &self,
-        principal: &BankAuthenticatedPrincipal,
-        mandatory: BankEstateMandatoryReview,
-        action: EstateAction,
-        idempotency: WorthQueryApplicationIdempotencyBinding,
-        request: &WorthQueryRequestScope,
-    ) -> Result<
-        BankEstateMandatoryReviewOutcome,
-        BankEstateProgressionFailure<BankEstateMandatoryReview>,
-    > {
         let EstateAction::CompleteMandatoryReview { access, review, .. } = action else {
             return Err(BankEstateProgressionFailure::retained(
                 BankEstateProgressionDenial::CommandInput("CompleteEstateMandatoryReviewOperation"),
                 mandatory,
             ));
         };
-        let capability = match self.application_runtime().installed_schema().capability(
-            CompleteEstateMandatoryReviewCapability::reference(),
-            CompleteEstateMandatoryReviewOperation::reference(),
-        ) {
-            Ok(capability) => capability,
-            Err(denial) => {
-                return Err(BankEstateProgressionFailure::retained(
-                    BankEstateProgressionDenial::from_capability_installation(denial),
-                    mandatory,
-                ));
+        let outcome = self
+            .request(principal, request)
+            .execute_mandatory_review_in_program(
+                self.application_program(),
+                BankPrincipalBinding::reference(),
+                CompleteEstateMandatoryReviewCapability::reference(),
+                CompleteEstateMandatoryReviewOperation::reference(),
+                mandatory.into_query(),
+                action,
+                idempotency_key,
+                TypedMutationPreconditions::<
+                    BankSchema,
+                    CompleteEstateMandatoryReviewOperation,
+                    bank_domain::schema::EstateCase,
+                >::default(),
+                self.invariant_projection(),
+                |reader, estate| seal_review_lifecycle_facts(reader, access, review, estate),
+            );
+        match outcome {
+            Ok(outcome) => Ok(BankEstateMandatoryReviewOutcome::from_query(outcome)),
+            Err(failure) => {
+                let (denial, mandatory) = failure.into_parts();
+                let denial = map_review_denial(denial);
+                Err(match mandatory {
+                    Some(mandatory) => BankEstateProgressionFailure::retained(
+                        denial,
+                        BankEstateMandatoryReview::from_query(mandatory),
+                    ),
+                    None => BankEstateProgressionFailure::consumed(denial),
+                })
             }
-        };
-        let access_authority = match self.application_runtime().admit_capability_access(
-            principal.query(),
-            &capability,
-            action,
-            request,
-        ) {
-            Ok(access) => access,
-            Err(denial) => {
-                return Err(BankEstateProgressionFailure::retained(
-                    BankEstateProgressionDenial::from_authorization(denial),
-                    mandatory,
-                ));
-            }
-        };
-        let operation = match self
-            .application_runtime()
-            .installed_schema()
-            .installed_operation(CompleteEstateMandatoryReviewOperation::reference())
-        {
-            Ok(operation) => operation,
-            Err(denial) => {
-                return Err(BankEstateProgressionFailure::retained(
-                    BankEstateProgressionDenial::from_operation_installation(denial),
-                    mandatory,
-                ));
-            }
-        };
-        let admission = match self.application_runtime().authorize_mandatory_review(
-            mandatory.into_query(),
-            access_authority,
-            &operation,
-            TypedMutationPreconditions::<
-                BankSchema,
-                CompleteEstateMandatoryReviewOperation,
-                bank_domain::schema::EstateCase,
-            >::default(),
-        ) {
-            Ok(admission) => admission,
-            Err(denial) => {
-                let mapped = BankEstateProgressionDenial::from_review_authorization_ref(&denial);
-                return Err(BankEstateProgressionFailure::retained(
-                    mapped,
-                    BankEstateMandatoryReview::from_query(denial.into_mandatory_review()),
-                ));
-            }
-        };
-        let projected = self
-            .invariant_projection()
-            .project_admitted_operation(&admission, |reader, estate| {
-                seal_review_lifecycle_facts(reader, access, review, estate)
-            })
-            .map_err(BankEstateProgressionDenial::from_projection)
-            .map_err(BankEstateProgressionFailure::consumed)?;
-        let (lifecycle_result, projection, _) = projected.into_parts();
-        lifecycle_result
-            .map_err(BankEstateProgressionDenial::LifecycleProjection)
-            .map_err(BankEstateProgressionFailure::consumed)?;
-        let program = self
-            .application_runtime()
-            .begin_projected_application_read_attempt(admission, projection)
-            .map_err(BankEstateProgressionDenial::from_attempt)
-            .map_err(BankEstateProgressionFailure::consumed)?
-            .complete_projected_dependencies()
-            .map_err(BankEstateProgressionDenial::from_attempt)
-            .map_err(BankEstateProgressionFailure::consumed)?
-            .materialize_mandatory_review_program()
-            .map_err(BankEstateProgressionDenial::from_attempt)
-            .map_err(BankEstateProgressionFailure::consumed)?;
-        Ok(BankEstateMandatoryReviewOutcome::from_query(
-            self.application_runtime()
-                .compare_and_commit_mandatory_review(program, idempotency),
-        ))
+        }
+    }
+}
+
+fn map_review_denial(
+    denial: WorthQueryApplicationMandatoryReviewDenial<BankEstateLifecycleProjectionDenial>,
+) -> BankEstateProgressionDenial {
+    use WorthQueryApplicationMandatoryReviewDenial as Query;
+    match denial {
+        Query::Program(denial) => BankEstateProgressionDenial::ProgramAction(denial),
+        Query::ProgramMismatch => BankEstateProgressionDenial::ProgramMismatch,
+        Query::PrincipalBindingInstallation(denial) => {
+            BankEstateProgressionDenial::PrincipalBindingInstallation(denial)
+        }
+        Query::PrincipalIdentityEncoding(denial) => {
+            BankEstateProgressionDenial::PrincipalIdentityEncoding(denial)
+        }
+        Query::CapabilityInstallation(denial) => {
+            BankEstateProgressionDenial::from_capability_installation(denial)
+        }
+        Query::OperationInstallation(denial) => {
+            BankEstateProgressionDenial::from_operation_installation(denial)
+        }
+        Query::ProductSelection(denial) => {
+            BankEstateProgressionDenial::from_product_selection(denial)
+        }
+        Query::PrincipalResolution(denial) => {
+            BankEstateProgressionDenial::PrincipalResolution(denial)
+        }
+        Query::Authorization(denial) => BankEstateProgressionDenial::from_authorization(denial),
+        Query::ReviewAuthorization(denial) => BankEstateProgressionDenial::ReviewAuthorization(
+            crate::BankAuthorizationDenial::from_query(denial),
+        ),
+        Query::Projection(denial) => BankEstateProgressionDenial::from_projection(denial),
+        Query::Decision(denial) => BankEstateProgressionDenial::LifecycleProjection(denial),
+        Query::Attempt(denial) => BankEstateProgressionDenial::from_attempt(denial),
+        Query::IdempotencyResolution(denial) => {
+            BankEstateProgressionDenial::from_idempotency(denial)
+        }
     }
 }

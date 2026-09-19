@@ -131,3 +131,10 @@ requests cannot replace the installed witness.
 Use the [Runtime World example](../worth-runtime-world/examples/runtime_world_publication.rs)
 for real same-graph construction and three-way publication handling. Bridge
 speculation/replay is not product-head or committed-terminal authority.
+
+Query-hosted conditional ownership is sealed at
+`BridgeOwnedSignalRuntime`. Bridge admits installed semantic correspondence;
+Signal owner-service ports perform exact-basis evaluation and lifecycle work.
+Carry the returned basis and performed receipt into the Query/World route. Raw
+graph access, detached descriptors, or copied component identifiers cannot
+replace those owner products.

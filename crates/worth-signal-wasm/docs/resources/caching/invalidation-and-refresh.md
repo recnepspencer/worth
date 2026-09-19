@@ -10,6 +10,8 @@ it immediately, or revalidating while preserving visible truth.
 - `line.revalidate()`
 - `line.freshness()`
 - `line.diagnostics()`
+- `family.invalidate(params)` / `family.invalidateAll()`
+- `signals.resource.invalidateAll()` / `signals.resource.refreshAll()`
 
 ## What Each One Means
 
@@ -34,6 +36,27 @@ console.log(line.status());
 line.revalidate();
 console.log(line.freshness());
 ```
+
+## Runtime-Wide Invalidation And Refresh
+
+Sign-out, tenant switch, and "the server told us everything changed" are not
+per-family events. The namespace sweeps every materialized line of every
+family and returns how many it touched:
+
+```ts
+const marked = signals.resource.invalidateAll();
+// every line: freshness { kind: "stale", reason: "manualRuntimeInvalidateAll" }
+// diagnostics().lastInvalidationScope === "runtimeAll"
+
+const refreshed = signals.resource.refreshAll();
+// every line: a new load, with line.refresh() semantics (pending reloads are
+// superseded)
+```
+
+Both are events over the lines that exist at the call: a line materialized
+afterwards starts fresh. Released lines are skipped and not counted. Visible
+values stay in place through `invalidateAll()`; `refreshAll()` replaces them
+as each load settles.
 
 ## Why Revalidate Exists
 

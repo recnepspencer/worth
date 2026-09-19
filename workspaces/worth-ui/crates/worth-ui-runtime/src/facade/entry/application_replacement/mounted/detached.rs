@@ -21,6 +21,8 @@ impl WorthUiDetachedPreparedMountedApplicationReplacement {
             application: self.application,
             mounted_successor: self.mounted_successor,
             frame: self.frame,
+            lifecycle: self.lifecycle,
+            owners: self.owners,
         })
     }
 }
@@ -55,10 +57,17 @@ impl WorthUiDetachedMountedApplicationReplacementInFlight {
         session: &'session mut WorthUiActiveApplicationSession,
         now: u64,
     ) -> WorthUiMountedApplicationReplacementOutcome<'session> {
+        let Self {
+            application,
+            mounted,
+            lifecycle,
+            owners,
+            ..
+        } = self;
         let outcome =
             session
                 .mounted
-                .complete_graph_replacement(&session.host_session, self.mounted, now);
+                .complete_graph_replacement(&session.host_session, mounted, now);
         let outcome = match outcome {
             Ok(outcome) => outcome,
             Err(rejection) => {
@@ -67,8 +76,10 @@ impl WorthUiDetachedMountedApplicationReplacementInFlight {
                         denial: rejection.denial,
                         in_flight: WorthUiMountedApplicationReplacementInFlight {
                             session,
-                            application: self.application,
+                            application,
                             mounted: *rejection.in_flight,
+                            lifecycle,
+                            owners,
                         },
                     },
                 ));
@@ -76,7 +87,9 @@ impl WorthUiDetachedMountedApplicationReplacementInFlight {
         };
         WorthUiPreparedMountedApplicationReplacement::finish(
             session,
-            self.application,
+            application,
+            lifecycle,
+            owners,
             outcome,
             |presented| presented.commit_once(),
         )
@@ -86,9 +99,16 @@ impl WorthUiDetachedMountedApplicationReplacementInFlight {
         self,
         session: &'session mut WorthUiActiveApplicationSession,
     ) -> WorthUiMountedApplicationReplacementOutcome<'session> {
+        let Self {
+            application,
+            mounted,
+            lifecycle,
+            owners,
+            ..
+        } = self;
         let outcome = session
             .mounted
-            .cancel_graph_replacement(&session.host_session, self.mounted);
+            .cancel_graph_replacement(&session.host_session, mounted);
         let outcome = match outcome {
             Ok(outcome) => outcome,
             Err(rejection) => {
@@ -97,8 +117,10 @@ impl WorthUiDetachedMountedApplicationReplacementInFlight {
                         denial: rejection.denial,
                         in_flight: WorthUiMountedApplicationReplacementInFlight {
                             session,
-                            application: self.application,
+                            application,
                             mounted: *rejection.in_flight,
+                            lifecycle,
+                            owners,
                         },
                     },
                 ));
@@ -106,7 +128,9 @@ impl WorthUiDetachedMountedApplicationReplacementInFlight {
         };
         WorthUiPreparedMountedApplicationReplacement::finish(
             session,
-            self.application,
+            application,
+            lifecycle,
+            owners,
             outcome,
             |presented| presented.commit_once(),
         )
