@@ -65,6 +65,7 @@ exports = [
     "worth_query_capability_provenance",
     "worth_query_effect",
     "worth_query_entity",
+    "worth_query_feature_spec",
     "worth_query_field",
     "worth_query_mutation_binding",
     "worth_query_operation",
