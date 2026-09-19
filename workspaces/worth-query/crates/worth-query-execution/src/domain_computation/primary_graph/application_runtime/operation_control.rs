@@ -5,8 +5,29 @@ use super::WorthQueryPrimaryGraphApplicationRuntime;
 mod attempt_registration;
 pub(in crate::domain_computation::primary_graph) use attempt_registration::WorthQueryApplicationAttemptOperationControl;
 pub use attempt_registration::WorthQueryApplicationAttemptRegistrationPause;
+pub use attempt_registration::WorthQueryApplicationCandidatePreparationPause;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    /// Observes the once-published activation-record identity for certification.
+    #[doc(hidden)]
+    pub fn program_activation_entity_for_test(
+        &self,
+    ) -> Option<worth_relational::facade::identity::EntityId> {
+        self.installed_program_support()?.activation().published()
+    }
+
+    /// Parks real application candidates after Relational preparation and
+    /// before any owner effect or World product comparison.
+    #[doc(hidden)]
+    pub fn pause_after_application_candidate_preparation_for_test(
+        &self,
+        attempts: std::num::NonZeroUsize,
+    ) -> WorthQueryApplicationCandidatePreparationPause {
+        self.primary_provider
+            .application_attempt_operation_control
+            .pause_after_candidate_preparation(attempts)
+    }
+
     /// Parks real provider-registered application attempts for certification.
     #[doc(hidden)]
     pub fn pause_after_application_attempt_registration_for_test(

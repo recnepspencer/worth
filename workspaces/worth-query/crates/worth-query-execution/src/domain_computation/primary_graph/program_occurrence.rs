@@ -11,7 +11,9 @@ use std::sync::Arc;
 use worth_foundational::facade::AspectValue;
 use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
 use worth_query_installation::facade::{
-    WorthQueryProgramSupportEntry, WorthQueryProgramSupportRoster,
+    WorthQueryInstalledApplicationSchema, WorthQueryProgramAdoptionRequirements,
+    WorthQueryProgramAdoptionRequirementsDenial, WorthQueryProgramSupportEntry,
+    WorthQueryProgramSupportRoster,
 };
 
 mod activation_cell;
@@ -93,5 +95,18 @@ impl<Schema> WorthQueryInstalledProgramSupport<Schema> {
             .iter()
             .position(|admitted| admitted == rendering)
             .and_then(|position| self.roster.entries().get(position))
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn adoption_requirements(
+        &self,
+        installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
+        source: &ApplicationProgramRevision,
+        target: &ApplicationProgramRevision,
+    ) -> Result<WorthQueryProgramAdoptionRequirements, WorthQueryProgramAdoptionRequirementsDenial>
+    where
+        Schema: worth_query_installation::facade::ApplicationSchema,
+    {
+        self.roster
+            .adoption_requirements(installed_schema, source, target)
     }
 }

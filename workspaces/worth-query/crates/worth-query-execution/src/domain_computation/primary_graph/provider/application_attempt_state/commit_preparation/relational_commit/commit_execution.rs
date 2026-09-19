@@ -65,6 +65,8 @@ pub(super) fn commit(
         .graph
         .with_runtime_mut(|runtime| runtime.prepare_validated_proposal(candidate))
         .map_err(transaction_commit_stop)?;
+    #[cfg(feature = "test-world-operation-control")]
+    provider.after_application_candidate_preparation_for_test();
     let performed = product_publication::publish(provider, &mut attempt, candidate)?;
     let performed = performed.publication;
     let next_basis = performed

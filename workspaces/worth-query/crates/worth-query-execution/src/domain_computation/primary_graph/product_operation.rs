@@ -8,6 +8,7 @@ mod generated_materialization;
 pub(in crate::domain_computation::primary_graph) use generated_materialization::admit_required_invariants;
 mod history;
 mod operation;
+mod program_adoption;
 mod query;
 mod relational_change_delivery;
 mod security_basis;
@@ -46,6 +47,11 @@ pub use generated_materialization::{
     WorthQueryUnpublishedGeneratedOutputRestoration,
 };
 pub use history::{WorthQueryProductHistory, WorthQueryProductHistoryEntry};
+pub use program_adoption::{
+    WorthQueryBranchAdoptionActivationDenial, WorthQueryBranchAdoptionPreparationDenial,
+    WorthQueryBranchAdoptionPublicationOutcome, WorthQueryPerformedBranchAdoption,
+    WorthQueryPreparedBranchAdoption, WorthQueryUnpublishedBranchAdoption,
+};
 pub use query::WorthQueryProductQueryControls;
 pub use transaction::{
     WorthQueryAdmittedChange, WorthQueryAppliedProductTransaction, WorthQueryProductTransaction,

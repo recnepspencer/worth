@@ -7,7 +7,7 @@ use worth_query_installation::facade::ApplicationSchema;
 
 use super::{
     WorthQueryApplicationMutationRequest, WorthQueryApplicationOutputDemandRequest,
-    WorthQueryApplicationQueryRequest,
+    WorthQueryApplicationProgramsRequest, WorthQueryApplicationQueryRequest,
 };
 use worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
@@ -130,6 +130,18 @@ where
             self.scope,
             self.branch,
             demand,
+        )
+    }
+
+    /// Enters branch-local application-program inspection and adoption.
+    pub fn programs(
+        &self,
+    ) -> WorthQueryApplicationProgramsRequest<'application, 'principal, 'scope, Schema> {
+        WorthQueryApplicationProgramsRequest::new(
+            self.application,
+            self.principal,
+            self.scope,
+            self.branch,
         )
     }
 

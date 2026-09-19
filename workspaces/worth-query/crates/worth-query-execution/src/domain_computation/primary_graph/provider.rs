@@ -91,6 +91,12 @@ impl WorthQueryPrimaryGraphProvider {
             .after_registration();
     }
 
+    #[cfg(feature = "test-world-operation-control")]
+    pub(super) fn after_application_candidate_preparation_for_test(&self) {
+        self.application_attempt_operation_control
+            .after_candidate_preparation();
+    }
+
     pub(in crate::domain_computation::primary_graph) fn conditional_commit_sequence(&self) -> u64 {
         self.conditional_commit_journal
             .lock()

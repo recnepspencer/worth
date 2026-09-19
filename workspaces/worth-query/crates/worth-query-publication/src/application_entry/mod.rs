@@ -8,6 +8,7 @@ mod elevation_request;
 mod live;
 mod mandatory_review;
 mod mutation;
+mod programs;
 mod query;
 mod request;
 mod retained_read;
@@ -53,6 +54,13 @@ pub use mutation::{
     WorthQueryPerformedMutationExecutionDenial, WorthQueryRequiredOutputPreparationDenial,
     WorthQueryRequiredOutputRecoveryPosture, WorthQueryRequiredOutputStartFailure,
     WorthQueryStartedDiscoveredOutputs, WorthQueryStartedRequiredOutputs,
+};
+pub use programs::{
+    WorthQueryApplicationProgramAdoptionPreparationDenial,
+    WorthQueryApplicationProgramAdoptionRequest,
+    WorthQueryApplicationProgramAdoptionRequestWithRequirements,
+    WorthQueryApplicationProgramsRequest, WorthQueryBranchAdoptionPublicationOutcome,
+    WorthQueryPerformedBranchAdoption, WorthQueryPreparedBranchAdoption,
 };
 pub use query::WorthQueryApplicationQueryRequest;
 pub use request::{

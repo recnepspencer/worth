@@ -37,7 +37,7 @@ pub mod runtime {
         WorthQueryWorkflowRunCleanupReceipt, WorthQueryWorkflowRunTerminal,
     };
     pub use worth_runtime_world::facade::{
-        CompositeComponentChangePosture, CompositeSignalPublicationIdentity,
+        CompositeComponentChangePosture, CompositeSignalPublicationIdentity, NoEffectCause,
         RuntimeWorldBranchBudgetInstallation, RuntimeWorldBudgetDenial,
         RuntimeWorldBudgetInstallation, RuntimeWorldBudgets, RuntimeWorldCancellationSource,
         RuntimeWorldCancellationToken, RuntimeWorldCustodyBudgetInstallation,
