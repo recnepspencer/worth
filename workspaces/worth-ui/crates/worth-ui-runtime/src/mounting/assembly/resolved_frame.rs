@@ -109,12 +109,14 @@ impl UiPreparedMountedFrame {
         profile: Option<&worth_ui_host_contract::UiHostAppearanceProfileContract>,
         motion: crate::mounting::presentation::UiAcceptedAppearanceMotion,
         overlays: &[crate::mounting::UiMountedAppearanceSurfaceOverlayInput],
+        scroll_chrome: &[crate::mounting::UiMountedAppearanceScrollChromeInput],
     ) -> crate::runtime::appearance::UiAppearanceInspectionAttemptBatch {
         self.frame.lower_appearance_with_motion_and_overlays(
             presentation,
             profile,
             motion,
             overlays,
+            scroll_chrome,
         )
     }
 

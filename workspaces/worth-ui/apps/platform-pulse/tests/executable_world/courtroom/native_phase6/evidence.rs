@@ -63,10 +63,27 @@ fn assert_scroll_continuity(input: &serde_json::Value) {
     let horizontal = input["last_horizontal_scroll"]
         .as_object()
         .expect("the real Windows horizontal wheel reaches host-native translation");
+    // One notch carries the platform's own line count, in thousandths of a line,
+    // read here from the same documented setting store by the courtroom's own hand.
+    let lines = i64::from(
+        crate::adjudication::platform_wheel_lines_per_notch()
+            .expect("the platform wheel-lines setting is a count or absent"),
+    );
     assert_eq!(vertical["x_subpixels"], 0);
-    assert_eq!(vertical["y_subpixels"], 40_000);
-    assert_eq!(horizontal["x_subpixels"], -40_000);
+    assert_eq!(vertical["y_subpixels"], lines * 1_000);
+    assert_eq!(vertical["lines_per_notch"], lines);
+    assert_eq!(horizontal["x_subpixels"], -lines * 1_000);
     assert_eq!(horizontal["y_subpixels"], 0);
+    assert_eq!(horizontal["lines_per_notch"], lines);
+    for basis in [
+        &vertical["line_count_basis"],
+        &horizontal["line_count_basis"],
+    ] {
+        assert!(
+            basis == "PlatformReported" || basis == "DefaultedAfterMissing",
+            "the host relays the platform count or the documented default: {basis}"
+        );
+    }
     let vertical_sequence = vertical["sequence"]
         .as_u64()
         .expect("vertical scroll has a retained sequence");

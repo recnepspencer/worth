@@ -38,10 +38,11 @@ pub(super) fn assert_qualified_dependencies() {
         assert_dependency_features(entries, "wgpu", &["std", "parking_lot", "dx12", "wgsl"]);
     }
     assert_dependency_features(workspace, "winsafe", &[]);
-    assert_dependency_features(windows, "winsafe", &["user"]);
+    assert_dependency_features(windows, "winsafe", &["advapi", "user"]);
     assert_dependency_features(workspace, "windows", &[]);
     assert_dependency_features(windows, "windows", &["UI_ViewManagement"]);
     assert_dependency_features(linux, "winit", &["rwh_06", "x11"]);
+    assert_eq!(qualified["winsafe-features"].as_str(), Some("advapi,user"));
     assert_eq!(qualified["winit-features"].as_str(), Some("rwh_06"));
     assert_eq!(
         qualified["winit-linux-features"].as_str(),

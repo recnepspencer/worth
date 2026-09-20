@@ -248,6 +248,9 @@ fn mechanic_belongs_to_node(
         UiMountedAppearanceMechanic::PortalSurface(_) => false,
         UiMountedAppearanceMechanic::Outline(mechanic) => mechanic.node_receipt() == receipt,
         UiMountedAppearanceMechanic::TextForeground(mechanic) => mechanic.node_receipt() == receipt,
+        UiMountedAppearanceMechanic::ScrollChrome(mechanic) => {
+            mechanic.identity().owner_instance() == receipt.mounted_instance()
+        }
         UiMountedAppearanceMechanic::Pointer(_) | UiMountedAppearanceMechanic::Backdrop(_) => false,
     }
 }
@@ -263,6 +266,9 @@ fn identity_belongs_to_node(
         }
         UiMountedAppearanceMechanicIdentity::TextForeground { target, .. } => {
             *target == receipt.mounted_instance()
+        }
+        UiMountedAppearanceMechanicIdentity::ScrollChrome(identity) => {
+            identity.owner_instance() == receipt.mounted_instance()
         }
         UiMountedAppearanceMechanicIdentity::PortalSurface(_)
         | UiMountedAppearanceMechanicIdentity::Pointer { .. }

@@ -222,7 +222,7 @@ impl UiMotionRuntimeState {
         self.terminalize_target(target, cause)
     }
 
-    pub(super) fn terminalize_target(
+    pub(crate) fn terminalize_target(
         &mut self,
         target: super::UiMotionTargetIdentity,
         cause: super::UiMotionTerminalCause,

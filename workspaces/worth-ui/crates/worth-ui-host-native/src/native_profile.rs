@@ -20,7 +20,6 @@ pub struct UiNativeMechanicsCapacities {
 
 pub const WORTH_UI_NATIVE_PROFILE_MANIFEST: &str =
     include_str!("../profiles/worth-ui-windows-dx12-v2.toml");
-pub(crate) const QUALIFIED_WHEEL_LINE_LOGICAL_SUBPIXELS: i64 = 40_000;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct UiNativeAppearanceProfile {

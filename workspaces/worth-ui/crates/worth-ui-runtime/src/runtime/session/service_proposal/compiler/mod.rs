@@ -18,12 +18,12 @@ mod settlement;
 mod settlement_compiler;
 #[cfg(test)]
 mod shutdown_tests;
-#[cfg(test)]
-#[path = "unit_tests.rs"]
-mod tests;
 mod staged_reference;
 mod staging;
 mod terminal;
+#[cfg(test)]
+#[path = "unit_tests.rs"]
+mod tests;
 
 #[cfg(test)]
 mod lifecycle {

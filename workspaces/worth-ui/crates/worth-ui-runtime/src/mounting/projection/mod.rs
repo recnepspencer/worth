@@ -16,14 +16,22 @@ mod participation;
 mod pointer_affordance;
 mod pointer_affordance_work;
 mod prepared_projection;
+/// Scroll chrome lowers beside node lowering rather than through it: chrome has
+/// no graph node and no mounted instance of its own.
+#[path = "lowering/scroll_chrome_lowering.rs"]
+mod scroll_chrome_lowering;
+#[cfg(test)]
+#[path = "lowering/scroll_chrome_lowering_tests.rs"]
+mod scroll_chrome_lowering_tests;
 mod semantic_text;
 
 pub(crate) use appearance::UiMountedAppearanceClip;
 #[cfg(test)]
 pub(crate) use appearance::UiMountedAppearanceClipDenial;
 pub(crate) use appearance::{
-    UiMountedAppearanceGeometryInput, UiMountedAppearanceLoweringDenial,
-    UiMountedAppearanceLoweringInput, UiMountedAppearanceNodeInput,
+    UiMountedAppearanceDerivedInput, UiMountedAppearanceGeometryInput,
+    UiMountedAppearanceLoweringDenial, UiMountedAppearanceLoweringInput,
+    UiMountedAppearanceNodeInput, UiMountedAppearanceScrollChromeInput,
     UiMountedAppearanceSurfaceOverlayInput, UiMountedAppearanceTextSpanInput,
     UiResolvedAppearanceNodeSource,
 };
@@ -60,6 +68,10 @@ pub(crate) use lowering::{
 };
 pub(crate) use prepared_projection::{
     UiMountedPresentationDeltaSource, UiPreparedMountedProjection,
+};
+pub(crate) use scroll_chrome_lowering::{
+    lower_scroll_chrome, UiMountedScrollChromeNode, UiScrollChromeLoweringDenial,
+    UiScrollChromeLoweringInput,
 };
 
 #[cfg(test)]

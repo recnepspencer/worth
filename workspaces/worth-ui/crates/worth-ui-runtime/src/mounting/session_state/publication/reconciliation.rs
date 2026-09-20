@@ -18,10 +18,8 @@ impl crate::mounting::session_state::WorthUiMountedSessionState {
             worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
             &[worth_ui_host_contract::UiSemanticSurfaceIdentity],
             Option<&crate::runtime::appearance::UiActiveThemeBinding>,
-        ) -> Result<
-            Vec<crate::mounting::UiMountedAppearanceSurfaceOverlayInput>,
-            (),
-        >,
+        )
+            -> Result<crate::mounting::UiMountedAppearanceDerivedInput, ()>,
     ) -> Result<UiMountedPublicationTransition, crate::mounting::UiMountedIdentityDenial> {
         let capability_report = host.capability_report().clone();
         let frame = self.identity.prepare_current_reconciliation_frame(
@@ -55,10 +53,8 @@ impl crate::mounting::session_state::WorthUiMountedSessionState {
             worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
             &[worth_ui_host_contract::UiSemanticSurfaceIdentity],
             Option<&crate::runtime::appearance::UiActiveThemeBinding>,
-        ) -> Result<
-            Vec<crate::mounting::UiMountedAppearanceSurfaceOverlayInput>,
-            (),
-        >,
+        )
+            -> Result<crate::mounting::UiMountedAppearanceDerivedInput, ()>,
     ) -> Result<UiMountedPublicationTransition, crate::mounting::UiMountedIdentityDenial> {
         if replacements.is_empty() || self.identity.publication_receipt().is_none() {
             return Err(crate::mounting::UiMountedIdentityDenial::ReconciliationBasisMismatch);
@@ -98,10 +94,8 @@ impl crate::mounting::session_state::WorthUiMountedSessionState {
             worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
             &[worth_ui_host_contract::UiSemanticSurfaceIdentity],
             Option<&crate::runtime::appearance::UiActiveThemeBinding>,
-        ) -> Result<
-            Vec<crate::mounting::UiMountedAppearanceSurfaceOverlayInput>,
-            (),
-        >,
+        )
+            -> Result<crate::mounting::UiMountedAppearanceDerivedInput, ()>,
     ) -> UiMountedPublicationTransition {
         let current = self
             .identity
@@ -141,8 +135,8 @@ impl crate::mounting::session_state::WorthUiMountedSessionState {
             &surfaces,
             admission.frame().prepared_theme_binding(),
         ) {
-            Ok(overlays) => admission
-                .lower_appearance_with_overlays(capability_report.appearance_profile(), &overlays),
+            Ok(derived) => admission
+                .lower_appearance_with_overlays(capability_report.appearance_profile(), &derived),
             Err(()) => admission.deny_appearance_output(),
         };
         let (admission, appearance_batch) = match appearance.admit_appearance_retention() {

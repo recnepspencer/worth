@@ -256,3 +256,55 @@ fn ensure_world(
     }
     Ok(())
 }
+
+impl UiAppearanceResolver {
+    /// Resolve one scroll-chrome part's role at the Hover and Pressed classes
+    /// the pointer lane derived for it.
+    ///
+    /// Chrome has no state vector and no graph target, so the world checks a
+    /// node needs do not apply; what remains is that the theme admits the role
+    /// and that the role is one a non-node may wear. A role narrowed to a
+    /// component or declared for backdrops is refused rather than painted.
+    pub(crate) fn resolve_scroll_chrome(
+        &self,
+        role: &worth_ui_dsl::UiAppearanceRoleDeclaration,
+        classes: &[(
+            worth_ui_dsl::UiAppearanceStateAxis,
+            worth_ui_dsl::UiAppearanceAxisClass,
+        )],
+        theme: &UiThemeResolutionView,
+    ) -> Result<super::UiScrollChromeAppearanceProjection, UiAppearanceResolutionFailure> {
+        if !theme.admits_role(role) {
+            return Err(UiAppearanceResolutionFailure::without_theme_work(
+                UiAppearanceResolutionDenial::MissingRoleCapability,
+            ));
+        }
+        if !matches!(
+            role.applicability(),
+            worth_ui_dsl::UiAppearanceRoleApplicability::AnyComponent
+        ) {
+            return Err(UiAppearanceResolutionFailure::without_theme_work(
+                UiAppearanceResolutionDenial::WrongRoleApplicability,
+            ));
+        }
+        let mut aspects = Vec::with_capacity(role.partitions().len());
+        let mut theme_slots_compared = 0_u32;
+        for (aspect, partition) in role.partitions() {
+            match aspect_resolution::resolve_with_classes(*aspect, partition, classes, theme) {
+                Ok(resolved) => {
+                    theme_slots_compared = theme_slots_compared
+                        .checked_add(resolved.theme_slots_compared())
+                        .expect("appearance theme traversal count fits its bounded catalog");
+                    aspects.push(resolved);
+                }
+                Err(failure) => return Err(failure.with_prior_theme_work(theme_slots_compared)),
+            }
+        }
+        Ok(super::UiScrollChromeAppearanceProjection::seal(
+            role,
+            classes,
+            theme,
+            aspects.into_boxed_slice(),
+        ))
+    }
+}

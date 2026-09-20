@@ -36,7 +36,11 @@ impl WorthUiNativeApplicationShell {
             .mounted
             .set_reduced_motion_posture(map_reduced_motion(reduced_motion));
         if !self.session.mounted.has_active_motion_samples() {
-            return Ok(UiNativeMotionTickDisposition::Inactive);
+            // A settle deferred by a presentation attempt is still owed its
+            // frame. The accepted sample outlives the track that produced it,
+            // so the retry runs here even after sampling has gone quiet.
+            self.settle_accepted_scroll_samples();
+            return Ok(self.native_motion_tick_disposition());
         }
         if self.session.mounted.motion_sample_presentation_pending() {
             return Ok(UiNativeMotionTickDisposition::AwaitingPhysicalCompletion);
@@ -48,12 +52,23 @@ impl WorthUiNativeApplicationShell {
             .map_err(|_| ())?;
         self.session
             .present_prepared_motion_tick(prepared, presentation);
+        self.session.settle_accepted_scroll_sample(presentation);
         Ok(self.native_motion_tick_disposition())
+    }
+
+    /// Apply whatever accepted Scroll samples are outstanding, if the surface
+    /// still has a published presentation to apply them against.
+    fn settle_accepted_scroll_samples(&mut self) {
+        let Some(presentation) = self.current_motion_presentation() else {
+            return;
+        };
+        self.session.settle_accepted_scroll_sample(presentation);
     }
 
     pub(crate) fn native_motion_sampling_active(&self) -> bool {
         self.session.mounted.has_active_motion_samples()
             || self.session.portal_exit_terminal_work_pending()
+            || self.session.awaits_scroll_settle_retry()
     }
 
     /// Whether Motion or retained Portal-exit work currently owns native

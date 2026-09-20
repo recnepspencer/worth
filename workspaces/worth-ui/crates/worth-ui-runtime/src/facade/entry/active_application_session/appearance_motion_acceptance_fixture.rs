@@ -53,14 +53,8 @@ pub(super) fn install(
 ) {
     let request = UiMotionTransitionRequest::from_family_transition(
         target,
-        1,
-        2,
-        presentation,
-        None,
-        !entering,
-        presentation,
-        None,
-        entering,
+        crate::runtime::motion::UiMotionTransitionEndpoint::new(1, presentation, None, !entering),
+        crate::runtime::motion::UiMotionTransitionEndpoint::new(2, presentation, None, entering),
         if entering {
             UiMotionDeclaration::portal_entrance()
         } else {

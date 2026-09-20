@@ -3,6 +3,7 @@ pub(crate) mod draft;
 pub(crate) mod gesture;
 mod pointer_admission;
 mod pointer_presence;
+mod scroll_chrome_hover;
 mod semantic;
 mod service_event;
 mod settlement;

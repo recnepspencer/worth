@@ -252,6 +252,62 @@ fn inside_contour(bounds: [i64; 4], radii: [i64; 4], x: i64, y: i64) -> bool {
     true
 }
 
+impl UiHeadlessAppearanceFrameTranscript {
+    /// Samples the scroll chrome of one mounted occurrence at a logical
+    /// subpixel point, in paint order: the track first, then the thumb on top.
+    ///
+    /// This is the headless evidence read for a scrollbar. It honours the
+    /// region's clip and the thumb's rounded contour, so a point inside the
+    /// gutter but outside the thumb reports the track, and a point in a cut
+    /// corner reports what lies beneath it.
+    pub fn reference_scroll_chrome_at(
+        &self,
+        owner: worth_ui_host_contract::UiMountedInstanceIdentity,
+        x: i64,
+        y: i64,
+    ) -> UiMountedAppearanceColor {
+        let mut parts = self
+            .mechanics
+            .iter()
+            .filter_map(|mechanic| match mechanic {
+                UiHeadlessAppearanceMechanic::ScrollChrome(chrome)
+                    if chrome.identity().owner_instance() == owner =>
+                {
+                    Some(chrome)
+                }
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        parts.sort_by_key(|chrome| chrome.identity().part().paint_ordinal());
+        let mut layers = Vec::new();
+        for chrome in parts {
+            let rect = chrome.rect();
+            let clip = chrome.clip();
+            let bounds = [
+                i64::from(rect.x()),
+                i64::from(rect.y()),
+                i64::from(rect.width()),
+                i64::from(rect.height()),
+            ];
+            if !contains(
+                [
+                    i64::from(clip.x()),
+                    i64::from(clip.y()),
+                    i64::from(clip.width()),
+                    i64::from(clip.height()),
+                ],
+                x,
+                y,
+            ) || !inside_contour(bounds, chrome.radii().corners().map(i64::from), x, y)
+            {
+                continue;
+            }
+            layers.push((chrome.background(), chrome.opacity()));
+        }
+        compose_source_over(layers)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

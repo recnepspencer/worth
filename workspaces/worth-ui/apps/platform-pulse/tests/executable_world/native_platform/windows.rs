@@ -29,6 +29,7 @@ mod input_environment;
 mod pointer_target;
 mod pointer_visual_settlement;
 mod process_windows;
+mod scroll_input_delivery;
 mod window_state;
 
 pub(super) use input_environment::WindowsInputEnvironmentDenial;
@@ -306,6 +307,26 @@ impl NativePlatformContract for WindowsNativePlatform {
     ) -> Result<(), NativePlatformFailure> {
         let observed = self.observe_bound_client_area(bound)?;
         input_delivery::deliver_wheel_deltas(&bound.window, observed)
+    }
+
+    fn deliver_wheel_notches(
+        &self,
+        bound: &Self::BoundClientArea,
+        point: NativeClientPixelPoint,
+        notches: i32,
+    ) -> Result<(), NativePlatformFailure> {
+        let observed = self.observe_bound_client_area(bound)?;
+        scroll_input_delivery::deliver_wheel_notches(&bound.window, observed, point, notches)
+    }
+
+    fn deliver_pointer_drag(
+        &self,
+        bound: &Self::BoundClientArea,
+        from: NativeClientPixelPoint,
+        to: NativeClientPixelPoint,
+    ) -> Result<(), NativePlatformFailure> {
+        let observed = self.observe_bound_client_area(bound)?;
+        scroll_input_delivery::deliver_pointer_drag(&bound.window, observed, from, to)
     }
 
     fn move_cursor(&self, screen_point: (i32, i32)) -> Result<(), NativePlatformFailure> {

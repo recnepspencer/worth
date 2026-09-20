@@ -108,6 +108,21 @@ pub trait UiNativeApplicationRuntime: 'static {
         UiNativeApplicationRuntimeProgressStopped,
     >;
 
+    /// Present the mounted geometry a Motion tick settled without host sample
+    /// work, through the application's existing frame lifecycle. An accepted
+    /// Scroll sample moves scrolled content by re-lowering geometry, so the
+    /// frame that shows the movement is owed by the application, not the host.
+    fn native_motion_settlement_ready(
+        &mut self,
+        application: crate::facade::WorthUiNativeApplicationShell,
+    ) -> Result<
+        (
+            crate::facade::WorthUiNativeApplicationShell,
+            UiNativeApplicationRuntimeDirective,
+        ),
+        UiNativeApplicationRuntimeProgressStopped,
+    >;
+
     /// Progress one host-owned viewport successor after the native driver has
     /// installed its exact physical basis in the runtime shell. The callback
     /// carries no copied extent and is not measurement authority.

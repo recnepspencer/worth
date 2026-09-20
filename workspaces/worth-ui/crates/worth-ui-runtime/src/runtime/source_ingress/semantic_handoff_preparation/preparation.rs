@@ -23,7 +23,7 @@ pub(in crate::runtime::source_ingress) fn prepare_semantic_handoff(
             WorthUiSemanticHandoffPreparationStop::UnsupportedProtocol,
         ));
     }
-    let successor_snapshot = snapshot
+    let refrozen_roles = snapshot
         .refreeze_authored_appearance_roles(
             package
                 .appearance_role_declarations()
@@ -34,8 +34,24 @@ pub(in crate::runtime::source_ingress) fn prepare_semantic_handoff(
                 evidence.clone(),
                 WorthUiSemanticHandoffPreparationStop::AppearanceRoleRegistration(cause),
             )
-        })?
-        .map(std::rc::Rc::new);
+        })?;
+    let scroll_region_clauses = evidence.authored_scroll_region_clauses().map_err(|cause| {
+        denial(
+            evidence.clone(),
+            WorthUiSemanticHandoffPreparationStop::AuthoredScrollRegion(cause),
+        )
+    })?;
+    let refrozen_regions = refrozen_roles
+        .as_ref()
+        .unwrap_or(snapshot)
+        .refreeze_authored_scroll_regions(&scroll_region_clauses)
+        .map_err(|cause| {
+            denial(
+                evidence.clone(),
+                WorthUiSemanticHandoffPreparationStop::AuthoredScrollRegion(cause),
+            )
+        })?;
+    let successor_snapshot = refrozen_regions.or(refrozen_roles).map(std::rc::Rc::new);
     evidence.successor_snapshot = successor_snapshot.clone();
     let snapshot = successor_snapshot.as_deref().unwrap_or(snapshot);
     let intent_material =

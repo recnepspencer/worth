@@ -14,6 +14,18 @@ pub(crate) enum UiScrollDeltaCause {
         precision: worth_ui_host_contract::UiHostScrollDeltaPrecision,
     },
     ProgrammaticReveal,
+    /// The accepted sample of a settling Scroll content group reached the
+    /// displayed pose, and the semantic offset is being brought to where the
+    /// host has already put the content. No reader gesture is asking for this:
+    /// it is the settle's own truth arriving one accepted frame at a time.
+    AcceptedSampleSettlement,
+    /// A reader is dragging the scroll thumb. The offset is placed directly,
+    /// with no smoothing and no transition: the thumb must stay under the
+    /// pointer, so the delta the drag names is the delta that applies.
+    ChromeThumbDrag,
+    /// A reader pressed the chrome track beside the thumb, and the region paged
+    /// toward the press by one viewport less one line.
+    ChromeTrackPage,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

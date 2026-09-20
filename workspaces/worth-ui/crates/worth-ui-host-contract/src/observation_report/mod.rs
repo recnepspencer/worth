@@ -57,7 +57,8 @@ pub use report::{
 };
 pub use scroll::{
     UiHostScrollDeltaPhase, UiHostScrollDeltaPrecision, UiHostScrollDeltaSource,
-    UiHostScrollDeltaTargetAffinity,
+    UiHostScrollDeltaTargetAffinity, UiHostScrollLineCountBasis,
+    UI_HOST_SCROLL_DEFAULT_LINES_PER_NOTCH,
 };
 pub use sequence::{UiHostObservationSequence, UiHostObservationSequenceRange};
 pub use time_basis::UiHostObservationTimeBasis;

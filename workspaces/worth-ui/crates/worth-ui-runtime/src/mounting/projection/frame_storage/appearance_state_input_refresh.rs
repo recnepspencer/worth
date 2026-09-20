@@ -52,6 +52,7 @@ impl UiMountedAppearanceFrameState {
             input
                 .compose_accepted_motion(geometry)
                 .map_err(|_| UiMountedAppearanceOutputDenial::NodeLowering)?;
+            input.attach_owned_scroll_chrome(geometry);
             let predecessor = entry.sidecar.current_node_receipt();
             let work = entry
                 .sidecar

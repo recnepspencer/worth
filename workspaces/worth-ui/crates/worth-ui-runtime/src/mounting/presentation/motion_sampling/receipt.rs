@@ -261,6 +261,28 @@ impl UiPresentationMotionSampleReceipt {
 }
 
 impl UiPresentationMotionSamplingReceipt {
+    /// Forget every sample and terminal request of `tracks`, whose targets
+    /// were retired while this tick was in flight. Their samples would report
+    /// motion nothing displays any more, and their terminals would name tracks
+    /// Motion has already ended.
+    pub(super) fn drop_tracks(&mut self, tracks: &[crate::runtime::motion::UiMotionTrackIdentity]) {
+        if tracks.is_empty() {
+            return;
+        }
+        self.samples = self
+            .samples
+            .iter()
+            .copied()
+            .filter(|sample| !tracks.contains(&sample.track()))
+            .collect();
+        self.terminals = self
+            .terminals
+            .iter()
+            .copied()
+            .filter(|terminal| !tracks.contains(&terminal.track()))
+            .collect();
+    }
+
     pub(crate) fn take_hit_transition(
         &mut self,
     ) -> Option<crate::mounting::UiCommittedPresentedHitTransition> {

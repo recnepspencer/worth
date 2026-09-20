@@ -475,3 +475,7 @@ path = "../../../../worth-ui/tests/ui/facade/appearance/fail/resolved_appearance
 [[bin]]
 name = "product-gate-one-appearance-contract"
 path = "../../../../worth-ui/tests/ui/facade/appearance/pass/gate_one_appearance_contract.rs"
+
+[[bin]]
+name = "product-smooth-scroll-policy-authoring"
+path = "../../../../worth-ui/tests/ui/facade/service/pass/smooth_scroll_policy_authoring.rs"

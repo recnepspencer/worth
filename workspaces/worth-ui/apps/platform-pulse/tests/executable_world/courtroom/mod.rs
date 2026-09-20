@@ -20,6 +20,8 @@ mod native_phase_f_reconstruction;
 #[cfg(target_os = "windows")]
 mod platform_pulse_cleanup;
 #[cfg(target_os = "windows")]
+mod platform_pulse_dashboard;
+#[cfg(target_os = "windows")]
 mod platform_pulse_input;
 #[cfg(target_os = "windows")]
 mod platform_pulse_intent;
@@ -29,5 +31,7 @@ mod platform_pulse_journey;
 mod platform_pulse_lifecycle;
 #[cfg(target_os = "windows")]
 mod platform_pulse_portal;
+#[cfg(target_os = "windows")]
+mod platform_pulse_scroll;
 #[cfg(target_os = "windows")]
 mod query_application_launch;

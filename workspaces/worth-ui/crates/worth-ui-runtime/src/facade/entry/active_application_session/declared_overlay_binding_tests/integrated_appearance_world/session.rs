@@ -1,15 +1,50 @@
 use super::super::{appearance_publication_support as overlay, test_support};
 use super::{authored, palette};
 use crate::capability::*;
-use crate::certification_support::{ScriptedPresentationHost, ScriptedSurfaceCompletion};
+use crate::certification_support::ScriptedPresentationHost;
 use crate::facade::WorthUiActiveApplicationSession;
-use crate::mounting::{UiMountedFrameOutcome, UiPreparedMountedFrame};
+use crate::mounting::UiPreparedMountedFrame;
 use crate::mounting::{UiSurfaceBindingCoordinatePosture, UiSurfaceBindingProfile};
 use worth_ui_host_contract::*;
 
 #[path = "application_capabilities.rs"]
 mod application_capabilities;
 use application_capabilities::builder;
+
+/// What a launched World declares about scrolling: the Scroll service policy
+/// its wheel follows, and the primary region kind whose content scrolls.
+pub(super) struct WorldScroll {
+    pub(super) policy: crate::declaration::UiScrollPolicy,
+    pub(super) region: MosaicRegionKindDescriptor,
+}
+
+impl Default for WorldScroll {
+    fn default() -> Self {
+        Self {
+            policy: crate::declaration::UiScrollPolicy::nested_region(),
+            region: crate::runtime::tests::source_ingress_boundary_test_support::source_backed_package_region(),
+        }
+    }
+}
+
+/// The capability shape one World launches with.
+pub(super) struct WorldCapabilities {
+    pub(super) seam: bool,
+    pub(super) multi_region_owner: bool,
+    pub(super) role: Option<worth_ui_dsl::UiAppearanceRoleDeclaration>,
+    pub(super) scroll: WorldScroll,
+}
+
+impl WorldCapabilities {
+    fn shared(seam: bool, multi_region_owner: bool) -> Self {
+        Self {
+            seam,
+            multi_region_owner,
+            role: None,
+            scroll: WorldScroll::default(),
+        }
+    }
+}
 
 pub(super) struct World {
     pub(super) session: WorthUiActiveApplicationSession,
@@ -29,13 +64,11 @@ impl World {
         source: String,
     ) -> Self {
         Self::launch_with_projection_budget(
-            false,
-            false,
+            WorldCapabilities::shared(false, false),
             source,
             None,
             Some(registration),
             Default::default(),
-            None,
         )
     }
 
@@ -70,13 +103,11 @@ impl World {
         )>,
     ) -> Self {
         Self::launch_with_projection_budget(
-            seam,
-            multi_region_owner,
+            WorldCapabilities::shared(seam, multi_region_owner),
             source,
             scalar,
             None,
             Default::default(),
-            None,
         )
     }
 
@@ -84,13 +115,26 @@ impl World {
         budget: crate::mounting::UiMountedFrameRetentionBudget,
     ) -> Self {
         Self::launch_with_projection_budget(
-            false,
-            false,
+            WorldCapabilities::shared(false, false),
             authored::source(),
             None,
             None,
             budget,
+        )
+    }
+
+    /// A World whose Scroll service and primary region are the caller's, with
+    /// or without a Motion service to publish settles to.
+    pub(super) fn launch_with_scroll(scroll: WorldScroll) -> Self {
+        Self::launch_with_projection_budget(
+            WorldCapabilities {
+                scroll,
+                ..WorldCapabilities::shared(false, false)
+            },
+            authored::source(),
             None,
+            None,
+            Default::default(),
         )
     }
 
@@ -99,19 +143,19 @@ impl World {
         role: worth_ui_dsl::UiAppearanceRoleDeclaration,
     ) -> Self {
         Self::launch_with_projection_budget(
-            false,
-            false,
+            WorldCapabilities {
+                role: Some(role),
+                ..WorldCapabilities::shared(false, false)
+            },
             source,
             None,
             None,
             Default::default(),
-            Some(role),
         )
     }
 
     fn launch_with_projection_budget(
-        seam: bool,
-        multi_region_owner: bool,
+        capabilities: WorldCapabilities,
         source: String,
         scalar: Option<(
             ComponentDescriptor,
@@ -119,11 +163,9 @@ impl World {
         )>,
         collection: Option<worth_ui_query_binding::UiCollectionProjectionRegistration>,
         budget: crate::mounting::UiMountedFrameRetentionBudget,
-        role: Option<worth_ui_dsl::UiAppearanceRoleDeclaration>,
     ) -> Self {
         let configured = || {
-            let builder = builder(seam, multi_region_owner, role.as_ref())
-                .with_mounted_frame_retention_budget(budget);
+            let builder = builder(&capabilities).with_mounted_frame_retention_budget(budget);
             let builder = match &scalar {
                 Some((component, registration)) => builder
                     .register_component(component.clone())
@@ -290,101 +332,5 @@ impl World {
                 }
                 _ => panic!("shared authored frame stops before preparation"),
             })
-    }
-
-    pub(super) fn publish(&mut self, frame: UiPreparedMountedFrame, now: u64, initial: bool) {
-        for _ in frame.surfaces() {
-            if initial {
-                self.host.push_native_display_presented();
-            } else {
-                self.host.push_native_display_settled_without_effects();
-            }
-        }
-        let outcome = self.session.present_prepared_mounted_frame_internal(
-            frame,
-            UiPresentationDeadline::at_tick(u64::MAX),
-            now,
-        );
-        match outcome {
-            UiMountedFrameOutcome::Published(_) => {}
-            UiMountedFrameOutcome::AdmissionDenied(denial) => {
-                panic!("shared publication at {now}: {:?}", denial.denial())
-            }
-            UiMountedFrameOutcome::RejectedBeforeEffects(denial) => {
-                panic!("shared publication: {:?}", denial.rejections())
-            }
-            other => panic!(
-                "shared publication at {now}: {:?}",
-                std::mem::discriminant(&other)
-            ),
-        }
-    }
-
-    pub(super) fn publish_in_flight(&mut self, frame: UiPreparedMountedFrame, now: u64) {
-        assert_eq!(
-            frame.surfaces().len(),
-            1,
-            "shared in-flight proof is one surface"
-        );
-        let predecessor = self.session.current_mounted_publication().unwrap().frame();
-        let appearance = self
-            .session
-            .mounted
-            .current_unpublished_appearance()
-            .unwrap()
-            .cloned();
-        self.host.push_in_flight(
-            vec![ScriptedSurfaceCompletion::Presented(
-                UiMountedSurfacePresentationCompletion::new(
-                    UiHostSurfacePresentationMode::NativeDisplay,
-                    UiHostPresentationEpoch::issued_by_host(now + 1_000),
-                    UiMountedCompletedEffects::new(Vec::new()),
-                    UiHostPresentationCostReport::default(),
-                ),
-            )],
-            UiHostSurfaceCancellationOutcome::CancelledBeforeEffects,
-        );
-        let outcome = self.session.present_prepared_mounted_frame_internal(
-            frame,
-            UiPresentationDeadline::at_tick(u64::MAX),
-            now,
-        );
-        let pending = match outcome {
-            UiMountedFrameOutcome::InFlight(pending) => pending,
-            UiMountedFrameOutcome::AdmissionDenied(denial) => {
-                panic!("shared in-flight admission: {:?}", denial.denial())
-            }
-            UiMountedFrameOutcome::RejectedBeforeEffects(denial) => {
-                panic!("shared in-flight rejection: {:?}", denial.rejections())
-            }
-            other => panic!(
-                "shared authored publication must enter the legal in-flight posture: {:?}",
-                std::mem::discriminant(&other)
-            ),
-        };
-        assert_eq!(
-            self.session.current_mounted_publication().unwrap().frame(),
-            predecessor,
-            "the accepted predecessor stays authoritative while host work is pending"
-        );
-        assert_eq!(
-            self.session
-                .mounted
-                .current_unpublished_appearance()
-                .unwrap(),
-            appearance.as_ref(),
-            "pending text and overlay work cannot replace accepted appearance"
-        );
-        let completed = self.session.complete_mounted_presentation(pending, now + 1);
-        match completed {
-            UiMountedFrameOutcome::Published(_) => {}
-            UiMountedFrameOutcome::PresentationIndeterminate(frame) => {
-                panic!("shared in-flight completion: {:?}", frame.report())
-            }
-            other => panic!(
-                "shared in-flight completion: {:?}",
-                std::mem::discriminant(&other)
-            ),
-        }
     }
 }

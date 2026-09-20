@@ -10,6 +10,9 @@ use worth_ui::facade::inspection::{
 use worth_ui_platform_pulse::visual_identity_pulse::PLATFORM_PULSE_MAXIMUM_PIXEL_BYTES;
 
 pub(super) use appearance::register as register_appearance;
+/// The Mosaic region declarations name the chrome roles the appearance owner
+/// defines, so the two declaration sites quote one set of identities.
+pub(in crate::application) use appearance::scroll_chrome;
 pub(super) use appearance::PlatformPulseAppearanceRegistrationDenial;
 pub(super) use product_structure::register_structure;
 

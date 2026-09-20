@@ -32,6 +32,7 @@ mod runtime_launch;
 #[cfg(feature = "certification-support")]
 mod runtime_service_scale;
 mod scripted_presentation_host;
+mod scroll_chrome_observation;
 mod scroll_observation;
 mod semantic_text_projection;
 mod semantic_text_resolver;
@@ -130,6 +131,9 @@ pub use runtime_service_scale::{runtime_service_scale_evidence, UiRuntimeService
 pub use scripted_presentation_host::{
     presented_completion, recorded_effects, scripted_presentation_epoch, ScriptedPresentationHost,
     ScriptedSurfaceCompletion,
+};
+pub use scroll_chrome_observation::{
+    UiScrollChromeCertificationOutcome, WorthUiScrollChromeCertificationExt,
 };
 pub use scroll_observation::{
     UiScrollObservationCertificationDenial, UiScrollObservationCertificationOutcome,

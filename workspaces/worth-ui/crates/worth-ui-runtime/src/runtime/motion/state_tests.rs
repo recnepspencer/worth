@@ -269,14 +269,18 @@ fn request_for_target_with_declaration(
     let presentation = presentation(frame);
     UiMotionTransitionRequest::from_family_transition(
         target,
-        predecessor_revision,
-        successor_revision,
-        presentation,
-        geometry([0.0, 0.0, 40.0, 20.0]),
-        predecessor_revision > 0,
-        presentation,
-        geometry([4.0, 8.0, 44.0, 24.0]),
-        true,
+        super::UiMotionTransitionEndpoint::new(
+            predecessor_revision,
+            presentation,
+            geometry([0.0, 0.0, 40.0, 20.0]),
+            predecessor_revision > 0,
+        ),
+        super::UiMotionTransitionEndpoint::new(
+            successor_revision,
+            presentation,
+            geometry([4.0, 8.0, 44.0, 24.0]),
+            true,
+        ),
         declaration,
     )
     .expect("Motion fixture preserves one presentation binding")

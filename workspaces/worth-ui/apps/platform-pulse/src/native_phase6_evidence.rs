@@ -39,6 +39,8 @@ pub(super) fn native_phase6_evidence(
                         "event_tick": scroll.event_tick(),
                         "x_subpixels": scroll.x_subpixels(),
                         "y_subpixels": scroll.y_subpixels(),
+                        "lines_per_notch": scroll.lines_per_notch(),
+                        "line_count_basis": scroll.line_count_basis().map(|basis| format!("{basis:?}")),
                     })
                 }),
                 "last_horizontal_scroll": input.last_horizontal_scroll().map(|scroll| {
@@ -47,6 +49,8 @@ pub(super) fn native_phase6_evidence(
                         "event_tick": scroll.event_tick(),
                         "x_subpixels": scroll.x_subpixels(),
                         "y_subpixels": scroll.y_subpixels(),
+                        "lines_per_notch": scroll.lines_per_notch(),
+                        "line_count_basis": scroll.line_count_basis().map(|basis| format!("{basis:?}")),
                     })
                 }),
             }),

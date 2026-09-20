@@ -43,7 +43,8 @@ impl WorthUiApplicationBuilder<UiChangeProfileInstalled, UiIntentWiringSatisfied
             self.service_policy_defaults,
             preparation_source.authored_service_policy_defaults(),
             service_support,
-        );
+        )
+        .map_err(WorthUiApplicationPreparationDenial::ServicePolicyNormalization)?;
         let prepared = prepare_application_authority(WorthUiApplicationPreparationInput {
             capability_snapshot,
             preparation_source,

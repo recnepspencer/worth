@@ -14,6 +14,18 @@ pub(super) const BOXES: [[f32; 4]; 5] = [
     [8.0, 12.0, 140.0, 36.0],
 ];
 pub(super) const MOVED_TARGET_BOX: [f32; 4] = [560.0, 420.0, 180.0, 60.0];
+/// The first component's region in its own local space when the World scrolls:
+/// half the owner's height, so its content has thirty points of block travel.
+pub(super) const SCROLLABLE_PRIMARY_REGION: [f32; 4] = [0.0, 0.0, 180.0, 30.0];
+
+/// Region rows that differ from the default of one region filling its owner.
+#[derive(Clone, Copy, Default)]
+struct RegionOverrides {
+    /// The child occurrence's region, in its owner-local space.
+    child: Option<[f32; 4]>,
+    /// The first component's region, in its own local space.
+    primary: Option<[f32; 4]>,
+}
 
 pub(super) fn canonical([x, y, width, height]: [f32; 4]) -> UiMountedCanonicalBox {
     canonical_in([x, y, width, height], UiMountedCoordinateSpace::HostSurface)
@@ -41,16 +53,15 @@ pub(super) fn install(
     session: &mut WorthUiActiveApplicationSession,
     surfaces: [UiSemanticSurfaceIdentity; 2],
     instances: [UiMountedInstanceIdentity; 5],
-    declarations: [worth_ui_dsl::UiMosaicRegionDeclarationIdentity; 2],
+    _declarations: [worth_ui_dsl::UiMosaicRegionDeclarationIdentity; 2],
 ) {
     install_with_child_region(
         session,
         surfaces,
         instances,
-        declarations,
         2,
         BOXES,
-        None,
+        RegionOverrides::default(),
         None,
     );
 }
@@ -59,16 +70,15 @@ pub(super) fn install_without_target(
     session: &mut WorthUiActiveApplicationSession,
     surfaces: [UiSemanticSurfaceIdentity; 2],
     instances: [UiMountedInstanceIdentity; 5],
-    declarations: [worth_ui_dsl::UiMosaicRegionDeclarationIdentity; 2],
+    _declarations: [worth_ui_dsl::UiMosaicRegionDeclarationIdentity; 2],
 ) {
     install_with_child_region(
         session,
         surfaces,
         instances,
-        declarations,
         10,
         BOXES,
-        None,
+        RegionOverrides::default(),
         Some(1),
     );
 }
@@ -77,16 +87,15 @@ pub(super) fn install_successor(
     session: &mut WorthUiActiveApplicationSession,
     surfaces: [UiSemanticSurfaceIdentity; 2],
     instances: [UiMountedInstanceIdentity; 5],
-    declarations: [worth_ui_dsl::UiMosaicRegionDeclarationIdentity; 2],
+    _declarations: [worth_ui_dsl::UiMosaicRegionDeclarationIdentity; 2],
 ) {
     install_with_child_region(
         session,
         surfaces,
         instances,
-        declarations,
         11,
         BOXES,
-        None,
+        RegionOverrides::default(),
         None,
     );
 }
@@ -95,7 +104,7 @@ pub(super) fn install_moved_target(
     session: &mut WorthUiActiveApplicationSession,
     surfaces: [UiSemanticSurfaceIdentity; 2],
     instances: [UiMountedInstanceIdentity; 5],
-    declarations: [worth_ui_dsl::UiMosaicRegionDeclarationIdentity; 2],
+    _declarations: [worth_ui_dsl::UiMosaicRegionDeclarationIdentity; 2],
 ) {
     let mut boxes = BOXES;
     boxes[1] = MOVED_TARGET_BOX;
@@ -103,10 +112,9 @@ pub(super) fn install_moved_target(
         session,
         surfaces,
         instances,
-        declarations,
         12,
         boxes,
-        None,
+        RegionOverrides::default(),
         None,
     );
 }
@@ -115,16 +123,15 @@ pub(super) fn install_restored_target(
     session: &mut WorthUiActiveApplicationSession,
     surfaces: [UiSemanticSurfaceIdentity; 2],
     instances: [UiMountedInstanceIdentity; 5],
-    declarations: [worth_ui_dsl::UiMosaicRegionDeclarationIdentity; 2],
+    _declarations: [worth_ui_dsl::UiMosaicRegionDeclarationIdentity; 2],
 ) {
     install_with_child_region(
         session,
         surfaces,
         instances,
-        declarations,
         13,
         BOXES,
-        None,
+        RegionOverrides::default(),
         None,
     );
 }
@@ -133,16 +140,18 @@ pub(super) fn install_disjoint_child_region(
     session: &mut WorthUiActiveApplicationSession,
     surfaces: [UiSemanticSurfaceIdentity; 2],
     instances: [UiMountedInstanceIdentity; 5],
-    declarations: [worth_ui_dsl::UiMosaicRegionDeclarationIdentity; 2],
+    _declarations: [worth_ui_dsl::UiMosaicRegionDeclarationIdentity; 2],
 ) {
     install_with_child_region(
         session,
         surfaces,
         instances,
-        declarations,
         3,
         BOXES,
-        Some([1_000.0, 1_000.0, 20.0, 20.0]),
+        RegionOverrides {
+            child: Some([1_000.0, 1_000.0, 20.0, 20.0]),
+            primary: None,
+        },
         None,
     );
 }
@@ -151,13 +160,12 @@ pub(super) fn install_seam_pair(
     session: &mut WorthUiActiveApplicationSession,
     surfaces: [UiSemanticSurfaceIdentity; 2],
     instances: [UiMountedInstanceIdentity; 5],
-    declarations: [worth_ui_dsl::UiMosaicRegionDeclarationIdentity; 2],
+    _declarations: [worth_ui_dsl::UiMosaicRegionDeclarationIdentity; 2],
 ) {
     install_with_child_region(
         session,
         surfaces,
         instances,
-        declarations,
         4,
         [
             [0.0, 0.0, 100.0, 100.0],
@@ -166,7 +174,28 @@ pub(super) fn install_seam_pair(
             BOXES[3],
             [10.0, 10.0, 40.0, 40.0],
         ],
+        RegionOverrides::default(),
         None,
+    );
+}
+
+/// Reinstall the launched geometry with the first component's region smaller
+/// than its box, so a wheel over it has somewhere to go.
+pub(super) fn install_scrollable_primary(
+    session: &mut WorthUiActiveApplicationSession,
+    surfaces: [UiSemanticSurfaceIdentity; 2],
+    instances: [UiMountedInstanceIdentity; 5],
+) {
+    install_with_child_region(
+        session,
+        surfaces,
+        instances,
+        20,
+        BOXES,
+        RegionOverrides {
+            child: None,
+            primary: Some(SCROLLABLE_PRIMARY_REGION),
+        },
         None,
     );
 }
@@ -175,10 +204,9 @@ fn install_with_child_region(
     session: &mut WorthUiActiveApplicationSession,
     surfaces: [UiSemanticSurfaceIdentity; 2],
     instances: [UiMountedInstanceIdentity; 5],
-    _declarations: [worth_ui_dsl::UiMosaicRegionDeclarationIdentity; 2],
     revision: u64,
     boxes: [[f32; 4]; 5],
-    child_region: Option<[f32; 4]>,
+    overrides: RegionOverrides,
     excluded: Option<usize>,
 ) {
     for (index, surface) in surfaces.into_iter().enumerate() {
@@ -221,12 +249,12 @@ fn install_with_child_region(
                     .application
                     .mounted_region_declarations(surface_declaration, mounted.graph_node_identity())
                     .0;
-                let bounds = if mount == 4 {
-                    child_region.unwrap_or([0.0, 0.0, boxes[mount][2], boxes[mount][3]])
-                } else if mount == 3 {
-                    [10.0, 10.0, 120.0, 40.0]
-                } else {
-                    [0.0, 0.0, boxes[mount][2], boxes[mount][3]]
+                let filling = [0.0, 0.0, boxes[mount][2], boxes[mount][3]];
+                let bounds = match mount {
+                    4 => overrides.child.unwrap_or(filling),
+                    3 => [10.0, 10.0, 120.0, 40.0],
+                    0 => overrides.primary.unwrap_or(filling),
+                    _ => filling,
                 };
                 bindings
                     .into_iter()

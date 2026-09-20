@@ -25,18 +25,7 @@ impl WorthUiActiveApplicationSession {
         let service_policy_plan = app.service_policy_plan();
         let mut dormant_portal_stack_ordinal_issuer =
             Some(crate::runtime::portal::UiPortalStackOrdinalIssuer::new());
-        let mut required_appearance_roles = app
-            .prepared_authority()
-            .consumed_fact_index()
-            .appearance_required_role_identities()
-            .into_vec();
-        required_appearance_roles.extend(
-            app.prepared_authority()
-                .authored_overlay_material()
-                .backdrop_appearance_role_identities(),
-        );
-        required_appearance_roles.sort();
-        required_appearance_roles.dedup();
+        let required_appearance_roles = app.required_appearance_role_identities();
         let appearance_theme_admission =
             if !required_appearance_roles.is_empty() {
                 let themes = app.capabilities().appearance_themes().ok_or(
@@ -199,6 +188,10 @@ impl WorthUiActiveApplicationSession {
             ),
             command_routing,
             ime_composing: false,
+            scroll_settle_retry:
+                super::scroll_accepted_sample_settlement::UiScrollSettleRetry::Settled,
+            last_scroll_settle_stop: None,
+            last_scroll_settle_disposition: super::UiScrollSettleDisposition::Idle,
             portal_exit_retention: super::portal_exit_retention::UiPortalExitRetentionCoordinator::new(),
             intent_evidence: crate::inspection::intent::UiIntentEvidenceRegistry::new(
                 identity.as_u64(),

@@ -1,7 +1,7 @@
 use super::spatial_index::UiMountedSpatialTree;
 use super::UiPresentedHitTestRow;
 use crate::mounting::UiHitTestSpatialWork;
-use crate::runtime::motion::UiMotionTargetIdentity;
+use crate::runtime::motion::{UiMotionTargetIdentity, UiMotionTargetScope};
 use crate::runtime::persistent_index::{
     UiPersistentIndexMutationWork, UiPersistentOrdMap, UiPersistentOrdSet,
 };
@@ -132,7 +132,11 @@ impl UiPresentedHitIndex {
             }
             let (row, probes) = self.rows.get_with_probes(&target.mounted_instance());
             work.map_key_probes += probes;
-            if !target.is_portal_contents()
+            // Only an ordinary target displaces the owning instance's own
+            // hit row. A contents-group target moves the members it names --
+            // Portal content or scrolled content -- and leaves the owner's
+            // stationary surface where it is.
+            if target.scope() == UiMotionTargetScope::Ordinary
                 && row.is_some_and(|row| {
                     row.base.portal_motion_target().is_none() && !row.base.owns_presented_portal()
                 })

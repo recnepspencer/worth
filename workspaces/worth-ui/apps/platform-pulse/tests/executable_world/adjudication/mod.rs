@@ -27,6 +27,10 @@ mod runtime_service_story_pixels;
 #[cfg(target_os = "windows")]
 mod schema_transition;
 #[cfg(target_os = "windows")]
+mod scroll_chrome_pixel_failure;
+#[cfg(target_os = "windows")]
+mod scroll_chrome_pixels;
+#[cfg(target_os = "windows")]
 mod source_to_pixel;
 mod visual_contract_manifest;
 #[cfg(target_os = "windows")]
@@ -107,9 +111,17 @@ pub(crate) use schema_transition::{
     ExpectedSchemaTransition,
 };
 #[cfg(target_os = "windows")]
+pub(crate) use scroll_chrome_pixel_failure::ScrollChromePixelFailure;
+#[cfg(target_os = "windows")]
+pub(crate) use scroll_chrome_pixels::{
+    adjudicate_content_shift, adjudicate_vertical_thumb, notch_points, physical_px,
+    platform_wheel_lines_per_notch, ContentShiftEvidence, RecentActivityScrollGeometry,
+    VerticalThumbEvidence,
+};
+#[cfg(target_os = "windows")]
 pub(crate) use source_to_pixel::{
-    adjudicate_first_frame, CausalFirstFrameObservationSet, ExecutableFirstFrameEvidence,
-    ExecutableFirstFrameFailure,
+    adjudicate_first_frame, adjudicate_source_signal_first_frame, CausalFirstFrameObservationSet,
+    ExecutableFirstFrameEvidence, ExecutableFirstFrameFailure,
 };
 #[cfg(target_os = "windows")]
 pub(crate) use visual_overlay_pixels::{

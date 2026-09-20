@@ -64,26 +64,12 @@ pub(super) fn deliver_pointer(
     observed: ProcessBoundNativeClientAreaObservation,
     point: NativeClientPixelPoint,
 ) -> Result<NativeInputDeliveryObservation, NativePlatformFailure> {
-    let bounds = observed.bounds();
-    if point.capture_extent() != (bounds.width(), bounds.height()) {
-        return Err(NativePlatformFailure::InputDelivery(
-            "pointer point was adjudicated from a different client capture extent".to_owned(),
-        ));
-    }
-    let (client_x, client_y) = point.coordinates();
-    let screen_x = bounds
-        .left()
-        .checked_add_unsigned(client_x)
-        .ok_or(NativePlatformFailure::InvalidCaptureWindowBounds)?;
-    let screen_y = bounds
-        .top()
-        .checked_add_unsigned(client_y)
-        .ok_or(NativePlatformFailure::InvalidCaptureWindowBounds)?;
+    let screen_point = super::scroll_input_delivery::screen_point_of(observed, point)?;
     deliver_at(
         window,
         observed,
         NativeInputProbeKind::Pointer,
-        (screen_x, screen_y),
+        screen_point,
         Some(point.landing_tolerance()),
         NativeKeyboardInput::Single(co::VK::CHAR_A),
     )
@@ -341,11 +327,11 @@ pub(super) fn post_effect_failure(
     }
 }
 
-fn move_pointer_to(screen_point: (i32, i32)) -> Result<(), NativePlatformFailure> {
+pub(super) fn move_pointer_to(screen_point: (i32, i32)) -> Result<(), NativePlatformFailure> {
     Mouse::set_cursor_pos(&Point::new(screen_point.0, screen_point.1)).map_err(input_failure)
 }
 
-fn prime_pointer_motion(
+pub(super) fn prime_pointer_motion(
     window: &HWND,
     screen_point: (i32, i32),
 ) -> Result<(), NativePlatformFailure> {
@@ -363,6 +349,6 @@ fn prime_pointer_motion(
         .map_err(NativePlatformFailure::InputEnvironment)
 }
 
-fn input_failure(error: uiautomation::Error) -> NativePlatformFailure {
+pub(super) fn input_failure(error: uiautomation::Error) -> NativePlatformFailure {
     NativePlatformFailure::InputDelivery(error.to_string())
 }

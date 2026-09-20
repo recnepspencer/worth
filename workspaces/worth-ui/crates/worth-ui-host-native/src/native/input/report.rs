@@ -58,6 +58,7 @@ pub struct UiNativeScrollDeltaObservation {
     event_tick: u64,
     x_subpixels: i64,
     y_subpixels: i64,
+    precision: worth_ui_host_contract::UiHostScrollDeltaPrecision,
 }
 
 impl UiNativePointerButtonObservation {
@@ -107,13 +108,27 @@ impl UiNativeScrollDeltaObservation {
         event_tick: u64,
         x_subpixels: i64,
         y_subpixels: i64,
+        precision: worth_ui_host_contract::UiHostScrollDeltaPrecision,
     ) -> Self {
         Self {
             sequence,
             event_tick,
             x_subpixels,
             y_subpixels,
+            precision,
         }
+    }
+
+    /// The platform line count one notch carried, when the delta was line-denominated.
+    pub const fn lines_per_notch(self) -> Option<u16> {
+        self.precision.lines_per_notch()
+    }
+
+    /// Where that line count came from, when the delta was line-denominated.
+    pub const fn line_count_basis(
+        self,
+    ) -> Option<worth_ui_host_contract::UiHostScrollLineCountBasis> {
+        self.precision.line_count_basis()
     }
 
     pub const fn sequence(self) -> u64 {

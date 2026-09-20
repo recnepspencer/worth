@@ -128,7 +128,7 @@ pub(super) fn authored_overlay_builder_with_component(
     )
 }
 
-fn authored_overlay_builder_with_component_and_region(
+pub(super) fn authored_overlay_builder_with_component_and_region(
     component: ComponentDescriptor,
     region: crate::capability::MosaicRegionKindDescriptor,
 ) -> crate::facade::entry::WorthUiCertificationApplicationBuilder {

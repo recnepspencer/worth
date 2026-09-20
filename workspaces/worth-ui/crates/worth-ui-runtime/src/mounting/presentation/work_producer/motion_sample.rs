@@ -5,6 +5,7 @@ use worth_ui_host_contract::{
 };
 
 use super::{production_cost, LocalWorkCost, RetainedTraversalCost, UiMountedPresentationState};
+use crate::runtime::motion::UiMotionTargetScope;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum UiMountedMotionSampleWorkDenial {
@@ -44,8 +45,18 @@ impl UiMountedPresentationState {
                 return Err(UiMountedMotionSampleWorkDenial::PresentationBasisMismatch);
             }
             let portal_group = self.portal_motion_group(sample.target());
-            if sample.target().is_portal_contents() && portal_group.is_none() {
-                return Err(UiMountedMotionSampleWorkDenial::UnknownTargetCommands);
+            match sample.target().scope() {
+                // Scrolled content is displaced by the Scroll runtime's pose
+                // application over the region's descendants, never by
+                // translating the region's own paint commands, so its sample
+                // contributes no command work. A tick that sampled only
+                // scrolled content never reaches this producer: the session
+                // accepts it without host sample work.
+                UiMotionTargetScope::ScrollContents => continue,
+                UiMotionTargetScope::PortalContents if portal_group.is_none() => {
+                    return Err(UiMountedMotionSampleWorkDenial::UnknownTargetCommands);
+                }
+                UiMotionTargetScope::Ordinary | UiMotionTargetScope::PortalContents => {}
             }
             let portal_clip = portal_group
                 .as_ref()

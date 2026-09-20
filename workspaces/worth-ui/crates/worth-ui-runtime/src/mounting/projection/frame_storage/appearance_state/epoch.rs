@@ -28,6 +28,7 @@ impl UiMountedAppearanceFrameState {
             self.selection.record_membership_work(work);
             self.epoch = Some(epoch);
             self.capacity_error = None;
+            self.scroll_chrome.clear_for_epoch();
         }
         let (retired, work) = self
             .members

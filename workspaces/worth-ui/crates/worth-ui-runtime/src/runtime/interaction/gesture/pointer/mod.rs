@@ -4,7 +4,12 @@ pub(crate) use cancellation::UiPreparedPointerGestureCancellation;
 mod appearance;
 mod model;
 mod presentation;
+mod scroll_chrome_latch;
 mod transition;
+
+pub(crate) use scroll_chrome_latch::{
+    UiScrollChromeLatch, UiScrollChromeLatchDenial, UiScrollChromeLatchState,
+};
 
 use std::collections::BTreeMap;
 
@@ -37,7 +42,26 @@ impl UiPointerGestureRuntimeState {
             counters: Default::default(),
             appearance_revision: 0,
             appearance_enabled,
+            scroll_chrome: Default::default(),
         }
+    }
+
+    /// The thumb drag in progress, if one is.
+    pub(crate) fn scroll_chrome_latch(&self) -> Option<UiScrollChromeLatch> {
+        self.scroll_chrome.held()
+    }
+
+    /// The latch slot as read-only state, for the lanes that only need to ask
+    /// what a drag in progress already owns.
+    pub(crate) const fn scroll_chrome_latch_state(&self) -> &UiScrollChromeLatchState {
+        &self.scroll_chrome
+    }
+
+    /// The latch slot, for the press, move and release lane that owns a drag.
+    pub(crate) fn scroll_chrome_latch_mut(
+        &mut self,
+    ) -> &mut scroll_chrome_latch::UiScrollChromeLatchState {
+        &mut self.scroll_chrome
     }
 
     pub(crate) fn process_report(
@@ -80,6 +104,9 @@ impl UiPointerGestureRuntimeState {
         binding: UiSurfaceBindingGeneration,
         reason: UiPointerGestureStopReason,
     ) -> Vec<super::UiPointerGestureStop> {
+        // A drag is presented under one binding; when that binding is gone the
+        // rectangles the drag was mapping through are gone with it.
+        self.scroll_chrome.cancel_binding(binding);
         self.cancel_where(|active| active.target.binding() == binding, reason)
     }
 
@@ -88,6 +115,9 @@ impl UiPointerGestureRuntimeState {
         instance: worth_ui_host_contract::UiMountedInstanceIdentity,
         reason: UiPointerGestureStopReason,
     ) -> Vec<super::UiPointerGestureStop> {
+        // A thumb drag ends with the occurrence it was dragging: the region is
+        // gone, so the offset the drag was placing has no owner left.
+        self.scroll_chrome.cancel_instance(instance);
         self.cancel_where(
             |active| active.target.mounted_instance() == instance,
             reason,
@@ -98,6 +128,9 @@ impl UiPointerGestureRuntimeState {
         &mut self,
         reason: UiPointerGestureStopReason,
     ) -> Vec<super::UiPointerGestureStop> {
+        // Modality changes and lost focus reach every gesture, and a captured
+        // thumb is a gesture: capture introduces no lifetime of its own.
+        self.scroll_chrome.cancel();
         let prepared = self.prepare_cancel_all(reason);
         self.commit_prepared_cancellation(prepared)
     }

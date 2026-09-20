@@ -53,8 +53,8 @@ pub(in crate::runtime) use request_basis::UiPortalCertificationServiceRequestAut
 pub(in crate::runtime) use request_basis::UiServiceRequestCoherenceAxes;
 pub(in crate::runtime) use request_basis::{
     UiAdmittedIntentServiceRequestAuthority, UiPortalDismissalServiceRequestAuthority,
-    UiPortalExitTerminalServiceRequestAuthority, UiServiceCancellationIdentity,
-    UiServiceRequestBasis, UiServiceRequestBasisDenial, UiServiceRequestCoherence,
-    UiServiceRequestCoherenceDrift, UiServiceRequestIdentity, UiServiceRequestOriginAuthority,
-    UiServiceSurfaceBasis,
+    UiPortalExitTerminalServiceRequestAuthority, UiScrollSettleServiceRequestAuthority,
+    UiServiceCancellationIdentity, UiServiceRequestBasis, UiServiceRequestBasisDenial,
+    UiServiceRequestCoherence, UiServiceRequestCoherenceDrift, UiServiceRequestIdentity,
+    UiServiceRequestOriginAuthority, UiServiceSurfaceBasis,
 };

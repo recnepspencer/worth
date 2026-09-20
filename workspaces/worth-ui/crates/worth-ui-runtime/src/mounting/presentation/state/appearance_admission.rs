@@ -15,22 +15,20 @@ impl UiMountedPresentationAdmission {
     pub(crate) fn lower_appearance_with_overlays(
         mut self,
         profile: Option<&worth_ui_host_contract::UiHostAppearanceProfileContract>,
-        overlays: &[crate::mounting::UiMountedAppearanceSurfaceOverlayInput],
+        derived: &crate::mounting::UiMountedAppearanceDerivedInput,
     ) -> UiMountedAppearanceAdmission {
+        let overlays = derived.overlays.as_slice();
         let requires_complete = self.candidates.requires_complete_appearance_projection();
         if requires_complete && self.frame.prepare_appearance_reconstruction().is_err() {
             return self.deny_appearance_output();
         }
-        let targets = match self.frame.appearance_motion_targets(overlays) {
-            Ok(targets) => targets,
-            Err(denial) => {
-                eprintln!("PULSE_APPEARANCE targets {denial:?}");
-                return self.deny_appearance_output();
-            }
+        let Ok(targets) = self.frame.appearance_motion_targets(overlays) else {
+            return self.deny_appearance_output();
         };
         let motion = self.candidates.accepted_appearance_motion(&targets);
         let refresh_visual_regions = !targets.is_empty()
             || !overlays.is_empty()
+            || !derived.scroll_chrome.is_empty()
             || !self.frame.retired_appearance_instances().is_empty();
         self.frame
             .record_accepted_motion_commands_visited(motion.commands_visited());
@@ -39,6 +37,7 @@ impl UiMountedPresentationAdmission {
             profile,
             motion,
             overlays,
+            &derived.scroll_chrome,
         );
         self.candidates
             .bind_appearance_sample_targets(&self.frame, &targets);

@@ -6,6 +6,7 @@ pub enum WorthUiApplicationPreparationPhase {
     GraphHandoff,
     GraphAdmission,
     GraphCommit,
+    ServicePolicyNormalization,
 }
 
 /// Phase-local denial from the single public application-preparation lane.
@@ -25,6 +26,7 @@ pub enum WorthUiApplicationPreparationDenial {
     GraphHandoff(Box<UiDeclarationGraphHandoffDenial>),
     GraphAdmission(Box<UiGraphInstantiationDenial>),
     GraphCommit(Box<UiGraphMutationCommitDenial>),
+    ServicePolicyNormalization(crate::declaration::UiServicePolicyNormalizationDenial),
 }
 
 impl WorthUiApplicationPreparationDenial {
@@ -41,6 +43,9 @@ impl WorthUiApplicationPreparationDenial {
             Self::GraphHandoff(_) => WorthUiApplicationPreparationPhase::GraphHandoff,
             Self::GraphAdmission(_) => WorthUiApplicationPreparationPhase::GraphAdmission,
             Self::GraphCommit(_) => WorthUiApplicationPreparationPhase::GraphCommit,
+            Self::ServicePolicyNormalization(_) => {
+                WorthUiApplicationPreparationPhase::ServicePolicyNormalization
+            }
         }
     }
 }

@@ -16,6 +16,17 @@ impl super::WorthUiMountedSessionState {
         )
     }
 
+    /// The Scroll region owner that `instance` travels with, when it is
+    /// scrolled content rather than a region owner in its own right.
+    pub(crate) fn scrolled_content_owner(
+        &self,
+        instance: worth_ui_host_contract::UiMountedInstanceIdentity,
+    ) -> Option<worth_ui_host_contract::UiMountedInstanceIdentity> {
+        let projected = self.identity.projection_instance(instance)?;
+        self.occurrence_geometry
+            .scrolled_content_owner(projected.basis().semantic_surface_identity(), instance)
+    }
+
     pub(crate) fn apply_scroll_geometries(
         &mut self,
         poses: &[(
@@ -55,5 +66,34 @@ impl super::WorthUiMountedSessionState {
             self.occurrence_geometry.apply_scroll_pose(pose);
         }
         Ok(())
+    }
+
+    /// Retire one Scroll content group's Motion sample outright, because a
+    /// pointer has taken direct control of the group's offset. From here until
+    /// a later settle installs a new track, the displayed pose is whatever
+    /// direct control applies, and no accepted sample stands behind it.
+    pub(crate) fn retire_scroll_motion_sample(
+        &mut self,
+        target: crate::runtime::motion::UiMotionTargetIdentity,
+    ) -> bool {
+        self.motion_sampling.retire_scroll_group_track(target)
+    }
+
+    /// The accepted translation of every retained Scroll content group, keyed
+    /// by the target that names it. This is the sole source of displayed
+    /// scrolled geometry: it reports what the host has already presented, never
+    /// the semantic target the content is still travelling toward.
+    pub(crate) fn accepted_scroll_group_translations(
+        &self,
+    ) -> Vec<(crate::runtime::motion::UiMotionTargetIdentity, [f32; 2])> {
+        self.motion_sampling
+            .retained_targets()
+            .into_iter()
+            .filter_map(|target| {
+                self.motion_sampling
+                    .accepted_scroll_group_translation(target)
+                    .map(|translation| (target, translation))
+            })
+            .collect()
     }
 }

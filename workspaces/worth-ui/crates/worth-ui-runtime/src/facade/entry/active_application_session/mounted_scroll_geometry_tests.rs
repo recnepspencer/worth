@@ -43,7 +43,7 @@ fn scroll_pose_is_local_idempotent_and_rejects_a_later_invalid_owner_before_effe
     ));
     let offset = crate::runtime::scroll::UiScrollOffset::new(
         0,
-        8 * worth_ui_host_contract::UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as i64,
+        8 * worth_ui_host_contract::UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
     )
     .unwrap();
     assert!(!session.mounted.projection_changes_pending());

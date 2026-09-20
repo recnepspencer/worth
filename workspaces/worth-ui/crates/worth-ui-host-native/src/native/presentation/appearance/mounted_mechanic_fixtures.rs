@@ -217,3 +217,60 @@ pub(super) fn pointer(family: UiPointerAffordanceFamily) -> UiMountedPointerAffo
         family,
     })
 }
+
+pub(in crate::native::presentation) struct MountedScrollChromeFixtureInput {
+    pub(in crate::native::presentation) semantic_surface: UiSemanticSurfaceIdentity,
+    pub(in crate::native::presentation) owner_instance: UiMountedInstanceIdentity,
+    pub(in crate::native::presentation) part: worth_ui_host_contract::UiMountedScrollChromePart,
+    pub(in crate::native::presentation) rect: worth_ui_host_contract::UiAppearanceAllocationBounds,
+    pub(in crate::native::presentation) radius: i32,
+    pub(in crate::native::presentation) background: UiMountedAppearanceColor,
+}
+
+pub(in crate::native::presentation) fn mounted_scroll_chrome(
+    input: MountedScrollChromeFixtureInput,
+) -> worth_ui_host_contract::UiMountedScrollChromeMechanic {
+    worth_ui_host_contract::UiMountedScrollChromeMechanic::complete_from_runtime_mounting(
+        worth_ui_host_contract::UiMountedScrollChromeCompletionInput {
+            identity: worth_ui_host_contract::UiMountedScrollChromeIdentity::from_runtime_mounting(
+                input.owner_instance,
+                worth_ui_host_contract::UiMountedScrollChromeAxis::Block,
+                input.part,
+            ),
+            semantic_surface: input.semantic_surface,
+            rect: input.rect,
+            clip: UiAppearanceClip::new(0, 0, 400_000, 400_000).unwrap(),
+            background: input.background,
+            radii: worth_ui_host_contract::UiAppearanceNormalizedLogicalRadii::normalize(
+                input.rect,
+                [worth_ui_host_contract::UiAppearanceLogicalLength::new(input.radius).unwrap(); 4],
+            ),
+            opacity: UiMountedPresentationOpacity::from_runtime_composition(u16::MAX),
+            attribution:
+                worth_ui_host_contract::UiMountedScrollChromeAppearanceAttribution::from_runtime_transport(
+                    input.semantic_surface,
+                    input.owner_instance,
+                    0x524f_4c45_0000_0001,
+                    0x5354_4154_4500_0001,
+                )
+                .unwrap(),
+        },
+    )
+    .unwrap()
+}
+
+pub(super) fn scroll_chrome(
+    part: worth_ui_host_contract::UiMountedScrollChromePart,
+) -> worth_ui_host_contract::UiMountedScrollChromeMechanic {
+    mounted_scroll_chrome(MountedScrollChromeFixtureInput {
+        semantic_surface: UiSemanticSurfaceIdentity::mint_unbound().unwrap(),
+        owner_instance: UiMountedInstanceIdentity::mint_unbound().unwrap(),
+        part,
+        rect: worth_ui_host_contract::UiAppearanceAllocationBounds::new(
+            100_000, 20_000, 6_000, 48_000,
+        )
+        .unwrap(),
+        radius: 3_000,
+        background: UiMountedAppearanceColor::from_straight_srgba([90, 90, 90, 255]),
+    })
+}

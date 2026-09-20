@@ -8,7 +8,9 @@ use worth_ui_host_contract::{
 /// Completes the exact occurrence geometry for the declarative frame-program
 /// driver. Applications with a live runtime remain responsible for their own
 /// layout; this owner covers the bounded program path used without one.
-pub(super) fn complete_program_layout(shell: &mut WorthUiNativeApplicationShell) -> Result<(), ()> {
+pub(in super::super) fn complete_program_layout(
+    shell: &mut WorthUiNativeApplicationShell,
+) -> Result<(), ()> {
     if !shell.native_program_layout_required() {
         return Ok(());
     }

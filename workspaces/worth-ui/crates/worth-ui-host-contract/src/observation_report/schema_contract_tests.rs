@@ -5,9 +5,9 @@ use crate::{
     UiHostObservationSequenceRange, UiHostObservationTimeBasis, UiHostPresentationEpoch,
     UiHostProtocolContract, UiHostProtocolDenial, UiHostProtocolNegotiation,
     UiHostProtocolSchemaFamily, UiHostScrollDeltaPhase, UiHostScrollDeltaPrecision,
-    UiHostScrollDeltaSource, UiHostScrollDeltaTargetAffinity, UiHostSurfaceIdentity,
-    UiMountedFrameIdentity, UiMountedInstanceIdentity, UiMountedNodeReceiptIssuer,
-    UiSurfaceBindingGeneration,
+    UiHostScrollDeltaSource, UiHostScrollDeltaTargetAffinity, UiHostScrollLineCountBasis,
+    UiHostSurfaceIdentity, UiMountedFrameIdentity, UiMountedInstanceIdentity,
+    UiMountedNodeReceiptIssuer, UiSurfaceBindingGeneration, UI_HOST_SCROLL_DEFAULT_LINES_PER_NOTCH,
 };
 
 #[test]
@@ -119,7 +119,10 @@ fn scroll_target_cannot_name_a_presentation_other_than_the_batch_presentation() 
             UiHostObservationPayload::ScrollDelta {
                 source: UiHostScrollDeltaSource::PointerWheel,
                 phase: UiHostScrollDeltaPhase::Updated,
-                precision: UiHostScrollDeltaPrecision::Line,
+                precision: UiHostScrollDeltaPrecision::Line {
+                    platform_lines_per_notch: UI_HOST_SCROLL_DEFAULT_LINES_PER_NOTCH,
+                    basis: UiHostScrollLineCountBasis::DefaultedAfterMissing,
+                },
                 target: UiHostScrollDeltaTargetAffinity::presented_surface_fallback(
                     foreign_presentation,
                 ),

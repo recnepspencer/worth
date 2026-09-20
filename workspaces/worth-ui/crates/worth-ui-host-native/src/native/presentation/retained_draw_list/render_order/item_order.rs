@@ -92,6 +92,18 @@ impl UiNativeRetainedDrawList {
                 appearance_rank,
                 key,
             )?,
+            // Chrome sits at the top of its surface's own content layer: above
+            // every scrolled rectangle, below the overlay layer that carries
+            // portals and their backdrops.
+            UiNativeAppearanceCommand::ScrollChrome(mechanic) => (
+                0,
+                usize::MAX,
+                0,
+                0,
+                mechanic.identity().part().paint_ordinal() as u8,
+                appearance_rank,
+                key.value(),
+            ),
             UiNativeAppearanceCommand::TextForeground(_)
             | UiNativeAppearanceCommand::OverlayOrder(_)
             | UiNativeAppearanceCommand::PointerAffordance(_) => return Ok(None),

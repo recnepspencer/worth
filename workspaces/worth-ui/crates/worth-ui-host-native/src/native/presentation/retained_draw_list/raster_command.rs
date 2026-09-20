@@ -87,7 +87,8 @@ impl UiNativeRetainedDrawList {
         basis: UiNativeRasterBasis,
     ) -> Result<Vec<UiNativeRasterOperation>, Denial> {
         use crate::native::presentation::appearance::{
-            UiNativeBackdropPipeline, UiNativeOutlinePipeline, UiNativeSurfacePipeline,
+            UiNativeBackdropPipeline, UiNativeOutlinePipeline, UiNativeScrollChromePipeline,
+            UiNativeSurfacePipeline,
         };
         let scale = self
             .staged_appearance
@@ -149,6 +150,17 @@ impl UiNativeRetainedDrawList {
                             opacity.factor(),
                         ),
                     })
+            }
+            UiNativeAppearanceCommand::ScrollChrome(mechanic) => {
+                // Chrome carries its own resolved opacity and never takes a
+                // motion sample: the bar reports the accepted pose, so a frame
+                // that is still settling paints the bar it already has.
+                let chrome = UiNativeScrollChromePipeline::prepare(&mechanic, scale)
+                    .map_err(|_| Denial::CommandMismatch)?;
+                surface_operation(
+                    UiNativeSurfacePipeline::prepare_scroll_chrome(&chrome),
+                    None,
+                )?
             }
             UiNativeAppearanceCommand::TextForeground(_)
             | UiNativeAppearanceCommand::OverlayOrder(_)

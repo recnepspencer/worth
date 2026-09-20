@@ -190,6 +190,20 @@ pub(crate) trait NativePlatformContract: sealed::Sealed {
         bound: &Self::BoundClientArea,
     ) -> Result<(), NativePlatformFailure>;
 
+    fn deliver_wheel_notches(
+        &self,
+        bound: &Self::BoundClientArea,
+        point: NativeClientPixelPoint,
+        notches: i32,
+    ) -> Result<(), NativePlatformFailure>;
+
+    fn deliver_pointer_drag(
+        &self,
+        bound: &Self::BoundClientArea,
+        from: NativeClientPixelPoint,
+        to: NativeClientPixelPoint,
+    ) -> Result<(), NativePlatformFailure>;
+
     fn move_cursor(&self, screen_point: (i32, i32)) -> Result<(), NativePlatformFailure>;
 
     fn request_normal_close(

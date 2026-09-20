@@ -122,6 +122,7 @@ fn scroll_delta_observation(
     report: &UiHostObservationReport,
 ) -> Option<UiNativeScrollDeltaObservation> {
     let UiHostObservationPayload::ScrollDelta {
+        precision,
         x_subpixels,
         y_subpixels,
         ..
@@ -137,5 +138,6 @@ fn scroll_delta_observation(
         event_tick,
         *x_subpixels,
         *y_subpixels,
+        *precision,
     ))
 }

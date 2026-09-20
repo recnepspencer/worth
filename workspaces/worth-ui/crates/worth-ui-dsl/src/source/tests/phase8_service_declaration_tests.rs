@@ -205,6 +205,10 @@ fn every_service_family_rejects_duplicate_and_unconsumed_clauses() {
         "command c { shortcut Primary+K scope application mystery }",
         "scroll s { nested anchor clamp anchor stable_key }",
         "scroll s { nested anchor clamp mystery }",
+        "scroll s { anchor clamp line_extent 20 line_extent 24 }",
+        "scroll s { anchor clamp chrome both track t thumb u chrome inline }",
+        "scroll s { anchor clamp wheel immediate wheel smooth 120 }",
+        "scroll s { anchor clamp wheel smooth 120 mystery }",
         "selection s { mode single mode multiple identity item_key preserve stable_key }",
         "selection s { mode single identity item_key preserve stable_key mystery }",
     ];
@@ -219,6 +223,115 @@ fn every_service_family_rejects_duplicate_and_unconsumed_clauses() {
         );
         assert!(diagnostic.message().contains("lawful repair"));
     }
+}
+
+/// A file author declares the line extent and the chrome the Rust author
+/// declares, and the canonical contract does not remember which order the
+/// clauses were written in.
+#[test]
+fn authored_scroll_chrome_and_line_extent_reach_one_canonical_contract() {
+    let declared = scroll_declaration(
+        "scroll activity_list { anchor stable_key line_extent 20          chrome both track platform.pulse.appearance.scroll_track          thumb platform.pulse.appearance.scroll_thumb }",
+    );
+    let reordered = scroll_declaration(
+        "scroll activity_list { chrome both          thumb platform.pulse.appearance.scroll_thumb          track platform.pulse.appearance.scroll_track line_extent 20 anchor stable_key }",
+    );
+
+    assert_eq!(declared.line_extent_logical_points(), Some(20));
+    let chrome = declared.chrome().expect("the authored chrome is admitted");
+    assert_eq!(chrome.axes(), crate::WorthUiScrollChromeAxes::Both);
+    assert_eq!(
+        chrome.track_role(),
+        "platform.pulse.appearance.scroll_track"
+    );
+    assert_eq!(
+        chrome.thumb_role(),
+        "platform.pulse.appearance.scroll_thumb"
+    );
+    assert_eq!(declared, reordered);
+    assert_eq!(canonical_text(&declared), canonical_text(&reordered));
+    assert_eq!(
+        canonical_text(&declared),
+        concat!(
+            "scroll:activity_list:false:StableKey:20:",
+            "Both/platform.pulse.appearance.scroll_track",
+            "/platform.pulse.appearance.scroll_thumb:immediate"
+        )
+    );
+}
+
+/// A wheel clause is one canonical fact in any order, and its absence spells
+/// the same as a declared immediate wheel: both lower to the same contract.
+#[test]
+fn authored_wheel_policy_reaches_one_canonical_contract() {
+    let unstated = scroll_declaration("scroll s { anchor clamp }");
+    let immediate = scroll_declaration("scroll s { wheel immediate anchor clamp }");
+    assert_eq!(unstated.wheel(), crate::WorthUiScrollWheelPolicy::Immediate);
+    assert_eq!(unstated, immediate);
+    assert_eq!(
+        canonical_text(&unstated),
+        "scroll:s:false:Clamp:-:-:immediate"
+    );
+
+    let smooth = scroll_declaration("scroll s { anchor clamp line_extent 20 wheel smooth 120 }");
+    let reordered = scroll_declaration("scroll s { wheel smooth 120 line_extent 20 anchor clamp }");
+    assert_eq!(
+        smooth.wheel(),
+        crate::WorthUiScrollWheelPolicy::Smooth { settle_ticks: 120 }
+    );
+    assert_eq!(smooth, reordered);
+    assert_eq!(
+        canonical_text(&smooth),
+        "scroll:s:false:Clamp:20:-:smooth/120"
+    );
+}
+
+fn canonical_text(declaration: &crate::WorthUiScrollDeclaration) -> String {
+    WorthUiServiceDeclarationMeaning::Scroll(declaration.clone()).canonical_text()
+}
+
+/// Chrome is three facts that only mean something together, and a line of no
+/// extent gives a wheel notch nowhere to go.
+#[test]
+fn partial_chrome_and_empty_line_extent_are_denied() {
+    for source in [
+        "scroll s { anchor clamp chrome both }",
+        "scroll s { anchor clamp track t thumb u }",
+        "scroll s { anchor clamp chrome both track t }",
+        "scroll s { anchor clamp chrome sideways track t thumb u }",
+        "scroll s { anchor clamp chrome both track t thumb t }",
+        "scroll s { anchor clamp line_extent 0 }",
+        "scroll s { anchor clamp line_extent tall }",
+        "scroll s { anchor clamp wheel }",
+        "scroll s { anchor clamp wheel smooth }",
+        "scroll s { anchor clamp wheel smooth 0 }",
+        "scroll s { anchor clamp wheel smooth soon }",
+        "scroll s { anchor clamp wheel smooth 120 extra }",
+        "scroll s { anchor clamp wheel gradual 120 }",
+        "scroll s { anchor clamp wheel immediate 120 }",
+    ] {
+        let report = compile(source).expect_err("an incomplete scroll chrome is denied");
+        let [diagnostic] = report.diagnostics() else {
+            panic!("one hostile scroll declaration produces one diagnostic: {source}")
+        };
+        assert_eq!(
+            diagnostic.identity().code(),
+            WorthUiDslCompileDiagnosticCode::InvalidServiceDeclaration
+        );
+        assert!(diagnostic.message().contains("lawful repair"));
+    }
+}
+
+fn scroll_declaration(source: &str) -> crate::WorthUiScrollDeclaration {
+    let package = compile(source).expect("the authored scroll declaration compiles");
+    let (declaration, _) = package
+        .service_declarations()
+        .next()
+        .expect("the package carries the scroll declaration");
+    let WorthUiServiceDeclarationMeaning::Scroll(scroll) = declaration else {
+        panic!("the declaration remains typed scroll meaning")
+    };
+    scroll.clone()
 }
 
 #[test]

@@ -23,6 +23,11 @@ pub enum UiScrollObservationCertificationDenial {
     BoundsOutOfRange,
     DeltaOutOfRange,
     Route,
+    SettleUnpublished,
+    AxisHeldByChromeDrag,
+    /// Mounted geometry refused the displayed pose, so the route was not
+    /// committed either.
+    Geometry,
 }
 
 pub trait WorthUiScrollObservationCertificationExt {
@@ -101,5 +106,10 @@ fn map_denial(
         Denial::BoundsOutOfRange => UiScrollObservationCertificationDenial::BoundsOutOfRange,
         Denial::DeltaOutOfRange => UiScrollObservationCertificationDenial::DeltaOutOfRange,
         Denial::Route(_) => UiScrollObservationCertificationDenial::Route,
+        Denial::SettleUnpublished => UiScrollObservationCertificationDenial::SettleUnpublished,
+        Denial::AxisHeldByChromeDrag => {
+            UiScrollObservationCertificationDenial::AxisHeldByChromeDrag
+        }
+        Denial::Geometry(_) => UiScrollObservationCertificationDenial::Geometry,
     }
 }

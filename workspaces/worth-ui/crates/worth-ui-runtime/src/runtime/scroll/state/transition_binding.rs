@@ -1,0 +1,112 @@
+//! Binding between the authoritative owner records and their pending
+//! transition targets.
+//!
+//! The offset in an owner record is accepted truth; a transition target is a
+//! derived intention that leads it. This file is the only place the two meet:
+//! staging reads the owner's accepted offset, bounds and axis policy, and
+//! reconciliation pulls a pending target back inside freshly reconciled bounds
+//! or retires it when the owner has been reincarnated.
+
+impl super::UiScrollRuntimeState {
+    /// Stage or advance one owner's transition target from an admitted coarse
+    /// wheel event.
+    pub(crate) fn stage_wheel_transition(
+        &mut self,
+        entry: crate::runtime::scroll::UiScrollChainEntry,
+        input: crate::runtime::scroll::transition::UiScrollWheelInput,
+    ) -> Result<
+        crate::runtime::scroll::transition::UiScrollTransitionTarget,
+        crate::runtime::scroll::transition::UiScrollTransitionDenial,
+    > {
+        let record = *self
+            .owners
+            .get(&entry.owner())
+            .ok_or(crate::runtime::scroll::transition::UiScrollTransitionDenial::UnknownOwner)?;
+        if record.incarnation != entry.incarnation() {
+            return Err(
+                crate::runtime::scroll::transition::UiScrollTransitionDenial::StaleIncarnation,
+            );
+        }
+        self.transition_targets.accumulate_wheel(
+            entry.owner(),
+            entry.incarnation(),
+            input,
+            crate::runtime::scroll::transition::UiScrollTransitionBasis::new(
+                record.offset,
+                record.bounds,
+                record.axes,
+            ),
+        )
+    }
+
+    #[cfg(test)]
+    pub(crate) fn transition_target(
+        &self,
+        owner: crate::runtime::scroll::UiScrollOwnerIdentity,
+        incarnation: crate::runtime::scroll::UiScrollOwnerIncarnation,
+    ) -> Option<crate::runtime::scroll::transition::UiScrollTransitionTarget> {
+        self.transition_targets.target(owner, incarnation)
+    }
+
+    /// Retire one owner's transition: thumb capture taking direct control,
+    /// owner removal, modality loss, or an explicit cancellation.
+    pub(crate) fn retire_transition(
+        &mut self,
+        owner: crate::runtime::scroll::UiScrollOwnerIdentity,
+    ) -> bool {
+        self.transition_targets.retire(owner)
+    }
+
+    /// Retire every transition whose settle horizon has ended at `tick`.
+    pub(crate) fn advance_transitions(&mut self, tick: u64) -> usize {
+        self.transition_targets.advance(tick)
+    }
+
+    /// Retire every pending transition whose owner's accepted offset has
+    /// arrived at the target it was settling toward.
+    ///
+    /// A settle ends when the content is where it was going, which the horizon
+    /// only approximates: a track that reaches its endpoint early leaves a
+    /// target standing, and the next notch would then accumulate against an
+    /// intention the reader can no longer see any distance to.
+    pub(crate) fn retire_reached_transitions(&mut self) -> usize {
+        let reached = self
+            .transition_targets
+            .pending_owners()
+            .filter(|(owner, target)| {
+                self.owners.get(owner).is_some_and(|record| {
+                    record.incarnation == target.incarnation()
+                        && record.offset == target.target_offset()
+                })
+            })
+            .map(|(owner, _)| owner)
+            .collect::<Vec<_>>();
+        for owner in &reached {
+            self.transition_targets.retire(*owner);
+        }
+        reached.len()
+    }
+
+    #[cfg(test)]
+    pub(crate) fn pending_transition_count(&self) -> usize {
+        self.transition_targets.pending_count()
+    }
+
+    /// A pending target may never continue toward an offset the reconciled
+    /// bounds no longer admit, so bounds reconciliation re-clamps it in the
+    /// same preparation that moved the accepted offset. A reincarnated owner
+    /// retires its predecessor's target instead of inheriting it.
+    pub(in crate::runtime::scroll) fn reconcile_transition_bounds(
+        &mut self,
+        owner: crate::runtime::scroll::UiScrollOwnerIdentity,
+        incarnation: crate::runtime::scroll::UiScrollOwnerIncarnation,
+        bounds: crate::runtime::scroll::UiScrollBounds,
+    ) -> crate::runtime::scroll::transition::UiScrollTransitionReclampOutcome {
+        self.transition_targets
+            .reconcile_bounds(owner, incarnation, bounds)
+    }
+
+    pub(in crate::runtime::scroll) fn release_transitions(&mut self) -> usize {
+        self.transition_targets.clear()
+    }
+}

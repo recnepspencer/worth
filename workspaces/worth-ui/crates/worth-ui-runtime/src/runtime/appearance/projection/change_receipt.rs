@@ -207,7 +207,10 @@ fn mechanic_identity_instance(
             target: instance,
             ..
         } => Some(instance),
-        worth_ui_host_contract::UiMountedAppearanceMechanicIdentity::Backdrop(_) => None,
+        // Chrome names the occurrence that owns its gutter, not an occurrence
+        // whose own appearance projection changed.
+        worth_ui_host_contract::UiMountedAppearanceMechanicIdentity::Backdrop(_)
+        | worth_ui_host_contract::UiMountedAppearanceMechanicIdentity::ScrollChrome(_) => None,
     }
 }
 

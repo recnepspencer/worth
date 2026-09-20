@@ -127,14 +127,19 @@ pub(crate) fn logical_delta(
     ))
 }
 
+/// Turn a wheel delta counted in notches into a delta counted in lines.
+///
+/// The host never converts a notch into content distance. It multiplies the
+/// notches the platform turned by the line count the platform states per notch,
+/// and the result is carried as lines at the canonical subpixel scale.
 pub(crate) fn logical_line_delta(
-    x_lines: f32,
-    y_lines: f32,
-    logical_units_per_line: f64,
+    x_notches: f32,
+    y_notches: f32,
+    lines_per_notch: f64,
 ) -> Result<(i64, i64), UiNativePointerCoordinateDenial> {
     Ok((
-        canonical_subpixels(f64::from(x_lines) * logical_units_per_line)?,
-        canonical_subpixels(f64::from(y_lines) * logical_units_per_line)?,
+        canonical_subpixels(f64::from(x_notches) * lines_per_notch)?,
+        canonical_subpixels(f64::from(y_notches) * lines_per_notch)?,
     ))
 }
 

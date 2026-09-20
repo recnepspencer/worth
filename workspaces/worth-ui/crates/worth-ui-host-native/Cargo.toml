@@ -24,7 +24,7 @@ rustybuzz = "=0.20.1"
 swash = "=0.2.10"
 
 [target.'cfg(windows)'.dependencies]
-winsafe = { version = "=0.0.28", default-features = false, features = ["user"] }
+winsafe = { version = "=0.0.28", default-features = false, features = ["advapi", "user"] }
 windows = { version = "=0.61.3", default-features = false, features = ["UI_ViewManagement"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
@@ -46,4 +46,5 @@ wgpu-features = "std,parking_lot,dx12,wgsl"
 wgpu-device-features = "empty"
 wgpu-limits = "wgpu-29.0.4-Limits::downlevel_defaults().using_resolution(adapter.limits())"
 winsafe = "0.0.28"
+winsafe-features = "advapi,user"
 windows = "0.61.3"

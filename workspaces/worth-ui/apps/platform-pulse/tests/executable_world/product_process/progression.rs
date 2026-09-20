@@ -3,7 +3,7 @@ use crate::adjudication::{
     ExecutableNativeInputReachabilityEvidence, ExecutablePredecessorPreservationEvidence,
     ExecutableReplacementEvidence, ExecutableVisualClearEvidence, ExecutableVisualOverlayEvidence,
     ExecutableVisualRetirementEvidence, ExecutableVisualSnapshotEvidence,
-    ExecutableVisualTraceEvidence,
+    ExecutableVisualTraceEvidence, VerticalThumbEvidence,
 };
 use crate::external_observation::PlatformPulseLifecycleStream;
 use crate::failure_teardown::{NativeBoundFailureWorldResources, UnboundFailureWorldResources};
@@ -52,6 +52,12 @@ pub(crate) struct Published<Stage> {
 pub(crate) struct InitialBlue {
     pub(super) evidence: ExecutableFirstFrameEvidence,
     pub(super) launch_to_first_publication: Duration,
+}
+
+/// The dashboard's first frame, adjudicated by its resting Recent activity
+/// thumb rather than the source-signal colour.
+pub(crate) struct DashboardAtRest {
+    pub(super) evidence: ExecutableFirstFrameEvidence<VerticalThumbEvidence>,
 }
 
 pub(crate) struct NativeInputReached<Stage> {
@@ -199,6 +205,12 @@ impl PulseExecutableWorld<Published<InitialBlue>> {
 
     pub(crate) fn launch_to_first_publication(&self) -> Duration {
         self.state.stage.launch_to_first_publication
+    }
+}
+
+impl PulseExecutableWorld<Published<DashboardAtRest>> {
+    pub(crate) fn evidence(&self) -> &ExecutableFirstFrameEvidence<VerticalThumbEvidence> {
+        &self.state.stage.evidence
     }
 }
 

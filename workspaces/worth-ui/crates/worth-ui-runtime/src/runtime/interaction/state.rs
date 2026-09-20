@@ -28,6 +28,7 @@ pub(crate) struct UiInteractionRuntimeState {
     semantic_interactions: u64,
     presentation_refresh: Option<super::UiInteractionPresentationRefreshSnapshot>,
     application_generation: worth_ui_host_contract::UiHostApplicationGeneration,
+    scroll_chrome_hover: super::scroll_chrome_hover::UiScrollChromeHoverState,
 }
 
 #[derive(Clone, Copy)]
@@ -49,6 +50,51 @@ impl UiInteractionRuntimeState {
         self.pointer_presence.is_some()
     }
 
+    /// The scroll-chrome thumb drag in progress, if one is. Reading it is how
+    /// wheel and keyboard lanes learn which axis a capture already owns.
+    pub(crate) fn scroll_chrome_latch(&self) -> Option<super::gesture::UiScrollChromeLatch> {
+        self.pointer.scroll_chrome_latch()
+    }
+
+    /// Whether a thumb drag already owns this axis of this region, so a wheel
+    /// or a key naming the same axis must be ignored for the length of the
+    /// capture. The rule lives in the latch slot; this is the way in.
+    pub(crate) fn scroll_chrome_suppresses_axis(
+        &self,
+        owner: crate::runtime::scroll::UiScrollOwnerIdentity,
+        axis: crate::runtime::scroll::chrome::UiScrollChromeAxis,
+    ) -> bool {
+        self.pointer
+            .scroll_chrome_latch_state()
+            .suppresses_axis(owner, axis)
+    }
+
+    /// The chrome latch slot. The press, move and release lane takes the latch
+    /// here; every cancellation path already clears it through `pointer`.
+    pub(crate) fn scroll_chrome_latch_mut(
+        &mut self,
+    ) -> &mut super::gesture::UiScrollChromeLatchState {
+        self.pointer.scroll_chrome_latch_mut()
+    }
+
+    /// Where the pointer last was on `surface`, for re-resolving chrome hover
+    /// against the accepted displayed offset at presentation time.
+    pub(crate) fn scroll_chrome_hover_point(
+        &self,
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+    ) -> Option<[f32; 2]> {
+        self.scroll_chrome_hover.point(surface)
+    }
+
+    pub(crate) fn observe_scroll_chrome_hover(
+        &mut self,
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+        binding: UiSurfaceBindingGeneration,
+        point: [f32; 2],
+    ) {
+        self.scroll_chrome_hover.observe(surface, binding, point);
+    }
+
     pub(crate) fn new(
         pointer_presence_enabled: bool,
         pressed_appearance_enabled: bool,
@@ -65,6 +111,7 @@ impl UiInteractionRuntimeState {
             presentation_refresh: None,
             application_generation: worth_ui_host_contract::UiHostApplicationGeneration::new(1)
                 .expect("the initial interaction application generation is nonzero"),
+            scroll_chrome_hover: Default::default(),
         }
     }
 
@@ -204,6 +251,7 @@ impl UiInteractionRuntimeState {
         if let Some(owner) = self.pointer_presence.as_mut() {
             owner.cancel_binding(binding);
         }
+        self.scroll_chrome_hover.clear_binding(binding);
         let pointer = self
             .pointer
             .cancel_binding(binding, reason.pointer_reason());
@@ -237,6 +285,7 @@ impl UiInteractionRuntimeState {
         if let Some(owner) = self.pointer_presence.as_mut() {
             owner.cancel_all();
         }
+        self.scroll_chrome_hover.clear_all();
         let pointer = self.pointer.cancel_all(reason.pointer_reason());
         let draft = self.draft.cancel_all(reason.local_reason());
         if matches!(reason, UiInteractionLifecycleStopReason::ApplicationRebound) {

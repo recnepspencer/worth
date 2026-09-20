@@ -1,5 +1,5 @@
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(crate) enum UiScrollRouteDenial {
+pub enum UiScrollRouteDenial {
     EmptyChain,
     ChainDepthExceeded,
     OwnershipCycle,
@@ -9,6 +9,9 @@ pub(crate) enum UiScrollRouteDenial {
     InitialOffsetOutOfBounds,
     RevisionExhausted,
     CounterOverflow,
+    /// The distance between the offset an owner holds and the one a route asks
+    /// it to hold is not representable, so no delta names the move.
+    OffsetDeltaOutOfRange,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -86,6 +89,8 @@ impl UiScrollRouteReceipt {
         }
     }
 
+    /// What asked for this route: a host delta, a chrome track page, or an
+    /// accepted-sample write-back. Certification reads it to tell them apart.
     #[cfg(any(test, feature = "certification-support"))]
     pub(crate) const fn cause(&self) -> super::UiScrollDeltaCause {
         self.cause
@@ -103,7 +108,9 @@ impl UiScrollRouteReceipt {
         self.owners_visited
     }
 
-    pub(in crate::runtime) const fn revision(&self) -> u64 {
+    /// The session-monotonic revision this route produced. A settle is named
+    /// by it, so every notch carries its own service request identity.
+    pub(crate) const fn revision(&self) -> u64 {
         self.revision
     }
 }

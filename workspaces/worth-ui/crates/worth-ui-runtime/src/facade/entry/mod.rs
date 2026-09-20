@@ -106,9 +106,16 @@ mod visual_overlay;
 mod visual_snapshot;
 pub use crate::lifecycle::WorthUiActiveApplicationSessionIdentity;
 pub use crate::runtime::exports::WorthUiAllocationCatalogActivationDenial;
+pub use crate::runtime::UiScrollSettleStop;
 pub use crate::runtime::WorthUiActiveApplicationGenerationIdentity;
 pub use active_application_inspection::WorthUiActiveInspectionReceipt;
-pub use active_application_session::WorthUiActiveApplicationSession;
+pub(crate) use active_application_session::UiScrollChromeIngressOutcome;
+#[cfg(any(test, feature = "certification-support"))]
+pub(crate) use active_application_session::UiScrollChromePressOutcome;
+pub use active_application_session::{
+    UiAcceptedScrollSettlementDenial, UiScrollSettleDisposition, UiScrollSettleRefusal,
+    UiScrollWriteBackRefusal, WorthUiActiveApplicationSession,
+};
 pub use active_framework_turn::{
     WorthUiActiveCanvasSpatialFrameCompletion, WorthUiActiveFrameworkTurnCompletion,
     WorthUiActiveFrameworkTurnExecution, WorthUiActiveOrdinaryFrameCompletion,

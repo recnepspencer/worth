@@ -90,3 +90,6 @@ fn unchanged_translation_preserves_predecessor_and_zero_work() {
 
 #[path = "tests/nonempty.rs"]
 mod nonempty;
+
+#[path = "tests/scroll_chrome.rs"]
+mod scroll_chrome;

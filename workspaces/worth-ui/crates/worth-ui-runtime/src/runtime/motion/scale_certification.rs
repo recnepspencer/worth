@@ -31,14 +31,18 @@ pub(crate) fn motion_scale_evidence() -> UiMotionScaleEvidence {
         );
         let request = super::UiMotionTransitionRequest::from_family_transition(
             target,
-            1,
-            2,
-            presentation,
-            geometry([0.0, 0.0, 40.0, 20.0]),
-            true,
-            presentation,
-            geometry([4.0, 8.0, 44.0, 24.0]),
-            true,
+            super::UiMotionTransitionEndpoint::new(
+                1,
+                presentation,
+                geometry([0.0, 0.0, 40.0, 20.0]),
+                true,
+            ),
+            super::UiMotionTransitionEndpoint::new(
+                2,
+                presentation,
+                geometry([4.0, 8.0, 44.0, 24.0]),
+                true,
+            ),
             super::UiMotionDeclaration::portal_entrance(),
         )
         .expect("motion scale request preserves one presentation binding");

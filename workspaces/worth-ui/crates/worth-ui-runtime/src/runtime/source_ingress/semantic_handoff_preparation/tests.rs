@@ -142,7 +142,8 @@ fn command_dsl_preserves_the_rust_authored_routing_policy() {
         crate::declaration::UiServicePolicyDefaults::default().with_command_routing(custom),
         evidence.authored_service_policy_defaults(),
         evidence.runtime_service_support(),
-    );
+    )
+    .expect("these declarations name no owner that was not installed");
 
     assert_eq!(policy_plan.command_routing(), Some(custom));
 }
@@ -236,7 +237,8 @@ fn service_dsl_demands_only_its_declared_owner_closure() {
         builder_defaults,
         evidence.authored_service_policy_defaults(),
         support,
-    );
+    )
+    .expect("these declarations name no owner that was not installed");
     assert_eq!(
         policy_plan.portal(),
         Some(crate::declaration::UiPortalPolicy::modal_dialog())

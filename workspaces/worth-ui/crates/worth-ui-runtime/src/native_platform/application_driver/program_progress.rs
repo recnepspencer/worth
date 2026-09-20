@@ -7,7 +7,7 @@ use super::program_reconstruction::{is_text_atlas_deferred, retry_text_atlas_def
 use crate::facade::WorthUiNativeApplicationShell;
 
 #[path = "program_progress/layout.rs"]
-mod layout;
+pub(super) mod layout;
 #[path = "program_progress/physical_progress.rs"]
 mod physical_progress;
 #[path = "program_progress/pointer_refresh.rs"]

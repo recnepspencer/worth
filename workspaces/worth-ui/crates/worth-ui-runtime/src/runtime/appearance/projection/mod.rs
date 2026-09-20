@@ -4,6 +4,7 @@ mod backdrop;
 mod change_receipt;
 mod resolved_aspect;
 mod resolver;
+mod scroll_chrome_projection;
 
 #[cfg(test)]
 #[path = "backdrop_digest_support.rs"]
@@ -31,3 +32,4 @@ pub(crate) use resolved_aspect::{
 pub(crate) use resolver::{
     UiAppearanceResolutionDenial, UiAppearanceResolutionFailure, UiAppearanceResolver,
 };
+pub(crate) use scroll_chrome_projection::UiScrollChromeAppearanceProjection;

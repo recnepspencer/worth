@@ -27,7 +27,7 @@ fn qualified_asset_license_and_manifests_have_exact_digests() {
     );
     assert_eq!(
         sha256(WORTH_UI_NATIVE_PROFILE_MANIFEST.as_bytes()),
-        "c069627e9f2bc79cdb5d4275c76846d4d9778c6d04c8a40df24a69580db92d85"
+        "b964f129d89c978a32716902d46b8b2deec27de8f90b1c6c852bbd5a08566585"
     );
 }
 
@@ -134,8 +134,9 @@ fn every_qualified_semantic_and_dependency_pin_matches_the_closed_record() {
     assert_eq!(integer(&platform, "surfaces"), 1);
     assert_eq!(integer(&platform, "sample_count"), 1);
     assert_eq!(
-        integer(&platform, "wheel_line_logical_subpixels"),
-        crate::native_profile::QUALIFIED_WHEEL_LINE_LOGICAL_SUBPIXELS,
+        platform.get("wheel_line_logical_subpixels"),
+        None,
+        "the host qualifies no content distance for a wheel line"
     );
     qualified_dependencies::assert_qualified_dependencies();
 }
@@ -294,6 +295,10 @@ const NATIVE_STRING_FIELDS: &[(&str, &str)] = &[
         "windows-0.61.3-UI_ViewManagement:UISettings.AnimationsEnabled",
     ),
     (
+        "wheel_notch_observation",
+        r"winsafe-0.0.28-advapi:RegGetValue;HKCU\Control Panel\Desktop\WheelScrollLines;REG_SZ;page-scroll-stated-not-truncated",
+    ),
+    (
         "client_input_observation",
         "uiautomation-0.25.0-control-input",
     ),
@@ -323,7 +328,6 @@ const NATIVE_INTEGER_FIELDS: &[(&str, i64)] = &[
     ("readback_slots", 4),
     ("readback_bytes", 16_777_216),
     ("gpu_wait_deadline_ms", 5_000),
-    ("wheel_line_logical_subpixels", 40_000),
 ];
 
 const NATIVE_BOOL_FIELDS: &[(&str, bool)] = &[("required_surface_compatibility", true)];

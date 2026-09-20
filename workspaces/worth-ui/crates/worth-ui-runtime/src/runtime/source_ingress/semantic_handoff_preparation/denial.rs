@@ -4,6 +4,8 @@ use super::WorthUiSemanticHandoffEvidence;
 pub enum WorthUiServiceDeclarationAdmissionCause {
     DuplicateIdentity,
     ConflictingFamilyPolicy,
+    /// A smooth wheel horizon the runtime cannot honour.
+    ScrollWheelHorizon(crate::declaration::UiScrollWheelBehaviorDenial),
     InvalidCommandIdentity,
     CommandNotRegistered,
     CommandShortcutMissing,
@@ -18,6 +20,7 @@ pub enum WorthUiServiceDeclarationAdmissionCause {
 pub enum WorthUiSemanticHandoffPreparationStop {
     UnsupportedProtocol,
     AppearanceRoleRegistration(crate::capability::AppearanceRoleRegistrationDenial),
+    AuthoredScrollRegion(crate::capability::UiAuthoredScrollRegionDenial),
     CapabilityResolution,
     RuntimeStructuralAdmission,
     DeclarationProjection,

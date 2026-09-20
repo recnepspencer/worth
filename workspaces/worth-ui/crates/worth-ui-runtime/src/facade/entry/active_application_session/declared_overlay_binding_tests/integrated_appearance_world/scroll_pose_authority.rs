@@ -1,0 +1,308 @@
+//! Facade-level proof that a Scroll route commits only the pose mounted
+//! geometry displays.
+//!
+//! The shared authored World supplies what the unit worlds cannot: a Scroll
+//! service installed from policy, a region occurrence with real mounted
+//! geometry at a nonzero origin, and a scripted host that can hold a
+//! presentation attempt open. Every path that moves an accepted offset is
+//! driven here through its production entry and checked against both the
+//! semantic offset Scroll holds and the pose geometry displays.
+
+use super::World;
+use crate::mounting::{UiMountedFrameOutcome, UiMountedOccurrenceGeometryDenial};
+use crate::runtime::motion::UiMotionTargetIdentity;
+use crate::runtime::scroll::{
+    UiHostScrollObservationDenial, UiHostScrollObservationOutcome, UiScrollChainEntry,
+    UiScrollDeltaCause, UiScrollOffset, UiScrollOwnerIdentity, UiScrollOwnerIncarnation,
+};
+use worth_ui_host_contract::*;
+
+/// A point inside the first component's box, so a wheel there addresses the
+/// region that component owns.
+const WHEEL_POSITION: [i64; 2] = [150_000, 55_000];
+const SUBPIXELS: i64 = UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT;
+
+/// The shared World with its first component's region made scrollable and
+/// one frame published, plus the Scroll owner that region resolves to.
+pub(super) struct ScrollWorld {
+    pub(super) world: World,
+    pub(super) owner: UiScrollOwnerIdentity,
+    pub(super) incarnation: UiScrollOwnerIncarnation,
+}
+
+impl ScrollWorld {
+    pub(super) fn launch_published() -> Self {
+        Self::publish(World::launch())
+    }
+
+    pub(super) fn publish(mut world: World) -> Self {
+        super::geometry::install_scrollable_primary(
+            &mut world.session,
+            world.surfaces,
+            world.instances,
+        );
+        let frame = world.prepare();
+        world.publish(frame, 1, true);
+        let target = world.instances[0];
+        let owner = world
+            .session
+            .scroll
+            .as_ref()
+            .expect("the World installs Scroll from policy")
+            .ownership_chain(target)
+            .expect("the first component resolves its Scroll chain")
+            .owners()[0];
+        assert!(
+            matches!(owner, UiScrollOwnerIdentity::Region { .. }),
+            "the innermost owner is the declared region: {owner:?}"
+        );
+        let incarnation = world
+            .session
+            .scroll_region_incarnation(target, 0)
+            .expect("the region occurrence has a current allocation");
+        Self {
+            world,
+            owner,
+            incarnation,
+        }
+    }
+
+    pub(super) fn target(&self) -> UiMountedInstanceIdentity {
+        self.world.instances[0]
+    }
+
+    pub(super) fn surface(&self) -> UiSemanticSurfaceIdentity {
+        self.world.surfaces[0]
+    }
+
+    fn presentation(&self) -> UiHostObservationPresentationBasis {
+        self.world
+            .session
+            .mounted
+            .current_presentation_for_surface(self.surface())
+            .expect("the first surface is published")
+    }
+
+    /// One wheel report over the first component. The host reports the
+    /// wheel's own travel, so content the reader pushes toward the top arrives
+    /// as a negative block delta; the offset it produces is positive.
+    pub(super) fn wheel(
+        &mut self,
+        precision: UiHostScrollDeltaPrecision,
+        y_subpixels: i64,
+        tick: u64,
+    ) -> UiHostScrollObservationOutcome {
+        let payload = UiHostObservationPayload::ScrollDelta {
+            source: UiHostScrollDeltaSource::PointerWheel,
+            phase: UiHostScrollDeltaPhase::Updated,
+            precision,
+            target: UiHostScrollDeltaTargetAffinity::exact_coordinate(
+                self.presentation(),
+                UiHostSurfacePosition::viewport_logical(WHEEL_POSITION[0], WHEEL_POSITION[1]),
+            ),
+            x_subpixels: 0,
+            y_subpixels,
+        };
+        self.world
+            .session
+            .observe_scroll_payload(&payload, &mut Default::default(), Some(tick))
+            .expect("a ScrollDelta payload is a Scroll observation")
+    }
+
+    pub(super) fn accepted_offset(&self) -> UiScrollOffset {
+        self.world
+            .session
+            .scroll
+            .as_ref()
+            .expect("Scroll stays installed")
+            .offset(self.owner, self.incarnation)
+            .expect("the routed owner keeps its offset")
+    }
+
+    pub(super) fn displayed_offset(&self) -> Option<UiScrollOffset> {
+        self.world
+            .session
+            .mounted
+            .displayed_scroll_pose(self.target(), self.target())
+    }
+
+    /// Present the first surface and leave the host holding the completion.
+    pub(super) fn hold_presentation_open(
+        &mut self,
+        now: u64,
+    ) -> crate::mounting::UiMountedPresentationInFlight {
+        let frame = self.world.prepare_surface(self.surface());
+        let pending = self.world.begin_in_flight(frame, now);
+        assert!(self.world.session.mounted.has_active_presentation_attempt());
+        pending
+    }
+
+    pub(super) fn complete(
+        &mut self,
+        pending: crate::mounting::UiMountedPresentationInFlight,
+        now: u64,
+    ) {
+        assert!(matches!(
+            self.world
+                .session
+                .complete_mounted_presentation(pending, now),
+            UiMountedFrameOutcome::Published(_)
+        ));
+    }
+}
+
+pub(super) fn block(points: i64) -> UiScrollOffset {
+    UiScrollOffset::new(0, points * SUBPIXELS).expect("a nonnegative offset")
+}
+
+fn pixels(points: i64) -> i64 {
+    -points * SUBPIXELS
+}
+
+#[test]
+fn an_immediate_wheel_commits_only_the_pose_geometry_displays() {
+    let mut scroll = ScrollWorld::launch_published();
+    assert_eq!(scroll.accepted_offset(), block(0));
+
+    let UiHostScrollObservationOutcome::Applied(receipt) =
+        scroll.wheel(UiHostScrollDeltaPrecision::Pixel, pixels(20), 5)
+    else {
+        panic!("an immediate wheel over scrollable content applies")
+    };
+    assert_eq!(receipt.transitions()[0].current(), block(20));
+    assert_eq!(scroll.accepted_offset(), block(20));
+    assert_eq!(scroll.displayed_offset(), Some(block(20)));
+
+    // With the host holding a presentation attempt open, geometry refuses the
+    // next pose. The route that named it is not committed either: the offset
+    // Scroll holds is the one the displayed pose was accepted at.
+    let pending = scroll.hold_presentation_open(6);
+    assert_eq!(
+        scroll.wheel(UiHostScrollDeltaPrecision::Pixel, pixels(5), 7),
+        UiHostScrollObservationOutcome::Denied(UiHostScrollObservationDenial::Geometry(
+            UiMountedOccurrenceGeometryDenial::PresentationInFlight
+        ))
+    );
+    assert_eq!(scroll.accepted_offset(), block(20));
+    assert_eq!(scroll.displayed_offset(), Some(block(20)));
+
+    // Once the host completes, the same wheel applies from the offset that was
+    // never moved, not from one the refused route would have left behind.
+    scroll.complete(pending, 8);
+    assert!(matches!(
+        scroll.wheel(UiHostScrollDeltaPrecision::Pixel, pixels(5), 9),
+        UiHostScrollObservationOutcome::Applied(_)
+    ));
+    assert_eq!(scroll.accepted_offset(), block(25));
+    assert_eq!(scroll.displayed_offset(), Some(block(25)));
+    let _ = scroll.world.session.shutdown();
+}
+
+#[test]
+fn a_thumb_placement_commits_only_the_pose_geometry_displays() {
+    use super::super::super::scroll_chrome_interaction::UiScrollChromeInteractionDenial;
+
+    let mut scroll = ScrollWorld::launch_published();
+    let displayed_before = scroll.displayed_offset();
+    let (owner, incarnation, target) = (scroll.owner, scroll.incarnation, scroll.target());
+
+    let pending = scroll.hold_presentation_open(2);
+    assert_eq!(
+        scroll.world.session.place_scroll_chrome_offset(
+            owner,
+            incarnation,
+            target,
+            0,
+            block(10),
+            UiScrollDeltaCause::ChromeThumbDrag,
+        ),
+        Err(UiScrollChromeInteractionDenial::Geometry(
+            UiMountedOccurrenceGeometryDenial::PresentationInFlight
+        ))
+    );
+    assert_eq!(scroll.accepted_offset(), block(0));
+    assert_eq!(scroll.displayed_offset(), displayed_before);
+
+    scroll.complete(pending, 3);
+    let placed = scroll
+        .world
+        .session
+        .place_scroll_chrome_offset(
+            owner,
+            incarnation,
+            target,
+            0,
+            block(10),
+            UiScrollDeltaCause::ChromeThumbDrag,
+        )
+        .expect("a placement with no attempt in flight applies");
+    assert_eq!(placed.transitions()[0].current(), block(10));
+    assert_eq!(scroll.accepted_offset(), block(10));
+    assert_eq!(scroll.displayed_offset(), Some(block(10)));
+    let _ = scroll.world.session.shutdown();
+}
+
+#[test]
+fn an_accepted_sample_settles_to_its_displacement_from_a_nonzero_rest() {
+    use super::super::super::UiAcceptedScrollSettlementDenial;
+
+    let scroll = ScrollWorld::launch_published();
+    let (target, surface) = (scroll.target(), scroll.surface());
+    let (owner_instance, content, _) = scroll
+        .world
+        .session
+        .mounted
+        .scroll_region_geometry(target, 0)
+        .expect("the scrollable region has geometry");
+    assert_eq!(owner_instance, target);
+    assert!(
+        content.x() > 0.0 && content.y() > 0.0,
+        "the content box rests off the origin: {content:?}"
+    );
+    let key =
+        super::super::super::scroll_transition_preparation::scroll_motion_owner_key(scroll.owner);
+    let motion_target = UiMotionTargetIdentity::from_scroll_region_owner(surface, target, key);
+    let settle = |sampled: [f32; 2]| {
+        scroll
+            .world
+            .session
+            .accepted_scroll_settlement(motion_target, sampled, surface)
+    };
+
+    // Content sampled twelve points above rest is content scrolled by twelve
+    // points, whatever absolute position rest happens to be.
+    let scrolled = settle([content.x(), content.y() - 12.0])
+        .expect("a sample above rest resolves")
+        .expect("this surface's Scroll content is not foreign");
+    assert_eq!(scrolled.offset, block(12));
+    assert_eq!(scrolled.owner_instance, target);
+    assert_eq!(scrolled.region_instance, target);
+    assert_eq!(scrolled.slot, 0);
+    assert_eq!(
+        scrolled.entry,
+        UiScrollChainEntry::new(scroll.owner, scroll.incarnation)
+    );
+    let at_rest = settle([content.x(), content.y()])
+        .expect("a sample at rest resolves")
+        .expect("this surface's Scroll content is not foreign");
+    assert_eq!(at_rest.offset, block(0));
+    assert!(
+        matches!(
+            settle([content.x(), content.y() + 12.0]),
+            Err(UiAcceptedScrollSettlementDenial::SampleBeforeRest)
+        ),
+        "content sampled below rest names no offset"
+    );
+    assert!(
+        matches!(
+            scroll.world.session.accepted_scroll_settlement(
+                UiMotionTargetIdentity::from_mounted_owner(surface, target, key),
+                [content.x(), content.y() - 12.0],
+                surface,
+            ),
+            Ok(None)
+        ),
+        "an ordinary Motion target is not Scroll content"
+    );
+    let _ = scroll.world.session.shutdown();
+}

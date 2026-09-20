@@ -21,6 +21,43 @@ pub(crate) fn lookup(
             })
             .collect::<Result<Vec<_>, _>>()?
             .into_boxed_slice();
+    lookup_cell(partition, classes, aspect)
+}
+
+/// A lookup whose classes are named directly rather than read off a node's
+/// sealed state vector. Scroll chrome is the caller: it is not a mounted node,
+/// so it has no vector, and its interaction posture is exactly the Hover and
+/// Pressed classes the pointer lane derived for the part.
+pub(crate) fn lookup_with_classes(
+    partition: &worth_ui_dsl::UiAppearanceDecisionPartition,
+    classes: &[(
+        worth_ui_dsl::UiAppearanceStateAxis,
+        worth_ui_dsl::UiAppearanceAxisClass,
+    )],
+    aspect: worth_ui_dsl::UiAppearanceAspect,
+) -> Result<UiAppearanceCellLookup, super::UiAppearanceResolutionDenial> {
+    let classes = partition
+        .axes()
+        .iter()
+        .map(|axis| {
+            classes
+                .iter()
+                .find(|(named, _)| *named == axis.axis())
+                .map(|(_, class)| *class)
+                .ok_or(super::UiAppearanceResolutionDenial::MissingStateAxis(
+                    axis.axis(),
+                ))
+        })
+        .collect::<Result<Vec<_>, _>>()?
+        .into_boxed_slice();
+    lookup_cell(partition, classes, aspect)
+}
+
+fn lookup_cell(
+    partition: &worth_ui_dsl::UiAppearanceDecisionPartition,
+    classes: Box<[worth_ui_dsl::UiAppearanceAxisClass]>,
+    aspect: worth_ui_dsl::UiAppearanceAspect,
+) -> Result<UiAppearanceCellLookup, super::UiAppearanceResolutionDenial> {
     let mut visited = 0_u32;
     let cell = partition
         .cells()

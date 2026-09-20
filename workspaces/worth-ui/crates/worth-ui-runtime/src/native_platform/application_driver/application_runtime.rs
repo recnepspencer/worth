@@ -188,7 +188,34 @@ impl UiNativeApplicationDriver {
         if schedules_next_frame {
             self.arm_motion_readiness_next_frame();
         }
-        Ok(worth_ui_host_native::UiNativeEventLoopDirective::Continue)
+        self.progress_application_runtime_motion_settlement()
+    }
+
+    /// A Motion tick that re-lowered mounted geometry without host sample work
+    /// leaves the frame showing it owed to the application. A tick that owes
+    /// nothing continues without waking the runtime.
+    pub(super) fn progress_application_runtime_motion_settlement(
+        &mut self,
+    ) -> Result<worth_ui_host_native::UiNativeEventLoopDirective, ()> {
+        let owed = self
+            .shell
+            .as_ref()
+            .is_some_and(|shell| shell.native_application_presentation_pending());
+        if !owed || !self.application_runtime_active {
+            return Ok(worth_ui_host_native::UiNativeEventLoopDirective::Continue);
+        }
+        let runtime = self.application_runtime.as_mut().ok_or(())?;
+        let shell = self.shell.take().ok_or(())?;
+        match runtime.native_motion_settlement_ready(shell) {
+            Ok((shell, directive)) => {
+                self.shell = Some(shell);
+                Ok(map_directive(directive))
+            }
+            Err(stopped) => {
+                self.shell = Some(stopped.into_application());
+                Err(())
+            }
+        }
     }
 
     pub(super) fn progress_motion_physical(

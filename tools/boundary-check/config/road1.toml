@@ -176,7 +176,7 @@ features = []
 target = "winsafe"
 version_requirement = "=0.0.28"
 uses_default_features = false
-features = ["dwm", "kernel", "user"]
+features = ["advapi", "dwm", "kernel", "user"]
 
 [[source_dependency_allowlists.dependency_contracts]]
 target = "xcap"

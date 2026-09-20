@@ -59,6 +59,7 @@ pub(crate) struct UiMountedAppearanceFrameState {
     >,
     overlay_work: Vec<super::appearance_output::UiMountedAppearanceOverlayWork>,
     order: super::appearance_order::UiMountedAppearanceOrderIndex,
+    scroll_chrome: scroll_chrome::UiMountedAppearanceScrollChromeState,
 }
 
 impl Default for UiMountedAppearanceFrameState {
@@ -79,6 +80,7 @@ impl Default for UiMountedAppearanceFrameState {
             active_portal_instances: Default::default(),
             overlay_work: Vec::new(),
             order: Default::default(),
+            scroll_chrome: Default::default(),
         }
     }
 }
@@ -195,6 +197,9 @@ impl UiMountedAppearanceFrameState {
             overlay_work: Vec::new(),
             order: predecessor
                 .map(|state| state.order.clone())
+                .unwrap_or_default(),
+            scroll_chrome: predecessor
+                .map(|state| state.scroll_chrome.fork())
                 .unwrap_or_default(),
         }
     }
@@ -316,6 +321,7 @@ impl UiMountedAppearanceFrameState {
     pub(super) fn has_pending_lowering(&self) -> bool {
         self.reconstruction_nodes.is_some()
             || !self.input_refresh_nodes.is_empty()
+            || self.scroll_chrome.has_pending()
             || self.members.has_pending_lowering()
             || !self.retirements.is_empty()
             || !self.overlay_sidecars.is_empty()
@@ -361,6 +367,9 @@ mod input_refresh;
 
 #[path = "appearance_state_overlay.rs"]
 mod overlay;
+
+#[path = "appearance_state_scroll_chrome.rs"]
+mod scroll_chrome;
 
 #[cfg(test)]
 #[path = "appearance_state_tests.rs"]

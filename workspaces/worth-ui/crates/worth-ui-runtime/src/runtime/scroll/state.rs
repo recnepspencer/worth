@@ -1,10 +1,12 @@
 use std::collections::BTreeMap;
 
+mod accepted_settlement;
 mod anchor_access;
 #[cfg(any(test, feature = "certification-support"))]
 mod certification;
 mod ownership_catalog;
 mod reconciliation;
+mod transition_binding;
 
 use reconciliation::reconcile_owner_record;
 
@@ -33,6 +35,7 @@ pub(crate) struct UiScrollRuntimeState {
     ownership_catalog:
         BTreeMap<worth_ui_host_contract::UiMountedInstanceIdentity, UiScrollOwnershipCatalogRecord>,
     ownership_references: BTreeMap<super::UiScrollOwnerIdentity, u64>,
+    transition_targets: super::transition::UiScrollTransitionSuccession,
     counters: super::UiScrollCounters,
     ownership_resolutions: u64,
     ownership_graph_nodes_visited: u64,
@@ -57,6 +60,7 @@ impl UiScrollRuntimeState {
             owners: BTreeMap::new(),
             ownership_catalog: BTreeMap::new(),
             ownership_references: BTreeMap::new(),
+            transition_targets: super::transition::UiScrollTransitionSuccession::new(),
             counters: super::UiScrollCounters::new(),
             ownership_resolutions: 0,
             ownership_graph_nodes_visited: 0,
@@ -77,7 +81,7 @@ impl UiScrollRuntimeState {
     }
 
     #[cfg(any(test, feature = "certification-support"))]
-    pub(in crate::runtime) fn register(
+    pub(crate) fn register(
         &mut self,
         registration: super::UiScrollOwnerRegistration,
     ) -> Result<(), super::UiScrollRouteDenial> {
@@ -147,6 +151,11 @@ impl UiScrollRuntimeState {
                 offset,
                 anchor,
             },
+        );
+        self.reconcile_transition_bounds(
+            registration.identity(),
+            registration.incarnation(),
+            registration.bounds(),
         );
         Ok(super::UiScrollAnchorReconciliationReceipt::new(
             outcome, offset,
@@ -258,6 +267,11 @@ impl UiScrollRuntimeState {
             }
             record.offset = transition.current();
         }
+        if let Some(bounds) = reconciled_bounds {
+            for (index, entry) in request.chain().iter().enumerate() {
+                self.reconcile_transition_bounds(entry.owner(), entry.incarnation(), bounds[index]);
+            }
+        }
         self.counters = next_counters;
         self.revision = next_revision;
         let receipt = super::UiScrollRouteReceipt::new(
@@ -281,6 +295,7 @@ impl UiScrollRuntimeState {
         self.owners.clear();
         self.ownership_catalog.clear();
         self.ownership_references.clear();
+        self.release_transitions();
         self.last_owner = None;
         released
     }

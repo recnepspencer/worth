@@ -1,13 +1,14 @@
 use worth_ui_host_contract::{
     UiMountedBackdropMechanic, UiMountedOutlineAppearanceMechanic, UiMountedOverlayOrderMechanic,
     UiMountedPointerAffordanceMechanic, UiMountedPortalSurfaceAppearanceMechanic,
-    UiMountedSurfaceAppearanceMechanic,
+    UiMountedScrollChromeMechanic, UiMountedSurfaceAppearanceMechanic,
 };
 
 use super::backdrop_pipeline::UiNativeBackdropPipeline;
 use super::damage::UiNativeAppearanceDamageRect;
 use super::geometry::{UiNativeAppearanceScale, UiNativeGeometryDenial};
 use super::outline_pipeline::UiNativeOutlinePipeline;
+use super::scroll_chrome_pipeline::UiNativeScrollChromePipeline;
 use super::surface_pipeline::UiNativeSurfacePipeline;
 
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -30,6 +31,7 @@ pub(crate) enum UiNativeAppearanceCommandFamily {
     Outline,
     TextForeground,
     Backdrop,
+    ScrollChrome,
     OverlayOrder,
     PointerAffordance,
 }
@@ -48,6 +50,10 @@ pub(crate) enum UiNativeAppearanceCommandIdentity {
         surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
         identity: worth_ui_host_contract::UiMountedBackdropIdentity,
     },
+    ScrollChrome {
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+        identity: worth_ui_host_contract::UiMountedScrollChromeIdentity,
+    },
     OverlayOrder {
         surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
     },
@@ -65,6 +71,7 @@ pub(crate) enum UiNativeAppearanceCommand {
     Outline(UiMountedOutlineAppearanceMechanic),
     TextForeground(super::text_foreground::UiNativeFinalizedTextForeground),
     Backdrop(UiMountedBackdropMechanic),
+    ScrollChrome(UiMountedScrollChromeMechanic),
     OverlayOrder(UiMountedOverlayOrderMechanic),
     PointerAffordance(UiMountedPointerAffordanceMechanic),
 }
@@ -77,6 +84,7 @@ impl UiNativeAppearanceCommand {
             Self::Outline(_) => UiNativeAppearanceCommandFamily::Outline,
             Self::TextForeground(_) => UiNativeAppearanceCommandFamily::TextForeground,
             Self::Backdrop(_) => UiNativeAppearanceCommandFamily::Backdrop,
+            Self::ScrollChrome(_) => UiNativeAppearanceCommandFamily::ScrollChrome,
             Self::OverlayOrder(_) => UiNativeAppearanceCommandFamily::OverlayOrder,
             Self::PointerAffordance(_) => UiNativeAppearanceCommandFamily::PointerAffordance,
         }
@@ -105,6 +113,10 @@ impl UiNativeAppearanceCommand {
             Self::Backdrop(mechanic) => UiNativeAppearanceCommandIdentity::Backdrop {
                 surface: mechanic.semantic_surface(),
                 identity: mechanic.identity().clone(),
+            },
+            Self::ScrollChrome(mechanic) => UiNativeAppearanceCommandIdentity::ScrollChrome {
+                surface: mechanic.semantic_surface(),
+                identity: mechanic.identity(),
             },
             Self::OverlayOrder(mechanic) => UiNativeAppearanceCommandIdentity::OverlayOrder {
                 surface: mechanic.semantic_surface(),
@@ -136,6 +148,9 @@ impl UiNativeAppearanceCommand {
             Self::Backdrop(mechanic) => Ok(Some(
                 UiNativeBackdropPipeline::prepare(mechanic, scale)?.damage_rect(),
             )),
+            Self::ScrollChrome(mechanic) => Ok(Some(
+                UiNativeScrollChromePipeline::prepare(mechanic, scale)?.damage_rect(),
+            )),
             Self::TextForeground(text) => text.damage_bounds(scale),
             Self::OverlayOrder(_) | Self::PointerAffordance(_) => Ok(None),
         }
@@ -151,7 +166,11 @@ impl UiNativeAppearanceCommand {
     pub(crate) fn is_drawable(&self) -> bool {
         matches!(
             self,
-            Self::Surface(_) | Self::PortalSurface(_) | Self::Outline(_) | Self::Backdrop(_)
+            Self::Surface(_)
+                | Self::PortalSurface(_)
+                | Self::Outline(_)
+                | Self::Backdrop(_)
+                | Self::ScrollChrome(_)
         )
     }
 }

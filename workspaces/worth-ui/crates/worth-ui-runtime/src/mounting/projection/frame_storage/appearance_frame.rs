@@ -26,6 +26,19 @@ impl UiMountedProjectionFrame {
         Ok(node.has_appearance_attachment && node.portal_surface_appearance)
     }
 
+    /// Whether the occurrence paints an appearance of its own this frame. An
+    /// occurrence that does not can still own scroll chrome, which is then
+    /// lowered as a fragment of its own rather than inside a node fragment.
+    pub(super) fn appearance_attached(
+        &self,
+        instance: worth_ui_host_contract::UiMountedInstanceIdentity,
+    ) -> Result<bool, super::super::UiMountedProjectionDenial> {
+        self.semantic
+            .node(instance)
+            .map(|node| node.has_appearance_attachment)
+            .ok_or(super::super::UiMountedProjectionDenial::AppearanceSelectionFrameMismatch)
+    }
+
     pub(super) fn appearance_node_input(
         &self,
         instance: worth_ui_host_contract::UiMountedInstanceIdentity,

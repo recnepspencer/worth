@@ -96,7 +96,9 @@ impl UiHostObservationPayload {
             Self::PointerButton { .. } => 36,
             Self::Keyboard { .. } => 8,
             Self::WindowFocus { .. } => 17,
-            Self::ScrollDelta { target, .. } => 19 + target.encoded_len(),
+            Self::ScrollDelta {
+                precision, target, ..
+            } => 18 + precision.encoded_len() + target.encoded_len(),
             Self::Clock { .. } | Self::Tick { .. } => 8,
             Self::TextInput { text, .. } => 8 + text.len(),
             Self::ImeComposition { phase, .. } => 9 + ime_encoded_len(phase),
@@ -175,7 +177,7 @@ impl UiHostObservationPayload {
                 y_subpixels,
             } => {
                 digest.fold_pair(*source as u64, *phase as u64);
-                digest.fold(*precision as u64);
+                digest.fold(precision.digest_basis());
                 digest.fold_scroll_target(*target);
                 digest.fold_pair(*x_subpixels as u64, *y_subpixels as u64);
             }

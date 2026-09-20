@@ -84,6 +84,7 @@ pub use scroll::allocation::{
 pub(crate) use scroll::allocation::{
     UiAdmittedScrollExtentSource, UiAdmittedScrollOwnedContract, UiScrollProjectionOwnerIdentity,
 };
+pub use scroll::UiScrollSettleStop;
 
 pub(crate) use allocation_frame_dispatch::UiPendingMountedPreviewTransition;
 pub(crate) use allocation_receipt::project_allocation_preview;

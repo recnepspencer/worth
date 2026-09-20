@@ -9,6 +9,20 @@ pub(crate) fn resolve(
     finish(aspect, lookup, theme)
 }
 
+pub(crate) fn resolve_with_classes(
+    aspect: worth_ui_dsl::UiAppearanceAspect,
+    partition: &worth_ui_dsl::UiAppearanceDecisionPartition,
+    classes: &[(
+        worth_ui_dsl::UiAppearanceStateAxis,
+        worth_ui_dsl::UiAppearanceAxisClass,
+    )],
+    theme: &super::super::super::theme::UiThemeResolutionView,
+) -> Result<super::super::UiResolvedAppearanceAspect, super::UiAppearanceResolutionFailure> {
+    let lookup = super::cell_lookup::lookup_with_classes(partition, classes, aspect)
+        .map_err(super::UiAppearanceResolutionFailure::without_theme_work)?;
+    finish(aspect, lookup, theme)
+}
+
 pub(crate) fn resolve_backdrop(
     aspect: worth_ui_dsl::UiAppearanceAspect,
     partition: &worth_ui_dsl::UiAppearanceDecisionPartition,

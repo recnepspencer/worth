@@ -1,4 +1,6 @@
 #[cfg(target_os = "windows")]
+mod dashboard_first_frame_progression;
+#[cfg(target_os = "windows")]
 mod first_frame_progression;
 #[cfg(target_os = "windows")]
 mod installation_progression;
@@ -30,6 +32,8 @@ mod quiescent_observation;
 mod replacement_progression;
 #[cfg(target_os = "windows")]
 mod schema_transition_progression;
+#[cfg(target_os = "windows")]
+mod scroll_progression;
 mod shutdown;
 #[cfg(target_os = "windows")]
 mod source_action_progression;
@@ -65,14 +69,18 @@ pub(crate) use portal_progression::{
 pub(crate) use progression::{
     AwaitingFirstFrame, AwaitingPreservation, AwaitingQueryCurrent, AwaitingRecovery,
     AwaitingReplacement, AwaitingSchemaStop, AwaitingStatusRecovery, Closed,
-    ComparisonBasisRefreshed, FinalRecovered, FirstCurrent, GreenSuccessor, IdentityTraced,
-    InitialBlue, Installed, NativeBoundExecutableWorld, NativeInputReached, OverlayCleared,
-    OverlayPublished, PortalReady, PreservedPredecessor, PreservedPredecessorEvidence, Published,
-    PulseExecutableWorld, QueryCurrent, RecoveredBlue, SchemaStopped, SecondCurrent,
-    SecondQueryCurrent, SnapshotCaptured,
+    ComparisonBasisRefreshed, DashboardAtRest, FinalRecovered, FirstCurrent, GreenSuccessor,
+    IdentityTraced, InitialBlue, Installed, NativeBoundExecutableWorld, NativeInputReached,
+    OverlayCleared, OverlayPublished, PortalReady, PreservedPredecessor,
+    PreservedPredecessorEvidence, Published, PulseExecutableWorld, QueryCurrent, RecoveredBlue,
+    SchemaStopped, SecondCurrent, SecondQueryCurrent, SnapshotCaptured,
 };
 #[cfg(target_os = "windows")]
 pub(crate) use quiescent_observation::PlatformPulseQuiescenceFailure;
+#[cfg(target_os = "windows")]
+pub(crate) use scroll_progression::{
+    PlatformPulseScrollJourneyEvidence, PlatformPulseScrollJourneyFailure,
+};
 pub(crate) use shutdown::{PlatformPulseProcessExitFailure, SuccessfulPlatformPulseExit};
 pub(crate) use watched_observation::{
     await_next_observation, await_watched_observation, WatchedPulseObservationFailure,

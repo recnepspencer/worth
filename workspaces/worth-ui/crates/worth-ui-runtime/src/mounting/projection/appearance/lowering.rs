@@ -7,7 +7,8 @@ use super::fact::{
     UiMountedAppearanceNodeInput, UiMountedAppearanceVisualBounds,
 };
 use super::{
-    backdrop, outline, overlay_order, surface, text_foreground, UiMountedAppearanceLoweringDenial,
+    backdrop, outline, overlay_order, scroll_chrome, surface, text_foreground,
+    UiMountedAppearanceLoweringDenial,
 };
 
 pub(super) fn lower(
@@ -23,6 +24,25 @@ pub(super) fn lower(
     let mut records = Vec::new();
     for node in &input.nodes {
         lower_node(&input, node, &mut mechanics, &mut records)?;
+        lower_owned_chrome(
+            &input,
+            node.node_receipt.mounted_instance(),
+            &mut mechanics,
+            &mut records,
+        )?;
+    }
+    if let Some(owner) = input.chrome_owner {
+        lower_owned_chrome(&input, owner, &mut mechanics, &mut records)?;
+    }
+    let owned = |chrome: &super::UiMountedAppearanceScrollChromeInput| {
+        input.chrome_owner == Some(chrome.owner_instance())
+            || input
+                .nodes
+                .iter()
+                .any(|node| node.node_receipt.mounted_instance() == chrome.owner_instance())
+    };
+    if !input.scroll_chrome.iter().all(owned) {
+        return Err(UiMountedAppearanceLoweringDenial::ScrollChromeOwnerMissing);
     }
     for backdrop_input in &input.backdrops {
         if backdrop_input.semantic_surface != input.semantic_surface {
@@ -59,6 +79,37 @@ pub(super) fn lower(
         records,
         geometry_inputs,
     ))
+}
+
+/// Chrome the given occurrence owns, painted after that occurrence's own
+/// surface, outline and text so the bars sit on the region rather than under
+/// it, and always inside the clip the region imposes.
+fn lower_owned_chrome(
+    input: &UiMountedAppearanceLoweringInput,
+    owner: worth_ui_host_contract::UiMountedInstanceIdentity,
+    mechanics: &mut Vec<UiMountedAppearanceMechanic>,
+    records: &mut Vec<UiMountedAppearanceFact>,
+) -> Result<(), UiMountedAppearanceLoweringDenial> {
+    for chrome in input
+        .scroll_chrome
+        .iter()
+        .filter(|chrome| chrome.owner_instance() == owner)
+    {
+        if chrome.semantic_surface() != input.semantic_surface {
+            return Err(UiMountedAppearanceLoweringDenial::NodeSurfaceMismatch);
+        }
+        let mechanic = scroll_chrome::lower(chrome)?;
+        records.push(UiMountedAppearanceFact::scroll_chrome(
+            input.semantic_surface,
+            chrome.attribution(),
+            chrome.semantic_digest(),
+            mechanic.clone(),
+            chrome.rect(),
+            chrome.clip(),
+        ));
+        mechanics.push(mechanic);
+    }
+    Ok(())
 }
 
 fn validate_backdrop_placements(

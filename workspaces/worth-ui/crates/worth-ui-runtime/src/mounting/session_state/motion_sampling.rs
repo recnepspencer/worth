@@ -122,6 +122,24 @@ impl WorthUiMountedSessionState {
             self.last_motion_sampling_cost = Some(receipt.cost());
             return UiMountedMotionSampleSettlement::Committed(receipt);
         }
+        if prepared.receipt().samples().iter().all(|sample| {
+            sample.target().scope() == crate::runtime::motion::UiMotionTargetScope::ScrollContents
+        }) {
+            // Scrolled content is displaced by the geometry the accepted offset
+            // re-lowers over the region's descendants, never by translating
+            // paint commands, so a tick that sampled only scrolled content owes
+            // the host no sample work. The sampling is accepted on the basis it
+            // was prepared against, and the settle that follows this tick
+            // presents the displacement.
+            let Ok(prepared) = prepared.with_presented_basis(presentation) else {
+                self.presentation
+                    .mark_motion_sample_indeterminate(presentation.binding());
+                return UiMountedMotionSampleSettlement::PresentationIndeterminate;
+            };
+            let receipt = self.motion_sampling.commit_prepared(prepared);
+            self.last_motion_sampling_cost = Some(receipt.cost());
+            return UiMountedMotionSampleSettlement::Committed(receipt);
+        }
         let capability_report = host.capability_report().clone();
         let outcome = self.presentation.present_motion_sample(
             prepared,

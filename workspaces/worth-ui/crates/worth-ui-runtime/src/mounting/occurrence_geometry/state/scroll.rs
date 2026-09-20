@@ -30,6 +30,50 @@ impl UiMountedOccurrenceGeometryState {
         Some((*owner, content, viewport))
     }
 
+    /// The Scroll region owner whose offset moves `instance`, when `instance`
+    /// is content laid out relative to such an owner rather than an owner
+    /// itself. Scrolled content is not the region's graph descendant, so its
+    /// own ownership chain never names the region; the layout parent link is
+    /// what ties it to the offset it travels with.
+    pub(crate) fn scrolled_content_owner(
+        &self,
+        surface: UiSemanticSurfaceIdentity,
+        instance: UiMountedInstanceIdentity,
+    ) -> Option<UiMountedInstanceIdentity> {
+        let geometry = self.surfaces.get(&surface)?;
+        let owns_region = |candidate: UiMountedInstanceIdentity| {
+            geometry
+                .regions
+                .values()
+                .flatten()
+                .any(|(owner, _, _)| *owner == candidate)
+        };
+        let mut cursor = geometry.occurrences.get(&instance)?.parent;
+        while let Some(ancestor) = cursor {
+            if owns_region(ancestor) {
+                return Some(ancestor);
+            }
+            cursor = geometry.occurrences.get(&ancestor)?.parent;
+        }
+        None
+    }
+
+    /// The offset the displayed pose of one region occurrence was last built
+    /// from. This is the displayed truth rather than the semantic target: the
+    /// accepted-sample settlement writes it, so a region still travelling
+    /// toward a new offset reports the one the host has already presented.
+    pub(crate) fn applied_scroll_pose(
+        &self,
+        surface: UiSemanticSurfaceIdentity,
+        owner_instance: UiMountedInstanceIdentity,
+    ) -> Option<crate::runtime::scroll::UiScrollOffset> {
+        self.surfaces
+            .get(&surface)?
+            .scroll_poses
+            .get(&owner_instance)
+            .copied()
+    }
+
     pub(crate) fn prepare_scroll_pose(
         &self,
         surface: UiSemanticSurfaceIdentity,

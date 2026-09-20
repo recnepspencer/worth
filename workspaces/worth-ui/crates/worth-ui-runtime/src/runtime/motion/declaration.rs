@@ -11,7 +11,13 @@ pub(crate) struct UiMotionPropertyChannels(u8);
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum UiMotionEasing {
+    /// A fixed-shape ease shared by every animated component. Its start rate is
+    /// whatever the shape dictates, so an interruption restarts the shape.
     EaseOutCubic,
+    /// A cubic Hermite that leaves the interrupted sample at the rate that
+    /// sample was already moving and arrives at the endpoint at rest. This is
+    /// the one declared curve family for retargeted settlement.
+    VelocityMatchedCubic,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -90,6 +96,24 @@ impl UiMotionDeclaration {
             channels: UiMotionPropertyChannels::one(UiMotionPropertyChannel::Geometry),
             easing: UiMotionEasing::EaseOutCubic,
             duration_ticks: 160,
+            delay_ticks: 0,
+            fill: UiMotionFillPolicy::FinalState,
+            interruption: UiMotionInterruptionPolicy::RetargetFromCurrentSample,
+            reduced_motion: UiMotionReducedMotionPolicy::SystemRespecting,
+            decorative: false,
+        }
+    }
+
+    /// Settlement of a Scroll region's content toward its succession target.
+    /// `settle_ticks` is the horizon measured from the latest accepted input,
+    /// not a fixed duration restarted per event, and an interrupting notch
+    /// retargets from the current sample's position and velocity.
+    pub(crate) const fn scroll_settle(settle_ticks: u32) -> Self {
+        Self {
+            channels: UiMotionPropertyChannels::one(UiMotionPropertyChannel::TranslationX)
+                .with(UiMotionPropertyChannel::TranslationY),
+            easing: UiMotionEasing::VelocityMatchedCubic,
+            duration_ticks: settle_ticks,
             delay_ticks: 0,
             fill: UiMotionFillPolicy::FinalState,
             interruption: UiMotionInterruptionPolicy::RetargetFromCurrentSample,
@@ -186,9 +210,41 @@ mod tests {
             UiMotionFillPolicy::FinalState
         );
         assert_eq!(
+            UiMotionDeclaration::scroll_settle(120).fill(),
+            UiMotionFillPolicy::FinalState
+        );
+        assert_eq!(
             UiMotionDeclaration::portal_exit().fill(),
             UiMotionFillPolicy::ExitRetention
         );
+    }
+
+    /// Scroll settlement is the declared curve family for retargeting: it moves
+    /// only the two translation channels, carries the settle horizon it was
+    /// given, and is never decorative, so reduced motion settles it directly
+    /// instead of snapping it away.
+    #[test]
+    fn scroll_settlement_declares_translation_only_velocity_matched_motion() {
+        let settle = UiMotionDeclaration::scroll_settle(120);
+
+        assert!(settle
+            .channels()
+            .contains(UiMotionPropertyChannel::TranslationX));
+        assert!(settle
+            .channels()
+            .contains(UiMotionPropertyChannel::TranslationY));
+        assert!(!settle.channels().contains(UiMotionPropertyChannel::Opacity));
+        assert!(!settle
+            .channels()
+            .contains(UiMotionPropertyChannel::Geometry));
+        assert_eq!(settle.easing(), UiMotionEasing::VelocityMatchedCubic);
+        assert_eq!(settle.duration_ticks(), 120);
+        assert_eq!(settle.delay_ticks(), 0);
+        assert_eq!(
+            settle.interruption(),
+            UiMotionInterruptionPolicy::RetargetFromCurrentSample
+        );
+        assert!(!settle.decorative());
     }
 
     #[test]

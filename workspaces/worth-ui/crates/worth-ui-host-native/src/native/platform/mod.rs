@@ -1,5 +1,9 @@
+mod wheel_notch;
+mod wheel_scroll_lines_store;
 #[cfg(target_os = "windows")]
 mod windows;
+
+pub(crate) use wheel_notch::{observe_wheel_notch_report, UiNativeWheelNotchReport};
 
 #[cfg(target_os = "windows")]
 pub(crate) use windows::{

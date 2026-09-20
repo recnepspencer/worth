@@ -130,6 +130,22 @@ pub(crate) fn prepare_successor_application_authority(
     let capability_snapshot = semantic_handoff
         .successor_snapshot()
         .unwrap_or_else(|| current.capability_authority());
+    let service_policy_plan = crate::declaration::UiNormalizedServicePolicyPlan::normalize(
+        current.service_policy_defaults(),
+        semantic_handoff.authored_service_policy_defaults(),
+        current
+            .intent_execution_bindings()
+            .runtime_service_support()
+            .union(semantic_handoff.runtime_service_support())
+            .union(current.capabilities().commands().runtime_service_support())
+            .union(
+                current
+                    .capabilities()
+                    .mosaic_regions()
+                    .runtime_service_support(),
+            ),
+    )
+    .map_err(WorthUiApplicationPreparationDenial::ServicePolicyNormalization)?;
     let (declaration_artifacts, declaration_source_identity) = declaration_material.into_parts();
     let graph_handoffs = lower_graph_handoffs(&declaration_artifacts)
         .map_err(|denial| WorthUiApplicationPreparationDenial::GraphHandoff(Box::new(denial)))?;
@@ -158,21 +174,6 @@ pub(crate) fn prepare_successor_application_authority(
         &declaration_artifacts,
         measurement_inspection_evidence.clone(),
         worth_ui_inspection::RUNTIME_INSPECTION_SCOPE_INVENTORY,
-    );
-    let service_policy_plan = crate::declaration::UiNormalizedServicePolicyPlan::normalize(
-        current.service_policy_defaults(),
-        semantic_handoff.authored_service_policy_defaults(),
-        current
-            .intent_execution_bindings()
-            .runtime_service_support()
-            .union(semantic_handoff.runtime_service_support())
-            .union(current.capabilities().commands().runtime_service_support())
-            .union(
-                current
-                    .capabilities()
-                    .mosaic_regions()
-                    .runtime_service_support(),
-            ),
     );
     let authority =
         WorthUiPreparedApplicationAuthority::seal(WorthUiPreparedApplicationAuthorityInput {

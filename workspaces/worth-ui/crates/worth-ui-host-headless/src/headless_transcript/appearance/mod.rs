@@ -3,6 +3,7 @@ mod outline;
 mod overlay_order;
 mod pointer_affordance;
 pub(crate) mod reference_raster;
+mod scroll_chrome;
 mod spatial_reference;
 mod surface;
 mod text_foreground;
@@ -23,6 +24,7 @@ pub enum UiHeadlessAppearanceMechanic {
     TextForeground(worth_ui_host_contract::UiMountedTextForegroundAppearanceMechanic),
     Pointer(worth_ui_host_contract::UiMountedPointerAffordanceMechanic),
     Backdrop(worth_ui_host_contract::UiMountedBackdropMechanic),
+    ScrollChrome(worth_ui_host_contract::UiMountedScrollChromeMechanic),
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -86,6 +88,9 @@ impl UiHeadlessAppearanceMechanic {
                 pointer_affordance::translate(mechanic)
             }
             UiMountedAppearanceMechanic::Backdrop(mechanic) => backdrop::translate(mechanic),
+            UiMountedAppearanceMechanic::ScrollChrome(mechanic) => {
+                scroll_chrome::translate(mechanic)
+            }
         }
     }
 
@@ -101,6 +106,9 @@ impl UiHeadlessAppearanceMechanic {
             }
             (Self::Pointer(left), UiMountedAppearanceMechanic::Pointer(right)) => left == right,
             (Self::Backdrop(left), UiMountedAppearanceMechanic::Backdrop(right)) => left == right,
+            (Self::ScrollChrome(left), UiMountedAppearanceMechanic::ScrollChrome(right)) => {
+                left == right
+            }
             _ => false,
         }
     }

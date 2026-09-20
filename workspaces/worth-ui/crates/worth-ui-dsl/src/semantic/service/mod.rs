@@ -12,7 +12,10 @@ pub use command::{
 pub use focus::{WorthUiFocusDeclaration, WorthUiFocusScope};
 pub use motion::{WorthUiMotionDeclaration, WorthUiReducedMotionPolicy};
 pub use portal::{WorthUiPortalDeclaration, WorthUiPortalDismissalSet, WorthUiPortalLayer};
-pub use scroll::{WorthUiScrollAnchorPolicy, WorthUiScrollDeclaration};
+pub use scroll::{
+    WorthUiScrollAnchorPolicy, WorthUiScrollChromeAxes, WorthUiScrollChromeDeclaration,
+    WorthUiScrollDeclaration, WorthUiScrollWheelPolicy,
+};
 pub use selection::{WorthUiSelectionDeclaration, WorthUiSelectionMode};
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -99,6 +102,13 @@ impl WorthUiServiceDeclarationMeaning {
                 }
                 crate::WorthUiArtifactInputBodyAtom::KeywordToken => {
                     Some(Word::Text("token".to_owned()))
+                }
+                // A clause value may be a number, as `line_extent 20` is. The
+                // family that owns the clause decides what that number means;
+                // a family with no numeric clause still denies it as an
+                // unknown clause or an invalid value.
+                crate::WorthUiArtifactInputBodyAtom::NumberLiteral(text) => {
+                    Some(Word::Text(text.clone()))
                 }
                 crate::WorthUiArtifactInputBodyAtom::Plus => Some(Word::Plus),
                 crate::WorthUiArtifactInputBodyAtom::LeftBrace

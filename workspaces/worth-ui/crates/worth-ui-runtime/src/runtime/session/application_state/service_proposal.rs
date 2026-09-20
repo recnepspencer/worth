@@ -10,6 +10,12 @@ mod portal_cancellation;
 mod portal_frame_binding;
 #[path = "service_proposal/portal_types.rs"]
 mod portal_types;
+#[path = "service_proposal/scroll_settle.rs"]
+mod scroll_settle;
+#[path = "service_proposal/scroll_settle_settlement.rs"]
+mod scroll_settle_settlement;
+#[path = "service_proposal/scroll_settle_types.rs"]
+mod scroll_settle_types;
 #[path = "service_proposal/settlement.rs"]
 mod settlement;
 #[path = "service_proposal/terminal.rs"]
@@ -21,6 +27,7 @@ pub(crate) use portal_types::{
     UiIndeterminatePortalProposalTransaction, UiPortalProposalPreparation,
     UiPortalProposalPreparationDenial, UiStagedPortalProposalTransaction,
 };
+pub(crate) use scroll_settle_types::UiScrollSettlePublicationDenial;
 
 impl WorthUiApplicationSessionState {
     pub(crate) fn service_proposal_resource_counts(&self) -> [u16; 4] {

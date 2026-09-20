@@ -109,6 +109,9 @@ impl UiNativeRetainedDrawList {
                     UiMountedAppearanceMechanic::Backdrop(value) => {
                         UiNativeAppearanceCommand::Backdrop(value.clone())
                     }
+                    UiMountedAppearanceMechanic::ScrollChrome(value) => {
+                        UiNativeAppearanceCommand::ScrollChrome(*value)
+                    }
                     UiMountedAppearanceMechanic::Pointer(value) => {
                         UiNativeAppearanceCommand::PointerAffordance(*value)
                     }

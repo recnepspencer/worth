@@ -46,6 +46,10 @@ pub(crate) enum UiMotionTerminalCause {
     SnappedToTarget,
     ReboundAway,
     ApplicationShutdown,
+    /// A pointer took direct control of the thing this track was moving -- a
+    /// scrollbar thumb grabbed mid-settle -- so the track ends where its last
+    /// accepted sample left the content, and the pointer places it from there.
+    DisplacedByDirectControl,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -272,14 +276,18 @@ impl UiMotionCommitReceipt {
         };
         let request = super::UiMotionTransitionRequest::from_family_transition(
             target,
-            identity,
-            identity + 1,
-            presentation,
-            geometry(predecessor_geometry),
-            predecessor_visible,
-            presentation,
-            geometry(successor_geometry),
-            successor_visible,
+            super::UiMotionTransitionEndpoint::new(
+                identity,
+                presentation,
+                geometry(predecessor_geometry),
+                predecessor_visible,
+            ),
+            super::UiMotionTransitionEndpoint::new(
+                identity + 1,
+                presentation,
+                geometry(successor_geometry),
+                successor_visible,
+            ),
             declaration,
         )
         .expect("sampling test transition has an advancing revision and stable binding");

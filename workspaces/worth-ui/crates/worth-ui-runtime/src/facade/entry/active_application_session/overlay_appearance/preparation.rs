@@ -61,9 +61,19 @@ impl crate::facade::WorthUiActiveApplicationSession {
             &crate::mounting::UiMountedGraphReplacementSuccessor,
         )>,
     ) -> Result<UiActiveOverlayAppearancePreparation, ()> {
+        // A replacement's successor has no accepted scroll pose yet, so its
+        // first frame presents no chrome; the first ordinary attempt after it
+        // derives chrome from the pose that frame settled.
+        let scroll_chrome = match replacement {
+            Some(_) => Vec::new(),
+            None => self
+                .prepare_scroll_chrome_appearance_sources()
+                .map_err(|_| ())?,
+        };
         if bound_owners.is_empty() {
             return Ok(UiActiveOverlayAppearancePreparation {
                 surfaces: Box::new([]),
+                scroll_chrome,
             });
         }
         let generation = replacement
@@ -164,6 +174,7 @@ impl crate::facade::WorthUiActiveApplicationSession {
         }
         Ok(UiActiveOverlayAppearancePreparation {
             surfaces: surfaces.into_boxed_slice(),
+            scroll_chrome,
         })
     }
 }

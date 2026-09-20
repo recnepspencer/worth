@@ -44,12 +44,20 @@ mod reconstruction;
 mod replacement;
 #[path = "integrated_appearance_world/replacement_geometry.rs"]
 mod replacement_geometry;
+#[path = "integrated_appearance_world/scroll_pose_authority.rs"]
+mod scroll_pose_authority;
+#[path = "integrated_appearance_world/scroll_settle_commit.rs"]
+mod scroll_settle_commit;
+#[path = "integrated_appearance_world/scroll_settle_frame.rs"]
+mod scroll_settle_frame;
 #[path = "integrated_appearance_world/seam.rs"]
 mod seam;
 #[path = "integrated_appearance_world/services.rs"]
 mod services;
 #[path = "integrated_appearance_world/session.rs"]
 mod session;
+#[path = "integrated_appearance_world/session_publication.rs"]
+mod session_publication;
 #[path = "integrated_appearance_world/stationary_motion.rs"]
 mod stationary_motion;
 #[path = "integrated_appearance_world/surface_continuity.rs"]

@@ -1,6 +1,7 @@
 use super::{
     UiMountedBackdropIdentity, UiMountedBackdropMechanic, UiMountedOutlineAppearanceMechanic,
     UiMountedPointerAffordanceMechanic, UiMountedPortalSurfaceAppearanceMechanic,
+    UiMountedScrollChromeIdentity, UiMountedScrollChromeMechanic,
     UiMountedSurfaceAppearanceMechanic, UiMountedTextForegroundAppearanceMechanic,
 };
 
@@ -20,6 +21,7 @@ pub enum UiMountedAppearanceMechanicIdentity {
         target: crate::UiMountedInstanceIdentity,
     },
     Backdrop(UiMountedBackdropIdentity),
+    ScrollChrome(UiMountedScrollChromeIdentity),
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -30,6 +32,7 @@ pub enum UiMountedAppearanceMechanic {
     TextForeground(UiMountedTextForegroundAppearanceMechanic),
     Pointer(UiMountedPointerAffordanceMechanic),
     Backdrop(UiMountedBackdropMechanic),
+    ScrollChrome(UiMountedScrollChromeMechanic),
 }
 
 impl UiMountedAppearanceMechanic {
@@ -52,7 +55,7 @@ impl UiMountedAppearanceMechanic {
             Self::TextForeground(mechanic) => mechanic
                 .reattribute_for_runtime_mounting(issuer, node_receipt)
                 .map(Self::TextForeground),
-            Self::Pointer(_) | Self::Backdrop(_) => None,
+            Self::Pointer(_) | Self::Backdrop(_) | Self::ScrollChrome(_) => None,
         }
     }
 
@@ -81,6 +84,9 @@ impl UiMountedAppearanceMechanic {
             Self::Backdrop(mechanic) => {
                 UiMountedAppearanceMechanicIdentity::Backdrop(mechanic.identity().clone())
             }
+            Self::ScrollChrome(mechanic) => {
+                UiMountedAppearanceMechanicIdentity::ScrollChrome(mechanic.identity())
+            }
         }
     }
 
@@ -90,7 +96,7 @@ impl UiMountedAppearanceMechanic {
             Self::PortalSurface(mechanic) => Some(mechanic.surface().node_receipt().frame()),
             Self::Outline(mechanic) => Some(mechanic.node_receipt().frame()),
             Self::TextForeground(mechanic) => Some(mechanic.node_receipt().frame()),
-            Self::Pointer(_) | Self::Backdrop(_) => None,
+            Self::Pointer(_) | Self::Backdrop(_) | Self::ScrollChrome(_) => None,
         }
     }
 }

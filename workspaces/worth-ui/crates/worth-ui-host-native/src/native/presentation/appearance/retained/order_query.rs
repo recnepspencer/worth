@@ -96,6 +96,15 @@ impl UiNativeAppearanceRetained {
                     Some((0, u64::from(outline.surface_paint_order()), 1, key.value()))
                 }
                 UiNativeAppearanceCommand::TextForeground(_) => Some((0, 0, 2, key.value())),
+                // Chrome paints above every authored surface on its own
+                // surface and below the overlay layer, so a scrollbar covers
+                // the content it scrolls without covering a modal above it.
+                UiNativeAppearanceCommand::ScrollChrome(chrome) => Some((
+                    0,
+                    u64::MAX,
+                    chrome.identity().part().paint_ordinal() as u8,
+                    key.value(),
+                )),
                 UiNativeAppearanceCommand::PortalSurface(portal) => Some((
                     1,
                     *overlay_rank

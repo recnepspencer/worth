@@ -3,8 +3,9 @@
 pub use crate::declaration::{
     UiCommandRoutingPolicy, UiFocusPolicy, UiFocusScopePolicy, UiMotionPolicy,
     UiNormalizedServicePolicyPlan, UiPortalPolicy, UiPortalPolicyKind, UiReducedMotionBehavior,
-    UiScrollAnchorBehavior, UiScrollPolicy, UiScrollRevealAlignment, UiSelectionMode,
-    UiSelectionPolicy,
+    UiScrollAnchorBehavior, UiScrollPolicy, UiScrollRevealAlignment, UiScrollWheelBehavior,
+    UiScrollWheelBehaviorDenial, UiSelectionMode, UiSelectionPolicy,
+    UiServicePolicyNormalizationDenial, UI_SCROLL_WHEEL_SETTLE_TICK_CEILING,
 };
 
 pub use crate::facade::registry::descriptor::{

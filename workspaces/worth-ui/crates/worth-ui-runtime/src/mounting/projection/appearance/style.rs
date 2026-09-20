@@ -116,7 +116,7 @@ fn resolved_border(
     Ok((mounted_color(stroke.color()), width))
 }
 
-fn resolved_radii(
+pub(super) fn resolved_radii(
     bounds: worth_ui_host_contract::UiAppearanceAllocationBounds,
     authored: worth_ui_dsl::UiThemeCornerRadii,
 ) -> Result<

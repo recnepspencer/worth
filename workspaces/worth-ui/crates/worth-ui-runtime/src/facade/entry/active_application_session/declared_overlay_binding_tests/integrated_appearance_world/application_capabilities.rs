@@ -2,21 +2,37 @@ use super::{authored, overlay, palette, test_support};
 use crate::capability::*;
 
 pub(super) fn builder(
-    seam: bool,
-    multi_region_owner: bool,
-    role: Option<&worth_ui_dsl::UiAppearanceRoleDeclaration>,
+    capabilities: &super::WorldCapabilities,
 ) -> crate::facade::entry::WorthUiCertificationApplicationBuilder {
-    let mut builder = test_support::authored_overlay_builder_with_component(authored::component(0))
-        .with_focus_policy_defaults(crate::declaration::UiFocusPolicy::workbench())
-        .with_motion_policy_defaults(crate::declaration::UiMotionPolicy::system_respecting())
-        .with_scroll_policy_defaults(crate::declaration::UiScrollPolicy::nested_region())
-        .register_surface(SurfaceDescriptor::new(SurfaceId::new("workspace.surface.secondary").unwrap(),
-            SurfaceKind::overlay_content(), ComponentId::new(authored::COMPONENTS[0]).unwrap(),
-            SurfacePlacementClass::overlay_layer(), SurfaceStateClass::restorable()))
-        .register_surface(SurfaceDescriptor::new(SurfaceId::new("aaa.surface").unwrap(),
-            SurfaceKind::overlay_content(), ComponentId::new(authored::COMPONENTS[0]).unwrap(),
-            SurfacePlacementClass::overlay_layer(), SurfaceStateClass::restorable()))
-        .register_theme_token(crate::runtime::tests::appearance_component_session_test_support::appearance_theme_token(ThemeTokenId::new(palette::TEXT_TOKEN).unwrap()));
+    let seam = capabilities.seam;
+    let multi_region_owner = capabilities.multi_region_owner;
+    let role = capabilities.role.as_ref();
+    let mut builder = test_support::authored_overlay_builder_with_component_and_region(
+        authored::component(0),
+        capabilities.scroll.region.clone(),
+    )
+    .with_focus_policy_defaults(crate::declaration::UiFocusPolicy::workbench())
+    .with_motion_policy_defaults(crate::declaration::UiMotionPolicy::system_respecting())
+    .with_scroll_policy_defaults(capabilities.scroll.policy)
+    .register_surface(SurfaceDescriptor::new(
+        SurfaceId::new("workspace.surface.secondary").unwrap(),
+        SurfaceKind::overlay_content(),
+        ComponentId::new(authored::COMPONENTS[0]).unwrap(),
+        SurfacePlacementClass::overlay_layer(),
+        SurfaceStateClass::restorable(),
+    ))
+    .register_surface(SurfaceDescriptor::new(
+        SurfaceId::new("aaa.surface").unwrap(),
+        SurfaceKind::overlay_content(),
+        ComponentId::new(authored::COMPONENTS[0]).unwrap(),
+        SurfacePlacementClass::overlay_layer(),
+        SurfaceStateClass::restorable(),
+    ))
+    .register_theme_token(
+        crate::runtime::tests::appearance_component_session_test_support::appearance_theme_token(
+            ThemeTokenId::new(palette::TEXT_TOKEN).unwrap(),
+        ),
+    );
     if seam {
         let primary = MosaicRegionKindId::new("workspace.region.primary").unwrap();
         let secondary = MosaicRegionKindId::new("workspace.region.secondary").unwrap();
