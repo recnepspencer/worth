@@ -288,6 +288,7 @@ exports = [
     "WorthQueryBranchAdoptionRecoveryDenial",
     "WorthQueryBranchAdoptionRecoveryFailure",
     "WorthQueryBranchAdoptionRecoveryOutcome",
+    "WorthQueryBranchAdoptionRecoveryReleaseFailure",
     "WorthQueryBranchSetAdoptionAdvanceDenial",
     "WorthQueryBranchSetAdoptionCancellation",
     "WorthQueryBranchSetAdoptionCloseDenial",
