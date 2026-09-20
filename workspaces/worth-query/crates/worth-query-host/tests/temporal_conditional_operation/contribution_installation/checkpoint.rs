@@ -27,6 +27,7 @@ pub(crate) fn application_checkpoint_restores_fresh_editable_authority() {
     )
     .expect("the checkpoint source application installs");
     let original_world = application.current_world();
+    assert_live_relation_is_readable(&application, "source");
     let checkpoint = application
         .capture_application_checkpoint()
         .expect("the current committed world captures as opaque bytes");
@@ -58,6 +59,7 @@ pub(crate) fn application_checkpoint_restores_fresh_editable_authority() {
         "restore must not execute conditional application work",
     );
     assert_ne!(restored.current_world(), original_world);
+    assert_live_relation_is_readable(&restored, "restored");
     let installed = restored
         .conditional::<TemporalConditional>()
         .expect("the restored contribution remains installed");
@@ -73,6 +75,63 @@ pub(crate) fn application_checkpoint_restores_fresh_editable_authority() {
     )
     .require_committed()
     .expect("fresh restored authority accepts a subsequent edit");
+}
+
+fn assert_live_relation_is_readable(
+    application: &application_installation::WorthQueryProgramApplicationRuntime<
+        TemporalHostSchema,
+        TemporalInstallationProgram,
+    >,
+    phase: &str,
+) {
+    let request = request_scope();
+    let schema = application.installed_schema();
+    let principal_binding = schema
+        .principal_binding(TemporalPrincipalBinding::reference())
+        .unwrap();
+    let authentication = admit_identity_adapter(schema);
+    let external = block_on(authentication.authenticate((), &request)).unwrap();
+    let selected = application
+        .on_branch(application.current_world())
+        .select()
+        .unwrap();
+    let principal = selected
+        .resolve_authenticated_principal(
+            &principal_binding,
+            &external,
+            &request,
+            primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
+        )
+        .unwrap();
+    let scope = selected
+        .resolve_entity(
+            IntentIdentityField::reference(),
+            "intent-1".to_owned(),
+            &request,
+            primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
+        )
+        .unwrap();
+    let query = schema
+        .certification_query(TemporalIntentLiveQuery::reference())
+        .unwrap();
+    let access = primary_graph::WorthQueryApplicationQueryAccessContext::new(&principal, &scope);
+    let plan = selected
+        .admit_application_query(
+            &query,
+            &access,
+            worth_query_host::facade::declaration::application_query::ApplicationQueryParameterSet::new(),
+            primary_graph::WorthQueryProductQueryControls::new(
+                std::num::NonZeroUsize::new(8).unwrap(),
+                std::num::NonZeroUsize::new(64).unwrap(),
+                &request,
+            ),
+        )
+        .unwrap();
+    let result = application
+        .execute_application_query_one_shot(plan)
+        .expect("checkpointed relation remains readable");
+    assert_eq!(result.rows().len(), 1);
+    assert_eq!(result.rows()[0].targets, vec!["intent-1"], "{phase}");
 }
 
 pub(crate) fn application_checkpoint_denies_corrupt_incompatible_and_forged_bytes() {

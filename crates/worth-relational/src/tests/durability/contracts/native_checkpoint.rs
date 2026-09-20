@@ -1,4 +1,5 @@
 use super::*;
+use crate::facade::transactions::{CreatedEntityRef, EntityReference, EntitySpec, RelationSpec};
 use std::sync::Arc;
 
 use crate::validation::data::{
@@ -80,6 +81,85 @@ fn native_checkpoint_round_trip_restores_a_live_editable_world() {
             .branch_head(&BranchId("main".to_owned())),
         Some(later.commit.clone())
     );
+}
+
+#[test]
+fn native_checkpoint_round_trip_restores_current_relation_adjacency() {
+    let runtime = persisted_runtime_with_test_schema();
+    let source_key = crate::symbols::data::ClientKey::raw("native-relation-source");
+    let mut transaction = test_owner_begin_transaction_for_main(&runtime);
+    transaction
+        .push_batch(
+            WorkerIntentBatch::new("native-relation")
+                .push(MutationIntent::Create(CreateIntent::Entity(EntitySpec {
+                    partition_id: PartitionId::main(),
+                    kind_id: KindId(1),
+                    client_key: source_key.clone(),
+                    fields: single_string_aspect_field_patch(
+                        aspect_key("name"),
+                        field_key("name"),
+                        "native-relation-source",
+                    ),
+                })))
+                .push(MutationIntent::Create(CreateIntent::Relation(
+                    RelationSpec {
+                        partition_id: PartitionId::main(),
+                        kind_id: KindId(2),
+                        client_key: crate::symbols::data::ClientKey::raw("native-relation"),
+                        source: EntityReference::Created(CreatedEntityRef {
+                            partition_id: PartitionId::main(),
+                            kind_id: KindId(1),
+                            client_key: source_key.clone(),
+                        }),
+                        target: EntityReference::Created(CreatedEntityRef {
+                            partition_id: PartitionId::main(),
+                            kind_id: KindId(1),
+                            client_key: source_key,
+                        }),
+                        fields: Default::default(),
+                    },
+                ))),
+        )
+        .unwrap();
+    let created = transaction.commit(&runtime).unwrap();
+    let source = changed_entities(&created)[0];
+    let target = source;
+    let relation = changed_relations(&created)[0];
+    let checkpoint = runtime.durability_authority().native_checkpoint().unwrap();
+
+    let mut recovered = persisted_runtime_with_test_schema();
+    recovered
+        .durability_recovery()
+        .restore_native_checkpoint(&checkpoint)
+        .unwrap();
+    let rows = recovered
+        .read_truth()
+        .bounded_outgoing_relations_of_kind_at_version(
+            source,
+            crate::facade::identity::KindId(2),
+            recovered.current_version_id(),
+            4,
+        )
+        .unwrap()
+        .into_records();
+
+    assert_eq!(rows.len(), 1);
+    assert_eq!(rows[0].relation_id, relation);
+    assert_eq!(rows[0].target, target);
+    let snapshot = snapshot_for_owner_branch(&recovered, &BranchId("main".to_owned()));
+    let projected = recovered
+        .read_truth()
+        .project_snapshot(&snapshot)
+        .unwrap()
+        .bounded_outgoing_relations_for_frontier(
+            &std::collections::BTreeSet::from([source]),
+            KindId(2),
+            4,
+        )
+        .unwrap()
+        .into_records();
+    assert_eq!(projected.len(), 1);
+    assert_eq!(projected[0].relation_id, relation);
 }
 
 #[test]
