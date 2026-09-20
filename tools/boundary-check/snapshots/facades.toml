@@ -500,6 +500,8 @@ exports = [
     "WorthQueryRuntimeTimeSourceDenial",
     "WorthQuerySelectedApplicationProducer",
     "WorthQuerySelectedProductOperation",
+    "WorthQuerySelectedProgramInspection",
+    "WorthQuerySelectedProgramInspectionDenial",
     "WorthQuerySourceExpectationDenial",
     "WorthQuerySourceExpectationDenialKind",
     "WorthQueryStoppedBranchSetAdoption",
