@@ -50,6 +50,25 @@ where
             target,
         }
     }
+
+    /// Freshly preflights every branch that remained unperformed after a
+    /// no-effect stop. The supplied owner-issued coverage must match the
+    /// stopped operation's exact remaining order.
+    pub fn resume(
+        self,
+        adoption: worth_query_execution::facade::primary_graph::WorthQueryStoppedBranchSetAdoption,
+        maximum_selection_work_per_branch: usize,
+    ) -> Result<
+        worth_query_execution::facade::primary_graph::WorthQueryPreparedBranchSetAdoption,
+        worth_query_execution::facade::primary_graph::WorthQueryBranchSetAdoptionResumeFailure,
+    > {
+        self.application.resume_branch_set_adoption(
+            adoption,
+            self.coverage,
+            maximum_selection_work_per_branch,
+            self.scope,
+        )
+    }
 }
 
 pub struct WorthQueryApplicationBranchSetProgramAdoptionRequest<

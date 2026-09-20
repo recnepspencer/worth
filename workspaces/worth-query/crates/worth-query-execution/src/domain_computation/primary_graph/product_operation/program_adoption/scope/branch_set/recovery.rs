@@ -2,7 +2,10 @@ use worth_query_admission::facade::authenticated_principal::WorthQueryRequestSco
 use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_world::facade::NoEffectCompositePublication;
 
-use super::{WorthQueryBranchSetAdoptionCancellation, WorthQueryPreparedBranchSetAdoption};
+use super::{
+    BranchSetAdoptionResolution, WorthQueryBranchSetAdoptionCancellation,
+    WorthQueryPreparedBranchSetAdoption,
+};
 use crate::basis::{WorthQueryProductBranch, WorthQueryProductBranchAdmissionDenial};
 use crate::domain_computation::execution_runtime::product_world::{
     WorthQueryProductBranchOwnerCleanupFailure, WorthQueryProductBranchOwnerCleanupReceipt,
@@ -62,6 +65,8 @@ impl WorthQueryBranchSetAdoptionRecovery {
         self.branch
     }
 
+    /// Returns completed dispositions before the branch under recovery.
+    /// That branch's disposition remains in this recovery's separate custody.
     pub fn progress(&self) -> &[WorthQueryBranchSetAdoptionProgress] {
         self.adoption.progress()
     }
@@ -190,13 +195,20 @@ impl WorthQueryPreparedBranchSetAdoption {
     /// Transfers the blocking unpublished terminal into a recovery object that
     /// keeps the performed prefix and untouched suffix inseparable from it.
     pub fn begin_recovery(mut self) -> Result<WorthQueryBranchSetAdoptionRecovery, Self> {
+        if !matches!(
+            self.resolution_required,
+            Some(BranchSetAdoptionResolution::ProductUnpublished(_))
+        ) {
+            return Err(self);
+        }
         let Some(progress) = self.progress.pop() else {
             return Err(self);
         };
         match progress {
-            WorthQueryBranchSetAdoptionProgress::ProductUnpublished { branch, adoption } => Ok(
-                WorthQueryBranchSetAdoptionRecovery::unpublished(branch, self, adoption),
-            ),
+            WorthQueryBranchSetAdoptionProgress::ProductUnpublished { branch, adoption } => Ok({
+                self.resolution_required = None;
+                WorthQueryBranchSetAdoptionRecovery::unpublished(branch, self, adoption)
+            }),
             progress => {
                 self.progress.push(progress);
                 Err(self)
@@ -305,7 +317,7 @@ fn cancel_unstarted(
     adoption: WorthQueryPreparedBranchSetAdoption,
 ) -> WorthQueryBranchSetAdoptionCancellation {
     WorthQueryBranchSetAdoptionCancellation {
-        cancelled_pending_branch_count: adoption.pending.len(),
+        cancelled_branch_count: adoption.pending.len() + 1,
         progress: adoption.progress,
         total_selection_work_units: adoption.total_selection_work_units,
     }

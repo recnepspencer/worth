@@ -90,7 +90,8 @@ pub use product_operation::{
     WorthQueryBranchSetAdoptionCloseDenial, WorthQueryBranchSetAdoptionPreparationDenial,
     WorthQueryBranchSetAdoptionProgress, WorthQueryBranchSetAdoptionRecovery,
     WorthQueryBranchSetAdoptionRecoveryFailure, WorthQueryBranchSetAdoptionRecoveryOutcome,
-    WorthQueryBranchSetAdoptionRecoveryReleaseFailure, WorthQueryClosedBranchSetAdoption,
+    WorthQueryBranchSetAdoptionRecoveryReleaseFailure, WorthQueryBranchSetAdoptionResumeDenial,
+    WorthQueryBranchSetAdoptionResumeFailure, WorthQueryClosedBranchSetAdoption,
     WorthQueryCompletedGeneratedOutputReconstruction,
     WorthQueryConditionalDefinitionPublicationDenial,
     WorthQueryConditionalDefinitionPublicationOutcome, WorthQueryGeneratedEntity,
@@ -114,8 +115,9 @@ pub use product_operation::{
     WorthQueryProgramCustodyDispositionInventory, WorthQueryProgramCustodyDispositionKind,
     WorthQueryProgramMigrationDescription, WorthQueryProgramMigrationPreparationDenial,
     WorthQueryRestoredGeneratedOutput, WorthQueryRetainedGeneratedOutputEntity,
-    WorthQuerySelectedProductOperation, WorthQuerySuspendedGeneratedOutput,
-    WorthQueryUnpublishedBranchAdoption, WorthQueryUnpublishedGeneratedOutputRestoration,
+    WorthQuerySelectedProductOperation, WorthQueryStoppedBranchSetAdoption,
+    WorthQuerySuspendedGeneratedOutput, WorthQueryUnpublishedBranchAdoption,
+    WorthQueryUnpublishedGeneratedOutputRestoration,
 };
 mod provider;
 mod resolution;

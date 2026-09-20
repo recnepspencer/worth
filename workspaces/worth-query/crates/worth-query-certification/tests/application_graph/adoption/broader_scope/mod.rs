@@ -3,6 +3,7 @@
 mod coverage;
 mod progression;
 mod recovery;
+mod resume;
 
 use worth_query_host::facade::application_installation::WorthQueryProgramOwner;
 use worth_query_host::facade::product::WorthQueryProductBranch;

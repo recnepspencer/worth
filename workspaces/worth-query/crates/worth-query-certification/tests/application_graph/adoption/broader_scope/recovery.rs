@@ -226,7 +226,7 @@ fn unpublished_middle_branch_can_release_custody_without_relabeling_untouched_su
     };
     assert!(cleanup.is_complete());
     assert_eq!(cancelled.progress().len(), 1);
-    assert_eq!(cancelled.cancelled_pending_branch_count(), 1);
+    assert_eq!(cancelled.cancelled_branch_count(), 2);
 
     let p1 = host.supported_program::<DimensionProgramP1>().unwrap();
     assert_eq!(

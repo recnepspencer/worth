@@ -14,9 +14,14 @@ use crate::domain_computation::primary_graph::{
 };
 
 mod recovery;
+mod resume;
 pub use recovery::{
     WorthQueryBranchSetAdoptionRecovery, WorthQueryBranchSetAdoptionRecoveryFailure,
     WorthQueryBranchSetAdoptionRecoveryOutcome, WorthQueryBranchSetAdoptionRecoveryReleaseFailure,
+};
+pub use resume::{
+    WorthQueryBranchSetAdoptionResumeDenial, WorthQueryBranchSetAdoptionResumeFailure,
+    WorthQueryStoppedBranchSetAdoption,
 };
 
 #[derive(Debug)]
@@ -42,9 +47,23 @@ impl WorthQueryBranchSetAdoptionPreparationDenial {
     }
 }
 
-struct PendingBranchAdoption {
-    branch: WorthQueryProductBranch,
-    adoption: WorthQueryPreparedBranchAdoption,
+pub(super) struct PendingBranchAdoption {
+    pub(super) branch: WorthQueryProductBranch,
+    pub(super) adoption: WorthQueryPreparedBranchAdoption,
+}
+
+#[derive(Clone, Copy)]
+pub(super) enum BranchSetAdoptionResolution {
+    NoEffect(WorthQueryProductBranch),
+    ProductUnpublished(WorthQueryProductBranch),
+}
+
+impl BranchSetAdoptionResolution {
+    pub(super) const fn branch(self) -> WorthQueryProductBranch {
+        match self {
+            Self::NoEffect(branch) | Self::ProductUnpublished(branch) => branch,
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -61,9 +80,11 @@ pub enum WorthQueryBranchSetAdoptionCloseDenial {
 /// Bounded, explicitly non-atomic progression over preflighted branch moves.
 #[must_use = "a branch-set adoption retains prepared publications until advanced or cancelled"]
 pub struct WorthQueryPreparedBranchSetAdoption {
-    pending: VecDeque<PendingBranchAdoption>,
-    progress: Vec<WorthQueryBranchSetAdoptionProgress>,
-    total_selection_work_units: usize,
+    pub(super) pending: VecDeque<PendingBranchAdoption>,
+    pub(super) progress: Vec<WorthQueryBranchSetAdoptionProgress>,
+    pub(super) resolution_required: Option<BranchSetAdoptionResolution>,
+    pub(super) target: ApplicationProgramRevision,
+    pub(super) total_selection_work_units: usize,
 }
 
 impl WorthQueryPreparedBranchSetAdoption {
@@ -71,6 +92,8 @@ impl WorthQueryPreparedBranchSetAdoption {
         self.pending.iter().map(|pending| pending.branch)
     }
 
+    /// Returns the current disposition for each branch already attempted.
+    /// A successful resume replaces its superseded no-effect disposition.
     pub fn progress(&self) -> &[WorthQueryBranchSetAdoptionProgress] {
         &self.progress
     }
@@ -85,10 +108,10 @@ impl WorthQueryPreparedBranchSetAdoption {
         Option<&WorthQueryBranchSetAdoptionProgress>,
         WorthQueryBranchSetAdoptionAdvanceDenial,
     > {
-        if let Some(blocked) = self.progress.last().filter(|entry| entry.blocks_advance()) {
+        if let Some(resolution) = self.resolution_required {
             return Err(
                 WorthQueryBranchSetAdoptionAdvanceDenial::ResolutionRequired {
-                    branch: blocked.branch(),
+                    branch: resolution.branch(),
                 },
             );
         }
@@ -115,14 +138,23 @@ impl WorthQueryPreparedBranchSetAdoption {
                 }
             }
         };
+        self.resolution_required = match &progress {
+            WorthQueryBranchSetAdoptionProgress::Performed { .. } => None,
+            WorthQueryBranchSetAdoptionProgress::NoEffect { branch, .. } => {
+                Some(BranchSetAdoptionResolution::NoEffect(*branch))
+            }
+            WorthQueryBranchSetAdoptionProgress::ProductUnpublished { branch, .. } => {
+                Some(BranchSetAdoptionResolution::ProductUnpublished(*branch))
+            }
+        };
         self.progress.push(progress);
         Ok(self.progress.last())
     }
 
     pub fn close_denial(&self) -> Option<WorthQueryBranchSetAdoptionCloseDenial> {
-        if let Some(blocked) = self.progress.last().filter(|entry| entry.blocks_advance()) {
+        if let Some(resolution) = self.resolution_required {
             return Some(WorthQueryBranchSetAdoptionCloseDenial::ResolutionRequired {
-                branch: blocked.branch(),
+                branch: resolution.branch(),
             });
         }
         (!self.pending.is_empty()).then_some(WorthQueryBranchSetAdoptionCloseDenial::Pending {
@@ -144,15 +176,15 @@ impl WorthQueryPreparedBranchSetAdoption {
     /// branches remain completed; a no-effect stop is resolved by cancellation,
     /// while unpublished owner custody must be recovered first.
     pub fn cancel(self) -> Result<WorthQueryBranchSetAdoptionCancellation, Self> {
-        if self
-            .progress
-            .last()
-            .is_some_and(|entry| entry.requires_recovery())
-        {
+        if matches!(
+            self.resolution_required,
+            Some(BranchSetAdoptionResolution::ProductUnpublished(_))
+        ) {
             return Err(self);
         }
         Ok(WorthQueryBranchSetAdoptionCancellation {
-            cancelled_pending_branch_count: self.pending.len(),
+            cancelled_branch_count: self.pending.len()
+                + usize::from(self.resolution_required.is_some()),
             progress: self.progress,
             total_selection_work_units: self.total_selection_work_units,
         })
@@ -165,6 +197,8 @@ pub struct WorthQueryClosedBranchSetAdoption {
 }
 
 impl WorthQueryClosedBranchSetAdoption {
+    /// Returns one terminal performed disposition per covered branch.
+    /// Superseded no-effect attempts remain reflected in cumulative work only.
     pub fn progress(&self) -> &[WorthQueryBranchSetAdoptionProgress] {
         &self.progress
     }
@@ -175,16 +209,17 @@ impl WorthQueryClosedBranchSetAdoption {
 }
 
 pub struct WorthQueryBranchSetAdoptionCancellation {
-    cancelled_pending_branch_count: usize,
-    progress: Vec<WorthQueryBranchSetAdoptionProgress>,
-    total_selection_work_units: usize,
+    pub(super) cancelled_branch_count: usize,
+    pub(super) progress: Vec<WorthQueryBranchSetAdoptionProgress>,
+    pub(super) total_selection_work_units: usize,
 }
 
 impl WorthQueryBranchSetAdoptionCancellation {
-    pub const fn cancelled_pending_branch_count(&self) -> usize {
-        self.cancelled_pending_branch_count
+    pub const fn cancelled_branch_count(&self) -> usize {
+        self.cancelled_branch_count
     }
 
+    /// Returns completed dispositions plus any active no-effect stop at cancellation.
     pub fn progress(&self) -> &[WorthQueryBranchSetAdoptionProgress] {
         &self.progress
     }
@@ -203,18 +238,43 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         request: &WorthQueryRequestScope,
     ) -> Result<WorthQueryPreparedBranchSetAdoption, WorthQueryBranchSetAdoptionPreparationDenial>
     {
-        let mut pending = VecDeque::new();
-        pending.try_reserve(coverage.branches.len()).map_err(|_| {
-            WorthQueryBranchSetAdoptionPreparationDenial::RetentionAllocationRejected
-        })?;
+        let (pending, total_selection_work_units) = self.prepare_branch_set_targets(
+            &coverage.branches,
+            target,
+            maximum_selection_work_per_branch,
+            request,
+        )?;
         let mut progress = Vec::new();
         progress
             .try_reserve_exact(coverage.branches.len())
             .map_err(|_| {
                 WorthQueryBranchSetAdoptionPreparationDenial::RetentionAllocationRejected
             })?;
+        Ok(WorthQueryPreparedBranchSetAdoption {
+            pending,
+            progress,
+            resolution_required: None,
+            target: target.clone(),
+            total_selection_work_units,
+        })
+    }
+
+    pub(super) fn prepare_branch_set_targets(
+        &self,
+        branches: &[WorthQueryProductBranch],
+        target: &ApplicationProgramRevision,
+        maximum_selection_work_per_branch: usize,
+        request: &WorthQueryRequestScope,
+    ) -> Result<
+        (VecDeque<PendingBranchAdoption>, usize),
+        WorthQueryBranchSetAdoptionPreparationDenial,
+    > {
+        let mut pending = VecDeque::new();
+        pending.try_reserve(branches.len()).map_err(|_| {
+            WorthQueryBranchSetAdoptionPreparationDenial::RetentionAllocationRejected
+        })?;
         let mut total_selection_work_units = 0usize;
-        for branch in coverage.branches {
+        for &branch in branches {
             let selected = self.on_branch(branch).select().map_err(|denial| {
                 WorthQueryBranchSetAdoptionPreparationDenial::ProductSelection { branch, denial }
             })?;
@@ -244,10 +304,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 .ok_or(WorthQueryBranchSetAdoptionPreparationDenial::WorkAccountingOverflow)?;
             pending.push_back(PendingBranchAdoption { branch, adoption });
         }
-        Ok(WorthQueryPreparedBranchSetAdoption {
-            pending,
-            progress,
-            total_selection_work_units,
-        })
+        Ok((pending, total_selection_work_units))
     }
 }

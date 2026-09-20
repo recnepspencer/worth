@@ -73,11 +73,12 @@ pub use programs::{
     WorthQueryBranchSetAdoptionCloseDenial, WorthQueryBranchSetAdoptionPreparationDenial,
     WorthQueryBranchSetAdoptionProgress, WorthQueryBranchSetAdoptionRecovery,
     WorthQueryBranchSetAdoptionRecoveryFailure, WorthQueryBranchSetAdoptionRecoveryOutcome,
-    WorthQueryBranchSetAdoptionRecoveryReleaseFailure, WorthQueryClosedBranchSetAdoption,
+    WorthQueryBranchSetAdoptionRecoveryReleaseFailure, WorthQueryBranchSetAdoptionResumeDenial,
+    WorthQueryBranchSetAdoptionResumeFailure, WorthQueryClosedBranchSetAdoption,
     WorthQueryPerformedBranchAdoption, WorthQueryPreparedBranchAdoption,
     WorthQueryPreparedBranchSetAdoption, WorthQueryPreparedProgramMigration,
     WorthQueryProgramAdoptionCoverage, WorthQueryProgramAdoptionCoverageDenial,
-    WorthQueryUnpublishedBranchAdoption,
+    WorthQueryStoppedBranchSetAdoption, WorthQueryUnpublishedBranchAdoption,
 };
 pub use query::WorthQueryApplicationQueryRequest;
 pub use request::{

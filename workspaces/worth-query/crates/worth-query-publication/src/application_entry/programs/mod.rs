@@ -18,9 +18,11 @@ pub use outcome::{
     WorthQueryBranchSetAdoptionPreparationDenial, WorthQueryBranchSetAdoptionProgress,
     WorthQueryBranchSetAdoptionRecovery, WorthQueryBranchSetAdoptionRecoveryFailure,
     WorthQueryBranchSetAdoptionRecoveryOutcome, WorthQueryBranchSetAdoptionRecoveryReleaseFailure,
+    WorthQueryBranchSetAdoptionResumeDenial, WorthQueryBranchSetAdoptionResumeFailure,
     WorthQueryClosedBranchSetAdoption, WorthQueryPerformedBranchAdoption,
     WorthQueryPreparedBranchSetAdoption, WorthQueryProgramAdoptionCoverage,
-    WorthQueryProgramAdoptionCoverageDenial, WorthQueryUnpublishedBranchAdoption,
+    WorthQueryProgramAdoptionCoverageDenial, WorthQueryStoppedBranchSetAdoption,
+    WorthQueryUnpublishedBranchAdoption,
 };
 pub use preparation::{
     WorthQueryApplicationProgramAdoptionPreparationDenial,

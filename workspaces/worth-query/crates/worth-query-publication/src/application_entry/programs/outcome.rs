@@ -6,7 +6,9 @@ pub use worth_query_execution::facade::primary_graph::{
     WorthQueryBranchSetAdoptionPreparationDenial, WorthQueryBranchSetAdoptionProgress,
     WorthQueryBranchSetAdoptionRecovery, WorthQueryBranchSetAdoptionRecoveryFailure,
     WorthQueryBranchSetAdoptionRecoveryOutcome, WorthQueryBranchSetAdoptionRecoveryReleaseFailure,
+    WorthQueryBranchSetAdoptionResumeDenial, WorthQueryBranchSetAdoptionResumeFailure,
     WorthQueryClosedBranchSetAdoption, WorthQueryPerformedBranchAdoption,
     WorthQueryPreparedBranchSetAdoption, WorthQueryProgramAdoptionCoverage,
-    WorthQueryProgramAdoptionCoverageDenial, WorthQueryUnpublishedBranchAdoption,
+    WorthQueryProgramAdoptionCoverageDenial, WorthQueryStoppedBranchSetAdoption,
+    WorthQueryUnpublishedBranchAdoption,
 };

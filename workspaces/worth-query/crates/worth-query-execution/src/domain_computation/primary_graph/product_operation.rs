@@ -56,14 +56,15 @@ pub use program_adoption::{
     WorthQueryBranchSetAdoptionCloseDenial, WorthQueryBranchSetAdoptionPreparationDenial,
     WorthQueryBranchSetAdoptionProgress, WorthQueryBranchSetAdoptionRecovery,
     WorthQueryBranchSetAdoptionRecoveryFailure, WorthQueryBranchSetAdoptionRecoveryOutcome,
-    WorthQueryBranchSetAdoptionRecoveryReleaseFailure, WorthQueryClosedBranchSetAdoption,
+    WorthQueryBranchSetAdoptionRecoveryReleaseFailure, WorthQueryBranchSetAdoptionResumeDenial,
+    WorthQueryBranchSetAdoptionResumeFailure, WorthQueryClosedBranchSetAdoption,
     WorthQueryOrderedProgramAdoptionCoverage, WorthQueryPerformedBranchAdoption,
     WorthQueryPreparedBranchAdoption, WorthQueryPreparedBranchSetAdoption,
     WorthQueryPreparedProgramMigration, WorthQueryProgramAdoptionCoverage,
     WorthQueryProgramAdoptionCoverageDenial, WorthQueryProgramCustodyDisposition,
     WorthQueryProgramCustodyDispositionInventory, WorthQueryProgramCustodyDispositionKind,
     WorthQueryProgramMigrationDescription, WorthQueryProgramMigrationPreparationDenial,
-    WorthQueryUnpublishedBranchAdoption,
+    WorthQueryStoppedBranchSetAdoption, WorthQueryUnpublishedBranchAdoption,
 };
 pub use query::WorthQueryProductQueryControls;
 pub use transaction::{

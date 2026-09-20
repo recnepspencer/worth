@@ -47,12 +47,4 @@ impl WorthQueryBranchSetAdoptionProgress {
             Self::Performed { .. } | Self::NoEffect { .. } => None,
         }
     }
-
-    pub(super) const fn blocks_advance(&self) -> bool {
-        !matches!(self, Self::Performed { .. })
-    }
-
-    pub(super) const fn requires_recovery(&self) -> bool {
-        matches!(self, Self::ProductUnpublished { .. })
-    }
 }

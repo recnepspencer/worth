@@ -110,7 +110,7 @@ fn stale_middle_branch_stops_progress_and_cancellation_preserves_the_prefix() {
         Ok(cancelled) => cancelled,
         Err(_) => panic!("stale no-effect has no owner custody to strand"),
     };
-    assert_eq!(cancelled.cancelled_pending_branch_count(), 1);
+    assert_eq!(cancelled.cancelled_branch_count(), 2);
     assert_eq!(cancelled.progress().len(), 2);
 
     let p1 = host.supported_program::<DimensionProgramP1>().unwrap();

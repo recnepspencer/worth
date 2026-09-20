@@ -38,7 +38,9 @@ pub use scope::{
     WorthQueryBranchSetAdoptionCloseDenial, WorthQueryBranchSetAdoptionPreparationDenial,
     WorthQueryBranchSetAdoptionProgress, WorthQueryBranchSetAdoptionRecovery,
     WorthQueryBranchSetAdoptionRecoveryFailure, WorthQueryBranchSetAdoptionRecoveryOutcome,
-    WorthQueryBranchSetAdoptionRecoveryReleaseFailure, WorthQueryClosedBranchSetAdoption,
+    WorthQueryBranchSetAdoptionRecoveryReleaseFailure, WorthQueryBranchSetAdoptionResumeDenial,
+    WorthQueryBranchSetAdoptionResumeFailure, WorthQueryClosedBranchSetAdoption,
     WorthQueryOrderedProgramAdoptionCoverage, WorthQueryPreparedBranchSetAdoption,
     WorthQueryProgramAdoptionCoverage, WorthQueryProgramAdoptionCoverageDenial,
+    WorthQueryStoppedBranchSetAdoption,
 };
