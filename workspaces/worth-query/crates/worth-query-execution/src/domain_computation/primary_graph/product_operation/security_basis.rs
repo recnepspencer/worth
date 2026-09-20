@@ -66,21 +66,14 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             })
             .map_err(|_| WorthQueryProductBranchAdmissionDenial::ObservationRejected)?;
         let mut application_basis = self.retain_product_application_basis(observation)?;
-        if let Some(support) = self.installed_program_support() {
-            if let Ok(selected) = super::super::product_activation::inspect_selected_program(
-                self,
-                observation
-                    .basis()
-                    .relational_basis()
-                    .observation()
-                    .version_id(),
-            ) {
-                let interpretation = support
-                    .retain_interpretation(selected.revision())
-                    .ok_or(WorthQueryProductBranchAdmissionDenial::ObservationRejected)?;
-                application_basis.bind_program_interpretation(interpretation);
-            }
-        }
+        let _ = self.bind_selected_program_interpretation(
+            observation
+                .basis()
+                .relational_basis()
+                .observation()
+                .version_id(),
+            &mut application_basis,
+        )?;
         Ok(application_basis)
     }
 

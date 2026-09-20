@@ -201,11 +201,7 @@ where
         application
             .product_runtime
             .activations
-            .bind_initial_program(
-                application.current_world().occurrence(),
-                &support.initial_revision,
-            )
-            .expect("the published root retains its activation coordination");
+            .require_program_coordination();
         application.program_support = Some(
             super::program_occurrence::WorthQueryInstalledProgramSupport::installed(
                 support.roster,

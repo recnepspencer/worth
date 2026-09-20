@@ -131,6 +131,43 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         self.product_runtime.activations.installed_branch_count()
     }
 
+    /// Holds the exact fork/retirement exclusion barrier for one program while
+    /// certification exercises a concurrent branch-creation request.
+    #[doc(hidden)]
+    pub fn with_program_retirement_barrier_for_test<Output>(
+        &self,
+        revision: &worth_query_declaration::facade::application_program::ApplicationProgramRevision,
+        work: impl FnOnce() -> Output,
+    ) -> Output {
+        let barrier = self
+            .product_runtime
+            .activations
+            .begin_program_retirement(revision)
+            .expect("certification starts the barrier without an in-flight fork");
+        let output = work();
+        drop(barrier);
+        output
+    }
+
+    /// Holds one revision-keyed fork reservation while certification attempts
+    /// retirement, then releases it as the real branch-creation path does at a
+    /// terminal World outcome.
+    #[doc(hidden)]
+    pub fn with_program_fork_reservation_for_test<Output>(
+        &self,
+        revision: &worth_query_declaration::facade::application_program::ApplicationProgramRevision,
+        work: impl FnOnce() -> Output,
+    ) -> Output {
+        let reservation = self
+            .product_runtime
+            .activations
+            .reserve_for_source_program(Some(revision))
+            .expect("certification reserves an active program fork");
+        let output = work();
+        drop(reservation);
+        output
+    }
+
     /// Counts definitions retained by the sealed Bridge owner.
     #[doc(hidden)]
     pub fn installed_conditional_definition_count_for_test(&self) -> usize {

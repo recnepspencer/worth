@@ -74,14 +74,17 @@ where
     /// ```
     pub fn selected_program_owner(
         &self,
-        branch: crate::basis::WorthQueryProductBranch,
+        selected: &crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<
+            '_,
+            Schema,
+        >,
     ) -> Result<WorthQuerySelectedProgramOwner<'_, Schema>, WorthQuerySelectedProgramOwnerDenial>
     {
-        let selected = self
-            .runtime
-            .on_branch(branch)
-            .select()
-            .map_err(WorthQuerySelectedProgramOwnerDenial::ProductSelection)?;
+        if !std::ptr::eq(selected.application(), &self.runtime) {
+            return Err(WorthQuerySelectedProgramOwnerDenial::ProductSelection(
+                crate::basis::WorthQueryProductBranchAdmissionDenial::ForeignOwner,
+            ));
+        }
         let inspection = selected
             .inspect_selected_program()
             .map_err(WorthQuerySelectedProgramOwnerDenial::Inspection)?;

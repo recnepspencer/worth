@@ -1,3 +1,4 @@
+use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
 use worth_query_declaration::facade::branch::{
     WorthQueryProductBranchComponentPosture, WorthQueryProductBranchComponents,
     WorthQueryProductBranchForkIntent,
@@ -24,6 +25,14 @@ pub struct WorthQueryProductBranchFork<'runtime> {
     application_commit_lane: Option<std::sync::Arc<
         crate::domain_computation::primary_graph::WorthQueryApplicationBranchCommitLane,
     >>,
+    source_program_resolver: Option<&'runtime dyn WorthQuerySourceProgramResolver>,
+}
+
+pub(crate) trait WorthQuerySourceProgramResolver {
+    fn source_program(
+        &self,
+        source: &crate::basis::WorthQueryProductBranchLease,
+    ) -> Option<ApplicationProgramRevision>;
 }
 
 #[derive(Debug)]
@@ -43,11 +52,12 @@ impl<'runtime> WorthQueryProductBranches<'runtime> {
             intent: None,
             output_lineage: None,
             application_commit_lane: None,
+            source_program_resolver: None,
         }
     }
 }
 
-impl WorthQueryProductBranchFork<'_> {
+impl<'runtime> WorthQueryProductBranchFork<'runtime> {
     pub(crate) fn with_application_lifecycle(
         mut self,
         output_lineage: std::sync::Arc<std::sync::Mutex<
@@ -56,9 +66,11 @@ impl WorthQueryProductBranchFork<'_> {
         application_commit_lane: std::sync::Arc<
             crate::domain_computation::primary_graph::WorthQueryApplicationBranchCommitLane,
         >,
+        source_program_resolver: &'runtime dyn WorthQuerySourceProgramResolver,
     ) -> Self {
         self.output_lineage = Some(output_lineage);
         self.application_commit_lane = Some(application_commit_lane);
+        self.source_program_resolver = Some(source_program_resolver);
         self
     }
 
@@ -79,6 +91,7 @@ impl WorthQueryProductBranchFork<'_> {
             intent,
             output_lineage,
             application_commit_lane,
+            source_program_resolver,
         } = self;
         let _coordination = application_commit_lane.as_ref().map(|lane| lane.enter());
         let components = intent
@@ -121,9 +134,16 @@ impl WorthQueryProductBranchFork<'_> {
         let source = runtime
             .admit_product_occurrence(source.occurrence())
             .map_err(WorthQueryProductBranchCreateError::SourceAdmission)?;
+        let source_program =
+            source_program_resolver.and_then(|resolver| resolver.source_program(&source));
         let cancellation = RuntimeWorldCancellationSource::new();
         match runtime
-            .create_product_branch(&source, intent, &cancellation.token())
+            .create_product_branch(
+                &source,
+                source_program.as_ref(),
+                intent,
+                &cancellation.token(),
+            )
             .map_err(WorthQueryProductBranchCreateError::Creation)?
         {
             RuntimeWorldBranchCreationOutcome::Performed(observation) => {

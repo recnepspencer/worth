@@ -121,6 +121,17 @@ Recovery and elevation journeys follow the same rule: retain the returned
 opaque token, send it to the purpose-specific next endpoint, and supply a new
 request ID, deadline, and idempotency key. Never decode or rewrite the token.
 
+Branch-program inspection and adoption currently belong to the authoritative
+same-process `BankIdentityRuntime` root. They are not HTTP/user-node commands.
+The server methods `inspect_branch_program` and
+`prepare_branch_program_adoption::<Target>` require a fresh authenticated Bank
+principal and request scope, and the target must already be rostered. A route
+must not accept a revision digest, prepared adoption, or recovery carrier as
+JSON. External-effect recovery remains valid after an adopted program removes
+the ordinary operation because the server retains the exact original
+occurrence and outbox authority; the node still receives only an opaque
+purpose-specific recovery token.
+
 ## How It Relates To Other Features
 
 - Use the ordinary Bank facade directly for same-process embedding.
@@ -163,6 +174,9 @@ request ID, deadline, and idempotency key. Never decode or rewrite the token.
   evidence.
 - The transport does not provide distributed Bank-server replication or
   authoritative failover.
+- The transport exposes no program-adoption endpoint. Adding one requires a
+  separately versioned protocol that preserves Query's move-only preparation
+  and unpublished-recovery custody; raw revision IDs are insufficient.
 
 ## Related Docs
 

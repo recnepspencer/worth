@@ -15,7 +15,6 @@ use super::{
 struct ActivationEntry {
     incarnation: ProductBranchIncarnation,
     gate: Arc<WorthQueryProductActivationGate>,
-    program: Option<ApplicationProgramRevision>,
 }
 
 /// Bounded coordination only. Entries contain no head or component selection.
@@ -29,6 +28,7 @@ struct ActivationRegistryState {
     live_occurrences: HashSet<ProductBranchIncarnation>,
     unavailable_programs: HashSet<ApplicationProgramRevision>,
     in_flight_programs: HashMap<ApplicationProgramRevision, usize>,
+    program_coordination_required: bool,
 }
 
 impl WorthQueryProductActivationRegistry {
@@ -49,6 +49,7 @@ impl WorthQueryProductActivationRegistry {
                 live_occurrences,
                 unavailable_programs: HashSet::new(),
                 in_flight_programs: HashMap::new(),
+                program_coordination_required: false,
             }),
             capacity: ActivationCapacity::new(limit.get()),
         })
@@ -66,29 +67,22 @@ impl WorthQueryProductActivationRegistry {
         })
     }
 
-    pub(crate) fn reserve_for_source(
+    pub(crate) fn reserve_for_source_program(
         &self,
-        source: ProductBranchIncarnation,
+        program: Option<&ApplicationProgramRevision>,
     ) -> Result<WorthQueryProductActivationReservation<'_>, WorthQueryProductActivationDenial> {
         let capacity = self.capacity.reserve()?;
         let mut state = self
             .state
             .lock()
             .map_err(|_| WorthQueryProductActivationDenial::RegistryUnavailable)?;
-        let program = state
-            .gates
-            .values()
-            .find(|entry| entry.incarnation == source)
-            .ok_or(WorthQueryProductActivationDenial::UnknownProductBranch)?
-            .program
-            .clone();
-        if program
-            .as_ref()
-            .is_some_and(|revision| state.unavailable_programs.contains(revision))
-        {
+        if state.program_coordination_required && program.is_none() {
             return Err(WorthQueryProductActivationDenial::ProgramSupportUnavailable);
         }
-        if let Some(revision) = &program {
+        if program.is_some_and(|revision| state.unavailable_programs.contains(revision)) {
+            return Err(WorthQueryProductActivationDenial::ProgramSupportUnavailable);
+        }
+        if let Some(revision) = program {
             let active = state
                 .in_flight_programs
                 .entry(revision.clone())
@@ -101,44 +95,17 @@ impl WorthQueryProductActivationRegistry {
         Ok(WorthQueryProductActivationReservation {
             registry: self,
             gate: Arc::new(WorthQueryProductActivationGate::new(capacity)),
-            program,
+            program: program.cloned(),
             program_reservation_active: true,
         })
     }
 
-    pub(crate) fn bind_initial_program(
-        &self,
-        occurrence: ProductBranchIncarnation,
-        revision: &ApplicationProgramRevision,
-    ) -> Result<(), WorthQueryProductActivationDenial> {
-        let mut state = self
-            .state
-            .lock()
-            .map_err(|_| WorthQueryProductActivationDenial::RegistryUnavailable)?;
-        let entry = state
-            .gates
-            .values_mut()
-            .find(|entry| entry.incarnation == occurrence)
-            .ok_or(WorthQueryProductActivationDenial::UnknownProductBranch)?;
-        entry.program = Some(revision.clone());
-        Ok(())
-    }
-
-    pub(crate) fn record_program_publication(
-        &self,
-        branch: &ProductBranchIdentity,
-        occurrence: ProductBranchIncarnation,
-        revision: &ApplicationProgramRevision,
-    ) {
+    pub(crate) fn require_program_coordination(&self) {
         let mut state = self
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        if let Some(entry) = state.gates.get_mut(branch) {
-            if entry.incarnation == occurrence {
-                entry.program = Some(revision.clone());
-            }
-        }
+        state.program_coordination_required = true;
     }
 
     pub(crate) fn begin_program_retirement(
@@ -263,7 +230,6 @@ impl WorthQueryProductActivationReservation<'_> {
             ActivationEntry {
                 incarnation: branch.lifecycle_incarnation(),
                 gate: Arc::clone(&self.gate),
-                program: self.program.clone(),
             },
         );
         if let Some(replaced) = replaced {

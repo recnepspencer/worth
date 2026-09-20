@@ -8,7 +8,9 @@ use worth_query_host::facade::application_entry::{
     WorthQueryApplicationMutationOutcome, WorthQueryApplicationRequestExt,
     WorthQueryApplicationRequestMutationDenial,
 };
+use worth_query_host::facade::application_installation::WorthQueryProgramApplicationRuntime;
 use worth_query_host::facade::application_installation::WorthQueryProgramOwner;
+use worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition;
 use worth_query_host::facade::product::WorthQueryProductBranch;
 
 use super::dimension_entry::{
@@ -47,4 +49,31 @@ where
         .without_source()
         .idempotency(&idempotency)
         .execute_in_program(owner)
+}
+
+/// Issues the same mutation through the branch-selected installed owner.
+pub fn set_dimension_selected<Program>(
+    application: &WorthQueryProgramApplicationRuntime<BoundedDimensionSchema, Program>,
+    branch: WorthQueryProductBranch,
+    dimension: u64,
+    idempotency: u64,
+) -> Result<DimensionOutcome, WorthQueryApplicationRequestMutationDenial>
+where
+    Program: ApplicationProgramDefinition<BoundedDimensionSchema>,
+{
+    let runtime = application.runtime();
+    let scope = request_scope();
+    let principal = authenticate_operator(runtime.installed_schema(), &scope);
+    runtime
+        .request(&principal, &scope)
+        .on_branch(branch)
+        .mutate(SetPartDimensionIntent {
+            input: SetPartDimensionInput {
+                identity: PART_IDENTITY.to_owned(),
+                dimension,
+            },
+        })
+        .without_source()
+        .idempotency(&idempotency)
+        .execute_in_selected_program(application)
 }

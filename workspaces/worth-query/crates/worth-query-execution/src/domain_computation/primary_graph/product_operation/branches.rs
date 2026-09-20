@@ -37,6 +37,23 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     }
 }
 
+impl<Schema: ApplicationSchema> crate::basis::WorthQuerySourceProgramResolver
+    for WorthQueryPrimaryGraphApplicationRuntime<Schema>
+{
+    fn source_program(
+        &self,
+        source: &crate::basis::WorthQueryProductBranchLease,
+    ) -> Option<worth_query_declaration::facade::application_program::ApplicationProgramRevision>
+    {
+        crate::domain_computation::primary_graph::product_activation::inspect_selected_program(
+            self,
+            source.relational_basis().observation().version_id(),
+        )
+        .ok()
+        .map(|selected| selected.revision().clone())
+    }
+}
+
 impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'runtime, Schema> {
     /// Admits an exact bounded set of currently live branch occurrences for
     /// explicit non-atomic program adoption. Later-created branches are not
@@ -90,6 +107,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
         self.branches.fork(source).with_application_lifecycle(
             std::sync::Arc::clone(&self.application.primary_provider.graph.output_lineage),
             commit_lane,
+            self.application,
         )
     }
 

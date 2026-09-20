@@ -276,7 +276,7 @@ fn denied_recovery_release_preserves_support_custody_for_retry() {
     ));
 }
 
-fn adopt(
+pub(super) fn adopt(
     host: &crate::bounded_dimension_model::host::BoundedDimensionRuntime<
         crate::bounded_dimension_model::programs::DimensionProgramP0,
     >,

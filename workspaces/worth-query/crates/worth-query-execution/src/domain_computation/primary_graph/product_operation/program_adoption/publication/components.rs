@@ -21,16 +21,10 @@ impl WorthQueryPreparedBranchAdoption {
             recovery,
             disposition,
             support_custody,
-            activation_registry,
             ..
         } = self;
         match publication.execute() {
             RuntimeWorldPublicationOutcome::Performed(performed) => {
-                activation_registry.record_program_publication(
-                    performed.new_product_head().branch_identity(),
-                    performed.new_product_head().lifecycle_incarnation(),
-                    &target,
-                );
                 WorthQueryBranchAdoptionPublicationOutcome::Performed(
                     WorthQueryPerformedBranchAdoption::new(
                         performed.consume(),

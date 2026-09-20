@@ -26,3 +26,5 @@ mod semantic_impact;
 mod signal_fork_inheritance;
 #[path = "adoption/support_retirement.rs"]
 mod support_retirement;
+#[path = "adoption/support_retirement_races.rs"]
+mod support_retirement_races;

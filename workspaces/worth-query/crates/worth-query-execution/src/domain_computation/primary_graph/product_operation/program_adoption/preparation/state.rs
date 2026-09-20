@@ -175,7 +175,6 @@ pub(super) fn prepare<Schema: ApplicationSchema>(
         recovery,
         disposition,
         support_custody,
-        activation_registry: std::sync::Arc::clone(&application.product_runtime.activations),
     })
 }
 

@@ -58,24 +58,12 @@ pub(super) fn admit_retained<Schema: worth_query_installation::facade::Applicati
     let mut application_basis = application
         .retain_product_application_basis(product.observation())
         .map_err(map_product_admission_denial)?;
-    if let Some(support) = application.installed_program_support() {
-        if let Ok(selected) =
-            crate::domain_computation::primary_graph::product_activation::inspect_selected_program(
-                application,
-                product.relational_basis().observation().version_id(),
-            )
-        {
-            let interpretation = support
-                .retain_interpretation(selected.revision())
-                .ok_or_else(|| {
-                    admission_denial(
-                        WorthQueryApplicationQueryAdmissionDenialKind::BasisUnavailable,
-                        "retired program interpretation",
-                    )
-                })?;
-            application_basis.bind_program_interpretation(interpretation);
-        }
-    }
+    let _ = application
+        .bind_selected_program_interpretation(
+            product.relational_basis().observation().version_id(),
+            &mut application_basis,
+        )
+        .map_err(map_product_admission_denial)?;
     admit(application, product, application_basis)
 }
 

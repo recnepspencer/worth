@@ -66,3 +66,23 @@ pub(in crate::domain_computation::primary_graph) fn inspect_selected_program<
         .clone();
     Ok(WorthQuerySelectedProgramInspection { revision })
 }
+
+impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    pub(in crate::domain_computation::primary_graph) fn bind_selected_program_interpretation(
+        &self,
+        version: worth_relational::facade::identity::VersionId,
+        basis: &mut crate::domain_computation::primary_graph::application_query::resource_lifecycle::WorthQueryApplicationBasisLease,
+    ) -> Result<
+        Result<WorthQuerySelectedProgramInspection, WorthQuerySelectedProgramInspectionDenial>,
+        crate::basis::WorthQueryProductBranchAdmissionDenial,
+    > {
+        let selected = inspect_selected_program(self, version);
+        if let (Some(support), Ok(selected)) = (self.installed_program_support(), &selected) {
+            let interpretation = support
+                .retain_interpretation(selected.revision())
+                .ok_or(crate::basis::WorthQueryProductBranchAdmissionDenial::ObservationRejected)?;
+            basis.bind_program_interpretation(interpretation);
+        }
+        Ok(selected)
+    }
+}

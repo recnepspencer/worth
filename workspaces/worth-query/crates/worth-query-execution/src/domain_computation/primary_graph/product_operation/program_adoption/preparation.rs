@@ -105,9 +105,6 @@ pub struct WorthQueryPreparedBranchAdoption {
         crate::domain_computation::primary_graph::WorthQueryUnpublishedIdempotencyDisposition,
     pub(super) support_custody:
         crate::domain_computation::primary_graph::program_occurrence::WorthQueryProgramSupportCustody,
-    pub(super) activation_registry: std::sync::Arc<
-        crate::domain_computation::execution_runtime::product_world::activation::WorthQueryProductActivationRegistry,
-    >,
 }
 
 impl WorthQueryPreparedBranchAdoption {

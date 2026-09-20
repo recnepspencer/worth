@@ -184,6 +184,26 @@ move-only.
 - [Conditional Installed Operations](./conditional-installed-operations.md)
   owns installed eligibility; cancellation does not replace it.
 
+## Program Adoption Resource Evidence
+
+Program adoption reports resource evidence through the owners that perform the
+work rather than through a second accounting registry:
+
+| Evidence | Public source |
+| --- | --- |
+| Target branches and explicit order | owner-issued `WorthQueryProgramAdoptionCoverage` and ordered coverage |
+| Affected existing state | `selected_entity_count()` on prepared/performed/unpublished adoption; `selection_work_units()` on preparation |
+| Migration and continuation custody | `migration()` and `custody().dispositions()` |
+| Owner contacts and publications | performed adoption's `relational_owner_contacts()`, branch, and composite commit; branch-set progress cardinality |
+| Cumulative broader-scope work | branch-set `progress()` and `total_selection_work_units()` |
+| Retained support memory | retirement inventory `retained_program_bytes()` plus interpretation/custody counts |
+
+Local adoption scans only its selected branch and affected installed kinds.
+Broader adoption pays once for the exact issued branch inventory and preflights
+all ordered targets before the first effect. Unchanged components make no
+mutation contact. Retained support bytes are stable logical installation
+accounting, not allocator or heap introspection.
+
 ## Inspection And Debugging
 
 Inspect:

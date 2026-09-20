@@ -196,6 +196,40 @@ delivered activity update contains the exact newly caused activity item, not a
 bounded snapshot that may omit it; the bank facade retains the typed cause
 until the fresh authorized one-item projection succeeds.
 
+## Branch program inspection, adoption, and recovery
+
+The Bank server exposes the Query-owned branch-program path through domain-named
+methods rather than accepting revision strings or World handles:
+
+```rust,ignore
+let before = runtime.inspect_branch_program(&principal, &scope, branch)?;
+let prepared = runtime.prepare_branch_program_adoption::<BankApplicationP1>(
+    &principal,
+    &scope,
+    branch,
+    128,
+)?;
+let outcome = prepared.publish();
+let after = runtime.inspect_branch_program(&principal, &fresh_scope, branch)?;
+```
+
+`BankApplicationP1` must already be rostered by the installed Bank host.
+Preparation compares the branch's actual source program with that target,
+derives state/migration and continuation/resource custody, and validates the
+target rules before publication. Only a performed World outcome changes what
+`inspect_branch_program` reports. Ordinary Bank mutations select their handler
+through that exact branch occurrence; an operation removed by P1 returns
+`ProgramNotActiveOnOccurrence` without producing an effect.
+
+Already-performed external work remains bound to its original P0 occurrence.
+The production recovery handle continues through the ordinary Bank recovery
+root after P1 removes the operation, with the same outbox correlation and no
+second business effect. Query's unpublished adoption recovery is a separate
+move-only carrier; it preserves source/target support custody and cannot be
+reconstructed from Bank diagnostics. The executable production-root claims are
+pinned by `workflow_continuations.rs` and
+`ordinary_mutations/estate_operations/program_adoption_recovery.rs`.
+
 ## Controls and outcomes
 
 Read controls own consistency, deadline, cancellation, result limits, and
@@ -254,6 +288,8 @@ identity into an offset or rebuild it from result values. Do not retry overflow
 from the live cursor; resynchronize with an ordinary query.
 Do not interpret a successful proposal as a commit—the public mutation outcome
 is the authoritative terminal surface.
+- Do not choose a program in an HTTP route, deserialize a program revision as
+  authority, or retry an operation removed by the selected branch program.
 
 ## Related docs
 

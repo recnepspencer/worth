@@ -227,14 +227,6 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         } = recovery;
         match prepared.execute() {
             worth_runtime_world::facade::RuntimeWorldPublicationOutcome::Performed(performed) => {
-                self.application()
-                    .product_runtime
-                    .activations
-                    .record_program_publication(
-                        performed.new_product_head().branch_identity(),
-                        performed.new_product_head().lifecycle_incarnation(),
-                        &target,
-                    );
                 let adoption = WorthQueryPerformedBranchAdoption::new(
                     performed.consume(),
                     source,

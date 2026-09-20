@@ -203,6 +203,52 @@ constructs and installs a validated program, reads the selected branch,
 performs a World publication, delivers the patch, executes its conditional,
 checks the successor and a retained read, and closes runtime resources.
 
+### Branch-local program selection and adoption
+
+An ordinary request selects program meaning from its exact product branch. It
+does not consult a process-wide "latest program":
+
+```rust,ignore
+let programs = application
+    .request(&principal, &scope)
+    .on_branch(branch)
+    .programs();
+
+let selected = programs.inspect()?;
+let requirements = programs.compare(target_revision)?;
+let prepared = programs
+    .adopt(target_revision)
+    .requirements(&requirements)
+    .prepare(maximum_selection_work)?;
+
+match prepared.publish() {
+    WorthQueryBranchAdoptionPublicationOutcome::Performed(adoption) => {
+        use_target_program(adoption.target());
+    }
+    WorthQueryBranchAdoptionPublicationOutcome::NoEffect(no_effect) => {
+        handle_stale_or_equivalent(no_effect);
+    }
+    WorthQueryBranchAdoptionPublicationOutcome::ProductUnpublished(pending) => {
+        retain_exact_adoption_recovery(pending.into_recovery());
+    }
+}
+```
+
+`inspect` and `compare` are descriptive. Only the move-only prepared adoption
+can attempt publication, and only World's `Performed` terminal changes the
+branch program. Preparation returns typed support, source/target, migration,
+target-rule, resource, and custody denials before publication. A retained read
+continues interpreting its exact old occurrence, but it gains no current
+mutation authority from that retention.
+
+Broader adoption is deliberately non-atomic. The branch owner first issues
+bounded coverage; the caller supplies an exact order; every target is
+preflighted before the first publication. `advance()` records one
+`Performed`, `NoEffect`, or `ProductUnpublished` disposition at a time.
+Cancellation preserves the performed prefix, and recovery preserves both that
+prefix and the untouched suffix. It never reports rollback of work that an
+owner already performed.
+
 Match every commit terminal. `Committed` and `AlreadyCommitted` carry the
 canonical product receipt. `ProductUnpublished`, `Deferred`,
 `SettlementDeferred`, and `Indeterminate` retain owner-specific recovery
@@ -388,9 +434,10 @@ explains a transition; it does not perform the transition.
 
 - The synchronous M0 contribution, request, handler, candidate, invariant,
   producer, conditional, bounded output-demand, exact/live read, correspondence,
-  and discovery foundation is certified. Broader milestone 9.17.4 remains open
-  for its remaining consumer migrations and managed lifecycle. Deferred producer
-  completion belongs to the later producer extension.
+  discovery, and branch-local program-evolution foundation is certified.
+  Dynamic workflow-definition instances and their adoption dispositions belong
+  to the separately governed successor milestone. Deferred producer completion
+  belongs to the later producer extension.
 - Historical, preview, continuation, and live lanes are available only for an
   installed query whose declared support and current admission allow that lane.
 - Conditional providers and managed clocks are stable on the primary-graph

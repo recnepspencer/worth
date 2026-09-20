@@ -2,7 +2,7 @@
 
 use crate::bounded_dimension_model::host::publish_on_first_program;
 use crate::bounded_dimension_model::operator_identity::{authenticate_operator, request_scope};
-use crate::bounded_dimension_model::presented_request::set_dimension;
+use crate::bounded_dimension_model::presented_request::{set_dimension, set_dimension_selected};
 use crate::bounded_dimension_model::programs::DimensionProgramP1;
 use crate::bounded_dimension_model::settled_verdict::{settle, DimensionVerdict};
 use worth_query_host::facade::application_entry::{
@@ -60,11 +60,21 @@ fn public_entry_inspects_and_executes_each_branch_under_its_carried_program() {
         WorthQueryBranchAdoptionPublicationOutcome::Performed(_)
     ));
 
+    let main_selection = host
+        .runtime()
+        .on_branch(main)
+        .select()
+        .expect("main selects its exact occurrence");
+    let sibling_selection = host
+        .runtime()
+        .on_branch(sibling)
+        .select()
+        .expect("sibling selects its exact occurrence");
     let main_owner = host
-        .selected_program_owner(main)
+        .selected_program_owner(&main_selection)
         .expect("main resolves its installed P1 owner");
     let sibling_owner = host
-        .selected_program_owner(sibling)
+        .selected_program_owner(&sibling_selection)
         .expect("sibling resolves its installed P0 owner");
     assert_eq!(main_owner.owned_revision(), &target);
     assert_eq!(sibling_owner.owned_revision(), &source);
@@ -82,10 +92,34 @@ fn public_entry_inspects_and_executes_each_branch_under_its_carried_program() {
 fn same_typed_first_branch_from_another_live_host_cannot_select_an_owner() {
     let host = publish_on_first_program();
     let foreign = publish_on_first_program();
+    let foreign_selection = foreign
+        .runtime()
+        .on_branch(foreign.current_world())
+        .select()
+        .expect("the foreign host can select its own branch");
     assert!(matches!(
-        host.selected_program_owner(foreign.current_world()),
+        host.selected_program_owner(&foreign_selection),
         Err(WorthQuerySelectedProgramOwnerDenial::ProductSelection(
             WorthQueryProductBranchAdmissionDenial::ForeignOwner
         ))
     ));
+}
+
+#[test]
+fn selected_program_mutation_reuses_its_authorization_selection() {
+    let host = publish_on_first_program();
+    let branch = host.current_world();
+    let observer = host.runtime().application_query_basis_observer();
+    let before = observer.observe().acquisitions();
+
+    assert_eq!(
+        settle(set_dimension_selected(&host, branch, 3, 0x9175_5003)),
+        DimensionVerdict::Performed(3)
+    );
+
+    let contacts = observer.observe().acquisitions() - before;
+    assert_eq!(
+        contacts, 5,
+        "one selected mutation retains one authorization selection plus four fresh security bases"
+    );
 }
