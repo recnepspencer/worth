@@ -56,6 +56,7 @@ pub(super) fn key_with_query_identity(
             occurrence(),
             observation_generation,
             identity,
+            [query_identity.wrapping_add(2); 32],
         ),
     )
 }

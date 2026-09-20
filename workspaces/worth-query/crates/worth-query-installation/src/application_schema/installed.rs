@@ -148,6 +148,11 @@ where
         &self.schema
     }
 
+    #[doc(hidden)]
+    pub fn installed_entity_marker_type(&self, entity: &str) -> Option<std::any::TypeId> {
+        self.member_provenance.entity_marker_type(entity)
+    }
+
     pub fn invariants(&self) -> &WorthQueryInstalledApplicationInvariantCatalog {
         &self.invariant_catalog
     }

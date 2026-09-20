@@ -263,7 +263,10 @@ where
                     .expect("output progression retains its root settlement");
                 let program_work = super::program_output_work::WorthQueryApplicationProgramWork::from_settlements(
                     work,
-                    (root.receipt(), root.readiness_delivery()),
+                    (
+                        root.application_commit_receipt(),
+                        root.readiness_delivery(),
+                    ),
                     outputs.iter().map(|output| {
                         (output.receipt(), output.readiness_delivery())
                     }),

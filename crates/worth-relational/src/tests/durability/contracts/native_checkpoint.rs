@@ -84,6 +84,34 @@ fn native_checkpoint_round_trip_restores_a_live_editable_world() {
 }
 
 #[test]
+fn recovery_authority_only_admits_a_basis_from_the_recovered_image() {
+    let source = persisted_runtime_with_test_schema();
+    create_entity_outcome(&source, "recovered-authority-source");
+    let checkpoint = source.durability_authority().native_checkpoint().unwrap();
+
+    let mut exact_recovery = persisted_runtime_with_test_schema();
+    let (_, exact_authority) = exact_recovery
+        .durability_recovery()
+        .restore_native_checkpoint_with_authority(&checkpoint)
+        .unwrap();
+    let (_, exact_basis) = exact_recovery
+        .observe_branch(&exact_recovery.main_branch_identity())
+        .unwrap();
+    assert!(exact_authority.admit_basis(exact_basis).is_ok());
+
+    let mut moved_recovery = persisted_runtime_with_test_schema();
+    let (_, moved_authority) = moved_recovery
+        .durability_recovery()
+        .restore_native_checkpoint_with_authority(&checkpoint)
+        .unwrap();
+    create_entity_outcome(&moved_recovery, "post-recovery-movement");
+    let (_, moved_basis) = moved_recovery
+        .observe_branch(&moved_recovery.main_branch_identity())
+        .unwrap();
+    assert!(moved_authority.admit_basis(moved_basis).is_err());
+}
+
+#[test]
 fn native_checkpoint_round_trip_restores_current_relation_adjacency() {
     let runtime = persisted_runtime_with_test_schema();
     let source_key = crate::symbols::data::ClientKey::raw("native-relation-source");

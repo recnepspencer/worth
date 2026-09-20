@@ -11,6 +11,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryObservedSource
     occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
     observation_generation: u64,
     identity: [u8; 32],
+    checkpoint_identity: [u8; 32],
 }
 
 impl WorthQueryObservedSourceEpoch {
@@ -21,6 +22,7 @@ impl WorthQueryObservedSourceEpoch {
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
         observation_generation: u64,
         identity: [u8; 32],
+        checkpoint_identity: [u8; 32],
     ) -> Self {
         Self {
             query,
@@ -29,6 +31,7 @@ impl WorthQueryObservedSourceEpoch {
             occurrence,
             observation_generation,
             identity,
+            checkpoint_identity,
         }
     }
 
@@ -49,6 +52,7 @@ impl WorthQueryObservedSourceEpoch {
             product.lifecycle_incarnation(),
             product.reference_generation().get(),
             identity,
+            derive_checkpoint_source_identity(query, parameters, footprint),
         ))
     }
 
@@ -86,6 +90,32 @@ impl WorthQueryObservedSourceEpoch {
     pub(in crate::domain_computation::primary_graph) const fn observation_generation(&self) -> u64 {
         self.observation_generation
     }
+
+    /// Runtime-neutral identity for matching one accepted source across a
+    /// fresh Product World occurrence during application-checkpoint recovery.
+    /// Ordinary demand supersession remains occurrence-qualified.
+    pub(in crate::domain_computation::primary_graph) const fn checkpoint_identity(
+        &self,
+    ) -> &[u8; 32] {
+        &self.checkpoint_identity
+    }
+
+    pub(in crate::domain_computation::primary_graph) const fn identity(&self) -> &[u8; 32] {
+        &self.identity
+    }
+}
+
+fn derive_checkpoint_source_identity(
+    query: &[u8; 32],
+    parameters: &[u8; 32],
+    footprint: &WorthQueryObservedSourceFootprint,
+) -> [u8; 32] {
+    let mut digest = Sha256::new();
+    digest.update(b"worth-query:checkpoint-observed-source:v1");
+    digest.update(query);
+    digest.update(parameters);
+    append_footprint(&mut digest, footprint);
+    digest.finalize().into()
 }
 
 pub(in crate::domain_computation::primary_graph) fn derive_source_identity(
@@ -105,39 +135,40 @@ pub(in crate::domain_computation::primary_graph) fn derive_source_identity(
             digest.update(product.lifecycle_incarnation().ordinal().to_be_bytes());
         }
     }
-    entity(&mut digest, footprint.root);
+    append_footprint(&mut digest, footprint);
+    digest.finalize().into()
+}
+
+fn append_footprint(digest: &mut Sha256, footprint: &WorthQueryObservedSourceFootprint) {
+    entity(digest, footprint.root);
     digest.update([u8::from(footprint.complete)]);
-    length(&mut digest, footprint.entities.len());
+    length(digest, footprint.entities.len());
     for observed in &footprint.entities {
-        entity(&mut digest, *observed);
+        entity(digest, *observed);
     }
-    length(&mut digest, footprint.aspects.len());
+    length(digest, footprint.aspects.len());
     for aspect in &footprint.aspects {
-        entity(&mut digest, aspect.entity);
-        text(&mut digest, &aspect.entity_name);
-        text(&mut digest, aspect.aspect.as_str());
+        entity(digest, aspect.entity);
+        text(digest, &aspect.entity_name);
+        text(digest, aspect.aspect.as_str());
         digest.update(aspect.contract_revision.0.to_be_bytes());
-        optional_u64(&mut digest, aspect.native_revision);
+        optional_u64(digest, aspect.native_revision);
     }
-    length(&mut digest, footprint.adjacencies.len());
+    length(digest, footprint.adjacencies.len());
     for adjacency in &footprint.adjacencies {
-        entity(&mut digest, adjacency.anchor);
+        entity(digest, adjacency.anchor);
         digest.update(adjacency.relation_kind.as_u32().to_be_bytes());
         digest.update([match adjacency.direction {
             worth_relational::facade::runtime::RelationalAdjacencyDirection::Outgoing => 0,
             worth_relational::facade::runtime::RelationalAdjacencyDirection::Incoming => 1,
         }]);
-        optional_u64(
-            &mut digest,
-            adjacency.native_revision.map(|revision| revision.0),
-        );
-        length(&mut digest, adjacency.comparison_work_limit);
-        length(&mut digest, adjacency.endpoints.len());
+        optional_u64(digest, adjacency.native_revision.map(|revision| revision.0));
+        length(digest, adjacency.comparison_work_limit);
+        length(digest, adjacency.endpoints.len());
         for endpoint in &adjacency.endpoints {
-            entity(&mut digest, *endpoint);
+            entity(digest, *endpoint);
         }
     }
-    digest.finalize().into()
 }
 
 fn entity(digest: &mut Sha256, entity: worth_relational::facade::identity::EntityId) {
@@ -231,6 +262,27 @@ mod tests {
         assert_ne!(
             derive_source_identity(&[7; 32], &[1; 32], &footprint, &selection),
             derive_source_identity(&[7; 32], &[2; 32], &footprint, &selection),
+        );
+    }
+
+    #[test]
+    fn checkpoint_identity_is_portable_but_changes_with_source_meaning() {
+        let root = EntityId::new(PartitionId::main(), 1, 1);
+        let source = footprint(root, vec![aspect(root, "source", 4)]);
+        let first = derive_checkpoint_source_identity(&[7; 32], &[8; 32], &source);
+        assert_eq!(
+            first,
+            derive_checkpoint_source_identity(&[7; 32], &[8; 32], &source)
+        );
+
+        let changed = footprint(root, vec![aspect(root, "source", 5)]);
+        assert_ne!(
+            first,
+            derive_checkpoint_source_identity(&[7; 32], &[8; 32], &changed)
+        );
+        assert_ne!(
+            first,
+            derive_checkpoint_source_identity(&[7; 32], &[9; 32], &source)
         );
     }
 

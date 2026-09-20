@@ -84,6 +84,9 @@ pub mod durability {
         RecoveryVerificationMode, RecoveryVerificationOutcome, RecoveryVerificationPlan,
         RelationIntegrityContractFamily, RelationalNativeCheckpoint, SegmentRetentionClass,
     };
+    pub use crate::durability::{
+        RecoveredRelationalBranchBasis, RecoveredRelationalRuntimeAuthority,
+    };
 }
 
 pub mod errors {

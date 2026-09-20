@@ -2,6 +2,7 @@
 
 mod current_output;
 mod qualification;
+mod restoration;
 mod retention;
 #[cfg(test)]
 mod tests;
@@ -31,7 +32,7 @@ pub(crate) struct WorthQueryApplicationOutputLineage {
         SemanticSource,
         HashMap<
             worth_runtime_world::facade::ProductBranchIncarnation,
-            BTreeMap<u64, RecordedOutput>,
+            BTreeMap<u64, Vec<RecordedOutput>>,
         >,
     >,
     origins: HashMap<worth_runtime_world::facade::ProductBranchIncarnation, ProductCoordinate>,
@@ -111,52 +112,6 @@ pub struct WorthQueryPriorOutputDenial {
 }
 
 impl WorthQueryApplicationOutputLineage {
-    #[allow(clippy::too_many_arguments)]
-    pub(super) fn record_restoration(
-        &mut self,
-        output_binding: TypeId,
-        runtime_authority: u64,
-        schema: ApplicationSchemaBindingIdentity,
-        scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
-        observation: &worth_runtime_world::facade::ProductBranchObservation,
-        correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
-        source_identity: [u8; 32],
-        source_partition_identity: [u8; 32],
-        producer_dependency_identity: Option<[u8; 32]>,
-        idempotency_key_identity: [u8; 32],
-        observed_source_facts: Arc<[super::application_attempt::WorthQueryApplicationObservedFact]>,
-    ) {
-        let source = SemanticSource {
-            runtime_authority,
-            schema,
-            scope,
-            output_binding,
-        };
-        let replaced = self
-            .by_source
-            .entry(source)
-            .or_default()
-            .entry(observation.lifecycle_incarnation())
-            .or_default()
-            .insert(
-                observation.reference_generation().get(),
-                RecordedOutput {
-                    correspondence,
-                    source_identity: Some(source_identity),
-                    source_partition_identity: Some(source_partition_identity),
-                    producer_dependency_identity,
-                    idempotency_key_identity,
-                    observed_source_facts,
-                },
-            );
-        assert!(
-            replaced.is_none(),
-            "one product generation may restore one output binding once"
-        );
-        self.live_occurrences
-            .insert(observation.lifecycle_incarnation());
-    }
-
     pub(super) fn install_output_families(&mut self, families: BTreeMap<String, Vec<TypeId>>) {
         assert!(self.output_families.is_empty());
         self.output_families.extend(families);
@@ -199,29 +154,29 @@ impl WorthQueryApplicationOutputLineage {
             scope: scope.scope(),
             output_binding,
         };
-        let replaced = self
+        let generation = self
             .by_source
             .entry(source)
             .or_default()
             .entry(head.lifecycle_incarnation())
             .or_default()
-            .insert(
-                head.reference_generation().get(),
-                RecordedOutput {
-                    correspondence: evidence.retain_output_correspondence(),
-                    source_identity: evidence.idempotency().source_identity(),
-                    source_partition_identity: evidence.idempotency().source_partition_identity(),
-                    producer_dependency_identity: evidence
-                        .idempotency()
-                        .producer_dependency_identity(),
-                    idempotency_key_identity: *evidence.idempotency().key_identity(),
-                    observed_source_facts: evidence.retain_observed_source_facts(),
-                },
-            );
+            .entry(head.reference_generation().get())
+            .or_default();
         assert!(
-            replaced.is_none(),
+            generation
+                .iter()
+                .all(|recorded| recorded.source_partition_identity
+                    != evidence.idempotency().source_partition_identity()),
             "one product generation may publish one output binding once"
         );
+        generation.push(RecordedOutput {
+            correspondence: evidence.retain_output_correspondence(),
+            source_identity: evidence.idempotency().source_identity(),
+            source_partition_identity: evidence.idempotency().source_partition_identity(),
+            producer_dependency_identity: evidence.idempotency().producer_dependency_identity(),
+            idempotency_key_identity: *evidence.idempotency().key_identity(),
+            observed_source_facts: evidence.retain_observed_source_facts(),
+        });
     }
 
     pub(super) fn resolve_current_family(
@@ -269,7 +224,7 @@ impl WorthQueryApplicationOutputLineage {
                 if let Some(recorded) = versions
                     .get(&coordinate.occurrence)
                     .and_then(|history| history.range(..=coordinate.generation).next_back())
-                    .map(|(_, recorded)| recorded)
+                    .and_then(|(_, recorded)| recorded.last())
                 {
                     candidates.push(WorthQueryCurrentOutputCandidate {
                         correspondence: Arc::clone(&recorded.correspondence),
@@ -348,14 +303,32 @@ impl WorthQueryApplicationOutputLineage {
 }
 
 fn latest_output_in_partition(
-    history: &BTreeMap<u64, RecordedOutput>,
+    history: &BTreeMap<u64, Vec<RecordedOutput>>,
     maximum_generation: u64,
     source_partition_identity: [u8; 32],
 ) -> Option<(&u64, &RecordedOutput)> {
     history
         .range(..=maximum_generation)
         .rev()
-        .find(|(_, recorded)| recorded.source_partition_identity == Some(source_partition_identity))
+        .find_map(|(generation, recorded)| {
+            recorded
+                .iter()
+                .find(|recorded| {
+                    recorded.source_partition_identity == Some(source_partition_identity)
+                })
+                .map(|recorded| (generation, recorded))
+        })
+}
+
+fn latest_output_matching<'a>(
+    history: &'a BTreeMap<u64, Vec<RecordedOutput>>,
+    maximum_generation: u64,
+    mut matches: impl FnMut(&RecordedOutput) -> bool,
+) -> Option<&'a RecordedOutput> {
+    history
+        .range(..=maximum_generation)
+        .rev()
+        .find_map(|(_, recorded)| recorded.iter().find(|recorded| matches(recorded)))
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

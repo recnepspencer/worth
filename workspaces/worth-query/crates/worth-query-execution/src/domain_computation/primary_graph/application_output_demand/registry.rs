@@ -99,9 +99,31 @@ impl SourceCustody {
 }
 
 #[derive(Clone)]
+pub(in crate::domain_computation::primary_graph) enum WorthQueryAcceptedOutputAuthority {
+    Committed(crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt),
+    Restored(WorthQueryRestoredAcceptedOutput),
+}
+
+#[derive(Clone)]
+pub(in crate::domain_computation::primary_graph) struct WorthQueryRestoredAcceptedOutput {
+    pub(in crate::domain_computation::primary_graph) checkpoint:
+        WorthQueryAcceptedOutputCheckpointIdentity,
+    pub(in crate::domain_computation::primary_graph) correspondence: std::sync::Arc<
+        crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
+    >,
+    pub(in crate::domain_computation::primary_graph) observation:
+        worth_runtime_world::facade::ProductBranchObservation,
+    pub(in crate::domain_computation::primary_graph) source_scope:
+        crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+    pub(in crate::domain_computation::primary_graph) source_identity: [u8; 32],
+    pub(in crate::domain_computation::primary_graph) observed_source_facts: std::sync::Arc<[
+        crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact
+    ]>,
+}
+
+#[derive(Clone)]
 pub(in crate::domain_computation::primary_graph) struct WorthQueryCompletedOutputDemand {
-    pub(in crate::domain_computation::primary_graph) receipt:
-        crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+    pub(in crate::domain_computation::primary_graph) authority: WorthQueryAcceptedOutputAuthority,
     pub(in crate::domain_computation::primary_graph) readiness:
         super::WorthQueryOutputReadinessDeliveryEvidence,
 }
@@ -151,6 +173,7 @@ mod checkpoint;
 mod lifecycle;
 mod notifications;
 mod progression;
+mod restoration;
 mod source_custody;
 mod supersession;
 #[cfg(test)]
@@ -235,6 +258,85 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryOutputDemandIn
     key: WorthQueryOutputDemandKey,
     notifications: WorthQueryOutputDemandNotifications,
     owner: WorthQueryOutputDemandRegistry,
+}
+
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub(in crate::domain_computation::primary_graph) struct WorthQueryAcceptedOutputCheckpointIdentity {
+    pub(in crate::domain_computation::primary_graph) producer: String,
+    pub(in crate::domain_computation::primary_graph) source: [u8; 32],
+    pub(in crate::domain_computation::primary_graph) scope:
+        crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+    pub(in crate::domain_computation::primary_graph) source_partition: [u8; 32],
+    pub(in crate::domain_computation::primary_graph) producer_dependency: Option<[u8; 32]>,
+    pub(in crate::domain_computation::primary_graph) idempotency_key: [u8; 32],
+    pub(in crate::domain_computation::primary_graph) roles:
+        Vec<crate::domain_computation::primary_graph::application_attempt::WorthQueryCheckpointOutputRole>,
+}
+
+impl WorthQueryAcceptedOutputCheckpointIdentity {
+    pub(in crate::domain_computation::primary_graph) fn same_output_slot(
+        &self,
+        other: &Self,
+    ) -> bool {
+        self.producer == other.producer
+            && self.scope == other.scope
+            && self.source_partition == other.source_partition
+    }
+}
+
+#[derive(Clone)]
+pub(in crate::domain_computation::primary_graph) struct WorthQueryReadmittedAcceptedOutput {
+    pub(in crate::domain_computation::primary_graph) checkpoint:
+        WorthQueryAcceptedOutputCheckpointIdentity,
+    pub(in crate::domain_computation::primary_graph) correspondence: std::sync::Arc<
+        crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
+    >,
+}
+
+impl WorthQueryOutputDemandRegistry {
+    /// Capture only terminal accepted outputs. In-flight, failed, and merely
+    /// published demands cannot become restart authority.
+    pub(in crate::domain_computation::primary_graph) fn accepted_checkpoint_identities(
+        &self,
+    ) -> Vec<WorthQueryAcceptedOutputCheckpointIdentity> {
+        let state = self
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut accepted = state
+            .records
+            .iter()
+            .filter_map(|(key, record)| {
+                let DemandState::Output(WorthQueryOutputProgress {
+                    checkpoint: Some(WorthQueryOutputCheckpoint::Ready(completion)),
+                    advancement: WorthQueryOutputAdvancement::Idle,
+                    ..
+                }) = &record.state
+                else {
+                    return None;
+                };
+                match &completion.authority {
+                    WorthQueryAcceptedOutputAuthority::Committed(receipt) => {
+                        let idempotency = receipt.idempotency_binding();
+                        Some(WorthQueryAcceptedOutputCheckpointIdentity {
+                            producer: key.producer.clone(),
+                            source: *key.source.checkpoint_identity(),
+                            scope: receipt.principal_scope().scope(),
+                            source_partition: idempotency.source_partition_identity()?,
+                            producer_dependency: idempotency.producer_dependency_identity(),
+                            idempotency_key: *idempotency.key_identity(),
+                            roles: receipt.output_correspondence().checkpoint_roles(),
+                        })
+                    }
+                    WorthQueryAcceptedOutputAuthority::Restored(restored) => {
+                        Some(restored.checkpoint.clone())
+                    }
+                }
+            })
+            .collect::<Vec<_>>();
+        accepted.sort();
+        accepted
+    }
 }
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryRequiredOutputSourcePreparation {

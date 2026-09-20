@@ -283,7 +283,10 @@ where
         }
         let work = crate::application_entry::mutation::WorthQueryApplicationProgramWork::from_all_settlements(
             traversal,
-            roots.iter().map(|(_, settled)| (settled.receipt(), settled.readiness_delivery()))
+            roots.iter().map(|(_, settled)| (
+                settled.application_commit_receipt(),
+                settled.readiness_delivery(),
+            ))
                 .chain(outputs.iter().map(|output| (output.receipt(), output.readiness_delivery()))),
         );
         Ok(WorthQueryDiscoveredProgramOutputProgress::Settled(

@@ -28,6 +28,7 @@ use super::{
 };
 mod binding_denial;
 mod checkpoint;
+mod preparation;
 mod publication;
 mod publication_target;
 use binding_denial::map_binding_denial_kind;
@@ -59,7 +60,9 @@ pub struct WorthQueryPrimaryGraphBootstrap<Schema> {
     pub(super) relation_keys: BTreeSet<(KindId, String)>,
     pub(super) entity_rows: Vec<super::typed_bootstrap::WorthQueryTypedEntityBootstrapRow>,
     pub(super) relation_rows: Vec<super::typed_bootstrap::WorthQueryTypedRelationBootstrapRow>,
-    recovered_publication: Option<WorthQueryPrimaryGraphPublication>,
+    pub(super) recovered_publication: Option<WorthQueryPrimaryGraphPublication>,
+    recovered_relational_authority:
+        Option<worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority>,
     pub(super) mutation_handlers: super::handler::PendingMutationHandlerRegistry<Schema>,
     invariant_installation_receipt:
         worth_relational::facade::runtime::RelationalInitialSchemaInstallationReceipt,
@@ -67,179 +70,16 @@ pub struct WorthQueryPrimaryGraphBootstrap<Schema> {
     _schema: PhantomData<fn() -> Schema>,
 }
 
-impl WorthQueryExecutionInstallationAuthority {
-    pub fn prepare_primary_graph<Schema>(
-        &self,
-        runtime: &WorthQueryExecutionRuntime,
-        installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
-        product_world_resources: crate::domain_computation::execution_runtime::product_world::WorthQueryProductWorldResources,
-    ) -> Result<WorthQueryPrimaryGraphBootstrap<Schema>, WorthQueryPrimaryGraphInstallationDenial>
-    where
-        Schema: ApplicationSchema,
-    {
-        let factories =
-            WorthQueryApplicationInvariantFactories::for_installed_schema(installed_schema);
-        self.prepare_primary_graph_with_relational_runtime_and_invariants(
-            runtime,
-            installed_schema,
-            RelationalRuntimeApi::builder().build(),
-            product_world_resources,
-            factories,
-        )
-    }
-
-    pub(crate) fn prepare_primary_graph_with_relational_runtime<Schema>(
-        &self,
-        runtime: &WorthQueryExecutionRuntime,
-        installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
-        relational_runtime: RelationalRuntime,
-        product_world_resources: crate::domain_computation::execution_runtime::product_world::WorthQueryProductWorldResources,
-    ) -> Result<WorthQueryPrimaryGraphBootstrap<Schema>, WorthQueryPrimaryGraphInstallationDenial>
-    where
-        Schema: ApplicationSchema,
-    {
-        let factories =
-            WorthQueryApplicationInvariantFactories::for_installed_schema(installed_schema);
-        self.prepare_primary_graph_with_relational_runtime_and_invariants(
-            runtime,
-            installed_schema,
-            relational_runtime,
-            product_world_resources,
-            factories,
-        )
-    }
-
-    pub(crate) fn prepare_primary_graph_with_relational_runtime_and_invariants<Schema>(
-        &self,
-        runtime: &WorthQueryExecutionRuntime,
-        installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
-        relational_runtime: RelationalRuntime,
-        product_world_resources: crate::domain_computation::execution_runtime::product_world::WorthQueryProductWorldResources,
-        invariant_factories: WorthQueryApplicationInvariantFactories<Schema>,
-    ) -> Result<WorthQueryPrimaryGraphBootstrap<Schema>, WorthQueryPrimaryGraphInstallationDenial>
-    where
-        Schema: ApplicationSchema,
-    {
-        self.prepare_primary_graph_with_optional_checkpoint(
-            runtime,
-            installed_schema,
-            relational_runtime,
-            product_world_resources,
-            invariant_factories,
-            None,
-        )
-    }
-
-    pub(super) fn prepare_primary_graph_with_optional_checkpoint<Schema>(
-        &self,
-        runtime: &WorthQueryExecutionRuntime,
-        installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
-        mut relational_runtime: RelationalRuntime,
-        product_world_resources: crate::domain_computation::execution_runtime::product_world::WorthQueryProductWorldResources,
-        invariant_factories: WorthQueryApplicationInvariantFactories<Schema>,
-        checkpoint: Option<&super::application_checkpoint::DecodedApplicationCheckpoint>,
-    ) -> Result<WorthQueryPrimaryGraphBootstrap<Schema>, WorthQueryPrimaryGraphInstallationDenial>
-    where
-        Schema: ApplicationSchema,
-    {
-        if !self.belongs_to(runtime) {
-            return Err(primary_graph_denial(
-                WorthQueryPrimaryGraphInstallationDenialKind::ForeignRuntime,
-                "execution installation authority belongs to another runtime",
-            ));
-        }
-        if runtime.primary_graph().is_some() {
-            return Err(primary_graph_denial(
-                WorthQueryPrimaryGraphInstallationDenialKind::AlreadyInstalled,
-                "execution runtime already owns a primary graph",
-            ));
-        }
-        runtime
-            .installed_packages()
-            .validate_application_schema(installed_schema)
-            .map_err(|denial| {
-                primary_graph_denial(
-                    WorthQueryPrimaryGraphInstallationDenialKind::StaleInstalledSchema,
-                    denial.subject(),
-                )
-            })?;
-        let (layout, additions) = WorthQueryPrimaryGraphLayout::lower(
-            installed_schema.installed_declaration(),
-            installed_schema.native_contracts(),
-            &relational_runtime.config().schema.registry,
-        )?;
-        let registrations =
-            invariant_factories.lower(installed_schema.binding_identity(), &layout)?;
-        let expected_invariant_inventory_digest =
-            worth_relational::facade::runtime::custom_invariant_inventory_digest(&registrations);
-        let mut invariant_installation_receipt = relational_runtime
-            .prepare_initial_schema_installation()
-            .map_err(map_initial_schema_installation_denial)?
-            .install_with_custom_invariants(additions, registrations)
-            .map_err(map_initial_schema_installation_denial)?;
-        if invariant_installation_receipt.custom_invariant_inventory_digest()
-            != &expected_invariant_inventory_digest
-        {
-            return Err(primary_graph_denial(
-                WorthQueryPrimaryGraphInstallationDenialKind::InvariantInstallationReceiptMismatch,
-                "Relational installed an invariant inventory outside the application catalog",
-            ));
-        }
-        if let Some(checkpoint) = checkpoint {
-            relational_runtime
-                .durability_recovery()
-                .restore_native_checkpoint(&checkpoint.native)
-                .map_err(|error| {
-                    primary_graph_denial(
-                        WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
-                        format!("native checkpoint recovery denied: {error:?}"),
-                    )
-                })?;
-            invariant_installation_receipt = relational_runtime
-                .readmit_recovered_initial_schema_installation(invariant_installation_receipt)
-                .map_err(|error| {
-                    primary_graph_denial(
-                        WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
-                        format!("recovered schema authority denied: {error}"),
-                    )
-                })?;
-        }
-        let graph = checkpoint::primary_graph_for_installation(
-            runtime.authority_identity(),
-            installed_schema.binding_identity(),
-            layout,
-            relational_runtime,
-            checkpoint.is_some(),
-        )?;
-        let recovered_publication = checkpoint
-            .map(|checkpoint| checkpoint.recover_publication(&graph))
-            .transpose()?;
-        Ok(WorthQueryPrimaryGraphBootstrap {
-            runtime_authority: runtime.authority_identity(),
-            installed_packages: runtime.retain_installed_packages(),
-            graph,
-            product_world_resources,
-            rows: Vec::new(),
-            external_identities: BTreeSet::new(),
-            principal_identities: BTreeSet::new(),
-            principal_keys: BTreeSet::new(),
-            entity_keys: BTreeSet::new(),
-            relation_keys: BTreeSet::new(),
-            entity_rows: Vec::new(),
-            relation_rows: Vec::new(),
-            recovered_publication,
-            mutation_handlers: Default::default(),
-            invariant_installation_receipt,
-            expected_invariant_inventory_digest,
-            _schema: PhantomData,
-        })
-    }
-}
-
 impl<Schema> WorthQueryPrimaryGraphBootstrap<Schema>
 where
     Schema: ApplicationSchema,
 {
+    pub(super) fn take_recovered_relational_authority(
+        &mut self,
+    ) -> Option<worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority> {
+        self.recovered_relational_authority.take()
+    }
+
     pub fn bind_principal<
         Binding,
         Mapping,

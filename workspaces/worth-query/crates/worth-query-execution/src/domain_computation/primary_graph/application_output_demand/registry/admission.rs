@@ -31,12 +31,10 @@ impl WorthQueryOutputDemandRegistry {
             .iter()
             .find(|(key, record)| {
                 let pending_commit = match &record.state {
-                    DemandState::Output(output) => Some(
-                        output
-                            .receipt
-                            .committed_product_publication()
-                            .composite_commit(),
-                    ),
+                    DemandState::Output(output) => output
+                        .receipt
+                        .as_ref()
+                        .map(|receipt| receipt.committed_product_publication().composite_commit()),
                     _ => None,
                 };
                 key.same_occurrence(&requested_key)
@@ -115,7 +113,9 @@ impl WorthQueryOutputDemandRegistry {
             {
                 let matches_ready = output.checkpoint.as_ref().is_some_and(|checkpoint| {
                     matches!(checkpoint, super::WorthQueryOutputCheckpoint::Ready(completion)
-                        if completion.receipt.is_same_authoritative_commit(successor))
+                        if matches!(&completion.authority,
+                            super::WorthQueryAcceptedOutputAuthority::Committed(receipt)
+                            if receipt.is_same_authoritative_commit(successor)))
                 });
                 if matches_ready {
                     if let super::WorthQueryOutputAdvancement::Stopped { denial, .. } =
@@ -180,7 +180,9 @@ impl WorthQueryOutputDemandRegistry {
                     if matches!(output.advancement, super::WorthQueryOutputAdvancement::Idle)
                     && output.checkpoint.as_ref().is_some_and(|checkpoint| {
                         matches!(checkpoint, super::WorthQueryOutputCheckpoint::Ready(completion)
-                            if completion.receipt.is_same_authoritative_commit(successor))
+                            if matches!(&completion.authority,
+                                super::WorthQueryAcceptedOutputAuthority::Committed(receipt)
+                                if receipt.is_same_authoritative_commit(successor)))
                     })
             );
             if existing_record && reopens_exact_ready {
@@ -288,7 +290,7 @@ impl WorthQueryOutputDemandRegistry {
     }
 }
 
-fn accepts_semantic_join(record: &DemandRecord) -> bool {
+pub(super) fn accepts_semantic_join(record: &DemandRecord) -> bool {
     match &record.state {
         DemandState::Failed(_) => false,
         DemandState::Output(output) => !matches!(
@@ -299,7 +301,7 @@ fn accepts_semantic_join(record: &DemandRecord) -> bool {
     }
 }
 
-fn newest_semantic_key(
+pub(super) fn newest_semantic_key(
     state: &super::DemandRegistryState,
     requested: &WorthQueryOutputDemandKey,
     accepts: impl Fn(&DemandRecord) -> bool,
@@ -335,7 +337,7 @@ fn new_record(
     }
 }
 
-fn interest(
+pub(super) fn interest(
     owner: &WorthQueryOutputDemandRegistry,
     key: WorthQueryOutputDemandKey,
     record: &DemandRecord,

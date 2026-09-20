@@ -193,5 +193,31 @@ where
         };
     application.installed_producers = producers;
     application.installed_conditionals = installed_conditionals;
+    application.recovered_outputs = decoded_checkpoint
+        .map(|checkpoint| {
+            checkpoint
+                .accepted_outputs
+                .into_iter()
+                .map(|accepted| {
+                    let correspondence = application
+                        .installed_producers
+                        .readmit_checkpoint_output(&application.installed_schema, &accepted)
+                        .map_err(|detail| {
+                            Denial::Graph(WorthQueryPrimaryGraphInstallationDenial::new(
+                                super::WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
+                                detail,
+                            ))
+                        })?;
+                    Ok(
+                        super::application_output_demand::WorthQueryReadmittedAcceptedOutput {
+                            checkpoint: accepted,
+                            correspondence,
+                        },
+                    )
+                })
+                .collect::<Result<Vec<_>, Denial>>()
+        })
+        .transpose()?
+        .unwrap_or_default();
     Ok(application)
 }

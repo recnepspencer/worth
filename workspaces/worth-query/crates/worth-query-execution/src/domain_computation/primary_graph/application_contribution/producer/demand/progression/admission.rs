@@ -1,5 +1,6 @@
 use worth_query_installation::facade::ApplicationSchema;
 
+mod restoration;
 mod source_custody;
 
 use super::super::{
@@ -214,6 +215,54 @@ where
                     ),
                 )
             })?;
+        let source_epoch = observed_source.output_source_epoch().ok_or_else(|| {
+            denial(
+                WorthQueryOutputDemandDenialKind::ForeignSource,
+                Family::IDENTITY,
+            )
+        })?;
+        let key = crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandKey::new(
+            selected.identity.clone(),
+            source_epoch,
+        );
+        let product_occurrence =
+            observed_source
+                .selected_product_occurrence()
+                .ok_or_else(|| {
+                    denial(
+                        WorthQueryOutputDemandDenialKind::ForeignSource,
+                        Family::IDENTITY,
+                    )
+                })?;
+        let source_scope = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(
+            observed_source.source_root(),
+        );
+        if let Some(restored) = self.readmit_checkpoint_output(
+            &selected.identity,
+            &observed_source,
+            source_epoch,
+            source_scope,
+        )? {
+            let (interest, newly_adopted) = self.output_demands.admit_restored(
+                key,
+                source_scope,
+                product_occurrence,
+                restored.clone(),
+            )?;
+            if newly_adopted {
+                self.record_restored_output(source_scope, &restored)?;
+            }
+            return Ok(WorthQueryAdmittedOutputDemand {
+                runtime_authority: self.runtime.authority_identity().as_u64(),
+                schema_binding: self.installed_schema.binding_identity(),
+                selected,
+                observed_source,
+                currentness_work_limit,
+                maximum_retained_bytes,
+                admission_kind,
+                interest: Some(interest),
+            });
+        }
         let resources = entry.executor.resources(&source).ok_or_else(|| {
             denial(
                 WorthQueryOutputDemandDenialKind::ForeignSource,
@@ -238,29 +287,11 @@ where
                 super::super::WorthQueryOutputDemandRecoveryPosture::Retryable,
             ));
         }
-        let key = crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandKey::new(
-            selected.identity.clone(),
-            observed_source.output_source_epoch().ok_or_else(|| {
-                denial(
-                    WorthQueryOutputDemandDenialKind::ForeignSource,
-                    Family::IDENTITY,
-                )
-            })?,
-        );
-        let product_occurrence =
-            observed_source
-                .selected_product_occurrence()
-                .ok_or_else(|| {
-                    denial(
-                        WorthQueryOutputDemandDenialKind::ForeignSource,
-                        Family::IDENTITY,
-                    )
-                })?;
         let interest = match performed_source {
             Some(source_commit) => self.output_demands.admit_performed(
                 key,
                 &source_commit,
-                crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(observed_source.source_root()),
+                source_scope,
                 product_occurrence,
             )?,
             None => self.output_demands.admit(
@@ -271,9 +302,7 @@ where
                         Family::IDENTITY,
                     )
                 })?),
-                crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(
-                    observed_source.source_root(),
-                ),
+                source_scope,
                 product_occurrence,
                 admission_kind,
                 expected_source_commit,

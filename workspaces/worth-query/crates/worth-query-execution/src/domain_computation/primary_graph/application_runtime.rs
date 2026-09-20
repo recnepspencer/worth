@@ -3,21 +3,20 @@ use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 use std::sync::Arc;
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationSchema};
 
-use crate::domain_computation::application_aftermath::WorthQueryExternalEffectTransport;
-use crate::domain_computation::authorization::WorthQueryRuntimeClock;
-use crate::domain_computation::execution_runtime::{
-    WorthQueryExecutionInstallationAuthority, WorthQueryExecutionRuntime,
-};
-use crate::domain_computation::managed_run::WorthQueryRecoveryHandleRegistry;
-use crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSource;
-
 use super::provider::WorthQueryPrimaryGraphProvider;
 use super::{
     authentication_clock::WorthQueryAuthenticationClock, WorthQueryPrimaryGraphBootstrap,
     WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphInstallationDenialKind,
     WorthQueryPrimaryGraphPublication,
 };
+use crate::domain_computation::application_aftermath::WorthQueryExternalEffectTransport;
 use crate::domain_computation::authorization::WorthQueryInstalledAuthorizationRegistry;
+use crate::domain_computation::authorization::WorthQueryRuntimeClock;
+use crate::domain_computation::execution_runtime::{
+    WorthQueryExecutionInstallationAuthority, WorthQueryExecutionRuntime,
+};
+use crate::domain_computation::managed_run::WorthQueryRecoveryHandleRegistry;
+use crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSource;
 
 #[cfg(any(
     test,
@@ -128,6 +127,7 @@ pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(super) next_output_producer_attempt: AtomicU64,
     pub(super) next_application_mutation_partition: AtomicU32,
     pub(super) output_demands: super::application_output_demand::WorthQueryOutputDemandRegistry,
+    pub(super) recovered_outputs: super::application_output_demand::WorthQueryRecoveredOutputs,
     pub(super) program_required_bindings: std::collections::BTreeSet<std::any::TypeId>,
     pub(super) program_required_operations: std::collections::BTreeSet<std::any::TypeId>,
     pub(super) installed_program_action_operations: Option<std::collections::BTreeSet<TypeId>>,

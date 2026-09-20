@@ -42,12 +42,12 @@ impl WorthQueryApplicationProgramWork {
     pub(super) fn from_settlements<'settlement>(
         traversal: ProgramOutputTraversalWork,
         root: (
-            &'settlement WorthQueryApplicationCommitReceipt,
+            Option<&'settlement WorthQueryApplicationCommitReceipt>,
             Option<&'settlement worth_query_execution::facade::primary_graph::WorthQueryOutputReadinessDeliveryEvidence>,
         ),
         descendants: impl Iterator<
             Item = (
-                &'settlement WorthQueryApplicationCommitReceipt,
+                Option<&'settlement WorthQueryApplicationCommitReceipt>,
                 Option<&'settlement worth_query_execution::facade::primary_graph::WorthQueryOutputReadinessDeliveryEvidence>,
             ),
         >,
@@ -60,7 +60,7 @@ impl WorthQueryApplicationProgramWork {
         traversal: ProgramOutputTraversalWork,
         settlements: impl Iterator<
             Item = (
-                &'settlement WorthQueryApplicationCommitReceipt,
+                Option<&'settlement WorthQueryApplicationCommitReceipt>,
                 Option<&'settlement worth_query_execution::facade::primary_graph::WorthQueryOutputReadinessDeliveryEvidence>,
             ),
         >,
@@ -78,16 +78,18 @@ impl WorthQueryApplicationProgramWork {
                 delivery_contacts =
                     delivery_contacts.saturating_add(readiness.delivery_contact_count());
             }
-            if let Some(work) = receipt.mutation_work() {
-                invariant_state_facts =
-                    invariant_state_facts.saturating_add(work.invariant_state_fact_count());
-                invariant_work_units =
-                    invariant_work_units.saturating_add(work.invariant_work_units());
-                invariant_executions = invariant_executions
-                    .saturating_add(work.relational_invariant_execution_count());
+            if let Some(receipt) = receipt {
+                if let Some(work) = receipt.mutation_work() {
+                    invariant_state_facts =
+                        invariant_state_facts.saturating_add(work.invariant_state_fact_count());
+                    invariant_work_units =
+                        invariant_work_units.saturating_add(work.invariant_work_units());
+                    invariant_executions = invariant_executions
+                        .saturating_add(work.relational_invariant_execution_count());
+                }
+                derived_publications = derived_publications
+                    .saturating_add(usize::from(receipt.changed_record_count() != 0));
             }
-            derived_publications = derived_publications
-                .saturating_add(usize::from(receipt.changed_record_count() != 0));
         }
         Self {
             discovery_queries: traversal.discovery_queries,

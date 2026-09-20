@@ -1,0 +1,91 @@
+use super::*;
+use crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity;
+
+#[test]
+fn checkpoint_capture_includes_only_idle_ready_outputs_in_canonical_order() {
+    let receipt = crate::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
+    let idempotency = receipt
+        .idempotency_binding()
+        .bind_source_partition(&[17; 32]);
+    let receipt = receipt.with_idempotency_binding_for_test(idempotency);
+    let occurrence = receipt.product_branch().occurrence();
+    let registry = WorthQueryOutputDemandRegistry::default();
+    let ready = |receipt| {
+        DemandState::Output(WorthQueryOutputProgress::new(
+            WorthQueryOutputCheckpoint::Ready(super::super::super::WorthQueryCompletedOutputDemand {
+                authority: WorthQueryAcceptedOutputAuthority::Committed(receipt),
+                readiness: crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputReadinessDeliveryEvidence::for_test(),
+            }),
+        ))
+    };
+    registry.state.lock().unwrap().records.extend([
+        (
+            key("z-producer", 1, 1),
+            record(occurrence, ready(receipt.clone()), 1),
+        ),
+        (
+            key("a-producer", 1, 2),
+            record(occurrence, ready(receipt.clone()), 1),
+        ),
+        (
+            key("published", 1, 3),
+            record(
+                occurrence,
+                DemandState::Output(WorthQueryOutputProgress::new(
+                    WorthQueryOutputCheckpoint::Published {
+                        receipt: receipt.clone(),
+                        delivery: WorthQueryPendingOutputDelivery::NoChange,
+                    },
+                )),
+                1,
+            ),
+        ),
+    ]);
+    let stopped_key = key("stopped", 1, 4);
+    let mut stopped = WorthQueryOutputProgress::new(WorthQueryOutputCheckpoint::Ready(
+        super::super::super::WorthQueryCompletedOutputDemand {
+            authority: WorthQueryAcceptedOutputAuthority::Committed(receipt),
+            readiness: crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputReadinessDeliveryEvidence::for_test(),
+        },
+    ));
+    stopped.stop(WorthQueryOutputDemandDenial::new(
+        WorthQueryOutputDemandDenialKind::Superseded,
+        "stopped before capture",
+    ));
+    registry.state.lock().unwrap().records.insert(
+        stopped_key,
+        record(occurrence, DemandState::Output(stopped), 1),
+    );
+
+    let accepted = registry.accepted_checkpoint_identities();
+
+    assert_eq!(accepted.len(), 2);
+    assert_eq!(accepted[0].producer, "a-producer");
+    assert_eq!(accepted[1].producer, "z-producer");
+    assert_eq!(accepted[0].source, [3; 32]);
+    assert_eq!(accepted[1].source, [3; 32]);
+}
+
+#[test]
+fn checkpoint_output_slots_ignore_superseded_source_generations() {
+    let scope = crate::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application()
+        .principal_scope()
+        .scope();
+    let checkpoint = |source| WorthQueryAcceptedOutputCheckpointIdentity {
+        producer: "producer".to_owned(),
+        source,
+        scope,
+        source_partition: [7; 32],
+        producer_dependency: None,
+        idempotency_key: source,
+        roles: Vec::new(),
+    };
+
+    assert!(checkpoint([1; 32]).same_output_slot(&checkpoint([2; 32])));
+    assert!(
+        !checkpoint([1; 32]).same_output_slot(&WorthQueryAcceptedOutputCheckpointIdentity {
+            source_partition: [8; 32],
+            ..checkpoint([2; 32])
+        })
+    );
+}

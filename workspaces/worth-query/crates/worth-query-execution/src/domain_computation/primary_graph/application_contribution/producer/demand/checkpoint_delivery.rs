@@ -6,9 +6,9 @@ use super::{
 };
 use crate::domain_computation::execution_runtime::product_world::WorthQueryPerformedRelationalProductChangeDeliveryDenialKind as DeliveryDenialKind;
 use crate::domain_computation::primary_graph::application_output_demand::{
-    WorthQueryCompletedOutputDemand, WorthQueryOutputCheckpoint as Checkpoint,
-    WorthQueryOutputClaimIdentity, WorthQueryOutputDemandInterest,
-    WorthQueryPendingOutputDelivery as Delivery,
+    WorthQueryAcceptedOutputAuthority, WorthQueryCompletedOutputDemand,
+    WorthQueryOutputCheckpoint as Checkpoint, WorthQueryOutputClaimIdentity,
+    WorthQueryOutputDemandInterest, WorthQueryPendingOutputDelivery as Delivery,
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
@@ -50,7 +50,10 @@ where
                 self.finish_output_checkpoint(
                     interest,
                     claim,
-                    Checkpoint::Ready(WorthQueryCompletedOutputDemand { receipt, readiness }),
+                    Checkpoint::Ready(WorthQueryCompletedOutputDemand {
+                        authority: WorthQueryAcceptedOutputAuthority::Committed(receipt),
+                        readiness,
+                    }),
                     None,
                 )
             }

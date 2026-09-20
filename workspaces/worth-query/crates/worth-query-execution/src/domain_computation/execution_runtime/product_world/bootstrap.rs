@@ -15,6 +15,9 @@ impl WorthQueryProductRuntime {
         relational: super::WorthQueryProductRelationalInstallation,
         bridge: &mut BridgeSealedRuntimeAssembly,
         resources: super::WorthQueryProductWorldResources,
+        recovered_relational_authority: Option<
+            worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority,
+        >,
     ) -> Result<Self, WorthQueryProductRuntimeInstallationDenial> {
         let (budgets, clock) = resources.into_parts();
         let super::WorthQueryProductRelationalInstallation {
@@ -63,14 +66,30 @@ impl WorthQueryProductRuntime {
             .map_err(|denial| installation_denial(format!("World installation: {denial:?}")))?;
         let branch = ProductBranchCreationIntent::named("primary")
             .map_err(|denial| installation_denial(format!("Product branch name: {denial:?}")))?;
-        let outcome = owner
-            .lifecycle_port()
-            .bootstrap_root(RuntimeWorldBootstrapIntent::new(
+        let bootstrap_intent = match recovered_relational_authority {
+            Some(authority) => {
+                let recovered_basis = authority.admit_basis(relational_basis).map_err(|_| {
+                    installation_denial(
+                        "Recovered Relational authority does not own the product basis".to_owned(),
+                    )
+                })?;
+                RuntimeWorldBootstrapIntent::recovered(
+                    branch,
+                    recovered_basis,
+                    signal_basis,
+                    correspondence_basis,
+                )
+            }
+            None => RuntimeWorldBootstrapIntent::new(
                 branch,
                 relational_basis,
                 signal_basis,
                 correspondence_basis,
-            ))
+            ),
+        };
+        let outcome = owner
+            .lifecycle_port()
+            .bootstrap_root(bootstrap_intent)
             .map_err(|denial| {
                 installation_denial(format!("World bootstrap service: {denial:?}"))
             })?;
@@ -80,6 +99,9 @@ impl WorthQueryProductRuntime {
             )));
         };
         let observation = performed.product_branch().clone();
+        let recovered_root_authority = performed
+            .into_recovered_root_authority()
+            .map(std::sync::Arc::new);
         activation.commit(&observation);
         Ok(Self::from_parts(
             owner,
@@ -92,6 +114,7 @@ impl WorthQueryProductRuntime {
             owner_cleanup,
             observation.branch_identity().clone(),
             observation.lifecycle_incarnation(),
+            recovered_root_authority,
         ))
     }
 }

@@ -3,7 +3,10 @@ use std::sync::Arc;
 
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 
-use super::{SemanticSource, WorthQueryApplicationOutputLineage, WorthQueryExactRecordedOutput};
+use super::{
+    latest_output_matching, SemanticSource, WorthQueryApplicationOutputLineage,
+    WorthQueryExactRecordedOutput,
+};
 
 impl WorthQueryApplicationOutputLineage {
     pub(in crate::domain_computation::primary_graph) fn qualified_output<Binding: 'static>(
@@ -21,14 +24,10 @@ impl WorthQueryApplicationOutputLineage {
             scope,
             output_binding: TypeId::of::<Binding>(),
         };
-        let recorded = self
-            .by_source
-            .get(&source)?
-            .get(&occurrence)?
-            .range(..=generation)
-            .next_back()
-            .map(|(_, recorded)| recorded)?;
-        (recorded.source_identity == Some(source_identity)).then_some(())?;
+        let history = self.by_source.get(&source)?.get(&occurrence)?;
+        let recorded = latest_output_matching(history, generation, |recorded| {
+            recorded.source_identity == Some(source_identity)
+        })?;
         Some(WorthQueryExactRecordedOutput {
             correspondence: Arc::clone(&recorded.correspondence),
             source_identity,
