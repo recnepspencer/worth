@@ -24,7 +24,7 @@ where
         let checkpoint_source = source_epoch.checkpoint_identity();
         let Some(readmitted) = self.recovered_outputs.iter().find(|readmitted| {
             readmitted.checkpoint.producer == producer
-                && readmitted.checkpoint.source == checkpoint_source
+                && readmitted.checkpoint.source == checkpoint_source.bytes()
                 && readmitted.checkpoint.scope == source_scope
                 && readmitted.checkpoint.source_partition == observed_source.partition_identity()
         }) else {
@@ -89,7 +89,9 @@ where
                 source_scope,
                 &restored.observation,
                 std::sync::Arc::clone(&restored.correspondence),
-                restored.source_identity,
+                crate::domain_computation::primary_graph::output_lineage::RecordedSourceIdentity::Checkpoint(
+                    restored.source_identity,
+                ),
                 restored.checkpoint.source_partition,
                 restored.checkpoint.producer_dependency,
                 restored.checkpoint.idempotency_key,

@@ -4,8 +4,8 @@ use std::sync::Arc;
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 
 use super::{
-    RecordedOutput, SemanticSource, WorthQueryApplicationOutputCorrespondence,
-    WorthQueryApplicationOutputLineage,
+    RecordedOutput, RecordedSourceIdentity, SemanticSource,
+    WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationOutputLineage,
 };
 
 impl WorthQueryApplicationOutputLineage {
@@ -18,7 +18,7 @@ impl WorthQueryApplicationOutputLineage {
         scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
         observation: &worth_runtime_world::facade::ProductBranchObservation,
         correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
-        source_identity: [u8; 32],
+        source_identity: RecordedSourceIdentity,
         source_partition_identity: [u8; 32],
         producer_dependency_identity: Option<[u8; 32]>,
         idempotency_key_identity: [u8; 32],

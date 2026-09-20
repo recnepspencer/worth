@@ -2,6 +2,7 @@
 
 mod current_output;
 mod qualification;
+mod recorded_source_identity;
 mod restoration;
 mod retention;
 #[cfg(test)]
@@ -12,6 +13,8 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 use std::sync::Arc;
 
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
+
+pub(in crate::domain_computation::primary_graph) use recorded_source_identity::RecordedSourceIdentity;
 
 use super::{
     provider::WorthQueryPrimaryGraphCommittedApplication,
@@ -42,7 +45,7 @@ pub(crate) struct WorthQueryApplicationOutputLineage {
 
 struct RecordedOutput {
     correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
-    source_identity: Option<[u8; 32]>,
+    source_identity: Option<RecordedSourceIdentity>,
     source_partition_identity: Option<[u8; 32]>,
     producer_dependency_identity: Option<[u8; 32]>,
     idempotency_key_identity: [u8; 32],
@@ -51,7 +54,7 @@ struct RecordedOutput {
 
 pub(super) struct WorthQueryExactRecordedOutput {
     pub(super) correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
-    pub(super) source_identity: [u8; 32],
+    pub(super) source_identity: RecordedSourceIdentity,
     pub(super) source_partition_identity: [u8; 32],
     pub(super) producer_dependency_identity: Option<[u8; 32]>,
     pub(super) idempotency_key_identity: [u8; 32],
@@ -171,7 +174,11 @@ impl WorthQueryApplicationOutputLineage {
         );
         generation.push(RecordedOutput {
             correspondence: evidence.retain_output_correspondence(),
-            source_identity: evidence.idempotency().source_identity(),
+            source_identity: evidence.idempotency().source_identity().map(|identity| {
+                RecordedSourceIdentity::Runtime(
+                    super::application_query::WorthQueryRuntimeSourceIdentity::new(identity),
+                )
+            }),
             source_partition_identity: evidence.idempotency().source_partition_identity(),
             producer_dependency_identity: evidence.idempotency().producer_dependency_identity(),
             idempotency_key_identity: *evidence.idempotency().key_identity(),

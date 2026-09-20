@@ -115,7 +115,8 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryRestoredAccept
         worth_runtime_world::facade::ProductBranchObservation,
     pub(in crate::domain_computation::primary_graph) source_scope:
         crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
-    pub(in crate::domain_computation::primary_graph) source_identity: [u8; 32],
+    pub(in crate::domain_computation::primary_graph) source_identity:
+        crate::domain_computation::primary_graph::application_query::WorthQueryCheckpointSourceIdentity,
     pub(in crate::domain_computation::primary_graph) observed_source_facts: std::sync::Arc<[
         crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact
     ]>,
@@ -320,7 +321,7 @@ impl WorthQueryOutputDemandRegistry {
                         let idempotency = receipt.idempotency_binding();
                         Some(WorthQueryAcceptedOutputCheckpointIdentity {
                             producer: key.producer.clone(),
-                            source: key.source.checkpoint_identity(),
+                            source: key.source.checkpoint_identity().bytes(),
                             scope: receipt.principal_scope().scope(),
                             source_partition: idempotency.source_partition_identity()?,
                             producer_dependency: idempotency.producer_dependency_identity(),

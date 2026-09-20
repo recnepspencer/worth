@@ -16,7 +16,8 @@ impl WorthQueryApplicationOutputLineage {
         scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
         generation: u64,
-        source_identity: [u8; 32],
+        runtime_identity: crate::domain_computation::primary_graph::application_query::WorthQueryRuntimeSourceIdentity,
+        checkpoint_identity: crate::domain_computation::primary_graph::application_query::WorthQueryCheckpointSourceIdentity,
     ) -> Option<WorthQueryExactRecordedOutput> {
         let source = SemanticSource {
             runtime_authority,
@@ -26,11 +27,13 @@ impl WorthQueryApplicationOutputLineage {
         };
         let history = self.by_source.get(&source)?.get(&occurrence)?;
         let recorded = latest_output_matching(history, generation, |recorded| {
-            recorded.source_identity == Some(source_identity)
+            recorded.source_identity.is_some_and(|identity| {
+                identity.matches_current(runtime_identity, checkpoint_identity)
+            })
         })?;
         Some(WorthQueryExactRecordedOutput {
             correspondence: Arc::clone(&recorded.correspondence),
-            source_identity,
+            source_identity: recorded.source_identity?,
             source_partition_identity: recorded.source_partition_identity?,
             producer_dependency_identity: recorded.producer_dependency_identity,
             idempotency_key_identity: recorded.idempotency_key_identity,

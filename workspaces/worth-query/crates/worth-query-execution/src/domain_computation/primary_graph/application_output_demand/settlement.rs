@@ -30,7 +30,8 @@ pub struct WorthQueryOutputDemandSettlement {
 pub(in crate::domain_computation::primary_graph) struct WorthQueryRestoredOutputSource {
     pub(in crate::domain_computation::primary_graph) scope:
         crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
-    pub(in crate::domain_computation::primary_graph) identity: [u8; 32],
+    pub(in crate::domain_computation::primary_graph) identity:
+        crate::domain_computation::primary_graph::application_query::WorthQueryCheckpointSourceIdentity,
 }
 
 impl WorthQueryOutputDemandSettlement {

@@ -2,8 +2,9 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use super::{
-    latest_output_in_partition, latest_output_matching, RecordedOutput, SemanticSource,
-    WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationOutputLineage,
+    latest_output_in_partition, latest_output_matching, RecordedOutput, RecordedSourceIdentity,
+    SemanticSource, WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationOutputLineage,
+    WorthQueryOutputSourcePosture,
 };
 
 #[test]
@@ -41,7 +42,9 @@ fn record(
 ) -> RecordedOutput {
     RecordedOutput {
         correspondence,
-        source_identity: Some([0x33; 32]),
+        source_identity: Some(RecordedSourceIdentity::Runtime(
+            crate::domain_computation::primary_graph::application_query::WorthQueryRuntimeSourceIdentity::new([0x33; 32]),
+        )),
         source_partition_identity: Some(source_partition_identity),
         producer_dependency_identity: None,
         idempotency_key_identity: [0x44; 32],
@@ -85,7 +88,7 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
         scope,
         observation,
         Arc::clone(&first),
-        [0x31; 32],
+        checkpoint_identity([0x31; 32]),
         first_partition,
         None,
         [0x41; 32],
@@ -98,7 +101,7 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
         scope,
         observation,
         Arc::clone(&sibling),
-        [0x32; 32],
+        checkpoint_identity([0x32; 32]),
         sibling_partition,
         Some([0x52; 32]),
         [0x42; 32],
@@ -111,7 +114,7 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
         scope,
         observation,
         Arc::clone(&first),
-        [0x31; 32],
+        checkpoint_identity([0x31; 32]),
         first_partition,
         None,
         [0x41; 32],
@@ -139,6 +142,39 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
     assert!(Arc::ptr_eq(&selected_sibling.correspondence, &sibling));
     assert!(Arc::ptr_eq(&matching_sibling.correspondence, &sibling));
     assert_eq!(history[&maximum_generation].len(), 2);
+
+    let current_checkpoint =
+        crate::domain_computation::primary_graph::application_query::WorthQueryCheckpointSourceIdentity::new([0x31; 32]);
+    let current_runtime =
+        crate::domain_computation::primary_graph::application_query::WorthQueryRuntimeSourceIdentity::new([0x99; 32]);
+    assert_eq!(
+        lineage.source_posture_for_any_output_binding(
+            runtime_authority,
+            &source.schema,
+            scope,
+            observation.lifecycle_incarnation(),
+            maximum_generation,
+            &[std::any::TypeId::of::<RestoredOutputBinding>()],
+            current_runtime,
+            current_checkpoint,
+        ),
+        WorthQueryOutputSourcePosture::Exact(std::any::TypeId::of::<RestoredOutputBinding>())
+    );
+    assert_eq!(
+        lineage
+            .qualified_output::<RestoredOutputBinding>(
+                runtime_authority,
+                &source.schema,
+                scope,
+                observation.lifecycle_incarnation(),
+                maximum_generation,
+                current_runtime,
+                current_checkpoint,
+            )
+            .expect("the restored record matches its portable source identity")
+            .source_identity,
+        checkpoint_identity([0x31; 32]),
+    );
 }
 
 #[test]
@@ -174,11 +210,17 @@ fn restoration_rejects_conflicting_identity_for_the_same_partition() {
             scope,
             observation,
             Arc::clone(&correspondence),
-            source_identity,
+            checkpoint_identity(source_identity),
             [0x11; 32],
             None,
             [0x41; 32],
             Arc::from([]),
         );
     }
+}
+
+fn checkpoint_identity(identity: [u8; 32]) -> RecordedSourceIdentity {
+    RecordedSourceIdentity::Checkpoint(
+        crate::domain_computation::primary_graph::application_query::WorthQueryCheckpointSourceIdentity::new(identity),
+    )
 }

@@ -43,7 +43,7 @@ fn released_meaning_removes_only_its_fixed_coordinate() {
 }
 
 #[test]
-fn reinterned_source_retains_durable_idempotency_identity() {
+fn reinterned_source_retains_checkpoint_identity_without_reusing_runtime_idempotency() {
     let registry = WorthQueryObservedSourceMeaningRegistry::new(20);
     let root = EntityId::new(PartitionId::main(), 1, 1);
     let selection = product_selection();
@@ -51,14 +51,81 @@ fn reinterned_source_retains_durable_idempotency_identity() {
         .intern(&[7; 32], &[8; 32], footprint(root, true), &selection)
         .unwrap();
     let first_runtime_identity = *first.identity();
-    let durable_identity = first.durable_idempotency_identity();
+    let checkpoint_identity = first.checkpoint_identity();
+    assert_eq!(
+        first.runtime_idempotency_identity().bytes(),
+        first_runtime_identity
+    );
     drop(first);
 
     let reinterned = registry
         .intern(&[7; 32], &[8; 32], footprint(root, true), &selection)
         .unwrap();
     assert_ne!(*reinterned.identity(), first_runtime_identity);
-    assert_eq!(reinterned.durable_idempotency_identity(), durable_identity);
+    assert_eq!(
+        reinterned.runtime_idempotency_identity().bytes(),
+        *reinterned.identity()
+    );
+    assert_eq!(reinterned.checkpoint_identity(), checkpoint_identity);
+}
+
+#[test]
+fn sibling_product_occurrences_share_checkpoint_identity_not_runtime_idempotency() {
+    let world =
+        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
+            true,
+        );
+    let source = world.application.current_world();
+    let first_branch = world
+        .application
+        .branches()
+        .fork(source)
+        .components(|components| components.fork_relational().reuse_exact_signal_basis())
+        .create()
+        .expect("the first sibling product publishes");
+    let second_branch = world
+        .application
+        .branches()
+        .fork(source)
+        .components(|components| components.fork_relational().reuse_exact_signal_basis())
+        .create()
+        .expect("the second sibling product publishes");
+    let selection = |branch| {
+        let selected = world
+            .application
+            .on_branch(branch)
+            .select()
+            .expect("the sibling product remains selectable");
+        WorthQueryApplicationBasisSelectionIdentity::Product(
+            crate::basis::WorthQueryProductBranchReadIdentity::from_observation(
+                selected.product().observation(),
+            ),
+        )
+    };
+    let registry = WorthQueryObservedSourceMeaningRegistry::new(21);
+    let root = EntityId::new(PartitionId::main(), 1, 1);
+    let first = registry
+        .intern(
+            &[7; 32],
+            &[8; 32],
+            footprint(root, true),
+            &selection(first_branch),
+        )
+        .unwrap();
+    let second = registry
+        .intern(
+            &[7; 32],
+            &[8; 32],
+            footprint(root, true),
+            &selection(second_branch),
+        )
+        .unwrap();
+
+    assert_ne!(
+        first.runtime_idempotency_identity(),
+        second.runtime_idempotency_identity()
+    );
+    assert_eq!(first.checkpoint_identity(), second.checkpoint_identity());
 }
 
 #[test]

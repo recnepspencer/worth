@@ -5,6 +5,11 @@ use std::sync::{Arc, Mutex, Weak};
 use super::super::resource_lifecycle::WorthQueryApplicationBasisSelectionIdentity;
 use super::WorthQueryObservedSourceFootprint;
 
+mod identity_kind;
+pub(in crate::domain_computation::primary_graph) use identity_kind::{
+    WorthQueryCheckpointSourceIdentity, WorthQueryRuntimeSourceIdentity,
+};
+
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 enum WorthQueryObservedSourceOccurrence {
     Relational,
@@ -37,12 +42,12 @@ impl WorthQueryObservedSourceMeaning {
         &self.identity
     }
 
-    pub(super) const fn checkpoint_identity(&self) -> [u8; 32] {
-        self.checkpoint_identity
+    pub(super) const fn checkpoint_identity(&self) -> WorthQueryCheckpointSourceIdentity {
+        WorthQueryCheckpointSourceIdentity::new(self.checkpoint_identity)
     }
 
-    pub(super) const fn durable_idempotency_identity(&self) -> [u8; 32] {
-        self.checkpoint_identity
+    pub(super) const fn runtime_idempotency_identity(&self) -> WorthQueryRuntimeSourceIdentity {
+        WorthQueryRuntimeSourceIdentity::new(self.identity)
     }
 }
 
@@ -287,7 +292,9 @@ impl WorthQueryObservedSourceEpoch {
         self.observation_generation
     }
 
-    pub(in crate::domain_computation::primary_graph) fn checkpoint_identity(&self) -> [u8; 32] {
+    pub(in crate::domain_computation::primary_graph) fn checkpoint_identity(
+        &self,
+    ) -> WorthQueryCheckpointSourceIdentity {
         self.meaning.checkpoint_identity()
     }
 

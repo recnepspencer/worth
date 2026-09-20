@@ -40,7 +40,7 @@ impl PublishedRestorationSettlement {
                 retry.producer.scope,
                 &observation,
                 retry.correspondence,
-                retry.producer.source_identity,
+                retry.producer.recorded_source_identity,
                 retry.producer.source_partition_identity,
                 retry.producer.producer_dependency_identity,
                 retry.producer.idempotency_key_identity,

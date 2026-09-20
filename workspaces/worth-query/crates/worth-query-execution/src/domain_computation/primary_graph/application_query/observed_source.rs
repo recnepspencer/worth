@@ -16,7 +16,10 @@ mod denial;
 mod footprint_accounting;
 pub(in crate::domain_computation::primary_graph) mod source_identity;
 pub use denial::{WorthQuerySourceExpectationDenial, WorthQuerySourceExpectationDenialKind};
-pub(in crate::domain_computation::primary_graph) use source_identity::WorthQueryObservedSourceEpoch;
+pub(in crate::domain_computation::primary_graph) use source_identity::{
+    WorthQueryCheckpointSourceIdentity, WorthQueryObservedSourceEpoch,
+    WorthQueryRuntimeSourceIdentity,
+};
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub(in crate::domain_computation) struct WorthQueryObservedAspectRevision {
@@ -168,12 +171,6 @@ impl<Query> WorthQueryObservedSource<Query> {
                     subject,
                 )
             })
-    }
-
-    /// Content-stable source commitment retained from the immutable basis.
-    /// Runtime and branch affinity are validated before durable idempotency.
-    pub(in crate::domain_computation) fn idempotency_identity(&self) -> [u8; 32] {
-        self.source_meaning.durable_idempotency_identity()
     }
 
     pub(in crate::domain_computation::primary_graph) fn output_source_epoch(
@@ -386,6 +383,6 @@ where
         )?;
         admission.bind_source_partition(partition_identity);
         admission.bind_source_facts(facts);
-        Ok(idempotency_identity)
+        Ok(idempotency_identity.bytes())
     }
 }

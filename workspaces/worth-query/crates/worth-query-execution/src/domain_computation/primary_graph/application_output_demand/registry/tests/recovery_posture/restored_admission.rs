@@ -62,7 +62,7 @@ fn restored_output(
         ),
         observation,
         source_scope: scope,
-        source_identity: [0x55; 32],
+        source_identity: crate::domain_computation::primary_graph::application_query::WorthQueryCheckpointSourceIdentity::new([0x55; 32]),
         observed_source_facts: Arc::from([]),
     }
 }

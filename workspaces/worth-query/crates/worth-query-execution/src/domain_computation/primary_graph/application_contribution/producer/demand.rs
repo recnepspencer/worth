@@ -317,6 +317,7 @@ where
                 observation.reference_generation().get(),
                 &output_bindings,
                 source.idempotency_identity(),
+                source.checkpoint_identity(),
             );
         let lifecycle = match source_posture {
             super::super::super::output_lineage::WorthQueryOutputSourcePosture::Exact(binding) => {

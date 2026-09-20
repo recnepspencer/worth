@@ -3,8 +3,8 @@ use std::any::TypeId;
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 
 use super::{
-    latest_output_in_partition, latest_output_matching, ProductCoordinate, SemanticSource,
-    WorthQueryApplicationOutputLineage, WorthQueryOutputSourcePosture,
+    latest_output_in_partition, latest_output_matching, ProductCoordinate, RecordedSourceIdentity,
+    SemanticSource, WorthQueryApplicationOutputLineage, WorthQueryOutputSourcePosture,
     WorthQueryProducerLineageHead,
 };
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
@@ -90,7 +90,10 @@ impl WorthQueryApplicationOutputLineage {
             }
             if let Some(recorded) = versions.get(&coordinate.occurrence).and_then(|history| {
                 latest_output_matching(history, coordinate.generation, |recorded| {
-                    recorded.source_identity == Some(source_identity)
+                    recorded.source_identity
+                        == Some(RecordedSourceIdentity::Runtime(
+                            crate::domain_computation::primary_graph::application_query::WorthQueryRuntimeSourceIdentity::new(source_identity),
+                        ))
                         && std::ptr::eq(
                             recorded.correspondence.as_ref(),
                             receipt.output_correspondence(),
@@ -150,7 +153,8 @@ impl WorthQueryApplicationOutputLineage {
             }
             if let Some(recorded) = versions.get(&coordinate.occurrence).and_then(|history| {
                 latest_output_matching(history, coordinate.generation, |recorded| {
-                    recorded.source_identity == Some(restored.identity)
+                    recorded.source_identity
+                        == Some(RecordedSourceIdentity::Checkpoint(restored.identity))
                         && std::ptr::eq(
                             recorded.correspondence.as_ref(),
                             settlement.output_correspondence.as_ref(),
@@ -188,7 +192,8 @@ impl WorthQueryApplicationOutputLineage {
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
         generation: u64,
         output_bindings: &[TypeId],
-        current_source_identity: [u8; 32],
+        current_runtime_identity: crate::domain_computation::primary_graph::application_query::WorthQueryRuntimeSourceIdentity,
+        current_checkpoint_identity: crate::domain_computation::primary_graph::application_query::WorthQueryCheckpointSourceIdentity,
     ) -> WorthQueryOutputSourcePosture {
         let mut retained_output = false;
         for output_binding in output_bindings {
@@ -211,10 +216,14 @@ impl WorthQueryApplicationOutputLineage {
                     .and_then(|history| history.range(..=coordinate.generation).next_back())
                     .map(|(_, recorded)| recorded)
                 {
-                    if recorded
-                        .iter()
-                        .any(|recorded| recorded.source_identity == Some(current_source_identity))
-                    {
+                    if recorded.iter().any(|recorded| {
+                        recorded.source_identity.is_some_and(|identity| {
+                            identity.matches_current(
+                                current_runtime_identity,
+                                current_checkpoint_identity,
+                            )
+                        })
+                    }) {
                         return WorthQueryOutputSourcePosture::Exact(*output_binding);
                     }
                     retained_output = true;
