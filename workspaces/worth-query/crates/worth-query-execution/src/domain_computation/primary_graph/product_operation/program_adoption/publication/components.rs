@@ -16,6 +16,7 @@ impl WorthQueryPreparedBranchAdoption {
             target,
             selected_entity_count,
             migration,
+            custody,
             publication,
             recovery,
             disposition,
@@ -30,6 +31,7 @@ impl WorthQueryPreparedBranchAdoption {
                         target,
                         selected_entity_count,
                         migration,
+                        custody,
                     ),
                 )
             }
@@ -43,6 +45,7 @@ impl WorthQueryPreparedBranchAdoption {
                         target,
                         selected_entity_count,
                         migration,
+                        custody,
                         unpublished,
                         recovery,
                         disposition,

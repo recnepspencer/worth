@@ -1,6 +1,7 @@
 mod canonical_slot;
 mod meaning_axes;
 mod semantic_diff;
+mod semantic_meaning;
 mod work_budget;
 
 use super::super::{
@@ -28,6 +29,7 @@ struct AdjustOperation;
 struct AuditOperation;
 struct BoundedDimensionV1;
 struct BoundedDimensionV2;
+struct BoundedDimensionV3;
 struct BoundedExport;
 struct AuditImport;
 struct BoundedToAudit;
@@ -114,6 +116,12 @@ impl ApplicationInvariantMarkerIdentity<RevisionSchema> for BoundedDimensionV2 {
     const MINOR: u16 = 0;
 }
 
+impl ApplicationInvariantMarkerIdentity<RevisionSchema> for BoundedDimensionV3 {
+    const IDENTIFIER: &'static str = "BoundedDimension";
+    const MAJOR: u16 = 3;
+    const MINOR: u16 = 0;
+}
+
 type BaselineRules = ApplicationRuleList<
     ApplicationRuleAt<
         ApplicationSharedRuleRef<RevisionSchema, BoundedDimensionV1>,
@@ -128,6 +136,34 @@ type RaisedRules = ApplicationRuleList<
         ApplicationCommitBoundary,
     >,
     ApplicationRuleLeaf,
+>;
+
+type MultipleRuleVersions = ApplicationRuleList<
+    ApplicationRuleAt<
+        ApplicationSharedRuleRef<RevisionSchema, BoundedDimensionV1>,
+        ApplicationCommitBoundary,
+    >,
+    ApplicationRuleList<
+        ApplicationRuleAt<
+            ApplicationSharedRuleRef<RevisionSchema, BoundedDimensionV3>,
+            ApplicationCommitBoundary,
+        >,
+        ApplicationRuleLeaf,
+    >,
+>;
+
+type ShiftedRuleVersions = ApplicationRuleList<
+    ApplicationRuleAt<
+        ApplicationSharedRuleRef<RevisionSchema, BoundedDimensionV2>,
+        ApplicationCommitBoundary,
+    >,
+    ApplicationRuleList<
+        ApplicationRuleAt<
+            ApplicationSharedRuleRef<RevisionSchema, BoundedDimensionV3>,
+            ApplicationCommitBoundary,
+        >,
+        ApplicationRuleLeaf,
+    >,
 >;
 
 /// The baseline rule inventory moved to a different execution point, which is
@@ -166,6 +202,8 @@ fn connectable_feature_specs() -> Vec<ApplicationFeatureSpec> {
 struct BaselineProgram;
 struct RenamedBaselineProgram;
 struct RaisedRuleVersionProgram;
+struct MultipleRuleVersionsProgram;
+struct ShiftedRuleVersionsProgram;
 struct AddedActionProgram;
 struct AddedFeatureProgram;
 struct MutationSensitiveRuleProgram;
@@ -198,6 +236,28 @@ impl ApplicationProgramDefinition<RevisionSchema> for RaisedRuleVersionProgram {
     type Contributions = ();
     type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
     type Rules = RaisedRules;
+    const IDENTITY: ApplicationProgramIdentity = SHARED_IDENTITY;
+
+    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
+        bounded_feature_specs()
+    }
+}
+
+impl ApplicationProgramDefinition<RevisionSchema> for MultipleRuleVersionsProgram {
+    type Contributions = ();
+    type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
+    type Rules = MultipleRuleVersions;
+    const IDENTITY: ApplicationProgramIdentity = SHARED_IDENTITY;
+
+    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
+        bounded_feature_specs()
+    }
+}
+
+impl ApplicationProgramDefinition<RevisionSchema> for ShiftedRuleVersionsProgram {
+    type Contributions = ();
+    type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
+    type Rules = ShiftedRuleVersions;
     const IDENTITY: ApplicationProgramIdentity = SHARED_IDENTITY;
 
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {

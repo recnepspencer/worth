@@ -1,9 +1,11 @@
 use super::{
     description_of, AddedActionProgram, BaselineProgram, ConnectedTopologyProgram,
-    RaisedRuleVersionProgram, RenamedBaselineProgram, UnconnectedTopologyProgram,
+    MultipleRuleVersionsProgram, RaisedRuleVersionProgram, RenamedBaselineProgram,
+    ShiftedRuleVersionsProgram, UnconnectedTopologyProgram,
 };
 use crate::application_program::{
-    ApplicationSemanticChangeKind, ApplicationSemanticDiff, ApplicationSemanticDiffDenial,
+    ApplicationConnectionDeclaration, ApplicationSemanticChangeKind,
+    ApplicationSemanticDescription, ApplicationSemanticDiff, ApplicationSemanticDiffDenial,
     ApplicationSemanticFamily,
 };
 
@@ -34,6 +36,75 @@ fn rule_contract_changes_are_typed_without_prejudging_live_state() {
     assert!(change.target_meaning().is_some());
     assert_ne!(change.source_meaning(), change.target_meaning());
     assert!(change.migration_assessment_requirement().is_none());
+}
+
+#[test]
+fn multiple_legal_rule_versions_are_compared_without_overwriting_an_occurrence() {
+    let diff = compare::<MultipleRuleVersionsProgram, ShiftedRuleVersionsProgram>(TEST_WORK_LIMIT)
+        .expect("all rule occurrences fit the comparison budget");
+
+    let rule_changes = diff
+        .changes()
+        .iter()
+        .filter(|change| change.family() == ApplicationSemanticFamily::Rules)
+        .collect::<Vec<_>>();
+    assert_eq!(rule_changes.len(), 1);
+    assert_eq!(
+        rule_changes[0].kind(),
+        ApplicationSemanticChangeKind::Changed
+    );
+    assert!(rule_changes[0]
+        .source_meaning()
+        .is_some_and(|meaning| meaning.contains("major=1:1")));
+    assert!(rule_changes[0]
+        .target_meaning()
+        .is_some_and(|meaning| meaning.contains("major=1:2")));
+}
+
+#[test]
+fn scoped_connection_change_survives_a_same_named_sibling_and_requires_assessment() {
+    let source = connection_description(vec![
+        connection("shared|route", "west:one", "sink", "old|port"),
+        connection("shared|route", "east", "sink", "stable"),
+    ]);
+    let target = connection_description(vec![
+        connection("shared|route", "west:one", "sink", "new:port"),
+        connection("shared|route", "east", "sink", "stable"),
+    ]);
+
+    let diff = ApplicationSemanticDiff::compare(&source, &target, TEST_WORK_LIMIT)
+        .expect("the scoped connection comparison fits the work budget");
+    let connection_changes = diff
+        .changes()
+        .iter()
+        .filter(|change| change.family() == ApplicationSemanticFamily::Connections)
+        .collect::<Vec<_>>();
+
+    assert_eq!(connection_changes.len(), 1);
+    assert_eq!(
+        connection_changes[0].kind(),
+        ApplicationSemanticChangeKind::Changed
+    );
+    assert!(connection_changes[0]
+        .source_meaning()
+        .is_some_and(|meaning| meaning.contains("source-port=8:old|port")));
+    assert!(connection_changes[0]
+        .target_meaning()
+        .is_some_and(|meaning| meaning.contains("source-port=8:new:port")));
+    assert!(connection_changes[0]
+        .migration_assessment_requirement()
+        .is_some());
+    assert_eq!(
+        source
+            .facts()
+            .iter()
+            .filter(|fact| fact.family() == ApplicationSemanticFamily::Connections)
+            .map(|fact| fact.subject())
+            .collect::<std::collections::BTreeSet<_>>()
+            .len(),
+        2,
+        "same-named connections in different legal scopes need distinct subjects"
+    );
 }
 
 #[test]
@@ -83,5 +154,36 @@ where
         &description_of::<Source>(),
         &description_of::<Target>(),
         maximum_work_units,
+    )
+}
+
+fn connection_description(
+    connections: Vec<ApplicationConnectionDeclaration>,
+) -> ApplicationSemanticDescription {
+    ApplicationSemanticDescription::from_validated_parts(
+        super::revision_of::<BaselineProgram>(),
+        &[],
+        &[],
+        &connections,
+        &[],
+    )
+}
+
+fn connection(
+    identity: &'static str,
+    source_instance: &'static str,
+    target_instance: &'static str,
+    source_port: &'static str,
+) -> ApplicationConnectionDeclaration {
+    ApplicationConnectionDeclaration::new(
+        identity,
+        source_instance,
+        "source|feature",
+        source_port,
+        target_instance,
+        "target:feature",
+        "target|port",
+        false,
+        true,
     )
 }

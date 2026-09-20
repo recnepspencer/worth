@@ -20,6 +20,7 @@ mod output_posture;
 mod program;
 mod program_outputs;
 mod rule;
+mod semantic_encoding;
 
 #[cfg(test)]
 mod program_tests;

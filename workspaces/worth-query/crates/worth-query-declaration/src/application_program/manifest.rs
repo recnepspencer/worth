@@ -1,3 +1,4 @@
+use super::semantic_encoding::framed_record;
 use super::{
     ApplicationActionDeclaration, ApplicationConnectionDeclaration, ApplicationFeatureDeclaration,
     ApplicationProgramRuleDeclaration, ValidatedApplicationProgram,
@@ -49,25 +50,36 @@ impl ApplicationProgramManifest {
         let mut records = Vec::new();
         for feature in features {
             let owner = feature.composition_instance();
-            records.push(format!(
-                "feature|{owner}|{}|version={}.{}",
-                feature.identity(),
-                feature.major(),
-                feature.minor()
+            records.push(framed_record(
+                "feature",
+                [
+                    ("owner", owner.to_owned()),
+                    ("identity", feature.identity().to_owned()),
+                    ("major", feature.major().to_string()),
+                    ("minor", feature.minor().to_string()),
+                ],
             ));
             records.extend(feature.inputs().iter().map(|input| {
-                format!(
-                    "port|{owner}|{}|input|{}|required={}",
-                    feature.identity(),
-                    input.identity(),
-                    input.required()
+                framed_record(
+                    "port",
+                    [
+                        ("owner", owner.to_owned()),
+                        ("feature", feature.identity().to_owned()),
+                        ("direction", "input".to_owned()),
+                        ("identity", input.identity().to_owned()),
+                        ("required", input.required().to_string()),
+                    ],
                 )
             }));
             records.extend(feature.outputs().iter().map(|output| {
-                format!(
-                    "port|{owner}|{}|output|{}",
-                    feature.identity(),
-                    output.identity()
+                framed_record(
+                    "port",
+                    [
+                        ("owner", owner.to_owned()),
+                        ("feature", feature.identity().to_owned()),
+                        ("direction", "output".to_owned()),
+                        ("identity", output.identity().to_owned()),
+                    ],
                 )
             }));
             for artifact in feature.derived_artifacts() {
@@ -78,112 +90,185 @@ impl ApplicationProgramManifest {
                     .collect::<Vec<_>>();
                 dependencies.sort_unstable();
                 let resources = artifact.resource_ceiling();
-                records.push(format!(
-                    "artifact|{owner}|{}|{}|output={}|locality={}:\
-                     {}|retention={}|reconstruction={}|required={}|\
-                     producer={}|dependencies={}|reuse={}|work={}|bytes={}|stopped={}",
-                    feature.identity(),
-                    artifact.identity(),
-                    artifact.output(),
-                    artifact.locality().identity(),
-                    artifact.locality().granule().canonical_token(),
-                    artifact.retention().canonical_token(),
-                    artifact.succession().canonical_token(),
-                    artifact.required(),
-                    artifact.producer_family(),
-                    dependencies.join(","),
-                    artifact.reuse_rule(),
-                    resources.maximum_work(),
-                    resources.maximum_retained_bytes(),
-                    artifact.stopped_outcome()
+                records.push(framed_record(
+                    "artifact",
+                    [
+                        ("owner", owner.to_owned()),
+                        ("feature", feature.identity().to_owned()),
+                        ("identity", artifact.identity().to_owned()),
+                        ("output", artifact.output().to_owned()),
+                        ("locality", artifact.locality().identity().to_owned()),
+                        (
+                            "granule",
+                            artifact.locality().granule().canonical_token().to_owned(),
+                        ),
+                        (
+                            "retention",
+                            artifact.retention().canonical_token().to_owned(),
+                        ),
+                        (
+                            "reconstruction",
+                            artifact.succession().canonical_token().to_owned(),
+                        ),
+                        ("required", artifact.required().to_string()),
+                        ("producer", artifact.producer_family().to_owned()),
+                    ]
+                    .into_iter()
+                    .chain(
+                        dependencies
+                            .into_iter()
+                            .map(|dependency| ("dependency", dependency.to_owned())),
+                    )
+                    .chain([
+                        ("reuse", artifact.reuse_rule().to_owned()),
+                        ("work", resources.maximum_work().to_string()),
+                        ("bytes", resources.maximum_retained_bytes().to_string()),
+                        ("stopped", artifact.stopped_outcome().to_owned()),
+                    ]),
                 ));
             }
             for collection in feature.derived_collections() {
-                records.push(format!(
-                    "collection|{owner}|{}|{}|contributor={}|grouping={}|measures={}|\
-                     lineage={}|applicability={}|incomplete={}|incremental={}",
-                    feature.identity(),
-                    collection.identity(),
-                    collection.contributor(),
-                    collection.grouping(),
-                    collection.measures(),
-                    collection.lineage(),
-                    collection.applicability(),
-                    collection.incomplete().canonical_token(),
-                    collection.incremental_update()
+                records.push(framed_record(
+                    "collection",
+                    [
+                        ("owner", owner.to_owned()),
+                        ("feature", feature.identity().to_owned()),
+                        ("identity", collection.identity().to_owned()),
+                        ("contributor", collection.contributor().to_owned()),
+                        ("grouping", collection.grouping().to_owned()),
+                        ("measures", collection.measures().to_owned()),
+                        ("lineage", collection.lineage().to_owned()),
+                        ("applicability", collection.applicability().to_owned()),
+                        (
+                            "incomplete",
+                            collection.incomplete().canonical_token().to_owned(),
+                        ),
+                        ("incremental", collection.incremental_update().to_owned()),
+                    ],
                 ));
             }
             for computation in feature.managed_computations() {
                 let resources = computation.resources();
-                records.push(format!(
-                    "computation|{owner}|{}|{}|input={}|output={}|partition={}|reuse={}|\
-                     stopped={}|execution={}|ordering={}|work={}|bytes={}",
-                    feature.identity(),
-                    computation.identity(),
-                    computation.input(),
-                    computation.output_artifact(),
-                    computation.partition(),
-                    computation.reuse(),
-                    computation.stopped(),
-                    computation.execution().canonical_token(),
-                    computation.ordering(),
-                    resources.maximum_work(),
-                    resources.maximum_retained_bytes()
+                records.push(framed_record(
+                    "computation",
+                    [
+                        ("owner", owner.to_owned()),
+                        ("feature", feature.identity().to_owned()),
+                        ("identity", computation.identity().to_owned()),
+                        ("input", computation.input().to_owned()),
+                        ("output", computation.output_artifact().to_owned()),
+                        ("partition", computation.partition().to_owned()),
+                        ("reuse", computation.reuse().to_owned()),
+                        ("stopped", computation.stopped().to_owned()),
+                        (
+                            "execution",
+                            computation.execution().canonical_token().to_owned(),
+                        ),
+                        ("ordering", computation.ordering().to_owned()),
+                        ("work", resources.maximum_work().to_string()),
+                        ("bytes", resources.maximum_retained_bytes().to_string()),
+                    ],
                 ));
             }
         }
         for action in actions {
-            records.push(format!(
-                "action|{}|{}|input={}|conditional={}|required-output={}|\
-                 authority=binding:{}|invariant={}|observation={}|locality={}|granule={}|change={}|posture={}|effect={}",
-                action.composition_instance(),
-                action.feature(),
-                action.operation_input_identity().as_str(),
-                action.conditional_only(),
-                action.required_output_source(),
-                action.binding(),
-                action
-                    .evaluated_requirement()
-                    .map_or("", |attachment| attachment.identity()),
-                action
-                    .correspondence()
-                    .map_or("", |attachment| attachment.identity()),
-                action.locality().map_or("", |locality| locality.identity()),
-                action
-                    .locality()
-                    .map_or("", |locality| locality.granule().canonical_token()),
-                action.change_shape().map_or("", |change| change.identity()),
-                action
-                    .change_shape()
-                    .map_or("", |change| change.posture().canonical_token()),
-                action
-                    .external_input()
-                    .map_or("", |attachment| attachment.identity())
+            records.push(framed_record(
+                "action",
+                [
+                    ("owner", action.composition_instance().to_owned()),
+                    ("feature", action.feature().to_owned()),
+                    (
+                        "input",
+                        action.operation_input_identity().as_str().to_owned(),
+                    ),
+                    ("conditional", action.conditional_only().to_string()),
+                    (
+                        "required-output",
+                        action.required_output_source().to_string(),
+                    ),
+                    ("binding", action.binding().to_owned()),
+                    (
+                        "invariant",
+                        action
+                            .evaluated_requirement()
+                            .map_or("", |attachment| attachment.identity())
+                            .to_owned(),
+                    ),
+                    (
+                        "observation",
+                        action
+                            .correspondence()
+                            .map_or("", |attachment| attachment.identity())
+                            .to_owned(),
+                    ),
+                    (
+                        "locality",
+                        action
+                            .locality()
+                            .map_or("", |locality| locality.identity())
+                            .to_owned(),
+                    ),
+                    (
+                        "granule",
+                        action
+                            .locality()
+                            .map_or("", |locality| locality.granule().canonical_token())
+                            .to_owned(),
+                    ),
+                    (
+                        "change",
+                        action
+                            .change_shape()
+                            .map_or("", |change| change.identity())
+                            .to_owned(),
+                    ),
+                    (
+                        "posture",
+                        action
+                            .change_shape()
+                            .map_or("", |change| change.posture().canonical_token())
+                            .to_owned(),
+                    ),
+                    (
+                        "effect",
+                        action
+                            .external_input()
+                            .map_or("", |attachment| attachment.identity())
+                            .to_owned(),
+                    ),
+                ],
             ));
         }
         records.extend(connections.iter().map(|connection| {
-            format!(
-                "connection|{}|{}:{}:{}|{}:{}:{}|required={}|exported={}",
-                connection.identity(),
-                connection.source_instance(),
-                connection.source_feature(),
-                connection.source_port(),
-                connection.target_instance(),
-                connection.target_feature(),
-                connection.target_port(),
-                connection.target_required(),
-                connection.exports_across_instances()
+            framed_record(
+                "connection",
+                [
+                    ("identity", connection.identity().to_owned()),
+                    ("source-instance", connection.source_instance().to_owned()),
+                    ("source-feature", connection.source_feature().to_owned()),
+                    ("source-port", connection.source_port().to_owned()),
+                    ("target-instance", connection.target_instance().to_owned()),
+                    ("target-feature", connection.target_feature().to_owned()),
+                    ("target-port", connection.target_port().to_owned()),
+                    ("required", connection.target_required().to_string()),
+                    (
+                        "exported",
+                        connection.exports_across_instances().to_string(),
+                    ),
+                ],
             )
         }));
         records.extend(rules.iter().map(|rule| {
-            format!(
-                "invariant|{}|{}|version={}.{}|point={}|owner={}",
-                rule.composition_instance(),
-                rule.identity(),
-                rule.major(),
-                rule.minor(),
-                rule.execution_point().canonical_token(),
-                rule.local_owner().unwrap_or("")
+            framed_record(
+                "invariant",
+                [
+                    ("owner", rule.composition_instance().to_owned()),
+                    ("identity", rule.identity().to_owned()),
+                    ("major", rule.major().to_string()),
+                    ("minor", rule.minor().to_string()),
+                    ("point", rule.execution_point().canonical_token().to_owned()),
+                    ("local-owner", rule.local_owner().unwrap_or("").to_owned()),
+                ],
             )
         }));
         records.sort_unstable();

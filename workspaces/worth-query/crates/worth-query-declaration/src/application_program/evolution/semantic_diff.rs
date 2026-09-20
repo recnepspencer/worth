@@ -137,33 +137,15 @@ impl ApplicationSemanticDiff {
         let mut changes = Vec::new();
         for (family, subject) in keys {
             let key = (family, subject.clone());
-            let change = match (source_facts.get(&key), target_facts.get(&key)) {
-                (None, Some(target)) => Some((
-                    ApplicationSemanticChangeKind::Added,
-                    None,
-                    Some((*target).to_owned()),
-                )),
-                (Some(source), None) => Some((
-                    ApplicationSemanticChangeKind::Removed,
-                    Some((*source).to_owned()),
-                    None,
-                )),
-                (Some(source), Some(target)) if source != target => Some((
-                    ApplicationSemanticChangeKind::Changed,
-                    Some((*source).to_owned()),
-                    Some((*target).to_owned()),
-                )),
-                _ => None,
-            };
-            if let Some((kind, source_meaning, target_meaning)) = change {
-                changes.push(ApplicationSemanticChange {
-                    family,
-                    kind,
-                    subject,
-                    source_meaning,
-                    target_meaning,
-                });
-            }
+            let source_meanings = source_facts.get(&key).map_or(&[][..], Vec::as_slice);
+            let target_meanings = target_facts.get(&key).map_or(&[][..], Vec::as_slice);
+            append_subject_changes(
+                &mut changes,
+                family,
+                &subject,
+                source_meanings,
+                target_meanings,
+            );
         }
         let changed_families = changes
             .iter()
@@ -186,12 +168,93 @@ impl ApplicationSemanticDiff {
 
 fn index(
     description: &ApplicationSemanticDescription,
-) -> BTreeMap<(ApplicationSemanticFamily, String), &str> {
-    description
-        .facts()
-        .iter()
-        .map(|fact| ((fact.family(), fact.subject().to_owned()), fact.meaning()))
-        .collect()
+) -> BTreeMap<(ApplicationSemanticFamily, String), Vec<&str>> {
+    let mut facts = BTreeMap::<_, Vec<_>>::new();
+    for fact in description.facts() {
+        facts
+            .entry((fact.family(), fact.subject().to_owned()))
+            .or_default()
+            .push(fact.meaning());
+    }
+    for meanings in facts.values_mut() {
+        meanings.sort_unstable();
+    }
+    facts
+}
+
+fn append_subject_changes(
+    changes: &mut Vec<ApplicationSemanticChange>,
+    family: ApplicationSemanticFamily,
+    subject: &str,
+    source_meanings: &[&str],
+    target_meanings: &[&str],
+) {
+    let mut unmatched_source = Vec::new();
+    let mut unmatched_target = Vec::new();
+    let (mut source_index, mut target_index) = (0, 0);
+    while source_index < source_meanings.len() && target_index < target_meanings.len() {
+        match source_meanings[source_index].cmp(target_meanings[target_index]) {
+            std::cmp::Ordering::Equal => {
+                source_index += 1;
+                target_index += 1;
+            }
+            std::cmp::Ordering::Less => {
+                unmatched_source.push(source_meanings[source_index]);
+                source_index += 1;
+            }
+            std::cmp::Ordering::Greater => {
+                unmatched_target.push(target_meanings[target_index]);
+                target_index += 1;
+            }
+        }
+    }
+    unmatched_source.extend_from_slice(&source_meanings[source_index..]);
+    unmatched_target.extend_from_slice(&target_meanings[target_index..]);
+
+    let changed_count = unmatched_source.len().min(unmatched_target.len());
+    for index in 0..changed_count {
+        changes.push(change(
+            family,
+            ApplicationSemanticChangeKind::Changed,
+            subject,
+            Some(unmatched_source[index]),
+            Some(unmatched_target[index]),
+        ));
+    }
+    for source in &unmatched_source[changed_count..] {
+        changes.push(change(
+            family,
+            ApplicationSemanticChangeKind::Removed,
+            subject,
+            Some(source),
+            None,
+        ));
+    }
+    for target in &unmatched_target[changed_count..] {
+        changes.push(change(
+            family,
+            ApplicationSemanticChangeKind::Added,
+            subject,
+            None,
+            Some(target),
+        ));
+    }
+}
+
+fn change(
+    family: ApplicationSemanticFamily,
+    kind: ApplicationSemanticChangeKind,
+    subject: &str,
+    source_meaning: Option<&str>,
+    target_meaning: Option<&str>,
+) -> ApplicationSemanticChange {
+    ApplicationSemanticChange {
+        family,
+        kind,
+        subject: subject.to_owned(),
+        source_meaning: source_meaning.map(str::to_owned),
+        target_meaning: target_meaning.map(str::to_owned),
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

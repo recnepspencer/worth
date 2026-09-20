@@ -103,11 +103,12 @@ pub use product_operation::{
     WorthQueryPerformedConditionalDefinitionPublication, WorthQueryPreparedBranchAdoption,
     WorthQueryPreparedProgramMigration, WorthQueryProductEntry, WorthQueryProductHistory,
     WorthQueryProductHistoryEntry, WorthQueryProductQueryControls, WorthQueryProductTransaction,
-    WorthQueryProductTransactionCommitError, WorthQueryProgramMigrationDescription,
-    WorthQueryProgramMigrationPreparationDenial, WorthQueryRestoredGeneratedOutput,
-    WorthQueryRetainedGeneratedOutputEntity, WorthQuerySelectedProductOperation,
-    WorthQuerySuspendedGeneratedOutput, WorthQueryUnpublishedBranchAdoption,
-    WorthQueryUnpublishedGeneratedOutputRestoration,
+    WorthQueryProductTransactionCommitError, WorthQueryProgramCustodyDisposition,
+    WorthQueryProgramCustodyDispositionInventory, WorthQueryProgramCustodyDispositionKind,
+    WorthQueryProgramMigrationDescription, WorthQueryProgramMigrationPreparationDenial,
+    WorthQueryRestoredGeneratedOutput, WorthQueryRetainedGeneratedOutputEntity,
+    WorthQuerySelectedProductOperation, WorthQuerySuspendedGeneratedOutput,
+    WorthQueryUnpublishedBranchAdoption, WorthQueryUnpublishedGeneratedOutputRestoration,
 };
 mod provider;
 mod resolution;

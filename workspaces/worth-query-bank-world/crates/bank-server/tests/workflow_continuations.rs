@@ -12,7 +12,8 @@ use bank_domain::model::{BusinessId, Money};
 use bank_domain::proposals::{BankIdempotencyKey, BankProposalDenial};
 use bank_domain::schema::{ApprovePayment, InitiateBusinessPayment, RejectPayment};
 use bank_server::{
-    mutations, queries, BankMutationControls, BankPendingPaymentContinuation, BankReadControls,
+    mutations, queries, BankApplicationP1, BankMutationControls, BankPendingPaymentContinuation,
+    BankReadControls,
 };
 
 use fixture::{ordinary_read_world, principal_id, APPROVER, OWNER, RECIPIENT};
@@ -22,8 +23,13 @@ use worth_query_host::facade::admission::authenticated_principal::{
 };
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationMutationOutcome, WorthQueryApplicationRequestMutationDenial,
+    WorthQueryBranchAdoptionPublicationOutcome,
 };
+use worth_query_host::facade::application_installation::WorthQueryProgramOwner;
 use worth_query_host::facade::primary_graph::WorthQueryPrincipalResolutionDenialKind;
+use worth_query_host::facade::primary_graph::{
+    WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitOutcome,
+};
 
 #[test]
 fn initiation_recovers_one_continuation_and_a_fresh_approver_commits() {
@@ -150,6 +156,68 @@ fn a_fresh_authorized_rejector_can_reject_the_read_derived_continuation() {
         ),
         "program-owned rejection must commit: {rejection:?}"
     );
+}
+
+#[test]
+fn pending_approval_crosses_adoption_only_through_fresh_p1_admission() {
+    let fixture = ordinary_read_world("adopted-payment-continuation", 0);
+    let approver = fixture.authenticate(APPROVER);
+    let pending = pending_continuation(&fixture, &approver);
+    let application = fixture.world.runtime.application_program();
+    let branch = application.current_world();
+    let target_owner = application
+        .supported_program::<BankApplicationP1>()
+        .expect("Bank P1 is rostered beside P0");
+    let target = target_owner.owned_revision().clone();
+    let adoption_scope = request_scope();
+    let programs = fixture
+        .world
+        .runtime
+        .request(&approver, &adoption_scope)
+        .on_branch(branch)
+        .programs();
+    let requirements = programs.compare(&target).expect("P0 to P1 compares");
+    let prepared = programs
+        .adopt(&target)
+        .requirements(&requirements)
+        .prepare(128)
+        .expect("Bank P1 adoption prepares");
+    assert!(matches!(
+        prepared.publish(),
+        WorthQueryBranchAdoptionPublicationOutcome::Performed(_)
+    ));
+
+    let approval_scope = request_scope();
+    let approval_request = fixture.world.runtime.request(&approver, &approval_scope);
+    let stale_approval_key = BankIdempotencyKey::new("approve-after-adoption-source").unwrap();
+    let stale_approval = approval_request
+        .mutate(ApprovePayment {
+            payment: pending.payment_id(),
+            approver: principal_id(APPROVER),
+        })
+        .idempotency(&stale_approval_key)
+        .execute_in_program(application)
+        .expect("the stale source request reaches occurrence gating");
+    assert!(matches!(
+        stale_approval,
+        WorthQueryApplicationMutationOutcome::Commit(
+            WorthQueryApplicationCommitOutcome::Denied(ref denial)
+        ) if denial.kind() == WorthQueryApplicationCommitDenialKind::ProgramNotActiveOnOccurrence
+    ));
+
+    let approval_key = BankIdempotencyKey::new("approve-after-adoption").unwrap();
+    let approval = approval_request
+        .mutate(ApprovePayment {
+            payment: pending.payment_id(),
+            approver: principal_id(APPROVER),
+        })
+        .idempotency(&approval_key)
+        .execute_in_program(&target_owner)
+        .expect("the carried payment identity receives fresh P1 admission");
+    assert!(matches!(
+        approval,
+        WorthQueryApplicationMutationOutcome::Committed { .. }
+    ));
 }
 
 #[test]

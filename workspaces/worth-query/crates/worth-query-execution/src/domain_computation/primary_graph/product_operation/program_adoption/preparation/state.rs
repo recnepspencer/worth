@@ -9,8 +9,8 @@ use worth_relational::facade::transactions::{
 };
 
 use super::{
-    selection, WorthQueryBranchAdoptionPreparationDenial, WorthQueryPreparedBranchAdoption,
-    WorthQueryPreparedProgramMigration,
+    dispositions, selection, WorthQueryBranchAdoptionPreparationDenial,
+    WorthQueryPreparedBranchAdoption, WorthQueryPreparedProgramMigration,
 };
 use crate::domain_computation::primary_graph::product_operation::WorthQuerySelectedProductOperation;
 use crate::domain_computation::primary_graph::program_occurrence::program_revision_rendering;
@@ -59,13 +59,8 @@ pub(super) fn prepare<Schema: ApplicationSchema>(
             );
         }
     }
-    if let Some(requirement) = requirements.custody_inventory_requirements().first() {
-        return Err(
-            WorthQueryBranchAdoptionPreparationDenial::CustodyInventoryRequired(
-                requirement.clone(),
-            ),
-        );
-    }
+    let custody = dispositions::derive(&requirements)
+        .map_err(WorthQueryBranchAdoptionPreparationDenial::CustodyDispositionUnsupported)?;
     let application = selected.application();
     if let Some(candidate) = migration.as_ref() {
         if candidate.target() != target {
@@ -173,6 +168,7 @@ pub(super) fn prepare<Schema: ApplicationSchema>(
         selected_entity_count,
         selection_work_units,
         migration: migration_description,
+        custody,
         publication,
         recovery,
         disposition,

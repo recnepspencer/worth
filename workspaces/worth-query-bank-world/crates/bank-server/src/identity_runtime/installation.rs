@@ -7,8 +7,8 @@ use bank_domain::{
 };
 use worth_query_host::facade::{
     application_installation::{
-        in_memory_program, in_memory_program_with_authorization_time_source,
-        WorthQueryInMemoryApplicationLimits,
+        in_memory_rostered_program, in_memory_rostered_program_with_authorization_time_source,
+        WorthQueryApplicationProgramRoster, WorthQueryInMemoryApplicationLimits,
     },
     domain::{WorthQueryInstalledApplicationSchema, WorthQueryInstalledPrincipalBinding},
     primary_graph::{
@@ -23,8 +23,10 @@ use worth_query_host::facade::{
 
 use super::{BankGraphSeed, BankIdentityRuntime};
 use crate::{
-    application_definition::validated_bank_application, error::BankIdentityRuntimeBuildError,
-    graph_bootstrap::bind_bank_world_with_estate, principal_seed::PreparedBankPrincipalSeed,
+    application_definition::{validated_bank_application, validated_bank_application_p1},
+    error::BankIdentityRuntimeBuildError,
+    graph_bootstrap::bind_bank_world_with_estate,
+    principal_seed::PreparedBankPrincipalSeed,
 };
 
 type InstalledBankPrincipalBinding = WorthQueryInstalledPrincipalBinding<
@@ -48,6 +50,8 @@ pub(super) fn install_prepared(
 ) -> Result<BankIdentityRuntime, BankIdentityRuntimeBuildError> {
     let program = validated_bank_application()
         .map_err(BankIdentityRuntimeBuildError::ApplicationProgramValidation)?;
+    let successor = validated_bank_application_p1()
+        .map_err(BankIdentityRuntimeBuildError::ApplicationProgramValidation)?;
     let declaration =
         BankSchema::declaration().map_err(BankIdentityRuntimeBuildError::SchemaDeclaration)?;
     let limits = bank_application_limits();
@@ -61,12 +65,18 @@ pub(super) fn install_prepared(
             Ok(())
         };
     let runtime = match authorization_time {
-        BankAuthorizationTimeInstallation::System => {
-            in_memory_program(program, declaration, ((), (), ()), limits, initialize)
-        }
+        BankAuthorizationTimeInstallation::System => in_memory_rostered_program(
+            program,
+            WorthQueryApplicationProgramRoster::new().support(successor),
+            declaration,
+            ((), (), ()),
+            limits,
+            initialize,
+        ),
         BankAuthorizationTimeInstallation::Installed(source) => {
-            in_memory_program_with_authorization_time_source(
+            in_memory_rostered_program_with_authorization_time_source(
                 program,
+                WorthQueryApplicationProgramRoster::new().support(successor),
                 declaration,
                 ((), (), ()),
                 limits,

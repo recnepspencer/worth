@@ -23,8 +23,11 @@ use worth_query_host::facade::{declaration, primary_graph, runtime};
 
 use super::dimension_entry::{SetPartDimensionBinding, SetPartDimensionHandler, PART_IDENTITY};
 use super::programs::{
-    validated_changed_feature_program, validated_first_program, validated_foreign_rule_program,
-    validated_second_program, DimensionProgramP0, DimensionProgramP1,
+    validated_changed_feature_program, validated_changed_operation_program,
+    validated_first_program, validated_first_resource_program, validated_foreign_rule_program,
+    validated_removed_operation_program, validated_second_program,
+    validated_second_resource_program, DimensionProgramP0, DimensionProgramP1,
+    ResourceDimensionProgramP0,
 };
 use super::rules::{resolve_first_rule, resolve_second_rule};
 use super::schema::{
@@ -66,7 +69,9 @@ pub fn publish_on_first_program() -> BoundedDimensionRuntime<DimensionProgramP0>
         validated_first_program(),
         WorthQueryApplicationProgramRoster::new()
             .support(validated_second_program())
-            .support(validated_changed_feature_program()),
+            .support(validated_changed_feature_program())
+            .support(validated_changed_operation_program())
+            .support(validated_removed_operation_program()),
     )
     .expect("the P0-initial bounded-dimension host must install")
 }
@@ -77,9 +82,21 @@ pub fn publish_on_second_program() -> BoundedDimensionRuntime<DimensionProgramP1
         validated_second_program(),
         WorthQueryApplicationProgramRoster::new()
             .support(validated_first_program())
-            .support(validated_changed_feature_program()),
+            .support(validated_changed_feature_program())
+            .support(validated_changed_operation_program())
+            .support(validated_removed_operation_program()),
     )
     .expect("the P1-initial bounded-dimension host must install")
+}
+
+pub fn publish_on_first_resource_program() -> BoundedDimensionRuntime<ResourceDimensionProgramP0> {
+    publish(
+        validated_first_resource_program(),
+        WorthQueryApplicationProgramRoster::new()
+            .support(validated_second_resource_program())
+            .support(validated_second_program()),
+    )
+    .expect("the resource-custody host must install")
 }
 
 /// Attempts a host that rosters P0 alone against the two-rule catalog.
@@ -99,6 +116,8 @@ pub fn publish_with_foreign_rule_rostered(
         WorthQueryApplicationProgramRoster::new()
             .support(validated_second_program())
             .support(validated_changed_feature_program())
+            .support(validated_changed_operation_program())
+            .support(validated_removed_operation_program())
             .support(validated_foreign_rule_program()),
     )
 }

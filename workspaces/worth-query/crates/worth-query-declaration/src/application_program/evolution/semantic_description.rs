@@ -1,3 +1,4 @@
+use super::super::semantic_encoding::{framed_fields, framed_parts};
 use super::super::{
     ApplicationActionDeclaration, ApplicationConnectionDeclaration, ApplicationFeatureDeclaration,
     ApplicationProgramRevision, ApplicationProgramRuleDeclaration,
@@ -46,6 +47,18 @@ impl ApplicationSemanticFact {
 
     pub(super) fn meaning(&self) -> &str {
         &self.meaning
+    }
+}
+
+impl ApplicationActionDeclaration {
+    /// Canonical descriptive subject used by semantic evolution evidence.
+    ///
+    /// The length framing keeps independently-authored identity components
+    /// distinct even when an identity itself contains punctuation used by
+    /// human-readable diagnostics. This remains descriptive evidence, not an
+    /// execution or installation authority token.
+    pub fn semantic_subject(&self) -> String {
+        framed_parts(&[self.composition_instance(), self.feature(), self.binding()])
     }
 }
 
@@ -102,37 +115,41 @@ fn append_features(
 ) {
     for feature in features {
         let owner = feature.composition_instance();
-        let feature_subject = format!("{owner}|{}", feature.identity());
+        let feature_subject = framed_parts(&[owner, feature.identity()]);
         facts.push(fact(
             ApplicationSemanticFamily::Features,
             &feature_subject,
-            format!("{}.{}", feature.major(), feature.minor()),
+            framed_fields([
+                ("major", feature.major().to_string()),
+                ("minor", feature.minor().to_string()),
+            ]),
         ));
         for input in feature.inputs() {
             facts.push(fact(
                 ApplicationSemanticFamily::Ports,
-                format!("{feature_subject}|input|{}", input.identity()),
-                format!("required={}", input.required()),
+                framed_parts(&[owner, feature.identity(), "input", input.identity()]),
+                framed_fields([("required", input.required().to_string())]),
             ));
         }
         for output in feature.outputs() {
             facts.push(fact(
                 ApplicationSemanticFamily::Ports,
-                format!("{feature_subject}|output|{}", output.identity()),
-                "output",
+                framed_parts(&[owner, feature.identity(), "output", output.identity()]),
+                framed_fields([("posture", "output".to_owned())]),
             ));
         }
-        append_feature_outputs(facts, &feature_subject, feature);
+        append_feature_outputs(facts, feature);
     }
 }
 
 fn append_feature_outputs(
     facts: &mut Vec<ApplicationSemanticFact>,
-    feature_subject: &str,
     feature: &ApplicationFeatureDeclaration,
 ) {
+    let owner = feature.composition_instance();
+    let feature_identity = feature.identity();
     for artifact in feature.derived_artifacts() {
-        let subject = format!("{feature_subject}|artifact|{}", artifact.identity());
+        let subject = framed_parts(&[owner, feature_identity, "artifact", artifact.identity()]);
         let mut dependencies = artifact
             .dependencies()
             .iter()
@@ -142,61 +159,96 @@ fn append_feature_outputs(
         facts.push(fact(
             ApplicationSemanticFamily::Outputs,
             &subject,
-            format!(
-                "output={}|locality={}:{}|retention={}|succession={}|required={}|producer={}|dependencies={}|reuse={}|stopped={}",
-                artifact.output(), artifact.locality().identity(),
-                artifact.locality().granule().canonical_token(), artifact.retention().canonical_token(),
-                artifact.succession().canonical_token(), artifact.required(), artifact.producer_family(),
-                dependencies.join(","), artifact.reuse_rule(), artifact.stopped_outcome()
+            framed_fields(
+                [
+                    ("output", artifact.output().to_owned()),
+                    ("locality", artifact.locality().identity().to_owned()),
+                    (
+                        "granule",
+                        artifact.locality().granule().canonical_token().to_owned(),
+                    ),
+                    (
+                        "retention",
+                        artifact.retention().canonical_token().to_owned(),
+                    ),
+                    (
+                        "succession",
+                        artifact.succession().canonical_token().to_owned(),
+                    ),
+                    ("required", artifact.required().to_string()),
+                    ("producer", artifact.producer_family().to_owned()),
+                ]
+                .into_iter()
+                .chain(
+                    dependencies
+                        .into_iter()
+                        .map(|dependency| ("dependency", dependency.to_owned())),
+                )
+                .chain([
+                    ("reuse", artifact.reuse_rule().to_owned()),
+                    ("stopped", artifact.stopped_outcome().to_owned()),
+                ]),
             ),
         ));
         let resources = artifact.resource_ceiling();
         facts.push(fact(
             ApplicationSemanticFamily::Resources,
             subject,
-            format!(
-                "work={}|bytes={}",
-                resources.maximum_work(),
-                resources.maximum_retained_bytes()
-            ),
+            framed_fields([
+                ("work", resources.maximum_work().to_string()),
+                ("bytes", resources.maximum_retained_bytes().to_string()),
+            ]),
         ));
     }
     for collection in feature.derived_collections() {
         facts.push(fact(
             ApplicationSemanticFamily::Outputs,
-            format!("{feature_subject}|collection|{}", collection.identity()),
-            format!(
-                "contributor={}|grouping={}|measures={}|lineage={}|applicability={}|incomplete={}|incremental={}",
-                collection.contributor(), collection.grouping(), collection.measures(), collection.lineage(),
-                collection.applicability(), collection.incomplete().canonical_token(), collection.incremental_update()
-            ),
+            framed_parts(&[owner, feature_identity, "collection", collection.identity()]),
+            framed_fields([
+                ("contributor", collection.contributor().to_owned()),
+                ("grouping", collection.grouping().to_owned()),
+                ("measures", collection.measures().to_owned()),
+                ("lineage", collection.lineage().to_owned()),
+                ("applicability", collection.applicability().to_owned()),
+                (
+                    "incomplete",
+                    collection.incomplete().canonical_token().to_owned(),
+                ),
+                ("incremental", collection.incremental_update().to_owned()),
+            ]),
         ));
     }
     for computation in feature.managed_computations() {
-        let subject = format!("{feature_subject}|computation|{}", computation.identity());
+        let subject = framed_parts(&[
+            owner,
+            feature_identity,
+            "computation",
+            computation.identity(),
+        ]);
         facts.push(fact(
             ApplicationSemanticFamily::Outputs,
             &subject,
-            format!(
-                "input={}|output={}|partition={}|reuse={}|stopped={}|execution={}|ordering={}",
-                computation.input(),
-                computation.output_artifact(),
-                computation.partition(),
-                computation.reuse(),
-                computation.stopped(),
-                computation.execution().canonical_token(),
-                computation.ordering()
-            ),
+            framed_fields([
+                ("input", computation.input().to_owned()),
+                ("output", computation.output_artifact().to_owned()),
+                ("partition", computation.partition().to_owned()),
+                ("reuse", computation.reuse().to_owned()),
+                ("stopped", computation.stopped().to_owned()),
+                (
+                    "execution",
+                    computation.execution().canonical_token().to_owned(),
+                ),
+                ("ordering", computation.ordering().to_owned()),
+            ]),
         ));
         let resources = computation.resources();
         facts.push(fact(
             ApplicationSemanticFamily::Resources,
             subject,
-            format!(
-                "work={}|bytes={}",
-                resources.maximum_work(),
-                resources.maximum_retained_bytes()
-            ),
+            framed_fields([
+                ("work", resources.maximum_work().to_string()),
+                ("bytes", resources.maximum_retained_bytes().to_string()),
+            ]),
         ));
     }
 }
@@ -206,33 +258,69 @@ fn append_actions(
     actions: &[ApplicationActionDeclaration],
 ) {
     for action in actions {
-        let subject = format!(
-            "{}|{}|{}",
-            action.composition_instance(),
-            action.feature(),
-            action.binding()
-        );
+        let subject = action.semantic_subject();
         facts.push(fact(
             ApplicationSemanticFamily::Operations,
             &subject,
-            format!(
-                "input={}|conditional={}|required-output={}|invariant={}|observation={}|locality={}|granule={}|change={}|posture={}",
-                action.operation_input_identity().as_str(), action.conditional_only(), action.required_output_source(),
-                action.evaluated_requirement().map_or("", |value| value.identity()),
-                action.correspondence().map_or("", |value| value.identity()),
-                action.locality().map_or("", |value| value.identity()),
-                action.locality().map_or("", |value| value.granule().canonical_token()),
-                action.change_shape().map_or("", |value| value.identity()),
-                action
-                    .change_shape()
-                    .map_or("", |value| value.posture().canonical_token()),
-            ),
+            framed_fields([
+                (
+                    "input",
+                    action.operation_input_identity().as_str().to_owned(),
+                ),
+                ("conditional", action.conditional_only().to_string()),
+                (
+                    "required-output",
+                    action.required_output_source().to_string(),
+                ),
+                (
+                    "invariant",
+                    action
+                        .evaluated_requirement()
+                        .map_or("", |value| value.identity())
+                        .to_owned(),
+                ),
+                (
+                    "observation",
+                    action
+                        .correspondence()
+                        .map_or("", |value| value.identity())
+                        .to_owned(),
+                ),
+                (
+                    "locality",
+                    action
+                        .locality()
+                        .map_or("", |value| value.identity())
+                        .to_owned(),
+                ),
+                (
+                    "granule",
+                    action
+                        .locality()
+                        .map_or("", |value| value.granule().canonical_token())
+                        .to_owned(),
+                ),
+                (
+                    "change",
+                    action
+                        .change_shape()
+                        .map_or("", |value| value.identity())
+                        .to_owned(),
+                ),
+                (
+                    "posture",
+                    action
+                        .change_shape()
+                        .map_or("", |value| value.posture().canonical_token())
+                        .to_owned(),
+                ),
+            ]),
         ));
         if let Some(effect) = action.external_input() {
             facts.push(fact(
                 ApplicationSemanticFamily::ExternalInputs,
                 subject,
-                effect.identity(),
+                framed_fields([("identity", effect.identity().to_owned())]),
             ));
         }
     }
@@ -245,18 +333,24 @@ fn append_connections(
     for connection in connections {
         facts.push(fact(
             ApplicationSemanticFamily::Connections,
-            connection.identity(),
-            format!(
-                "{}:{}:{}|{}:{}:{}|required={}|exported={}",
+            framed_parts(&[
                 connection.source_instance(),
-                connection.source_feature(),
-                connection.source_port(),
                 connection.target_instance(),
-                connection.target_feature(),
-                connection.target_port(),
-                connection.target_required(),
-                connection.exports_across_instances()
-            ),
+                connection.identity(),
+            ]),
+            framed_fields([
+                ("source-instance", connection.source_instance().to_owned()),
+                ("source-feature", connection.source_feature().to_owned()),
+                ("source-port", connection.source_port().to_owned()),
+                ("target-instance", connection.target_instance().to_owned()),
+                ("target-feature", connection.target_feature().to_owned()),
+                ("target-port", connection.target_port().to_owned()),
+                ("required", connection.target_required().to_string()),
+                (
+                    "exported",
+                    connection.exports_across_instances().to_string(),
+                ),
+            ]),
         ));
     }
 }
@@ -268,14 +362,13 @@ fn append_rules(
     for rule in rules {
         facts.push(fact(
             ApplicationSemanticFamily::Rules,
-            format!("{}|{}", rule.composition_instance(), rule.identity()),
-            format!(
-                "version={}.{}|point={}|owner={}",
-                rule.major(),
-                rule.minor(),
-                rule.execution_point().canonical_token(),
-                rule.local_owner().unwrap_or("")
-            ),
+            framed_parts(&[rule.composition_instance(), rule.identity()]),
+            framed_fields([
+                ("major", rule.major().to_string()),
+                ("minor", rule.minor().to_string()),
+                ("point", rule.execution_point().canonical_token().to_owned()),
+                ("owner", rule.local_owner().unwrap_or("").to_owned()),
+            ]),
         ));
     }
 }

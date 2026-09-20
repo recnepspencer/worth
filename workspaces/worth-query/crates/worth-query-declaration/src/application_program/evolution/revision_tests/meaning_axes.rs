@@ -60,7 +60,7 @@ fn action_locality_granule_has_a_named_canonical_manifest_axis() {
         .find(|record| record.starts_with("action|"))
         .expect("the baseline program declares one action");
 
-    assert!(action.contains("|locality=|granule=|change="));
+    assert!(action.contains("|locality=0:|granule=0:|change=0:"));
 }
 
 #[test]
@@ -87,11 +87,11 @@ fn a_rule_execution_point_reaches_the_record_as_its_named_canonical_token() {
     assert!(committed
         .records()
         .iter()
-        .any(|record| record.contains("|point=CommitBoundary|")));
+        .any(|record| record.contains("|point=14:CommitBoundary|")));
     assert!(mutation_sensitive
         .records()
         .iter()
-        .any(|record| record.contains("|point=MutationSensitive|")));
+        .any(|record| record.contains("|point=17:MutationSensitive|")));
 }
 
 #[test]
@@ -111,8 +111,9 @@ fn a_declared_output_connection_enters_the_normalized_manifest() {
         .records()
         .iter()
         .any(|record| record.starts_with("connection|")));
-    assert!(connected
-        .records()
-        .iter()
-        .any(|record| record.starts_with("connection|worth.query.tests.bounded-audit.v1|")));
+    let identity = "worth.query.tests.bounded-audit.v1";
+    assert!(connected.records().iter().any(|record| {
+        record.starts_with("connection|")
+            && record.contains(&format!("identity={}:{}", identity.len(), identity))
+    }));
 }

@@ -6,6 +6,8 @@ mod branch_adoption;
 mod branch_adoption_recovery;
 #[path = "adoption/branch_divergence.rs"]
 mod branch_divergence;
+#[path = "adoption/custody.rs"]
+mod custody;
 #[path = "adoption/migration.rs"]
 mod migration;
 #[path = "adoption/recovery_terminals.rs"]

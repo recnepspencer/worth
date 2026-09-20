@@ -261,15 +261,16 @@ where
     program
         .actions()
         .iter()
-        .filter(|action| external_operations.contains(action.binding()))
-        .map(|action| {
-            format!(
-                "{}|{}|{}",
-                action.composition_instance(),
-                action.feature(),
-                action.binding()
-            )
+        .filter(|action| match action.mutation_binding_type() {
+            Some(binding_type) => installed_schema
+                .installed_mutation_binding_inventory()
+                .find(|binding| {
+                    binding.binding_type() == binding_type && binding.identity() == action.binding()
+                })
+                .is_some_and(|binding| external_operations.contains(binding.operation_name())),
+            None => external_operations.contains(action.binding()),
         })
+        .map(|action| action.semantic_subject())
         .collect()
 }
 

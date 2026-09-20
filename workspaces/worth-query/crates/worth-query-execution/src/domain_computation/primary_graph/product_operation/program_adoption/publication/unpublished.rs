@@ -10,6 +10,7 @@ pub struct WorthQueryUnpublishedBranchAdoption {
     target: ApplicationProgramRevision,
     selected_entity_count: usize,
     migration: Option<super::super::preparation::WorthQueryProgramMigrationDescription>,
+    custody: super::super::preparation::WorthQueryProgramCustodyDispositionInventory,
     product: crate::domain_computation::WorthQueryProductUnpublishedApplication,
 }
 
@@ -19,6 +20,7 @@ impl WorthQueryUnpublishedBranchAdoption {
         target: ApplicationProgramRevision,
         selected_entity_count: usize,
         migration: Option<super::super::preparation::WorthQueryProgramMigrationDescription>,
+        custody: super::super::preparation::WorthQueryProgramCustodyDispositionInventory,
         owner_effects: ProductUnpublishedOwnerEffects,
         recovery: RuntimeWorldRecoveryPort,
         disposition: crate::domain_computation::primary_graph::WorthQueryUnpublishedIdempotencyDisposition,
@@ -28,6 +30,7 @@ impl WorthQueryUnpublishedBranchAdoption {
             target,
             selected_entity_count,
             migration,
+            custody,
             product: crate::domain_computation::WorthQueryProductUnpublishedApplication::new(
                 owner_effects,
                 recovery,
@@ -54,6 +57,12 @@ impl WorthQueryUnpublishedBranchAdoption {
         self.migration.as_ref()
     }
 
+    pub const fn custody(
+        &self,
+    ) -> &super::super::preparation::WorthQueryProgramCustodyDispositionInventory {
+        &self.custody
+    }
+
     pub fn cause(&self) -> ProductUnpublishedCause {
         self.product.cause()
     }
@@ -76,6 +85,7 @@ impl WorthQueryUnpublishedBranchAdoption {
             self.target,
             self.selected_entity_count,
             self.migration,
+            self.custody,
             self.product.into_recovery(),
         )
     }

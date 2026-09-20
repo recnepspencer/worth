@@ -1,7 +1,12 @@
+mod dispositions;
 mod migration;
 mod selection;
 mod state;
 
+pub use dispositions::{
+    WorthQueryProgramCustodyDisposition, WorthQueryProgramCustodyDispositionInventory,
+    WorthQueryProgramCustodyDispositionKind,
+};
 pub use migration::{
     WorthQueryAdmittedProgramMigration, WorthQueryPreparedProgramMigration,
     WorthQueryProgramMigrationDescription, WorthQueryProgramMigrationPreparationDenial,
@@ -37,7 +42,7 @@ pub enum WorthQueryBranchAdoptionPreparationDenial {
     MigrationAssessmentRequired(ApplicationProgramMigrationAssessmentRequirement),
     MigrationTargetMismatch,
     MigrationSourceChanged,
-    CustodyInventoryRequired(WorthQueryProgramCustodyInventoryRequirement),
+    CustodyDispositionUnsupported(WorthQueryProgramCustodyInventoryRequirement),
     UnknownEntityScope {
         entity: String,
     },
@@ -88,6 +93,7 @@ pub struct WorthQueryPreparedBranchAdoption {
     pub(super) selected_entity_count: usize,
     pub(super) selection_work_units: usize,
     pub(super) migration: Option<WorthQueryProgramMigrationDescription>,
+    pub(super) custody: WorthQueryProgramCustodyDispositionInventory,
     pub(super) publication: crate::domain_computation::execution_runtime::product_world::WorthQueryPreparedProductPublication,
     pub(super) recovery: worth_runtime_world::facade::RuntimeWorldRecoveryPort,
     pub(super) disposition:
@@ -117,6 +123,10 @@ impl WorthQueryPreparedBranchAdoption {
 
     pub const fn migration(&self) -> Option<&WorthQueryProgramMigrationDescription> {
         self.migration.as_ref()
+    }
+
+    pub const fn custody(&self) -> &WorthQueryProgramCustodyDispositionInventory {
+        &self.custody
     }
 }
 

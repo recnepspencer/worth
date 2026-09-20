@@ -5,11 +5,12 @@
 //! and reserves one Relational-only World publication. Publication accepts
 //! only that move-only product; a revision by itself carries no effect power.
 //!
-//! Phase 1 holds the branch activation gate through candidate preparation,
-//! then relies on the prepared World's exact product-head fence during the
-//! move-only publication. Durable same-key replay belongs to the later
-//! custody progression; this slice provides a fail-closed requirements
-//! freshness fence and does not claim idempotent replay.
+//! The branch activation gate is held through candidate preparation, then the
+//! prepared World's exact product-head fence guards move-only publication.
+//! Preparation derives migration and custody dispositions from installed
+//! source/target truth; callers can inspect those decisions but cannot author
+//! them. Managed same-intent replay belongs to the broader-scope progression,
+//! while single-branch requirements remain fail-closed and freshness-bound.
 
 mod custody;
 mod preparation;
@@ -23,8 +24,9 @@ pub use custody::{
 pub use preparation::{
     WorthQueryAdmittedProgramMigration, WorthQueryBranchAdoptionActivationDenial,
     WorthQueryBranchAdoptionPreparationDenial, WorthQueryPreparedBranchAdoption,
-    WorthQueryPreparedProgramMigration, WorthQueryProgramMigrationDescription,
-    WorthQueryProgramMigrationPreparationDenial,
+    WorthQueryPreparedProgramMigration, WorthQueryProgramCustodyDisposition,
+    WorthQueryProgramCustodyDispositionInventory, WorthQueryProgramCustodyDispositionKind,
+    WorthQueryProgramMigrationDescription, WorthQueryProgramMigrationPreparationDenial,
 };
 pub use publication::{
     WorthQueryBranchAdoptionPublicationOutcome, WorthQueryPerformedBranchAdoption,

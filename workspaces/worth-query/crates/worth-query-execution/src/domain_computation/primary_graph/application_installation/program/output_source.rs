@@ -1,4 +1,17 @@
-use super::*;
+use super::WorthQueryProgramApplicationRuntime;
+use crate::domain_computation::primary_graph::{
+    WorthQueryApplicationDiscoveredOutputConnection, WorthQueryApplicationRequiredOutputConnection,
+    WorthQueryApplicationRequiredOutputSource,
+};
+use worth_query_declaration::facade::application_program::{
+    ApplicationConnectionShape, ApplicationOutputGraphShape, ApplicationProgramDefinition,
+    ApplicationProgramOutputsShape,
+};
+
+type RootConnectionRef<Schema, Root> =
+    <Root as ApplicationOutputGraphShape<Schema>>::RootConnection;
+type RootConnection<Schema, Root> =
+    <RootConnectionRef<Schema, Root> as ApplicationConnectionShape<Schema>>::Binding;
 
 type PreparedProgramSource = (
     crate::domain_computation::primary_graph::WorthQueryPreparedRequiredOutputSource,

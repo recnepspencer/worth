@@ -20,6 +20,7 @@ pub struct WorthQueryBranchAdoptionRecovery {
     target: ApplicationProgramRevision,
     selected_entity_count: usize,
     migration: Option<super::super::preparation::WorthQueryProgramMigrationDescription>,
+    custody: super::super::preparation::WorthQueryProgramCustodyDispositionInventory,
     product: WorthQueryProductUnpublishedRecovery,
 }
 
@@ -29,6 +30,7 @@ impl WorthQueryBranchAdoptionRecovery {
         target: ApplicationProgramRevision,
         selected_entity_count: usize,
         migration: Option<super::super::preparation::WorthQueryProgramMigrationDescription>,
+        custody: super::super::preparation::WorthQueryProgramCustodyDispositionInventory,
         product: WorthQueryProductUnpublishedRecovery,
     ) -> Self {
         Self {
@@ -36,6 +38,7 @@ impl WorthQueryBranchAdoptionRecovery {
             target,
             selected_entity_count,
             migration,
+            custody,
             product,
         }
     }
@@ -52,6 +55,12 @@ impl WorthQueryBranchAdoptionRecovery {
         &self,
     ) -> Option<&super::super::preparation::WorthQueryProgramMigrationDescription> {
         self.migration.as_ref()
+    }
+
+    pub const fn custody(
+        &self,
+    ) -> &super::super::preparation::WorthQueryProgramCustodyDispositionInventory {
+        &self.custody
     }
 }
 
@@ -161,6 +170,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         let target = recovery.target.clone();
         let selected_entity_count = recovery.selected_entity_count;
         let migration = recovery.migration.clone();
+        let custody = recovery.custody.clone();
         match prepared.execute() {
             worth_runtime_world::facade::RuntimeWorldPublicationOutcome::Performed(performed) => {
                 let adoption = WorthQueryPerformedBranchAdoption::new(
@@ -169,6 +179,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                     target,
                     selected_entity_count,
                     migration,
+                    custody,
                 );
                 let cleanup = self.application().release_product_publication_recovery(
                     recovery.product,
@@ -190,6 +201,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                     target,
                     selected_entity_count,
                     migration,
+                    custody,
                     effects,
                     binding.recovery(),
                     self.application()

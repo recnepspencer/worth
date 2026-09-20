@@ -9,6 +9,7 @@ pub struct WorthQueryPerformedBranchAdoption {
     target: ApplicationProgramRevision,
     selected_entity_count: usize,
     migration: Option<super::super::preparation::WorthQueryProgramMigrationDescription>,
+    custody: super::super::preparation::WorthQueryProgramCustodyDispositionInventory,
 }
 
 impl WorthQueryPerformedBranchAdoption {
@@ -18,6 +19,7 @@ impl WorthQueryPerformedBranchAdoption {
         target: ApplicationProgramRevision,
         selected_entity_count: usize,
         migration: Option<super::super::preparation::WorthQueryProgramMigrationDescription>,
+        custody: super::super::preparation::WorthQueryProgramCustodyDispositionInventory,
     ) -> Self {
         Self {
             publication,
@@ -25,6 +27,7 @@ impl WorthQueryPerformedBranchAdoption {
             target,
             selected_entity_count,
             migration,
+            custody,
         }
     }
 
@@ -44,6 +47,12 @@ impl WorthQueryPerformedBranchAdoption {
         &self,
     ) -> Option<&super::super::preparation::WorthQueryProgramMigrationDescription> {
         self.migration.as_ref()
+    }
+
+    pub const fn custody(
+        &self,
+    ) -> &super::super::preparation::WorthQueryProgramCustodyDispositionInventory {
+        &self.custody
     }
 
     pub fn product_branch_identity(&self) -> &ProductBranchIdentity {

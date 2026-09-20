@@ -24,7 +24,7 @@ mod ordinary;
 mod principal_seed;
 mod world_seed;
 
-pub use application_definition::BankApplication;
+pub use application_definition::{BankApplication, BankApplicationP1};
 pub use application_query::{
     BankAccountActivityContinuation, BankAccountActivityHistoricalResult,
     BankAccountActivityLiveLease, BankAccountActivityLiveOutcome, BankAccountActivityLiveUpdate,

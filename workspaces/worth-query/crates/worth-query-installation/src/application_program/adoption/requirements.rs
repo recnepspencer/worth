@@ -59,12 +59,17 @@ pub enum WorthQueryProgramCustodyInventoryKind {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryProgramCustodyInventoryRequirement {
     kind: WorthQueryProgramCustodyInventoryKind,
+    change: ApplicationSemanticChangeKind,
     subject: String,
 }
 
 impl WorthQueryProgramCustodyInventoryRequirement {
     pub const fn kind(&self) -> WorthQueryProgramCustodyInventoryKind {
         self.kind
+    }
+
+    pub const fn change(&self) -> ApplicationSemanticChangeKind {
+        self.change
     }
 
     pub fn subject(&self) -> &str {
@@ -294,6 +299,7 @@ fn compile_custody_inventory(
         if change.family() == ApplicationSemanticFamily::Operations && removed_or_changed {
             requirements.push(custody_inventory_requirement(
                 WorthQueryProgramCustodyInventoryKind::OperationContinuation,
+                change.kind(),
                 change.subject(),
             ));
             if source
@@ -303,6 +309,7 @@ fn compile_custody_inventory(
             {
                 requirements.push(custody_inventory_requirement(
                     WorthQueryProgramCustodyInventoryKind::ExternalEffectRecovery,
+                    change.kind(),
                     change.subject(),
                 ));
             }
@@ -310,6 +317,7 @@ fn compile_custody_inventory(
         if change.family() == ApplicationSemanticFamily::Resources && removed_or_changed {
             requirements.push(custody_inventory_requirement(
                 WorthQueryProgramCustodyInventoryKind::ResourceCustody,
+                change.kind(),
                 change.subject(),
             ));
         }
@@ -319,10 +327,12 @@ fn compile_custody_inventory(
 
 fn custody_inventory_requirement(
     kind: WorthQueryProgramCustodyInventoryKind,
+    change: ApplicationSemanticChangeKind,
     subject: &str,
 ) -> WorthQueryProgramCustodyInventoryRequirement {
     WorthQueryProgramCustodyInventoryRequirement {
         kind,
+        change,
         subject: subject.to_owned(),
     }
 }
