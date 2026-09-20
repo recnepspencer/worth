@@ -9,5 +9,6 @@ pub use crate::domain_computation::primary_graph::application_installation::{
     WorthQueryInMemoryApplicationLimits, WorthQueryInMemoryApplicationProfile,
     WorthQueryProgramApplicationRuntime, WorthQueryProgramOutputAdvance, WorthQueryProgramOwner,
     WorthQueryProgramRootDemand, WorthQueryReadmittedApplicationPreview,
+    WorthQuerySelectedProgramOwner, WorthQuerySelectedProgramOwnerDenial,
     WorthQuerySettledProgramOutput, WorthQuerySupportedProgramHandle,
 };

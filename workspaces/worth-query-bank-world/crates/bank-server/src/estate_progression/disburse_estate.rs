@@ -37,7 +37,7 @@ impl BankIdentityRuntime {
             self.request(principal, request)
                 .mutate(bank_domain::schema::DisburseEstate::new(disbursement))
                 .idempotency(idempotency_key)
-                .execute_capability_in_program(self.application_program()),
+                .execute_capability_in_selected_program(self.application_program()),
             "DisburseEstateOperation",
             |denial| {
                 denial

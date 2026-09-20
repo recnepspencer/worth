@@ -38,7 +38,7 @@ impl BankIdentityRuntime {
                     estate, executor, authority, review,
                 ))
                 .idempotency(key)
-                .execute_capability_in_program(self.application_program()),
+                .execute_capability_in_selected_program(self.application_program()),
             "ReleaseEstateOperation",
             |denial| {
                 denial

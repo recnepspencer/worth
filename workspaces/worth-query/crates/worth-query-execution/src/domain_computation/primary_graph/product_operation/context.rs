@@ -103,6 +103,22 @@ where
 }
 
 impl<'runtime, Schema> WorthQuerySelectedProductOperation<'runtime, Schema> {
+    /// Inspects the rostered program carried by this exact selected occurrence.
+    pub fn inspect_selected_program(
+        &self,
+    ) -> Result<
+        super::super::WorthQuerySelectedProgramInspection,
+        super::super::WorthQuerySelectedProgramInspectionDenial,
+    >
+    where
+        Schema: ApplicationSchema,
+    {
+        super::super::product_activation::inspect_selected_program(
+            self.application,
+            self.product.relational_basis().observation().version_id(),
+        )
+    }
+
     pub fn product(&self) -> &WorthQueryProductBranchLease {
         &self.product
     }

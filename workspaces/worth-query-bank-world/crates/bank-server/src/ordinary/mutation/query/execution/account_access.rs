@@ -63,7 +63,7 @@ fn execute_grant(
         .mutate(input)
         .preconditions(preconditions)
         .idempotency(controls.idempotency_key())
-        .execute_in_program(runtime.application_program())
+        .execute_in_selected_program(runtime.application_program())
 }
 
 fn execute_revoke(
@@ -82,5 +82,5 @@ fn execute_revoke(
         .mutate(input)
         .preconditions(preconditions)
         .idempotency(controls.idempotency_key())
-        .execute_in_program(runtime.application_program())
+        .execute_in_selected_program(runtime.application_program())
 }

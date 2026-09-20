@@ -27,6 +27,16 @@ pub enum WorthQueryApplicationProgramAdoptionRecoveryFailure {
     Recovery(worth_query_execution::facade::primary_graph::WorthQueryBranchAdoptionRecoveryFailure),
 }
 
+#[derive(Debug)]
+pub enum WorthQueryApplicationProgramInspectionDenial {
+    ProductSelection(
+        worth_query_execution::facade::primary_graph::WorthQueryProductBranchAdmissionDenial,
+    ),
+    Inspection(
+        worth_query_execution::facade::primary_graph::WorthQuerySelectedProgramInspectionDenial,
+    ),
+}
+
 impl WorthQueryApplicationProgramAdoptionRecoveryFailure {
     pub fn into_recovery(
         self,
@@ -83,6 +93,23 @@ where
             .map_err(WorthQueryApplicationProgramAdoptionPreparationDenial::Adoption)
     }
 
+    /// Reports the rostered program carried by this exact selected branch
+    /// occurrence. The report is descriptive and cannot be used as adoption
+    /// preparation or publication authority.
+    pub fn inspect(
+        &self,
+    ) -> Result<
+        worth_query_execution::facade::primary_graph::WorthQuerySelectedProgramInspection,
+        WorthQueryApplicationProgramInspectionDenial,
+    > {
+        self.application
+            .on_branch(self.branch)
+            .select()
+            .map_err(WorthQueryApplicationProgramInspectionDenial::ProductSelection)?
+            .inspect_selected_program()
+            .map_err(WorthQueryApplicationProgramInspectionDenial::Inspection)
+    }
+
     pub fn adopt<'target>(
         self,
         target: &'target ApplicationProgramRevision,
@@ -112,6 +139,22 @@ where
     ///     raw: ProductUnpublishedRecoveryHandle,
     /// ) {
     ///     let _ = programs.recover(raw);
+    /// }
+    /// ```
+    ///
+    /// A performed World receipt is descriptive evidence, not Query's exact
+    /// unpublished adoption custody.
+    ///
+    /// ```compile_fail,E0308
+    /// use worth_query_installation::facade::ApplicationSchema;
+    /// use worth_query_publication::facade::application_entry::WorthQueryApplicationProgramsRequest;
+    /// use worth_runtime_world::facade::PerformedCompositePublication;
+    ///
+    /// fn raw_receipt_cannot_resume<Schema: ApplicationSchema>(
+    ///     programs: WorthQueryApplicationProgramsRequest<'_, '_, '_, Schema>,
+    ///     receipt: PerformedCompositePublication,
+    /// ) {
+    ///     let _ = programs.recover(receipt);
     /// }
     /// ```
     pub fn recover(

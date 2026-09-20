@@ -1,6 +1,5 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use worth_foundational::facade::ContractValidatedAspectValueView;
 use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryProgramAdoptionRequirements};
 use worth_relational::facade::transactions::{
@@ -201,44 +200,27 @@ pub(super) fn requirements<Schema: ApplicationSchema>(
     WorthQueryBranchAdoptionPreparationDenial,
 > {
     let application = selected.application();
+    let source = selected
+        .inspect_selected_program()
+        .map_err(|denial| match denial {
+            crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial::ProgramSupportUnavailable => {
+                WorthQueryBranchAdoptionPreparationDenial::ProgramSupportUnavailable
+            }
+            crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial::ProgramActivationUnavailable => {
+                WorthQueryBranchAdoptionPreparationDenial::ProgramActivationUnavailable
+            }
+            crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial::ProgramActivationUnreadable => {
+                WorthQueryBranchAdoptionPreparationDenial::ProgramActivationUnreadable
+            }
+            crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial::ProgramActivationUnrostered => {
+                WorthQueryBranchAdoptionPreparationDenial::ProgramActivationUnrostered
+            }
+        })?
+        .revision()
+        .clone();
     let support = application
         .installed_program_support()
         .ok_or(WorthQueryBranchAdoptionPreparationDenial::ProgramSupportUnavailable)?;
-    let activation = support
-        .activation()
-        .published()
-        .ok_or(WorthQueryBranchAdoptionPreparationDenial::ProgramActivationUnavailable)?;
-    let graph = &application.primary_provider.graph;
-    let layout = graph.layout.program_activation().clone();
-    let version = selected
-        .product()
-        .relational_basis()
-        .observation()
-        .version_id();
-
-    let source_rendering = graph
-        .with_runtime(|runtime| {
-            let record = runtime
-                .read_truth()
-                .visible_entity_at_version(activation, version)?;
-            let state = record.authoritative_aspect_state.as_ref()?;
-            let value = state.get(layout.program_revision_locator.aspect().aspect_key())?;
-            let ContractValidatedAspectValueView::Struct(fields) = value.view() else {
-                return None;
-            };
-            let field = layout
-                .program_revision_locator
-                .field_path()
-                .fields()
-                .first()?;
-            fields.get(field).cloned()
-        })
-        .ok_or(WorthQueryBranchAdoptionPreparationDenial::ProgramActivationUnreadable)?;
-    let source = support
-        .rostered_for_rendering(&source_rendering)
-        .ok_or(WorthQueryBranchAdoptionPreparationDenial::ProgramActivationUnrostered)?
-        .revision()
-        .clone();
     let requirements = support
         .adoption_requirements(application.installed_schema(), &source, target)
         .map_err(WorthQueryBranchAdoptionPreparationDenial::Requirements)?;

@@ -170,22 +170,32 @@ fn pending_approval_crosses_adoption_only_through_fresh_p1_admission() {
         .expect("Bank P1 is rostered beside P0");
     let target = target_owner.owned_revision().clone();
     let adoption_scope = request_scope();
-    let programs = fixture
+    let initial = fixture
         .world
         .runtime
-        .request(&approver, &adoption_scope)
-        .on_branch(branch)
-        .programs();
-    let requirements = programs.compare(&target).expect("P0 to P1 compares");
-    let prepared = programs
-        .adopt(&target)
-        .requirements(&requirements)
-        .prepare(128)
-        .expect("Bank P1 adoption prepares");
+        .inspect_branch_program(&approver, &adoption_scope, branch)
+        .expect("Bank exposes the selected program at its production root");
+    assert_eq!(initial.revision(), application.owned_revision());
+    let prepared = fixture
+        .world
+        .runtime
+        .prepare_branch_program_adoption::<BankApplicationP1>(
+            &approver,
+            &adoption_scope,
+            branch,
+            128,
+        )
+        .expect("Bank P1 adoption prepares through its production root");
     assert!(matches!(
         prepared.publish(),
         WorthQueryBranchAdoptionPublicationOutcome::Performed(_)
     ));
+    let adopted = fixture
+        .world
+        .runtime
+        .inspect_branch_program(&approver, &adoption_scope, branch)
+        .expect("Bank reports the performed branch-local activation");
+    assert_eq!(adopted.revision(), &target);
 
     let approval_scope = request_scope();
     let approval_request = fixture.world.runtime.request(&approver, &approval_scope);
@@ -205,19 +215,20 @@ fn pending_approval_crosses_adoption_only_through_fresh_p1_admission() {
         ) if denial.kind() == WorthQueryApplicationCommitDenialKind::ProgramNotActiveOnOccurrence
     ));
 
-    let approval_key = BankIdempotencyKey::new("approve-after-adoption").unwrap();
-    let approval = approval_request
-        .mutate(ApprovePayment {
-            payment: pending.payment_id(),
-            approver: principal_id(APPROVER),
-        })
-        .idempotency(&approval_key)
-        .execute_in_program(&target_owner)
-        .expect("the carried payment identity receives fresh P1 admission");
-    assert!(matches!(
-        approval,
-        WorthQueryApplicationMutationOutcome::Committed { .. }
-    ));
+    let approval = fixture
+        .world
+        .runtime
+        .mutate(pending.approve())
+        .as_principal(&approver)
+        .controls(controls("approve-after-adoption"))
+        .execute();
+    assert!(
+        matches!(
+            approval,
+            Ok(WorthQueryApplicationMutationOutcome::Committed { .. })
+        ),
+        "the carried payment identity receives fresh P1 admission"
+    );
 }
 
 #[test]

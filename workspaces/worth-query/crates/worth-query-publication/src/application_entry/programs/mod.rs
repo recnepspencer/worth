@@ -32,5 +32,6 @@ pub use preparation::{
 };
 pub use request::{
     WorthQueryApplicationProgramAdoptionRecoveryFailure,
-    WorthQueryApplicationProgramAdoptionRequest, WorthQueryApplicationProgramsRequest,
+    WorthQueryApplicationProgramAdoptionRequest, WorthQueryApplicationProgramInspectionDenial,
+    WorthQueryApplicationProgramsRequest,
 };

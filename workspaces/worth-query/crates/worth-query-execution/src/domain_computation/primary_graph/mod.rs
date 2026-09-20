@@ -74,6 +74,9 @@ mod ordinary_read;
 pub(crate) mod output_lineage;
 mod principal_key;
 pub(crate) mod product_activation;
+pub use product_activation::{
+    WorthQuerySelectedProgramInspection, WorthQuerySelectedProgramInspectionDenial,
+};
 mod product_operation;
 mod program_occurrence;
 pub use product_operation::{

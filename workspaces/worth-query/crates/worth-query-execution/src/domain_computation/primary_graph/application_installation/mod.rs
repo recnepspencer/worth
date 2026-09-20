@@ -16,7 +16,8 @@ pub use program::{
     WorthQueryApplicationPreviewSession, WorthQueryApplicationProgramRoots,
     WorthQueryApplicationProgramRoster, WorthQueryProgramApplicationRuntime,
     WorthQueryProgramOutputAdvance, WorthQueryProgramOwner, WorthQueryProgramRootDemand,
-    WorthQueryReadmittedApplicationPreview, WorthQuerySettledProgramOutput,
+    WorthQueryReadmittedApplicationPreview, WorthQuerySelectedProgramOwner,
+    WorthQuerySelectedProgramOwnerDenial, WorthQuerySettledProgramOutput,
     WorthQuerySupportedProgramHandle,
 };
 use program_admission::WorthQueryProgramAdmissionStep;

@@ -5,6 +5,7 @@ use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationIntent, ApplicationMutationScopeBinding,
     ApplicationMutationScopeResolution,
 };
+use worth_query_declaration::facade::application_program::ApplicationProgramDefinition;
 use worth_query_execution::facade::application_installation::WorthQueryProgramOwner;
 use worth_query_execution::facade::primary_graph::{
     WorthQueryApplicationCommitOutcome, WorthQueryApplicationCommitReceipt,
@@ -110,6 +111,35 @@ where
             application
                 .compare_and_commit_program_action_retained::<Intent::Binding>(program, idempotency)
         })
+    }
+
+    /// Executes retained work under the branch-selected installed program.
+    /// A removed action is presented through the initial owner only so the
+    /// occurrence gate can return its inactive-program denial; it cannot
+    /// commit or consume the retained work.
+    pub fn execute_retained_in_selected_program<Program>(
+        self,
+        application: &'application worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime<Schema, Program>,
+    ) -> Result<
+        WorthQueryApplicationRetainedMutationOutcome<
+            <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
+            <Intent::Binding as ApplicationMutationBinding<Schema>>::Result,
+        >,
+        WorthQueryApplicationRequestMutationDenial,
+    >
+    where
+        Program: ApplicationProgramDefinition<Schema>,
+    {
+        if !std::ptr::eq(application.runtime(), self.request.application) {
+            return Err(WorthQueryApplicationRequestMutationDenial::ApplicationProgramMismatch);
+        }
+        let owner = application
+            .selected_program_owner(self.request.branch)
+            .map_err(super::selected_program::map_selected_program_owner_denial)?;
+        if !owner.contains_action::<Intent::Binding>() {
+            return self.execute_retained_in_program(application);
+        }
+        self.execute_retained_in_program(&owner)
     }
 
     fn execute_retained_with_commit(

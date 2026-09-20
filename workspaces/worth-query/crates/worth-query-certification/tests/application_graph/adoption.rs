@@ -8,6 +8,8 @@ mod branch_adoption_recovery;
 mod branch_divergence;
 #[path = "adoption/broader_scope/mod.rs"]
 mod broader_scope;
+#[path = "adoption/consumer_closure.rs"]
+mod consumer_closure;
 #[path = "adoption/custody.rs"]
 mod custody;
 #[path = "adoption/migration.rs"]

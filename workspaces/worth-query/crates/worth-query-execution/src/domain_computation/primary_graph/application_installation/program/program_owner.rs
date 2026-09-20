@@ -1,8 +1,9 @@
 //! Who may present a program for one program-gated commit.
 //!
-//! Exactly two owners exist: the runtime published with a host's initial
-//! program, and a typed handle onto another program that host rostered. The
-//! trait is sealed so no third owner can appear, and every program-gated
+//! Exactly two owner categories exist: the runtime published with a host's
+//! initial program, and handles onto programs that host rostered. A selected
+//! owner is a branch-resolved form of either category. The trait is sealed so no
+//! outside owner can appear, and every program-gated
 //! commit entry point accepts owners only through it. Owning a program is not
 //! activating it: the shared implementations resolve the occurrence's active
 //! program before any effect, and refuse a presented program that is not it.
@@ -30,8 +31,81 @@ mod occurrence_commit;
 use occurrence_commit::{commit_program_action, commit_program_action_retained};
 
 mod sealed {
-    /// Closes the set of program owners at the two the platform publishes.
+    /// Closes program ownership to the two categories the platform publishes.
     pub trait WorthQueryProgramOwnership {}
+}
+
+/// A commit owner resolved from the program carried by one live, typed branch
+/// selection. Its fields are private so a revision or lookalike activation
+/// cannot manufacture commit authority.
+pub struct WorthQuerySelectedProgramOwner<'runtime, Schema> {
+    runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    revision: &'runtime ApplicationProgramRevision,
+    action_bindings: &'runtime [TypeId],
+    output_source_bindings: &'runtime [TypeId],
+}
+
+#[derive(Debug)]
+pub enum WorthQuerySelectedProgramOwnerDenial {
+    ProductSelection(
+        crate::domain_computation::primary_graph::WorthQueryProductBranchAdmissionDenial,
+    ),
+    Inspection(crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial),
+    InstalledOwnerUnavailable,
+}
+
+impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program>
+where
+    Schema: ApplicationSchema,
+{
+    /// Resolves the installed commit owner carried by one exact branch.
+    ///
+    /// ```compile_fail,E0451
+    /// use worth_query_execution::facade::application_installation::WorthQuerySelectedProgramOwner;
+    ///
+    /// fn a_revision_cannot_forge_an_owner<Schema>() {
+    ///     let _owner = WorthQuerySelectedProgramOwner::<Schema> {
+    ///         runtime: todo!(),
+    ///         revision: todo!(),
+    ///         action_bindings: &[],
+    ///         output_source_bindings: &[],
+    ///     };
+    /// }
+    /// ```
+    pub fn selected_program_owner(
+        &self,
+        branch: crate::basis::WorthQueryProductBranch,
+    ) -> Result<WorthQuerySelectedProgramOwner<'_, Schema>, WorthQuerySelectedProgramOwnerDenial>
+    {
+        let selected = self
+            .runtime
+            .on_branch(branch)
+            .select()
+            .map_err(WorthQuerySelectedProgramOwnerDenial::ProductSelection)?;
+        let inspection = selected
+            .inspect_selected_program()
+            .map_err(WorthQuerySelectedProgramOwnerDenial::Inspection)?;
+        let revision = inspection.revision();
+        if revision == self.program.revision() {
+            return Ok(WorthQuerySelectedProgramOwner {
+                runtime: &self.runtime,
+                revision: self.program.revision(),
+                action_bindings: &self.action_bindings,
+                output_source_bindings: &self.output_source_bindings,
+            });
+        }
+        let record = self
+            .supported
+            .iter()
+            .find(|record| record.revision() == revision)
+            .ok_or(WorthQuerySelectedProgramOwnerDenial::InstalledOwnerUnavailable)?;
+        Ok(WorthQuerySelectedProgramOwner {
+            runtime: &self.runtime,
+            revision: record.revision(),
+            action_bindings: &record.action_bindings,
+            output_source_bindings: &record.output_source_bindings,
+        })
+    }
 }
 
 /// One owner of a rostered program on one published host.
@@ -96,6 +170,29 @@ pub trait WorthQueryProgramOwner<Schema>: sealed::WorthQueryProgramOwnership {
         Binding::Input: Clone + Send + Sync + 'static,
     {
         commit_program_action_retained::<Schema, Binding, Self>(self, program, idempotency)
+    }
+}
+
+impl<Schema> sealed::WorthQueryProgramOwnership for WorthQuerySelectedProgramOwner<'_, Schema> {}
+
+impl<Schema> WorthQueryProgramOwner<Schema> for WorthQuerySelectedProgramOwner<'_, Schema>
+where
+    Schema: ApplicationSchema,
+{
+    fn owned_runtime(&self) -> &WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+        self.runtime
+    }
+
+    fn owned_revision(&self) -> &ApplicationProgramRevision {
+        self.revision
+    }
+
+    fn owns_action(&self, binding: TypeId) -> bool {
+        self.action_bindings.contains(&binding)
+    }
+
+    fn owns_output_source(&self, binding: TypeId) -> bool {
+        self.output_source_bindings.contains(&binding)
     }
 }
 

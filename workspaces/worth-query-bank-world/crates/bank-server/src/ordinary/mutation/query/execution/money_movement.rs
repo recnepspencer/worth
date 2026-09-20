@@ -16,7 +16,7 @@ macro_rules! execute_program_mutation {
                     .mutate(self.mutation.input)
                     .preconditions(self.preconditions)
                     .idempotency(self.controls.idempotency_key())
-                    .execute_in_program(self.runtime.application_program())
+                    .execute_in_selected_program(self.runtime.application_program())
             }
 
             pub fn execute_retained(self) -> BankMoneyMovementRetainedExecution {
@@ -25,7 +25,7 @@ macro_rules! execute_program_mutation {
                     .mutate(self.mutation.input)
                     .preconditions(self.preconditions)
                     .idempotency(self.controls.idempotency_key())
-                    .execute_retained_in_program(self.runtime.application_program())
+                    .execute_retained_in_selected_program(self.runtime.application_program())
             }
         }
     };

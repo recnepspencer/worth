@@ -65,7 +65,7 @@ fn execute_personal(
         .mutate(input)
         .preconditions(preconditions)
         .idempotency(controls.idempotency_key())
-        .execute_in_program(runtime.application_program())
+        .execute_in_selected_program(runtime.application_program())
 }
 
 fn execute_business(
@@ -84,5 +84,5 @@ fn execute_business(
         .mutate(input)
         .preconditions(preconditions)
         .idempotency(controls.idempotency_key())
-        .execute_in_program(runtime.application_program())
+        .execute_in_selected_program(runtime.application_program())
 }

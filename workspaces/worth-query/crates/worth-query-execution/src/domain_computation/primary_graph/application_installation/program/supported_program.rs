@@ -24,8 +24,8 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationR
 pub(in crate::domain_computation::primary_graph) struct WorthQuerySupportedProgramRecord {
     program_type: TypeId,
     revision: ApplicationProgramRevision,
-    action_bindings: Box<[TypeId]>,
-    output_source_bindings: Box<[TypeId]>,
+    pub(in crate::domain_computation::primary_graph) action_bindings: Box<[TypeId]>,
+    pub(in crate::domain_computation::primary_graph) output_source_bindings: Box<[TypeId]>,
 }
 
 impl WorthQuerySupportedProgramRecord {
