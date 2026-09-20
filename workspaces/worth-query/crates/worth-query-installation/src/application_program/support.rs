@@ -9,6 +9,7 @@ use worth_query_declaration::facade::application_schema::ApplicationSchemaBindin
 
 mod admission;
 mod compatibility;
+mod retirement;
 
 #[cfg(test)]
 mod admission_tests;
@@ -19,6 +20,10 @@ mod installation_denial_tests;
 
 pub use admission::{WorthQueryProgramSupportAdmission, WorthQueryProgramSupportDenial};
 pub use compatibility::WorthQueryProgramRuleKey;
+pub use retirement::{
+    WorthQueryProgramSupportPartialRetirementInventory, WorthQueryProgramSupportRetirementDenial,
+    WorthQueryProgramSupportRetirementInventory,
+};
 
 /// One supported program as the host retains it, erased of its authoring Rust
 /// types.
@@ -100,6 +105,44 @@ impl WorthQueryProgramSupportEntry {
 
     pub fn acts_through_mutation_binding(&self, binding: TypeId) -> bool {
         self.mutation_bindings.contains(&binding)
+    }
+
+    /// Logical bytes retained so this exact program can still be interpreted.
+    /// The count covers owned canonical strings and fixed identity slots; it is
+    /// stable across allocator implementations and therefore suitable for
+    /// installed resource accounting rather than heap introspection.
+    pub fn retained_bytes(&self) -> usize {
+        let rule_bytes = self.rules.iter().fold(0usize, |bytes, rule| {
+            bytes.saturating_add(rule.identity().len())
+        });
+        let fact_bytes = self
+            .semantic_description
+            .facts()
+            .iter()
+            .fold(0usize, |bytes, fact| {
+                bytes
+                    .saturating_add(fact.subject().len())
+                    .saturating_add(fact.canonical_meaning().len())
+            });
+        let effect_bytes = self
+            .effectful_action_subjects
+            .iter()
+            .fold(0usize, |bytes, subject| bytes.saturating_add(subject.len()));
+        std::mem::size_of::<ApplicationProgramRevision>()
+            .saturating_add(self.identity.as_str().len())
+            .saturating_add(rule_bytes)
+            .saturating_add(
+                self.action_operations
+                    .len()
+                    .saturating_mul(std::mem::size_of::<TypeId>()),
+            )
+            .saturating_add(
+                self.mutation_bindings
+                    .len()
+                    .saturating_mul(std::mem::size_of::<TypeId>()),
+            )
+            .saturating_add(fact_bytes)
+            .saturating_add(effect_bytes)
     }
 }
 

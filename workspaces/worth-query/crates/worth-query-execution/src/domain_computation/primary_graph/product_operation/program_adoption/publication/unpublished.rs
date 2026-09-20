@@ -12,6 +12,8 @@ pub struct WorthQueryUnpublishedBranchAdoption {
     migration: Option<super::super::preparation::WorthQueryProgramMigrationDescription>,
     custody: super::super::preparation::WorthQueryProgramCustodyDispositionInventory,
     product: crate::domain_computation::WorthQueryProductUnpublishedApplication,
+    support_custody:
+        crate::domain_computation::primary_graph::program_occurrence::WorthQueryProgramSupportCustody,
 }
 
 impl WorthQueryUnpublishedBranchAdoption {
@@ -24,6 +26,7 @@ impl WorthQueryUnpublishedBranchAdoption {
         owner_effects: ProductUnpublishedOwnerEffects,
         recovery: RuntimeWorldRecoveryPort,
         disposition: crate::domain_computation::primary_graph::WorthQueryUnpublishedIdempotencyDisposition,
+        support_custody: crate::domain_computation::primary_graph::program_occurrence::WorthQueryProgramSupportCustody,
     ) -> Self {
         Self {
             source,
@@ -36,6 +39,7 @@ impl WorthQueryUnpublishedBranchAdoption {
                 recovery,
                 disposition,
             ),
+            support_custody,
         }
     }
 
@@ -87,6 +91,7 @@ impl WorthQueryUnpublishedBranchAdoption {
             self.migration,
             self.custody,
             self.product.into_recovery(),
+            self.support_custody,
         )
     }
 }

@@ -127,6 +127,8 @@ pub(crate) struct WorthQueryApplicationBasisLease {
     snapshot: Option<SnapshotHandle>,
     graph: WorthQueryPrimaryGraphIntegrationHandle,
     state: Arc<WorthQueryApplicationBasisRegistryState>,
+    program_interpretation:
+        Option<crate::domain_computation::primary_graph::program_occurrence::WorthQueryProgramSupportInterpretation>,
 }
 
 pub(crate) enum WorthQueryApplicationBasisRegistrationDenial {
@@ -183,6 +185,7 @@ impl WorthQueryApplicationBasisRegistry {
             snapshot: Some(snapshot),
             graph,
             state: Arc::clone(&self.state),
+            program_interpretation: None,
         })
     }
 }
@@ -223,6 +226,18 @@ impl WorthQueryApplicationBasisLease {
         );
         self.identity.selection = WorthQueryApplicationBasisSelectionIdentity::Product(
             crate::basis::WorthQueryProductBranchReadIdentity::from_observation(product),
+        );
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn bind_program_interpretation(
+        &mut self,
+        interpretation: crate::domain_computation::primary_graph::program_occurrence::WorthQueryProgramSupportInterpretation,
+    ) {
+        assert!(
+            self.program_interpretation
+                .replace(interpretation)
+                .is_none(),
+            "one retained basis binds exactly one program interpretation"
         );
     }
 

@@ -23,6 +23,8 @@ pub struct WorthQueryBranchAdoptionRecovery {
     migration: Option<super::super::preparation::WorthQueryProgramMigrationDescription>,
     custody: super::super::preparation::WorthQueryProgramCustodyDispositionInventory,
     product: WorthQueryProductUnpublishedRecovery,
+    support_custody:
+        crate::domain_computation::primary_graph::program_occurrence::WorthQueryProgramSupportCustody,
 }
 
 impl WorthQueryBranchAdoptionRecovery {
@@ -33,6 +35,7 @@ impl WorthQueryBranchAdoptionRecovery {
         migration: Option<super::super::preparation::WorthQueryProgramMigrationDescription>,
         custody: super::super::preparation::WorthQueryProgramCustodyDispositionInventory,
         product: WorthQueryProductUnpublishedRecovery,
+        support_custody: crate::domain_computation::primary_graph::program_occurrence::WorthQueryProgramSupportCustody,
     ) -> Self {
         Self {
             source,
@@ -41,6 +44,7 @@ impl WorthQueryBranchAdoptionRecovery {
             migration,
             custody,
             product,
+            support_custody,
         }
     }
 
@@ -65,8 +69,7 @@ impl WorthQueryBranchAdoptionRecovery {
     }
 }
 
-pub(in crate::domain_computation::primary_graph::product_operation::program_adoption) enum WorthQueryBranchAdoptionCustodyReleaseFailure
-{
+pub enum WorthQueryBranchAdoptionRecoveryReleaseFailure {
     Recovery {
         denial: WorthQueryProductUnpublishedRecoveryReleaseDenial,
         recovery: WorthQueryBranchAdoptionRecovery,
@@ -74,6 +77,41 @@ pub(in crate::domain_computation::primary_graph::product_operation::program_adop
     OwnerCleanup(
         crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanupFailure,
     ),
+}
+
+impl WorthQueryBranchAdoptionRecoveryReleaseFailure {
+    pub fn into_recovery(self) -> Option<WorthQueryBranchAdoptionRecovery> {
+        match self {
+            Self::Recovery { recovery, .. } => Some(recovery),
+            Self::OwnerCleanup(_) => None,
+        }
+    }
+
+    pub fn into_owner_cleanup(
+        self,
+    ) -> Option<
+        crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanup,
+    >{
+        match self {
+            Self::Recovery { .. } => None,
+            Self::OwnerCleanup(failure) => Some(failure.into_cleanup()),
+        }
+    }
+}
+
+impl std::fmt::Debug for WorthQueryBranchAdoptionRecoveryReleaseFailure {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Recovery { denial, .. } => formatter
+                .debug_struct("Recovery")
+                .field("denial", denial)
+                .finish_non_exhaustive(),
+            Self::OwnerCleanup(failure) => formatter
+                .debug_tuple("OwnerCleanup")
+                .field(failure)
+                .finish(),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -178,13 +216,25 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         };
         drop(unpublished);
         let binding = self.product().publication_binding().clone();
-        let source = recovery.source.clone();
-        let target = recovery.target.clone();
-        let selected_entity_count = recovery.selected_entity_count;
-        let migration = recovery.migration.clone();
-        let custody = recovery.custody.clone();
+        let WorthQueryBranchAdoptionRecovery {
+            source,
+            target,
+            selected_entity_count,
+            migration,
+            custody,
+            product,
+            support_custody,
+        } = recovery;
         match prepared.execute() {
             worth_runtime_world::facade::RuntimeWorldPublicationOutcome::Performed(performed) => {
+                self.application()
+                    .product_runtime
+                    .activations
+                    .record_program_publication(
+                        performed.new_product_head().branch_identity(),
+                        performed.new_product_head().lifecycle_incarnation(),
+                        &target,
+                    );
                 let adoption = WorthQueryPerformedBranchAdoption::new(
                     performed.consume(),
                     source,
@@ -194,7 +244,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                     custody,
                 );
                 let cleanup = self.application().release_product_publication_recovery(
-                    recovery.product,
+                    product,
                     IMMEDIATE_RECOVERY_RELEASE_AGE_TICKS,
                 );
                 Ok(WorthQueryBranchAdoptionRecoveryOutcome::Performed { adoption, cleanup })
@@ -202,7 +252,15 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             worth_runtime_world::facade::RuntimeWorldPublicationOutcome::NoEffect(no_effect) => {
                 Ok(WorthQueryBranchAdoptionRecoveryOutcome::NoEffect {
                     no_effect,
-                    recovery,
+                    recovery: WorthQueryBranchAdoptionRecovery {
+                        source,
+                        target,
+                        selected_entity_count,
+                        migration,
+                        custody,
+                        product,
+                        support_custody,
+                    },
                 })
             }
             worth_runtime_world::facade::RuntimeWorldPublicationOutcome::ProductUnpublished(
@@ -219,9 +277,10 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                     self.application()
                         .primary_provider
                         .unpublished_idempotency_disposition(),
+                    support_custody,
                 );
                 let prior_cleanup = self.application().release_product_publication_recovery(
-                    recovery.product,
+                    product,
                     IMMEDIATE_RECOVERY_RELEASE_AGE_TICKS,
                 );
                 Ok(
@@ -236,13 +295,40 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
 }
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    #[doc(hidden)]
+    pub fn integration_recover_branch_adoption(
+        &self,
+        branch: crate::basis::WorthQueryProductBranch,
+        recovery: WorthQueryBranchAdoptionRecovery,
+        request: &WorthQueryRequestScope,
+    ) -> Result<
+        Result<WorthQueryBranchAdoptionRecoveryOutcome, WorthQueryBranchAdoptionRecoveryFailure>,
+        (
+            crate::basis::WorthQueryProductBranchAdmissionDenial,
+            WorthQueryBranchAdoptionRecovery,
+        ),
+    > {
+        let product = match self
+            .product_runtime
+            .admit_product_occurrence(branch.occurrence())
+        {
+            Ok(product) => product,
+            Err(denial) => return Err((denial, recovery)),
+        };
+        let selected = match self.on_product_for_adoption_recovery(product) {
+            Ok(selected) => selected,
+            Err(denial) => return Err((denial, recovery)),
+        };
+        Ok(selected.recover_branch_adoption(recovery, request))
+    }
+
     pub(in crate::domain_computation::primary_graph::product_operation::program_adoption) fn release_branch_adoption_custody(
         &self,
         recovery: WorthQueryBranchAdoptionRecovery,
         minimum_age_ticks: u64,
     ) -> Result<
         crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanupReceipt,
-        WorthQueryBranchAdoptionCustodyReleaseFailure,
+        WorthQueryBranchAdoptionRecoveryReleaseFailure,
     >{
         let WorthQueryBranchAdoptionRecovery {
             source,
@@ -251,12 +337,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             migration,
             custody,
             product,
+            support_custody,
         } = recovery;
         match self.release_product_publication_recovery(product, minimum_age_ticks) {
             Ok(receipt) => Ok(receipt),
             Err(WorthQueryProductUnpublishedRecoveryReleaseFailure::Recovery(failure)) => {
                 let denial = failure.denial();
-                Err(WorthQueryBranchAdoptionCustodyReleaseFailure::Recovery {
+                Err(WorthQueryBranchAdoptionRecoveryReleaseFailure::Recovery {
                     denial,
                     recovery: WorthQueryBranchAdoptionRecovery {
                         source,
@@ -265,12 +352,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         migration,
                         custody,
                         product: failure.into_recovery(),
+                        support_custody,
                     },
                 })
             }
-            Err(WorthQueryProductUnpublishedRecoveryReleaseFailure::OwnerCleanup(failure)) => Err(
-                WorthQueryBranchAdoptionCustodyReleaseFailure::OwnerCleanup(failure),
-            ),
+            Err(WorthQueryProductUnpublishedRecoveryReleaseFailure::OwnerCleanup(failure)) => {
+                Err(WorthQueryBranchAdoptionRecoveryReleaseFailure::OwnerCleanup(failure))
+            }
         }
     }
 
@@ -280,9 +368,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         minimum_age_ticks: u64,
     ) -> Result<
         crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanupReceipt,
-        WorthQueryProductUnpublishedRecoveryReleaseFailure,
+        WorthQueryBranchAdoptionRecoveryReleaseFailure,
     >{
-        self.release_product_publication_recovery(recovery.product, minimum_age_ticks)
+        self.release_branch_adoption_custody(recovery, minimum_age_ticks)
     }
 }
 

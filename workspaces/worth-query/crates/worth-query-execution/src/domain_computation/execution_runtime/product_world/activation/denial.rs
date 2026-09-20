@@ -6,4 +6,5 @@ pub(crate) enum WorthQueryProductActivationDenial {
     RegistryUnavailable,
     GateUnavailable,
     PublicationInProgress,
+    ProgramSupportUnavailable,
 }

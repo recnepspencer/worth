@@ -88,6 +88,9 @@ pub(super) fn prepare<Schema: ApplicationSchema>(
     let support = application
         .installed_program_support()
         .ok_or(WorthQueryBranchAdoptionPreparationDenial::ProgramSupportUnavailable)?;
+    let support_custody = support
+        .retain_custody(&source, target)
+        .ok_or(WorthQueryBranchAdoptionPreparationDenial::ProgramSupportRetirementInProgress)?;
     let activation = support
         .activation()
         .published()
@@ -171,6 +174,8 @@ pub(super) fn prepare<Schema: ApplicationSchema>(
         publication,
         recovery,
         disposition,
+        support_custody,
+        activation_registry: std::sync::Arc::clone(&application.product_runtime.activations),
     })
 }
 

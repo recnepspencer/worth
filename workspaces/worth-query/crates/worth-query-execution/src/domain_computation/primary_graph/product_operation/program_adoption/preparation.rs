@@ -29,6 +29,7 @@ pub enum WorthQueryBranchAdoptionActivationDenial {
     RegistryUnavailable,
     GateUnavailable,
     PublicationInProgress,
+    ProgramSupportUnavailable,
 }
 
 #[derive(Debug)]
@@ -37,6 +38,7 @@ pub enum WorthQueryBranchAdoptionPreparationDenial {
     ProgramActivationUnavailable,
     ProgramActivationUnreadable,
     ProgramActivationUnrostered,
+    ProgramSupportRetirementInProgress,
     Requirements(WorthQueryProgramAdoptionRequirementsDenial),
     RequirementsChanged,
     MigrationAssessmentRequired(ApplicationProgramMigrationAssessmentRequirement),
@@ -79,6 +81,9 @@ impl From<crate::domain_computation::execution_runtime::product_world::activatio
             WorthQueryProductActivationDenial::RegistryUnavailable => Self::RegistryUnavailable,
             WorthQueryProductActivationDenial::GateUnavailable => Self::GateUnavailable,
             WorthQueryProductActivationDenial::PublicationInProgress => Self::PublicationInProgress,
+            WorthQueryProductActivationDenial::ProgramSupportUnavailable => {
+                Self::ProgramSupportUnavailable
+            }
         }
     }
 }
@@ -98,6 +103,11 @@ pub struct WorthQueryPreparedBranchAdoption {
     pub(super) recovery: worth_runtime_world::facade::RuntimeWorldRecoveryPort,
     pub(super) disposition:
         crate::domain_computation::primary_graph::WorthQueryUnpublishedIdempotencyDisposition,
+    pub(super) support_custody:
+        crate::domain_computation::primary_graph::program_occurrence::WorthQueryProgramSupportCustody,
+    pub(super) activation_registry: std::sync::Arc<
+        crate::domain_computation::execution_runtime::product_world::activation::WorthQueryProductActivationRegistry,
+    >,
 }
 
 impl WorthQueryPreparedBranchAdoption {
@@ -183,6 +193,10 @@ mod tests {
             (
                 OwnerDenial::PublicationInProgress,
                 PublicDenial::PublicationInProgress,
+            ),
+            (
+                OwnerDenial::ProgramSupportUnavailable,
+                PublicDenial::ProgramSupportUnavailable,
             ),
         ];
 

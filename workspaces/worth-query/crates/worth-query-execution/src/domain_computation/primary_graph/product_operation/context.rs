@@ -75,6 +75,35 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         if product.observation().owner_identity() != self.product_runtime.owner.owner_identity() {
             return Err(WorthQueryProductBranchAdmissionDenial::ForeignOwner);
         }
+        let mut application_basis = self.retain_product_application_basis(product.observation())?;
+        if let Some(support) = self.installed_program_support() {
+            if let Ok(selected) = super::super::product_activation::inspect_selected_program(
+                self,
+                product.relational_basis().observation().version_id(),
+            ) {
+                let interpretation = support
+                    .retain_interpretation(selected.revision())
+                    .ok_or(WorthQueryProductBranchAdmissionDenial::ObservationRejected)?;
+                application_basis.bind_program_interpretation(interpretation);
+            }
+        }
+        Ok(WorthQuerySelectedProductOperation {
+            application: self,
+            product,
+            application_basis,
+        })
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn on_product_for_adoption_recovery(
+        &self,
+        product: WorthQueryProductBranchLease,
+    ) -> Result<
+        WorthQuerySelectedProductOperation<'_, Schema>,
+        WorthQueryProductBranchAdmissionDenial,
+    > {
+        if product.observation().owner_identity() != self.product_runtime.owner.owner_identity() {
+            return Err(WorthQueryProductBranchAdmissionDenial::ForeignOwner);
+        }
         let application_basis = self.retain_product_application_basis(product.observation())?;
         Ok(WorthQuerySelectedProductOperation {
             application: self,

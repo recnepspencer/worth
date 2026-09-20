@@ -27,12 +27,15 @@ impl WorthQueryProductRuntime {
                 RuntimeWorldServiceDenial::Denied(RuntimeWorldBranchAdmissionDenial::ForeignOwner),
             ));
         }
-        let reservation = self.activations.reserve().map_err(|denial| match denial {
-            WorthQueryProductActivationDenial::CapacityExhausted => {
-                WorthQueryProductBranchCreationDenial::CoordinationCapacityExhausted
-            }
-            _ => WorthQueryProductBranchCreationDenial::CoordinationUnavailable,
-        })?;
+        let reservation = self
+            .activations
+            .reserve_for_source(source.observation().lifecycle_incarnation())
+            .map_err(|denial| match denial {
+                WorthQueryProductActivationDenial::CapacityExhausted => {
+                    WorthQueryProductBranchCreationDenial::CoordinationCapacityExhausted
+                }
+                _ => WorthQueryProductBranchCreationDenial::CoordinationUnavailable,
+            })?;
         let outcome = self
             .owner
             .branch_port()

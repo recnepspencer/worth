@@ -164,20 +164,21 @@ where
         worth_query_execution::facade::primary_graph::WorthQueryBranchAdoptionRecoveryOutcome,
         WorthQueryApplicationProgramAdoptionRecoveryFailure,
     > {
-        let selected = match self.application.on_branch(self.branch).select() {
-            Ok(selected) => selected,
-            Err(denial) => {
-                return Err(
-                    WorthQueryApplicationProgramAdoptionRecoveryFailure::ProductSelection {
-                        denial,
-                        recovery,
-                    },
-                )
+        match self.application.integration_recover_branch_adoption(
+            self.branch,
+            recovery,
+            self.scope,
+        ) {
+            Ok(outcome) => {
+                outcome.map_err(WorthQueryApplicationProgramAdoptionRecoveryFailure::Recovery)
             }
-        };
-        selected
-            .recover_branch_adoption(recovery, self.scope)
-            .map_err(WorthQueryApplicationProgramAdoptionRecoveryFailure::Recovery)
+            Err((denial, recovery)) => Err(
+                WorthQueryApplicationProgramAdoptionRecoveryFailure::ProductSelection {
+                    denial,
+                    recovery,
+                },
+            ),
+        }
     }
 }
 

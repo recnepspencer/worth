@@ -29,7 +29,9 @@ pub use external_input::{
 pub use scoped_action::WorthQueryInstalledScopedAction;
 pub use support::{
     WorthQueryProgramRuleKey, WorthQueryProgramSupportAdmission, WorthQueryProgramSupportDenial,
-    WorthQueryProgramSupportEntry, WorthQueryProgramSupportRoster,
+    WorthQueryProgramSupportEntry, WorthQueryProgramSupportPartialRetirementInventory,
+    WorthQueryProgramSupportRetirementDenial, WorthQueryProgramSupportRetirementInventory,
+    WorthQueryProgramSupportRoster,
 };
 
 use worth_query_declaration::facade::application_program::{

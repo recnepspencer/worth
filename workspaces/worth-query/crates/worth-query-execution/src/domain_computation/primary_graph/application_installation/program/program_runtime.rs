@@ -14,6 +14,8 @@ use super::supported_program::{
 use crate::domain_computation::primary_graph::program_occurrence::WorthQueryPresentedProgram;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
+pub use crate::domain_computation::primary_graph::program_occurrence::WorthQueryProgramSupportRetirementReceipt;
+
 /// Runtime paired with the exact validated program that governed installation.
 pub struct WorthQueryProgramApplicationRuntime<Schema, Program> {
     pub(in crate::domain_computation::primary_graph) runtime:
@@ -97,10 +99,90 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
             .supported
             .iter()
             .find(|record| record.answers_to(TypeId::of::<Supported>()))?;
+        self.runtime
+            .installed_program_support()?
+            .present(record.revision())?;
         Some(WorthQuerySupportedProgramHandle::rostered(
             &self.runtime,
             record,
         ))
+    }
+
+    /// Removes one rostered program from ordinary host service only after
+    /// every live World branch, retained interpretation, and mandatory
+    /// adoption-recovery obligation has been inventoried and released.
+    pub fn retire_program_support(
+        &self,
+        revision: &worth_query_declaration::facade::application_program::ApplicationProgramRevision,
+    ) -> Result<
+        WorthQueryProgramSupportRetirementReceipt,
+        worth_query_installation::facade::WorthQueryProgramSupportRetirementDenial,
+    >
+    where
+        Schema: worth_query_installation::facade::ApplicationSchema,
+    {
+        use crate::basis::WorthQueryProductBranchAdmissionDenial as BranchDenial;
+        use worth_query_installation::facade::WorthQueryProgramSupportRetirementDenial as Denial;
+
+        let support =
+            self.runtime
+                .installed_program_support()
+                .ok_or_else(|| Denial::UnrosteredProgram {
+                    revision: revision.clone(),
+                })?;
+        let entry =
+            support
+                .rostered_for_recovery(revision)
+                .ok_or_else(|| Denial::UnrosteredProgram {
+                    revision: revision.clone(),
+                })?;
+        let retained_program_bytes = entry.retained_bytes();
+        let retirement = support.lifecycle().begin_retirement(revision)?;
+        let barrier = match self
+            .runtime
+            .product_runtime
+            .activations
+            .begin_program_retirement(revision)
+        {
+            Ok(barrier) => barrier,
+            Err(_) => return Err(retirement.inventory_unavailable(retained_program_bytes)),
+        };
+        let occurrences = match self.runtime.product_runtime.activations.live_occurrences() {
+            Ok(occurrences) => occurrences,
+            Err(_) => return Err(retirement.inventory_unavailable(retained_program_bytes)),
+        };
+        let mut current_branches = 0usize;
+        for occurrence in occurrences.iter().copied() {
+            let selected = match self
+                .runtime
+                .product_runtime
+                .admit_product_occurrence(occurrence)
+            {
+                Ok(selected) => selected,
+                Err(BranchDenial::RetiredBranch | BranchDenial::IncarnationChanged) => continue,
+                Err(_) => {
+                    return Err(retirement.inventory_unavailable(retained_program_bytes));
+                }
+            };
+            let inspection = match crate::domain_computation::primary_graph::product_activation::inspect_selected_program(
+                    &self.runtime,
+                    selected.relational_basis().observation().version_id(),
+                ) {
+                    Ok(inspection) => inspection,
+                    Err(_) => return Err(retirement.inventory_unavailable(retained_program_bytes)),
+                };
+            if inspection.revision() == revision {
+                current_branches = match current_branches.checked_add(1) {
+                    Some(current_branches) => current_branches,
+                    None => {
+                        return Err(retirement.inventory_unavailable(retained_program_bytes));
+                    }
+                };
+            }
+        }
+        let receipt = retirement.finish(current_branches, retained_program_bytes)?;
+        barrier.commit();
+        Ok(receipt)
     }
 }
 

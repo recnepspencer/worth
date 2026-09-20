@@ -16,9 +16,9 @@ pub use program::{
     WorthQueryApplicationPreviewSession, WorthQueryApplicationProgramRoots,
     WorthQueryApplicationProgramRoster, WorthQueryProgramApplicationRuntime,
     WorthQueryProgramOutputAdvance, WorthQueryProgramOwner, WorthQueryProgramRootDemand,
-    WorthQueryReadmittedApplicationPreview, WorthQuerySelectedProgramOwner,
-    WorthQuerySelectedProgramOwnerDenial, WorthQuerySettledProgramOutput,
-    WorthQuerySupportedProgramHandle,
+    WorthQueryProgramSupportRetirementReceipt, WorthQueryReadmittedApplicationPreview,
+    WorthQuerySelectedProgramOwner, WorthQuerySelectedProgramOwnerDenial,
+    WorthQuerySettledProgramOutput, WorthQuerySupportedProgramHandle,
 };
 use program_admission::WorthQueryProgramAdmissionStep;
 
@@ -198,6 +198,14 @@ where
     application.installed_producers = producers;
     application.installed_conditionals = installed_conditionals;
     if let Some(support) = admitted_program_support {
+        application
+            .product_runtime
+            .activations
+            .bind_initial_program(
+                application.current_world().occurrence(),
+                &support.initial_revision,
+            )
+            .expect("the published root retains its activation coordination");
         application.program_support = Some(
             super::program_occurrence::WorthQueryInstalledProgramSupport::installed(
                 support.roster,

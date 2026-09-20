@@ -10,7 +10,7 @@ use crate::basis::{WorthQueryProductBranch, WorthQueryProductBranchAdmissionDeni
 use crate::domain_computation::execution_runtime::product_world::{
     WorthQueryProductBranchOwnerCleanupFailure, WorthQueryProductBranchOwnerCleanupReceipt,
 };
-use crate::domain_computation::primary_graph::product_operation::program_adoption::custody::WorthQueryBranchAdoptionCustodyReleaseFailure;
+use crate::domain_computation::primary_graph::product_operation::program_adoption::custody::WorthQueryBranchAdoptionRecoveryReleaseFailure;
 use crate::domain_computation::primary_graph::{
     WorthQueryBranchAdoptionRecovery, WorthQueryBranchAdoptionRecoveryFailure,
     WorthQueryBranchAdoptionRecoveryOutcome, WorthQueryPrimaryGraphApplicationRuntime,
@@ -293,7 +293,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let (branch, adoption, recovery) = recovery.into_parts();
         match self.release_branch_adoption_custody(recovery, minimum_age_ticks) {
             Ok(receipt) => Ok((cancel_unstarted(adoption), receipt)),
-            Err(WorthQueryBranchAdoptionCustodyReleaseFailure::Recovery { denial, recovery }) => {
+            Err(WorthQueryBranchAdoptionRecoveryReleaseFailure::Recovery { denial, recovery }) => {
                 Err(
                     WorthQueryBranchSetAdoptionRecoveryReleaseFailure::Recovery {
                         denial,
@@ -303,7 +303,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     },
                 )
             }
-            Err(WorthQueryBranchAdoptionCustodyReleaseFailure::OwnerCleanup(failure)) => Err(
+            Err(WorthQueryBranchAdoptionRecoveryReleaseFailure::OwnerCleanup(failure)) => Err(
                 WorthQueryBranchSetAdoptionRecoveryReleaseFailure::OwnerCleanup {
                     cancellation: cancel_unstarted(adoption),
                     failure,

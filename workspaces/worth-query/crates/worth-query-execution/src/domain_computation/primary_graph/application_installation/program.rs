@@ -22,7 +22,9 @@ pub use output_roots::WorthQueryApplicationProgramRoots;
 pub use program_owner::{
     WorthQueryProgramOwner, WorthQuerySelectedProgramOwner, WorthQuerySelectedProgramOwnerDenial,
 };
-pub use program_runtime::WorthQueryProgramApplicationRuntime;
+pub use program_runtime::{
+    WorthQueryProgramApplicationRuntime, WorthQueryProgramSupportRetirementReceipt,
+};
 pub use roster_authoring::WorthQueryApplicationProgramRoster;
 pub use specialized_action::WorthQueryAdmittedProgramOperation;
 pub use speculation::{

@@ -24,3 +24,5 @@ mod roster_admission;
 mod semantic_impact;
 #[path = "adoption/signal_fork_inheritance.rs"]
 mod signal_fork_inheritance;
+#[path = "adoption/support_retirement.rs"]
+mod support_retirement;

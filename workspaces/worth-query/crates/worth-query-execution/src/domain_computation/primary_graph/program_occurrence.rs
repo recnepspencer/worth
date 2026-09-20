@@ -19,16 +19,22 @@ use worth_query_installation::facade::{
 mod activation_cell;
 mod presented_program;
 mod revision_rendering;
+mod support_lifecycle;
 
 pub(in crate::domain_computation::primary_graph) use activation_cell::WorthQueryProgramActivationCell;
 pub(in crate::domain_computation::primary_graph) use presented_program::WorthQueryPresentedProgram;
 pub(in crate::domain_computation::primary_graph) use revision_rendering::program_revision_rendering;
+pub use support_lifecycle::WorthQueryProgramSupportRetirementReceipt;
+pub(in crate::domain_computation::primary_graph) use support_lifecycle::{
+    WorthQueryProgramSupportCustody, WorthQueryProgramSupportInterpretation,
+};
 
 /// The program support one published application runtime retains.
 pub(in crate::domain_computation::primary_graph) struct WorthQueryInstalledProgramSupport<Schema> {
     roster: Arc<WorthQueryProgramSupportRoster<Schema>>,
     renderings: Box<[AspectValue]>,
     activation: WorthQueryProgramActivationCell,
+    lifecycle: support_lifecycle::WorthQueryProgramSupportLifecycle,
 }
 
 impl<Schema> WorthQueryInstalledProgramSupport<Schema> {
@@ -42,6 +48,7 @@ impl<Schema> WorthQueryInstalledProgramSupport<Schema> {
             .map(|entry| program_revision_rendering(entry.revision()))
             .collect();
         Self {
+            lifecycle: support_lifecycle::WorthQueryProgramSupportLifecycle::installed(&roster),
             roster,
             renderings,
             activation,
@@ -62,6 +69,9 @@ impl<Schema> WorthQueryInstalledProgramSupport<Schema> {
         &self,
         revision: &ApplicationProgramRevision,
     ) -> Option<WorthQueryPresentedProgram<'_>> {
+        if !self.lifecycle.is_active(revision) {
+            return None;
+        }
         let position = self
             .roster
             .entries()
@@ -97,6 +107,34 @@ impl<Schema> WorthQueryInstalledProgramSupport<Schema> {
             .and_then(|position| self.roster.entries().get(position))
     }
 
+    pub(in crate::domain_computation::primary_graph) fn rostered_for_recovery(
+        &self,
+        revision: &ApplicationProgramRevision,
+    ) -> Option<&WorthQueryProgramSupportEntry> {
+        self.roster.entry(revision)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn retain_interpretation(
+        &self,
+        revision: &ApplicationProgramRevision,
+    ) -> Option<WorthQueryProgramSupportInterpretation> {
+        self.lifecycle.retain_interpretation(revision)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn retain_custody(
+        &self,
+        source: &ApplicationProgramRevision,
+        target: &ApplicationProgramRevision,
+    ) -> Option<WorthQueryProgramSupportCustody> {
+        self.lifecycle.retain_custody(source, target)
+    }
+
+    pub(in crate::domain_computation::primary_graph) const fn lifecycle(
+        &self,
+    ) -> &support_lifecycle::WorthQueryProgramSupportLifecycle {
+        &self.lifecycle
+    }
+
     pub(in crate::domain_computation::primary_graph) fn adoption_requirements(
         &self,
         installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
@@ -106,6 +144,13 @@ impl<Schema> WorthQueryInstalledProgramSupport<Schema> {
     where
         Schema: worth_query_installation::facade::ApplicationSchema,
     {
+        if !self.lifecycle.is_active(target) {
+            return Err(
+                WorthQueryProgramAdoptionRequirementsDenial::UnrosteredTarget {
+                    revision: target.clone(),
+                },
+            );
+        }
         self.roster
             .adoption_requirements(installed_schema, source, target)
     }

@@ -181,8 +181,10 @@ pub mod facade {
         WorthQueryProgramArtifactPosture, WorthQueryProgramCustodyInventoryKind,
         WorthQueryProgramCustodyInventoryRequirement, WorthQueryProgramRuleKey,
         WorthQueryProgramSupportAdmission, WorthQueryProgramSupportDenial,
-        WorthQueryProgramSupportEntry, WorthQueryProgramSupportRoster,
-        WorthQueryProgramValidationScope, WorthQueryRepeatedOptionalMemberState,
+        WorthQueryProgramSupportEntry, WorthQueryProgramSupportPartialRetirementInventory,
+        WorthQueryProgramSupportRetirementDenial, WorthQueryProgramSupportRetirementInventory,
+        WorthQueryProgramSupportRoster, WorthQueryProgramValidationScope,
+        WorthQueryRepeatedOptionalMemberState,
     };
     pub use crate::application_query::{
         prepare_canonical_read_graph_planning_basis, WorthQueryApplicationCanonicalArtifact,
