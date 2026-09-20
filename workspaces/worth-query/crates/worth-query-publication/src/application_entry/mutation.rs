@@ -18,6 +18,10 @@ pub use discovered::{
     WorthQueryDiscoveredProgramOutputSettlement, WorthQueryPerformedDiscoveredApplicationMutation,
     WorthQueryStartedDiscoveredOutputs,
 };
+pub use execution::{
+    WorthQueryApplicationProgramMigrationPreparationDenial,
+    WorthQueryApplicationProgramMigrationPreparationOutcome,
+};
 pub use outcome::WorthQueryApplicationMutationOutcome;
 pub use performed::{
     WorthQueryApplicationPerformedMutationOutcome, WorthQueryPerformedApplicationMutation,

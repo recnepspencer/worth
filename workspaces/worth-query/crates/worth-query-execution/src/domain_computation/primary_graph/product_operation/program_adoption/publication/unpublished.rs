@@ -9,6 +9,7 @@ pub struct WorthQueryUnpublishedBranchAdoption {
     source: ApplicationProgramRevision,
     target: ApplicationProgramRevision,
     selected_entity_count: usize,
+    migration: Option<super::super::preparation::WorthQueryProgramMigrationDescription>,
     product: crate::domain_computation::WorthQueryProductUnpublishedApplication,
 }
 
@@ -17,6 +18,7 @@ impl WorthQueryUnpublishedBranchAdoption {
         source: ApplicationProgramRevision,
         target: ApplicationProgramRevision,
         selected_entity_count: usize,
+        migration: Option<super::super::preparation::WorthQueryProgramMigrationDescription>,
         owner_effects: ProductUnpublishedOwnerEffects,
         recovery: RuntimeWorldRecoveryPort,
         disposition: crate::domain_computation::primary_graph::WorthQueryUnpublishedIdempotencyDisposition,
@@ -25,6 +27,7 @@ impl WorthQueryUnpublishedBranchAdoption {
             source,
             target,
             selected_entity_count,
+            migration,
             product: crate::domain_computation::WorthQueryProductUnpublishedApplication::new(
                 owner_effects,
                 recovery,
@@ -43,6 +46,12 @@ impl WorthQueryUnpublishedBranchAdoption {
 
     pub const fn selected_entity_count(&self) -> usize {
         self.selected_entity_count
+    }
+
+    pub const fn migration(
+        &self,
+    ) -> Option<&super::super::preparation::WorthQueryProgramMigrationDescription> {
+        self.migration.as_ref()
     }
 
     pub fn cause(&self) -> ProductUnpublishedCause {
@@ -66,6 +75,7 @@ impl WorthQueryUnpublishedBranchAdoption {
             self.source,
             self.target,
             self.selected_entity_count,
+            self.migration,
             self.product.into_recovery(),
         )
     }

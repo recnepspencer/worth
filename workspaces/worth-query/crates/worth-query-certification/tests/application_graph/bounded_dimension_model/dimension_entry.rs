@@ -36,8 +36,33 @@ use super::schema::{
     SetPartDimensionInputBinding,
 };
 
+fn migration_candidate_counts() -> &'static std::sync::Mutex<std::collections::BTreeMap<u64, usize>>
+{
+    static COUNTS: std::sync::OnceLock<std::sync::Mutex<std::collections::BTreeMap<u64, usize>>> =
+        std::sync::OnceLock::new();
+    COUNTS.get_or_init(Default::default)
+}
+
+pub fn reset_candidate_count(dimension: u64) {
+    migration_candidate_counts()
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+        .remove(&dimension);
+}
+
+pub fn candidate_count(dimension: u64) -> usize {
+    migration_candidate_counts()
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+        .get(&dimension)
+        .copied()
+        .unwrap_or(0)
+}
+
 /// The one part every host in this court seeds and both programs act on.
 pub const PART_IDENTITY: &str = "part-1";
+/// Reserved fixture value whose candidate-authoring count proves migration recovery does not replay.
+pub const MIGRATION_CANDIDATE_PROBE_DIMENSION: u64 = 17;
 
 #[derive(Clone, Debug)]
 pub struct PartDimensionRead {
@@ -267,6 +292,11 @@ impl OperationHandler<BoundedDimensionSchema, SetPartDimensionBinding> for SetPa
         target: WorthQueryInvariantMutationTarget<BoundedDimensionSchema, Part>,
         writer: &mut CandidateWriter<'_, BoundedDimensionSchema, SetPartDimensionBinding>,
     ) -> HandlerResult<PartDimensionWritten, SetPartDimensionDenial> {
+        *migration_candidate_counts()
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .entry(input.dimension)
+            .or_default() += 1;
         let part = match writer.projected_entity(&target) {
             Ok(part) => part,
             Err(error) => {

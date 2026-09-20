@@ -13,7 +13,9 @@ pub use outcome::{
 };
 pub use preparation::{
     WorthQueryApplicationProgramAdoptionPreparationDenial,
+    WorthQueryApplicationProgramAdoptionRequestWithMigration,
     WorthQueryApplicationProgramAdoptionRequestWithRequirements, WorthQueryPreparedBranchAdoption,
+    WorthQueryPreparedProgramMigration,
 };
 pub use request::{
     WorthQueryApplicationProgramAdoptionRecoveryFailure,

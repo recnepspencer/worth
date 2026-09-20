@@ -4,6 +4,7 @@ use worth_query_installation::facade::{ApplicationSchema, WorthQueryProgramAdopt
 use super::WorthQueryApplicationProgramsRequest;
 
 pub use worth_query_execution::facade::primary_graph::WorthQueryPreparedBranchAdoption;
+pub use worth_query_execution::facade::primary_graph::WorthQueryPreparedProgramMigration;
 
 #[derive(Debug)]
 pub enum WorthQueryApplicationProgramAdoptionPreparationDenial {
@@ -46,6 +47,25 @@ pub struct WorthQueryApplicationProgramAdoptionRequestWithRequirements<
     pub(super) requirements: &'requirements WorthQueryProgramAdoptionRequirements,
 }
 
+pub struct WorthQueryApplicationProgramAdoptionRequestWithMigration<
+    'application,
+    'principal,
+    'scope,
+    'target,
+    'requirements,
+    Schema,
+> {
+    request: WorthQueryApplicationProgramAdoptionRequestWithRequirements<
+        'application,
+        'principal,
+        'scope,
+        'target,
+        'requirements,
+        Schema,
+    >,
+    migration: WorthQueryPreparedProgramMigration,
+}
+
 impl<'application, 'principal, 'scope, 'target, 'requirements, Schema>
     WorthQueryApplicationProgramAdoptionRequestWithRequirements<
         'application,
@@ -58,6 +78,23 @@ impl<'application, 'principal, 'scope, 'target, 'requirements, Schema>
 where
     Schema: ApplicationSchema,
 {
+    pub fn migration(
+        self,
+        migration: WorthQueryPreparedProgramMigration,
+    ) -> WorthQueryApplicationProgramAdoptionRequestWithMigration<
+        'application,
+        'principal,
+        'scope,
+        'target,
+        'requirements,
+        Schema,
+    > {
+        WorthQueryApplicationProgramAdoptionRequestWithMigration {
+            request: self,
+            migration,
+        }
+    }
+
     pub fn prepare(
         self,
         maximum_selection_work: usize,
@@ -75,6 +112,42 @@ where
                 self.requirements,
                 maximum_selection_work,
                 self.programs.scope,
+            )
+            .map_err(WorthQueryApplicationProgramAdoptionPreparationDenial::Adoption)
+    }
+}
+
+impl<'application, 'principal, 'scope, 'target, 'requirements, Schema>
+    WorthQueryApplicationProgramAdoptionRequestWithMigration<
+        'application,
+        'principal,
+        'scope,
+        'target,
+        'requirements,
+        Schema,
+    >
+where
+    Schema: ApplicationSchema,
+{
+    pub fn prepare(
+        self,
+        maximum_selection_work: usize,
+    ) -> Result<
+        WorthQueryPreparedBranchAdoption,
+        WorthQueryApplicationProgramAdoptionPreparationDenial,
+    > {
+        self.request
+            .programs
+            .application
+            .on_branch(self.request.programs.branch)
+            .select()
+            .map_err(WorthQueryApplicationProgramAdoptionPreparationDenial::ProductSelection)?
+            .prepare_branch_adoption_with_migration(
+                self.request.target,
+                self.request.requirements,
+                self.migration,
+                maximum_selection_work,
+                self.request.programs.scope,
             )
             .map_err(WorthQueryApplicationProgramAdoptionPreparationDenial::Adoption)
     }

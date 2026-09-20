@@ -16,6 +16,21 @@ use super::{
 };
 use crate::application_entry::WorthQueryApplicationRequestMutationDenial;
 
+#[derive(Debug)]
+pub enum WorthQueryApplicationProgramMigrationPreparationDenial {
+    Request(WorthQueryApplicationRequestMutationDenial),
+    Migration(
+        worth_query_execution::facade::primary_graph::WorthQueryProgramMigrationPreparationDenial,
+    ),
+}
+
+pub enum WorthQueryApplicationProgramMigrationPreparationOutcome<DomainDenial> {
+    Prepared(worth_query_execution::facade::primary_graph::WorthQueryPreparedProgramMigration),
+    DomainDenied(DomainDenial),
+    Cancelled,
+    DeadlineExceeded,
+}
+
 impl<'application, 'principal, 'scope, 'key, Schema, Intent, SourcePreparation>
     WorthQueryApplicationMutationRequestWithIdempotency<
         'application,
@@ -36,6 +51,70 @@ where
             <Intent::Binding as ApplicationMutationBinding<Schema>>::PrincipalIdentity,
         >,
 {
+    /// Executes this installed mutation handler as a candidate for the
+    /// target program's atomic branch adoption. No operation is committed and
+    /// no operation idempotency or outbox record is registered here.
+    pub fn prepare_program_migration(
+        mut self,
+        target: &worth_query_declaration::facade::application_program::ApplicationProgramRevision,
+    ) -> Result<
+        WorthQueryApplicationProgramMigrationPreparationOutcome<
+            <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
+        >,
+        WorthQueryApplicationProgramMigrationPreparationDenial,
+    > {
+        let admitted = self
+            .request
+            .application
+            .admit_program_migration::<Intent::Binding>(target)
+            .map_err(WorthQueryApplicationProgramMigrationPreparationDenial::Migration)?;
+        let prepared = super::authorization::prepare(&mut self)
+            .map_err(WorthQueryApplicationProgramMigrationPreparationDenial::Request)?;
+        let completed = match self
+            .request
+            .application
+            .execute_mutation_handler::<Intent::Binding>(
+                self.request.intent.input(),
+                self.key,
+                &prepared.principal_identity,
+                prepared.admission,
+            )
+            .map_err(|denial| {
+                WorthQueryApplicationProgramMigrationPreparationDenial::Request(
+                    WorthQueryApplicationRequestMutationDenial::Handler(denial),
+                )
+            })? {
+            HandlerResult::Completed(completed) => completed,
+            HandlerResult::DomainDenied(denial) => {
+                return Ok(
+                    WorthQueryApplicationProgramMigrationPreparationOutcome::DomainDenied(denial),
+                );
+            }
+            HandlerResult::ExecutionDenied(denial) => {
+                return Err(
+                    WorthQueryApplicationProgramMigrationPreparationDenial::Request(
+                        WorthQueryApplicationRequestMutationDenial::Handler(
+                            MutationHandlerExecutionDenial::Handler(denial),
+                        ),
+                    ),
+                );
+            }
+            HandlerResult::Cancelled => {
+                return Ok(WorthQueryApplicationProgramMigrationPreparationOutcome::Cancelled);
+            }
+            HandlerResult::DeadlineExceeded => {
+                return Ok(
+                    WorthQueryApplicationProgramMigrationPreparationOutcome::DeadlineExceeded,
+                );
+            }
+        };
+        self.request
+            .application
+            .seal_program_migration(admitted, completed)
+            .map(WorthQueryApplicationProgramMigrationPreparationOutcome::Prepared)
+            .map_err(WorthQueryApplicationProgramMigrationPreparationDenial::Migration)
+    }
+
     pub fn execute(
         self,
     ) -> Result<

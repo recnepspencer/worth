@@ -78,7 +78,7 @@ mod product_operation;
 mod program_occurrence;
 pub use product_operation::{
     WorthQueryAdmittedApplicationConditionalDefinition, WorthQueryAdmittedChange,
-    WorthQueryApplicationConditionalDefinitionAdmissionDenial,
+    WorthQueryAdmittedProgramMigration, WorthQueryApplicationConditionalDefinitionAdmissionDenial,
     WorthQueryApplicationProductBranchCleanup, WorthQueryApplicationProductBranchCleanupDenial,
     WorthQueryApplicationProductBranchCleanupFailure,
     WorthQueryApplicationProductBranchCloseDenial, WorthQueryApplicationProductBranches,
@@ -101,9 +101,10 @@ pub use product_operation::{
     WorthQueryGeneratedOutputSuspensionRecoveryFailure,
     WorthQueryGeneratedOutputSuspensionRecoveryStage, WorthQueryPerformedBranchAdoption,
     WorthQueryPerformedConditionalDefinitionPublication, WorthQueryPreparedBranchAdoption,
-    WorthQueryProductEntry, WorthQueryProductHistory, WorthQueryProductHistoryEntry,
-    WorthQueryProductQueryControls, WorthQueryProductTransaction,
-    WorthQueryProductTransactionCommitError, WorthQueryRestoredGeneratedOutput,
+    WorthQueryPreparedProgramMigration, WorthQueryProductEntry, WorthQueryProductHistory,
+    WorthQueryProductHistoryEntry, WorthQueryProductQueryControls, WorthQueryProductTransaction,
+    WorthQueryProductTransactionCommitError, WorthQueryProgramMigrationDescription,
+    WorthQueryProgramMigrationPreparationDenial, WorthQueryRestoredGeneratedOutput,
     WorthQueryRetainedGeneratedOutputEntity, WorthQuerySelectedProductOperation,
     WorthQuerySuspendedGeneratedOutput, WorthQueryUnpublishedBranchAdoption,
     WorthQueryUnpublishedGeneratedOutputRestoration,
@@ -195,7 +196,7 @@ pub use application_attempt::{
 pub use crate::domain_computation::WorthQueryCustomInvariantDenial;
 pub use application_entry::mutation::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerInterruption, HandlerResult,
-    MutationHandlerExecutionDenial, OperationHandler,
+    MutationHandlerExecutionDenial, OperationHandler, WorthQueryCompletedMutationCandidate,
 };
 pub use settlement_repair::WorthQueryApplicationSettlementRecoveryError;
 pub(in crate::domain_computation) use application_branch::primary_relational_branch_id;

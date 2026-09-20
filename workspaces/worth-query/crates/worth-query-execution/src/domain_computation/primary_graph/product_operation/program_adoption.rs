@@ -21,8 +21,10 @@ pub use custody::{
 };
 
 pub use preparation::{
-    WorthQueryBranchAdoptionActivationDenial, WorthQueryBranchAdoptionPreparationDenial,
-    WorthQueryPreparedBranchAdoption,
+    WorthQueryAdmittedProgramMigration, WorthQueryBranchAdoptionActivationDenial,
+    WorthQueryBranchAdoptionPreparationDenial, WorthQueryPreparedBranchAdoption,
+    WorthQueryPreparedProgramMigration, WorthQueryProgramMigrationDescription,
+    WorthQueryProgramMigrationPreparationDenial,
 };
 pub use publication::{
     WorthQueryBranchAdoptionPublicationOutcome, WorthQueryPerformedBranchAdoption,
@@ -72,6 +74,38 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 self,
                 target,
                 expected_requirements,
+                None,
+                maximum_selection_work,
+                request,
+            )
+        })
+        .map_err(|denial| {
+            WorthQueryBranchAdoptionPreparationDenial::ProductActivation(denial.into())
+        })?
+    }
+
+    pub fn prepare_branch_adoption_with_migration(
+        &self,
+        target: &ApplicationProgramRevision,
+        expected_requirements: &WorthQueryProgramAdoptionRequirements,
+        migration: WorthQueryPreparedProgramMigration,
+        maximum_selection_work: usize,
+        request: &WorthQueryRequestScope,
+    ) -> Result<WorthQueryPreparedBranchAdoption, WorthQueryBranchAdoptionPreparationDenial> {
+        let application = self.application();
+        let gate = application
+            .product_runtime
+            .activations
+            .gate(self.product().branch_identity())
+            .map_err(|denial| {
+                WorthQueryBranchAdoptionPreparationDenial::ProductActivation(denial.into())
+            })?;
+        gate.publish(|| {
+            preparation::prepare(
+                self,
+                target,
+                expected_requirements,
+                Some(migration),
                 maximum_selection_work,
                 request,
             )

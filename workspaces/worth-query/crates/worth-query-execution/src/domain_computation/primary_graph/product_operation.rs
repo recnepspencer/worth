@@ -48,11 +48,13 @@ pub use generated_materialization::{
 };
 pub use history::{WorthQueryProductHistory, WorthQueryProductHistoryEntry};
 pub use program_adoption::{
-    WorthQueryBranchAdoptionActivationDenial, WorthQueryBranchAdoptionPreparationDenial,
-    WorthQueryBranchAdoptionPublicationOutcome, WorthQueryBranchAdoptionRecovery,
-    WorthQueryBranchAdoptionRecoveryDenial, WorthQueryBranchAdoptionRecoveryFailure,
-    WorthQueryBranchAdoptionRecoveryOutcome, WorthQueryPerformedBranchAdoption,
-    WorthQueryPreparedBranchAdoption, WorthQueryUnpublishedBranchAdoption,
+    WorthQueryAdmittedProgramMigration, WorthQueryBranchAdoptionActivationDenial,
+    WorthQueryBranchAdoptionPreparationDenial, WorthQueryBranchAdoptionPublicationOutcome,
+    WorthQueryBranchAdoptionRecovery, WorthQueryBranchAdoptionRecoveryDenial,
+    WorthQueryBranchAdoptionRecoveryFailure, WorthQueryBranchAdoptionRecoveryOutcome,
+    WorthQueryPerformedBranchAdoption, WorthQueryPreparedBranchAdoption,
+    WorthQueryPreparedProgramMigration, WorthQueryProgramMigrationDescription,
+    WorthQueryProgramMigrationPreparationDenial, WorthQueryUnpublishedBranchAdoption,
 };
 pub use query::WorthQueryProductQueryControls;
 pub use transaction::{

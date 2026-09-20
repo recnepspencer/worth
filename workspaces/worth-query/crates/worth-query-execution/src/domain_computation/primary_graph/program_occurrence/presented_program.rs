@@ -41,4 +41,11 @@ impl<'support> WorthQueryPresentedProgram<'support> {
     ) -> bool {
         self.entry.acts_through_operation(operation)
     }
+
+    pub(in crate::domain_computation::primary_graph) fn acts_through_mutation_binding(
+        &self,
+        binding: TypeId,
+    ) -> bool {
+        self.entry.acts_through_mutation_binding(binding)
+    }
 }

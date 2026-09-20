@@ -40,6 +40,12 @@ pub(in crate::domain_computation::primary_graph::application_attempt) struct Wor
 }
 
 impl WorthQueryApplicationOutputCorrespondenceCandidate {
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn is_empty(
+        &self,
+    ) -> bool {
+        self.expected_roles.is_empty() && self.expected_families.is_empty() && self.roles.is_empty()
+    }
+
     pub(in crate::domain_computation::primary_graph::application_attempt) fn remap_created_partition(
         mut self,
         mutation_partition: worth_relational::facade::identity::PartitionId,

@@ -115,6 +115,13 @@ impl WorthQueryRegisteredProviderEffects {
         &self.batch
     }
 
+    pub(super) fn into_migration_batch(self) -> Result<WorkerIntentBatch, &'static str> {
+        if self.emissions.len() != 0 {
+            return Err("program migration cannot carry application emissions");
+        }
+        Ok(self.batch)
+    }
+
     pub(super) const fn emissions(&self) -> &WorthQueryAdmittedApplicationEmissionBatch {
         &self.emissions
     }

@@ -1,5 +1,11 @@
+mod migration;
 mod selection;
 mod state;
+
+pub use migration::{
+    WorthQueryAdmittedProgramMigration, WorthQueryPreparedProgramMigration,
+    WorthQueryProgramMigrationDescription, WorthQueryProgramMigrationPreparationDenial,
+};
 
 use worth_query_declaration::facade::application_program::ApplicationProgramMigrationAssessmentRequirement;
 use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
@@ -29,6 +35,8 @@ pub enum WorthQueryBranchAdoptionPreparationDenial {
     Requirements(WorthQueryProgramAdoptionRequirementsDenial),
     RequirementsChanged,
     MigrationAssessmentRequired(ApplicationProgramMigrationAssessmentRequirement),
+    MigrationTargetMismatch,
+    MigrationSourceChanged,
     CustodyInventoryRequired(WorthQueryProgramCustodyInventoryRequirement),
     UnknownEntityScope {
         entity: String,
@@ -79,6 +87,7 @@ pub struct WorthQueryPreparedBranchAdoption {
     pub(super) requirements: WorthQueryProgramAdoptionRequirements,
     pub(super) selected_entity_count: usize,
     pub(super) selection_work_units: usize,
+    pub(super) migration: Option<WorthQueryProgramMigrationDescription>,
     pub(super) publication: crate::domain_computation::execution_runtime::product_world::WorthQueryPreparedProductPublication,
     pub(super) recovery: worth_runtime_world::facade::RuntimeWorldRecoveryPort,
     pub(super) disposition:
@@ -105,12 +114,17 @@ impl WorthQueryPreparedBranchAdoption {
     pub const fn selection_work_units(&self) -> usize {
         self.selection_work_units
     }
+
+    pub const fn migration(&self) -> Option<&WorthQueryProgramMigrationDescription> {
+        self.migration.as_ref()
+    }
 }
 
 pub(super) fn prepare<Schema: ApplicationSchema>(
     selected: &WorthQuerySelectedProductOperation<'_, Schema>,
     target: &ApplicationProgramRevision,
     expected_requirements: &WorthQueryProgramAdoptionRequirements,
+    migration: Option<WorthQueryPreparedProgramMigration>,
     maximum_selection_work: usize,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
 ) -> Result<WorthQueryPreparedBranchAdoption, WorthQueryBranchAdoptionPreparationDenial> {
@@ -118,6 +132,7 @@ pub(super) fn prepare<Schema: ApplicationSchema>(
         selected,
         target,
         expected_requirements,
+        migration,
         maximum_selection_work,
         request,
     )
