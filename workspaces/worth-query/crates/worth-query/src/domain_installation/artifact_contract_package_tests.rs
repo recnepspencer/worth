@@ -2,8 +2,9 @@ use worth_foundational::facade::{
     CanonicalizationRuleVersion, FoundationalPerformanceCounterName, RetentionDeliveryProfile,
 };
 use worth_query_declaration::facade::application_schema::{
-    ApplicationEntityRef, ApplicationSchema, ApplicationSchemaDeclaration,
-    ApplicationSchemaDeclarationBuilder, ApplicationSchemaDeclarationDenial,
+    ApplicationEntityMarkerIdentity, ApplicationEntityRef, ApplicationSchema,
+    ApplicationSchemaDeclaration, ApplicationSchemaDeclarationBuilder,
+    ApplicationSchemaDeclarationDenial,
 };
 
 use crate::application::{WorthQueryCapabilityFamily, WorthQueryDomainEntryMarker};
@@ -30,6 +31,10 @@ impl WorthQueryDomainEntryMarker for ArtifactContractDomain {
 struct CandidateArtifact;
 struct PackageSchema;
 struct PackageEntity;
+
+impl ApplicationEntityMarkerIdentity<PackageSchema> for PackageEntity {
+    const IDENTIFIER: &'static str = "PackageEntity";
+}
 
 impl ApplicationSchema for PackageSchema {
     const OWNER: &'static str = "WORTH.tests.artifact-contract";

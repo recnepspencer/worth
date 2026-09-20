@@ -1,6 +1,7 @@
 use worth_query_declaration::facade::application_schema::{
-    ApplicationEntityRef, ApplicationSchema, ApplicationSchemaContributionAuthoring,
-    ApplicationSchemaDeclaration, ApplicationSchemaDeclarationBuilder, ApplicationSchemaMember,
+    ApplicationEntityMarkerIdentity, ApplicationEntityRef, ApplicationSchema,
+    ApplicationSchemaContributionAuthoring, ApplicationSchemaDeclaration,
+    ApplicationSchemaDeclarationBuilder, ApplicationSchemaMember,
 };
 use worth_query_installation::facade::{
     WorthQueryInstallationAdmissionProfile, WorthQueryInstallationGeneration,
@@ -11,6 +12,10 @@ use worth_query_installation::facade::{
 
 struct ContributionSchema;
 struct Component;
+
+impl ApplicationEntityMarkerIdentity<ContributionSchema> for Component {
+    const IDENTIFIER: &'static str = "Component";
+}
 
 worth_query_declaration::worth_query_application_contribution! {
     contribution TopologyContribution in ContributionSchema {

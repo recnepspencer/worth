@@ -53,14 +53,14 @@ fn newer_root_retires_only_its_matching_source() {
         root_kind: PreparedOutputRootKind::Discovered(std::any::TypeId::of::<()>()),
         source: None,
         discovery: None,
-        bound_sources: Some(vec![older, sibling]),
+        bound_sources: Some(vec![older.clone(), sibling.clone()]),
         consumed_sources: Vec::new(),
         retired_sources: Vec::new(),
         retired: None,
         token_count: 0,
         completed: false,
     };
-    custody.retire_superseded_roots(&[newer, sibling]);
+    custody.retire_superseded_roots(&[newer, sibling.clone()]);
     assert_eq!(
         custody.source_denial(&older.identity).unwrap().kind(),
         WorthQueryOutputDemandDenialKind::Superseded
@@ -97,8 +97,8 @@ fn completed_multi_root_custody_waits_for_token_and_active_record() {
             root_kind: PreparedOutputRootKind::Discovered(std::any::TypeId::of::<()>()),
             source: None,
             discovery: None,
-            bound_sources: Some(vec![first, second]),
-            consumed_sources: vec![first.identity, second.identity],
+            bound_sources: Some(vec![first.clone(), second.clone()]),
+            consumed_sources: vec![first.identity.clone(), second.identity.clone()],
             retired_sources: Vec::new(),
             retired: None,
             token_count: 1,
@@ -152,11 +152,11 @@ fn fully_superseded_multi_root_custody_prunes_after_its_last_token() {
             root_kind: PreparedOutputRootKind::Discovered(std::any::TypeId::of::<()>()),
             source: None,
             discovery: None,
-            bound_sources: Some(vec![first, second]),
+            bound_sources: Some(vec![first.clone(), second.clone()]),
             consumed_sources: Vec::new(),
             retired_sources: vec![
-                (first.identity, superseded.clone()),
-                (second.identity, superseded),
+                (first.identity.clone(), superseded.clone()),
+                (second.identity.clone(), superseded),
             ],
             retired: None,
             token_count: 1,

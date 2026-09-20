@@ -44,7 +44,7 @@ impl WorthQueryOutputDemandRegistry {
         let matching_semantic_source = newest_semantic_key(&state, &requested_key, |record| {
             accepts_semantic_join(record)
         });
-        let requested_source = requested_key.source;
+        let requested_source = requested_key.source.clone();
         let mut retained_key = None;
         if admission_kind == DemandAdmissionKind::Recovery {
             let expected = expected_source_commit.ok_or_else(|| {
@@ -155,7 +155,7 @@ impl WorthQueryOutputDemandRegistry {
                 .expect("selected custody exists");
             let performed = custody.source.as_ref().map(|source| {
                 let mut source = source.clone();
-                source.output_source_identity = Some(requested_source);
+                source.output_source_identity = Some(requested_source.clone());
                 source
             });
             custody.finish_admission(requested_source);
@@ -265,8 +265,8 @@ impl WorthQueryOutputDemandRegistry {
             .as_ref()
             .expect("available custody retains source")
             .clone();
-        performed_source.output_source_identity = Some(requested_key.source);
-        custody.finish_admission(requested_key.source);
+        performed_source.output_source_identity = Some(requested_key.source.clone());
+        custody.finish_admission(requested_key.source.clone());
         let record = state.records.entry(key.clone()).or_insert_with(|| {
             new_record(
                 product_occurrence,

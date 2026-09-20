@@ -21,9 +21,10 @@ where
         >,
         WorthQueryOutputDemandDenial,
     >{
+        let checkpoint_source = source_epoch.checkpoint_identity();
         let Some(readmitted) = self.recovered_outputs.iter().find(|readmitted| {
             readmitted.checkpoint.producer == producer
-                && readmitted.checkpoint.source == *source_epoch.checkpoint_identity()
+                && readmitted.checkpoint.source == checkpoint_source
                 && readmitted.checkpoint.scope == source_scope
                 && readmitted.checkpoint.source_partition == observed_source.partition_identity()
         }) else {
@@ -59,7 +60,7 @@ where
                 correspondence: std::sync::Arc::clone(&readmitted.correspondence),
                 observation: observation.clone(),
                 source_scope,
-                source_identity: *source_epoch.identity(),
+                source_identity: source_epoch.checkpoint_identity(),
                 observed_source_facts,
             },
         ))

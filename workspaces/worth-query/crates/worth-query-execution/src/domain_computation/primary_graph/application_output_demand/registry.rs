@@ -24,7 +24,7 @@ struct DiscoveredSourceRecovery {
     discovery: Arc<dyn std::any::Any + Send + Sync>,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum PreparedOutputRootKind {
     Required(std::any::TypeId),
     Discovered(std::any::TypeId),
@@ -43,7 +43,7 @@ struct SourceCustody {
     completed: bool,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) struct BoundOutputSource {
     pub(in crate::domain_computation::primary_graph) scope:
         crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
@@ -320,7 +320,7 @@ impl WorthQueryOutputDemandRegistry {
                         let idempotency = receipt.idempotency_binding();
                         Some(WorthQueryAcceptedOutputCheckpointIdentity {
                             producer: key.producer.clone(),
-                            source: *key.source.checkpoint_identity(),
+                            source: key.source.checkpoint_identity(),
                             scope: receipt.principal_scope().scope(),
                             source_partition: idempotency.source_partition_identity()?,
                             producer_dependency: idempotency.producer_dependency_identity(),

@@ -1,9 +1,10 @@
 use std::num::NonZeroUsize;
 use worth_query_decl::facade::application_program::{
     ApplicationCommitBoundary, ApplicationConnectionRef, ApplicationFeatureSpec,
-    ApplicationOutputEdge, ApplicationOutputGraph, ApplicationOutputLeaf, ApplicationProgramAuthoring,
-    ApplicationProgramDefinition, ApplicationProgramIdentity, ApplicationProgramOutputs,
-    ApplicationRuleAt, ApplicationRuleLeaf, ApplicationRuleList, ApplicationSharedRuleRef,
+    ApplicationOutputEdge, ApplicationOutputGraph, ApplicationOutputLeaf,
+    ApplicationProgramAuthoring, ApplicationProgramDefinition, ApplicationProgramIdentity,
+    ApplicationProgramOutputs, ApplicationRuleAt, ApplicationRuleLeaf, ApplicationRuleList,
+    ApplicationSharedRuleRef,
 };
 use worth_query_decl::facade::application_schema::ApplicationSchemaComposition;
 use worth_query_decl::facade::worth_query_application;
@@ -20,6 +21,13 @@ use worth_query_host::facade::{
 use super::*;
 mod support;
 use support::{authenticate, install, length};
+
+fn checkpoint_recovery_test_guard() -> std::sync::MutexGuard<'static, ()> {
+    static EXCLUSIVE_PROVIDER_COUNTER: std::sync::Mutex<()> = std::sync::Mutex::new(());
+    EXCLUSIVE_PROVIDER_COUNTER
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+}
 
 worth_query_application! {
     CheckpointSchema {
@@ -103,6 +111,7 @@ impl ApplicationProgramDefinition<CheckpointSchema> for CheckpointProgram {
 
 #[test]
 fn checkpoint_reopens_ready_output_without_producer_contact_and_recomputes_after_source_change() {
+    let _guard = checkpoint_recovery_test_guard();
     super::producer::reset_provider_contacts();
     let application = install(None);
     let (scope, principal) = authenticate(&application);
@@ -129,14 +138,21 @@ fn checkpoint_reopens_ready_output_without_producer_contact_and_recomputes_after
     assert_eq!(restored_settlement.work().delivery_contact_count(), 0);
     assert_eq!(restored_settlement.work().derived_publication_count(), 0);
     assert_eq!(super::producer::provider_contacts(), 0);
-    let retained = request.retain_read().expect("the recovered root is observable");
+    let retained = request
+        .retain_read()
+        .expect("the recovered root is observable");
     request
         .at(&retained)
-        .require_current_program_output(
-            &restored_settlement,
-            NonZeroUsize::new(4_096).unwrap(),
-        )
+        .require_current_program_output(&restored_settlement, NonZeroUsize::new(4_096).unwrap())
         .expect("the restored settlement is current at its recovered source");
+
+    let repeated_restored_settlement = settle(&request, &restored);
+    assert_eq!(
+        repeated_restored_settlement.work().producer_contact_count(),
+        0
+    );
+    assert_eq!(super::producer::provider_contacts(), 0);
+    drop(repeated_restored_settlement);
 
     let observed = request
         .query(PlanarRead {
@@ -153,7 +169,9 @@ fn checkpoint_reopens_ready_output_without_producer_contact_and_recomputes_after
         .idempotency(&77_u64)
         .execute_performed::<CheckpointProgram, CheckpointRoot>(&restored)
         .expect("the recovered source accepts a fresh edit");
-    let current = request.retain_read().expect("the edited root is observable");
+    let current = request
+        .retain_read()
+        .expect("the edited root is observable");
     assert!(matches!(
         request.at(&current).require_current_program_output(
             &restored_settlement,
@@ -172,6 +190,7 @@ fn checkpoint_reopens_ready_output_without_producer_contact_and_recomputes_after
 
 #[test]
 fn recovered_output_survives_an_unrelated_settled_edit_without_producer_contact() {
+    let _guard = checkpoint_recovery_test_guard();
     let application = install(None);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
@@ -212,6 +231,7 @@ fn recovered_output_survives_an_unrelated_settled_edit_without_producer_contact(
 
 #[test]
 fn unadopted_recovered_output_survives_an_unrelated_edit_before_first_demand() {
+    let _guard = checkpoint_recovery_test_guard();
     let application = install(None);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
@@ -251,6 +271,7 @@ fn unadopted_recovered_output_survives_an_unrelated_edit_before_first_demand() {
 
 #[test]
 fn checkpoint_reopens_sibling_parameter_partitions_without_contact_or_panic() {
+    let _guard = checkpoint_recovery_test_guard();
     let application = install(None);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
@@ -320,7 +341,10 @@ fn settle_for<'application, 'principal, 'scope>(
         )
         .expect("the program output starts");
     loop {
-        match output.advance(request).expect("the program output advances") {
+        match output
+            .advance(request)
+            .expect("the program output advances")
+        {
             WorthQueryApplicationProgramOutputProgress::Pending => {}
             WorthQueryApplicationProgramOutputProgress::Settled(settled) => return settled,
         }

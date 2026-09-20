@@ -17,21 +17,22 @@ impl<Query> WorthQueryObservedSource<Query> {
         use WorthQuerySourceExpectationDenialKind as Kind;
 
         self.validate_completeness(&self.query_identifier)?;
+        let footprint = self.source_meaning.footprint();
         let mut facts = Vec::with_capacity(
-            self.footprint
+            footprint
                 .entities
                 .len()
-                .saturating_add(self.footprint.aspects.len())
-                .saturating_add(self.footprint.adjacencies.len()),
+                .saturating_add(footprint.aspects.len())
+                .saturating_add(footprint.adjacencies.len()),
         );
         facts.extend(
-            self.footprint
+            footprint
                 .entities
                 .iter()
                 .copied()
                 .map(|entity_id| Fact::SourceEntity { entity_id }),
         );
-        for aspect in &self.footprint.aspects {
+        for aspect in &footprint.aspects {
             layout
                 .aspect_contract(&aspect.entity_name, &aspect.aspect)
                 .filter(|contract| contract.revision() == aspect.contract_revision)
@@ -47,16 +48,19 @@ impl<Query> WorthQueryObservedSource<Query> {
                 native_revision: aspect.native_revision,
             });
         }
-        facts.extend(self.footprint.adjacencies.iter().map(|adjacency| {
-            Fact::SourceAdjacencyRevision {
-                relation_kind: adjacency.relation_kind,
-                anchor: adjacency.anchor,
-                direction: adjacency.direction,
-                native_revision: adjacency.native_revision,
-                comparison_work_limit: adjacency.comparison_work_limit,
-                endpoints: adjacency.endpoints.clone(),
-            }
-        }));
+        facts.extend(
+            footprint
+                .adjacencies
+                .iter()
+                .map(|adjacency| Fact::SourceAdjacencyRevision {
+                    relation_kind: adjacency.relation_kind,
+                    anchor: adjacency.anchor,
+                    direction: adjacency.direction,
+                    native_revision: adjacency.native_revision,
+                    comparison_work_limit: adjacency.comparison_work_limit,
+                    endpoints: adjacency.endpoints.clone(),
+                }),
+        );
         Ok(facts.into())
     }
 }

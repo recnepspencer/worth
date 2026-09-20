@@ -223,7 +223,7 @@ where
         })?;
         let key = crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandKey::new(
             selected.identity.clone(),
-            source_epoch,
+            source_epoch.clone(),
         );
         let product_occurrence =
             observed_source

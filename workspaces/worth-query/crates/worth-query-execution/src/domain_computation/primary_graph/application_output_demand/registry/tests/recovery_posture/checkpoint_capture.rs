@@ -10,6 +10,16 @@ fn checkpoint_capture_includes_only_idle_ready_outputs_in_canonical_order() {
     let receipt = receipt.with_idempotency_binding_for_test(idempotency);
     let occurrence = receipt.product_branch().occurrence();
     let registry = WorthQueryOutputDemandRegistry::default();
+    let z_key = key("z-producer", 1, 1);
+    let z_source = [
+        104, 12, 250, 201, 243, 137, 209, 8, 5, 95, 184, 254, 185, 193, 81, 209, 154, 242, 13, 62,
+        200, 75, 34, 92, 40, 237, 91, 236, 243, 199, 38, 105,
+    ];
+    let a_key = key("a-producer", 1, 2);
+    let a_source = [
+        66, 30, 63, 137, 77, 42, 214, 25, 22, 71, 227, 13, 250, 171, 71, 224, 118, 15, 232, 73, 45,
+        25, 207, 70, 141, 78, 31, 120, 28, 168, 223, 217,
+    ];
     let ready = |receipt| {
         DemandState::Output(WorthQueryOutputProgress::new(
             WorthQueryOutputCheckpoint::Ready(super::super::super::WorthQueryCompletedOutputDemand {
@@ -19,14 +29,8 @@ fn checkpoint_capture_includes_only_idle_ready_outputs_in_canonical_order() {
         ))
     };
     registry.state.lock().unwrap().records.extend([
-        (
-            key("z-producer", 1, 1),
-            record(occurrence, ready(receipt.clone()), 1),
-        ),
-        (
-            key("a-producer", 1, 2),
-            record(occurrence, ready(receipt.clone()), 1),
-        ),
+        (z_key, record(occurrence, ready(receipt.clone()), 1)),
+        (a_key, record(occurrence, ready(receipt.clone()), 1)),
         (
             key("published", 1, 3),
             record(
@@ -62,8 +66,8 @@ fn checkpoint_capture_includes_only_idle_ready_outputs_in_canonical_order() {
     assert_eq!(accepted.len(), 2);
     assert_eq!(accepted[0].producer, "a-producer");
     assert_eq!(accepted[1].producer, "z-producer");
-    assert_eq!(accepted[0].source, [3; 32]);
-    assert_eq!(accepted[1].source, [3; 32]);
+    assert_eq!(accepted[0].source, a_source);
+    assert_eq!(accepted[1].source, z_source);
 }
 
 #[test]

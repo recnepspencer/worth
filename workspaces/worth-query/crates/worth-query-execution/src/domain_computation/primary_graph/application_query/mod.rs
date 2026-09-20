@@ -18,7 +18,7 @@ mod execution_validation;
 mod governance_affinity_tests;
 mod graph_read_plan_binding;
 mod live;
-mod observed_source;
+pub(in crate::domain_computation::primary_graph) mod observed_source;
 mod one_shot;
 mod projection;
 mod read_execution;

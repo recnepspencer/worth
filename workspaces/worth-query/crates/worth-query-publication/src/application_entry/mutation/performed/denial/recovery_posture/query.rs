@@ -174,7 +174,8 @@ fn execution_posture(kind: ExecutionKind) -> WorthQueryRequiredOutputRecoveryPos
         | ExecutionKind::ProjectionUnavailable
         | ExecutionKind::Projection(_)
         | ExecutionKind::ResultBufferLimitExceeded
-        | ExecutionKind::WorkLimitExceeded => Terminal,
+        | ExecutionKind::WorkLimitExceeded
+        | ExecutionKind::SourceIdentityExhausted => Terminal,
     }
 }
 

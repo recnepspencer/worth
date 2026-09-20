@@ -4,8 +4,8 @@ use std::task::{Context, Poll, Waker};
 use std::time::{Duration, Instant, SystemTime};
 
 use worth_query_declaration::facade::application_schema::{
-    ApplicationEntityRef, ApplicationSchema, ApplicationSchemaDeclaration,
-    ApplicationSchemaDeclarationBuilder,
+    ApplicationEntityMarkerIdentity, ApplicationEntityRef, ApplicationSchema,
+    ApplicationSchemaDeclaration, ApplicationSchemaDeclarationBuilder,
 };
 use worth_query_declaration::facade::authentication::WorthQueryExternalPrincipalIdentity;
 use worth_query_installation::facade::{
@@ -18,6 +18,10 @@ use super::*;
 
 struct TestSchema;
 struct Principal;
+
+impl ApplicationEntityMarkerIdentity<TestSchema> for Principal {
+    const IDENTIFIER: &'static str = "Principal";
+}
 
 impl ApplicationSchema for TestSchema {
     const OWNER: &'static str = "authentication-test";

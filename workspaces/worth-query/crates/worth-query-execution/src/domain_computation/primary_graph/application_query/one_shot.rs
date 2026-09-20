@@ -50,6 +50,7 @@ pub enum WorthQueryApplicationOneShotDenialKind {
     Projection(WorthQueryApplicationProjectionDenialKind),
     ResultBufferLimitExceeded,
     WorkLimitExceeded,
+    SourceIdentityExhausted,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

@@ -36,11 +36,9 @@ mod graph_participation;
 pub(in crate::domain_computation::primary_graph) mod installation;
 #[cfg(feature = "test-world-operation-control")]
 mod operation_control;
+pub(in crate::domain_computation) use external_dispatch_attempt::WorthQueryExternalDispatchAttemptOrdinal;
 #[cfg(feature = "test-world-operation-control")]
 pub(in crate::domain_computation::primary_graph) use operation_control::WorthQueryApplicationAttemptOperationControl;
-
-pub(in crate::domain_computation) use external_dispatch_attempt::WorthQueryExternalDispatchAttemptOrdinal;
-
 /// Purpose-scoped application runtime published from one typed primary graph.
 /// Publishing consumes the raw execution root and its installation authority.
 /// The resulting value exposes principal admission and installed-handler
@@ -110,6 +108,8 @@ pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
     pub(super) result_buffers:
         super::application_query::resource_lifecycle::WorthQueryApplicationResultBufferRegistry,
+    pub(super) source_meanings:
+        super::application_query::observed_source::source_identity::WorthQueryObservedSourceMeaningRegistry,
     pub(super) next_external_dispatch_attempt: AtomicU64,
     pub(super) external_effect_transport:
         std::sync::OnceLock<std::sync::Arc<dyn WorthQueryExternalEffectTransport>>,

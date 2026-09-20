@@ -5,6 +5,7 @@ pub use crate::domain_computation::{
 };
 mod application_attempt;
 mod application_checkpoint;
+mod application_checkpoint_source_identity;
 mod application_contribution;
 pub use application_checkpoint::WorthQueryApplicationCheckpoint;
 mod application_output_demand;
