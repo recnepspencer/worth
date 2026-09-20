@@ -11,7 +11,9 @@ use super::{
 };
 use worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
+mod branch_set;
 mod program_outputs;
+pub use branch_set::WorthQueryApplicationBranchSetRequest;
 pub use program_outputs::WorthQueryProgramOutputCurrentnessDenial;
 
 /// Borrowed ordinary-request context. Construction selects no World state and

@@ -9,7 +9,8 @@ use super::super::publication::{
 use crate::domain_computation::primary_graph::product_operation::WorthQuerySelectedProductOperation;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::{
-    WorthQueryProductUnpublishedRecovery, WorthQueryProductUnpublishedRecoveryReleaseFailure,
+    WorthQueryProductUnpublishedRecovery, WorthQueryProductUnpublishedRecoveryReleaseDenial,
+    WorthQueryProductUnpublishedRecoveryReleaseFailure,
 };
 
 const IMMEDIATE_RECOVERY_RELEASE_AGE_TICKS: u64 = 0;
@@ -62,6 +63,17 @@ impl WorthQueryBranchAdoptionRecovery {
     ) -> &super::super::preparation::WorthQueryProgramCustodyDispositionInventory {
         &self.custody
     }
+}
+
+pub(in crate::domain_computation::primary_graph::product_operation::program_adoption) enum WorthQueryBranchAdoptionCustodyReleaseFailure
+{
+    Recovery {
+        denial: WorthQueryProductUnpublishedRecoveryReleaseDenial,
+        recovery: WorthQueryBranchAdoptionRecovery,
+    },
+    OwnerCleanup(
+        crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanupFailure,
+    ),
 }
 
 #[derive(Debug)]
@@ -224,6 +236,44 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
 }
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    pub(in crate::domain_computation::primary_graph::product_operation::program_adoption) fn release_branch_adoption_custody(
+        &self,
+        recovery: WorthQueryBranchAdoptionRecovery,
+        minimum_age_ticks: u64,
+    ) -> Result<
+        crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanupReceipt,
+        WorthQueryBranchAdoptionCustodyReleaseFailure,
+    >{
+        let WorthQueryBranchAdoptionRecovery {
+            source,
+            target,
+            selected_entity_count,
+            migration,
+            custody,
+            product,
+        } = recovery;
+        match self.release_product_publication_recovery(product, minimum_age_ticks) {
+            Ok(receipt) => Ok(receipt),
+            Err(WorthQueryProductUnpublishedRecoveryReleaseFailure::Recovery(failure)) => {
+                let denial = failure.denial();
+                Err(WorthQueryBranchAdoptionCustodyReleaseFailure::Recovery {
+                    denial,
+                    recovery: WorthQueryBranchAdoptionRecovery {
+                        source,
+                        target,
+                        selected_entity_count,
+                        migration,
+                        custody,
+                        product: failure.into_recovery(),
+                    },
+                })
+            }
+            Err(WorthQueryProductUnpublishedRecoveryReleaseFailure::OwnerCleanup(failure)) => Err(
+                WorthQueryBranchAdoptionCustodyReleaseFailure::OwnerCleanup(failure),
+            ),
+        }
+    }
+
     pub fn release_branch_adoption_recovery(
         &self,
         recovery: WorthQueryBranchAdoptionRecovery,

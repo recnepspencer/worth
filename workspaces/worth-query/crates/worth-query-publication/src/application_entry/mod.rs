@@ -59,6 +59,8 @@ pub use mutation::{
     WorthQueryStartedRequiredOutputs,
 };
 pub use programs::{
+    WorthQueryApplicationBranchSetProgramAdoptionRequest,
+    WorthQueryApplicationBranchSetProgramsRequest,
     WorthQueryApplicationProgramAdoptionPreparationDenial,
     WorthQueryApplicationProgramAdoptionRecoveryFailure,
     WorthQueryApplicationProgramAdoptionRequest,
@@ -67,13 +69,20 @@ pub use programs::{
     WorthQueryApplicationProgramsRequest, WorthQueryBranchAdoptionPublicationOutcome,
     WorthQueryBranchAdoptionRecovery, WorthQueryBranchAdoptionRecoveryDenial,
     WorthQueryBranchAdoptionRecoveryFailure, WorthQueryBranchAdoptionRecoveryOutcome,
+    WorthQueryBranchSetAdoptionAdvanceDenial, WorthQueryBranchSetAdoptionCancellation,
+    WorthQueryBranchSetAdoptionCloseDenial, WorthQueryBranchSetAdoptionPreparationDenial,
+    WorthQueryBranchSetAdoptionProgress, WorthQueryBranchSetAdoptionRecovery,
+    WorthQueryBranchSetAdoptionRecoveryFailure, WorthQueryBranchSetAdoptionRecoveryOutcome,
+    WorthQueryBranchSetAdoptionRecoveryReleaseFailure, WorthQueryClosedBranchSetAdoption,
     WorthQueryPerformedBranchAdoption, WorthQueryPreparedBranchAdoption,
-    WorthQueryPreparedProgramMigration, WorthQueryUnpublishedBranchAdoption,
+    WorthQueryPreparedBranchSetAdoption, WorthQueryPreparedProgramMigration,
+    WorthQueryProgramAdoptionCoverage, WorthQueryProgramAdoptionCoverageDenial,
+    WorthQueryUnpublishedBranchAdoption,
 };
 pub use query::WorthQueryApplicationQueryRequest;
 pub use request::{
-    WorthQueryApplicationHistorySelectionDenial, WorthQueryApplicationRequest,
-    WorthQueryApplicationRequestExt, WorthQueryApplicationRetainedRequest,
-    WorthQueryProgramOutputCurrentnessDenial,
+    WorthQueryApplicationBranchSetRequest, WorthQueryApplicationHistorySelectionDenial,
+    WorthQueryApplicationRequest, WorthQueryApplicationRequestExt,
+    WorthQueryApplicationRetainedRequest, WorthQueryProgramOutputCurrentnessDenial,
 };
 pub use retained_read::WorthQueryApplicationReadObservation;
