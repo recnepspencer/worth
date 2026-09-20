@@ -45,7 +45,9 @@ impl ApplicationSemanticFact {
         &self.subject
     }
 
-    pub(super) fn meaning(&self) -> &str {
+    /// Canonical descriptive meaning used by evolution and archive codecs.
+    /// It grants no installation or execution authority.
+    pub fn canonical_meaning(&self) -> &str {
         &self.meaning
     }
 }

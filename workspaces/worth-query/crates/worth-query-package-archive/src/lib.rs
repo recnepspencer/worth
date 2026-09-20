@@ -2,6 +2,7 @@
 
 #![forbid(unsafe_code)]
 
+mod application_program;
 mod binary_encoding;
 mod binary_input;
 mod binary_output;

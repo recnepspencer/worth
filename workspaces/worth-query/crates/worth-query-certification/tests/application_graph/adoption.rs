@@ -14,6 +14,8 @@ mod consumer_closure;
 mod custody;
 #[path = "adoption/migration.rs"]
 mod migration;
+#[path = "adoption/program_codec.rs"]
+mod program_codec;
 #[path = "adoption/recovery_terminals.rs"]
 mod recovery_terminals;
 #[path = "adoption/roster_admission.rs"]

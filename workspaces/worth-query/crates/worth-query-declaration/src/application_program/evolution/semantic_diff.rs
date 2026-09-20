@@ -174,7 +174,7 @@ fn index(
         facts
             .entry((fact.family(), fact.subject().to_owned()))
             .or_default()
-            .push(fact.meaning());
+            .push(fact.canonical_meaning());
     }
     for meanings in facts.values_mut() {
         meanings.sort_unstable();
