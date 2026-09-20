@@ -20,8 +20,8 @@ pub(super) fn select(
     maximum_work_units: usize,
 ) -> Result<WorthQueryAdoptionSelection, WorthQueryBranchAdoptionPreparationDenial> {
     let mut entity_names = BTreeSet::new();
-    for rule in requirements.added_rules() {
-        for target in rule.validation_scope() {
+    for scope in requirements.validation_scopes() {
+        for target in scope.targets() {
             match target {
                 ApplicationInvariantScopeTarget::Entity(entity) => {
                     entity_names.insert(entity.clone());

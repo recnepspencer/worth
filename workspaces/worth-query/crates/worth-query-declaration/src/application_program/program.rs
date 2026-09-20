@@ -8,7 +8,7 @@ use super::{
     ApplicationFeatureSpec, ApplicationProgramIdentity, ApplicationProgramManifest,
     ApplicationProgramOutputsShape, ApplicationProgramRevision,
     ApplicationProgramRevisionBudgetDenial, ApplicationProgramRuleDeclaration,
-    ApplicationProgramRulesShape,
+    ApplicationProgramRulesShape, ApplicationSemanticDescription,
 };
 
 mod definition_validation;
@@ -141,6 +141,7 @@ pub struct ValidatedApplicationProgram<Schema, Program> {
     actions: Box<[ApplicationActionDeclaration]>,
     connections: Box<[ApplicationConnectionDeclaration]>,
     rules: Box<[ApplicationProgramRuleDeclaration]>,
+    semantic_description: ApplicationSemanticDescription,
     marker: PhantomData<fn() -> (Schema, Program)>,
 }
 
@@ -163,6 +164,10 @@ impl<Schema, Program> ValidatedApplicationProgram<Schema, Program> {
     }
     pub fn rules(&self) -> &[ApplicationProgramRuleDeclaration] {
         &self.rules
+    }
+    /// Immutable authored meaning used for bounded program evolution.
+    pub fn semantic_description(&self) -> &ApplicationSemanticDescription {
+        &self.semantic_description
     }
 }
 
@@ -337,6 +342,13 @@ where
     );
     let revision = ApplicationProgramRevision::mint(&manifest)
         .map_err(|budget| deny_canonical_revision_budget(&identity, budget))?;
+    let semantic_description = ApplicationSemanticDescription::from_validated_parts(
+        revision.clone(),
+        &features,
+        &actions,
+        &connections,
+        &rules,
+    );
     Ok(ValidatedApplicationProgram {
         identity,
         revision,
@@ -344,6 +356,7 @@ where
         actions,
         connections,
         rules,
+        semantic_description,
         marker: PhantomData,
     })
 }

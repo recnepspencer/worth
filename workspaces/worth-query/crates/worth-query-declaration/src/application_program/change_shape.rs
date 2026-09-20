@@ -13,6 +13,23 @@ pub enum ApplicationChangePosture {
     Reconstruct,
 }
 
+impl ApplicationChangePosture {
+    /// Stable authored token used by canonical program identity and semantic
+    /// comparison. Rust variant spelling is not persisted implicitly.
+    pub const fn canonical_token(self) -> &'static str {
+        match self {
+            Self::Preserve => "preserve",
+            Self::Replace => "replace",
+            Self::Split => "split",
+            Self::Merge => "merge",
+            Self::CreateDelete => "create-delete",
+            Self::Rewire => "rewire",
+            Self::Reparent => "reparent",
+            Self::Reconstruct => "reconstruct",
+        }
+    }
+}
+
 /// Domain-owned change meaning attached to one canonical program action.
 ///
 /// The operation handler and installed invariants still own the actual candidate.

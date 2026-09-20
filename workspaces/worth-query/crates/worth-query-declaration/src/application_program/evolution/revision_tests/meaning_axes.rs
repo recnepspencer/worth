@@ -52,6 +52,18 @@ fn an_added_action_changes_the_revision() {
 }
 
 #[test]
+fn action_locality_granule_has_a_named_canonical_manifest_axis() {
+    let manifest = manifest_of::<BaselineProgram>();
+    let action = manifest
+        .records()
+        .iter()
+        .find(|record| record.starts_with("action|"))
+        .expect("the baseline program declares one action");
+
+    assert!(action.contains("|locality=|granule=|change="));
+}
+
+#[test]
 fn an_added_feature_changes_the_revision() {
     assert_ne!(
         revision_of::<BaselineProgram>(),

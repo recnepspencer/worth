@@ -178,10 +178,11 @@ pub mod facade {
         WorthQueryInstalledExternalInputProvider, WorthQueryInstalledRepeatedOptionalMember,
         WorthQueryInstalledScopedAction, WorthQueryProgramAddedRule,
         WorthQueryProgramAdoptionRequirements, WorthQueryProgramAdoptionRequirementsDenial,
-        WorthQueryProgramArtifactPosture, WorthQueryProgramRuleKey,
+        WorthQueryProgramArtifactPosture, WorthQueryProgramCustodyInventoryKind,
+        WorthQueryProgramCustodyInventoryRequirement, WorthQueryProgramRuleKey,
         WorthQueryProgramSupportAdmission, WorthQueryProgramSupportDenial,
         WorthQueryProgramSupportEntry, WorthQueryProgramSupportRoster,
-        WorthQueryRepeatedOptionalMemberState,
+        WorthQueryProgramValidationScope, WorthQueryRepeatedOptionalMemberState,
     };
     pub use crate::application_query::{
         prepare_canonical_read_graph_planning_basis, WorthQueryApplicationCanonicalArtifact,

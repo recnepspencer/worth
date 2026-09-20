@@ -3,7 +3,7 @@ use std::collections::BTreeSet;
 use std::marker::PhantomData;
 
 use worth_query_declaration::facade::application_program::{
-    ApplicationProgramIdentity, ApplicationProgramRevision,
+    ApplicationProgramIdentity, ApplicationProgramRevision, ApplicationSemanticDescription,
 };
 use worth_query_declaration::facade::application_schema::ApplicationSchemaBindingIdentity;
 
@@ -35,6 +35,8 @@ pub struct WorthQueryProgramSupportEntry {
     rules: Box<[WorthQueryProgramRuleKey]>,
     action_operations: Box<[TypeId]>,
     mutation_bindings: Box<[TypeId]>,
+    semantic_description: ApplicationSemanticDescription,
+    effectful_action_subjects: Box<[String]>,
 }
 
 impl WorthQueryProgramSupportEntry {
@@ -44,6 +46,8 @@ impl WorthQueryProgramSupportEntry {
         rules: BTreeSet<WorthQueryProgramRuleKey>,
         action_operations: BTreeSet<TypeId>,
         mutation_bindings: BTreeSet<TypeId>,
+        semantic_description: ApplicationSemanticDescription,
+        effectful_action_subjects: BTreeSet<String>,
     ) -> Self {
         Self {
             revision,
@@ -51,6 +55,8 @@ impl WorthQueryProgramSupportEntry {
             rules: rules.into_iter().collect(),
             action_operations: action_operations.into_iter().collect(),
             mutation_bindings: mutation_bindings.into_iter().collect(),
+            semantic_description,
+            effectful_action_subjects: effectful_action_subjects.into_iter().collect(),
         }
     }
 
@@ -72,6 +78,14 @@ impl WorthQueryProgramSupportEntry {
 
     pub fn mutation_bindings(&self) -> &[TypeId] {
         &self.mutation_bindings
+    }
+
+    pub fn semantic_description(&self) -> &ApplicationSemanticDescription {
+        &self.semantic_description
+    }
+
+    pub(crate) fn effectful_action_subjects(&self) -> &[String] {
+        &self.effectful_action_subjects
     }
 
     /// Whether this program declares the named installed rule contract, which

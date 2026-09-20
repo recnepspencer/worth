@@ -48,6 +48,20 @@ pub(super) fn prepare<Schema: ApplicationSchema>(
     if &requirements != expected_requirements {
         return Err(WorthQueryBranchAdoptionPreparationDenial::RequirementsChanged);
     }
+    if let Some(requirement) = requirements.migration_assessment_requirements().first() {
+        return Err(
+            WorthQueryBranchAdoptionPreparationDenial::MigrationAssessmentRequired(
+                requirement.clone(),
+            ),
+        );
+    }
+    if let Some(requirement) = requirements.custody_inventory_requirements().first() {
+        return Err(
+            WorthQueryBranchAdoptionPreparationDenial::CustodyInventoryRequired(
+                requirement.clone(),
+            ),
+        );
+    }
     let application = selected.application();
     let support = application
         .installed_program_support()

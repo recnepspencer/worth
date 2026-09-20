@@ -5,7 +5,7 @@ use worth_query_declaration::facade::application_program::{
     ValidatedApplicationProgram,
 };
 use worth_query_declaration::facade::application_schema::{
-    ApplicationSchema, ApplicationSchemaBindingIdentity,
+    ApplicationSchema, ApplicationSchemaBindingIdentity, ApplicationSchemaMember,
 };
 
 use super::compatibility::{
@@ -164,6 +164,8 @@ where
                 .iter()
                 .filter_map(|action| action.mutation_binding_type())
                 .collect(),
+            program.semantic_description().clone(),
+            effectful_action_subjects(self.installed_schema, program),
         ));
         Ok(self)
     }
@@ -235,6 +237,40 @@ where
         }
         Ok(())
     }
+}
+
+fn effectful_action_subjects<Schema, Program>(
+    installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
+    program: &ValidatedApplicationProgram<Schema, Program>,
+) -> BTreeSet<String>
+where
+    Schema: ApplicationSchema,
+    Program: ApplicationProgramDefinition<Schema>,
+{
+    let external_operations = installed_schema
+        .installed_declaration()
+        .members()
+        .iter()
+        .filter_map(|member| match member {
+            ApplicationSchemaMember::OperationExternalEffect { operation, .. } => {
+                Some(operation.as_str())
+            }
+            _ => None,
+        })
+        .collect::<BTreeSet<_>>();
+    program
+        .actions()
+        .iter()
+        .filter(|action| external_operations.contains(action.binding()))
+        .map(|action| {
+            format!(
+                "{}|{}|{}",
+                action.composition_instance(),
+                action.feature(),
+                action.binding()
+            )
+        })
+        .collect()
 }
 
 fn require_governed_composition<Schema, Program>(

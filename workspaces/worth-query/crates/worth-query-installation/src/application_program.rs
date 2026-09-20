@@ -13,7 +13,8 @@ mod support;
 mod program_support_fixture;
 pub use adoption::{
     WorthQueryProgramAddedRule, WorthQueryProgramAdoptionRequirements,
-    WorthQueryProgramAdoptionRequirementsDenial,
+    WorthQueryProgramAdoptionRequirementsDenial, WorthQueryProgramCustodyInventoryKind,
+    WorthQueryProgramCustodyInventoryRequirement, WorthQueryProgramValidationScope,
 };
 pub use correspondence::{
     WorthQueryCorrespondedAction, WorthQueryInstalledRepeatedOptionalMember,

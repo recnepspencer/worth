@@ -1,10 +1,11 @@
 mod selection;
 mod state;
 
+use worth_query_declaration::facade::application_program::ApplicationProgramMigrationAssessmentRequirement;
 use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryProgramAdoptionRequirements,
-    WorthQueryProgramAdoptionRequirementsDenial,
+    WorthQueryProgramAdoptionRequirementsDenial, WorthQueryProgramCustodyInventoryRequirement,
 };
 
 use super::super::WorthQuerySelectedProductOperation;
@@ -27,6 +28,8 @@ pub enum WorthQueryBranchAdoptionPreparationDenial {
     ProgramActivationUnrostered,
     Requirements(WorthQueryProgramAdoptionRequirementsDenial),
     RequirementsChanged,
+    MigrationAssessmentRequired(ApplicationProgramMigrationAssessmentRequirement),
+    CustodyInventoryRequired(WorthQueryProgramCustodyInventoryRequirement),
     UnknownEntityScope {
         entity: String,
     },

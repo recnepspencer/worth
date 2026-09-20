@@ -20,11 +20,19 @@ use super::schema::{
 
 /// The one feature both programs govern.
 pub struct BoundedDimensionFeature;
+pub struct BoundedDimensionFeatureV2;
 
 impl ApplicationFeature<BoundedDimensionSchema> for BoundedDimensionFeature {
     type Inputs = ApplicationFeatureInputLeaf;
 
     const IDENTITY: &'static str = "worth.query.certification.bounded-dimension.feature.v1";
+}
+
+impl ApplicationFeature<BoundedDimensionSchema> for BoundedDimensionFeatureV2 {
+    type Inputs = ApplicationFeatureInputLeaf;
+
+    const IDENTITY: &'static str = "worth.query.certification.bounded-dimension.feature.v1";
+    const MAJOR: u16 = 2;
 }
 
 type CommitBoundaryRule<Invariant> = ApplicationRuleList<
@@ -40,6 +48,8 @@ pub struct DimensionProgramP0;
 
 /// The program that reads `bounded-dimension-v2` as the law.
 pub struct DimensionProgramP1;
+/// A rostered target whose feature meaning cannot be carried without migration.
+pub struct ChangedFeatureDimensionProgram;
 
 /// A program this court never rosters on any host.
 pub struct UnrosteredDimensionProgram;
@@ -70,6 +80,24 @@ impl ApplicationProgramDefinition<BoundedDimensionSchema> for DimensionProgramP1
 
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         dimension_feature_specs()
+    }
+}
+
+impl ApplicationProgramDefinition<BoundedDimensionSchema> for ChangedFeatureDimensionProgram {
+    type Contributions = (BoundedDimensionContribution,);
+    type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
+    type Rules = CommitBoundaryRule<BoundedDimensionV1>;
+
+    const IDENTITY: ApplicationProgramIdentity = ApplicationProgramIdentity::new(
+        "worth.query.certification.bounded-dimension.changed-feature.v1",
+    );
+
+    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
+        vec![
+            ApplicationFeatureSpec::root::<BoundedDimensionSchema, BoundedDimensionFeatureV2>()
+                .mutation::<SetPartDimensionBinding>()
+                .finish(),
+        ]
     }
 }
 
@@ -109,6 +137,11 @@ pub fn validated_first_program(
 pub fn validated_second_program(
 ) -> ValidatedApplicationProgram<BoundedDimensionSchema, DimensionProgramP1> {
     validate::<DimensionProgramP1>()
+}
+
+pub fn validated_changed_feature_program(
+) -> ValidatedApplicationProgram<BoundedDimensionSchema, ChangedFeatureDimensionProgram> {
+    validate::<ChangedFeatureDimensionProgram>()
 }
 
 pub fn validated_foreign_rule_program(

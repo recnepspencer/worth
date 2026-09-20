@@ -17,5 +17,6 @@ mod requirements_tests;
 
 pub use requirements::{
     WorthQueryProgramAddedRule, WorthQueryProgramAdoptionRequirements,
-    WorthQueryProgramAdoptionRequirementsDenial,
+    WorthQueryProgramAdoptionRequirementsDenial, WorthQueryProgramCustodyInventoryKind,
+    WorthQueryProgramCustodyInventoryRequirement, WorthQueryProgramValidationScope,
 };

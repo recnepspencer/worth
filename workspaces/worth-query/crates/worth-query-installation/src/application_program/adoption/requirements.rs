@@ -1,36 +1,22 @@
-//! The owner-compiled statement of what a branch must satisfy to adopt a
-//! program.
+//! Installation-authored semantic impact and adoption obligations.
 
-use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
+use worth_query_declaration::facade::application_program::{
+    ApplicationProgramMigrationAssessmentRequirement, ApplicationProgramRevision,
+    ApplicationSemanticChangeKind, ApplicationSemanticDiff, ApplicationSemanticDiffDenial,
+    ApplicationSemanticFamily,
+};
 use worth_query_declaration::facade::application_schema::{
     ApplicationInvariantScopeTarget, ApplicationSchema, ApplicationSchemaBindingIdentity,
 };
 
 use super::scope_validation::installed_validation_scope;
 use crate::application_program::support::{
-    WorthQueryProgramRuleKey, WorthQueryProgramSupportRoster,
+    WorthQueryProgramRuleKey, WorthQueryProgramSupportEntry, WorthQueryProgramSupportRoster,
 };
 use crate::facade::WorthQueryInstalledApplicationSchema;
 
-/// One rule contract that begins governing when a branch moves from the source
-/// program to the target program.
-///
-/// The scope is the installed catalog's own applicability for that contract,
-/// never the caller's idea of it: it names what existing state the rule reaches
-/// and therefore what an adoption has to put in front of it before the branch
-/// can be said to satisfy the target program.
-///
-/// ```
-/// use worth_query_installation::facade::{
-///     WorthQueryProgramAddedRule, WorthQueryProgramAdoptionRequirements,
-/// };
-///
-/// fn begins_governing(
-///     requirements: &WorthQueryProgramAdoptionRequirements,
-/// ) -> &[WorthQueryProgramAddedRule] {
-///     requirements.added_rules()
-/// }
-/// ```
+const DEFAULT_COMPARISON_WORK_LIMIT: usize = 65_536;
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryProgramAddedRule {
     rule: WorthQueryProgramRuleKey,
@@ -47,27 +33,55 @@ impl WorthQueryProgramAddedRule {
     }
 }
 
-/// What a branch must satisfy to move from one rostered program to another.
-///
-/// Requirements are evidence, never a permit. They describe what the host
-/// computed for one (source, target) pair on one installed schema, so a caller
-/// can see the cost and scope of an adoption before asking for it. The
-/// operation that performs the adoption recomputes them from the branch's own
-/// activation and compares; a value presented by a caller opens nothing that
-/// the recomputation would not have opened by itself.
-///
-/// There is no public constructor. The only way to hold one is to have asked a
-/// closed support roster for it.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct WorthQueryProgramValidationScope {
+    rule: WorthQueryProgramRuleKey,
+    targets: Box<[ApplicationInvariantScopeTarget]>,
+}
+
+impl WorthQueryProgramValidationScope {
+    pub fn rule(&self) -> &WorthQueryProgramRuleKey {
+        &self.rule
+    }
+
+    pub fn targets(&self) -> &[ApplicationInvariantScopeTarget] {
+        &self.targets
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WorthQueryProgramCustodyInventoryKind {
+    OperationContinuation,
+    ExternalEffectRecovery,
+    ResourceCustody,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct WorthQueryProgramCustodyInventoryRequirement {
+    kind: WorthQueryProgramCustodyInventoryKind,
+    subject: String,
+}
+
+impl WorthQueryProgramCustodyInventoryRequirement {
+    pub const fn kind(&self) -> WorthQueryProgramCustodyInventoryKind {
+        self.kind
+    }
+
+    pub fn subject(&self) -> &str {
+        &self.subject
+    }
+}
+
+/// Owner-computed impact for one exact source/target pair and installation.
 ///
 /// ```compile_fail,E0451
 /// use worth_query_installation::facade::WorthQueryProgramAdoptionRequirements;
-///
 /// fn forged() -> WorthQueryProgramAdoptionRequirements {
 ///     WorthQueryProgramAdoptionRequirements {
-///         schema_binding: unimplemented!(),
-///         source: unimplemented!(),
-///         target: unimplemented!(),
-///         added_rules: unimplemented!(),
+///         schema_binding: unimplemented!(), source: unimplemented!(),
+///         target: unimplemented!(), semantic_diff: unimplemented!(),
+///         validation_scopes: unimplemented!(), added_rules: unimplemented!(),
+///         migration_assessments: unimplemented!(), custody_inventory: unimplemented!(),
 ///     }
 /// }
 /// ```
@@ -76,85 +90,101 @@ pub struct WorthQueryProgramAdoptionRequirements {
     schema_binding: ApplicationSchemaBindingIdentity,
     source: ApplicationProgramRevision,
     target: ApplicationProgramRevision,
+    semantic_diff: ApplicationSemanticDiff,
+    validation_scopes: Box<[WorthQueryProgramValidationScope]>,
     added_rules: Box<[WorthQueryProgramAddedRule]>,
+    migration_assessments: Box<[ApplicationProgramMigrationAssessmentRequirement]>,
+    custody_inventory: Box<[WorthQueryProgramCustodyInventoryRequirement]>,
 }
 
 impl WorthQueryProgramAdoptionRequirements {
-    /// The installed schema these requirements were compiled against. An
-    /// adoption judged on one installation says nothing about another.
     pub fn schema_binding(&self) -> &ApplicationSchemaBindingIdentity {
         &self.schema_binding
     }
-
     pub fn source(&self) -> &ApplicationProgramRevision {
         &self.source
     }
-
     pub fn target(&self) -> &ApplicationProgramRevision {
         &self.target
     }
-
-    /// The rules that start governing, in the roster's canonical rule order.
+    pub fn semantic_diff(&self) -> &ApplicationSemanticDiff {
+        &self.semantic_diff
+    }
+    pub fn validation_scopes(&self) -> &[WorthQueryProgramValidationScope] {
+        &self.validation_scopes
+    }
     pub fn added_rules(&self) -> &[WorthQueryProgramAddedRule] {
         &self.added_rules
     }
-
-    /// Whether existing state has to be put in front of a rule before the
-    /// target program can be said to hold on this branch.
-    ///
-    /// A rule the source declares and the target drops cannot be violated by
-    /// state the branch is already carrying — it stops speaking — and a rule
-    /// both declare has been governing that state all along. Only a rule that
-    /// begins governing can find the branch already in breach.
+    pub fn migration_assessment_requirements(
+        &self,
+    ) -> &[ApplicationProgramMigrationAssessmentRequirement] {
+        &self.migration_assessments
+    }
+    pub fn custody_inventory_requirements(
+        &self,
+    ) -> &[WorthQueryProgramCustodyInventoryRequirement] {
+        &self.custody_inventory
+    }
     pub fn requires_existing_state_validation(&self) -> bool {
-        !self.added_rules.is_empty()
+        !self.validation_scopes.is_empty()
+    }
+    pub fn requires_migration_assessment(&self) -> bool {
+        !self.migration_assessments.is_empty()
+    }
+    pub fn requires_custody_inventory(&self) -> bool {
+        !self.custody_inventory.is_empty()
+    }
+    /// Positive authored equivalence. This does not claim that changed target
+    /// rules have accepted the selected branch's live state.
+    pub fn semantically_equivalent(&self) -> bool {
+        self.semantic_diff.changes().is_empty()
     }
 }
 
-/// Why a host could not say what one adoption would demand.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryProgramAdoptionRequirementsDenial {
-    /// The branch's current program is not on this roster, so what it declares
-    /// — and therefore what the move adds — cannot be established.
     UnrosteredSource {
         revision: ApplicationProgramRevision,
     },
-    /// The proposed program is not supported by this host.
     UnrosteredTarget {
         revision: ApplicationProgramRevision,
     },
-    /// The roster was admitted against a different installed schema than the
-    /// one asked to resolve its rules.
     ForeignSchemaBinding {
         roster: ApplicationSchemaBindingIdentity,
         installed: ApplicationSchemaBindingIdentity,
     },
-    /// A rostered program declares a rule this installed catalog cannot
-    /// resolve, so the scope the adoption would validate is unknown.
-    ///
-    /// This is defense in depth rather than an ordinarily constructible
-    /// posture: support admission and scope resolution use the same rule key,
-    /// while `ForeignSchemaBinding` ensures the roster and installed catalog
-    /// belong to one schema binding. Keeping the denial explicit makes a
-    /// future weakening of either boundary fail closed instead of silently
-    /// treating an unknown scope as empty.
-    UnresolvedRuleScope { rule: WorthQueryProgramRuleKey },
+    UnresolvedRuleScope {
+        rule: WorthQueryProgramRuleKey,
+    },
+    SemanticComparison(ApplicationSemanticDiffDenial),
 }
 
 impl<Schema> WorthQueryProgramSupportRoster<Schema>
 where
     Schema: ApplicationSchema,
 {
-    /// Compiles what a branch running `source` must satisfy to run `target`.
-    ///
-    /// `source == target` is not a denial: it compiles to requirements that add
-    /// no rule. Whether re-adopting the program a branch already runs is a
-    /// no-op or a mistake is the operation's judgement, not the catalog's.
     pub fn adoption_requirements(
         &self,
         installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
         source: &ApplicationProgramRevision,
         target: &ApplicationProgramRevision,
+    ) -> Result<WorthQueryProgramAdoptionRequirements, WorthQueryProgramAdoptionRequirementsDenial>
+    {
+        self.adoption_requirements_with_maximum_work(
+            installed_schema,
+            source,
+            target,
+            DEFAULT_COMPARISON_WORK_LIMIT,
+        )
+    }
+
+    pub fn adoption_requirements_with_maximum_work(
+        &self,
+        installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
+        source: &ApplicationProgramRevision,
+        target: &ApplicationProgramRevision,
+        maximum_comparison_work: usize,
     ) -> Result<WorthQueryProgramAdoptionRequirements, WorthQueryProgramAdoptionRequirementsDenial>
     {
         let installed = installed_schema.binding_identity();
@@ -176,27 +206,123 @@ where
                 revision: target.clone(),
             }
         })?;
-        let mut added_rules = Vec::new();
-        for rule in target_entry.rules() {
-            if source_entry.declares_rule(rule) {
-                continue;
-            }
-            let validation_scope =
-                installed_validation_scope(installed_schema, rule).ok_or_else(|| {
-                    WorthQueryProgramAdoptionRequirementsDenial::UnresolvedRuleScope {
-                        rule: rule.clone(),
-                    }
-                })?;
-            added_rules.push(WorthQueryProgramAddedRule {
-                rule: rule.clone(),
-                validation_scope: validation_scope.into_boxed_slice(),
-            });
+        compile_requirements(
+            installed_schema,
+            installed,
+            source_entry,
+            target_entry,
+            maximum_comparison_work,
+        )
+    }
+}
+
+fn compile_requirements<Schema: ApplicationSchema>(
+    installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
+    schema_binding: ApplicationSchemaBindingIdentity,
+    source: &WorthQueryProgramSupportEntry,
+    target: &WorthQueryProgramSupportEntry,
+    maximum_comparison_work: usize,
+) -> Result<WorthQueryProgramAdoptionRequirements, WorthQueryProgramAdoptionRequirementsDenial> {
+    let semantic_diff = ApplicationSemanticDiff::compare(
+        source.semantic_description(),
+        target.semantic_description(),
+        maximum_comparison_work,
+    )
+    .map_err(WorthQueryProgramAdoptionRequirementsDenial::SemanticComparison)?;
+    let (validation_scopes, added_rules) =
+        resolve_target_rule_scopes(installed_schema, source, target)?;
+    let migration_assessments = semantic_diff
+        .changes()
+        .iter()
+        .filter_map(|change| change.migration_assessment_requirement())
+        .collect::<Vec<_>>();
+    let custody_inventory = compile_custody_inventory(source, &semantic_diff);
+    Ok(WorthQueryProgramAdoptionRequirements {
+        schema_binding,
+        source: source.revision().clone(),
+        target: target.revision().clone(),
+        semantic_diff,
+        validation_scopes: validation_scopes.into_boxed_slice(),
+        added_rules: added_rules.into_boxed_slice(),
+        migration_assessments: migration_assessments.into_boxed_slice(),
+        custody_inventory: custody_inventory.into_boxed_slice(),
+    })
+}
+
+fn resolve_target_rule_scopes<Schema: ApplicationSchema>(
+    installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
+    source: &WorthQueryProgramSupportEntry,
+    target: &WorthQueryProgramSupportEntry,
+) -> Result<
+    (
+        Vec<WorthQueryProgramValidationScope>,
+        Vec<WorthQueryProgramAddedRule>,
+    ),
+    WorthQueryProgramAdoptionRequirementsDenial,
+> {
+    let mut scopes = Vec::new();
+    let mut added = Vec::new();
+    for rule in target.rules() {
+        if source.declares_rule(rule) {
+            continue;
         }
-        Ok(WorthQueryProgramAdoptionRequirements {
-            schema_binding: installed,
-            source: source.clone(),
-            target: target.clone(),
-            added_rules: added_rules.into_boxed_slice(),
-        })
+        let targets = installed_validation_scope(installed_schema, rule).ok_or_else(|| {
+            WorthQueryProgramAdoptionRequirementsDenial::UnresolvedRuleScope { rule: rule.clone() }
+        })?;
+        scopes.push(WorthQueryProgramValidationScope {
+            rule: rule.clone(),
+            targets: targets.clone().into_boxed_slice(),
+        });
+        added.push(WorthQueryProgramAddedRule {
+            rule: rule.clone(),
+            validation_scope: targets.into_boxed_slice(),
+        });
+    }
+    Ok((scopes, added))
+}
+
+fn compile_custody_inventory(
+    source: &WorthQueryProgramSupportEntry,
+    diff: &ApplicationSemanticDiff,
+) -> Vec<WorthQueryProgramCustodyInventoryRequirement> {
+    let mut requirements = Vec::new();
+    for change in diff.changes() {
+        let removed_or_changed = matches!(
+            change.kind(),
+            ApplicationSemanticChangeKind::Removed | ApplicationSemanticChangeKind::Changed
+        );
+        if change.family() == ApplicationSemanticFamily::Operations && removed_or_changed {
+            requirements.push(custody_inventory_requirement(
+                WorthQueryProgramCustodyInventoryKind::OperationContinuation,
+                change.subject(),
+            ));
+            if source
+                .effectful_action_subjects()
+                .iter()
+                .any(|subject| subject == change.subject())
+            {
+                requirements.push(custody_inventory_requirement(
+                    WorthQueryProgramCustodyInventoryKind::ExternalEffectRecovery,
+                    change.subject(),
+                ));
+            }
+        }
+        if change.family() == ApplicationSemanticFamily::Resources && removed_or_changed {
+            requirements.push(custody_inventory_requirement(
+                WorthQueryProgramCustodyInventoryKind::ResourceCustody,
+                change.subject(),
+            ));
+        }
+    }
+    requirements
+}
+
+fn custody_inventory_requirement(
+    kind: WorthQueryProgramCustodyInventoryKind,
+    subject: &str,
+) -> WorthQueryProgramCustodyInventoryRequirement {
+    WorthQueryProgramCustodyInventoryRequirement {
+        kind,
+        subject: subject.to_owned(),
     }
 }

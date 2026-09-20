@@ -51,8 +51,13 @@ pub use evaluated_requirement::{
     ApplicationEvaluatedRequirement, ApplicationEvaluatedRequirementRule,
     ApplicationRequirementSubmissionDenial,
 };
-pub use evolution::ApplicationProgramRevision;
 pub(in crate::application_program) use evolution::ApplicationProgramRevisionBudgetDenial;
+pub use evolution::{
+    ApplicationProgramMigrationAssessmentRequirement, ApplicationProgramRevision,
+    ApplicationSemanticChange, ApplicationSemanticChangeKind, ApplicationSemanticDescription,
+    ApplicationSemanticDiff, ApplicationSemanticDiffDenial, ApplicationSemanticFact,
+    ApplicationSemanticFamily,
+};
 pub use external_input::{ApplicationExternalInputProvider, ApplicationExternalInputResolution};
 pub use feature::{
     ApplicationFeature, ApplicationFeatureDeclaration, ApplicationFeatureInputDeclaration,

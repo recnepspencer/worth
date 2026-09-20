@@ -135,7 +135,7 @@ impl ApplicationProgramManifest {
         for action in actions {
             records.push(format!(
                 "action|{}|{}|input={}|conditional={}|required-output={}|\
-                 authority=binding:{}|invariant={}|observation={}|locality={}|change={}|effect={}",
+                 authority=binding:{}|invariant={}|observation={}|locality={}|granule={}|change={}|posture={}|effect={}",
                 action.composition_instance(),
                 action.feature(),
                 action.operation_input_identity().as_str(),
@@ -149,7 +149,13 @@ impl ApplicationProgramManifest {
                     .correspondence()
                     .map_or("", |attachment| attachment.identity()),
                 action.locality().map_or("", |locality| locality.identity()),
+                action
+                    .locality()
+                    .map_or("", |locality| locality.granule().canonical_token()),
                 action.change_shape().map_or("", |change| change.identity()),
+                action
+                    .change_shape()
+                    .map_or("", |change| change.posture().canonical_token()),
                 action
                     .external_input()
                     .map_or("", |attachment| attachment.identity())

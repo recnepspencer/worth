@@ -1,5 +1,6 @@
 mod canonical_slot;
 mod meaning_axes;
+mod semantic_diff;
 mod work_budget;
 
 use super::super::{
@@ -287,4 +288,15 @@ where
         .validated_program()
         .expect("the revision fixture programs are declaration-valid")
         .normalized_manifest()
+}
+
+fn description_of<Program>() -> super::super::ApplicationSemanticDescription
+where
+    Program: ApplicationProgramDefinition<RevisionSchema>,
+{
+    ApplicationProgramAuthoring::<RevisionSchema, Program>::begin()
+        .validated_program()
+        .expect("the semantic fixture program is declaration-valid")
+        .semantic_description()
+        .clone()
 }

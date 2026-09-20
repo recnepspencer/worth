@@ -10,5 +10,7 @@ mod branch_divergence;
 mod recovery_terminals;
 #[path = "adoption/roster_admission.rs"]
 mod roster_admission;
+#[path = "adoption/semantic_impact.rs"]
+mod semantic_impact;
 #[path = "adoption/signal_fork_inheritance.rs"]
 mod signal_fork_inheritance;
