@@ -26,6 +26,8 @@ pub(in crate::physical_runtime) struct PhysicalCurrentRootOwner {
     read_protection: std::sync::Arc<crate::physical_runtime::stability::RootProtectionRegistry>,
     state: Mutex<PhysicalCurrentRootState>,
     transition: PhysicalRootPublicationTransitionOwner,
+    publication: std::sync::Arc<crate::physical_runtime::durability::retention::PhysicalPublicationAdmission>,
+    rewrite_growth: Mutex<Option<crate::physical_runtime::durability::retention::CandidateGrowthLease>>,
 }
 
 struct PhysicalCurrentRootState {
@@ -85,7 +87,68 @@ impl PhysicalCurrentRootOwner {
                 free_space,
             }),
             transition: PhysicalRootPublicationTransitionOwner::new(runtime),
+            publication: std::sync::Arc::new(
+                crate::physical_runtime::durability::retention::PhysicalPublicationAdmission::new(
+                    crate::physical_runtime::durability::retention::PhysicalRetentionProfile::store_default(),
+                ),
+            ),
+            rewrite_growth: Mutex::new(None),
         }
+    }
+
+    pub(in crate::physical_runtime) fn register_pending_publication(
+        &self,
+        identity: crate::physical_runtime::PhysicalMutationIdentity,
+    ) -> Result<
+        crate::physical_runtime::durability::retention::PendingPublicationLease,
+        crate::physical_runtime::durability::retention::PhysicalPublicationAdmissionDenial,
+    > {
+        self.publication.register_exclusive_pending(identity)
+    }
+
+    pub(in crate::physical_runtime) fn pending_publication_count(&self) -> usize {
+        self.publication.pending_len()
+    }
+
+    pub(in crate::physical_runtime) fn hold_rewrite_candidate(
+        &self,
+        generation: u64,
+        bytes: u64,
+    ) -> Result<(), ()> {
+        let lease = self
+            .publication
+            .reserve_candidate(generation, bytes)
+            .map_err(|_| ())?;
+        *self
+            .rewrite_growth
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner()) = Some(lease);
+        Ok(())
+    }
+
+    pub(in crate::physical_runtime) fn release_rewrite_candidate(&self) {
+        self.rewrite_growth
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .take();
+    }
+
+    pub(in crate::physical_runtime) fn commit_rewrite_candidate(&self) {
+        let lease = self
+            .rewrite_growth
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .take();
+        if let Some(lease) = lease {
+            self.publication.seal_candidate_charge(lease.generation());
+        }
+    }
+
+    pub(in crate::physical_runtime) fn install_retention_profile(
+        &self,
+        profile: crate::physical_runtime::durability::PhysicalRetentionProfile,
+    ) {
+        self.publication.replace_profile(profile);
     }
 
     pub(in crate::physical_runtime) fn snapshot(

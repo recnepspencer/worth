@@ -15,6 +15,10 @@ use worth_store::physical_runtime::{
 mod cancellation_boundaries;
 #[path = "managed_mutation/drop_boundaries.rs"]
 mod drop_boundaries;
+#[path = "managed_mutation/pending_publication.rs"]
+mod pending_publication;
+#[path = "managed_mutation/selected_segment_rewrite.rs"]
+mod selected_segment_rewrite;
 
 #[test]
 fn managed_mutation_completion_is_the_only_acknowledgment_source() {
@@ -271,7 +275,7 @@ fn cancellation_during_runtime_close_is_explicit_and_close_drains_the_attempt() 
     assert_eq!(shutdown.mutations().cancellation_runtime_closing(), 1);
 }
 
-fn prepare(
+pub(super) fn prepare(
     serving: &worth_store::physical_runtime::ServingPhysicalRuntime,
     placement: worth_store::physical_runtime::AdmittedRecordPlacementPolicy,
     material: [u8; 32],

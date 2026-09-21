@@ -23,15 +23,19 @@ pub(in crate::physical_runtime::record_serving) struct PublishedTailPageGeometry
 }
 
 impl PublishedTailPageGeometry {
-    pub(super) const fn page_cell(&self) -> worth_store_physical_format::PageGenerationCell {
+    pub(in crate::physical_runtime::record_serving) const fn page_cell(
+        &self,
+    ) -> worth_store_physical_format::PageGenerationCell {
         self.page
     }
 
-    pub(super) const fn generation(&self) -> u64 {
+    pub(in crate::physical_runtime::record_serving) const fn generation(&self) -> u64 {
         self.page.generation().get()
     }
 
-    pub(super) const fn page(&self) -> worth_store_physical_format::PhysicalPageId {
+    pub(in crate::physical_runtime::record_serving) const fn page(
+        &self,
+    ) -> worth_store_physical_format::PhysicalPageId {
         self.page.page_id()
     }
 

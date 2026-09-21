@@ -22,6 +22,7 @@ mod pre_seal_cancellation;
 mod root_candidate_execution;
 mod root_preparation;
 mod root_progression;
+mod selected_segment_rewrite;
 mod submission;
 mod wal_data_planning;
 
@@ -202,6 +203,24 @@ impl RecordPublicationDirector {
                 self.idempotency.record_indeterminate(*fate)
             }
         }
+    }
+
+    pub(in crate::physical_runtime) fn pending_publication_count(&self) -> usize {
+        self.root_owner.pending_publication_count()
+    }
+
+    pub(in crate::physical_runtime) fn limit_candidate_growth_bytes(&self, usable_growth_bytes: u64) {
+        let headroom_bytes = 64 * 1024;
+        let profile = crate::physical_runtime::durability::PhysicalRetentionProfile::new(
+            usable_growth_bytes
+                .checked_add(headroom_bytes)
+                .expect("usable growth plus headroom fits u64"),
+            4_096,
+            headroom_bytes,
+            8,
+        )
+        .expect("growth limits withhold nonzero progress headroom");
+        self.root_owner.install_retention_profile(profile);
     }
 
     #[cfg(feature = "certification-test-authority")]

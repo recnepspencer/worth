@@ -170,6 +170,15 @@ fn plan_member(
         data.redo_targets(),
         &projection,
     );
+    let redo = match data.rewrite() {
+        Some(rewrite) => redo.with_encoded_payload(
+            rewrite
+                .with_group(group.group_identity().bytes())
+                .with_page_lsn(lsn_range.start().get())
+                .encode(),
+        ),
+        None => redo,
+    };
     let member = PhysicalWalMemberBasis::new(
         group.member_identity(),
         binding.mutation_identity(),

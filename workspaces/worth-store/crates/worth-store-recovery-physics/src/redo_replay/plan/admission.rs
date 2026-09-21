@@ -10,6 +10,8 @@ pub fn admit_physical_redo_members(
 ) -> Result<AdmittedPhysicalRedoMembers, PhysicalRedoPlanningDenial> {
     members.sort_unstable_by_key(|member| member.lsn_range.start());
     let mut admitted = Vec::with_capacity(members.len());
+    let mut rewrites = Vec::new();
+    let mut rewrite_admissions = Vec::new();
     let mut targets = 0_u64;
     let mut scratch_bytes = 0_u64;
     let mut distinct = BTreeSet::new();
@@ -20,6 +22,25 @@ pub fn admit_physical_redo_members(
             return Err(PhysicalRedoPlanningDenial::LsnRangeMismatch);
         }
         prior_end = Some(member.lsn_range.end_exclusive());
+        if let Some(rewrite) = admitted_rewrite(&member, limits.recovery_memory_bytes)? {
+            scratch_bytes = scratch_bytes
+                .checked_add(rewrite.candidate_bytes())
+                .ok_or(PhysicalRedoPlanningDenial::CounterOverflow)?;
+            if scratch_bytes > limits.recovery_memory_bytes {
+                return Err(PhysicalRedoPlanningDenial::RecoveryMemoryLimit {
+                    observed: scratch_bytes,
+                    admitted: limits.recovery_memory_bytes,
+                });
+            }
+            rewrite_admissions.push(PhysicalRewriteAdmission {
+                operation: member.operation(),
+                group: member.group(),
+                fate: member.fate(),
+                redo: rewrite,
+            });
+            rewrites.push(rewrite);
+            continue;
+        }
         let (records, decoded) = decode_physical_redo_member(
             member.canonical_redo(),
             member.lsn_range(),
@@ -58,6 +79,8 @@ pub fn admit_physical_redo_members(
         scratch_bytes,
         members: admitted.into_boxed_slice(),
         group_allocations,
+        rewrites: rewrites.into_boxed_slice(),
+        rewrite_admissions: rewrite_admissions.into_boxed_slice(),
     })
 }
 
@@ -137,7 +160,46 @@ impl AdmittedPhysicalRedoMembers {
             projections: projections.into_boxed_slice(),
             recovery_root_allocation_bytes,
             counters,
+            rewrites: self.rewrites,
+            rewrite_admissions: self.rewrite_admissions,
         })
+    }
+}
+
+fn rewrite_payload(member: &PhysicalRedoMemberInput) -> Result<bool, PhysicalRedoPlanningDenial> {
+    match worth_store_physical_format::PhysicalRewriteRedo::decode(member.canonical_redo(), u64::MAX)
+    {
+        Ok(_) => Ok(true),
+        Err(worth_store_physical_format::PhysicalRewriteRedoDenial::WrongDomain) => Ok(false),
+        Err(_) => Err(PhysicalRedoPlanningDenial::MalformedMember),
+    }
+}
+
+fn admitted_rewrite(
+    member: &PhysicalRedoMemberInput,
+    maximum_candidate_bytes: u64,
+) -> Result<Option<worth_store_physical_format::PhysicalRewriteRedo>, PhysicalRedoPlanningDenial> {
+    let span = member
+        .lsn_range()
+        .end_exclusive()
+        .get()
+        .saturating_sub(member.lsn_range().start().get());
+    match worth_store_physical_format::PhysicalRewriteRedo::decode(member.canonical_redo(), u64::MAX)
+    {
+        Ok(rewrite) => {
+            if span != 1 {
+                return Err(PhysicalRedoPlanningDenial::LsnRangeMismatch);
+            }
+            if rewrite.candidate_bytes() > maximum_candidate_bytes {
+                return Err(PhysicalRedoPlanningDenial::RecoveryMemoryLimit {
+                    observed: rewrite.candidate_bytes(),
+                    admitted: maximum_candidate_bytes,
+                });
+            }
+            Ok(Some(rewrite))
+        }
+        Err(worth_store_physical_format::PhysicalRewriteRedoDenial::WrongDomain) => Ok(None),
+        Err(_) => Err(PhysicalRedoPlanningDenial::MalformedMember),
     }
 }
 
@@ -149,6 +211,9 @@ pub fn physical_redo_target_identities(
     let mut targets = Vec::new();
     let mut distinct = BTreeSet::new();
     for member in members {
+        if rewrite_payload(member)? {
+            continue;
+        }
         let remaining = maximum_targets.saturating_sub(targets.len() as u64);
         let records = decode_physical_redo_records_with_distinct(
             member.canonical_redo(),
@@ -173,6 +238,9 @@ pub fn physical_redo_observation_target_identities(
         if member.fate() != RecoveryOperationFate::Indeterminate {
             continue;
         }
+        if rewrite_payload(member)? {
+            continue;
+        }
         let remaining = maximum_targets.saturating_sub(targets.len() as u64);
         let records =
             decode_physical_redo_records(member.canonical_redo(), member.lsn_range(), remaining)?;
@@ -190,6 +258,9 @@ pub fn physical_redo_observation_targets(
     let mut targets = Vec::new();
     for member in members {
         if member.fate() != RecoveryOperationFate::Indeterminate {
+            continue;
+        }
+        if rewrite_payload(member)? {
             continue;
         }
         let remaining = maximum_targets.saturating_sub(targets.len() as u64);

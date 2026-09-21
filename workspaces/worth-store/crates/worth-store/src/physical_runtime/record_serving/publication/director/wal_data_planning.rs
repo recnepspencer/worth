@@ -28,7 +28,12 @@ impl RecordPublicationDirector {
         {
             return Ok(prepared);
         }
-        match self.build_durable_data_plan(&prepared) {
+        let planned = if prepared.selected_segment_rewrite() {
+            self.build_selected_segment_rewrite(&prepared)
+        } else {
+            self.build_durable_data_plan(&prepared)
+        };
+        match planned {
             Ok((data, root)) => Ok(prepared.attach_plans(data, root)),
             Err(error) => {
                 let denial = data_planning_denial(error);

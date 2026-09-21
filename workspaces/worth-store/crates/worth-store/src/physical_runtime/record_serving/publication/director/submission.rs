@@ -80,6 +80,23 @@ impl PhysicalRecordSubmission {
         director.prepare_durable_append(batch, placement, manifest_capacity_transition, request)
     }
 
+    pub fn rewrite_selected_inline_segment(
+        &self,
+        placement: AdmittedRecordPlacementPolicy,
+        request: PhysicalMutationRequest,
+    ) -> PhysicalMutationPreparationOutcome {
+        let director = match self.director.upgrade() {
+            Some(director) => director,
+            None => {
+                return TransitionOutcome::stale(
+                    PhysicalMutationPreparationStale::PublicationAuthorityReleased,
+                )
+                .into()
+            }
+        };
+        director.prepare_selected_segment_rewrite(placement, request)
+    }
+
     pub(in crate::physical_runtime) fn cancel_prepared_before_group_seal(
         &self,
         prepared: crate::physical_runtime::PreparedPhysicalMutation,

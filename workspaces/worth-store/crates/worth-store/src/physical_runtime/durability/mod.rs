@@ -8,6 +8,9 @@ mod lifecycle;
 mod mutation;
 mod observation;
 mod publication;
+mod retention;
+pub(in crate::physical_runtime) use retention::PhysicalPublicationAdmissionDenial;
+pub(in crate::physical_runtime) use retention::PhysicalRetentionProfile;
 mod settlement;
 mod wal;
 

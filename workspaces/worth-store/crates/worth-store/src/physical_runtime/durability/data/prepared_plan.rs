@@ -1,6 +1,7 @@
 use worth_proof::CanonicalVec;
 use worth_store_physical_format::{
     encode_data_frame_page_lsn, DurableFrameKind, PhysicalPageLsn, PhysicalRecordFormatDeclaration,
+    PhysicalRewriteRedo,
 };
 use worth_store_wal::{LogSequenceNumber, WalLsnRange};
 
@@ -29,6 +30,7 @@ pub(in crate::physical_runtime) struct PreparedPhysicalDataFrame {
 pub(in crate::physical_runtime) struct PreparedPhysicalDataPlan {
     frames: Vec<PreparedPhysicalDataFrame>,
     record_count: u32,
+    rewrite: Option<PhysicalRewriteRedo>,
 }
 
 pub(in crate::physical_runtime) struct WalBoundPhysicalDataFrame {
@@ -40,6 +42,7 @@ pub(in crate::physical_runtime) struct WalBoundPhysicalDataPlan {
     frames: Vec<WalBoundPhysicalDataFrame>,
     record_count: u32,
     redo_targets: Vec<CanonicalVec<PhysicalRedoTargetClaim>>,
+    rewrite: Option<PhysicalRewriteRedo>,
 }
 
 impl PreparedPhysicalDataFrame {
@@ -94,19 +97,30 @@ impl PreparedPhysicalDataPlan {
         Ok(Self {
             frames,
             record_count,
+            rewrite: None,
         })
+    }
+
+    pub(in crate::physical_runtime) fn with_rewrite(mut self, rewrite: PhysicalRewriteRedo) -> Self {
+        self.rewrite = Some(rewrite);
+        self
     }
 
     pub(in crate::physical_runtime) fn bind(
         self,
         range: WalLsnRange,
     ) -> Result<WalBoundPhysicalDataPlan, (Self, PhysicalDataPlanBindingDenial)> {
+        let rewrite = self.rewrite;
         match bind_frames(self.frames, self.record_count, range) {
-            Ok(plan) => Ok(plan),
+            Ok(mut plan) => {
+                plan.rewrite = rewrite;
+                Ok(plan)
+            }
             Err((frames, denial)) => Err((
                 Self {
                     frames,
                     record_count: self.record_count,
+                    rewrite,
                 },
                 denial,
             )),
@@ -123,6 +137,10 @@ impl WalBoundPhysicalDataPlan {
 
     pub(in crate::physical_runtime) fn frames(&self) -> &[WalBoundPhysicalDataFrame] {
         &self.frames
+    }
+
+    pub(in crate::physical_runtime) const fn rewrite(&self) -> Option<PhysicalRewriteRedo> {
+        self.rewrite
     }
 
     pub(in crate::physical_runtime) fn into_prepared(mut self) -> PreparedPhysicalDataPlan {
@@ -155,6 +173,7 @@ impl WalBoundPhysicalDataPlan {
         PreparedPhysicalDataPlan {
             frames,
             record_count: self.record_count,
+            rewrite: self.rewrite,
         }
     }
 }
@@ -244,6 +263,7 @@ fn bind_frames(
         frames: bound,
         record_count,
         redo_targets,
+        rewrite: None,
     })
 }
 

@@ -7,6 +7,7 @@ use super::{
     Invocation,
 };
 use worth_store::physical_runtime::production::PhysicalMutationCheckpoint;
+use worth_store::physical_runtime::PhysicalMutationOutcome;
 
 const INLINE_RECORD_PAYLOAD_BYTES: usize = 128;
 
@@ -21,6 +22,7 @@ enum MutationCrashWorkload {
     ExtentWriteback,
     InlineRecord,
     CapacityTransition,
+    SelectedSegmentRewrite,
 }
 
 pub(super) fn admit(
@@ -41,6 +43,7 @@ pub(super) fn admit(
 fn parse_stage(encoded: &str) -> Result<PhysicalMutationCheckpoint, String> {
     match encoded {
         "before-effect-cutover" => Ok(PhysicalMutationCheckpoint::BeforeEffectCutover),
+        "before-wal-append" => Ok(PhysicalMutationCheckpoint::BeforeWalAppend),
         "after-group-seal" => Ok(PhysicalMutationCheckpoint::AfterGroupSeal),
         "after-wal-durability" => Ok(PhysicalMutationCheckpoint::AfterWalDurability),
         "after-writeback-admission-before-effect" => {
@@ -62,6 +65,7 @@ impl MutationCrashWorkload {
             "extent-writeback" => Ok(Self::ExtentWriteback),
             "inline-record" => Ok(Self::InlineRecord),
             "capacity-transition" => Ok(Self::CapacityTransition),
+            "selected-segment-rewrite" => Ok(Self::SelectedSegmentRewrite),
             _ => Err(format!("unknown C8 mutation crash workload `{encoded}`")),
         }
     }
@@ -69,7 +73,7 @@ impl MutationCrashWorkload {
     fn payload_length(&self, writer: &InitializedWriter) -> usize {
         match self {
             Self::ExtentWriteback => configuration::dirty_checkpoint_payload_length(writer.format),
-            Self::InlineRecord => INLINE_RECORD_PAYLOAD_BYTES,
+            Self::InlineRecord | Self::SelectedSegmentRewrite => INLINE_RECORD_PAYLOAD_BYTES,
             Self::CapacityTransition => INLINE_RECORD_PAYLOAD_BYTES,
         }
     }
@@ -85,10 +89,35 @@ pub(super) fn hold_for_process_death(
     invocation: &Invocation,
 ) -> Result<(), String> {
     let seed = invocation.stage.perturbation_seed;
-    let gate = writer.serving.pause_physical_mutation_at(crash.checkpoint);
     let material = dirty_material(seed);
+    if matches!(crash.workload, MutationCrashWorkload::SelectedSegmentRewrite) {
+        let tail = start_dirty_checkpoint(
+            &writer.serving,
+            writer.placement,
+            material,
+            INLINE_RECORD_PAYLOAD_BYTES,
+        )?;
+        match tail.wait() {
+            PhysicalMutationOutcome::Completed(_) => {}
+            PhysicalMutationOutcome::ProvenNoEffect(_) => {
+                return Err("C8 rewrite source append had no effect".to_owned());
+            }
+            PhysicalMutationOutcome::Indeterminate(_) => {
+                return Err("C8 rewrite source append did not finish".to_owned());
+            }
+        }
+    }
+    let gate = writer.serving.pause_physical_mutation_at(crash.checkpoint);
     let payload_length = crash.workload.payload_length(writer);
-    let mutation = if crash.workload.changes_capacity() {
+    let mutation = if matches!(crash.workload, MutationCrashWorkload::SelectedSegmentRewrite) {
+        let mut rewrite_material = material;
+        rewrite_material[0] ^= 0xA5;
+        super::mutation_submission::start_selected_segment_rewrite(
+            &writer.serving,
+            writer.placement,
+            rewrite_material,
+        )?
+    } else if crash.workload.changes_capacity() {
         start_capacity_transition(
             &writer.serving,
             configuration::capacity_transition_placement(writer.format),

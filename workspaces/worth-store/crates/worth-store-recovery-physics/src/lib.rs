@@ -30,6 +30,7 @@ pub use redo_replay::{
     PhysicalRedoDecisionKind, PhysicalRedoDecisionPrior, PhysicalRedoDecisionView,
     PhysicalRedoExtentCoordinate, PhysicalRedoGroupBinding, PhysicalRedoMemberInput,
     PhysicalRedoPlanCounters, PhysicalRedoPlanningDenial, PhysicalRedoProjection,
+    PhysicalRewriteAdmission,
     PhysicalRedoRecord, PhysicalRedoTarget, PhysicalRedoTargetIdentity, RecoveryPageObservation,
     RecoveryPageSource,
 };

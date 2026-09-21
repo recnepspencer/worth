@@ -32,6 +32,8 @@ pub struct PreparedPhysicalMutation {
     durability_policy_basis: PhysicalWorkSemanticBasis,
     resources: PhysicalMutationResourceShape,
     start: crate::physical_runtime::PhysicalMutationStartPort,
+    selected_segment_rewrite: bool,
+    source_root_generation: u64,
 }
 
 pub(in crate::physical_runtime) struct PreparedPhysicalMutationContext {
@@ -112,7 +114,26 @@ impl PreparedPhysicalMutation {
             durability_policy_basis: context.durability_policy_basis,
             resources: context.resources,
             start: context.start,
+            selected_segment_rewrite: false,
+            source_root_generation: 0,
         }
+    }
+
+    pub(in crate::physical_runtime::record_serving) fn mark_selected_segment_rewrite(
+        mut self,
+        source_root_generation: u64,
+    ) -> Self {
+        self.selected_segment_rewrite = true;
+        self.source_root_generation = source_root_generation;
+        self
+    }
+
+    pub(in crate::physical_runtime) const fn selected_segment_rewrite(&self) -> bool {
+        self.selected_segment_rewrite
+    }
+
+    pub(in crate::physical_runtime) const fn source_root_generation(&self) -> u64 {
+        self.source_root_generation
     }
 
     pub const fn mutation_identity(&self) -> PhysicalMutationIdentity {
@@ -257,6 +278,8 @@ impl PreparedPhysicalMutation {
             durability_policy_basis: parts.context.durability_policy_basis,
             resources: parts.context.resources,
             start: parts.context.start,
+            selected_segment_rewrite: false,
+            source_root_generation: 0,
         }
     }
 }

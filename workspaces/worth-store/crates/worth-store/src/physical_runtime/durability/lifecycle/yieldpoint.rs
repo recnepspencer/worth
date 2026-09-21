@@ -11,6 +11,9 @@ pub struct PhysicalMutationPauseGate {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum PhysicalMutationCheckpoint {
     BeforeEffectCutover,
+    /// Pending publication is registered and growth headroom is charged,
+    /// immediately before the first WAL append.
+    BeforeWalAppend,
     AfterGroupSeal,
     AfterWalDurability,
     /// A writeback claim and scheduler admission are live, immediately before

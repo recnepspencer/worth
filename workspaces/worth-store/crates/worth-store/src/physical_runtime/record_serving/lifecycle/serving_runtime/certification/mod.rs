@@ -34,6 +34,20 @@ impl ServingPhysicalRuntime {
             .map_err(|_| crate::physical_runtime::PhysicalWorkRetryFailure::DerivedStateUnavailable)
     }
 
+    pub fn certification_pending_publication_count(&self) -> usize {
+        self.parts.publication.pending_publication_count()
+    }
+
+    /// Limits usable candidate growth so rewrite admission can be denied one-over.
+    ///
+    /// `usable_growth_bytes` is the allowance after progress headroom. Headroom stays
+    /// at the store default (64 KiB) so one-byte-over claims remain honest.
+    pub fn certification_limit_candidate_growth_bytes(&self, usable_growth_bytes: u64) {
+        self.parts
+            .publication
+            .limit_candidate_growth_bytes(usable_growth_bytes);
+    }
+
     pub fn certification_pause_physical_mutation_at(
         &self,
         checkpoint: crate::physical_runtime::certification::CertificationPhysicalMutationCheckpoint,

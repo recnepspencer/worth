@@ -1,5 +1,7 @@
 #[path = "completion/execution_basis.rs"]
 mod execution_basis;
+#[path = "completion/rewrite_materialization.rs"]
+mod rewrite_materialization;
 #[path = "completion/plan_cost.rs"]
 mod plan_cost;
 #[path = "completion/planned_recovery.rs"]
@@ -16,6 +18,7 @@ pub(super) fn complete(
     context: PlanningContext,
     mut basis: ResolvedPlanningBasis,
 ) -> Result<PlannedPhysicalRecovery, crate::entry::PhysicalRecoveryOutcome> {
+    let context = rewrite_materialization::install(context, &mut basis)?;
     let (context, execution) = execution_basis::derive(context, &mut basis)?;
     let (context, plan_cost, planning_counters) = plan_cost::admit(context, &basis, &execution)?;
     let context = publication_effects::admit(context, planning_counters, &execution.publication)?;

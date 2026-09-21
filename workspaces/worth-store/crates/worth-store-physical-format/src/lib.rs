@@ -36,6 +36,7 @@ mod placement;
 mod record_framing;
 mod record_identity;
 mod recovery_projection;
+mod rewrite_redo;
 mod reference;
 mod root_selector;
 mod security_metadata;
@@ -195,7 +196,8 @@ pub use offline_verifier::{
 };
 pub use page_record::{
     append_inline_records_owned, decode_inline_record, encode_inline_page, inspect_inline_page,
-    inspect_inline_page_records, AppendedInlineRecord, InlinePageDenial, InlinePageGeometry,
+    inspect_inline_page_records, restamp_inline_page_generation, AppendedInlineRecord,
+    InlinePageDenial, InlinePageGeometry,
     InlinePageRecordDescriptor, InlineRecordAppend, InlineRecordRange, PageRecordCounterSnapshot,
     PageRecordDenial, PageRecordDenialKind, PhysicalPageRecordAuthority, RecordAppendReport,
     RecordLocateReport, SlotAppendRequest, SlotDirectory, SlotDirectoryEntry,
@@ -214,6 +216,7 @@ pub use record_framing::{
     RecordPagePayload, RecordPlacementClass, RecordPlacementWitness, DURABLE_FRAME_HEADER_BYTES,
 };
 pub use record_identity::PersistedRecordIdentity;
+pub use rewrite_redo::{PhysicalRewriteRedo, PhysicalRewriteRedoDenial, REWRITE_REDO_DOMAIN};
 pub use recovery_projection::{
     PersistedInlineSegmentAllocation, PersistedPhysicalRecoveryFrame,
     PersistedPhysicalRecoveryManifest, PersistedPhysicalRecoveryProjection,

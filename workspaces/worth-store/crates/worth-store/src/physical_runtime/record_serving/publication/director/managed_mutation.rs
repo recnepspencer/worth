@@ -17,6 +17,36 @@ use crate::physical_runtime::{
     WalDurablePhysicalMutation,
 };
 
+struct RewriteGrowthGuard<'a> {
+    owner: &'a crate::physical_runtime::durability::PhysicalCurrentRootOwner,
+    committed: bool,
+}
+
+impl<'a> RewriteGrowthGuard<'a> {
+    fn new(owner: &'a crate::physical_runtime::durability::PhysicalCurrentRootOwner) -> Self {
+        Self {
+            owner,
+            committed: false,
+        }
+    }
+
+    fn commit(&mut self) {
+        if self.committed {
+            return;
+        }
+        self.owner.commit_rewrite_candidate();
+        self.committed = true;
+    }
+}
+
+impl Drop for RewriteGrowthGuard<'_> {
+    fn drop(&mut self) {
+        if !self.committed {
+            self.owner.release_rewrite_candidate();
+        }
+    }
+}
+
 impl RecordPublicationDirector {
     pub(in crate::physical_runtime) fn execute_managed_mutation(
         &self,
@@ -34,13 +64,44 @@ impl RecordPublicationDirector {
         prepared: PreparedPhysicalMutation,
         attempt: &PhysicalMutationAttempt,
     ) -> Result<Arc<CompletedPhysicalMutationFact>, PhysicalMutationTerminalFact> {
+        let pending = match self
+            .root_owner
+            .register_pending_publication(attempt.identity())
+        {
+            Ok(pending) => pending,
+            Err(crate::physical_runtime::durability::PhysicalPublicationAdmissionDenial::ScopeConflict(_)) => {
+                return Err(self.pre_effect_terminal(
+                    prepared,
+                    attempt,
+                    PhysicalMutationProvenNoEffectCause::ScopeConflict,
+                ))
+            }
+            Err(crate::physical_runtime::durability::PhysicalPublicationAdmissionDenial::Growth(_)) => {
+                return Err(self.pre_effect_terminal(
+                    prepared,
+                    attempt,
+                    PhysicalMutationProvenNoEffectCause::AdmissionDeniedBeforeGroupSeal,
+                ))
+            }
+        };
+        if self.rewrite_source_changed(&prepared) {
+            return Err(self.pre_effect_terminal(
+                prepared,
+                attempt,
+                PhysicalMutationProvenNoEffectCause::SourceChanged,
+            ));
+        }
+        let mut growth = RewriteGrowthGuard::new(&self.root_owner);
         let appended = self.append_managed_wal(prepared, attempt)?;
+        let _pending = pending;
         let (basis, durable) = self.synchronize_managed_wal(appended, attempt)?;
         let settled = self.settle_managed_data(basis, durable, attempt)?;
         let prepared_root = self.prepare_managed_root(settled, attempt)?;
         let replaced_root = self.replace_managed_root(prepared_root, attempt)?;
         let durable_root = self.synchronize_managed_root(replaced_root, attempt)?;
-        self.advance_managed_root(durable_root, attempt)
+        let completed = self.advance_managed_root(durable_root, attempt)?;
+        growth.commit();
+        Ok(completed)
     }
 
     fn append_managed_wal(
@@ -56,13 +117,18 @@ impl RecordPublicationDirector {
         let planned = match self.plan_prepared_group_for_wal(NonEmpty::new(prepared, Vec::new())) {
             Ok(planned) => planned,
             Err((members, _)) => {
-                return Err(self.pre_effect_terminal(
-                    one(members),
-                    attempt,
-                    PhysicalMutationProvenNoEffectCause::AdmissionDeniedBeforeGroupSeal,
-                ))
+                let prepared = one(members);
+                let cause = if self.rewrite_source_changed(&prepared) {
+                    PhysicalMutationProvenNoEffectCause::SourceChanged
+                } else {
+                    PhysicalMutationProvenNoEffectCause::AdmissionDeniedBeforeGroupSeal
+                };
+                return Err(self.pre_effect_terminal(prepared, attempt, cause));
             }
         };
+        self.mutations.reach_checkpoint(
+            crate::physical_runtime::durability::PhysicalMutationCheckpoint::BeforeWalAppend,
+        );
         match self.wal.append_prepared_group(planned) {
             PhysicalWalGroupAppendOutcome::Appended(appended) => {
                 attempt.commit_settlement();
