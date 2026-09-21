@@ -48,7 +48,7 @@ fn record(
         source_partition_identity: Some(source_partition_identity),
         producer_dependency_identity: None,
         idempotency_key_identity: [0x44; 32],
-        observed_source_facts: Arc::from([]),
+        observed_source_facts: Some(Arc::from([])),
     }
 }
 
@@ -175,6 +175,94 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
             .source_identity,
         checkpoint_identity([0x31; 32]),
     );
+}
+
+#[test]
+fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmission() {
+    let world =
+        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
+            true,
+        );
+    let product = world
+        .application
+        .product_runtime()
+        .admit_product_branch(world.application.product_runtime().default_branch())
+        .expect("the fixture's default product occurrence is live");
+    let observation = product.observation();
+    let runtime_authority = world.application.runtime.authority_identity().as_u64();
+    let schema = world.application.installed_schema.binding_identity();
+    let scope = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(
+        worth_relational::facade::identity::EntityId::new(
+            worth_relational::facade::identity::PartitionId::main(),
+            1,
+            1,
+        ),
+    );
+    let partition = [0x11; 32];
+    let source_identity = checkpoint_identity([0x31; 32]);
+    let runtime_identity = crate::domain_computation::primary_graph::application_query::WorthQueryRuntimeSourceIdentity::new([0x99; 32]);
+    let checkpoint_identity = crate::domain_computation::primary_graph::application_query::WorthQueryCheckpointSourceIdentity::new([0x31; 32]);
+    let correspondence = Arc::new(
+        WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
+            std::any::TypeId::of::<RestoredOutputBinding>(),
+            Vec::new(),
+            |_| None,
+        )
+        .unwrap(),
+    );
+    let mut lineage = WorthQueryApplicationOutputLineage::default();
+
+    lineage.record_recovered_prior_output(
+        std::any::TypeId::of::<RestoredOutputBinding>(),
+        runtime_authority,
+        schema.clone(),
+        scope,
+        observation.lifecycle_incarnation(),
+        observation.reference_generation().get(),
+        Arc::clone(&correspondence),
+        source_identity,
+        partition,
+        None,
+        [0x41; 32],
+    );
+
+    assert!(lineage
+        .qualified_output::<RestoredOutputBinding>(
+            runtime_authority,
+            &schema,
+            scope,
+            observation.lifecycle_incarnation(),
+            observation.reference_generation().get(),
+            runtime_identity,
+            checkpoint_identity,
+        )
+        .is_none());
+
+    lineage.record_restoration(
+        std::any::TypeId::of::<RestoredOutputBinding>(),
+        runtime_authority,
+        schema.clone(),
+        scope,
+        observation,
+        correspondence,
+        source_identity,
+        partition,
+        None,
+        [0x41; 32],
+        Arc::from([]),
+    );
+
+    assert!(lineage
+        .qualified_output::<RestoredOutputBinding>(
+            runtime_authority,
+            &schema,
+            scope,
+            observation.lifecycle_incarnation(),
+            observation.reference_generation().get(),
+            runtime_identity,
+            checkpoint_identity,
+        )
+        .is_some());
 }
 
 #[test]

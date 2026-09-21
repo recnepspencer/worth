@@ -49,7 +49,8 @@ struct RecordedOutput {
     source_partition_identity: Option<[u8; 32]>,
     producer_dependency_identity: Option<[u8; 32]>,
     idempotency_key_identity: [u8; 32],
-    observed_source_facts: Arc<[super::application_attempt::WorthQueryApplicationObservedFact]>,
+    observed_source_facts:
+        Option<Arc<[super::application_attempt::WorthQueryApplicationObservedFact]>>,
 }
 
 pub(super) struct WorthQueryExactRecordedOutput {
@@ -182,7 +183,7 @@ impl WorthQueryApplicationOutputLineage {
             source_partition_identity: evidence.idempotency().source_partition_identity(),
             producer_dependency_identity: evidence.idempotency().producer_dependency_identity(),
             idempotency_key_identity: *evidence.idempotency().key_identity(),
-            observed_source_facts: evidence.retain_observed_source_facts(),
+            observed_source_facts: Some(evidence.retain_observed_source_facts()),
         });
     }
 
@@ -231,11 +232,21 @@ impl WorthQueryApplicationOutputLineage {
                 if let Some(recorded) = versions
                     .get(&coordinate.occurrence)
                     .and_then(|history| history.range(..=coordinate.generation).next_back())
-                    .and_then(|(_, recorded)| recorded.last())
+                    .and_then(|(_, recorded)| {
+                        recorded
+                            .iter()
+                            .rev()
+                            .find(|recorded| recorded.observed_source_facts.is_some())
+                    })
                 {
                     candidates.push(WorthQueryCurrentOutputCandidate {
                         correspondence: Arc::clone(&recorded.correspondence),
-                        observed_source_facts: Arc::clone(&recorded.observed_source_facts),
+                        observed_source_facts: Arc::clone(
+                            recorded
+                                .observed_source_facts
+                                .as_ref()
+                                .expect("a current-output candidate has source facts"),
+                        ),
                     });
                     break;
                 }

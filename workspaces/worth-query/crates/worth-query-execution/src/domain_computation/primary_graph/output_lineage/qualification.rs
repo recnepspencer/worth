@@ -40,7 +40,7 @@ impl WorthQueryApplicationOutputLineage {
             runtime_authority: source.runtime_authority,
             schema: source.schema.clone(),
             scope: source.scope,
-            observed_source_facts: Arc::clone(&recorded.observed_source_facts),
+            observed_source_facts: Arc::clone(recorded.observed_source_facts.as_ref()?),
         })
     }
 

@@ -100,10 +100,10 @@ impl WorthQueryApplicationOutputLineage {
                         )
                 })
             }) {
-                return Ok(Some((
-                    std::sync::Arc::clone(&recorded.observed_source_facts),
-                    work,
-                )));
+                let Some(facts) = recorded.observed_source_facts.as_ref() else {
+                    return Ok(None);
+                };
+                return Ok(Some((std::sync::Arc::clone(facts), work)));
             }
             let Some(parent) = self.origins.get(&coordinate.occurrence).copied() else {
                 return Ok(None);
@@ -161,10 +161,10 @@ impl WorthQueryApplicationOutputLineage {
                         )
                 })
             }) {
-                return Ok(Some((
-                    std::sync::Arc::clone(&recorded.observed_source_facts),
-                    work,
-                )));
+                let Some(facts) = recorded.observed_source_facts.as_ref() else {
+                    return Ok(None);
+                };
+                return Ok(Some((std::sync::Arc::clone(facts), work)));
             }
             let Some(parent) = self.origins.get(&coordinate.occurrence).copied() else {
                 return Ok(None);
