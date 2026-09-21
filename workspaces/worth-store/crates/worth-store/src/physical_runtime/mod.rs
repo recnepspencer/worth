@@ -130,7 +130,8 @@ pub use durability::{
 };
 pub use identity::{DeclaredStoreRoot, RuntimeIdentity};
 pub use instance::{
-    PhysicalDurabilityStateReopenFailure, PhysicalSignalClockObservation,
+    PhysicalDurabilityStateReopenFailure, RecordSchedulerReservationDenial,
+    PhysicalSignalClockObservation,
     PhysicalSignalClockObservationFailure, PhysicalSignalConstructionFailure,
     PhysicalSignalDeltaApplicationFailure, PhysicalSignalObservation,
     PhysicalSignalRuntimeIdentity, PhysicalSignalShutdownOutcome, PhysicalStoreAbortOutcome,

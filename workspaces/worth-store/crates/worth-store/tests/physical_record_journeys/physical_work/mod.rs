@@ -4,6 +4,8 @@ mod authority_sealing;
 mod capacity;
 mod close_plan;
 mod concurrency;
+mod background_retention;
+mod dispatch_saturation;
 mod durability_signal_binding;
 mod e2e_trace;
 mod execution_capability;

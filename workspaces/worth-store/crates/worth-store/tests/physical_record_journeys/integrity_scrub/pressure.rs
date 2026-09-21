@@ -85,7 +85,20 @@ fn bounded_scrub_preserves_foreground_progress_at_thirty_two_times_residency() {
             .active_operation_bytes_for(PhysicalOperationAllocationScope::Scrub),
         0
     );
-    read_record(&serving, &records, 0);
+    let ordinary = ForegroundLaneDeclaration::artifact_metadata_read()
+        .with_latency_envelope(ForegroundLatencyEnvelope::bounded_interference(
+            "scrub-pressure-foreground-floor",
+            1,
+        ))
+        .with_budget(
+            ForegroundResourceBudget::new()
+                .with_queue_slots(QueueSlot::new(1).unwrap())
+                .with_worker_permits(worth_store_io_scheduler::WorkerPermit::new(1).unwrap()),
+        );
+    let ordinary = serving
+        .reserve_physical_scheduler_foreground(ordinary)
+        .expect("foreground floor remains after a capacity-deferred scrub");
+    drop(ordinary);
     drop(held);
     assert_released(&serving);
 

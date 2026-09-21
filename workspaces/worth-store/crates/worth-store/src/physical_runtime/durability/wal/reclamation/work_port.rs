@@ -130,8 +130,17 @@ impl PhysicalWalReclamationWorkPort {
                 scope.byte_count(),
                 foreground_pressure_events,
             )
-            .map_err(|_| PhysicalWalReclamationActionFailure::SchedulerCapacityUnavailable)?;
-        let lease = require_complete_lease(pacing)?;
+            .map_err(|_| {
+                self.scheduler.cancel_wal_reclamation_background_head();
+                PhysicalWalReclamationActionFailure::SchedulerCapacityUnavailable
+            })?;
+        let lease = match require_complete_lease(pacing) {
+            Ok(lease) => lease,
+            Err(failure) => {
+                self.scheduler.cancel_wal_reclamation_background_head();
+                return Err(failure);
+            }
+        };
         let demand = PhysicalSchedulerDemand::wal_reclamation_background(ready, lease)
             .map_err(|_| PhysicalWalReclamationActionFailure::SchedulerDemandRejected)?;
         PhysicalWorkAdmission::require_current(
@@ -140,7 +149,7 @@ impl PhysicalWalReclamationWorkPort {
             &runtime.health,
         )
         .map_err(|_| PhysicalWalReclamationActionFailure::PreEffect)?;
-        let work = PhysicalWorkScheduler::admit(demand, &backend, policy)
+        let work = PhysicalWorkScheduler::admit(self.scheduler.effects(), demand, &backend, policy)
             .map_err(|_| PhysicalWalReclamationActionFailure::QueueAdmissionRejected)?;
         PhysicalExecutorCommand::wal_reclamation(work)
             .map_err(|_| PhysicalWalReclamationActionFailure::Command)

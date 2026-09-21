@@ -3,6 +3,7 @@ mod aspect_delta;
 mod authority;
 mod command_storage;
 mod concurrency_scope;
+mod effect_footprint;
 mod consumer_lifecycle;
 mod declaration;
 mod drain_observation;
@@ -26,6 +27,9 @@ pub(in crate::physical_runtime) use submission::{
 pub use authority::AdmittedPhysicalWorkAuthority;
 pub(in crate::physical_runtime) use authority::PhysicalWorkAdmissionAuthority;
 pub use concurrency_scope::{PhysicalWorkConcurrencyRelation, PhysicalWorkConcurrencyScope};
+pub(in crate::physical_runtime) use effect_footprint::{
+    PhysicalEffectAdmission, PhysicalEffectAdmissionDenial, PhysicalEffectAdmissionLease,
+};
 pub use consumer_lifecycle::{
     PhysicalEffectObligation, PhysicalWorkCancellationFailure, PhysicalWorkCancellationJoin,
     PhysicalWorkConsumerHandle, PhysicalWorkRetryAdmission, PhysicalWorkRetryFailure,

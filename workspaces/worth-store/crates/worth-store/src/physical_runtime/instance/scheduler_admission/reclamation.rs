@@ -6,6 +6,7 @@ pub(in crate::physical_runtime) enum PhysicalWalReclamationSchedulerAdmissionDen
     Foreground(
         worth_store_io_scheduler::foreground_reservation::PhysicalInstanceForegroundAdmissionDenial,
     ),
+    OwedBackgroundTurn,
     Background(worth_store_io_scheduler::BackgroundPacingDenial),
 }
 
@@ -31,12 +32,27 @@ impl PhysicalSchedulerAdmissionOwner {
                     bounded_interference("wal-reclamation-foreground-preservation", 2),
             )
             .with_budget(super::wal_barrier_budget());
-        let preservation = self
-            .foreground
-            .reserve(preservation, &self.fsync, security)
-            .map_err(PhysicalWalReclamationSchedulerAdmissionDenial::Foreground)?;
+        let preservation =
+            super::background_head::RetainedBackgroundHeads::reserve_preservation(
+                self,
+                super::background_head::BackgroundHeadKind::Reclamation,
+                preservation,
+                security,
+            )
+            .map_err(|denial| match denial {
+                super::RecordSchedulerReservationDenial::Admission(cause) => {
+                    PhysicalWalReclamationSchedulerAdmissionDenial::Foreground(cause)
+                }
+                super::RecordSchedulerReservationDenial::OwedBackgroundTurn => {
+                    PhysicalWalReclamationSchedulerAdmissionDenial::OwedBackgroundTurn
+                }
+            })?;
         let (foreground_receipt, foreground_capacity) = preservation.into_parts();
         drop(foreground_capacity);
+        self.heads.note(
+            super::background_head::BackgroundHeadKind::Reclamation,
+            &self.dispatch,
+        );
 
         let budget = wal_reclamation_background_budget(bytes);
         let pressure = worth_store_io_scheduler::BackgroundIoPressureShape::
@@ -61,6 +77,11 @@ impl PhysicalSchedulerAdmissionOwner {
         let pacing = worth_store_io_scheduler::admit_background_pacing(
             worth_store_io_scheduler::BackgroundIdleCapacityLeaseRequest::new(capacity)
                 .with_foreground_pressure_events(foreground_pressure_events),
+        );
+        self.heads.settle(
+            super::background_head::BackgroundHeadKind::Reclamation,
+            &self.dispatch,
+            &pacing,
         );
         Ok((pacing, self.fsync, policy))
     }

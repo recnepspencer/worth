@@ -158,8 +158,17 @@ impl PhysicalCheckpointWorkPort {
                 scope.accounted_bytes(),
                 foreground_pressure_events,
             )
-            .map_err(|_denial| PhysicalCheckpointActionFailure::SchedulerCapacityUnavailable)?;
-        let lease = require_complete_lease(pacing)?;
+            .map_err(|_denial| {
+                self.scheduler.cancel_checkpoint_background_head();
+                PhysicalCheckpointActionFailure::SchedulerCapacityUnavailable
+            })?;
+        let lease = match require_complete_lease(pacing) {
+            Ok(lease) => lease,
+            Err(failure) => {
+                self.scheduler.cancel_checkpoint_background_head();
+                return Err(failure);
+            }
+        };
         let demand = PhysicalSchedulerDemand::checkpoint_background(ready, lease)
             .map_err(|_denial| PhysicalCheckpointActionFailure::SchedulerDemandRejected)?;
         PhysicalWorkAdmission::require_current(
@@ -168,7 +177,7 @@ impl PhysicalCheckpointWorkPort {
             &runtime.health,
         )
         .map_err(|_denial| PhysicalCheckpointActionFailure::PreEffect)?;
-        let work = PhysicalWorkScheduler::admit(demand, &backend, policy)
+        let work = PhysicalWorkScheduler::admit(self.scheduler.effects(), demand, &backend, policy)
             .map_err(|_denial| PhysicalCheckpointActionFailure::QueueAdmissionRejected)?;
         PhysicalExecutorCommand::checkpoint(work, payload)
             .map_err(|_denial| PhysicalCheckpointActionFailure::Command)

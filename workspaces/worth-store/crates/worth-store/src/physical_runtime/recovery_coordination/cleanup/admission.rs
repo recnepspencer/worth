@@ -78,14 +78,17 @@ fn admit_foreground_read(
         .scheduler
         .record_read(&coordination.scheduler_security, bytes.max(1))
         .map_err(|denial| {
-            let crate::physical_runtime::instance::RecordSchedulerReservationDenial::Admission(
-                denial,
-            ) = denial;
-            after_cancel(
-                coordination,
-                consumer,
-                PhysicalRecoveryCleanupAdmissionDenialKind::SchedulerForegroundCapacity(denial),
-            )
+            let kind = match denial {
+                crate::physical_runtime::instance::RecordSchedulerReservationDenial::Admission(
+                    denial,
+                ) => PhysicalRecoveryCleanupAdmissionDenialKind::SchedulerForegroundCapacity(denial),
+                crate::physical_runtime::instance::RecordSchedulerReservationDenial::OwedBackgroundTurn => {
+                    PhysicalRecoveryCleanupAdmissionDenialKind::Scheduler(
+                        crate::physical_runtime::PhysicalSchedulerDenial::OwedBackgroundTurn,
+                    )
+                }
+            };
+            after_cancel(coordination, consumer, kind)
         })?;
     let demand =
         PhysicalSchedulerDemand::foreground(ready, reservation, None).map_err(|denial| {
@@ -105,7 +108,7 @@ fn admit_foreground_read(
         })?;
     let policy =
         crate::physical_runtime::record_serving::admit_record_queue_policy(demand.queue_work());
-    PhysicalWorkScheduler::admit(demand, &backend, policy).map_err(|denial| {
+    PhysicalWorkScheduler::admit(coordination.scheduler.effects(), demand, &backend, policy).map_err(|denial| {
         after_cancel(
             coordination,
             consumer,
@@ -171,6 +174,7 @@ fn admit_background_removal(
         .map_err(|denial| {
             let kind = match denial {
                 crate::physical_runtime::instance::PhysicalWalReclamationSchedulerAdmissionDenial::Foreground(denial) => PhysicalRecoveryCleanupAdmissionDenialKind::SchedulerForegroundCapacity(denial),
+                crate::physical_runtime::instance::PhysicalWalReclamationSchedulerAdmissionDenial::OwedBackgroundTurn => PhysicalRecoveryCleanupAdmissionDenialKind::Scheduler(crate::physical_runtime::PhysicalSchedulerDenial::OwedBackgroundTurn),
                 crate::physical_runtime::instance::PhysicalWalReclamationSchedulerAdmissionDenial::Background(denial) => PhysicalRecoveryCleanupAdmissionDenialKind::SchedulerBackgroundCapacity(denial),
             };
             after_cancel(coordination, consumer, kind)
@@ -178,6 +182,9 @@ fn admit_background_removal(
     let lease = match pacing {
         BackgroundPacingOutcome::AdmittedWithDebt(admitted) => admitted.into_lease(),
         other => {
+            coordination
+                .scheduler
+                .cancel_wal_reclamation_background_head();
             return Err(after_cancel(
                 coordination,
                 consumer,
@@ -201,7 +208,7 @@ fn admit_background_removal(
                 PhysicalRecoveryCleanupAdmissionDenialKind::PreEffect(denial),
             )
         })?;
-    PhysicalWorkScheduler::admit(demand, &backend, policy).map_err(|denial| {
+    PhysicalWorkScheduler::admit(coordination.scheduler.effects(), demand, &backend, policy).map_err(|denial| {
         after_cancel(
             coordination,
             consumer,

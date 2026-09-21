@@ -88,17 +88,15 @@ impl PhysicalSchedulerAdmissionOwner {
         backend: &IoSchedulerBackendCapabilityAdmission,
         security: &IoSchedulerSecurityScopeAdmission,
     ) -> Result<PhysicalInstanceForegroundReservation, RecordSchedulerReservationDenial> {
-        self.foreground
-            .reserve(
-                lane.with_latency_envelope(ForegroundLatencyEnvelope::bounded_interference(
-                    "physical-root-publication",
-                    2,
-                ))
-                .with_budget(super::wal_barrier_budget()),
-                backend,
-                security,
-            )
-            .map_err(RecordSchedulerReservationDenial::Admission)
+        self.reserve_selected_foreground(
+            lane.with_latency_envelope(ForegroundLatencyEnvelope::bounded_interference(
+                "physical-root-publication",
+                2,
+            ))
+            .with_budget(super::wal_barrier_budget()),
+            backend,
+            security,
+        )
     }
 }
 

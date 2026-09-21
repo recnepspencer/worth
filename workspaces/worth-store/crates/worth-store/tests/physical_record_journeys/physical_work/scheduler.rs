@@ -13,7 +13,7 @@ use worth_store_io_scheduler::{
 };
 
 use super::fixture::{
-    disjoint_mutation_fixture, serving_from_initialization_with_work_profile, work_fixture,
+    foreground_saturation_fixture, serving_from_initialization_with_work_profile, work_fixture,
 };
 
 mod locality;
@@ -186,8 +186,8 @@ fn cancelled_ready_work_is_denied_before_scheduler_demand_admission() {
 #[test]
 fn disjoint_ready_work_admits_independently_and_a_denial_does_not_mutate_admitted_plans() {
     let root = tempdir().unwrap();
-    let (profile, first_request, second_request) = disjoint_mutation_fixture();
-    let third_request = first_request.clone();
+    let (profile, requests) = foreground_saturation_fixture();
+    let [first_request, second_request, third_request, _] = requests;
     let serving = serving_from_initialization_with_work_profile(root.path(), profile);
     let first = ready_work(&serving, first_request);
     let second = ready_work(&serving, second_request);

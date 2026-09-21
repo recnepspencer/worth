@@ -20,6 +20,61 @@ pub(in crate::physical_work) fn disjoint_mutation_fixture() -> (
     )
 }
 
+pub(in crate::physical_work) fn foreground_saturation_fixture() -> (
+    PhysicalWorkProfileDeclaration,
+    [PhysicalMutationWorkRequest; 4],
+) {
+    let (profile, basis, security) = mutation_basis();
+    let request = |offset| {
+        PhysicalMutationWorkRequest::exact_write(
+            PhysicalWorkScope::one(
+                RecordFrameCoordinate::new(RecordArtifactFile::BootstrapCatalog, offset, 8)
+                    .unwrap(),
+            ),
+            basis.clone(),
+            security,
+            ArtifactRangeWriteDurabilityRequirement::BufferedWrite,
+        )
+        .unwrap()
+    };
+    (profile, [request(8), request(16), request(24), request(32)])
+}
+
+pub(in crate::physical_work) fn overlapping_mutation_fixture() -> (
+    PhysicalWorkProfileDeclaration,
+    PhysicalMutationWorkRequest,
+    PhysicalMutationWorkRequest,
+) {
+    mutation_pair_fixture(
+        RecordFrameCoordinate::new(RecordArtifactFile::BootstrapCatalog, 12, 8).unwrap(),
+    )
+}
+
+pub(in crate::physical_work) fn whole_catalog_mutation_fixture() -> (
+    PhysicalWorkProfileDeclaration,
+    PhysicalMutationWorkRequest,
+    PhysicalMutationWorkRequest,
+) {
+    let (profile, basis, security) = mutation_basis();
+    let range = PhysicalMutationWorkRequest::exact_write(
+        PhysicalWorkScope::one(
+            RecordFrameCoordinate::new(RecordArtifactFile::BootstrapCatalog, 8, 8).unwrap(),
+        ),
+        basis.clone(),
+        security,
+        ArtifactRangeWriteDurabilityRequirement::BufferedWrite,
+    )
+    .unwrap();
+    let whole = PhysicalMutationWorkRequest::exact_write(
+        PhysicalWorkScope::artifact(RecordArtifactFile::BootstrapCatalog),
+        basis,
+        security,
+        ArtifactRangeWriteDurabilityRequirement::BufferedWrite,
+    )
+    .unwrap();
+    (profile, range, whole)
+}
+
 pub(in crate::physical_work) fn disjoint_artifact_mutation_fixture() -> (
     PhysicalWorkProfileDeclaration,
     PhysicalMutationWorkRequest,
@@ -31,12 +86,10 @@ pub(in crate::physical_work) fn disjoint_artifact_mutation_fixture() -> (
     )
 }
 
-fn mutation_pair_fixture(
-    second_coordinate: RecordFrameCoordinate,
-) -> (
+fn mutation_basis() -> (
     PhysicalWorkProfileDeclaration,
-    PhysicalMutationWorkRequest,
-    PhysicalMutationWorkRequest,
+    PhysicalWorkSemanticBasis,
+    worth_store_security::StoreAuthorityBoundSecurityScopeReceipt,
 ) {
     let (contract, identity, contract_admission, physical_witness) = admitted_contract(1);
     let patch = match aspects()
@@ -55,6 +108,22 @@ fn mutation_pair_fixture(
     .unwrap();
     let basis =
         PhysicalWorkSemanticBasis::mutation(patch_fact, contract_admission.clone()).unwrap();
+    (
+        PhysicalWorkProfileDeclaration::new(security_scope(physical_witness), [contract_admission])
+            .unwrap(),
+        basis,
+        security_scope(physical_witness),
+    )
+}
+
+fn mutation_pair_fixture(
+    second_coordinate: RecordFrameCoordinate,
+) -> (
+    PhysicalWorkProfileDeclaration,
+    PhysicalMutationWorkRequest,
+    PhysicalMutationWorkRequest,
+) {
+    let (profile, basis, security) = mutation_basis();
     let request = |offset, basis| {
         PhysicalMutationWorkRequest::exact_write(
             PhysicalWorkScope::one(
@@ -62,19 +131,18 @@ fn mutation_pair_fixture(
                     .unwrap(),
             ),
             basis,
-            security_scope(physical_witness),
+            security,
             ArtifactRangeWriteDurabilityRequirement::BufferedWrite,
         )
         .unwrap()
     };
     (
-        PhysicalWorkProfileDeclaration::new(security_scope(physical_witness), [contract_admission])
-            .unwrap(),
+        profile,
         request(8, basis.clone()),
         PhysicalMutationWorkRequest::exact_write(
             PhysicalWorkScope::one(second_coordinate),
             basis,
-            security_scope(physical_witness),
+            security,
             ArtifactRangeWriteDurabilityRequirement::BufferedWrite,
         )
         .unwrap(),

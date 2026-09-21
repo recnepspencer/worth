@@ -6,6 +6,7 @@ pub(in crate::physical_runtime) enum PhysicalCheckpointSchedulerAdmissionDenial 
     Foreground(
         worth_store_io_scheduler::foreground_reservation::PhysicalInstanceForegroundAdmissionDenial,
     ),
+    OwedBackgroundTurn,
     Background(worth_store_io_scheduler::BackgroundPacingDenial),
 }
 
@@ -31,12 +32,24 @@ impl PhysicalSchedulerAdmissionOwner {
                     bounded_interference("checkpoint-foreground-preservation", 2),
             )
             .with_budget(super::wal_barrier_budget());
-        let preservation = self
-            .foreground
-            .reserve(preservation, &self.fsync, security)
-            .map_err(PhysicalCheckpointSchedulerAdmissionDenial::Foreground)?;
+        let preservation = super::background_head::RetainedBackgroundHeads::reserve_preservation(
+            self,
+            super::background_head::BackgroundHeadKind::Checkpoint,
+            preservation,
+            security,
+        )
+        .map_err(|denial| match denial {
+            super::RecordSchedulerReservationDenial::Admission(cause) => {
+                PhysicalCheckpointSchedulerAdmissionDenial::Foreground(cause)
+            }
+            super::RecordSchedulerReservationDenial::OwedBackgroundTurn => {
+                PhysicalCheckpointSchedulerAdmissionDenial::OwedBackgroundTurn
+            }
+        })?;
         let (foreground_receipt, foreground_capacity) = preservation.into_parts();
         drop(foreground_capacity);
+        self.heads
+            .note(super::background_head::BackgroundHeadKind::Checkpoint, &self.dispatch);
 
         let budget = checkpoint_background_budget(bytes);
         let pressure = worth_store_io_scheduler::BackgroundIoPressureShape::
@@ -59,6 +72,11 @@ impl PhysicalSchedulerAdmissionOwner {
         let pacing = worth_store_io_scheduler::admit_background_pacing(
             worth_store_io_scheduler::BackgroundIdleCapacityLeaseRequest::new(capacity)
                 .with_foreground_pressure_events(foreground_pressure_events),
+        );
+        self.heads.settle(
+            super::background_head::BackgroundHeadKind::Checkpoint,
+            &self.dispatch,
+            &pacing,
         );
         Ok((pacing, self.fsync, policy))
     }

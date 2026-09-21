@@ -207,6 +207,11 @@ impl PhysicalWalAppendPort {
                 RecordSchedulerReservationDenial::Admission(denial) => {
                     PhysicalWalAppendFailureCause::SchedulerReservationDenied(denial)
                 }
+                RecordSchedulerReservationDenial::OwedBackgroundTurn => {
+                    PhysicalWalAppendFailureCause::Scheduler(
+                        crate::physical_runtime::PhysicalSchedulerDenial::OwedBackgroundTurn,
+                    )
+                }
             })?;
         let demand = PhysicalSchedulerDemand::foreground(ready, reservation, None)
             .map_err(PhysicalWalAppendFailureCause::Scheduler)?;
@@ -218,7 +223,7 @@ impl PhysicalWalAppendPort {
         .map_err(PhysicalWalAppendFailureCause::PreEffect)?;
         let policy =
             crate::physical_runtime::record_serving::admit_record_queue_policy(demand.queue_work());
-        let work = PhysicalWorkScheduler::admit(demand, &backend, policy)
+        let work = PhysicalWorkScheduler::admit(self.scheduler.effects(), demand, &backend, policy)
             .map_err(PhysicalWalAppendFailureCause::Scheduler)?;
         PhysicalExecutorCommand::wal_frame_write(
             work,

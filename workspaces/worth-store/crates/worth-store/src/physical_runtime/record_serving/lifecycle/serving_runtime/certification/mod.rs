@@ -140,6 +140,48 @@ impl ServingPhysicalRuntime {
         self.parts.work_runtime.health.revoke();
     }
 
+    pub fn certification_pace_checkpoint_background(
+        &self,
+        foreground_pressure_events: u64,
+    ) -> worth_store_io_scheduler::BackgroundPacingOutcome {
+        self.parts
+            .scheduler_admission
+            .checkpoint_background(
+                self.parts.record_work.scheduler_security(),
+                4_096,
+                foreground_pressure_events,
+            )
+            .map(|(pacing, _, _)| pacing)
+            .expect("checkpoint background pacing reaches the scheduler")
+    }
+
+    pub fn certification_cancel_checkpoint_background_head(&self) {
+        self.parts
+            .scheduler_admission
+            .cancel_checkpoint_background_head();
+    }
+
+    pub fn certification_pace_wal_reclamation_background(
+        &self,
+        foreground_pressure_events: u64,
+    ) -> worth_store_io_scheduler::BackgroundPacingOutcome {
+        self.parts
+            .scheduler_admission
+            .wal_reclamation_background(
+                self.parts.record_work.scheduler_security(),
+                4_096,
+                foreground_pressure_events,
+            )
+            .map(|(pacing, _, _)| pacing)
+            .expect("reclamation background pacing reaches the scheduler")
+    }
+
+    pub fn certification_cancel_wal_reclamation_background_head(&self) {
+        self.parts
+            .scheduler_admission
+            .cancel_wal_reclamation_background_head();
+    }
+
     pub fn certification_publication_summary(
         &self,
     ) -> Result<

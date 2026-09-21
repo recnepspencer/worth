@@ -1,6 +1,7 @@
 #![doc = include_str!("compile_fail_proofs.md")]
 
 mod admission;
+mod dispatch;
 mod execution;
 #[cfg(test)]
 mod grouping_basis_tests;
@@ -16,6 +17,9 @@ pub use admission::{
 pub use admission::{
     group_ready_queue_pair, QueueExecutionAdmissionDenial, QueueGroupedReadyPlans,
     QueueGroupingDenial, QueueGroupingOutcome, QueueGroupingRejected,
+};
+pub use dispatch::{
+    BackgroundDispatchAttempt, ForegroundDispatchTurn, OwedBackgroundTurn, PhysicalDispatchSelection,
 };
 pub use execution::{
     execute_grouped_ready_queue_plans, execute_ready_queue_plan, AdmittedQueueExecutionPlan,

@@ -147,7 +147,7 @@ impl ServingPhysicalRuntime {
             worth_store_io_scheduler::foreground_reservation::PhysicalInstanceForegroundReservation,
             worth_store_io_scheduler::IoSchedulerBackendCapabilityAdmission,
         ),
-        worth_store_io_scheduler::foreground_reservation::PhysicalInstanceForegroundAdmissionDenial,
+        crate::physical_runtime::RecordSchedulerReservationDenial,
     > {
         self.parts
             .scheduler_admission
@@ -176,7 +176,12 @@ impl ServingPhysicalRuntime {
             &self.parts.work_runtime.health,
         )
         .map_err(crate::physical_runtime::PhysicalSchedulerDenial::PreEffect)?;
-        crate::physical_runtime::PhysicalWorkScheduler::admit(demand, backend, policy)
+        crate::physical_runtime::PhysicalWorkScheduler::admit(
+            self.parts.scheduler_admission.effects(),
+            demand,
+            backend,
+            policy,
+        )
     }
 
     pub fn execute_physical_work(

@@ -66,7 +66,7 @@ impl FrameWritebackPort {
         PhysicalWorkAdmission::require_ready_current(&runtime.submission, &ready, &runtime.health)
             .map_err(PhysicalWritebackFailureCause::PreEffect)?;
         let (demand, backend) = self.lower_scheduler_demand(ready, claim, basis)?;
-        let work = admit_scheduler_demand(demand, &backend)?;
+        let work = admit_scheduler_demand(self.scheduler.effects(), demand, &backend)?;
         admit_retry(retry, &work)?;
         Ok(work)
     }
@@ -154,6 +154,11 @@ impl FrameWritebackPort {
                 RecordSchedulerReservationDenial::Admission(denial) => {
                     PhysicalWritebackFailureCause::SchedulerReservation(denial)
                 }
+                RecordSchedulerReservationDenial::OwedBackgroundTurn => {
+                    PhysicalWritebackFailureCause::Scheduler(
+                        crate::physical_runtime::PhysicalSchedulerDenial::OwedBackgroundTurn,
+                    )
+                }
             })
     }
 }
@@ -175,11 +180,12 @@ impl WritebackSchedulerBasis {
 }
 
 fn admit_scheduler_demand(
+    effects: &crate::physical_runtime::work::PhysicalEffectAdmission,
     demand: PhysicalSchedulerDemand,
     backend: &IoSchedulerBackendCapabilityAdmission,
 ) -> Result<ResourceAdmittedPhysicalWork, PhysicalWritebackFailureCause> {
     let policy = admit_record_queue_policy(demand.queue_work());
-    PhysicalWorkScheduler::admit(demand, backend, policy)
+    PhysicalWorkScheduler::admit(effects, demand, backend, policy)
         .map_err(PhysicalWritebackFailureCause::Scheduler)
 }
 

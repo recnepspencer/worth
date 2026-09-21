@@ -33,6 +33,9 @@ pub enum PhysicalSchedulerDenial {
     Queue(QueueExecutionAdmissionDenial),
     ResidencyWorkMismatch,
     Residency(worth_store_buffer_pool::PhysicalResidencyDenial),
+    EffectConflict,
+    EffectSlotsExhausted,
+    OwedBackgroundTurn,
 }
 
 pub struct PhysicalSchedulerDemand {
@@ -197,11 +200,19 @@ fn require_lane(
 }
 
 impl PhysicalWorkScheduler {
-    pub fn admit(
+    pub(in crate::physical_runtime) fn admit(
+        effects: &super::PhysicalEffectAdmission,
         demand: PhysicalSchedulerDemand,
         backend: &IoSchedulerBackendCapabilityAdmission,
         policy: worth_foundational::FoundationalPolicyAdmissionReceipt,
     ) -> Result<ResourceAdmittedPhysicalWork, PhysicalSchedulerDenial> {
+        let footprint = super::effect_footprint::lower_effect_footprint(demand.intent());
+        let effect_lease = effects.admit(footprint).map_err(|denial| match denial {
+            super::PhysicalEffectAdmissionDenial::Conflict => PhysicalSchedulerDenial::EffectConflict,
+            super::PhysicalEffectAdmissionDenial::SlotsExhausted => {
+                PhysicalSchedulerDenial::EffectSlotsExhausted
+            }
+        })?;
         let PhysicalSchedulerDemand {
             ready,
             work,
@@ -211,7 +222,12 @@ impl PhysicalWorkScheduler {
             admit_queue_policy_receipt(work, policy).map_err(PhysicalSchedulerDenial::Queue)?;
         let plan = admit_queue_execution_plan(QueueExecutionAdmissionRequest::new(policy, backend))
             .map_err(PhysicalSchedulerDenial::Queue)?;
-        Ok(ResourceAdmittedPhysicalWork::new(ready, plan, capacity))
+        Ok(ResourceAdmittedPhysicalWork::new(
+            ready,
+            plan,
+            capacity,
+            effect_lease,
+        ))
     }
 }
 

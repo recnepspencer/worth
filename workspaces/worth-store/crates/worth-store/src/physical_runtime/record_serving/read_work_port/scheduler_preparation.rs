@@ -95,7 +95,7 @@ impl CanonicalRecordReadPort {
         }
         .map_err(CanonicalRecordReadFailure::Scheduler)
         .map_err(|failure| CanonicalRecordReadFailureEvidence::during_work(failure, identity))?;
-        prepare_command(runtime, demand, identity, backend, |work| {
+        prepare_command(runtime, self.scheduler.effects(), demand, identity, backend, |work| {
             PhysicalExecutorCommand::read(work)
         })
     }
@@ -132,9 +132,14 @@ impl CanonicalRecordReadPort {
             .map_err(|failure| {
                 CanonicalRecordReadFailureEvidence::during_work(failure, identity)
             })?;
-        prepare_command(runtime, demand, identity, backend, |work| {
-            PhysicalExecutorCommand::metadata(work)
-        })
+        prepare_command(
+            runtime,
+            self.scheduler.effects(),
+            demand,
+            identity,
+            backend,
+            |work| PhysicalExecutorCommand::metadata(work),
+        )
     }
 }
 
@@ -185,6 +190,7 @@ pub(super) fn admit_ready(
 
 fn prepare_command(
     runtime: &PhysicalStoreWorkRuntime,
+    effects: &crate::physical_runtime::work::PhysicalEffectAdmission,
     demand: PhysicalSchedulerDemand,
     identity: PhysicalWorkIdentity,
     backend: worth_store_io_scheduler::IoSchedulerBackendCapabilityAdmission,
@@ -196,7 +202,7 @@ fn prepare_command(
         .map_err(CanonicalRecordReadFailure::PreEffect)
         .map_err(|failure| CanonicalRecordReadFailureEvidence::during_work(failure, identity))?;
     let policy = super::super::record_queue_policy::admit_record_queue_policy(demand.queue_work());
-    let work = crate::physical_runtime::PhysicalWorkScheduler::admit(demand, &backend, policy)
+    let work = crate::physical_runtime::PhysicalWorkScheduler::admit(effects, demand, &backend, policy)
         .map_err(CanonicalRecordReadFailure::Scheduler)
         .map_err(|failure| CanonicalRecordReadFailureEvidence::during_work(failure, identity))?;
     debug_assert_eq!(work.intent().identity(), identity);

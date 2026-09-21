@@ -90,7 +90,7 @@ pub(super) fn admit(
     }
     let policy =
         crate::physical_runtime::record_serving::admit_record_queue_policy(demand.queue_work());
-    match PhysicalWorkScheduler::admit(demand, &backend, policy) {
+    match PhysicalWorkScheduler::admit(coordination.scheduler.effects(), demand, &backend, policy) {
         Ok(work) => Ok(work),
         Err(denial) => {
             cancel_consumer(coordination, consumer);

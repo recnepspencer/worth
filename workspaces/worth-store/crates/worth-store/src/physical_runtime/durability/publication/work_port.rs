@@ -40,6 +40,7 @@ pub enum PhysicalRootPublicationWorkFailureCause {
     DependencyBlocked,
     SchedulerReservation,
     Scheduler,
+    EffectConflict,
     Command,
 }
 
@@ -59,6 +60,9 @@ impl PhysicalRootPublicationWorkFailure {
             Self::DependencyBlocked => PhysicalRootPublicationWorkFailureCause::DependencyBlocked,
             Self::SchedulerReservation(_) => {
                 PhysicalRootPublicationWorkFailureCause::SchedulerReservation
+            }
+            Self::Scheduler(crate::physical_runtime::PhysicalSchedulerDenial::EffectConflict) => {
+                PhysicalRootPublicationWorkFailureCause::EffectConflict
             }
             Self::Scheduler(_) => PhysicalRootPublicationWorkFailureCause::Scheduler,
             Self::Command(_) => PhysicalRootPublicationWorkFailureCause::Command,
@@ -159,7 +163,7 @@ impl PhysicalRootPublicationWorkPort {
         .map_err(PhysicalRootPublicationWorkFailure::PreEffect)?;
         let policy =
             crate::physical_runtime::record_serving::admit_record_queue_policy(demand.queue_work());
-        let work = PhysicalWorkScheduler::admit(demand, &backend, policy)
+        let work = PhysicalWorkScheduler::admit(self.scheduler.effects(), demand, &backend, policy)
             .map_err(PhysicalRootPublicationWorkFailure::Scheduler)?;
         let command = PhysicalExecutorCommand::root_publication_effect(work)
             .map_err(PhysicalRootPublicationWorkFailure::Command)?;
