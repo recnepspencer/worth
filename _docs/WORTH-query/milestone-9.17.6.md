@@ -33,9 +33,8 @@ execution, Bridge/Signal eligibility and World publication remain the existing o
 Complete one proposal -> two required assessments -> approval -> real application
 journey in Phase 1 through the graph-shaped public authoring surface. Then finish
 branching, bounded retries, definition revisions, branch forks and program adoption.
-After that kernel is usable, finish first-class inbound external occurrences and
-asynchronous effect recovery in the final phase. A graph editor UI is not required;
-the public typed authoring API and real product command surface are required.
+A graph editor UI is not required; the public typed authoring API and real product
+command surface are required.
 
 Closure includes safe A/B definition coexistence, fresh approval/source validation,
 independent required inventory, exact step idempotency, bounded execution, partial
@@ -45,8 +44,9 @@ string-node authority, reimplemented admission or parallel publication path.
 
 ## Current Boundary And Reuse
 
-- Query managed_run/workflow_graph_execution.rs owns active workflow execution,
-  provider step progression and completed/paused outcomes.
+- Query managed_run/workflow_graph_execution.rs owns provider-backed read-graph
+  execution, provider step progression and completed/paused outcomes; it is not an
+  authored-application workflow executor.
 - managed_run/workflow_yield_* and provider_session/readmission/workflow.rs own
   suspended/yielded resource custody and fresh provider/session readmission.
 - artifact_owner workflow authority and convergence_epoch workflow cleanup own
@@ -59,8 +59,8 @@ string-node authority, reimplemented admission or parallel publication path.
   dispositions and exact recovery. This milestone adds its new definition/instance
   participants to that boundary, not a competing adoption engine.
 
-Definition compilation lowers to those installed operation/managed execution
-contracts. New primary_graph/workflow code owns branch-local authored-definition,
+Definition compilation lowers to installed mutation, output-demand, managed-read and
+change-delivery contracts. New primary_graph/workflow code owns branch-local definition,
 instance and proposal/approval meaning; it does not own another queue, worker
 scheduler, provider session or authoritative runtime graph.
 
@@ -87,6 +87,10 @@ retry bound changes canonical meaning; changing only authoring syntax does not.
 - Revoke the approver or remove a required installed capability. Deny before
   effects. An unauthorized node hidden behind a condition cannot evade definition
   contract validation; actual action authority is still freshly checked at execution.
+- Revoke the starter, advance as another authorized principal and attribute the effect
+  to that actor. An unauthorized pumper observes `AwaitingActor`; a wake without a
+  request causes zero provider/World contacts. Ordinary mutation cannot bypass a
+  workflow-authority port, and a definition cannot route around its approval source.
 - Remove an assessment supplier while its obligation remains applicable. Completion
   becomes unmet, not vacuously passing. Required executable ports cannot be left
   unbound at program adoption.
@@ -97,11 +101,23 @@ retry bound changes canonical meaning; changing only authoring syntax does not.
   migration/retirement and recovery custody on exact branch coverage. Old
   candidates cannot publish after activation.
 
-Use real CAD proposal/change and required geometry assessment contracts from
-9.17.4 for the first endpoint. Add Bank's real approved business-payment/process
-journey for non-geometric authority and exactly-once effect; its asynchronous inbound
-recovery closes in the final phase.
-No test-only callback substitutes for apply or approval authority.
+Use the real `worth-proprietary` CAD consumer for the first endpoint:
+`worth-cad-entry` declares the reviewed-geometry vocabulary,
+`worthy-house-application` composes and runs it through the ordinary Query host
+facade, and `worthy-house-certification` owns the cross-repository product court.
+Do not substitute an in-repository CAD facsimile. Public WORTH remains independent
+of proprietary crates; the proprietary workspace consumes a pinned candidate public
+revision through public facades. Add Bank's real approved business-payment/process
+journey for non-geometric authority and exactly-once outbound effect. No test-only
+callback substitutes for apply or approval authority.
+
+The proprietary court also exercises the completed 9.17.5 boundary: start a reviewed-
+geometry instance under P0, leave it awaiting evidence or approval, prepare P1, and
+require the workflow participant's exact carry, migrate, retire or cancel disposition
+before adoption can publish. After P1 activation, complete the lawful disposition and
+observe P1 geometry/output; a sibling branch remains callable under P0. A stale P0
+transition, copied approval or missing live-instance inventory must fail. This is one
+consumer journey across the two contracts, not a reopening of 9.17.5.
 
 ### Exact evidence under separate publications
 
@@ -121,6 +137,8 @@ but the approval/application guard must reject if the declared policy requires p
 The oracle states required subjects from the independent authored requirement model,
 not by enumerating whatever assessment outputs currently exist. Inspect actual
 publication results, source versions and product output; log text alone cannot prove it.
+With one, ten and one hundred waiting instances bound to a source, editing it performs
+zero workflow contacts; later admission pays only for its bound dependencies.
 
 Collect one required signature as soon as its declared subject is ready, before the
 control-flow point that consumes it. Advance, navigate Back and reach that point again:
@@ -146,6 +164,9 @@ While I waits, use 9.17.5 to change X's program. An incompatible operation/rule/
 change blocks without instance disposition. Compatible carriage freshly binds I to
 current supported contracts. Migration revalidates every affected proposal/evidence
 binding; it never renames old proof to the new revision. Y still progresses.
+Start J between adoption prepare/publish: the head fence makes adoption stale and
+re-preparation inventories J. Fork Y while I waits, then adopt on Y: copied I is
+historical there and creates no live disposition, while X still requires one.
 
 ### Effect and resource boundaries
 
@@ -159,26 +180,13 @@ Deliver duplicate/reordered wakes; revoke authority while waiting; cancel before
 execution, after owner effect, and after performed publication. Close the last user
 interest and retire the branch while recovery remains. Dispose no required custody.
 With two observers, closing one releases its own interest, not the other's run.
-Exhaust definition graph, prepared candidate, queued run, retained evidence and
+After performed publication, drop every handle plus compiled/status projections and
+exhaust replay retention; retry as another authorized actor and require one effect plus
+the correct successor. Race cancel between admission/publication: cancel-first makes
+the step stale before effect, effect-first makes cancellation report that effect.
+Exhaust definition graph, prepared candidate, pending notification, retained evidence and
 iteration limits independently at their owner boundaries. Do not manufacture a
 giant fixture that exhausts all limits together.
-
-### Final inbound occurrence and asynchronous effect court
-
-After kernel closure, the final phase supplies the inbound counterpart to the existing
-outbox. A host receives an authenticated Bank rail or CAD/solver callback; Query admits
-one bounded immutable occurrence, correlates it to the exact effect/transition, and
-the instance owner consumes it through World publication. Raw payloads and identifiers
-carry no completion authority.
-
-Lose the synchronous response after the external effect, then deliver duplicate,
-reordered and post-cancellation callbacks. Require one occurrence and one lawful
-consumption, retain blocked external truth, and never reopen a cancelled instance.
-Unknown/foreign correlation, invalid authentication/protocol/payload and exhausted
-retention deny before workflow effects. Observe the external owner, occurrence,
-correlation/consumption and World result independently. A shared-truth callback,
-mutable status or direct resume command fails this court. Store remains the owner of
-restart-safe rediscovery; this proof states process-local durability.
 
 ## Definition Language And Ownership
 
@@ -215,6 +223,13 @@ branch scope; sibling instances retain their own program and evidence. Removing 
 and running instances to have lawful dispositions before activation; historical data
 and performed recovery remain, without callable removed operations.
 
+Definition identity has three non-interchangeable axes: workflow identity names the
+lineage, canonical content identity hashes version-tagged expanded meaning, and the
+published revision occurrence names one performed commit. Branch-current selection is
+a separate fact. Pins and retirement bind the occurrence; compiled plans key by
+content plus installed support so equal meaning may be shared without aliasing A-B-A
+publication or branch currentness.
+
 Instances bind immutable definition revision, exact subjects/inputs, proposal source
 expectations, step receipts and required evidence. New instances select the current
 revision. Existing ones stay pinned until explicit admitted migration/cancellation.
@@ -223,16 +238,25 @@ may support existing instances under the selected branch's admitted program and
 current host support/security. A revision that is historical on one branch may still
 be current on another; neither an archive nor a copied receipt makes it executable.
 
-Signal owns wakes/eligibility; Query freshly admits executing steps; World publishes
-effects. Approval binds proposal identity, dependency versions, workflow revision,
-scope, approver and expiry. Relevant source changes invalidate it. Migration must
-revalidate affected evidence, never relabel approvals. Conditions consume admitted
-observations with explicit current/retained posture.
+Progression is caller-pumped through a live authenticated request. Signal wakes only
+make readiness observable; without a request provider and World contacts remain zero.
+Every node uses the advancing request's principal, never the author, starter or an
+ambient service principal. A host may pump with its own authenticated principal; this
+milestone installs no run-as grant, background sweeper or per-definition registration.
+An unauthorized next actor yields `AwaitingActor` without flattening the node outcome.
+Deadlines, expiry and authentication age use one installed named clock domain and are
+checked at admission.
 
-Step idempotency binds instance, definition revision, transition occurrence and intent.
-Replay resumes owner results, not another effect; changed intent conflicts. Definitions
-declare finite graph size, work/retention budgets, deadlines, queues, retry bounds and
-explicit terminal/partial-effect continuations.
+Approval binds proposal identity, dependency versions, workflow revision, scope,
+approver, purpose and expiry. Migration revalidates affected evidence, never relabels
+approval. Conditions consume admitted observations with explicit current/retained
+posture. Query freshly admits steps and World publishes effects.
+
+Transition occurrence identity is derived from instance/incarnation, definition
+occurrence, expanded node path and the settlement-derived back-edge iteration vector;
+it is never allocated from process memory. Its owner-derived step key is
+principal-independent. Caller keys scope declared action intent inside that occurrence.
+Definitions bound graph size, work/retention, deadlines, notifications and retries.
 
 
 ### One canonical authoring model
@@ -261,7 +285,7 @@ source and authority facts remain runtime admissions producing stronger phases.
 ### Exact definition shape
 
 ApplicationWorkflowSpec is the installed vocabulary contract, containing allowed
-operation/query/assessment/approval/external-input references, connection/result
+operation/query/assessment/approval/provider-input references, connection/result
 bindings, authoring capability, maximum effect ceiling, policy and resource profiles.
 It does not embed a user's current definition or instance state.
 
@@ -301,9 +325,20 @@ authority.
 `AdmittedWorkflowTransition` is the sole workflow-issued permit for one concrete step.
 Its owner binds instance/incarnation, definition and program revision, transition
 occurrence, exact inputs/source expectations/evidence, current principal authority and
-reserved resources. Existing managed execution consumes it once and returns the real
-owner outcome. A compiled plan, status projection, node ID, wake or prior transition
+reserved resources. The selected existing node owner consumes it once and returns its
+real outcome. A compiled plan, status projection, node ID, wake or prior transition
 receipt cannot construct or substitute for this admission.
+
+| Phase value | Visibility and mint | Consumer and authority posture |
+| --- | --- | --- |
+| `ValidatedWorkflowDefinition` | public; pure canonical validator | publication preparation; grants nothing |
+| `PreparedWorkflowDefinitionPublication` | public opaque; live application owner using concrete authoring authority | publication only, under exact affinity/currentness |
+| `PublishedWorkflowDefinitionRef` | public opaque; performed publication or governed discovery | compilation/start selection; grants nothing |
+| `CompiledWorkflowDefinition` | crate-private; compiler from published truth and support | transition selection; grants nothing |
+| `AdmittedWorkflowTransition` | crate-private; instance owner using the installed operation's concrete `worth-proof` authority plus current principal/resources | exactly one existing owner execution |
+
+No phase has `from_identity`, a proof codec or public fields. Compile-fail evidence
+pairs forged construction with valid owner-issued use.
 
 Compilation is definition-publication/cold reconstruction work. Ordinary wakes select
 precompiled transition meaning and perform fresh admission; they do not expand
@@ -316,10 +351,9 @@ inputs to transition admission.
 | Node kind | Consumes | Produces and limitation |
 | --- | --- | --- |
 | Query/read | Installed query and current or explicit retained read contract | Disclosed typed observation; no mutation permit |
-| Operation | Installed typed intent, inputs, required source expectation and current authority | Existing actual mutation terminal; performed and settlement are distinct |
+| Operation | Installed typed intent, inputs, source expectation, current authority and any declared workflow-authority port | Existing mutation terminal; performed and settlement are distinct |
 | Assessment | Required subject/source contract and installed producer | Exact completed evidence, possibly failing; Pending is not success |
-| Approval | Immutable proposal revision, evidence requirements and approval policy | Owner-published decision under current approver authority; no general capability |
-| External input wait | Installed inbound protocol and exact effect/transition correlation requirement | A committed correlated occurrence; receipt or payload alone cannot complete the step |
+| Approval | Immutable proposal revision, evidence requirements and approval policy | Owner-issued unforgeable authority port for its exact covered operation; no general capability |
 | Condition | Declared typed inputs and pure Query predicate | A declared branch selection, not an effect or new observation |
 | Evidence join | Required inventory and compatible completed evidence | Complete/failing/incomplete/stale result under declared policy |
 | Bounded back edge | Explicit retry/revision reason, attempt bound and retained state | A new transition occurrence; cannot reuse changed intent under an old key |
@@ -345,6 +379,12 @@ identity cannot decide overlapping write legality. A join's execution policy is
 explicit: all required results, a declared conditional subset, or a typed failure.
 No default race-to-first rule silently weakens requirements.
 
+An operation declaring a workflow-authority port cannot run through ordinary mutation
+entry without an owner-issued value; that entry returns typed
+`RequiresWorkflowTransition` before handler work. Validation rejects an unbound port
+or a non-approval producer. Operations without such a port remain directly callable:
+placing them after approval is process order, not security.
+
 Retry of an infrastructure delivery is not a new domain operation. A declared
 revision/back-edge that changes proposal or input is a new transition occurrence
 and intent; it must clear/revalidate affected evidence and obtain fresh admission.
@@ -363,7 +403,7 @@ untrusted authored draft
   -> CompiledWorkflowDefinition (rebuildable, non-authoritative)
   -> freshly admitted instance start
   -> owner-managed eligibility / AdmittedWorkflowTransition
-  -> managed execution / operation publication
+  -> selected node owner / actual publication
   -> typed result / evidence join / next transition / terminal custody
 ~~~
 
@@ -399,8 +439,10 @@ executable candidate or preparation proof retained for later unconditional use.
 Applying it prepares the actual candidate under fresh admission and source checks.
 
 Assessment evidence binds producer/contract version, required subject, exact
-authored-source dependency versions, result posture and performed publication.
-Its native source footprint excludes irrelevant output publications, permitting
+authored-source dependency versions, result posture, performed publication and output
+content identity. The evidence fact is authoritative; the assessment output is a
+rebuildable projection and may be evicted without changing what was accepted. Its
+native source footprint excludes irrelevant output publications, permitting
 separate assessments to settle without requiring identical latest World heads.
 Equal values are insufficient after native ABA. Required coverage is computed
 from the authored inventory/applicability, not supplied by the evidence rows.
@@ -427,12 +469,13 @@ changed part.
 Fresh-authentication evidence binds the exact signing intent, subject coverage,
 principal and declared maximum age/reuse policy. Authentication for another intent,
 an expired challenge or reuse beyond policy cannot authorize the signature even when
-the same principal and proposal are visible.
+the same principal and proposal are visible. The admission-owned authentication event,
+not a caller flag or principal expiry, records purpose and issuance in the named clock.
 
-Changing a proposal, consumed source, required inventory, applicable rule or semantic
-operation contract invalidates affected evidence. Unrelated branch/source edits do
-not. Compatible reuse is a checked dependency/contract equivalence result, never
-the default because an ID or displayed value matches.
+Evidence staleness is never an eagerly stored flag. Admission compares bound native
+dependency and contract versions; changes make only affected coverage stale. An
+ordinary source commit performs zero workflow invalidation work. Unrelated edits
+preserve coverage. Reuse is a checked equivalence result, never an ID/value match.
 
 ### Instance progression and linear effect custody
 
@@ -451,11 +494,16 @@ custody remains authoritative; resumption resolves that exact outcome rather tha
 executing another effect. No owner-unpublished step is recorded as performed merely
 because its private candidate or outbox exists.
 
-Step identity binds application/branch/instance incarnation, definition revision,
-node and logical transition occurrence plus intent equivalence. Transport retry and
-duplicate Signal wake reuse that transition's result. An authored loop creates a new
-transition only after the prior result is settled or has a declared carried recovery
-posture; it cannot escape a key conflict by inventing a fresh attempt ID.
+For a local mutation, transition settlement and the domain mutation are staged in one
+Relational candidate with the exact instance head in its source expectation. Effectful
+transitions serialize on that head. Cancellation after admission makes the candidate
+stale before effect; cancellation after publication reports the performed effect.
+Successor selection reads settlement, not replay retention or an in-memory handle.
+
+Step identity binds application/branch/instance incarnation, definition occurrence,
+node, logical transition occurrence and intent equivalence. Transport retry, duplicate
+wake and another authorized principal reuse the result. A loop creates a new occurrence
+only after settlement or declared recovery; it cannot invent a fresh attempt ID.
 
 Instance observable states distinguish Ready, Running, WaitingForEvidence,
 WaitingForApproval, Completed, Rejected, Cancelled and RecoveryPending, refined by
@@ -471,35 +519,6 @@ The workflow author does not forward receipts, choose dependency ordinals or par
 event strings. Pure evaluation creates no authoritative publication. Effectful steps
 return through the same admitted candidate/invariant/World path as ordinary actions.
 
-### Inbound external occurrences
-
-The final phase adds an inbound counterpart to the outbox, not a broker, scheduler or
-workflow-local queue. Installed `ApplicationExternalInputBinding` declares protocol,
-correlation, authenticated source, bounded payload and decoding. Host adapters own
-transport; they cannot declare completion or select a transition.
-
-Inbound progression is compiler-visible and owner-issued:
-
-~~~text
-ReceivedExternalEnvelope
-  -> AuthenticatedExternalEnvelope
-  -> AdmittedExternalOccurrence
-  -> CorrelatedExternalOccurrence
-  -> ConsumedExternalOccurrence
-~~~
-
-Admission commits one immutable occurrence before separate consumption. Deduplication
-binds protocol, authenticated source, external message identity and correlation family;
-correlation additionally binds the exact effect, branch, instance/definition and
-transition. Bounded custody retains blocked, reordered or late occurrences.
-
-Dispatch, acknowledgement, remote completion, inbound observation and consumption stay
-distinct. A lost response remains indeterminate until an installed external-owner
-callback or reconciliation proves completion; redispatch is safe only under the
-installed remote-idempotency contract. Occurrences and typed relations, never mutable
-status, are authoritative. Signal only wakes; Store later owns restart discovery.
-Serialized envelopes and live leases carry no authority.
-
 ### Branches, revision retirement and migration
 
 Definitions A/B coexist as immutable facts; one selected current definition per
@@ -511,9 +530,9 @@ A branch fork preserves historical definitions/instance records under exact comp
 meaning. It does not clone executable approval, live leases or dispatch permission.
 Continuing work there requires explicit admitted new-instance/fork disposition with
 new branch identity, current authority and verified prior-effect references. The
-default is historical inspection, not automatic execution. Cannot reconcile a prior
-effect safely: deny continuation with its typed requirement, rather than replay it
-under a fresh key.
+default is historical inspection, not automatic execution. If a prior effect cannot
+be reconciled safely, deny continuation with its typed requirement rather than replay
+it under a fresh key.
 
 Definition migration prepares an exact source instance, source/target definition,
 node/result mapping, subject/source compatibility and effect/evidence dispositions.
@@ -528,6 +547,16 @@ fresh execution evidence; incompatible definitions retire/migrate and uneffected
 instances cancel. Performed obligations remain occurrence-bound recovery.
 Do not re-open ordinary operations from a historical program to finish cleanup.
 Unaffected sibling programs/instances remain usable.
+
+This milestone additively extends adoption preparation with a live-participant port.
+`WorkflowVocabulary` joins the semantic families; published definitions retain their
+dependency facts so inventory never reads compiled plans. The port inventories exact
+live definition/instance occurrences within `maximum_selection_work`; exhaustion
+denies without truncation. The owner derives legal dispositions, while callers choose
+only among legal alternatives. Cancel/retire/carry facts stage in the adoption
+candidate; mapped instance migration publishes earlier. A definition replacement
+depending on target meaning publishes after activation, so the intentional gap denies
+new starts. Fork-copied instances from another incarnation are historical, not live.
 
 ## Required Public Experience
 
@@ -576,7 +605,13 @@ let outcome = request.publish_workflow(prepared)
 // Match the performed outcome to obtain its owner-published definition reference.
 let started = request.start_workflow(&published_definition, subjects)
     .idempotency(instance_key).controls(instance_limits).execute();
-// Observe/advance via managed owner progress with fresh request authority.
+let progress = request.advance_workflow(&started.instance())
+    .step_budget(step_budget).execute();
+match progress {
+    WorthQueryWorkflowProgress::AwaitingActor(next) => show_required_actor(next),
+    WorthQueryWorkflowProgress::Settled(outcome) => render_node_outcome(outcome),
+    other => render_progress(other),
+}
 ~~~
 
 The primitive builder can construct this exact graph without the macro, and a bounded
@@ -588,15 +623,19 @@ not only the linear successful form. The shipped signatures follow the named aut
 transitions; authoring accepts no request or authority, and private spelling may not
 remove validation or publication preparation.
 
-The model exposes ordinary declared approve, reject, revise, cancel, inspect,
+Later sessions obtain definition references through governed branch discovery; a ref
+grants no authority, and starting from a superseded occurrence returns a typed stale
+denial naming the current occurrence. The model exposes approve, reject, revise, cancel, inspect,
 retire-definition and migrate-instance actions. Each takes the appropriate typed
 identity/source expectation and current authority. It does not expose a
 set_workflow_status operation, arbitrary node executor or deserialize-proof route.
-The final phase adds declared `await_external` nodes backed only by installed inbound
-protocol references; it does not expose arbitrary callback URLs or caller-selected
-correlation targets.
+The declaration vocabulary reserves no executable inbound node. 9.17.7 adds
+`await_inbound` only after its external-effect owner exists; until then validation
+returns an unsupported-vocabulary denial rather than a provisional resume path.
 
-Error results name workflow/definition/instance/node and the violated binding,
+Each entry has typed performed, denied, no-effect, unpublished/recovery, partial,
+cancelled and indeterminate postures as applicable; nested node outcomes remain
+unflattened. Errors name workflow/definition/instance/node and the violated binding,
 source, authority, budget or transition contract. Disclosure may redact detail,
 never erase the fact that execution or recovery is incomplete. Observation resource
 close releases interest; it does not itself cancel the instance or its mandatory work.
@@ -609,50 +648,57 @@ No new scheduler, generalized workflow runtime, queue registry or expression com
 
 ~~~text
 worth-query-declaration/src/application_program/workflow/
-  vocabulary/{definition,operations,assessments,approvals}.rs  N installed semantic references
+  vocabulary/{definition,operations,assessments,approvals,authority_ports}.rs N semantic references
   authoring/{builder,component,expansion,macro_surface}.rs      N one graph-shaped authoring model
   definition/{authored,canonical,inputs,identity}.rs          N immutable model meaning
   connection/{data,control,join,retry}.rs                     N distinct edge semantics
   validation/{binding,availability,termination,resources}.rs  N structural checks
-worth-query-declaration/src/application_schema/external_input/
-  {binding,protocol,correlation}.rs                           N final-phase inbound meaning
 worth-query-installation/src/application_program/workflow/
   {vocabulary,adapters,definition_contract}.rs                N/R concrete installed bindings
-worth-query-installation/src/application_schema/external_input/
-  {installed_contract,source_authentication}.rs               N final-phase installed inbound contract
+worth-query-admission/src/authentication_event/
+  {intent,issuance,clock}.rs                                  N purpose/age/reuse proof in named clock
 worth-query-execution/src/domain_computation/primary_graph/workflow/
+  schema/{relations,version}.rs                              N Query-contributed fact schema
   definition/{preparation,publication,revision,retirement}.rs N branch-local definition facts
   definition/compilation/{lowering,plan,reconstruction}.rs   N rebuildable execution meaning
   instance/{start,observation,migration,retirement}.rs        N model instance meaning
   instance/transition/{selection,admission,settlement}.rs     N one-step authority and result
+  instance/status_projection.rs                              N discardable current-status view
   proposal/{source,revision,application}.rs                   N operation proposal contract
   evidence/{inventory,assessment,approval,currentness}.rs     N owner-backed evidence meaning
   adoption/{inventory,dispositions}.rs                       N participant in 9.17.5
   recovery/{continuation,disposition}.rs                      N adaptation to actual custody
-  external_input/{admission,correlation,consumption,custody}.rs N final-phase inbound occurrences
 worth-query-execution/src/domain_computation/
-  managed_run/workflow_*                                     E/R sole run/step/yield owner
+  managed_run/workflow_*                                     E/R read-node provider-run owner only
   provider_session/readmission/workflow.rs                   E/R fresh continuation admission
   artifact_owner/{workflow_authority,frozen_workflow_authority}.rs E/R canonical carriers
   convergence_epoch/workflow_cleanup.rs                      E/R actual resource cleanup
 worth-query-execution/src/domain_computation/primary_graph/
+  application_attempt/product_operation/{operation,transaction}.rs E/R mutation/atomic settlement
   conditional_operation/ application_output_demand/           E/R eligibility and exact closure
-  product_operation/program_adoption/                        E/R existing branch adoption
+  product_operation/program_adoption/                        E/R live-participant port and branch adoption
   application_discovery/                                    E/R governed definitions/instances
 worth-query-publication/src/application_entry/
   workflow/{definition,instance,actions,progress}.rs           N public builders/results
-  external_input/{receive,outcome}.rs                          N final-phase host entry/result
-worth-query-package-archive/                                 E/R definition codecs, not authority
+worth-query-package-archive/src/workflow_definition/
+  {codec,compatibility}.rs                                   N draft codec only, never live facts
 worth-query-decl/src/facade.rs worth-query-host/src/facade.rs E/R reexports
 worth-query-certification/tests/application_graph/workflow/
   {authoring,definition,evidence,revision,branching,recovery,resources}.rs N grouped public proof
-  external_input/{admission,correlation,consumption}.rs        N final-phase protocol proof
+worth-proprietary/crates/worth-cad-entry/src/application/workflow/
+  {vocabulary,reviewed_geometry}.rs                            N proprietary declarations
+worth-proprietary/crates/worthy-house-application/src/workflow/
+  {composition,actions,program_adoption}.rs                    N real product integration
+worth-proprietary/crates/worthy-house-certification/tests/journeys/workflow.rs
+                                                               N cross-repository court
+worth-proprietary/docs/house/query-platform.md                 R consumer contract and operation
 ~~~
 
 Authoring/validation is pure meaning; installation binds known implementations;
 primary graph stores and mutates definition/instance/proposal facts through admitted
-operations; managed_run owns execution lifecycle; proof/World/Signal retain their
-authority. Model-step records are projections/references to canonical performed
+operations; existing operation, output-demand, managed-read and change-delivery owners
+execute their node families; proof/World/Signal retain authority. Model-step records
+are projections/references to canonical performed
 facts, not another commit/dispatch ledger. No persisted live lease or arbitrary
 status table may become an execution permit.
 
@@ -662,16 +708,29 @@ The macro is a thin facade over `authoring::builder`, never a second validator.
 Execution `definition/compilation` owns discardable plans derived from published truth;
 `instance/transition/admission` alone binds current authority and resources for one
 step. Neither may absorb the other's lifecycle or become a current-definition store.
-`external_input` is structurally separate because protocol authentication, occurrence
-custody and transport-facing failure behavior differ from workflow definition and
-instance progression. Host-specific HTTP, broker and rail adapters remain in their
-product/server owners and depend only on the publication/host facade.
+Operation/approval nodes lower to mutation, assessment to output demand, read to
+managed run and notification to change delivery. “Transition” never aliases a managed
+provider step. Capability elevation/mandatory-review workflows remain separate.
 
-CAD application composition binds the real reviewed geometry workflow; Bank's
-application_definition/workflows binds approved business-payment and estate nodes.
+Facts use versioned Query-contributed native relations; current status is derived.
+Archives carry definition drafts only: instances, approvals and live authority never
+import. `worth_query_workflow!` is `macro_rules!` in declaration, not a hidden
+proc-macro crate. The 9.17.4 successor sketch is superseded by this populated tree.
+`primary_graph/workflow` alone mutates facts; `application_discovery` exposes governed
+read selection and mints non-authoritative refs, never currentness or start authority.
+
+The `worth-proprietary` CAD application composition binds the real reviewed geometry
+workflow; Bank creates application_definition/workflows for approved business-payment
+and estate nodes.
 Their domain handlers and numerical algorithms remain unchanged in ownership.
 Real Bank HTTP/user-node/process adapters expose the new declared authoring/instance
 actions with current authentication. No product-specific runner duplicates Query.
+
+`worth-proprietary` is the standing reference consumer from Phase 1 onward, not a
+terminal smoke test. Every phase closes its corresponding proprietary workflow slice
+through the pinned public facades before the next phase relies on it. Query-local
+owner/certification tests remain the faster diagnostic proof and the portable public
+contract; neither evidence lane substitutes for the other.
 
 All files remain within 400 lines absent a separate exemption. Reuse the existing
 public graph integration target and managed-run owner tests. Do not create a crate
@@ -686,15 +745,21 @@ Implement the canonical finite authored definition, primitive typed graph builde
 `worth_query_workflow!`, deterministic component expansion, validation, branch-local
 publication, instance start, proposal, two assessment requirements, approval and
 application. Derive one rebuildable compiled definition and require an
-`AdmittedWorkflowTransition` for every executed node. Lower directly to existing
-managed/conditional entry and actual World effects. Prove builder/macro/command-adapter
-semantic equivalence on this endpoint.
+`AdmittedWorkflowTransition` for every executed node. Phase 1 supports operation,
+assessment, approval, evidence-join and terminal nodes, lowered to their existing
+owners and actual World effects. Prove builder/macro/command-adapter equivalence.
 
 Ship real authoring and instance command surfaces immediately. The first proof includes
 assessment rejection then retry, wrong-source approval, duplicate wake, denied apply,
 successful exact output and cleanup. No graph builder-only checkpoint.
-Collect one approval/evidence item before its consuming node and prove its exact signing
-intent, age and reuse policy are enforced at collection and consumption.
+Collect evidence before its consuming node. Destroy compiled/status projections and
+all handles, rebuild identical next actions from facts, then retry as another principal
+after replay retention is exhausted: one effect and correct successor remain. Race
+cancel between admission/publication in both orders. Compile-fail every shipped phase
+substitution with valid counterparts and pin canonical identity through closure.
+In the same phase, `worth-proprietary` authors, publishes, starts and completes the
+minimal reviewed-geometry definition through `worthy-house-application`, including
+real assessment rejection/retry, approval authority and geometry publication.
 The next phase trusts runtime-authored meaning producing actual admitted effects.
 
 ### Phase 2: Control flow, coverage and effect custody
@@ -709,14 +774,17 @@ Advance and navigate Back without revising the evidence subject, then consume th
 still-compatible early evidence. In one multi-subject proposal, change a reviewed
 subject and preserve an independent review for an unrelated subject while invalidating
 only the affected coverage. Prove a new transition occurrence alone does not invalidate
-evidence and stale or differently purposed authentication cannot sign.
+evidence and stale or differently purposed authentication cannot sign. Bind purpose,
+issue time, age and reuse through the installed authentication-event owner and clock.
 
 Complete authority revocation at waits, effect ceiling denial and resource admission.
 Remove any new client-authored workflow loops or manual receipt routing. Existing
 static Bank semantics remain protected. The next phase trusts lawful branching
-and honest partial effects, not just a successful linear workflow. Delayed external
-callbacks remain explicitly unsupported until the final phase rather than entering
-through a temporary `resume` or status mutation.
+and honest partial effects, not just a successful linear workflow. Inbound callbacks
+remain unsupported until 9.17.7 rather than entering through `resume` or status.
+The proprietary slice exercises condition/join/Back behavior, early geometry evidence,
+selective multi-subject invalidation and cancellation around a real geometry effect;
+Bank remains the distinct outbound-custody court.
 
 ### Phase 3: Definition revisions, branches and program adoption
 
@@ -724,6 +792,14 @@ Ship definition retirement, A/B coexistence, explicit instance migration and for
 continuation admission. Implement the definition/instance participant in 9.17.5
 adoption with exact state/evidence dispositions. Test compatible/incompatible
 program changes while approval, delivery and performed-effect recovery are pending.
+Start an instance between adoption prepare/publish and require stale re-preparation;
+fork while an instance waits and prove only its exact live incarnation is inventoried.
+
+Run that adoption court through `worth-proprietary`: P0 reviewed geometry waits,
+P1 adoption consumes the workflow owner's exact live inventory/disposition, the
+lawful instance outcome observes P1 meaning, and a sibling continues under P0.
+The public certification fixture proves platform portability but cannot replace this
+consumer gate or duplicate proprietary geometry semantics inside WORTH.
 
 No global instance revision bump, copied approval or duplicate external execution.
 An unaffected sibling progresses. The next phase trusts definition and program
@@ -731,42 +807,26 @@ evolution without losing meaning, authorization or custody.
 
 ### Phase 4: Workflow-kernel lifecycle and public closure
 
-Complete bounded observations, queued runs, retention, deadline/iteration accounting,
+Complete bounded observations, pending notifications, retention, deadline/iteration accounting,
 cancellation, close and retirement across every new state. Finish public codecs,
 discovery, authoring/control-flow examples and real product adapters.
 
-Destroy and reconstruct compiled definitions and current-status projections while
-instances are ready, waiting and recovery-pending. Prove identical next-transition
-meaning, zero authority from reconstructed projections, and no authored-graph
-rediscovery in the ordinary wake path.
+The proprietary slice closes observation, cancellation, retention, resource
+exhaustion, cold reconstruction, command/action exposure and operator diagnostics
+through the same product composition used in Phases 1-3, not a new closure fixture.
 
-Compile-fail raw/validated definition as publication-ready, published/compiled
-definition as transition authority, approval description as execution permit and
-cross-role value substitution, with valid counterparts.
-Runtime cases supply genuinely issued foreign/stale evidence. Reuse owner affinity/
-queue/recovery tests and inspect failures before broader reruns. Delete obsolete
-workflow glue and any weaker new experimental entry. At this boundary the complete
-workflow kernel is usable for local effects and existing outbound-effect postures;
-there is no provisional inbound callback API for callers to migrate later.
+Runtime cases supply issued foreign/stale evidence. Deny publication/start before any
+pinned-revision capacity effect; never evict pins. Count cold compile misses and require
+zero on warm progression. Delete only 9.17.6 scaffolding, manual receipt routing and
+weaker experimental entries; existing static product workflows remain until explicitly
+migrated. Enforce that managed_run and conditional_operation never import
+primary_graph/workflow. The complete local/outbound kernel closes with no provisional
+inbound API; 9.17.7 enters through the external-effect owner.
 
-### Phase 5: Inbound external occurrences and final qualification
-
-Add installed external-input protocols and the received -> authenticated -> admitted
--> correlated -> consumed phase progression. Commit immutable bounded inbox
-occurrences before separate workflow consumption, reuse exact outbox correlation and
-external-owner idempotency, and expose host entry/results without transport ownership.
-
-Complete Bank's real HTTP/user-node/rail callback recovery and one CAD/solver-style
-asynchronous callback. Exercise lost synchronous response, duplicate/reordered and
-late delivery, invalid source/protocol/payload, unknown and foreign correlation,
-blocked consumption, cancellation, retention exhaustion and exact cleanup. Count
-actual admission, World, wake, dispatch and consumption contacts. State the
-process-local durability posture and preserve Store's later restart authority.
-
-Delete any direct resume/status/message-routing substitute. Run final public facade,
-protocol, lifecycle, warning-free and repository enforcement checks. All dynamic and
-external behaviors close here before 9.18; no unfinished workflow migration or inbox
-authority is handed to correction.
+Closure requires a reproducible `worth-proprietary` dependency pin to the candidate
+public revision and green focused `worthy-house-application` plus
+`worthy-house-certification` workflow/adoption evidence. A green Query-local CAD-shaped
+fixture alone cannot close the milestone.
 
 ## Acceptance, Cost And Review
 
@@ -781,7 +841,7 @@ occurrences, explicit public ports and independent inspection provenance.
 
 Compile-fail evidence proves a raw/validated definition cannot publish without
 prepared live affinity and that neither published nor compiled definition meaning can
-reach managed execution without `AdmittedWorkflowTransition`; valid counterparts cross
+reach any node owner without `AdmittedWorkflowTransition`; valid counterparts cross
 the intended phases. Runtime evidence destroys compiled/status projections, rebuilds
 them from authority and obtains the same next actions while copied plans, statuses,
 wakes and prior transition receipts open no door.
@@ -800,12 +860,10 @@ An implementation that keys validity only by current node, whole proposal revisi
 latest transition cannot pass.
 
 Bounds cover definition nodes/edges/bytes, validation visits, admitted step work,
-queued wakes, in-flight operations, retained evidence, history references, back-edge
-iterations and total deadline. Final-phase inbound bounds cover envelope bytes,
-authentication/decoding work, admitted and unconsumed occurrences, pending correlation,
-duplicate contacts and retention. Count actual provider/World/dispatch/inbound/
-consumption contacts and retained resources. A loop consumes one total budget; a yield
-or duplicate delivery does not reset it.
+pending notifications, in-flight operations, retained evidence, history references,
+revision pins, back-edge iterations and total deadline. Count provider, World,
+dispatch and settlement contacts plus retained resources. A loop consumes one total
+budget; a yield or duplicate delivery does not reset it.
 Independent instances/branches share immutable contracts without a whole-runtime lock.
 Program/definition canonicalization is publication work, not repeated per step.
 Ordinary transition counters distinguish compiled-plan selection, live admission,
@@ -835,7 +893,8 @@ Review asks whether a definition grants authority, a status field substitutes fo
 performed effect, a changed proposal reuses approval, a loop escapes bounds, or a
 program/fork transition discards recovery. It also asks whether any authoring surface
 can bypass canonical validation, whether component expansion creates hidden runtime
-ownership, and whether raw inbound data can advance or complete an instance. It must
+ownership, whether ordinary mutation can bypass an authority port, and whether a wake
+can execute without an authenticated request. It must
 answer the compiler omission and state-versus-evidence question from 9.17.4. No proof
 ledger, test-for-test system or new generic runtime is an acceptance substitute.
 
@@ -849,21 +908,25 @@ Back/navigation, selective invalidation and signing-intent authentication policy
 They show CAD model graphs as workflow values rather than
 one workflow node per geometric primitive. Host/decl READMEs link to compiled examples;
 AI_README locates definition/component expansion, publication preparation, compiled
-definition projection, per-transition admission, managed execution, branch adoption,
-outbound effect and inbound occurrence owners.
+definition projection, per-transition admission, node-owner lowering, branch adoption
+and outbound-effect owners.
 
 Existing aftermath/resource/branch guides explain exact workflow cancellation,
 partial outcomes, retention, migration and fork posture. CAD command references and
 Bank public-consumer/process contracts document real authoring/action/recovery APIs,
-including typed denial, fresh authorization, external-input authentication,
-deduplication, correlation, consumption and process-local durability. Product/server
-docs name their HTTP/rail adapters without assigning them message meaning or workflow
-authority. No parallel workflow guide or journal.
+including typed denial, fresh authorization and outbound recovery. No parallel
+workflow guide or journal.
 
-[9.18](./milestone-9.18.md) receives the completed static graph, program evolution
-and dynamic workflow contracts. Correction must treat definition/instance changes as
-governed semantic state and preserve exact performed-step history and external-effect
-posture; it does not undo by setting status backwards or revive provisional APIs.
+Revise `worth-proprietary/docs/house/query-platform.md` for the reviewed-geometry
+definition, author/approve/advance actions, P0-to-P1 live-instance disposition,
+operator-visible recovery and the exact public WORTH dependency pin used by the
+certification run.
+
+[9.17.7](./milestone-9.17.7.md) adds inbound occurrences under the external-effect
+aftermath owner, then [9.18](./milestone-9.18.md) receives the completed graph,
+program-evolution, workflow and inbound-effect contracts. Correction treats
+definition/instance changes as governed semantic state and preserves exact performed
+history; it never sets status backwards or revives provisional APIs.
 
 The [cross-runtime merge roadmap](../cross-runtime/merging-and-branching-roadmap.md)
 later reconciles definition graphs, instance progress, evidence and effect provenance.

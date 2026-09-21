@@ -40,6 +40,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt::provider_e
     >,
     lease: WorthQueryApplicationSnapshotLease,
     provider_attempt: WorthQueryPreparedApplicationProviderAttempt,
+    platform_mutation: bool,
     authorization: WorthQueryProviderCommitAuthorization,
     idempotency: WorthQueryApplicationIdempotencyBinding,
     aftermath_causality: Option<
@@ -107,6 +108,7 @@ struct WorthQueryProviderAttemptPreparation {
     preimage_demand: Option<worth_query_installation::facade::InstalledPreImageDemand>,
     conditional_definition:
         Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
+    platform_mutation: bool,
     validator_work_admission: crate::domain_computation::primary_graph::application_attempt::effect_program::WorthQueryCandidateValidatorWorkAdmission,
     output_correspondence: super::super::super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
     retain_output_demand_observation: bool,
@@ -149,6 +151,7 @@ where
         emission_retained_bytes,
         emission_retained_bytes_ceiling,
         conditional_definition,
+        platform_mutation,
         validator_work_admission,
         output_correspondence,
         retain_output_demand_observation,
@@ -187,6 +190,7 @@ where
                 emission_retained_bytes_ceiling,
                 preimage_demand,
                 conditional_definition,
+                platform_mutation,
                 validator_work_admission,
                 output_correspondence,
                 retain_output_demand_observation,
@@ -218,6 +222,7 @@ fn prepare_authorized_application_commit<Schema, Operation, Input, Scope>(
     let Some(mutation_partition) = application.issue_application_mutation_partition() else {
         return terminal(denied(DenialStage::ProposalBinding));
     };
+    let platform_mutation = provider.platform_mutation;
     let provider_attempt = match prepare_application_provider_attempt(provider, mutation_partition)
     {
         Ok(prepared) => prepared,
@@ -227,6 +232,7 @@ fn prepare_authorized_application_commit<Schema, Operation, Input, Scope>(
         admission,
         lease,
         provider_attempt,
+        platform_mutation,
         authorization,
         idempotency,
         aftermath_causality,

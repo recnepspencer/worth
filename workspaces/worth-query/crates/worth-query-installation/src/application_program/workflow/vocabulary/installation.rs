@@ -1,0 +1,391 @@
+use std::any::TypeId;
+use std::collections::BTreeSet;
+use std::marker::PhantomData;
+
+use worth_query_declaration::facade::{
+    application_capability::{ApplicationCapabilityMarkerIdentity, ApplicationCapabilityRef},
+    application_program::ApplicationWorkflowSpec,
+    application_query::{ApplicationQueryBinding, ApplicationQueryMarkerIdentity},
+    application_schema::{
+        ApplicationOperationMarkerIdentity, ApplicationOperationRef, ApplicationSchema,
+        ApplicationStructuredValueBinding,
+    },
+};
+
+use crate::application_program::WorthQueryInstalledApplicationProgram;
+use crate::application_schema::WorthQueryInstalledApplicationSchema;
+
+use super::{
+    denial, InstalledWorkflowAdvanceCapability, InstalledWorkflowApproval,
+    InstalledWorkflowAssessment, InstalledWorkflowAuthoringCapability,
+    InstalledWorkflowCapabilityBinding, InstalledWorkflowInstanceStartCapability,
+    InstalledWorkflowOperation, WorthQueryApplicationWorkflowInstallationDenial,
+    WorthQueryApplicationWorkflowInstallationDenialKind,
+    WorthQueryApplicationWorkflowResourceCeiling, WorthQueryInstalledApplicationWorkflowSpec,
+};
+
+pub struct WorthQueryApplicationWorkflowSpecInstallation<'installed, Schema, Spec, Program>
+where
+    Schema: ApplicationSchema,
+    Spec: ApplicationWorkflowSpec<Schema = Schema>,
+{
+    schema: &'installed WorthQueryInstalledApplicationSchema<Schema>,
+    program: &'installed WorthQueryInstalledApplicationProgram<Schema, Program>,
+    authoring_capability: Option<InstalledWorkflowAuthoringCapability>,
+    instance_start_capability: Option<InstalledWorkflowInstanceStartCapability>,
+    advance_capability: Option<InstalledWorkflowAdvanceCapability>,
+    operations: Vec<InstalledWorkflowOperation>,
+    assessments: Vec<InstalledWorkflowAssessment>,
+    approvals: Vec<InstalledWorkflowApproval>,
+    resources: WorthQueryApplicationWorkflowResourceCeiling,
+    markers: BTreeSet<(u8, TypeId)>,
+    marker: PhantomData<fn() -> Spec>,
+}
+
+impl<'installed, Schema, Spec, Program>
+    WorthQueryApplicationWorkflowSpecInstallation<'installed, Schema, Spec, Program>
+where
+    Schema: ApplicationSchema,
+    Spec: ApplicationWorkflowSpec<Schema = Schema>,
+{
+    pub fn begin(
+        schema: &'installed WorthQueryInstalledApplicationSchema<Schema>,
+        program: &'installed WorthQueryInstalledApplicationProgram<Schema, Program>,
+        resources: WorthQueryApplicationWorkflowResourceCeiling,
+    ) -> Self {
+        Self {
+            schema,
+            program,
+            authoring_capability: None,
+            instance_start_capability: None,
+            advance_capability: None,
+            operations: Vec::new(),
+            assessments: Vec::new(),
+            approvals: Vec::new(),
+            resources,
+            markers: BTreeSet::new(),
+            marker: PhantomData,
+        }
+    }
+
+    pub fn operation<Operation, Input>(
+        mut self,
+    ) -> Result<Self, WorthQueryApplicationWorkflowInstallationDenial>
+    where
+        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
+        Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
+        Input: 'static,
+    {
+        self.insert_marker(0, TypeId::of::<Operation>(), Operation::IDENTIFIER)?;
+        if !self.program.contains_operation_type::<Operation>() {
+            return Err(denial(
+                WorthQueryApplicationWorkflowInstallationDenialKind::OperationNotInProgram,
+                Operation::IDENTIFIER,
+            ));
+        }
+        self.schema
+            .installed_operation(
+                ApplicationOperationRef::<Schema, Operation, Input>::from_declaration(),
+            )
+            .map_err(|_| {
+                denial(
+                    WorthQueryApplicationWorkflowInstallationDenialKind::OperationNotInstalled,
+                    Operation::IDENTIFIER,
+                )
+            })?;
+        self.operations.push(InstalledWorkflowOperation {
+            marker: TypeId::of::<Operation>(),
+            identifier: Operation::IDENTIFIER,
+            input_type: Operation::InputBinding::IDENTITY,
+        });
+        Ok(self)
+    }
+
+    pub fn assessment<Binding>(
+        mut self,
+    ) -> Result<Self, WorthQueryApplicationWorkflowInstallationDenial>
+    where
+        Binding: ApplicationQueryBinding<Schema> + 'static,
+        Binding::Query: ApplicationQueryMarkerIdentity<Schema> + 'static,
+    {
+        self.insert_marker(
+            1,
+            TypeId::of::<Binding::Query>(),
+            Binding::Query::IDENTIFIER,
+        )?;
+        self.schema
+            .installed_query_binding::<Binding>()
+            .map_err(|_| {
+                denial(
+                    WorthQueryApplicationWorkflowInstallationDenialKind::AssessmentNotInstalled,
+                    Binding::IDENTITY,
+                )
+            })?;
+        self.assessments.push(InstalledWorkflowAssessment {
+            query_marker: TypeId::of::<Binding::Query>(),
+            query_identifier: Binding::Query::IDENTIFIER,
+            parameter_type: Binding::Query::PARAMETER_TYPE_IDENTITY,
+            result_type: Binding::Query::RESULT_TYPE_IDENTITY,
+            binding_identity: Binding::IDENTITY,
+        });
+        Ok(self)
+    }
+
+    pub fn approval<Capability, Operation, Input>(
+        mut self,
+    ) -> Result<Self, WorthQueryApplicationWorkflowInstallationDenial>
+    where
+        Capability: ApplicationCapabilityMarkerIdentity<Schema = Schema> + 'static,
+        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
+        Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
+        Input: 'static,
+    {
+        self.insert_marker(2, TypeId::of::<Capability>(), Capability::IDENTIFIER)?;
+        let binding = self.bind_capability::<Capability, Operation, Input>(
+            WorthQueryApplicationWorkflowInstallationDenialKind::ApprovalNotInstalled,
+        )?;
+        self.approvals.push(InstalledWorkflowApproval { binding });
+        Ok(self)
+    }
+
+    pub fn authoring_capability<Capability, Operation, Input>(
+        mut self,
+    ) -> Result<Self, WorthQueryApplicationWorkflowInstallationDenial>
+    where
+        Capability: ApplicationCapabilityMarkerIdentity<Schema = Schema> + 'static,
+        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
+        Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
+        Input: 'static,
+    {
+        if self.authoring_capability.is_some() {
+            return Err(denial(
+                WorthQueryApplicationWorkflowInstallationDenialKind::DuplicateVocabularyMember,
+                Capability::IDENTIFIER,
+            ));
+        }
+        if self
+            .instance_start_capability
+            .as_ref()
+            .is_some_and(|installed| {
+                installed.binding.matches_capability(
+                    TypeId::of::<Capability>(),
+                    Capability::IDENTIFIER,
+                    &Capability::PORTABLE_TYPE_IDENTITY,
+                )
+            })
+        {
+            return Err(denial(
+                WorthQueryApplicationWorkflowInstallationDenialKind::DuplicateVocabularyMember,
+                Capability::IDENTIFIER,
+            ));
+        }
+        if self.advance_capability.as_ref().is_some_and(|installed| {
+            installed.binding.matches_capability(
+                TypeId::of::<Capability>(),
+                Capability::IDENTIFIER,
+                &Capability::PORTABLE_TYPE_IDENTITY,
+            )
+        }) {
+            return Err(denial(
+                WorthQueryApplicationWorkflowInstallationDenialKind::DuplicateVocabularyMember,
+                Capability::IDENTIFIER,
+            ));
+        }
+        self.insert_marker(3, TypeId::of::<Capability>(), Capability::IDENTIFIER)?;
+        let binding = self.bind_capability::<Capability, Operation, Input>(
+            WorthQueryApplicationWorkflowInstallationDenialKind::AuthoringCapabilityNotInstalled,
+        )?;
+        self.authoring_capability = Some(InstalledWorkflowAuthoringCapability { binding });
+        Ok(self)
+    }
+
+    pub fn instance_start_capability<Capability, Operation, Input>(
+        mut self,
+    ) -> Result<Self, WorthQueryApplicationWorkflowInstallationDenial>
+    where
+        Capability: ApplicationCapabilityMarkerIdentity<Schema = Schema> + 'static,
+        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
+        Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
+        Input: 'static,
+    {
+        if self.instance_start_capability.is_some() {
+            return Err(denial(
+                WorthQueryApplicationWorkflowInstallationDenialKind::DuplicateVocabularyMember,
+                Capability::IDENTIFIER,
+            ));
+        }
+        if self.authoring_capability.as_ref().is_some_and(|installed| {
+            installed.binding.matches_capability(
+                TypeId::of::<Capability>(),
+                Capability::IDENTIFIER,
+                &Capability::PORTABLE_TYPE_IDENTITY,
+            )
+        }) {
+            return Err(denial(
+                WorthQueryApplicationWorkflowInstallationDenialKind::DuplicateVocabularyMember,
+                Capability::IDENTIFIER,
+            ));
+        }
+        if self.advance_capability.as_ref().is_some_and(|installed| {
+            installed.binding.matches_capability(
+                TypeId::of::<Capability>(),
+                Capability::IDENTIFIER,
+                &Capability::PORTABLE_TYPE_IDENTITY,
+            )
+        }) {
+            return Err(denial(
+                WorthQueryApplicationWorkflowInstallationDenialKind::DuplicateVocabularyMember,
+                Capability::IDENTIFIER,
+            ));
+        }
+        self.insert_marker(4, TypeId::of::<Capability>(), Capability::IDENTIFIER)?;
+        let binding = self.bind_capability::<Capability, Operation, Input>(
+            WorthQueryApplicationWorkflowInstallationDenialKind::InstanceStartCapabilityNotInstalled,
+        )?;
+        self.instance_start_capability = Some(InstalledWorkflowInstanceStartCapability { binding });
+        Ok(self)
+    }
+
+    pub fn advance_capability<Capability, Operation, Input>(
+        mut self,
+    ) -> Result<Self, WorthQueryApplicationWorkflowInstallationDenial>
+    where
+        Capability: ApplicationCapabilityMarkerIdentity<Schema = Schema> + 'static,
+        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
+        Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
+        Input: 'static,
+    {
+        if self.advance_capability.is_some() {
+            return Err(denial(
+                WorthQueryApplicationWorkflowInstallationDenialKind::DuplicateVocabularyMember,
+                Capability::IDENTIFIER,
+            ));
+        }
+        for installed in [
+            self.authoring_capability
+                .as_ref()
+                .map(|value| &value.binding),
+            self.instance_start_capability
+                .as_ref()
+                .map(|value| &value.binding),
+        ]
+        .into_iter()
+        .flatten()
+        {
+            if installed.matches_capability(
+                TypeId::of::<Capability>(),
+                Capability::IDENTIFIER,
+                &Capability::PORTABLE_TYPE_IDENTITY,
+            ) {
+                return Err(denial(
+                    WorthQueryApplicationWorkflowInstallationDenialKind::DuplicateVocabularyMember,
+                    Capability::IDENTIFIER,
+                ));
+            }
+        }
+        self.insert_marker(5, TypeId::of::<Capability>(), Capability::IDENTIFIER)?;
+        let binding = self.bind_capability::<Capability, Operation, Input>(
+            WorthQueryApplicationWorkflowInstallationDenialKind::AdvanceCapabilityNotInstalled,
+        )?;
+        self.advance_capability = Some(InstalledWorkflowAdvanceCapability { binding });
+        Ok(self)
+    }
+
+    pub fn finish(
+        self,
+    ) -> Result<
+        WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+        WorthQueryApplicationWorkflowInstallationDenial,
+    > {
+        if self.program.schema_binding() != &self.schema.binding_identity() {
+            return Err(denial(
+                WorthQueryApplicationWorkflowInstallationDenialKind::ForeignSchemaBinding,
+                Spec::IDENTITY.as_str(),
+            ));
+        }
+        let authoring_capability = self.authoring_capability.ok_or_else(|| {
+            denial(
+                WorthQueryApplicationWorkflowInstallationDenialKind::MissingAuthoringCapability,
+                Spec::IDENTITY.as_str(),
+            )
+        })?;
+        let instance_start_capability = self.instance_start_capability.ok_or_else(|| {
+            denial(
+                WorthQueryApplicationWorkflowInstallationDenialKind::MissingInstanceStartCapability,
+                Spec::IDENTITY.as_str(),
+            )
+        })?;
+        let advance_capability = self.advance_capability.ok_or_else(|| {
+            denial(
+                WorthQueryApplicationWorkflowInstallationDenialKind::MissingAdvanceCapability,
+                Spec::IDENTITY.as_str(),
+            )
+        })?;
+        if self.operations.is_empty() || self.assessments.is_empty() || self.approvals.is_empty() {
+            return Err(denial(
+                WorthQueryApplicationWorkflowInstallationDenialKind::EmptyVocabulary,
+                Spec::IDENTITY.as_str(),
+            ));
+        }
+        Ok(WorthQueryInstalledApplicationWorkflowSpec {
+            schema_binding: self.schema.binding_identity(),
+            program_revision: self.program.revision().clone(),
+            authoring_capability,
+            instance_start_capability,
+            advance_capability,
+            operations: self.operations.into_boxed_slice(),
+            assessments: self.assessments.into_boxed_slice(),
+            approvals: self.approvals.into_boxed_slice(),
+            resources: self.resources,
+            marker: PhantomData,
+        })
+    }
+
+    fn bind_capability<Capability, Operation, Input>(
+        &self,
+        denial_kind: WorthQueryApplicationWorkflowInstallationDenialKind,
+    ) -> Result<InstalledWorkflowCapabilityBinding, WorthQueryApplicationWorkflowInstallationDenial>
+    where
+        Capability: ApplicationCapabilityMarkerIdentity<Schema = Schema> + 'static,
+        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
+        Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
+        Input: 'static,
+    {
+        if !self.program.contains_operation_type::<Operation>() {
+            return Err(denial(
+                WorthQueryApplicationWorkflowInstallationDenialKind::OperationNotInProgram,
+                Operation::IDENTIFIER,
+            ));
+        }
+        let installed = self
+            .schema
+            .capability(
+                ApplicationCapabilityRef::<Schema, Capability>::from_declaration(),
+                ApplicationOperationRef::<Schema, Operation, Input>::from_declaration(),
+            )
+            .map_err(|_| denial(denial_kind, Capability::IDENTIFIER))?;
+        Ok(InstalledWorkflowCapabilityBinding {
+            marker: TypeId::of::<Capability>(),
+            identifier: Capability::IDENTIFIER,
+            capability_type: Capability::PORTABLE_TYPE_IDENTITY,
+            operation_marker: TypeId::of::<Operation>(),
+            operation_identifier: Operation::IDENTIFIER,
+            installed_identity: *installed.identity().bytes(),
+        })
+    }
+
+    fn insert_marker(
+        &mut self,
+        family: u8,
+        marker: TypeId,
+        subject: &str,
+    ) -> Result<(), WorthQueryApplicationWorkflowInstallationDenial> {
+        if !self.markers.insert((family, marker)) {
+            return Err(denial(
+                WorthQueryApplicationWorkflowInstallationDenialKind::DuplicateVocabularyMember,
+                subject,
+            ));
+        }
+        Ok(())
+    }
+}

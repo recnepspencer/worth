@@ -8,6 +8,7 @@ mod model;
 mod optional_field_authoring;
 mod ordinary_field_authoring;
 pub(super) mod output_correspondence;
+mod platform_reservation;
 mod relation_effects;
 mod reservation_charging;
 mod target_admission;
@@ -32,12 +33,12 @@ use worth_query_installation::facade::{
 };
 use worth_relational::facade::transactions::EntityReference;
 
+pub(in crate::domain_computation::primary_graph::application_attempt) use model::WorthQueryApplicationOptionalFieldWrite;
 pub(in crate::domain_computation::primary_graph) use model::{
     WorthQueryAdmittedApplicationEmissionBatch, WorthQueryApplicationEmission,
 };
-pub(in crate::domain_computation::primary_graph::application_attempt) use model::{
-    WorthQueryApplicationCreationPartition, WorthQueryApplicationOptionalFieldWrite,
-    WorthQueryApplicationRealizedEffect,
+pub(in crate::domain_computation::primary_graph) use model::{
+    WorthQueryApplicationCreationPartition, WorthQueryApplicationRealizedEffect,
 };
 pub use model::{
     WorthQueryApplicationEffectEntity, WorthQueryApplicationEffectProgram,
@@ -61,6 +62,9 @@ pub use output_correspondence::{
     WorthQueryApplicationOutputFamilyEntry, WorthQueryApplicationOutputPosture,
     WorthQueryApplicationOutputProjectionDenial, WorthQueryApplicationOutputRole,
     WorthQueryApplicationOutputRoleFamily, WorthQueryApplicationOutputRoleNameDenial,
+};
+pub(in crate::domain_computation::primary_graph) use platform_reservation::{
+    admit_platform_effects, PlatformEffectDemand,
 };
 use target_admission::installed_contract_admits_program_target;
 use worth_query_declaration::facade::{
@@ -285,6 +289,7 @@ impl<Schema, Operation, Input, Scope>
             emission_retained_bytes: self.emission_retained_bytes,
             emission_retained_bytes_ceiling: self.emission_retained_bytes_ceiling,
             conditional_definition: self.conditional_definition,
+            platform_mutation: false,
             validator_work_admission,
             output_correspondence: self.output_correspondence,
             retain_output_demand_observation: false,

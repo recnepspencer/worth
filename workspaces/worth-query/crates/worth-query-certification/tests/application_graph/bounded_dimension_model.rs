@@ -6,6 +6,10 @@
 //! is authored through the `worth-query-host` and `worth-query-decl` facades,
 //! exactly as an external consumer would have to author it.
 
+#[path = "bounded_dimension_model/assessment_output.rs"]
+pub mod assessment_output;
+#[path = "bounded_dimension_model/assessment_readiness.rs"]
+pub mod assessment_readiness;
 #[path = "bounded_dimension_model/dimension_entry.rs"]
 pub mod dimension_entry;
 #[path = "bounded_dimension_model/host.rs"]
@@ -24,3 +28,5 @@ pub mod rules;
 pub mod schema;
 #[path = "bounded_dimension_model/settled_verdict.rs"]
 pub mod settled_verdict;
+#[path = "bounded_dimension_model/workflow.rs"]
+pub mod workflow;

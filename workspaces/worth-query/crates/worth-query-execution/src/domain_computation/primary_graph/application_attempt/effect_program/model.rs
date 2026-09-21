@@ -242,16 +242,14 @@ pub struct WorthQueryApplicationEffectEntity<Schema, Entity> {
     pub(super) _marker: PhantomData<fn() -> (Schema, Entity)>,
 }
 
-pub(in crate::domain_computation::primary_graph::application_attempt) struct WorthQueryApplicationOptionalFieldWrite
-{
+pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationOptionalFieldWrite {
     pub(in crate::domain_computation::primary_graph::application_attempt) contract:
         PortableAspectContractBasis,
     pub(in crate::domain_computation::primary_graph::application_attempt) value:
         Option<AspectValue>,
 }
 
-pub(in crate::domain_computation::primary_graph::application_attempt) enum WorthQueryApplicationRealizedEffect
-{
+pub(in crate::domain_computation::primary_graph) enum WorthQueryApplicationRealizedEffect {
     CreateEntity {
         kind: KindId,
         key: String,
@@ -300,6 +298,9 @@ pub struct WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope> {
         u64,
     pub(in crate::domain_computation::primary_graph::application_attempt) conditional_definition:
         Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
+    /// True only when Query itself authored graph mutations outside the
+    /// application's declared touch contract after reserving their exact cost.
+    pub(in crate::domain_computation::primary_graph::application_attempt) platform_mutation: bool,
     pub(in crate::domain_computation::primary_graph::application_attempt) validator_work_admission:
         super::WorthQueryCandidateValidatorWorkAdmission,
     pub(in crate::domain_computation::primary_graph::application_attempt) output_correspondence:
@@ -337,8 +338,7 @@ pub struct WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, S
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph::application_attempt) enum WorthQueryApplicationCreationPartition
-{
+pub(in crate::domain_computation::primary_graph) enum WorthQueryApplicationCreationPartition {
     Issued,
     Context(worth_relational::facade::identity::PartitionId),
 }

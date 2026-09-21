@@ -11,7 +11,7 @@ use worth_query_host::facade::application_contribution::{
 use worth_query_host::facade::application_installation::{
     in_memory_rostered_program, WorthQueryApplicationProgramRoster,
     WorthQueryInMemoryApplicationDenial, WorthQueryInMemoryApplicationLimits,
-    WorthQueryProgramApplicationRuntime,
+    WorthQueryProgramApplicationRuntime, WorthQueryWorkflowApplicationRuntime,
 };
 use worth_query_host::facade::declaration::application_program::{
     ApplicationProgramDefinition, ApplicationProgramOutputsShape, ValidatedApplicationProgram,
@@ -21,6 +21,10 @@ use worth_query_host::facade::declaration::application_schema::{
 };
 use worth_query_host::facade::{declaration, primary_graph, runtime};
 
+use super::assessment_output::{
+    PartAssessmentBinding, PartAssessmentHandler, PartAssessmentProducer, PartAssessmentProvider,
+};
+use super::assessment_readiness::PartAssessmentReadiness;
 use super::dimension_entry::{SetPartDimensionBinding, SetPartDimensionHandler, PART_IDENTITY};
 use super::programs::{
     validated_changed_feature_program, validated_changed_operation_program,
@@ -34,6 +38,11 @@ use super::schema::{
     BoundedDimensionContribution, BoundedDimensionSchema, BoundedDimensionV1, BoundedDimensionV2,
     Part, PartDimensionField, PartIdentityField, PartPrincipalBinding,
 };
+use super::workflow::{
+    WorkflowAdvanceBinding, WorkflowAdvanceHandler, WorkflowApprovalBinding,
+    WorkflowApprovalHandler, WorkflowDefinitionAuthoringBinding,
+    WorkflowDefinitionAuthoringHandler, WorkflowInstanceStartBinding, WorkflowInstanceStartHandler,
+};
 
 /// The dimension every host seeds. It satisfies both installed rules, so the
 /// same bootstrap is lawful whichever program the host starts on.
@@ -41,9 +50,22 @@ pub const SEED_DIMENSION: u64 = 7;
 
 pub type BoundedDimensionRuntime<Initial> =
     WorthQueryProgramApplicationRuntime<BoundedDimensionSchema, Initial>;
+pub type BoundedDimensionWorkflowRuntime = WorthQueryWorkflowApplicationRuntime<
+    BoundedDimensionSchema,
+    super::workflow::ReviewedGeometryWorkflow,
+    DimensionProgramP0,
+>;
 
 impl WorthQueryApplicationContribution<BoundedDimensionSchema> for BoundedDimensionContribution {
     type Configuration = ();
+
+    fn contracts(
+        contracts: &mut worth_query_host::facade::application_contribution::WorthQueryApplicationContributionContracts<BoundedDimensionSchema>,
+    ) -> Result<(), primary_graph::WorthQueryPrimaryGraphInstallationDenial> {
+        contracts.producer::<PartAssessmentProducer>()?;
+        contracts.conditional::<PartAssessmentReadiness>()?;
+        Ok(())
+    }
 
     fn configure(
         (): Self::Configuration,
@@ -59,7 +81,21 @@ impl WorthQueryApplicationContribution<BoundedDimensionSchema> for BoundedDimens
             ApplicationInvariantExecutionPoint::CommitBoundary,
             resolve_second_rule,
         )?;
-        setup.handler::<SetPartDimensionBinding, _>(SetPartDimensionHandler)
+        setup
+            .handler::<SetPartDimensionBinding, _>(SetPartDimensionHandler)
+            .and_then(|()| setup.handler::<PartAssessmentBinding, _>(PartAssessmentHandler))
+            .and_then(|()| setup.producer::<PartAssessmentProducer>(PartAssessmentProvider))
+            .and_then(|()| setup.conditional::<PartAssessmentReadiness>(()))
+            .and_then(|()| {
+                setup.handler::<WorkflowDefinitionAuthoringBinding, _>(
+                    WorkflowDefinitionAuthoringHandler,
+                )
+            })
+            .and_then(|()| {
+                setup.handler::<WorkflowInstanceStartBinding, _>(WorkflowInstanceStartHandler)
+            })
+            .and_then(|()| setup.handler::<WorkflowAdvanceBinding, _>(WorkflowAdvanceHandler))
+            .and_then(|()| setup.handler::<WorkflowApprovalBinding, _>(WorkflowApprovalHandler))
     }
 }
 
@@ -74,6 +110,10 @@ pub fn publish_on_first_program() -> BoundedDimensionRuntime<DimensionProgramP0>
             .support(validated_removed_operation_program()),
     )
     .expect("the P0-initial bounded-dimension host must install")
+}
+
+pub fn publish_workflow_on_first_program() -> BoundedDimensionWorkflowRuntime {
+    super::workflow::retain_workflow(publish_on_first_program())
 }
 
 /// Publishes a host whose first occurrence runs P1, with P0 rostered beside it.
@@ -149,6 +189,7 @@ where
                 .expect("the part principal binding must install");
             seed_operator(graph, &principal_binding);
             seed_part(graph);
+            super::workflow::seed_authoring(graph);
             Ok(())
         },
     )
@@ -194,8 +235,12 @@ fn seed_part(graph: &mut primary_graph::WorthQueryPrimaryGraphBootstrap<BoundedD
 fn host_limits() -> WorthQueryInMemoryApplicationLimits {
     WorthQueryInMemoryApplicationLimits::new(
         world_resources(),
-        runtime::WorthQueryApplicationCandidateResourceProfile::bounded(5_120, 2_048, 5_120)
-            .expect("valid candidate limits"),
+        runtime::WorthQueryApplicationCandidateResourceProfile::bounded(
+            4_096,
+            2 * 1024 * 1024,
+            1_048_576,
+        )
+        .expect("valid candidate limits"),
         runtime::WorthQueryApplicationQueryResourceProfile::bounded(5_120, 2_048, usize::MAX, 128)
             .expect("valid query limits"),
         primary_graph::SignalConditionalEvaluationBudget::development(),

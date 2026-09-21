@@ -158,6 +158,18 @@ where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
 {
+    pub(in crate::application_entry) const fn application_runtime(
+        &self,
+    ) -> &'application WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+        self.application
+    }
+
+    pub(in crate::application_entry) const fn product_branch(
+        &self,
+    ) -> worth_query_execution::facade::product::WorthQueryProductBranch {
+        self.branch
+    }
+
     pub fn preconditions(
         mut self,
         preconditions: TypedMutationPreconditions<
@@ -183,5 +195,44 @@ where
         SourcePreparation,
     > {
         WorthQueryApplicationMutationRequestWithIdempotency { request: self, key }
+    }
+}
+
+impl<'application, 'principal, 'scope, 'key, Schema, Intent, SourcePreparation>
+    WorthQueryApplicationMutationRequestWithIdempotency<
+        'application,
+        'principal,
+        'scope,
+        'key,
+        Schema,
+        Intent,
+        SourcePreparation,
+    >
+where
+    Schema: ApplicationSchema,
+    Intent: ApplicationMutationIntent<Schema>,
+{
+    pub(in crate::application_entry) const fn application_runtime(
+        &self,
+    ) -> &'application WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+        self.request.application_runtime()
+    }
+
+    pub(in crate::application_entry) const fn product_branch(
+        &self,
+    ) -> worth_query_execution::facade::product::WorthQueryProductBranch {
+        self.request.product_branch()
+    }
+
+    pub(in crate::application_entry) const fn authenticated_principal(
+        &self,
+    ) -> &'principal WorthQueryAuthenticatedExternalPrincipal<Schema> {
+        self.request.principal
+    }
+
+    pub(in crate::application_entry) const fn request_scope(
+        &self,
+    ) -> &'scope WorthQueryRequestScope {
+        self.request.scope
     }
 }

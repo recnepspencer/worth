@@ -9,6 +9,8 @@ use worth_relational::facade::identity::{EntityId, RelationId};
 
 use super::super::WorthQueryApplicationObservedFact;
 
+mod workflow_fact;
+
 const DOMAIN: CanonicalBasisDomain =
     CanonicalBasisDomain::Future("worth-query.application-producer-dependencies");
 const RULE_VERSION: &str = "worth-query-application-producer-dependencies-v1";
@@ -198,6 +200,52 @@ fn append_fact(
                 );
             }
         }
+        WorthQueryApplicationObservedFact::IndexedEntitySelection {
+            entity_kind,
+            value,
+            candidate_limit,
+            candidates,
+            ..
+        } => {
+            kind(entries, prefix, "indexed-entity-selection");
+            number_u64(
+                entries,
+                prefix,
+                "entity-kind",
+                u64::from(entity_kind.as_u32()),
+            );
+            push(
+                entries,
+                format!("{prefix}.value"),
+                CanonicalBasisEntryKind::Value,
+                canonical_basis_value_for_aspect_value(value),
+            );
+            number(entries, prefix, "candidate-limit", *candidate_limit);
+            entities(entries, prefix, "candidate", candidates);
+        }
+        WorthQueryApplicationObservedFact::WorkflowDefinitionPredecessor { .. }
+        | WorthQueryApplicationObservedFact::WorkflowDefinitionCurrent { .. }
+        | WorthQueryApplicationObservedFact::WorkflowInstanceCapacity { .. }
+        | WorthQueryApplicationObservedFact::WorkflowTransitionCapacity { .. } => {
+            workflow_fact::append(entries, prefix, fact)
+        }
+    }
+}
+
+fn optional_entity(
+    entries: &mut Vec<CanonicalBasisEntry>,
+    prefix: &str,
+    field: &str,
+    value: Option<EntityId>,
+) {
+    match value {
+        Some(value) => entity(entries, prefix, field, value),
+        None => push(
+            entries,
+            format!("{prefix}.{field}"),
+            CanonicalBasisEntryKind::Identity,
+            CanonicalBasisValue::Null,
+        ),
     }
 }
 

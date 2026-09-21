@@ -10,6 +10,8 @@ mod roster_authoring;
 mod specialized_action;
 mod speculation;
 mod supported_program;
+mod workflow_assessment;
+mod workflow_runtime;
 pub use construction::{
     in_memory_program, in_memory_program_with_authorization_time_source,
     in_memory_rostered_program, in_memory_rostered_program_with_authorization_time_source,
@@ -32,3 +34,6 @@ pub use speculation::{
     WorthQueryApplicationPreviewSession, WorthQueryReadmittedApplicationPreview,
 };
 pub use supported_program::WorthQuerySupportedProgramHandle;
+pub use workflow_runtime::{
+    WorthQueryWorkflowApplicationRuntime, WorthQueryWorkflowRuntimeBindingDenial,
+};

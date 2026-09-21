@@ -76,6 +76,7 @@ where
         mut admission,
         lease,
         provider_attempt,
+        platform_mutation,
         authorization,
         idempotency,
         aftermath_causality,
@@ -88,7 +89,7 @@ where
         lease.product(),
     )
     .map_err(|_| denied(DenialStage::ManagedRunAdmission))?;
-    let operation = bind_execution_operation(application, &admission, &lease)?;
+    let operation = bind_execution_operation(application, &admission, &lease, platform_mutation)?;
     let reserved = admission
         .graph_work_mut()
         .take_operation_capacity()
@@ -131,6 +132,7 @@ fn bind_execution_operation<Schema, Operation, Input, Scope>(
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     lease: &WorthQueryApplicationSnapshotLease,
+    platform_mutation: bool,
 ) -> Result<WorthQueryExecutionBoundOperationAuthority, WorthQueryApplicationCommitOutcome>
 where
     Schema: ApplicationSchema,
@@ -189,6 +191,7 @@ where
                 schema_binding: admission.binding_identity(),
                 snapshot,
                 product: lease.product(),
+                platform_mutation,
             },
         ),
     )

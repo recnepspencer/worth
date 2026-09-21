@@ -36,10 +36,10 @@ pub(super) struct RaisedBoundedDimension;
 struct SupportEntity;
 struct BoundedFeature;
 struct AuditFeature;
-struct AdjustInput;
-struct AdjustInputBinding;
+pub(super) struct AdjustInput;
+pub(super) struct AdjustInputBinding;
 struct AdjustOperation;
-struct UnknownOperation;
+pub(super) struct UnknownOperation;
 
 pub(super) const BOUNDED_RULE: &str = "BoundedDimension";
 pub(super) const AUDIT_RULE: &str = "AuditTrail";

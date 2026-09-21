@@ -33,7 +33,8 @@ The dependency order is strict:
         -> 9.17.1.2 final owner services and Signal independent progress
             -> 9.17.2 composite history and coordinated publication
                 -> 9.17.3 Query carriage, facade, and certification
-                    -> 9.17.4 graph authoring -> 9.17.5 program evolution -> 9.17.6 workflows (post-closure)
+                    -> 9.17.4 graph authoring -> 9.17.5 program evolution -> 9.17.6 workflows
+                        -> 9.17.7 inbound effect completion (post-closure)
                         -> 9.18 tree-based semantic undo and redo
 ```
 
@@ -458,9 +459,11 @@ Runtime World unit test, or Query facade compile alone is not umbrella closure.
 as application graph authoring and execution, using real CAD and Bank evidence to
 complete static composition and ordinary consumer cutover.
 [9.17.5](./milestone-9.17.5.md) adds branch-scoped program evolution and
-[9.17.6](./milestone-9.17.6.md) adds dynamic workflow authoring. These successors
+[9.17.6](./milestone-9.17.6.md) adds dynamic workflow authoring.
+[9.17.7](./milestone-9.17.7.md) adds inbound occurrence handling and external-
+effect completion. These successors
 preserve historical certification and the same composite/proof owners.
-[Milestone 9.18](./milestone-9.18.md) begins after all three post-closure
+[Milestone 9.18](./milestone-9.18.md) begins after all four post-closure
 milestones and the completed 9.17 umbrella. It consumes exact product branches, immutable
 single-parent composite commits, component bases, ancestry, retention, and
 coordinated compare-and-publish authority and performed-publication-gated

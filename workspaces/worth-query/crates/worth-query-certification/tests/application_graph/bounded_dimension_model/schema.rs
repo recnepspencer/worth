@@ -67,7 +67,7 @@ worth_query_application_contribution! {
                 .invariant(bounded_dimension_invariants::first_definition())
                 .invariant(bounded_dimension_invariants::second_definition())
                 .application_query(part_dimension_query_definition());
-            super::dimension_entry::declare(schema)
+            super::workflow::declare(super::assessment_output::declare(super::dimension_entry::declare(schema)))
         }
     }
 }

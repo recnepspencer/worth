@@ -17,6 +17,8 @@ use crate::domain_computation::primary_graph::{
 pub struct WorthQueryOutputDemandSettlement {
     runtime_authority: u64,
     schema_binding: ApplicationSchemaBindingIdentity,
+    producer_identity: String,
+    output_family_identity: String,
     receipt: WorthQueryApplicationCommitReceipt,
     readiness_delivery: Option<WorthQueryOutputReadinessDeliveryEvidence>,
     observation: Arc<WorthQueryApplicationReadObservation>,
@@ -38,6 +40,8 @@ impl WorthQueryOutputDemandSettlement {
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         receipt: &WorthQueryApplicationCommitReceipt,
         readiness_delivery: &WorthQueryOutputReadinessDeliveryEvidence,
+        producer_identity: &str,
+        output_family_identity: &str,
     ) -> Result<Arc<Self>, WorthQueryOutputDemandDenial>
     where
         Schema: worth_query_installation::facade::ApplicationSchema,
@@ -59,6 +63,8 @@ impl WorthQueryOutputDemandSettlement {
         Ok(Arc::new(Self {
             runtime_authority: runtime.runtime.authority_identity().as_u64(),
             schema_binding: runtime.installed_schema.binding_identity(),
+            producer_identity: producer_identity.to_owned(),
+            output_family_identity: output_family_identity.to_owned(),
             receipt: receipt.clone(),
             readiness_delivery: Some(readiness_delivery.clone()),
             observation: WorthQueryApplicationReadObservation::from_product(runtime, observation),
@@ -67,6 +73,14 @@ impl WorthQueryOutputDemandSettlement {
 
     pub fn receipt(&self) -> &WorthQueryApplicationCommitReceipt {
         &self.receipt
+    }
+
+    pub fn producer_identity(&self) -> &str {
+        &self.producer_identity
+    }
+
+    pub fn output_family_identity(&self) -> &str {
+        &self.output_family_identity
     }
 
     pub fn readiness_delivery(&self) -> Option<&WorthQueryOutputReadinessDeliveryEvidence> {
@@ -224,6 +238,55 @@ where
                 WorthQueryOutputDemandDenial::new(
                     WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
                     format!("retained output basis unavailable: {error:?}"),
+                )
+            })
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn current_output_source_facts(
+        &self,
+        settlement: &WorthQueryOutputDemandSettlement,
+    ) -> Result<
+        Arc<[crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact]>,
+        WorthQueryOutputDemandDenial,
+    > {
+        if !settlement.belongs_to(self) {
+            return Err(WorthQueryOutputDemandDenial::new(
+                WorthQueryOutputDemandDenialKind::ForeignSettlement,
+                "output settlement belongs to another application runtime",
+            ));
+        }
+        let selected = self
+            .on_branch(settlement.receipt.product_branch())
+            .select()
+            .map_err(|error| {
+                WorthQueryOutputDemandDenial::product_selection(
+                    error,
+                    "settled output currentness could not select its product occurrence",
+                )
+            })?;
+        self.primary_provider
+            .graph
+            .output_lineage
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .source_facts_for_receipt(
+                self.runtime.authority_identity().as_u64(),
+                &self.installed_schema.binding_identity(),
+                selected.product().observation(),
+                &settlement.receipt,
+                usize::MAX,
+            )
+            .map_err(|()| {
+                WorthQueryOutputDemandDenial::new(
+                    WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
+                    "settled output currentness exceeded its lineage work budget",
+                )
+            })?
+            .map(|(facts, _)| facts)
+            .ok_or_else(|| {
+                WorthQueryOutputDemandDenial::new(
+                    WorthQueryOutputDemandDenialKind::Superseded,
+                    "settled output no longer names the current output lineage",
                 )
             })
     }

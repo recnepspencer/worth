@@ -216,6 +216,8 @@ where
                     self,
                     &completion.receipt,
                     &completion.readiness,
+                    &demand.selected.identity,
+                    Family::IDENTITY,
                 );
                 return match settlement {
                     Ok(settlement) => Ok(WorthQueryOutputDemandAdvance::Settled(settlement)),

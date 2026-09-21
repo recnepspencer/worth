@@ -71,6 +71,51 @@ pub mod provider_session {
 
 pub mod primary_graph;
 
+/// Internal bridge used only by the Publication application-entry owner.
+#[doc(hidden)]
+pub mod workflow_definition_publication {
+    pub use crate::domain_computation::primary_graph::{
+        PerformedWorkflowDefinitionPublication, PreparedWorkflowDefinitionPublication,
+        PublishedWorkflowDefinitionRef, WorkflowDefinitionBindingDenial,
+        WorkflowDefinitionExpectedPredecessor, WorkflowDefinitionPreparationDenial,
+        WorkflowDefinitionPublicationOutcome, WorthQueryWorkflowDefinitionPublicationAdapter,
+    };
+}
+
+/// Internal bridge used only by the Publication application-entry owner.
+#[doc(hidden)]
+pub mod workflow_instance_start {
+    pub use crate::domain_computation::primary_graph::{
+        PerformedWorkflowInstanceStart, PreparedWorkflowInstanceStart,
+        PublishedWorkflowDefinitionRef, PublishedWorkflowInstanceRef,
+        WorkflowInstanceBindingDenial, WorkflowInstancePreparationDenial,
+        WorkflowInstanceStartOutcome, WorthQueryWorkflowInstanceStartAdapter,
+    };
+}
+
+/// Internal bridge used only by the Publication application-entry owner.
+#[doc(hidden)]
+pub mod workflow_advance {
+    pub use crate::domain_computation::primary_graph::{
+        PerformedWorkflowApproval, PerformedWorkflowAssessmentEvidence,
+        PerformedWorkflowTransition, PreparedWorkflowAdvance, PreparedWorkflowAssessment,
+        PublishedWorkflowInstanceRef, PublishedWorkflowProposalRef, RequiredWorkflowApproval,
+        RequiredWorkflowAssessment, RequiredWorkflowEvidence, WorkflowApprovalDecision,
+        WorkflowProgressOutcome, WorkflowTransitionBindingDenial,
+        WorkflowTransitionPreparationDenial, WorthQueryWorkflowAdvanceAdapter,
+    };
+}
+
+/// Internal bridge used only by the Publication application-entry owner.
+#[doc(hidden)]
+pub mod workflow_proposal {
+    pub use crate::domain_computation::primary_graph::{
+        PerformedWorkflowProposal, PreparedWorkflowProposal, PublishedWorkflowInstanceRef,
+        PublishedWorkflowProposalRef, WorkflowProposalBindingDenial, WorkflowProposalOutcome,
+        WorkflowProposalPreparationDenial, WorthQueryWorkflowProposalAdapter,
+    };
+}
+
 /// Compatibility surface for the current undo/redo experiment.
 ///
 /// These types remain compiled but are not accepted Phase 8 product contracts.

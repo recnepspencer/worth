@@ -32,6 +32,8 @@ pub(in crate::domain_computation::primary_graph::application_contribution) struc
         String,
     pub(in crate::domain_computation::primary_graph::application_contribution) output_family:
         String,
+    pub(in crate::domain_computation::primary_graph::application_contribution) output_family_type:
+        TypeId,
     pub(in crate::domain_computation::primary_graph::application_contribution) output_roles:
         Vec<String>,
     pub(in crate::domain_computation::primary_graph::application_contribution) output_role_families:
@@ -75,6 +77,7 @@ impl DeclaredProducerBinding {
                 <Binding::OutputFamily as WorthQueryProducerOutputFamily<Schema>>::Source::IDENTITY
                     .to_owned(),
             output_family: Binding::OutputFamily::IDENTITY.to_owned(),
+            output_family_type: TypeId::of::<Binding::OutputFamily>(),
             output_roles: <Binding::Operation as ApplicationMutationBinding<Schema>>::Output::ROLES
                 .iter()
                 .map(|role| role.name().to_owned())
@@ -117,6 +120,7 @@ impl DeclaredProducerBinding {
         self.identity == expected.identity
             && self.source_selector == expected.source_selector
             && self.output_family == expected.output_family
+            && self.output_family_type == expected.output_family_type
             && self.output_roles == expected.output_roles
             && self.output_role_families == expected.output_role_families
             && self.output_role == expected.output_role
@@ -136,10 +140,12 @@ impl DeclaredProducerBinding {
 
 mod operation_binding_uniqueness;
 mod output_family_inventory;
+mod pending;
 #[cfg(test)]
 mod tests;
 
 use operation_binding_uniqueness::duplicate_operation_binding;
+pub(in crate::domain_computation::primary_graph::application_contribution) use pending::PendingProducerRegistry;
 
 pub(super) struct InstalledProducerProvider<Schema> {
     pub(super) declaration: DeclaredProducerBinding,
@@ -208,7 +214,10 @@ where
     {
         self.entries
             .values()
-            .filter(|entry| entry.declaration.output_family == Family::IDENTITY)
+            .filter(|entry| {
+                entry.declaration.output_family == Family::IDENTITY
+                    && entry.declaration.output_family_type == TypeId::of::<Family>()
+            })
             .map(|entry| entry.declaration.operation_binding_type)
             .collect()
     }
@@ -224,6 +233,7 @@ where
     {
         let mut matching = self.entries.values().filter(|entry| {
             entry.declaration.output_family == Family::IDENTITY
+                && entry.declaration.output_family_type == TypeId::of::<Family>()
                 && entry.declaration.operation_binding_type == output_binding
         });
         let selected = matching.next().ok_or_else(|| {
@@ -259,136 +269,6 @@ where
 
     pub(in crate::domain_computation::primary_graph) fn is_empty(&self) -> bool {
         self.entries.is_empty()
-    }
-}
-
-pub(in crate::domain_computation::primary_graph::application_contribution) struct PendingProducerRegistry<
-    Schema,
-> {
-    declared: BTreeMap<String, DeclaredProducerBinding>,
-    providers: BTreeMap<
-        String,
-        (
-            Arc<dyn Any + Send + Sync>,
-            Arc<dyn InstalledProducerExecutor<Schema>>,
-        ),
-    >,
-    marker: PhantomData<fn() -> Schema>,
-}
-
-impl<Schema> PendingProducerRegistry<Schema>
-where
-    Schema: ApplicationSchema,
-{
-    pub(in crate::domain_computation::primary_graph::application_contribution) fn new(
-        declared: BTreeMap<String, DeclaredProducerBinding>,
-    ) -> Self {
-        Self {
-            declared,
-            providers: BTreeMap::new(),
-            marker: PhantomData,
-        }
-    }
-
-    pub(in crate::domain_computation::primary_graph::application_contribution) fn register<
-        Binding,
-    >(
-        &mut self,
-        owner: &str,
-        provider: Binding::Provider,
-    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>
-    where
-        Binding: WorthQueryApplicationProducerBinding<Schema>,
-    {
-        let declared = self
-            .declared
-            .get(Binding::IDENTITY)
-            .ok_or_else(|| denial(DenialKind::ForeignProducerBinding, Binding::IDENTITY))?;
-        if declared.owner != owner {
-            return Err(denial(
-                DenialKind::ForeignProducerBinding,
-                Binding::IDENTITY,
-            ));
-        }
-        if !declared.meaning_matches::<Schema, Binding>() {
-            return Err(denial(
-                DenialKind::ProducerBindingMeaningMismatch,
-                Binding::IDENTITY,
-            ));
-        }
-        if self.providers.contains_key(Binding::IDENTITY) {
-            return Err(denial(
-                DenialKind::DuplicateProducerBinding,
-                Binding::IDENTITY,
-            ));
-        }
-        let provider = Arc::new(provider);
-        self.providers.insert(
-            Binding::IDENTITY.to_owned(),
-            (
-                provider.clone(),
-                Arc::new(TypedInstalledProducer::<Schema, Binding>::new(provider)),
-            ),
-        );
-        Ok(())
-    }
-
-    pub(in crate::domain_computation::primary_graph::application_contribution) fn seal(
-        self,
-    ) -> Result<
-        WorthQueryInstalledApplicationProducerRegistry<Schema>,
-        WorthQueryPrimaryGraphInstallationDenial,
-    > {
-        if let Some((left, right)) = duplicate_operation_binding(&self.declared) {
-            return Err(denial(
-                DenialKind::DuplicateProducerOperationBinding,
-                format!("{left} / {right}"),
-            ));
-        }
-        let missing = self
-            .declared
-            .keys()
-            .find(|identity| !self.providers.contains_key(*identity));
-        if let Some(identity) = missing {
-            return Err(denial(DenialKind::MissingProducerProvider, identity));
-        }
-        let entries = self
-            .declared
-            .into_iter()
-            .map(|(identity, declaration)| {
-                let (value, executor) = self
-                    .providers
-                    .get(&identity)
-                    .expect("complete provider inventory checked")
-                    .clone();
-                (
-                    identity,
-                    InstalledProducerProvider {
-                        declaration,
-                        value,
-                        executor,
-                    },
-                )
-            })
-            .collect();
-        Ok(WorthQueryInstalledApplicationProducerRegistry {
-            entries,
-            marker: PhantomData,
-        })
-    }
-
-    pub(in crate::domain_computation::primary_graph::application_contribution) fn validate_complete(
-        &self,
-    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-        if let Some(identity) = self
-            .declared
-            .keys()
-            .find(|identity| !self.providers.contains_key(*identity))
-        {
-            Err(denial(DenialKind::MissingProducerProvider, identity))
-        } else {
-            Ok(())
-        }
     }
 }
 

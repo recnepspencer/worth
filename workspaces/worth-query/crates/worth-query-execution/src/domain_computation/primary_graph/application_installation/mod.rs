@@ -19,6 +19,7 @@ pub use program::{
     WorthQueryProgramSupportRetirementReceipt, WorthQueryReadmittedApplicationPreview,
     WorthQuerySelectedProgramOwner, WorthQuerySelectedProgramOwnerDenial,
     WorthQuerySettledProgramOutput, WorthQuerySupportedProgramHandle,
+    WorthQueryWorkflowApplicationRuntime, WorthQueryWorkflowRuntimeBindingDenial,
 };
 use program_admission::WorthQueryProgramAdmissionStep;
 

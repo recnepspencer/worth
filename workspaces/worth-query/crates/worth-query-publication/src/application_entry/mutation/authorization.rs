@@ -22,19 +22,19 @@ type MutationScope<Schema, Binding> =
         Schema,
     >>::Scope;
 
-pub(super) struct PreparedMutation<Schema, Binding>
+pub(in crate::application_entry) struct PreparedMutation<Schema, Binding>
 where
     Schema: ApplicationSchema,
     Binding: ApplicationMutationBinding<Schema>,
 {
-    pub(super) principal_identity: Binding::PrincipalIdentity,
-    pub(super) admission: WorthQueryAdmittedApplicationOperation<
+    pub(in crate::application_entry) principal_identity: Binding::PrincipalIdentity,
+    pub(in crate::application_entry) admission: WorthQueryAdmittedApplicationOperation<
         Schema,
         Binding::Operation,
         Binding::Input,
         MutationScope<Schema, Binding>,
     >,
-    pub(super) idempotency: WorthQueryApplicationIdempotencyBinding,
+    pub(in crate::application_entry) idempotency: WorthQueryApplicationIdempotencyBinding,
 }
 
 struct AuthorizedMutation<Schema, Binding>
@@ -94,7 +94,7 @@ where
         .on_branch(request.branch)
         .select()
         .map_err(WorthQueryApplicationRequestMutationDenial::ProductSelection)?;
-    authorize_selected(request, selected)
+    authorize_selected(request, &selected)
 }
 
 fn authorize_selected<Schema, Intent, SourcePreparation>(
@@ -106,7 +106,7 @@ fn authorize_selected<Schema, Intent, SourcePreparation>(
         Intent,
         SourcePreparation,
     >,
-    selected: WorthQuerySelectedProductOperation<'_, Schema>,
+    selected: &WorthQuerySelectedProductOperation<'_, Schema>,
 ) -> Result<
     AuthorizedMutation<Schema, IntentBinding<Schema, Intent>>,
     WorthQueryApplicationRequestMutationDenial,
@@ -192,7 +192,7 @@ pub(super) fn prepare_selected<Schema, Intent, SourcePreparation>(
         Intent,
         SourcePreparation,
     >,
-    selected: WorthQuerySelectedProductOperation<'_, Schema>,
+    selected: &WorthQuerySelectedProductOperation<'_, Schema>,
 ) -> Result<PreparedMutation<Schema, IntentBinding<Schema, Intent>>, WorthQueryApplicationRequestMutationDenial>
 where
     Schema: ApplicationSchema,
@@ -304,10 +304,10 @@ where
         .on_branch(request.request.branch)
         .select()
         .map_err(WorthQueryApplicationRequestMutationDenial::ProductSelection)?;
-    prepare_capability_selected(request, selected)
+    prepare_capability_selected(request, &selected)
 }
 
-pub(super) fn prepare_capability_selected<Schema, Intent, SourcePreparation>(
+pub(in crate::application_entry) fn prepare_capability_selected<Schema, Intent, SourcePreparation>(
     request: &mut WorthQueryApplicationMutationRequestWithIdempotency<
         '_,
         '_,
@@ -317,7 +317,7 @@ pub(super) fn prepare_capability_selected<Schema, Intent, SourcePreparation>(
         Intent,
         SourcePreparation,
     >,
-    selected: WorthQuerySelectedProductOperation<'_, Schema>,
+    selected: &WorthQuerySelectedProductOperation<'_, Schema>,
 ) -> Result<PreparedMutation<Schema, IntentBinding<Schema, Intent>>, WorthQueryApplicationRequestMutationDenial>
 where
     Schema: ApplicationSchema,

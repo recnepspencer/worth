@@ -77,6 +77,24 @@ where
     ) -> &'static str;
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WorthQueryWorkflowAssessmentPosture {
+    Passing,
+    Failing,
+}
+
+/// Assessment meaning owned by the installed output-family contract rather
+/// than selected by a workflow caller.
+pub trait WorthQueryWorkflowAssessmentOutputFamily<Schema>:
+    WorthQueryProducerOutputFamily<Schema>
+where
+    Schema: ApplicationSchema,
+{
+    fn assessment_posture(
+        source: &<<Self::Source as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value,
+    ) -> WorthQueryWorkflowAssessmentPosture;
+}
+
 /// Typed request for one installed output family from one authored source.
 pub trait WorthQueryApplicationOutputDemand<Schema>: Sized + 'static
 where

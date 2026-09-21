@@ -86,6 +86,28 @@ impl<Binding, Entity> WorthQueryApplicationOutputFamilyEntry<'_, Binding, Entity
 }
 
 impl WorthQueryApplicationOutputCorrespondence {
+    pub(in crate::domain_computation::primary_graph) fn workflow_content_identity(
+        &self,
+    ) -> [u8; 32] {
+        use sha2::{Digest, Sha256};
+
+        let mut digest = Sha256::new();
+        digest.update(b"worth-query:workflow-assessment-output:v1");
+        for (role, binding) in &self.roles {
+            digest.update((role.len() as u64).to_le_bytes());
+            digest.update(role.as_bytes());
+            digest.update([match binding.posture {
+                WorthQueryApplicationOutputPosture::Create => 0,
+                WorthQueryApplicationOutputPosture::Preserve => 1,
+                WorthQueryApplicationOutputPosture::Retire => 2,
+            }]);
+            digest.update(binding.entity.partition_value_u64().to_le_bytes());
+            digest.update(binding.entity.local_slot_value().to_le_bytes());
+            digest.update(u64::from(binding.entity.generation_value()).to_le_bytes());
+        }
+        digest.finalize().into()
+    }
+
     pub(in crate::domain_computation::primary_graph) const fn binding_type(
         &self,
     ) -> Option<TypeId> {

@@ -49,14 +49,12 @@ impl ApplicationInvariantMarkerIdentity<BoundedDimensionSchema> for BoundedDimen
     const MINOR: u16 = 0;
 }
 
-/// Exactly the Relational work one bounded-dimension rule body spends on the
-/// single touched part every case in this court writes: one unit fewer and the
-/// author's own rule exhausts its meter. The budget is deliberately not padded,
-/// so these cases also prove that a program-rostered host pays for its own
-/// branch program activation read instead of taking it out of the units the
-/// author declared.
-const FIRST_RULE_WORK_UNITS: u64 = 24;
-const SECOND_RULE_WORK_UNITS: u64 = 24;
+/// Bounded Relational work for this shared host's largest bootstrap and
+/// workflow-publication candidates. The ordinary dimension mutation reserves
+/// both installed rule ceilings explicitly, so this bound must also remain
+/// within that operation's validator-work contract.
+const FIRST_RULE_WORK_UNITS: u64 = 256;
+const SECOND_RULE_WORK_UNITS: u64 = 256;
 
 pub(super) fn first_definition(
 ) -> ApplicationInvariantDefinition<BoundedDimensionSchema, BoundedDimensionV1> {
