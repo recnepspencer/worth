@@ -29,10 +29,11 @@ pub(super) fn derive<Schema, Operation, Input, Scope>(
     let mut evidence = Vec::new();
     let mut evidence_material = Vec::new();
     for node in compiled.required_assessments(evidence_join.entity()) {
-        let observed = transitions
-            .iter()
-            .find(|transition| transition.settlement.node() == node.entity())
-            .and_then(|transition| transition.assessment_evidence.as_ref())
+        let observed =
+            super::super::super::workflow_instance_observation::latest_assessment_evidence(
+                transitions,
+                node.entity(),
+            )
             .ok_or_else(|| affinity("approval required evidence is absent"))?;
         if !observed.passing {
             return Err(affinity("approval required evidence is failing"));

@@ -18,6 +18,9 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphApplicationRuntime, WorthQuerySelectedProductOperation,
 };
 
+#[path = "preparation/adapter_commit.rs"]
+mod adapter_commit;
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorkflowTransitionBindingDenial {
     ForeignSchema,
@@ -229,24 +232,62 @@ impl WorthQueryWorkflowAdvanceAdapter {
         )
     }
 
-    pub fn compare_and_commit_assessment<Schema, Operation, Input, Scope, Query>(
+    #[doc(hidden)]
+    pub fn bind_operation_idempotency(
+        idempotency: WorthQueryApplicationIdempotencyBinding,
+        required: &super::RequiredWorkflowOperation,
+    ) -> WorthQueryApplicationIdempotencyBinding {
+        idempotency.bind_workflow_operation(required.transition_identity_bytes())
+    }
+
+    #[doc(hidden)]
+    pub fn bind_operation_idempotency_raw(
+        idempotency: WorthQueryApplicationIdempotencyBinding,
+        transition_identity: &[u8; 32],
+    ) -> WorthQueryApplicationIdempotencyBinding {
+        idempotency.bind_workflow_operation(transition_identity)
+    }
+
+    pub fn resolve_condition_replay<Schema, Operation, Input, Scope, Query>(
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-        prepared: super::PreparedWorkflowAssessment<Schema, Operation, Input, Scope>,
-        settlement: &crate::domain_computation::primary_graph::WorthQueryOutputDemandSettlement,
-        source: &crate::domain_computation::primary_graph::WorthQueryObservedSource<Query>,
-        posture: crate::domain_computation::primary_graph::WorthQueryWorkflowAssessmentPosture,
+        prepared: &PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
+        required: &super::RequiredWorkflowCondition,
+        source: &crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource<
+            Query,
+            bool,
+        >,
         idempotency: WorthQueryApplicationIdempotencyBinding,
     ) -> Result<
-        WorkflowProgressOutcome,
-        crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
+        Option<WorkflowProgressOutcome>,
+        crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial,
     >
     where
         Schema: ApplicationSchema,
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        let prepared = prepared.settle(runtime, settlement, source, posture)?;
-        Ok(runtime.compare_and_commit_workflow_advance(prepared, idempotency))
+        prepared.resolve_condition_replay(runtime, required, source, idempotency)
+    }
+
+    pub fn resolve_operation_replay<Schema, Operation, Input, Scope, Binding>(
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        prepared: &PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
+        required: &super::RequiredWorkflowOperation,
+        receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+        idempotency: WorthQueryApplicationIdempotencyBinding,
+    ) -> Result<
+        Option<WorkflowProgressOutcome>,
+        crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial,
+    >
+    where
+        Schema: ApplicationSchema,
+        Operation: 'static,
+        Input: Clone + Send + Sync + 'static,
+        Binding: worth_query_declaration::facade::application_operation::ApplicationMutationBinding<
+            Schema,
+        >,
+    {
+        prepared.resolve_operation_replay::<Binding>(runtime, required, receipt, idempotency)
     }
 
     pub fn prepare<Schema, Capability, Operation, Input, Scope, Spec, Program>(
@@ -291,18 +332,5 @@ impl WorthQueryWorkflowAdvanceAdapter {
         selected.prepare_workflow_approval::<Capability, Operation, Input, Scope, Spec, Program>(
             installed, instance, required, proposal, decision, admission,
         )
-    }
-
-    pub fn compare_and_commit<Schema, Operation, Input, Scope>(
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-        prepared: PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
-        idempotency: WorthQueryApplicationIdempotencyBinding,
-    ) -> WorkflowProgressOutcome
-    where
-        Schema: ApplicationSchema,
-        Operation: 'static,
-        Input: Clone + Send + Sync + 'static,
-    {
-        runtime.compare_and_commit_workflow_advance(prepared, idempotency)
     }
 }

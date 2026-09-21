@@ -1,17 +1,23 @@
 use bank_domain::schema::{
-    ApplyOpeningFundingMutationBinding, ApprovePaymentMutationBinding, BankAccounts, BankEstate,
-    BankPayments, BankPostingIntegrity, BankSchema, CreateBusinessAccountMutationBinding,
-    CreatePersonalAccountMutationBinding, DepositMutationBinding, DisburseEstateMutationBinding,
-    FreezeEstateAccountMutationBinding, GrantAccountAccessMutationBinding,
-    InitiateBusinessPaymentMutationBinding, NotifyEstateDeathMutationBinding,
-    OpenEstateCaseMutationBinding, RecognizeEstateExecutorMutationBinding,
-    RejectPaymentMutationBinding, ReleaseEstateMutationBinding,
-    RetransmitEstateDeathNoticeMutationBinding, ReverseJournalMutationBinding,
-    RevokeAccountAccessMutationBinding, SendMoneyMutationBinding, WithdrawMutationBinding,
+    ApplyOpeningFundingMutationBinding, ApprovePaymentMutationBinding,
+    ApprovedBusinessPaymentAdvanceBinding, ApprovedBusinessPaymentApprovalBinding,
+    ApprovedBusinessPaymentAuthoringBinding, ApprovedBusinessPaymentInstanceStartBinding,
+    ApprovedPaymentAssessmentBinding, ApprovedPaymentAssessmentProducer,
+    ApprovedPaymentAssessmentProvider, ApprovedPaymentAssessmentReadiness, BankAccounts,
+    BankEstate, BankPayments, BankPostingIntegrity, BankSchema,
+    CreateBusinessAccountMutationBinding, CreatePersonalAccountMutationBinding,
+    DepositMutationBinding, DisburseEstateMutationBinding, FreezeEstateAccountMutationBinding,
+    GrantAccountAccessMutationBinding, InitiateBusinessPaymentMutationBinding,
+    NotifyEstateDeathMutationBinding, OpenEstateCaseMutationBinding,
+    RecognizeEstateExecutorMutationBinding, RejectPaymentMutationBinding,
+    ReleaseEstateMutationBinding, RetransmitEstateDeathNoticeMutationBinding,
+    ReverseJournalMutationBinding, RevokeAccountAccessMutationBinding, SendMoneyMutationBinding,
+    WithdrawMutationBinding,
 };
 use worth_query_host::facade::{
     application_contribution::{
-        WorthQueryApplicationContribution, WorthQueryApplicationContributionSetup,
+        WorthQueryApplicationContribution, WorthQueryApplicationContributionContracts,
+        WorthQueryApplicationContributionSetup,
     },
     declaration::application_schema::{
         ApplicationInvariantExecutionPoint, ApplicationInvariantMarkerIdentity,
@@ -22,12 +28,13 @@ use worth_query_host::facade::{
 };
 
 use crate::mutation_handlers::{
-    ApplyOpeningFundingHandler, ApprovePaymentHandler, CreateBusinessAccountHandler,
-    CreatePersonalAccountHandler, DepositHandler, DisburseEstateHandler,
-    FreezeEstateAccountHandler, GrantAccountAccessHandler, InitiateBusinessPaymentHandler,
-    NotifyEstateDeathHandler, OpenEstateCaseHandler, RecognizeEstateExecutorHandler,
-    RejectPaymentHandler, ReleaseEstateHandler, RetransmitEstateDeathNoticeHandler,
-    ReverseJournalHandler, RevokeAccountAccessHandler, SendMoneyHandler, WithdrawHandler,
+    ApplyOpeningFundingHandler, ApprovePaymentHandler, ApprovedBusinessPaymentControlHandler,
+    ApprovedPaymentAssessmentHandler, CreateBusinessAccountHandler, CreatePersonalAccountHandler,
+    DepositHandler, DisburseEstateHandler, FreezeEstateAccountHandler, GrantAccountAccessHandler,
+    InitiateBusinessPaymentHandler, NotifyEstateDeathHandler, OpenEstateCaseHandler,
+    RecognizeEstateExecutorHandler, RejectPaymentHandler, ReleaseEstateHandler,
+    RetransmitEstateDeathNoticeHandler, ReverseJournalHandler, RevokeAccountAccessHandler,
+    SendMoneyHandler, WithdrawHandler,
 };
 
 macro_rules! bank_provider_contribution {
@@ -71,6 +78,14 @@ impl WorthQueryApplicationContribution<BankSchema> for BankAccountsProvider {
 impl WorthQueryApplicationContribution<BankSchema> for BankPaymentsProvider {
     type Configuration = ();
 
+    fn contracts(
+        contracts: &mut WorthQueryApplicationContributionContracts<BankSchema>,
+    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+        contracts.producer::<ApprovedPaymentAssessmentProducer>()?;
+        contracts.conditional::<ApprovedPaymentAssessmentReadiness>()?;
+        Ok(())
+    }
+
     fn configure(
         (): Self::Configuration,
         setup: &mut WorthQueryApplicationContributionSetup<'_, BankSchema>,
@@ -86,6 +101,21 @@ impl WorthQueryApplicationContribution<BankSchema> for BankPaymentsProvider {
         setup.handler::<SendMoneyMutationBinding, _>(SendMoneyHandler)?;
         setup
             .handler::<InitiateBusinessPaymentMutationBinding, _>(InitiateBusinessPaymentHandler)?;
+        setup.handler::<ApprovedBusinessPaymentAuthoringBinding, _>(
+            ApprovedBusinessPaymentControlHandler,
+        )?;
+        setup.handler::<ApprovedBusinessPaymentApprovalBinding, _>(
+            ApprovedBusinessPaymentControlHandler,
+        )?;
+        setup.handler::<ApprovedBusinessPaymentInstanceStartBinding, _>(
+            ApprovedBusinessPaymentControlHandler,
+        )?;
+        setup.handler::<ApprovedBusinessPaymentAdvanceBinding, _>(
+            ApprovedBusinessPaymentControlHandler,
+        )?;
+        setup.handler::<ApprovedPaymentAssessmentBinding, _>(ApprovedPaymentAssessmentHandler)?;
+        setup.producer::<ApprovedPaymentAssessmentProducer>(ApprovedPaymentAssessmentProvider)?;
+        setup.conditional::<ApprovedPaymentAssessmentReadiness>(())?;
         setup.handler::<ApprovePaymentMutationBinding, _>(ApprovePaymentHandler)?;
         setup.handler::<RejectPaymentMutationBinding, _>(RejectPaymentHandler)?;
         setup.handler::<ReverseJournalMutationBinding, _>(ReverseJournalHandler)

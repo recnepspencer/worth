@@ -1,4 +1,4 @@
-use worth_foundational::facade::{AspectValue, InternedString};
+use worth_foundational::facade::AspectValue;
 use worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome;
 use worth_relational::facade::identity::{EntityId, PartitionId, RelationId};
 
@@ -13,7 +13,11 @@ use crate::domain_computation::primary_graph::workflow::{
 };
 
 mod dependency;
+mod proposal;
+mod value;
 pub(in crate::domain_computation::primary_graph::application_attempt) use dependency::observe_evidence_dependencies;
+pub(in crate::domain_computation::primary_graph::application_attempt) use proposal::observe_latest_workflow_proposal_identity;
+use value::{observed_bool, observed_text, observed_u64, optional_identity};
 
 pub(super) fn observe_settled_transition(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
@@ -55,18 +59,32 @@ pub(super) fn observe_settled_transition(
         facts,
     )?)
     .ok_or_else(|| denial("workflow transition outcome is unsupported"))?;
+    let operation_receipt_identity = optional_identity(
+        runtime,
+        snapshot,
+        transition,
+        kind,
+        &layout.transition.operation_receipt_identity,
+        facts,
+    )?;
     let nodes = adjacency_with_kind(
         runtime,
         snapshot,
         layout.transition_node_relation,
         transition,
         2,
+        "workflow transition node relation is unavailable",
         facts,
     )?;
     let [node] = nodes.as_slice() else {
         return Err(denial("workflow transition node binding is not singular"));
     };
-    Ok(SettledWorkflowTransition::new(*node, occurrence, outcome))
+    Ok(SettledWorkflowTransition::new(
+        *node,
+        occurrence,
+        outcome,
+        operation_receipt_identity,
+    ))
 }
 
 pub(super) fn observe_assessment_evidence(
@@ -82,6 +100,7 @@ pub(super) fn observe_assessment_evidence(
         layout.transition_assessment_evidence_relation,
         transition,
         2,
+        "workflow assessment evidence relation is unavailable",
         facts,
     )?;
     let ([] | [_]) = evidence.as_slice() else {
@@ -196,91 +215,18 @@ pub(super) fn observe_assessment_evidence(
             &layout.assessment_evidence.passing,
             facts,
         )?,
+        proposal_identity: observed_text(
+            runtime,
+            snapshot,
+            evidence,
+            kind,
+            &layout.assessment_evidence.proposal_identity,
+            facts,
+        )?,
         source_identity,
         publication_identity,
         output_content_identity,
     }))
-}
-
-fn observed_text(
-    runtime: &worth_relational::facade::runtime::RelationalRuntime,
-    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    entity: EntityId,
-    kind: worth_relational::facade::identity::KindId,
-    locator: &worth_foundational::facade::AspectFieldLocator,
-    facts: &mut Vec<WorthQueryApplicationObservedFact>,
-) -> Result<String, WorthQueryApplicationAttemptDenial> {
-    let value = super::observe_field_value(runtime, snapshot, entity, kind, locator)
-        .ok_or_else(|| denial("workflow assessment evidence field is unavailable"))?;
-    let retained = value.clone();
-    let AspectValue::String(value) = &value else {
-        return Err(denial(
-            "workflow assessment evidence field has the wrong type",
-        ));
-    };
-    let text = match value {
-        InternedString::Raw(value) => value.clone(),
-        InternedString::Symbol(_) => {
-            return Err(denial(
-                "workflow assessment evidence text is not materialized",
-            ))
-        }
-    };
-    facts.push(WorthQueryApplicationObservedFact::Field {
-        entity_id: entity,
-        kind,
-        locator: locator.clone(),
-        value: retained,
-    });
-    Ok(text)
-}
-
-fn observed_bool(
-    runtime: &worth_relational::facade::runtime::RelationalRuntime,
-    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    entity: EntityId,
-    kind: worth_relational::facade::identity::KindId,
-    locator: &worth_foundational::facade::AspectFieldLocator,
-    facts: &mut Vec<WorthQueryApplicationObservedFact>,
-) -> Result<bool, WorthQueryApplicationAttemptDenial> {
-    let value = super::observe_field_value(runtime, snapshot, entity, kind, locator)
-        .ok_or_else(|| denial("workflow assessment evidence field is unavailable"))?;
-    let AspectValue::Bool(posture) = value else {
-        return Err(denial(
-            "workflow assessment evidence field has the wrong type",
-        ));
-    };
-    facts.push(WorthQueryApplicationObservedFact::Field {
-        entity_id: entity,
-        kind,
-        locator: locator.clone(),
-        value: AspectValue::Bool(posture),
-    });
-    Ok(posture)
-}
-
-fn observed_u64(
-    runtime: &worth_relational::facade::runtime::RelationalRuntime,
-    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    entity: EntityId,
-    kind: worth_relational::facade::identity::KindId,
-    locator: &worth_foundational::facade::AspectFieldLocator,
-    facts: &mut Vec<WorthQueryApplicationObservedFact>,
-) -> Result<u64, WorthQueryApplicationAttemptDenial> {
-    let value = super::observe_field_value(runtime, snapshot, entity, kind, locator)
-        .ok_or_else(|| denial("workflow assessment evidence field is unavailable"))?;
-    let AspectValue::UInt64(number) = value else {
-        return Err(denial(
-            "workflow assessment evidence field has the wrong type",
-        ));
-    };
-    facts.push(WorthQueryApplicationObservedFact::Field {
-        entity_id: entity,
-        kind,
-        locator: locator.clone(),
-        value: AspectValue::UInt64(number),
-    });
-    Ok(number)
 }
 
 pub(in crate::domain_computation::primary_graph) fn recover_settled_live_membership(

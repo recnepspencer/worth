@@ -1,12 +1,11 @@
 use std::collections::BTreeMap;
 
-use worth_foundational::facade::{AspectValue, InternedString};
+use worth_foundational::facade::AspectValue;
 use worth_query_declaration::facade::application_program::{
-    ApplicationProgramRevision, ApplicationWorkflowConnectionKind, ApplicationWorkflowNodeKind,
-    ApplicationWorkflowSpec, ValidatedWorkflowDefinition,
+    ApplicationProgramRevision, ApplicationWorkflowNodeKind, ApplicationWorkflowSpec,
+    ValidatedWorkflowDefinition,
 };
 use worth_relational::facade::identity::{EntityId, PartitionId, RelationId};
-use worth_relational::facade::symbols::ClientKey;
 use worth_relational::facade::transactions::{CreatedEntityRef, EntityReference};
 
 use super::super::super::application_attempt::{
@@ -14,7 +13,11 @@ use super::super::super::application_attempt::{
 };
 use super::super::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION;
 use super::super::schema::WorthQueryWorkflowLayout;
-use super::codec::{WorkflowConnectionTag, WorkflowNodeTag};
+use super::codec::WorkflowNodeTag;
+
+#[path = "facts/encoding.rs"]
+mod encoding;
+use encoding::*;
 
 #[derive(Clone, Copy)]
 pub(in crate::domain_computation::primary_graph) enum WorkflowLineagePublicationTarget {
@@ -36,6 +39,7 @@ pub(in crate::domain_computation::primary_graph) fn visit_definition_facts<Spec,
     program_revision: &ApplicationProgramRevision,
     definition: &ValidatedWorkflowDefinition<Spec>,
     assessment_bindings: &[(String, &'static str)],
+    condition_bindings: &[(String, &'static str)],
     approval_bindings: &[worth_query_installation::facade::WorthQueryInstalledWorkflowApprovalBinding],
     lineage: WorkflowLineagePublicationTarget,
     mut emit: impl FnMut(WorthQueryApplicationRealizedEffect) -> Result<(), Error>,
@@ -99,11 +103,15 @@ where
         let approval_binding = approval_bindings
             .iter()
             .find(|binding| binding.node_path == node.identity().as_str());
+        let condition_binding = condition_bindings
+            .iter()
+            .find_map(|(path, binding)| (path == node.identity().as_str()).then_some(*binding));
         emit(create_node(
             layout,
             &node_ref,
             node,
             assessment_binding,
+            condition_binding,
             approval_binding,
             publication.creation_partition,
         ))?;
@@ -236,6 +244,7 @@ fn create_node(
     reference: &CreatedEntityRef,
     node: &worth_query_declaration::facade::application_program::ApplicationWorkflowNode,
     assessment_binding: Option<&str>,
+    condition_binding: Option<&str>,
     approval_binding: Option<
         &worth_query_installation::facade::WorthQueryInstalledWorkflowApprovalBinding,
     >,
@@ -263,6 +272,14 @@ fn create_node(
                 None,
                 false,
             ),
+            ApplicationWorkflowNodeKind::Condition(condition) => (
+                condition.identifier(),
+                None,
+                Some(condition.parameter_type().as_str()),
+                Some(condition.result_type().as_str()),
+                None,
+                false,
+            ),
             ApplicationWorkflowNodeKind::Approval(approval) => (
                 approval.identifier(),
                 None,
@@ -271,9 +288,10 @@ fn create_node(
                 Some(approval.capability_type().as_str()),
                 false,
             ),
-            ApplicationWorkflowNodeKind::EvidenceJoin | ApplicationWorkflowNodeKind::Terminal => {
-                ("", None, None, None, None, false)
+            ApplicationWorkflowNodeKind::EvidenceJoin(policy) => {
+                (policy.identity(), None, None, None, None, false)
             }
+            ApplicationWorkflowNodeKind::Terminal => ("", None, None, None, None, false),
         };
     let mut fields = BTreeMap::from([
         (layout.node.path.clone(), text(node.identity().as_str())),
@@ -289,6 +307,7 @@ fn create_node(
         (&layout.node.parameter_type, parameter_type),
         (&layout.node.result_type, result_type),
         (&layout.node.assessment_binding, assessment_binding),
+        (&layout.node.condition_binding, condition_binding),
         (&layout.node.capability_type, capability_type),
         (
             &layout.node.approval_operation,
@@ -311,77 +330,4 @@ fn create_node(
         fields,
         partition: creation_partition,
     }
-}
-
-fn hex(bytes: [u8; 32]) -> String {
-    use std::fmt::Write;
-
-    let mut text = String::with_capacity(64);
-    for byte in bytes {
-        write!(&mut text, "{byte:02x}").expect("writing to a String cannot fail");
-    }
-    text
-}
-
-fn create_connection(
-    layout: &WorthQueryWorkflowLayout,
-    reference: &CreatedEntityRef,
-    connection: ApplicationWorkflowConnectionKind,
-    creation_partition: WorthQueryApplicationCreationPartition,
-) -> WorthQueryApplicationRealizedEffect {
-    let tag = WorkflowConnectionTag::from_declared(connection);
-    let fields = BTreeMap::from([
-        (
-            layout.connection.family.clone(),
-            AspectValue::UInt64(tag.family()),
-        ),
-        (
-            layout.connection.variant.clone(),
-            AspectValue::UInt64(tag.variant()),
-        ),
-    ]);
-    WorthQueryApplicationRealizedEffect::CreateEntity {
-        kind: reference.kind_id,
-        key: raw_key(reference),
-        fields,
-        partition: creation_partition,
-    }
-}
-
-fn create_relation(
-    kind_id: worth_relational::facade::identity::KindId,
-    key: impl Into<String>,
-    source: EntityReference,
-    target: EntityReference,
-) -> WorthQueryApplicationRealizedEffect {
-    WorthQueryApplicationRealizedEffect::CreateRelation {
-        kind: kind_id,
-        key: key.into(),
-        from: source,
-        to: target,
-    }
-}
-
-fn created(
-    partition_id: PartitionId,
-    kind_id: worth_relational::facade::identity::KindId,
-    key: impl Into<String>,
-) -> CreatedEntityRef {
-    CreatedEntityRef {
-        partition_id,
-        kind_id,
-        client_key: ClientKey::raw(key),
-    }
-}
-
-fn raw_key(reference: &CreatedEntityRef) -> String {
-    reference
-        .client_key
-        .as_raw_str()
-        .expect("workflow publication uses raw owner-issued client keys")
-        .to_owned()
-}
-
-fn text(value: impl Into<String>) -> AspectValue {
-    AspectValue::String(InternedString::Raw(value.into()))
 }

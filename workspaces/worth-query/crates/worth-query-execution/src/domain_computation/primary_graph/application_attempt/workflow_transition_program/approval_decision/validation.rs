@@ -104,10 +104,11 @@ pub(super) fn validate_passing_evidence(
     }
     let mut evidence_entities = Vec::new();
     for node in required {
-        let Some(evidence) = transitions
-            .iter()
-            .find(|transition| transition.settlement.node() == node.entity())
-            .and_then(|transition| transition.assessment_evidence.as_ref())
+        let Some(evidence) =
+            super::super::super::workflow_instance_observation::latest_assessment_evidence(
+                transitions,
+                node.entity(),
+            )
         else {
             return Err(affinity("approval required evidence is absent"));
         };

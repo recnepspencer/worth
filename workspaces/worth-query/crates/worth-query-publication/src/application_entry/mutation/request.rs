@@ -66,6 +66,7 @@ pub struct WorthQueryApplicationMutationRequestWithIdempotency<
         SourcePreparation,
     >,
     pub(super) key: &'key <Intent::Binding as ApplicationMutationBinding<Schema>>::IdempotencyKey,
+    pub(super) workflow_transition_identity: Option<[u8; 32]>,
 }
 
 impl<'application, 'principal, 'scope, Schema, Intent>
@@ -194,7 +195,11 @@ where
         Intent,
         SourcePreparation,
     > {
-        WorthQueryApplicationMutationRequestWithIdempotency { request: self, key }
+        WorthQueryApplicationMutationRequestWithIdempotency {
+            request: self,
+            key,
+            workflow_transition_identity: None,
+        }
     }
 }
 
@@ -212,6 +217,18 @@ where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
 {
+    pub(in crate::application_entry) fn bind_workflow_transition(
+        mut self,
+        identity: [u8; 32],
+    ) -> Self {
+        self.workflow_transition_identity = Some(identity);
+        self
+    }
+
+    pub(in crate::application_entry) fn input_identity(&self) -> [u8; 32] {
+        Intent::Binding::input_identity(self.request.intent.input())
+    }
+
     pub(in crate::application_entry) const fn application_runtime(
         &self,
     ) -> &'application WorthQueryPrimaryGraphApplicationRuntime<Schema> {

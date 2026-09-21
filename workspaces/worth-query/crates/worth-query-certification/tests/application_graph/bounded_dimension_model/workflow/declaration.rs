@@ -25,7 +25,10 @@ use worth_query_host::facade::{
 
 use super::super::{
     dimension_entry::PART_IDENTITY,
-    schema::{BoundedDimensionSchema, Part, PartIdentityField, Principal},
+    schema::{
+        BoundedDimensionSchema, Part, PartIdentityField, Principal, SetPartDimensionInput,
+        SetPartDimensionInputBinding,
+    },
 };
 
 pub struct ReviewedGeometryWorkflow;
@@ -60,15 +63,8 @@ worth_query_capability_context!(pub WorkflowInstanceStartContext in BoundedDimen
 worth_query_capability_provenance!(pub WorkflowInstanceStartProvenance in BoundedDimensionSchema);
 worth_query_capability!(pub WorkflowInstanceStartCapability in BoundedDimensionSchema);
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorkflowDefinitionAuthoringInput {
-    pub part_identity: String,
-}
-
-worth_query_portable_type!(WorkflowDefinitionAuthoringInput => "worth.query.certification.workflow-definition-authoring-input.v1");
-worth_query_structured_value_binding!(pub WorkflowDefinitionAuthoringInputBinding for WorkflowDefinitionAuthoringInput {
-    identity: "worth.query.certification.workflow-definition-authoring-input.v1"
-});
+pub type WorkflowDefinitionAuthoringInput = SetPartDimensionInput;
+pub type WorkflowDefinitionAuthoringInputBinding = SetPartDimensionInputBinding;
 worth_query_operation!(pub WorkflowDefinitionAuthoringOperation for BoundedDimensionSchema, input WorkflowDefinitionAuthoringInputBinding);
 worth_query_operation_reads!(WorkflowDefinitionAuthoringOperation => [PartIdentityField]);
 
@@ -103,7 +99,7 @@ impl ApplicationCapabilityRequest<BoundedDimensionSchema, WorkflowDefinitionAuth
         Ok(ApplicationCapabilityRequestProjection::new(
             ApplicationCapabilityEntitySelector::new(
                 PartIdentityField::reference(),
-                encoded(self.part_identity.clone()),
+                encoded(self.identity.clone()),
             ),
             encoded("author-workflow-definition".to_owned()),
             encoded("reviewed-geometry".to_owned()),

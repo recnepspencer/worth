@@ -1,9 +1,6 @@
-use worth_query_declaration::facade::application_program::{
-    ApplicationWorkflowControlOutcome, ApplicationWorkflowDataFlow,
-};
 use worth_relational::facade::identity::EntityId;
 
-use super::{exact_adjacent, observed_u64};
+use super::{exact_adjacent, observed_optional_text, observed_optional_u64, observed_u64};
 use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationAdjacencyDirection, WorthQueryApplicationAttemptDenial,
     WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationObservedFact,
@@ -44,6 +41,22 @@ pub(super) fn compile_connection(
         &layout.connection.variant,
         facts,
     )?;
+    let retry_reason = observed_optional_text(
+        runtime,
+        snapshot,
+        entity,
+        layout.connection.entity_kind,
+        &layout.connection.retry_reason,
+        facts,
+    )?;
+    let retry_maximum_attempts = observed_optional_u64(
+        runtime,
+        snapshot,
+        entity,
+        layout.connection.entity_kind,
+        &layout.connection.retry_maximum_attempts,
+        facts,
+    )?;
     let source = exact_adjacent(
         runtime,
         snapshot,
@@ -65,35 +78,28 @@ pub(super) fn compile_connection(
     if !nodes.contains(&source) || !nodes.contains(&target) {
         return Err(invalid_connection());
     }
-    let kind = match WorkflowConnectionTag::from_persisted(family, variant) {
-        Some(WorkflowConnectionTag::Control(ApplicationWorkflowControlOutcome::Completed)) => {
-            CompiledWorkflowConnectionKind::Control(ApplicationWorkflowControlOutcome::Completed)
+    let tag =
+        WorkflowConnectionTag::from_persisted(family, variant).ok_or_else(invalid_connection)?;
+    let retry_fields_present = retry_reason.is_some() && retry_maximum_attempts.is_some();
+    if matches!(tag, WorkflowConnectionTag::Retry(_)) != retry_fields_present {
+        return Err(invalid_connection());
+    }
+    let kind = match tag {
+        WorkflowConnectionTag::Control(outcome) => CompiledWorkflowConnectionKind::Control(outcome),
+        WorkflowConnectionTag::Data(flow) => CompiledWorkflowConnectionKind::Data(flow),
+        WorkflowConnectionTag::Retry(trigger) => {
+            let maximum_attempts = retry_maximum_attempts
+                .and_then(|value| u16::try_from(value).ok())
+                .filter(|value| *value > 0)
+                .ok_or_else(invalid_connection)?;
+            CompiledWorkflowConnectionKind::Retry {
+                trigger,
+                reason: retry_reason
+                    .filter(|reason| !reason.trim().is_empty())
+                    .ok_or_else(invalid_connection)?,
+                maximum_attempts,
+            }
         }
-        Some(WorkflowConnectionTag::Control(ApplicationWorkflowControlOutcome::Approved)) => {
-            CompiledWorkflowConnectionKind::Control(ApplicationWorkflowControlOutcome::Approved)
-        }
-        Some(WorkflowConnectionTag::Control(ApplicationWorkflowControlOutcome::Rejected)) => {
-            CompiledWorkflowConnectionKind::Control(ApplicationWorkflowControlOutcome::Rejected)
-        }
-        Some(WorkflowConnectionTag::Data(ApplicationWorkflowDataFlow::ProposalSubject)) => {
-            CompiledWorkflowConnectionKind::Data(ApplicationWorkflowDataFlow::ProposalSubject)
-        }
-        Some(WorkflowConnectionTag::Data(ApplicationWorkflowDataFlow::AssessmentSubject)) => {
-            CompiledWorkflowConnectionKind::Data(ApplicationWorkflowDataFlow::AssessmentSubject)
-        }
-        Some(WorkflowConnectionTag::Data(ApplicationWorkflowDataFlow::AssessmentEvidence)) => {
-            CompiledWorkflowConnectionKind::Data(ApplicationWorkflowDataFlow::AssessmentEvidence)
-        }
-        Some(WorkflowConnectionTag::Data(ApplicationWorkflowDataFlow::JoinedEvidence)) => {
-            CompiledWorkflowConnectionKind::Data(ApplicationWorkflowDataFlow::JoinedEvidence)
-        }
-        Some(WorkflowConnectionTag::Data(ApplicationWorkflowDataFlow::ApprovalAuthority)) => {
-            CompiledWorkflowConnectionKind::Data(ApplicationWorkflowDataFlow::ApprovalAuthority)
-        }
-        Some(WorkflowConnectionTag::Data(ApplicationWorkflowDataFlow::OperationInput)) => {
-            CompiledWorkflowConnectionKind::Data(ApplicationWorkflowDataFlow::OperationInput)
-        }
-        _ => return Err(invalid_connection()),
     };
     Ok(CompiledWorkflowConnection {
         entity,

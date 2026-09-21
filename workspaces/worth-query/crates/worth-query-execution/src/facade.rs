@@ -99,8 +99,9 @@ pub mod workflow_advance {
     pub use crate::domain_computation::primary_graph::{
         PerformedWorkflowApproval, PerformedWorkflowAssessmentEvidence,
         PerformedWorkflowTransition, PreparedWorkflowAdvance, PreparedWorkflowAssessment,
-        PublishedWorkflowInstanceRef, PublishedWorkflowProposalRef, RequiredWorkflowApproval,
-        RequiredWorkflowAssessment, RequiredWorkflowEvidence, WorkflowApprovalDecision,
+        PreparedWorkflowOperation, PublishedWorkflowInstanceRef, PublishedWorkflowProposalRef,
+        RequiredWorkflowApproval, RequiredWorkflowAssessment, RequiredWorkflowCondition,
+        RequiredWorkflowEvidence, RequiredWorkflowOperation, WorkflowApprovalDecision,
         WorkflowProgressOutcome, WorkflowTransitionBindingDenial,
         WorkflowTransitionPreparationDenial, WorthQueryWorkflowAdvanceAdapter,
     };

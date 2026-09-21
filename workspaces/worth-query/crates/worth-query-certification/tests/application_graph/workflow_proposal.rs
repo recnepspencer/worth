@@ -11,9 +11,9 @@ use worth_query_host::facade::{
 use super::bounded_dimension_model::{
     host::publish_workflow_on_first_program,
     workflow::{
-        advance_instance, proposal_terminal_definition, propose_instance,
-        propose_instance_on_branch, publish_definition, repeated_proposal_definition,
-        reviewed_geometry_definition, start_instance,
+        advance_instance, proposal_terminal_definition, propose_authoring_instance,
+        propose_instance, propose_instance_on_branch, publish_definition,
+        repeated_proposal_definition, reviewed_geometry_definition, start_instance,
     },
 };
 
@@ -89,14 +89,14 @@ fn proposal_replay_is_key_bound_across_an_eligible_repeated_proposal_head() {
         definition.definition().clone(),
         412,
     ));
-    let first = expect_proposal(propose_instance(
+    let first = expect_proposal(propose_authoring_instance(
         &application,
         started.instance().clone(),
         413,
     ));
     assert_eq!(first.node_path(), "proposal/first");
 
-    let replay = expect_proposal(propose_instance(
+    let replay = expect_proposal(propose_authoring_instance(
         &application,
         started.instance().clone(),
         413,
@@ -104,7 +104,7 @@ fn proposal_replay_is_key_bound_across_an_eligible_repeated_proposal_head() {
     assert!(replay.replayed());
     assert_eq!(replay.proposal(), first.proposal());
 
-    let second = expect_proposal(propose_instance(
+    let second = expect_proposal(propose_authoring_instance(
         &application,
         started.instance().clone(),
         414,
@@ -128,7 +128,7 @@ fn proposal_replay_resolves_after_the_instance_completed() {
         definition.definition().clone(),
         422,
     ));
-    let proposal = expect_proposal(propose_instance(
+    let proposal = expect_proposal(propose_authoring_instance(
         &application,
         started.instance().clone(),
         423,
@@ -140,7 +140,7 @@ fn proposal_replay_resolves_after_the_instance_completed() {
         other => panic!("expected terminal completion, got {other:?}"),
     }
 
-    let replay = expect_proposal(propose_instance(
+    let replay = expect_proposal(propose_authoring_instance(
         &application,
         started.instance().clone(),
         423,
@@ -164,7 +164,7 @@ fn proposal_replay_rejects_a_foreign_branch_instance_reference_before_lookup() {
         definition.definition().clone(),
         432,
     ));
-    expect_proposal(propose_instance(
+    expect_proposal(propose_authoring_instance(
         &application,
         started.instance().clone(),
         433,

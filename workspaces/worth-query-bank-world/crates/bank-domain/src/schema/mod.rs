@@ -13,6 +13,7 @@ mod precondition_manifest;
 mod program_manifest;
 mod relations;
 mod values;
+mod workflow;
 
 pub use authentication::*;
 pub use contributions::{BankAccounts, BankEstate, BankPayments};
@@ -25,3 +26,4 @@ pub use operations::*;
 pub use posting_integrity::BankPostingIntegrity;
 pub use relations::*;
 pub use values::*;
+pub use workflow::*;

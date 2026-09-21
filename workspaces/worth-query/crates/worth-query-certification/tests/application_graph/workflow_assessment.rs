@@ -19,14 +19,17 @@ use super::bounded_dimension_model::{
     schema::Part,
     settled_verdict::{settle, DimensionVerdict},
     workflow::{
-        accept_assessment, advance_instance, assessment_join_terminal_definition, propose_instance,
-        publish_definition, reviewed_geometry_definition, settle_assessment,
+        accept_assessment, advance_instance, assessment_join_terminal_definition,
+        assessment_join_terminal_definition_with_policy, assessment_retry_definition,
+        propose_instance, publish_definition, reviewed_geometry_definition, settle_assessment,
         spoofed_assessment_denial, start_instance,
     },
 };
 
 #[path = "workflow_assessment/currentness.rs"]
 mod currentness;
+#[path = "workflow_assessment/join_policy.rs"]
+mod join_policy;
 
 #[test]
 fn authenticated_advance_reconstructs_the_exact_required_assessment_without_settling_it() {
@@ -217,10 +220,7 @@ fn authenticated_advance_reconstructs_the_exact_required_assessment_without_sett
             assert_eq!(required.instance(), started.instance().entity_id());
             assert_eq!(required.node_path(), "approval");
             assert_eq!(required.operation(), "WorkflowAdvanceOperation");
-            assert_eq!(
-                required.target_operation(),
-                "WorkflowDefinitionAuthoringOperation"
-            );
+            assert_eq!(required.target_operation(), "SetPartDimension");
             assert_eq!(required.installed_capability_identity().len(), 64);
         }
         other => panic!("expected the exact approval requirement, got {other:?}"),

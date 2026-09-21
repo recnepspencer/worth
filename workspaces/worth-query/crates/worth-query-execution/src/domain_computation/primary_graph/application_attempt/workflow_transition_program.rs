@@ -18,14 +18,18 @@ use crate::domain_computation::primary_graph::workflow::{
     instance::{
         admit_workflow_transition, select_current_transition, select_settled_replay_transition,
         select_terminal_transition, visit_terminal_transition_facts,
-        SelectedWorkflowTransitionKind,
+        visit_workflow_transition_facts, SelectedWorkflowTransitionKind, WorkflowInstanceState,
     },
 };
 
 mod approval;
 mod approval_decision;
 mod assessment;
+mod assessment_materialization;
+mod condition;
+mod condition_materialization;
 mod evidence_join;
+mod operation;
 mod preparation;
 mod publication;
 
@@ -35,9 +39,10 @@ pub use preparation::{
 };
 pub use publication::{
     PerformedWorkflowApproval, PerformedWorkflowAssessmentEvidence, PerformedWorkflowTransition,
-    PreparedWorkflowAdvance, PreparedWorkflowAssessment, RequiredWorkflowApproval,
-    RequiredWorkflowAssessment, RequiredWorkflowEvidence, WorkflowApprovalDecision,
-    WorkflowProgressOutcome,
+    PreparedWorkflowAdvance, PreparedWorkflowAssessment, PreparedWorkflowCondition,
+    PreparedWorkflowOperation, RequiredWorkflowApproval, RequiredWorkflowAssessment,
+    RequiredWorkflowCondition, RequiredWorkflowEvidence, RequiredWorkflowOperation,
+    WorkflowApprovalDecision, WorkflowProgressOutcome,
 };
 
 impl<Schema, Operation, Input, Scope>
@@ -132,6 +137,7 @@ where
                     identity: selected.identity().to_owned(),
                     identity_bytes: *selected.identity_bytes(),
                     node_path: selected.node_path().to_owned(),
+                    operation_receipt_identity: transition.settlement.operation_receipt_identity(),
                 })
             })
             .collect::<Result<Vec<_>, _>>()?
@@ -222,11 +228,23 @@ where
                     false,
                     facts,
                     assessment,
+                    &observed.transitions,
+                ),
+            SelectedWorkflowTransitionKind::Condition(condition) => self
+                .materialize_condition_requirement(
+                    &layout,
+                    compiled.program_revision().clone(),
+                    instance,
+                    selected,
+                    live_membership,
+                    false,
+                    facts,
+                    condition,
                 ),
             SelectedWorkflowTransitionKind::Approval(approval) => {
                 self.materialize_approval_requirement(&layout, instance, selected, facts, approval)
             }
-            SelectedWorkflowTransitionKind::EvidenceJoin => self.materialize_evidence_join(
+            SelectedWorkflowTransitionKind::EvidenceJoin(policy) => self.materialize_evidence_join(
                 &layout,
                 compiled,
                 instance,
@@ -234,6 +252,7 @@ where
                 live_membership,
                 facts,
                 &observed.transitions,
+                policy,
             ),
             SelectedWorkflowTransitionKind::Terminal => self.materialize_terminal_transition(
                 &layout,
@@ -244,65 +263,20 @@ where
                 retire_live_membership,
                 facts,
             ),
-            SelectedWorkflowTransitionKind::Operation => unreachable!(
-                "ordinary operation heads are selected only by their concrete operation owner"
-            ),
+            SelectedWorkflowTransitionKind::Operation(operation) => self
+                .materialize_operation_requirement(
+                    &layout,
+                    &compiled,
+                    instance,
+                    selected,
+                    live_membership,
+                    false,
+                    facts,
+                    &observed.transitions,
+                    operation,
+                ),
         }?;
         Ok(prepared.with_replays(replays))
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    fn materialize_assessment_requirement(
-        mut self,
-        layout: &crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
-        program_revision: worth_query_declaration::facade::application_program::ApplicationProgramRevision,
-        instance: super::PublishedWorkflowInstanceRef,
-        selected: crate::domain_computation::primary_graph::workflow::instance::SelectedWorkflowTransition,
-        live_membership: worth_relational::facade::identity::RelationId,
-        retire_live_membership: bool,
-        facts: Vec<super::WorthQueryApplicationObservedFact>,
-        assessment: crate::domain_computation::primary_graph::workflow::instance::SelectedWorkflowAssessment,
-    ) -> Result<
-        PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
-        WorthQueryApplicationAttemptDenial,
-    > {
-        if self.facts.len().saturating_add(facts.len())
-            > self
-                .admission
-                .allowed_graph_contract()
-                .decision_fact_budget()
-        {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,
-                self.admission.operation(),
-            ));
-        }
-        self.facts.extend(facts);
-        let subject = self.admission.scope_entity_id();
-        let admitted = admit_workflow_transition(
-            self,
-            selected,
-            instance.entity_id(),
-            subject,
-            live_membership,
-            retire_live_membership,
-        );
-        let required = RequiredWorkflowAssessment::from_selected(
-            admitted.instance(),
-            admitted.node_path().to_owned(),
-            admitted.identity().to_owned(),
-            admitted.occurrence(),
-            assessment,
-        );
-        Ok(PreparedWorkflowAdvance::AwaitingAssessment(
-            PreparedWorkflowAssessment {
-                admitted,
-                required,
-                layout: layout.clone(),
-                program_revision,
-                replays: Box::default(),
-            },
-        ))
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -378,6 +352,8 @@ where
             instance: transition_instance,
             node_path,
             assessment: None,
+            supporting_identity: None,
+            operation_receipt_identity: None,
             approval: None,
             approval_identity: None,
             replays: Box::default(),

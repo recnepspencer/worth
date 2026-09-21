@@ -1,5 +1,38 @@
 use super::*;
 
+#[test]
+fn authored_effect_ceiling_is_enforced_before_graph_execution(
+) -> Result<(), Box<dyn std::error::Error>> {
+    let limits = ApplicationWorkflowDefinitionLimits::new(4, 4, 1, 2, 4096)
+        .expect("the focused limits are nonzero");
+    let mut builder =
+        ApplicationWorkflowDefinitionBuilder::<ReviewedGeometry>::new("effect-ceiling", limits)?;
+    let first = builder.operation::<ProposeChange>("first", false)?;
+    let second = builder.operation::<ApplyChange>("second", false)?;
+    let terminal = builder.terminal("terminal")?;
+    builder
+        .start(&first)
+        .control(
+            &first,
+            ApplicationWorkflowControlOutcome::Completed,
+            &second,
+        )
+        .control(
+            &second,
+            ApplicationWorkflowControlOutcome::Completed,
+            &terminal,
+        );
+    let denial = match builder.finish()?.validate() {
+        Ok(_) => panic!("two effect nodes exceeded the authored ceiling of one"),
+        Err(denial) => denial,
+    };
+    assert_eq!(
+        denial.kind(),
+        ApplicationWorkflowValidationDenialKind::EffectLimitExceeded
+    );
+    Ok(())
+}
+
 fn denial(
     author: impl FnOnce(
         &mut ApplicationWorkflowDefinitionBuilder<ReviewedGeometry>,
@@ -159,6 +192,40 @@ fn operation_cannot_supply_its_own_input() -> Result<(), Box<dyn std::error::Err
 }
 
 #[test]
+fn operation_input_requires_the_exact_portable_input_type() -> Result<(), Box<dyn std::error::Error>>
+{
+    let mut builder = ApplicationWorkflowDefinitionBuilder::<ReviewedGeometry>::new(
+        "incompatible-operation-input",
+        limits(),
+    )?;
+    let source = builder.operation::<CollisionOperationAb>("source", false)?;
+    let target = builder.operation::<CollisionOperationA>("target", false)?;
+    let terminal = builder.terminal("terminal")?;
+    builder
+        .start(&source)
+        .control(
+            &source,
+            ApplicationWorkflowControlOutcome::Completed,
+            &target,
+        )
+        .control(
+            &target,
+            ApplicationWorkflowControlOutcome::Completed,
+            &terminal,
+        )
+        .operation_input(&source, &target);
+    let denial = match builder.finish()?.validate() {
+        Ok(_) => panic!("an operation input cannot cross portable input types"),
+        Err(denial) => denial,
+    };
+    assert_eq!(
+        denial.kind(),
+        ApplicationWorkflowValidationDenialKind::IncompatibleOperationInput
+    );
+    Ok(())
+}
+
+#[test]
 fn data_cannot_cross_a_mutually_exclusive_control_arm() -> Result<(), Box<dyn std::error::Error>> {
     let mut builder = ApplicationWorkflowDefinitionBuilder::<ReviewedGeometry>::new(
         "conditional-data",
@@ -168,7 +235,10 @@ fn data_cannot_cross_a_mutually_exclusive_control_arm() -> Result<(), Box<dyn st
     let structural = builder.assessment::<StructuralAssessment>("structural")?;
     let manufacturability =
         builder.assessment::<ManufacturabilityAssessment>("manufacturability")?;
-    let evidence = builder.evidence_join("evidence")?;
+    let evidence = builder.evidence_join(
+        "evidence",
+        ApplicationWorkflowEvidenceJoinPolicy::AllRequiredPassing,
+    )?;
     let approval = builder.approval::<GeometryApprover>("approval")?;
     let approved = builder.operation::<ApplyChange>("approved", true)?;
     let rejected = builder.operation::<ApplyChange>("rejected", false)?;
@@ -192,8 +262,13 @@ fn data_cannot_cross_a_mutually_exclusive_control_arm() -> Result<(), Box<dyn st
         )
         .control(
             &evidence,
-            ApplicationWorkflowControlOutcome::Completed,
+            ApplicationWorkflowControlOutcome::EvidenceSatisfied,
             &approval,
+        )
+        .control(
+            &evidence,
+            ApplicationWorkflowControlOutcome::EvidenceFailed,
+            &rejected,
         )
         .control(
             &approval,

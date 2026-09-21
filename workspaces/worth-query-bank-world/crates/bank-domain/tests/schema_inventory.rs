@@ -3,6 +3,8 @@ use worth_query_decl::facade::application_schema::ApplicationSchemaMember;
 
 #[path = "schema_inventory/field_inventory.rs"]
 mod field_inventory;
+#[path = "schema_inventory/source_contract.rs"]
+mod source_contract;
 #[path = "schema_inventory/support.rs"]
 mod support;
 
@@ -34,7 +36,6 @@ fn bank_manifest_matches_the_frozen_schema_world() {
     assert_eq!(binding.principal_identity_aspect(), "PrincipalIdentity");
     assert_eq!(binding.principal_identity_field(), "PrincipalIdentityField");
 }
-
 #[test]
 fn send_projection_capability_does_not_widen_mandatory_commit_dependencies() {
     let declaration = BankSchema::declaration().unwrap();
@@ -51,7 +52,6 @@ fn send_projection_capability_does_not_widen_mandatory_commit_dependencies() {
         ],
     );
 }
-
 #[test]
 fn revoke_projection_capability_does_not_widen_mandatory_commit_dependencies() {
     let declaration = BankSchema::declaration().unwrap();
@@ -78,6 +78,7 @@ fn assert_entity_and_relation_inventory(members: &[ApplicationSchemaMember]) {
             "Account",
             "AccountAuthorization",
             "Approval",
+            "ApprovedBusinessPaymentGrant",
             "Branch",
             "Business",
             "CapabilityGrant",
@@ -101,6 +102,10 @@ fn assert_entity_and_relation_inventory(members: &[ApplicationSchemaMember]) {
         expected(&[
             "AccountAuthorizedUser",
             "ApprovalPrincipal",
+            "ApprovedBusinessPaymentGrantGrantee",
+            "ApprovedBusinessPaymentGrantGrantor",
+            "ApprovedBusinessPaymentGrantParent",
+            "ApprovedBusinessPaymentGrantResource",
             "AssignmentPrincipal",
             "AuthorizationAccount",
             "BusinessAccount",
@@ -157,6 +162,10 @@ fn assert_operation_inventory(members: &[ApplicationSchemaMember]) {
             "ApplyOpeningFundingOperation",
             "ApproveEstateEmergencyAccessOperation",
             "ApprovePaymentOperation",
+            "ApprovedBusinessPaymentAdvanceOperation",
+            "ApprovedBusinessPaymentApprovalOperation",
+            "ApprovedBusinessPaymentAuthoringOperation",
+            "ApprovedBusinessPaymentInstanceStartOperation",
             "CompleteEstateMandatoryReviewOperation",
             "CreateBusinessAccountOperation",
             "CreatePersonalAccountOperation",
@@ -168,6 +177,7 @@ fn assert_operation_inventory(members: &[ApplicationSchemaMember]) {
             "InitiateBusinessPaymentOperation",
             "NotifyDeathEstateOperation",
             "OpenEstateCaseOperation",
+            "PublishApprovedPaymentAssessment",
             "RecognizeEstateExecutorOperation",
             "RejectPaymentOperation",
             "ReleaseEstateOperation",
@@ -189,6 +199,10 @@ fn assert_capability_inventory(members: &[ApplicationSchemaMember]) {
         names(members, application_capability_name),
         expected(&[
             "ApproveEstateEmergencyAccessCapability",
+            "ApprovedBusinessPaymentAdvance",
+            "ApprovedBusinessPaymentApproval",
+            "ApprovedBusinessPaymentAuthoring",
+            "ApprovedBusinessPaymentInstanceStart",
             "CompleteEstateMandatoryReviewCapability",
             "DelegateEstateCapability",
             "DisburseEstateCapability",
@@ -300,6 +314,7 @@ fn assert_payment_and_authorization_programs(members: &[ApplicationSchemaMember]
             "create:JournalEntry",
             "create:Posting",
             "emit:AccountActivityEffect",
+            "emit:ApprovedPaymentSettlementEffect",
             "link:ApprovalPrincipal:Approval->Principal",
             "link:JournalPosting:JournalEntry->Posting",
             "link:PaymentApproval:PaymentIntent->Approval",
@@ -344,48 +359,4 @@ fn assert_payment_and_authorization_programs(members: &[ApplicationSchemaMember]
             "unlink:AuthorizationAccount:AccountAuthorization->Account",
         ],
     );
-}
-
-#[test]
-fn bank_schema_source_has_no_raw_query_descriptor_or_dynamic_key_lane() {
-    let schema_sources = [
-        include_str!("../src/schema/entities.rs"),
-        include_str!("../src/schema/authentication.rs"),
-        include_str!("../src/schema/decision_read_manifest.rs"),
-        include_str!("../src/schema/fields.rs"),
-        include_str!("../src/schema/governance.rs"),
-        include_str!("../src/schema/manifest.rs"),
-        include_str!("../src/schema/operations.rs"),
-        include_str!("../src/schema/program_manifest.rs"),
-        include_str!("../src/schema/relations.rs"),
-        include_str!("../src/schema/values.rs"),
-    ]
-    .join("\n");
-    for forbidden in [
-        "from_schema_identifier(",
-        "from_schema_identifiers(",
-        "ApplicationEntityRef::<",
-        "ApplicationFieldRef::<",
-        "DynamicApplication",
-    ] {
-        assert!(
-            !schema_sources.contains(forbidden),
-            "bank schema contains forbidden raw lane: {forbidden}"
-        );
-    }
-
-    let manifest = include_str!("../Cargo.toml");
-    for forbidden_dependency in [
-        "worth-query-declaration",
-        "worth-query-installation",
-        "worth-query-execution",
-        "worth-query-replay",
-        "worth-runtime-bridge",
-        "worth-relational",
-    ] {
-        assert!(
-            !manifest.contains(forbidden_dependency),
-            "bank-domain crosses audience boundary through {forbidden_dependency}"
-        );
-    }
 }

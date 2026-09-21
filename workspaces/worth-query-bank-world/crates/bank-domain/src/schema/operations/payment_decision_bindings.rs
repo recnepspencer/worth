@@ -60,7 +60,7 @@ fn payment_scope_from_rejection(input: &RejectPayment) -> PaymentId {
     input.payment
 }
 
-fn approval_input_identity(input: &ApprovePayment) -> [u8; 32] {
+pub(crate) fn approval_input_identity(input: &ApprovePayment) -> [u8; 32] {
     *CanonicalProposalPayload::new("application-approve-payment")
         .text("payment", &input.payment.canonical_text())
         .u64("approver", input.approver.get())
@@ -104,7 +104,7 @@ worth_query_mutation_binding!(
         NoApplicationUnit,
     field PaymentIdentityField::reference(),
     value payment_scope_from_approval,
-    candidates creates 4, deletes 0, links 6, unlinks 0, writes 13, emits 2,
+    candidates creates 4, deletes 0, links 6, unlinks 0, writes 13, emits 3,
     resources retained_representation_bytes 32768, validator_work 16655
 );
 

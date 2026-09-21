@@ -7,11 +7,12 @@ use crate::{
 use super::{ApplicationWorkflowAuthoringDenial, ApplicationWorkflowDefinitionBuilder};
 use crate::application_program::workflow::{
     ApplicationWorkflowApprovalRef, ApplicationWorkflowAssessmentRef,
-    ApplicationWorkflowConnection, ApplicationWorkflowConnectionKind,
-    ApplicationWorkflowControlOutcome, ApplicationWorkflowDataFlow,
-    ApplicationWorkflowDefinitionLimits, ApplicationWorkflowNodeIdentity,
-    ApplicationWorkflowNodeKind, ApplicationWorkflowOperationRef, ApplicationWorkflowSpec,
-    AuthoredWorkflowDefinition,
+    ApplicationWorkflowConditionRef, ApplicationWorkflowConnection,
+    ApplicationWorkflowConnectionKind, ApplicationWorkflowControlOutcome,
+    ApplicationWorkflowDataFlow, ApplicationWorkflowDefinitionLimits,
+    ApplicationWorkflowEvidenceJoinPolicy, ApplicationWorkflowNodeIdentity,
+    ApplicationWorkflowNodeKind, ApplicationWorkflowOperationRef, ApplicationWorkflowRetry,
+    ApplicationWorkflowSpec, AuthoredWorkflowDefinition,
 };
 
 pub enum ApplicationWorkflowAuthoringCommand {
@@ -54,6 +55,24 @@ impl ApplicationWorkflowAuthoringCommand {
         )
     }
 
+    pub fn condition<Spec, Query>(
+        identity: impl Into<String>,
+    ) -> Result<Self, ApplicationWorkflowAuthoringDenial>
+    where
+        Spec: ApplicationWorkflowSpec,
+        Query: ApplicationQueryMarkerIdentity<Spec::Schema> + 'static,
+        Query::ResultBinding:
+            crate::application_schema::ApplicationStructuredValueBinding<Value = bool>,
+    {
+        Self::node(
+            identity,
+            ApplicationWorkflowNodeKind::Condition(ApplicationWorkflowConditionRef::declared::<
+                Spec,
+                Query,
+            >()),
+        )
+    }
+
     pub fn approval<Spec, Capability>(
         identity: impl Into<String>,
     ) -> Result<Self, ApplicationWorkflowAuthoringDenial>
@@ -72,8 +91,9 @@ impl ApplicationWorkflowAuthoringCommand {
 
     pub fn evidence_join(
         identity: impl Into<String>,
+        policy: ApplicationWorkflowEvidenceJoinPolicy,
     ) -> Result<Self, ApplicationWorkflowAuthoringDenial> {
-        Self::node(identity, ApplicationWorkflowNodeKind::EvidenceJoin)
+        Self::node(identity, ApplicationWorkflowNodeKind::EvidenceJoin(policy))
     }
 
     pub fn terminal(
@@ -95,6 +115,18 @@ impl ApplicationWorkflowAuthoringCommand {
             source,
             target,
             ApplicationWorkflowConnectionKind::Control(outcome),
+        )
+    }
+
+    pub fn retry(
+        source: impl Into<String>,
+        retry: ApplicationWorkflowRetry,
+        target: impl Into<String>,
+    ) -> Result<Self, ApplicationWorkflowAuthoringDenial> {
+        Self::connection(
+            source,
+            target,
+            ApplicationWorkflowConnectionKind::Retry(retry),
         )
     }
 

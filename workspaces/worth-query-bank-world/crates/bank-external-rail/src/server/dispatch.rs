@@ -8,7 +8,7 @@ use std::time::Duration;
 use tokio::io::AsyncWriteExt;
 use tokio::net::TcpStream;
 
-use crate::protocol::notice::decode_notice_for_profile;
+use crate::protocol::notice::decode_effect_for_profile;
 use crate::protocol::request::{RailDispatch, RailRequest};
 use crate::protocol::response::{LedgerStatus, RailResponseFrame};
 use crate::protocol::support_profile::RailProtocolSupportProfile;
@@ -130,14 +130,14 @@ async fn serve_dispatch(
     let owners = state.owners();
     let fault_script = state.fault_selection.current();
     let correlation = &dispatch.correlation;
-    let notice = match decode_notice_for_profile(&dispatch.payload, state.protocol_support) {
-        Ok(notice) => notice,
+    let effect = match decode_effect_for_profile(&dispatch.payload, state.protocol_support) {
+        Ok(effect) => effect,
         Err(rejection) => return fault_behavior::reject(stream, rejection).await,
     };
     let reserve_new = fault_script != FaultScript::DisappearMidDispatch;
     match owners
         .ledger
-        .admit(correlation, &dispatch.payload, notice, reserve_new)
+        .admit(correlation, &dispatch.payload, effect, reserve_new)
     {
         RailAdmission::Reserved(reservation) => {
             apply_fault_script(stream, reservation, fault_script, owners).await

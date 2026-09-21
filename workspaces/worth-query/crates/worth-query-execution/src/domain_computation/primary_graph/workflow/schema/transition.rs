@@ -26,6 +26,8 @@ pub(super) fn lower_transition(
     let protocol_version = planned_field_locator(TRANSITION_ASPECT, "protocol-version")?;
     let occurrence = planned_field_locator(TRANSITION_ASPECT, "occurrence")?;
     let outcome = planned_field_locator(TRANSITION_ASPECT, "outcome")?;
+    let operation_receipt_identity =
+        planned_field_locator(TRANSITION_ASPECT, "operation-receipt-identity")?;
     let live_membership_partition =
         planned_field_locator(TRANSITION_ASPECT, "live-membership-partition")?;
     let live_membership_slot = planned_field_locator(TRANSITION_ASPECT, "live-membership-slot")?;
@@ -37,6 +39,7 @@ pub(super) fn lower_transition(
         .required("protocol-version", ScalarAspectType::UInt64)
         .required("occurrence", ScalarAspectType::UInt64)
         .required("outcome", ScalarAspectType::UInt64)
+        .optional("operation-receipt-identity", ScalarAspectType::String)
         .required("live-membership-partition", ScalarAspectType::UInt64)
         .required("live-membership-slot", ScalarAspectType::UInt64)
         .required("live-membership-generation", ScalarAspectType::UInt64)
@@ -60,6 +63,7 @@ pub(super) fn lower_transition(
             protocol_version,
             occurrence,
             outcome,
+            operation_receipt_identity,
             live_membership_partition,
             live_membership_slot,
             live_membership_generation,

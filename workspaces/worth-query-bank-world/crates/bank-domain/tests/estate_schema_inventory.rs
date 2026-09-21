@@ -26,7 +26,12 @@ fn required_estate_topology_and_policy_contributions_are_present() {
             .iter()
             .filter_map(capability_context_name)
             .collect::<BTreeSet<_>>(),
-        ["EstateActionContext"].into_iter().collect()
+        [
+            "ApprovedBusinessPaymentControlContext",
+            "EstateActionContext"
+        ]
+        .into_iter()
+        .collect()
     );
     assert_eq!(
         members
@@ -46,7 +51,12 @@ fn required_estate_topology_and_policy_contributions_are_present() {
             .iter()
             .filter_map(capability_provenance_name)
             .collect::<BTreeSet<_>>(),
-        ["EstateGrantChainProvenance"].into_iter().collect()
+        [
+            "ApprovedBusinessPaymentGrantProvenance",
+            "EstateGrantChainProvenance",
+        ]
+        .into_iter()
+        .collect()
     );
 }
 
@@ -329,6 +339,10 @@ fn estate_operations() -> BTreeSet<&'static str> {
 fn estate_capabilities() -> BTreeSet<&'static str> {
     [
         "ApproveEstateEmergencyAccessCapability",
+        "ApprovedBusinessPaymentAdvance",
+        "ApprovedBusinessPaymentApproval",
+        "ApprovedBusinessPaymentAuthoring",
+        "ApprovedBusinessPaymentInstanceStart",
         "CompleteEstateMandatoryReviewCapability",
         "DelegateEstateCapability",
         "DisburseEstateCapability",

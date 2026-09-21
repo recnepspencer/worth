@@ -94,7 +94,9 @@ impl ApplicationMutationBinding<BoundedDimensionSchema> for WorkflowDefinitionAu
     }
 
     fn input_identity(input: &WorkflowDefinitionAuthoringInput) -> [u8; 32] {
-        content_identity(input.part_identity.as_bytes())
+        let mut bytes = input.identity.as_bytes().to_vec();
+        bytes.extend_from_slice(&input.dimension.to_le_bytes());
+        content_identity(&bytes)
     }
 
     fn scope_field() -> ApplicationFieldRef<
@@ -138,7 +140,7 @@ impl ApplicationMutationIntent<BoundedDimensionSchema> for WorkflowDefinitionAut
     fn scope_binding(&self) -> WorkflowDefinitionAuthoringScope {
         WorkflowDefinitionAuthoringScope::new(
             PartIdentityField::reference(),
-            self.input.part_identity.clone(),
+            self.input.identity.clone(),
         )
     }
 }
@@ -162,12 +164,11 @@ impl OperationHandler<BoundedDimensionSchema, WorkflowDefinitionAuthoringBinding
         WorthQueryInvariantMutationTarget<BoundedDimensionSchema, Part>,
         WorkflowDefinitionAuthoringDenial,
     > {
-        let part = match reader
-            .resolve_entity(PartIdentityField::reference(), input.part_identity.clone())
-        {
-            Ok(part) => part,
-            Err(error) => return HandlerResult::ExecutionDenied(error),
-        };
+        let part =
+            match reader.resolve_entity(PartIdentityField::reference(), input.identity.clone()) {
+                Ok(part) => part,
+                Err(error) => return HandlerResult::ExecutionDenied(error),
+            };
         match reader.mutation_target(&part) {
             Ok(target) => HandlerResult::Completed(target),
             Err(error) => HandlerResult::ExecutionDenied(error),

@@ -14,7 +14,8 @@ use bank_domain::estate::BankEstateWorld;
 use bank_domain::model::BankPrincipalId;
 use bank_domain::proposals::BankSnapshot;
 use bank_domain::schema::{
-    BankPrincipalBinding, BankPrincipalIdBinding, BankSchema, ExternalPrincipalMapping, Principal,
+    ApprovedBusinessPaymentWorkflow, BankPrincipalBinding, BankPrincipalIdBinding, BankSchema,
+    ExternalPrincipalMapping, Principal,
 };
 use worth_query_host::facade::admission::authenticated_principal::{
     admit_authentication_adapter, WorthQueryAuthenticationAdapter,
@@ -24,7 +25,9 @@ use worth_query_host::facade::admission::authenticated_principal::{
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationRequest, WorthQueryApplicationRequestExt,
 };
-use worth_query_host::facade::application_installation::WorthQueryProgramApplicationRuntime;
+use worth_query_host::facade::application_installation::{
+    WorthQueryProgramApplicationRuntime, WorthQueryWorkflowApplicationRuntime,
+};
 use worth_query_host::facade::declaration::application_schema::{
     ApplicationOperationMarkerIdentity, ApplicationOperationRef, ApplicationStructuredValueBinding,
 };
@@ -63,7 +66,11 @@ impl BankAuthenticationConfiguration {
 }
 
 pub struct BankIdentityRuntime {
-    runtime: WorthQueryProgramApplicationRuntime<BankSchema, BankApplication>,
+    runtime: WorthQueryWorkflowApplicationRuntime<
+        BankSchema,
+        ApprovedBusinessPaymentWorkflow,
+        BankApplication,
+    >,
     binding: WorthQueryInstalledPrincipalBinding<
         BankSchema,
         BankPrincipalBinding,
@@ -76,10 +83,28 @@ pub struct BankIdentityRuntime {
 }
 
 impl BankIdentityRuntime {
+    pub fn approved_business_payment<'runtime, 'principal, 'scope>(
+        &'runtime self,
+        principal: &'principal BankAuthenticatedPrincipal,
+        scope: &'scope WorthQueryRequestScope,
+    ) -> crate::BankApprovedPaymentWorkflow<'runtime, 'principal, 'scope> {
+        crate::BankApprovedPaymentWorkflow::new(self, principal, scope)
+    }
+
+    pub(crate) const fn approved_payment_workflow_runtime(
+        &self,
+    ) -> &WorthQueryWorkflowApplicationRuntime<
+        BankSchema,
+        ApprovedBusinessPaymentWorkflow,
+        BankApplication,
+    > {
+        &self.runtime
+    }
+
     pub const fn application_program(
         &self,
     ) -> &WorthQueryProgramApplicationRuntime<BankSchema, BankApplication> {
-        &self.runtime
+        self.runtime.program_runtime()
     }
 
     pub fn request<'application, 'principal, 'scope>(
@@ -203,7 +228,7 @@ impl BankIdentityRuntime {
     pub(crate) const fn application_runtime(
         &self,
     ) -> &WorthQueryPrimaryGraphApplicationRuntime<BankSchema> {
-        self.runtime.runtime()
+        self.runtime.program_runtime().runtime()
     }
 
     /// Installed aftermath from the live bank schema — integration tests only.

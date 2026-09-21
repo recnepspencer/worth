@@ -98,7 +98,8 @@ where
         self.facts.extend(lineage.facts);
 
         let program_revision = bound.contract.program_revision().clone();
-        let (definition, assessment_bindings, approval_bindings) = bound.contract.into_definition();
+        let (definition, assessment_bindings, condition_bindings, approval_bindings) =
+            bound.contract.into_definition();
         let content_identity = definition.content_identity().clone();
         let workflow_intent_identity =
             intent_identity::workflow_definition_intent_identity::<Spec>(
@@ -108,6 +109,7 @@ where
                 self.lease.product().product_branch(),
                 &expected_predecessor,
                 &assessment_bindings,
+                &condition_bindings,
                 &approval_bindings,
             )
             .map_err(|()| {
@@ -122,6 +124,7 @@ where
             &program_revision,
             &definition,
             &assessment_bindings,
+            &condition_bindings,
             &approval_bindings,
             lineage.target,
             |effect| demand.observe(&effect),
@@ -133,6 +136,7 @@ where
             &program_revision,
             &definition,
             &assessment_bindings,
+            &condition_bindings,
             &approval_bindings,
             lineage.target,
             |effect| {

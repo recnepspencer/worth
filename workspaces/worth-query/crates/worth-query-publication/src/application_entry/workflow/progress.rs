@@ -55,6 +55,30 @@ pub enum WorthQueryWorkflowAssessmentAcceptanceDenial {
     Attempt(worth_query_execution::facade::primary_graph::WorthQueryApplicationAttemptDenial),
 }
 
+#[derive(Debug)]
+pub enum WorthQueryWorkflowConditionAcceptanceDenial {
+    NotAwaitingCondition,
+    RequirementMismatch,
+    Replay(
+        worth_query_execution::facade::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial,
+    ),
+    Attempt(worth_query_execution::facade::primary_graph::WorthQueryApplicationAttemptDenial),
+}
+
+impl std::fmt::Display for WorthQueryWorkflowConditionAcceptanceDenial {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::NotAwaitingCondition => formatter.write_str("workflow is not awaiting condition"),
+            Self::RequirementMismatch => formatter
+                .write_str("condition result does not match the current workflow requirement"),
+            Self::Replay(denial) => denial.fmt(formatter),
+            Self::Attempt(denial) => denial.fmt(formatter),
+        }
+    }
+}
+
+impl std::error::Error for WorthQueryWorkflowConditionAcceptanceDenial {}
+
 impl std::fmt::Display for WorthQueryWorkflowAssessmentAcceptanceDenial {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -247,6 +271,8 @@ where
         let required = match self.prepared {
             PreparedWorkflowAdvance::AwaitingAssessment(prepared) => prepared.into_required(),
             PreparedWorkflowAdvance::Transition { .. }
+            | PreparedWorkflowAdvance::AwaitingCondition(_)
+            | PreparedWorkflowAdvance::AwaitingOperation(_)
             | PreparedWorkflowAdvance::AwaitingEvidence { .. }
             | PreparedWorkflowAdvance::AwaitingApproval { .. }
             | PreparedWorkflowAdvance::ReplayOnly { .. } => {
@@ -299,6 +325,8 @@ where
         let prepared = match self.prepared {
             PreparedWorkflowAdvance::AwaitingAssessment(prepared) => prepared,
             PreparedWorkflowAdvance::Transition { .. }
+            | PreparedWorkflowAdvance::AwaitingCondition(_)
+            | PreparedWorkflowAdvance::AwaitingOperation(_)
             | PreparedWorkflowAdvance::AwaitingEvidence { .. }
             | PreparedWorkflowAdvance::AwaitingApproval { .. }
             | PreparedWorkflowAdvance::ReplayOnly { .. } => {

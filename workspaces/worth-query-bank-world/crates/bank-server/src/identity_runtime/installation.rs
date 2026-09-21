@@ -1,6 +1,12 @@
 use bank_domain::{
     model::BankPrincipalId,
+    queries::PaymentDetailQueryBinding,
     schema::{
+        ApprovePayment, ApprovePaymentOperation, ApprovedBusinessPaymentAdvance,
+        ApprovedBusinessPaymentAdvanceOperation, ApprovedBusinessPaymentApproval,
+        ApprovedBusinessPaymentApprovalOperation, ApprovedBusinessPaymentAuthoring,
+        ApprovedBusinessPaymentAuthoringOperation, ApprovedBusinessPaymentInstanceStart,
+        ApprovedBusinessPaymentInstanceStartOperation, ApprovedBusinessPaymentWorkflow,
         BankPrincipalBinding, BankPrincipalIdBinding, BankSchema, ExternalPrincipalMapping,
         Principal,
     },
@@ -10,7 +16,11 @@ use worth_query_host::facade::{
         in_memory_rostered_program, in_memory_rostered_program_with_authorization_time_source,
         WorthQueryApplicationProgramRoster, WorthQueryInMemoryApplicationLimits,
     },
-    domain::{WorthQueryInstalledApplicationSchema, WorthQueryInstalledPrincipalBinding},
+    domain::{
+        WorthQueryApplicationWorkflowResourceCeiling,
+        WorthQueryApplicationWorkflowSpecInstallation, WorthQueryInstalledApplicationSchema,
+        WorthQueryInstalledPrincipalBinding,
+    },
     primary_graph::{
         SignalConditionalEvaluationBudget, WorthQueryPrimaryGraphApplicationRuntime,
         WorthQueryPrimaryGraphBootstrap, WorthQueryPrimaryGraphInstallationDenial,
@@ -89,6 +99,50 @@ pub(super) fn install_prepared(
     let invariant_projection = invariant_projection
         .expect("program construction invokes the initializer before publication");
     let binding = resolve_installed_principal_binding(runtime.runtime())?;
+    let workflow = WorthQueryApplicationWorkflowSpecInstallation::<
+        BankSchema,
+        ApprovedBusinessPaymentWorkflow,
+        crate::application_definition::BankApplication,
+    >::begin(
+        runtime.runtime().installed_schema(),
+        runtime.installed_program(),
+        payment_workflow_resources(),
+    )
+    .operation::<ApprovedBusinessPaymentAuthoringOperation, ApprovePayment>()
+    .map_err(workflow_error)?
+    .operation::<ApprovePaymentOperation, ApprovePayment>()
+    .map_err(workflow_error)?
+    .assessment::<PaymentDetailQueryBinding>()
+    .map_err(workflow_error)?
+    .approval::<
+        ApprovedBusinessPaymentApproval,
+        ApprovedBusinessPaymentApprovalOperation,
+        ApprovePayment,
+    >()
+    .map_err(workflow_error)?
+    .authoring_capability::<
+        ApprovedBusinessPaymentAuthoring,
+        ApprovedBusinessPaymentAuthoringOperation,
+        ApprovePayment,
+    >()
+    .map_err(workflow_error)?
+    .instance_start_capability::<
+        ApprovedBusinessPaymentInstanceStart,
+        ApprovedBusinessPaymentInstanceStartOperation,
+        ApprovePayment,
+    >()
+    .map_err(workflow_error)?
+    .advance_capability::<
+        ApprovedBusinessPaymentAdvance,
+        ApprovedBusinessPaymentAdvanceOperation,
+        ApprovePayment,
+    >()
+    .map_err(workflow_error)?
+    .finish()
+    .map_err(workflow_error)?;
+    let runtime = runtime
+        .retain_workflow_spec(workflow)
+        .map_err(workflow_error)?;
     Ok(BankIdentityRuntime {
         runtime,
         binding,
@@ -96,12 +150,30 @@ pub(super) fn install_prepared(
     })
 }
 
+fn payment_workflow_resources() -> WorthQueryApplicationWorkflowResourceCeiling {
+    WorthQueryApplicationWorkflowResourceCeiling::new(
+        32,
+        64,
+        4,
+        4,
+        64 * 1_024,
+        32,
+        128,
+        256 * 1_024,
+    )
+    .expect("approved-payment workflow resources are nonzero")
+}
+
+fn workflow_error(error: impl std::fmt::Debug) -> BankIdentityRuntimeBuildError {
+    BankIdentityRuntimeBuildError::WorkflowInstallation(format!("{error:?}"))
+}
+
 pub(crate) fn bank_application_limits() -> WorthQueryInMemoryApplicationLimits {
     let queries = WorthQueryApplicationQueryResourceProfile::bounded(32_768, 262_144, 32_768, 64)
         .expect("bank application-query resource profile is statically non-zero");
     WorthQueryInMemoryApplicationLimits::new(
         super::product_world_resources::bank_product_world_resources(),
-        WorthQueryApplicationCandidateResourceProfile::bounded(4096, 32768, 32768)
+        WorthQueryApplicationCandidateResourceProfile::bounded(4_096, 2 * 1_024 * 1_024, 1_048_576)
             .expect("bank application candidate limits are statically non-zero"),
         queries,
         SignalConditionalEvaluationBudget::development(),

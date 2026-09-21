@@ -14,29 +14,43 @@ use worth_query_host::facade::{
         ApplicationWorkflowDefinitionLimits, ValidatedWorkflowDefinition,
     },
 };
-use worth_query_installation::facade::{
-    WorthQueryApplicationWorkflowResourceCeiling, WorthQueryApplicationWorkflowSpecInstallation,
-    WorthQueryInstalledWorkflowDefinitionContract,
-};
+use worth_query_installation::facade::WorthQueryInstalledWorkflowDefinitionContract;
 
 use super::super::{
-    dimension_entry::{PartDimensionQueryBinding, PART_IDENTITY},
-    host::{BoundedDimensionRuntime, BoundedDimensionWorkflowRuntime},
+    dimension_entry::PART_IDENTITY,
+    host::BoundedDimensionWorkflowRuntime,
     operator_identity::{authenticate_operator, request_scope},
     programs::DimensionProgramP0,
-    schema::{BoundedDimensionSchema, PartDimensionQuery},
+    schema::{
+        BoundedDimensionSchema, PartDimensionConditionQuery, PartDimensionQuery, SetPartDimension,
+    },
 };
 use super::{
-    ReviewedGeometryWorkflow, WorkflowAdvanceCapability, WorkflowAdvanceInput,
-    WorkflowAdvanceIntent, WorkflowAdvanceOperation, WorkflowApprovalCapability,
-    WorkflowApprovalIntent, WorkflowDefinitionAuthoringCapability,
-    WorkflowDefinitionAuthoringInput, WorkflowDefinitionAuthoringIntent,
-    WorkflowDefinitionAuthoringOperation, WorkflowInstanceStartCapability,
-    WorkflowInstanceStartInput, WorkflowInstanceStartIntent, WorkflowInstanceStartOperation,
+    ReviewedGeometryWorkflow, WorkflowAdvanceInput, WorkflowAdvanceIntent,
+    WorkflowApprovalCapability, WorkflowApprovalIntent, WorkflowDefinitionAuthoringInput,
+    WorkflowDefinitionAuthoringIntent, WorkflowDefinitionAuthoringOperation,
+    WorkflowInstanceStartInput, WorkflowInstanceStartIntent,
+};
+
+#[path = "definition/instance.rs"]
+mod instance;
+pub use instance::{
+    advance_instance, approve_instance, propose_authoring_instance, propose_instance,
+    propose_instance_on_branch, start_instance,
 };
 
 pub fn reviewed_geometry_definition(
     completion_identity: &str,
+) -> ValidatedWorkflowDefinition<ReviewedGeometryWorkflow> {
+    reviewed_geometry_definition_with_join_policy(
+        completion_identity,
+        worth_query_host::facade::declaration::application_program::ApplicationWorkflowEvidenceJoinPolicy::AllRequiredPassing,
+    )
+}
+
+pub fn reviewed_geometry_definition_with_join_policy(
+    completion_identity: &str,
+    join_policy: worth_query_host::facade::declaration::application_program::ApplicationWorkflowEvidenceJoinPolicy,
 ) -> ValidatedWorkflowDefinition<ReviewedGeometryWorkflow> {
     let mut builder = ApplicationWorkflowDefinitionBuilder::<ReviewedGeometryWorkflow>::new(
         "reviewed-geometry",
@@ -53,13 +67,13 @@ pub fn reviewed_geometry_definition(
         .assessment::<PartDimensionQuery>("checks/manufacturability")
         .expect("the manufacturability assessment node is valid");
     let evidence = builder
-        .evidence_join("checks/evidence")
+        .evidence_join("checks/evidence", join_policy)
         .expect("the evidence node is valid");
     let approval = builder
         .approval::<WorkflowApprovalCapability>("approval")
         .expect("the approval node is valid");
     let apply = builder
-        .operation::<WorkflowDefinitionAuthoringOperation>("apply", true)
+        .operation::<SetPartDimension>("apply", true)
         .expect("the guarded operation node is valid");
     let completed = builder
         .terminal(completion_identity)
@@ -86,8 +100,13 @@ pub fn reviewed_geometry_definition(
         )
         .control(
             &evidence,
-            ApplicationWorkflowControlOutcome::Completed,
+            ApplicationWorkflowControlOutcome::EvidenceSatisfied,
             &approval,
+        )
+        .control(
+            &evidence,
+            ApplicationWorkflowControlOutcome::EvidenceFailed,
+            &rejected,
         )
         .control(
             &approval,
@@ -162,6 +181,49 @@ pub fn proposal_terminal_definition() -> ValidatedWorkflowDefinition<ReviewedGeo
         .expect("the proposal-terminal definition is valid")
 }
 
+pub fn condition_terminal_definition() -> ValidatedWorkflowDefinition<ReviewedGeometryWorkflow> {
+    let mut builder = ApplicationWorkflowDefinitionBuilder::<ReviewedGeometryWorkflow>::new(
+        "condition-terminal",
+        definition_limits(),
+    )
+    .expect("the condition workflow identity is valid");
+    let proposal = builder
+        .operation::<WorkflowDefinitionAuthoringOperation>("proposal", false)
+        .expect("the proposal node is valid");
+    let condition = builder
+        .condition::<PartDimensionConditionQuery>("positive-dimension")
+        .expect("the condition node is valid");
+    let satisfied = builder
+        .terminal("satisfied")
+        .expect("the satisfied terminal is valid");
+    let unsatisfied = builder
+        .terminal("unsatisfied")
+        .expect("the unsatisfied terminal is valid");
+    builder
+        .start(&proposal)
+        .control(
+            &proposal,
+            ApplicationWorkflowControlOutcome::Completed,
+            &condition,
+        )
+        .control(
+            &condition,
+            ApplicationWorkflowControlOutcome::ConditionSatisfied,
+            &satisfied,
+        )
+        .control(
+            &condition,
+            ApplicationWorkflowControlOutcome::ConditionUnsatisfied,
+            &unsatisfied,
+        )
+        .condition_subject(&proposal, &condition);
+    builder
+        .finish()
+        .expect("the condition definition is complete")
+        .validate()
+        .expect("the condition definition is valid")
+}
+
 pub fn repeated_proposal_definition() -> ValidatedWorkflowDefinition<ReviewedGeometryWorkflow> {
     let mut builder = ApplicationWorkflowDefinitionBuilder::<ReviewedGeometryWorkflow>::new(
         "repeated-proposal",
@@ -210,49 +272,6 @@ pub fn bind_definition(
         .expect("the workflow definition binds to installed vocabulary")
 }
 
-pub fn retain_workflow(
-    application: BoundedDimensionRuntime<DimensionProgramP0>,
-) -> BoundedDimensionWorkflowRuntime {
-    let workflow = WorthQueryApplicationWorkflowSpecInstallation::<
-        BoundedDimensionSchema,
-        ReviewedGeometryWorkflow,
-        DimensionProgramP0,
-    >::begin(
-        application.runtime().installed_schema(),
-        application.installed_program(),
-        workflow_resources(),
-    )
-    .operation::<WorkflowDefinitionAuthoringOperation, WorkflowDefinitionAuthoringInput>()
-    .expect("the workflow operation is installed")
-    .assessment::<PartDimensionQueryBinding>()
-    .expect("the workflow assessment is installed")
-    .approval::<
-        WorkflowApprovalCapability,
-        WorkflowAdvanceOperation,
-        WorkflowAdvanceInput,
-    >()
-    .expect("the workflow approval capability is installed")
-    .authoring_capability::<
-        WorkflowDefinitionAuthoringCapability,
-        WorkflowDefinitionAuthoringOperation,
-        WorkflowDefinitionAuthoringInput,
-    >()
-    .expect("the workflow authoring capability is installed")
-    .instance_start_capability::<
-        WorkflowInstanceStartCapability,
-        WorkflowInstanceStartOperation,
-        WorkflowInstanceStartInput,
-    >()
-    .expect("the workflow instance-start capability is installed")
-    .advance_capability::<WorkflowAdvanceCapability, WorkflowAdvanceOperation, WorkflowAdvanceInput>()
-    .expect("the workflow advance capability is installed")
-    .finish()
-    .expect("the workflow vocabulary is valid");
-    application
-        .retain_workflow_spec(workflow)
-        .expect("the workflow vocabulary belongs to the runtime")
-}
-
 pub fn publish_definition(
     application: &BoundedDimensionWorkflowRuntime,
     definition: ValidatedWorkflowDefinition<ReviewedGeometryWorkflow>,
@@ -270,7 +289,8 @@ pub fn publish_definition(
         .request(&principal, &scope)
         .mutate(WorkflowDefinitionAuthoringIntent {
             input: WorkflowDefinitionAuthoringInput {
-                part_identity: PART_IDENTITY.to_owned(),
+                identity: PART_IDENTITY.to_owned(),
+                dimension: 8,
             },
         })
         .without_source()
@@ -279,122 +299,7 @@ pub fn publish_definition(
         .map(|request| request.execute())
 }
 
-pub fn start_instance(
-    application: &BoundedDimensionWorkflowRuntime,
-    definition: PublishedWorkflowDefinitionRef,
-    idempotency: u64,
-) -> Result<WorkflowInstanceStartOutcome, WorthQueryWorkflowInstanceStartPreparationDenial> {
-    let runtime = application.runtime();
-    let scope = request_scope();
-    let principal = authenticate_operator(runtime.installed_schema(), &scope);
-    runtime
-        .request(&principal, &scope)
-        .mutate(WorkflowInstanceStartIntent {
-            input: WorkflowInstanceStartInput {
-                part_identity: PART_IDENTITY.to_owned(),
-            },
-        })
-        .without_source()
-        .idempotency(&idempotency)
-        .prepare_workflow_instance_start(application, definition)
-        .map(|request| request.execute())
-}
-
-pub fn advance_instance(
-    application: &BoundedDimensionWorkflowRuntime,
-    instance: worth_query_host::facade::application_entry::PublishedWorkflowInstanceRef,
-    idempotency: u64,
-) -> Result<WorkflowProgressOutcome, WorthQueryWorkflowAdvancePreparationDenial> {
-    let runtime = application.runtime();
-    let scope = request_scope();
-    let principal = authenticate_operator(runtime.installed_schema(), &scope);
-    runtime
-        .request(&principal, &scope)
-        .mutate(WorkflowAdvanceIntent {
-            input: WorkflowAdvanceInput {
-                part_identity: PART_IDENTITY.to_owned(),
-            },
-        })
-        .without_source()
-        .idempotency(&idempotency)
-        .prepare_workflow_advance(application, instance)
-        .map(|request| request.execute())
-}
-
-pub fn approve_instance(
-    application: &BoundedDimensionWorkflowRuntime,
-    instance: worth_query_host::facade::application_entry::PublishedWorkflowInstanceRef,
-    required: &RequiredWorkflowApproval,
-    proposal: &PublishedWorkflowProposalRef,
-    decision: WorkflowApprovalDecision,
-    idempotency: u64,
-) -> Result<WorkflowProgressOutcome, WorthQueryWorkflowAdvancePreparationDenial> {
-    let runtime = application.runtime();
-    let scope = request_scope();
-    let principal = authenticate_operator(runtime.installed_schema(), &scope);
-    runtime
-        .request(&principal, &scope)
-        .mutate(WorkflowApprovalIntent {
-            input: WorkflowAdvanceInput {
-                part_identity: PART_IDENTITY.to_owned(),
-            },
-        })
-        .without_source()
-        .idempotency(&idempotency)
-        .prepare_workflow_approval(application, instance, required, proposal, decision)
-        .map(|request| request.execute())
-}
-
-pub fn propose_instance(
-    application: &BoundedDimensionWorkflowRuntime,
-    instance: worth_query_host::facade::application_entry::PublishedWorkflowInstanceRef,
-    idempotency: u64,
-) -> Result<WorkflowProposalOutcome, WorthQueryWorkflowProposalPreparationDenial> {
-    let runtime = application.runtime();
-    let scope = request_scope();
-    let principal = authenticate_operator(runtime.installed_schema(), &scope);
-    runtime
-        .request(&principal, &scope)
-        .mutate(WorkflowDefinitionAuthoringIntent {
-            input: WorkflowDefinitionAuthoringInput {
-                part_identity: PART_IDENTITY.to_owned(),
-            },
-        })
-        .without_source()
-        .idempotency(&idempotency)
-        .prepare_workflow_proposal(application, instance)
-        .map(|request| request.execute())
-}
-
-pub fn propose_instance_on_branch(
-    application: &BoundedDimensionWorkflowRuntime,
-    branch: worth_query_host::facade::product::WorthQueryProductBranch,
-    instance: worth_query_host::facade::application_entry::PublishedWorkflowInstanceRef,
-    idempotency: u64,
-) -> Result<WorkflowProposalOutcome, WorthQueryWorkflowProposalPreparationDenial> {
-    let runtime = application.runtime();
-    let scope = request_scope();
-    let principal = authenticate_operator(runtime.installed_schema(), &scope);
-    runtime
-        .request(&principal, &scope)
-        .on_branch(branch)
-        .mutate(WorkflowDefinitionAuthoringIntent {
-            input: WorkflowDefinitionAuthoringInput {
-                part_identity: PART_IDENTITY.to_owned(),
-            },
-        })
-        .without_source()
-        .idempotency(&idempotency)
-        .prepare_workflow_proposal(application, instance)
-        .map(|request| request.execute())
-}
-
 pub(super) fn definition_limits() -> ApplicationWorkflowDefinitionLimits {
     ApplicationWorkflowDefinitionLimits::new(32, 64, 4, 4, 64 * 1024)
         .expect("the workflow definition limits are nonzero")
-}
-
-fn workflow_resources() -> WorthQueryApplicationWorkflowResourceCeiling {
-    WorthQueryApplicationWorkflowResourceCeiling::new(32, 64, 4, 4, 64 * 1024, 32, 128, 256 * 1024)
-        .expect("the workflow installation limits are nonzero")
 }

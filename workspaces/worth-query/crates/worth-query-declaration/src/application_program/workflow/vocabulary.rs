@@ -58,6 +58,48 @@ pub struct ApplicationWorkflowAssessmentRef {
     query_type: std::any::TypeId,
 }
 
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub struct ApplicationWorkflowConditionRef {
+    identifier: &'static str,
+    parameter_type: WorthQueryPortableTypeIdentity,
+    result_type: WorthQueryPortableTypeIdentity,
+    query_type: std::any::TypeId,
+}
+
+impl ApplicationWorkflowConditionRef {
+    pub fn declared<Spec, Query>() -> Self
+    where
+        Spec: ApplicationWorkflowSpec,
+        Query: ApplicationQueryMarkerIdentity<Spec::Schema> + 'static,
+        Query::ResultBinding:
+            crate::application_schema::ApplicationStructuredValueBinding<Value = bool>,
+    {
+        Self {
+            identifier: Query::IDENTIFIER,
+            parameter_type: Query::PARAMETER_TYPE_IDENTITY,
+            result_type: Query::RESULT_TYPE_IDENTITY,
+            query_type: std::any::TypeId::of::<Query>(),
+        }
+    }
+
+    pub const fn identifier(&self) -> &'static str {
+        self.identifier
+    }
+
+    pub const fn parameter_type(&self) -> &WorthQueryPortableTypeIdentity {
+        &self.parameter_type
+    }
+
+    pub const fn result_type(&self) -> &WorthQueryPortableTypeIdentity {
+        &self.result_type
+    }
+
+    #[doc(hidden)]
+    pub const fn query_type(&self) -> std::any::TypeId {
+        self.query_type
+    }
+}
+
 impl ApplicationWorkflowAssessmentRef {
     pub fn declared<Spec, Query>() -> Self
     where

@@ -28,6 +28,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         layout.evidence_dependency_relation,
         evidence,
         evidence_dependency_adjacency_work(maximum_dependencies),
+        "workflow evidence dependency relation is unavailable",
         facts,
     )?;
     if dependencies.len() > maximum_dependencies {

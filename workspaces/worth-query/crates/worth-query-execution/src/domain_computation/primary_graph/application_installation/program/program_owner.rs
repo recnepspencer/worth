@@ -14,12 +14,12 @@ use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationScopeBinding,
 };
 use worth_query_declaration::facade::application_program::{
-    ApplicationProgramDefinition, ApplicationProgramRevision,
+    ApplicationProgramDefinition, ApplicationProgramRevision, ApplicationWorkflowSpec,
 };
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::supported_program::WorthQuerySupportedProgramHandle;
-use super::WorthQueryProgramApplicationRuntime;
+use super::{WorthQueryProgramApplicationRuntime, WorthQueryWorkflowApplicationRuntime};
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitOutcome,
     WorthQueryApplicationEffectProgram, WorthQueryApplicationIdempotencyBinding,
@@ -224,6 +224,38 @@ where
 
     fn owns_output_source(&self, binding: TypeId) -> bool {
         self.requires_output_source(binding)
+    }
+}
+
+impl<Schema, Spec, Program> sealed::WorthQueryProgramOwnership
+    for WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>
+where
+    Schema: ApplicationSchema,
+    Spec: ApplicationWorkflowSpec<Schema = Schema>,
+{
+}
+
+impl<Schema, Spec, Program> WorthQueryProgramOwner<Schema>
+    for WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>
+where
+    Schema: ApplicationSchema,
+    Spec: ApplicationWorkflowSpec<Schema = Schema>,
+    Program: ApplicationProgramDefinition<Schema>,
+{
+    fn owned_runtime(&self) -> &WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+        self.program_runtime().owned_runtime()
+    }
+
+    fn owned_revision(&self) -> &ApplicationProgramRevision {
+        self.program_runtime().owned_revision()
+    }
+
+    fn owns_action(&self, binding: TypeId) -> bool {
+        self.program_runtime().owns_action(binding)
+    }
+
+    fn owns_output_source(&self, binding: TypeId) -> bool {
+        self.program_runtime().owns_output_source(binding)
     }
 }
 

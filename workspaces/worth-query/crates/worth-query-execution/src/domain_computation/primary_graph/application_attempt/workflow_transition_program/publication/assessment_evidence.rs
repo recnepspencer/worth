@@ -9,6 +9,7 @@ pub struct PerformedWorkflowAssessmentEvidence {
     pub(super) result_type: String,
     pub(super) binding: String,
     pub(super) subject: worth_relational::facade::identity::EntityId,
+    pub(super) proposal_identity: String,
     pub(super) source_identity: String,
     pub(super) passing: bool,
     pub(super) publication_identity: String,
@@ -42,6 +43,9 @@ impl PerformedWorkflowAssessmentEvidence {
     }
     pub const fn subject(&self) -> worth_relational::facade::identity::EntityId {
         self.subject
+    }
+    pub fn proposal_identity(&self) -> &str {
+        &self.proposal_identity
     }
     pub fn source_identity(&self) -> &str {
         &self.source_identity

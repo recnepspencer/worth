@@ -2,6 +2,7 @@ use std::marker::PhantomData;
 
 use super::{
     ApplicationWorkflowApprovalRef, ApplicationWorkflowAssessmentRef,
+    ApplicationWorkflowComponentExpansion, ApplicationWorkflowConditionRef,
     ApplicationWorkflowDefinitionContentIdentity, ApplicationWorkflowDefinitionIdentity,
     ApplicationWorkflowNodeIdentity, ApplicationWorkflowOperationRef, ApplicationWorkflowSpec,
     ApplicationWorkflowValidationDenial,
@@ -70,9 +71,33 @@ pub enum ApplicationWorkflowNodeKind {
         requires_workflow_authority: bool,
     },
     Assessment(ApplicationWorkflowAssessmentRef),
+    Condition(ApplicationWorkflowConditionRef),
     Approval(ApplicationWorkflowApprovalRef),
-    EvidenceJoin,
+    EvidenceJoin(ApplicationWorkflowEvidenceJoinPolicy),
     Terminal,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ApplicationWorkflowEvidenceJoinPolicy {
+    AllRequiredPassing,
+    AllRequiredCompleted,
+}
+
+impl ApplicationWorkflowEvidenceJoinPolicy {
+    pub const fn identity(self) -> &'static str {
+        match self {
+            Self::AllRequiredPassing => "all-required-passing",
+            Self::AllRequiredCompleted => "all-required-completed",
+        }
+    }
+
+    pub const fn from_identity(identity: &str) -> Option<Self> {
+        match identity.as_bytes() {
+            b"all-required-passing" => Some(Self::AllRequiredPassing),
+            b"all-required-completed" => Some(Self::AllRequiredCompleted),
+            _ => None,
+        }
+    }
 }
 
 impl ApplicationWorkflowNodeKind {
@@ -119,22 +144,61 @@ pub enum ApplicationWorkflowControlOutcome {
     Completed,
     Approved,
     Rejected,
+    EvidenceSatisfied,
+    EvidenceFailed,
+    ConditionSatisfied,
+    ConditionUnsatisfied,
+    RetryExhausted,
+}
+
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub struct ApplicationWorkflowRetry {
+    trigger: ApplicationWorkflowControlOutcome,
+    reason: String,
+    maximum_attempts: u16,
+}
+
+impl ApplicationWorkflowRetry {
+    pub fn new(
+        trigger: ApplicationWorkflowControlOutcome,
+        reason: impl Into<String>,
+        maximum_attempts: u16,
+    ) -> Option<Self> {
+        let reason = reason.into();
+        (maximum_attempts > 0 && !reason.trim().is_empty()).then_some(Self {
+            trigger,
+            reason,
+            maximum_attempts,
+        })
+    }
+
+    pub const fn trigger(&self) -> ApplicationWorkflowControlOutcome {
+        self.trigger
+    }
+    pub fn reason(&self) -> &str {
+        &self.reason
+    }
+    pub const fn maximum_attempts(&self) -> u16 {
+        self.maximum_attempts
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum ApplicationWorkflowDataFlow {
     ProposalSubject,
     AssessmentSubject,
+    ConditionSubject,
     AssessmentEvidence,
     JoinedEvidence,
     ApprovalAuthority,
     OperationInput,
 }
 
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum ApplicationWorkflowConnectionKind {
     Control(ApplicationWorkflowControlOutcome),
     Data(ApplicationWorkflowDataFlow),
+    Retry(ApplicationWorkflowRetry),
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -165,8 +229,8 @@ impl ApplicationWorkflowConnection {
         &self.target
     }
 
-    pub const fn kind(&self) -> ApplicationWorkflowConnectionKind {
-        self.kind
+    pub fn kind(&self) -> ApplicationWorkflowConnectionKind {
+        self.kind.clone()
     }
 }
 
@@ -179,6 +243,7 @@ where
     pub(super) start: Option<ApplicationWorkflowNodeIdentity>,
     pub(super) nodes: Vec<ApplicationWorkflowNode>,
     pub(super) connections: Vec<ApplicationWorkflowConnection>,
+    pub(super) component_expansions: Vec<ApplicationWorkflowComponentExpansion>,
     pub(super) marker: PhantomData<fn() -> Spec>,
 }
 
@@ -207,6 +272,7 @@ where
     pub(super) start: ApplicationWorkflowNodeIdentity,
     pub(super) nodes: Box<[ApplicationWorkflowNode]>,
     pub(super) connections: Box<[ApplicationWorkflowConnection]>,
+    pub(super) component_expansions: Box<[ApplicationWorkflowComponentExpansion]>,
     pub(super) marker: PhantomData<fn() -> Spec>,
 }
 
@@ -236,5 +302,9 @@ where
 
     pub fn connections(&self) -> &[ApplicationWorkflowConnection] {
         &self.connections
+    }
+
+    pub fn component_expansions(&self) -> &[ApplicationWorkflowComponentExpansion] {
+        &self.component_expansions
     }
 }

@@ -14,6 +14,10 @@ use super::{
 };
 use crate::application_entry::WorthQueryApplicationRequestMutationDenial;
 
+#[path = "authorization/authorized.rs"]
+mod authorized;
+use authorized::AuthorizedMutation;
+
 type IntentBinding<Schema, Intent> = <Intent as ApplicationMutationIntent<Schema>>::Binding;
 type IntentPrincipal<Schema, Intent> =
     <IntentBinding<Schema, Intent> as ApplicationMutationBinding<Schema>>::PrincipalIdentity;
@@ -35,20 +39,6 @@ where
         MutationScope<Schema, Binding>,
     >,
     pub(in crate::application_entry) idempotency: WorthQueryApplicationIdempotencyBinding,
-}
-
-struct AuthorizedMutation<Schema, Binding>
-where
-    Schema: ApplicationSchema,
-    Binding: ApplicationMutationBinding<Schema>,
-{
-    principal_identity: Binding::PrincipalIdentity,
-    admission: WorthQueryAdmittedApplicationOperation<
-        Schema,
-        Binding::Operation,
-        Binding::Input,
-        MutationScope<Schema, Binding>,
-    >,
 }
 
 pub(super) fn assess<Schema, Intent, SourcePreparation>(
@@ -260,6 +250,12 @@ where
         IntentBinding::<Schema, Intent>::input_identity(request.request.intent.input()),
     )
     .bind_source(source_identity.as_ref());
+    let idempotency = request.workflow_transition_identity.map_or(idempotency, |identity| {
+        worth_query_execution::facade::workflow_advance::WorthQueryWorkflowAdvanceAdapter::bind_operation_idempotency_raw(
+            idempotency,
+            &identity,
+        )
+    });
     Ok(PreparedMutation {
         principal_identity,
         admission,

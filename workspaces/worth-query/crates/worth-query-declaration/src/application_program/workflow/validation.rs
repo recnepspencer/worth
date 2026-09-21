@@ -20,8 +20,10 @@ pub enum ApplicationWorkflowValidationDenialKind {
     UnknownConnectionEndpoint,
     DuplicateConnection,
     InvalidDataFlow,
+    IncompatibleOperationInput,
     UnavailableDataFlow,
     MissingAssessmentSubject,
+    MissingConditionSubject,
     IncompleteEvidenceJoin,
     IncompleteApproval,
     MissingWorkflowAuthority,
@@ -99,6 +101,12 @@ where
         authored.connections,
     )
     .map_err(canonical_denial)?;
+    let mut component_expansions = authored.component_expansions;
+    component_expansions.sort_by(|left, right| {
+        left.occurrence_path()
+            .cmp(right.occurrence_path())
+            .then_with(|| left.component().cmp(right.component()))
+    });
     Ok(ValidatedWorkflowDefinition {
         identity: authored.identity,
         content_identity,
@@ -106,6 +114,7 @@ where
         start,
         nodes,
         connections,
+        component_expansions: component_expansions.into_boxed_slice(),
         marker: PhantomData,
     })
 }

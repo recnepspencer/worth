@@ -96,6 +96,7 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowAssessmentEviden
     pub(in crate::domain_computation::primary_graph) subject_partition: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) subject_slot: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) subject_generation: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) proposal_identity: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) source_identity: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) passing: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) publication_identity: AspectFieldLocator,
@@ -134,6 +135,7 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowNodeLayout {
     pub(in crate::domain_computation::primary_graph) parameter_type: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) result_type: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) assessment_binding: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) condition_binding: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) capability_type: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) approval_operation: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) approval_capability_identity:
@@ -146,6 +148,8 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowConnectionLayout
     pub(in crate::domain_computation::primary_graph) entity_kind: KindId,
     pub(in crate::domain_computation::primary_graph) family: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) variant: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) retry_reason: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) retry_maximum_attempts: AspectFieldLocator,
 }
 
 #[derive(Clone, Debug)]
@@ -170,6 +174,7 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowTransitionLayout
     pub(in crate::domain_computation::primary_graph) protocol_version: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) occurrence: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) outcome: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) operation_receipt_identity: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) live_membership_partition: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) live_membership_slot: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) live_membership_generation: AspectFieldLocator,

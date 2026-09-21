@@ -5,6 +5,7 @@ use worth_query_host::facade::application_entry::{
     RequiredWorkflowApproval, WorkflowApprovalDecision, WorkflowDefinitionExpectedPredecessor,
     WorkflowDefinitionPublicationOutcome, WorkflowInstanceStartOutcome, WorkflowProgressOutcome,
     WorkflowProposalOutcome, WorkflowTransitionPreparationDenial,
+    WorthQueryApplicationMutationOutcome, WorthQueryApplicationRequestExt,
     WorthQueryWorkflowAdvancePreparationDenial,
 };
 use worth_query_host::facade::primary_graph::{
@@ -13,14 +14,260 @@ use worth_query_host::facade::primary_graph::{
 };
 
 use super::bounded_dimension_model::{
+    dimension_entry::{SetPartDimensionBinding, SetPartDimensionIntent, PART_IDENTITY},
     host::{BoundedDimensionWorkflowRuntime, SEED_DIMENSION},
+    operator_identity::{authenticate_operator, request_scope},
     presented_request::set_dimension,
+    readback::read_dimension,
     settled_verdict::{settle, DimensionVerdict},
     workflow::{
         accept_assessment, advance_instance, approve_instance, propose_instance,
-        publish_definition, reviewed_geometry_definition, settle_assessment, start_instance,
+        publish_definition, reviewed_geometry_definition,
+        reviewed_geometry_definition_with_join_policy, settle_assessment, start_instance,
+        WorkflowAdvanceInput, WorkflowAdvanceIntent,
     },
 };
+
+#[path = "workflow_approval/rejection.rs"]
+mod rejection;
+#[path = "workflow_approval/replay.rs"]
+mod replay;
+
+#[test]
+fn approved_operation_requires_and_consumes_the_exact_performed_effect() {
+    let (application, _, instance, proposal, approval, _) = approval_journey("applied", 800);
+    match approve_instance(
+        &application,
+        instance.clone(),
+        &approval,
+        &proposal,
+        WorkflowApprovalDecision::Approve,
+        810,
+    ) {
+        Ok(WorkflowProgressOutcome::Completed(_)) => {}
+        other => panic!("expected approval to complete, got {other:?}"),
+    }
+    let required = match advance_instance(&application, instance.clone(), 811)
+        .expect("the approved effect requirement must prepare")
+    {
+        WorkflowProgressOutcome::AwaitingOperation(required) => required,
+        other => panic!("expected an operation requirement, got {other:?}"),
+    };
+    let runtime = application.runtime();
+    let scope = request_scope();
+    let principal = authenticate_operator(runtime.installed_schema(), &scope);
+    let unbound = runtime
+        .request(&principal, &scope)
+        .on_branch(instance.branch())
+        .mutate(SetPartDimensionIntent {
+            input: super::bounded_dimension_model::schema::SetPartDimensionInput {
+                identity: PART_IDENTITY.to_owned(),
+                dimension: 8,
+            },
+        })
+        .without_source()
+        .idempotency(&812_u64)
+        .execute_in_program(application.program_runtime())
+        .expect("the ordinary unbound effect request must execute");
+    let unbound_receipt = match unbound {
+        WorthQueryApplicationMutationOutcome::Committed { receipt, .. } => receipt,
+        other => panic!("expected the unbound effect to commit, got {other:?}"),
+    };
+    let unbound_acceptance = runtime
+        .request(&principal, &scope)
+        .on_branch(instance.branch())
+        .mutate(WorkflowAdvanceIntent {
+            input: WorkflowAdvanceInput {
+                part_identity: PART_IDENTITY.to_owned(),
+            },
+        })
+        .without_source()
+        .idempotency(&816_u64)
+        .prepare_workflow_advance(&application, instance.clone())
+        .expect("the unbound receipt rejection must prepare")
+        .accept_operation::<SetPartDimensionBinding>(&required, &unbound_receipt);
+    assert!(matches!(
+        unbound_acceptance,
+        Err(worth_query_host::facade::application_entry::WorthQueryWorkflowOperationAcceptanceDenial::Attempt(attempt))
+            if attempt.kind() == WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch
+    ));
+    assert_eq!(
+        settle(set_dimension(
+            application.program_runtime(),
+            instance.branch(),
+            SEED_DIMENSION,
+            813,
+        )),
+        DimensionVerdict::Performed(SEED_DIMENSION)
+    );
+    let wrong_input = runtime
+        .request(&principal, &scope)
+        .on_branch(instance.branch())
+        .mutate(SetPartDimensionIntent {
+            input: super::bounded_dimension_model::schema::SetPartDimensionInput {
+                identity: PART_IDENTITY.to_owned(),
+                dimension: 9,
+            },
+        })
+        .without_source()
+        .idempotency(&814_u64)
+        .for_workflow_operation(&application, &required);
+    match wrong_input {
+        Err(denial) => assert_eq!(
+            denial,
+            worth_query_host::facade::application_entry::WorthQueryWorkflowOperationBindingDenial::RequirementMismatch
+        ),
+        Ok(_) => panic!("a different proposed input must not bind"),
+    }
+    let effect = runtime
+        .request(&principal, &scope)
+        .on_branch(instance.branch())
+        .mutate(SetPartDimensionIntent {
+            input: super::bounded_dimension_model::schema::SetPartDimensionInput {
+                identity: PART_IDENTITY.to_owned(),
+                dimension: 8,
+            },
+        })
+        .without_source()
+        .idempotency(&815_u64)
+        .for_workflow_operation(&application, &required)
+        .expect("the effect request matches the durable operation requirement")
+        .execute_in_program(application.program_runtime())
+        .expect("the approved effect request must execute");
+    let receipt = match effect {
+        WorthQueryApplicationMutationOutcome::Committed { receipt, .. } => receipt,
+        other => panic!("expected the approved effect to commit, got {other:?}"),
+    };
+    assert_eq!(read_dimension(runtime, instance.branch()), 8);
+    let completed = runtime
+        .request(&principal, &scope)
+        .on_branch(instance.branch())
+        .mutate(WorkflowAdvanceIntent {
+            input: WorkflowAdvanceInput {
+                part_identity: PART_IDENTITY.to_owned(),
+            },
+        })
+        .without_source()
+        .idempotency(&816_u64)
+        .prepare_workflow_advance(&application, instance.clone())
+        .expect("the effect acceptance must prepare")
+        .accept_operation::<SetPartDimensionBinding>(&required, &receipt)
+        .expect("the exact owner-issued effect receipt must be accepted");
+    let durable_receipt_identity = match completed {
+        WorkflowProgressOutcome::Completed(performed) => {
+            assert_eq!(performed.node_path(), "apply");
+            assert!(!performed.replayed());
+            *performed
+                .operation_receipt_identity()
+                .expect("the performed effect receipt identity must be durable")
+        }
+        other => panic!("expected the apply transition to complete, got {other:?}"),
+    };
+    let replayed = runtime
+        .request(&principal, &scope)
+        .on_branch(instance.branch())
+        .mutate(WorkflowAdvanceIntent {
+            input: WorkflowAdvanceInput {
+                part_identity: PART_IDENTITY.to_owned(),
+            },
+        })
+        .without_source()
+        .idempotency(&816_u64)
+        .prepare_workflow_advance(&application, instance.clone())
+        .expect("the operation acceptance replay must prepare")
+        .accept_operation::<SetPartDimensionBinding>(&required, &receipt)
+        .expect("the exact operation acceptance must replay");
+    match replayed {
+        WorkflowProgressOutcome::Completed(performed) => {
+            assert_eq!(performed.node_path(), "apply");
+            assert!(performed.replayed());
+            assert_eq!(
+                performed.operation_receipt_identity(),
+                Some(&durable_receipt_identity)
+            );
+        }
+        other => panic!("expected the apply transition replay, got {other:?}"),
+    }
+    match advance_instance(&application, instance, 817)
+        .expect("the completion terminal must prepare")
+    {
+        WorkflowProgressOutcome::Completed(performed) => {
+            assert_eq!(performed.node_path(), "applied")
+        }
+        other => panic!("expected the completion terminal, got {other:?}"),
+    }
+}
+
+#[test]
+fn all_completed_join_does_not_turn_failing_evidence_into_approval_authority() {
+    const FAILING_DIMENSION: u64 = 6;
+    let application = super::bounded_dimension_model::host::publish_workflow_on_first_program();
+    assert_eq!(
+        settle(set_dimension(
+            application.program_runtime(),
+            application.program_runtime().current_world(),
+            FAILING_DIMENSION,
+            720,
+        )),
+        DimensionVerdict::Performed(FAILING_DIMENSION)
+    );
+    let definition = match publish_definition(
+        &application,
+        reviewed_geometry_definition_with_join_policy(
+            "completed",
+            worth_query_host::facade::declaration::application_program::ApplicationWorkflowEvidenceJoinPolicy::AllRequiredCompleted,
+        ),
+        WorkflowDefinitionExpectedPredecessor::Absent,
+        721,
+    )
+    .expect("all-completed approval definition must prepare")
+    {
+        WorkflowDefinitionPublicationOutcome::Published(performed) => performed,
+        other => panic!("expected a published definition, got {other:?}"),
+    };
+    let instance = match start_instance(&application, definition.definition().clone(), 722)
+        .expect("all-completed instance start must prepare")
+    {
+        WorkflowInstanceStartOutcome::Started(performed) => performed.instance().clone(),
+        other => panic!("expected a started instance, got {other:?}"),
+    };
+    let proposal = published_proposal(&application, instance.clone(), 723);
+    for (settlement_key, acceptance_key) in [(724, 725), (726, 727)] {
+        let settlement = settle_assessment(&application, instance.clone(), settlement_key);
+        assert_eq!(
+            settlement.posture(),
+            worth_query_host::facade::application_contribution::WorthQueryWorkflowAssessmentPosture::Failing
+        );
+        assert!(matches!(
+            accept_assessment(&application, instance.clone(), &settlement, acceptance_key),
+            Ok(WorkflowProgressOutcome::Completed(_))
+        ));
+    }
+    assert!(matches!(
+        advance_instance(&application, instance.clone(), 728),
+        Ok(WorkflowProgressOutcome::Completed(_))
+    ));
+    let required = match advance_instance(&application, instance.clone(), 729)
+        .expect("all-completed join may expose the declared approval node")
+    {
+        WorkflowProgressOutcome::AwaitingApproval(required) => required,
+        other => panic!("expected approval requirement, got {other:?}"),
+    };
+    assert!(matches!(
+        approve_instance(
+            &application,
+            instance,
+            &required,
+            &proposal,
+            WorkflowApprovalDecision::Approve,
+            730,
+        ),
+        Err(WorthQueryWorkflowAdvancePreparationDenial::TransitionPreparation(
+            WorkflowTransitionPreparationDenial::Attempt(attempt)
+        )) if attempt.kind()
+            == WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch
+    ));
+}
 
 #[test]
 fn approval_rejects_assessment_evidence_after_native_source_aba() {
@@ -50,182 +297,6 @@ fn approval_rejects_assessment_evidence_after_native_source_aba() {
         )) if attempt.kind()
             == WorthQueryApplicationAttemptDenialKind::WorkflowAssessmentEvidenceMismatch
     ));
-}
-
-#[test]
-fn exact_approval_persists_replays_and_binds_decision_and_instance() {
-    let (application, definition, instance, proposal, required, mut expected_evidence) =
-        approval_journey("approved", 500);
-    expected_evidence.sort_unstable();
-    let committed_approval = match approve_instance(
-        &application,
-        instance.clone(),
-        &required,
-        &proposal,
-        WorkflowApprovalDecision::Approve,
-        510,
-    )
-    .expect("the exact approval request must prepare")
-    {
-        WorkflowProgressOutcome::Completed(performed) => {
-            assert_eq!(performed.node_path(), "approval");
-            assert!(!performed.replayed());
-            let approval = performed
-                .approval()
-                .expect("approval publication must reconstruct its durable approval fact");
-            assert_ne!(approval.entity(), performed.transition());
-            assert_eq!(approval.identity().len(), 64);
-            assert_eq!(approval.decision(), WorkflowApprovalDecision::Approve);
-            assert_eq!(approval.proposal(), proposal.entity_id());
-            let mut actual_evidence = approval.evidence().to_vec();
-            actual_evidence.sort_unstable();
-            assert_eq!(actual_evidence, expected_evidence);
-            assert_eq!(approval.purpose(), "String(Raw(\"reviewed-geometry\"))");
-            assert_eq!(approval.expiry(), u64::MAX);
-            let principal = performed.receipt().principal_scope().principal();
-            assert_eq!(
-                approval.approver(),
-                worth_relational::facade::identity::EntityId::new(
-                    worth_relational::facade::identity::PartitionId::new(principal.partition_id(),),
-                    principal.local_slot(),
-                    principal.generation(),
-                )
-            );
-            (approval.entity(), approval.identity().to_owned())
-        }
-        other => panic!("expected a performed workflow approval, got {other:?}"),
-    };
-    match approve_instance(
-        &application,
-        instance.clone(),
-        &required,
-        &proposal,
-        WorkflowApprovalDecision::Approve,
-        510,
-    )
-    .expect("the exact approval retry must prepare")
-    {
-        WorkflowProgressOutcome::Completed(performed) => {
-            assert!(performed.replayed());
-            let approval = performed
-                .approval()
-                .expect("approval replay must reconstruct the durable approval fact");
-            let (entity, identity) = &committed_approval;
-            let mut actual_evidence = approval.evidence().to_vec();
-            actual_evidence.sort_unstable();
-            assert_eq!(approval.entity(), *entity);
-            assert_eq!(approval.identity(), identity);
-            assert_eq!(approval.decision(), WorkflowApprovalDecision::Approve);
-            assert_eq!(approval.proposal(), proposal.entity_id());
-            assert_eq!(actual_evidence, expected_evidence);
-            let principal = performed.receipt().principal_scope().principal();
-            assert_eq!(
-                approval.approver(),
-                worth_relational::facade::identity::EntityId::new(
-                    worth_relational::facade::identity::PartitionId::new(principal.partition_id(),),
-                    principal.local_slot(),
-                    principal.generation(),
-                )
-            );
-            assert_eq!(approval.purpose(), "String(Raw(\"reviewed-geometry\"))");
-            assert_eq!(approval.expiry(), u64::MAX);
-        }
-        other => panic!("expected a replayed workflow approval, got {other:?}"),
-    }
-    match approve_instance(
-        &application,
-        instance.clone(),
-        &required,
-        &proposal,
-        WorkflowApprovalDecision::Reject,
-        510,
-    )
-    .expect("changed approval meaning must resolve through idempotency")
-    {
-        WorkflowProgressOutcome::Application(WorthQueryApplicationCommitOutcome::Denied(
-            denial,
-        )) => assert_eq!(
-            denial.kind(),
-            WorthQueryApplicationCommitDenialKind::IdempotencyIntentDrift
-        ),
-        other => panic!("expected approval decision intent drift, got {other:?}"),
-    }
-
-    let foreign_definition = match publish_definition(
-        &application,
-        reviewed_geometry_definition("foreign"),
-        WorkflowDefinitionExpectedPredecessor::Published(definition),
-        512,
-    )
-    .expect("foreign definition publication must prepare")
-    {
-        WorkflowDefinitionPublicationOutcome::Published(performed) => performed,
-        other => panic!("expected a foreign definition publication, got {other:?}"),
-    };
-    let foreign = match start_instance(&application, foreign_definition.definition().clone(), 513)
-        .expect("foreign instance start must prepare")
-    {
-        WorkflowInstanceStartOutcome::Started(performed) => performed.instance().clone(),
-        other => panic!("expected a foreign instance, got {other:?}"),
-    };
-    let foreign_proposal = published_proposal(&application, foreign.clone(), 514);
-    for denial in [
-        approve_instance(
-            &application,
-            instance.clone(),
-            &required,
-            &foreign_proposal,
-            WorkflowApprovalDecision::Approve,
-            515,
-        ),
-        approve_instance(
-            &application,
-            foreign,
-            &required,
-            &foreign_proposal,
-            WorkflowApprovalDecision::Approve,
-            516,
-        ),
-    ] {
-        assert!(matches!(
-            denial,
-            Err(WorthQueryWorkflowAdvancePreparationDenial::TransitionPreparation(
-                WorkflowTransitionPreparationDenial::Attempt(attempt)
-            )) if attempt.kind()
-                == WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAuthorityMismatch
-        ));
-    }
-}
-
-#[test]
-fn rejection_routes_to_its_declared_terminal_and_replays_before_that_successor() {
-    let (application, _, instance, proposal, required, _) = approval_journey("unused", 600);
-    for replayed in [false, true] {
-        match approve_instance(
-            &application,
-            instance.clone(),
-            &required,
-            &proposal,
-            WorkflowApprovalDecision::Reject,
-            610,
-        )
-        .expect("rejection and its exact retry must prepare")
-        {
-            WorkflowProgressOutcome::Completed(performed) => {
-                assert_eq!(performed.node_path(), "approval");
-                assert_eq!(performed.replayed(), replayed);
-            }
-            other => panic!("expected a performed rejection, got {other:?}"),
-        }
-    }
-    match advance_instance(&application, instance, 611)
-        .expect("the rejected successor terminal must prepare")
-    {
-        WorkflowProgressOutcome::Completed(performed) => {
-            assert_eq!(performed.node_path(), "rejected")
-        }
-        other => panic!("expected the rejected terminal, got {other:?}"),
-    }
 }
 
 fn approval_journey(

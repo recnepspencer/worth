@@ -45,6 +45,7 @@ use super::relations::{
     PaymentBusiness, PaymentDestination, PaymentInitiator, PaymentSource, PersonalOwner,
     PostingAccount,
 };
+use super::workflow::ApprovedPaymentSettlementEffect;
 use super::BankSchema;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -318,4 +319,5 @@ worth_query_operation_emits!(DepositOperation => [AccountActivityEffect]);
 worth_query_operation_emits!(WithdrawOperation => [AccountActivityEffect]);
 worth_query_operation_emits!(SendMoneyOperation => [AccountActivityEffect]);
 worth_query_operation_emits!(ApprovePaymentOperation => [AccountActivityEffect]);
+worth_query_operation_emits!(ApprovePaymentOperation => [ApprovedPaymentSettlementEffect]);
 worth_query_operation_emits!(ReverseJournalOperation => [AccountActivityEffect]);

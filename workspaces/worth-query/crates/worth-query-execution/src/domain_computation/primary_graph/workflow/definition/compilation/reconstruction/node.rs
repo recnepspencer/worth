@@ -81,6 +81,14 @@ pub(super) fn compile_node(
         &node.assessment_binding,
         facts,
     )?;
+    let condition_binding = observed_optional_text(
+        runtime,
+        snapshot,
+        entity,
+        node.entity_kind,
+        &node.condition_binding,
+        facts,
+    )?;
     let capability_type = observed_optional_text(
         runtime,
         snapshot,
@@ -120,6 +128,7 @@ pub(super) fn compile_node(
         parameter_type,
         result_type,
         assessment_binding,
+        condition_binding,
         capability_type,
         approval_operation,
         approval_capability_identity,
@@ -136,6 +145,7 @@ fn decode_kind(
     parameter_type: Option<String>,
     result_type: Option<String>,
     assessment_binding: Option<String>,
+    condition_binding: Option<String>,
     capability_type: Option<String>,
     approval_operation: Option<String>,
     approval_capability_identity: Option<String>,
@@ -146,6 +156,7 @@ fn decode_kind(
             if parameter_type.is_none()
                 && result_type.is_none()
                 && assessment_binding.is_none()
+                && condition_binding.is_none()
                 && capability_type.is_none()
                 && approval_operation.is_none()
                 && approval_capability_identity.is_none() =>
@@ -161,6 +172,7 @@ fn decode_kind(
                 && capability_type.is_none()
                 && approval_operation.is_none()
                 && approval_capability_identity.is_none()
+                && condition_binding.is_none()
                 && !requires_workflow_authority =>
         {
             Ok(CompiledWorkflowNodeKind::Assessment {
@@ -170,11 +182,27 @@ fn decode_kind(
                 binding: assessment_binding.ok_or_else(invalid_node)?,
             })
         }
+        Some(WorkflowNodeTag::Condition)
+            if input_type.is_none()
+                && assessment_binding.is_none()
+                && capability_type.is_none()
+                && approval_operation.is_none()
+                && approval_capability_identity.is_none()
+                && !requires_workflow_authority =>
+        {
+            Ok(CompiledWorkflowNodeKind::Condition {
+                query: member,
+                parameter_type: parameter_type.ok_or_else(invalid_node)?,
+                result_type: result_type.ok_or_else(invalid_node)?,
+                binding: condition_binding.ok_or_else(invalid_node)?,
+            })
+        }
         Some(WorkflowNodeTag::Approval)
             if input_type.is_none()
                 && parameter_type.is_none()
                 && result_type.is_none()
                 && assessment_binding.is_none()
+                && condition_binding.is_none()
                 && !requires_workflow_authority =>
         {
             Ok(CompiledWorkflowNodeKind::Approval {
@@ -186,19 +214,21 @@ fn decode_kind(
             })
         }
         Some(WorkflowNodeTag::EvidenceJoin)
-            if empty_node_fields(
-                &member,
+            if empty_optional_node_fields(
                 &input_type,
                 &parameter_type,
                 &result_type,
                 &assessment_binding,
+                &condition_binding,
                 &capability_type,
                 &approval_operation,
                 &approval_capability_identity,
                 requires_workflow_authority,
             ) =>
         {
-            Ok(CompiledWorkflowNodeKind::EvidenceJoin)
+            let policy = worth_query_declaration::facade::application_program::ApplicationWorkflowEvidenceJoinPolicy::from_identity(&member)
+                .ok_or_else(invalid_node)?;
+            Ok(CompiledWorkflowNodeKind::EvidenceJoin { policy })
         }
         Some(WorkflowNodeTag::Terminal)
             if empty_node_fields(
@@ -207,6 +237,7 @@ fn decode_kind(
                 &parameter_type,
                 &result_type,
                 &assessment_binding,
+                &condition_binding,
                 &capability_type,
                 &approval_operation,
                 &approval_capability_identity,
@@ -226,6 +257,7 @@ fn empty_node_fields(
     parameter_type: &Option<String>,
     result_type: &Option<String>,
     assessment_binding: &Option<String>,
+    condition_binding: &Option<String>,
     capability_type: &Option<String>,
     approval_operation: &Option<String>,
     approval_capability_identity: &Option<String>,
@@ -236,6 +268,30 @@ fn empty_node_fields(
         && parameter_type.is_none()
         && result_type.is_none()
         && assessment_binding.is_none()
+        && condition_binding.is_none()
+        && capability_type.is_none()
+        && approval_operation.is_none()
+        && approval_capability_identity.is_none()
+        && !requires_workflow_authority
+}
+
+#[allow(clippy::too_many_arguments)]
+fn empty_optional_node_fields(
+    input_type: &Option<String>,
+    parameter_type: &Option<String>,
+    result_type: &Option<String>,
+    assessment_binding: &Option<String>,
+    condition_binding: &Option<String>,
+    capability_type: &Option<String>,
+    approval_operation: &Option<String>,
+    approval_capability_identity: &Option<String>,
+    requires_workflow_authority: bool,
+) -> bool {
+    input_type.is_none()
+        && parameter_type.is_none()
+        && result_type.is_none()
+        && assessment_binding.is_none()
+        && condition_binding.is_none()
         && capability_type.is_none()
         && approval_operation.is_none()
         && approval_capability_identity.is_none()

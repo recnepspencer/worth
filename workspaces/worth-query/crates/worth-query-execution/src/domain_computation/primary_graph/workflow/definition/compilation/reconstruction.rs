@@ -289,6 +289,34 @@ fn observed_u64(
     Ok(value)
 }
 
+fn observed_optional_u64(
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    entity: EntityId,
+    kind: KindId,
+    locator: &AspectFieldLocator,
+    facts: &mut Vec<WorthQueryApplicationObservedFact>,
+) -> Result<Option<u64>, WorthQueryApplicationAttemptDenial> {
+    let Some(value) = observe_field_value(runtime, snapshot, entity, kind, locator) else {
+        facts.push(WorthQueryApplicationObservedFact::AbsentField {
+            entity_id: entity,
+            kind,
+            locator: locator.clone(),
+        });
+        return Ok(None);
+    };
+    let AspectValue::UInt64(number) = value else {
+        return Err(denial("workflow definition field has invalid type"));
+    };
+    facts.push(WorthQueryApplicationObservedFact::Field {
+        entity_id: entity,
+        kind,
+        locator: locator.clone(),
+        value: AspectValue::UInt64(number),
+    });
+    Ok(Some(number))
+}
+
 fn observed_bool(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,

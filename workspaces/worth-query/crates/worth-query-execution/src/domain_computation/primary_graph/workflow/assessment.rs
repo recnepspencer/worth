@@ -27,6 +27,7 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowAssessmentEviden
     pub(in crate::domain_computation::primary_graph) result_type: String,
     pub(in crate::domain_computation::primary_graph) binding: String,
     pub(in crate::domain_computation::primary_graph) subject: EntityId,
+    pub(in crate::domain_computation::primary_graph) proposal_identity: String,
     pub(in crate::domain_computation::primary_graph) source_identity: String,
     pub(in crate::domain_computation::primary_graph) passing: bool,
     pub(in crate::domain_computation::primary_graph) publication_identity: String,
@@ -106,6 +107,10 @@ pub(in crate::domain_computation::primary_graph) fn visit_workflow_assessment_fa
             (
                 layout.assessment_evidence.subject_generation.clone(),
                 AspectValue::UInt64(u64::from(meaning.subject.generation_value())),
+            ),
+            (
+                layout.assessment_evidence.proposal_identity.clone(),
+                text(&meaning.proposal_identity),
             ),
             (
                 layout.assessment_evidence.source_identity.clone(),

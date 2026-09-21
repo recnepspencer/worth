@@ -23,6 +23,7 @@ where
     program_revision: ApplicationProgramRevision,
     definition: ValidatedWorkflowDefinition<Spec>,
     assessment_bindings: Box<[(String, &'static str)]>,
+    condition_bindings: Box<[(String, &'static str)]>,
     approval_bindings: Box<[WorthQueryInstalledWorkflowApprovalBinding]>,
     authoring_capability: InstalledWorkflowAuthoringCapability,
     marker: PhantomData<fn() -> (Schema, Program)>,
@@ -55,6 +56,11 @@ where
     #[doc(hidden)]
     pub fn assessment_bindings(&self) -> &[(String, &'static str)] {
         &self.assessment_bindings
+    }
+
+    #[doc(hidden)]
+    pub fn condition_bindings(&self) -> &[(String, &'static str)] {
+        &self.condition_bindings
     }
 
     #[doc(hidden)]
@@ -92,11 +98,13 @@ where
     ) -> (
         ValidatedWorkflowDefinition<Spec>,
         Box<[(String, &'static str)]>,
+        Box<[(String, &'static str)]>,
         Box<[WorthQueryInstalledWorkflowApprovalBinding]>,
     ) {
         (
             self.definition,
             self.assessment_bindings,
+            self.condition_bindings,
             self.approval_bindings,
         )
     }
@@ -127,6 +135,7 @@ where
         ));
     }
     let mut assessment_bindings = Vec::new();
+    let mut condition_bindings = Vec::new();
     let mut approval_bindings = Vec::new();
     for node in definition.nodes() {
         let supported = match node.kind() {
@@ -153,6 +162,22 @@ where
                     ));
                 })
                 .is_some(),
+            ApplicationWorkflowNodeKind::Condition(condition) => installed
+                .conditions
+                .iter()
+                .find(|candidate| {
+                    candidate.query_marker == condition.query_type()
+                        && candidate.query_identifier == condition.identifier()
+                        && &candidate.parameter_type == condition.parameter_type()
+                        && &candidate.result_type == condition.result_type()
+                })
+                .map(|candidate| {
+                    condition_bindings.push((
+                        node.identity().as_str().to_owned(),
+                        candidate.binding_identity,
+                    ));
+                })
+                .is_some(),
             ApplicationWorkflowNodeKind::Approval(approval) => installed
                 .approvals
                 .iter()
@@ -171,9 +196,8 @@ where
                     });
                 })
                 .is_some(),
-            ApplicationWorkflowNodeKind::EvidenceJoin | ApplicationWorkflowNodeKind::Terminal => {
-                true
-            }
+            ApplicationWorkflowNodeKind::EvidenceJoin(_)
+            | ApplicationWorkflowNodeKind::Terminal => true,
         };
         if !supported {
             return Err(denial(
@@ -183,12 +207,14 @@ where
         }
     }
     assessment_bindings.sort_unstable_by(|left, right| left.0.cmp(&right.0));
+    condition_bindings.sort_unstable_by(|left, right| left.0.cmp(&right.0));
     approval_bindings.sort_unstable_by(|left, right| left.node_path.cmp(&right.node_path));
     Ok(WorthQueryInstalledWorkflowDefinitionContract {
         schema_binding: installed.schema_binding.clone(),
         program_revision: installed.program_revision.clone(),
         definition,
         assessment_bindings: assessment_bindings.into_boxed_slice(),
+        condition_bindings: condition_bindings.into_boxed_slice(),
         approval_bindings: approval_bindings.into_boxed_slice(),
         authoring_capability: installed.authoring_capability.clone(),
         marker: PhantomData,

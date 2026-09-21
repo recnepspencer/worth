@@ -67,17 +67,24 @@ fn validate_flow(
                 ApplicationWorkflowNodeKind::Assessment(_)
             )
         ),
+        ApplicationWorkflowDataFlow::ConditionSubject => matches!(
+            (source, target),
+            (
+                ApplicationWorkflowNodeKind::Operation { .. },
+                ApplicationWorkflowNodeKind::Condition(_)
+            )
+        ),
         ApplicationWorkflowDataFlow::AssessmentEvidence => matches!(
             (source, target),
             (
                 ApplicationWorkflowNodeKind::Assessment(_),
-                ApplicationWorkflowNodeKind::EvidenceJoin
+                ApplicationWorkflowNodeKind::EvidenceJoin(_)
             )
         ),
         ApplicationWorkflowDataFlow::JoinedEvidence => matches!(
             (source, target),
             (
-                ApplicationWorkflowNodeKind::EvidenceJoin,
+                ApplicationWorkflowNodeKind::EvidenceJoin(_),
                 ApplicationWorkflowNodeKind::Approval(_)
             )
         ),
@@ -88,13 +95,25 @@ fn validate_flow(
                 ApplicationWorkflowNodeKind::Operation { .. }
             )
         ),
-        ApplicationWorkflowDataFlow::OperationInput => matches!(
-            (source, target),
+        ApplicationWorkflowDataFlow::OperationInput => match (source, target) {
             (
-                ApplicationWorkflowNodeKind::Operation { .. },
-                ApplicationWorkflowNodeKind::Operation { .. }
-            )
-        ),
+                ApplicationWorkflowNodeKind::Operation {
+                    operation: source, ..
+                },
+                ApplicationWorkflowNodeKind::Operation {
+                    operation: target, ..
+                },
+            ) => {
+                if source.input_type() != target.input_type() {
+                    return Err(denial(
+                        ApplicationWorkflowValidationDenialKind::IncompatibleOperationInput,
+                        subject.as_str(),
+                    ));
+                }
+                true
+            }
+            _ => false,
+        },
     };
     if valid {
         Ok(())
@@ -121,6 +140,14 @@ pub(super) fn validate_requirements(
                 .count()
         };
         match node.kind() {
+            ApplicationWorkflowNodeKind::Condition(_)
+                if incoming(ApplicationWorkflowDataFlow::ConditionSubject) != 1 =>
+            {
+                return Err(denial(
+                    ApplicationWorkflowValidationDenialKind::MissingConditionSubject,
+                    identity.as_str(),
+                ));
+            }
             ApplicationWorkflowNodeKind::Assessment(_)
                 if incoming(ApplicationWorkflowDataFlow::AssessmentSubject) != 1 =>
             {
@@ -129,7 +156,7 @@ pub(super) fn validate_requirements(
                     identity.as_str(),
                 ));
             }
-            ApplicationWorkflowNodeKind::EvidenceJoin
+            ApplicationWorkflowNodeKind::EvidenceJoin(_)
                 if incoming(ApplicationWorkflowDataFlow::AssessmentEvidence) < 2 =>
             {
                 return Err(denial(

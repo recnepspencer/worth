@@ -33,6 +33,8 @@ where
             transition_identity_locator,
             node_path,
             assessment,
+            supporting_identity,
+            operation_receipt_identity,
             approval,
             approval_identity,
         ) = match prepared {
@@ -44,6 +46,8 @@ where
                 transition_identity_locator,
                 node_path,
                 assessment,
+                supporting_identity,
+                operation_receipt_identity,
                 approval,
                 approval_identity,
                 ..
@@ -55,11 +59,19 @@ where
                 transition_identity_locator,
                 node_path,
                 assessment,
+                supporting_identity,
+                operation_receipt_identity,
                 approval,
                 approval_identity,
             ),
             PreparedWorkflowAdvance::AwaitingAssessment(prepared) => {
                 return WorkflowProgressOutcome::AwaitingAssessment(prepared.into_required())
+            }
+            PreparedWorkflowAdvance::AwaitingCondition(prepared) => {
+                return WorkflowProgressOutcome::AwaitingCondition(prepared.into_required())
+            }
+            PreparedWorkflowAdvance::AwaitingOperation(prepared) => {
+                return WorkflowProgressOutcome::AwaitingOperation(prepared.into_required())
             }
             PreparedWorkflowAdvance::AwaitingEvidence { required, .. } => {
                 return WorkflowProgressOutcome::AwaitingEvidence(required)
@@ -90,6 +102,11 @@ where
         let idempotency = approval_identity.as_ref().map_or(idempotency, |identity| {
             idempotency.bind_workflow_approval(identity)
         });
+        let idempotency = supporting_identity
+            .as_ref()
+            .map_or(idempotency, |identity| {
+                idempotency.bind_workflow_support(identity)
+            });
         let outcome = self.compare_and_commit_application_for_program_action(
             &presented,
             program,
@@ -106,6 +123,7 @@ where
                         node_path,
                         assessment,
                         approval,
+                        operation_receipt_identity,
                         false,
                     )
                 })
@@ -120,6 +138,7 @@ where
                         node_path,
                         assessment,
                         approval,
+                        operation_receipt_identity,
                         true,
                     )
                 })
@@ -137,6 +156,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt::workflow_t
     node_path: String,
     assessment: Option<PreparedWorkflowAssessmentProjection>,
     approval: Option<PreparedWorkflowApprovalProjection>,
+    operation_receipt_identity: Option<[u8; 32]>,
     replayed: bool,
 ) -> WorkflowProgressOutcome {
     let expected = AspectValue::String(InternedString::Raw(transition_identity));
@@ -188,6 +208,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt::workflow_t
                 result_type: assessment.result_type,
                 binding: assessment.binding,
                 subject: assessment.subject,
+                proposal_identity: assessment.proposal_identity,
                 source_identity: assessment.source_identity,
                 passing: assessment.passing,
                 publication_identity: assessment.publication_identity,
@@ -210,6 +231,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt::workflow_t
         replayed,
         assessment_evidence,
         approval,
+        operation_receipt_identity,
     })
 }
 

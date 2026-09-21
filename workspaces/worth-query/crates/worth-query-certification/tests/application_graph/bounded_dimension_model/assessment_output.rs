@@ -250,8 +250,12 @@ impl WorthQueryProducerOutputFamily<BoundedDimensionSchema> for PartAssessmentOu
 impl WorthQueryWorkflowAssessmentOutputFamily<BoundedDimensionSchema>
     for PartAssessmentOutputFamily
 {
-    fn assessment_posture(_: &PartDimensionRow) -> WorthQueryWorkflowAssessmentPosture {
-        WorthQueryWorkflowAssessmentPosture::Passing
+    fn assessment_posture(row: &PartDimensionRow) -> WorthQueryWorkflowAssessmentPosture {
+        if row.dimension == 6 {
+            WorthQueryWorkflowAssessmentPosture::Failing
+        } else {
+            WorthQueryWorkflowAssessmentPosture::Passing
+        }
     }
 }
 

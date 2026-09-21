@@ -43,6 +43,7 @@ pub(super) fn validate(
                 .expect("endpoint validation ran") += 1;
         }
     }
+    require_bounded_back_edges(nodes, connections, &outgoing)?;
     require_reachable(start, nodes, &outgoing)?;
     require_acyclic(start, nodes.len(), indegree, &outgoing)
 }
@@ -58,7 +59,19 @@ fn require_complete_outcomes(
                 (connection.source() == *identity)
                     .then(|| match connection.kind() {
                         ApplicationWorkflowConnectionKind::Control(outcome) => Some(outcome),
-                        ApplicationWorkflowConnectionKind::Data(_) => None,
+                        ApplicationWorkflowConnectionKind::Data(_)
+                        | ApplicationWorkflowConnectionKind::Retry(_) => None,
+                    })
+                    .flatten()
+            })
+            .collect::<Vec<_>>();
+        let retries = connections
+            .iter()
+            .filter_map(|connection| {
+                (connection.source() == *identity)
+                    .then(|| match connection.kind() {
+                        ApplicationWorkflowConnectionKind::Retry(retry) => Some(retry),
+                        _ => None,
                     })
                     .flatten()
             })
@@ -67,6 +80,14 @@ fn require_complete_outcomes(
             ApplicationWorkflowNodeKind::Approval(_) => &[
                 ApplicationWorkflowControlOutcome::Approved,
                 ApplicationWorkflowControlOutcome::Rejected,
+            ],
+            ApplicationWorkflowNodeKind::EvidenceJoin(_) => &[
+                ApplicationWorkflowControlOutcome::EvidenceSatisfied,
+                ApplicationWorkflowControlOutcome::EvidenceFailed,
+            ],
+            ApplicationWorkflowNodeKind::Condition(_) => &[
+                ApplicationWorkflowControlOutcome::ConditionSatisfied,
+                ApplicationWorkflowControlOutcome::ConditionUnsatisfied,
             ],
             ApplicationWorkflowNodeKind::Terminal => {
                 if outcomes.is_empty() {
@@ -77,14 +98,31 @@ fn require_complete_outcomes(
                     identity.as_str(),
                 ));
             }
-            _ => &[ApplicationWorkflowControlOutcome::Completed],
+            ApplicationWorkflowNodeKind::Operation { .. }
+            | ApplicationWorkflowNodeKind::Assessment(_) => {
+                &[ApplicationWorkflowControlOutcome::Completed]
+            }
         };
+        if retries.len() > 1 {
+            return Err(denial(
+                ApplicationWorkflowValidationDenialKind::AmbiguousControlOutcome,
+                identity.as_str(),
+            ));
+        }
+        let retry_trigger = retries.first().map(|retry| retry.trigger());
+        if retry_trigger.is_some_and(|trigger| !expected.contains(&trigger)) {
+            return Err(denial(
+                ApplicationWorkflowValidationDenialKind::UnexpectedControlOutcome,
+                identity.as_str(),
+            ));
+        }
         for expected_outcome in expected {
-            match outcomes
+            let count = outcomes
                 .iter()
                 .filter(|outcome| *outcome == expected_outcome)
                 .count()
-            {
+                + usize::from(retry_trigger == Some(*expected_outcome));
+            match count {
                 0 => {
                     return Err(denial(
                         ApplicationWorkflowValidationDenialKind::MissingControlOutcome,
@@ -100,10 +138,64 @@ fn require_complete_outcomes(
                 }
             }
         }
-        if outcomes.iter().any(|outcome| !expected.contains(outcome)) {
+        if retries.first().is_some() {
+            match outcomes
+                .iter()
+                .filter(|outcome| **outcome == ApplicationWorkflowControlOutcome::RetryExhausted)
+                .count()
+            {
+                1 => {}
+                0 => {
+                    return Err(denial(
+                        ApplicationWorkflowValidationDenialKind::MissingControlOutcome,
+                        identity.as_str(),
+                    ))
+                }
+                _ => {
+                    return Err(denial(
+                        ApplicationWorkflowValidationDenialKind::AmbiguousControlOutcome,
+                        identity.as_str(),
+                    ))
+                }
+            }
+        }
+        if outcomes.iter().any(|outcome| {
+            !expected.contains(outcome)
+                && !(retries.first().is_some()
+                    && *outcome == ApplicationWorkflowControlOutcome::RetryExhausted)
+        }) {
             return Err(denial(
                 ApplicationWorkflowValidationDenialKind::UnexpectedControlOutcome,
                 identity.as_str(),
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn require_bounded_back_edges(
+    nodes: &BTreeMap<&ApplicationWorkflowNodeIdentity, &ApplicationWorkflowNode>,
+    connections: &[ApplicationWorkflowConnection],
+    outgoing: &BTreeMap<ApplicationWorkflowNodeIdentity, Vec<ApplicationWorkflowNodeIdentity>>,
+) -> Result<(), ApplicationWorkflowValidationDenial> {
+    for connection in connections {
+        if !matches!(
+            connection.kind(),
+            ApplicationWorkflowConnectionKind::Retry(_)
+        ) {
+            continue;
+        }
+        let mut reachable = BTreeSet::new();
+        let mut queue = VecDeque::from([connection.target().clone()]);
+        while let Some(current) = queue.pop_front() {
+            if reachable.insert(current.clone()) {
+                queue.extend(outgoing.get(&current).into_iter().flatten().cloned());
+            }
+        }
+        if !nodes.contains_key(connection.target()) || !reachable.contains(connection.source()) {
+            return Err(denial(
+                ApplicationWorkflowValidationDenialKind::ControlCycle,
+                connection.source().as_str(),
             ));
         }
     }

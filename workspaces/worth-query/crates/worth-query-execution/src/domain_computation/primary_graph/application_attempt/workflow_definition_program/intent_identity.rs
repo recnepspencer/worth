@@ -15,7 +15,7 @@ use crate::basis::WorthQueryProductBranch;
 
 const DOMAIN: CanonicalBasisDomain =
     CanonicalBasisDomain::Future("worth-query.workflow-definition-publication-intent");
-const RULE_VERSION: &str = "worth-query-workflow-definition-publication-intent-v1";
+const RULE_VERSION: &str = "worth-query-workflow-definition-publication-intent-v2";
 const MAXIMUM_CANONICAL_BYTES: usize = 4 * 1_024 * 1_024;
 
 pub(super) fn workflow_definition_intent_identity<Spec: ApplicationWorkflowSpec>(
@@ -25,6 +25,7 @@ pub(super) fn workflow_definition_intent_identity<Spec: ApplicationWorkflowSpec>
     branch: WorthQueryProductBranch,
     predecessor: &WorkflowDefinitionExpectedPredecessor,
     assessment_bindings: &[(String, &'static str)],
+    condition_bindings: &[(String, &'static str)],
     approval_bindings: &[worth_query_installation::facade::WorthQueryInstalledWorkflowApprovalBinding],
 ) -> Result<[u8; 32], ()> {
     let (predecessor_kind, predecessor_entity, predecessor_content) = match predecessor {
@@ -87,6 +88,18 @@ pub(super) fn workflow_definition_intent_identity<Spec: ApplicationWorkflowSpec>
         ));
         entries.push(entry(
             format!("assessment.{index}.binding"),
+            CanonicalBasisEntryKind::Identity,
+            text(*binding),
+        ));
+    }
+    for (index, (path, binding)) in condition_bindings.iter().enumerate() {
+        entries.push(entry(
+            format!("condition.{index}.path"),
+            CanonicalBasisEntryKind::Locator,
+            text(path),
+        ));
+        entries.push(entry(
+            format!("condition.{index}.binding"),
             CanonicalBasisEntryKind::Identity,
             text(*binding),
         ));

@@ -1,7 +1,9 @@
 mod approval;
 mod assessment;
+mod condition;
 mod definition;
 mod instance;
+mod operation;
 mod progress;
 mod proposal;
 
@@ -20,9 +22,13 @@ pub use instance::{
     WorthQueryWorkflowInstanceStartPreparationDenial,
     WorthQueryWorkflowInstanceStartPreparationDenialKind, WorthQueryWorkflowInstanceStartRequest,
 };
+pub use operation::{
+    WorthQueryWorkflowOperationAcceptanceDenial, WorthQueryWorkflowOperationBindingDenial,
+};
 pub use progress::{
     WorthQueryWorkflowAdvancePreparationDenial, WorthQueryWorkflowAdvancePreparationDenialKind,
     WorthQueryWorkflowAdvanceRequest, WorthQueryWorkflowAssessmentAcceptanceDenial,
+    WorthQueryWorkflowConditionAcceptanceDenial,
 };
 pub use proposal::{
     WorthQueryWorkflowProposalPreparationDenial, WorthQueryWorkflowProposalPreparationDenialKind,
@@ -30,9 +36,9 @@ pub use proposal::{
 };
 pub use worth_query_execution::facade::workflow_advance::{
     PerformedWorkflowApproval, PerformedWorkflowAssessmentEvidence, PerformedWorkflowTransition,
-    RequiredWorkflowApproval, RequiredWorkflowAssessment, RequiredWorkflowEvidence,
-    WorkflowApprovalDecision, WorkflowProgressOutcome, WorkflowTransitionBindingDenial,
-    WorkflowTransitionPreparationDenial,
+    RequiredWorkflowApproval, RequiredWorkflowAssessment, RequiredWorkflowCondition,
+    RequiredWorkflowEvidence, RequiredWorkflowOperation, WorkflowApprovalDecision,
+    WorkflowProgressOutcome, WorkflowTransitionBindingDenial, WorkflowTransitionPreparationDenial,
 };
 pub use worth_query_execution::facade::workflow_definition_publication::{
     PerformedWorkflowDefinitionPublication, PreparedWorkflowDefinitionPublication,

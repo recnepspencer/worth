@@ -157,6 +157,15 @@ pub(super) struct InstalledWorkflowAssessment {
 }
 
 #[derive(Clone)]
+pub(super) struct InstalledWorkflowCondition {
+    pub(super) query_marker: TypeId,
+    pub(super) query_identifier: &'static str,
+    pub(super) parameter_type: WorthQueryPortableTypeIdentity,
+    pub(super) result_type: WorthQueryPortableTypeIdentity,
+    pub(super) binding_identity: &'static str,
+}
+
+#[derive(Clone)]
 pub(super) struct InstalledWorkflowCapabilityBinding {
     pub(super) marker: TypeId,
     pub(super) identifier: &'static str,
@@ -224,6 +233,7 @@ where
     pub(super) advance_capability: InstalledWorkflowAdvanceCapability,
     pub(super) operations: Box<[InstalledWorkflowOperation]>,
     pub(super) assessments: Box<[InstalledWorkflowAssessment]>,
+    pub(super) conditions: Box<[InstalledWorkflowCondition]>,
     pub(super) approvals: Box<[InstalledWorkflowApproval]>,
     pub(super) resources: WorthQueryApplicationWorkflowResourceCeiling,
     pub(super) marker: PhantomData<fn() -> (Schema, Spec, Program)>,

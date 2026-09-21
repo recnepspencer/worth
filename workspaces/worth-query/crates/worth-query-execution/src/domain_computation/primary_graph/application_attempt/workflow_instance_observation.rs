@@ -12,7 +12,10 @@ use crate::domain_computation::primary_graph::workflow::instance::{
 use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout;
 
 mod settlement;
-pub(super) use settlement::{observe_evidence_dependencies, recover_settled_live_membership};
+pub(super) use settlement::{
+    observe_evidence_dependencies, observe_latest_workflow_proposal_identity,
+    recover_settled_live_membership,
+};
 
 pub(in crate::domain_computation::primary_graph::application_attempt) struct ObservedWorkflowInstance
 {
@@ -42,11 +45,39 @@ pub(in crate::domain_computation::primary_graph::application_attempt) struct Obs
     pub(in crate::domain_computation::primary_graph::application_attempt) result_type: String,
     pub(in crate::domain_computation::primary_graph::application_attempt) binding: String,
     pub(in crate::domain_computation::primary_graph::application_attempt) passing: bool,
+    pub(in crate::domain_computation::primary_graph::application_attempt) proposal_identity: String,
     pub(in crate::domain_computation::primary_graph::application_attempt) source_identity: String,
     pub(in crate::domain_computation::primary_graph::application_attempt) publication_identity:
         String,
     pub(in crate::domain_computation::primary_graph::application_attempt) output_content_identity:
         String,
+}
+
+pub(in crate::domain_computation::primary_graph::application_attempt) fn latest_transition_for_node(
+    transitions: &[ObservedWorkflowTransition],
+    node: EntityId,
+) -> Option<&ObservedWorkflowTransition> {
+    transitions
+        .iter()
+        .filter(|transition| transition.settlement.node() == node)
+        .max_by_key(|transition| transition.settlement.occurrence())
+}
+
+pub(in crate::domain_computation::primary_graph::application_attempt) fn latest_assessment_evidence(
+    transitions: &[ObservedWorkflowTransition],
+    node: EntityId,
+) -> Option<&ObservedWorkflowAssessmentEvidence> {
+    transitions
+        .iter()
+        .filter(|transition| transition.settlement.node() == node)
+        .filter_map(|transition| {
+            transition
+                .assessment_evidence
+                .as_ref()
+                .map(|evidence| (transition.settlement.occurrence(), evidence))
+        })
+        .max_by_key(|(occurrence, _)| *occurrence)
+        .map(|(_, evidence)| evidence)
 }
 
 pub(in crate::domain_computation::primary_graph::application_attempt) fn observe_workflow_instance(
@@ -120,6 +151,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         layout.instance_definition_relation,
         entity,
         2,
+        "workflow instance definition relation is unavailable",
         &mut facts,
     )?;
     if definitions.as_slice() != [instance.definition_entity_id()] {
@@ -131,6 +163,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         layout.instance_lineage_relation,
         entity,
         2,
+        "workflow instance lineage relation is unavailable",
         &mut facts,
     )?;
     if lineages.as_slice() != [lineage] {
@@ -278,9 +311,18 @@ fn adjacency(
     relation_kind: worth_relational::facade::identity::KindId,
     anchor: EntityId,
     limit: usize,
+    unavailable: &'static str,
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
 ) -> Result<Vec<EntityId>, WorthQueryApplicationAttemptDenial> {
-    adjacency_with_kind(runtime, snapshot, relation_kind, anchor, limit, facts)
+    adjacency_with_kind(
+        runtime,
+        snapshot,
+        relation_kind,
+        anchor,
+        limit,
+        unavailable,
+        facts,
+    )
 }
 
 fn adjacency_with_kind(
@@ -289,11 +331,12 @@ fn adjacency_with_kind(
     relation_kind: worth_relational::facade::identity::KindId,
     anchor: EntityId,
     limit: usize,
+    unavailable: &'static str,
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
 ) -> Result<Vec<EntityId>, WorthQueryApplicationAttemptDenial> {
     let direction = WorthQueryApplicationAdjacencyDirection::Outgoing;
     let relations = observe_adjacency(runtime, snapshot, relation_kind, anchor, direction, limit)
-        .ok_or_else(|| denial("workflow instance relation is unavailable"))?;
+        .ok_or_else(|| denial(unavailable))?;
     let adjacent = relations.iter().map(|relation| relation.to).collect();
     facts.push(WorthQueryApplicationObservedFact::Adjacency {
         relation_kind,

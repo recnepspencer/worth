@@ -1,8 +1,4 @@
 use worth_foundational::facade::{aspects, AspectIdentity, ScalarAspectType, StructAspectShape};
-use worth_query_installation::facade::{
-    ApplicationRelationCardinality, ApplicationRelationCrossContextPolicy,
-    ApplicationRelationDeletionPolicy, ApplicationRelationEndpoints, ApplicationRelationIntegrity,
-};
 use worth_relational::facade::identity::KindId;
 use worth_relational::facade::indexes::DerivedIndexId;
 use worth_relational::facade::schema::{
@@ -21,6 +17,10 @@ use crate::domain_computation::primary_graph::schema_layout::{
     valid_field_key,
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial;
+
+#[path = "relations/integrity.rs"]
+mod integrity;
+pub(super) use integrity::*;
 
 pub(super) fn lower_lineage(
     registry: RelationalSchemaRegistry,
@@ -135,6 +135,7 @@ pub(super) fn lower_node(
     let parameter_type = planned_field_locator(NODE_ASPECT, "parameter-type")?;
     let result_type = planned_field_locator(NODE_ASPECT, "result-type")?;
     let assessment_binding = planned_field_locator(NODE_ASPECT, "assessment-binding")?;
+    let condition_binding = planned_field_locator(NODE_ASPECT, "condition-binding")?;
     let capability_type = planned_field_locator(NODE_ASPECT, "capability-type")?;
     let approval_operation = planned_field_locator(NODE_ASPECT, "approval-operation")?;
     let approval_capability_identity =
@@ -149,6 +150,7 @@ pub(super) fn lower_node(
         .optional("parameter-type", ScalarAspectType::String)
         .optional("result-type", ScalarAspectType::String)
         .optional("assessment-binding", ScalarAspectType::String)
+        .optional("condition-binding", ScalarAspectType::String)
         .optional("capability-type", ScalarAspectType::String)
         .optional("approval-operation", ScalarAspectType::String)
         .optional("approval-capability-identity", ScalarAspectType::String)
@@ -176,6 +178,7 @@ pub(super) fn lower_node(
             parameter_type,
             result_type,
             assessment_binding,
+            condition_binding,
             capability_type,
             approval_operation,
             approval_capability_identity,
@@ -196,10 +199,15 @@ pub(super) fn lower_connection(
 > {
     let family = planned_field_locator(CONNECTION_ASPECT, "family")?;
     let variant = planned_field_locator(CONNECTION_ASPECT, "variant")?;
+    let retry_reason = planned_field_locator(CONNECTION_ASPECT, "retry-reason")?;
+    let retry_maximum_attempts =
+        planned_field_locator(CONNECTION_ASPECT, "retry-maximum-attempts")?;
     let shape = aspects()
         .struct_fields()
         .required("family", ScalarAspectType::UInt64)
         .required("variant", ScalarAspectType::UInt64)
+        .optional("retry-reason", ScalarAspectType::String)
+        .optional("retry-maximum-attempts", ScalarAspectType::UInt64)
         .finish()
         .map_err(|_| invalid_member(CONNECTION_ASPECT))?;
     let registry = register_platform_entity(
@@ -218,6 +226,8 @@ pub(super) fn lower_connection(
             entity_kind: kind,
             family,
             variant,
+            retry_reason,
+            retry_maximum_attempts,
         },
     ))
 }
@@ -321,70 +331,6 @@ pub(super) fn allocate_kinds(
         *kind = KindId(next);
     }
     Ok(kinds)
-}
-
-pub(super) fn live_membership_integrity() -> ApplicationRelationIntegrity {
-    ApplicationRelationIntegrity::new(
-        ApplicationRelationEndpoints::new(false, ApplicationRelationCrossContextPolicy::Forbid),
-        ApplicationRelationCardinality::new(None, Some(1), None, None, None, Some(1)),
-        ApplicationRelationDeletionPolicy::RequireRelationDeletionInSameCommit,
-    )
-}
-
-pub(super) fn current_definition_integrity() -> ApplicationRelationIntegrity {
-    ApplicationRelationIntegrity::new(
-        ApplicationRelationEndpoints::new(false, ApplicationRelationCrossContextPolicy::Forbid),
-        ApplicationRelationCardinality::new(Some(1), Some(1), None, Some(1), None, Some(1)),
-        ApplicationRelationDeletionPolicy::RequireRelationDeletionInSameCommit,
-    )
-}
-
-pub(super) fn connection_endpoint_integrity() -> ApplicationRelationIntegrity {
-    ApplicationRelationIntegrity::new(
-        ApplicationRelationEndpoints::new(false, ApplicationRelationCrossContextPolicy::Forbid),
-        ApplicationRelationCardinality::new(Some(1), Some(1), None, None, None, Some(1)),
-        ApplicationRelationDeletionPolicy::RequireRelationDeletionInSameCommit,
-    )
-}
-
-pub(super) fn owned_fact_integrity() -> ApplicationRelationIntegrity {
-    ApplicationRelationIntegrity::new(
-        ApplicationRelationEndpoints::new(false, ApplicationRelationCrossContextPolicy::Forbid),
-        ApplicationRelationCardinality::new(None, None, Some(1), Some(1), None, Some(1)),
-        ApplicationRelationDeletionPolicy::RequireRelationDeletionInSameCommit,
-    )
-}
-
-pub(super) fn workflow_proposal_integrity() -> ApplicationRelationIntegrity {
-    ApplicationRelationIntegrity::new(
-        ApplicationRelationEndpoints::new(false, ApplicationRelationCrossContextPolicy::Forbid),
-        ApplicationRelationCardinality::new(None, Some(1), Some(1), Some(1), None, Some(1)),
-        ApplicationRelationDeletionPolicy::RequireRelationDeletionInSameCommit,
-    )
-}
-
-pub(super) fn assessment_evidence_integrity() -> ApplicationRelationIntegrity {
-    ApplicationRelationIntegrity::new(
-        ApplicationRelationEndpoints::new(false, ApplicationRelationCrossContextPolicy::Forbid),
-        ApplicationRelationCardinality::new(None, Some(1), Some(1), Some(1), None, Some(1)),
-        ApplicationRelationDeletionPolicy::RequireRelationDeletionInSameCommit,
-    )
-}
-
-pub(super) fn approval_evidence_integrity() -> ApplicationRelationIntegrity {
-    ApplicationRelationIntegrity::new(
-        ApplicationRelationEndpoints::new(false, ApplicationRelationCrossContextPolicy::Forbid),
-        ApplicationRelationCardinality::new(Some(1), None, None, None, None, Some(1)),
-        ApplicationRelationDeletionPolicy::RequireRelationDeletionInSameCommit,
-    )
-}
-
-pub(super) fn approval_proposal_integrity() -> ApplicationRelationIntegrity {
-    ApplicationRelationIntegrity::new(
-        ApplicationRelationEndpoints::new(false, ApplicationRelationCrossContextPolicy::Forbid),
-        ApplicationRelationCardinality::new(Some(1), Some(1), None, None, None, Some(1)),
-        ApplicationRelationDeletionPolicy::RequireRelationDeletionInSameCommit,
-    )
 }
 
 #[cfg(test)]

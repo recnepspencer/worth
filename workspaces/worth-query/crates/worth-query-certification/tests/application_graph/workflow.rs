@@ -19,6 +19,36 @@ use super::bounded_dimension_model::{
 };
 
 #[test]
+fn installed_resource_ceiling_rejects_a_definition_declaring_broader_limits() {
+    let resources =
+        worth_query_installation::facade::WorthQueryApplicationWorkflowResourceCeiling::new(
+            32,
+            64,
+            1,
+            4,
+            64 * 1024,
+            32,
+            128,
+            256 * 1024,
+        )
+        .expect("the constrained workflow resources are nonzero");
+    let application = super::bounded_dimension_model::workflow::retain_workflow_with_resources(
+        super::bounded_dimension_model::host::publish_on_first_program(),
+        resources,
+    );
+    let denial = match application.workflow_spec().bind_definition(
+        super::bounded_dimension_model::workflow::reviewed_geometry_definition("completed"),
+    ) {
+        Ok(_) => panic!("definition limits exceeded the installed effect ceiling"),
+        Err(denial) => denial,
+    };
+    assert_eq!(
+        denial.kind(),
+        worth_query_installation::facade::WorthQueryApplicationWorkflowInstallationDenialKind::DefinitionLimitExceeded
+    );
+}
+
+#[test]
 fn public_terminal_workflow_advances_once_through_authenticated_transition_authority() {
     let application = publish_workflow_on_first_program();
     let definition = expect_published(

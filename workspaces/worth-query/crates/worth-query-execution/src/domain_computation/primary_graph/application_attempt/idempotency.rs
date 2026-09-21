@@ -42,7 +42,7 @@ pub struct WorthQueryApplicationIdempotencyBinding {
     workflow_instance_identity: Option<[u8; 32]>,
     workflow_proposal_context_identity: Option<[u8; 32]>,
     workflow_transition_identity: Option<[u8; 32]>,
-    workflow_assessment_identity: Option<[u8; 32]>,
+    workflow_support_identity: Option<[u8; 32]>,
     workflow_approval_identity: Option<[u8; 32]>,
 }
 
@@ -64,7 +64,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             workflow_instance_identity: None,
             workflow_proposal_context_identity: None,
             workflow_transition_identity: None,
-            workflow_assessment_identity: None,
+            workflow_support_identity: None,
             workflow_approval_identity: None,
         }
     }
@@ -119,9 +119,9 @@ impl WorthQueryApplicationIdempotencyBinding {
             self.workflow_proposal_context_identity,
         );
         workflow_transition::append_identity_slot(&mut encoded, self.workflow_transition_identity);
-        workflow_transition::append_assessment_identity_slot(
+        workflow_transition::append_support_identity_slot(
             &mut encoded,
-            self.workflow_assessment_identity,
+            self.workflow_support_identity,
         );
         workflow_transition::append_approval_identity_slot(
             &mut encoded,
@@ -174,7 +174,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             workflow_instance_identity: self.workflow_instance_identity,
             workflow_proposal_context_identity: self.workflow_proposal_context_identity,
             workflow_transition_identity: self.workflow_transition_identity,
-            workflow_assessment_identity: self.workflow_assessment_identity,
+            workflow_support_identity: self.workflow_support_identity,
             workflow_approval_identity: self.workflow_approval_identity,
         }
     }
@@ -217,7 +217,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             workflow_instance_identity: self.workflow_instance_identity,
             workflow_proposal_context_identity: self.workflow_proposal_context_identity,
             workflow_transition_identity: self.workflow_transition_identity,
-            workflow_assessment_identity: self.workflow_assessment_identity,
+            workflow_support_identity: self.workflow_support_identity,
             workflow_approval_identity: self.workflow_approval_identity,
         }
     }
@@ -245,7 +245,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             workflow_instance_identity: self.workflow_instance_identity,
             workflow_proposal_context_identity: self.workflow_proposal_context_identity,
             workflow_transition_identity: self.workflow_transition_identity,
-            workflow_assessment_identity: self.workflow_assessment_identity,
+            workflow_support_identity: self.workflow_support_identity,
             workflow_approval_identity: self.workflow_approval_identity,
         }
     }
@@ -273,7 +273,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             workflow_instance_identity: self.workflow_instance_identity,
             workflow_proposal_context_identity: self.workflow_proposal_context_identity,
             workflow_transition_identity: self.workflow_transition_identity,
-            workflow_assessment_identity: self.workflow_assessment_identity,
+            workflow_support_identity: self.workflow_support_identity,
             workflow_approval_identity: self.workflow_approval_identity,
         }
     }
@@ -301,7 +301,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             workflow_instance_identity: self.workflow_instance_identity,
             workflow_proposal_context_identity: self.workflow_proposal_context_identity,
             workflow_transition_identity: self.workflow_transition_identity,
-            workflow_assessment_identity: self.workflow_assessment_identity,
+            workflow_support_identity: self.workflow_support_identity,
             workflow_approval_identity: self.workflow_approval_identity,
         }
     }
@@ -329,7 +329,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             workflow_instance_identity: self.workflow_instance_identity,
             workflow_proposal_context_identity: self.workflow_proposal_context_identity,
             workflow_transition_identity: self.workflow_transition_identity,
-            workflow_assessment_identity: self.workflow_assessment_identity,
+            workflow_support_identity: self.workflow_support_identity,
             workflow_approval_identity: self.workflow_approval_identity,
         }
     }

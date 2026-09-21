@@ -41,6 +41,39 @@ pub(in crate::domain_computation::primary_graph) fn visit_workflow_transition_fa
     admitted: &AdmittedWorkflowTransition<Schema, Operation, Input, Scope>,
     outcome: worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome,
     state: super::super::state::WorkflowInstanceState,
+    emit: impl FnMut(WorthQueryApplicationRealizedEffect) -> Result<(), Error>,
+) -> Result<CreatedEntityRef, Error> {
+    visit_transition_facts(layout, admitted, outcome, state, None, emit)
+}
+
+pub(in crate::domain_computation::primary_graph) fn visit_workflow_operation_transition_facts<
+    Schema,
+    Operation,
+    Input,
+    Scope,
+    Error,
+>(
+    layout: &WorthQueryWorkflowLayout,
+    admitted: &AdmittedWorkflowTransition<Schema, Operation, Input, Scope>,
+    operation_receipt_identity: &[u8; 32],
+    emit: impl FnMut(WorthQueryApplicationRealizedEffect) -> Result<(), Error>,
+) -> Result<CreatedEntityRef, Error> {
+    visit_transition_facts(
+        layout,
+        admitted,
+        worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome::Completed,
+        super::super::state::WorkflowInstanceState::Ready,
+        Some(operation_receipt_identity),
+        emit,
+    )
+}
+
+fn visit_transition_facts<Schema, Operation, Input, Scope, Error>(
+    layout: &WorthQueryWorkflowLayout,
+    admitted: &AdmittedWorkflowTransition<Schema, Operation, Input, Scope>,
+    outcome: worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome,
+    state: super::super::state::WorkflowInstanceState,
+    operation_receipt_identity: Option<&[u8; 32]>,
     mut emit: impl FnMut(WorthQueryApplicationRealizedEffect) -> Result<(), Error>,
 ) -> Result<CreatedEntityRef, Error> {
     let transition = CreatedEntityRef {
@@ -48,41 +81,48 @@ pub(in crate::domain_computation::primary_graph) fn visit_workflow_transition_fa
         kind_id: layout.transition.entity_kind,
         client_key: ClientKey::raw("transition"),
     };
+    let mut fields = BTreeMap::from([
+        (
+            layout.transition.identity.clone(),
+            AspectValue::String(InternedString::Raw(admitted.identity.clone())),
+        ),
+        (
+            layout.transition.protocol_version.clone(),
+            AspectValue::UInt64(
+                super::super::super::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION,
+            ),
+        ),
+        (
+            layout.transition.occurrence.clone(),
+            AspectValue::UInt64(admitted.occurrence),
+        ),
+        (
+            layout.transition.outcome.clone(),
+            AspectValue::UInt64(super::encode_transition_outcome(outcome)),
+        ),
+        (
+            layout.transition.live_membership_partition.clone(),
+            AspectValue::UInt64(admitted.live_membership.partition_value_u64()),
+        ),
+        (
+            layout.transition.live_membership_slot.clone(),
+            AspectValue::UInt64(admitted.live_membership.local_slot_value()),
+        ),
+        (
+            layout.transition.live_membership_generation.clone(),
+            AspectValue::UInt64(u64::from(admitted.live_membership.generation_value())),
+        ),
+    ]);
+    if let Some(identity) = operation_receipt_identity {
+        fields.insert(
+            layout.transition.operation_receipt_identity.clone(),
+            AspectValue::String(InternedString::Raw(encode_identity(identity))),
+        );
+    }
     emit(WorthQueryApplicationRealizedEffect::CreateEntity {
         kind: transition.kind_id,
         key: "transition".to_owned(),
-        fields: BTreeMap::from([
-            (
-                layout.transition.identity.clone(),
-                AspectValue::String(InternedString::Raw(admitted.identity.clone())),
-            ),
-            (
-                layout.transition.protocol_version.clone(),
-                AspectValue::UInt64(
-                    super::super::super::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION,
-                ),
-            ),
-            (
-                layout.transition.occurrence.clone(),
-                AspectValue::UInt64(admitted.occurrence),
-            ),
-            (
-                layout.transition.outcome.clone(),
-                AspectValue::UInt64(super::encode_transition_outcome(outcome)),
-            ),
-            (
-                layout.transition.live_membership_partition.clone(),
-                AspectValue::UInt64(admitted.live_membership.partition_value_u64()),
-            ),
-            (
-                layout.transition.live_membership_slot.clone(),
-                AspectValue::UInt64(admitted.live_membership.local_slot_value()),
-            ),
-            (
-                layout.transition.live_membership_generation.clone(),
-                AspectValue::UInt64(u64::from(admitted.live_membership.generation_value())),
-            ),
-        ]),
+        fields,
         partition: WorthQueryApplicationCreationPartition::Context(admitted.instance.partition_id),
     })?;
     emit(WorthQueryApplicationRealizedEffect::CreateRelation {
@@ -111,4 +151,14 @@ pub(in crate::domain_computation::primary_graph) fn visit_workflow_transition_fa
         })?;
     }
     Ok(transition)
+}
+
+fn encode_identity(identity: &[u8; 32]) -> String {
+    let mut encoded = String::with_capacity(64);
+    for byte in identity {
+        use std::fmt::Write;
+        write!(&mut encoded, "{byte:02x}")
+            .expect("writing an operation receipt identity to String cannot fail");
+    }
+    encoded
 }

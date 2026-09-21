@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use super::{resolve_head_entity, unique_successor_entity, SettledWorkflowTransition};
+use super::{navigation::unique_successor_entity, resolve_head_entity, SettledWorkflowTransition};
 use worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome;
 use worth_relational::facade::identity::{EntityId, PartitionId};
 
@@ -13,6 +13,7 @@ fn completed(node: EntityId, occurrence: u64) -> SettledWorkflowTransition {
         node,
         occurrence,
         ApplicationWorkflowControlOutcome::Completed,
+        None,
     )
 }
 
@@ -37,7 +38,7 @@ fn out_of_order_settlements_reconstruct_the_exact_terminal_head() {
     let edges = BTreeMap::from([(start, middle), (middle, terminal)]);
     let mut history = [completed(middle, 1), completed(start, 0)];
 
-    let head = resolve_head_entity(&mut history, start, |source, outcome| {
+    let head = resolve_head_entity(&mut history, start, |source, outcome, _history| {
         linear_successor(&edges, source, outcome)
     })
     .expect("the immutable history selects its compiled terminal");
@@ -56,10 +57,12 @@ fn duplicate_gap_and_wrong_node_histories_fail_closed() {
         vec![completed(start, 0), completed(middle, 2)],
         vec![completed(entity(99), 0)],
     ] {
-        assert!(resolve_head_entity(&mut history, start, |source, outcome| {
-            linear_successor(&edges, source, outcome)
-        })
-        .is_err());
+        assert!(
+            resolve_head_entity(&mut history, start, |source, outcome, _history| {
+                linear_successor(&edges, source, outcome)
+            })
+            .is_err()
+        );
     }
 }
 

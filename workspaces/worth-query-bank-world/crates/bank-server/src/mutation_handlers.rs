@@ -9,6 +9,8 @@ mod journal;
 mod notify_estate_death;
 mod open_estate_case;
 mod payment_decision;
+mod payment_workflow_assessment;
+mod payment_workflow_control;
 mod recognize_estate_executor;
 mod release_estate;
 mod retransmit_death_notice;
@@ -27,6 +29,8 @@ pub(crate) use institution_money_movement::{
 pub(crate) use notify_estate_death::NotifyEstateDeathHandler;
 pub(crate) use open_estate_case::OpenEstateCaseHandler;
 pub(crate) use payment_decision::{ApprovePaymentHandler, RejectPaymentHandler};
+pub(crate) use payment_workflow_assessment::ApprovedPaymentAssessmentHandler;
+pub(crate) use payment_workflow_control::ApprovedBusinessPaymentControlHandler;
 pub(crate) use recognize_estate_executor::RecognizeEstateExecutorHandler;
 pub(crate) use release_estate::ReleaseEstateHandler;
 pub(crate) use retransmit_death_notice::RetransmitEstateDeathNoticeHandler;

@@ -32,6 +32,21 @@ impl ApplicationWorkflowDefinitionIdentity {
 }
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub struct ApplicationWorkflowComponentIdentity(String);
+
+impl ApplicationWorkflowComponentIdentity {
+    pub fn new(identity: impl Into<String>) -> Result<Self, String> {
+        let identity = identity.into();
+        require_identity(&identity)?;
+        Ok(Self(identity))
+    }
+
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct ApplicationWorkflowNodeIdentity(String);
 
 impl ApplicationWorkflowNodeIdentity {
@@ -78,6 +93,15 @@ pub(super) fn require_identity(identity: &str) -> Result<(), String> {
             .chars()
             .any(|character| character.is_whitespace() || character.is_control())
     {
+        Err(identity.to_owned())
+    } else {
+        Ok(())
+    }
+}
+
+pub(super) fn require_identity_segment(identity: &str) -> Result<(), String> {
+    require_identity(identity)?;
+    if identity.contains('/') {
         Err(identity.to_owned())
     } else {
         Ok(())

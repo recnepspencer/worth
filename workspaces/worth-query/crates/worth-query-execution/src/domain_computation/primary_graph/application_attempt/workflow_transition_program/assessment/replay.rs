@@ -23,6 +23,8 @@ where
             | Self::AwaitingApproval { instance, .. }
             | Self::ReplayOnly { instance, .. } => *instance,
             Self::AwaitingAssessment(prepared) => prepared.required.instance(),
+            Self::AwaitingCondition(prepared) => prepared.required.instance(),
+            Self::AwaitingOperation(prepared) => prepared.required.instance(),
         }
     }
 
@@ -52,6 +54,16 @@ where
                 assessment_identity_locator,
             ),
             Self::AwaitingAssessment(prepared) => (
+                &prepared.admitted.read_set().admission,
+                &prepared.layout.transition.identity,
+                &prepared.layout.assessment_evidence.identity,
+            ),
+            Self::AwaitingCondition(prepared) => (
+                &prepared.admitted.read_set().admission,
+                &prepared.layout.transition.identity,
+                &prepared.layout.assessment_evidence.identity,
+            ),
+            Self::AwaitingOperation(prepared) => (
                 &prepared.admitted.read_set().admission,
                 &prepared.layout.transition.identity,
                 &prepared.layout.assessment_evidence.identity,
@@ -157,6 +169,7 @@ where
                     transition_locator.clone(),
                     required.node_path().to_owned(),
                     Some(assessment),
+                    None,
                     None,
                     true,
                 )

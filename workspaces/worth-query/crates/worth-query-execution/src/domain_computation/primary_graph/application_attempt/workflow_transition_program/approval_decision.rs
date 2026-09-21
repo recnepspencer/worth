@@ -100,6 +100,7 @@ where
                     identity: selected.identity().to_owned(),
                     identity_bytes: *selected.identity_bytes(),
                     node_path: selected.node_path().to_owned(),
+                    operation_receipt_identity: transition.settlement.operation_receipt_identity(),
                 })
             })
             .collect::<Result<Vec<_>, _>>()?
@@ -131,11 +132,10 @@ where
             &observed.transitions,
         )?;
         let approval_projection = projection::prepare(&layout, &meaning)?;
-        if let Some(settled) = observed
-            .transitions
-            .iter()
-            .find(|transition| transition.settlement.node() == approval_node)
-        {
+        if let Some(settled) = observed.transitions.iter().find(|transition| {
+            transition.settlement.node() == approval_node
+                && transition.settlement.occurrence() == required.occurrence()
+        }) {
             let selected = select_settled_replay_transition(
                 &compiled,
                 instance.entity_id(),
@@ -278,9 +278,11 @@ where
             "approval proposal source differs from authored input",
         ));
     }
-    let proposal_transition = transitions
-        .iter()
-        .find(|transition| transition.settlement.node() == proposal_source.entity())
+    let proposal_transition =
+        super::super::workflow_instance_observation::latest_transition_for_node(
+            transitions,
+            proposal_source.entity(),
+        )
         .ok_or_else(|| affinity("approval proposal transition is absent"))?;
     let mut proposal_facts = handle.with_runtime(|runtime| {
         crate::domain_computation::primary_graph::workflow::proposal::observe_workflow_proposal(
@@ -295,11 +297,14 @@ where
     let evidence_source = unique(compiled.approval_evidence_sources(approval), "evidence")?;
     if !matches!(
         evidence_source.kind(),
-        crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowNodeKind::EvidenceJoin
-    ) || !transitions.iter().any(|transition| {
-        transition.settlement.node() == evidence_source.entity()
-            && transition.settlement.outcome()
-                == worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome::Completed
+        crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowNodeKind::EvidenceJoin { .. }
+    ) || !super::super::workflow_instance_observation::latest_transition_for_node(
+        transitions,
+        evidence_source.entity(),
+    )
+    .is_some_and(|transition| {
+        transition.settlement.outcome()
+            == worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome::EvidenceSatisfied
     }) {
         return Err(affinity("approval joined evidence is absent"));
     }
@@ -384,6 +389,8 @@ where
         instance,
         node_path,
         assessment: None,
+        supporting_identity: None,
+        operation_receipt_identity: None,
         approval: Some(approval_projection),
         approval_identity: Some(meaning.identity),
         replays: Box::default(),

@@ -1,6 +1,70 @@
 use super::*;
 
 #[test]
+fn evidence_join_policy_changes_canonical_meaning() -> Result<(), Box<dyn std::error::Error>> {
+    let passing = primitive_definition_named_with_policy(
+        "reviewed-geometry",
+        ApplicationWorkflowEvidenceJoinPolicy::AllRequiredPassing,
+    )?;
+    let completed = primitive_definition_named_with_policy(
+        "reviewed-geometry",
+        ApplicationWorkflowEvidenceJoinPolicy::AllRequiredCompleted,
+    )?;
+    assert_ne!(passing.content_identity(), completed.content_identity());
+    Ok(())
+}
+
+#[test]
+fn retry_reason_and_bound_change_canonical_meaning() -> Result<(), Box<dyn std::error::Error>> {
+    fn definition(
+        reason: &str,
+        maximum_attempts: u16,
+    ) -> Result<ValidatedWorkflowDefinition<ReviewedGeometry>, Box<dyn std::error::Error>> {
+        let mut builder = ApplicationWorkflowDefinitionBuilder::<ReviewedGeometry>::new(
+            "canonical-retry",
+            limits(),
+        )?;
+        let first = builder.operation::<ProposeChange>("first", false)?;
+        let revise = builder.operation::<ApplyChange>("revise", false)?;
+        let exhausted = builder.terminal("exhausted")?;
+        builder
+            .start(&first)
+            .control(
+                &first,
+                ApplicationWorkflowControlOutcome::Completed,
+                &revise,
+            )
+            .retry(
+                &revise,
+                ApplicationWorkflowRetry::new(
+                    ApplicationWorkflowControlOutcome::Completed,
+                    reason,
+                    maximum_attempts,
+                )
+                .expect("the retry metadata is valid"),
+                &first,
+            )
+            .control(
+                &revise,
+                ApplicationWorkflowControlOutcome::RetryExhausted,
+                &exhausted,
+            );
+        Ok(builder.finish()?.validate()?)
+    }
+
+    let baseline = definition("proposal-revision", 2)?;
+    assert_ne!(
+        baseline.content_identity(),
+        definition("external-revision", 2)?.content_identity()
+    );
+    assert_ne!(
+        baseline.content_identity(),
+        definition("proposal-revision", 3)?.content_identity()
+    );
+    Ok(())
+}
+
+#[test]
 fn lineage_identity_is_not_part_of_canonical_content_identity(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let first = primitive_definition_named("reviewed-geometry-a")?;
@@ -82,7 +146,7 @@ fn primitive_form_has_the_independently_expected_expanded_graph() {
     ));
     assert!(matches!(
         kind("checks/evidence"),
-        ApplicationWorkflowNodeKind::EvidenceJoin
+        ApplicationWorkflowNodeKind::EvidenceJoin(_)
     ));
     assert!(matches!(
         kind("approval"),
@@ -105,7 +169,9 @@ fn primitive_form_has_the_independently_expected_expanded_graph() {
     ));
 
     use ApplicationWorkflowConnectionKind::{Control, Data};
-    use ApplicationWorkflowControlOutcome::{Approved, Completed, Rejected};
+    use ApplicationWorkflowControlOutcome::{
+        Approved, Completed, EvidenceFailed, EvidenceSatisfied, Rejected,
+    };
     use ApplicationWorkflowDataFlow::{
         ApprovalAuthority, AssessmentEvidence, AssessmentSubject, JoinedEvidence, OperationInput,
         ProposalSubject,
@@ -135,7 +201,8 @@ fn primitive_form_has_the_independently_expected_expanded_graph() {
                 Control(Completed),
                 "checks/evidence",
             ),
-            ("checks/evidence", Control(Completed), "approval"),
+            ("checks/evidence", Control(EvidenceSatisfied), "approval"),
+            ("checks/evidence", Control(EvidenceFailed), "rejected"),
             ("approval", Control(Approved), "apply"),
             ("approval", Control(Rejected), "rejected"),
             ("apply", Control(Completed), "completed"),

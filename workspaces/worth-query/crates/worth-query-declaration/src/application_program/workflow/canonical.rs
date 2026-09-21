@@ -33,7 +33,7 @@ where
     Spec: ApplicationWorkflowSpec,
 {
     nodes.sort_by(|left, right| left.identity().cmp(right.identity()));
-    connections.sort_by(|left, right| connection_key(left).cmp(&connection_key(right)));
+    connections.sort_by_key(connection_record);
     let mut entries = Vec::with_capacity(nodes.len() + connections.len() + 5);
     entries.push(text_entry("spec", Spec::IDENTITY.as_str()));
     entries.push(text_entry("start", start));
@@ -119,6 +119,15 @@ fn node_record(node: &ApplicationWorkflowNode) -> String {
                 assessment.result_type().as_str(),
             ],
         ),
+        ApplicationWorkflowNodeKind::Condition(condition) => framed_record(
+            "condition",
+            &[
+                node.identity().as_str(),
+                condition.identifier(),
+                condition.parameter_type().as_str(),
+                condition.result_type().as_str(),
+            ],
+        ),
         ApplicationWorkflowNodeKind::Approval(approval) => framed_record(
             "approval",
             &[
@@ -127,42 +136,45 @@ fn node_record(node: &ApplicationWorkflowNode) -> String {
                 approval.capability_type().as_str(),
             ],
         ),
-        ApplicationWorkflowNodeKind::EvidenceJoin => {
-            framed_record("evidence-join", &[node.identity().as_str()])
-        }
+        ApplicationWorkflowNodeKind::EvidenceJoin(policy) => framed_record(
+            "evidence-join",
+            &[node.identity().as_str(), policy.identity()],
+        ),
         ApplicationWorkflowNodeKind::Terminal => {
             framed_record("terminal", &[node.identity().as_str()])
         }
     }
 }
 
-fn connection_key(connection: &ApplicationWorkflowConnection) -> (&str, &str, u8, u8) {
-    let (family, variant) = match connection.kind() {
-        ApplicationWorkflowConnectionKind::Control(outcome) => (0, control_tag(outcome)),
-        ApplicationWorkflowConnectionKind::Data(flow) => (1, data_tag(flow)),
-    };
-    (
-        connection.source().as_str(),
-        connection.target().as_str(),
-        family,
-        variant,
-    )
-}
-
 fn connection_record(connection: &ApplicationWorkflowConnection) -> String {
-    let (family, variant) = match connection.kind() {
-        ApplicationWorkflowConnectionKind::Control(outcome) => ("control", control_tag(outcome)),
-        ApplicationWorkflowConnectionKind::Data(flow) => ("data", data_tag(flow)),
-    };
-    let variant = variant.to_string();
-    framed_record(
-        family,
-        &[
-            connection.source().as_str(),
-            connection.target().as_str(),
-            &variant,
-        ],
-    )
+    match connection.kind() {
+        ApplicationWorkflowConnectionKind::Control(outcome) => framed_record(
+            "control",
+            &[
+                connection.source().as_str(),
+                connection.target().as_str(),
+                &control_tag(outcome).to_string(),
+            ],
+        ),
+        ApplicationWorkflowConnectionKind::Data(flow) => framed_record(
+            "data",
+            &[
+                connection.source().as_str(),
+                connection.target().as_str(),
+                &data_tag(flow).to_string(),
+            ],
+        ),
+        ApplicationWorkflowConnectionKind::Retry(retry) => framed_record(
+            "retry",
+            &[
+                connection.source().as_str(),
+                connection.target().as_str(),
+                &control_tag(retry.trigger()).to_string(),
+                retry.reason(),
+                &retry.maximum_attempts().to_string(),
+            ],
+        ),
+    }
 }
 
 fn framed_record(kind: &str, fields: &[&str]) -> String {
@@ -181,6 +193,11 @@ const fn control_tag(outcome: ApplicationWorkflowControlOutcome) -> u8 {
         ApplicationWorkflowControlOutcome::Completed => 0,
         ApplicationWorkflowControlOutcome::Approved => 1,
         ApplicationWorkflowControlOutcome::Rejected => 2,
+        ApplicationWorkflowControlOutcome::EvidenceSatisfied => 3,
+        ApplicationWorkflowControlOutcome::EvidenceFailed => 4,
+        ApplicationWorkflowControlOutcome::RetryExhausted => 5,
+        ApplicationWorkflowControlOutcome::ConditionSatisfied => 6,
+        ApplicationWorkflowControlOutcome::ConditionUnsatisfied => 7,
     }
 }
 
@@ -192,6 +209,7 @@ const fn data_tag(flow: ApplicationWorkflowDataFlow) -> u8 {
         ApplicationWorkflowDataFlow::JoinedEvidence => 3,
         ApplicationWorkflowDataFlow::ApprovalAuthority => 4,
         ApplicationWorkflowDataFlow::OperationInput => 5,
+        ApplicationWorkflowDataFlow::ConditionSubject => 6,
     }
 }
 

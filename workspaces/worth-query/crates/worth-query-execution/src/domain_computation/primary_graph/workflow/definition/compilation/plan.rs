@@ -38,13 +38,21 @@ pub(in crate::domain_computation::primary_graph) enum CompiledWorkflowNodeKind {
         result_type: String,
         binding: String,
     },
+    Condition {
+        query: String,
+        parameter_type: String,
+        result_type: String,
+        binding: String,
+    },
     Approval {
         capability: String,
         capability_type: String,
         operation: String,
         installed_capability_identity: String,
     },
-    EvidenceJoin,
+    EvidenceJoin {
+        policy: worth_query_declaration::facade::application_program::ApplicationWorkflowEvidenceJoinPolicy,
+    },
     Terminal,
 }
 
@@ -58,6 +66,11 @@ pub(in crate::domain_computation::primary_graph) struct CompiledWorkflowConnecti
 pub(in crate::domain_computation::primary_graph) enum CompiledWorkflowConnectionKind {
     Control(ApplicationWorkflowControlOutcome),
     Data(ApplicationWorkflowDataFlow),
+    Retry {
+        trigger: ApplicationWorkflowControlOutcome,
+        reason: String,
+        maximum_attempts: u16,
+    },
 }
 
 impl CompiledWorkflowNode {
@@ -104,6 +117,18 @@ impl CompiledWorkflowNode {
                 result_type.clone(),
                 binding.clone(),
             ],
+            CompiledWorkflowNodeKind::Condition {
+                query,
+                parameter_type,
+                result_type,
+                binding,
+            } => vec![
+                WorkflowNodeTag::Condition.identity().to_owned(),
+                query.clone(),
+                parameter_type.clone(),
+                result_type.clone(),
+                binding.clone(),
+            ],
             CompiledWorkflowNodeKind::Approval {
                 capability,
                 capability_type,
@@ -116,9 +141,10 @@ impl CompiledWorkflowNode {
                 operation.clone(),
                 installed_capability_identity.clone(),
             ],
-            CompiledWorkflowNodeKind::EvidenceJoin => {
-                vec![WorkflowNodeTag::EvidenceJoin.identity().to_owned()]
-            }
+            CompiledWorkflowNodeKind::EvidenceJoin { policy } => vec![
+                WorkflowNodeTag::EvidenceJoin.identity().to_owned(),
+                policy.identity().to_owned(),
+            ],
             CompiledWorkflowNodeKind::Terminal => {
                 vec![WorkflowNodeTag::Terminal.identity().to_owned()]
             }
@@ -136,11 +162,25 @@ impl CompiledWorkflowNode {
 
 impl CompiledWorkflowConnection {
     fn identity_material(&self) -> String {
-        let tag = match self.kind {
+        let kind = match &self.kind {
             CompiledWorkflowConnectionKind::Control(outcome) => {
-                WorkflowConnectionTag::control(outcome)
+                WorkflowConnectionTag::control(*outcome)
+                    .identity()
+                    .to_owned()
             }
-            CompiledWorkflowConnectionKind::Data(flow) => WorkflowConnectionTag::data(flow),
+            CompiledWorkflowConnectionKind::Data(flow) => {
+                WorkflowConnectionTag::data(*flow).identity().to_owned()
+            }
+            CompiledWorkflowConnectionKind::Retry {
+                trigger,
+                reason,
+                maximum_attempts,
+            } => format!(
+                "{}:{}:{}",
+                WorkflowConnectionTag::Retry(*trigger).identity(),
+                reason,
+                maximum_attempts,
+            ),
         };
         format!(
             "{}:{}:{}:{}:{}:{}:{}:{}:{}:{kind}",
@@ -153,7 +193,7 @@ impl CompiledWorkflowConnection {
             self.target.partition_value(),
             self.target.local_slot_value(),
             self.target.generation_value(),
-            kind = tag.identity(),
+            kind = kind,
         )
     }
 }
@@ -212,6 +252,31 @@ impl CompiledWorkflowDefinition {
             .filter_map(|target| self.nodes.iter().find(|node| node.entity == target))
     }
 
+    pub(in crate::domain_computation::primary_graph) fn retry_successors(
+        &self,
+        source: EntityId,
+        trigger: ApplicationWorkflowControlOutcome,
+    ) -> impl Iterator<Item = (&CompiledWorkflowNode, u16)> {
+        self.connections
+            .iter()
+            .filter_map(move |connection| match &connection.kind {
+                CompiledWorkflowConnectionKind::Retry {
+                    trigger: candidate,
+                    maximum_attempts,
+                    ..
+                } if *candidate == trigger && connection.source == source => {
+                    Some((connection.target, *maximum_attempts))
+                }
+                _ => None,
+            })
+            .filter_map(|(target, maximum_attempts)| {
+                self.nodes
+                    .iter()
+                    .find(|node| node.entity == target)
+                    .map(|node| (node, maximum_attempts))
+            })
+    }
+
     pub(in crate::domain_computation::primary_graph) fn required_assessments(
         &self,
         join: EntityId,
@@ -254,6 +319,13 @@ impl CompiledWorkflowDefinition {
         approval: EntityId,
     ) -> impl Iterator<Item = &CompiledWorkflowNode> {
         self.data_sources(approval, ApplicationWorkflowDataFlow::JoinedEvidence)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn operation_input_sources(
+        &self,
+        operation: EntityId,
+    ) -> impl Iterator<Item = &CompiledWorkflowNode> {
+        self.data_sources(operation, ApplicationWorkflowDataFlow::OperationInput)
     }
 
     fn data_sources(
@@ -302,52 +374,5 @@ fn append_framed(target: &mut String, value: &str) {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::{
-        CompiledWorkflowConnection, CompiledWorkflowConnectionKind, CompiledWorkflowNode,
-        CompiledWorkflowNodeKind,
-    };
-    use worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome;
-    use worth_relational::facade::identity::{EntityId, PartitionId};
-
-    #[test]
-    fn compiled_identity_material_carries_full_record_coordinates() {
-        let first_node = CompiledWorkflowNode {
-            entity: EntityId::new(PartitionId::new(1), 10, 3),
-            path: "apply".to_owned(),
-            kind: CompiledWorkflowNodeKind::Terminal,
-        };
-        let reassociated_node = CompiledWorkflowNode {
-            entity: EntityId::new(PartitionId::new(2), 10, 3),
-            path: "apply".to_owned(),
-            kind: CompiledWorkflowNodeKind::Terminal,
-        };
-
-        assert_ne!(
-            first_node.identity_material(),
-            reassociated_node.identity_material()
-        );
-
-        let first_connection = CompiledWorkflowConnection {
-            entity: EntityId::new(PartitionId::new(1), 20, 3),
-            source: first_node.entity,
-            target: EntityId::new(PartitionId::new(1), 11, 3),
-            kind: CompiledWorkflowConnectionKind::Control(
-                ApplicationWorkflowControlOutcome::Completed,
-            ),
-        };
-        let reassociated_connection = CompiledWorkflowConnection {
-            entity: first_connection.entity,
-            source: reassociated_node.entity,
-            target: first_connection.target,
-            kind: CompiledWorkflowConnectionKind::Control(
-                ApplicationWorkflowControlOutcome::Completed,
-            ),
-        };
-
-        assert_ne!(
-            first_connection.identity_material(),
-            reassociated_connection.identity_material()
-        );
-    }
-}
+#[path = "plan/tests.rs"]
+mod tests;

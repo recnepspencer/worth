@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 
 use crate::protocol::correlation::RailCorrelation;
-use crate::protocol::notice::EstateDeathNotice;
+use crate::protocol::notice::{EstateDeathNotice, RailDomainEffect};
 
 /// The rail-side consequence of completing one admitted death notice.
 ///
@@ -14,21 +14,21 @@ use crate::protocol::notice::EstateDeathNotice;
 /// were actually applied.
 #[derive(Default)]
 pub struct CompletedEffects {
-    notices: Mutex<HashMap<RailCorrelation, EstateDeathNotice>>,
+    effects: Mutex<HashMap<RailCorrelation, RailDomainEffect>>,
 }
 
 impl CompletedEffects {
     pub fn apply_once(
         &self,
         correlation: RailCorrelation,
-        notice: EstateDeathNotice,
+        effect: RailDomainEffect,
     ) -> Result<(), CompletedEffectConflict> {
         match self.lock().entry(correlation) {
             Entry::Vacant(entry) => {
-                entry.insert(notice);
+                entry.insert(effect);
                 Ok(())
             }
-            Entry::Occupied(entry) if entry.get() == &notice => {
+            Entry::Occupied(entry) if entry.get() == &effect => {
                 Err(CompletedEffectConflict::Repeat)
             }
             Entry::Occupied(_) => Err(CompletedEffectConflict::MeaningDrift),
@@ -40,11 +40,16 @@ impl CompletedEffects {
     }
 
     pub fn notice_of(&self, correlation: &RailCorrelation) -> Option<EstateDeathNotice> {
-        self.lock().get(correlation).copied()
+        self.lock()
+            .get(correlation)
+            .and_then(|effect| match effect {
+                RailDomainEffect::EstateDeathNotice(notice) => Some(*notice),
+                RailDomainEffect::ApprovedPaymentSettlement(_) => None,
+            })
     }
 
-    fn lock(&self) -> std::sync::MutexGuard<'_, HashMap<RailCorrelation, EstateDeathNotice>> {
-        self.notices
+    fn lock(&self) -> std::sync::MutexGuard<'_, HashMap<RailCorrelation, RailDomainEffect>> {
+        self.effects
             .lock()
             .expect("rail completed-effect mutex is never poisoned")
     }

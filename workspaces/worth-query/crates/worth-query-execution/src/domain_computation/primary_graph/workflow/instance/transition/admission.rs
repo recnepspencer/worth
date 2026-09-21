@@ -9,7 +9,8 @@ mod selection;
 pub(in crate::domain_computation::primary_graph) use selection::{
     select_current_transition, select_proposal_replay_transition, select_proposal_transition,
     select_settled_replay_transition, select_terminal_transition, SelectedWorkflowApproval,
-    SelectedWorkflowAssessment, SelectedWorkflowTransition, SelectedWorkflowTransitionKind,
+    SelectedWorkflowAssessment, SelectedWorkflowCondition, SelectedWorkflowOperation,
+    SelectedWorkflowTransition, SelectedWorkflowTransitionKind,
 };
 
 pub(in crate::domain_computation::primary_graph) struct AdmittedWorkflowTransition<
@@ -41,6 +42,7 @@ pub(in crate::domain_computation::primary_graph) struct SettledWorkflowTransitio
     pub(super) node: EntityId,
     pub(super) occurrence: u64,
     pub(super) outcome: ApplicationWorkflowControlOutcome,
+    pub(super) operation_receipt_identity: Option<[u8; 32]>,
 }
 
 impl SettledWorkflowTransition {
@@ -48,11 +50,13 @@ impl SettledWorkflowTransition {
         node: EntityId,
         occurrence: u64,
         outcome: ApplicationWorkflowControlOutcome,
+        operation_receipt_identity: Option<[u8; 32]>,
     ) -> Self {
         Self {
             node,
             occurrence,
             outcome,
+            operation_receipt_identity,
         }
     }
 
@@ -68,6 +72,12 @@ impl SettledWorkflowTransition {
         self,
     ) -> ApplicationWorkflowControlOutcome {
         self.outcome
+    }
+
+    pub(in crate::domain_computation::primary_graph) const fn operation_receipt_identity(
+        self,
+    ) -> Option<[u8; 32]> {
+        self.operation_receipt_identity
     }
 }
 

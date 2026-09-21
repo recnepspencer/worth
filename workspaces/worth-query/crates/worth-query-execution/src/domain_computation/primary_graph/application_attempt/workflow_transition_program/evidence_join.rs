@@ -25,6 +25,7 @@ where
         live_membership: worth_relational::facade::identity::RelationId,
         mut facts: Vec<super::super::WorthQueryApplicationObservedFact>,
         transitions: &[super::super::workflow_instance_observation::ObservedWorkflowTransition],
+        policy: worth_query_declaration::facade::application_program::ApplicationWorkflowEvidenceJoinPolicy,
     ) -> Result<
         PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
         WorthQueryApplicationAttemptDenial,
@@ -68,10 +69,11 @@ where
                 "evidence join requirement is not an assessment node",
             ));
         };
-            let Some(evidence) = transitions
-                .iter()
-                .find(|transition| transition.settlement.node() == node.entity())
-                .and_then(|transition| transition.assessment_evidence.as_ref())
+            let Some(evidence) =
+                super::super::workflow_instance_observation::latest_assessment_evidence(
+                    transitions,
+                    node.entity(),
+                )
             else {
                 continue;
             };
@@ -89,7 +91,7 @@ where
             passing = passing.saturating_add(usize::from(evidence.passing));
             evidence_entities.push(evidence.entity);
         }
-        if passing != required.len() {
+        if completed != required.len() {
             let required = RequiredWorkflowEvidence::new(
                 instance.entity_id(),
                 selected.node_path().to_owned(),
@@ -106,6 +108,15 @@ where
                 replays: Box::default(),
             });
         }
+        let satisfied = match policy {
+            worth_query_declaration::facade::application_program::ApplicationWorkflowEvidenceJoinPolicy::AllRequiredPassing => passing == required.len(),
+            worth_query_declaration::facade::application_program::ApplicationWorkflowEvidenceJoinPolicy::AllRequiredCompleted => true,
+        };
+        let outcome = if satisfied {
+            worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome::EvidenceSatisfied
+        } else {
+            worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome::EvidenceFailed
+        };
         let maximum_facts = self
             .admission
             .allowed_graph_contract()
@@ -152,7 +163,7 @@ where
         crate::domain_computation::primary_graph::workflow::instance::visit_workflow_transition_facts(
         layout,
         &admitted,
-        worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome::Completed,
+        outcome,
         crate::domain_computation::primary_graph::workflow::instance::WorkflowInstanceState::Ready,
         |effect| demand.observe(&effect),
     )?;
@@ -161,7 +172,7 @@ where
         crate::domain_computation::primary_graph::workflow::instance::visit_workflow_transition_facts(
         layout,
         &admitted,
-        worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome::Completed,
+        outcome,
         crate::domain_computation::primary_graph::workflow::instance::WorkflowInstanceState::Ready,
         |effect| {
             effects.push(effect);
@@ -194,6 +205,8 @@ where
             instance: transition_instance,
             node_path,
             assessment: None,
+            supporting_identity: None,
+            operation_receipt_identity: None,
             approval: None,
             approval_identity: None,
             replays: Box::default(),

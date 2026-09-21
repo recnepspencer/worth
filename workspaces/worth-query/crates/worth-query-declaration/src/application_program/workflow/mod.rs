@@ -8,6 +8,7 @@ mod authoring;
 mod canonical;
 mod identity;
 mod model;
+mod provenance;
 mod validation;
 mod vocabulary;
 
@@ -17,24 +18,37 @@ mod tests;
 pub use authoring::{
     ApplicationWorkflowApprovalNode, ApplicationWorkflowAssessmentNode,
     ApplicationWorkflowAuthoringCommand, ApplicationWorkflowAuthoringDenial,
-    ApplicationWorkflowCommandAdapter, ApplicationWorkflowDefinitionBuilder,
-    ApplicationWorkflowEvidenceJoinNode, ApplicationWorkflowNodeRef,
-    ApplicationWorkflowOperationNode, ApplicationWorkflowTerminalNode,
+    ApplicationWorkflowCommandAdapter, ApplicationWorkflowComponentBuilder,
+    ApplicationWorkflowComponentInputBinding, ApplicationWorkflowComponentInputPort,
+    ApplicationWorkflowComponentNodeRef, ApplicationWorkflowComponentOutputBinding,
+    ApplicationWorkflowComponentOutputPort, ApplicationWorkflowComponentResource,
+    ApplicationWorkflowConditionNode, ApplicationWorkflowDefinitionBuilder,
+    ApplicationWorkflowEvidenceJoinNode, ApplicationWorkflowInputBinding,
+    ApplicationWorkflowNodeRef, ApplicationWorkflowOperationNode, ApplicationWorkflowOutputBinding,
+    ApplicationWorkflowTerminalNode, AuthoredWorkflowComponent, ExpandedWorkflowComponent,
+    ExpandedWorkflowComponentInComponent,
 };
 pub use identity::{
-    ApplicationWorkflowDefinitionContentIdentity, ApplicationWorkflowDefinitionIdentity,
-    ApplicationWorkflowNodeIdentity, ApplicationWorkflowSpecIdentity,
+    ApplicationWorkflowComponentIdentity, ApplicationWorkflowDefinitionContentIdentity,
+    ApplicationWorkflowDefinitionIdentity, ApplicationWorkflowNodeIdentity,
+    ApplicationWorkflowSpecIdentity,
 };
 pub use model::{
     ApplicationWorkflowConnection, ApplicationWorkflowConnectionKind,
     ApplicationWorkflowControlOutcome, ApplicationWorkflowDataFlow,
-    ApplicationWorkflowDefinitionLimits, ApplicationWorkflowNode, ApplicationWorkflowNodeKind,
+    ApplicationWorkflowDefinitionLimits, ApplicationWorkflowEvidenceJoinPolicy,
+    ApplicationWorkflowNode, ApplicationWorkflowNodeKind, ApplicationWorkflowRetry,
     AuthoredWorkflowDefinition, ValidatedWorkflowDefinition,
+};
+pub use provenance::{
+    ApplicationWorkflowComponentExpansion, ApplicationWorkflowComponentPortDirection,
+    ApplicationWorkflowExpandedConnectionProvenance, ApplicationWorkflowExpandedNodeProvenance,
+    ApplicationWorkflowExpandedPortProvenance,
 };
 pub use validation::{
     ApplicationWorkflowValidationDenial, ApplicationWorkflowValidationDenialKind,
 };
 pub use vocabulary::{
     ApplicationWorkflowApprovalRef, ApplicationWorkflowAssessmentRef,
-    ApplicationWorkflowOperationRef, ApplicationWorkflowSpec,
+    ApplicationWorkflowConditionRef, ApplicationWorkflowOperationRef, ApplicationWorkflowSpec,
 };
