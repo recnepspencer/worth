@@ -10,11 +10,15 @@ use super::region::complete_regions;
 
 use super::{UiMountedOccurrenceGeometryDenial, UiMountedSurfaceGeometryBatch};
 
+#[path = "state/presented_grid.rs"]
+mod presented_grid;
 #[path = "state/projection.rs"]
 mod projection;
 #[path = "state/resolution.rs"]
 mod resolution;
 mod scroll;
+#[path = "state/scroll_anchor.rs"]
+mod scroll_anchor;
 mod succession;
 
 use resolution::{
@@ -39,6 +43,10 @@ struct UiMountedOccurrenceGeometryRow {
 #[derive(Clone, Debug, PartialEq)]
 struct UiMountedSurfaceGeometry {
     binding: UiSurfaceBindingGeneration,
+    /// The grid this surface's pixels land on, kept beside the boxes rather
+    /// than asked for at each read, so presentation can place a scrolled box
+    /// without reaching back into identity for the binding that placed it.
+    device_scale: crate::runtime::scroll::UiScrollPresentationDeviceScale,
     layout_revision: super::UiMountedLayoutRevision,
     viewport: UiMountedCanonicalBox,
     occurrences: BTreeMap<UiMountedInstanceIdentity, UiMountedOccurrenceGeometryRow>,
@@ -74,11 +82,15 @@ impl UiMountedOccurrenceGeometryState {
         if !identity.validates_layout_basis(batch.basis()) {
             return Err(UiMountedOccurrenceGeometryDenial::StaleLayoutBasis);
         }
-        let binding = identity
+        let surface_binding = identity
             .projection_surface(batch.surface())
             .ok_or(UiMountedOccurrenceGeometryDenial::MissingSurfaceBinding)?
-            .0
-            .binding_generation();
+            .0;
+        let binding = surface_binding.binding_generation();
+        let device_scale = crate::runtime::scroll::UiScrollPresentationDeviceScale::admit(
+            surface_binding.profile().device_scale_milli(),
+        )
+        .map_err(|_| UiMountedOccurrenceGeometryDenial::UnusableDeviceScale)?;
         if batch.occurrences().is_empty() {
             return Err(UiMountedOccurrenceGeometryDenial::EmptyBatch);
         }
@@ -231,6 +243,7 @@ impl UiMountedOccurrenceGeometryState {
             batch.surface(),
             UiMountedSurfaceGeometry {
                 binding,
+                device_scale,
                 layout_revision: batch.layout_revision(),
                 viewport: batch.viewport(),
                 occurrences: rows,

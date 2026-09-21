@@ -8,15 +8,20 @@
 //! assembles exactly that, once, so every consumer paints the same rectangles
 //! the pointer is hit-tested against.
 //!
-//! Snapping happens here and nowhere else. The rectangles that leave this file
-//! sit on the device grid; the rectangles the pointer is resolved against stay
-//! unsnapped, because hit testing answers from the accepted offset rather than
-//! from the frame that offset was painted in.
+//! Chrome is snapped here, from its own derived rectangles. The rectangles
+//! that leave this file sit on the device grid; the rectangles the pointer is
+//! resolved against stay unsnapped, because hit testing answers from the
+//! accepted offset rather than from the frame that offset was painted in. The
+//! content easing underneath is snapped on the same grid where it is painted,
+//! from the same accepted sample, so the thumb and the rows it measures move by
+//! whole pixels together.
 
 use crate::runtime::scroll::chrome::{
-    snap_to_device_grid, UiScrollChromeAppearanceState, UiScrollChromeAxis,
-    UiScrollChromeDeviceScale, UiScrollChromeDragPosture, UiScrollChromeFacts, UiScrollChromePart,
-    UiScrollChromeSnappingDenial,
+    UiScrollChromeAppearanceState, UiScrollChromeAxis, UiScrollChromeDragPosture,
+    UiScrollChromeFacts, UiScrollChromePart,
+};
+use crate::runtime::scroll::{
+    snap_to_device_grid, UiScrollPresentationDeviceScale, UiScrollPresentationSnappingDenial,
 };
 
 /// One painted chrome rectangle, ready for a host paint mechanic.
@@ -35,7 +40,7 @@ pub(crate) struct UiMountedScrollChromeNode {
 pub(crate) enum UiScrollChromeLoweringDenial {
     /// The device scale named no grid, or a snapped rectangle left the range
     /// canonical mounted geometry admits.
-    Snapping(UiScrollChromeSnappingDenial),
+    Snapping(UiScrollPresentationSnappingDenial),
 }
 
 /// What one region hands to lowering: its derived chrome, the roles that paint
@@ -49,7 +54,7 @@ pub(crate) struct UiScrollChromeLoweringInput<'input> {
     /// this normally contains it outright; it still clips, because a viewport
     /// narrower than its own gutter must not paint chrome outside itself.
     pub(crate) clip: worth_ui_host_contract::UiMountedCanonicalBox,
-    pub(crate) device_scale: UiScrollChromeDeviceScale,
+    pub(crate) device_scale: UiScrollPresentationDeviceScale,
     /// The part the pointer is over, if it is over one of this region's parts.
     pub(crate) hovered: Option<(UiScrollChromeAxis, UiScrollChromePart)>,
     /// The axis this region has a thumb drag on, and where that drag's pointer

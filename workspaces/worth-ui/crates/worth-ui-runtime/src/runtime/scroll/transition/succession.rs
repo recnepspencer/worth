@@ -29,6 +29,10 @@ pub(crate) enum UiScrollTransitionReclampOutcome {
     /// The owner was reincarnated. A target from a retired incarnation is
     /// retired outright; it is never clamped into its replacement.
     RetiredStaleIncarnation,
+    /// The reconciled extent leaves nowhere to scroll to. Clamping the target
+    /// to the origin would leave a settle standing that has no distance to
+    /// travel, so it is retired instead and the motion behind it can end.
+    RetiredEmptyExtent,
 }
 
 /// Which offset one axis accumulates against for an arriving delta.
@@ -110,7 +114,8 @@ impl UiScrollTransitionSuccession {
     }
 
     /// Re-clamp the owner's pending target against freshly reconciled bounds,
-    /// or retire it when the owner has been reincarnated.
+    /// or retire it when the owner has been reincarnated or its extent has
+    /// collapsed to nothing.
     pub(crate) fn reconcile_bounds(
         &mut self,
         owner: super::super::UiScrollOwnerIdentity,
@@ -123,6 +128,10 @@ impl UiScrollTransitionSuccession {
         if !stored.target.binds(owner, incarnation) {
             self.owners.remove(&owner);
             return UiScrollTransitionReclampOutcome::RetiredStaleIncarnation;
+        }
+        if bounds.admits_no_travel() {
+            self.owners.remove(&owner);
+            return UiScrollTransitionReclampOutcome::RetiredEmptyExtent;
         }
         let reclamped = stored.target.reclamped(bounds);
         self.owners.insert(

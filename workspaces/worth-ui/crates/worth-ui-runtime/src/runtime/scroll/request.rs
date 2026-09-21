@@ -47,7 +47,7 @@ impl UiScrollChainEntry {
         self.owner
     }
 
-    pub(in crate::runtime) const fn incarnation(self) -> super::UiScrollOwnerIncarnation {
+    pub(crate) const fn incarnation(self) -> super::UiScrollOwnerIncarnation {
         self.incarnation
     }
 }

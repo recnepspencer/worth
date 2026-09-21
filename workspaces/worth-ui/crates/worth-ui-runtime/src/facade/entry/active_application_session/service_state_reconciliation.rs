@@ -8,6 +8,11 @@ impl WorthUiActiveApplicationSession {
             .is_some_and(|scroll| scroll.has_mounted_ownership())
         {
             self.reconcile_published_scroll_owners();
+            // Reconciling bounds is where an owner's extent can collapse, and
+            // a collapsed extent retires the target it left nowhere to reach.
+            // The motion that target was driving ends here, in the same
+            // reconciliation, so no frame settles content that has no room.
+            self.settle_scroll_motion_without_a_target();
         }
         if self
             .selection

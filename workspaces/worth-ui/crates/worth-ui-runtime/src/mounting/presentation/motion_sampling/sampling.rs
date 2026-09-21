@@ -256,11 +256,9 @@ impl UiMountedMotionSampler {
                 ));
                 continue;
             }
-            if self.reduced_motion == super::UiPresentationReducedMotionPosture::Reduce
-                && state.track.declaration().reduced_motion()
-                    == crate::runtime::motion::UiMotionReducedMotionPolicy::SystemRespecting
-            {
-                if state.track.declaration().decorative() {
+            if self.reduced_motion == super::UiPresentationReducedMotionPosture::Reduce {
+                let declaration = state.track.declaration();
+                if declaration.settles_directly_under_reduced_motion() {
                     let sample = state
                         .snap_system_reduced_motion(tick, presentation)
                         .map_err(UiPresentationMotionSamplingDenial::InvalidSampleGeometry)?;
@@ -271,7 +269,9 @@ impl UiMountedMotionSampler {
                     ));
                     continue;
                 }
-                state.shorten_system_reduced_motion();
+                if declaration.shortens_under_reduced_motion() {
+                    state.shorten_system_reduced_motion();
+                }
             }
             let sample = match state.sample(tick, presentation) {
                 Ok(sample) => sample,

@@ -1,6 +1,17 @@
+//! One host scroll delta, from the payload the host reported to the offset the
+//! reader sees move.
+//!
+//! The order here is the whole point. The chain is resolved, the delta is
+//! turned into offset direction, bounds are reconciled and the route is run
+//! against a cloned successor; only when that successor has either placed its
+//! poses or published its settle does it become the session's Scroll state.
+//! Everything before that is evidence, and a denial anywhere leaves the
+//! accepted offset exactly where the last applied pose left it.
+
 use super::super::WorthUiActiveApplicationSession;
 
 use super::scroll_chrome_ingress::suppress_captured_axes;
+use super::scroll_gesture_latching::UiScrollRoutedChain;
 use crate::runtime::scroll::{UiHostScrollObservationDenial, UiHostScrollObservationOutcome};
 
 impl WorthUiActiveApplicationSession {
@@ -21,20 +32,35 @@ impl WorthUiActiveApplicationSession {
         else {
             return None;
         };
-        Some(
-            match self.apply_host_scroll_delta(
-                *source,
-                *phase,
-                *precision,
-                *target,
-                [*x_subpixels, *y_subpixels],
-                work,
-                observation_tick,
-            ) {
-                Ok(receipt) => UiHostScrollObservationOutcome::Applied(receipt),
-                Err(denial) => UiHostScrollObservationOutcome::Denied(denial),
-            },
-        )
+        let outcome = match self.apply_host_scroll_delta(
+            *source,
+            *phase,
+            *precision,
+            *target,
+            [*x_subpixels, *y_subpixels],
+            work,
+            observation_tick,
+        ) {
+            Ok(receipt) => UiHostScrollObservationOutcome::Applied(receipt),
+            Err(denial) => UiHostScrollObservationOutcome::Denied(denial),
+        };
+        // A gesture that has stated its end is over on the host's say-so, not
+        // on ours. Whatever the delta it carried was allowed to do, the latch
+        // it was holding ends here, once, after the report has been made.
+        self.end_scroll_gesture_latch_on_phase(*phase);
+        // Reconciling bounds along the routed chain can retire a settle target
+        // whose owner has nothing left to reach. Retiring the target does not
+        // end the track that was walking toward it, and until something does,
+        // that track keeps sampling content no one is settling. Publication
+        // sweeps for exactly this; a route is the other place a target can
+        // disappear, so it sweeps too rather than leaving the orphan to
+        // whichever frame happens to be published next.
+        //
+        // A denied observation discarded its successor, so it retired nothing
+        // and the sweep finds nothing. A settle this observation just staged
+        // is pending by the time the sweep runs and is left alone.
+        self.settle_scroll_motion_without_a_target();
+        Some(outcome)
     }
 
     fn apply_host_scroll_delta(
@@ -47,38 +73,13 @@ impl WorthUiActiveApplicationSession {
         work: &mut crate::mounting::UiHitTestSpatialWork,
         observation_tick: Option<u64>,
     ) -> Result<crate::runtime::scroll::UiScrollRouteReceipt, UiHostScrollObservationDenial> {
-        let (mounted_instance, mounted) = self.resolve_scroll_target(target, work)?;
+        let routed = self.resolve_scroll_routing(target, work, observation_tick)?;
         let [x_subpixels, y_subpixels] = delta_subpixels;
-        let surface_incarnation = self.scroll_owner_incarnation();
-        let scroll = self
-            .scroll
-            .as_ref()
-            .ok_or(UiHostScrollObservationDenial::NoDeclaredScrollOwner)?;
-        let chain = scroll
-            .ownership_chain(mounted_instance)
-            .map_err(UiHostScrollObservationDenial::Ownership)?;
-        if chain.owners().is_empty() {
-            return Err(UiHostScrollObservationDenial::NoDeclaredScrollOwner);
-        }
-        let mut entries = Vec::with_capacity(chain.owners().len());
-        for (slot, owner) in chain.owners().iter().copied().enumerate() {
-            let incarnation = match owner {
-                crate::runtime::scroll::UiScrollOwnerIdentity::Region { .. } => self
-                    .scroll_region_incarnation(mounted_instance, slot)
-                    .ok_or(UiHostScrollObservationDenial::AllocationUnavailable)?,
-                crate::runtime::scroll::UiScrollOwnerIdentity::Surface(_)
-                | crate::runtime::scroll::UiScrollOwnerIdentity::Viewport(_) => surface_incarnation,
-            };
-            entries.push(crate::runtime::scroll::UiScrollChainEntry::new(
-                owner,
-                incarnation,
-            ));
-        }
         // A thumb drag owns the axis it grabbed for the length of its capture.
         // The drag places that offset directly, so a wheel moving the same
         // offset underneath it would fight the pointer; the other axis of the
         // same region, and every other region, keep scrolling.
-        let captured = self.axes_held_by_scroll_chrome(&entries);
+        let captured = self.axes_held_by_scroll_chrome(routed.entries());
         let delta_subpixels = suppress_captured_axes(delta_subpixels, captured);
         if captured != [false, false]
             && delta_subpixels == [0, 0]
@@ -104,7 +105,7 @@ impl WorthUiActiveApplicationSession {
         // stages the target the accepted sample travels to.
         let smooth = observation_tick.and_then(|tick| {
             self.admit_smooth_wheel_observation(
-                mounted_instance,
+                routed.mounted_instance(),
                 target.presentation(),
                 phase,
                 precision,
@@ -119,30 +120,18 @@ impl WorthUiActiveApplicationSession {
         } else {
             offset_delta
         };
-        let bounds = entries
+        let bounds = self.reconciled_scroll_bounds(&routed)?;
+        let geometry = routed
+            .slots()
             .iter()
-            .enumerate()
-            .map(|(slot, entry)| {
-                self.scroll_bounds_for_mounted_owner(
-                    entry.owner(),
-                    mounted_instance,
-                    mounted.graph_node_identity(),
-                    slot,
-                )
-            })
-            .collect::<Result<Vec<_>, _>>()
-            .map_err(map_bounds_denial)?;
-        let geometry = entries
-            .iter()
-            .enumerate()
-            .map(|(slot, _)| {
+            .map(|slot| {
                 self.mounted
-                    .scroll_region_geometry(mounted_instance, slot)
+                    .scroll_region_geometry(routed.mounted_instance(), *slot)
                     .map(|row| row.0)
             })
             .collect::<Vec<_>>();
         let request = crate::runtime::scroll::UiScrollDeltaRequest::new(
-            entries,
+            routed.entries().to_vec(),
             delta,
             crate::runtime::scroll::UiScrollDeltaCause::Host {
                 source,
@@ -151,11 +140,23 @@ impl WorthUiActiveApplicationSession {
             },
         )
         .map_err(UiHostScrollObservationDenial::Route)?;
-        let mut successor = self
+        let installed = self
             .scroll
             .as_ref()
-            .expect("Scroll installation was proven before bounds preflight")
-            .clone();
+            .expect("Scroll installation was proven before bounds preflight");
+        // Which owner this gesture belongs to, judged from the offsets the
+        // chain holds now against the bounds the route is about to reconcile.
+        // The route is what moves those offsets, so the question is asked
+        // first; the answer is taken only once the route below commits.
+        let offsets = routed
+            .entries()
+            .iter()
+            .map(|entry| installed.offset(entry.owner(), entry.incarnation()))
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(UiHostScrollObservationDenial::Route)?;
+        let region = crate::runtime::scroll::latching_chain_index(&offsets, &bounds, offset_delta)
+            .and_then(|index| routed.region(index));
+        let mut successor = installed.clone();
         let receipt = successor
             .route_with_reconciled_bounds(request, &bounds)
             .map_err(UiHostScrollObservationDenial::Route)?;
@@ -168,8 +169,9 @@ impl WorthUiActiveApplicationSession {
             // published through the Scroll settle service-proposal lane. The
             // accepted offset does not move here: the track that settles it is
             // what moves it, one accepted sample at a time.
+            let staged = region.or_else(|| routed.region(0));
             let settled = self
-                .stage_scroll_transition(&mut successor, &receipt, observation)
+                .stage_scroll_transition(&mut successor, &receipt, observation, staged)
                 .map_err(
                     |denial| crate::runtime::scroll::UiScrollSettleStop::Staging {
                         detail: format!("{denial:?}").into_boxed_str(),
@@ -188,6 +190,13 @@ impl WorthUiActiveApplicationSession {
                 }
             }
             *self.scroll.as_mut().expect("installed Scroll owner") = successor;
+            self.latch_committed_scroll_gesture(
+                &routed,
+                region,
+                phase,
+                target.presentation(),
+                observation_tick,
+            );
             return Ok(receipt);
         }
         let poses = receipt
@@ -204,11 +213,54 @@ impl WorthUiActiveApplicationSession {
                 })
             })
             .collect::<Vec<_>>();
-        self.mounted
-            .apply_scroll_geometries(&poses)
+        self.apply_scroll_poses(&poses)
             .map_err(UiHostScrollObservationDenial::Geometry)?;
         *self.scroll.as_mut().expect("installed Scroll owner") = successor;
+        self.latch_committed_scroll_gesture(
+            &routed,
+            region,
+            phase,
+            target.presentation(),
+            observation_tick,
+        );
         Ok(receipt)
+    }
+
+    /// The bounds each routed owner is reconciled against, in chain order.
+    fn reconciled_scroll_bounds(
+        &self,
+        routed: &UiScrollRoutedChain,
+    ) -> Result<Vec<crate::runtime::scroll::UiScrollBounds>, UiHostScrollObservationDenial> {
+        routed
+            .entries()
+            .iter()
+            .zip(routed.slots())
+            .map(|(entry, slot)| {
+                self.scroll_bounds_for_mounted_owner(
+                    entry.owner(),
+                    routed.mounted_instance(),
+                    routed.graph_node(),
+                    *slot,
+                )
+            })
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(map_bounds_denial)
+    }
+
+    /// A gesture that reached here committed, so the latch may move. An
+    /// observation the host gave no tick has no place on a timeline and
+    /// therefore cannot open or age a latch.
+    fn latch_committed_scroll_gesture(
+        &mut self,
+        routed: &UiScrollRoutedChain,
+        region: Option<super::scroll_gesture_latching::UiScrollRoutedRegion>,
+        phase: worth_ui_host_contract::UiHostScrollDeltaPhase,
+        presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
+        observation_tick: Option<u64>,
+    ) {
+        if let Some(tick) = observation_tick {
+            self.latch_routed_scroll_gesture(routed, region, phase, presentation, tick);
+        }
     }
 
     /// Which axes of this chain a thumb drag currently holds.
@@ -229,84 +281,6 @@ impl WorthUiActiveApplicationSession {
             held[1] |= self.scroll_chrome_captures_axis(entry.owner(), UiScrollChromeAxis::Block);
         }
         held
-    }
-
-    fn resolve_scroll_target(
-        &self,
-        target: worth_ui_host_contract::UiHostScrollDeltaTargetAffinity,
-        work: &mut crate::mounting::UiHitTestSpatialWork,
-    ) -> Result<
-        (
-            worth_ui_host_contract::UiMountedInstanceIdentity,
-            crate::mounting::UiMountedIdentityBasis,
-        ),
-        UiHostScrollObservationDenial,
-    > {
-        match target {
-            worth_ui_host_contract::UiHostScrollDeltaTargetAffinity::ExactCoordinate {
-                presentation,
-                position,
-            } => {
-                crate::runtime::interaction::targeting::require_current_presentation(
-                    &self.mounted,
-                    presentation,
-                )
-                .map_err(UiHostScrollObservationDenial::Targeting)?;
-                let target = crate::runtime::interaction::targeting::resolve_presented_target(
-                    &self.mounted,
-                    presentation,
-                    position,
-                    work,
-                )
-                .map_err(UiHostScrollObservationDenial::Targeting)?;
-                // Content that travels with a Scroll region is laid out relative
-                // to the region owner, not mounted beneath it, so a wheel over
-                // that content addresses the region that scrolls it.
-                let hit = target.view().mounted_instance();
-                let mounted = self.mounted.scrolled_content_owner(hit).unwrap_or(hit);
-                self.mounted
-                    .current_mounted_identity_basis(mounted)
-                    .map(|basis| (mounted, basis))
-                    .ok_or(UiHostScrollObservationDenial::MountedBasisUnavailable)
-            }
-            worth_ui_host_contract::UiHostScrollDeltaTargetAffinity::ExactMountedTarget {
-                presentation,
-                mounted,
-            } => {
-                crate::runtime::interaction::targeting::require_current_presentation(
-                    &self.mounted,
-                    presentation,
-                )
-                .map_err(UiHostScrollObservationDenial::Targeting)?;
-                let surface = self
-                    .mounted
-                    .current_surface_for_binding(presentation.binding())
-                    .ok_or(UiHostScrollObservationDenial::MountedBasisUnavailable)?;
-                self.mounted
-                    .admit_current_interaction_affinity(
-                        crate::mounting::UiMountedInteractionAffinityInput {
-                            surface,
-                            binding: presentation.binding(),
-                            mounted_instance: mounted.instance(),
-                            node_receipt: mounted.node_receipt(),
-                        },
-                    )
-                    .map_err(|denial| {
-                        UiHostScrollObservationDenial::Targeting(
-                            crate::runtime::interaction::targeting::map_current_affinity_denial(
-                                denial,
-                            ),
-                        )
-                    })?;
-                self.mounted
-                    .current_mounted_identity_basis(mounted.instance())
-                    .map(|basis| (mounted.instance(), basis))
-                    .ok_or(UiHostScrollObservationDenial::MountedBasisUnavailable)
-            }
-            worth_ui_host_contract::UiHostScrollDeltaTargetAffinity::PresentedSurfaceFallback {
-                ..
-            } => Err(UiHostScrollObservationDenial::PresentedSurfaceFallbackIsAmbiguous),
-        }
     }
 }
 

@@ -58,7 +58,11 @@ impl super::super::WorthUiActiveApplicationSession {
             .scroll
             .as_mut()
             .is_some_and(|scroll| scroll.retire_transition(owner));
-        let ended = self.end_scroll_content_motion(owner, mounted_instance);
+        let ended = self.end_scroll_content_motion(
+            owner,
+            mounted_instance,
+            UiMotionTerminalCause::DisplacedByDirectControl,
+        );
         UiScrollDirectControlReceipt {
             transition_retired,
             sample_retired: ended.sample_retired,
@@ -67,23 +71,37 @@ impl super::super::WorthUiActiveApplicationSession {
     }
 
     /// End the sampler track and the Motion track still moving `owner`'s
-    /// content on `mounted_instance`. Called once a directly placed pose has
-    /// landed, so the displayed pose from here is the one direct control
-    /// applied and no accepted sample stands behind it.
+    /// content on `mounted_instance`, recording `cause` as why.
+    ///
+    /// A pointer placing a pose calls this once that pose has landed, so the
+    /// displayed pose from here is the one direct control applied and no
+    /// accepted sample stands behind it. A lifecycle boundary calls it because
+    /// the content has stopped being something the reader can see. The ending
+    /// is the same either way; only the reason differs, and the reason is
+    /// published as a fact, so the record says which happened.
     pub(in crate::facade::entry) fn end_scroll_content_motion(
         &mut self,
         owner: crate::runtime::scroll::UiScrollOwnerIdentity,
         mounted_instance: worth_ui_host_contract::UiMountedInstanceIdentity,
+        cause: UiMotionTerminalCause,
     ) -> UiScrollContentMotionEnd {
-        let target = UiMotionTargetIdentity::from_scroll_region_owner(
-            owner.semantic_surface(),
-            mounted_instance,
-            super::scroll_transition_preparation::scroll_motion_owner_key(owner),
-        );
+        let target = scroll_content_motion_target(owner, mounted_instance);
+        self.end_scroll_content_motion_target(target, cause)
+    }
+
+    /// The same ending, named by the Motion target rather than by the owner it
+    /// was derived from. A sweep that starts from what the sampler still holds
+    /// has the target in hand and no owner to rebuild it from.
+    pub(in crate::facade::entry) fn end_scroll_content_motion_target(
+        &mut self,
+        target: UiMotionTargetIdentity,
+        cause: UiMotionTerminalCause,
+    ) -> UiScrollContentMotionEnd {
         let sample_retired = self.mounted.retire_scroll_motion_sample(target);
-        let terminal = self.motion.as_mut().and_then(|motion| {
-            motion.terminalize_target(target, UiMotionTerminalCause::DisplacedByDirectControl)
-        });
+        let terminal = self
+            .motion
+            .as_mut()
+            .and_then(|motion| motion.terminalize_target(target, cause));
         if let Some(terminal) = terminal {
             // A Scroll content track retains no Portal exit, so the coordinator
             // has nothing to settle for it; it is told so it can prove that.
@@ -96,4 +114,16 @@ impl super::super::WorthUiActiveApplicationSession {
             track_terminalized: terminal.is_some(),
         }
     }
+}
+
+/// The Motion target one Scroll owner's content moves under on one occurrence.
+pub(in crate::facade::entry) fn scroll_content_motion_target(
+    owner: crate::runtime::scroll::UiScrollOwnerIdentity,
+    mounted_instance: worth_ui_host_contract::UiMountedInstanceIdentity,
+) -> UiMotionTargetIdentity {
+    UiMotionTargetIdentity::from_scroll_region_owner(
+        owner.semantic_surface(),
+        mounted_instance,
+        super::scroll_transition_preparation::scroll_motion_owner_key(owner),
+    )
 }

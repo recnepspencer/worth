@@ -76,7 +76,7 @@ impl UiScrollAnchor {
         self.identity == other.identity
     }
 
-    pub(super) const fn mounted_identity(
+    pub(crate) const fn mounted_identity(
         self,
     ) -> Option<worth_ui_host_contract::UiMountedInstanceIdentity> {
         match self.identity {

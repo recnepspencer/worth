@@ -87,6 +87,50 @@ impl super::UiScrollRuntimeState {
         reached.len()
     }
 
+    /// Every pending settle, paired with a mounted occurrence whose ownership
+    /// chain names its owner.
+    ///
+    /// Succession records which owner is settling; the ownership catalog
+    /// records which occurrences that owner belongs to. A settle needs both
+    /// halves to be ended -- the owner names the target to retire, the
+    /// occurrence is what turns that owner into the Motion target the sampler
+    /// and the track are filed under -- and joining them is something only
+    /// Scroll can do, because only Scroll holds both lists. Without it a
+    /// lifecycle boundary can retire an intention but not the motion carrying
+    /// it out.
+    ///
+    /// A region owner belongs to exactly one occurrence, so it appears once. A
+    /// surface or viewport owner belongs to every occurrence presented under
+    /// it and appears once per occurrence, which is right: its content motion
+    /// is filed per occurrence too.
+    pub(crate) fn pending_settle_occurrences(
+        &self,
+    ) -> Vec<(
+        crate::runtime::scroll::UiScrollOwnerIdentity,
+        worth_ui_host_contract::UiMountedInstanceIdentity,
+    )> {
+        let settling = self
+            .transition_targets
+            .pending_owners()
+            .map(|(owner, _)| owner)
+            .collect::<Vec<_>>();
+        if settling.is_empty() {
+            return Vec::new();
+        }
+        let mut joined = Vec::with_capacity(settling.len());
+        for mounted in self.ownership_instances().iter().copied() {
+            let Ok(chain) = self.ownership_chain(mounted) else {
+                continue;
+            };
+            for owner in chain.owners().iter().copied() {
+                if settling.contains(&owner) {
+                    joined.push((owner, mounted));
+                }
+            }
+        }
+        joined
+    }
+
     #[cfg(test)]
     pub(crate) fn pending_transition_count(&self) -> usize {
         self.transition_targets.pending_count()

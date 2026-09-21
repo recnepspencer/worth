@@ -217,6 +217,65 @@ fn routing_with_reconciled_bounds_reclamps_the_pending_target() {
     );
 }
 
+/// Reconciled bounds reach the owners a route never visited, not only the ones
+/// it did.
+///
+/// A route stops at the first owner that leaves nothing over, so the zero delta
+/// a declared smooth wheel routes visits exactly one owner however deep the
+/// chain is. The ancestor behind it is the owner that notch will actually
+/// settle, and the bounds arriving with the route are the live geometry it has
+/// to settle against. Writing bounds only as far as the route travelled would
+/// leave that ancestor measuring itself against whatever geometry was current
+/// the last time a delta had something left for it -- under a smooth wheel,
+/// never -- and it would stage a target past content that is no longer there.
+///
+/// The outer owner is asked afterwards by staging against it: a target clamped
+/// to the reconciled extent proves the bounds landed, and one clamped to the
+/// registered extent proves they stopped short.
+#[test]
+fn reconciled_bounds_reach_a_chain_owner_the_route_never_visited() {
+    let surface = surface();
+    let inner =
+        UiScrollOwnerIdentity::region(surface, crate::graph::UiGraphNodeIdentity::new(11), 1);
+    let outer = UiScrollOwnerIdentity::viewport(surface);
+    let mut state = UiScrollRuntimeState::new_session_restore_candidate();
+    state
+        .register(registration(inner, incarnation(1), 1_000_000, 0))
+        .expect("registration");
+    state
+        .register(registration(outer, incarnation(2), 1_000_000, 0))
+        .expect("registration");
+
+    let receipt = state
+        .route_with_reconciled_bounds(
+            UiScrollDeltaRequest::new(
+                vec![
+                    UiScrollChainEntry::new(inner, incarnation(1)),
+                    UiScrollChainEntry::new(outer, incarnation(2)),
+                ],
+                UiScrollDelta::new(0, 0),
+                host_cause(),
+            )
+            .expect("request"),
+            &[bounds(1_000_000), bounds(20_000)],
+        )
+        .expect("route");
+    assert_eq!(
+        receipt.owners_visited(),
+        1,
+        "a zero delta leaves nothing over, so the outer owner is never visited"
+    );
+
+    let target = state
+        .stage_wheel_transition(UiScrollChainEntry::new(outer, incarnation(2)), notch(2, 10))
+        .expect("staged");
+    assert_eq!(
+        target.target_offset().block_subpixels(),
+        20_000,
+        "the unvisited owner settles against the extent the route reconciled,          not the one it was registered with"
+    );
+}
+
 /// Advancing past the settle horizon retires the target, and shutdown releases
 /// whatever is still pending, so storage never outlives the session.
 #[test]
@@ -248,4 +307,84 @@ fn advancing_past_the_horizon_and_shutting_down_both_release_pending_targets() {
         .expect("staged once more");
     state.shutdown();
     assert_eq!(state.pending_transition_count(), 0);
+}
+
+/// A reveal places the offset outright, so a settle still walking that owner
+/// toward a wheel target is an intention the reveal has overruled. Left
+/// standing, the track behind it would drag the content straight back off
+/// whatever the reveal just brought into view.
+#[test]
+fn a_reveal_retires_the_settle_it_overrode() {
+    let owner = UiScrollOwnerIdentity::viewport(surface());
+    let mut state = UiScrollRuntimeState::new_session_restore_candidate();
+    state
+        .register(registration(owner, incarnation(1), 1_000_000, 0))
+        .expect("registration");
+    state
+        .stage_wheel_transition(UiScrollChainEntry::new(owner, incarnation(1)), notch(1, 10))
+        .expect("staged");
+    assert_eq!(state.pending_transition_count(), 1);
+
+    state
+        .reveal(
+            UiScrollProgrammaticRevealRequest::new(
+                vec![UiScrollChainEntry::new(owner, incarnation(1))],
+                UiScrollRevealTarget::new(
+                    UiScrollRevealInterval::new(0, 10).expect("an ordered interval"),
+                    UiScrollRevealInterval::new(400_000, 460_000).expect("an ordered interval"),
+                ),
+                UiScrollViewportExtent::new(100_000, 100_000).expect("a positive extent"),
+                crate::declaration::UiScrollRevealAlignment::End,
+            )
+            .expect("a revealable chain"),
+        )
+        .expect("the reveal routes");
+
+    assert_eq!(
+        state
+            .offset(owner, incarnation(1))
+            .expect("an owner offset"),
+        UiScrollOffset::new(0, 360_000).expect("a non-negative offset"),
+        "the reveal placed the offset it asked for"
+    );
+    assert_eq!(
+        state.pending_transition_count(),
+        0,
+        "nothing may go on travelling toward a target the reveal overrode"
+    );
+}
+
+/// Revealing something that is already at the top asks, arithmetically, to
+/// scroll behind the beginning of the content. There is no such place, so the
+/// request lands at rest rather than being asserted away.
+#[test]
+fn a_reveal_behind_rest_lands_at_rest() {
+    let owner = UiScrollOwnerIdentity::viewport(surface());
+    let mut state = UiScrollRuntimeState::new_session_restore_candidate();
+    state
+        .register(registration(owner, incarnation(1), 1_000_000, 40_000))
+        .expect("registration");
+
+    state
+        .reveal(
+            UiScrollProgrammaticRevealRequest::new(
+                vec![UiScrollChainEntry::new(owner, incarnation(1))],
+                UiScrollRevealTarget::new(
+                    UiScrollRevealInterval::new(0, 10).expect("an ordered interval"),
+                    UiScrollRevealInterval::new(0, 5_000).expect("an ordered interval"),
+                ),
+                UiScrollViewportExtent::new(100_000, 100_000).expect("a positive extent"),
+                crate::declaration::UiScrollRevealAlignment::End,
+            )
+            .expect("a revealable chain"),
+        )
+        .expect("the reveal routes");
+
+    assert_eq!(
+        state
+            .offset(owner, incarnation(1))
+            .expect("an owner offset"),
+        UiScrollOffset::origin(),
+        "the content is as far back as content goes"
+    );
 }

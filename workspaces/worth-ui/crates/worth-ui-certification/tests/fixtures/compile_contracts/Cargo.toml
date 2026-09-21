@@ -479,3 +479,11 @@ path = "../../../../worth-ui/tests/ui/facade/appearance/pass/gate_one_appearance
 [[bin]]
 name = "product-smooth-scroll-policy-authoring"
 path = "../../../../worth-ui/tests/ui/facade/service/pass/smooth_scroll_policy_authoring.rs"
+
+[[bin]]
+name = "product-scroll-settle-declared-not-prepared"
+path = "../../../../worth-ui/tests/ui/facade/service/fail/scroll_presentation_cannot_consume_an_unprepared_settle.rs"
+
+[[bin]]
+name = "product-scroll-settle-asked-for-by-declaring"
+path = "../../../../worth-ui/tests/ui/facade/service/pass/scroll_settle_is_asked_for_by_declaring_one.rs"

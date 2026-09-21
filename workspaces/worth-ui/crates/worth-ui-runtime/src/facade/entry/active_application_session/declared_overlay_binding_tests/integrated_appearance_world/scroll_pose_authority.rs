@@ -35,12 +35,27 @@ impl ScrollWorld {
         Self::publish(World::launch())
     }
 
-    pub(super) fn publish(mut world: World) -> Self {
-        super::geometry::install_scrollable_primary(
+    /// The same World with the third component laid out inside the scrollable
+    /// region, so the region has presented content of its own to carry.
+    pub(super) fn publish_with_nested_content(mut world: World) -> Self {
+        super::geometry::scrollable::install_scrollable_primary_with_nested_content(
             &mut world.session,
             world.surfaces,
             world.instances,
         );
+        Self::publish_installed(world)
+    }
+
+    pub(super) fn publish(mut world: World) -> Self {
+        super::geometry::scrollable::install_scrollable_primary(
+            &mut world.session,
+            world.surfaces,
+            world.instances,
+        );
+        Self::publish_installed(world)
+    }
+
+    fn publish_installed(mut world: World) -> Self {
         let frame = world.prepare();
         world.publish(frame, 1, true);
         let target = world.instances[0];
@@ -75,7 +90,11 @@ impl ScrollWorld {
         self.world.surfaces[0]
     }
 
-    fn presentation(&self) -> UiHostObservationPresentationBasis {
+    /// The basis the host is presenting this surface under right now. A
+    /// scenario that holds one across a republication holds a stale one, which
+    /// is how a report arriving from a frame the reader has already left is
+    /// written down.
+    pub(super) fn presentation(&self) -> UiHostObservationPresentationBasis {
         self.world
             .session
             .mounted
@@ -92,14 +111,31 @@ impl ScrollWorld {
         y_subpixels: i64,
         tick: u64,
     ) -> UiHostScrollObservationOutcome {
+        self.targeted_wheel(
+            UiHostScrollDeltaPhase::Updated,
+            self.pointer_target(),
+            precision,
+            y_subpixels,
+            tick,
+        )
+    }
+
+    /// One wheel report with a chosen phase and a chosen target affinity, so a
+    /// scenario can say what the host was able to tell the runtime about where
+    /// the gesture landed.
+    pub(super) fn targeted_wheel(
+        &mut self,
+        phase: UiHostScrollDeltaPhase,
+        target: UiHostScrollDeltaTargetAffinity,
+        precision: UiHostScrollDeltaPrecision,
+        y_subpixels: i64,
+        tick: u64,
+    ) -> UiHostScrollObservationOutcome {
         let payload = UiHostObservationPayload::ScrollDelta {
             source: UiHostScrollDeltaSource::PointerWheel,
-            phase: UiHostScrollDeltaPhase::Updated,
+            phase,
             precision,
-            target: UiHostScrollDeltaTargetAffinity::exact_coordinate(
-                self.presentation(),
-                UiHostSurfacePosition::viewport_logical(WHEEL_POSITION[0], WHEEL_POSITION[1]),
-            ),
+            target,
             x_subpixels: 0,
             y_subpixels,
         };
@@ -107,6 +143,20 @@ impl ScrollWorld {
             .session
             .observe_scroll_payload(&payload, &mut Default::default(), Some(tick))
             .expect("a ScrollDelta payload is a Scroll observation")
+    }
+
+    /// A target the host resolved to a coordinate over the scrollable region.
+    pub(super) fn pointer_target(&self) -> UiHostScrollDeltaTargetAffinity {
+        UiHostScrollDeltaTargetAffinity::exact_coordinate(
+            self.presentation(),
+            UiHostSurfacePosition::viewport_logical(WHEEL_POSITION[0], WHEEL_POSITION[1]),
+        )
+    }
+
+    /// A target naming only the presented surface. Nothing in it says which
+    /// owner the gesture belongs to, so it is answerable only by a latch.
+    pub(super) fn surface_only_target(&self) -> UiHostScrollDeltaTargetAffinity {
+        UiHostScrollDeltaTargetAffinity::presented_surface_fallback(self.presentation())
     }
 
     pub(super) fn accepted_offset(&self) -> UiScrollOffset {

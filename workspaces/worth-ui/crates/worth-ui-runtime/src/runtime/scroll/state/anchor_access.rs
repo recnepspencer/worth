@@ -1,5 +1,5 @@
 impl super::UiScrollRuntimeState {
-    pub(in crate::runtime::scroll) fn owner_anchor(
+    pub(crate) fn owner_anchor(
         &self,
         owner: crate::runtime::scroll::UiScrollOwnerIdentity,
         incarnation: crate::runtime::scroll::UiScrollOwnerIncarnation,

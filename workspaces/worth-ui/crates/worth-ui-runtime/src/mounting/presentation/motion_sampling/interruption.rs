@@ -27,19 +27,30 @@ pub(super) fn resolve(
     reduced_motion: super::UiPresentationReducedMotionPosture,
 ) -> UiPresentationMotionInstallation {
     let declaration = track.declaration();
-    if reduced_motion == super::UiPresentationReducedMotionPosture::Reduce
-        && declaration.reduced_motion()
-            == crate::runtime::motion::UiMotionReducedMotionPolicy::SystemRespecting
-    {
-        if declaration.decorative() {
+    if reduced_motion == super::UiPresentationReducedMotionPosture::Reduce {
+        // Arriving as the track installs is right for anything whose
+        // installation mints the frame that shows it: the entrance carries the
+        // arrived sample, so the reader sees the destination and never the
+        // journey. A Scroll content group is the one thing it is wrong for. A
+        // settle submits into the frame already on screen, so there is no
+        // entrance to carry the sample and nothing would present it; the
+        // offset the sample settles would never learn where the content went,
+        // and a reader who asked for less motion would get none. The tick path
+        // snaps that track on its first tick instead, which is the same
+        // arrival by way of a frame that can carry it.
+        if declaration.settles_directly_under_reduced_motion()
+            && track.target().scope() != crate::runtime::motion::UiMotionTargetScope::ScrollContents
+        {
             return UiPresentationMotionInstallation::SnapToTarget;
         }
-        return UiPresentationMotionInstallation::Install {
-            geometry: semantic_predecessor(track),
-            opacity_units: predecessor_opacity_units(track),
-            start_velocity: UiPresentationSampleVelocity::RESTING,
-            duration_ticks: 1,
-        };
+        if declaration.shortens_under_reduced_motion() {
+            return UiPresentationMotionInstallation::Install {
+                geometry: semantic_predecessor(track),
+                opacity_units: predecessor_opacity_units(track),
+                start_velocity: UiPresentationSampleVelocity::RESTING,
+                duration_ticks: 1,
+            };
+        }
     }
     let duration_ticks = declaration.duration_ticks();
     match track.retarget() {

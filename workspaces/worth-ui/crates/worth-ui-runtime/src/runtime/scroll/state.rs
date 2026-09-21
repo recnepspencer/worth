@@ -260,12 +260,22 @@ impl UiScrollRuntimeState {
             .filter(|transition| transition.previous() != transition.current())
             .count();
         let next_counters = self.counters.after_admission(owners_visited, changed)?;
-        for (index, (entry, transition)) in request.chain().iter().zip(&transitions).enumerate() {
-            let record = self.exact_owner_mut(entry.owner(), entry.incarnation())?;
-            if let Some(bounds) = reconciled_bounds {
-                record.bounds = bounds[index];
+        // Reconciled bounds are live geometry for every owner the chain names,
+        // so they land on all of them. Only the owners the route visited have
+        // a new offset to take: a route stops where the travel runs out, and
+        // an owner it never reached is exactly where it was. Writing bounds
+        // only that far would leave an ancestor measuring itself against
+        // geometry from whenever a delta last had something left for it --
+        // which, for the zero delta a smooth wheel routes, is never.
+        if let Some(bounds) = reconciled_bounds {
+            for (index, entry) in request.chain().iter().enumerate() {
+                self.exact_owner_mut(entry.owner(), entry.incarnation())?
+                    .bounds = bounds[index];
             }
-            record.offset = transition.current();
+        }
+        for (entry, transition) in request.chain().iter().zip(&transitions) {
+            self.exact_owner_mut(entry.owner(), entry.incarnation())?
+                .offset = transition.current();
         }
         if let Some(bounds) = reconciled_bounds {
             for (index, entry) in request.chain().iter().enumerate() {

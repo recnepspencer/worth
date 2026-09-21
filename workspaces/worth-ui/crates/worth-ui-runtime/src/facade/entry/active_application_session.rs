@@ -78,6 +78,7 @@ mod scroll_chrome_interaction;
 pub(crate) use scroll_chrome_ingress::UiScrollChromeIngressOutcome;
 #[cfg(any(test, feature = "certification-support"))]
 pub(crate) use scroll_chrome_interaction::UiScrollChromePressOutcome;
+pub(in crate::facade::entry) use scroll_settlement_lifecycle::UiScrollSettlementScope;
 #[path = "active_application_session/scroll_chrome_presentation.rs"]
 mod scroll_chrome_presentation;
 #[path = "active_application_session/scroll_chrome_projection.rs"]
@@ -89,12 +90,20 @@ mod scroll_chrome_tests;
 mod scroll_direct_control;
 #[path = "active_application_session/scroll_geometry.rs"]
 mod scroll_geometry;
+#[path = "active_application_session/scroll_gesture_latching.rs"]
+mod scroll_gesture_latching;
 #[path = "active_application_session/scroll_observation.rs"]
 mod scroll_observation;
+#[path = "active_application_session/scroll_pose_application.rs"]
+mod scroll_pose_application;
 #[path = "active_application_session/scroll_region_declaration.rs"]
 mod scroll_region_declaration;
 #[path = "active_application_session/scroll_settle_disposition.rs"]
 mod scroll_settle_disposition;
+#[path = "active_application_session/scroll_settlement_lifecycle.rs"]
+mod scroll_settlement_lifecycle;
+#[path = "active_application_session/scroll_target_resolution.rs"]
+mod scroll_target_resolution;
 pub use scroll_settle_disposition::{
     UiAcceptedScrollSettlementDenial, UiScrollSettleDisposition, UiScrollSettleRefusal,
     UiScrollWriteBackRefusal,

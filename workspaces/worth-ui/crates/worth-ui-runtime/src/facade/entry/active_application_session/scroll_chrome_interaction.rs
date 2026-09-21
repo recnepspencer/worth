@@ -303,14 +303,17 @@ impl super::super::WorthUiActiveApplicationSession {
         // The pose lands first; the routed state becomes the session's only
         // once the pixels it describes are what mounted geometry holds, and
         // only then does the settle that was walking the region end.
-        self.mounted
-            .apply_scroll_geometries(&poses)
+        self.apply_scroll_poses(&poses)
             .map_err(UiScrollChromeInteractionDenial::Geometry)?;
         *self
             .scroll
             .as_mut()
             .expect("Scroll installation was proven above") = successor;
-        self.end_scroll_content_motion(owner, mounted_instance);
+        self.end_scroll_content_motion(
+            owner,
+            mounted_instance,
+            crate::runtime::motion::UiMotionTerminalCause::DisplacedByDirectControl,
+        );
         Ok(receipt)
     }
 }

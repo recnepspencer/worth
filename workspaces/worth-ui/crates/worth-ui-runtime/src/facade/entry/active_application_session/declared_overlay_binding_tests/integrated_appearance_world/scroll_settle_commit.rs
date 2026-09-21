@@ -29,6 +29,12 @@ pub(super) const ONE_NOTCH: UiHostScrollDeltaPrecision = UiHostScrollDeltaPrecis
 /// The World with a smooth wheel and a primary region that does or does not
 /// declare a line extent.
 pub(super) fn smooth_world(line_extent: bool) -> ScrollWorld {
+    ScrollWorld::publish(World::launch_with_scroll(smooth_scroll(line_extent)))
+}
+
+/// What a smooth-wheel World declares about scrolling, so a scenario that
+/// needs a different geometry can launch the same Scroll service.
+pub(super) fn smooth_scroll(line_extent: bool) -> WorldScroll {
     let mut region =
         crate::runtime::tests::source_ingress_boundary_test_support::source_backed_package_region();
     if line_extent {
@@ -37,14 +43,13 @@ pub(super) fn smooth_world(line_extent: bool) -> ScrollWorld {
                 .expect("a nonzero line extent"),
         );
     }
-    let scroll = WorldScroll {
+    WorldScroll {
         policy: crate::declaration::UiScrollPolicy::nested_region().with_wheel_behavior(
             crate::declaration::UiScrollWheelBehavior::smooth(SETTLE_TICKS)
                 .expect("a nonzero settle horizon"),
         ),
         region,
-    };
-    ScrollWorld::publish(World::launch_with_scroll(scroll))
+    }
 }
 
 /// One notch toward the top of the content: a milli-line count in offset

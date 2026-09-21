@@ -25,6 +25,9 @@ pub enum UiScrollObservationCertificationDenial {
     Route,
     SettleUnpublished,
     AxisHeldByChromeDrag,
+    /// A latched gesture outlived the frame's willingness to admit its owner,
+    /// which is what an accepted modal Portal does to the content behind it.
+    LatchedOwnerNotAdmitted,
     /// Mounted geometry refused the displayed pose, so the route was not
     /// committed either.
     Geometry,
@@ -109,6 +112,9 @@ fn map_denial(
         Denial::SettleUnpublished => UiScrollObservationCertificationDenial::SettleUnpublished,
         Denial::AxisHeldByChromeDrag => {
             UiScrollObservationCertificationDenial::AxisHeldByChromeDrag
+        }
+        Denial::LatchedOwnerNotAdmitted(_) => {
+            UiScrollObservationCertificationDenial::LatchedOwnerNotAdmitted
         }
         Denial::Geometry(_) => UiScrollObservationCertificationDenial::Geometry,
     }

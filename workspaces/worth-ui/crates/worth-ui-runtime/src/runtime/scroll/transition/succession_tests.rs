@@ -196,6 +196,34 @@ fn reconciling_shrunken_bounds_reclamps_the_pending_target() {
     );
 }
 
+/// Content that shrank to fit the space showing it leaves nowhere to settle
+/// to. Clamping the target to rest would leave a settle standing with no
+/// distance left to travel, and the motion carrying it out would go on
+/// translating content with no room to be translated.
+#[test]
+fn a_collapsed_extent_retires_the_target_rather_than_clamping_it_to_rest() {
+    let mut succession = UiScrollTransitionSuccession::new();
+    let (owner, incarnation) = (owner(), incarnation(1));
+    succession
+        .accumulate_wheel(owner, incarnation, notch(4, 10), basis(0, 10_000_000))
+        .expect("staged");
+    assert_eq!(succession.pending_count(), 1);
+
+    let collapsed = crate::runtime::scroll::UiScrollBounds::new(0, 0).expect("bounds");
+    assert_eq!(
+        succession.reconcile_bounds(owner, incarnation, collapsed),
+        UiScrollTransitionReclampOutcome::RetiredEmptyExtent
+    );
+    assert_eq!(succession.pending_count(), 0);
+    assert!(succession.target(owner, incarnation).is_none());
+    // The retirement is what happened, not a posture the owner now holds. A
+    // second reconciliation of the same extent finds nothing to retire.
+    assert_eq!(
+        succession.reconcile_bounds(owner, incarnation, collapsed),
+        UiScrollTransitionReclampOutcome::NoTarget
+    );
+}
+
 /// A reincarnated owner retires its predecessor's target outright. It is never
 /// clamped into the new incarnation, whose content is unrelated.
 #[test]

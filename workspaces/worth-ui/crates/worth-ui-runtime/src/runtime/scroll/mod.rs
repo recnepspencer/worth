@@ -1,11 +1,13 @@
 pub(crate) mod allocation;
 mod anchor;
 pub(crate) mod chrome;
+mod gesture_latch;
 mod host_observation;
 mod identity;
 mod inspection;
 mod model;
 mod ownership_chain;
+mod presentation_snapping;
 mod programmatic_reveal;
 mod proposal;
 mod receipt;
@@ -25,6 +27,9 @@ pub(crate) use anchor::{
     UiScrollAnchorReconciliationOutcome, UiScrollAnchorReconciliationReceipt,
     UiScrollRebindRequest,
 };
+pub(crate) use gesture_latch::{
+    latching_chain_index, UiScrollGestureLatch, UiScrollGestureLatchLifetime,
+};
 pub(crate) use host_observation::{
     UiHostScrollObservationDenial, UiHostScrollObservationOutcome, UiScrollBoundsResolutionDenial,
 };
@@ -35,6 +40,9 @@ pub(crate) use inspection::UiScrollOwnerInspectionRecord;
 pub(crate) use model::{UiScrollAxes, UiScrollBounds, UiScrollDelta, UiScrollOffset};
 pub(crate) use ownership_chain::{
     UiResolvedScrollOwnershipChain, UiScrollOwnershipResolutionDenial,
+};
+pub(crate) use presentation_snapping::{
+    snap_to_device_grid, UiScrollPresentationDeviceScale, UiScrollPresentationSnappingDenial,
 };
 pub(crate) use programmatic_reveal::{
     UiScrollProgrammaticRevealRequest, UiScrollRevealInterval, UiScrollRevealTarget,
@@ -55,6 +63,8 @@ pub(crate) use settle_transition::{
 pub(crate) use shared_owner_reconciliation::UiSharedScrollOwnerReconciliation;
 pub(crate) use state::UiScrollRuntimeState;
 
+#[cfg(test)]
+mod gesture_latch_tests;
 #[cfg(test)]
 mod state_rebind_tests;
 #[cfg(test)]

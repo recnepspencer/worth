@@ -20,7 +20,7 @@ mod transition_request;
 pub(crate) use census::{UiMotionResourceCensus, UiMotionShutdownReport};
 pub(crate) use declaration::{
     UiMotionDeclaration, UiMotionEasing, UiMotionFillPolicy, UiMotionInterruptionPolicy,
-    UiMotionPropertyChannel, UiMotionPropertyChannels, UiMotionReducedMotionPolicy,
+    UiMotionPropertyChannel, UiMotionPropertyChannels,
 };
 pub(crate) use overlay_export::{
     UiMotionOverlayOwnerExport, UiMotionOverlayOwnerRow, UiMotionOverlayRows,

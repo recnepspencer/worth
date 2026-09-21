@@ -44,12 +44,30 @@ mod reconstruction;
 mod replacement;
 #[path = "integrated_appearance_world/replacement_geometry.rs"]
 mod replacement_geometry;
+#[path = "integrated_appearance_world/scroll_content_anchoring.rs"]
+mod scroll_content_anchoring;
+#[path = "integrated_appearance_world/scroll_gesture_latching.rs"]
+mod scroll_gesture_latching;
+#[path = "integrated_appearance_world/scroll_hover_reresolution.rs"]
+mod scroll_hover_reresolution;
+#[path = "integrated_appearance_world/scroll_modality_cancellation.rs"]
+mod scroll_modality_cancellation;
 #[path = "integrated_appearance_world/scroll_pose_authority.rs"]
 mod scroll_pose_authority;
+#[path = "integrated_appearance_world/scroll_presentation_snapping.rs"]
+mod scroll_presentation_snapping;
+#[path = "integrated_appearance_world/scroll_reconstruction.rs"]
+mod scroll_reconstruction;
+#[path = "integrated_appearance_world/scroll_reduced_motion.rs"]
+mod scroll_reduced_motion;
 #[path = "integrated_appearance_world/scroll_settle_commit.rs"]
 mod scroll_settle_commit;
 #[path = "integrated_appearance_world/scroll_settle_frame.rs"]
 mod scroll_settle_frame;
+#[path = "integrated_appearance_world/scroll_settle_over_open_attempt.rs"]
+mod scroll_settle_over_open_attempt;
+#[path = "integrated_appearance_world/scroll_settlement_lifecycle.rs"]
+mod scroll_settlement_lifecycle;
 #[path = "integrated_appearance_world/seam.rs"]
 mod seam;
 #[path = "integrated_appearance_world/services.rs"]

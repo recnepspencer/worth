@@ -172,6 +172,60 @@ impl UiPresentedHitIndex {
         work
     }
 
+    /// Displace the presented hit rows of the occurrences a settled scroll
+    /// pose moved, by exactly the distance it moved them.
+    ///
+    /// Scrolled content travels by re-lowering geometry over a region's
+    /// descendants, never by translating paint commands, so no Motion sample
+    /// is filed under these rows and `apply_motion` never reaches them. The
+    /// prepared pose that moved the displayed geometry is therefore the only
+    /// evidence that can move them, and it moves them on the frame it is
+    /// applied, so a pointer that never moved resolves against the content the
+    /// settle just put beneath it.
+    pub(in crate::mounting) fn apply_scroll_translations(
+        &mut self,
+        binding: UiSurfaceBindingGeneration,
+        translations: &[(UiMountedInstanceIdentity, [f32; 2])],
+    ) -> UiHitTestSpatialWork {
+        let mut work = UiHitTestSpatialWork::default();
+        for (instance, translation) in translations {
+            let (record, probes) = self.rows.get_with_probes(instance);
+            work.map_key_probes += probes;
+            let Some(record) = record.copied() else {
+                continue;
+            };
+            if record.base.mounted().binding() != binding {
+                continue;
+            }
+            // A row accepted Motion has hidden is not somewhere a pointer can
+            // land, so a scroll pose has no hit row of its own to move.
+            let Some(current) = record.effective else {
+                continue;
+            };
+            let effective = Some(current.scroll_translated(*translation));
+            // A pose that lands a row exactly where it already was displaced
+            // nothing, and is not counted. The count answers how much of the
+            // index this pose actually moved, so it has to be taken after the
+            // question is settled rather than before it is asked.
+            if effective == record.effective {
+                continue;
+            }
+            work.scroll_rows_displaced += 1;
+            self.update_partition(record.base, record.effective, effective, 0, &mut work);
+            record_map(
+                &mut work,
+                self.rows.insert_with_work(
+                    *instance,
+                    Record {
+                        effective,
+                        ..record
+                    },
+                ),
+            );
+        }
+        work
+    }
+
     pub(in crate::mounting) fn prepare_motion_entrance(
         &mut self,
         entrance: crate::runtime::motion::UiPreparedMotionEntrance,

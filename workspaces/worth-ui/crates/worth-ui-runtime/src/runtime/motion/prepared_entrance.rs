@@ -54,9 +54,7 @@ impl UiPreparedMotionEntrance {
     ) {
         (self.source, self.initial)
     }
-    pub(crate) fn snaps_for_reduced_motion(self) -> bool {
-        self.declaration.decorative()
-            && self.declaration.reduced_motion()
-                == super::UiMotionReducedMotionPolicy::SystemRespecting
+    pub(crate) const fn snaps_for_reduced_motion(self) -> bool {
+        self.declaration.settles_directly_under_reduced_motion()
     }
 }

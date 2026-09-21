@@ -115,10 +115,12 @@ impl UiMountedOccurrenceGeometryState {
             }
         }
         let mut rows = Vec::with_capacity(translations.len());
+        let mut moved = Vec::with_capacity(translations.len());
         for (instance, (dx, dy)) in &translations {
             let Some(row) = geometry.occurrences.get(instance) else {
                 continue;
             };
+            moved.push((*instance, [*dx, *dy]));
             let mut row = row.clone();
             row.bounds = translate(row.bounds, *dx, *dy)?;
             for (binding, clip) in row
@@ -161,6 +163,7 @@ impl UiMountedOccurrenceGeometryState {
             poses: poses.to_vec(),
             rows,
             regions,
+            translations: moved,
         })
     }
 
@@ -170,6 +173,11 @@ impl UiMountedOccurrenceGeometryState {
         identity: &crate::mounting::UiMountedIdentityState,
         scroll: &mut crate::runtime::scroll::UiScrollRuntimeState,
     ) -> Result<Box<[UiMountedInstanceIdentity]>, UiMountedOccurrenceGeometryDenial> {
+        let binding = identity
+            .projection_surface(surface)
+            .ok_or(UiMountedOccurrenceGeometryDenial::MissingSurfaceBinding)?
+            .0
+            .binding_generation();
         let mut poses = BTreeMap::new();
         for target in scroll.ownership_instances() {
             let Ok(chain) = scroll.ownership_chain(target).cloned() else {
@@ -201,11 +209,26 @@ impl UiMountedOccurrenceGeometryState {
                     bounds,
                     crate::runtime::scroll::UiScrollOffset::origin(),
                 );
+                let (anchor, policy) = self.scroll_rebind_anchor(
+                    surface,
+                    mounted,
+                    binding,
+                    scroll.owner_anchor(owner, incarnation).ok().flatten(),
+                    // An owner with no record and an owner whose record belongs
+                    // to an earlier incarnation are the same thing to a restore:
+                    // neither names an offset this surface has travelled, so both
+                    // start it at rest rather than at a distance nothing here can
+                    // account for.
+                    scroll
+                        .offset(owner, incarnation)
+                        .unwrap_or_else(|_| crate::runtime::scroll::UiScrollOffset::origin()),
+                    bounds,
+                );
                 scroll
                     .reconcile_rebind(crate::runtime::scroll::UiScrollRebindRequest::new(
                         registration,
-                        None,
-                        crate::runtime::scroll::UiScrollAnchorPolicy::Clamp,
+                        anchor,
+                        policy,
                     ))
                     .expect("origin is within validated region extents");
                 poses.insert(
@@ -253,15 +276,32 @@ pub(crate) struct UiPreparedMountedScrollPose {
         usize,
         UiMountedCanonicalBox,
     )>,
+    translations: Vec<(UiMountedInstanceIdentity, [f32; 2])>,
 }
 
 impl UiPreparedMountedScrollPose {
     pub(crate) fn changed_instances(&self) -> Box<[UiMountedInstanceIdentity]> {
         self.rows.iter().map(|row| row.0).collect()
     }
+
+    pub(crate) const fn surface(&self) -> UiSemanticSurfaceIdentity {
+        self.surface
+    }
+
+    /// How far this pose moves each occurrence it moves, in presented points.
+    ///
+    /// Displayed geometry and the presented hit rows are two readings of the
+    /// same displacement, so both follow this one list. Handing it out is what
+    /// lets a pointer resolve against the content a settle just put under it
+    /// rather than the content that was there before.
+    pub(crate) fn translations(&self) -> &[(UiMountedInstanceIdentity, [f32; 2])] {
+        &self.translations
+    }
 }
 
-fn translate(
+/// One box moved by a displacement, still canonical. Both the pose that stores
+/// a displacement and the presentation that corrects one place a box this way.
+pub(super) fn translate(
     bounds: UiMountedCanonicalBox,
     dx: f32,
     dy: f32,

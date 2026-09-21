@@ -27,6 +27,15 @@ impl super::WorthUiMountedSessionState {
             .scrolled_content_owner(projected.basis().semantic_surface_identity(), instance)
     }
 
+    /// Move every named region's descendants to the offset it names, and
+    /// report the presented hit transitions that crossing left behind.
+    ///
+    /// Displayed geometry and reachable geometry are two readings of one
+    /// displacement, so they are taken from one prepared pose rather than
+    /// separately: there is no ordering in which a caller can commit a pose
+    /// whose pixels and whose hit rows disagree. A caller that has moved
+    /// content under a pointer hands the transitions to interaction, which is
+    /// how hover re-resolves without a synthetic pointer event.
     pub(crate) fn apply_scroll_geometries(
         &mut self,
         poses: &[(
@@ -34,7 +43,10 @@ impl super::WorthUiMountedSessionState {
             worth_ui_host_contract::UiMountedInstanceIdentity,
             crate::runtime::scroll::UiScrollOffset,
         )],
-    ) -> Result<(), super::super::UiMountedOccurrenceGeometryDenial> {
+    ) -> Result<
+        Box<[crate::mounting::UiCommittedPresentedHitTransition]>,
+        super::super::UiMountedOccurrenceGeometryDenial,
+    > {
         use super::super::UiMountedOccurrenceGeometryDenial as Denial;
         if self.has_active_presentation_attempt() {
             return Err(Denial::PresentationInFlight);
@@ -62,10 +74,27 @@ impl super::WorthUiMountedSessionState {
                 .mark_occurrence_geometry_changed(&changed)
                 .map_err(|_| Denial::StateRevisionExhausted)?;
         }
+        let mut transitions = Vec::new();
+        let mut hit_work = crate::mounting::UiHitTestSpatialWork::default();
         for pose in prepared {
+            let (transition, refreshed) = self
+                .retention
+                .refresh_presented_hit_scroll(pose.surface(), pose.translations());
+            hit_work.merge(refreshed);
+            if let Some(transition) = transition {
+                transitions.push(transition);
+            }
             self.occurrence_geometry.apply_scroll_pose(pose);
         }
-        Ok(())
+        self.last_scroll_hit_index_work = hit_work;
+        Ok(transitions.into_boxed_slice())
+    }
+
+    /// Presented hit-index maintenance done for the last call that applied
+    /// poses, summed over every surface that call moved. A call that moved
+    /// nothing reachable reports zero rather than nothing, because it did look.
+    pub(crate) const fn last_scroll_hit_index_work(&self) -> crate::mounting::UiHitTestSpatialWork {
+        self.last_scroll_hit_index_work
     }
 
     /// Retire one Scroll content group's Motion sample outright, because a

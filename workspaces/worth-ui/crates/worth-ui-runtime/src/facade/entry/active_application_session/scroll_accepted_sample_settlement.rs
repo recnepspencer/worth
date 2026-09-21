@@ -89,7 +89,7 @@ impl super::super::WorthUiActiveApplicationSession {
                 )
             })
             .collect::<Vec<_>>();
-        match self.mounted.apply_scroll_geometries(&poses) {
+        match self.apply_scroll_poses(&poses) {
             Ok(()) => {
                 self.scroll_settle_retry = UiScrollSettleRetry::Settled;
                 if let Err(write_back) = self.write_back_accepted_scroll_offsets(&settlements) {

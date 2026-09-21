@@ -31,9 +31,9 @@ impl super::WorthUiMountedSessionState {
     pub(crate) fn scroll_chrome_device_scale(
         &self,
         surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
-    ) -> Option<crate::runtime::scroll::chrome::UiScrollChromeDeviceScale> {
+    ) -> Option<crate::runtime::scroll::UiScrollPresentationDeviceScale> {
         let (binding, _) = self.identity.projection_surface(surface)?;
-        crate::runtime::scroll::chrome::UiScrollChromeDeviceScale::admit(
+        crate::runtime::scroll::UiScrollPresentationDeviceScale::admit(
             binding.profile().device_scale_milli(),
         )
         .ok()

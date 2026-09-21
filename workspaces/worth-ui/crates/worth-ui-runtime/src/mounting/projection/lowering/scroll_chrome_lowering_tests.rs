@@ -8,9 +8,10 @@
 
 use super::{lower_scroll_chrome, UiScrollChromeLoweringInput};
 use crate::runtime::scroll::chrome::{
-    UiScrollChromeAxis, UiScrollChromeAxisSupport, UiScrollChromeDeviceScale,
-    UiScrollChromeDragPosture, UiScrollChromeFacts, UiScrollChromeMetrics, UiScrollChromePart,
+    UiScrollChromeAxis, UiScrollChromeAxisSupport, UiScrollChromeDragPosture, UiScrollChromeFacts,
+    UiScrollChromeMetrics, UiScrollChromePart,
 };
+use crate::runtime::scroll::UiScrollPresentationDeviceScale;
 
 const GUTTER: f32 = 12.0;
 const VIEWPORT_WIDTH: f32 = 768.0;
@@ -82,7 +83,7 @@ fn input<'input>(
         track_role,
         thumb_role,
         clip,
-        device_scale: UiScrollChromeDeviceScale::admit(device_scale_milli)
+        device_scale: UiScrollPresentationDeviceScale::admit(device_scale_milli)
             .expect("a positive scale names a grid"),
         hovered: None,
         drag: None,
@@ -101,7 +102,7 @@ fn every_overflowing_axis_lowers_its_track_under_its_thumb() {
         &track_role,
         &thumb_role,
         canonical(0.0, 0.0, VIEWPORT_WIDTH, VIEWPORT_HEIGHT),
-        UiScrollChromeDeviceScale::UNSCALED_MILLI,
+        UiScrollPresentationDeviceScale::UNSCALED_MILLI,
     ))
     .expect("the declared extents lower");
 
@@ -188,7 +189,7 @@ fn a_part_the_region_cannot_show_is_not_painted() {
         &track_role,
         &thumb_role,
         canonical(0.0, 0.0, VIEWPORT_WIDTH, VIEWPORT_HEIGHT - GUTTER),
-        UiScrollChromeDeviceScale::UNSCALED_MILLI,
+        UiScrollPresentationDeviceScale::UNSCALED_MILLI,
     ))
     .expect("the declared extents lower");
 
@@ -218,7 +219,7 @@ fn a_drag_holds_its_own_axis_and_leaves_the_other_idle() {
         &track_role,
         &thumb_role,
         canonical(0.0, 0.0, VIEWPORT_WIDTH, VIEWPORT_HEIGHT),
-        UiScrollChromeDeviceScale::UNSCALED_MILLI,
+        UiScrollPresentationDeviceScale::UNSCALED_MILLI,
     );
     lowering.drag = Some((
         UiScrollChromeAxis::Block,
@@ -271,7 +272,7 @@ fn the_block_thumb_follows_the_accepted_offset_along_its_track() {
             &track_role,
             &thumb_role,
             canonical(0.0, 0.0, VIEWPORT_WIDTH, VIEWPORT_HEIGHT),
-            UiScrollChromeDeviceScale::UNSCALED_MILLI,
+            UiScrollPresentationDeviceScale::UNSCALED_MILLI,
         ))
         .expect("the declared extents lower");
         let thumb = nodes

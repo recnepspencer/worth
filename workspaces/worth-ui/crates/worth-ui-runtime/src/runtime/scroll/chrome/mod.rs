@@ -9,7 +9,6 @@ mod derived_facts;
 mod metrics;
 mod part;
 mod pointer_target;
-mod presentation_snapping;
 mod thumb_geometry;
 mod track_geometry;
 
@@ -28,9 +27,6 @@ pub(crate) use part::UiScrollChromePart;
 pub(crate) use pointer_target::{
     effective_thumb_pointer_rect, grab_offset_logical_points, offset_for_thumb_position,
     offset_for_track_click, page_step_subpixels, rect_contains,
-};
-pub(crate) use presentation_snapping::{
-    snap_to_device_grid, UiScrollChromeDeviceScale, UiScrollChromeSnappingDenial,
 };
 pub(crate) use thumb_geometry::{thumb_extent, thumb_rect, UiScrollThumbExtent};
 pub(crate) use track_geometry::{

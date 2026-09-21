@@ -126,6 +126,22 @@ impl WorthUiActiveApplicationSession {
                             .flatten()
                     })
                     .collect();
+                // A window that has stopped being the reader's leaves nothing
+                // in flight. Every settle ends where its last accepted sample
+                // put the content, and the wheel gesture gives its owner back,
+                // so the first notch after the reader comes back is theirs to
+                // aim rather than the tail of one they walked away from.
+                if batch.reports().iter().any(|report| {
+                    matches!(
+                        report.report().payload(),
+                        worth_ui_host_contract::UiHostObservationPayload::WindowFocus {
+                            focused: false,
+                            ..
+                        }
+                    )
+                }) {
+                    self.settle_scroll_after_attention_loss();
+                }
                 let generation = self.active_generation_identity();
                 let mut receipt =
                     self.interaction

@@ -29,6 +29,7 @@ pub(crate) struct UiInteractionRuntimeState {
     presentation_refresh: Option<super::UiInteractionPresentationRefreshSnapshot>,
     application_generation: worth_ui_host_contract::UiHostApplicationGeneration,
     scroll_chrome_hover: super::scroll_chrome_hover::UiScrollChromeHoverState,
+    scroll_gesture_latch: super::scroll_gesture_latch::UiScrollGestureLatchState,
 }
 
 #[derive(Clone, Copy)]
@@ -95,6 +96,29 @@ impl UiInteractionRuntimeState {
         self.scroll_chrome_hover.observe(surface, binding, point);
     }
 
+    /// The scroll gesture latch still holding at `input_tick`, if one is.
+    /// Routing reads it before it resolves an owner from pointer location.
+    pub(crate) fn scroll_gesture_latch_at(
+        &self,
+        input_tick: u64,
+    ) -> Option<crate::runtime::scroll::UiScrollGestureLatch> {
+        self.scroll_gesture_latch.held_at(input_tick)
+    }
+
+    /// Take or carry forward the latch, after the route it describes has
+    /// been committed. A gesture that consumed nothing takes none.
+    pub(crate) fn latch_scroll_gesture(
+        &mut self,
+        latch: crate::runtime::scroll::UiScrollGestureLatch,
+    ) {
+        self.scroll_gesture_latch.latch(latch);
+    }
+
+    /// The host ended or cancelled the phase, so the latch ends with it.
+    pub(crate) fn end_scroll_gesture_latch(&mut self) -> bool {
+        self.scroll_gesture_latch.end()
+    }
+
     pub(crate) fn new(
         pointer_presence_enabled: bool,
         pressed_appearance_enabled: bool,
@@ -112,6 +136,7 @@ impl UiInteractionRuntimeState {
             application_generation: worth_ui_host_contract::UiHostApplicationGeneration::new(1)
                 .expect("the initial interaction application generation is nonzero"),
             scroll_chrome_hover: Default::default(),
+            scroll_gesture_latch: Default::default(),
         }
     }
 
@@ -252,6 +277,7 @@ impl UiInteractionRuntimeState {
             owner.cancel_binding(binding);
         }
         self.scroll_chrome_hover.clear_binding(binding);
+        self.scroll_gesture_latch.clear_binding(binding);
         let pointer = self
             .pointer
             .cancel_binding(binding, reason.pointer_reason());
@@ -267,6 +293,7 @@ impl UiInteractionRuntimeState {
         if let Some(owner) = self.pointer_presence.as_mut() {
             owner.cancel_instance(instance);
         }
+        self.scroll_gesture_latch.clear_instance(instance);
         let pointer = self
             .pointer
             .cancel_instance(instance, reason.pointer_reason());
@@ -286,6 +313,7 @@ impl UiInteractionRuntimeState {
             owner.cancel_all();
         }
         self.scroll_chrome_hover.clear_all();
+        self.scroll_gesture_latch.clear_all();
         let pointer = self.pointer.cancel_all(reason.pointer_reason());
         let draft = self.draft.cancel_all(reason.local_reason());
         if matches!(reason, UiInteractionLifecycleStopReason::ApplicationRebound) {

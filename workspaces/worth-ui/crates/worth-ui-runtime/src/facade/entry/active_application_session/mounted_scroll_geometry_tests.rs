@@ -47,12 +47,12 @@ fn scroll_pose_is_local_idempotent_and_rejects_a_later_invalid_owner_before_effe
     )
     .unwrap();
     assert!(!session.mounted.projection_changes_pending());
-    assert_eq!(
+    assert!(matches!(
         session
             .mounted
             .apply_scroll_geometries(&[(surface, root, offset), (surface, retired, offset)]),
         Err(crate::mounting::UiMountedOccurrenceGeometryDenial::UnknownMountedInstance)
-    );
+    ));
     assert!(!session.mounted.projection_changes_pending());
     let unchanged = session
         .prepare_mounted_frame_with_application_presentation(

@@ -4,6 +4,9 @@ use crate::mounting::{
 };
 use worth_ui_host_contract::*;
 
+#[path = "geometry/scrollable.rs"]
+pub(super) mod scrollable;
+
 pub(super) const VIEWPORT: [f32; 4] = [0.0, 0.0, 800.0, 600.0];
 pub(super) const SECONDARY_REGION: [f32; 4] = [50.0, 60.0, 120.0, 40.0];
 pub(super) const BOXES: [[f32; 4]; 5] = [
@@ -14,17 +17,23 @@ pub(super) const BOXES: [[f32; 4]; 5] = [
     [8.0, 12.0, 140.0, 36.0],
 ];
 pub(super) const MOVED_TARGET_BOX: [f32; 4] = [560.0, 420.0, 180.0, 60.0];
-/// The first component's region in its own local space when the World scrolls:
-/// half the owner's height, so its content has thirty points of block travel.
-pub(super) const SCROLLABLE_PRIMARY_REGION: [f32; 4] = [0.0, 0.0, 180.0, 30.0];
 
-/// Region rows that differ from the default of one region filling its owner.
+/// Rows that differ from the defaults: one region filling its owner, and every
+/// component but the child laid out against the surface.
 #[derive(Clone, Copy, Default)]
 struct RegionOverrides {
     /// The child occurrence's region, in its owner-local space.
     child: Option<[f32; 4]>,
     /// The first component's region, in its own local space.
     primary: Option<[f32; 4]>,
+    /// One more mount laid out relative to the first component rather than the
+    /// surface, so it is that component's content and travels with its scroll
+    /// offset. The child occurrence is by default; this names a second.
+    nested: Option<usize>,
+    /// Lay the child occurrence out against the surface instead of inside the
+    /// first component, so that component's region stops carrying it while it
+    /// stays mounted.
+    detach_child: bool,
 }
 
 pub(super) fn canonical([x, y, width, height]: [f32; 4]) -> UiMountedCanonicalBox {
@@ -151,6 +160,8 @@ pub(super) fn install_disjoint_child_region(
         RegionOverrides {
             child: Some([1_000.0, 1_000.0, 20.0, 20.0]),
             primary: None,
+            nested: None,
+            detach_child: false,
         },
         None,
     );
@@ -175,27 +186,6 @@ pub(super) fn install_seam_pair(
             [10.0, 10.0, 40.0, 40.0],
         ],
         RegionOverrides::default(),
-        None,
-    );
-}
-
-/// Reinstall the launched geometry with the first component's region smaller
-/// than its box, so a wheel over it has somewhere to go.
-pub(super) fn install_scrollable_primary(
-    session: &mut WorthUiActiveApplicationSession,
-    surfaces: [UiSemanticSurfaceIdentity; 2],
-    instances: [UiMountedInstanceIdentity; 5],
-) {
-    install_with_child_region(
-        session,
-        surfaces,
-        instances,
-        20,
-        BOXES,
-        RegionOverrides {
-            child: None,
-            primary: Some(SCROLLABLE_PRIMARY_REGION),
-        },
         None,
     );
 }
@@ -225,7 +215,7 @@ fn install_with_child_region(
             .enumerate()
             .filter(|(mount, _)| Some(*mount) != excluded && (*mount == 3) == (index == 1))
             .map(|(mount, instance)| {
-                if mount == 4 {
+                if (mount == 4 && !overrides.detach_child) || Some(mount) == overrides.nested {
                     UiMountedOccurrenceGeometry::parent_relative(
                         *instance,
                         instances[0],

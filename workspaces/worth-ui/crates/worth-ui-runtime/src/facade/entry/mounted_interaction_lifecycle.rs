@@ -1,3 +1,4 @@
+use super::active_application_session::UiScrollSettlementScope;
 use super::WorthUiActiveApplicationSession;
 use crate::facade::mounted::{
     UiHostSurfacePresentationMode, UiMountedIdentityDenial, UiMountedInstanceIdentity,
@@ -46,6 +47,14 @@ impl WorthUiActiveApplicationSession {
     ) -> Result<UiInteractionLifecycleSettlementReceipt, UiMountedIdentityDenial> {
         let service_basis = self.mounted.current_mounted_identity_basis(identity);
         self.mounted.unmount_instance(identity)?;
+        // The occurrence is gone, so anything still walking its content toward
+        // a wheel target is walking content that no longer exists. This runs
+        // before Scroll retires the occurrence below, because retiring it is
+        // what removes the ownership chain that says which settles were its.
+        self.settle_live_scroll_motion(
+            UiScrollSettlementScope::MountedOccurrence(identity),
+            crate::runtime::motion::UiMotionTerminalCause::SubjectUnmounted,
+        );
         if self.scroll.is_installed() {
             self.scroll
                 .as_mut()
@@ -93,6 +102,13 @@ impl WorthUiActiveApplicationSession {
             .mounted
             .deregister_host_surface_for_rebind(&self.host_session, binding)
             .map_err(UiSurfaceRebindInteractionDenial::BeforeMutation)?;
+        // The binding whose rectangles this surface's content was moving
+        // through is gone. A settle that outlived it would resume against
+        // geometry from a presentation nobody is showing any more.
+        self.settle_live_scroll_motion(
+            UiScrollSettlementScope::SemanticSurface(semantic_surface),
+            crate::runtime::motion::UiMotionTerminalCause::ReboundAway,
+        );
         let previous_input = self.interaction.active_input_binding();
         let interaction = self
             .interaction

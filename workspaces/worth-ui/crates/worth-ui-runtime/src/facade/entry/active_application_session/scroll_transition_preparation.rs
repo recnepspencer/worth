@@ -23,12 +23,6 @@ const _: () = assert!(
         == UI_SCROLL_WHEEL_LINE_MILLI_PER_LINE
 );
 
-/// The chain position a smooth wheel latches to. Phase 1 latches the whole
-/// gesture to the innermost owner: the Scroll transition succession accumulates
-/// against one owner and reports no remainder, so a chain-wide smooth bubble
-/// would have nothing to bubble with.
-const LATCHED_CHAIN_SLOT: usize = 0;
-
 /// One host wheel observation admitted as coarse-line evidence under a declared
 /// smooth wheel, bound to the mounted occurrence and the presentation it was
 /// observed against.
@@ -47,11 +41,12 @@ pub(in crate::facade::entry) struct UiScrollWheelObservation {
 pub(in crate::facade::entry) enum UiScrollTransitionStagingDenial {
     /// The routed receipt named no owner, so there is nothing to stage against.
     NoRoutedOwner,
-    /// The innermost owner is not a declared region occurrence, or its
+    /// The latched owner is not a declared region occurrence, or its
     /// region-kind declares no line extent, so a notch has no travel here.
     OwnerDeclaresNoLineExtent,
-    /// The owner occurrence has no current allocation to bind an incarnation to.
-    OwnerAllocationUnavailable,
+    /// The routed state does not hold the latched owner under the incarnation
+    /// the chain named, so there is no accepted offset to settle from.
+    LatchedOwnerNotRouted(crate::runtime::scroll::UiScrollRouteDenial),
     /// The region occurrence has no mounted content box to translate.
     ContentGeometryUnavailable,
     Transition(UiScrollTransitionDenial),
@@ -97,7 +92,7 @@ impl super::super::WorthUiActiveApplicationSession {
         })
     }
 
-    /// Advance the innermost routed owner's settle target by `observation`, and
+    /// Advance the settle target of the owner this gesture latched to, and
     /// lower that target into the Motion request that interpolates it.
     ///
     /// `receipt` is the zero-delta route this observation produced: it moved no
@@ -114,25 +109,31 @@ impl super::super::WorthUiActiveApplicationSession {
         scroll: &mut crate::runtime::scroll::UiScrollRuntimeState,
         receipt: &crate::runtime::scroll::UiScrollRouteReceipt,
         observation: UiScrollWheelObservation,
+        region: Option<super::scroll_gesture_latching::UiScrollRoutedRegion>,
     ) -> Result<
         crate::runtime::scroll::UiPreparedScrollSettleTransition,
         UiScrollTransitionStagingDenial,
     > {
-        let latched = receipt
-            .transitions()
-            .first()
-            .copied()
-            .ok_or(UiScrollTransitionStagingDenial::NoRoutedOwner)?;
-        let owner = latched.owner();
-        let accepted_offset = latched.current();
+        let region = region.ok_or(UiScrollTransitionStagingDenial::NoRoutedOwner)?;
+        // The owner comes from the chain, and its accepted offset from the
+        // successor the route produced. Neither can come from `receipt`: a
+        // receipt names only the owners the route had travel left to visit,
+        // and the zero delta a smooth wheel routes stops at the first of them,
+        // so the owner a gesture latched outward to is routinely absent from
+        // it. The successor holds every owner's offset whether the route
+        // touched it or not, and for an owner it did touch that offset is the
+        // one the receipt would have reported.
+        let entry = region.entry();
+        let owner = entry.owner();
+        let incarnation = entry.incarnation();
+        let accepted_offset = scroll
+            .offset(owner, incarnation)
+            .map_err(UiScrollTransitionStagingDenial::LatchedOwnerNotRouted)?;
         let line_extent_logical_points = self
             .declared_scroll_line_extent_logical_points(owner)
             .ok_or(UiScrollTransitionStagingDenial::OwnerDeclaresNoLineExtent)?;
-        let incarnation = self
-            .scroll_region_incarnation(observation.mounted_instance, LATCHED_CHAIN_SLOT)
-            .ok_or(UiScrollTransitionStagingDenial::OwnerAllocationUnavailable)?;
         let content_at_rest =
-            self.unscrolled_region_content(observation.mounted_instance, LATCHED_CHAIN_SLOT)?;
+            self.unscrolled_region_content(observation.mounted_instance, region.slot())?;
         let input = UiScrollWheelInput::admit(
             observation.lines,
             observation.phase,

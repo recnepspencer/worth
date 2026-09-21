@@ -50,6 +50,20 @@ pub(crate) enum UiMotionTerminalCause {
     /// scrollbar thumb grabbed mid-settle -- so the track ends where its last
     /// accepted sample left the content, and the pointer places it from there.
     DisplacedByDirectControl,
+    /// The occurrence this track was moving was unmounted. Content that is no
+    /// longer mounted cannot finish arriving anywhere, so the track ends at the
+    /// last sample the reader actually saw rather than at a target belonging to
+    /// something that is gone.
+    SubjectUnmounted,
+    /// The window stopped being the reader's. A settle is the tail of a gesture
+    /// somebody is watching; once nobody is, it ends where it had got to rather
+    /// than finishing on its own and moving content behind the reader's back.
+    AttentionLost,
+    /// What this track was moving has nowhere left to go: its content emptied,
+    /// or shrank to fit its viewport, so the offset it was settling toward
+    /// stopped existing. The track ends rather than go on re-applying a
+    /// translation the extent no longer admits.
+    NowhereLeftToSettle,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
