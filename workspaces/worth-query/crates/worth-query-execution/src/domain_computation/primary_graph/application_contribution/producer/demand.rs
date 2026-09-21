@@ -1,5 +1,7 @@
 use worth_query_installation::facade::ApplicationSchema;
 
+use std::any::TypeId;
+
 use super::{
     WorthQueryInstalledApplicationProducerRegistry, WorthQueryProducerApplicability,
     WorthQueryProducerLifecyclePosture, WorthQueryProducerOutputFamily,
@@ -303,7 +305,8 @@ where
             ));
         };
         let output_bindings = self.installed_producers.family_output_bindings::<Family>();
-        let source_posture = self
+        let scope = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(source.source_root());
+        let mut source_posture = self
             .primary_provider
             .graph
             .output_lineage
@@ -312,13 +315,24 @@ where
             .source_posture_for_any_output_binding(
                 self.runtime.authority_identity().as_u64(),
                 &self.installed_schema.binding_identity(),
-                crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(source.source_root()),
+                scope,
                 observation.lifecycle_incarnation(),
                 observation.reference_generation().get(),
                 &output_bindings,
                 source.idempotency_identity(),
                 source.checkpoint_identity(),
             );
+        if source_posture
+            == super::super::super::output_lineage::WorthQueryOutputSourcePosture::Absent
+        {
+            source_posture = recovered_source_posture(
+                &self.recovered_outputs,
+                scope,
+                source.partition_identity(),
+                source.checkpoint_identity(),
+                &output_bindings,
+            );
+        }
         let lifecycle = match source_posture {
             super::super::super::output_lineage::WorthQueryOutputSourcePosture::Exact(binding) => {
                 return self.installed_producers.select_exact::<Family>(binding)
@@ -335,5 +349,112 @@ where
                 profile_kind,
                 lifecycle,
             ))
+    }
+}
+
+fn recovered_source_posture(
+    recovered_outputs: &[super::super::super::application_output_demand::WorthQueryReadmittedAcceptedOutput],
+    scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+    source_partition: [u8; 32],
+    checkpoint_identity: crate::domain_computation::primary_graph::application_query::WorthQueryCheckpointSourceIdentity,
+    output_bindings: &[TypeId],
+) -> super::super::super::output_lineage::WorthQueryOutputSourcePosture {
+    let mut retained_output = false;
+    for recovered in recovered_outputs {
+        let checkpoint = &recovered.checkpoint;
+        let Some(binding) = recovered.correspondence.binding_type() else {
+            continue;
+        };
+        if checkpoint.scope != scope
+            || checkpoint.source_partition != source_partition
+            || !output_bindings.contains(&binding)
+        {
+            continue;
+        }
+        if checkpoint.source == checkpoint_identity.bytes() {
+            return super::super::super::output_lineage::WorthQueryOutputSourcePosture::Exact(
+                binding,
+            );
+        }
+        retained_output = true;
+    }
+    if retained_output {
+        super::super::super::output_lineage::WorthQueryOutputSourcePosture::Drifted
+    } else {
+        super::super::super::output_lineage::WorthQueryOutputSourcePosture::Absent
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::Arc;
+
+    use crate::domain_computation::primary_graph::{application_output_demand, output_lineage};
+
+    struct OutputBinding;
+
+    #[test]
+    fn recovered_output_selects_exact_then_preserve_before_lineage_is_lazily_restored() {
+        let scope = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(
+            worth_relational::facade::identity::EntityId::new(
+                worth_relational::facade::identity::PartitionId::main(),
+                1,
+                1,
+            ),
+        );
+        let partition = [0x22; 32];
+        let checkpoint_identity = crate::domain_computation::primary_graph::application_query::WorthQueryCheckpointSourceIdentity::new([0x33; 32]);
+        let binding = TypeId::of::<OutputBinding>();
+        let recovered = application_output_demand::WorthQueryReadmittedAcceptedOutput {
+            checkpoint: application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity {
+                producer: "producer".to_owned(),
+                source: checkpoint_identity.bytes(),
+                scope,
+                source_partition: partition,
+                producer_dependency: None,
+                idempotency_key: [0x44; 32],
+                roles: Vec::new(),
+            },
+            correspondence: Arc::new(
+                crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
+                    binding,
+                    Vec::new(),
+                    |_| None,
+                )
+                .expect("an empty output family can be rebound for selection evidence"),
+            ),
+        };
+
+        assert_eq!(
+            recovered_source_posture(
+                std::slice::from_ref(&recovered),
+                scope,
+                partition,
+                checkpoint_identity,
+                &[binding],
+            ),
+            output_lineage::WorthQueryOutputSourcePosture::Exact(binding),
+        );
+        assert_eq!(
+            recovered_source_posture(
+                std::slice::from_ref(&recovered),
+                scope,
+                partition,
+                crate::domain_computation::primary_graph::application_query::WorthQueryCheckpointSourceIdentity::new([0x55; 32]),
+                &[binding],
+            ),
+            output_lineage::WorthQueryOutputSourcePosture::Drifted,
+        );
+        assert_eq!(
+            recovered_source_posture(
+                &[recovered],
+                scope,
+                [0x66; 32],
+                checkpoint_identity,
+                &[binding],
+            ),
+            output_lineage::WorthQueryOutputSourcePosture::Absent,
+        );
     }
 }
