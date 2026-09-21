@@ -1,5 +1,5 @@
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use uiautomation::types::Handle;
 use uiautomation::UIAutomation;
@@ -47,6 +47,10 @@ pub(super) fn screen_point_of(
 
 /// Turn the wheel `notches` times over `point`.
 ///
+/// Returns the instant the events left for the product, so a caller timing the
+/// product can start its clock there rather than at the harness preparation --
+/// focus, pointer qualification and hit testing -- that has to happen first.
+///
 /// Positive `notches` roll the wheel toward the user, which the platform
 /// spells as a negative `WHEEL_DELTA` and every application reads as "scroll
 /// the content down". Each notch is one OS event, exactly as a real wheel
@@ -56,7 +60,7 @@ pub(super) fn deliver_wheel_notches(
     observed: ProcessBoundNativeClientAreaObservation,
     point: NativeClientPixelPoint,
     notches: i32,
-) -> Result<(), NativePlatformFailure> {
+) -> Result<Instant, NativePlatformFailure> {
     if notches == 0 {
         return Err(NativePlatformFailure::InputDelivery(
             "a wheel delivery needs at least one notch".to_owned(),
@@ -80,6 +84,7 @@ pub(super) fn deliver_wheel_notches(
         })
         .collect();
     let expected = notches.unsigned_abs();
+    let issued = Instant::now();
     let delivered = winsafe::SendInput(&events)
         .map_err(|error| NativePlatformFailure::InputDelivery(error.to_string()))?;
     if delivered != expected {
@@ -87,7 +92,7 @@ pub(super) fn deliver_wheel_notches(
             "SendInput delivered {delivered} of {expected} wheel notch events"
         )));
     }
-    Ok(())
+    Ok(issued)
 }
 
 /// Press the primary button at `from`, move the pointer in steps to `to`, and

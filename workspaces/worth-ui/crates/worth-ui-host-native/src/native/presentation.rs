@@ -97,6 +97,11 @@ pub(crate) use transaction_state::{
 };
 pub(crate) use unchanged::present_unchanged_appearance;
 
+/// How long a control may wait on the GPU before calling it a failure.
+///
+/// Presentation itself never waits: a frame's readback settles on a later turn
+/// rather than blocking the event loop on the device.
+#[cfg(test)]
 pub(crate) const GPU_WAIT_DEADLINE: std::time::Duration = std::time::Duration::from_millis(5_000);
 
 pub(crate) enum UiNativePresentationFailure {

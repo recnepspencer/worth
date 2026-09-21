@@ -6,6 +6,19 @@ use super::platform_pulse_dashboard::launch_dashboard_at_rest;
 
 /// Physical pixels of slack for one snapped content edge.
 const SHIFT_TOLERANCE_PX: i64 = 1;
+/// The whole journey: geometry, hit testing and the timed notches after them.
+const JOURNEY_BUDGET: std::time::Duration = std::time::Duration::from_secs(150);
+/// The milestone's p95 budget from input to the first pixel that moves.
+const FIRST_CHANGE_BUDGET: std::time::Duration = std::time::Duration::from_millis(50);
+/// No notch may stall past this, however good the percentiles look.
+const FIRST_CHANGE_STALL: std::time::Duration = std::time::Duration::from_millis(100);
+/// The milestone's p95 and p99 bounds on the gap between accepted visible frames.
+const FRAME_GAP_BUDGET: std::time::Duration = std::time::Duration::from_millis(25);
+const FRAME_GAP_TAIL: std::time::Duration = std::time::Duration::from_millis(50);
+/// No gap may pass this while motion or input requires progress.
+const FRAME_GAP_STALL: std::time::Duration = std::time::Duration::from_millis(100);
+/// The declared 120 ms wheel settle plus two 60 Hz display intervals.
+const SETTLEMENT_BOUND: std::time::Duration = std::time::Duration::from_millis(154);
 
 #[test]
 fn native_wheel_notch_and_thumb_drag_move_recent_activity_by_declared_geometry() {
@@ -16,13 +29,14 @@ fn native_wheel_notch_and_thumb_drag_move_recent_activity_by_declared_geometry()
     });
     assert_scroll_geometry(completed.evidence());
     assert_hit_testing(completed.evidence());
+    assert_wheel_latency(completed.evidence());
     let shutdown_sequence = completed.evidence().expected_shutdown_sequence();
     let closed = close_recovered_at_sequence(completed.into_ready(), shutdown_sequence);
     assert!(closed.evidence().successful_exit().status().success());
     let elapsed = journey_started.elapsed();
     assert!(
-        elapsed <= std::time::Duration::from_secs(45),
-        "the native scroll journey must finish within 45 seconds; elapsed={elapsed:?}"
+        elapsed <= JOURNEY_BUDGET,
+        "the native scroll journey must finish within {JOURNEY_BUDGET:?}; elapsed={elapsed:?}"
     );
 }
 
@@ -54,6 +68,54 @@ fn assert_scroll_geometry(evidence: &PlatformPulseScrollJourneyEvidence) {
     assert!(evidence.drag_thumb().top_px() > evidence.wheel_thumb().top_px());
     assert!(evidence.wheel_thumb().length_px() >= 24);
     assert_eq!(drag.column_px(), wheel.column_px());
+}
+
+/// The milestone's timing criteria, on the intervals actually measured.
+fn assert_wheel_latency(evidence: &PlatformPulseScrollJourneyEvidence) {
+    let latency = evidence.latency();
+    let report = latency.report();
+    println!("{report}");
+    // A probe no finer than the budget cannot answer whether the budget is met,
+    // so say that instead of reporting a number that would read as a verdict.
+    let floor = latency.sampling_floor();
+    assert!(
+        floor < FIRST_CHANGE_BUDGET,
+        "one probe costs {floor:?}; this run cannot resolve a {FIRST_CHANGE_BUDGET:?} budget -- {report}"
+    );
+    let p95 = latency.first_change_percentile(950);
+    assert!(
+        p95 <= FIRST_CHANGE_BUDGET,
+        "p95 input to first visible change is {p95:?}, over the {FIRST_CHANGE_BUDGET:?} budget -- {report}"
+    );
+    assert!(
+        worst(latency.first_change()) <= FIRST_CHANGE_STALL,
+        "a wheel notch took {:?} to reach the screen, past the {FIRST_CHANGE_STALL:?} stall bound -- {report}",
+        worst(latency.first_change())
+    );
+    assert!(
+        latency.frame_gap_percentile(950) <= FRAME_GAP_BUDGET,
+        "p95 accepted visible-frame gap is {:?}, over the {FRAME_GAP_BUDGET:?} budget -- {report}",
+        latency.frame_gap_percentile(950)
+    );
+    assert!(
+        latency.frame_gap_percentile(990) <= FRAME_GAP_TAIL,
+        "p99 accepted visible-frame gap is {:?}, over the {FRAME_GAP_TAIL:?} budget -- {report}",
+        latency.frame_gap_percentile(990)
+    );
+    assert!(
+        worst(latency.frame_gaps()) <= FRAME_GAP_STALL,
+        "a frame gap of {:?} passed the {FRAME_GAP_STALL:?} bound while motion required progress -- {report}",
+        worst(latency.frame_gaps())
+    );
+    assert!(
+        worst(latency.settlement()) <= SETTLEMENT_BOUND,
+        "the list settled {:?} after the notch, past the {SETTLEMENT_BOUND:?} bound -- {report}",
+        worst(latency.settlement())
+    );
+}
+
+fn worst(samples: &[std::time::Duration]) -> std::time::Duration {
+    samples.iter().copied().max().unwrap_or_default()
 }
 
 fn assert_hit_testing(evidence: &PlatformPulseScrollJourneyEvidence) {

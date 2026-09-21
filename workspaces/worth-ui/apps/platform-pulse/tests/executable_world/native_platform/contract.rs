@@ -154,6 +154,40 @@ pub(crate) trait NativePlatformContract: sealed::Sealed {
         bound: &Self::BoundClientArea,
     ) -> Result<NativeClientPixelCapture, NativePlatformFailure>;
 
+    /// The bound client area held where its pixels can be read.
+    ///
+    /// Dropping it returns the window to where the desktop had it.
+    type ExposedClientArea<'bound>
+    where
+        Self: 'bound;
+
+    /// Raise the bound client area and wait for the desktop to compose it.
+    ///
+    /// Raising a window and waiting for a composition costs tens of
+    /// milliseconds -- the same order as the intervals a motion criterion
+    /// measures. It is a precondition of reading the window's pixels at all,
+    /// not part of any interval measured through them, so a timing probe
+    /// exposes the area once and samples inside that exposure.
+    fn expose_client_area<'bound>(
+        &self,
+        bound: &'bound Self::BoundClientArea,
+    ) -> Result<Self::ExposedClientArea<'bound>, NativePlatformFailure>;
+
+    /// One cheap capture of `strip` -- x, y, width, height in client pixels.
+    ///
+    /// `capture_client_area` proves where its pixels came from by taking three
+    /// captures from three sources and cross-checking them, which costs about
+    /// half a second; one uncrossed capture of the whole area still costs tens
+    /// of milliseconds. Both are the same order as the intervals a motion
+    /// criterion measures, so neither can time one. Movement shows in any strip
+    /// the content crosses, so a timing probe reads a strip of an already
+    /// exposed area. Never adjudicate appearance from this.
+    fn sample_exposed_strip(
+        &self,
+        exposed: &Self::ExposedClientArea<'_>,
+        strip: [u32; 4],
+    ) -> Result<NativeClientPixelCapture, NativePlatformFailure>;
+
     fn resize_bound_client_area(
         &self,
         bound: &mut Self::BoundClientArea,
@@ -195,7 +229,7 @@ pub(crate) trait NativePlatformContract: sealed::Sealed {
         bound: &Self::BoundClientArea,
         point: NativeClientPixelPoint,
         notches: i32,
-    ) -> Result<(), NativePlatformFailure>;
+    ) -> Result<Instant, NativePlatformFailure>;
 
     fn deliver_pointer_drag(
         &self,

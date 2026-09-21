@@ -23,6 +23,8 @@ pub(crate) enum PlatformPulseScrollJourneyFailure {
         observed: u64,
     },
     PointOutsideCapture([u32; 2]),
+    /// A timed wheel notch put nothing on screen before its deadline.
+    WheelNeverMoved(usize),
     CaptureExport(String),
 }
 
@@ -53,6 +55,10 @@ impl fmt::Display for PlatformPulseScrollJourneyFailure {
             Self::HitTarget { expected, observed } => write!(
                 formatter,
                 "the click after the move hit node {observed}, expected node {expected}"
+            ),
+            Self::WheelNeverMoved(trial) => write!(
+                formatter,
+                "timed wheel notch {trial} moved no pixel before its deadline"
             ),
             Self::PointOutsideCapture(point) => {
                 write!(formatter, "point {point:?} lies outside the client capture")

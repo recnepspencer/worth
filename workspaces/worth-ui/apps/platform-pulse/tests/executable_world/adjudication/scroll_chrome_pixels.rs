@@ -114,6 +114,11 @@ impl RecentActivityScrollGeometry {
         from_offset + delta_points * self.max_offset_points() / self.thumb_travel_points()
     }
 
+    /// The scrolled viewport itself, logical points: [x, y, width, height].
+    pub(crate) fn viewport_points(self) -> [f64; 4] {
+        REGION.map(f64::from)
+    }
+
     /// A point inside the scrolled content, clear of the chrome.
     pub(crate) fn content_interior_points(self) -> [f64; 2] {
         [

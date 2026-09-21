@@ -153,19 +153,12 @@ fn deliver_at(
     }
     let (delivered_event_count, qualified_point) = match kind {
         NativeInputProbeKind::Pointer => {
-            prime_pointer_motion(window, (screen_x, screen_y))?;
-            super::pointer_visual_settlement::await_client_stability(observed)?;
-            super::pointer_target::require_before_effect(window, (screen_x, screen_y))?;
-            let cursor = Mouse::get_cursor_pos().map_err(input_failure)?;
-            let qualified_point = (cursor.get_x(), cursor.get_y());
-            if pointer_tolerance.is_some_and(|tolerance| {
-                qualified_point.0.abs_diff(screen_x) > tolerance
-                    || qualified_point.1.abs_diff(screen_y) > tolerance
-            }) {
-                return Err(NativePlatformFailure::InputDelivery(format!(
-                    "cursor moved away from the qualified control before button delivery: expected=({screen_x}, {screen_y}); observed={qualified_point:?}; tolerance={pointer_tolerance:?}"
-                )));
-            }
+            let qualified_point = super::pointer_arming::arm_pointer_at(
+                window,
+                observed,
+                (screen_x, screen_y),
+                pointer_tolerance,
+            )?;
             let delivered = winsafe::SendInput(&[
                 HwKbMouse::Mouse(MOUSEINPUT {
                     dwFlags: co::MOUSEEVENTF::LEFTDOWN,

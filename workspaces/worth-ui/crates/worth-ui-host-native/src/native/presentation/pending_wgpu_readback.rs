@@ -1,8 +1,7 @@
-use super::{port, transaction_state::UiNativePendingExternalObligation, GPU_WAIT_DEADLINE};
+use super::{port, transaction_state::UiNativePendingExternalObligation};
 
 pub(crate) struct UiNativePendingWgpuObligation {
     readback: wgpu::Buffer,
-    submission: wgpu::SubmissionIndex,
     mapping: std::sync::mpsc::Receiver<Result<(), wgpu::BufferAsyncError>>,
     cost: worth_ui_host_contract::UiHostPresentationCostReport,
     presented: Option<port::UiNativePresentationPortObservation>,
@@ -19,7 +18,6 @@ pub(crate) enum UiNativeWgpuReadbackPoll {
 impl UiNativePendingWgpuObligation {
     pub(crate) fn new(
         readback: wgpu::Buffer,
-        submission: wgpu::SubmissionIndex,
         cost: worth_ui_host_contract::UiHostPresentationCostReport,
         device_generation: std::sync::Arc<crate::native::UiNativeDeviceGeneration>,
     ) -> Self {
@@ -29,7 +27,6 @@ impl UiNativePendingWgpuObligation {
         });
         Self {
             readback,
-            submission,
             mapping,
             cost,
             presented: None,
@@ -38,6 +35,11 @@ impl UiNativePendingWgpuObligation {
         }
     }
 
+    /// Advance the readback without blocking the caller.
+    ///
+    /// The frame reached the display when its surface texture was handed off,
+    /// so waiting on the GPU here would delay the next frame rather than this
+    /// one. An unfinished readback stays pending and settles on a later turn.
     pub(crate) fn poll_readback(&mut self) -> UiNativeWgpuReadbackPoll {
         if self.terminal_indeterminate {
             return UiNativeWgpuReadbackPoll::Indeterminate;
@@ -45,24 +47,18 @@ impl UiNativePendingWgpuObligation {
         if self
             .device_generation
             .device()
-            .poll(wgpu::PollType::Wait {
-                submission_index: Some(self.submission.clone()),
-                timeout: Some(GPU_WAIT_DEADLINE),
-            })
+            .poll(wgpu::PollType::Poll)
             .is_err()
         {
             return UiNativeWgpuReadbackPoll::Pending;
         }
-        match self
-            .mapping
-            .recv_timeout(std::time::Duration::from_millis(50))
-        {
+        match self.mapping.try_recv() {
             Ok(Ok(())) => self.mapped_pixels(),
-            Ok(Err(_)) | Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => {
+            Ok(Err(_)) | Err(std::sync::mpsc::TryRecvError::Disconnected) => {
                 self.terminal_indeterminate = true;
                 UiNativeWgpuReadbackPoll::Indeterminate
             }
-            Err(std::sync::mpsc::RecvTimeoutError::Timeout) => UiNativeWgpuReadbackPoll::Pending,
+            Err(std::sync::mpsc::TryRecvError::Empty) => UiNativeWgpuReadbackPoll::Pending,
         }
     }
 
@@ -151,7 +147,7 @@ pub(crate) fn prove_pending_readback_handoff() {
         label: Some("worth-ui-readback-control-copy"),
     });
     encoder.copy_buffer_to_buffer(&source, 0, &readback, 0, 512);
-    let submission = queue.submit([encoder.finish()]);
+    queue.submit([encoder.finish()]);
     let device_lost = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
     let device_generation = std::sync::Arc::new(crate::native::UiNativeDeviceGeneration::new(
         1,
@@ -163,13 +159,17 @@ pub(crate) fn prove_pending_readback_handoff() {
     ));
     let mut pending = UiNativePendingWgpuObligation::new(
         readback,
-        submission,
         worth_ui_host_contract::UiHostPresentationCostReport::default(),
         device_generation,
     );
     pending.retain_async_handoff();
-    let UiNativeWgpuReadbackPoll::Presented(pixels) = pending.poll_readback() else {
-        panic!("one retained production map must reach its exact bytes");
+    let deadline = std::time::Instant::now() + super::GPU_WAIT_DEADLINE;
+    let pixels = loop {
+        match pending.poll_readback() {
+            UiNativeWgpuReadbackPoll::Presented(pixels) => break pixels,
+            UiNativeWgpuReadbackPoll::Pending if std::time::Instant::now() < deadline => continue,
+            _ => panic!("one retained production map must reach its exact bytes"),
+        }
     };
     assert_eq!(pixels, [[13, 29, 71, 255], [199, 5, 151, 17]]);
 }

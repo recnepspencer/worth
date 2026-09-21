@@ -149,13 +149,9 @@ fn observe_handoff(
     handoff: UiNativePresentHandoff,
     defer_initial_observation: bool,
 ) -> Result<UiNativePresentationPortObservation, UiNativePresentationPortFailure> {
-    let (readback, submission, cost) = handoff.into_parts();
-    let mut pending = UiNativePendingWgpuObligation::new(
-        readback,
-        submission,
-        cost,
-        graphics.device_generation(),
-    );
+    let (readback, cost) = handoff.into_parts();
+    let mut pending =
+        UiNativePendingWgpuObligation::new(readback, cost, graphics.device_generation());
     if defer_initial_observation {
         pending.retain_async_handoff();
         return Err(UiNativePresentationPortFailure::ReadbackUnsettled(

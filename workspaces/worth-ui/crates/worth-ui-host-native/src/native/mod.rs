@@ -104,6 +104,7 @@ pub(crate) use platform::UiNativePointerInputPort;
 #[cfg(all(test, feature = "certification-support"))]
 pub(crate) use presentation::appearance::APPEARANCE_MECHANICS;
 #[cfg(test)]
+#[cfg(test)]
 pub(crate) use presentation::GPU_WAIT_DEADLINE;
 #[cfg(feature = "certification-support")]
 pub use presentation::{
