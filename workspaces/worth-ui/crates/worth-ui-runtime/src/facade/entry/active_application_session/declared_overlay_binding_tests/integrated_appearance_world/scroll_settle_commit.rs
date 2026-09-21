@@ -35,6 +35,20 @@ pub(super) fn smooth_world(line_extent: bool) -> ScrollWorld {
 /// What a smooth-wheel World declares about scrolling, so a scenario that
 /// needs a different geometry can launch the same Scroll service.
 pub(super) fn smooth_scroll(line_extent: bool) -> WorldScroll {
+    WorldScroll {
+        policy: crate::declaration::UiScrollPolicy::nested_region().with_wheel_behavior(
+            crate::declaration::UiScrollWheelBehavior::smooth(SETTLE_TICKS)
+                .expect("a nonzero settle horizon"),
+        ),
+        region: scroll_region(line_extent),
+    }
+}
+
+/// The primary region that does or does not declare how far one of its lines
+/// reaches. The wheel behaviour declared over it belongs to the scenario; the
+/// extent a notch is measured against is shared, so a smooth notch and an
+/// immediate notch answer to the same declaration.
+pub(super) fn scroll_region(line_extent: bool) -> crate::capability::MosaicRegionKindDescriptor {
     let mut region =
         crate::runtime::tests::source_ingress_boundary_test_support::source_backed_package_region();
     if line_extent {
@@ -43,13 +57,7 @@ pub(super) fn smooth_scroll(line_extent: bool) -> WorldScroll {
                 .expect("a nonzero line extent"),
         );
     }
-    WorldScroll {
-        policy: crate::declaration::UiScrollPolicy::nested_region().with_wheel_behavior(
-            crate::declaration::UiScrollWheelBehavior::smooth(SETTLE_TICKS)
-                .expect("a nonzero settle horizon"),
-        ),
-        region,
-    }
+    region
 }
 
 /// One notch toward the top of the content: a milli-line count in offset

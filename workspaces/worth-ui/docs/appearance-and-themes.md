@@ -132,6 +132,60 @@ accepted command sample during prepared presentation; it never turns a visual
 sample into layout or interaction authority, and it never feeds appearance
 opacity back into Motion's retarget predecessor.
 
+## Scroll Chrome
+
+A scrollable region's track and thumb are painted by declared roles and placed
+by the runtime. An author says which axes get bars and which two roles paint
+them; the runtime derives both rectangles from the accepted offset and the
+content extent. There is no authored thumb position, and reading one back out
+of chrome facts to compute another is the same second data path a renderer-side
+field lookup would be.
+
+Chrome roles are painted beside a region rather than on a component inside it,
+so they must not attach to a component: leave `applies_to_component` off and
+they apply to any. A role a contract names is required by the theme binding
+like any other, so both must be registered before the region that names them is
+mounted, and a region that does not own its scroll derives no chrome at all.
+
+<!-- compiled-example:scroll-chrome-rust -->
+```rust
+let track_identity = UiAppearanceRoleIdentity::new("app.appearance.scroll_track")?;
+let thumb_identity = UiAppearanceRoleIdentity::new("app.appearance.scroll_thumb")?;
+let thumb = UiAppearanceRole::authoring(thumb_identity.clone())
+    .cover(
+        UiAppearanceAspect::Background,
+        UiAppearancePartitionAuthoring::new([]).with_cell(
+            UiAppearanceCell::when([]).uses_slot(
+                UiThemeSlotIdentity::new("app.theme.scroll_thumb")?,
+                UiThemeValueKind::Color,
+            ),
+        ),
+    )?
+    .build()?;
+let region = MosaicRegionKindDescriptor::new(
+    MosaicRegionKindId::new("app.region.list")?,
+    MosaicRegionRole::auxiliary(),
+)
+.with_scroll_ownership(MosaicScrollOwnership::region_owned())
+.with_scroll_line_extent(UiScrollLineExtent::logical_points(20)?)
+.with_scroll_chrome(UiScrollChromeContract::new(
+    UiScrollAxisSupport::Block,
+    track_identity,
+    thumb_identity,
+)?);
+```
+
+Partitioning a chrome role on Hover and Pressed gives a resting bar, a bar under
+the pointer and a thumb being dragged three distinct declared appearances. A
+drag that leaves the gutter is still a drag, so `PressedCapturedOutside` and
+`PressedArmedInside` normally resolve to one held cell. Hover and Pressed here
+mean what they mean everywhere else; appearance reads the axis, it does not
+decide it. The live construction is compiled in
+[`scroll_chrome.rs`](../apps/platform-pulse/src/application/presentation/appearance/scroll_chrome.rs).
+
+Declaring chrome on an axis a region cannot travel on reserves a gutter for a
+bar that can never move, so name only the axes whose content actually overflows.
+
 ## Live Theme Switching
 
 Obtain the current surface, predecessor presentation, and
@@ -161,13 +215,17 @@ Complete reconstruction is an explicit recovery path with separate cost.
 
 `worth-ui-global-text-v2` remains staged and is not the live text profile. Icons
 await the Milestone 9 host mechanic and must not be represented by text glyphs.
-Mounted preview remains the single preview lane. `worth-cert-ui` is neither a
+Mounted preview remains the single preview lane. Scroll chrome paints a track
+and a thumb only; there is no declared arrow, corner or gutter-only appearance,
+and a chrome role cannot be attached to a component. `worth-cert-ui` is neither a
 workspace crate nor a certification owner.
 
 ## Anti-Patterns
 
 - Selecting colors or state styles in a renderer or host adapter.
 - Treating a component name as an implicit role or theme slot.
+- Computing a scroll thumb rectangle in an application or reading one back
+  from chrome facts to place anything.
 - Reading mutable service state while resolving appearance.
 - Applying region-relative seam offsets directly to a surface allocation.
 - Ordering overlays by raw z-index, source order, identity, or arbitrary rank.

@@ -35,6 +35,18 @@ impl UiMountedIdentityState {
             .map(|record| record.view)
     }
 
+    /// Every semantic surface currently bound, in binding order.
+    ///
+    /// The whole identity view answers this too, but it answers it by
+    /// materialising the mounted instances and the frame receipts as well. A
+    /// caller that only needs the surfaces asks here, so listing them is not a
+    /// reason to copy the rest of the identity.
+    pub(crate) fn bound_surfaces(&self) -> impl Iterator<Item = UiSemanticSurfaceIdentity> + '_ {
+        self.bindings
+            .values()
+            .map(|record| record.view.semantic_surface_identity())
+    }
+
     pub(crate) fn prepare_surface_registration(
         &self,
         protocol: worth_ui_host_contract::UiHostProtocolAgreement,

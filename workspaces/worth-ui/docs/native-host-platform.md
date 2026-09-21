@@ -137,6 +137,14 @@ separate:
 - `ScrollDelta` reports source, phase, precision, high-resolution x/y delta,
   and exact coordinate, mounted-target, or current presented-surface affinity.
   The runtime Scroll owner resolves and updates the semantic owner and offset.
+  Precision is part of the report, not a hint. A pixel delta is travel already
+  and reaches the offset untouched, which is the path a precision device --
+  touchpad, precision wheel -- takes. A line delta is a count of lines in
+  thousandths, already multiplied by the platform's lines-per-notch reading, and
+  the runtime turns it into travel with the region author's declared line
+  extent; a region that declares none is denied rather than moved. The adapter
+  never converts one precision into the other, and a synthetic pixel delta
+  therefore proves the semantics of a precision device and not its timing.
 - `Tick` and the existing level-triggered readiness path wake presentation
   sampling. They do not give the host a motion timeline or interpolation
   authority.
@@ -144,6 +152,22 @@ separate:
   its geometry, layer, lifecycle, and input shielding, but does not own logical
   open/close state. An operating-system popup surface is unsupported in this
   contract.
+
+A settling region is driven by the shell on the frames it already runs, not by
+a timeline the host owns:
+
+```text
+prepare_motion_tick
+-> present_prepared_motion_tick
+-> settle_accepted_scroll_sample
+```
+
+The accepted offset is what the last presented sample actually placed, not what
+the settle is aiming at. A host that presented a frame has moved the reader's
+content; one that prepared a frame it never presented has not, and the accepted
+offset must not claim otherwise. Because a region's owner box at rest is its
+content box, the first frame after an input samples the rest pose and moves
+nothing, so a settle declaring N ticks arrives on frame N + 1.
 
 Focus placement preserves the physical-effect boundary:
 
@@ -279,6 +303,29 @@ that interprets the former ambiguous `Focus` observation as `WindowFocus`, and
 no mixed-revision fallback that silently drops scroll affinity or focus
 settlement.
 
+Scroll timing qualifies against the recorded Windows 60 Hz machine, on a warm
+optimized native build at 1536x1024, over three ten-second traces of active
+scrolling taken after warmup. What the repository records today is the
+qualified native profile `worth-ui-windows-dx12-v2`, which names the software
+stack and not the machine: no CPU, GPU, panel or refresh identity is checked in
+for a run to be matched against. No such run has been taken either, so what
+follows is the bar a run answers to, not a result it reported, and the first
+run has to check in the machine it ran on beside its numbers. The thresholds are a p95
+input-to-first-visible response within 50 ms, a p95 gap between accepted
+visible frames within 25 ms, a p99 within 50 ms, and no gap beyond 100 ms
+while motion or input still requires progress -- a session with nothing left to
+advance owes no frame, so a quiet gap is not a stall. Final wheel settlement is
+within 120 ms plus two display intervals of the last input, absent a host
+refusal injected on purpose; an injected refusal is a scenario about the
+refusal, not a missed deadline. A run
+reports the hardware, the device scale, the input device, and the raw
+intervals, with preparation and host costs named separately. Averages that
+hide a stall are not evidence; the distribution and the worst gap are.
+
+Precision input is qualified by a run on a real precision device. A synthetic
+pixel-delta report exercises the same semantic path and proves nothing about
+timing, and absent hardware leaves the claim unverified rather than passed.
+
 ## Cost And Failure Posture
 
 Presentation reports structural and physical amplification separately:
@@ -314,6 +361,13 @@ ordinal; retained reconstruction resumes from current mounted authority and
 presents a distinct product frame. A later minimize/restore cycle cannot reuse
 the earlier title/barrier observation. The Windows lifecycle courtroom verifies
 each successor presentation before it accepts compositor pixels.
+
+A settle is the tail of a gesture somebody is watching. A window that stops
+being the reader's, an unmounted subject, content that empties or shrinks to
+fit, and a pointer that takes a thumb each end the track explicitly, at the
+sample the reader last saw, rather than finishing on their own and moving
+content behind the reader's back. No motion survives the thing it was moving,
+so the census a close waits on is reached rather than approached.
 
 Close uses one ordered shutdown progression: stop admission, settle external
 presentation and readback obligations, release derived/recovery state, release

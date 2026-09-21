@@ -71,6 +71,11 @@ pub(super) fn builder(
             })
             .unwrap();
     }
+    for role in
+        super::super::scroll_chrome_fixture::declared_chrome_roles(&capabilities.scroll.region)
+    {
+        builder = builder.register_appearance_role(role).unwrap();
+    }
     builder
         .register_mosaic_sizing_contract(super::super::replacement_geometry::alternate_sizing())
         .register_appearance_role(super::super::replacement::successor_role())

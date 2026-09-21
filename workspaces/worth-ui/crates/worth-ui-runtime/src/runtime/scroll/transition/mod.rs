@@ -23,7 +23,7 @@ pub(crate) use succession::{
 };
 pub(crate) use target::UiScrollTransitionTarget;
 pub(crate) use wheel_accumulation::{
-    UiScrollWheelInput, UiScrollWheelLineDelta, UiScrollWheelWindow,
+    line_travel, UiScrollWheelInput, UiScrollWheelLineDelta, UiScrollWheelWindow,
     UI_SCROLL_WHEEL_LINE_MILLI_PER_LINE,
 };
 

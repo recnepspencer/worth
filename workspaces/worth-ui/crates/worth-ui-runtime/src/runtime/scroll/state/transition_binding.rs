@@ -118,7 +118,7 @@ impl super::UiScrollRuntimeState {
             return Vec::new();
         }
         let mut joined = Vec::with_capacity(settling.len());
-        for mounted in self.ownership_instances().iter().copied() {
+        for mounted in self.ownership_instances() {
             let Ok(chain) = self.ownership_chain(mounted) else {
                 continue;
             };

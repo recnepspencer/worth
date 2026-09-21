@@ -104,8 +104,6 @@ impl super::super::WorthUiActiveApplicationSession {
         };
         scroll
             .ownership_instances()
-            .iter()
-            .copied()
             .flat_map(|mounted_instance| {
                 self.region_chrome_on_surface(surface, mounted_instance)
                     .into_iter()

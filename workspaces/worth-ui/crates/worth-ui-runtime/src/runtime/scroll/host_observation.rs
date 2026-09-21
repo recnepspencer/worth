@@ -38,6 +38,12 @@ pub(crate) enum UiHostScrollObservationDenial {
     /// The route was not committed: the accepted offset stays where the last
     /// applied pose left it, so state and pixels keep describing one frame.
     Geometry(crate::mounting::UiMountedOccurrenceGeometryDenial),
+    /// The host reported this wheel in lines, and the owner the gesture
+    /// latched to -- the one that will move -- declares no line extent. A line
+    /// is a distance only the author can state, so there is no travel to
+    /// route: a notch whose owner never said how tall its lines are moves
+    /// nothing rather than moving some number the runtime picked.
+    OwnerDeclaresNoLineExtent,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

@@ -179,7 +179,9 @@ impl UiMountedOccurrenceGeometryState {
             .0
             .binding_generation();
         let mut poses = BTreeMap::new();
-        for target in scroll.ownership_instances() {
+        // Gathered before the walk: each restored owner is reconciled back
+        // into the same Scroll state the instances came from.
+        for target in scroll.ownership_instances().collect::<Vec<_>>() {
             let Ok(chain) = scroll.ownership_chain(target).cloned() else {
                 continue;
             };

@@ -142,6 +142,105 @@ Graph must never import mounting. Planning cannot mutate mounted or observation
 state. Observation cannot publish a frame. Inspection cannot reconstruct
 operational truth.
 
+## Scroll, Motion, And Direct Control
+
+Scroll owns the semantic offset of every region that can travel. Motion owns
+the track that walks an offset from where it is to where something asked it to
+go. Mounted presentation samples that track and produces the pose a frame
+carries. No owner crosses into another: Scroll never keeps a sample, Motion
+never keeps an offset, and presentation mints neither.
+
+The native shell drives one settling frame in three steps, calling the session
+directly rather than reporting anything. A `Tick` observation is the other way
+in: a host batch carrying one runs these same three steps, in this same order,
+inside `admit_host_interaction_batch`. The native shell never constructs a
+`Tick`, and neither entry advances a motion timeline the host owns -- what a
+tick wakes is presentation sampling.
+
+```text
+prepare_motion_tick
+-> present_prepared_motion_tick
+-> settle_accepted_scroll_sample
+```
+
+A region's owner box at rest is its content box, so the accepted offset is the
+difference between the rest pose and the pose that was sampled. The first frame
+after a notch therefore samples the rest pose and moves nothing; a settle
+declaring N ticks arrives on frame N + 1.
+
+A host wheel report is not travel until the runtime makes it travel. A pixel
+delta already is travel and routes untouched, and so does a page delta, which
+the track-click step measures for itself. A line delta is a count of lines that
+the host has already multiplied by the platform's lines-per-notch, and how far
+one line reaches belongs to the region's author. The two declared wheel
+behaviours take that product at different moments -- a smooth wheel when it
+stages the settle that travels the distance, an immediate wheel on the way in,
+having no settle to take it later -- through one shared conversion, so a region
+that eases and a region that jumps travel the same distance per notch. A region
+that will move and declares no line extent is refused rather than moved one
+point per notch on the arithmetic that a milli-line and a subpixel happen to
+share a scale. The owner asked is the one the gesture latched to -- the
+innermost that can take travel in this direction, which is the owner the reader
+will see move -- so a notch handed outward from an inner edge is measured by the
+ancestor that takes it, and a notch no owner in the chain can take has no
+owner to measure it: it moves nothing rather than being refused for a
+declaration nothing needed. An immediate wheel refuses with
+`OwnerDeclaresNoLineExtent`; a smooth wheel cannot stage its settle and
+refuses with `SettleUnpublished`. A viewport owner declares no extent by
+construction, so content that must answer a coarse wheel belongs to a declared
+region that owns its scroll.
+
+The refusal is worth stating in the shape an author will meet it. When an inner
+region is at its edge and the owner that would take the notch declares no
+extent, the notch is refused rather than handed further outward, so an
+overflowing viewport -- or an ancestor region whose author never declared an
+extent -- cannot be scrolled by a coarse wheel at all, one refusal per notch
+for as long as the reader spins. Precision deltas are unaffected, because they
+arrive as travel and never ask for an extent. An author who wants an ancestor
+to answer a wheel declares an extent on that ancestor; extent succession, which
+would let an ancestor inherit one, is 3.16.2's work and not this path's.
+
+Both of those descriptions reach further than any application can currently go,
+and the guide would mislead if it did not say so. A graph node is either the
+root page or a direct child of it, and the root page is the runtime bootstrap
+artifact rather than anything authored, so it carries no region and owns no
+scroll. Every ownership chain an authored application can build is therefore
+exactly one owner deep: the latched owner is always also the owner under the
+pointer, and a notch never has an ancestor to be handed to. The rule is written
+against chains, and implemented against chains, because that is what the model
+is; the half of it that only a deeper chain would reveal is asserted nowhere,
+and a scenario pins the depth ceiling so the gap announces itself if the ceiling
+lifts.
+
+Chrome is derived, never authored. A Mosaic region descriptor declares a
+contract naming the axes it wants bars on and two registered appearance roles;
+the runtime derives the track and thumb rectangles from the accepted pose and
+the content extent. Derivation requires the region to own its scroll, both
+roles to be registered, and each role to apply to any component, because a bar
+is painted beside the region rather than on one of the components inside it.
+Nothing in an application supplies a thumb position.
+
+Pressing a thumb takes direct control of the region. The pending transition is
+retired, the retained accepted sample is retired, and the Motion track ends
+with `DisplacedByDirectControl` at the sample the reader last saw. The press
+itself places nothing, so the content does not jump under the grab; the drag
+that follows places absolute offsets through the same route a wheel uses. A
+press on the track pages by one viewport less one line and is a placement, not
+a capture.
+
+Every other way a settle can stop is equally explicit. Content that empties or
+shrinks to fit its viewport ends with `NowhereLeftToSettle`, an unmounted
+subject with `SubjectUnmounted`, a window that stops being the reader's with
+`AttentionLost`, and shutdown with `ApplicationShutdown`. A track never
+outlives the thing it was moving.
+
+Both owners are local in the work they do. A route stops at the first owner
+that leaves no remainder, so a scroll visits its own ownership chain and the
+visible descendant commands that changed, not unrelated regions and not every
+mounted instance. Host observation reports are retained pending delivery and
+retired on delivery rather than accumulated as input history, so the storage a
+burst of wheel events leaves does not grow with how long the reader scrolled.
+
 ## Rebind Construction
 
 Every active session constructs `UiRebindRuntimeState` from the prepared

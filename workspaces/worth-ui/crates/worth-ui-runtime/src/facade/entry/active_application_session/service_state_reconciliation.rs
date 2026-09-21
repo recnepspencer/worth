@@ -29,7 +29,10 @@ impl WorthUiActiveApplicationSession {
             .scroll
             .as_ref()
             .expect("mounted Scroll ownership was checked above")
-            .ownership_instances();
+            .ownership_instances()
+            // Gathered before the walk: retiring an instance the mounted state
+            // no longer names changes the catalog this walk reads.
+            .collect::<Vec<_>>();
         for mounted_instance in mounted_instances {
             let Some(target) = self
                 .mounted

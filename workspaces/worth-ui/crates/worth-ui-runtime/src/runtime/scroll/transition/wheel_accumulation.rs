@@ -129,22 +129,13 @@ impl UiScrollWheelInput {
         })
     }
 
-    /// Lines times the declared line extent, in the same integer subpixels the
-    /// Scroll offset model uses. A thousandth of a line against a 20-point
-    /// extent is exactly 20 subpixels, so fractions survive the product.
+    /// The travel this event's lines carry against the extent it was admitted
+    /// with.
     pub(crate) fn points_subpixels(
         self,
     ) -> Result<super::super::UiScrollDelta, super::UiScrollTransitionDenial> {
-        let extent = i64::from(self.line_extent_logical_points);
-        let axis = |milli_lines: i64| {
-            milli_lines
-                .checked_mul(extent)
-                .ok_or(super::UiScrollTransitionDenial::ArithmeticOutOfRange)
-        };
-        Ok(super::super::UiScrollDelta::new(
-            axis(self.lines.inline_milli_lines)?,
-            axis(self.lines.block_milli_lines)?,
-        ))
+        line_travel(self.lines, self.line_extent_logical_points)
+            .ok_or(super::UiScrollTransitionDenial::ArithmeticOutOfRange)
     }
 
     pub(crate) const fn phase(self) -> worth_ui_host_contract::UiHostScrollDeltaPhase {
@@ -158,4 +149,26 @@ impl UiScrollWheelInput {
     pub(crate) const fn settle_ticks(self) -> u32 {
         self.settle_ticks
     }
+}
+
+/// Lines times the declared line extent, in the same integer subpixels the
+/// Scroll offset model uses. A thousandth of a line against a 20-point extent
+/// is exactly 20 subpixels, so a high-resolution wheel's fraction survives the
+/// product. `None` when that product leaves the representable range.
+///
+/// Both declared wheel behaviours reach this product, at different moments. A
+/// smooth wheel takes it when it stages the settle that will travel the
+/// distance; an immediate wheel has no settle to take it later and takes it on
+/// the way in. They share this function so that the moment differs and the
+/// distance does not.
+pub(crate) fn line_travel(
+    lines: UiScrollWheelLineDelta,
+    line_extent_logical_points: u16,
+) -> Option<super::super::UiScrollDelta> {
+    let extent = i64::from(line_extent_logical_points);
+    let axis = |milli_lines: i64| milli_lines.checked_mul(extent);
+    Some(super::super::UiScrollDelta::new(
+        axis(lines.inline_milli_lines)?,
+        axis(lines.block_milli_lines)?,
+    ))
 }

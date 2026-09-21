@@ -31,6 +31,9 @@ pub enum UiScrollObservationCertificationDenial {
     /// Mounted geometry refused the displayed pose, so the route was not
     /// committed either.
     Geometry,
+    /// A wheel reported in lines latched to an owner that declares no line
+    /// extent, so the notch had no distance to travel.
+    OwnerDeclaresNoLineExtent,
 }
 
 pub trait WorthUiScrollObservationCertificationExt {
@@ -117,5 +120,8 @@ fn map_denial(
             UiScrollObservationCertificationDenial::LatchedOwnerNotAdmitted
         }
         Denial::Geometry(_) => UiScrollObservationCertificationDenial::Geometry,
+        Denial::OwnerDeclaresNoLineExtent => {
+            UiScrollObservationCertificationDenial::OwnerDeclaresNoLineExtent
+        }
     }
 }

@@ -185,13 +185,7 @@ impl WorthUiMountedSessionState {
     pub(crate) fn current_surfaces(
         &self,
     ) -> impl Iterator<Item = worth_ui_host_contract::UiSemanticSurfaceIdentity> + '_ {
-        self.identity
-            .view()
-            .surface_bindings()
-            .iter()
-            .map(|binding| binding.semantic_surface_identity())
-            .collect::<Vec<_>>()
-            .into_iter()
+        self.identity.bound_surfaces()
     }
 
     pub(crate) fn current_portal_owner_for_child(

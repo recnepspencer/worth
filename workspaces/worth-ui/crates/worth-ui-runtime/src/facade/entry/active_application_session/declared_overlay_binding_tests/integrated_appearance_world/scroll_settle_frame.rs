@@ -41,7 +41,7 @@ fn presentation(scroll: &ScrollWorld) -> UiHostObservationPresentationBasis {
 
 /// One Motion frame the way the native shell runs it: prepare the tick,
 /// present it, then settle the accepted Scroll sample.
-fn settle_frame(scroll: &mut ScrollWorld, tick: u64) -> UiScrollSettleDisposition {
+pub(super) fn settle_frame(scroll: &mut ScrollWorld, tick: u64) -> UiScrollSettleDisposition {
     let basis = presentation(scroll);
     let prepared = scroll
         .world
@@ -57,7 +57,7 @@ fn settle_frame(scroll: &mut ScrollWorld, tick: u64) -> UiScrollSettleDispositio
 
 /// The frame the interaction lane runs when a settle is owed and no Motion
 /// tick asked for one.
-fn owed_frame(scroll: &mut ScrollWorld) -> UiScrollSettleDisposition {
+pub(super) fn owed_frame(scroll: &mut ScrollWorld) -> UiScrollSettleDisposition {
     let basis = presentation(scroll);
     scroll.world.session.settle_accepted_scroll_sample(basis)
 }
@@ -113,7 +113,14 @@ fn each_settle_frame_moves_the_offset_exactly_to_its_accepted_sample() {
             accepted.block_subpixels() >= previous.block_subpixels(),
             "frame {elapsed}: the settle never moves back ({previous:?} then {accepted:?})"
         );
-        if elapsed > 1 {
+        if elapsed == 1 {
+            assert_eq!(
+                accepted,
+                block(0),
+                "the frame a notch arrives on samples the rest pose, so it moves \
+                 nothing and the settle arrives one frame past its horizon"
+            );
+        } else {
             assert!(
                 accepted.block_subpixels() > previous.block_subpixels(),
                 "frame {elapsed}: every frame inside the horizon moves the content"

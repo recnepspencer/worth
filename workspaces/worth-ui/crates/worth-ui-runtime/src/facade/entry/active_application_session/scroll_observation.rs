@@ -12,6 +12,7 @@ use super::super::WorthUiActiveApplicationSession;
 
 use super::scroll_chrome_ingress::suppress_captured_axes;
 use super::scroll_gesture_latching::UiScrollRoutedChain;
+use crate::runtime::scroll::transition::{line_travel, UiScrollWheelLineDelta};
 use crate::runtime::scroll::{UiHostScrollObservationDenial, UiHostScrollObservationOutcome};
 
 impl WorthUiActiveApplicationSession {
@@ -113,13 +114,6 @@ impl WorthUiActiveApplicationSession {
                 tick,
             )
         });
-        let delta = if smooth.is_some()
-            || phase == worth_ui_host_contract::UiHostScrollDeltaPhase::Cancelled
-        {
-            crate::runtime::scroll::UiScrollDelta::new(0, 0)
-        } else {
-            offset_delta
-        };
         let bounds = self.reconciled_scroll_bounds(&routed)?;
         let geometry = routed
             .slots()
@@ -130,16 +124,6 @@ impl WorthUiActiveApplicationSession {
                     .map(|row| row.0)
             })
             .collect::<Vec<_>>();
-        let request = crate::runtime::scroll::UiScrollDeltaRequest::new(
-            routed.entries().to_vec(),
-            delta,
-            crate::runtime::scroll::UiScrollDeltaCause::Host {
-                source,
-                phase,
-                precision,
-            },
-        )
-        .map_err(UiHostScrollObservationDenial::Route)?;
         let installed = self
             .scroll
             .as_ref()
@@ -156,6 +140,27 @@ impl WorthUiActiveApplicationSession {
             .map_err(UiHostScrollObservationDenial::Route)?;
         let region = crate::runtime::scroll::latching_chain_index(&offsets, &bounds, offset_delta)
             .and_then(|index| routed.region(index));
+        // The latched owner is asked before the travel is measured, because it
+        // is what the travel is measured against: a notch reported in lines is
+        // a count until some owner's declared extent turns it into a distance,
+        // and the owner that will move is the one whose declaration governs.
+        let delta = if smooth.is_some()
+            || phase == worth_ui_host_contract::UiHostScrollDeltaPhase::Cancelled
+        {
+            crate::runtime::scroll::UiScrollDelta::new(0, 0)
+        } else {
+            self.coarse_line_travel(region, precision, offset_delta)?
+        };
+        let request = crate::runtime::scroll::UiScrollDeltaRequest::new(
+            routed.entries().to_vec(),
+            delta,
+            crate::runtime::scroll::UiScrollDeltaCause::Host {
+                source,
+                phase,
+                precision,
+            },
+        )
+        .map_err(UiHostScrollObservationDenial::Route)?;
         let mut successor = installed.clone();
         let receipt = successor
             .route_with_reconciled_bounds(request, &bounds)
@@ -281,6 +286,60 @@ impl WorthUiActiveApplicationSession {
             held[1] |= self.scroll_chrome_captures_axis(entry.owner(), UiScrollChromeAxis::Block);
         }
         held
+    }
+
+    /// The travel one host delta carries, in the subpixels the Scroll offset
+    /// model uses, measured against `latched`: the owner this gesture will
+    /// move.
+    ///
+    /// A pixel delta already is that travel and is returned untouched; so is a
+    /// page delta, which the track-click step measures for itself. A line
+    /// delta is not: the host reports a count of lines, already multiplied by
+    /// the platform's lines-per-notch, and how far one line reaches is the
+    /// region author's to declare.
+    ///
+    /// A declared smooth wheel measures that count against the same owner when
+    /// it stages the settle that travels the distance. An immediate wheel has
+    /// no settle to measure it later, so it is measured here, through the
+    /// conversion the settling path uses -- one notch is the same distance
+    /// under either declared behaviour, and an owner that will move but
+    /// declares no extent is refused rather than moved by a count read as
+    /// though it were a distance.
+    ///
+    /// `latched` is the one the caller also stages the settle against and
+    /// latches the gesture to, so the three agree by construction rather than
+    /// by each resolving the owner again. That matters only where a chain
+    /// reaches past its innermost owner: an inner region at its edge hands the
+    /// notch outward, and measuring it against the region the pointer is
+    /// inside would spend an extent belonging to something that is not going
+    /// to move.
+    fn coarse_line_travel(
+        &self,
+        latched: Option<super::scroll_gesture_latching::UiScrollRoutedRegion>,
+        precision: worth_ui_host_contract::UiHostScrollDeltaPrecision,
+        offset_delta: crate::runtime::scroll::UiScrollDelta,
+    ) -> Result<crate::runtime::scroll::UiScrollDelta, UiHostScrollObservationDenial> {
+        if precision.lines_per_notch().is_none() {
+            return Ok(offset_delta);
+        }
+        let Some(latched) = latched else {
+            // No owner in this chain can take a notch in this direction, so
+            // there is no owner whose extent would measure it and nothing for
+            // the measurement to move. The route still runs against no travel:
+            // it reconciles bounds and names the chain it visited.
+            return Ok(crate::runtime::scroll::UiScrollDelta::new(0, 0));
+        };
+        let extent = self
+            .declared_scroll_line_extent_logical_points(latched.entry().owner())
+            .ok_or(UiHostScrollObservationDenial::OwnerDeclaresNoLineExtent)?;
+        line_travel(
+            UiScrollWheelLineDelta::new(
+                offset_delta.inline_subpixels(),
+                offset_delta.block_subpixels(),
+            ),
+            extent,
+        )
+        .ok_or(UiHostScrollObservationDenial::DeltaOutOfRange)
     }
 }
 

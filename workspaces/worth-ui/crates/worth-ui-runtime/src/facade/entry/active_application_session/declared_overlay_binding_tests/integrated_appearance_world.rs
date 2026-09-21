@@ -44,12 +44,22 @@ mod reconstruction;
 mod replacement;
 #[path = "integrated_appearance_world/replacement_geometry.rs"]
 mod replacement_geometry;
+#[path = "integrated_appearance_world/scroll_capture_cancellation.rs"]
+mod scroll_capture_cancellation;
+#[path = "integrated_appearance_world/scroll_chrome_fixture.rs"]
+mod scroll_chrome_fixture;
+#[path = "integrated_appearance_world/scroll_coarse_wheel.rs"]
+mod scroll_coarse_wheel;
 #[path = "integrated_appearance_world/scroll_content_anchoring.rs"]
 mod scroll_content_anchoring;
 #[path = "integrated_appearance_world/scroll_gesture_latching.rs"]
 mod scroll_gesture_latching;
 #[path = "integrated_appearance_world/scroll_hover_reresolution.rs"]
 mod scroll_hover_reresolution;
+#[path = "integrated_appearance_world/scroll_input_burst.rs"]
+mod scroll_input_burst;
+#[path = "integrated_appearance_world/scroll_locality_narrowing.rs"]
+mod scroll_locality_narrowing;
 #[path = "integrated_appearance_world/scroll_modality_cancellation.rs"]
 mod scroll_modality_cancellation;
 #[path = "integrated_appearance_world/scroll_pose_authority.rs"]

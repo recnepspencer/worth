@@ -54,6 +54,19 @@ impl UiPreparedMotionEntrance {
     ) {
         (self.source, self.initial)
     }
+    /// Whether a reader who asked for less motion should be shown this
+    /// entrance's end state outright instead of the travel toward it.
+    ///
+    /// The answer is the declaration's alone, which is only safe because an
+    /// entrance exists only for Portal contents: `prepared_entrance` refuses
+    /// every successor whose target is not, so scrolled content never reaches
+    /// here. That matters because the two want opposite things. A Portal
+    /// appearing is a thing the reader did not ask for, and under reduced
+    /// motion it should simply be there. A scroll is travel the reader asked
+    /// for by turning a wheel, and snapping it to the end would take away the
+    /// continuity that tells them how far they went. If an entrance is ever
+    /// prepared for anything but Portal contents, this has to ask what it is
+    /// preparing before it asks the declaration.
     pub(crate) const fn snaps_for_reduced_motion(self) -> bool {
         self.declaration.settles_directly_under_reduced_motion()
     }
