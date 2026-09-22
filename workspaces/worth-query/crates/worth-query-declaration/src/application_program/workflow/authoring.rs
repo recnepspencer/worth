@@ -1,4 +1,7 @@
-use std::{collections::BTreeSet, marker::PhantomData};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    marker::PhantomData,
+};
 
 use crate::{
     application_capability::ApplicationCapabilityMarkerIdentity,
@@ -18,6 +21,7 @@ use super::{
 mod command;
 mod component;
 mod connections;
+mod denial;
 pub use command::{ApplicationWorkflowAuthoringCommand, ApplicationWorkflowCommandAdapter};
 pub use component::{
     ApplicationWorkflowComponentBuilder, ApplicationWorkflowComponentInputBinding,
@@ -25,6 +29,7 @@ pub use component::{
     ApplicationWorkflowComponentOutputBinding, ApplicationWorkflowComponentOutputPort,
     AuthoredWorkflowComponent, ExpandedWorkflowComponent, ExpandedWorkflowComponentInComponent,
 };
+pub use denial::{ApplicationWorkflowAuthoringDenial, ApplicationWorkflowComponentResource};
 
 pub enum ApplicationWorkflowOperationNode {}
 pub enum ApplicationWorkflowAssessmentNode {}
@@ -97,98 +102,6 @@ impl<Kind> ApplicationWorkflowOutputBinding<Kind> for ApplicationWorkflowNodeRef
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum ApplicationWorkflowComponentResource {
-    Ports,
-    Nodes,
-    Connections,
-    ExpandedNodes,
-    ExpandedConnections,
-    ComponentOccurrences,
-    ComponentDepth,
-    NodeProvenance,
-    ConnectionProvenance,
-    PortProvenance,
-}
-
-impl std::fmt::Display for ApplicationWorkflowComponentResource {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        formatter.write_str(match self {
-            Self::Ports => "ports",
-            Self::Nodes => "nodes",
-            Self::Connections => "connections",
-            Self::ExpandedNodes => "expanded nodes",
-            Self::ExpandedConnections => "expanded connections",
-            Self::ComponentOccurrences => "component occurrences",
-            Self::ComponentDepth => "component depth",
-            Self::NodeProvenance => "node provenance",
-            Self::ConnectionProvenance => "connection provenance",
-            Self::PortProvenance => "port provenance",
-        })
-    }
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum ApplicationWorkflowAuthoringDenial {
-    InvalidIdentity(String),
-    DuplicateNode(ApplicationWorkflowNodeIdentity),
-    UnknownComponentNode(ApplicationWorkflowNodeIdentity),
-    DuplicateComponentOccurrence(String),
-    DuplicateComponentPort(String),
-    ForeignComponentNode,
-    ForeignComponentPort,
-    ComponentResourceLimitExceeded {
-        resource: ApplicationWorkflowComponentResource,
-        maximum: u32,
-    },
-    UnexportedComponentPort(String),
-}
-
-impl std::fmt::Display for ApplicationWorkflowAuthoringDenial {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::InvalidIdentity(identity) => {
-                write!(formatter, "invalid workflow identity: {identity}")
-            }
-            Self::DuplicateNode(identity) => {
-                write!(formatter, "duplicate workflow node: {}", identity.as_str())
-            }
-            Self::UnknownComponentNode(identity) => write!(
-                formatter,
-                "component connection names absent node: {}",
-                identity.as_str()
-            ),
-            Self::DuplicateComponentOccurrence(occurrence) => {
-                write!(
-                    formatter,
-                    "duplicate workflow component occurrence: {occurrence}"
-                )
-            }
-            Self::DuplicateComponentPort(identity) => {
-                write!(formatter, "duplicate workflow component port: {identity}")
-            }
-            Self::ForeignComponentNode => {
-                formatter.write_str("workflow component node belongs to another component")
-            }
-            Self::ForeignComponentPort => {
-                formatter.write_str("workflow component port belongs to another component")
-            }
-            Self::ComponentResourceLimitExceeded { resource, maximum } => write!(
-                formatter,
-                "workflow component {resource} exceeds its bounded maximum of {maximum}"
-            ),
-            Self::UnexportedComponentPort(identity) => {
-                write!(
-                    formatter,
-                    "workflow component port is not exported: {identity}"
-                )
-            }
-        }
-    }
-}
-
-impl std::error::Error for ApplicationWorkflowAuthoringDenial {}
-
 pub struct ApplicationWorkflowDefinitionBuilder<Spec>
 where
     Spec: ApplicationWorkflowSpec,
@@ -197,7 +110,7 @@ where
     limits: ApplicationWorkflowDefinitionLimits,
     start: Option<ApplicationWorkflowNodeIdentity>,
     nodes: Vec<ApplicationWorkflowNode>,
-    node_identities: BTreeSet<ApplicationWorkflowNodeIdentity>,
+    node_is_operation: BTreeMap<ApplicationWorkflowNodeIdentity, bool>,
     connections: Vec<ApplicationWorkflowConnection>,
     component_expansions: Vec<super::ApplicationWorkflowComponentExpansion>,
     component_occurrences: BTreeSet<String>,
@@ -219,7 +132,7 @@ where
             limits,
             start: None,
             nodes: Vec::new(),
-            node_identities: BTreeSet::new(),
+            node_is_operation: BTreeMap::new(),
             connections: Vec::new(),
             component_expansions: Vec::new(),
             component_occurrences: BTreeSet::new(),
@@ -382,9 +295,11 @@ where
         identity: ApplicationWorkflowNodeIdentity,
         kind: ApplicationWorkflowNodeKind,
     ) -> Result<(), ApplicationWorkflowAuthoringDenial> {
-        if !self.node_identities.insert(identity.clone()) {
+        if self.node_is_operation.contains_key(&identity) {
             return Err(ApplicationWorkflowAuthoringDenial::DuplicateNode(identity));
         }
+        self.node_is_operation
+            .insert(identity.clone(), kind.is_operation());
         self.nodes
             .push(ApplicationWorkflowNode::new(identity, kind));
         Ok(())

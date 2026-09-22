@@ -168,8 +168,12 @@ impl ApplicationWorkflowEvidenceJoinPolicy {
 }
 
 impl ApplicationWorkflowNodeKind {
-    pub const fn is_effect(&self) -> bool {
+    pub const fn is_operation(&self) -> bool {
         matches!(self, Self::Operation { .. })
+    }
+
+    pub const fn is_effect(&self) -> bool {
+        self.is_operation()
     }
 
     pub const fn requires_workflow_authority(&self) -> bool {

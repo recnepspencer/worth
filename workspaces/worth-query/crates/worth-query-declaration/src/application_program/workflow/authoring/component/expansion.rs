@@ -40,7 +40,7 @@ where
         .collect::<Result<Vec<_>, ApplicationWorkflowAuthoringDenial>>()?;
     if let Some(duplicate) = expanded_nodes
         .iter()
-        .find(|expanded| builder.node_identities.contains(expanded.identity()))
+        .find(|expanded| builder.node_is_operation.contains_key(expanded.identity()))
     {
         return Err(ApplicationWorkflowAuthoringDenial::DuplicateNode(
             duplicate.identity().clone(),
@@ -115,9 +115,11 @@ where
         })
         .collect::<Result<Vec<_>, _>>()?;
 
-    builder
-        .node_identities
-        .extend(expanded_nodes.iter().map(|node| node.identity().clone()));
+    builder.node_is_operation.extend(
+        expanded_nodes
+            .iter()
+            .map(|node| (node.identity().clone(), node.kind().is_operation())),
+    );
     builder.nodes.extend(expanded_nodes);
     builder.connections.extend(expanded_connections);
     builder

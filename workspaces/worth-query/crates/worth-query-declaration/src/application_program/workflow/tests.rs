@@ -16,6 +16,7 @@ mod condition;
 mod resource_limits;
 mod retry;
 mod scale;
+mod sequence;
 mod shape;
 mod subject_selector;
 mod validation;
