@@ -1,10 +1,10 @@
 use sha2::{Digest, Sha256};
 
+use super::inputs::ObservedApprovalEvidence;
 use super::*;
 
 pub(super) fn derive<Schema, Operation, Input, Scope>(
     compiled: &crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowDefinition,
-    approval_node: worth_relational::facade::identity::EntityId,
     required: &RequiredWorkflowApproval,
     proposal: &super::super::super::PublishedWorkflowProposalRef,
     decision: WorkflowApprovalDecision,
@@ -14,7 +14,7 @@ pub(super) fn derive<Schema, Operation, Input, Scope>(
         Input,
         Scope,
     >,
-    transitions: &[super::super::super::workflow_instance_observation::ObservedWorkflowTransition],
+    evidence_observations: &[ObservedApprovalEvidence],
 ) -> Result<
     crate::domain_computation::primary_graph::workflow::WorkflowApprovalMeaning,
     WorthQueryApplicationAttemptDenial,
@@ -22,25 +22,16 @@ pub(super) fn derive<Schema, Operation, Input, Scope>(
     let authority = admission
         .workflow_approval_authority()
         .ok_or_else(|| affinity("workflow approval lacks retained capability authorization"))?;
-    let evidence_join = unique(
-        compiled.approval_evidence_sources(approval_node),
-        "evidence",
-    )?;
     let mut evidence = Vec::new();
     let mut evidence_material = Vec::new();
-    for node in compiled.required_assessments(evidence_join.entity()) {
-        let observed =
-            super::super::super::workflow_instance_observation::latest_assessment_evidence(
-                transitions,
-                node.entity(),
-            )
-            .ok_or_else(|| affinity("approval required evidence is absent"))?;
+    for observation in evidence_observations {
+        let observed = &observation.evidence;
         if !observed.passing {
             return Err(affinity("approval required evidence is failing"));
         }
         evidence.push(observed.entity);
         evidence_material.push((
-            node.path().to_owned(),
+            observation.node_path.clone(),
             observed.identity.clone(),
             observed.source_identity.clone(),
             observed.publication_identity.clone(),

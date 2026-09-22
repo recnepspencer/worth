@@ -1,10 +1,104 @@
 use super::*;
 
 #[test]
+fn older_approval_replays_after_the_same_node_settles_again() {
+    let application =
+        super::super::bounded_dimension_model::host::publish_workflow_on_first_program();
+    let definition = match publish_definition(
+        &application,
+        super::super::bounded_dimension_model::workflow::approval_retry_definition(),
+        WorkflowDefinitionExpectedPredecessor::Absent,
+        950,
+    )
+    .expect("retry definition publishes")
+    {
+        WorkflowDefinitionPublicationOutcome::Published(performed) => {
+            performed.definition().clone()
+        }
+        other => panic!("expected publication, got {other:?}"),
+    };
+    let instance = match start_instance(&application, definition, 951).expect("instance starts") {
+        WorkflowInstanceStartOutcome::Started(performed) => performed.instance().clone(),
+        other => panic!("expected start, got {other:?}"),
+    };
+    let proposal = super::proposal::published_proposal(&application, instance.clone(), 952);
+    for key in [953, 955] {
+        let settlement = settle_assessment(&application, instance.clone(), key);
+        assert!(matches!(
+            accept_assessment(&application, instance.clone(), &settlement, key + 1),
+            Ok(WorkflowProgressOutcome::Completed(_))
+        ));
+    }
+    assert!(matches!(
+        advance_instance(&application, instance.clone(), 957),
+        Ok(WorkflowProgressOutcome::Completed(_))
+    ));
+    let mut first = None;
+    for key in [958, 960] {
+        let required = match advance_instance(&application, instance.clone(), key)
+            .expect("approval selected")
+        {
+            WorkflowProgressOutcome::AwaitingApproval(required) => required,
+            other => panic!("expected approval, got {other:?}"),
+        };
+        let before = application.runtime().workflow_instance_progress_counters();
+        let transition = match approve_instance(
+            &application,
+            instance.clone(),
+            &required,
+            &proposal,
+            WorkflowApprovalDecision::Reject,
+            key + 1,
+        )
+        .expect("rejection prepares")
+        {
+            WorkflowProgressOutcome::Completed(performed) => {
+                assert!(!performed.replayed());
+                performed.transition()
+            }
+            other => panic!("expected rejection, got {other:?}"),
+        };
+        let after = application.runtime().workflow_instance_progress_counters();
+        assert_eq!(
+            after.warm_history_transition_visits(),
+            before.warm_history_transition_visits()
+        );
+        if first.is_none() {
+            first = Some((required, transition));
+        }
+    }
+    let (required, transition) = first.unwrap();
+    for cold in [false, true] {
+        if cold {
+            application
+                .runtime()
+                .release_workflow_instance_progress_for_test();
+        }
+        match approve_instance(
+            &application,
+            instance.clone(),
+            &required,
+            &proposal,
+            WorkflowApprovalDecision::Reject,
+            959,
+        )
+        .expect("older retry prepares")
+        {
+            WorkflowProgressOutcome::Completed(performed) => {
+                assert!(performed.replayed());
+                assert_eq!(performed.transition(), transition);
+            }
+            other => panic!("expected original rejection replay, got {other:?}"),
+        }
+    }
+}
+
+#[test]
 fn exact_approval_persists_replays_and_binds_decision_and_instance() {
     let (application, definition, instance, proposal, required, mut expected_evidence) =
         approval_journey("approved", 500);
     expected_evidence.sort_unstable();
+    let before_approval = application.runtime().workflow_instance_progress_counters();
     let committed_approval = match approve_instance(
         &application,
         instance.clone(),
@@ -43,6 +137,19 @@ fn exact_approval_persists_replays_and_binds_decision_and_instance() {
         }
         other => panic!("expected a performed workflow approval, got {other:?}"),
     };
+    let after_approval = application.runtime().workflow_instance_progress_counters();
+    assert_eq!(
+        after_approval.warm_core_hits(),
+        before_approval.warm_core_hits() + 1
+    );
+    assert_eq!(
+        after_approval.warm_history_transition_visits(),
+        before_approval.warm_history_transition_visits()
+    );
+    application
+        .runtime()
+        .release_workflow_instance_progress_for_test();
+    let before_reconstruction = application.runtime().workflow_instance_progress_counters();
     match approve_instance(
         &application,
         instance.clone(),
@@ -80,6 +187,19 @@ fn exact_approval_persists_replays_and_binds_decision_and_instance() {
         }
         other => panic!("expected a replayed workflow approval, got {other:?}"),
     }
+    let after_reconstruction = application.runtime().workflow_instance_progress_counters();
+    assert_eq!(
+        after_reconstruction.cold_misses(),
+        before_reconstruction.cold_misses() + 1
+    );
+    assert!(
+        after_reconstruction.cold_reconstruction_transition_visits()
+            > before_reconstruction.cold_reconstruction_transition_visits()
+    );
+    assert_eq!(
+        after_reconstruction.warm_history_transition_visits(),
+        before_reconstruction.warm_history_transition_visits()
+    );
     match approve_instance(
         &application,
         instance.clone(),

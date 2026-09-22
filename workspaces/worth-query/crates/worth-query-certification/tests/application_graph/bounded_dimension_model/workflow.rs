@@ -29,7 +29,7 @@ pub use declaration::{
     WorkflowInstanceStartCapability, WorkflowInstanceStartInput, WorkflowInstanceStartOperation,
 };
 pub use definition::{
-    advance_instance, approve_instance, condition_terminal_definition,
+    advance_instance, approval_retry_definition, approve_instance, condition_terminal_definition,
     proposal_terminal_definition, propose_authoring_instance, propose_instance,
     propose_instance_on_branch, publish_definition, repeated_proposal_definition,
     reviewed_geometry_definition, reviewed_geometry_definition_with_join_policy, start_instance,

@@ -53,6 +53,22 @@ pub fn reviewed_geometry_definition_with_join_policy(
     completion_identity: &str,
     join_policy: worth_query_host::facade::declaration::application_program::ApplicationWorkflowEvidenceJoinPolicy,
 ) -> ValidatedWorkflowDefinition<ReviewedGeometryWorkflow> {
+    reviewed_geometry_definition_with_policy(completion_identity, join_policy, None)
+}
+
+pub fn approval_retry_definition() -> ValidatedWorkflowDefinition<ReviewedGeometryWorkflow> {
+    reviewed_geometry_definition_with_policy(
+        "applied",
+        worth_query_host::facade::declaration::application_program::ApplicationWorkflowEvidenceJoinPolicy::AllRequiredPassing,
+        Some(2),
+    )
+}
+
+fn reviewed_geometry_definition_with_policy(
+    completion_identity: &str,
+    join_policy: worth_query_host::facade::declaration::application_program::ApplicationWorkflowEvidenceJoinPolicy,
+    approval_retries: Option<u16>,
+) -> ValidatedWorkflowDefinition<ReviewedGeometryWorkflow> {
     let mut builder = ApplicationWorkflowDefinitionBuilder::<ReviewedGeometryWorkflow>::new(
         "reviewed-geometry",
         definition_limits(),
@@ -115,11 +131,6 @@ pub fn reviewed_geometry_definition_with_join_policy(
             &apply,
         )
         .control(
-            &approval,
-            ApplicationWorkflowControlOutcome::Rejected,
-            &rejected,
-        )
-        .control(
             &apply,
             ApplicationWorkflowControlOutcome::Completed,
             &completed,
@@ -132,6 +143,21 @@ pub fn reviewed_geometry_definition_with_join_policy(
         .joined_evidence(&evidence, &approval)
         .approval_authority(&approval, &apply)
         .operation_input(&propose, &apply);
+    if let Some(bound) = approval_retries {
+        builder.retry(
+            &approval,
+            worth_query_host::facade::declaration::application_program::ApplicationWorkflowRetry::new(
+                ApplicationWorkflowControlOutcome::Rejected, "reconsider", bound,
+            ).expect("the reconsideration bound is valid"),
+            &approval,
+        ).control(&approval, ApplicationWorkflowControlOutcome::RetryExhausted, &rejected);
+    } else {
+        builder.control(
+            &approval,
+            ApplicationWorkflowControlOutcome::Rejected,
+            &rejected,
+        );
+    }
     builder
         .finish()
         .expect("the authored definition is complete")

@@ -91,33 +91,6 @@ pub(super) fn unique<'a>(
     }
 }
 
-pub(super) fn validate_passing_evidence(
-    compiled: &crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowDefinition,
-    join: worth_relational::facade::identity::EntityId,
-    transitions: &[super::super::super::workflow_instance_observation::ObservedWorkflowTransition],
-) -> Result<Vec<worth_relational::facade::identity::EntityId>, WorthQueryApplicationAttemptDenial> {
-    let required = compiled.required_assessments(join).collect::<Vec<_>>();
-    if required.len() < 2 {
-        return Err(affinity("approval evidence inventory is incomplete"));
-    }
-    let mut evidence_entities = Vec::new();
-    for node in required {
-        let Some(evidence) =
-            super::super::super::workflow_instance_observation::latest_assessment_evidence(
-                transitions,
-                node.entity(),
-            )
-        else {
-            return Err(affinity("approval required evidence is absent"));
-        };
-        if !evidence.passing {
-            return Err(affinity("approval required evidence is failing"));
-        }
-        evidence_entities.push(evidence.entity);
-    }
-    Ok(evidence_entities)
-}
-
 pub(super) fn affinity(subject: impl Into<String>) -> WorthQueryApplicationAttemptDenial {
     denial(
         WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,

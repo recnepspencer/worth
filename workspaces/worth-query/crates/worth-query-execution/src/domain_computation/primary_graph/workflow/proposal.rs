@@ -8,6 +8,5 @@ pub(in crate::domain_computation::primary_graph) use identity::{
     WorkflowProposalCoverageMeaning, WorkflowProposalMeaning,
 };
 pub(in crate::domain_computation::primary_graph) use observation::{
-    observe_workflow_operation_input, observe_workflow_proposal,
-    observe_workflow_proposal_coverage, observe_workflow_proposal_identity,
+    observe_workflow_operation_input, observe_workflow_proposal, observe_workflow_proposal_coverage,
 };

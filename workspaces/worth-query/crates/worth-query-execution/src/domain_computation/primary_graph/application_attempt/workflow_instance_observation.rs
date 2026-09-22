@@ -98,33 +98,6 @@ pub(in crate::domain_computation::primary_graph::application_attempt) struct Obs
         String,
 }
 
-pub(in crate::domain_computation::primary_graph::application_attempt) fn latest_transition_for_node(
-    transitions: &[ObservedWorkflowTransition],
-    node: EntityId,
-) -> Option<&ObservedWorkflowTransition> {
-    transitions
-        .iter()
-        .filter(|transition| transition.settlement.node() == node)
-        .max_by_key(|transition| transition.settlement.occurrence())
-}
-
-pub(in crate::domain_computation::primary_graph::application_attempt) fn latest_assessment_evidence(
-    transitions: &[ObservedWorkflowTransition],
-    node: EntityId,
-) -> Option<&ObservedWorkflowAssessmentEvidence> {
-    transitions
-        .iter()
-        .filter(|transition| transition.settlement.node() == node)
-        .filter_map(|transition| {
-            transition
-                .assessment_evidence
-                .as_ref()
-                .map(|evidence| (transition.settlement.occurrence(), evidence))
-        })
-        .max_by_key(|(occurrence, _)| *occurrence)
-        .map(|(_, evidence)| evidence)
-}
-
 pub(in crate::domain_computation::primary_graph::application_attempt) fn observe_workflow_instance(
     handle: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
