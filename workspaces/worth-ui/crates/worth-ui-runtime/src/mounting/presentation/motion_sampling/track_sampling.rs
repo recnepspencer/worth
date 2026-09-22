@@ -19,6 +19,12 @@ pub(super) struct UiPresentationTrackState {
 }
 
 impl UiPresentationTrackState {
+    /// The entrance sample is accepted as this track's current sample, but it
+    /// is delayed and carries no opacity: the frame that published it drew the
+    /// overlay at its successor geometry, not at the entrance offset. Claiming
+    /// the entrance geometry as presented erased the only record of what the
+    /// host still shows, so the first moving sample damaged its own destination
+    /// twice and left the published successor on screen.
     pub(super) fn accept_published_entrance(
         &mut self,
         sample: super::UiPresentationMotionSampleReceipt,
@@ -28,7 +34,6 @@ impl UiPresentationTrackState {
             Some(sample),
             "the physically accepted entrance matches the installed initial sample"
         );
-        self.presented_geometry = self.current_geometry;
         self.presented = true;
     }
 
