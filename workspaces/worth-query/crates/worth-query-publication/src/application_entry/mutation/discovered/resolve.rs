@@ -188,7 +188,7 @@ where
             application,
             admitted,
             demand,
-            Some(std::sync::Arc::clone(&retained.retained)),
+            None,
         ));
     }
     let source_lease = application
