@@ -60,6 +60,9 @@ pub(crate) enum UiScrollChromeInteractionDenial {
 pub(crate) enum UiScrollChromePressOutcome {
     /// A thumb press. The pointer is captured and the drag is latched.
     ThumbCaptured(UiScrollChromeLatch),
+    /// The press is admitted, but an older host frame must finish physically
+    /// before the pointer-to-thumb grab can be derived from accepted pixels.
+    ThumbAwaitingPhysical,
     /// A track press. The region paged by one viewport minus one line.
     TrackPaged(crate::runtime::scroll::UiScrollRouteReceipt),
 }
@@ -93,7 +96,7 @@ impl super::super::WorthUiActiveApplicationSession {
         point: [f32; 2],
         pointer: worth_ui_host_contract::UiHostPointerIdentity,
         capture_epoch: worth_ui_host_contract::UiHostPointerCaptureEpoch,
-        binding: worth_ui_host_contract::UiSurfaceBindingGeneration,
+        presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
     ) -> Result<UiScrollChromePressOutcome, UiScrollChromeInteractionDenial> {
         if self
             .scroll
@@ -133,6 +136,25 @@ impl super::super::WorthUiActiveApplicationSession {
             .ok_or(UiScrollChromeInteractionDenial::ChromeUnavailable)?;
         match part.part() {
             UiScrollChromePart::Thumb => {
+                if self.mounted.motion_sample_presentation_pending() {
+                    let pending =
+                        crate::runtime::interaction::gesture::UiScrollChromePendingCapture::new(
+                            pointer,
+                            capture_epoch,
+                            presentation.binding(),
+                            presentation,
+                            region.owner(),
+                            region.owner_instance(),
+                            region.incarnation(),
+                            part.axis(),
+                            point,
+                        );
+                    self.interaction
+                        .scroll_chrome_latch_mut()
+                        .begin_pending(pending)
+                        .map_err(UiScrollChromeInteractionDenial::Latch)?;
+                    return Ok(UiScrollChromePressOutcome::ThumbAwaitingPhysical);
+                }
                 let grab = crate::runtime::scroll::chrome::grab_offset_logical_points(
                     part.axis(),
                     axis_facts.thumb(),
@@ -141,7 +163,7 @@ impl super::super::WorthUiActiveApplicationSession {
                 let latch = UiScrollChromeLatch::press(
                     pointer,
                     capture_epoch,
-                    binding,
+                    presentation.binding(),
                     region.owner(),
                     region.owner_instance(),
                     region.incarnation(),
@@ -159,6 +181,9 @@ impl super::super::WorthUiActiveApplicationSession {
                 Ok(UiScrollChromePressOutcome::ThumbCaptured(latched))
             }
             UiScrollChromePart::Track => {
+                if self.mounted.motion_sample_presentation_pending() {
+                    return Err(UiScrollChromeInteractionDenial::AcceptedPoseUnsettled);
+                }
                 let line = self
                     .declared_scroll_line_extent_logical_points(region.owner())
                     .unwrap_or(0);

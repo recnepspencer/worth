@@ -55,6 +55,8 @@ pub(in crate::facade::entry) enum UiScrollChromePointerIntent {
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) enum UiScrollChromeIngressOutcome {
     Pressed(UiScrollChromePressOutcome),
+    PendingMoved,
+    PendingReleased,
     Dragged(crate::runtime::scroll::UiScrollRouteReceipt),
     Released(UiScrollChromeLatch),
     Denied(UiScrollChromeInteractionDenial),
@@ -212,14 +214,9 @@ impl super::super::WorthUiActiveApplicationSession {
                     chrome_point(position),
                 );
             }
-            let latched = self
-                .interaction
-                .scroll_chrome_latch()
-                .map(|held| (held.pointer(), held.capture_epoch()));
+            let latched = self.interaction.scroll_chrome_capture_identity();
             let intent = scroll_chrome_pointer_intent(report.report().payload(), latched);
-            if let Some(outcome) =
-                self.answer_scroll_chrome_intent(intent, surface, presentation.binding())
-            {
+            if let Some(outcome) = self.answer_scroll_chrome_intent(intent, surface, presentation) {
                 report_out.outcomes.push(outcome);
                 report_out.claimed.push(report.report().sequence());
             }
@@ -231,7 +228,7 @@ impl super::super::WorthUiActiveApplicationSession {
         &mut self,
         intent: UiScrollChromePointerIntent,
         surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
-        binding: worth_ui_host_contract::UiSurfaceBindingGeneration,
+        presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
     ) -> Option<UiScrollChromeIngressOutcome> {
         match intent {
             UiScrollChromePointerIntent::Untouched => None,
@@ -245,8 +242,13 @@ impl super::super::WorthUiActiveApplicationSession {
                 // the lane declines it and leaves the report where it was.
                 self.scroll_chrome_under_pointer(surface, point)?;
                 Some(
-                    match self.press_scroll_chrome(surface, point, pointer, capture_epoch, binding)
-                    {
+                    match self.press_scroll_chrome(
+                        surface,
+                        point,
+                        pointer,
+                        capture_epoch,
+                        presentation,
+                    ) {
                         Ok(outcome) => UiScrollChromeIngressOutcome::Pressed(outcome),
                         Err(denial) => UiScrollChromeIngressOutcome::Denied(denial),
                     },
@@ -256,17 +258,59 @@ impl super::super::WorthUiActiveApplicationSession {
                 pointer,
                 capture_epoch,
                 position,
-            } => Some(
-                match self.drag_scroll_chrome(chrome_point(position), pointer, capture_epoch) {
-                    Ok(receipt) => UiScrollChromeIngressOutcome::Dragged(receipt),
-                    Err(denial) => UiScrollChromeIngressOutcome::Denied(denial),
-                },
-            ),
+            } => {
+                if self
+                    .interaction
+                    .scroll_chrome_latch_mut()
+                    .pending()
+                    .is_some()
+                {
+                    return Some(
+                        match self.interaction.scroll_chrome_latch_mut().move_pending(
+                            pointer,
+                            capture_epoch,
+                            chrome_point(position),
+                            false,
+                        ) {
+                            Ok(_) => UiScrollChromeIngressOutcome::PendingMoved,
+                            Err(denial) => UiScrollChromeIngressOutcome::Denied(
+                                UiScrollChromeInteractionDenial::Latch(denial),
+                            ),
+                        },
+                    );
+                }
+                Some(
+                    match self.drag_scroll_chrome(chrome_point(position), pointer, capture_epoch) {
+                        Ok(receipt) => UiScrollChromeIngressOutcome::Dragged(receipt),
+                        Err(denial) => UiScrollChromeIngressOutcome::Denied(denial),
+                    },
+                )
+            }
             UiScrollChromePointerIntent::Release {
                 pointer,
                 capture_epoch,
                 position,
             } => {
+                if self
+                    .interaction
+                    .scroll_chrome_latch_mut()
+                    .pending()
+                    .is_some()
+                {
+                    return Some(
+                        match self.interaction.scroll_chrome_latch_mut().move_pending(
+                            pointer,
+                            capture_epoch,
+                            chrome_point(position),
+                            true,
+                        ) {
+                            Ok(_) => UiScrollChromeIngressOutcome::PendingReleased,
+                            Err(denial) => UiScrollChromeIngressOutcome::Denied(
+                                UiScrollChromeInteractionDenial::Latch(denial),
+                            ),
+                        },
+                    );
+                }
                 // The OS may coalesce the final move before button-up. Its
                 // event-time position is the final drag intent, not merely hover.
                 // Stage through ordinary acceptance, then release even on denial.

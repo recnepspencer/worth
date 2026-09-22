@@ -213,6 +213,29 @@ fn a_notch_on_one_surface_owes_the_other_surface_nothing() {
 
 #[test]
 fn accepted_samples_visit_only_indexed_content_and_its_owned_regions() {
+    fn present_and_inspect(
+        scroll: &mut super::scroll_pose_authority::ScrollWorld,
+        tick: u64,
+    ) -> super::super::super::UiScrollSettleDisposition {
+        let basis = scroll.presentation();
+        let prepared = scroll
+            .world
+            .session
+            .prepare_motion_tick(tick, basis)
+            .expect("armed settle prepares its tick");
+        if !prepared.receipt().samples().is_empty() {
+            scroll.world.host.push_native_display_presented();
+        }
+        scroll
+            .world
+            .session
+            .present_prepared_motion_tick(prepared, basis);
+        // Completion now reconciles accepted Scroll geometry before returning.
+        // A second explicit settle would overwrite this frame's locality work
+        // with the equal-pose (zero-work) retry.
+        scroll.world.session.last_scroll_settle_disposition()
+    }
+
     let mut scroll = super::scroll_settle_commit::smooth_world(true);
     let declaration = scroll
         .world
@@ -263,13 +286,13 @@ fn accepted_samples_visit_only_indexed_content_and_its_owned_regions() {
     ));
     // The first accepted sample establishes Motion's unchanged rest pose;
     // locality must not manufacture descendant work when nothing moved.
-    super::scroll_settle_frame::settle_frame(&mut scroll, 6);
+    present_and_inspect(&mut scroll, 6);
     let rest_work = scroll.world.session.last_scroll_hit_index_work();
     assert_eq!(rest_work.scroll_geometry_members_visited(), 0);
     assert_eq!(rest_work.scroll_geometry_regions_visited(), 0);
     for tick in [7, 8] {
         assert_eq!(
-            super::scroll_settle_frame::settle_frame(&mut scroll, tick),
+            present_and_inspect(&mut scroll, tick),
             super::super::super::UiScrollSettleDisposition::Applied
         );
         let work = scroll.world.session.last_scroll_hit_index_work();

@@ -9,6 +9,7 @@ mod transition;
 
 pub(crate) use scroll_chrome_latch::{
     UiScrollChromeLatch, UiScrollChromeLatchDenial, UiScrollChromeLatchState,
+    UiScrollChromePendingCapture,
 };
 
 use std::collections::BTreeMap;
@@ -55,6 +56,23 @@ impl UiPointerGestureRuntimeState {
     /// what a drag in progress already owns.
     pub(crate) const fn scroll_chrome_latch_state(&self) -> &UiScrollChromeLatchState {
         &self.scroll_chrome
+    }
+
+    pub(crate) fn scroll_chrome_capture_identity(
+        &self,
+    ) -> Option<(
+        UiHostPointerIdentity,
+        worth_ui_host_contract::UiHostPointerCaptureEpoch,
+    )> {
+        self.scroll_chrome
+            .pending()
+            .filter(|pending| !pending.released())
+            .map(|pending| (pending.pointer(), pending.capture_epoch()))
+            .or_else(|| {
+                self.scroll_chrome
+                    .held()
+                    .map(|held| (held.pointer(), held.capture_epoch()))
+            })
     }
 
     /// The latch slot, for the press, move and release lane that owns a drag.

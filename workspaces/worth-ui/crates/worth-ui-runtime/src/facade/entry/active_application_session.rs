@@ -75,6 +75,8 @@ mod scroll_chrome_ingress;
 mod scroll_chrome_ingress_tests;
 #[path = "active_application_session/scroll_chrome_interaction.rs"]
 mod scroll_chrome_interaction;
+#[path = "active_application_session/scroll_chrome_pending_completion.rs"]
+mod scroll_chrome_pending_completion;
 pub(crate) use scroll_chrome_ingress::UiScrollChromeIngressOutcome;
 #[cfg(any(test, feature = "certification-support"))]
 pub(crate) use scroll_chrome_interaction::UiScrollChromePressOutcome;

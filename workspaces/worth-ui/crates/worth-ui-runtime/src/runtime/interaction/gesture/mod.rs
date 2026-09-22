@@ -9,6 +9,7 @@ pub use stop::{UiPointerGestureStop, UiPointerGestureStopReason};
 
 pub(crate) use pointer::{
     UiScrollChromeLatch, UiScrollChromeLatchDenial, UiScrollChromeLatchState,
+    UiScrollChromePendingCapture,
 };
 
 #[allow(

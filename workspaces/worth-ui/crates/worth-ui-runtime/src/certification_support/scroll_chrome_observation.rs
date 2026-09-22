@@ -10,12 +10,16 @@
 pub enum UiScrollChromeCertificationOutcome {
     /// A thumb press: the pointer is captured and the drag is latched.
     ThumbCaptured,
+    /// A validated press awaits a physically pending Motion sample.
+    ThumbAwaitingPhysical,
     /// A track press: the region paged by one viewport minus one line.
     TrackPaged,
     /// A latched drag placed the offset that keeps the grab under the pointer.
     Dragged,
+    PendingMoved,
     /// The release that ended a latched drag.
     Released,
+    PendingReleased,
     /// Chrome claimed the report and refused it.
     Denied,
 }
@@ -39,11 +43,16 @@ impl WorthUiScrollChromeCertificationExt
                 Outcome::Pressed(
                     crate::facade::entry::UiScrollChromePressOutcome::ThumbCaptured(_),
                 ) => UiScrollChromeCertificationOutcome::ThumbCaptured,
+                Outcome::Pressed(
+                    crate::facade::entry::UiScrollChromePressOutcome::ThumbAwaitingPhysical,
+                ) => UiScrollChromeCertificationOutcome::ThumbAwaitingPhysical,
                 Outcome::Pressed(crate::facade::entry::UiScrollChromePressOutcome::TrackPaged(
                     _,
                 )) => UiScrollChromeCertificationOutcome::TrackPaged,
                 Outcome::Dragged(_) => UiScrollChromeCertificationOutcome::Dragged,
+                Outcome::PendingMoved => UiScrollChromeCertificationOutcome::PendingMoved,
                 Outcome::Released(_) => UiScrollChromeCertificationOutcome::Released,
+                Outcome::PendingReleased => UiScrollChromeCertificationOutcome::PendingReleased,
                 Outcome::Denied(_) => UiScrollChromeCertificationOutcome::Denied,
             })
             .collect::<Vec<_>>()

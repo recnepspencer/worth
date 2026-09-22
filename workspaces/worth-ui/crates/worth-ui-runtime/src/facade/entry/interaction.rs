@@ -15,9 +15,6 @@ impl WorthUiActiveApplicationSession {
         &mut self,
         reachability: worth_ui_host_native::UiNativeInputReachability,
     ) -> UiNativeObservationIngressSettlement {
-        if self.motion.is_installed() {
-            self.complete_motion_sample_presentation();
-        }
         let drain = match self.host_session.drain_observations() {
             Ok(drain) => drain,
             Err(denial) => {
@@ -31,6 +28,12 @@ impl WorthUiActiveApplicationSession {
             .map(|batch| self.admit_host_interaction_batch(batch))
             .collect::<Vec<_>>()
             .into_boxed_slice();
+        // Reports retain their event-time epoch. Admit them while that epoch
+        // is still current; a pending thumb press then waits for this physical
+        // completion rather than being silently invalidated by it.
+        if self.motion.is_installed() {
+            self.complete_motion_sample_presentation();
+        }
         UiNativeObservationIngressSettlement::from_outcomes(outcomes, reachability)
     }
 

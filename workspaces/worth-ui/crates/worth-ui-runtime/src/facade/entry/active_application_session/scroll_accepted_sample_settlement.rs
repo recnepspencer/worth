@@ -45,6 +45,12 @@ impl super::super::WorthUiActiveApplicationSession {
     ) -> UiScrollSettleDisposition {
         let disposition = self.settle_accepted_scroll_sample_inner(presentation);
         self.last_scroll_settle_disposition = disposition;
+        if matches!(
+            disposition,
+            UiScrollSettleDisposition::Applied | UiScrollSettleDisposition::Idle
+        ) {
+            self.finish_pending_scroll_chrome_capture();
+        }
         disposition
     }
 

@@ -201,7 +201,12 @@ do not supply thumb coordinates. The thumb's clip remains its viewport, not its
 old rectangle, so subsequent samples can move throughout the track.
 
 Pressing a moving thumb takes capture at the accepted pose and ends its easing
-with `DisplacedByDirectControl`. The press does not place content. Drag and track
+with `DisplacedByDirectControl`. If a sampled frame is still physically in
+flight, the admitted press retains its original presentation, pointer and
+capture epoch until those pixels are accepted and reconciled; the grab is then
+derived from the actual displayed thumb. A pending move or release retains its
+event-time position, while focus or binding loss cancels the capture. The press
+does not place content. Drag and track
 placement stage exact direct successors; their offsets and transition retirement
 commit only when the corresponding ordinary frame is accepted. Further direct
 input accumulates on bounded pending intent. Wheel and keyboard input cannot
@@ -211,6 +216,9 @@ Native client exit preserves the held button and capture epoch; focus loss
 still cancels capture, and a release outside the window clears the held button.
 Release submits its event-time position through ordinary direct succession
 before dropping capture, so a coalesced final move cannot lose the endpoint.
+A released pending capture refuses later same-axis wheel input until its final
+placement is staged, and the native physical callback wakes the ordinary frame
+that must publish that placement.
 
 Layout extent succession also stays pending until presentation. Accepted
 bounds and offsets remain coherent with displayed content while a resized or

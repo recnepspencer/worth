@@ -149,7 +149,15 @@ impl UiNativeEventLoopClient for UiNativeApplicationDriver {
     ) -> Result<UiNativeEventLoopDirective, UiNativeEventLoopClientFailure> {
         (|| -> Result<UiNativeEventLoopDirective, ()> {
             if self.progress_motion_physical(&grant)? {
-                return Ok(UiNativeEventLoopDirective::Continue);
+                // Finishing a retained thumb release can stage direct Scroll
+                // geometry and retire the last Motion sample in one callback.
+                // Wake the ordinary presentation owner even when no next
+                // sampling tick remains to do it.
+                return self
+                    .progress_application_runtime_motion_settlement()
+                    .map_err(|()| {
+                        eprintln!("native-driver-diagnostic: motion physical settlement denied");
+                    });
             }
             if self.application_runtime_active {
                 return self

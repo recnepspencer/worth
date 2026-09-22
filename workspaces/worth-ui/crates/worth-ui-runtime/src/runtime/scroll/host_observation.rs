@@ -30,6 +30,11 @@ pub(crate) enum UiHostScrollObservationDenial {
     /// wheel moving the same offset underneath it would fight the pointer.
     /// Nothing scrolled, and nothing was staged.
     AxisHeldByChromeDrag,
+    /// The pointer released a thumb while an earlier physical frame still
+    /// owns its final placement. Later same-axis input is refused explicitly
+    /// until that admitted release has been applied; it is never acknowledged
+    /// and then erased by the older capture's settlement.
+    PendingChromeRelease,
     /// A gesture already holds a latch, and the frame this event is reported
     /// against no longer admits input to the occurrence that latch names --
     /// a modal Portal has been accepted above it, or the occurrence has left

@@ -32,6 +32,28 @@ impl WorthUiNativeApplicationShell {
             }
             UiPortalExitTerminalProgress::Published | UiPortalExitTerminalProgress::Idle => {}
         }
+        if self
+            .session
+            .interaction
+            .scroll_chrome_pending_capture()
+            .is_some()
+        {
+            if self.session.mounted.motion_sample_presentation_pending() {
+                return Ok(UiNativeMotionTickDisposition::AwaitingPhysicalCompletion);
+            }
+            // The physical frame may have completed without Scroll accepting
+            // its geometry yet. Reconcile that debt before retrying the grab.
+            self.settle_accepted_scroll_samples();
+            self.session.finish_pending_scroll_chrome_capture();
+            if self
+                .session
+                .interaction
+                .scroll_chrome_pending_capture()
+                .is_some()
+            {
+                return Ok(UiNativeMotionTickDisposition::Active);
+            }
+        }
         self.session
             .mounted
             .set_reduced_motion_posture(map_reduced_motion(reduced_motion));
@@ -76,6 +98,11 @@ impl WorthUiNativeApplicationShell {
         self.session.mounted.has_active_motion_samples()
             || self.session.portal_exit_terminal_work_pending()
             || self.session.awaits_scroll_settle_retry()
+            || self
+                .session
+                .interaction
+                .scroll_chrome_pending_capture()
+                .is_some()
     }
 
     /// Whether Motion or retained Portal-exit work currently owns native

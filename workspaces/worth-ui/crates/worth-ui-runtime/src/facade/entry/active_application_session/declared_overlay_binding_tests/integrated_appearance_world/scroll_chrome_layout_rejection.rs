@@ -35,13 +35,10 @@ fn rejected_extent_keeps_presented_chrome_hit_geometry_and_defers_control_until_
         thumb.y() + thumb.height() / 2.0,
     ];
     assert!(matches!(
-        scroll.world.session.press_scroll_chrome(
-            surface,
-            grabbed,
-            pointer,
-            capture,
-            previous.binding(),
-        ),
+        scroll
+            .world
+            .session
+            .press_scroll_chrome(surface, grabbed, pointer, capture, previous,),
         Ok(UiScrollChromePressOutcome::ThumbCaptured(_))
     ));
     let before = scroll.accepted_offset();
@@ -108,13 +105,10 @@ fn rejected_extent_keeps_presented_chrome_hit_geometry_and_defers_control_until_
         "the rejected candidate's larger thumb cannot claim a point on the displayed track"
     );
     assert_eq!(
-        scroll.world.session.press_scroll_chrome(
-            surface,
-            point,
-            pointer,
-            capture,
-            previous.binding()
-        ),
+        scroll
+            .world
+            .session
+            .press_scroll_chrome(surface, point, pointer, capture, previous),
         Err(UiScrollChromeInteractionDenial::UnpresentedLayout)
     );
     assert_eq!(
@@ -145,13 +139,10 @@ fn rejected_extent_keeps_presented_chrome_hit_geometry_and_defers_control_until_
         .unwrap();
     assert_eq!(answer.part().unwrap().part(), UiScrollChromePart::Thumb);
     assert!(matches!(
-        scroll.world.session.press_scroll_chrome(
-            surface,
-            point,
-            pointer,
-            capture,
-            accepted.binding(),
-        ),
+        scroll
+            .world
+            .session
+            .press_scroll_chrome(surface, point, pointer, capture, accepted,),
         Ok(UiScrollChromePressOutcome::ThumbCaptured(_))
     ));
     assert!(scroll

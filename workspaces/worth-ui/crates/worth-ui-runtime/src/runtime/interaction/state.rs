@@ -57,6 +57,21 @@ impl UiInteractionRuntimeState {
         self.pointer.scroll_chrome_latch()
     }
 
+    pub(crate) fn scroll_chrome_capture_identity(
+        &self,
+    ) -> Option<(
+        worth_ui_host_contract::UiHostPointerIdentity,
+        worth_ui_host_contract::UiHostPointerCaptureEpoch,
+    )> {
+        self.pointer.scroll_chrome_capture_identity()
+    }
+
+    pub(crate) fn scroll_chrome_pending_capture(
+        &self,
+    ) -> Option<super::gesture::UiScrollChromePendingCapture> {
+        self.pointer.scroll_chrome_latch_state().pending()
+    }
+
     /// Whether a thumb drag already owns this axis of this region, so a wheel
     /// or a key naming the same axis must be ignored for the length of the
     /// capture. The rule lives in the latch slot; this is the way in.

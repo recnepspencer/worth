@@ -64,6 +64,27 @@ impl WorthUiActiveApplicationSession {
     ) -> Result<crate::runtime::scroll::UiScrollRouteReceipt, UiHostScrollObservationDenial> {
         let routed = self.resolve_scroll_routing(target, work, observation_tick)?;
         let [x_subpixels, y_subpixels] = delta_subpixels;
+        if self
+            .interaction
+            .scroll_chrome_pending_capture()
+            .is_some_and(|pending| {
+                pending.released()
+                    && routed
+                        .entries()
+                        .iter()
+                        .any(|entry| entry.owner() == pending.owner())
+                    && match pending.axis() {
+                        crate::runtime::scroll::chrome::UiScrollChromeAxis::Inline => {
+                            x_subpixels != 0
+                        }
+                        crate::runtime::scroll::chrome::UiScrollChromeAxis::Block => {
+                            y_subpixels != 0
+                        }
+                    }
+            })
+        {
+            return Err(UiHostScrollObservationDenial::PendingChromeRelease);
+        }
         // A thumb drag owns the axis it grabbed for the length of its capture.
         // The drag places that offset directly, so a wheel moving the same
         // offset underneath it would fight the pointer; the other axis of the

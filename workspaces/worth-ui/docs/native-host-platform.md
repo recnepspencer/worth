@@ -364,12 +364,17 @@ Neither this initialization failure nor the earlier GDI diagnostics qualify
 the native timing budgets. The subsequent moving-thumb functional probe uses
 direct GDI observations under an already qualified exposure; observation
 completion is only an upper bound, never a frame-pacing timestamp. The
-optimized native run now reaches its real button-down, stable held pose, and
-drag check. It fails there: the visible thumb advances while a newer Motion
-presentation is physically in flight, after the press latched the older accepted
-pose. The held drag therefore moves the thumb less than the pointer's 30-pixel
-travel. The pending physical sample, old event-time epoch, and capture must be
-reconciled without relabeling the input before this functional proof can pass.
+optimized native rerun now passes the real button-down, stable held pose,
+30-pixel drag, origin restore, horizontal and vertical endpoints, and return
+pixels. The capture waits for any in-flight physical sample and derives the grab
+from its accepted thumb without relabeling the old event-time presentation.
+The same journey still stops when its later timing trace asks this Windows
+session for DXGI duplication: `DuplicateOutput1` returns
+`DXGI_ERROR_UNSUPPORTED`. No timing budget is claimed from the successful GDI
+functional observations.
+Windows Graphics Capture was evaluated as a fallback, but this dependency's
+one-frame pool can coalesce upstream frames without a loss report; its timing
+population therefore cannot replace the required loss-checked DXGI trace.
 
 Precision input is qualified by a run on a real precision device. A synthetic
 pixel-delta report exercises the same semantic path and proves nothing about

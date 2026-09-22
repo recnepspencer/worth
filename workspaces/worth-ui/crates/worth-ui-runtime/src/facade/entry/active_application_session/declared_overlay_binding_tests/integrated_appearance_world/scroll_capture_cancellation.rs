@@ -31,6 +31,10 @@ use crate::runtime::scroll::chrome::UiScrollChromeAxis;
 use crate::runtime::scroll::{UiHostScrollObservationOutcome, UiScrollOffset};
 use worth_ui_host_contract::*;
 
+#[path = "scroll_capture_cancellation/accepted_sample_direct.rs"]
+mod accepted_sample_direct;
+#[path = "scroll_capture_cancellation/pending_focus_loss.rs"]
+mod pending_focus_loss;
 #[path = "scroll_capture_cancellation/pending_sample.rs"]
 mod pending_sample;
 #[path = "scroll_capture_cancellation/release_position.rs"]
@@ -91,7 +95,7 @@ fn centre(box_: UiMountedCanonicalBox) -> [f32; 2] {
 /// A press the host delivers with its pointer and the capture it opened.
 fn press(scroll: &mut ScrollWorld, point: [f32; 2]) -> UiScrollChromePressOutcome {
     let surface = scroll.surface();
-    let binding = scroll.presentation().binding();
+    let presentation = scroll.presentation();
     scroll
         .world
         .session
@@ -100,7 +104,7 @@ fn press(scroll: &mut ScrollWorld, point: [f32; 2]) -> UiScrollChromePressOutcom
             point,
             UiHostPointerIdentity::new(POINTER),
             UiHostPointerCaptureEpoch::new(CAPTURE_EPOCH),
-            binding,
+            presentation,
         )
         .expect("a press on the thumb the region presents is answered")
 }
