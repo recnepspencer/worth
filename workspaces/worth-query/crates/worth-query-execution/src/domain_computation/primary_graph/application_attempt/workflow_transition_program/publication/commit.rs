@@ -157,7 +157,14 @@ where
                 .primary_provider
                 .graph
                 .with_workflow_instance_progress_mut(progress_key, |retention| {
-                    progress_update.apply(retention, committed_revision, performed.transition())
+                    progress_update.apply(
+                        retention,
+                        committed_revision,
+                        performed.transition(),
+                        performed
+                            .assessment_evidence()
+                            .map(|evidence| evidence.evidence()),
+                    )
                 });
         }
         projected

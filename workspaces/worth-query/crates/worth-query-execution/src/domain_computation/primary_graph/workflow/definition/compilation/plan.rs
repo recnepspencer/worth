@@ -226,6 +226,13 @@ impl CompiledWorkflowDefinition {
         })
     }
 
+    pub(in crate::domain_computation::primary_graph) fn assessment_subject_sources(
+        &self,
+        assessment: EntityId,
+    ) -> impl Iterator<Item = &CompiledWorkflowNode> {
+        self.data_sources(assessment, ApplicationWorkflowDataFlow::AssessmentSubject)
+    }
+
     pub(in crate::domain_computation::primary_graph) fn approval_authority_targets(
         &self,
         approval: EntityId,

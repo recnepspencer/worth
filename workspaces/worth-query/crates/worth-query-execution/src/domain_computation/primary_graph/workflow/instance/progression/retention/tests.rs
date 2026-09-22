@@ -19,6 +19,7 @@ fn progress(head: u64) -> WorkflowInstanceProgress {
             2,
         )]),
         latest_transitions: BTreeMap::new(),
+        latest_assessment_evidence: BTreeMap::new(),
     }
 }
 

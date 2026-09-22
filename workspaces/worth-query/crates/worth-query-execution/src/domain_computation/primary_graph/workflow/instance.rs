@@ -10,9 +10,10 @@ pub use progression::WorthQueryWorkflowInstanceProgressCounters;
 pub(in crate::domain_computation::primary_graph) use progression::{
     default_progress_retention_shards, PreparedWorkflowProgressUpdate,
     RetainedWorkflowInstanceProgressProjection, SettledWorkflowTransition,
-    WorkflowInstanceProgress, WorkflowInstanceProgressKey, WorkflowInstanceProgressRetention,
-    WorkflowInstanceProgressRetentionDenial, WorkflowTransitionLocator,
-    WorkflowTransitionProgressBasis, WorkflowTransitionReplayProjection,
+    WorkflowAssessmentEvidenceLocator, WorkflowInstanceProgress, WorkflowInstanceProgressKey,
+    WorkflowInstanceProgressRetention, WorkflowInstanceProgressRetentionDenial,
+    WorkflowTransitionLocator, WorkflowTransitionProgressBasis,
+    WorkflowTransitionProgressObservation, WorkflowTransitionReplayProjection,
     WorkflowTransitionReplayRetention,
 };
 pub(in crate::domain_computation::primary_graph) use state::WorkflowInstanceState;

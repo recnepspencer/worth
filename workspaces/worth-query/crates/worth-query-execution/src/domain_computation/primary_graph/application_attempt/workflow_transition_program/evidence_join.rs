@@ -24,7 +24,7 @@ where
         selected: crate::domain_computation::primary_graph::workflow::instance::SelectedWorkflowTransition,
         live_membership: worth_relational::facade::identity::RelationId,
         mut facts: Vec<super::super::WorthQueryApplicationObservedFact>,
-        transitions: &[super::super::workflow_instance_observation::ObservedWorkflowTransition],
+        progress: &crate::domain_computation::primary_graph::workflow::instance::WorkflowInstanceProgress,
         policy: worth_query_declaration::facade::application_program::ApplicationWorkflowEvidenceJoinPolicy,
     ) -> Result<
         PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
@@ -70,14 +70,24 @@ where
                 "evidence join requirement is not an assessment node",
             ));
         };
-            let Some(evidence) =
-                super::super::workflow_instance_observation::latest_assessment_evidence(
-                    transitions,
-                    node.entity(),
-                )
-            else {
+            let Some(evidence_locator) = progress.latest_assessment_evidence(node.entity()) else {
                 continue;
             };
+            let maximum_facts = self
+                .admission
+                .allowed_graph_contract()
+                .decision_fact_budget()
+                .saturating_sub(self.facts.len().saturating_add(facts.len()));
+            let (evidence, mut retained_facts) = self.lease.handle().with_runtime(|runtime| {
+                super::super::workflow_instance_observation::observe_retained_assessment_evidence(
+                    runtime,
+                    self.lease.snapshot(),
+                    layout,
+                    evidence_locator,
+                    maximum_facts,
+                )
+            })?;
+            facts.append(&mut retained_facts);
             if evidence.query != *query
                 || evidence.parameter_type != *parameter_type
                 || evidence.result_type != *result_type

@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 use worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome;
 use worth_relational::facade::identity::EntityId;
 
+mod locator;
 mod navigation;
 mod replay;
 mod retention;
@@ -11,6 +12,10 @@ use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
 };
 use crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowDefinition;
+pub(in crate::domain_computation::primary_graph) use locator::{
+    WorkflowAssessmentEvidenceLocator, WorkflowTransitionLocator,
+    WorkflowTransitionProgressObservation,
+};
 use navigation::unique_successor;
 pub(in crate::domain_computation::primary_graph) use replay::{
     WorkflowTransitionReplayProjection, WorkflowTransitionReplayRetention,
@@ -31,31 +36,6 @@ pub(in crate::domain_computation::primary_graph) struct SettledWorkflowTransitio
     occurrence: u64,
     outcome: ApplicationWorkflowControlOutcome,
     operation_receipt_identity: Option<[u8; 32]>,
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) struct WorkflowTransitionLocator {
-    entity: EntityId,
-    settlement: SettledWorkflowTransition,
-}
-
-impl WorkflowTransitionLocator {
-    pub(in crate::domain_computation::primary_graph) const fn new(
-        entity: EntityId,
-        settlement: SettledWorkflowTransition,
-    ) -> Self {
-        Self { entity, settlement }
-    }
-
-    pub(in crate::domain_computation::primary_graph) const fn entity(self) -> EntityId {
-        self.entity
-    }
-
-    pub(in crate::domain_computation::primary_graph) const fn settlement(
-        self,
-    ) -> SettledWorkflowTransition {
-        self.settlement
-    }
 }
 
 impl SettledWorkflowTransition {
@@ -106,6 +86,7 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowInstanceProgress
     next_occurrence: u64,
     retry_counts: BTreeMap<(EntityId, ApplicationWorkflowControlOutcome), usize>,
     latest_transitions: BTreeMap<EntityId, WorkflowTransitionLocator>,
+    latest_assessment_evidence: BTreeMap<EntityId, WorkflowAssessmentEvidenceLocator>,
 }
 
 impl WorkflowInstanceProgress {
@@ -124,6 +105,12 @@ impl WorkflowInstanceProgress {
                         .saturating_add(CONSERVATIVE_TREE_NODE_ALLOWANCE),
                 ),
             )
+            .saturating_add(
+                self.latest_assessment_evidence.len().saturating_mul(
+                    std::mem::size_of::<(EntityId, WorkflowAssessmentEvidenceLocator)>()
+                        .saturating_add(CONSERVATIVE_TREE_NODE_ALLOWANCE),
+                ),
+            )
     }
 
     pub(in crate::domain_computation::primary_graph) fn reconstruct(
@@ -136,6 +123,7 @@ impl WorkflowInstanceProgress {
             next_occurrence: 0,
             retry_counts: BTreeMap::new(),
             latest_transitions: BTreeMap::new(),
+            latest_assessment_evidence: BTreeMap::new(),
         };
         for transition in settled {
             progress.advance(compiled, *transition)?;
@@ -159,6 +147,7 @@ impl WorkflowInstanceProgress {
             next_occurrence: 0,
             retry_counts: BTreeMap::new(),
             latest_transitions: BTreeMap::new(),
+            latest_assessment_evidence: BTreeMap::new(),
         };
         for transition in settled {
             progress.advance_with(*transition, &mut successor)?;
@@ -172,27 +161,6 @@ impl WorkflowInstanceProgress {
 
     pub(in crate::domain_computation::primary_graph) const fn next_occurrence(&self) -> u64 {
         self.next_occurrence
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn latest_transition(
-        &self,
-        node: EntityId,
-    ) -> Option<WorkflowTransitionLocator> {
-        self.latest_transitions.get(&node).copied()
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn retain_transition(
-        &mut self,
-        locator: WorkflowTransitionLocator,
-    ) {
-        let node = locator.settlement().node();
-        match self.latest_transitions.get(&node) {
-            Some(retained)
-                if retained.settlement().occurrence() >= locator.settlement().occurrence() => {}
-            _ => {
-                self.latest_transitions.insert(node, locator);
-            }
-        }
     }
 
     pub(in crate::domain_computation::primary_graph) fn advance(
@@ -368,14 +336,42 @@ mod tests {
             next_occurrence: 2,
             retry_counts: BTreeMap::new(),
             latest_transitions: BTreeMap::new(),
+            latest_assessment_evidence: BTreeMap::new(),
         };
         let latest = WorkflowTransitionLocator::new(entity(52), completed(node, 1));
-        progress.retain_transition(latest);
-        progress.retain_transition(WorkflowTransitionLocator::new(
-            entity(51),
-            completed(node, 0),
+        progress.retain_observation(WorkflowTransitionProgressObservation::new(latest, None));
+        progress.retain_observation(WorkflowTransitionProgressObservation::new(
+            WorkflowTransitionLocator::new(entity(51), completed(node, 0)),
+            None,
         ));
 
         assert_eq!(progress.latest_transition(node), Some(latest));
+    }
+
+    #[test]
+    fn evidence_locator_survives_a_later_reuse_transition_without_new_evidence() {
+        let node = entity(60);
+        let mut progress = WorkflowInstanceProgress {
+            head: node,
+            next_occurrence: 2,
+            retry_counts: BTreeMap::new(),
+            latest_transitions: BTreeMap::new(),
+            latest_assessment_evidence: BTreeMap::new(),
+        };
+        let evidence_transition = WorkflowTransitionLocator::new(entity(61), completed(node, 0));
+        progress.retain_observation(WorkflowTransitionProgressObservation::new(
+            evidence_transition,
+            Some(entity(62)),
+        ));
+        progress.retain_observation(WorkflowTransitionProgressObservation::new(
+            WorkflowTransitionLocator::new(entity(63), completed(node, 1)),
+            None,
+        ));
+
+        let retained = progress
+            .latest_assessment_evidence(node)
+            .expect("reused evidence remains locatable");
+        assert_eq!(retained.transition(), evidence_transition);
+        assert_eq!(retained.evidence(), entity(62));
     }
 }

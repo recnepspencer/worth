@@ -16,29 +16,49 @@ where
     pub(super) fn materialize_assessment_requirement(
         mut self,
         layout: &crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
-        program_revision: worth_query_declaration::facade::application_program::ApplicationProgramRevision,
+        compiled: &crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowDefinition,
         instance: super::super::PublishedWorkflowInstanceRef,
         selected: crate::domain_computation::primary_graph::workflow::instance::SelectedWorkflowTransition,
         live_membership: worth_relational::facade::identity::RelationId,
         retire_live_membership: bool,
         mut facts: Vec<super::super::WorthQueryApplicationObservedFact>,
         assessment: crate::domain_computation::primary_graph::workflow::instance::SelectedWorkflowAssessment,
-        transitions: &[super::super::workflow_instance_observation::ObservedWorkflowTransition],
+        progress: &crate::domain_computation::primary_graph::workflow::instance::WorkflowInstanceProgress,
     ) -> Result<
         PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
         WorthQueryApplicationAttemptDenial,
     > {
+        let program_revision = compiled.program_revision().clone();
+        let mut sources = compiled.assessment_subject_sources(selected.node());
+        let source = sources.next().ok_or_else(|| {
+            denial(
+                WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,
+                selected.node_path(),
+            )
+        })?;
+        if sources.next().is_some() {
+            return Err(denial(
+                WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,
+                selected.node_path(),
+            ));
+        }
+        let source_transition = progress.latest_transition(source.entity()).ok_or_else(|| {
+            denial(
+                WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,
+                selected.node_path(),
+            )
+        })?;
         let proposal_fact_budget = self
             .admission
             .allowed_graph_contract()
             .decision_fact_budget()
             .saturating_sub(self.facts.len().saturating_add(facts.len()));
         let (proposal_entity, proposal_identity, proposal_facts) = self.lease.handle().with_runtime(|runtime| {
-            super::super::workflow_instance_observation::observe_latest_workflow_proposal_identity(
+            super::super::workflow_instance_observation::observe_retained_workflow_proposal_identity(
                 runtime,
                 self.lease.snapshot(),
                 layout,
-                transitions,
+                source_transition,
                 proposal_fact_budget,
             )
         })?;
@@ -53,12 +73,22 @@ where
             )
         })?;
         facts.extend(coverage_facts);
-        if let Some(evidence) =
-            super::super::workflow_instance_observation::latest_assessment_evidence(
-                transitions,
-                selected.node(),
-            )
-        {
+        if let Some(evidence_locator) = progress.latest_assessment_evidence(selected.node()) {
+            let maximum_facts = self
+                .admission
+                .allowed_graph_contract()
+                .decision_fact_budget()
+                .saturating_sub(self.facts.len().saturating_add(facts.len()));
+            let (evidence, mut retained_facts) = self.lease.handle().with_runtime(|runtime| {
+                super::super::workflow_instance_observation::observe_retained_assessment_evidence(
+                    runtime,
+                    self.lease.snapshot(),
+                    layout,
+                    evidence_locator,
+                    maximum_facts,
+                )
+            })?;
+            facts.append(&mut retained_facts);
             if evidence.query != assessment.query
                 || evidence.parameter_type != assessment.parameter_type
                 || evidence.result_type != assessment.result_type

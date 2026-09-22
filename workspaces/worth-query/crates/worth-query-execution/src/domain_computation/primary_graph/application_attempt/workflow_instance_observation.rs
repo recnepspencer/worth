@@ -9,7 +9,7 @@ use super::{
 use crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowDefinition;
 use crate::domain_computation::primary_graph::workflow::instance::{
     SettledWorkflowTransition, WorkflowInstanceState, WorkflowTransitionLocator,
-    WorkflowTransitionProgressBasis,
+    WorkflowTransitionProgressBasis, WorkflowTransitionProgressObservation,
 };
 use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout;
 
@@ -19,8 +19,9 @@ mod progression;
 mod settlement;
 use instance_binding::{adjacency, adjacency_with_kind, exact, exact_u64, text};
 pub(super) use settlement::{
-    observe_evidence_dependencies, observe_latest_workflow_proposal_identity,
-    observe_retained_transition, recover_settled_live_membership,
+    observe_evidence_dependencies, observe_retained_assessment_evidence,
+    observe_retained_transition, observe_retained_workflow_proposal_identity,
+    recover_settled_live_membership,
 };
 
 pub(in crate::domain_computation::primary_graph::application_attempt) struct ObservedWorkflowInstance
@@ -300,27 +301,35 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
             retention.observe_warm_history(transition_visits)
         });
     }
-    let mut transition_locators = settled_transitions
+    let mut progress_observations = settled_transitions
         .iter()
-        .map(|transition| WorkflowTransitionLocator::new(transition.entity, transition.settlement))
+        .map(|transition| {
+            WorkflowTransitionProgressObservation::new(
+                WorkflowTransitionLocator::new(transition.entity, transition.settlement),
+                transition
+                    .assessment_evidence
+                    .as_ref()
+                    .map(|evidence| evidence.entity),
+            )
+        })
         .collect::<Vec<_>>();
     if live_membership.is_none() {
-        let settled_index = transition_locators
+        let settled_index = progress_observations
             .iter()
             .enumerate()
-            .max_by_key(|(_, transition)| transition.settlement().occurrence())
+            .max_by_key(|(_, observation)| observation.transition().settlement().occurrence())
             .map(|(index, _)| index);
         if let Some(index) = settled_index {
-            transition_locators.swap_remove(index);
+            progress_observations.swap_remove(index);
         }
     }
-    let reconstruction_transition_visits = transition_locators.len();
+    let reconstruction_transition_visits = progress_observations.len();
     let replay_projections = progression::project_replays(compiled, entity, &settled_transitions)?;
     let (progress_basis, replays) = progression::finish_progress(
         handle,
         progress_observation,
         compiled,
-        &transition_locators,
+        &progress_observations,
         replay_projections,
         reconstruction_transition_visits,
     )?;

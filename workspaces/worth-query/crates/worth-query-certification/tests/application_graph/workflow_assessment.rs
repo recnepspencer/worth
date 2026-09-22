@@ -148,6 +148,7 @@ fn authenticated_advance_reconstructs_the_exact_required_assessment_without_sett
         other => panic!("expected performed assessment evidence, got {other:?}"),
     }
 
+    let before_assessment = application.runtime().workflow_instance_progress_counters();
     match advance_instance(&application, started.instance().clone(), 449)
         .expect("accepted assessment must advance to the next exact requirement")
     {
@@ -157,6 +158,15 @@ fn authenticated_advance_reconstructs_the_exact_required_assessment_without_sett
         }
         other => panic!("expected the second assessment requirement, got {other:?}"),
     }
+    let after_assessment = application.runtime().workflow_instance_progress_counters();
+    assert_eq!(
+        after_assessment.warm_core_hits(),
+        before_assessment.warm_core_hits() + 1,
+    );
+    assert_eq!(
+        after_assessment.warm_history_transition_visits(),
+        before_assessment.warm_history_transition_visits(),
+    );
 
     match accept_assessment(&application, started.instance().clone(), &settled, 448)
         .expect("the original acceptance key must replay its exact evidence")
@@ -199,6 +209,7 @@ fn authenticated_advance_reconstructs_the_exact_required_assessment_without_sett
         other => panic!("expected replay through successor head, got {other:?}"),
     }
 
+    let before_join = application.runtime().workflow_instance_progress_counters();
     match advance_instance(&application, started.instance().clone(), 453)
         .expect("the evidence join must reconstruct from committed assessment facts")
     {
@@ -209,6 +220,15 @@ fn authenticated_advance_reconstructs_the_exact_required_assessment_without_sett
         }
         other => panic!("expected the complete evidence join to settle, got {other:?}"),
     }
+    let after_join = application.runtime().workflow_instance_progress_counters();
+    assert_eq!(
+        after_join.warm_core_hits(),
+        before_join.warm_core_hits() + 1,
+    );
+    assert_eq!(
+        after_join.warm_history_transition_visits(),
+        before_join.warm_history_transition_visits(),
+    );
     match advance_instance(&application, started.instance().clone(), 453)
         .expect("the committed evidence join key must replay beyond its successor head")
     {
@@ -314,10 +334,23 @@ fn evidence_join_replays_before_a_supported_terminal_successor() {
             Ok(WorkflowProgressOutcome::Completed(_))
         ));
     }
+    application
+        .runtime()
+        .release_workflow_instance_progress_for_test();
+    let before_reconstruction = application.runtime().workflow_instance_progress_counters();
     assert!(matches!(
         advance_instance(&application, started.instance().clone(), 477),
         Ok(WorkflowProgressOutcome::Completed(_))
     ));
+    let after_reconstruction = application.runtime().workflow_instance_progress_counters();
+    assert_eq!(
+        after_reconstruction.cold_misses(),
+        before_reconstruction.cold_misses() + 1,
+    );
+    assert!(
+        after_reconstruction.cold_reconstruction_transition_visits()
+            > before_reconstruction.cold_reconstruction_transition_visits()
+    );
     match advance_instance(&application, started.instance().clone(), 477)
         .expect("join key must replay before its supported successor")
     {

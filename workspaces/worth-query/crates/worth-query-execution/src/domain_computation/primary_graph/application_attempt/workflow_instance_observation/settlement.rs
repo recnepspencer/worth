@@ -17,9 +17,11 @@ use crate::domain_computation::primary_graph::workflow::{
 
 mod dependency;
 mod proposal;
+mod retained_evidence;
 mod value;
 pub(in crate::domain_computation::primary_graph::application_attempt) use dependency::observe_evidence_dependencies;
-pub(in crate::domain_computation::primary_graph::application_attempt) use proposal::observe_latest_workflow_proposal_identity;
+pub(in crate::domain_computation::primary_graph::application_attempt) use proposal::observe_retained_workflow_proposal_identity;
+pub(in crate::domain_computation::primary_graph::application_attempt) use retained_evidence::observe_retained_assessment_evidence;
 use value::{observed_bool, observed_text, observed_u64, optional_identity};
 
 pub(super) fn observe_settled_transition(

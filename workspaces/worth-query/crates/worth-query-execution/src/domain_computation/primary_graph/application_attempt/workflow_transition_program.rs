@@ -215,22 +215,6 @@ where
             }
             Err(denial) => return Err(denial),
         };
-        if matches!(
-            selected.kind(),
-            SelectedWorkflowTransitionKind::Assessment(_)
-                | SelectedWorkflowTransitionKind::EvidenceJoin(_)
-        ) {
-            self.lease.handle().with_runtime(|runtime| {
-                observed.ensure_history(
-                    self.lease.handle(),
-                    runtime,
-                    self.lease.snapshot(),
-                    &layout,
-                    instance.entity_id(),
-                    maximum_transitions,
-                )
-            })?;
-        }
         let replay_probe_identity = *selected.identity_bytes();
         let replays = publication::PreparedWorkflowTransitionReplays::retained(std::mem::take(
             &mut observed.replays,
@@ -240,14 +224,14 @@ where
             SelectedWorkflowTransitionKind::Assessment(assessment) => self
                 .materialize_assessment_requirement(
                     &layout,
-                    compiled.program_revision().clone(),
+                    &compiled,
                     instance,
                     selected,
                     live_membership,
                     false,
                     facts,
                     assessment,
-                    &observed.transitions,
+                    observed.progress_basis.progress(),
                 ),
             SelectedWorkflowTransitionKind::Condition(condition) => self
                 .materialize_condition_requirement(
@@ -270,7 +254,7 @@ where
                 selected,
                 live_membership,
                 facts,
-                &observed.transitions,
+                observed.progress_basis.progress(),
                 policy,
             ),
             SelectedWorkflowTransitionKind::Terminal => self.materialize_terminal_transition(

@@ -4,7 +4,8 @@ use worth_relational::facade::identity::{EntityId, VersionId};
 use super::{
     SettledWorkflowTransition, WorkflowInstanceProgress, WorkflowInstanceProgressKey,
     WorkflowInstanceProgressRetention, WorkflowInstanceProgressRetentionDenial,
-    WorkflowTransitionLocator, WorkflowTransitionReplayProjection,
+    WorkflowTransitionLocator, WorkflowTransitionProgressObservation,
+    WorkflowTransitionReplayProjection,
 };
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial;
 use crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowDefinition;
@@ -97,6 +98,7 @@ impl PreparedWorkflowProgressUpdate {
         retention: &mut WorkflowInstanceProgressRetention,
         committed_revision: VersionId,
         transition: EntityId,
+        assessment_evidence: Option<EntityId>,
     ) -> Result<(), WorkflowInstanceProgressRetentionDenial> {
         let Self {
             key,
@@ -106,7 +108,10 @@ impl PreparedWorkflowProgressUpdate {
             settlement,
             replay,
         } = self;
-        advanced.retain_transition(WorkflowTransitionLocator::new(transition, settlement));
+        advanced.retain_observation(WorkflowTransitionProgressObservation::new(
+            WorkflowTransitionLocator::new(transition, settlement),
+            assessment_evidence,
+        ));
         retention.advance(
             key,
             source_revision,
