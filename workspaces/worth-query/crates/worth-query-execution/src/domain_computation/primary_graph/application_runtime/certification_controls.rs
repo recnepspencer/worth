@@ -1,5 +1,17 @@
 use worth_query_installation::facade::ApplicationSchema;
 
+#[cfg(feature = "test-primary-graph-faults")]
+use worth_relational::facade::{
+    identity::PartitionId,
+    symbols::ClientKey,
+    transactions::{
+        AspectFieldPatch, CreateIntent, DeleteRelationIntent, EntityReference, MutationIntent,
+        RelationMutationIntent, RelationSpec, WorkerIntentBatch,
+    },
+};
+#[cfg(feature = "test-primary-graph-faults")]
+use worth_runtime_world::facade::RuntimeWorldPublicationOutcome;
+
 use super::WorthQueryPrimaryGraphApplicationRuntime;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
@@ -128,6 +140,82 @@ where
                 .expect("the application branch remains owner observable");
             (active, basis.descriptor().clone())
         })
+    }
+
+    /// Cycles one definition-node membership without changing its visible endpoints.
+    #[doc(hidden)]
+    #[cfg(feature = "test-primary-graph-faults")]
+    pub fn cycle_workflow_definition_membership_for_test(
+        &self,
+        definition: &crate::domain_computation::primary_graph::PublishedWorkflowDefinitionRef,
+        request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+    ) {
+        let selected = self
+            .on_branch(definition.branch())
+            .select()
+            .expect("the workflow definition branch remains admitted");
+        let (_, product, application_basis) = selected.into_parts();
+        let handle = self
+            .runtime
+            .primary_graph()
+            .expect("the application retains its primary graph")
+            .integration_handle();
+        let candidate = handle.with_query_runtime_mut(|runtime, layout| {
+            let relation_kind = layout.workflow().definition_node_relation;
+            let membership = runtime
+                .read_truth()
+                .visible_relations_of_kind(
+                    relation_kind,
+                    application_basis.snapshot_handle().version_id(),
+                )
+                .into_iter()
+                .find(|relation| relation.source == definition.entity_id())
+                .expect("the published definition retains a node membership");
+            let batch = WorkerIntentBatch::new("workflow-membership-aba")
+                .push(MutationIntent::Relation(RelationMutationIntent::Delete(
+                    DeleteRelationIntent {
+                        relation_id: membership.relation_id,
+                    },
+                )))
+                .push(MutationIntent::Create(CreateIntent::Relation(
+                    RelationSpec {
+                        partition_id: PartitionId::main(),
+                        kind_id: relation_kind,
+                        client_key: ClientKey::raw("workflow-membership-aba"),
+                        source: EntityReference::Existing(membership.source),
+                        target: EntityReference::Existing(membership.target),
+                        fields: AspectFieldPatch::default(),
+                    },
+                )));
+            let mut transaction = runtime
+                .begin_branch_transaction(
+                    product.relational_basis(),
+                    worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
+                )
+                .expect("the selected product basis admits the fault transaction");
+            transaction
+                .push_batch(batch)
+                .expect("the membership cycle stays within resource budgets");
+            runtime
+                .prepare_branch_transaction(transaction)
+                .expect("the membership cycle prepares a real Relational candidate")
+        });
+        drop(application_basis);
+        let prepared = product
+            .publication_binding()
+            .prepare_relational_candidate(candidate, request, false)
+            .expect("the membership cycle prepares a World publication");
+        let outcome = prepared.execute();
+        let RuntimeWorldPublicationOutcome::Performed(performed) = outcome else {
+            panic!("the membership cycle must perform: {outcome:?}");
+        };
+        let published_basis = performed.commit().basis().relational_basis().clone();
+        drop(performed.consume());
+        handle.with_runtime_mut(|runtime| {
+            handle
+                .ensure_primary_indexes_for_basis(runtime, &published_basis)
+                .expect("the membership cycle refreshes indexes at its published basis");
+        });
     }
 
     #[doc(hidden)]

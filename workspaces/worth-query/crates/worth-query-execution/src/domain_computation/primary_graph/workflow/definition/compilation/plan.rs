@@ -1,12 +1,15 @@
+use std::sync::Arc;
+
 use worth_query_declaration::facade::application_program::{
     ApplicationProgramRevision, ApplicationWorkflowControlOutcome, ApplicationWorkflowDataFlow,
     ApplicationWorkflowDefinitionContentIdentity,
 };
 use worth_relational::facade::identity::EntityId;
 
-use super::super::codec::{WorkflowConnectionTag, WorkflowNodeTag};
+use super::super::codec::WorkflowNodeTag;
 
 mod coverage;
+mod retained_bytes;
 
 /// Rebuildable workflow meaning for one exact performed definition revision.
 ///
@@ -24,10 +27,16 @@ pub(in crate::domain_computation::primary_graph) struct CompiledWorkflowDefiniti
 
 pub(in crate::domain_computation::primary_graph) struct CompiledWorkflowNode {
     pub(super) entity: EntityId,
+    pub(super) meaning: Arc<CompiledWorkflowNodeMeaning>,
+}
+
+#[derive(Debug, Eq, PartialEq)]
+pub(super) struct CompiledWorkflowNodeMeaning {
     pub(super) path: String,
     pub(super) kind: CompiledWorkflowNodeKind,
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum CompiledWorkflowNodeKind {
     Operation {
         operation: String,
@@ -63,9 +72,10 @@ pub(in crate::domain_computation::primary_graph) struct CompiledWorkflowConnecti
     pub(super) entity: EntityId,
     pub(super) source: EntityId,
     pub(super) target: EntityId,
-    pub(super) kind: CompiledWorkflowConnectionKind,
+    pub(super) kind: Arc<CompiledWorkflowConnectionKind>,
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum CompiledWorkflowConnectionKind {
     Control(ApplicationWorkflowControlOutcome),
     Data(ApplicationWorkflowDataFlow),
@@ -76,19 +86,32 @@ pub(in crate::domain_computation::primary_graph) enum CompiledWorkflowConnection
     },
 }
 
+#[derive(Debug, Eq, PartialEq)]
+pub(super) struct CompiledWorkflowSemanticConnection {
+    pub(super) source: usize,
+    pub(super) target: usize,
+    pub(super) kind: Arc<CompiledWorkflowConnectionKind>,
+}
+
+#[derive(Debug, Eq, PartialEq)]
+pub(super) struct CompiledWorkflowSemanticPlan {
+    pub(super) start: usize,
+    pub(super) nodes: Box<[Arc<CompiledWorkflowNodeMeaning>]>,
+    pub(super) connections: Box<[CompiledWorkflowSemanticConnection]>,
+    pub(super) retained_bytes: usize,
+}
+
 impl CompiledWorkflowNode {
     pub(in crate::domain_computation::primary_graph) const fn entity(&self) -> EntityId {
         self.entity
     }
 
     pub(in crate::domain_computation::primary_graph) fn path(&self) -> &str {
-        &self.path
+        &self.meaning.path
     }
 
-    pub(in crate::domain_computation::primary_graph) const fn kind(
-        &self,
-    ) -> &CompiledWorkflowNodeKind {
-        &self.kind
+    pub(in crate::domain_computation::primary_graph) fn kind(&self) -> &CompiledWorkflowNodeKind {
+        &self.meaning.kind
     }
 
     pub(in crate::domain_computation::primary_graph) fn identity_material(&self) -> String {
@@ -97,7 +120,7 @@ impl CompiledWorkflowNode {
             self.entity.local_slot_value().to_string(),
             self.entity.generation_value().to_string(),
         ];
-        fields.extend(match &self.kind {
+        fields.extend(match &self.meaning.kind {
             CompiledWorkflowNodeKind::Operation {
                 operation,
                 input_type,
@@ -167,26 +190,7 @@ impl CompiledWorkflowNode {
 
 impl CompiledWorkflowConnection {
     fn identity_material(&self) -> String {
-        let kind = match &self.kind {
-            CompiledWorkflowConnectionKind::Control(outcome) => {
-                WorkflowConnectionTag::control(*outcome)
-                    .identity()
-                    .to_owned()
-            }
-            CompiledWorkflowConnectionKind::Data(flow) => {
-                WorkflowConnectionTag::data(*flow).identity().to_owned()
-            }
-            CompiledWorkflowConnectionKind::Retry {
-                trigger,
-                reason,
-                maximum_attempts,
-            } => format!(
-                "{}:{}:{}",
-                WorkflowConnectionTag::Retry(*trigger).identity(),
-                reason,
-                maximum_attempts,
-            ),
-        };
+        let kind = self.kind.semantic_identity_material();
         format!(
             "{}:{}:{}:{}:{}:{}:{}:{}:{}:{kind}",
             self.entity.partition_value(),
@@ -225,7 +229,7 @@ impl CompiledWorkflowDefinition {
     }
 
     pub(in crate::domain_computation::primary_graph) fn start_path(&self) -> &str {
-        &self.start().path
+        self.start().path()
     }
 
     pub(in crate::domain_computation::primary_graph) const fn node_count(&self) -> usize {
@@ -246,9 +250,9 @@ impl CompiledWorkflowDefinition {
     ) -> impl Iterator<Item = &CompiledWorkflowNode> {
         self.connections
             .iter()
-            .filter_map(move |connection| match connection.kind {
+            .filter_map(move |connection| match connection.kind.as_ref() {
                 CompiledWorkflowConnectionKind::Control(candidate)
-                    if candidate == outcome && connection.source == source =>
+                    if *candidate == outcome && connection.source == source =>
                 {
                     Some(connection.target)
                 }
@@ -264,7 +268,7 @@ impl CompiledWorkflowDefinition {
     ) -> impl Iterator<Item = (&CompiledWorkflowNode, u16)> {
         self.connections
             .iter()
-            .filter_map(move |connection| match &connection.kind {
+            .filter_map(move |connection| match connection.kind.as_ref() {
                 CompiledWorkflowConnectionKind::Retry {
                     trigger: candidate,
                     maximum_attempts,
@@ -288,7 +292,7 @@ impl CompiledWorkflowDefinition {
     ) -> impl Iterator<Item = &CompiledWorkflowNode> {
         self.connections
             .iter()
-            .filter_map(move |connection| match connection.kind {
+            .filter_map(move |connection| match connection.kind.as_ref() {
                 CompiledWorkflowConnectionKind::Data(
                     ApplicationWorkflowDataFlow::AssessmentEvidence,
                 ) if connection.target == join => Some(connection.source),
@@ -303,7 +307,7 @@ impl CompiledWorkflowDefinition {
     ) -> impl Iterator<Item = &CompiledWorkflowNode> {
         self.connections
             .iter()
-            .filter_map(move |connection| match connection.kind {
+            .filter_map(move |connection| match connection.kind.as_ref() {
                 CompiledWorkflowConnectionKind::Data(
                     ApplicationWorkflowDataFlow::ApprovalAuthority,
                 ) if connection.source == approval => Some(connection.target),
@@ -340,9 +344,9 @@ impl CompiledWorkflowDefinition {
     ) -> impl Iterator<Item = &CompiledWorkflowNode> {
         self.connections
             .iter()
-            .filter_map(move |connection| match connection.kind {
+            .filter_map(move |connection| match connection.kind.as_ref() {
                 CompiledWorkflowConnectionKind::Data(candidate)
-                    if candidate == flow && connection.target == target =>
+                    if *candidate == flow && connection.target == target =>
                 {
                     Some(connection.source)
                 }
@@ -362,7 +366,7 @@ impl CompiledWorkflowDefinition {
     ) -> String {
         let mut material = String::new();
         for node in &self.nodes {
-            append_framed(&mut material, &node.path);
+            append_framed(&mut material, node.path());
             append_framed(&mut material, &node.identity_material());
         }
         for connection in &self.connections {

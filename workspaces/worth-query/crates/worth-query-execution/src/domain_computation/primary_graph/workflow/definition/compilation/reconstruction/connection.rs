@@ -105,7 +105,7 @@ pub(super) fn compile_connection(
         entity,
         source,
         target,
-        kind,
+        kind: std::sync::Arc::new(kind),
     })
 }
 

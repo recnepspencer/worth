@@ -8,7 +8,9 @@ use crate::domain_computation::primary_graph::application_attempt::{
 use crate::domain_computation::primary_graph::workflow::{
     definition::{
         codec::WorkflowNodeTag,
-        compilation::plan::{CompiledWorkflowNode, CompiledWorkflowNodeKind},
+        compilation::plan::{
+            CompiledWorkflowNode, CompiledWorkflowNodeKind, CompiledWorkflowNodeMeaning,
+        },
     },
     schema::WorthQueryWorkflowLayout,
 };
@@ -143,7 +145,10 @@ pub(super) fn compile_node(
         approval_capability_identity,
         requires_workflow_authority,
     )?;
-    Ok(CompiledWorkflowNode { entity, path, kind })
+    Ok(CompiledWorkflowNode {
+        entity,
+        meaning: std::sync::Arc::new(CompiledWorkflowNodeMeaning { path, kind }),
+    })
 }
 
 #[allow(clippy::too_many_arguments)]

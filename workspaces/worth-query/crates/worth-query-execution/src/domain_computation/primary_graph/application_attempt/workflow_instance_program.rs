@@ -77,19 +77,18 @@ where
             ));
         }
         let layout = self.lease.layout.workflow().clone();
-        let (compiled, mut compile_facts) = self.lease.handle().with_runtime(|runtime| {
-            reconstruct_compiled_definition(
-                runtime,
-                self.lease.snapshot(),
-                &layout,
-                &published,
-                installed.program_revision(),
-                Spec::IDENTITY.as_str(),
-                usize::from(installed.resources().maximum_definition_nodes()),
-                usize::from(installed.resources().maximum_definition_connections()),
-                WorkflowDefinitionCompilationPosture::Current,
-            )
-        })?;
+        let (compiled, mut compile_facts) = reconstruct_compiled_definition(
+            self.lease.handle(),
+            self.lease.snapshot(),
+            &layout,
+            &published,
+            installed.program_revision(),
+            Spec::IDENTITY.as_str(),
+            installed.support_identity_bytes(),
+            usize::from(installed.resources().maximum_definition_nodes()),
+            usize::from(installed.resources().maximum_definition_connections()),
+            WorkflowDefinitionCompilationPosture::Current,
+        )?;
         let maximum_instances = usize::try_from(installed.resources().maximum_live_instances())
             .map_err(|_| {
                 denial(

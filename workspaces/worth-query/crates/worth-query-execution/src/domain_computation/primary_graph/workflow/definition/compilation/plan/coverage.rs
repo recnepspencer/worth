@@ -13,7 +13,7 @@ impl CompiledWorkflowDefinition {
         let mut selectors = self
             .connections
             .iter()
-            .filter_map(|connection| match connection.kind {
+            .filter_map(|connection| match connection.kind.as_ref() {
                 CompiledWorkflowConnectionKind::Data(
                     ApplicationWorkflowDataFlow::AssessmentSubject,
                 ) if connection.source == proposal => Some(connection.target),
@@ -23,7 +23,7 @@ impl CompiledWorkflowDefinition {
                 self.nodes
                     .iter()
                     .find(|node| node.entity == target)
-                    .and_then(|node| match &node.kind {
+                    .and_then(|node| match node.kind() {
                         CompiledWorkflowNodeKind::Assessment { subject, .. } => {
                             Some(subject.clone())
                         }

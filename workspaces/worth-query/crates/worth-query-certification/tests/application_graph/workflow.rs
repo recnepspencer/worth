@@ -82,6 +82,7 @@ fn installed_component_ceiling_rejects_only_the_broader_component_contract() {
 #[test]
 fn public_terminal_workflow_advances_once_through_authenticated_transition_authority() {
     let application = publish_workflow_on_first_program();
+    let before = application.runtime().workflow_compilation_reuse_counters();
     let definition = expect_published(
         "terminal definition",
         publish_definition(
@@ -96,6 +97,9 @@ fn public_terminal_workflow_advances_once_through_authenticated_transition_autho
         definition.definition().clone(),
         32,
     ));
+    let after_cold_start = application.runtime().workflow_compilation_reuse_counters();
+    assert_eq!(after_cold_start.cold_misses(), before.cold_misses() + 1);
+    assert_eq!(after_cold_start.cold_retains(), before.cold_retains() + 1);
     assert_eq!(started.instance().current_node_path(), "completed");
     for key in 100..131 {
         expect_started(start_instance(
@@ -104,12 +108,20 @@ fn public_terminal_workflow_advances_once_through_authenticated_transition_autho
             key,
         ));
     }
+    let after_warm_starts = application.runtime().workflow_compilation_reuse_counters();
+    assert_eq!(
+        after_warm_starts.cold_misses(),
+        after_cold_start.cold_misses()
+    );
+    assert_eq!(
+        after_warm_starts.warm_hits(),
+        after_cold_start.warm_hits() + 31
+    );
     expect_stale_start(start_instance(
         &application,
         definition.definition().clone(),
         131,
     ));
-
     let transition = match advance_instance(&application, started.instance().clone(), 33)
         .expect("workflow advance preparation must succeed")
     {

@@ -79,19 +79,18 @@ where
             instance.definition_entity_id(),
             instance.definition_content_identity().clone(),
         );
-        let (compiled, mut facts) = self.lease.handle().with_runtime(|runtime| {
-            reconstruct_compiled_definition(
-                runtime,
-                self.lease.snapshot(),
-                &layout,
-                &published,
-                instance.program_revision(),
-                Spec::IDENTITY.as_str(),
-                usize::from(installed.resources().maximum_definition_nodes()),
-                usize::from(installed.resources().maximum_definition_connections()),
-                WorkflowDefinitionCompilationPosture::Retained,
-            )
-        })?;
+        let (compiled, mut facts) = reconstruct_compiled_definition(
+            self.lease.handle(),
+            self.lease.snapshot(),
+            &layout,
+            &published,
+            instance.program_revision(),
+            Spec::IDENTITY.as_str(),
+            installed.support_identity_bytes(),
+            usize::from(installed.resources().maximum_definition_nodes()),
+            usize::from(installed.resources().maximum_definition_connections()),
+            WorkflowDefinitionCompilationPosture::Retained,
+        )?;
         let subject = self.admission.scope_entity_id();
         let mut observed = self.lease.handle().with_runtime(|runtime| {
             super::workflow_instance_observation::observe_workflow_instance(

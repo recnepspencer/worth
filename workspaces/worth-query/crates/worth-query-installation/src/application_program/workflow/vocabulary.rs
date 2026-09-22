@@ -12,6 +12,7 @@ use worth_query_declaration::facade::{
 
 mod approval_binding;
 mod installation;
+mod support_identity;
 pub use installation::WorthQueryApplicationWorkflowSpecInstallation;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -232,6 +233,7 @@ where
 {
     pub(super) schema_binding: ApplicationSchemaBindingIdentity,
     pub(super) program_revision: ApplicationProgramRevision,
+    pub(super) support_identity: [u8; 32],
     pub(super) authoring_capability: InstalledWorkflowAuthoringCapability,
     pub(super) instance_start_capability: InstalledWorkflowInstanceStartCapability,
     pub(super) advance_capability: InstalledWorkflowAdvanceCapability,

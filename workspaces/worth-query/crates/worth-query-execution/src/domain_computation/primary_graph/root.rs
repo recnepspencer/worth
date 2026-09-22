@@ -25,6 +25,8 @@ pub struct WorthQueryPrimaryGraph {
     source_owner: WorthQueryRelationalSourceOwner,
     aggregate_projections: Arc<Mutex<super::aggregate_projection::WorthQueryAggregateProjections>>,
     output_lineage: Arc<Mutex<super::output_lineage::WorthQueryApplicationOutputLineage>>,
+    workflow_compilation_reuse:
+        Arc<Mutex<super::workflow::definition::WorkflowDefinitionCompilationReuse>>,
     truth_partition_role: Option<worth_foundational::facade::TruthPartitionRole>,
 }
 
@@ -106,6 +108,7 @@ impl WorthQueryPrimaryGraph {
                 super::aggregate_projection::WorthQueryAggregateProjections::default(),
             )),
             output_lineage: Arc::new(Mutex::new(Default::default())),
+            workflow_compilation_reuse: Arc::new(Mutex::new(Default::default())),
             truth_partition_role: None,
         }
     }
@@ -180,6 +183,7 @@ impl WorthQueryPrimaryGraph {
             primary_index_ids,
             aggregate_projections: Arc::clone(&self.aggregate_projections),
             output_lineage: Arc::clone(&self.output_lineage),
+            workflow_compilation_reuse: Arc::clone(&self.workflow_compilation_reuse),
             truth_partition_role: self.truth_partition_role.clone(),
         }
     }
@@ -215,10 +219,34 @@ pub struct WorthQueryPrimaryGraphIntegrationHandle {
         Arc<Mutex<super::aggregate_projection::WorthQueryAggregateProjections>>,
     pub(in crate::domain_computation::primary_graph) output_lineage:
         Arc<Mutex<super::output_lineage::WorthQueryApplicationOutputLineage>>,
+    pub(in crate::domain_computation::primary_graph) workflow_compilation_reuse:
+        Arc<Mutex<super::workflow::definition::WorkflowDefinitionCompilationReuse>>,
     pub(super) truth_partition_role: Option<worth_foundational::facade::TruthPartitionRole>,
 }
 
 impl WorthQueryPrimaryGraphIntegrationHandle {
+    #[doc(hidden)]
+    pub fn workflow_compilation_reuse_counters(
+        &self,
+    ) -> super::WorthQueryWorkflowCompilationReuseCounters {
+        let reuse = self
+            .workflow_compilation_reuse
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        reuse.counters()
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn with_workflow_compilation_reuse_mut<T>(
+        &self,
+        mutate: impl FnOnce(&mut super::workflow::definition::WorkflowDefinitionCompilationReuse) -> T,
+    ) -> T {
+        let mut reuse = self
+            .workflow_compilation_reuse
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        mutate(&mut reuse)
+    }
+
     #[doc(hidden)]
     pub fn with_runtime<T>(&self, read: impl FnOnce(&RelationalRuntime) -> T) -> T {
         self.source_owner.with_runtime(read)
