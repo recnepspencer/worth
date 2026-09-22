@@ -53,6 +53,11 @@ pub(in crate::application_entry) struct WorthQueryApplicationProgramDemandHandle
     application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
     admitted: WorthQueryAdmittedProgramOutput<Schema, Program, Demand>,
     demand: Demand,
+    source_observation: Option<
+        std::sync::Arc<
+            worth_query_execution::facade::primary_graph::WorthQueryApplicationReadObservation,
+        >,
+    >,
 }
 
 impl<Schema, Program, Demand> WorthQueryApplicationProgramDemandHandle<'_, Schema, Program, Demand>
@@ -86,11 +91,17 @@ where
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
         admitted: WorthQueryAdmittedProgramOutput<Schema, Program, Demand>,
         demand: Demand,
+        source_observation: Option<
+            std::sync::Arc<
+                worth_query_execution::facade::primary_graph::WorthQueryApplicationReadObservation,
+            >,
+        >,
     ) -> Self {
         Self {
             application,
             admitted,
             demand,
+            source_observation,
         }
     }
 
@@ -112,11 +123,20 @@ where
         WorthQueryApplicationProgramDemandProgress<Schema, Program, Demand>,
         WorthQueryApplicationOutputDemandDenial,
     > {
-        let disclosure = request
-            .query(self.demand.source_intent())
-            .execute()
-            .map_err(WorthQueryApplicationOutputDemandDenial::Source)?
-            .into_output_demand_source();
+        let disclosure = if let Some(observation) = &self.source_observation {
+            request
+                .at(
+                    &crate::application_entry::WorthQueryApplicationReadObservation::new(
+                        std::sync::Arc::clone(observation),
+                    ),
+                )
+                .query(self.demand.source_intent())
+                .execute()
+        } else {
+            request.query(self.demand.source_intent()).execute()
+        }
+        .map_err(WorthQueryApplicationOutputDemandDenial::Source)?
+        .into_output_demand_source();
         match self
             .application
             .advance_program_output(

@@ -114,6 +114,7 @@ where
                 application,
                 admitted,
                 self.demand,
+                Some(std::sync::Arc::clone(&observation)),
             ),
             observation,
         ))
@@ -200,6 +201,7 @@ where
                 application,
                 admitted,
                 self.demand,
+                Some(std::sync::Arc::clone(&observation)),
             ),
             observation,
         ))
@@ -229,6 +231,11 @@ where
             Demand = Demand,
         >,
     {
+        let source_observation = self
+            .observation
+            .as_ref()
+            .cloned()
+            .ok_or(WorthQueryApplicationOutputDemandDenial::FreshRequestMismatch)?;
         let source_result = self.query_source()?;
         let maximum_work = self
             .controls
@@ -251,6 +258,7 @@ where
             application,
             admitted,
             self.demand,
+            Some(source_observation),
         ))
     }
 
@@ -303,6 +311,7 @@ where
         RootConnection<Schema, Root>:
             WorthQueryApplicationRequiredOutputConnection<Schema, Demand = Demand>,
     {
+        let source_observation = self.observation.as_ref().cloned();
         let maximum_work = self
             .controls
             .map_or(1, |controls| controls.maximum_work().get());
@@ -322,6 +331,7 @@ where
             application,
             admitted,
             self.demand,
+            source_observation,
         ))
     }
 
