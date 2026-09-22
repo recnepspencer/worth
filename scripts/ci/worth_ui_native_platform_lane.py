@@ -29,7 +29,7 @@ import sys
 import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Mapping
+from typing import Any, Callable, Mapping, Sequence
 
 ROOT = Path(__file__).resolve().parents[2]
 MANIFEST = ROOT / "workspaces/worth-ui/Cargo.toml"
@@ -69,6 +69,10 @@ WINDOWS_PROFILE = "worth-ui-windows-dx12-v2"
 # software build keeps its own unless the operator names one; sharing it with
 # any other lane would rebuild wgpu, naga and winit on every alternation.
 LINUX_TARGET_DIR = ROOT / "workspaces/worth-ui/target/native-platform-x11-software"
+WORKSPACE_TARGET_DIR = ROOT / "workspaces/worth-ui/target"
+# Temporary instrumentation must carry this token so its residue stays findable in a
+# built artifact after it has been removed from source. See `instrumentation_residue`.
+INSTRUMENTATION_MARKER = b"WORTH-UI-TEMPORARY-INSTRUMENTATION"
 # Variables the Linux execution must not inherit: RUSTFLAGS would compete with
 # the derived encoded flags, and a scale override would counterfeit the dpi.
 LINUX_REMOVED_VARIABLES = ("RUSTFLAGS", "WINIT_X11_SCALE_FACTOR")
@@ -262,7 +266,46 @@ def parse_test_result(lines: list[str]) -> dict[str, int] | None:
     return None
 
 
-def verdict(worlds_listed: int, result: dict[str, int] | None, cargo_exit: int) -> str:
+def target_directory(environment: Mapping[str, str]) -> Path:
+    return Path(environment.get("CARGO_TARGET_DIR", WORKSPACE_TARGET_DIR))
+
+
+def carries_marker(artifact: Path, marker: bytes = INSTRUMENTATION_MARKER) -> bool:
+    """Scan a built artifact for the marker without reading it whole into memory."""
+    overlap = len(marker) - 1
+    tail = b""
+    with artifact.open("rb") as handle:
+        while chunk := handle.read(1 << 20):
+            if marker in tail + chunk:
+                return True
+            tail = chunk[-overlap:]
+    return False
+
+
+def instrumentation_residue(directory: Path) -> list[str]:
+    """Built world artifacts still carrying temporary instrumentation.
+
+    Cargo decides freshness from mtime, so a source file restored to its original
+    bytes can also be restored to its original mtime, leaving an instrumented
+    artifact permanently fresh. The tree then reads clean while every later run
+    executes code that is not in it. Source cannot show that; the artifact can.
+    """
+    deps = directory / "debug" / "deps"
+    return [
+        artifact.name
+        for artifact in sorted(deps.glob(f"{TEST_TARGET}-*"))
+        if not artifact.suffix and artifact.is_file() and carries_marker(artifact)
+    ]
+
+
+def verdict(
+    worlds_listed: int,
+    result: dict[str, int] | None,
+    cargo_exit: int,
+    residue: Sequence[str] = (),
+) -> str:
+    if residue:
+        return "instrumentation-residue"
     if worlds_listed < CERTIFIED_WORLD_FLOOR:
         return "below-world-floor"
     if result is None:
@@ -307,7 +350,10 @@ def execute(
     result = parse_test_result(output)
     if result is not None:
         evidence.update(executed=result["passed"] + result["failed"], **result)
-    evidence["result"] = verdict(worlds_listed, result, cargo_exit)
+    residue = instrumentation_residue(target_directory(environment))
+    for artifact in residue:
+        print(f"{REPORT_TAG} instrumentation residue: {artifact}", flush=True)
+    evidence["result"] = verdict(worlds_listed, result, cargo_exit, residue)
     print(render_report(evidence), flush=True)
     if evidence["result"] == "ok":
         return 0, evidence

@@ -81,6 +81,27 @@ implementation and tests address them adequately.
 - Is the chosen boundary and cost appropriate?
 - Does code review consider the evidence sufficient?
 
+## Temporary instrumentation
+
+Instrumentation added to answer a question must leave no trace in the artifact,
+not only in the source. Cargo decides freshness from modification time, so a file
+restored to its original bytes can also be restored to its original time, leaving
+the instrumented artifact permanently fresh. The tree then reads clean while every
+later run executes code that is not in it, and a reviewer inspecting the diff
+cannot see the difference.
+
+Removing instrumentation therefore has two obligations. Restore the source, then
+invalidate the fingerprint of the target that compiled it. Confirm the removal
+against the rebuilt artifact, because the source is the one place the residue is
+guaranteed absent.
+
+Temporary instrumentation carries the token `WORTH-UI-TEMPORARY-INSTRUMENTATION`
+in every message it prints, so the residue stays findable once the source is gone.
+The native-platform lane scans the artifact it just executed for that token and
+refuses the run as `instrumentation-residue` when it appears, ahead of every other
+verdict: the counts describe code that is not in the tree, so none of them are
+evidence.
+
 ## Specification use
 
 Add a short `QA considerations` section to a specification when the change has

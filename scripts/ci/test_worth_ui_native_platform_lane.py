@@ -128,6 +128,36 @@ class NativePlatformLaneVerdictTests(TestCase):
         )
         self.assertEqual(lane.verdict(floor, {"passed": 82, "failed": 0, "ignored": 0}, 0), "ok")
 
+    def test_verdict_refuses_a_clean_run_whose_artifact_carries_instrumentation(self) -> None:
+        """Residue outranks every count: they describe code that is not in the tree."""
+        floor = lane.CERTIFIED_WORLD_FLOOR
+        clean = {"passed": 82, "failed": 0, "ignored": 0}
+
+        self.assertEqual(lane.verdict(floor, clean, 0), "ok")
+        self.assertEqual(
+            lane.verdict(floor, clean, 0, ["executable_world-45841bd787a4c978"]),
+            "instrumentation-residue",
+        )
+
+    def test_residue_scan_names_only_the_world_artifacts_carrying_the_marker(self) -> None:
+        with TemporaryDirectory() as directory:
+            deps = Path(directory) / "debug" / "deps"
+            deps.mkdir(parents=True)
+            # Straddle a read boundary: a chunked scan must not lose the marker at the seam.
+            seam = (1 << 20) - (len(lane.INSTRUMENTATION_MARKER) // 2)
+            (deps / "executable_world-0000000000000001").write_bytes(
+                b"\0" * seam + lane.INSTRUMENTATION_MARKER + b"\0" * 64
+            )
+            (deps / "executable_world-0000000000000002").write_bytes(b"\0" * (1 << 21))
+            (deps / "executable_world-0000000000000001.d").write_bytes(
+                lane.INSTRUMENTATION_MARKER
+            )
+
+            self.assertEqual(
+                lane.instrumentation_residue(Path(directory)),
+                ["executable_world-0000000000000001"],
+            )
+
     def test_report_line_is_machine_readable(self) -> None:
         line = lane.render_report({"mode": "execute", "worlds": 8, "result": "ok"})
 
