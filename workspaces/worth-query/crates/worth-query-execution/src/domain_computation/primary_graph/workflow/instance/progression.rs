@@ -33,6 +33,31 @@ pub(in crate::domain_computation::primary_graph) struct SettledWorkflowTransitio
     operation_receipt_identity: Option<[u8; 32]>,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(in crate::domain_computation::primary_graph) struct WorkflowTransitionLocator {
+    entity: EntityId,
+    settlement: SettledWorkflowTransition,
+}
+
+impl WorkflowTransitionLocator {
+    pub(in crate::domain_computation::primary_graph) const fn new(
+        entity: EntityId,
+        settlement: SettledWorkflowTransition,
+    ) -> Self {
+        Self { entity, settlement }
+    }
+
+    pub(in crate::domain_computation::primary_graph) const fn entity(self) -> EntityId {
+        self.entity
+    }
+
+    pub(in crate::domain_computation::primary_graph) const fn settlement(
+        self,
+    ) -> SettledWorkflowTransition {
+        self.settlement
+    }
+}
+
 impl SettledWorkflowTransition {
     pub(in crate::domain_computation::primary_graph) const fn new(
         node: EntityId,
@@ -80,17 +105,25 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowInstanceProgress
     head: EntityId,
     next_occurrence: u64,
     retry_counts: BTreeMap<(EntityId, ApplicationWorkflowControlOutcome), usize>,
+    latest_transitions: BTreeMap<EntityId, WorkflowTransitionLocator>,
 }
 
 impl WorkflowInstanceProgress {
     pub(super) fn retained_charge_bytes(&self) -> usize {
         const CONSERVATIVE_TREE_NODE_ALLOWANCE: usize = 128;
-        std::mem::size_of::<Self>().saturating_add(
-            self.retry_counts.len().saturating_mul(
-                std::mem::size_of::<((EntityId, ApplicationWorkflowControlOutcome), usize)>()
-                    .saturating_add(CONSERVATIVE_TREE_NODE_ALLOWANCE),
-            ),
-        )
+        std::mem::size_of::<Self>()
+            .saturating_add(
+                self.retry_counts.len().saturating_mul(
+                    std::mem::size_of::<((EntityId, ApplicationWorkflowControlOutcome), usize)>()
+                        .saturating_add(CONSERVATIVE_TREE_NODE_ALLOWANCE),
+                ),
+            )
+            .saturating_add(
+                self.latest_transitions.len().saturating_mul(
+                    std::mem::size_of::<(EntityId, WorkflowTransitionLocator)>()
+                        .saturating_add(CONSERVATIVE_TREE_NODE_ALLOWANCE),
+                ),
+            )
     }
 
     pub(in crate::domain_computation::primary_graph) fn reconstruct(
@@ -102,6 +135,7 @@ impl WorkflowInstanceProgress {
             head: compiled.start().entity(),
             next_occurrence: 0,
             retry_counts: BTreeMap::new(),
+            latest_transitions: BTreeMap::new(),
         };
         for transition in settled {
             progress.advance(compiled, *transition)?;
@@ -124,6 +158,7 @@ impl WorkflowInstanceProgress {
             head: start,
             next_occurrence: 0,
             retry_counts: BTreeMap::new(),
+            latest_transitions: BTreeMap::new(),
         };
         for transition in settled {
             progress.advance_with(*transition, &mut successor)?;
@@ -137,6 +172,27 @@ impl WorkflowInstanceProgress {
 
     pub(in crate::domain_computation::primary_graph) const fn next_occurrence(&self) -> u64 {
         self.next_occurrence
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn latest_transition(
+        &self,
+        node: EntityId,
+    ) -> Option<WorkflowTransitionLocator> {
+        self.latest_transitions.get(&node).copied()
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn retain_transition(
+        &mut self,
+        locator: WorkflowTransitionLocator,
+    ) {
+        let node = locator.settlement().node();
+        match self.latest_transitions.get(&node) {
+            Some(retained)
+                if retained.settlement().occurrence() >= locator.settlement().occurrence() => {}
+            _ => {
+                self.latest_transitions.insert(node, locator);
+            }
+        }
     }
 
     pub(in crate::domain_computation::primary_graph) fn advance(
@@ -302,5 +358,24 @@ mod tests {
                 .ok_or_else(|| denial("settled terminal has no successor")),
         )
         .is_err());
+    }
+
+    #[test]
+    fn latest_transition_locator_tracks_occurrence_without_becoming_authority() {
+        let node = entity(50);
+        let mut progress = WorkflowInstanceProgress {
+            head: node,
+            next_occurrence: 2,
+            retry_counts: BTreeMap::new(),
+            latest_transitions: BTreeMap::new(),
+        };
+        let latest = WorkflowTransitionLocator::new(entity(52), completed(node, 1));
+        progress.retain_transition(latest);
+        progress.retain_transition(WorkflowTransitionLocator::new(
+            entity(51),
+            completed(node, 0),
+        ));
+
+        assert_eq!(progress.latest_transition(node), Some(latest));
     }
 }

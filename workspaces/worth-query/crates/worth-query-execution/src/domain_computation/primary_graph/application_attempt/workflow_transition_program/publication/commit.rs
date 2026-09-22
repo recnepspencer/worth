@@ -157,7 +157,7 @@ where
                 .primary_provider
                 .graph
                 .with_workflow_instance_progress_mut(progress_key, |retention| {
-                    progress_update.apply(retention, committed_revision)
+                    progress_update.apply(retention, committed_revision, performed.transition())
                 });
         }
         projected

@@ -28,6 +28,10 @@ use super::bounded_dimension_model::{
     },
 };
 
+#[path = "workflow_approval/operation_requirement.rs"]
+mod operation_requirement;
+#[path = "workflow_approval/proposal.rs"]
+mod proposal;
 #[path = "workflow_approval/rejection.rs"]
 mod rejection;
 #[path = "workflow_approval/replay.rs"]
@@ -47,12 +51,39 @@ fn approved_operation_requires_and_consumes_the_exact_performed_effect() {
         Ok(WorkflowProgressOutcome::Completed(_)) => {}
         other => panic!("expected approval to complete, got {other:?}"),
     }
-    let required = match advance_instance(&application, instance.clone(), 811)
+    let before = application.runtime().workflow_instance_progress_counters();
+    let warm_required = match advance_instance(&application, instance.clone(), 811)
         .expect("the approved effect requirement must prepare")
     {
         WorkflowProgressOutcome::AwaitingOperation(required) => required,
         other => panic!("expected an operation requirement, got {other:?}"),
     };
+    let after = application.runtime().workflow_instance_progress_counters();
+    assert_eq!(after.warm_core_hits(), before.warm_core_hits() + 1);
+    assert_eq!(
+        after.warm_history_transition_visits(),
+        before.warm_history_transition_visits()
+    );
+    application
+        .runtime()
+        .release_workflow_instance_progress_for_test();
+    let before_reconstruction = application.runtime().workflow_instance_progress_counters();
+    let required = match advance_instance(&application, instance.clone(), 818)
+        .expect("the operation requirement must reconstruct after projection loss")
+    {
+        WorkflowProgressOutcome::AwaitingOperation(required) => required,
+        other => panic!("expected a reconstructed operation requirement, got {other:?}"),
+    };
+    let after_reconstruction = application.runtime().workflow_instance_progress_counters();
+    operation_requirement::assert_same(&warm_required, &required);
+    assert_eq!(
+        after_reconstruction.cold_misses(),
+        before_reconstruction.cold_misses() + 1
+    );
+    assert!(
+        after_reconstruction.cold_reconstruction_transition_visits()
+            > before_reconstruction.cold_reconstruction_transition_visits()
+    );
     let runtime = application.runtime();
     let scope = request_scope();
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
@@ -231,7 +262,7 @@ fn all_completed_join_does_not_turn_failing_evidence_into_approval_authority() {
         WorkflowInstanceStartOutcome::Started(performed) => performed.instance().clone(),
         other => panic!("expected a started instance, got {other:?}"),
     };
-    let proposal = published_proposal(&application, instance.clone(), 723);
+    let proposal = proposal::published_proposal(&application, instance.clone(), 723);
     for (settlement_key, acceptance_key) in [(724, 725), (726, 727)] {
         let settlement = settle_assessment(&application, instance.clone(), settlement_key);
         assert_eq!(
@@ -328,7 +359,7 @@ fn approval_journey(
         WorkflowInstanceStartOutcome::Started(performed) => performed.instance().clone(),
         other => panic!("expected a started approval instance, got {other:?}"),
     };
-    let proposal = published_proposal(&application, instance.clone(), key + 2);
+    let proposal = proposal::published_proposal(&application, instance.clone(), key + 2);
     let mut evidence = Vec::new();
     for offset in [3, 5] {
         let settlement = settle_assessment(&application, instance.clone(), key + offset);
@@ -365,15 +396,4 @@ fn approval_journey(
         required,
         evidence,
     )
-}
-
-fn published_proposal(
-    application: &BoundedDimensionWorkflowRuntime,
-    instance: PublishedWorkflowInstanceRef,
-    key: u64,
-) -> PublishedWorkflowProposalRef {
-    match propose_instance(application, instance, key).expect("proposal must prepare") {
-        WorkflowProposalOutcome::Published(performed) => performed.proposal().clone(),
-        other => panic!("expected a published proposal, got {other:?}"),
-    }
 }

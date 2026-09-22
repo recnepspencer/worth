@@ -10,7 +10,7 @@ use crate::domain_computation::primary_graph::workflow::definition::CompiledWork
 use crate::domain_computation::primary_graph::workflow::instance::{
     select_settled_replay_transition, RetainedWorkflowInstanceProgressProjection,
     WorkflowInstanceProgress, WorkflowInstanceProgressKey, WorkflowInstanceProgressRetentionDenial,
-    WorkflowTransitionProgressBasis, WorkflowTransitionReplayProjection,
+    WorkflowTransitionLocator, WorkflowTransitionProgressBasis, WorkflowTransitionReplayProjection,
     WorkflowTransitionReplayRetention,
 };
 use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout;
@@ -97,7 +97,7 @@ pub(super) fn finish_progress(
     handle: &WorthQueryPrimaryGraphIntegrationHandle,
     observation: WorkflowProgressObservation,
     compiled: &CompiledWorkflowDefinition,
-    settlements: &mut [SettledWorkflowTransition],
+    transitions: &[WorkflowTransitionLocator],
     replays: Vec<WorkflowTransitionReplayProjection>,
     reconstruction_transition_visits: usize,
 ) -> Result<
@@ -118,7 +118,14 @@ pub(super) fn finish_progress(
             retained.replays,
         )),
         None => {
-            let progress = WorkflowInstanceProgress::reconstruct(compiled, settlements)?;
+            let mut settlements = transitions
+                .iter()
+                .map(|transition| transition.settlement())
+                .collect::<Vec<SettledWorkflowTransition>>();
+            let mut progress = WorkflowInstanceProgress::reconstruct(compiled, &mut settlements)?;
+            for transition in transitions {
+                progress.retain_transition(*transition);
+            }
             let replays = WorkflowTransitionReplayRetention::from_replays(replays);
             handle
                 .with_workflow_instance_progress_mut(observation.key, |retention| {

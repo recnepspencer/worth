@@ -8,7 +8,10 @@ use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationObservedFact,
 };
 use crate::domain_computation::primary_graph::workflow::{
-    instance::{decode_transition_outcome, encode_transition_outcome, SettledWorkflowTransition},
+    instance::{
+        decode_transition_outcome, encode_transition_outcome, SettledWorkflowTransition,
+        WorkflowTransitionLocator,
+    },
     schema::WorthQueryWorkflowLayout,
 };
 
@@ -85,6 +88,20 @@ pub(super) fn observe_settled_transition(
         outcome,
         operation_receipt_identity,
     ))
+}
+
+pub(in crate::domain_computation::primary_graph::application_attempt) fn observe_retained_transition(
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    layout: &WorthQueryWorkflowLayout,
+    locator: WorkflowTransitionLocator,
+    facts: &mut Vec<WorthQueryApplicationObservedFact>,
+) -> Result<SettledWorkflowTransition, WorthQueryApplicationAttemptDenial> {
+    let observed = observe_settled_transition(runtime, snapshot, layout, locator.entity(), facts)?;
+    if observed != locator.settlement() {
+        return Err(denial("retained workflow transition locator changed"));
+    }
+    Ok(observed)
 }
 
 pub(super) fn observe_assessment_evidence(

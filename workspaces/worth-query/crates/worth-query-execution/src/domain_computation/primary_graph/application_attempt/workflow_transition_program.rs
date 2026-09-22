@@ -219,7 +219,6 @@ where
             selected.kind(),
             SelectedWorkflowTransitionKind::Assessment(_)
                 | SelectedWorkflowTransitionKind::EvidenceJoin(_)
-                | SelectedWorkflowTransitionKind::Operation(_)
         ) {
             self.lease.handle().with_runtime(|runtime| {
                 observed.ensure_history(
@@ -292,7 +291,7 @@ where
                     live_membership,
                     false,
                     facts,
-                    &observed.transitions,
+                    observed.progress_basis.progress(),
                     operation,
                 ),
         }?;

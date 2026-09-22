@@ -18,6 +18,7 @@ fn progress(head: u64) -> WorkflowInstanceProgress {
             (entity(1), ApplicationWorkflowControlOutcome::Completed),
             2,
         )]),
+        latest_transitions: BTreeMap::new(),
     }
 }
 

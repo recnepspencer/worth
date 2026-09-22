@@ -116,7 +116,7 @@ fn exact_approval_persists_replays_and_binds_decision_and_instance() {
         WorkflowInstanceStartOutcome::Started(performed) => performed.instance().clone(),
         other => panic!("expected a foreign instance, got {other:?}"),
     };
-    let foreign_proposal = published_proposal(&application, foreign.clone(), 514);
+    let foreign_proposal = super::proposal::published_proposal(&application, foreign.clone(), 514);
     for denial in [
         approve_instance(
             &application,
