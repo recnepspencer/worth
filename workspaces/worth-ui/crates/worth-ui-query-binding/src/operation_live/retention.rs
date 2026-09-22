@@ -124,7 +124,11 @@ impl WorthUiOperationLiveRetention {
         );
         self.next_source_generation = generation;
         self.next_source_order = order;
-        debug_assert!(self.insert(resource).is_none());
+        let displaced = self.insert(resource);
+        debug_assert!(
+            displaced.is_none(),
+            "admission rejects a duplicate before retention inserts it"
+        );
         Ok(())
     }
 

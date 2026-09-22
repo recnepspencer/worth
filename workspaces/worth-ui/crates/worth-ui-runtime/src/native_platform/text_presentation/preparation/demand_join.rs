@@ -76,7 +76,7 @@ pub(super) fn rebuild_glyph_runs<'work>(
                     let span = spans
                         .next()
                         .expect("text demand admitted exactly one covering paint span");
-                    debug_assert!(spans.next().is_none());
+                    debug_assert_eq!(spans.count(), 0);
                     let positioned = demand
                         .positioned_glyph_for_record(layout, record_index)
                         .expect("retained demand preserves positioned-glyph provenance");

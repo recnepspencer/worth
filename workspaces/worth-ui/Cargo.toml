@@ -75,6 +75,10 @@ unsafe_code = "forbid"
 
 [workspace.lints.clippy]
 all = { level = "deny", priority = -1 }
+# A debug_assert body never runs in a release build, so a call placed inside
+# one performs its work only under debug assertions. Hoist the call and assert
+# on the value it returned.
+debug_assert_with_mut_call = "deny"
 
 # Worth UI is a nested workspace and does not inherit the root workspace's
 # profiles. Keep Windows test/debug metadata useful without paying for full PDB

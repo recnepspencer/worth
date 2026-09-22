@@ -42,9 +42,11 @@ pub(super) fn reconcile_portal_installation(
         Some(owner)
     } else {
         if let Some(mut owner) = slot.take() {
-            debug_assert_eq!(owner.shutdown().final_active_records(), 0);
+            let shutdown = owner.shutdown();
+            debug_assert_eq!(shutdown.final_active_records(), 0);
             let issuer = owner.take_stack_ordinal_issuer();
-            debug_assert!(dormant_ordinal_issuer.replace(issuer).is_none());
+            let displaced = dormant_ordinal_issuer.replace(issuer);
+            debug_assert!(displaced.is_none());
         }
         None
     };
@@ -68,7 +70,8 @@ pub(super) fn reconcile_motion_installation(
         Some(owner)
     } else {
         if let Some(mut owner) = slot.take() {
-            debug_assert!(owner.shutdown().final_census().is_zero());
+            let shutdown = owner.shutdown();
+            debug_assert!(shutdown.final_census().is_zero());
         }
         None
     };
