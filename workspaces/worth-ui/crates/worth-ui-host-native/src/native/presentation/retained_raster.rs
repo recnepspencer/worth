@@ -5,6 +5,7 @@ use super::raster::{raster_damage_for_basis, UiNativeRasterBasis};
 use super::{UiNativePresentationPortPlan, UiNativeRasterOperation, UiNativeRetainedDrawList};
 
 mod cost;
+mod damage_gathering;
 pub(super) use cost::replay_cost;
 
 pub(super) fn build_plan(
@@ -18,21 +19,23 @@ pub(super) fn build_plan(
     let staged_clears = retained
         .staged_appearance_clears(&replay.staged_appearance_regions, basis)
         .map_err(|_| malformed())?;
-    let logical_clears = replay.regions.iter().map(|region| {
-        raster_damage_for_basis(region.damage.bounds(), basis).map_err(|_| malformed())
-    });
+    let mut damage = Vec::with_capacity(
+        replay.regions.len() + replay.physical_text_regions.len() + staged_clears.len(),
+    );
+    for region in &replay.regions {
+        if let Some(clear) =
+            raster_damage_for_basis(region.damage.bounds(), basis).map_err(|_| malformed())?
+        {
+            damage.push(clear);
+        }
+    }
+    damage.extend(replay.physical_text_regions.iter().copied());
+    damage.extend(staged_clears);
     let mut operations = Vec::new();
     let mut cleared_pixels = 0_u64;
     let mut rendered_pixels = 0_u64;
     let mut replayed_commands = 0_u64;
-    let physical_clears = replay
-        .physical_text_regions
-        .into_iter()
-        .chain(staged_clears);
-    for clear in logical_clears.chain(physical_clears.map(|clear| Ok(Some(clear)))) {
-        let Some(clear) = clear? else {
-            continue;
-        };
+    for clear in damage_gathering::gather(damage, basis.extent()) {
         cleared_pixels = add_pixels(cleared_pixels, clear)?;
         operations.push(UiNativeRasterOperation::Clear(clear));
         let physical_replay = retained
@@ -75,7 +78,10 @@ pub(super) fn build_plan(
                             replayed_commands.checked_add(1).ok_or_else(malformed)?;
                         continue;
                     }
-                    let sampled = super::sample::sampled_command_bounds(command, sample)?;
+                    let Some(sampled) = super::sample::sampled_command_bounds(command, sample)?
+                    else {
+                        continue;
+                    };
                     let Some(rect) = raster_damage_for_basis(sampled, basis)
                         .map_err(|_| malformed())?
                         .and_then(|rect| rect.intersection(clear, basis.extent()))

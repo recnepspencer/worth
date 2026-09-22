@@ -46,6 +46,27 @@ fn completion_preserves_runtime_owned_semantic_text_meaning() {
 }
 
 #[test]
+fn rows_scrolled_past_the_surface_origin_complete_for_the_clip_to_drop() {
+    // The live geometry of a scroll row carried left of the viewport origin: it
+    // keeps positive, finite extent, so it completes and the clip removes it.
+    let mut input = fixture();
+    input.bounds = canonical_box(-462.0, 418.0, 420.0, 23.0);
+    input.clip_bounds = input.bounds;
+    input.origin_x = -462.0;
+    input.origin_y = 426.0;
+    assert_eq!(
+        input.bounds.posture(),
+        super::super::UiMountedGeometryPosture::Offscreen
+    );
+
+    let row = complete(input.clone());
+    assert_eq!(row.bounds(), input.bounds);
+
+    let scroll_region = crate::UiAppearanceClip::new(290_000, 693_000, 768_000, 269_000).unwrap();
+    assert_eq!(row.clipped_to_appearance_ancestor(scroll_region), Ok(None));
+}
+
+#[test]
 fn geometry_origin_and_receipt_mismatches_are_typed_denials() {
     let mut input = fixture();
     input.bounds = canonical_box(32.0, 32.0, 0.0, 96.0);

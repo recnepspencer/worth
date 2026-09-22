@@ -19,6 +19,7 @@ use super::{NativePlatformContract, NativePlatformFailure};
 
 mod capture_consistency;
 mod capture_region;
+mod capture_settlement;
 mod client_capture;
 mod environment;
 mod gdi_capture;
@@ -101,17 +102,20 @@ impl WindowsNativePlatform {
         let client = bound.observation.bounds();
         let monitor = monitor_for_client(client)?;
         let region = monitor_capture_region(&monitor, client)?;
-        let monitor_capture =
-            capture_bound_client_area(&monitor, region, bound.observation.process_id())?;
-        let window_capture = client_capture::capture_client_area(
-            &bound.capture_window,
-            client,
-            bound.observation.process_id(),
-        )?;
-        require_matching_capture_sources(&monitor_capture, &window_capture)?;
-        let gdi_capture = gdi_capture::capture_client_area(client, bound.observation.process_id())?;
-        require_matching_composited_sources(&monitor_capture, &gdi_capture)?;
-        Ok(monitor_capture)
+        capture_settlement::settled_exposure(|| {
+            let monitor_capture =
+                capture_bound_client_area(&monitor, region, bound.observation.process_id())?;
+            let window_capture = client_capture::capture_client_area(
+                &bound.capture_window,
+                client,
+                bound.observation.process_id(),
+            )?;
+            require_matching_capture_sources(&monitor_capture, &window_capture)?;
+            let gdi_capture =
+                gdi_capture::capture_client_area(client, bound.observation.process_id())?;
+            require_matching_composited_sources(&monitor_capture, &gdi_capture)?;
+            Ok(monitor_capture)
+        })
     }
 }
 

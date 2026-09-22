@@ -43,13 +43,13 @@ pub enum WorthUiStatusOwnerError {
     MissingUniqueRecord,
     LiveOpen(String),
     MutationRequest(String),
-    SourceMutationOutcome(WorthUiStatusMutationOutcome),
-    ActionMutationOutcome(WorthUiStatusActionMutationOutcome),
+    SourceMutationOutcome(Box<WorthUiStatusMutationOutcome>),
+    ActionMutationOutcome(Box<WorthUiStatusActionMutationOutcome>),
     LiveDelivery(WorthUiStatusLiveDeliveryStop),
     PublicationMismatch,
     OperationAndLiveClose {
         operation: Box<WorthUiStatusOwnerError>,
-        close: WorthQueryApplicationLiveCloseOutcome,
+        close: Box<WorthQueryApplicationLiveCloseOutcome>,
     },
 }
 
@@ -68,7 +68,7 @@ impl WorthUiStatusOwnerError {
     pub(super) fn with_live_close(self, close: WorthQueryApplicationLiveCloseOutcome) -> Self {
         Self::OperationAndLiveClose {
             operation: Box::new(self),
-            close,
+            close: Box::new(close),
         }
     }
 }
