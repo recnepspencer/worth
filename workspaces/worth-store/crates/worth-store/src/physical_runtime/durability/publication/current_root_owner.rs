@@ -32,7 +32,7 @@ pub(in crate::physical_runtime) struct PhysicalCurrentRootOwner {
     displaced: Mutex<Option<crate::physical_runtime::durability::retention::DisplacedSegment>>,
 }
 
-struct PhysicalCurrentRootState {
+pub(super) struct PhysicalCurrentRootState {
     current_root: DurablePhysicalRootManifest,
     previous_root: Option<RetainedPhysicalRoot>,
     namespace_evidence: crate::physical_runtime::PhysicalRootNamespaceDurabilityEvidence,

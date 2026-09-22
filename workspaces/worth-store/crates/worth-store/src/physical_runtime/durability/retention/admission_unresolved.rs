@@ -45,3 +45,18 @@ fn retained_publication_blocks_the_next_root_change() {
         }
     }
 }
+
+#[test]
+fn sealed_candidate_charge_survives_lease_drop() {
+    let profile = PhysicalRetentionProfile::new(100, 4, 40, 1).unwrap();
+    let admission = std::sync::Arc::new(PhysicalPublicationAdmission::new(profile));
+    let lease = admission.reserve_candidate(9, 60).unwrap();
+    admission.seal_candidate_charge(lease.generation());
+    drop(lease);
+    assert_eq!(admission.remaining_growth_bytes(), 0);
+    let Err(denied) = admission.reserve_candidate(10, 1) else {
+        panic!("sealed retained growth must keep denying one-over requests");
+    };
+    assert_eq!(denied.remaining_bytes, 0);
+    assert_eq!(denied.requested_bytes, 1);
+}

@@ -1,9 +1,69 @@
+use std::path::Path;
+
 use worth_store::physical_runtime::{
-    ManifestEntryCapacity, PhysicalMutationOutcome, PhysicalRecordPlacementPolicy, SegmentPageCount,
+    ManifestEntryCapacity, PhysicalMutationOutcome, PhysicalRecordPlacementPolicy,
+    PhysicalRetirementDenial, SegmentPageCount,
 };
+use worth_store_physical_backend::MediaOperationRole;
 
 use super::selected_segment_rewrite::prepare_rewrite;
 use super::*;
+
+#[test]
+fn retirement_waits_for_the_source_reader_then_restores_growth() {
+    let parent = tempfile::tempdir().unwrap();
+    let root = parent.path().join("store");
+    let serving = serving_from_initialization(&root);
+    let (format, placement, _) = configuration();
+    let page_bytes = u64::from(format.declaration().page_size().bytes());
+    serving.certification_limit_candidate_growth_bytes(page_bytes.saturating_mul(6));
+    completed(prepare(&serving, placement, [51; 32], b"retirement-source").execute());
+    let first_reader = serving.records().unwrap();
+    let second_reader = serving.records().unwrap();
+    completed(prepare_rewrite(&serving, placement, [52; 32]).execute());
+    let successor_reader = serving.records().unwrap();
+    let before = segment_names(&root);
+    assert!(before.len() >= 2);
+    match prepare_rewrite(&serving, placement, [53; 32]).execute() {
+        PhysicalMutationOutcome::ProvenNoEffect(fate) => {
+            assert_eq!(
+                fate.cause(),
+                PhysicalMutationProvenNoEffectCause::AdmissionDeniedBeforeGroupSeal
+            );
+        }
+        PhysicalMutationOutcome::Completed(_) | PhysicalMutationOutcome::Indeterminate(_) => {
+            panic!("retained garbage must deny the next rewrite at the growth limit")
+        }
+    }
+    assert_eq!(
+        serving.retire_displaced_segment(),
+        Err(PhysicalRetirementDenial::Protected)
+    );
+    assert_eq!(segment_names(&root), before);
+    drop(first_reader);
+    assert_eq!(
+        serving.retire_displaced_segment(),
+        Err(PhysicalRetirementDenial::Protected)
+    );
+    assert_eq!(segment_names(&root), before);
+    drop(second_reader);
+    serving.retire_displaced_segment().unwrap();
+    drop(successor_reader);
+    let after = segment_names(&root);
+    assert_eq!(after.len(), before.len() - 1);
+    assert!(directory_contains(&root.join("families").join("wal"), RETIREMENT_DOMAIN));
+    completed(prepare_rewrite(&serving, placement, [54; 32]).execute());
+    assert!(
+        serving
+            .media_counters()
+            .attempts_for(MediaOperationRole::PositionedWrite)
+            > 0
+    );
+    serving.close();
+    let reopened = crate::serving_from_open(&root);
+    assert!(reopened.records().is_ok());
+    reopened.close();
+}
 
 #[test]
 fn reopened_store_keeps_displaced_rewrite_garbage() {
@@ -274,4 +334,37 @@ fn reopened_store_keeps_the_published_extent_charge() {
         "reopen must keep the published extent bytes charged"
     );
     serving.close();
+}
+
+const RETIREMENT_DOMAIN: &[u8] = b"store.physical.retirement.v1";
+
+fn segment_names(root: &Path) -> Vec<String> {
+    let mut names = std::fs::read_dir(root.join("families").join("records").join("segments"))
+        .unwrap()
+        .flatten()
+        .map(|entry| entry.file_name().to_string_lossy().into_owned())
+        .filter(|name| name.ends_with(".pages"))
+        .collect::<Vec<_>>();
+    names.sort();
+    names
+}
+
+fn directory_contains(root: &Path, needle: &[u8]) -> bool {
+    let Ok(entries) = std::fs::read_dir(root) else {
+        return false;
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_dir() {
+            if directory_contains(&path, needle) {
+                return true;
+            }
+        } else if std::fs::read(&path)
+            .ok()
+            .is_some_and(|bytes| bytes.windows(needle.len()).any(|window| window == needle))
+        {
+            return true;
+        }
+    }
+    false
 }

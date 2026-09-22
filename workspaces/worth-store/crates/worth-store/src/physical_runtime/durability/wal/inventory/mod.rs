@@ -41,10 +41,28 @@ pub(in crate::physical_runtime) struct ReopenedPhysicalWalInventory {
     pub(super) requires_inspection: bool,
     pub(super) segments: PhysicalWalSegmentInventory,
     pub(in crate::physical_runtime::durability) members: Vec<ReopenedPhysicalWalMember>,
+    pub(in crate::physical_runtime::durability) retirement_spans: Vec<(u64, u64)>,
+    pub(in crate::physical_runtime::durability) retirement_records:
+        Vec<crate::physical_runtime::durability::RetirementRecord>,
+    pub(in crate::physical_runtime::durability) retirement_locations: Vec<(u64, u64)>,
 }
 
 impl ReopenedPhysicalWalInventory {
     pub(in crate::physical_runtime) fn take_members(&mut self) -> Vec<ReopenedPhysicalWalMember> {
         std::mem::take(&mut self.members)
+    }
+
+    pub(in crate::physical_runtime) fn take_retirement_spans(&mut self) -> Vec<(u64, u64)> {
+        std::mem::take(&mut self.retirement_spans)
+    }
+
+    pub(in crate::physical_runtime) fn take_retirement_records(
+        &mut self,
+    ) -> Vec<crate::physical_runtime::durability::RetirementRecord> {
+        std::mem::take(&mut self.retirement_records)
+    }
+
+    pub(in crate::physical_runtime) fn take_retirement_locations(&mut self) -> Vec<(u64, u64)> {
+        std::mem::take(&mut self.retirement_locations)
     }
 }

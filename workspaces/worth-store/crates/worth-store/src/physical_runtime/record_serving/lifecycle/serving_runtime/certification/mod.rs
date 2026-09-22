@@ -46,6 +46,73 @@ impl ServingPhysicalRuntime {
         self.parts.publication.charged_growth_bytes()
     }
 
+    /// Owes a background turn after the next retirement frame is written, before its barrier.
+    pub fn certification_owe_before_retirement_barrier(&self) {
+        self.parts
+            .publication
+            .certification_owe_before_maintenance_barrier();
+    }
+
+    /// Makes the next foreground reservation wait for a background turn.
+    pub fn certification_owe_background_turn(&self) {
+        self.parts
+            .scheduler_admission
+            .certification_owe_background_turn();
+    }
+
+    /// Clears the background turn installed by `certification_owe_background_turn`.
+    pub fn certification_release_owed_background_turn(&self) {
+        self.parts
+            .scheduler_admission
+            .certification_release_owed_background_turn();
+    }
+
+    /// Holds the retirement owner after the claim and before the intent append.
+    pub fn certification_pause_before_retirement_intent(&self) {
+        self.parts
+            .publication
+            .arm_retirement_intent_gate();
+    }
+
+    pub fn certification_retirement_intent_arrived(&self) -> bool {
+        self.parts.publication.retirement_intent_arrived()
+    }
+
+    pub fn certification_release_retirement_intent(&self) {
+        self.parts.publication.release_retirement_intent_gate();
+    }
+
+    /// Stops retirement after the intent and checkpoint, before the segment unlink.
+    pub fn certification_stop_before_retirement_delete(&self) {
+        self.parts
+            .publication
+            .certification_stop_before_retirement_delete();
+    }
+
+    /// Fails the next segment-removal directory sync after the unlink has returned.
+    pub fn certification_fail_next_removal_directory_sync(&self) {
+        self.parts
+            .work_runtime
+            .executor
+            .record_serving_media()
+            .certification_fail_next_removal_directory_sync();
+    }
+
+    /// Stops retirement after the segment file is gone and before completion.
+    pub fn certification_stop_after_retirement_delete(&self) {
+        self.parts
+            .publication
+            .certification_stop_after_retirement_delete();
+    }
+
+    /// Ordinary publication work cannot remove a segment. The public command
+    /// constructor refuses before any media effect.
+    pub fn certification_public_segment_removal_rejected(&self) -> bool {
+        self.parts
+            .publication
+            .certification_public_segment_removal_rejected()
+    }
+
     pub fn certification_limit_candidate_growth_bytes(&self, usable_growth_bytes: u64) {
         self.parts
             .publication

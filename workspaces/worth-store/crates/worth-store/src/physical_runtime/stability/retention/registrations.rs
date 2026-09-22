@@ -238,6 +238,27 @@ impl RootProtectionRegistry {
         state.roots.contains_key(&generation)
     }
 
+    /// True when a live reader still names this inline segment as its tail.
+    ///
+    /// The registry is the bounded protected-root index. Retirement uses it
+    /// instead of walking the published graph.
+    pub(in crate::physical_runtime) fn protects_inline_segment(
+        &self,
+        segment_id: u64,
+        generation: u64,
+    ) -> bool {
+        let mut state = self
+            .state
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        state.index_probes = state.index_probes.saturating_add(1);
+        state.roots.values().any(|root| {
+            root.manifest.last_inline_segment().is_some_and(|cell| {
+                cell.segment_id().get() == segment_id && cell.generation().get() == generation
+            })
+        })
+    }
+
     pub(super) fn root_acquisitions(&self, binding: PhysicalProtectedRootObservation) -> u32 {
         if binding.runtime() != self.runtime {
             return 0;

@@ -109,6 +109,11 @@ fn scope_lowering_never_emits_an_empty_key_list() {
         lower_scope(&artifact, PhysicalEffectAccess::Write)[..],
         [PhysicalEffectKey::WholeArtifact { .. }]
     ));
+    let removal = PhysicalWorkScope::artifact_removal(segment(4));
+    assert!(matches!(
+        lower_scope(&removal, PhysicalEffectAccess::Write)[..],
+        [PhysicalEffectKey::DeleteArtifact { .. }]
+    ));
     assert!(matches!(
         lower_scope(&one, PhysicalEffectAccess::Read)[..],
         [PhysicalEffectKey::Range { .. }]

@@ -19,6 +19,12 @@ mod drop_boundaries;
 mod pending_publication;
 #[path = "managed_mutation/segment_retirement.rs"]
 mod segment_retirement;
+#[path = "managed_mutation/retirement_reconstruction.rs"]
+mod retirement_reconstruction;
+#[path = "managed_mutation/retirement_identity.rs"]
+mod retirement_identity;
+#[path = "managed_mutation/retirement_wal_hold.rs"]
+mod retirement_wal_hold;
 #[path = "managed_mutation/selected_segment_rewrite.rs"]
 mod selected_segment_rewrite;
 #[path = "managed_mutation/maintenance_capability.rs"]

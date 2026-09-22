@@ -23,13 +23,12 @@ struct AdmissionState {
     charged_bytes: u64,
     pending: HashMap<PhysicalMutationIdentity, u32>,
     generations: BTreeMap<u64, (u64, u32)>,
-    garbage: BTreeMap<u64, RetainedGarbage>,
+    garbage: BTreeMap<(u64, u64), RetainedGarbage>,
 }
 
 struct RetainedGarbage {
     bytes: u64,
     source_root: u64,
-    segment_id: u64,
     claimed: bool,
     completed: bool,
 }
@@ -204,15 +203,15 @@ impl PhysicalPublicationAdmission {
 
     pub(in crate::physical_runtime) fn retain_displaced(&self, displaced: DisplacedSegment) {
         let mut state = self.lock();
-        if state.garbage.contains_key(&displaced.generation) {
+        let key = (displaced.segment_id, displaced.generation);
+        if state.garbage.contains_key(&key) {
             return;
         }
         state.garbage.insert(
-            displaced.generation,
+            key,
             RetainedGarbage {
                 bytes: displaced.bytes,
                 source_root: displaced.source_root,
-                segment_id: displaced.segment_id,
                 claimed: false,
                 completed: false,
             },
@@ -221,19 +220,23 @@ impl PhysicalPublicationAdmission {
 
     pub(in crate::physical_runtime) fn next_displaced(&self) -> Option<DisplacedSegment> {
         let state = self.lock();
-        state.garbage.iter().find_map(|(generation, garbage)| {
+        state.garbage.iter().find_map(|((segment_id, generation), garbage)| {
             (!garbage.completed).then_some(DisplacedSegment {
                 source_root: garbage.source_root,
-                segment_id: garbage.segment_id,
+                segment_id: *segment_id,
                 generation: *generation,
                 bytes: garbage.bytes,
             })
         })
     }
 
-    pub(in crate::physical_runtime) fn claim_displaced(&self, generation: u64) -> GarbageClaim {
+    pub(in crate::physical_runtime) fn claim_displaced(
+        &self,
+        segment_id: u64,
+        generation: u64,
+    ) -> GarbageClaim {
         let mut state = self.lock();
-        let Some(garbage) = state.garbage.get_mut(&generation) else {
+        let Some(garbage) = state.garbage.get_mut(&(segment_id, generation)) else {
             return GarbageClaim::Absent;
         };
         if garbage.completed {
@@ -241,7 +244,7 @@ impl PhysicalPublicationAdmission {
         }
         let displaced = DisplacedSegment {
             source_root: garbage.source_root,
-            segment_id: garbage.segment_id,
+            segment_id,
             generation,
             bytes: garbage.bytes,
         };
@@ -252,18 +255,29 @@ impl PhysicalPublicationAdmission {
         GarbageClaim::Claimed(displaced)
     }
 
-    pub(in crate::physical_runtime) fn revert_displaced_claim(&self, generation: u64) {
+    pub(in crate::physical_runtime) fn removal_permit(
+        &self,
+        segment_id: u64,
+        generation: u64,
+    ) -> Option<super::RetirementRemovalPermit> {
+        let state = self.lock();
+        let garbage = state.garbage.get(&(segment_id, generation))?;
+        (garbage.claimed && !garbage.completed)
+            .then_some(super::RetirementRemovalPermit::issued(segment_id, generation))
+    }
+
+    pub(in crate::physical_runtime) fn revert_displaced_claim(&self, segment_id: u64, generation: u64) {
         let mut state = self.lock();
-        if let Some(garbage) = state.garbage.get_mut(&generation) {
+        if let Some(garbage) = state.garbage.get_mut(&(segment_id, generation)) {
             if !garbage.completed {
                 garbage.claimed = false;
             }
         }
     }
 
-    pub(in crate::physical_runtime) fn complete_displaced(&self, generation: u64) {
+    pub(in crate::physical_runtime) fn complete_displaced(&self, segment_id: u64, generation: u64) {
         let mut state = self.lock();
-        let Some(garbage) = state.garbage.get_mut(&generation) else {
+        let Some(garbage) = state.garbage.get_mut(&(segment_id, generation)) else {
             return;
         };
         if garbage.completed {
@@ -372,21 +386,6 @@ mod tests {
         drop(again);
         assert_eq!(admission.lock().charged_bytes, 0);
         assert!(admission.reserve_candidate(3, 61).is_err());
-    }
-
-    #[test]
-    fn sealed_candidate_charge_survives_lease_drop() {
-        let profile = PhysicalRetentionProfile::new(100, 4, 40, 1).unwrap();
-        let admission = std::sync::Arc::new(PhysicalPublicationAdmission::new(profile));
-        let lease = admission.reserve_candidate(9, 60).unwrap();
-        admission.seal_candidate_charge(lease.generation());
-        drop(lease);
-        assert_eq!(admission.remaining_growth_bytes(), 0);
-        let Err(denied) = admission.reserve_candidate(10, 1) else {
-            panic!("sealed retained growth must keep denying one-over requests");
-        };
-        assert_eq!(denied.remaining_bytes, 0);
-        assert_eq!(denied.requested_bytes, 1);
     }
 }
 

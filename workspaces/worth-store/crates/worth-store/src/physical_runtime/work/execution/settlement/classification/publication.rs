@@ -124,5 +124,8 @@ pub(in crate::physical_runtime::work::execution::settlement) const fn effect_rol
         crate::physical_runtime::work::PhysicalPublicationEffect::ReplaceCatalog => {
             MediaOperationRole::AtomicReplace
         }
+        crate::physical_runtime::work::PhysicalPublicationEffect::RemoveArtifact => {
+            MediaOperationRole::Delete
+        }
     }
 }

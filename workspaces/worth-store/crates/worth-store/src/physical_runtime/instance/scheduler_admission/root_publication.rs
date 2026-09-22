@@ -82,6 +82,27 @@ impl PhysicalSchedulerAdmissionOwner {
         })
     }
 
+    pub(in crate::physical_runtime) fn record_generation_removal(
+        &self,
+        security: &IoSchedulerSecurityScopeAdmission,
+        bytes: u64,
+    ) -> Result<
+        (
+            PhysicalInstanceForegroundReservation,
+            IoSchedulerBackendCapabilityAdmission,
+        ),
+        RecordSchedulerReservationDenial,
+    > {
+        let lane = ForegroundLaneDeclaration::ordinary_page_write()
+            .with_latency_envelope(ForegroundLatencyEnvelope::bounded_interference(
+                "physical-record-retirement",
+                8,
+            ))
+            .with_budget(super::write_budget(bytes.max(1), true, true));
+        let reservation = self.reserve_selected_foreground(lane, &self.buffered_file, security)?;
+        Ok((reservation, self.buffered_file.clone()))
+    }
+
     fn reserve_root_lane(
         &self,
         lane: ForegroundLaneDeclaration,

@@ -44,6 +44,11 @@ impl<'media> IntegrityAdmittedRootManifest<'media> {
         .last_inline_segment(self.validated.last_inline_segment())
         .admit()
         .expect("sealed root-manifest fields preserve the format contract");
+        let manifest = if self.validated.requires_maintenance_protocol() {
+            manifest.with_maintenance_protocol()
+        } else {
+            manifest
+        };
         (manifest, self.validated.record_format())
     }
 

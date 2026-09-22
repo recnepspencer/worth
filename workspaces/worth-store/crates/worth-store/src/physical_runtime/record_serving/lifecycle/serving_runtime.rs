@@ -122,6 +122,72 @@ impl ServingPhysicalRuntime {
         )
     }
 
+    /// Retires one segment generation displaced by a published rewrite.
+    ///
+    /// A live reader of the source root blocks the claim. Intent is durable in
+    /// the WAL, then a checkpoint preserves that obligation, and only then is
+    /// the file deleted. The retained-byte charge is released after namespace
+    /// synchronization and completion.
+    pub fn retire_displaced_segment(
+        &self,
+    ) -> Result<(), crate::physical_runtime::PhysicalRetirementDenial> {
+        let Some(_owner) = self.parts.publication.try_begin_retirement() else {
+            return Err(crate::physical_runtime::PhysicalRetirementDenial::Waiting);
+        };
+        let Some(displaced) = self.parts.publication.commit_retirement_intent()? else {
+            return Ok(());
+        };
+        let captured = match self.checkpoint_displaced_retirement(displaced.generation) {
+            Ok(captured) => captured,
+            Err(denial) => {
+                self.parts
+                    .publication
+                    .revert_retirement_claim(displaced.segment_id, displaced.generation);
+                return Err(denial);
+            }
+        };
+        if captured <= displaced.source_root {
+            self.parts
+                .publication
+                .revert_retirement_claim(displaced.segment_id, displaced.generation);
+            return Err(crate::physical_runtime::PhysicalRetirementDenial::Retained);
+        }
+        self.parts.publication.finish_retirement(displaced)
+    }
+
+    fn checkpoint_displaced_retirement(
+        &self,
+        generation: u64,
+    ) -> Result<u64, crate::physical_runtime::PhysicalRetirementDenial> {
+        use worth_proof::TransitionOutcome;
+
+        use crate::physical_runtime::{
+            PhysicalCheckpointDeadline, PhysicalCheckpointIdempotencyKey, PhysicalCheckpointOutcome,
+            PhysicalCheckpointRequest, PhysicalRetirementDenial,
+        };
+
+        let mut key = [0u8; 32];
+        key[..8].copy_from_slice(&generation.to_le_bytes());
+        let request = PhysicalCheckpointRequest::fuzzy(
+            PhysicalCheckpointIdempotencyKey::new(key),
+            PhysicalCheckpointDeadline::after_milliseconds(30_000)
+                .expect("retirement checkpoint deadline is nonzero"),
+        );
+        let TransitionOutcome::Success(handle) = self.checkpoints().start(request).into_raw()
+        else {
+            return Err(PhysicalRetirementDenial::Checkpoint);
+        };
+        match handle.wait() {
+            PhysicalCheckpointOutcome::Completed(completed) => {
+                Ok(completed.basis().source().root().generation())
+            }
+            PhysicalCheckpointOutcome::ProvenNoEffect(_)
+            | PhysicalCheckpointOutcome::Indeterminate(_) => {
+                Err(PhysicalRetirementDenial::Checkpoint)
+            }
+        }
+    }
+
     /// Atomically captures and protects the current root for this acquisition.
     pub fn records(
         &self,

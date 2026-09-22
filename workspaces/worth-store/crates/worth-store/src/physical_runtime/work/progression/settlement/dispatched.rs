@@ -380,6 +380,9 @@ fn publication_effect_matches(
             PhysicalPublicationEffect::ReplaceCatalog,
             ArtifactTreePublicationEffect::Replacement { .. }
                 | ArtifactTreePublicationEffect::RootProtocolReplacement { .. }
+        ) | (
+            PhysicalPublicationEffect::RemoveArtifact,
+            ArtifactTreePublicationEffect::DurableRemoval(_)
         )
     )
 }

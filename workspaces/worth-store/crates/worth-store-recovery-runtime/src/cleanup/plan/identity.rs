@@ -107,6 +107,7 @@ const fn deferral_reason(reason: RecoveryCleanupDeferralReason) -> u8 {
         RecoveryCleanupDeferralReason::CandidateLimit => 0,
         RecoveryCleanupDeferralReason::ByteLimit => 1,
         RecoveryCleanupDeferralReason::UnresolvedOperationFate => 2,
+        RecoveryCleanupDeferralReason::UnresolvedRetirement => 10,
         RecoveryCleanupDeferralReason::FreshnessUnavailable => 3,
         RecoveryCleanupDeferralReason::PublishedGenerationChanged => 4,
         RecoveryCleanupDeferralReason::EligibilityChanged => 5,

@@ -209,6 +209,10 @@ fn encode_target(target: PhysicalWorkObligationTargetCode, record: &mut [u8; 160
             write_artifact(record, artifact);
         }
         PhysicalWorkObligationTargetCode::RecordNamespaceSynchronization => record[104] = 5,
+        PhysicalWorkObligationTargetCode::ArtifactRemoval(artifact) => {
+            record[104] = 9;
+            write_artifact(record, artifact);
+        }
         PhysicalWorkObligationTargetCode::WalArtifactInterval {
             segment,
             generation,
@@ -269,6 +273,10 @@ fn decode_target(
         5 if empty && !has_digest && record[106] == 0 && first == 0 && second == 0 => {
             PhysicalWorkObligationTargetCode::RecordNamespaceSynchronization
         }
+        9 if empty && !has_digest => PhysicalWorkObligationTargetCode::ArtifactRemoval(
+            decode_artifact(record[106], first, second)
+                .ok_or(PhysicalWorkObligationV6Denial::InvalidTarget)?,
+        ),
         6 if record[106] == 0
             && first > 0
             && second > 0

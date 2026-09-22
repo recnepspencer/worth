@@ -51,7 +51,10 @@ pub(in crate::physical_runtime::durability) fn plan_reclamation(
     if retained_index == 0 {
         return Ok(PhysicalWalReclamationPlan::NotRequired { checkpoint });
     }
-    let candidates = &entries[..retained_index];
+    let candidates = reclaimable_before_retirement(&entries[..retained_index], &state.unresolved_retirement_spans);
+    if candidates.is_empty() {
+        return Ok(PhysicalWalReclamationPlan::NotRequired { checkpoint });
+    }
     if candidates
         .iter()
         .any(|entry| entry.lsn_range().end_exclusive() > checkpoint_boundary)
@@ -69,6 +72,22 @@ pub(in crate::physical_runtime::durability) fn plan_reclamation(
             candidates,
         ),
     ))
+}
+
+fn reclaimable_before_retirement<'a>(
+    candidates: &'a [super::super::inventory::PhysicalWalSegmentInventoryEntry],
+    holds: &[(u64, u64, u64, u64)],
+) -> &'a [super::super::inventory::PhysicalWalSegmentInventoryEntry] {
+    let Some(index) = candidates.iter().position(|entry| {
+        let start = entry.lsn_range().start().get();
+        let end = entry.lsn_range().end_exclusive().get();
+        holds.iter().any(|(_, _, hold_start, hold_end)| {
+            start < *hold_end && *hold_start < end
+        })
+    }) else {
+        return candidates;
+    };
+    &candidates[..index]
 }
 
 fn require_retained_suffix(

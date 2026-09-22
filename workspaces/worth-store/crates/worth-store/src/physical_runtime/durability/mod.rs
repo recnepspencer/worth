@@ -12,7 +12,14 @@ mod retention;
 pub(in crate::physical_runtime) use retention::PendingPublicationLease;
 pub(in crate::physical_runtime) use retention::PhysicalPublicationAdmissionDenial;
 pub(in crate::physical_runtime) use retention::PhysicalRetentionProfile;
-pub(in crate::physical_runtime) use retention::GarbageClaim;
+pub use retention::PhysicalRetirementDenial;
+pub(in crate::physical_runtime) use retention::{
+    encode_retirement, unresolved_retirement_holds, unresolved_retirements, DisplacedSegment,
+    RetirementRecord,
+    RetirementRemovalPermit, RETIREMENT_COMPLETION, RETIREMENT_INTENT,
+};
+#[cfg(feature = "recovery-runtime-owner")]
+pub(in crate::physical_runtime) use retention::{decode_retirement, payload_is_retirement};
 mod settlement;
 mod wal;
 
@@ -164,7 +171,8 @@ pub(in crate::physical_runtime) use publication::{
     replace_root_candidate, synchronize_root_namespace, PhysicalCurrentRootOwner,
     PhysicalRootPublicationIdentity, PhysicalRootPublicationPreparationFailure,
     PhysicalRootPublicationPreparationNotStartedCause, PhysicalRootPublicationTransition,
-    PhysicalRootPublicationWorkPort, RootCandidateSynchronizationFailure,
+    PhysicalRootPublicationWorkFailure, PhysicalRootPublicationWorkPort,
+    RootCandidateSynchronizationFailure,
 };
 #[cfg(feature = "certification-test-authority")]
 pub use publication::{CertificationReadRootCapturePauseGate, CertificationReadRootCaptureStage};
@@ -189,6 +197,7 @@ pub use settlement::{
 };
 pub(in crate::physical_runtime) use wal::{
     reopen_wal_inventory, CompletionBoundPhysicalWalAppendSettlement, PhysicalWalAppendPort,
+    ScheduledMaintenanceDenial,
     PhysicalWalBindingReopenCutoff, PhysicalWalReclamationFoundation, PhysicalWalReclamationOwner,
     PhysicalWalRuntimeOwner, ReservedPhysicalWalGroupMembers,
 };

@@ -160,6 +160,7 @@ pub(in crate::physical_runtime::record_serving) fn load_current_root(
             &prior_roots,
             &current_root,
             &artifacts,
+            u64::from(admission.expected_format.page_size().bytes()),
         )?
     } else {
         Vec::new()

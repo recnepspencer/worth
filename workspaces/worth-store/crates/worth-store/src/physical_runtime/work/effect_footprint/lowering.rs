@@ -22,6 +22,9 @@ pub(super) fn lower_scope(
     if let Some(inspection) = scope.inspection_target() {
         return vec![lower_inspection(inspection)];
     }
+    if let Some(artifact) = scope.artifact_removal_target() {
+        return vec![PhysicalEffectKey::DeleteArtifact { artifact }];
+    }
     if let Some(artifact) = scope.artifact_target() {
         return vec![lower_named_artifact(artifact, access)];
     }

@@ -30,6 +30,7 @@ pub(crate) struct RecoveryCleanupPlanBasis<'a> {
     pub(crate) base: &'a RecoveryBaseImagePlan,
     pub(crate) publication: &'a RecoveryPublicationExpectation,
     pub(crate) fates: &'a RecoveryOperationFateSet,
+    pub(crate) unresolved_retirement: bool,
     pub(crate) limits: PhysicalRecoveryLimitDeclaration,
 }
 
@@ -39,6 +40,7 @@ pub(crate) fn build_plan(basis: RecoveryCleanupPlanBasis<'_>) -> RecoveryCleanup
         base,
         publication,
         fates,
+        unresolved_retirement,
         limits,
     } = basis;
     let checkpoint = publication.checkpoint_identity();
@@ -46,7 +48,7 @@ pub(crate) fn build_plan(basis: RecoveryCleanupPlanBasis<'_>) -> RecoveryCleanup
     dispositions.extend(consumed_publication_candidates(
         publication.created_artifacts(),
     ));
-    let covered_wal = admit_checkpoint_covered_wal(selection, fates, limits);
+    let covered_wal = admit_checkpoint_covered_wal(selection, fates, unresolved_retirement, limits);
     let candidates = covered_wal.candidates;
     dispositions.extend(covered_wal.dispositions);
     dispositions.extend(selection.residue().iter().map(|residue| {
@@ -80,6 +82,7 @@ struct CheckpointCoveredWalAdmission {
 fn admit_checkpoint_covered_wal(
     selection: &PhysicalSourceSelection,
     fates: &RecoveryOperationFateSet,
+    unresolved_retirement: bool,
     limits: PhysicalRecoveryLimitDeclaration,
 ) -> CheckpointCoveredWalAdmission {
     let mut admission = CheckpointCoveredWalAdmission {
@@ -90,6 +93,7 @@ fn admit_checkpoint_covered_wal(
     for covered in selection.wal_tail().checkpoint_covered() {
         let kind = checkpoint_covered_disposition(CheckpointCoveredWalDecision {
             cleanup_safe: covered.cleanup_safe(),
+            unresolved_retirement,
             unresolved: fates.indeterminate() != 0,
             next_count: admission.candidates.len() as u64 + 1,
             next_bytes: candidate_bytes.checked_add(covered.byte_count()),
@@ -116,6 +120,7 @@ fn admit_checkpoint_covered_wal(
 
 struct CheckpointCoveredWalDecision {
     cleanup_safe: bool,
+    unresolved_retirement: bool,
     unresolved: bool,
     next_count: u64,
     next_bytes: Option<u64>,
@@ -127,6 +132,10 @@ fn checkpoint_covered_disposition(
 ) -> RecoveryCleanupDispositionKind {
     if !decision.cleanup_safe {
         RecoveryCleanupDispositionKind::QuarantinedOrUnsupported
+    } else if decision.unresolved_retirement {
+        RecoveryCleanupDispositionKind::Deferred(
+            RecoveryCleanupDeferralReason::UnresolvedRetirement,
+        )
     } else if decision.unresolved {
         RecoveryCleanupDispositionKind::Deferred(
             RecoveryCleanupDeferralReason::UnresolvedOperationFate,

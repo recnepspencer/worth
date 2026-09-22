@@ -62,6 +62,9 @@ pub(in crate::physical_runtime) fn reopen_wal_inventory(
     let mut peak_buffer_bytes = 0u64;
     let mut active_lsn_end = None;
     let mut members = Vec::new();
+    let mut retirement_spans = Vec::new();
+    let mut retirement_records = Vec::new();
+    let mut retirement_locations = Vec::new();
     let mut interrupted_tail = None;
     let mut interrupted_segment = None;
     for identity in segments.iter().copied() {
@@ -113,6 +116,26 @@ pub(in crate::physical_runtime) fn reopen_wal_inventory(
             interrupted_tail = Some(repair);
         }
         for frame in verified.frames().iter().copied() {
+            if super::super::super::retention::payload_is_retirement(frame.payload()) {
+                let Some(record) = super::super::super::retention::decode_retirement(frame.payload())
+                else {
+                    return Err(PhysicalWalOpenFailure::MemberPayloadRejected);
+                };
+                retirement_records.push(record);
+                retirement_locations.push((
+                    frame.lsn_range().start().get(),
+                    frame.lsn_range().end_exclusive().get(),
+                ));
+                let range = frame.lsn_range();
+                match cutoff.lsn() {
+                    Some(cutoff_lsn) if range.end_exclusive() <= cutoff_lsn => {}
+                    Some(cutoff_lsn) if range.start() < cutoff_lsn => {
+                        return Err(PhysicalWalOpenFailure::MemberPayloadRejected);
+                    }
+                    _ => retirement_spans.push((range.start().get(), range.end_exclusive().get())),
+                }
+                continue;
+            }
             if let Some(member) = ReopenedPhysicalWalMember::decode_retained_frame(cutoff, frame)
                 .map_err(|_denial| PhysicalWalOpenFailure::MemberPayloadRejected)?
             {
@@ -184,6 +207,9 @@ pub(in crate::physical_runtime) fn reopen_wal_inventory(
         requires_inspection,
         segments: segment_inventory,
         members,
+        retirement_spans,
+        retirement_records,
+        retirement_locations,
     })
 }
 
@@ -246,6 +272,9 @@ fn empty_inventory(
         requires_inspection: false,
         segments: PhysicalWalSegmentInventory::empty(),
         members: Vec::new(),
+        retirement_spans: Vec::new(),
+        retirement_records: Vec::new(),
+        retirement_locations: Vec::new(),
     })
 }
 

@@ -1,3 +1,5 @@
+#[cfg(feature = "certification-test-authority")]
+use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, Mutex, Weak};
 
 use worth_store_physical_format::{DurableFreeSpaceManifestHeader, DurablePhysicalRootManifest};
@@ -21,6 +23,7 @@ mod managed_mutation;
 mod pre_seal_cancellation;
 mod root_candidate_execution;
 mod root_preparation;
+mod retirement;
 mod root_progression;
 mod selected_segment_rewrite;
 mod submission;
@@ -49,7 +52,14 @@ pub(in crate::physical_runtime) struct RecordPublicationDirector {
     access: AdmittedRecordAccessPolicy,
     residue: RecordPublicationResidueObservation,
     preparation: Mutex<RecordPreparationState>,
+    retirement_owner: Mutex<()>,
     mutations: Arc<crate::physical_runtime::PhysicalMutationRuntimeOwner>,
+    #[cfg(feature = "certification-test-authority")]
+    retirement_intent_gate: retirement::RetirementIntentGate,
+    #[cfg(feature = "certification-test-authority")]
+    stop_before_retirement_delete: AtomicBool,
+    #[cfg(feature = "certification-test-authority")]
+    stop_after_retirement_delete: AtomicBool,
 }
 
 pub(in crate::physical_runtime) struct RecordPublicationTerminalState {
@@ -87,6 +97,8 @@ pub(in crate::physical_runtime) struct RecordPublicationFoundation {
     pub(in crate::physical_runtime) previous_root: Option<DurablePhysicalRootManifest>,
     pub(in crate::physical_runtime) displaced_segments:
         Vec<crate::physical_runtime::record_serving::admission::bootstrap::DisplacedSegmentCharge>,
+    pub(in crate::physical_runtime) unresolved_retirements:
+        Vec<crate::physical_runtime::durability::RetirementRecord>,
     pub(in crate::physical_runtime) retained_extent_bytes: u64,
     pub(in crate::physical_runtime) retained_inline_bytes: u64,
     pub(in crate::physical_runtime) retained_publication_overhead: u64,
@@ -125,13 +137,27 @@ impl RecordPublicationDirector {
         retained = retained.saturating_add(foundation.wal.observation().reopened_bytes());
         retained = retained.saturating_add(foundation.retained_extent_bytes);
         root_owner.reconstruct_retained_bytes(retained);
-        for segment in displaced {
+        for segment in &displaced {
             root_owner.restore_displaced_segment(
                 segment.source_root,
                 segment.segment_id,
                 segment.generation,
                 page_bytes,
             );
+        }
+        for record in foundation.unresolved_retirements {
+            if displaced.iter().any(|segment| {
+                segment.segment_id == record.segment_id && segment.generation == record.generation
+            }) {
+                continue;
+            }
+            root_owner.restore_displaced_segment(
+                record.source_root,
+                record.segment_id,
+                record.generation,
+                record.bytes,
+            );
+            root_owner.reconstruct_retained_bytes(record.bytes);
         }
         foundation
             .wal
@@ -162,7 +188,14 @@ impl RecordPublicationDirector {
             preparation: Mutex::new(RecordPreparationState {
                 allocation_frontier: foundation.allocation_frontier,
             }),
+            retirement_owner: Mutex::new(()),
             mutations: crate::physical_runtime::PhysicalMutationRuntimeOwner::new(director.clone()),
+            #[cfg(feature = "certification-test-authority")]
+            retirement_intent_gate: retirement::RetirementIntentGate::new(),
+            #[cfg(feature = "certification-test-authority")]
+            stop_before_retirement_delete: AtomicBool::new(false),
+            #[cfg(feature = "certification-test-authority")]
+            stop_after_retirement_delete: AtomicBool::new(false),
         })
     }
 
@@ -231,6 +264,37 @@ impl RecordPublicationDirector {
 
     pub(in crate::physical_runtime) fn charged_growth_bytes(&self) -> u64 {
         self.root_owner.charged_growth_bytes()
+    }
+
+    #[cfg(feature = "certification-test-authority")]
+    pub(in crate::physical_runtime) fn certification_owe_before_maintenance_barrier(&self) {
+        self.wal.certification_owe_before_maintenance_barrier();
+    }
+
+    #[cfg(feature = "certification-test-authority")]
+    pub(in crate::physical_runtime) fn certification_stop_before_retirement_delete(&self) {
+        self.stop_before_retirement_delete
+            .store(true, std::sync::atomic::Ordering::Relaxed);
+    }
+
+    #[cfg(feature = "certification-test-authority")]
+    pub(in crate::physical_runtime) fn certification_stop_after_retirement_delete(&self) {
+        self.stop_after_retirement_delete
+            .store(true, std::sync::atomic::Ordering::Relaxed);
+    }
+
+    #[cfg(feature = "certification-test-authority")]
+    pub(in crate::physical_runtime) fn certification_public_segment_removal_rejected(&self) -> bool {
+        let Some(displaced) = self.root_owner.next_displaced_segment() else {
+            return false;
+        };
+        let artifact = worth_store_physical_format::RecordArtifactFile::Segment {
+            segment: displaced.segment_id,
+            generation: displaced.generation,
+        };
+        self.root_work
+            .certification_public_removal_rejected(artifact)
+            .unwrap_or(false)
     }
 
     pub(in crate::physical_runtime) fn pending_publication_count(&self) -> usize {

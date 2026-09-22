@@ -15,6 +15,7 @@ mod reclamation;
 #[cfg(feature = "recovery-runtime-owner")]
 pub(in crate::physical_runtime) use reclamation::PhysicalWalReclamationSchedulerAdmissionDenial;
 mod root_publication;
+#[cfg(feature = "certification-test-authority")] mod certification;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RecordSchedulerReservationDenial {

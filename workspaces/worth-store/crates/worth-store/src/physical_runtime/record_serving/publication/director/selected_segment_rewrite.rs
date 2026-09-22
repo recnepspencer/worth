@@ -285,12 +285,16 @@ impl RecordPublicationDirector {
             .map_err(|()| {
                 RecordAppendError::Denied(RecordAppendDenial::PhysicalPressure)
             })?;
-        self.root_owner.note_displaced_segment(
-            current_root.generation(),
-            segment.segment.segment_id().get(),
-            page_entry.data_generation(),
-            page_bytes,
-        );
+        // Other pages in this generation stay reachable. Deleting the file
+        // would remove them with the rewritten tail.
+        if page_entry.data_page_count() == 1 {
+            self.root_owner.note_displaced_segment(
+                current_root.generation(),
+                segment.segment.segment_id().get(),
+                page_entry.data_generation(),
+                page_bytes,
+            );
+        }
         let data = PreparedPhysicalDataPlan::new(vec![frame], 1)
             .map_err(|_| damaged())?
             .with_rewrite(rewrite);

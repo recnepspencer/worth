@@ -19,6 +19,24 @@ impl StoreRecoveryBindingFreshnessSample {
     pub fn wal_members(&self) -> &[StoreRecoveryWalMember] {
         &self.wal_members
     }
+    pub fn retirements(&self) -> &[StoreRecoveryRetirementObligation] {
+        &self.retirements
+    }
+}
+
+impl StoreRecoveryRetirementObligation {
+    pub const fn source_root(&self) -> u64 {
+        self.source_root
+    }
+    pub const fn segment_id(&self) -> u64 {
+        self.segment_id
+    }
+    pub const fn generation(&self) -> u64 {
+        self.generation
+    }
+    pub const fn bytes(&self) -> u64 {
+        self.bytes
+    }
 }
 
 impl StoreRecoveryOperationEvidence {

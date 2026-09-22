@@ -3,7 +3,6 @@ use std::sync::{
     Arc, OnceLock, Weak,
 };
 
-use worth_proof::TransitionOutcome;
 use worth_signal::facade::{AsyncNodeAdmissionClass, AsyncNodeConditionBlockClass};
 use worth_store_io_scheduler::QueueExecutionOutcome;
 use worth_store_physical_backend::ArtifactTreeFailure;
@@ -14,18 +13,19 @@ use crate::physical_runtime::durability::PhysicalMutationIdempotencyRuntimeAutho
 use crate::physical_runtime::work::PhysicalWorkAdmissionAuthority;
 use crate::physical_runtime::{
     instance::{
-        PhysicalSchedulerAdmissionOwner, PhysicalStoreWorkRuntime, RecordSchedulerReservationDenial,
+        PhysicalSchedulerAdmissionOwner, PhysicalStoreWorkRuntime,
     },
     record_serving::RecordWorkAdmission,
     PhysicalDurabilityObservation, PhysicalExecutorCommand, PhysicalExecutorCommandDenial,
-    PhysicalMutationWorkRequest, PhysicalSchedulerDemand, PhysicalSchedulerDenial,
-    PhysicalWalAppendScope, PhysicalWalAppendSettlement, PhysicalWorkAdmission,
-    PhysicalWorkExecution, PhysicalWorkPreEffectDenial, PhysicalWorkReadiness,
-    PhysicalWorkScheduler, PhysicalWorkSettlementEvidence, WalAppendedPhysicalMutation,
+    PhysicalSchedulerDenial, PhysicalWalAppendScope, PhysicalWalAppendSettlement,
+    PhysicalWorkExecution, PhysicalWorkPreEffectDenial, PhysicalWorkSettlementEvidence,
+    WalAppendedPhysicalMutation,
     WalBarrierMember, WalRangeReservedPhysicalMutation,
 };
 
 mod group;
+mod maintenance;
+pub(in crate::physical_runtime) use maintenance::ScheduledMaintenanceDenial;
 
 pub use group::{
     IndeterminatePhysicalWalGroupAppend, PhysicalWalGroupAppendContinuation,
@@ -75,6 +75,8 @@ pub(in crate::physical_runtime) struct PhysicalWalAppendPort {
     publication: Arc<OnceLock<Arc<crate::physical_runtime::durability::retention::PhysicalPublicationAdmission>>>,
     #[cfg(feature = "certification-test-authority")]
     fail_next_member_before_effect: Arc<AtomicBool>,
+    #[cfg(feature = "certification-test-authority")]
+    owe_before_maintenance_barrier: Arc<AtomicBool>,
 }
 
 impl PhysicalWalAppendPort {
@@ -102,7 +104,15 @@ impl PhysicalWalAppendPort {
             publication: Arc::new(OnceLock::new()),
             #[cfg(feature = "certification-test-authority")]
             fail_next_member_before_effect: Arc::new(AtomicBool::new(false)),
+            #[cfg(feature = "certification-test-authority")]
+            owe_before_maintenance_barrier: Arc::new(AtomicBool::new(false)),
         }
+    }
+
+    #[cfg(feature = "certification-test-authority")]
+    pub(in crate::physical_runtime) fn certification_owe_before_maintenance_barrier(&self) {
+        self.owe_before_maintenance_barrier
+            .store(true, Ordering::Relaxed);
     }
 
     #[cfg(feature = "certification-test-authority")]
@@ -139,7 +149,7 @@ impl PhysicalWalAppendPort {
     pub(in crate::physical_runtime) fn plan_maintenance_frame(
         &self,
         payload: &[u8],
-    ) -> Result<(worth_store_physical_backend::ArtifactTreeFile, u64, Vec<u8>), ()> {
+    ) -> Result<(worth_store_physical_backend::ArtifactTreeFile, u64, u64, u64, Vec<u8>), ()> {
         self.owner.plan_maintenance_frame(payload)
     }
 
@@ -182,10 +192,6 @@ impl PhysicalWalAppendPort {
                 PhysicalWorkPreEffectDenial::ConsumerCancelled,
             ));
         }
-        let runtime = self
-            .runtime
-            .upgrade()
-            .ok_or(PhysicalWalAppendFailureCause::RuntimeReleased)?;
         let declaration = reserved.declaration();
         let artifact_range = declaration.artifact_range();
         let scope = PhysicalWalAppendScope::new(
@@ -196,87 +202,12 @@ impl PhysicalWalAppendPort {
             declaration.disposition(),
         )
         .expect("reserved WAL declarations carry one valid append scope");
-        let request = PhysicalMutationWorkRequest::wal_append(
-            scope,
-            self.record.wal_append_basis(),
-            self.record.security(),
-        )
-        .map_err(PhysicalWalAppendFailureCause::SubmissionDenied)?;
-        let receipt = match runtime
-            .submission
-            .mutation_submission()
-            .submit(request)
-            .into_raw()
-        {
-            TransitionOutcome::Success(receipt) => receipt,
-            TransitionOutcome::Denied(denial) => {
-                return Err(PhysicalWalAppendFailureCause::SubmissionDenied(denial))
-            }
-            TransitionOutcome::Deferred(deferred) => {
-                return Err(PhysicalWalAppendFailureCause::SubmissionDeferred(deferred))
-            }
-            TransitionOutcome::Stale(stale) => {
-                return Err(PhysicalWalAppendFailureCause::SubmissionStale(stale))
-            }
-            TransitionOutcome::RebindRequired(rebind) => match rebind {},
-            TransitionOutcome::Failed(failure) => {
-                return Err(PhysicalWalAppendFailureCause::SubmissionFailed(failure))
-            }
-        };
-        let admitted = PhysicalWorkAdmission::admit(
-            &runtime.submission,
-            receipt,
-            &self.physical,
-            &runtime.health,
-        )
-        .map_err(PhysicalWalAppendFailureCause::PreEffect)?;
-        let ready = match runtime
-            .signal
-            .request(admitted)
-            .map_err(PhysicalWalAppendFailureCause::PreEffect)?
-        {
-            PhysicalWorkReadiness::Ready(ready) => ready,
-            PhysicalWorkReadiness::Blocked(blocked) => {
-                return Err(PhysicalWalAppendFailureCause::DependencyBlocked {
-                    class: blocked.class(),
-                    condition: blocked.condition(),
-                })
-            }
-        };
-        let (reservation, backend) = self
-            .scheduler
-            .wal_append(
-                self.record.scheduler_security(),
-                artifact_range.byte_count(),
-            )
-            .map_err(|denial: RecordSchedulerReservationDenial| match denial {
-                RecordSchedulerReservationDenial::Admission(denial) => {
-                    PhysicalWalAppendFailureCause::SchedulerReservationDenied(denial)
-                }
-                RecordSchedulerReservationDenial::OwedBackgroundTurn => {
-                    PhysicalWalAppendFailureCause::Scheduler(
-                        crate::physical_runtime::PhysicalSchedulerDenial::OwedBackgroundTurn,
-                    )
-                }
-            })?;
-        let demand = PhysicalSchedulerDemand::foreground(ready, reservation, None)
-            .map_err(PhysicalWalAppendFailureCause::Scheduler)?;
-        PhysicalWorkAdmission::require_current(
-            &runtime.submission,
-            demand.intent(),
-            &runtime.health,
-        )
-        .map_err(PhysicalWalAppendFailureCause::PreEffect)?;
-        let policy =
-            crate::physical_runtime::record_serving::admit_record_queue_policy(demand.queue_work());
-        let work = PhysicalWorkScheduler::admit(self.scheduler.effects(), demand, &backend, policy)
-            .map_err(PhysicalWalAppendFailureCause::Scheduler)?;
-        PhysicalExecutorCommand::wal_frame_write(
-            work,
+        maintenance::prepare_wal_frame_command(
+            self,
             reserved.artifact().clone(),
-            reserved.encoded_frame().to_vec().into_boxed_slice(),
+            reserved.encoded_frame().to_vec(),
+            scope,
         )
-        .map_err(PhysicalWalAppendFailureCause::Command)
     }
 
     fn execute_group_member(

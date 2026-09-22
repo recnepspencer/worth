@@ -12,6 +12,7 @@ pub(super) fn retained_displaced_segments(
     prior: &[DurablePhysicalRootManifest],
     current: &DurablePhysicalRootManifest,
     artifacts: &ServingRecordArtifacts,
+    page_bytes: u64,
 ) -> Result<Vec<DisplacedSegmentCharge>, BootstrapTransitionFailure> {
     let mut displaced = Vec::new();
     let mut before = prior.first();
@@ -24,7 +25,7 @@ pub(super) fn retained_displaced_segments(
                         generation: charge.generation,
                     })
                     .map_err(backend_before_effect)?;
-                if present {
+                if present && wholly_obsolete(artifacts, &charge, page_bytes)? {
                     displaced.push(charge);
                 }
             }
@@ -53,4 +54,21 @@ fn rewrite_displacement(
         segment_id: before_segment.segment_id().get(),
         generation: before_segment.generation().get(),
     })
+}
+
+/// A rewrite replaces one tail page. Only a one-page generation is then
+/// wholly unreachable. A longer file still holds the current root's earlier
+/// pages, so missing or larger length blocks deletion.
+fn wholly_obsolete(
+    artifacts: &ServingRecordArtifacts,
+    charge: &DisplacedSegmentCharge,
+    page_bytes: u64,
+) -> Result<bool, BootstrapTransitionFailure> {
+    let length = artifacts
+        .file_length(RecordArtifactFile::Segment {
+            segment: charge.segment_id,
+            generation: charge.generation,
+        })
+        .map_err(backend_before_effect)?;
+    Ok(length == page_bytes)
 }

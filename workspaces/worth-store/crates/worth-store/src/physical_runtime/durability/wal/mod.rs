@@ -24,7 +24,7 @@ pub(in crate::physical_runtime) use inventory::{
 };
 pub use member_basis::{PhysicalWalMemberBasis, PhysicalWalMemberIdentity};
 pub use observation::PhysicalWalObservation;
-pub(in crate::physical_runtime) use port::PhysicalWalAppendPort;
+pub(in crate::physical_runtime) use port::{PhysicalWalAppendPort, ScheduledMaintenanceDenial};
 pub use port::{
     IndeterminatePhysicalWalGroupAppend, PhysicalWalAppendFailureCause,
     PhysicalWalGroupAppendContinuation, PhysicalWalGroupAppendFailureCause,

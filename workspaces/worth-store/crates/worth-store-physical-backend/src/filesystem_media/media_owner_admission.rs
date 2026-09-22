@@ -112,6 +112,8 @@ impl FilesystemMediaOwner {
             artifact_mutations: Arc::new(Default::default()),
             store_root_publication_required: AtomicBool::new(store_root_publication_required),
             root_parent_publication_required: AtomicBool::new(root_parent_publication_required),
+            #[cfg(feature = "certification-test-authority")]
+            fail_next_removal_directory_sync: AtomicBool::new(false),
         })
     }
 }

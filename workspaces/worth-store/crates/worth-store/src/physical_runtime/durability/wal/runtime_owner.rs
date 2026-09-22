@@ -24,6 +24,7 @@ struct PlannedMaintenanceFrame {
     segment: worth_store_wal::WalSegmentId,
     generation: worth_store_wal::WalSegmentGeneration,
     lsn_range: worth_store_wal::WalLsnRange,
+    retirement: Option<(u8, u64, u64)>,
 }
 
 pub(super) struct PhysicalWalRuntimeState {
@@ -44,6 +45,8 @@ pub(super) struct PhysicalWalRuntimeState {
     pub(super) reopen_peak_buffer_bytes: u64,
     pub(super) segments: PhysicalWalSegmentInventory,
     maintenance: Option<PlannedMaintenanceFrame>,
+    awaiting_barrier: bool,
+    pub(super) unresolved_retirement_spans: Vec<(u64, u64, u64, u64)>,
 }
 
 pub(super) enum PhysicalWalMemberCompletionDenial {
@@ -78,6 +81,8 @@ impl PhysicalWalRuntimeOwner {
                 reopen_peak_buffer_bytes: inventory.peak_buffer_bytes,
                 segments: inventory.segments,
                 maintenance: None,
+                awaiting_barrier: false,
+                unresolved_retirement_spans: Vec::new(),
             })),
             preparation: Arc::new(PhysicalWalPreparationAdmission::new(
                 media.store_identity(),
@@ -90,7 +95,7 @@ impl PhysicalWalRuntimeOwner {
     pub(in crate::physical_runtime) fn plan_maintenance_frame(
         &self,
         payload: &[u8],
-    ) -> Result<(ArtifactTreeFile, u64, Vec<u8>), ()> {
+    ) -> Result<(ArtifactTreeFile, u64, u64, u64, Vec<u8>), ()> {
         let mut state = self
             .shared
             .lock()
@@ -116,15 +121,69 @@ impl PhysicalWalRuntimeOwner {
         }
         let bytes = planned.frame().encoded_frame().to_vec();
         let offset = state.frontier.valid_prefix_bytes();
+        let segment = state.frontier.segment().get();
+        let generation = state.frontier.generation().get();
         state.in_flight = true;
+        let retirement = super::super::retention::decode_retirement(payload)
+            .map(|record| (record.action, record.segment_id, record.generation));
         state.maintenance = Some(PlannedMaintenanceFrame {
             bytes: bytes.clone(),
             frontier: planned.resulting_frontier(),
             segment: state.frontier.segment(),
             generation: state.frontier.generation(),
             lsn_range: range,
+            retirement,
         });
-        Ok((state.active_artifact.clone(), offset, bytes))
+        Ok((
+            state.active_artifact.clone(),
+            segment,
+            generation,
+            offset,
+            bytes,
+        ))
+    }
+
+    pub(in crate::physical_runtime) fn planned_maintenance_interval(
+        &self,
+    ) -> Option<(u64, u64, u64, u64, u64, u64)> {
+        let state = self
+            .shared
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let planned = state.maintenance.as_ref()?;
+        Some((
+            planned.segment.get(),
+            planned.generation.get(),
+            planned.lsn_range.start().get(),
+            planned.lsn_range.end_exclusive().get(),
+            state.frontier.valid_prefix_bytes(),
+            planned.bytes.len() as u64,
+        ))
+    }
+
+    pub(in crate::physical_runtime) fn note_maintenance_written(&self) {
+        self.shared
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .awaiting_barrier = true;
+    }
+
+    pub(in crate::physical_runtime) fn maintenance_awaiting_barrier(&self) -> bool {
+        self.shared
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .awaiting_barrier
+    }
+
+    pub(in crate::physical_runtime) fn planned_maintenance_artifact(&self) -> Option<ArtifactTreeFile> {
+        let state = self
+            .shared
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        state
+            .maintenance
+            .as_ref()
+            .map(|_| state.active_artifact.clone())
     }
 
     pub(in crate::physical_runtime) fn abort_maintenance_frame(&self) {
@@ -134,6 +193,7 @@ impl PhysicalWalRuntimeOwner {
             .unwrap_or_else(|poisoned| poisoned.into_inner());
         state.maintenance = None;
         state.in_flight = false;
+        state.awaiting_barrier = false;
     }
 
     pub(in crate::physical_runtime) fn finish_maintenance_frame(&self) -> Result<(), ()> {
@@ -141,6 +201,7 @@ impl PhysicalWalRuntimeOwner {
             .shared
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
+        state.awaiting_barrier = false;
         let planned = state.maintenance.take().ok_or(())?;
         let identity = worth_store_wal::WalSegmentArtifactIdentity::new(planned.segment, planned.generation);
         if state
@@ -158,6 +219,7 @@ impl PhysicalWalRuntimeOwner {
         state.in_flight = false;
         let start = planned.lsn_range.start().get();
         let end = planned.lsn_range.end_exclusive().get();
+        super::super::retention::note_retirement_hold(&mut state.unresolved_retirement_spans, planned.retirement, start, end);
         if state.record_durable_barrier(start, end) {
             Ok(())
         } else {
@@ -327,6 +389,9 @@ impl PhysicalWalRuntimeState {
         worth_store_physical_format::CheckpointWalSourceRange::new(begin, end)
     }
 }
+
+#[path = "runtime_owner/retirement_hold.rs"]
+mod retirement_hold;
 
 #[cfg(test)]
 mod tests;

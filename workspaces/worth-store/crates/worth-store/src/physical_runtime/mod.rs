@@ -100,6 +100,7 @@ pub use durability::{
     PhysicalRecoveryOperationFate, PhysicalRecoveryOperationFateCounts,
     PhysicalRecoveryOperationFates, PhysicalRecoveryRootBasis, PhysicalRecoveryWalAttemptBinding,
     PhysicalRecoveryWalSegment, PhysicalRecoveryWalTail, PhysicalRedoLsn, PhysicalRedoTargetClaim,
+    PhysicalRetirementDenial,
     PhysicalRootCandidateSynchronizationFailureCause, PhysicalRootCandidateWriteFailureCause,
     PhysicalRootCandidateWriteFailurePosture, PhysicalRootNamespaceDurabilityEvidence,
     PhysicalRootNamespaceDurabilityFailureCause, PhysicalRootNamespaceDurabilityNotStarted,
@@ -231,7 +232,7 @@ pub use recovery_freshness::{
     StoreRecoveryCleanupFreshnessDenial, StoreRecoveryCleanupFreshnessFailure,
     StoreRecoveryCleanupFreshnessSample, StoreRecoveryCleanupPlan,
     StoreRecoveryCleanupPlanAdmissionFailure, StoreRecoveryOperationEvidence,
-    StoreRecoveryOperationFate, StoreRecoveryWalMember,
+    StoreRecoveryOperationFate, StoreRecoveryRetirementObligation, StoreRecoveryWalMember,
 };
 #[cfg(feature = "recovery-runtime-owner")]
 pub use recovery_yieldpoint::{

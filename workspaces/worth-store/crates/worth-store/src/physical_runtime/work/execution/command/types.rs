@@ -11,6 +11,7 @@ pub enum PhysicalExecutorCommandDenial {
     RetryIdentityMismatch,
     RetryRangeMismatch,
     ResidencyRetryRequiresClaim,
+    RetirementRemovalRequiresClaim,
     ArtifactCommandRequiresArtifactScope,
     WalAppendCommandRequiresWalScope,
     WalSegmentCreateCommandRequiresWalScope,
@@ -44,6 +45,7 @@ pub enum PhysicalPublicationEffect {
     SynchronizeArtifactParent,
     ReplaceCatalog,
     SynchronizeRecordFamily,
+    RemoveArtifact,
 }
 
 pub struct PhysicalRetryCommand {

@@ -61,38 +61,40 @@ impl ArtifactTreeMedia<'_> {
             Ok(()) => {
                 self.owner.boundary().counters().deletion();
                 attempt.completed(0);
-                match synchronize_directory(self.owner, &directory) {
-                    Ok(()) => self.completed(effect, operation),
-                    Err(failure) => ArtifactTreePublicationEffectOutcome::Indeterminate(
-                        IndeterminateArtifactTreePublicationEffect {
-                            failure,
-                            owner: self.owner.identity(),
-                            store: self.store,
-                            operation,
-                            effect,
-                        },
-                    ),
-                }
+                self.directory_sync_after_unlink(effect, operation, &directory)
             }
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
                 attempt.completed(0);
-                match synchronize_directory(self.owner, &directory) {
-                    Ok(()) => self.completed(effect, operation),
-                    Err(failure) => ArtifactTreePublicationEffectOutcome::Indeterminate(
-                        IndeterminateArtifactTreePublicationEffect {
-                            failure,
-                            owner: self.owner.identity(),
-                            store: self.store,
-                            operation,
-                            effect,
-                        },
-                    ),
-                }
+                self.directory_sync_after_unlink(effect, operation, &directory)
             }
             Err(error) => {
                 attempt.indeterminate(0);
                 self.indeterminate(effect, operation, Some(&error))
             }
+        }
+    }
+
+    fn directory_sync_after_unlink(
+        &self,
+        effect: ArtifactTreePublicationEffect,
+        operation: crate::filesystem_media::MediaOperationIdentity,
+        directory: &cap_std::fs::Dir,
+    ) -> ArtifactTreePublicationEffectOutcome {
+        #[cfg(feature = "certification-test-authority")]
+        if self.owner.take_removal_directory_sync_failure() {
+            return self.indeterminate(effect, operation, None);
+        }
+        match synchronize_directory(self.owner, directory) {
+            Ok(()) => self.completed(effect, operation),
+            Err(failure) => ArtifactTreePublicationEffectOutcome::Indeterminate(
+                IndeterminateArtifactTreePublicationEffect {
+                    failure,
+                    owner: self.owner.identity(),
+                    store: self.store,
+                    operation,
+                    effect,
+                },
+            ),
         }
     }
 }

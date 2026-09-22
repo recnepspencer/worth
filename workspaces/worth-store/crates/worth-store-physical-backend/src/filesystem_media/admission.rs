@@ -82,6 +82,11 @@ impl QualifiedFilesystemMedia {
         self.owner.counters()
     }
 
+    #[cfg(feature = "certification-test-authority")]
+    pub fn certification_fail_next_removal_directory_sync(&self) {
+        self.owner.certification_fail_next_removal_directory_sync();
+    }
+
     pub fn counter_observer(&self) -> super::MediaCounterObserver {
         self.owner.counter_observer()
     }

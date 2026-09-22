@@ -9,7 +9,8 @@ pub use binding::{
     StoreRecoveryBindingFreshness, StoreRecoveryBindingFreshnessSample,
     StoreRecoveryBindingSampleDenial, StoreRecoveryBindingSampleFailure,
     StoreRecoveryCheckpointBindingBasis, StoreRecoveryCheckpointBindingRebuilder,
-    StoreRecoveryOperationEvidence, StoreRecoveryOperationFate, StoreRecoveryWalMember,
+    StoreRecoveryOperationEvidence, StoreRecoveryOperationFate,
+    StoreRecoveryRetirementObligation, StoreRecoveryWalMember,
 };
 pub(in crate::physical_runtime) use cleanup::admit_plan as admit_cleanup_plan;
 pub(in crate::physical_runtime) use cleanup::StoreRecoveryCleanupRemovalBasis;
