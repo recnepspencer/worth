@@ -156,6 +156,7 @@ pub const COMPLEXITY_CONTRACTS: &[ComplexityContract] = &[
     index_access::ENTITY_FIELD,
     index_access::RELATION_FIELD,
     index_access::GENERATION_SELECTION,
+    index_access::PATCH_LOCAL_MAINTENANCE,
     ComplexityContract {
         id: "runtime.bulk_mutation.planning",
         function_path: "transactions/logic/mod.rs::RelationalTransaction::plan_bulk_mutation_batch",

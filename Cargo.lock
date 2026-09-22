@@ -1625,6 +1625,7 @@ dependencies = [
  "arc-swap",
  "crossbeam-queue",
  "dashmap",
+ "im",
  "proptest",
  "rayon",
  "rmp-serde",

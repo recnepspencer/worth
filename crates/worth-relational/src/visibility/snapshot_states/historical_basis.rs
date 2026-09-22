@@ -34,6 +34,32 @@ enum HistoricalVisibilityCoverage {
 }
 
 impl HistoricalVisibilityBasis {
+    pub(crate) fn resolve_retained_commit(
+        runtime: &RelationalRuntime,
+        commit_id: crate::history::data::CommitId,
+        branch_id: BranchId,
+        version_id: VersionId,
+    ) -> Result<Self, HistoricalVisibilityDenial> {
+        let retained = runtime
+            .history
+            .retain_historical_root(commit_id)
+            .map_err(historical_retention_denial)?
+            .ok_or(HistoricalVisibilityDenial::CertificationReconstructionRequired)?;
+        let source_root_id = retained.root().id();
+        if retained.root().commit_id() != Some(commit_id) {
+            return Err(HistoricalVisibilityDenial::MvccIntervalUnavailable);
+        }
+        Ok(Self {
+            branch_id,
+            version_id,
+            root: Some(Arc::new(retained)),
+            coverage: HistoricalVisibilityCoverage::RetainedInterval {
+                source_root_id,
+                source_version: version_id,
+            },
+        })
+    }
+
     pub(crate) fn resolve(
         runtime: &RelationalRuntime,
         version_id: VersionId,

@@ -63,6 +63,7 @@ mod freshness;
 mod granular_invalidation;
 mod handler;
 mod index_currency;
+mod index_maintenance_budget;
 mod index_refresh;
 mod initial_schema_denial;
 mod invariant_installation;

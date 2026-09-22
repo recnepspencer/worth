@@ -29,3 +29,16 @@ pub(super) const GENERATION_SELECTION: ComplexityContract = ComplexityContract {
         "tests::query::indexes::generation_selection_locality::bounded_generation_selection_does_not_enumerate_retained_builds",
     ],
 };
+
+pub(super) const PATCH_LOCAL_MAINTENANCE: ComplexityContract = ComplexityContract {
+    id: "runtime.index.patch_local_maintenance",
+    function_path: "indexes/authority/maintenance/mod.rs::IndexAuthority::refresh_for_basis",
+    declared_time_complexity: "O(I + P + affected_adjacency + derived_join_pairs + entry_edits * (log K + log R)); cold reconstruction separately scans bounded live record slots",
+    budget_summary: "Canonical patch records and exact roots determine work. Native outcomes count reads, adjacency, row edits, comparisons and persistent path reservations. Missing generations enter an explicit cold slot budget; no ordinary full-root build is selected.",
+    status: ComplexityStatus::Verified,
+    proof_tests: &[
+        "indexes::authority::maintenance::entry_edits::tests::one_edit_in_large_key_and_bucket_population_charges_search_paths",
+        "tests::query::indexes::maintenance::patch_local_field_maintenance_matches_independent_rebuild_and_preserves_prior_reader",
+        "tests::query::indexes::maintenance::ordering_join_and_relation_field_updates_match_rebuild_after_local_changes",
+    ],
+};

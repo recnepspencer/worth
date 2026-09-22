@@ -64,8 +64,9 @@ impl std::fmt::Display for WorthQueryPrimaryGraphIndexRefreshDenial {
 impl std::error::Error for WorthQueryPrimaryGraphIndexRefreshDenial {}
 
 impl WorthQueryPrimaryGraphIntegrationHandle {
-    /// Executes one ordinary mutation and synchronously refreshes every primary
-    /// identity index when that mutation advances authoritative graph state.
+    /// Executes a mutation and synchronously refreshes every committed branch
+    /// touched by it. A main-branch commit uses its exact captured prior root;
+    /// other branches and additional commits use the finite cold budget.
     ///
     /// The outer result reports derived-index maintenance. The inner result is
     /// the caller's mutation outcome and is preserved when maintenance
@@ -76,6 +77,10 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
         mutate: impl FnOnce(&mut worth_relational::facade::runtime::RelationalRuntime) -> Result<T, E>,
     ) -> Result<Result<T, E>, WorthQueryPrimaryGraphIndexRefreshDenial> {
         self.source_owner.with_runtime_mut(|runtime| {
+            let before = runtime
+                .observe_branch(&runtime.main_branch_identity())
+                .ok()
+                .and_then(|(_, basis)| runtime.snapshots().snapshot_for_observation(&basis.observation()).ok());
             let started_after = runtime
                 .publication()
                 .observation_snapshot()
@@ -85,19 +90,43 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
                     .history()
                     .immutable_commit_receipt_at_patch_stream_position(position)
             });
-            let outcome = mutate(runtime);
+            let outcome = match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| mutate(runtime))) {
+                Ok(outcome) => outcome,
+                Err(payload) => {
+                    if let Some(before) = before {
+                        runtime.snapshots().release_snapshot(&before)
+                            .expect("captured index snapshot closes during unwind");
+                    }
+                    std::panic::resume_unwind(payload);
+                }
+            };
             let published = runtime
                 .publication()
                 .read_patch_stream(PatchStreamRequest {
                     after_position: started_after,
                     max_commits: usize::MAX,
-                })
-                .map_err(|_| {
-                    missing_committed_mutation(previous.as_ref(), self.primary_index_ids.len())
-                })?;
+                });
+            let published = match published {
+                Ok(published) => published,
+                Err(_) => {
+                    if let Some(before) = before {
+                        runtime.snapshots().release_snapshot(&before).expect("captured snapshot closes");
+                    }
+                    return Err(missing_committed_mutation(previous.as_ref(), self.primary_index_ids.len()));
+                }
+            };
             if published.patches.is_empty() {
+                if let Some(before) = before {
+                    runtime.snapshots().release_snapshot(&before).expect("captured snapshot closes");
+                }
                 return Ok(outcome);
             }
+            let captured_branch_commit_count = published.patches.iter().filter(|patch| {
+                runtime.history().immutable_commit_receipt_at_patch_stream_position(patch.position)
+                    .is_some_and(|receipt| before.as_ref().is_some_and(|snapshot| receipt.branch_id == *snapshot.branch_id()))
+            }).count();
+            let mut used_before = false;
+            let refresh = (|| {
             for patch in published.patches {
                 let committed = runtime
                     .history()
@@ -105,25 +134,40 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
                     .ok_or_else(|| {
                         missing_committed_mutation(previous.as_ref(), self.primary_index_ids.len())
                     })?;
-                let build = runtime
-                    .index_authority()
-                    .build_for_commit(DerivedIndexBuildRequest {
+                let basis = runtime.branch_identity(&committed.branch_id).ok()
+                    .and_then(|identity| runtime.observe_branch(&identity).ok().map(|(_, basis)| basis))
+                    .filter(|basis| basis.observation().commit_id() == Some(committed.commit_id));
+                let prior = if captured_branch_commit_count == 1 && !used_before && before.as_ref().is_some_and(|before| before.branch_id() == &committed.branch_id) {
+                    used_before = true;
+                    before.as_ref()
+                } else { None };
+                let request = DerivedIndexBuildRequest {
                         source_commit_id: committed.commit_id,
                         branch_id: committed.branch_id.clone(),
                         index_ids: self.primary_index_ids.to_vec(),
-                    });
-                if !build.failed_indexes.is_empty()
-                    || build.generations.len() != self.primary_index_ids.len()
-                {
+                    };
+                let build = if let Some(basis) = basis {
+                    super::index_maintenance_budget::refresh_with_cold_fallback(runtime, request, &basis, prior)
+                } else {
+                    runtime.index_authority().reconstruct_for_commit(
+                        request, super::index_maintenance_budget::cold_index_reconstruction_budget())
+                };
+                if !matches!(&build, Ok(outcome) if outcome.generations.len() == self.primary_index_ids.len()) {
                     return Err(index_build_rejected(
                         previous.as_ref(),
                         &committed,
                         self.primary_index_ids.len(),
-                        build.failed_indexes.len(),
+                        self.primary_index_ids.len(),
                     ));
                 }
             }
             Ok(outcome)
+            })();
+            if let Some(before) = before {
+                runtime.snapshots().release_snapshot(&before)
+                    .expect("captured index maintenance snapshot releases exactly once");
+            }
+            refresh
         })
     }
 }

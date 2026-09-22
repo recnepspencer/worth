@@ -28,7 +28,7 @@ fn generation(
         } else {
             DerivedIndexPublicationStatus::BuildFailed
         },
-        entries: DerivedIndexEntries::EntityField(BTreeMap::new()),
+        entries: DerivedIndexEntries::EntityField(BTreeMap::new().into()),
     }
 }
 

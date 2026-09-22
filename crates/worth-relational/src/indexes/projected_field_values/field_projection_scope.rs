@@ -4,12 +4,12 @@ use crate::identity::data::KindId;
 use crate::schema::data::{LoweredAspectContractBinding, LoweredAspectContractPlan};
 
 #[derive(Debug, Clone)]
-pub(super) struct EntityIndexFieldProjectionScope {
+pub(in crate::indexes) struct EntityIndexFieldProjectionScope {
     kind_id: KindId,
 }
 
 #[derive(Debug, Clone)]
-pub(super) struct RelationIndexFieldProjectionScope {
+pub(in crate::indexes) struct RelationIndexFieldProjectionScope {
     kind_id: KindId,
 }
 
@@ -58,7 +58,7 @@ pub(super) fn relation_index_projection_scopes(
         .collect()
 }
 
-pub(super) fn entity_index_projection_scope(
+pub(in crate::indexes) fn entity_index_projection_scope(
     plan: &LoweredAspectContractPlan,
     field_locator: &AspectFieldLocator,
 ) -> Option<EntityIndexFieldProjectionScope> {
@@ -72,7 +72,7 @@ pub(super) fn entity_index_projection_scope(
     None
 }
 
-fn relation_index_projection_scope(
+pub(in crate::indexes) fn relation_index_projection_scope(
     plan: &LoweredAspectContractPlan,
     field_locator: &AspectFieldLocator,
 ) -> Option<RelationIndexFieldProjectionScope> {

@@ -1,4 +1,11 @@
 mod allocation_accounting;
+mod entry_map;
+pub use entry_map::{DerivedIndexEntryMap, DerivedIndexRows};
+mod maintenance;
+pub use maintenance::{
+    DerivedIndexMaintenanceBudget, DerivedIndexMaintenanceDenial,
+    DerivedIndexMaintenanceDenialKind, DerivedIndexMaintenanceOutcome, DerivedIndexMaintenanceWork,
+};
 mod bounded_entity_field_lookup;
 mod bounded_related_entity_ordered_lookup;
 mod bounded_relation_join_lookup;
@@ -31,8 +38,6 @@ pub use relation_join::{
     RelationJoinDefinition, RelationJoinEntry, RelationJoinKey, RelationJoinLeg,
     RelationJoinSharedEndpoint,
 };
-
-use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
@@ -78,10 +83,10 @@ pub struct DerivedIndexDefinition {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DerivedIndexEntries {
-    EntityField(BTreeMap<AuthoritativeFieldComparisonKey, Vec<EntityId>>),
-    RelationField(BTreeMap<AuthoritativeFieldComparisonKey, Vec<RelationId>>),
-    RelatedEntityOrdering(BTreeMap<EntityId, Vec<RelatedEntityOrderingEntry>>),
-    RelationJoin(BTreeMap<RelationJoinKey, Vec<RelationJoinEntry>>),
+    EntityField(DerivedIndexEntryMap<AuthoritativeFieldComparisonKey, EntityId>),
+    RelationField(DerivedIndexEntryMap<AuthoritativeFieldComparisonKey, RelationId>),
+    RelatedEntityOrdering(DerivedIndexEntryMap<EntityId, RelatedEntityOrderingEntry>),
+    RelationJoin(DerivedIndexEntryMap<RelationJoinKey, RelationJoinEntry>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

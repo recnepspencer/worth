@@ -83,10 +83,9 @@ pub(super) fn execute_index_packets(
                 singleton_result_stream(
                     *reduction_key,
                     *index_id,
-                    DerivedIndexEntries::EntityField(build_entity_aspect_field_index(
-                        projection,
-                        field_locator,
-                    )),
+                    DerivedIndexEntries::EntityField(
+                        build_entity_aspect_field_index(projection, field_locator).into(),
+                    ),
                 )
             })
             .collect::<Vec<_>>(),
@@ -96,10 +95,9 @@ pub(super) fn execute_index_packets(
                 singleton_result_stream(
                     *reduction_key,
                     *index_id,
-                    DerivedIndexEntries::EntityField(build_entity_aspect_field_index(
-                        projection,
-                        field_locator,
-                    )),
+                    DerivedIndexEntries::EntityField(
+                        build_entity_aspect_field_index(projection, field_locator).into(),
+                    ),
                 )
             })
             .collect::<Vec<_>>(),
@@ -112,10 +110,9 @@ pub(super) fn execute_index_packets(
                 singleton_result_stream(
                     *reduction_key,
                     *index_id,
-                    DerivedIndexEntries::RelationField(build_relation_aspect_field_index(
-                        projection,
-                        field_locator,
-                    )),
+                    DerivedIndexEntries::RelationField(
+                        build_relation_aspect_field_index(projection, field_locator).into(),
+                    ),
                 )
             })
             .collect::<Vec<_>>(),
@@ -125,10 +122,9 @@ pub(super) fn execute_index_packets(
                 singleton_result_stream(
                     *reduction_key,
                     *index_id,
-                    DerivedIndexEntries::RelationField(build_relation_aspect_field_index(
-                        projection,
-                        field_locator,
-                    )),
+                    DerivedIndexEntries::RelationField(
+                        build_relation_aspect_field_index(projection, field_locator).into(),
+                    ),
                 )
             })
             .collect::<Vec<_>>(),
@@ -157,7 +153,8 @@ pub(super) fn execute_index_packets(
                                     *child_kind,
                                     ordering,
                                 ),
-                            ),
+                            )
+                            .into(),
                         ),
                     )
                 },
@@ -186,7 +183,8 @@ pub(super) fn execute_index_packets(
                                     *child_kind,
                                     ordering,
                                 ),
-                            ),
+                            )
+                            .into(),
                         ),
                     )
                 },
@@ -315,7 +313,9 @@ fn relation_join_result(
     singleton_result_stream(
         packet.reduction_key,
         packet.index_id,
-        DerivedIndexEntries::RelationJoin(build_relation_join_index(projection, packet.definition)),
+        DerivedIndexEntries::RelationJoin(
+            build_relation_join_index(projection, packet.definition).into(),
+        ),
     )
 }
 

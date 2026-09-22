@@ -239,7 +239,7 @@ impl ReplaySurfaceDigestBuilderExt for ReplayDigestBuilder {
         match entries {
             DerivedIndexEntries::EntityField(rows) => {
                 self = self.tag(1).usize(rows.len());
-                for (key, ids) in rows {
+                for (key, ids) in rows.iter() {
                     self = self.byte_vec(key.canonical_value_bytes()).usize(ids.len());
                     for id in ids {
                         self = self.entity_id(*id);
@@ -249,7 +249,7 @@ impl ReplaySurfaceDigestBuilderExt for ReplayDigestBuilder {
             }
             DerivedIndexEntries::RelationField(rows) => {
                 self = self.tag(2).usize(rows.len());
-                for (key, ids) in rows {
+                for (key, ids) in rows.iter() {
                     self = self.byte_vec(key.canonical_value_bytes()).usize(ids.len());
                     for id in ids {
                         self = self.relation_id(*id);
@@ -259,7 +259,7 @@ impl ReplaySurfaceDigestBuilderExt for ReplayDigestBuilder {
             }
             DerivedIndexEntries::RelatedEntityOrdering(rows) => {
                 self = self.tag(3).usize(rows.len());
-                for (parent, entries) in rows {
+                for (parent, entries) in rows.iter() {
                     self = self.entity_id(*parent).usize(entries.len());
                     for entry in entries {
                         self = self.usize(entry.ordering_values().len());
@@ -275,7 +275,7 @@ impl ReplaySurfaceDigestBuilderExt for ReplayDigestBuilder {
             }
             DerivedIndexEntries::RelationJoin(rows) => {
                 self = self.tag(4).usize(rows.len());
-                for (key, entries) in rows {
+                for (key, entries) in rows.iter() {
                     self = self
                         .entity_id(key.left_entity_id())
                         .entity_id(key.right_entity_id())
