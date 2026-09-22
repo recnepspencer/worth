@@ -366,6 +366,7 @@ where
         supporting_identity: None,
         operation_receipt_identity: None,
         progress_update: Some(progress_update),
+        terminal: false,
         approval: Some(approval_projection),
         approval_identity: Some(meaning.identity),
         replays: Default::default(),

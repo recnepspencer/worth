@@ -360,6 +360,7 @@ where
             supporting_identity: None,
             operation_receipt_identity: None,
             progress_update: None,
+            terminal: true,
             approval: None,
             approval_identity: None,
             replays: Default::default(),

@@ -69,6 +69,8 @@ impl WorkflowTransitionProgressBasis {
                 identity: transition_identity,
                 identity_bytes: transition_identity_bytes,
                 node_path,
+                // Terminal settlement has no successor and bypasses progress updates.
+                terminal: false,
                 operation_receipt_identity,
             },
         })

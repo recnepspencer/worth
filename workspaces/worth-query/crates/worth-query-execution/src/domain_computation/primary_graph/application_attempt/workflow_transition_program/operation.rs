@@ -250,6 +250,7 @@ where
             supporting_identity: Some(receipt_identity),
             operation_receipt_identity: Some(receipt_identity),
             progress_update: Some(progress_update),
+            terminal: false,
             approval: None,
             approval_identity: None,
             replays: self.replays,

@@ -28,6 +28,7 @@ fn replay(identity: u8) -> WorkflowTransitionReplayProjection {
         identity: format!("transition-{identity}"),
         identity_bytes: [identity; 32],
         node_path: format!("node-{identity}"),
+        terminal: false,
         operation_receipt_identity: None,
     }
 }

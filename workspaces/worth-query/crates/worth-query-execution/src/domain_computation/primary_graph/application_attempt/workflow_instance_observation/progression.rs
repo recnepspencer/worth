@@ -41,6 +41,7 @@ pub(super) fn project_replays(
                     identity: selected.identity().to_owned(),
                     identity_bytes: *selected.identity_bytes(),
                     node_path: selected.node_path().to_owned(),
+                    terminal: selected.terminal(),
                     operation_receipt_identity: transition.settlement.operation_receipt_identity(),
                 },
             )

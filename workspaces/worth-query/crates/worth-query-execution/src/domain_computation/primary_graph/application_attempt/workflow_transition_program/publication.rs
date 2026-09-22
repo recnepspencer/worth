@@ -35,6 +35,7 @@ pub enum PreparedWorkflowAdvance<Schema, Operation, Input, Scope> {
         assessment_identity_locator: worth_foundational::facade::AspectFieldLocator,
         instance: worth_relational::facade::identity::EntityId,
         node_path: String,
+        terminal: bool,
         assessment: Option<PreparedWorkflowAssessmentProjection>,
         supporting_identity: Option<[u8; 32]>,
         operation_receipt_identity: Option<[u8; 32]>,
@@ -247,6 +248,7 @@ impl RequiredWorkflowCondition {
 pub struct PerformedWorkflowTransition {
     transition: worth_relational::facade::identity::EntityId,
     node_path: String,
+    terminal: bool,
     receipt: super::super::WorthQueryApplicationCommitReceipt,
     replayed: bool,
     assessment_evidence: Option<PerformedWorkflowAssessmentEvidence>,
@@ -300,6 +302,10 @@ impl PerformedWorkflowTransition {
 
     pub fn node_path(&self) -> &str {
         &self.node_path
+    }
+
+    pub const fn terminal(&self) -> bool {
+        self.terminal
     }
 
     pub const fn receipt(&self) -> &super::super::WorthQueryApplicationCommitReceipt {

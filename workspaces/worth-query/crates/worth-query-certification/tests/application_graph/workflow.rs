@@ -129,8 +129,8 @@ fn public_terminal_workflow_advances_once_through_authenticated_transition_autho
         other => panic!("expected a completed terminal transition, got {other:?}"),
     };
     assert_eq!(transition.node_path(), "completed");
+    assert!(transition.terminal());
     assert!(!transition.replayed());
-
     let replay = match advance_instance(&application, started.instance().clone(), 33)
         .expect("an exact workflow transition retry must prepare")
     {
@@ -138,8 +138,8 @@ fn public_terminal_workflow_advances_once_through_authenticated_transition_autho
         other => panic!("expected a replayed terminal transition, got {other:?}"),
     };
     assert!(replay.replayed());
+    assert!(replay.terminal());
     assert_eq!(replay.transition(), transition.transition());
-
     match advance_instance(&application, started.instance().clone(), 34)
         .expect("a new key must reach transition-head comparison")
     {

@@ -6,6 +6,7 @@ pub struct WorkflowTransitionReplayProjection {
     pub(in crate::domain_computation::primary_graph) identity: String,
     pub(in crate::domain_computation::primary_graph) identity_bytes: [u8; 32],
     pub(in crate::domain_computation::primary_graph) node_path: String,
+    pub(in crate::domain_computation::primary_graph) terminal: bool,
     pub(in crate::domain_computation::primary_graph) operation_receipt_identity: Option<[u8; 32]>,
 }
 
@@ -84,6 +85,7 @@ mod tests {
             identity: format!("transition-{identity}"),
             identity_bytes: [identity; 32],
             node_path: format!("node-{identity}"),
+            terminal: false,
             operation_receipt_identity: None,
         }
     }

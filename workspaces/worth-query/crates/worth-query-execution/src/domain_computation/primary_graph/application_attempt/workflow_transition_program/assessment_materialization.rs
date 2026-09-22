@@ -264,6 +264,7 @@ where
             supporting_identity: None,
             operation_receipt_identity: None,
             progress_update: Some(progress_update),
+            terminal: false,
             approval: None,
             approval_identity: None,
             replays: Default::default(),

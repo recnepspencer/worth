@@ -106,6 +106,7 @@ fn authenticated_advance_reconstructs_the_exact_required_assessment_without_sett
     match accepted {
         WorkflowProgressOutcome::Completed(performed) => {
             assert_eq!(performed.node_path(), "checks/structural");
+            assert!(!performed.terminal());
             assert!(!performed.replayed());
             let evidence = performed
                 .assessment_evidence()
@@ -174,6 +175,7 @@ fn authenticated_advance_reconstructs_the_exact_required_assessment_without_sett
         WorkflowProgressOutcome::Completed(performed) => {
             assert_eq!(performed.node_path(), "checks/structural");
             assert!(performed.replayed());
+            assert!(!performed.terminal());
             assert!(performed.assessment_evidence().is_some());
         }
         other => panic!("expected replayed assessment evidence, got {other:?}"),
@@ -370,6 +372,7 @@ fn evidence_join_replays_before_a_supported_terminal_successor() {
         WorkflowProgressOutcome::Completed(performed) => {
             assert_eq!(performed.node_path(), "checks/join");
             assert!(performed.replayed());
+            assert!(!performed.terminal());
         }
         other => panic!("expected the historical join replay, got {other:?}"),
     }
