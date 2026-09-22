@@ -258,6 +258,24 @@ to a program, the weaker `.execute()` path returns
 `ApplicationProgramRequired`. A runtime for another installed program returns
 `ApplicationProgramMismatch`.
 
+One installed host may roster multiple validated program revisions. The
+canonical revision and its versioned codec describe meaning; they do not select
+current meaning. Each World product occurrence carries one performed
+branch-program activation, and `request.on_branch(branch).programs()` is the
+public inspection/comparison/preparation entry. Semantic comparison is input to
+admission, never write authority. A prepared adoption binds exact source and
+target programs, branch head, affected state, target-rule validation,
+migration, component dispositions, resources, and custody. Only World's final
+performed publication activates the target.
+
+Retained reads and unpublished adoption recoveries lease exact program support.
+Prepared and broader-scope handles carry mandatory source/target custody until
+publication, cancellation, release, or recovery. Support retirement first
+blocks fork/adoption races and inventories current branches, retained
+interpretations, custody, and stable retained bytes; it cannot evict a program
+still needed for correctness. Broader adoption is owner-covered, ordered, and
+explicitly non-atomic: its progress is evidence, not rollback fiction.
+
 The application foundation supports independently compiled entry contributions
 for one root schema. `worth_query_application!` lists those contributions once
 and supplies `ApplicationSchemaComposition::Contributions`. Each entry declares
@@ -1133,6 +1151,13 @@ returns World's canonical terminal unchanged. Dispatch-outbox eligibility is
 bound to the original performed product occurrence. A caller cannot substitute
 a branch token, a component basis, or a fresh latest observation after
 admission. Importing World directly remains outside the Query audience route.
+
+Selected application-program meaning follows the same occurrence. Sibling
+branches can lawfully run P0 and P1 at once; ordinary mutation, query, security,
+producer, and retained-read paths must not consult global latest-program state.
+Branch-local adoption changes this field only inside a performed composite
+publication. Component preparation, a target revision, and decoded program
+text are all insufficient.
 See the [Runtime World contract](../../../../../crates/worth-runtime-world/README.md)
 for construction, outcomes, history, retention, and recovery.
 

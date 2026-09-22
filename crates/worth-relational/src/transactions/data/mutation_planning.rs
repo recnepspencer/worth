@@ -52,6 +52,9 @@ impl MutationIntent {
             Self::Entity(EntityMutationIntent::Delete(spec)) => {
                 touched.insert(spec.entity_id.partition_id);
             }
+            Self::Entity(EntityMutationIntent::Revalidate(spec)) => {
+                touched.insert(spec.entity_id.partition_id);
+            }
             Self::Create(CreateIntent::Relation(spec)) => {
                 touched.insert(spec.partition_id);
                 touched.insert(spec.source.partition_id());
@@ -104,12 +107,19 @@ impl MutationIntent {
         }
     }
 
-    pub(crate) fn rollback_effect(&self) -> RollbackEffect {
+    /// What discarding this intent undoes.
+    ///
+    /// Not every intent leaves something to undo: a revalidation demand never
+    /// changed the record, so discarding it restores nothing and discards no
+    /// creation. Reporting it as a restoration would inflate the rollback
+    /// summary with work that never happened, so it yields no effect at all.
+    pub(crate) fn rollback_effect(&self) -> Option<RollbackEffect> {
         match self {
+            Self::Entity(EntityMutationIntent::Revalidate(_)) => None,
             Self::Create(CreateIntent::Entity(_))
             | Self::Create(CreateIntent::EntityAspects(_))
             | Self::Create(CreateIntent::BulkEntities(_)) => {
-                RollbackEffect::DiscardedEntityCreation
+                Some(RollbackEffect::DiscardedEntityCreation)
             }
             Self::Entity(EntityMutationIntent::UpdateFields(super::UpdateEntityFieldsIntent {
                 entity_id,
@@ -122,28 +132,28 @@ impl MutationIntent {
                 entity_id, ..
             }))
             | Self::Entity(EntityMutationIntent::Delete(DeleteEntityIntent { entity_id })) => {
-                RollbackEffect::RestoredEntity(*entity_id)
+                Some(RollbackEffect::RestoredEntity(*entity_id))
             }
             Self::Create(CreateIntent::Relation(_))
             | Self::Create(CreateIntent::RelationAspects(_))
             | Self::Create(CreateIntent::BulkRelations(_)) => {
-                RollbackEffect::DiscardedRelationCreation
+                Some(RollbackEffect::DiscardedRelationCreation)
             }
             Self::Relation(RelationMutationIntent::UpdateEndpoints(spec)) => {
-                RollbackEffect::RestoredRelation(spec.relation_id)
+                Some(RollbackEffect::RestoredRelation(spec.relation_id))
             }
             Self::Relation(RelationMutationIntent::ApplyAspectPatch(spec)) => {
-                RollbackEffect::RestoredRelation(spec.relation_id)
+                Some(RollbackEffect::RestoredRelation(spec.relation_id))
             }
             Self::Relation(RelationMutationIntent::Delete(spec)) => {
-                RollbackEffect::RestoredRelation(spec.relation_id)
+                Some(RollbackEffect::RestoredRelation(spec.relation_id))
             }
-            Self::Materialization(intent) => match intent.record() {
+            Self::Materialization(intent) => Some(match intent.record() {
                 super::RecordRef::Entity(entity_id) => RollbackEffect::RestoredEntity(entity_id),
                 super::RecordRef::Relation(relation_id) => {
                     RollbackEffect::RestoredRelation(relation_id)
                 }
-            },
+            }),
         }
     }
 
@@ -159,6 +169,9 @@ impl MutationIntent {
                 Some(ExistingRecordTarget::Entity(spec.entity_id))
             }
             Self::Entity(EntityMutationIntent::Delete(spec)) => {
+                Some(ExistingRecordTarget::Entity(spec.entity_id))
+            }
+            Self::Entity(EntityMutationIntent::Revalidate(spec)) => {
                 Some(ExistingRecordTarget::Entity(spec.entity_id))
             }
             Self::Relation(RelationMutationIntent::UpdateEndpoints(spec)) => {

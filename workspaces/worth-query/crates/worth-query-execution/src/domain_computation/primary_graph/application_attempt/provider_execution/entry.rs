@@ -10,7 +10,9 @@ use super::phase::{
     start_managed_application_commit, WorthQueryApplicationCommitPreparation,
     WorthQueryApplicationCommitPreparationRequest,
 };
+use super::program_occurrence_gate::resolve_occurrence_program;
 use crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality;
+use crate::domain_computation::primary_graph::program_occurrence::WorthQueryPresentedProgram;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
@@ -18,7 +20,7 @@ where
     Schema: ApplicationSchema,
 {
     pub(in crate::domain_computation) fn has_installed_application_program(&self) -> bool {
-        self.installed_program_action_operations.is_some()
+        self.program_support.is_some()
     }
 
     pub fn compare_and_commit_application<Operation, Input, Scope>(
@@ -30,7 +32,7 @@ where
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        if self.installed_program_action_operations.is_some()
+        if self.has_installed_application_program()
             || self
                 .program_required_operations
                 .contains(&std::any::TypeId::of::<Operation>())
@@ -48,13 +50,55 @@ where
         Scope,
     >(
         &self,
+        presented: &WorthQueryPresentedProgram<'_>,
+        source_binding: std::any::TypeId,
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
     ) -> WorthQueryApplicationCommitOutcome
     where
         Input: Clone + Send + Sync + 'static,
     {
+        if let Err(outcome) =
+            self.require_occurrence_owns_output_source(presented, source_binding, &program)
+        {
+            return outcome;
+        }
         self.compare_and_commit_application_with_output_observation(program, idempotency, true)
+    }
+
+    /// Requires that the program presented for this output source is the one
+    /// active on the attempt's own occurrence, and that the occurrence's
+    /// program acts through the mutation binding producing the source.
+    fn require_occurrence_owns_output_source<Operation, Input, Scope>(
+        &self,
+        presented: &WorthQueryPresentedProgram<'_>,
+        source_binding: std::any::TypeId,
+        program: &WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
+    ) -> Result<(), WorthQueryApplicationCommitOutcome> {
+        let Some(support) = self.program_support.as_ref() else {
+            return Err(WorthQueryApplicationCommitOutcome::Denied(
+                WorthQueryApplicationCommitDenial::application_program_required(),
+            ));
+        };
+        let occurrence = resolve_occurrence_program(support, program)
+            .map_err(WorthQueryApplicationCommitOutcome::Denied)?;
+        if occurrence.rendering() != presented.rendering() {
+            return Err(WorthQueryApplicationCommitOutcome::Denied(
+                WorthQueryApplicationCommitDenial::program_not_active_on_occurrence(
+                    presented.identity(),
+                    occurrence.entry().identity(),
+                ),
+            ));
+        }
+        if !occurrence
+            .entry()
+            .acts_through_mutation_binding(source_binding)
+        {
+            return Err(WorthQueryApplicationCommitOutcome::Denied(
+                WorthQueryApplicationCommitDenial::application_program_required(),
+            ));
+        }
+        Ok(())
     }
 
     pub(in crate::domain_computation::primary_graph) fn compare_and_commit_application_for_program_output_producer<
@@ -73,16 +117,42 @@ where
         if !self
             .installed_conditionals
             .contains_operation::<Operation>()
-            || !self
-                .installed_program_action_operations
-                .as_ref()
-                .is_some_and(|actions| actions.contains(&std::any::TypeId::of::<Operation>()))
         {
             return WorthQueryApplicationCommitOutcome::Denied(
                 WorthQueryApplicationCommitDenial::application_program_required(),
             );
         }
+        if let Err(outcome) = self.require_occurrence_acts_through(&program) {
+            return outcome;
+        }
         self.compare_and_commit_application_with_output_observation(program, idempotency, true)
+    }
+
+    /// Requires that the program active on this attempt's occurrence acts
+    /// through the operation being committed.
+    fn require_occurrence_acts_through<Operation, Input, Scope>(
+        &self,
+        program: &WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
+    ) -> Result<(), WorthQueryApplicationCommitOutcome>
+    where
+        Operation: 'static,
+    {
+        let Some(support) = self.program_support.as_ref() else {
+            return Err(WorthQueryApplicationCommitOutcome::Denied(
+                WorthQueryApplicationCommitDenial::application_program_required(),
+            ));
+        };
+        let occurrence = resolve_occurrence_program(support, program)
+            .map_err(WorthQueryApplicationCommitOutcome::Denied)?;
+        if !occurrence
+            .entry()
+            .acts_through_operation(std::any::TypeId::of::<Operation>())
+        {
+            return Err(WorthQueryApplicationCommitOutcome::Denied(
+                WorthQueryApplicationCommitDenial::application_program_required(),
+            ));
+        }
+        Ok(())
     }
 
     pub(in crate::domain_computation::primary_graph) fn compare_and_commit_application_for_program_action<
@@ -91,6 +161,7 @@ where
         Scope,
     >(
         &self,
+        presented: &WorthQueryPresentedProgram,
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
     ) -> WorthQueryApplicationCommitOutcome
@@ -101,13 +172,27 @@ where
         if self
             .installed_conditionals
             .contains_operation::<Operation>()
-            || !self
-                .installed_program_action_operations
-                .as_ref()
-                .is_some_and(|actions| actions.contains(&std::any::TypeId::of::<Operation>()))
+            || !presented.acts_through_operation(std::any::TypeId::of::<Operation>())
         {
             return WorthQueryApplicationCommitOutcome::Denied(
                 WorthQueryApplicationCommitDenial::application_program_required(),
+            );
+        }
+        let Some(support) = self.program_support.as_ref() else {
+            return WorthQueryApplicationCommitOutcome::Denied(
+                WorthQueryApplicationCommitDenial::application_program_required(),
+            );
+        };
+        let occurrence = match resolve_occurrence_program(support, &program) {
+            Ok(occurrence) => occurrence,
+            Err(denial) => return WorthQueryApplicationCommitOutcome::Denied(denial),
+        };
+        if occurrence.rendering() != presented.rendering() {
+            return WorthQueryApplicationCommitOutcome::Denied(
+                WorthQueryApplicationCommitDenial::program_not_active_on_occurrence(
+                    presented.identity(),
+                    occurrence.entry().identity(),
+                ),
             );
         }
         self.compare_and_commit_application_with_output_observation(program, idempotency, false)
@@ -126,23 +211,21 @@ where
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        if self.installed_program_action_operations.is_some() {
-            if !self
-                .installed_conditionals
-                .contains_operation::<Operation>()
-                || !self
-                    .installed_program_action_operations
-                    .as_ref()
-                    .is_some_and(|actions| actions.contains(&std::any::TypeId::of::<Operation>()))
-            {
-                return WorthQueryApplicationCommitOutcome::Denied(
-                    WorthQueryApplicationCommitDenial::application_program_required(),
-                );
-            }
-            self.compare_and_commit_application_with_output_observation(program, idempotency, false)
-        } else {
-            self.compare_and_commit_application(program, idempotency)
+        if !self.has_installed_application_program() {
+            return self.compare_and_commit_application(program, idempotency);
         }
+        if !self
+            .installed_conditionals
+            .contains_operation::<Operation>()
+        {
+            return WorthQueryApplicationCommitOutcome::Denied(
+                WorthQueryApplicationCommitDenial::application_program_required(),
+            );
+        }
+        if let Err(outcome) = self.require_occurrence_acts_through(&program) {
+            return outcome;
+        }
+        self.compare_and_commit_application_with_output_observation(program, idempotency, false)
     }
 
     fn compare_and_commit_application_with_output_observation<Operation, Input, Scope>(

@@ -236,11 +236,11 @@ pub mod runtime {
         RelationalRetainedCommitSnapshotDenialKind,
     };
     pub use crate::visibility::materialization::read_records::{
-        AdjacencyTruthReadLimitExceeded, BoundedAdjacencyTruthRead,
+        AdjacencyTruthReadLimitExceeded, BoundedAdjacencyTruthRead, BoundedEntityKindTruthRead,
         BoundedFrontierAdjacencyTruthRead, BoundedFrontierFieldEqualityTruthRead,
-        FrontierAdjacencyTruthReadLimitExceeded, FrontierFieldEqualityTruthReadLimitExceeded,
-        ProjectionAspectFilter, ProjectionAspectFilterMode, ProjectionAspectRequirement,
-        ProjectionAspectScope,
+        EntityKindTruthReadLimitExceeded, FrontierAdjacencyTruthReadLimitExceeded,
+        FrontierFieldEqualityTruthReadLimitExceeded, ProjectionAspectFilter,
+        ProjectionAspectFilterMode, ProjectionAspectRequirement, ProjectionAspectScope,
     };
 }
 

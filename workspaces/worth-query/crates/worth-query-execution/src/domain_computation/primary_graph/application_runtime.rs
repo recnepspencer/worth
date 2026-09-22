@@ -1,15 +1,11 @@
-use std::any::TypeId;
 use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 use std::sync::Arc;
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationSchema};
 
 use crate::domain_computation::application_aftermath::WorthQueryExternalEffectTransport;
 use crate::domain_computation::authorization::WorthQueryRuntimeClock;
-use crate::domain_computation::execution_runtime::{
-    WorthQueryExecutionInstallationAuthority, WorthQueryExecutionRuntime,
-};
+use crate::domain_computation::execution_runtime::WorthQueryExecutionRuntime;
 use crate::domain_computation::managed_run::WorthQueryRecoveryHandleRegistry;
-use crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSource;
 
 use super::provider::WorthQueryPrimaryGraphProvider;
 use super::{
@@ -37,6 +33,7 @@ mod graph_participation;
 pub(in crate::domain_computation::primary_graph) mod installation;
 #[cfg(feature = "test-world-operation-control")]
 mod operation_control;
+mod publication_entry;
 #[cfg(feature = "test-world-operation-control")]
 pub(in crate::domain_computation::primary_graph) use operation_control::WorthQueryApplicationAttemptOperationControl;
 
@@ -130,7 +127,8 @@ pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(super) output_demands: super::application_output_demand::WorthQueryOutputDemandRegistry,
     pub(super) program_required_bindings: std::collections::BTreeSet<std::any::TypeId>,
     pub(super) program_required_operations: std::collections::BTreeSet<std::any::TypeId>,
-    pub(super) installed_program_action_operations: Option<std::collections::BTreeSet<TypeId>>,
+    pub(super) program_support:
+        Option<super::program_occurrence::WorthQueryInstalledProgramSupport<Schema>>,
     pub(super) installed_conditionals:
         super::application_contribution::WorthQueryInstalledApplicationConditionalRegistry<Schema>,
 }
@@ -143,13 +141,21 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
             Schema,
         >,
     {
-        self.installed_program_action_operations.is_some()
+        self.program_support.is_some()
             || self
                 .program_required_bindings
                 .contains(&std::any::TypeId::of::<Binding>())
             || self
                 .program_required_operations
                 .contains(&std::any::TypeId::of::<Binding::Operation>())
+    }
+
+    /// The immutable program support this host admitted at installation, when
+    /// it admitted any.
+    pub(super) fn installed_program_support(
+        &self,
+    ) -> Option<&super::program_occurrence::WorthQueryInstalledProgramSupport<Schema>> {
+        self.program_support.as_ref()
     }
 
     pub(super) fn issue_application_mutation_partition(
@@ -161,139 +167,6 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
             })
             .ok()
             .map(worth_relational::facade::identity::PartitionId)
-    }
-}
-
-impl<Schema> WorthQueryPrimaryGraphBootstrap<Schema>
-where
-    Schema: ApplicationSchema,
-{
-    pub fn publish_application_runtime(
-        self,
-        runtime: WorthQueryExecutionRuntime,
-        authority: WorthQueryExecutionInstallationAuthority,
-        installed_schema: WorthQueryInstalledApplicationSchema<Schema>,
-        conditional_evaluation_budget: worth_signal::facade::runtime::SignalConditionalEvaluationBudget,
-    ) -> Result<
-        WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-        WorthQueryPrimaryGraphInstallationDenial,
-    > {
-        installation::require_no_conditional_bindings(&runtime, &installed_schema)?;
-        installation::publish_application_runtime_with_clock(
-            installation::ApplicationRuntimePublication {
-                bootstrap: self,
-                runtime,
-                authority,
-                installed_schema,
-                authorization_clock: WorthQueryRuntimeClock::system(),
-                fault_port: super::provider::fault_port::production_fault_port(),
-                conditional_evaluation_budget,
-            },
-        )
-    }
-
-    /// Begins the sole primary-graph conditional publication progression.
-    ///
-    /// Complete provider, clock, and reconstruction bindings are accumulated
-    /// here before the application runtime can become visible.
-    pub fn conditional_application_runtime_installation(
-        self,
-        runtime: WorthQueryExecutionRuntime,
-        authority: WorthQueryExecutionInstallationAuthority,
-        installed_schema: WorthQueryInstalledApplicationSchema<Schema>,
-        conditional_evaluation_budget: worth_signal::facade::runtime::SignalConditionalEvaluationBudget,
-    ) -> Result<
-        super::conditional_operation::WorthQueryConditionalApplicationRuntimeInstallation<Schema>,
-        super::conditional_operation::WorthQueryConditionalRuntimeInstallationDenial,
-    > {
-        super::conditional_operation::WorthQueryConditionalApplicationRuntimeInstallation::new(
-            installation::ApplicationRuntimePublication {
-                bootstrap: self,
-                runtime,
-                authority,
-                installed_schema,
-                authorization_clock: WorthQueryRuntimeClock::system(),
-                fault_port: super::provider::fault_port::production_fault_port(),
-                conditional_evaluation_budget,
-            },
-        )
-    }
-
-    /// Begins conditional publication with one host-installed trusted-time
-    /// mechanism fixed for the lifetime of the resulting runtime.
-    pub fn conditional_application_runtime_installation_with_authorization_time_source(
-        self,
-        runtime: WorthQueryExecutionRuntime,
-        authority: WorthQueryExecutionInstallationAuthority,
-        installed_schema: WorthQueryInstalledApplicationSchema<Schema>,
-        conditional_evaluation_budget: worth_signal::facade::runtime::SignalConditionalEvaluationBudget,
-        source: impl WorthQueryRuntimeTimeSource,
-    ) -> Result<
-        super::conditional_operation::WorthQueryConditionalApplicationRuntimeInstallation<Schema>,
-        super::conditional_operation::WorthQueryConditionalRuntimeInstallationDenial,
-    > {
-        super::conditional_operation::WorthQueryConditionalApplicationRuntimeInstallation::new(
-            installation::ApplicationRuntimePublication {
-                bootstrap: self,
-                runtime,
-                authority,
-                installed_schema,
-                authorization_clock: WorthQueryRuntimeClock::from_source(source),
-                fault_port: super::provider::fault_port::production_fault_port(),
-                conditional_evaluation_budget,
-            },
-        )
-    }
-
-    /// Publishes one application runtime with a host-installed trusted-time
-    /// mechanism.
-    ///
-    /// The source is fixed for the lifetime of the returned runtime. It grants
-    /// no Query authority and is never exposed to operation callers.
-    pub fn publish_application_runtime_with_authorization_time_source(
-        self,
-        runtime: WorthQueryExecutionRuntime,
-        authority: WorthQueryExecutionInstallationAuthority,
-        installed_schema: WorthQueryInstalledApplicationSchema<Schema>,
-        conditional_evaluation_budget: worth_signal::facade::runtime::SignalConditionalEvaluationBudget,
-        source: impl WorthQueryRuntimeTimeSource,
-    ) -> Result<
-        WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-        WorthQueryPrimaryGraphInstallationDenial,
-    > {
-        self.publish_application_runtime_with_ports(
-            runtime,
-            authority,
-            installed_schema,
-            conditional_evaluation_budget,
-            source,
-            super::provider::fault_port::production_fault_port(),
-        )
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn publish_application_runtime_with_ports(
-        self,
-        runtime: WorthQueryExecutionRuntime,
-        authority: WorthQueryExecutionInstallationAuthority,
-        installed_schema: WorthQueryInstalledApplicationSchema<Schema>,
-        conditional_evaluation_budget: worth_signal::facade::runtime::SignalConditionalEvaluationBudget,
-        source: impl WorthQueryRuntimeTimeSource,
-        fault_port: Arc<dyn super::provider::fault_port::WorthQueryPrimaryGraphFaultPort>,
-    ) -> Result<
-        WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-        WorthQueryPrimaryGraphInstallationDenial,
-    > {
-        installation::publish_application_runtime_with_clock(
-            installation::ApplicationRuntimePublication {
-                bootstrap: self,
-                runtime,
-                authority,
-                installed_schema,
-                authorization_clock: WorthQueryRuntimeClock::from_source(source),
-                fault_port,
-                conditional_evaluation_budget,
-            },
-        )
     }
 }
 

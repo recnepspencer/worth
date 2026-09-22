@@ -8,6 +8,7 @@ mod entry;
 mod external_dispatch;
 mod outcome;
 mod phase;
+mod program_occurrence_gate;
 mod provider_denial;
 mod recovery_evidence;
 mod resource_request;

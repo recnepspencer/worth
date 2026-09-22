@@ -44,7 +44,7 @@ pub(super) fn admit<Schema>(
     ))
 }
 
-pub(super) fn admit_retained<Schema>(
+pub(super) fn admit_retained<Schema: worth_query_installation::facade::ApplicationSchema>(
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     product: WorthQueryProductObservationLease,
 ) -> Result<WorthQueryApplicationQueryBasisCustody, WorthQueryApplicationQueryAdmissionDenial> {
@@ -55,8 +55,14 @@ pub(super) fn admit_retained<Schema>(
             "product World owner",
         ));
     }
-    let application_basis = application
+    let mut application_basis = application
         .retain_product_application_basis(product.observation())
+        .map_err(map_product_admission_denial)?;
+    let _ = application
+        .bind_selected_program_interpretation(
+            product.relational_basis().observation().version_id(),
+            &mut application_basis,
+        )
         .map_err(map_product_admission_denial)?;
     admit(application, product, application_basis)
 }

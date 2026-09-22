@@ -103,6 +103,9 @@ fn estimated_mutation_effect_shape(
                 change_count += 1;
                 event_count += 1;
             }
+            // A revalidation demand rewrites nothing, so it contributes neither a
+            // change to deliver nor an event to record.
+            MutationIntent::Entity(EntityMutationIntent::Revalidate(_)) => {}
         }
     }
 

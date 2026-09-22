@@ -16,6 +16,7 @@ pub(crate) enum CanonicalIntentKey {
         client_keys: Vec<crate::symbols::data::ClientKey>,
     },
     UpdateEntityFields(EntityId),
+    RevalidateEntity(EntityId),
     ReplaceEntity {
         entity_id: EntityId,
         replacement_partition_id: crate::identity::data::PartitionId,
@@ -84,6 +85,9 @@ pub(crate) fn canonical_intent_key(intent: &MutationIntent) -> CanonicalIntentKe
         }
         MutationIntent::Entity(EntityMutationIntent::Delete(spec)) => {
             CanonicalIntentKey::DeleteEntity(spec.entity_id)
+        }
+        MutationIntent::Entity(EntityMutationIntent::Revalidate(spec)) => {
+            CanonicalIntentKey::RevalidateEntity(spec.entity_id)
         }
         MutationIntent::Create(CreateIntent::Relation(spec)) => {
             CanonicalIntentKey::CreateRelation(RelationCreateKey {

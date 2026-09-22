@@ -402,6 +402,39 @@ Resolution consumes the handle after a fresh owner-issued effect authority and
 an admitted idempotency read agree with its exact binding. A domain host should
 normally wrap this generic sequence in domain-named methods, as Bank does.
 
+## Program Adoption Recovery And Support Retirement
+
+Program adoption has its own recovery carrier. When lower-owner effects occur
+but World does not publish the target program, the
+`WorthQueryUnpublishedBranchAdoption` retains source and target revisions,
+migration and custody dispositions, the unpublished World recovery, and
+mandatory support custody. Continue it only through the same branch request:
+
+```rust,ignore
+let recovery = unpublished.into_recovery();
+let outcome = application
+    .request(&principal, &fresh_scope)
+    .on_branch(branch)
+    .programs()
+    .recover(recovery)?;
+```
+
+A copied revision, raw World recovery handle, or performed receipt cannot enter
+this path. A retryable recovery-release denial returns the complete adoption
+recovery; it does not return only the inner World product and silently release
+program support. For broader adoption, the branch-set recovery additionally
+preserves the performed prefix and untouched suffix.
+
+Host support retirement is a separate operation from adoption. Call
+`WorthQueryProgramApplicationRuntime::retire_program_support(&revision)` only
+when intentionally removing installed support. Execution first blocks new
+fork/adoption races, then inventories every current branch, retained
+interpretation lease, and mandatory custody token. Typed denials expose either
+the complete inventory or, when live-branch inspection is unavailable, an
+honest partial inventory that still includes retained interpretations,
+mandatory custody, and stable retained program bytes. Retirement succeeds only
+when every count is zero; it cannot erase support needed by exact recovery.
+
 ## How It Relates To Other Features
 
 - Pair external effects with ordinary Query mutation and idempotency. The outbox
@@ -412,6 +445,9 @@ normally wrap this generic sequence in domain-named methods, as Bank does.
   reconstruction and historical replay remain certification-only.
 - Use publication for consumer descriptions. Use execution recovery authority
   only inside the host runtime that owns the handle.
+- Keep application-aftermath recovery, adoption recovery, and support retirement
+  distinct. They own external-effect completion, unpublished program movement,
+  and installed support lifetime respectively.
 - Relational remains the authority for commit history, entity lineage, branch
   head, and ancestry. Runtime Bridge may transport an already-admitted portable
   description, but it does not decide any of those facts.

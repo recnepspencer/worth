@@ -11,6 +11,8 @@ use super::providers::{BankAccountsProvider, BankEstateProvider, BankPaymentsPro
 
 pub struct BankApplication;
 #[doc(hidden)]
+pub struct BankApplicationP1;
+#[doc(hidden)]
 pub struct BankAccountsFeature;
 #[doc(hidden)]
 pub struct BankPaymentsFeature;
@@ -44,8 +46,20 @@ pub(crate) type BankRules = ApplicationRuleList<
 >;
 
 pub(crate) fn bank_feature_specs() -> Vec<ApplicationFeatureSpec> {
+    bank_feature_specs_with_estate_notification(true)
+}
+
+fn bank_feature_specs_with_estate_notification(
+    include_estate_notification: bool,
+) -> Vec<ApplicationFeatureSpec> {
     use bank_domain::schema::*;
 
+    let estate = ApplicationFeatureSpec::root::<BankSchema, BankEstateFeature>();
+    let estate = if include_estate_notification {
+        estate.mutation::<NotifyEstateDeathMutationBinding>()
+    } else {
+        estate
+    };
     vec![
         ApplicationFeatureSpec::root::<BankSchema, BankAccountsFeature>()
             .mutation::<CreatePersonalAccountMutationBinding>()
@@ -63,8 +77,7 @@ pub(crate) fn bank_feature_specs() -> Vec<ApplicationFeatureSpec> {
             .mutation::<RejectPaymentMutationBinding>()
             .mutation::<ReverseJournalMutationBinding>()
             .finish(),
-        ApplicationFeatureSpec::root::<BankSchema, BankEstateFeature>()
-            .mutation::<NotifyEstateDeathMutationBinding>()
+        estate
             .mutation::<FreezeEstateAccountMutationBinding>()
             .mutation::<OpenEstateCaseMutationBinding>()
             .mutation::<RecognizeEstateExecutorMutationBinding>()
@@ -79,6 +92,23 @@ pub(crate) fn bank_feature_specs() -> Vec<ApplicationFeatureSpec> {
             .operation::<RevokeEstateCapabilityOperation>()
             .finish(),
     ]
+}
+
+impl ApplicationProgramDefinition<BankSchema> for BankApplicationP1 {
+    type Contributions = (
+        BankAccountsProvider,
+        BankPaymentsProvider,
+        BankEstateProvider,
+    );
+    type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
+    type Rules = BankRules;
+
+    const IDENTITY: ApplicationProgramIdentity =
+        ApplicationProgramIdentity::new("worth.bank.application.p1.v1");
+
+    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
+        bank_feature_specs_with_estate_notification(false)
+    }
 }
 
 impl ApplicationProgramDefinition<BankSchema> for BankApplication {
@@ -103,4 +133,11 @@ pub(crate) fn validated_bank_application() -> Result<
     worth_query_host::facade::declaration::application_program::ApplicationProgramValidationDenial,
 > {
     ApplicationProgramAuthoring::<BankSchema, BankApplication>::begin().validated_program()
+}
+
+pub(crate) fn validated_bank_application_p1() -> Result<
+    ValidatedApplicationProgram<BankSchema, BankApplicationP1>,
+    worth_query_host::facade::declaration::application_program::ApplicationProgramValidationDenial,
+> {
+    ApplicationProgramAuthoring::<BankSchema, BankApplicationP1>::begin().validated_program()
 }

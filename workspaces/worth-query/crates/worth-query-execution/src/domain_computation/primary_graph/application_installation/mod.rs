@@ -4,18 +4,23 @@ mod denial;
 mod limits;
 mod profile;
 mod program;
+mod program_admission;
 pub use denial::WorthQueryInMemoryApplicationDenial;
 pub use limits::WorthQueryInMemoryApplicationLimits;
 pub use profile::WorthQueryInMemoryApplicationProfile;
 pub use program::{
     in_memory_program, in_memory_program_with_authorization_time_source,
+    in_memory_rostered_program, in_memory_rostered_program_with_authorization_time_source,
     WorthQueryAdmittedProgramOperation, WorthQueryAdmittedProgramOutput,
     WorthQueryApplicationPreviewReadmissionDenial, WorthQueryApplicationPreviewRequest,
     WorthQueryApplicationPreviewSession, WorthQueryApplicationProgramRoots,
-    WorthQueryProgramApplicationRuntime, WorthQueryProgramOutputAdvance,
-    WorthQueryProgramRootDemand, WorthQueryReadmittedApplicationPreview,
-    WorthQuerySettledProgramOutput,
+    WorthQueryApplicationProgramRoster, WorthQueryProgramApplicationRuntime,
+    WorthQueryProgramOutputAdvance, WorthQueryProgramOwner, WorthQueryProgramRootDemand,
+    WorthQueryProgramSupportRetirementReceipt, WorthQueryReadmittedApplicationPreview,
+    WorthQuerySelectedProgramOwner, WorthQuerySelectedProgramOwnerDenial,
+    WorthQuerySettledProgramOutput, WorthQuerySupportedProgramHandle,
 };
+use program_admission::WorthQueryProgramAdmissionStep;
 
 use super::application_contribution::{
     WorthQueryApplicationContributionTuple, WorthQueryConfiguredApplicationContributions,
@@ -54,6 +59,7 @@ where
         limits,
         initial_state,
         None,
+        None,
     )
 }
 
@@ -68,6 +74,7 @@ pub(super) fn in_memory_with_contributions<Schema, Contributions>(
     authorization_time_source: Option<
         Box<dyn crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSource>,
     >,
+    program_admission: Option<WorthQueryProgramAdmissionStep<'_, Schema>>,
 ) -> Result<WorthQueryPrimaryGraphApplicationRuntime<Schema>, WorthQueryInMemoryApplicationDenial>
 where
     Schema: ApplicationSchemaComposition,
@@ -101,12 +108,25 @@ where
         .installed_packages()
         .bind_application_schema(declaration)
         .map_err(Denial::Schema)?;
+    let admitted_program_support = match program_admission {
+        Some(admit) => Some(admit(&installed)?),
+        None => None,
+    };
     let configured = WorthQueryConfiguredApplicationContributions::<Schema>::configure::<
         Contributions,
     >(&installed, configuration, contracts)
     .map_err(Denial::Contributions)?;
-    let (invariants, handlers, producers, conditionals) =
+    let (mut invariants, handlers, producers, conditionals) =
         configured.into_parts().map_err(Denial::Contributions)?;
+    let activation = super::program_occurrence::WorthQueryProgramActivationCell::unpublished();
+    if let Some(support) = &admitted_program_support {
+        invariants.select_by_program(
+            super::invariant_installation::WorthQueryInvariantProgramBasis::admitted(
+                std::sync::Arc::clone(&support.roster),
+                activation.clone(),
+            ),
+        );
+    }
     let relational_runtime = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
         .profile(limits.profile.relational_profile())
         .build();
@@ -120,6 +140,14 @@ where
         )
         .map_err(Denial::Graph)?;
     graph.mutation_handlers = handlers;
+    if let Some(support) = &admitted_program_support {
+        graph.program_activation_seed = Some(
+            super::bootstrap::WorthQueryProgramActivationSeed::for_initial_program(
+                &support.initial_revision,
+                activation.clone(),
+            ),
+        );
+    }
     initial_state(&mut graph, &installed).map_err(Denial::InitialState)?;
     let (mut application, installed_conditionals) =
         if conditionals.is_empty() && producers.is_empty() {
@@ -169,5 +197,17 @@ where
         };
     application.installed_producers = producers;
     application.installed_conditionals = installed_conditionals;
+    if let Some(support) = admitted_program_support {
+        application
+            .product_runtime
+            .activations
+            .require_program_coordination();
+        application.program_support = Some(
+            super::program_occurrence::WorthQueryInstalledProgramSupport::installed(
+                support.roster,
+                activation,
+            ),
+        );
+    }
     Ok(application)
 }

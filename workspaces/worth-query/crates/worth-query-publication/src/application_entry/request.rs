@@ -7,11 +7,13 @@ use worth_query_installation::facade::ApplicationSchema;
 
 use super::{
     WorthQueryApplicationMutationRequest, WorthQueryApplicationOutputDemandRequest,
-    WorthQueryApplicationQueryRequest,
+    WorthQueryApplicationProgramsRequest, WorthQueryApplicationQueryRequest,
 };
 use worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
+mod branch_set;
 mod program_outputs;
+pub use branch_set::WorthQueryApplicationBranchSetRequest;
 pub use program_outputs::WorthQueryProgramOutputCurrentnessDenial;
 
 /// Borrowed ordinary-request context. Construction selects no World state and
@@ -130,6 +132,18 @@ where
             self.scope,
             self.branch,
             demand,
+        )
+    }
+
+    /// Enters branch-local application-program inspection and adoption.
+    pub fn programs(
+        &self,
+    ) -> WorthQueryApplicationProgramsRequest<'application, 'principal, 'scope, Schema> {
+        WorthQueryApplicationProgramsRequest::new(
+            self.application,
+            self.principal,
+            self.scope,
+            self.branch,
         )
     }
 

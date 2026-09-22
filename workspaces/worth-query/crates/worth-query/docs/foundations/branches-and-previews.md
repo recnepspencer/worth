@@ -121,6 +121,31 @@ whose ancestry they protect.
 See the executable
 [advanced product branching example](../../../worth-query-certification/examples/advanced_product_branching.rs).
 
+### Branch-local application programs
+
+Each product occurrence carries one owner-admitted application-program
+revision. Sibling branches may therefore remain on P0 and P1 simultaneously.
+`application.request(...).on_branch(branch).programs().inspect()` reports the
+program carried by that exact selection; the report is not adoption authority.
+Ordinary queries, mutations, retained reads, security bases, pending producers,
+and required-output work resolve through the same selected occurrence.
+
+Adoption compares installed canonical meaning, derives migration and custody
+requirements, validates existing state under the target rules, and reserves
+one branch-bound publication. A component-local success does not activate the
+target. Only the final World `Performed` outcome records the target program;
+`ProductUnpublished` retains the original source, target, migration, owner
+effects, and exact recovery route.
+
+For multiple branches, call
+`application.branches().program_adoption_coverage(&branches, maximum_targets)`
+and then `request.on_branches(coverage, ordered_targets)`. The returned handle
+is bounded and explicitly non-atomic: inspect `progress()`, resolve a
+`NoEffect` or `ProductUnpublished` stop, and then resume, cancel, or close it.
+Later-created branches never enter previously issued coverage. This is program
+adoption, not merge or rebase; multi-parent reconciliation remains a separate
+roadmap product.
+
 Preview:
 
 - binds existing handles into a preview lane

@@ -83,6 +83,14 @@ impl WorthQueryProductBranchOwnerCleanupRegistry {
         })
     }
 
+    #[cfg(feature = "test-world-operation-control")]
+    pub(crate) fn available_capacity_for_test(&self) -> usize {
+        let state = lock(&self.state);
+        state
+            .maximum
+            .saturating_sub(state.entries.len().saturating_add(state.reserved))
+    }
+
     pub(super) fn pending_identities(&self) -> Vec<u64> {
         let mut identities: Vec<_> = lock(&self.state).entries.keys().copied().collect();
         identities.sort_unstable();

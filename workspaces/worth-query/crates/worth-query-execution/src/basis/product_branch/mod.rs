@@ -7,6 +7,7 @@ mod observation;
 mod read_identity;
 mod selection;
 
+pub(crate) use creation::WorthQuerySourceProgramResolver;
 pub use creation::{WorthQueryProductBranchCreateError, WorthQueryProductBranchFork};
 pub(super) use creation_recovery::map_recovery_denial;
 pub use creation_recovery::{

@@ -62,6 +62,9 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     ForeignInvariantFactory,
     InvariantFactoryMeaningMismatch,
     InvariantFactoryRejected,
+    /// A program-rostered rule's declared work budget cannot carry the platform
+    /// reserve its branch program activation read needs.
+    ProgramActivationWorkReserveOverflow,
     InvariantInstallationReceiptMismatch,
     MissingProducerBinding,
     DuplicateProducerBinding,

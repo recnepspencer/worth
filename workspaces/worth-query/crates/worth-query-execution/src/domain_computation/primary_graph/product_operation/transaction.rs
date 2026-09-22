@@ -107,8 +107,14 @@ where
         if self.change.program.product_branch() != self.entry.branch {
             return Err(WorthQueryProductTransactionCommitError::BranchMismatch);
         }
+        let Some(presented) = admitted.runtime.presented_program() else {
+            return Ok(WorthQueryApplicationCommitOutcome::Denied(
+                crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::application_program_required(),
+            ));
+        };
         Ok(
             application.compare_and_commit_application_for_program_action(
+                &presented,
                 self.change.program,
                 self.change.idempotency,
             ),

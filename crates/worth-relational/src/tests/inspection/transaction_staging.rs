@@ -154,3 +154,49 @@ fn transaction_inspection_marks_lineage_affecting_intents_without_previewing_com
     };
     assert_eq!(current_name, Some("replace-target".into()));
 }
+
+#[test]
+fn staging_inspection_counts_a_revalidation_demand_apart_from_the_mutations() {
+    let runtime = runtime_with_test_schema();
+    let rewritten = create_entity(&runtime, "rewritten");
+    let demanded = create_entity(&runtime, "demanded");
+
+    let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
+    txn.push_batch(
+        WorkerIntentBatch::new("rewrite-one-and-rejudge-another")
+            .push(MutationIntent::Entity(EntityMutationIntent::UpdateFields(
+                UpdateEntityFieldsIntent {
+                    entity_id: rewritten,
+                    fields: crate::tests::support::single_string_aspect_field_patch(
+                        crate::tests::support::aspect_key("name"),
+                        crate::tests::support::field_key("name"),
+                        "after",
+                    ),
+                },
+            )))
+            .push(MutationIntent::Entity(EntityMutationIntent::Revalidate(
+                crate::transactions::data::RevalidateEntityIntent {
+                    entity_id: demanded,
+                },
+            ))),
+    )
+    .expect("test staging stays within configured resource budgets");
+
+    let staging = txn.inspect_staging();
+
+    assert_eq!(
+        staging.intent_counts.entity_mutation_count, 1,
+        "one record is about to change, so the mutation count must name one record and not two"
+    );
+    assert_eq!(
+        staging.intent_counts.entity_revalidation_count, 1,
+        "the demand is carried and must be visible, not silently absent from the surface"
+    );
+    assert!(
+        staging
+            .touched_records
+            .contains(&crate::facade::transactions::RecordRef::Entity(demanded)),
+        "a demanded record is touched even though it is not mutated: {:?}",
+        staging.touched_records
+    );
+}

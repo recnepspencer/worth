@@ -3,10 +3,11 @@ use std::collections::BTreeSet;
 use crate::identity::data::{KindId, PartitionId};
 use crate::symbols::data::ClientKey;
 use crate::transactions::data::{
-    CreateIntent, CreatedEntityRef, CreatedRelationRef, EntityMutationIntent, EntityReference,
-    MutationIntent, RecordRef, RelationMutationIntent, WorkerIntentBatch,
+    CreateIntent, CreatedEntityRef, CreatedRelationRef, EntityReference, MutationIntent, RecordRef,
+    RelationMutationIntent, WorkerIntentBatch,
 };
 
+use super::intent_locus::{entity_intent_locus, EntityIntentLocus};
 use super::{
     RelationalTransactionFootprint, RelationalTransactionReadLocus,
     RelationalTransactionStagingDenial, RelationalTransactionWriteLocus,
@@ -31,16 +32,32 @@ impl RelationalTransactionFootprint {
         Ok(())
     }
 
-    pub(crate) fn admit_staged_writes(
+    /// Admits everything one staged batch will touch against the transaction's
+    /// footprint capacity.
+    ///
+    /// Not every staged intent writes: a revalidation demand only brings a
+    /// record back under judgement. Such a demand still costs the transaction a
+    /// locus, and counting only writes would leave it the one staged intent no
+    /// capacity bounds, so reads and writes are admitted together against the
+    /// same ceiling.
+    pub(crate) fn admit_staged_loci(
         &mut self,
         batch: &WorkerIntentBatch,
         maximum_loci: usize,
     ) -> Result<(), RelationalTransactionStagingDenial> {
-        let staged = staged_write_loci(batch);
+        let staged = staged_loci(batch);
         let new_loci = staged
+            .writes
             .iter()
             .filter(|locus| !self.writes.contains(*locus))
-            .count();
+            .count()
+            .saturating_add(
+                staged
+                    .reads
+                    .iter()
+                    .filter(|locus| !self.reads.contains(*locus))
+                    .count(),
+            );
         let required_loci = self.total_locus_count().saturating_add(new_loci);
         if required_loci > maximum_loci {
             return Err(
@@ -50,41 +67,57 @@ impl RelationalTransactionFootprint {
                 },
             );
         }
-        for locus in staged {
+        for locus in staged.writes {
             self.record_write(locus);
+        }
+        for locus in staged.reads {
+            self.record_read(locus);
         }
         Ok(())
     }
 }
 
-fn staged_write_loci(batch: &WorkerIntentBatch) -> BTreeSet<RelationalTransactionWriteLocus> {
-    let mut loci = BTreeSet::new();
+/// What one staged batch will touch, separated by the authority each locus
+/// carries: a write changes the record, a read only observes it.
+#[derive(Default)]
+struct StagedIntentLoci {
+    writes: BTreeSet<RelationalTransactionWriteLocus>,
+    reads: BTreeSet<RelationalTransactionReadLocus>,
+}
+
+fn staged_loci(batch: &WorkerIntentBatch) -> StagedIntentLoci {
+    let mut loci = StagedIntentLoci::default();
     for intent in &batch.intents {
         match intent {
-            MutationIntent::Entity(intent) => {
-                let entity_id = match intent {
-                    EntityMutationIntent::UpdateFields(intent) => intent.entity_id,
-                    EntityMutationIntent::ApplyAspectPatch(intent) => intent.entity_id,
-                    EntityMutationIntent::Replace(intent) => intent.entity_id,
-                    EntityMutationIntent::Delete(intent) => intent.entity_id,
-                };
-                loci.insert(RelationalTransactionWriteLocus::Existing(
-                    RecordRef::Entity(entity_id),
-                ));
-            }
+            MutationIntent::Entity(intent) => match entity_intent_locus(intent) {
+                EntityIntentLocus::Write(entity_id) => {
+                    loci.writes
+                        .insert(RelationalTransactionWriteLocus::Existing(
+                            RecordRef::Entity(entity_id),
+                        ));
+                }
+                EntityIntentLocus::Read(entity_id) => {
+                    loci.reads
+                        .insert(RelationalTransactionReadLocus::Existing(RecordRef::Entity(
+                            entity_id,
+                        )));
+                }
+            },
             MutationIntent::Relation(intent) => {
                 let relation_id = match intent {
                     RelationMutationIntent::UpdateEndpoints(intent) => intent.relation_id,
                     RelationMutationIntent::ApplyAspectPatch(intent) => intent.relation_id,
                     RelationMutationIntent::Delete(intent) => intent.relation_id,
                 };
-                loci.insert(RelationalTransactionWriteLocus::Existing(
-                    RecordRef::Relation(relation_id),
-                ));
+                loci.writes
+                    .insert(RelationalTransactionWriteLocus::Existing(
+                        RecordRef::Relation(relation_id),
+                    ));
             }
-            MutationIntent::Create(create) => collect_created_write_loci(create, &mut loci),
+            MutationIntent::Create(create) => collect_created_write_loci(create, &mut loci.writes),
             MutationIntent::Materialization(intent) => {
-                loci.insert(RelationalTransactionWriteLocus::Existing(intent.record()));
+                loci.writes
+                    .insert(RelationalTransactionWriteLocus::Existing(intent.record()));
             }
         }
     }

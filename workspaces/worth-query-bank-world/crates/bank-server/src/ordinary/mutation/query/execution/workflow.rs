@@ -114,7 +114,7 @@ fn execute_approval(
         .mutate(input)
         .preconditions(preconditions)
         .idempotency(controls.idempotency_key())
-        .execute_in_program(runtime.application_program())
+        .execute_in_selected_program(runtime.application_program())
 }
 
 fn execute_rejection(
@@ -129,7 +129,7 @@ fn execute_rejection(
         .mutate(input)
         .preconditions(preconditions)
         .idempotency(controls.idempotency_key())
-        .execute_in_program(runtime.application_program())
+        .execute_in_selected_program(runtime.application_program())
 }
 
 fn execute_initiation(
@@ -149,6 +149,6 @@ fn execute_initiation(
             .mutate(input)
             .preconditions(preconditions)
             .idempotency(controls.idempotency_key())
-            .execute_in_program(runtime.application_program()),
+            .execute_in_selected_program(runtime.application_program()),
     )
 }

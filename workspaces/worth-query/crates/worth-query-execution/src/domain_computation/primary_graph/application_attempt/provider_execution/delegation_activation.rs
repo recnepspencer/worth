@@ -19,7 +19,7 @@ where
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        if self.installed_program_action_operations.is_some()
+        if self.has_installed_application_program()
             || self
                 .program_required_operations
                 .contains(&std::any::TypeId::of::<Operation>())

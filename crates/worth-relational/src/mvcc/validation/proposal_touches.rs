@@ -39,6 +39,11 @@ pub enum ValidatedMutationTouch {
     UnrepresentableEntityMutation {
         kind: KindId,
     },
+    /// One unchanged record brought back under judgement. It is not a write:
+    /// the record's stored state is exactly what it was before the candidate.
+    RevalidateEntity {
+        kind: KindId,
+    },
     UnrepresentableRelationMutation {
         kind: KindId,
     },
@@ -53,6 +58,7 @@ impl ValidatedMutationTouch {
             | Self::LinkRelation { kind }
             | Self::UnlinkRelation { kind }
             | Self::UnrepresentableEntityMutation { kind }
+            | Self::RevalidateEntity { kind }
             | Self::UnrepresentableRelationMutation { kind } => *kind,
         }
     }
@@ -228,6 +234,7 @@ fn project_entity(
         EntityMutationIntent::ApplyAspectPatch(spec) => spec.entity_id,
         EntityMutationIntent::Replace(spec) => spec.entity_id,
         EntityMutationIntent::Delete(spec) => spec.entity_id,
+        EntityMutationIntent::Revalidate(spec) => spec.entity_id,
     };
     let kind = entity_kind(state, entity, work)?;
     match intent {
@@ -240,6 +247,9 @@ fn project_entity(
         }
         EntityMutationIntent::Delete(_) => {
             touches.insert(ValidatedMutationTouch::DeleteEntity { kind });
+        }
+        EntityMutationIntent::Revalidate(_) => {
+            touches.insert(ValidatedMutationTouch::RevalidateEntity { kind });
         }
     }
     Ok(())

@@ -84,6 +84,9 @@ pub(super) fn project_entity(
                 )?;
             }
             EntityMutationIntent::Replace(_) | EntityMutationIntent::Delete(_) => effective = None,
+            // A revalidation demand changes nothing, so the effective record is
+            // exactly what the preceding staged intents left.
+            EntityMutationIntent::Revalidate(_) => {}
         }
     }
     Ok(effective)

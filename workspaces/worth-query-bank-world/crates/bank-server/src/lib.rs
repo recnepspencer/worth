@@ -22,9 +22,10 @@ mod operation_admission;
 mod operation_commit;
 mod ordinary;
 mod principal_seed;
+mod program_adoption;
 mod world_seed;
 
-pub use application_definition::BankApplication;
+pub use application_definition::{BankApplication, BankApplicationP1};
 pub use application_query::{
     BankAccountActivityContinuation, BankAccountActivityHistoricalResult,
     BankAccountActivityLiveLease, BankAccountActivityLiveOutcome, BankAccountActivityLiveUpdate,
@@ -98,4 +99,5 @@ pub use ordinary::{
     BankReadyQuery, BankRejectPendingPayment,
 };
 pub use principal_seed::BankPrincipalSeed;
+pub use program_adoption::{BankProgramAdoptionPreparationDenial, BankProgramInspectionDenial};
 pub use world_seed::{BankBusinessOwnerSeed, BankEmployeeAssignmentSeed, BankWorldSeed};

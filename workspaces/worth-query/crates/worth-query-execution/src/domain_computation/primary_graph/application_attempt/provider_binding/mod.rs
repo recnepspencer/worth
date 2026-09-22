@@ -116,6 +116,29 @@ pub(super) fn prepare_provider_attempt(
     })
 }
 
+pub(super) fn prepare_program_migration_batch(
+    mutation_partition: worth_relational::facade::identity::PartitionId,
+    facts: &[WorthQueryApplicationObservedFact],
+    effects: Vec<WorthQueryApplicationRealizedEffect>,
+) -> Result<
+    worth_relational::facade::transactions::WorkerIntentBatch,
+    WorthQueryApplicationAttemptDenial,
+> {
+    let mut accumulator =
+        WorthQueryProviderEffectAccumulator::new(facts, &effects, mutation_partition);
+    for effect in effects {
+        accumulator.add_effect(effect)?;
+    }
+    accumulator
+        .finish(
+            0,
+            0,
+            super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate::default(),
+        )?
+        .into_migration_batch()
+        .map_err(|_| progression_denial())
+}
+
 pub(super) fn progression_denial() -> WorthQueryApplicationAttemptDenial {
     WorthQueryApplicationAttemptDenial::new(
         WorthQueryApplicationAttemptDenialKind::IncompleteEffectBasis,

@@ -8,8 +8,8 @@ use crate::transactions::data::{
     BulkEntityCreateIntent, BulkRelationCreateIntent, CreateIntent, DeleteEntityIntent,
     DeleteRelationIntent, EntityAspectCreateIntent, EntityMutationIntent, EntityReference,
     EntitySpec, MaterializationMutationIntent, MutationIntent, RelationAspectCreateIntent,
-    RelationMutationIntent, RelationSpec, ReplaceEntityIntent, UpdateEntityFieldsIntent,
-    UpdateRelationEndpointsIntent, WorkerIntentBatch,
+    RelationMutationIntent, RelationSpec, ReplaceEntityIntent, RevalidateEntityIntent,
+    UpdateEntityFieldsIntent, UpdateRelationEndpointsIntent, WorkerIntentBatch,
 };
 
 pub(crate) fn strategy_mutation_program_digest(
@@ -136,6 +136,10 @@ fn write_entity_mutation_intent(bytes: &mut StrategyDigestBytes, intent: &Entity
             bytes.tag(4);
             write_apply_entity_aspect_patch_intent(bytes, intent);
         }
+        EntityMutationIntent::Revalidate(intent) => {
+            bytes.tag(5);
+            write_revalidate_entity_intent(bytes, intent);
+        }
     }
 }
 
@@ -241,6 +245,17 @@ fn write_apply_entity_aspect_patch_intent(
 fn write_replace_entity_intent(bytes: &mut StrategyDigestBytes, intent: &ReplaceEntityIntent) {
     bytes.entity_id(intent.entity_id);
     write_entity_spec(bytes, &intent.replacement);
+}
+
+/// A revalidation demand names only the record it brings back under
+/// judgement. Its tag is what separates it from the other intents that carry
+/// nothing but an entity id, so two commits of opposite meaning over one
+/// record cannot share a program digest.
+fn write_revalidate_entity_intent(
+    bytes: &mut StrategyDigestBytes,
+    intent: &RevalidateEntityIntent,
+) {
+    bytes.entity_id(intent.entity_id);
 }
 
 fn write_delete_entity_intent(bytes: &mut StrategyDigestBytes, intent: &DeleteEntityIntent) {

@@ -44,8 +44,7 @@ pub use relational_publication::{
     WorthQueryPerformedRelationalProductChangeDeliveryDenialKind,
     WorthQueryPerformedRelationalProductChangeDeliveryOutcome,
 };
-#[cfg(test)]
-pub(in crate::domain_computation) use request_control::WorthQueryPreparedProductPublication;
+pub(crate) use request_control::WorthQueryPreparedProductPublication;
 #[cfg(test)]
 pub(in crate::domain_computation) use resources::test_product_world_resources;
 #[cfg(feature = "test-primary-graph-faults")]

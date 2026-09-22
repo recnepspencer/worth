@@ -21,6 +21,9 @@ pub enum WorthQueryInMemoryApplicationDenial {
     Program(worth_query_installation::facade::WorthQueryApplicationProgramInstallationDenial),
     ConditionalProgramMismatch,
     RequiredOutputSourceAction(String),
+    /// Program support was admitted for this installation, but the installed
+    /// initial program never reached the runtime that was to carry it.
+    ProgramAdmissionIncomplete,
 }
 
 impl std::fmt::Display for WorthQueryInMemoryApplicationDenial {
@@ -39,6 +42,7 @@ impl std::error::Error for WorthQueryInMemoryApplicationDenial {
             Self::Admission(_)
             | Self::Runtime(_)
             | Self::ConditionalProgramMismatch
+            | Self::ProgramAdmissionIncomplete
             | Self::RequiredOutputSourceAction(_) => None,
             Self::Schema(error) => Some(error),
             Self::Contributions(error)

@@ -25,6 +25,7 @@ mod idempotency_resolution;
 mod mandatory_review_outcome;
 mod mandatory_review_program;
 mod mandatory_review_replay;
+mod migration;
 mod observation;
 pub(in crate::domain_computation::primary_graph) mod precondition_binding;
 mod provider_binding;
@@ -60,6 +61,7 @@ pub use compare_and_commit::{
 };
 pub(in crate::domain_computation::primary_graph) use compare_and_commit::{
     WorthQueryCommittedReceiptProjection, WorthQueryPendingApplicationCommitReceipt,
+    WorthQueryProgramActivationUnresolved,
 };
 pub use delegation_activation_program::WorthQueryDelegationActivationProgram;
 pub use denial::{WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind};
@@ -108,6 +110,7 @@ pub(super) use mandatory_review_outcome::reviewed_outcome;
 pub use mandatory_review_outcome::{WorthQueryMandatoryReviewOutcome, WorthQueryReviewedElevation};
 pub(super) use mandatory_review_program::validate_mandatory_review_program;
 pub use mandatory_review_program::WorthQueryMandatoryReviewProgram;
+pub(in crate::domain_computation::primary_graph) use migration::prepare_program_migration_effects;
 pub(in crate::domain_computation::primary_graph) use observation::observe_field_value;
 pub(in crate::domain_computation) use provider_binding::WorthQueryPreparedApplicationProviderAttempt;
 pub(in crate::domain_computation) use provider_execution::application_resource_request;

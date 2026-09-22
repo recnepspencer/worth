@@ -3,6 +3,7 @@ use crate::domain_computation::primary_graph::{
     application_query::resource_lifecycle::WorthQueryApplicationBasisLease,
     WorthQueryPrimaryGraphApplicationRuntime,
 };
+use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_world::facade::ProductBranchObservation;
 
 pub(in crate::domain_computation) trait WorthQueryProductObservationSource {
@@ -46,7 +47,7 @@ impl WorthQueryProductSecurityBasis {
     }
 }
 
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     fn retain_indexed_security_basis(
         &self,
         observation: &ProductBranchObservation,
@@ -64,7 +65,16 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
                 )
             })
             .map_err(|_| WorthQueryProductBranchAdmissionDenial::ObservationRejected)?;
-        self.retain_product_application_basis(observation)
+        let mut application_basis = self.retain_product_application_basis(observation)?;
+        let _ = self.bind_selected_program_interpretation(
+            observation
+                .basis()
+                .relational_basis()
+                .observation()
+                .version_id(),
+            &mut application_basis,
+        )?;
+        Ok(application_basis)
     }
 
     pub(in crate::domain_computation) fn admit_product_security_basis(

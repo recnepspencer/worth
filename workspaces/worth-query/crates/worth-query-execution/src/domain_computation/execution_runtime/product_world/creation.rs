@@ -1,3 +1,4 @@
+use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
 use worth_runtime_world::facade::{
     ProductBranchCreationIntent, RuntimeWorldBranchAdmissionDenial,
     RuntimeWorldBranchCreationOutcome, RuntimeWorldCancellationToken, RuntimeWorldServiceDenial,
@@ -10,6 +11,7 @@ use crate::basis::WorthQueryProductBranchLease;
 pub enum WorthQueryProductBranchCreationDenial {
     CoordinationCapacityExhausted,
     CoordinationUnavailable,
+    ProgramSupportUnavailable,
     World(RuntimeWorldServiceDenial<RuntimeWorldBranchAdmissionDenial>),
 }
 
@@ -19,6 +21,7 @@ impl WorthQueryProductRuntime {
     pub(crate) fn create_product_branch(
         &self,
         source: &WorthQueryProductBranchLease,
+        source_program: Option<&ApplicationProgramRevision>,
         intent: ProductBranchCreationIntent,
         cancellation: &RuntimeWorldCancellationToken,
     ) -> Result<RuntimeWorldBranchCreationOutcome, WorthQueryProductBranchCreationDenial> {
@@ -27,12 +30,18 @@ impl WorthQueryProductRuntime {
                 RuntimeWorldServiceDenial::Denied(RuntimeWorldBranchAdmissionDenial::ForeignOwner),
             ));
         }
-        let reservation = self.activations.reserve().map_err(|denial| match denial {
-            WorthQueryProductActivationDenial::CapacityExhausted => {
-                WorthQueryProductBranchCreationDenial::CoordinationCapacityExhausted
-            }
-            _ => WorthQueryProductBranchCreationDenial::CoordinationUnavailable,
-        })?;
+        let reservation = self
+            .activations
+            .reserve_for_source_program(source_program)
+            .map_err(|denial| match denial {
+                WorthQueryProductActivationDenial::CapacityExhausted => {
+                    WorthQueryProductBranchCreationDenial::CoordinationCapacityExhausted
+                }
+                WorthQueryProductActivationDenial::ProgramSupportUnavailable => {
+                    WorthQueryProductBranchCreationDenial::ProgramSupportUnavailable
+                }
+                _ => WorthQueryProductBranchCreationDenial::CoordinationUnavailable,
+            })?;
         let outcome = self
             .owner
             .branch_port()

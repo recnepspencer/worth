@@ -29,6 +29,38 @@ pub enum WorthQueryApplicationCommitDenialKind {
     DelegationActivationRequired,
     CapabilityRevocationRequired,
     ApplicationProgramRequired,
+    /// The presented program is not the program this occurrence is running.
+    ProgramNotActiveOnOccurrence,
+    /// This occurrence carries no branch program activation the host can
+    /// attribute to an admitted rostered program, so no program-gated commit
+    /// can be compared against one.
+    ProgramActivationUnresolved,
+}
+
+/// Which fail-closed integrity path refused to attribute one occurrence's
+/// branch program activation.
+///
+/// These are distinct causes for the same refusal: a host that never seeded
+/// activation, a snapshot that cannot produce the record, and a record naming
+/// meaning this host never admitted are three different operator situations.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(in crate::domain_computation::primary_graph) enum WorthQueryProgramActivationUnresolved {
+    /// The branch never published an activation record at all.
+    NeverPublished,
+    /// The activation record exists but this attempt's snapshot cannot read it.
+    Unreadable,
+    /// The activation record renders a program this host never rostered.
+    NamesNoRosteredProgram,
+}
+
+impl WorthQueryProgramActivationUnresolved {
+    const fn detail(self) -> &'static str {
+        match self {
+            Self::NeverPublished => "branch program activation was never published",
+            Self::Unreadable => "branch program activation is unreadable on this occurrence",
+            Self::NamesNoRosteredProgram => "branch program activation names no rostered program",
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -287,6 +319,38 @@ impl WorthQueryApplicationCommitDenial {
             kind: WorthQueryApplicationCommitDenialKind::ApplicationProgramRequired,
             stage: WorthQueryApplicationCommitDenialStage::ProposalBinding,
             detail: None,
+            custom_invariant: None,
+        }
+    }
+
+    /// Refuses a program-gated commit whose occurrence carries no activation
+    /// this host can attribute to an admitted rostered program, naming which
+    /// fail-closed integrity path refused it.
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn program_activation_unresolved(
+        unresolved: WorthQueryProgramActivationUnresolved,
+    ) -> Self {
+        Self {
+            kind: WorthQueryApplicationCommitDenialKind::ProgramActivationUnresolved,
+            stage: WorthQueryApplicationCommitDenialStage::ProposalBinding,
+            detail: Some(std::sync::Arc::from(unresolved.detail())),
+            custom_invariant: None,
+        }
+    }
+
+    /// Refuses a program-gated commit presented through a rostered program that
+    /// is not the one this occurrence activated.
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn program_not_active_on_occurrence(
+        presented: &worth_query_declaration::facade::application_program::ApplicationProgramIdentity,
+        active: &worth_query_declaration::facade::application_program::ApplicationProgramIdentity,
+    ) -> Self {
+        Self {
+            kind: WorthQueryApplicationCommitDenialKind::ProgramNotActiveOnOccurrence,
+            stage: WorthQueryApplicationCommitDenialStage::ProposalBinding,
+            detail: Some(std::sync::Arc::from(format!(
+                "presented program {} is not active on this occurrence: {} is",
+                presented.as_str(),
+                active.as_str()
+            ))),
             custom_invariant: None,
         }
     }

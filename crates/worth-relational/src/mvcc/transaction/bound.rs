@@ -62,7 +62,7 @@ impl BranchBoundRelationalTransaction {
             );
         }
         self.footprint
-            .admit_staged_writes(&batch, self.maximum_footprint_loci)?;
+            .admit_staged_loci(&batch, self.maximum_footprint_loci)?;
         self.overlay.stage(batch, &mut self.footprint);
         self.overlay_bytes = required_bytes;
         self.last_merged_plan = None;

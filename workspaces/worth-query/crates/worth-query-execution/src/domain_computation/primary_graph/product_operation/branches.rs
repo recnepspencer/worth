@@ -9,6 +9,10 @@ use worth_runtime_world::facade::{
 };
 
 use super::WorthQueryApplicationProductBranchCleanup;
+use super::{
+    WorthQueryOrderedProgramAdoptionCoverage, WorthQueryProgramAdoptionCoverage,
+    WorthQueryProgramAdoptionCoverageDenial,
+};
 use crate::basis::{
     WorthQueryProductBranch, WorthQueryProductBranchCreationRecovery, WorthQueryProductBranchFork,
     WorthQueryProductBranchRecoveryDenial, WorthQueryProductBranches,
@@ -33,7 +37,68 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     }
 }
 
+impl<Schema: ApplicationSchema> crate::basis::WorthQuerySourceProgramResolver
+    for WorthQueryPrimaryGraphApplicationRuntime<Schema>
+{
+    fn source_program(
+        &self,
+        source: &crate::basis::WorthQueryProductBranchLease,
+    ) -> Option<worth_query_declaration::facade::application_program::ApplicationProgramRevision>
+    {
+        crate::domain_computation::primary_graph::product_activation::inspect_selected_program(
+            self,
+            source.relational_basis().observation().version_id(),
+        )
+        .ok()
+        .map(|selected| selected.revision().clone())
+    }
+}
+
 impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'runtime, Schema> {
+    /// Admits an exact bounded set of currently live branch occurrences for
+    /// explicit non-atomic program adoption. Later-created branches are not
+    /// silently added to the issued coverage.
+    pub fn program_adoption_coverage(
+        &self,
+        branches: &[WorthQueryProductBranch],
+        maximum_targets: NonZeroUsize,
+    ) -> Result<WorthQueryProgramAdoptionCoverage, WorthQueryProgramAdoptionCoverageDenial> {
+        let coverage = WorthQueryProgramAdoptionCoverage::issue(branches, maximum_targets)?;
+        let unadmitted = self
+            .application
+            .product_runtime
+            .activations
+            .first_unadmitted_live_occurrence(
+                coverage.branches().iter().map(|branch| branch.occurrence()),
+            )
+            .map_err(|_| WorthQueryProgramAdoptionCoverageDenial::RegistryUnavailable)?;
+        if let Some(unadmitted) = unadmitted {
+            let branch = coverage
+                .branches()
+                .iter()
+                .copied()
+                .find(|branch| branch.occurrence() == unadmitted)
+                .unwrap_or(coverage.branches()[0]);
+            return Err(WorthQueryProgramAdoptionCoverageDenial::ForeignOrRetiredTarget { branch });
+        }
+        Ok(coverage)
+    }
+
+    pub fn order_program_adoption_coverage(
+        &self,
+        coverage: WorthQueryProgramAdoptionCoverage,
+        ordered_targets: &[WorthQueryProductBranch],
+    ) -> Result<WorthQueryOrderedProgramAdoptionCoverage, WorthQueryProgramAdoptionCoverageDenial>
+    {
+        coverage.order(
+            self.application
+                .current_world()
+                .occurrence()
+                .owner_identity(),
+            ordered_targets,
+        )
+    }
+
     pub fn fork(self, source: WorthQueryProductBranch) -> WorthQueryProductBranchFork<'runtime> {
         let commit_lane = self
             .application
@@ -42,6 +107,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
         self.branches.fork(source).with_application_lifecycle(
             std::sync::Arc::clone(&self.application.primary_provider.graph.output_lineage),
             commit_lane,
+            self.application,
         )
     }
 

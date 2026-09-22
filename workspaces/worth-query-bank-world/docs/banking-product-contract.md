@@ -119,11 +119,29 @@ policy denied, invariant violated, stale, already committed idempotently,
 aborted, cancelled, partial effect, and indeterminate. An adapter may map these
 outcomes to transport vocabulary but may not collapse their meaning.
 
+## Program evolution
+
+The authoritative Bank host may support multiple validated Bank application
+programs over the same installed native schema. Each product branch carries its
+own selected program. Program evolution may add, change, or remove application
+operations and rules, but it cannot reinterpret committed journal truth,
+duplicate an external business effect, or turn a descriptive revision into
+authority.
+
+Adoption validates existing branch state under the target program and preserves
+the exact disposition of continuations, resource reservations, and performed
+effect recovery. A removed ordinary operation becomes unavailable on that
+branch, while recovery of work performed under the source program remains
+bound to its original occurrence and idempotency/outbox evidence. Only a
+performed composite publication changes the selected program; sibling branches
+may remain on different supported revisions.
+
 ## Ownership
 
 - `bank-domain` owns every concept and invariant in this document.
 - Query owns typed declaration, installation, authorization composition,
-  touched-graph admission, execution progression, and result meaning.
+  touched-graph admission, branch-program adoption, execution progression, and
+  result meaning.
 - Relational owns graph facts and touched-graph proof.
 - Signal owns policy evaluation evidence.
 - The runtime bridge owns installed correspondence and lowering.

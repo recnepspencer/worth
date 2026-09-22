@@ -40,7 +40,7 @@ fn real_sibling_denial_is_inspectable_releasable_and_leaves_no_recovery_orphan()
     let RuntimeWorldBranchCreationOutcome::Performed(occupied) = world
         .application
         .product_runtime
-        .create_product_branch(&source, intent, &cancellation.token())
+        .create_product_branch(&source, None, intent, &cancellation.token())
         .expect("the real Signal destination is occupied through World")
     else {
         panic!("the collision fixture must publish its Signal fork");

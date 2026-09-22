@@ -11,6 +11,6 @@ pub use mutation_intent::{
     ApplyEntityAspectPatchIntent, ApplyRelationAspectPatchIntent, BulkEntityCreateIntent,
     BulkRelationCreateIntent, CreateIntent, DeleteEntityIntent, DeleteRelationIntent,
     EntityAspectCreateIntent, EntityMutationIntent, MutationIntent, RelationAspectCreateIntent,
-    RelationMutationIntent, ReplaceEntityIntent, UpdateEntityFieldsIntent,
+    RelationMutationIntent, ReplaceEntityIntent, RevalidateEntityIntent, UpdateEntityFieldsIntent,
     UpdateRelationEndpointsIntent,
 };

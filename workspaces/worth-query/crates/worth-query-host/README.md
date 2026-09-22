@@ -101,8 +101,43 @@ The executable configuration and resource setup live in
 [consumer installation](../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/installation.rs),
 with contribution inventory, ownership, and handler-completeness denials in
 [contribution denials](../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/contribution_denials.rs).
-The synchronous M0 application foundation is complete; broader 9.17.4 consumer
-migration and managed-lifecycle work remains open.
+The synchronous application foundation and branch-local program-evolution path
+are complete. The separately governed dynamic workflow-definition product
+remains outside this surface.
+
+## Branch-Local Program Evolution
+
+One host may roster multiple validated application programs over the same
+installed native contracts. A request enters the public path with
+`application.request(&principal, &scope).on_branch(branch).programs()`:
+
+```rust,ignore
+let programs = application
+    .request(&principal, &scope)
+    .on_branch(branch)
+    .programs();
+let inspection = programs.inspect()?;
+let requirements = programs.compare(&target_revision)?;
+let prepared = programs
+    .adopt(&target_revision)
+    .requirements(&requirements)
+    .prepare(maximum_selection_work)?;
+let outcome = prepared.publish();
+```
+
+Inspection and semantic comparison are descriptive. Preparation consumes exact
+branch, source-program, target-support, target-rule, migration, resource, and
+custody evidence. Only World's performed publication changes the branch's
+selected program. Unpublished outcomes retain exact recovery authority; raw
+revision text, a World handle, or a receipt cannot substitute for it.
+
+`application.branches().program_adoption_coverage(...)` issues bounded live
+coverage for explicit non-atomic broader adoption. The caller may order that
+exact set, but cannot add branches or claim rollback of a performed prefix.
+Support removal is separate:
+`WorthQueryProgramApplicationRuntime::retire_program_support` succeeds only
+after current branches, retained interpretations, and mandatory custody reach
+zero, and its inventory reports stable retained program bytes.
 
 ## Output Demand, Exact Observation, And Live Reads
 
@@ -235,6 +270,9 @@ Host code may:
 - run ordinary installed workflow re-execution;
 - inspect trace-bound lineage and request sparse promotion from an exact
   carrying publication.
+- inspect and adopt a rostered application program on an exact product branch,
+  progress owner-issued branch coverage, recover unpublished adoption, and
+  retire unused program support through typed custody inventories.
 
 Host code must not:
 

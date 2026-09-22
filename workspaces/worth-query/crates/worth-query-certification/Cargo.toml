@@ -18,6 +18,7 @@ worth-query-decl.workspace = true
 worth-query-admission = { path = "../worth-query-admission" }
 worth-query-execution = { path = "../worth-query-execution", features = ["test-durability-faults", "test-primary-graph-faults", "test-world-operation-control"] }
 worth-query-installation = { path = "../worth-query-installation", features = ["certification-query-lookup"] }
+worth-query-package-archive.workspace = true
 worth-proof.workspace = true
 worth-relational.workspace = true
 worth-runtime-bridge.workspace = true
@@ -59,6 +60,10 @@ harness = false
 [[test]]
 name = "program_example_authority"
 path = "tests/program_example_authority.rs"
+
+[[test]]
+name = "application_graph"
+path = "tests/application_graph.rs"
 
 
 [lints]

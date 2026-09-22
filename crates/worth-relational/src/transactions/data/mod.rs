@@ -30,8 +30,9 @@ pub use intents::{
     BulkRelationCreateIntent, CreateIntent, DeleteEntityIntent, DeleteRelationIntent,
     EntityAspectCreateIntent, EntityMutationIntent, MaterializationMutationIntent, MutationIntent,
     RelationAspectCreateIntent, RelationMutationIntent, RematerializeEntityIntent,
-    RematerializeRelationIntent, ReplaceEntityIntent, SuspendEntityMaterializationIntent,
-    SuspendRelationMaterializationIntent, UpdateEntityFieldsIntent, UpdateRelationEndpointsIntent,
+    RematerializeRelationIntent, ReplaceEntityIntent, RevalidateEntityIntent,
+    SuspendEntityMaterializationIntent, SuspendRelationMaterializationIntent,
+    UpdateEntityFieldsIntent, UpdateRelationEndpointsIntent,
 };
 pub use mutation_planning::CommitTopology;
 pub(crate) use outcomes::merge_commit_mutation_plan_token;

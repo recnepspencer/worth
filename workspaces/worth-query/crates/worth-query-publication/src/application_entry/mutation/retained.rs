@@ -6,7 +6,7 @@ use worth_query_declaration::facade::application_operation::{
     ApplicationMutationScopeResolution,
 };
 use worth_query_declaration::facade::application_program::ApplicationProgramDefinition;
-use worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime;
+use worth_query_execution::facade::application_installation::WorthQueryProgramOwner;
 use worth_query_execution::facade::primary_graph::{
     WorthQueryApplicationCommitOutcome, WorthQueryApplicationCommitReceipt,
     WorthQueryApplicationEffectProgram, WorthQueryApplicationIdempotencyBinding,
@@ -83,14 +83,51 @@ where
         {
             return Err(WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired);
         }
-        self.execute_retained_with_commit(|application, program, idempotency| {
-            application.compare_and_commit_application_retained(program, idempotency)
-        })
+        self.execute_retained_with_commit(
+            super::authorization::prepare,
+            |application, program, idempotency| {
+                application.compare_and_commit_application_retained(program, idempotency)
+            },
+        )
     }
 
-    pub fn execute_retained_in_program<Program>(
+    pub fn execute_retained_in_program<Owner>(
         self,
-        application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+        application: &'application Owner,
+    ) -> Result<
+        WorthQueryApplicationRetainedMutationOutcome<
+            <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
+            <Intent::Binding as ApplicationMutationBinding<Schema>>::Result,
+        >,
+        WorthQueryApplicationRequestMutationDenial,
+    >
+    where
+        Owner: WorthQueryProgramOwner<Schema>,
+    {
+        if !std::ptr::eq(application.runtime(), self.request.application) {
+            return Err(WorthQueryApplicationRequestMutationDenial::ApplicationProgramMismatch);
+        }
+        if !application.contains_action::<Intent::Binding>() {
+            return Err(WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired);
+        }
+        self.execute_retained_with_commit(
+            super::authorization::prepare,
+            |_, program, idempotency| {
+                application.compare_and_commit_program_action_retained::<Intent::Binding>(
+                    program,
+                    idempotency,
+                )
+            },
+        )
+    }
+
+    /// Executes retained work under the branch-selected installed program.
+    /// A removed action is presented through the initial owner only so the
+    /// occurrence gate can return its inactive-program denial; it cannot
+    /// commit or consume the retained work.
+    pub fn execute_retained_in_selected_program<Program>(
+        self,
+        application: &'application worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime<Schema, Program>,
     ) -> Result<
         WorthQueryApplicationRetainedMutationOutcome<
             <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
@@ -104,17 +141,45 @@ where
         if !std::ptr::eq(application.runtime(), self.request.application) {
             return Err(WorthQueryApplicationRequestMutationDenial::ApplicationProgramMismatch);
         }
-        if !application.contains_action::<Intent::Binding>() {
+        let selected = self
+            .request
+            .application
+            .on_branch(self.request.branch)
+            .select()
+            .map_err(WorthQueryApplicationRequestMutationDenial::ProductSelection)?;
+        let owner = application
+            .selected_program_owner(&selected)
+            .map_err(super::selected_program::map_selected_program_owner_denial)?;
+        let selected_owns_action = owner.contains_action::<Intent::Binding>();
+        if !selected_owns_action && !application.contains_action::<Intent::Binding>() {
             return Err(WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired);
         }
-        self.execute_retained_with_commit(|_, program, idempotency| {
-            application
-                .compare_and_commit_program_action_retained::<Intent::Binding>(program, idempotency)
-        })
+        self.execute_retained_with_commit(
+            move |request| super::authorization::prepare_selected(request, selected),
+            |_, program, idempotency| {
+                if selected_owns_action {
+                    owner.compare_and_commit_program_action_retained::<Intent::Binding>(
+                        program,
+                        idempotency,
+                    )
+                } else {
+                    application.compare_and_commit_program_action_retained::<Intent::Binding>(
+                        program,
+                        idempotency,
+                    )
+                }
+            },
+        )
     }
 
     fn execute_retained_with_commit(
         self,
+        prepare: impl FnOnce(
+            &mut Self,
+        ) -> Result<
+            super::authorization::PreparedMutation<Schema, Intent::Binding>,
+            WorthQueryApplicationRequestMutationDenial,
+        >,
         commit: impl FnOnce(
             &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
             WorthQueryApplicationEffectProgram<
@@ -134,7 +199,7 @@ where
     > {
         let retained: RefCell<Option<Arc<RetainedRead>>> = RefCell::new(None);
         let outcome: Outcome<Schema, Intent> = self.execute_with_preparation_and_commit(
-            super::authorization::prepare,
+            prepare,
             |application, program, idempotency| match commit(application, program, idempotency) {
                 WorthQueryApplicationRetainedCommitOutcome::Committed {
                     receipt,

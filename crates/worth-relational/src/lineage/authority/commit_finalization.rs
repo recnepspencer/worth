@@ -167,6 +167,7 @@ impl LineageFinalizationPlan {
                 | MutationIntent::Relation(_)
                 | MutationIntent::Entity(EntityMutationIntent::UpdateFields(_))
                 | MutationIntent::Entity(EntityMutationIntent::ApplyAspectPatch(_))
+                | MutationIntent::Entity(EntityMutationIntent::Revalidate(_))
                 | MutationIntent::Materialization(_) => {}
             }
         }

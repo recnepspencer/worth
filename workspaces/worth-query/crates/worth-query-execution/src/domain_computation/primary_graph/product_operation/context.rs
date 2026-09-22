@@ -13,6 +13,10 @@ pub struct WorthQuerySelectedProductOperation<'runtime, Schema> {
     product: WorthQueryProductBranchLease,
     application_basis:
         super::super::application_query::resource_lifecycle::WorthQueryApplicationBasisLease,
+    selected_program: Result<
+        super::super::WorthQuerySelectedProgramInspection,
+        super::super::WorthQuerySelectedProgramInspectionDenial,
+    >,
 }
 
 /// Public application entry naming one product occurrence. It performs no
@@ -75,11 +79,39 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         if product.observation().owner_identity() != self.product_runtime.owner.owner_identity() {
             return Err(WorthQueryProductBranchAdmissionDenial::ForeignOwner);
         }
-        let application_basis = self.retain_product_application_basis(product.observation())?;
+        let mut application_basis = self.retain_product_application_basis(product.observation())?;
+        let selected_program = self.bind_selected_program_interpretation(
+            product.relational_basis().observation().version_id(),
+            &mut application_basis,
+        )?;
         Ok(WorthQuerySelectedProductOperation {
             application: self,
             product,
             application_basis,
+            selected_program,
+        })
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn on_product_for_adoption_recovery(
+        &self,
+        product: WorthQueryProductBranchLease,
+    ) -> Result<
+        WorthQuerySelectedProductOperation<'_, Schema>,
+        WorthQueryProductBranchAdmissionDenial,
+    > {
+        if product.observation().owner_identity() != self.product_runtime.owner.owner_identity() {
+            return Err(WorthQueryProductBranchAdmissionDenial::ForeignOwner);
+        }
+        let application_basis = self.retain_product_application_basis(product.observation())?;
+        let selected_program = super::super::product_activation::inspect_selected_program(
+            self,
+            product.relational_basis().observation().version_id(),
+        );
+        Ok(WorthQuerySelectedProductOperation {
+            application: self,
+            product,
+            application_basis,
+            selected_program,
         })
     }
 }
@@ -103,6 +135,19 @@ where
 }
 
 impl<'runtime, Schema> WorthQuerySelectedProductOperation<'runtime, Schema> {
+    /// Inspects the rostered program carried by this exact selected occurrence.
+    pub fn inspect_selected_program(
+        &self,
+    ) -> Result<
+        super::super::WorthQuerySelectedProgramInspection,
+        super::super::WorthQuerySelectedProgramInspectionDenial,
+    >
+    where
+        Schema: ApplicationSchema,
+    {
+        self.selected_program.clone()
+    }
+
     pub fn product(&self) -> &WorthQueryProductBranchLease {
         &self.product
     }

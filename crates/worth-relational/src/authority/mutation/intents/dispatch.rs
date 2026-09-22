@@ -6,7 +6,7 @@ use super::{
     apply_entity_aspect_patch, apply_relation_aspect_patch, bulk_create_entities,
     bulk_create_relations, create_entity, create_entity_aspects, create_relation,
     create_relation_aspects, delete_entity, delete_relation, materialization, replace_entity,
-    update_entity_fields, update_relation_endpoints,
+    revalidate_entity, update_entity_fields, update_relation_endpoints,
 };
 use crate::authority::mutation::outcomes::MutationOutcome;
 use crate::authority::mutation::MutationWorkspace;
@@ -34,6 +34,9 @@ pub(crate) fn dispatch_intent(
         }
         MutationIntent::Entity(EntityMutationIntent::Delete(spec)) => {
             delete_entity::apply(spec, workspace)
+        }
+        MutationIntent::Entity(EntityMutationIntent::Revalidate(spec)) => {
+            revalidate_entity::apply(spec, workspace)
         }
         MutationIntent::Create(CreateIntent::Relation(spec)) => {
             create_relation::apply(spec, workspace)

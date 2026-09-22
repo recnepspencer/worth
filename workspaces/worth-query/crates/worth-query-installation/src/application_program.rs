@@ -1,11 +1,21 @@
 use std::collections::BTreeSet;
 use std::marker::PhantomData;
 
+mod adoption;
 mod correspondence;
 mod derived_artifact;
 mod evaluated_requirement;
 mod external_input;
 mod scoped_action;
+mod support;
+
+#[cfg(test)]
+mod program_support_fixture;
+pub use adoption::{
+    WorthQueryProgramAddedRule, WorthQueryProgramAdoptionRequirements,
+    WorthQueryProgramAdoptionRequirementsDenial, WorthQueryProgramCustodyInventoryKind,
+    WorthQueryProgramCustodyInventoryRequirement, WorthQueryProgramValidationScope,
+};
 pub use correspondence::{
     WorthQueryCorrespondedAction, WorthQueryInstalledRepeatedOptionalMember,
     WorthQueryRepeatedOptionalMemberState,
@@ -17,11 +27,17 @@ pub use external_input::{
     WorthQueryInstalledExternalInputProvider,
 };
 pub use scoped_action::WorthQueryInstalledScopedAction;
+pub use support::{
+    WorthQueryProgramRuleKey, WorthQueryProgramSupportAdmission, WorthQueryProgramSupportDenial,
+    WorthQueryProgramSupportEntry, WorthQueryProgramSupportPartialRetirementInventory,
+    WorthQueryProgramSupportRetirementDenial, WorthQueryProgramSupportRetirementInventory,
+    WorthQueryProgramSupportRoster,
+};
 
 use worth_query_declaration::facade::application_program::{
     ApplicationActionDeclaration, ApplicationConnectionDeclaration, ApplicationFeatureDeclaration,
-    ApplicationProgramDefinition, ApplicationProgramIdentity, ApplicationProgramRuleDeclaration,
-    ValidatedApplicationProgram,
+    ApplicationProgramDefinition, ApplicationProgramIdentity, ApplicationProgramRevision,
+    ApplicationProgramRuleDeclaration, ValidatedApplicationProgram,
 };
 use worth_query_declaration::facade::application_schema::{
     ApplicationSchema, ApplicationSchemaBindingIdentity,
@@ -31,11 +47,22 @@ use worth_query_declaration::facade::application_schema::{
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationProgramInstallationDenial {
     subject: String,
+    support_denial: Option<WorthQueryProgramSupportDenial>,
 }
 
 impl WorthQueryApplicationProgramInstallationDenial {
     pub fn subject(&self) -> &str {
         &self.subject
+    }
+
+    /// Hands back the structured support refusal this denial was raised from.
+    ///
+    /// Installation denials that never reached support admission — an
+    /// undeclared program binding, for one — carry no support reason, so a
+    /// caller reading `None` learns that the refusal happened elsewhere rather
+    /// than that the reason was lost.
+    pub const fn support_denial(&self) -> Option<&WorthQueryProgramSupportDenial> {
+        self.support_denial.as_ref()
     }
 }
 
@@ -55,13 +82,47 @@ impl WorthQueryApplicationProgramInstallationDenial {
     fn new(subject: impl Into<String>) -> Self {
         Self {
             subject: subject.into(),
+            support_denial: None,
         }
+    }
+}
+
+impl From<WorthQueryProgramSupportDenial> for WorthQueryApplicationProgramInstallationDenial {
+    /// Renders one support refusal as the installation subject this boundary
+    /// has always reported, while retaining the structured reason so a caller
+    /// can act on the refusal instead of parsing prose.
+    fn from(denial: WorthQueryProgramSupportDenial) -> Self {
+        Self {
+            subject: support_denial_subject(&denial),
+            support_denial: Some(denial),
+        }
+    }
+}
+
+/// Names the installation subject each support refusal has always reported.
+///
+/// Every variant is answered by name: a new support refusal must decide its
+/// installation subject here rather than inherit a catch-all rendering.
+fn support_denial_subject(denial: &WorthQueryProgramSupportDenial) -> String {
+    match denial {
+        WorthQueryProgramSupportDenial::EmptyProgram { program } => program.as_str().to_owned(),
+        WorthQueryProgramSupportDenial::UnsupportedRuleContract { rule, .. } => {
+            rule.identity().to_owned()
+        }
+        WorthQueryProgramSupportDenial::UnsupportedAction { binding, .. } => binding.clone(),
+        WorthQueryProgramSupportDenial::UndeclaredInstalledRule { rule } => {
+            format!("undeclared installed rule: {}", rule.identity())
+        }
+        WorthQueryProgramSupportDenial::DuplicateProgram { .. } => denial.to_string(),
+        WorthQueryProgramSupportDenial::UnrosteredProgram { .. } => denial.to_string(),
+        WorthQueryProgramSupportDenial::ForeignSchemaBinding { .. } => denial.to_string(),
     }
 }
 
 /// Installed program meaning affine to one schema installation.
 pub struct WorthQueryInstalledApplicationProgram<Schema, Program> {
     identity: ApplicationProgramIdentity,
+    revision: ApplicationProgramRevision,
     schema_binding: ApplicationSchemaBindingIdentity,
     features: Box<[ApplicationFeatureDeclaration]>,
     actions: Box<[ApplicationActionDeclaration]>,
@@ -73,6 +134,10 @@ pub struct WorthQueryInstalledApplicationProgram<Schema, Program> {
 impl<Schema, Program> WorthQueryInstalledApplicationProgram<Schema, Program> {
     pub fn identity(&self) -> &ApplicationProgramIdentity {
         &self.identity
+    }
+    /// Canonical content identity of the validated meaning installed here.
+    pub fn revision(&self) -> &ApplicationProgramRevision {
+        &self.revision
     }
     pub fn schema_binding(&self) -> &ApplicationSchemaBindingIdentity {
         &self.schema_binding
@@ -179,6 +244,8 @@ impl<Schema, Program> WorthQueryInstalledApplicationProgram<Schema, Program> {
     }
 }
 
+/// Installs the single program a host runs, which must own the installed rule
+/// catalog by itself. This is exactly the one-entry roster case.
 pub fn install_application_program<Schema, Program>(
     program: ValidatedApplicationProgram<Schema, Program>,
     installed_schema: &crate::facade::WorthQueryInstalledApplicationSchema<Schema>,
@@ -190,82 +257,47 @@ where
     Schema: ApplicationSchema,
     Program: ApplicationProgramDefinition<Schema>,
 {
-    if program.features().is_empty() {
-        return Err(WorthQueryApplicationProgramInstallationDenial {
-            subject: program.identity().as_str().to_owned(),
+    let roster = WorthQueryProgramSupportAdmission::for_installed_schema(installed_schema)
+        .support(&program)?
+        .close()?;
+    Ok(install_rostered_application_program(
+        program,
+        installed_schema,
+        &roster,
+    )?)
+}
+
+/// Installs one program a host already admitted into its support roster.
+///
+/// The roster carries the proof that every installed rule has a declaring
+/// owner, so a rostered program may legally declare fewer rules than the
+/// catalog holds while a peer program declares the rest.
+pub fn install_rostered_application_program<Schema, Program>(
+    program: ValidatedApplicationProgram<Schema, Program>,
+    installed_schema: &crate::facade::WorthQueryInstalledApplicationSchema<Schema>,
+    roster: &WorthQueryProgramSupportRoster<Schema>,
+) -> Result<WorthQueryInstalledApplicationProgram<Schema, Program>, WorthQueryProgramSupportDenial>
+where
+    Schema: ApplicationSchema,
+    Program: ApplicationProgramDefinition<Schema>,
+{
+    let schema_binding = installed_schema.binding_identity();
+    if roster.schema_binding() != &schema_binding {
+        return Err(WorthQueryProgramSupportDenial::ForeignSchemaBinding {
+            rostered: roster.schema_binding().clone(),
+            presented: schema_binding,
         });
     }
-    for rule in program.rules() {
-        let installed = installed_schema
-            .invariants()
-            .descriptors()
-            .any(|candidate| {
-                candidate.identifier() == rule.identity()
-                    && candidate.major() == rule.major()
-                    && candidate.minor() == rule.minor()
-                    && candidate.execution_point() == rule.execution_point()
-            });
-        if !installed {
-            return Err(WorthQueryApplicationProgramInstallationDenial {
-                subject: rule.identity().to_owned(),
-            });
-        }
-    }
-    let declared_rules = program
-        .rules()
-        .iter()
-        .map(|rule| {
-            (
-                rule.identity(),
-                rule.major(),
-                rule.minor(),
-                rule.execution_point(),
-            )
-        })
-        .collect::<BTreeSet<_>>();
-    let installed_rules = installed_schema
-        .invariants()
-        .descriptors()
-        .map(|rule| {
-            (
-                rule.identifier(),
-                rule.major(),
-                rule.minor(),
-                rule.execution_point(),
-            )
-        })
-        .collect::<BTreeSet<_>>();
-    if let Some(undeclared) = installed_rules.difference(&declared_rules).next() {
-        return Err(WorthQueryApplicationProgramInstallationDenial {
-            subject: format!("undeclared installed rule: {}", undeclared.0),
+    if roster.entry(program.revision()).is_none() {
+        return Err(WorthQueryProgramSupportDenial::UnrosteredProgram {
+            program: program.identity().clone(),
+            revision: program.revision().clone(),
         });
-    }
-    for action in program.actions() {
-        let installed = match action.mutation_binding_type() {
-            Some(binding_type) => {
-                installed_schema
-                    .installed_mutation_binding_inventory()
-                    .any(|binding| {
-                        binding.binding_type() == binding_type
-                            && binding.identity() == action.binding()
-                    })
-            }
-            None => installed_schema.member_provenance.admits_program_operation(
-                action.binding(),
-                action.operation_type(),
-                action.operation_input_type(),
-                action.operation_input_identity(),
-            ),
-        };
-        if !installed {
-            return Err(WorthQueryApplicationProgramInstallationDenial {
-                subject: action.binding().to_owned(),
-            });
-        }
     }
     Ok(WorthQueryInstalledApplicationProgram {
         identity: program.identity().clone(),
-        schema_binding: installed_schema.binding_identity(),
+        revision: program.revision().clone(),
+        schema_binding,
         features: program.features().to_vec().into_boxed_slice(),
         actions: program.actions().to_vec().into_boxed_slice(),
         connections: program.connections().to_vec().into_boxed_slice(),

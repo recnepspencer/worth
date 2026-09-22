@@ -26,6 +26,21 @@ pub enum ApplicationCollectionIncompletePosture {
     RetainPending,
 }
 
+impl ApplicationCollectionIncompletePosture {
+    /// Names this posture in the durable canonical manifest record that the
+    /// program revision digests.
+    ///
+    /// The token is decided here rather than derived from the Rust variant
+    /// spelling, so renaming a variant is a compile-time-visible decision
+    /// instead of a silent change of every program's content identity.
+    pub const fn canonical_token(self) -> &'static str {
+        match self {
+            Self::ExcludeIncomplete => "ExcludeIncomplete",
+            Self::RetainPending => "RetainPending",
+        }
+    }
+}
+
 pub trait ApplicationDerivedCollection<Schema, Feature>: Sized + 'static
 where
     Schema: ApplicationSchema,

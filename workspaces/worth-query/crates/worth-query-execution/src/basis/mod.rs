@@ -1,5 +1,6 @@
 mod product_branch;
 
+pub(crate) use product_branch::WorthQuerySourceProgramResolver;
 pub use product_branch::{
     WorthQueryProductBranch, WorthQueryProductBranchAdmissionDenial,
     WorthQueryProductBranchCreateError, WorthQueryProductBranchCreationRecovery,

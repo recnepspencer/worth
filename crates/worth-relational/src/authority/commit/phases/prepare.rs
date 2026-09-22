@@ -73,6 +73,18 @@ fn sparse_entity_slots_for_plan(
                     .or_insert_with(BTreeSet::new)
                     .insert(spec.entity_id.slot_index());
             }
+            // A revalidation demand writes no field, but it marks the
+            // record's slot touched, and a touched slot must be materialized
+            // in the working state. Naming its slot here keeps the sparse
+            // clone both correct and narrow: without this arm the plan falls
+            // back to cloning every slot in the partition to cover one record
+            // the demand never changed.
+            MutationIntent::Entity(EntityMutationIntent::Revalidate(spec)) => {
+                slots_by_partition
+                    .entry(spec.entity_id.partition_id)
+                    .or_insert_with(BTreeSet::new)
+                    .insert(spec.entity_id.slot_index());
+            }
             MutationIntent::Create(_)
                 if matches!(clone_mode, PartitionCloneMode::GraphSparseEntities) => {}
             _ => return None,
@@ -123,7 +135,10 @@ fn sparse_relation_overlay_partitions_for_plan(
             }
             MutationIntent::Create(CreateIntent::Entity(_))
             | MutationIntent::Create(CreateIntent::BulkEntities(_))
-            | MutationIntent::Entity(EntityMutationIntent::UpdateFields(_)) => {}
+            | MutationIntent::Entity(EntityMutationIntent::UpdateFields(_))
+            // A demand touches one entity record and no adjacency, so it adds
+            // no relation overlay partition and must not veto the sparse path.
+            | MutationIntent::Entity(EntityMutationIntent::Revalidate(_)) => {}
             _ => return None,
         }
     }

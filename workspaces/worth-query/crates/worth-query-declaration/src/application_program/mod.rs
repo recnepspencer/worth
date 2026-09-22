@@ -7,6 +7,7 @@ mod connection;
 mod derived_artifact;
 mod derived_collection;
 mod evaluated_requirement;
+mod evolution;
 mod external_input;
 mod feature;
 mod identity;
@@ -19,6 +20,7 @@ mod output_posture;
 mod program;
 mod program_outputs;
 mod rule;
+mod semantic_encoding;
 
 #[cfg(test)]
 mod program_tests;
@@ -49,6 +51,13 @@ pub use derived_collection::{
 pub use evaluated_requirement::{
     ApplicationEvaluatedRequirement, ApplicationEvaluatedRequirementRule,
     ApplicationRequirementSubmissionDenial,
+};
+pub(in crate::application_program) use evolution::ApplicationProgramRevisionBudgetDenial;
+pub use evolution::{
+    ApplicationProgramMigrationAssessmentRequirement, ApplicationProgramRevision,
+    ApplicationSemanticChange, ApplicationSemanticChangeKind, ApplicationSemanticDescription,
+    ApplicationSemanticDiff, ApplicationSemanticDiffDenial, ApplicationSemanticFact,
+    ApplicationSemanticFamily,
 };
 pub use external_input::{ApplicationExternalInputProvider, ApplicationExternalInputResolution};
 pub use feature::{

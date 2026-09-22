@@ -5,8 +5,29 @@ use super::WorthQueryPrimaryGraphApplicationRuntime;
 mod attempt_registration;
 pub(in crate::domain_computation::primary_graph) use attempt_registration::WorthQueryApplicationAttemptOperationControl;
 pub use attempt_registration::WorthQueryApplicationAttemptRegistrationPause;
+pub use attempt_registration::WorthQueryApplicationCandidatePreparationPause;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    /// Observes the once-published activation-record identity for certification.
+    #[doc(hidden)]
+    pub fn program_activation_entity_for_test(
+        &self,
+    ) -> Option<worth_relational::facade::identity::EntityId> {
+        self.installed_program_support()?.activation().published()
+    }
+
+    /// Parks real application candidates after Relational preparation and
+    /// before any owner effect or World product comparison.
+    #[doc(hidden)]
+    pub fn pause_after_application_candidate_preparation_for_test(
+        &self,
+        attempts: std::num::NonZeroUsize,
+    ) -> WorthQueryApplicationCandidatePreparationPause {
+        self.primary_provider
+            .application_attempt_operation_control
+            .pause_after_candidate_preparation(attempts)
+    }
+
     /// Parks real provider-registered application attempts for certification.
     #[doc(hidden)]
     pub fn pause_after_application_attempt_registration_for_test(
@@ -75,10 +96,76 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
             .expect("the installed World remains inspectable")
     }
 
+    /// Runs one certification action while every Query owner-cleanup slot is reserved.
+    #[doc(hidden)]
+    pub fn with_owner_cleanup_capacity_exhausted_for_test<Output>(
+        &self,
+        work: impl FnOnce() -> Output,
+    ) -> Output {
+        let available = self
+            .product_runtime
+            .owner_cleanup
+            .available_capacity_for_test();
+        let mut held = Vec::with_capacity(available);
+        for _ in 0..available {
+            held.push(
+                self.product_runtime
+                    .reserve_owner_cleanup_for_application()
+                    .expect("reported cleanup capacity must remain reservable"),
+            );
+        }
+        assert!(
+            self.product_runtime
+                .reserve_owner_cleanup_for_application()
+                .is_err(),
+            "the bounded cleanup owner must be exhausted before certification work"
+        );
+        let output = work();
+        drop(held);
+        output
+    }
+
     /// Counts branches installed in Query's bounded activation index.
     #[doc(hidden)]
     pub fn indexed_product_branch_count_for_test(&self) -> usize {
         self.product_runtime.activations.installed_branch_count()
+    }
+
+    /// Holds the exact fork/retirement exclusion barrier for one program while
+    /// certification exercises a concurrent branch-creation request.
+    #[doc(hidden)]
+    pub fn with_program_retirement_barrier_for_test<Output>(
+        &self,
+        revision: &worth_query_declaration::facade::application_program::ApplicationProgramRevision,
+        work: impl FnOnce() -> Output,
+    ) -> Output {
+        let barrier = self
+            .product_runtime
+            .activations
+            .begin_program_retirement(revision)
+            .expect("certification starts the barrier without an in-flight fork");
+        let output = work();
+        drop(barrier);
+        output
+    }
+
+    /// Holds one revision-keyed fork reservation while certification attempts
+    /// retirement, then releases it as the real branch-creation path does at a
+    /// terminal World outcome.
+    #[doc(hidden)]
+    pub fn with_program_fork_reservation_for_test<Output>(
+        &self,
+        revision: &worth_query_declaration::facade::application_program::ApplicationProgramRevision,
+        work: impl FnOnce() -> Output,
+    ) -> Output {
+        let reservation = self
+            .product_runtime
+            .activations
+            .reserve_for_source_program(Some(revision))
+            .expect("certification reserves an active program fork");
+        let output = work();
+        drop(reservation);
+        output
     }
 
     /// Counts definitions retained by the sealed Bridge owner.

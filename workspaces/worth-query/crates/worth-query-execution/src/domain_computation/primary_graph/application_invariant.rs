@@ -14,10 +14,12 @@ pub use worth_relational::facade::runtime::{
 
 mod access_denial;
 mod prepared_scope;
+mod program_selection;
 mod registration;
 mod typed_binding;
 mod typed_view;
 pub use access_denial::{WorthQueryInvariantAccessDenial, WorthQueryInvariantAccessDenialKind};
+pub(super) use program_selection::WorthQueryProgramRuleSelection;
 pub(super) use registration::ErasedApplicationInvariantRule;
 pub use typed_binding::{
     WorthQueryApplicationInvariantEntityBinding, WorthQueryApplicationInvariantFieldBinding,

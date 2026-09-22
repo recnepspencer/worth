@@ -123,7 +123,7 @@ impl super::BranchBoundRelationalTransaction {
         let effects = drained
             .into_iter()
             .flat_map(|batch| batch.intents.into_iter())
-            .map(|intent| intent.rollback_effect())
+            .filter_map(|intent| intent.rollback_effect())
             .collect::<Vec<_>>();
         let summary = RollbackSummary::from_effects(&effects);
         Ok(RollbackOutcome {

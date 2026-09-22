@@ -10,6 +10,7 @@ mod program_output_settlement;
 mod program_output_work;
 mod request;
 mod retained;
+mod selected_program;
 
 pub use authorization_assessment::WorthQueryCurrentAuthorizationAssessment;
 pub use discovered::{
@@ -17,6 +18,10 @@ pub use discovered::{
     WorthQueryDiscoveredProgramOutputHandle, WorthQueryDiscoveredProgramOutputProgress,
     WorthQueryDiscoveredProgramOutputSettlement, WorthQueryPerformedDiscoveredApplicationMutation,
     WorthQueryStartedDiscoveredOutputs,
+};
+pub use execution::{
+    WorthQueryApplicationProgramMigrationPreparationDenial,
+    WorthQueryApplicationProgramMigrationPreparationOutcome,
 };
 pub use outcome::WorthQueryApplicationMutationOutcome;
 pub use performed::{

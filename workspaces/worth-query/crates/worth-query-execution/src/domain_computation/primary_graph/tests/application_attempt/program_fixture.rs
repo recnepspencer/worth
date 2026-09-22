@@ -4,7 +4,7 @@ use worth_query_declaration::facade::application_schema::{
 
 use super::super::fixture::{
     MutationFreeEmitInput, MutationFreeEmitOperation, MutationFreeExternalEffect,
-    MutationFreeNotice,
+    MutationFreeNotice, ProgramRequiredInput, ProgramRequiredOperation,
 };
 use super::{AccountStatus, TouchAccountOperation};
 use crate::domain_computation::primary_graph::{
@@ -26,6 +26,60 @@ pub(super) type MutationFreeProgram = WorthQueryApplicationEffectProgram<
     MutationFreeEmitInput,
     Account,
 >;
+pub(super) type ProgramRequiredProgram = WorthQueryApplicationEffectProgram<
+    Schema,
+    ProgramRequiredOperation,
+    ProgramRequiredInput,
+    Account,
+>;
+
+/// An admitted effect program for the one operation the fixture schema marks
+/// program-required, which is the operation the fixture roster acts through.
+pub(super) fn admitted_program_required_program(
+    world: &World,
+    principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, u64>,
+    account: &WorthQueryApplicationEntityIdentity<Schema, Account>,
+    request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+    replacement: &str,
+) -> ProgramRequiredProgram {
+    let operation = world
+        .application
+        .installed_schema()
+        .installed_operation(ProgramRequiredOperation::reference())
+        .unwrap();
+    let admission = world
+        .selected_product()
+        .authorize_operation(
+            principal,
+            account,
+            &operation,
+            TypedMutationPreconditions::new(),
+            request,
+        )
+        .unwrap();
+    let (_, projection, _) = world
+        .invariant
+        .project_admitted_operation(&admission, |reader, projected| {
+            reader
+                .require_decision_field(projected, AccountStatus::reference())
+                .unwrap();
+        })
+        .unwrap()
+        .into_parts();
+    let reads = world
+        .application
+        .begin_projected_application_read_attempt(admission, projection)
+        .unwrap();
+    let mut effects = reads
+        .complete_projected_dependencies()
+        .unwrap()
+        .begin_effect_program();
+    let account = effects.existing_entity(account).unwrap();
+    effects
+        .write_field(&account, AccountStatus::reference(), replacement.to_owned())
+        .unwrap();
+    effects.finish().unwrap()
+}
 
 pub(super) fn admitted_mutation_free_program(
     world: &World,

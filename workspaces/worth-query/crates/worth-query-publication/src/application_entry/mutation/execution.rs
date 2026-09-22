@@ -2,8 +2,7 @@ use worth_query_declaration::facade::application_operation::{
     ApplicationCapabilityMutationBinding, ApplicationMutationBinding, ApplicationMutationIntent,
     ApplicationMutationScopeBinding, ApplicationMutationScopeResolution,
 };
-use worth_query_declaration::facade::application_program::ApplicationProgramDefinition;
-use worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime;
+use worth_query_execution::facade::application_installation::WorthQueryProgramOwner;
 use worth_query_execution::facade::primary_graph::{
     HandlerResult, MutationHandlerExecutionDenial, WorthQueryAdmittedApplicationOperation,
     WorthQueryApplicationCommitOutcome, WorthQueryApplicationEffectProgram,
@@ -16,6 +15,21 @@ use super::{
     WorthQueryApplicationMutationOutcome, WorthQueryApplicationMutationRequestWithIdempotency,
 };
 use crate::application_entry::WorthQueryApplicationRequestMutationDenial;
+
+#[derive(Debug)]
+pub enum WorthQueryApplicationProgramMigrationPreparationDenial {
+    Request(WorthQueryApplicationRequestMutationDenial),
+    Migration(
+        worth_query_execution::facade::primary_graph::WorthQueryProgramMigrationPreparationDenial,
+    ),
+}
+
+pub enum WorthQueryApplicationProgramMigrationPreparationOutcome<DomainDenial> {
+    Prepared(worth_query_execution::facade::primary_graph::WorthQueryPreparedProgramMigration),
+    DomainDenied(DomainDenial),
+    Cancelled,
+    DeadlineExceeded,
+}
 
 impl<'application, 'principal, 'scope, 'key, Schema, Intent, SourcePreparation>
     WorthQueryApplicationMutationRequestWithIdempotency<
@@ -37,6 +51,70 @@ where
             <Intent::Binding as ApplicationMutationBinding<Schema>>::PrincipalIdentity,
         >,
 {
+    /// Executes this installed mutation handler as a candidate for the
+    /// target program's atomic branch adoption. No operation is committed and
+    /// no operation idempotency or outbox record is registered here.
+    pub fn prepare_program_migration(
+        mut self,
+        target: &worth_query_declaration::facade::application_program::ApplicationProgramRevision,
+    ) -> Result<
+        WorthQueryApplicationProgramMigrationPreparationOutcome<
+            <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
+        >,
+        WorthQueryApplicationProgramMigrationPreparationDenial,
+    > {
+        let admitted = self
+            .request
+            .application
+            .admit_program_migration::<Intent::Binding>(target)
+            .map_err(WorthQueryApplicationProgramMigrationPreparationDenial::Migration)?;
+        let prepared = super::authorization::prepare(&mut self)
+            .map_err(WorthQueryApplicationProgramMigrationPreparationDenial::Request)?;
+        let completed = match self
+            .request
+            .application
+            .execute_mutation_handler::<Intent::Binding>(
+                self.request.intent.input(),
+                self.key,
+                &prepared.principal_identity,
+                prepared.admission,
+            )
+            .map_err(|denial| {
+                WorthQueryApplicationProgramMigrationPreparationDenial::Request(
+                    WorthQueryApplicationRequestMutationDenial::Handler(denial),
+                )
+            })? {
+            HandlerResult::Completed(completed) => completed,
+            HandlerResult::DomainDenied(denial) => {
+                return Ok(
+                    WorthQueryApplicationProgramMigrationPreparationOutcome::DomainDenied(denial),
+                );
+            }
+            HandlerResult::ExecutionDenied(denial) => {
+                return Err(
+                    WorthQueryApplicationProgramMigrationPreparationDenial::Request(
+                        WorthQueryApplicationRequestMutationDenial::Handler(
+                            MutationHandlerExecutionDenial::Handler(denial),
+                        ),
+                    ),
+                );
+            }
+            HandlerResult::Cancelled => {
+                return Ok(WorthQueryApplicationProgramMigrationPreparationOutcome::Cancelled);
+            }
+            HandlerResult::DeadlineExceeded => {
+                return Ok(
+                    WorthQueryApplicationProgramMigrationPreparationOutcome::DeadlineExceeded,
+                );
+            }
+        };
+        self.request
+            .application
+            .seal_program_migration(admitted, completed)
+            .map(WorthQueryApplicationProgramMigrationPreparationOutcome::Prepared)
+            .map_err(WorthQueryApplicationProgramMigrationPreparationDenial::Migration)
+    }
+
     pub fn execute(
         self,
     ) -> Result<
@@ -62,9 +140,9 @@ where
     }
 
     /// Executes one action through the exact installed program that owns it.
-    pub fn execute_in_program<Program>(
+    pub fn execute_in_program<Owner>(
         self,
-        application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+        application: &'application Owner,
     ) -> Result<
         WorthQueryApplicationMutationOutcome<
             <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
@@ -73,7 +151,7 @@ where
         WorthQueryApplicationRequestMutationDenial,
     >
     where
-        Program: ApplicationProgramDefinition<Schema>,
+        Owner: WorthQueryProgramOwner<Schema>,
     {
         if !std::ptr::eq(application.runtime(), self.request.application) {
             return Err(WorthQueryApplicationRequestMutationDenial::ApplicationProgramMismatch);
@@ -91,9 +169,9 @@ where
     }
 
     /// Executes one capability-owned action through its exact installed program.
-    pub fn execute_capability_in_program<Program>(
+    pub fn execute_capability_in_program<Owner>(
         self,
-        application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+        application: &'application Owner,
     ) -> Result<
         WorthQueryApplicationMutationOutcome<
             <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
@@ -102,7 +180,7 @@ where
         WorthQueryApplicationRequestMutationDenial,
     >
     where
-        Program: ApplicationProgramDefinition<Schema>,
+        Owner: WorthQueryProgramOwner<Schema>,
         Intent::Binding: ApplicationCapabilityMutationBinding<Schema>,
         <Intent::Binding as ApplicationMutationBinding<Schema>>::Input:
             worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest<

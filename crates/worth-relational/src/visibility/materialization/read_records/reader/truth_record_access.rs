@@ -178,51 +178,20 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         kind_id: crate::identity::data::KindId,
         version_id: crate::identity::data::VersionId,
     ) -> Vec<EntityReadRecord> {
-        let mut records = Vec::new();
-        let current_version = VersionSource::current_version_id(self.runtime);
-        let Some(partition) = state.get_partition(partition_id) else {
-            return records;
-        };
-        if version_id == current_version {
-            for slot in partition.entity_arena.live_bitset.iter_set_slots() {
-                if !slot_kind_matches_current(&partition.entity_arena, slot, kind_id) {
-                    continue;
-                }
-                if let Some(record) = materialize_current_authoritative_entity_record(
-                    registry,
-                    partition,
-                    partition_id,
-                    slot,
-                ) {
-                    records.push(record);
-                }
-            }
-        } else {
-            self.runtime.services.instrumentation.count(|counters| {
-                counters.visibility_entity_slot_scans += partition.entity_arena.slot_count();
-            });
-            for slot in partition.entity_arena.occupied_slots() {
-                if !entity_slot_matches_kind_at_version(
-                    partition,
-                    slot,
-                    kind_id,
-                    version_id,
-                    current_version,
-                ) {
-                    continue;
-                }
-                if let Some(record) = materialize_authoritative_entity_record_at_version(
-                    registry,
-                    partition,
-                    partition_id,
-                    slot,
-                    version_id,
-                ) {
-                    records.push(record);
-                }
-            }
-        }
-        records
+        // One scan implementation. An unbounded kind read is the bounded one
+        // with a budget nothing can reach, so the two can never drift apart in
+        // what they consider visible.
+        let mut scan = super::truth_kind_scan::EntityKindScan::new(usize::MAX);
+        self.scan_entity_kind_in_partition(
+            state,
+            registry,
+            partition_id,
+            kind_id,
+            version_id,
+            &mut scan,
+        )
+        .expect("an unbounded kind scan cannot exhaust usize::MAX work");
+        scan.into_records()
     }
 
     pub(crate) fn visible_relations_of_kind_in_partition_from_state(

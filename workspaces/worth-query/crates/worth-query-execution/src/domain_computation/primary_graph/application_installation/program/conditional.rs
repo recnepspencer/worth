@@ -3,7 +3,7 @@ use std::collections::BTreeSet;
 
 use worth_query_declaration::facade::application_program::ApplicationActionDeclaration;
 
-use super::WorthQueryInMemoryApplicationDenial;
+use super::super::WorthQueryInMemoryApplicationDenial;
 
 pub(super) fn validate_conditional_actions(
     actions: &[ApplicationActionDeclaration],

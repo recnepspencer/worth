@@ -60,7 +60,7 @@ pub(super) fn commit_bootstrap_rows(
     })
 }
 
-fn map_bootstrap_basis_denial(
+pub(super) fn map_bootstrap_basis_denial(
     denial: worth_relational::facade::branch::RelationalBranchBasisDenial,
 ) -> WorthQueryPrimaryGraphInstallationDenial {
     let kind = match denial {
@@ -81,7 +81,7 @@ fn map_bootstrap_basis_denial(
     )
 }
 
-fn map_bootstrap_transaction_admission_denial(
+pub(super) fn map_bootstrap_transaction_admission_denial(
     denial: worth_relational::facade::mvcc::RelationalBranchTransactionAdmissionDenial,
 ) -> WorthQueryPrimaryGraphInstallationDenial {
     use worth_relational::facade::mvcc::RelationalBranchTransactionAdmissionDenial as Denial;
@@ -100,7 +100,7 @@ fn map_bootstrap_transaction_admission_denial(
     )
 }
 
-fn map_bootstrap_staging_denial(
+pub(super) fn map_bootstrap_staging_denial(
     denial: worth_relational::facade::mvcc::RelationalTransactionStagingDenial,
 ) -> WorthQueryPrimaryGraphInstallationDenial {
     use worth_relational::facade::mvcc::RelationalTransactionStagingDenial as Denial;
@@ -144,7 +144,7 @@ fn map_bootstrap_staging_denial(
     )
 }
 
-fn map_bootstrap_commit_denial(
+pub(super) fn map_bootstrap_commit_denial(
     error: worth_relational::facade::transactions::TransactionCommitError,
 ) -> WorthQueryPrimaryGraphInstallationDenial {
     use worth_relational::facade::mvcc::{

@@ -1,5 +1,12 @@
 //! Public archive protocol surface.
 
+pub use crate::application_program::{
+    decode_application_program_description, encode_application_program_description,
+    WorthQueryApplicationProgramArchiveCompatibility,
+    WorthQueryUntrustedApplicationProgramDescription,
+    WorthQueryUntrustedApplicationProgramSemanticFact,
+    WORTH_QUERY_APPLICATION_PROGRAM_ARCHIVE_PROTOCOL_VERSION,
+};
 pub use crate::compatibility::{
     WorthQueryPackageArchiveCompatibilityDenial, WorthQueryPackageArchiveCompatibilityPosture,
     WorthQueryPackageArchiveCompatibilityProfile, WorthQueryPackageArchiveProtocolLayer,

@@ -188,6 +188,10 @@ fn entity_targets(intent: &EntityMutationIntent) -> Vec<ValidatedFieldMutationTa
         EntityMutationIntent::Delete(delete) => vec![ValidatedFieldMutationTarget::WholeRecord {
             record: RecordRef::Entity(delete.entity_id),
         }],
+        // A revalidation demand mutates no field, so it claims no mutation
+        // target: the footprint a validator sees must not name a write the
+        // candidate never makes.
+        EntityMutationIntent::Revalidate(_) => Vec::new(),
     }
 }
 

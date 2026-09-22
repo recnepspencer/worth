@@ -3,6 +3,7 @@
 use worth_foundational::facade::{BoundaryProtocolCompatibilityWindow, BoundaryProtocolVersion};
 use worth_query_installation::facade::WORTH_QUERY_PORTABLE_PACKAGE_MANIFEST_VERSION;
 
+use crate::application_program::WORTH_QUERY_APPLICATION_PROGRAM_ARCHIVE_PROTOCOL_VERSION;
 use crate::envelope::WORTH_QUERY_PACKAGE_RELEASE_ENVELOPE_PROTOCOL_VERSION;
 use crate::protocol::WORTH_QUERY_PACKAGE_ARCHIVE_PROTOCOL_VERSION;
 use crate::record::WORTH_QUERY_PACKAGE_ARCHIVE_RECORD_PROTOCOL_VERSION;
@@ -15,6 +16,7 @@ pub enum WorthQueryPackageArchiveProtocolLayer {
     Archive,
     Manifest,
     RecordFrame,
+    ApplicationProgramDescription,
 }
 
 /// Reader support windows for the independently versioned archive layers.
@@ -28,6 +30,7 @@ pub struct WorthQueryPackageArchiveCompatibilityProfile {
     archive: BoundaryProtocolCompatibilityWindow,
     manifest: BoundaryProtocolCompatibilityWindow,
     record_frame: BoundaryProtocolCompatibilityWindow,
+    application_program_description: BoundaryProtocolCompatibilityWindow,
 }
 
 impl WorthQueryPackageArchiveCompatibilityProfile {
@@ -36,6 +39,9 @@ impl WorthQueryPackageArchiveCompatibilityProfile {
         archive: exact_window(WORTH_QUERY_PACKAGE_ARCHIVE_PROTOCOL_VERSION),
         manifest: exact_window(WORTH_QUERY_PORTABLE_PACKAGE_MANIFEST_VERSION.get()),
         record_frame: exact_window(WORTH_QUERY_PACKAGE_ARCHIVE_RECORD_PROTOCOL_VERSION),
+        application_program_description: exact_window(
+            WORTH_QUERY_APPLICATION_PROGRAM_ARCHIVE_PROTOCOL_VERSION,
+        ),
     };
 
     pub const fn release_envelope_window(self) -> BoundaryProtocolCompatibilityWindow {
@@ -52,6 +58,12 @@ impl WorthQueryPackageArchiveCompatibilityProfile {
 
     pub const fn record_frame_window(self) -> BoundaryProtocolCompatibilityWindow {
         self.record_frame
+    }
+
+    pub const fn application_program_description_window(
+        self,
+    ) -> BoundaryProtocolCompatibilityWindow {
+        self.application_program_description
     }
 
     pub(crate) fn admit(
@@ -84,6 +96,9 @@ impl WorthQueryPackageArchiveCompatibilityProfile {
             WorthQueryPackageArchiveProtocolLayer::Archive => self.archive,
             WorthQueryPackageArchiveProtocolLayer::Manifest => self.manifest,
             WorthQueryPackageArchiveProtocolLayer::RecordFrame => self.record_frame,
+            WorthQueryPackageArchiveProtocolLayer::ApplicationProgramDescription => {
+                self.application_program_description
+            }
         }
     }
 }

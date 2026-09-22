@@ -74,14 +74,28 @@ mod ordinary_read;
 pub(crate) mod output_lineage;
 mod principal_key;
 pub(crate) mod product_activation;
+pub use product_activation::{
+    WorthQuerySelectedProgramInspection, WorthQuerySelectedProgramInspectionDenial,
+};
 mod product_operation;
+mod program_occurrence;
 pub use product_operation::{
     WorthQueryAdmittedApplicationConditionalDefinition, WorthQueryAdmittedChange,
-    WorthQueryApplicationConditionalDefinitionAdmissionDenial,
+    WorthQueryAdmittedProgramMigration, WorthQueryApplicationConditionalDefinitionAdmissionDenial,
     WorthQueryApplicationProductBranchCleanup, WorthQueryApplicationProductBranchCleanupDenial,
     WorthQueryApplicationProductBranchCleanupFailure,
     WorthQueryApplicationProductBranchCloseDenial, WorthQueryApplicationProductBranches,
-    WorthQueryAppliedProductTransaction, WorthQueryCompletedGeneratedOutputReconstruction,
+    WorthQueryAppliedProductTransaction, WorthQueryBranchAdoptionActivationDenial,
+    WorthQueryBranchAdoptionPreparationDenial, WorthQueryBranchAdoptionPublicationOutcome,
+    WorthQueryBranchAdoptionRecovery, WorthQueryBranchAdoptionRecoveryDenial,
+    WorthQueryBranchAdoptionRecoveryFailure, WorthQueryBranchAdoptionRecoveryOutcome,
+    WorthQueryBranchAdoptionRecoveryReleaseFailure, WorthQueryBranchSetAdoptionAdvanceDenial,
+    WorthQueryBranchSetAdoptionCancellation, WorthQueryBranchSetAdoptionCloseDenial,
+    WorthQueryBranchSetAdoptionPreparationDenial, WorthQueryBranchSetAdoptionProgress,
+    WorthQueryBranchSetAdoptionRecovery, WorthQueryBranchSetAdoptionRecoveryFailure,
+    WorthQueryBranchSetAdoptionRecoveryOutcome, WorthQueryBranchSetAdoptionRecoveryReleaseFailure,
+    WorthQueryBranchSetAdoptionResumeDenial, WorthQueryBranchSetAdoptionResumeFailure,
+    WorthQueryClosedBranchSetAdoption, WorthQueryCompletedGeneratedOutputReconstruction,
     WorthQueryConditionalDefinitionPublicationDenial,
     WorthQueryConditionalDefinitionPublicationOutcome, WorthQueryGeneratedEntity,
     WorthQueryGeneratedOutputInvariantAdmissionDenial,
@@ -94,12 +108,18 @@ pub use product_operation::{
     WorthQueryGeneratedOutputRestorationRecoveryStage, WorthQueryGeneratedOutputSuspensionDenial,
     WorthQueryGeneratedOutputSuspensionFailure, WorthQueryGeneratedOutputSuspensionRecovery,
     WorthQueryGeneratedOutputSuspensionRecoveryFailure,
-    WorthQueryGeneratedOutputSuspensionRecoveryStage,
-    WorthQueryPerformedConditionalDefinitionPublication, WorthQueryProductEntry,
-    WorthQueryProductHistory, WorthQueryProductHistoryEntry, WorthQueryProductQueryControls,
-    WorthQueryProductTransaction, WorthQueryProductTransactionCommitError,
+    WorthQueryGeneratedOutputSuspensionRecoveryStage, WorthQueryOrderedProgramAdoptionCoverage,
+    WorthQueryPerformedBranchAdoption, WorthQueryPerformedConditionalDefinitionPublication,
+    WorthQueryPreparedBranchAdoption, WorthQueryPreparedBranchSetAdoption,
+    WorthQueryPreparedProgramMigration, WorthQueryProductEntry, WorthQueryProductHistory,
+    WorthQueryProductHistoryEntry, WorthQueryProductQueryControls, WorthQueryProductTransaction,
+    WorthQueryProductTransactionCommitError, WorthQueryProgramAdoptionCoverage,
+    WorthQueryProgramAdoptionCoverageDenial, WorthQueryProgramCustodyDisposition,
+    WorthQueryProgramCustodyDispositionInventory, WorthQueryProgramCustodyDispositionKind,
+    WorthQueryProgramMigrationDescription, WorthQueryProgramMigrationPreparationDenial,
     WorthQueryRestoredGeneratedOutput, WorthQueryRetainedGeneratedOutputEntity,
-    WorthQuerySelectedProductOperation, WorthQuerySuspendedGeneratedOutput,
+    WorthQuerySelectedProductOperation, WorthQueryStoppedBranchSetAdoption,
+    WorthQuerySuspendedGeneratedOutput, WorthQueryUnpublishedBranchAdoption,
     WorthQueryUnpublishedGeneratedOutputRestoration,
 };
 mod provider;
@@ -189,7 +209,7 @@ pub use application_attempt::{
 pub use crate::domain_computation::WorthQueryCustomInvariantDenial;
 pub use application_entry::mutation::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerInterruption, HandlerResult,
-    MutationHandlerExecutionDenial, OperationHandler,
+    MutationHandlerExecutionDenial, OperationHandler, WorthQueryCompletedMutationCandidate,
 };
 pub use settlement_repair::WorthQueryApplicationSettlementRecoveryError;
 pub(in crate::domain_computation) use application_branch::primary_relational_branch_id;
