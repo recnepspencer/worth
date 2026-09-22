@@ -39,7 +39,6 @@ impl super::UiScrollRuntimeState {
         )
     }
 
-    #[cfg(test)]
     pub(crate) fn transition_target(
         &self,
         owner: crate::runtime::scroll::UiScrollOwnerIdentity,
@@ -55,11 +54,6 @@ impl super::UiScrollRuntimeState {
         owner: crate::runtime::scroll::UiScrollOwnerIdentity,
     ) -> bool {
         self.transition_targets.retire(owner)
-    }
-
-    /// Retire every transition whose settle horizon has ended at `tick`.
-    pub(crate) fn advance_transitions(&mut self, tick: u64) -> usize {
-        self.transition_targets.advance(tick)
     }
 
     /// Retire every pending transition whose owner's accepted offset has

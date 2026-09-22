@@ -72,8 +72,13 @@ impl crate::facade::WorthUiActiveApplicationSession {
         };
         if bound_owners.is_empty() {
             return Ok(UiActiveOverlayAppearancePreparation {
+                scroll_geometry_reservations: self
+                    .mounted
+                    .scroll_geometry_reservations()
+                    .ok_or(())?,
                 surfaces: Box::new([]),
                 scroll_chrome,
+                scroll_motion: self.prepare_scroll_motion_groups()?,
             });
         }
         let generation = replacement
@@ -173,8 +178,10 @@ impl crate::facade::WorthUiActiveApplicationSession {
             });
         }
         Ok(UiActiveOverlayAppearancePreparation {
+            scroll_geometry_reservations: self.mounted.scroll_geometry_reservations().ok_or(())?,
             surfaces: surfaces.into_boxed_slice(),
             scroll_chrome,
+            scroll_motion: self.prepare_scroll_motion_groups()?,
         })
     }
 }

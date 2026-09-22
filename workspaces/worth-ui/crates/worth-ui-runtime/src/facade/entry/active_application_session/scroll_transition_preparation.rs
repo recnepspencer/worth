@@ -142,10 +142,9 @@ impl super::super::WorthUiActiveApplicationSession {
             observation.settle_ticks,
         )
         .map_err(UiScrollTransitionStagingDenial::Transition)?;
-        // A target whose horizon has ended is no intention anyone is settling
-        // toward any more; it goes before this notch decides what it
-        // accumulates against.
-        scroll.advance_transitions(observation.input_tick);
+        // The horizon schedules sampling, not acceptance. A refused endpoint
+        // remains pending until accepted or explicitly cancelled; later input
+        // still accumulates against that target, even after its old deadline.
         let target = scroll
             .stage_wheel_transition(
                 crate::runtime::scroll::UiScrollChainEntry::new(owner, incarnation),

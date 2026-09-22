@@ -29,6 +29,7 @@ impl Default for WorldScroll {
 
 /// The capability shape one World launches with.
 pub(super) struct WorldCapabilities {
+    pub(super) motion: bool,
     pub(super) seam: bool,
     pub(super) multi_region_owner: bool,
     pub(super) role: Option<worth_ui_dsl::UiAppearanceRoleDeclaration>,
@@ -38,6 +39,7 @@ pub(super) struct WorldCapabilities {
 impl WorldCapabilities {
     fn shared(seam: bool, multi_region_owner: bool) -> Self {
         Self {
+            motion: true,
             seam,
             multi_region_owner,
             role: None,
@@ -57,6 +59,19 @@ pub(super) struct World {
 impl World {
     pub(super) fn launch() -> Self {
         Self::launch_with_seam(false)
+    }
+
+    pub(super) fn launch_without_motion() -> Self {
+        Self::launch_with_projection_budget(
+            WorldCapabilities {
+                motion: false,
+                ..WorldCapabilities::shared(false, false)
+            },
+            authored::scroll_only_source(),
+            None,
+            None,
+            Default::default(),
+        )
     }
 
     pub(super) fn launch_ap07(

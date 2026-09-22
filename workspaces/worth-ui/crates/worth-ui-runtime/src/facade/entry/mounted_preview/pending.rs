@@ -36,6 +36,7 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
             appearance_inspection,
             overlay_appearance,
             motion,
+            scroll,
         } = self;
         let preview_theme_observation = presentation.preview_theme_observation();
         match completion.into_pending_mounted_preview() {
@@ -54,6 +55,8 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
                 appearance_owner_snapshot,
                 preview_theme_observation,
                 ports: WorthUiMountedPreviewPorts {
+                    motion,
+                    scroll,
                     application_session_identity,
                     generation_identity,
                     host_session,
@@ -93,6 +96,7 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
                 appearance_inspection,
                 overlay_appearance,
                 motion,
+                scroll,
             })),
         }
     }
@@ -106,6 +110,22 @@ impl<'session> WorthUiPendingMountedPreview<'session> {
         WorthUiPreparedMountedPreview<'session>,
         WorthUiMountedPreviewPreparationRejection<'session>,
     > {
+        if self
+            .ports
+            .mounted
+            .current_mounted_identity_basis(mounted_instance)
+            .is_some_and(|basis| {
+                self.ports.scroll.as_deref().is_some_and(|scroll| {
+                    scroll.has_unpresented_layout(basis.semantic_surface_identity())
+                        || scroll.has_pending_direct(basis.semantic_surface_identity())
+                })
+            })
+        {
+            return Err(WorthUiMountedPreviewPreparationRejection {
+                denial: WorthUiMountedPreviewPreparationDenial::UnpresentedScrollLayout,
+                pending: Box::new(self),
+            });
+        }
         match self.prepare_frame(mounted_instance) {
             Ok(frame) => Ok(WorthUiPreparedMountedPreview {
                 frame,

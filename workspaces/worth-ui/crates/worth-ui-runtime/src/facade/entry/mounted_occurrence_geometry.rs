@@ -36,6 +36,10 @@ impl WorthUiMountedLayout<'_> {
         &mut self,
         batch: UiMountedSurfaceGeometryBatch,
     ) -> Result<UiMountedLayoutCompletionReceipt, UiMountedOccurrenceGeometryDenial> {
+        let surface = batch.surface();
+        if self.session.mounted.has_pending_direct_scroll(surface) {
+            return Err(UiMountedOccurrenceGeometryDenial::UnpublishedScrollEffect);
+        }
         let mut staged_scroll = self.session.scroll.as_ref().cloned();
         let authority = UiMountedOccurrenceGeometryValidationAuthority::active(self.session);
         let validated = authority.validate(batch, staged_scroll.as_mut())?;
@@ -54,11 +58,11 @@ impl WorthUiMountedLayout<'_> {
                     .add_region_resolution_work(work.region_index_rows, work.region_lookup_steps)
             })?;
         if let Some(staged) = staged_scroll {
-            *self
-                .session
+            self.session
                 .scroll
                 .as_mut()
-                .expect("the staged Scroll owner came from an installed service") = staged;
+                .expect("the staged Scroll owner came from an installed service")
+                .stage_layout_successor(surface, &staged);
         }
         Ok(receipt)
     }

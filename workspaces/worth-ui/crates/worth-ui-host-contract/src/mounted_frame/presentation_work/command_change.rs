@@ -12,6 +12,10 @@ enum UiMountedPaintCommandFamily {
     SemanticText,
     /// The painted surface of an instance that owns no paint command.
     AppearanceSurface,
+    ScrollChrome(
+        crate::UiMountedScrollChromeAxis,
+        crate::UiMountedScrollChromePart,
+    ),
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -112,6 +116,34 @@ impl UiMountedPaintCommandIdentity {
         matches!(self.family, UiMountedPaintCommandFamily::AppearanceSurface)
     }
 
+    /// A derived scrollbar part remains distinct from the owner's node paint.
+    #[doc(hidden)]
+    pub const fn scroll_chrome(identity: crate::UiMountedScrollChromeIdentity) -> Self {
+        Self {
+            mounted_instance: identity.owner_instance(),
+            family: UiMountedPaintCommandFamily::ScrollChrome(identity.axis(), identity.part()),
+            semantic_slot: 0,
+            collection_row: None,
+        }
+    }
+
+    pub const fn scroll_chrome_identity(self) -> Option<crate::UiMountedScrollChromeIdentity> {
+        match self.family {
+            UiMountedPaintCommandFamily::ScrollChrome(axis, part) => {
+                Some(crate::UiMountedScrollChromeIdentity::from_runtime_mounting(
+                    self.mounted_instance,
+                    axis,
+                    part,
+                ))
+            }
+            _ => None,
+        }
+    }
+
+    pub const fn is_appearance_sample(self) -> bool {
+        self.is_appearance_surface() || self.scroll_chrome_identity().is_some()
+    }
+
     #[doc(hidden)]
     pub const fn semantic_text_identity_parts(self) -> Option<(u16, Option<[u8; 32]>)> {
         match self.family {
@@ -119,7 +151,8 @@ impl UiMountedPaintCommandIdentity {
                 Some((self.semantic_slot, self.collection_row))
             }
             UiMountedPaintCommandFamily::PortalOverlay
-            | UiMountedPaintCommandFamily::AppearanceSurface => None,
+            | UiMountedPaintCommandFamily::AppearanceSurface
+            | UiMountedPaintCommandFamily::ScrollChrome(..) => None,
         }
     }
 
@@ -128,6 +161,12 @@ impl UiMountedPaintCommandIdentity {
             UiMountedPaintCommandFamily::PortalOverlay => 1_u64,
             UiMountedPaintCommandFamily::SemanticText => 2_u64,
             UiMountedPaintCommandFamily::AppearanceSurface => 3_u64,
+            UiMountedPaintCommandFamily::ScrollChrome(axis, part) => {
+                4 + match axis {
+                    crate::UiMountedScrollChromeAxis::Inline => 0,
+                    crate::UiMountedScrollChromeAxis::Block => 2,
+                } + u64::from(part.paint_ordinal())
+            }
         };
         let mut digest = self
             .mounted_instance

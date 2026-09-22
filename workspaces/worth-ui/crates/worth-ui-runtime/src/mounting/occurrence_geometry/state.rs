@@ -16,9 +16,13 @@ mod presented_grid;
 mod projection;
 #[path = "state/resolution.rs"]
 mod resolution;
+mod retirement;
 mod scroll;
 #[path = "state/scroll_anchor.rs"]
 mod scroll_anchor;
+mod scroll_index;
+#[path = "state/scroll_presentation.rs"]
+mod scroll_presentation;
 mod succession;
 
 use resolution::{
@@ -51,6 +55,7 @@ struct UiMountedSurfaceGeometry {
     viewport: UiMountedCanonicalBox,
     occurrences: BTreeMap<UiMountedInstanceIdentity, UiMountedOccurrenceGeometryRow>,
     children: BTreeMap<UiMountedInstanceIdentity, Vec<UiMountedInstanceIdentity>>,
+    scroll_index: std::sync::Arc<scroll_index::UiScrollGeometryIndex>,
     scroll_poses: BTreeMap<UiMountedInstanceIdentity, crate::runtime::scroll::UiScrollOffset>,
     generation: Option<
         crate::facade::prepared_application_authority::WorthUiPreparedApplicationGenerationIdentity,
@@ -248,10 +253,12 @@ impl UiMountedOccurrenceGeometryState {
                 viewport: batch.viewport(),
                 occurrences: rows,
                 children,
+                scroll_index: Default::default(),
                 scroll_poses: BTreeMap::new(),
                 generation: Some(batch.basis.generation),
                 regions,
-            },
+            }
+            .index_scroll_geometry(),
         );
         Ok((
             changed.into_boxed_slice(),
@@ -307,41 +314,6 @@ impl UiMountedOccurrenceGeometryState {
                 .collect::<Vec<_>>()
                 .into_boxed_slice(),
         )
-    }
-
-    pub(crate) fn retire_instance(
-        &mut self,
-        instance: UiMountedInstanceIdentity,
-    ) -> Box<[UiMountedInstanceIdentity]> {
-        let mut affected = BTreeSet::new();
-        for surface in self.surfaces.values_mut() {
-            let mut pending = vec![instance];
-            while let Some(candidate) = pending.pop() {
-                let Some(row) = surface.occurrences.remove(&candidate) else {
-                    continue;
-                };
-                affected.insert(candidate);
-                surface.scroll_poses.remove(&candidate);
-                if let Some(parent) = row
-                    .parent
-                    .and_then(|parent| surface.children.get_mut(&parent))
-                {
-                    parent.retain(|child| *child != candidate);
-                }
-                if let Some(descendants) = surface.children.remove(&candidate) {
-                    pending.extend(descendants);
-                }
-            }
-            surface.regions.retain(|_, rows| {
-                rows.retain(|(owner, _, _)| surface.occurrences.contains_key(owner));
-                !rows.is_empty()
-            });
-        }
-        affected.into_iter().collect::<Vec<_>>().into_boxed_slice()
-    }
-
-    pub(crate) fn retire_surface(&mut self, surface: UiSemanticSurfaceIdentity) {
-        self.surfaces.remove(&surface);
     }
 
     pub(crate) fn rebind_surface(

@@ -2,7 +2,7 @@
 use super::{UiNativeRetainedDrawList, UiNativeRetainedDrawListDenial as Denial};
 use crate::native::presentation::{
     raster::UiNativeRasterBasis,
-    text::{plan_glyph_commands, UiNativeGlyphCommand},
+    text::{plan_raw_glyph_commands, sampled_glyph, UiNativeGlyphCommand},
 };
 use crate::native::text_atlas::UiNativeTextAtlas;
 use worth_ui_host_contract::{UiMountedPaintCommand, UiMountedPaintCommandIdentity};
@@ -18,26 +18,16 @@ impl UiNativeRetainedDrawList {
         else {
             return Err(Denial::CommandMismatch);
         };
-        let mut glyphs = plan_glyph_commands(self.glyph_runs(identity), atlas, basis.extent())
+        let mut glyphs = plan_raw_glyph_commands(self.glyph_runs(identity), atlas)
             .map_err(|_| Denial::CommandMismatch)?;
         // Match original immutable image evidence before any sampled geometry.
         self.apply_text_paint(mechanic, &mut glyphs)?;
         let sample = self.sample_override(identity);
-        if let Some(sample) = sample {
-            for glyph in glyphs.iter_mut() {
-                glyph.opacity = sample.opacity().factor();
-            }
-        }
-        if let Some(transform) = sample.and_then(|sample| sample.transform()) {
-            for glyph in glyphs.iter_mut() {
-                glyph.target = crate::native::presentation::sample::transform_physical_box(
-                    glyph.target,
-                    transform,
-                    basis,
-                )
-                .map_err(|_| Denial::CommandMismatch)?;
-            }
-        }
-        Ok(glyphs)
+        glyphs
+            .into_vec()
+            .into_iter()
+            .map(|glyph| sampled_glyph(glyph, sample, basis).map_err(|_| Denial::CommandMismatch))
+            .collect::<Result<Vec<_>, _>>()
+            .map(|glyphs| glyphs.into_iter().flatten().collect())
     }
 }

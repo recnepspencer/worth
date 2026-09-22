@@ -2,10 +2,14 @@ use std::collections::BTreeMap;
 
 mod accepted_settlement;
 mod anchor_access;
+mod direct_succession;
+pub(crate) use direct_succession::UiPreparedScrollDirectSuccession;
 #[cfg(any(test, feature = "certification-support"))]
 mod certification;
+mod layout_succession;
 mod ownership_catalog;
 mod reconciliation;
+mod route_candidate;
 mod transition_binding;
 
 use reconciliation::reconcile_owner_record;
@@ -30,6 +34,8 @@ struct UiScrollOwnershipCatalogRecord {
 /// Query- or host-provided extents establish bounds; only this state changes offsets.
 #[derive(Clone)]
 pub(crate) struct UiScrollRuntimeState {
+    #[cfg(test)]
+    clone_observation: route_candidate::UiScrollStateCloneObservation,
     policy: crate::declaration::UiScrollPolicy,
     owners: BTreeMap<super::UiScrollOwnerIdentity, UiScrollOwnerRecord>,
     ownership_catalog:
@@ -42,6 +48,11 @@ pub(crate) struct UiScrollRuntimeState {
     ownership_plan_nodes_visited: u64,
     revision: u64,
     last_owner: Option<super::UiScrollOwnerInspectionRecord>,
+    pending_layouts: BTreeMap<
+        worth_ui_host_contract::UiSemanticSurfaceIdentity,
+        layout_succession::UiScrollLayoutSuccessor,
+    >,
+    pending_direct: BTreeMap<super::UiScrollOwnerIdentity, UiPreparedScrollDirectSuccession>,
 }
 
 impl UiScrollRuntimeState {
@@ -56,6 +67,8 @@ impl UiScrollRuntimeState {
         policy: crate::declaration::UiScrollPolicy,
     ) -> Self {
         Self {
+            #[cfg(test)]
+            clone_observation: route_candidate::UiScrollStateCloneObservation,
             policy,
             owners: BTreeMap::new(),
             ownership_catalog: BTreeMap::new(),
@@ -67,6 +80,8 @@ impl UiScrollRuntimeState {
             ownership_plan_nodes_visited: 0,
             revision: 0,
             last_owner: None,
+            pending_layouts: BTreeMap::new(),
+            pending_direct: BTreeMap::new(),
         }
     }
 
@@ -307,6 +322,8 @@ impl UiScrollRuntimeState {
         self.ownership_references.clear();
         self.release_transitions();
         self.last_owner = None;
+        self.pending_layouts.clear();
+        self.pending_direct.clear();
         released
     }
 

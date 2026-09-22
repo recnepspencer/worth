@@ -276,10 +276,10 @@ fn reconciled_bounds_reach_a_chain_owner_the_route_never_visited() {
     );
 }
 
-/// Advancing past the settle horizon retires the target, and shutdown releases
-/// whatever is still pending, so storage never outlives the session.
+/// Only accepted arrival or explicit cancellation retires pending intent;
+/// shutdown releases whatever remains so storage never outlives the session.
 #[test]
-fn advancing_past_the_horizon_and_shutting_down_both_release_pending_targets() {
+fn accepted_arrival_cancellation_and_shutdown_release_pending_targets() {
     let owner = UiScrollOwnerIdentity::viewport(surface());
     let mut state = UiScrollRuntimeState::new_session_restore_candidate();
     state
@@ -289,11 +289,15 @@ fn advancing_past_the_horizon_and_shutting_down_both_release_pending_targets() {
         .stage_wheel_transition(UiScrollChainEntry::new(owner, incarnation(1)), notch(1, 10))
         .expect("staged");
 
-    assert_eq!(
-        state.advance_transitions(10 + u64::from(SETTLE_TICKS) - 1),
-        0
-    );
-    assert_eq!(state.advance_transitions(10 + u64::from(SETTLE_TICKS)), 1);
+    assert_eq!(state.retire_reached_transitions(), 0);
+    state
+        .settle_accepted_sample(
+            UiScrollChainEntry::new(owner, incarnation(1)),
+            UiScrollOffset::new(0, ONE_NOTCH_SUBPIXELS).unwrap(),
+            bounds(1_000_000),
+        )
+        .unwrap();
+    assert_eq!(state.retire_reached_transitions(), 1);
     assert_eq!(state.pending_transition_count(), 0);
 
     state

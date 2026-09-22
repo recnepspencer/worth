@@ -1,4 +1,47 @@
 impl super::WorthUiMountedSessionState {
+    pub(crate) fn scroll_geometry_reservations(
+        &self,
+    ) -> Option<std::collections::BTreeMap<worth_ui_host_contract::UiSemanticSurfaceIdentity, usize>>
+    {
+        self.occurrence_geometry.scroll_geometry_reservations()
+    }
+
+    pub(crate) fn retained_scroll_chrome_geometry(
+        &self,
+        target: crate::runtime::motion::UiMotionTargetIdentity,
+    ) -> Option<(
+        worth_ui_host_contract::UiMountedCanonicalBox,
+        worth_ui_host_contract::UiMountedCanonicalBox,
+        worth_ui_host_contract::UiMountedCanonicalBox,
+    )> {
+        // This lookup admits the exact retained physical epoch and live binding,
+        // not merely a frame number supplied by a candidate geometry caller.
+        let presentation = self.current_presentation_for_surface(target.semantic_surface())?;
+        self.presentation
+            .retained_scroll_chrome_geometry(presentation, target)
+    }
+
+    pub(crate) fn scroll_presentation_members(
+        &self,
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+        owner: worth_ui_host_contract::UiMountedInstanceIdentity,
+    ) -> Option<
+        std::sync::Arc<[crate::mounting::presentation::work_producer::UiMountedScrollMotionMember]>,
+    > {
+        self.occurrence_geometry
+            .scroll_presentation_members(surface, owner)
+    }
+
+    pub(crate) fn rebase_presented_scroll_extent(
+        &mut self,
+        target: crate::runtime::motion::UiMotionTargetIdentity,
+        tick: u64,
+    ) {
+        self.motion_sampling
+            .rebase_presented_scroll_extent(target, tick)
+            .expect("published extent and admitted Motion request carry finite geometry");
+    }
+
     pub(crate) fn scroll_region_geometry(
         &self,
         target: worth_ui_host_contract::UiMountedInstanceIdentity,
@@ -36,6 +79,7 @@ impl super::WorthUiMountedSessionState {
     /// whose pixels and whose hit rows disagree. A caller that has moved
     /// content under a pointer hands the transitions to interaction, which is
     /// how hover re-resolves without a synthetic pointer event.
+    #[cfg(test)]
     pub(crate) fn apply_scroll_geometries(
         &mut self,
         poses: &[(
@@ -43,6 +87,37 @@ impl super::WorthUiMountedSessionState {
             worth_ui_host_contract::UiMountedInstanceIdentity,
             crate::runtime::scroll::UiScrollOffset,
         )],
+    ) -> Result<
+        Box<[crate::mounting::UiCommittedPresentedHitTransition]>,
+        super::super::UiMountedOccurrenceGeometryDenial,
+    > {
+        self.apply_scroll_geometry_changes(poses, true)
+    }
+
+    /// A host-accepted sample has already moved retained paint. Update its
+    /// geometry and hit rows without scheduling that same paint a second time.
+    pub(crate) fn apply_presented_scroll_geometries(
+        &mut self,
+        poses: &[(
+            worth_ui_host_contract::UiSemanticSurfaceIdentity,
+            worth_ui_host_contract::UiMountedInstanceIdentity,
+            crate::runtime::scroll::UiScrollOffset,
+        )],
+    ) -> Result<
+        Box<[crate::mounting::UiCommittedPresentedHitTransition]>,
+        super::super::UiMountedOccurrenceGeometryDenial,
+    > {
+        self.apply_scroll_geometry_changes(poses, false)
+    }
+
+    fn apply_scroll_geometry_changes(
+        &mut self,
+        poses: &[(
+            worth_ui_host_contract::UiSemanticSurfaceIdentity,
+            worth_ui_host_contract::UiMountedInstanceIdentity,
+            crate::runtime::scroll::UiScrollOffset,
+        )],
+        owes_paint: bool,
     ) -> Result<
         Box<[crate::mounting::UiCommittedPresentedHitTransition]>,
         super::super::UiMountedOccurrenceGeometryDenial,
@@ -69,7 +144,7 @@ impl super::WorthUiMountedSessionState {
             .iter()
             .flat_map(|pose| pose.changed_instances().into_vec())
             .collect::<Vec<_>>();
-        if !changed.is_empty() {
+        if owes_paint && !changed.is_empty() {
             self.identity
                 .mark_occurrence_geometry_changed(&changed)
                 .map_err(|_| Denial::StateRevisionExhausted)?;
@@ -77,6 +152,7 @@ impl super::WorthUiMountedSessionState {
         let mut transitions = Vec::new();
         let mut hit_work = crate::mounting::UiHitTestSpatialWork::default();
         for pose in prepared {
+            hit_work.merge(pose.work());
             let (transition, refreshed) = self
                 .retention
                 .refresh_presented_hit_scroll(pose.surface(), pose.translations());

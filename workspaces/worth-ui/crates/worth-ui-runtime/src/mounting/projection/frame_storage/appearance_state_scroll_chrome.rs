@@ -127,6 +127,20 @@ impl UiMountedAppearanceFrameState {
             let fragment = self.scroll_chrome.fragments.get(&owner);
             let fragment_removable =
                 fragment.is_some_and(|fragment| bound(bindings, fragment.semantic_surface));
+            let previous_bound = self
+                .scroll_chrome
+                .by_owner
+                .get(&owner)
+                .is_some_and(|inputs| {
+                    inputs
+                        .iter()
+                        .any(|input| bound(bindings, input.semantic_surface()))
+                });
+            // An exact-surface attempt says nothing about retained bars on
+            // another surface. Absence from this candidate is not removal.
+            if !previous_bound && !next.contains_key(&owner) && !fragment_removable {
+                continue;
+            }
             let changed = self.scroll_chrome.by_owner.get(&owner) != next.get(&owner);
             let lingering = fragment.is_some() && !next.contains_key(&owner);
             let refreshed = changed || lingering || (reconstruct && fragment.is_some());
@@ -172,7 +186,12 @@ impl UiMountedAppearanceFrameState {
                     .push(UiScrollChromeOwnerWork::Absent(owner));
             }
         }
-        self.scroll_chrome.by_owner = next;
+        self.scroll_chrome.by_owner.retain(|_, inputs| {
+            !inputs
+                .iter()
+                .any(|input| bound(bindings, input.semantic_surface()))
+        });
+        self.scroll_chrome.by_owner.extend(next);
         Ok(())
     }
 

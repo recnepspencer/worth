@@ -102,7 +102,7 @@ pub(super) fn validate_sample(input: &UiMountedPresentationSampleInput) {
         .map(|change| change.command())
         .collect::<HashSet<_>>();
     assert_eq!(identities.len(), input.changes.len());
-    assert!(!input.changes.is_empty());
+    assert!(!input.changes.is_empty() || input.damage.is_empty());
     // Logical allocation damage can be empty for visible overhanging text.
     // Actual image damage is finalized by the host presentation owner.
 }

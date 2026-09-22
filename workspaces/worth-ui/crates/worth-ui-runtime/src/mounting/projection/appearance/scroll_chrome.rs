@@ -42,6 +42,50 @@ pub(crate) struct UiMountedAppearanceScrollChromeInput {
 }
 
 impl UiMountedAppearanceScrollChromeInput {
+    /// Already resolved geometry and opacity for retained physical sampling.
+    /// This exposes no theme evaluator or authority to change Scroll state.
+    pub(in crate::mounting) fn sample_target(
+        &self,
+    ) -> Result<
+        (
+            UiMountedScrollChromeIdentity,
+            worth_ui_host_contract::UiMountedCanonicalBox,
+            worth_ui_host_contract::UiMountedCanonicalBox,
+            UiMountedAppearanceOpacity,
+        ),
+        (),
+    > {
+        use worth_ui_host_contract::{
+            UiMountedCanonicalBox, UiMountedCanonicalBoxInput, UiMountedCoordinateSpace,
+        };
+        let unit = worth_ui_host_contract::UI_APPEARANCE_LOGICAL_SUBPIXELS_PER_POINT as f32;
+        let bounds = |x: i32, y: i32, width: u32, height: u32| {
+            UiMountedCanonicalBox::canonicalize(UiMountedCanonicalBoxInput {
+                x: x as f32 / unit,
+                y: y as f32 / unit,
+                width: width as f32 / unit,
+                height: height as f32 / unit,
+                coordinate_space: UiMountedCoordinateSpace::Viewport,
+            })
+            .map_err(|_| ())
+        };
+        Ok((
+            self.identity,
+            bounds(
+                self.rect.x(),
+                self.rect.y(),
+                self.rect.width(),
+                self.rect.height(),
+            )?,
+            bounds(
+                self.clip.x(),
+                self.clip.y(),
+                self.clip.width(),
+                self.clip.height(),
+            )?,
+            self.appearance_opacity,
+        ))
+    }
     /// Marry one derived rectangle to the appearance its role resolved to.
     ///
     /// A part whose role declares no Background is refused rather than painted

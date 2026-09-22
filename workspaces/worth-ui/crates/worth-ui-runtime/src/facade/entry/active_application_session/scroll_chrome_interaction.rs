@@ -33,6 +33,9 @@ pub(crate) enum UiScrollChromeInteractionDenial {
     PressIsOnTheThumb,
     /// The chrome this interaction names is no longer derivable.
     ChromeUnavailable,
+    /// A new extent is staged but not displayed. Direct control cannot mutate
+    /// that candidate while the pointer still names the retained predecessor.
+    UnpresentedLayout,
     Latch(UiScrollChromeLatchDenial),
     Route(crate::runtime::scroll::UiScrollRouteDenial),
     /// The placed offset left the range a Scroll offset admits.
@@ -66,15 +69,18 @@ impl super::super::WorthUiActiveApplicationSession {
         surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
         point: [f32; 2],
     ) -> Option<UiScrollChromePointerAnswer> {
-        let regions = self.scroll_chrome_facts(surface);
-        let targets = regions
-            .iter()
-            .map(|region| UiScrollChromeRegionTarget {
-                owner: region.owner(),
-                facts: region.facts(),
-            })
-            .collect::<Vec<_>>();
-        resolve_scroll_chrome_pointer(point, &targets)
+        let regions = self.presented_scroll_chrome_facts(surface);
+        resolve_regions(point, &regions)
+    }
+
+    /// Appearance preparation resolves hover against the candidate it paints;
+    /// only observation routing must stay on the accepted predecessor.
+    pub(in crate::facade::entry) fn prepared_scroll_chrome_under_pointer(
+        &self,
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+        point: [f32; 2],
+    ) -> Option<UiScrollChromePointerAnswer> {
+        resolve_regions(point, &self.scroll_chrome_facts(surface))
     }
 
     /// Press chrome at `point`. A thumb press captures; a track press pages.
@@ -86,6 +92,13 @@ impl super::super::WorthUiActiveApplicationSession {
         capture_epoch: worth_ui_host_contract::UiHostPointerCaptureEpoch,
         binding: worth_ui_host_contract::UiSurfaceBindingGeneration,
     ) -> Result<UiScrollChromePressOutcome, UiScrollChromeInteractionDenial> {
+        if self
+            .scroll
+            .as_ref()
+            .is_some_and(|scroll| scroll.has_unpresented_layout(surface))
+        {
+            return Err(UiScrollChromeInteractionDenial::UnpresentedLayout);
+        }
         let answer = self
             .scroll_chrome_under_pointer(surface, point)
             .ok_or(UiScrollChromeInteractionDenial::NoChromeUnderPointer)?;
@@ -158,6 +171,13 @@ impl super::super::WorthUiActiveApplicationSession {
         let held = self.interaction.scroll_chrome_latch().ok_or(
             UiScrollChromeInteractionDenial::Latch(UiScrollChromeLatchDenial::NotLatched),
         )?;
+        if self
+            .scroll
+            .as_ref()
+            .is_some_and(|scroll| scroll.has_unpresented_layout(held.owner().semantic_surface()))
+        {
+            return Err(UiScrollChromeInteractionDenial::UnpresentedLayout);
+        }
         let region = self
             .region_chrome_for_owner(held.owner())
             .ok_or(UiScrollChromeInteractionDenial::ChromeUnavailable)?;
@@ -196,8 +216,8 @@ impl super::super::WorthUiActiveApplicationSession {
         )
     }
 
-    /// End a drag. The offset the last move placed is already applied, so the
-    /// release only gives the capture back.
+    /// End capture only. Ingress stages the release's final position first;
+    /// that pending offset still waits for ordinary physical acceptance.
     pub(in crate::facade::entry) fn release_scroll_chrome(
         &mut self,
         pointer: worth_ui_host_contract::UiHostPointerIdentity,
@@ -224,7 +244,7 @@ impl super::super::WorthUiActiveApplicationSession {
         &self,
         owner: crate::runtime::scroll::UiScrollOwnerIdentity,
     ) -> Option<super::scroll_chrome_projection::UiScrollRegionChromeFacts> {
-        self.scroll_chrome_facts(owner.semantic_surface())
+        self.presented_scroll_chrome_facts(owner.semantic_surface())
             .into_iter()
             .find(|region| region.owner() == owner)
     }
@@ -238,7 +258,7 @@ impl super::super::WorthUiActiveApplicationSession {
     ///
     /// The placement is all or nothing. A settle still walking the region is
     /// retired on the staged successor and its Motion ended only after mounted
-    /// geometry has accepted the placed pose; a refused placement leaves the
+    /// publication has accepted the placed pose; a refused placement leaves the
     /// offset, the pending target and the live track exactly as they were.
     pub(super) fn place_scroll_chrome_offset(
         &mut self,
@@ -253,7 +273,20 @@ impl super::super::WorthUiActiveApplicationSession {
             .scroll
             .as_ref()
             .ok_or(UiScrollChromeInteractionDenial::ChromeUnavailable)?;
-        let current = scroll
+        if scroll.has_unpresented_layout(owner.semantic_surface()) {
+            return Err(UiScrollChromeInteractionDenial::UnpresentedLayout);
+        }
+        let mut successor = scroll
+            .route_candidate(
+                &[crate::runtime::scroll::UiScrollChainEntry::new(
+                    owner,
+                    incarnation,
+                )],
+                true,
+            )
+            .map_err(UiScrollChromeInteractionDenial::Route)?;
+        let current = successor
+            .state()
             .offset(owner, incarnation)
             .map_err(|_| UiScrollChromeInteractionDenial::ChromeUnavailable)?;
         let delta = crate::runtime::scroll::UiScrollDelta::new(
@@ -281,39 +314,36 @@ impl super::super::WorthUiActiveApplicationSession {
             cause,
         )
         .map_err(UiScrollChromeInteractionDenial::Route)?;
-        let mut successor = scroll.clone();
         // The offset placed here is direct: the successor carries no pending
         // target for a notch to accumulate on, and the route starts from the
         // offset Scroll holds rather than from an intention the pointer overrode.
-        successor.retire_transition(owner);
+        successor.state_mut().retire_transition(owner);
         let receipt = successor
+            .state_mut()
             .route_with_reconciled_bounds(request, &[bounds])
             .map_err(UiScrollChromeInteractionDenial::Route)?;
-        let poses = receipt
-            .transitions()
-            .iter()
-            .map(|transition| {
-                (
-                    transition.owner().semantic_surface(),
-                    owner_instance,
-                    transition.current(),
-                )
-            })
-            .collect::<Vec<_>>();
-        // The pose lands first; the routed state becomes the session's only
-        // once the pixels it describes are what mounted geometry holds, and
-        // only then does the settle that was walking the region end.
-        self.apply_scroll_poses(&poses)
-            .map_err(UiScrollChromeInteractionDenial::Geometry)?;
-        *self
-            .scroll
-            .as_mut()
-            .expect("Scroll installation was proven above") = successor;
-        self.end_scroll_content_motion(
-            owner,
+        self.stage_direct_scroll_succession(
+            successor.state(),
+            &receipt,
             mounted_instance,
-            crate::runtime::motion::UiMotionTerminalCause::DisplacedByDirectControl,
-        );
+            &[Some(owner_instance)],
+        )
+        .map_err(UiScrollChromeInteractionDenial::Geometry)?;
         Ok(receipt)
     }
+}
+
+fn resolve_regions(
+    point: [f32; 2],
+    regions: &[super::scroll_chrome_projection::UiScrollRegionChromeFacts],
+) -> Option<UiScrollChromePointerAnswer> {
+    let targets = regions
+        .iter()
+        .filter(|region| region.admits_pointer(point))
+        .map(|region| UiScrollChromeRegionTarget {
+            owner: region.owner(),
+            facts: region.facts(),
+        })
+        .collect::<Vec<_>>();
+    resolve_scroll_chrome_pointer(point, &targets)
 }

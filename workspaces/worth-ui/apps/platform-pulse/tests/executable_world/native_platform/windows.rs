@@ -9,7 +9,7 @@ use winsafe::{self as win, co, HwndPlace, HWND, POINT, SIZE};
 use xcap::Window;
 
 use crate::external_observation::{
-    NativeClientAreaBounds, NativeClientPixelCapture, NativeClientPixelPoint, NativeInputDeliveryObservation,
+    NativeClientPixelCapture, NativeClientPixelPoint, NativeInputDeliveryObservation,
     NativeInputProbeKind, NativeWindowIdentity, NativeWindowVisibilityTransitionObservation,
     NormalNativeCloseRequestObservation, ProcessBoundNativeClientAreaObservation,
 };
@@ -23,6 +23,8 @@ mod capture_settlement;
 mod client_capture;
 mod environment;
 mod gdi_capture;
+mod graphics_capture;
+mod held_pointer;
 mod input_delivery;
 #[cfg(test)]
 mod input_delivery_tests;
@@ -32,9 +34,13 @@ mod pointer_target;
 mod pointer_visual_settlement;
 mod process_windows;
 mod scroll_input_delivery;
+mod scroll_probe_input;
+mod timed_wheel_input;
 mod window_state;
 
+pub(crate) use graphics_capture::WindowsCaptureStream;
 pub(super) use input_environment::WindowsInputEnvironmentDenial;
+pub(crate) use timed_wheel_input::WindowsPreparedWheelInput;
 
 use capture_consistency::{require_matching_capture_sources, require_matching_composited_sources};
 use capture_region::{
@@ -260,28 +266,6 @@ impl NativePlatformContract for WindowsNativePlatform {
             .map_err(|error| NativePlatformFailure::ClientExposure(error.to_string()))?;
         self.observe_bound_client_area(bound)?;
         Ok(WindowsCaptureExposure { bound })
-    }
-
-    fn sample_exposed_strip(
-        &self,
-        exposed: &Self::ExposedClientArea<'_>,
-        strip: [u32; 4],
-    ) -> Result<NativeClientPixelCapture, NativePlatformFailure> {
-        let client = exposed.bound.observation.bounds();
-        let [x, y, width, height] = strip.map(i32::try_from);
-        let (Ok(x), Ok(y), Ok(width), Ok(height)) = (x, y, width, height) else {
-            return Err(NativePlatformFailure::InvalidCaptureWindowBounds);
-        };
-        let left = client.left().saturating_add(x);
-        let top = client.top().saturating_add(y);
-        let bounds = NativeClientAreaBounds::new(
-            left,
-            top,
-            left.saturating_add(width).min(client.right()),
-            top.saturating_add(height).min(client.bottom()),
-        )
-        .ok_or(NativePlatformFailure::InvalidCaptureWindowBounds)?;
-        gdi_capture::capture_client_area(bounds, exposed.bound.observation.process_id())
     }
 
     fn resize_bound_client_area(

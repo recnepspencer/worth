@@ -4,6 +4,19 @@ use super::UiMountedMotionSampler;
 use crate::runtime::motion::{UiMotionTargetIdentity, UiMotionTargetScope};
 
 impl UiMountedMotionSampler {
+    pub(crate) fn rebase_presented_scroll_extent(
+        &mut self,
+        target: UiMotionTargetIdentity,
+        tick: u64,
+    ) -> Result<(), super::super::UiPresentationGeometrySamplingDenial> {
+        assert_eq!(target.scope(), UiMotionTargetScope::ScrollContents);
+        let state = self
+            .tracks
+            .get_mut(&target)
+            .expect("extent retarget was installed");
+        state.rebase_presented_extent(tick)
+    }
+
     /// The accepted translation of one Scroll region's scrolled content, in the
     /// sample's own coordinate space. This is the sole authority for displayed
     /// scrolled geometry: it reports only what the host has already accepted,

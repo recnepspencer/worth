@@ -25,6 +25,10 @@ mod backdrop_motion;
 mod locality;
 #[path = "render_order_tests/portal_group.rs"]
 mod portal_group;
+#[path = "render_order_tests/sampled_locality.rs"]
+mod sampled_locality;
+#[path = "render_order_tests/scroll_sample.rs"]
+mod scroll_sample;
 
 #[test]
 fn complete_and_damage_join_surfaces_at_their_ordinary_text_slots() {

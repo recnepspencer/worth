@@ -10,6 +10,7 @@ pub(crate) fn mechanic_contains_run(
     mechanic.qualified_layout_identity() == run.layout_identity()
         && layout.identity() == run.layout_identity()
         && run.clip_bounds() == mechanic.clip_bounds()
+        && run.intrinsic_clip_bounds() == mechanic.intrinsic_clip_bounds()
         && run.layer_semantic_order() == mechanic.layer_semantic_order()
         && positioned_glyph_matches(mechanic, layout, run)
         && mechanic.foregrounds().iter().any(|foreground| {

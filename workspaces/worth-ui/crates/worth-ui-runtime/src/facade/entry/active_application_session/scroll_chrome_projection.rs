@@ -17,6 +17,7 @@ pub(in crate::facade::entry) struct UiScrollRegionChromeFacts {
     owner: crate::runtime::scroll::UiScrollOwnerIdentity,
     incarnation: crate::runtime::scroll::UiScrollOwnerIncarnation,
     viewport: worth_ui_host_contract::UiMountedCanonicalBox,
+    pointer_clip: Option<worth_ui_host_contract::UiMountedCanonicalBox>,
     displayed_offset: crate::runtime::scroll::UiScrollOffset,
     facts: crate::runtime::scroll::chrome::UiScrollChromeFacts,
     track_role: worth_ui_dsl::UiAppearanceRoleIdentity,
@@ -24,6 +25,11 @@ pub(in crate::facade::entry) struct UiScrollRegionChromeFacts {
 }
 
 impl UiScrollRegionChromeFacts {
+    pub(in crate::facade::entry) fn admits_pointer(&self, point: [f32; 2]) -> bool {
+        self.pointer_clip
+            .is_none_or(|clip| crate::runtime::scroll::chrome::rect_contains(clip, point))
+    }
+
     pub(in crate::facade::entry) const fn owner_instance(
         &self,
     ) -> worth_ui_host_contract::UiMountedInstanceIdentity {
@@ -99,13 +105,28 @@ impl super::super::WorthUiActiveApplicationSession {
         &self,
         surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
     ) -> Vec<UiScrollRegionChromeFacts> {
+        self.resolve_scroll_chrome_facts(surface, false)
+    }
+
+    pub(in crate::facade::entry) fn presented_scroll_chrome_facts(
+        &self,
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+    ) -> Vec<UiScrollRegionChromeFacts> {
+        self.resolve_scroll_chrome_facts(surface, true)
+    }
+
+    fn resolve_scroll_chrome_facts(
+        &self,
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+        presented: bool,
+    ) -> Vec<UiScrollRegionChromeFacts> {
         let Some(scroll) = self.scroll.as_ref() else {
             return Vec::new();
         };
         scroll
             .ownership_instances()
             .flat_map(|mounted_instance| {
-                self.region_chrome_on_surface(surface, mounted_instance)
+                self.region_chrome_on_surface(surface, mounted_instance, presented)
                     .into_iter()
             })
             .collect()
@@ -117,6 +138,7 @@ impl super::super::WorthUiActiveApplicationSession {
         &self,
         surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
         mounted_instance: worth_ui_host_contract::UiMountedInstanceIdentity,
+        presented: bool,
     ) -> Vec<UiScrollRegionChromeFacts> {
         let Some(scroll) = self.scroll.as_ref() else {
             return Vec::new();
@@ -136,7 +158,9 @@ impl super::super::WorthUiActiveApplicationSession {
                         crate::runtime::scroll::UiScrollOwnerIdentity::Region { .. }
                     )
             })
-            .filter_map(|(slot, owner)| self.region_chrome(owner, mounted_instance, slot))
+            .filter_map(|(slot, owner)| {
+                self.region_chrome(owner, mounted_instance, slot, presented)
+            })
             .collect()
     }
 
@@ -146,15 +170,34 @@ impl super::super::WorthUiActiveApplicationSession {
         owner: crate::runtime::scroll::UiScrollOwnerIdentity,
         mounted_instance: worth_ui_host_contract::UiMountedInstanceIdentity,
         slot: usize,
+        presented: bool,
     ) -> Option<UiScrollRegionChromeFacts> {
         // An inadmissible declaration paints nothing: the denial was raised at
         // the admission site before any geometry was derived, and a region
         // whose chrome cannot be admitted presents none rather than presenting
         // chrome built from roles or an ownership the declaration never had.
         let admitted = self.admitted_scroll_chrome(owner).ok()?;
-        let (owner_instance, content, viewport) = self
+        let (owner_instance, mut content, mut viewport) = self
             .mounted
             .scroll_region_geometry(mounted_instance, slot)?;
+        let scroll = self.scroll.as_ref()?;
+        let retained = presented
+            && (scroll.has_unpresented_layout(owner.semantic_surface())
+                || scroll.has_pending_direct(owner.semantic_surface()));
+        let pointer_clip = if retained {
+            let target = crate::runtime::motion::UiMotionTargetIdentity::from_scroll_region_owner(
+                owner.semantic_surface(),
+                mounted_instance,
+                super::scroll_transition_preparation::scroll_motion_owner_key(owner),
+            );
+            let (accepted_content, accepted_viewport, clip) =
+                self.mounted.retained_scroll_chrome_geometry(target)?;
+            content = accepted_content;
+            viewport = accepted_viewport;
+            Some(clip)
+        } else {
+            None
+        };
         let bounds =
             crate::runtime::scroll::UiScrollBounds::from_mounted_region(content, viewport)?;
         let incarnation = self.scroll_region_incarnation(mounted_instance, slot)?;
@@ -162,10 +205,13 @@ impl super::super::WorthUiActiveApplicationSession {
         // the content already is. Under the immediate policy the two coincide;
         // under a settling one the pose is the accepted sample and the semantic
         // offset is still travelling toward it.
-        let displayed_offset = self
-            .mounted
-            .displayed_scroll_pose(mounted_instance, owner_instance)
-            .or_else(|| self.scroll.as_ref()?.offset(owner, incarnation).ok())?;
+        let displayed_offset = if retained {
+            scroll.offset(owner, incarnation).ok()?
+        } else {
+            self.mounted
+                .displayed_scroll_pose(mounted_instance, owner_instance)
+                .or_else(|| scroll.offset(owner, incarnation).ok())?
+        };
         let facts = crate::runtime::scroll::chrome::UiScrollChromeFacts::derive(
             viewport,
             bounds,
@@ -178,6 +224,7 @@ impl super::super::WorthUiActiveApplicationSession {
             slot,
             incarnation,
             viewport,
+            pointer_clip,
             displayed_offset,
             owner,
             facts,

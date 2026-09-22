@@ -259,7 +259,7 @@ impl UiMotionRuntimeState {
         true
     }
 
-    fn publish(
+    pub(super) fn publish(
         &mut self,
         track: super::UiMotionTrackIdentity,
         request: super::UiMotionTransitionRequest,
@@ -291,6 +291,13 @@ impl UiMotionRuntimeState {
 
     pub(crate) const fn publication_count(&self) -> u64 {
         self.publication_sequence
+    }
+
+    pub(crate) fn committed_track(
+        &self,
+        target: super::UiMotionTargetIdentity,
+    ) -> Option<super::UiCommittedMotionTrack> {
+        self.tracks.get(&target).copied()
     }
 
     #[cfg(test)]

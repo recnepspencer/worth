@@ -140,6 +140,18 @@ impl UiDerivedMotionServiceProposal {
 }
 
 impl UiCommittedMotionTrack {
+    pub(super) fn with_presented_extent(
+        mut self,
+        request: super::UiMotionTransitionRequest,
+    ) -> Self {
+        assert_eq!(self.target(), request.successor().target());
+        self.request = request;
+        self.retarget = Some(super::retarget::resolve(
+            request.declaration().interruption(),
+        ));
+        self
+    }
+
     pub(super) const fn new(
         derived: &UiDerivedMotionServiceProposal,
         retarget: Option<super::UiMotionRetargetDisposition>,

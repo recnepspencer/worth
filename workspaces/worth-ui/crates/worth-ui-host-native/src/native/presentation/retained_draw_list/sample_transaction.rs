@@ -10,6 +10,7 @@ use super::mutation::{update_damage, visible_bounds};
 use super::{UiNativeRetainedDrawList, UiNativeRetainedDrawListDenial, UiNativeRetainedReplayPlan};
 
 pub(crate) struct UiNativeRetainedSampleUndo {
+    appearance_coverage: super::sampled_appearance_coverage::CoverageUndo,
     pub(super) physical_coverage: Vec<(
         UiMountedPaintCommandIdentity,
         Option<super::physical_coverage::UiNativeCommandImageCoverage>,
@@ -21,10 +22,19 @@ pub(crate) struct UiNativeRetainedSampleUndo {
 }
 
 pub(crate) struct UiNativeAppearanceSampleUndo {
+    appearance_coverage: super::sampled_appearance_coverage::CoverageUndo,
     overrides: Vec<(
         UiMountedPaintCommandIdentity,
         Option<UiMountedPresentationSampleChange>,
     )>,
+}
+
+impl UiNativeRetainedSampleUndo {
+    pub(in crate::native::presentation) fn changed_identities(
+        &self,
+    ) -> impl Iterator<Item = UiMountedPaintCommandIdentity> + '_ {
+        self.overrides.iter().map(|(identity, _)| *identity)
+    }
 }
 
 impl UiNativeRetainedDrawList {
@@ -48,6 +58,12 @@ impl UiNativeRetainedDrawList {
         }
         let retired = self.retired_appearance_surface_samples(work);
         let undo = UiNativeAppearanceSampleUndo {
+            appearance_coverage: self.sampled_appearance.snapshot(
+                retired
+                    .iter()
+                    .copied()
+                    .chain(changes.iter().map(|change| change.command())),
+            ),
             overrides: retired
                 .iter()
                 .copied()
@@ -57,10 +73,12 @@ impl UiNativeRetainedDrawList {
         };
         for identity in &retired {
             self.sample_overrides.remove(identity);
+            self.sampled_appearance.replace(*identity, None)?;
         }
         for (applied, change) in changes.iter().enumerate() {
             if let Err(denial) = self.apply_sample_change(change) {
                 self.rollback_appearance_sample_overrides(UiNativeAppearanceSampleUndo {
+                    appearance_coverage: undo.appearance_coverage,
                     overrides: undo.overrides[..retired.len() + applied].to_vec(),
                 })
                 .expect("already-refreshed appearance samples roll back exactly");
@@ -70,14 +88,17 @@ impl UiNativeRetainedDrawList {
         Ok(undo)
     }
 
-    /// Paint commands move through the damage index; appearance surfaces are
-    /// replayed by the sample's own damage and only record their override.
+    /// Both paint and appearance coverage follow the staged sample; their
+    /// separate indexes preserve the two retained command families.
     fn apply_sample_change(
         &mut self,
         change: &UiMountedPresentationSampleChange,
     ) -> Result<(), UiNativeRetainedDrawListDenial> {
         let identity = change.command();
-        if !identity.is_appearance_surface() {
+        if identity.is_appearance_sample() {
+            let bounds = self.sampled_target_bounds(identity, Some(*change))?;
+            self.sampled_appearance.replace(identity, bounds)?;
+        } else {
             let old = self
                 .sampled_target_bounds(identity, self.sample_overrides.get(&identity).copied())?;
             let new = self.sampled_target_bounds(identity, Some(*change))?;
@@ -92,6 +113,7 @@ impl UiNativeRetainedDrawList {
         undo: UiNativeAppearanceSampleUndo,
     ) -> Result<(), UiNativeRetainedDrawListDenial> {
         self.rollback_sample(UiNativeRetainedSampleUndo {
+            appearance_coverage: undo.appearance_coverage,
             physical_coverage: Vec::new(),
             overrides: undo.overrides,
         })
@@ -128,6 +150,7 @@ impl UiNativeRetainedDrawList {
                 self.rollback_sample(UiNativeRetainedSampleUndo {
                     overrides: retired,
                     physical_coverage: Vec::new(),
+                    appearance_coverage: Vec::new(),
                 })
                 .expect("already-retired sample overrides roll back exactly");
                 return Err(denial);
@@ -153,7 +176,7 @@ impl UiNativeRetainedDrawList {
         for change in sample
             .changes()
             .iter()
-            .filter(|change| change.command().is_appearance_surface())
+            .filter(|change| change.command().is_appearance_sample())
         {
             for sampled in [
                 self.sample_overrides.get(&change.command()).copied(),
@@ -169,6 +192,9 @@ impl UiNativeRetainedDrawList {
             }
         }
         let undo = UiNativeRetainedSampleUndo {
+            appearance_coverage: self
+                .sampled_appearance
+                .snapshot(sample.changes().iter().map(|change| change.command())),
             physical_coverage: Vec::new(),
             overrides: sample
                 .changes()
@@ -184,6 +210,7 @@ impl UiNativeRetainedDrawList {
         for (applied, change) in sample.changes().iter().enumerate() {
             if let Err(denial) = self.apply_sample_change(change) {
                 let applied_undo = UiNativeRetainedSampleUndo {
+                    appearance_coverage: undo.appearance_coverage,
                     physical_coverage: Vec::new(),
                     overrides: undo.overrides[..applied].to_vec(),
                 };
@@ -207,8 +234,9 @@ impl UiNativeRetainedDrawList {
         undo: UiNativeRetainedSampleUndo,
     ) -> Result<(), UiNativeRetainedDrawListDenial> {
         self.restore_physical_coverage(undo.physical_coverage)?;
+        self.sampled_appearance.restore(undo.appearance_coverage)?;
         for (identity, previous) in undo.overrides {
-            if !identity.is_appearance_surface() {
+            if !identity.is_appearance_sample() {
                 let current = self.sampled_target_bounds(
                     identity,
                     self.sample_overrides.get(&identity).copied(),
@@ -248,7 +276,7 @@ impl UiNativeRetainedDrawList {
             .map(|change| change.command())
             .collect::<HashSet<_>>();
         if unique.len() != sample.changes().len()
-            || sample.changes().is_empty()
+            || (sample.changes().is_empty() && !sample.damage().is_empty())
             || sample
                 .changes()
                 .iter()
@@ -272,7 +300,10 @@ pub(in crate::native::presentation) fn sampled_visible_bounds(
     command: &UiMountedPaintCommand,
     change: Option<UiMountedPresentationSampleChange>,
 ) -> Result<Option<UiMountedCanonicalBox>, UiNativeRetainedDrawListDenial> {
-    let Some(bounds) = visible_bounds(command) else {
+    let Some(bounds) = change
+        .filter(|change| change.clip().is_some())
+        .map_or_else(|| visible_bounds(command), |_| Some(command.bounds()))
+    else {
         return Ok(None);
     };
     sampled_bounds(bounds, change)
@@ -288,10 +319,12 @@ pub(super) fn sampled_bounds(
     if change.opacity().factor() == 0.0 {
         return Ok(None);
     }
-    change
+    let bounds = change
         .transform()
-        .map_or(Ok(bounds), |transform| transform_box(bounds, transform))
-        .map(Some)
+        .map_or(Ok(bounds), |transform| transform_box(bounds, transform))?;
+    Ok(change
+        .clip()
+        .map_or(Some(bounds), |clip| bounds.intersection(clip)))
 }
 
 pub(super) fn transform_box(

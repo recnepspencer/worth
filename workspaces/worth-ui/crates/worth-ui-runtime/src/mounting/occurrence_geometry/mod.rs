@@ -75,6 +75,7 @@ pub(crate) struct UiMountedMosaicSeamPaintInput {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum UiMountedOccurrenceGeometryDenial {
     PresentationInFlight,
+    UnpublishedScrollEffect,
     StateRevisionExhausted,
     MissingSurfaceBinding,
     EmptyBatch,

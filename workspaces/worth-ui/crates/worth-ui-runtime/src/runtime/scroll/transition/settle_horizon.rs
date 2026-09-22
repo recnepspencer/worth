@@ -62,10 +62,6 @@ impl UiScrollSettleHorizon {
         self.deadline_tick
     }
 
-    pub(crate) const fn is_exhausted_at(self, tick: u64) -> bool {
-        tick >= self.deadline_tick
-    }
-
     pub(crate) const fn remaining_ticks(self, tick: u64) -> u64 {
         self.deadline_tick.saturating_sub(tick)
     }

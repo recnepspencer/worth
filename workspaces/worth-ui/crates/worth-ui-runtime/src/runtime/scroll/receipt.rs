@@ -91,7 +91,6 @@ impl UiScrollRouteReceipt {
 
     /// What asked for this route: a host delta, a chrome track page, or an
     /// accepted-sample write-back. Certification reads it to tell them apart.
-    #[cfg(any(test, feature = "certification-support"))]
     pub(crate) const fn cause(&self) -> super::UiScrollDeltaCause {
         self.cause
     }

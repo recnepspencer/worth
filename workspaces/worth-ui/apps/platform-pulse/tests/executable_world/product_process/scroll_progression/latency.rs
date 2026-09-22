@@ -1,265 +1,190 @@
-//! The milestone's timing criteria, measured on the same live window: how long
-//! the product takes to put a coarse wheel notch on screen, and how evenly the
-//! frames that carry it arrive.
-//!
-//! The measurement's resolution is the cost of one probe, so that cost is
-//! measured first and travels with the verdict. Raw intervals are kept and
-//! reported, never averaged: a stall a mean would hide is the thing worth
-//! finding.
-use std::fmt::Write as _;
-use std::time::{Duration, Instant};
-
+//! Warm native timing: OS compositor timestamps, bounded capture, raw intervals.
+use super::{NativeBoundExecutableWorld, PlatformPulseScrollJourneyFailure as Failure};
 use crate::adjudication::{physical_px, RecentActivityScrollGeometry};
-use crate::external_observation::{NativeClientPixelCapture, NativeClientPixelPoint};
-use crate::native_platform::{NativePlatformContract, WindowsNativePlatform};
+use crate::external_observation::{
+    NativeClientPixelCapture, NativeClientPixelPoint, NativeTimedClientPixelCapture,
+};
+use crate::native_platform::NativePlatformContract;
+use std::time::Duration;
 
-use super::{NativeBoundExecutableWorld, PlatformPulseScrollJourneyFailure};
+mod accepted_samples;
+#[cfg(test)]
+mod tests;
+pub(super) mod thumb;
+mod trace;
+mod visible_change;
 
-/// Wheel notches timed, alternating direction so the list stays mid-travel.
-const TRIALS: usize = 12;
-/// Back-to-back probes timed before the trials, to know the sampling floor.
-const PROBE_COST_SAMPLES: usize = 16;
-/// A trial that shows nothing within this is a stall, not a slow frame.
-const FIRST_CHANGE_DEADLINE: Duration = Duration::from_secs(10);
-/// Quiet probing that ends a trial: the list has stopped moving.
-const SETTLED_QUIET: Duration = Duration::from_millis(150);
-/// A trial stops being followed after this, settled or not.
-const TRIAL_DEADLINE: Duration = Duration::from_secs(12);
-/// Rest between trials, so each notch starts from a still list.
-const BETWEEN_TRIALS: Duration = Duration::from_millis(400);
-/// Channel difference that makes a pixel a changed pixel.
-const CHANNEL_TOLERANCE: u8 = 8;
-/// Changed pixels in the strip that together count as visible movement.
-const VISIBLE_CHANGE_PX: usize = 64;
-/// The probed strip, logical points inset into the scrolled viewport. Text rows
-/// cross it, so anything that moves the list changes it.
-const STRIP_INSET_POINTS: [f64; 2] = [16.0, 16.0];
-const STRIP_SIZE_POINTS: [f64; 2] = [420.0, 200.0];
+#[derive(Clone, Debug)]
+pub(crate) struct VisibleScrollFrame {
+    pub(super) qpc_100ns: i64,
+    pub(super) thumb_top_px: u32,
+    pub(super) thumb_length_px: u32,
+}
 
-/// Raw per-notch intervals, and the probe cost that bounds their resolution.
+/// Only the current predecessor retains pixels; history keeps bounded pose/time
+/// observations rather than accumulating a movie.
+pub(super) struct ObservedScrollFrame {
+    visible: VisibleScrollFrame,
+    pixels: NativeClientPixelCapture,
+}
+
+#[derive(Clone, Debug, Default)]
 pub(crate) struct ScrollLatencyEvidence {
-    probe_cost: Vec<Duration>,
-    preparation: Vec<Duration>,
-    first_change: Vec<Duration>,
-    frame_gaps: Vec<Duration>,
-    settlement: Vec<Duration>,
+    pub(super) input_brackets: Vec<Duration>,
+    pub(super) copy_cost: Vec<Duration>,
+    pub(super) acquisition_lag: Vec<Duration>,
+    pub(super) first_change: Vec<Duration>,
+    pub(super) frame_gaps: Vec<Duration>,
+    pub(super) settlement: Vec<Duration>,
+    pub(super) trace_input_counts: Vec<usize>,
+    pub(super) trace_spans: Vec<Duration>,
+    pub(super) visible_frames: Vec<VisibleScrollFrame>,
+    pub(super) dpi: u32,
 }
 
 impl ScrollLatencyEvidence {
     pub(crate) fn first_change(&self) -> &[Duration] {
         &self.first_change
     }
-
     pub(crate) fn frame_gaps(&self) -> &[Duration] {
         &self.frame_gaps
     }
-
     pub(crate) fn settlement(&self) -> &[Duration] {
         &self.settlement
     }
-
-    /// The worst probe observed: the coarsest this measurement can resolve.
-    pub(crate) fn sampling_floor(&self) -> Duration {
-        self.probe_cost.iter().copied().max().unwrap_or_default()
+    pub(crate) fn delivery_uncertainty(&self) -> Duration {
+        percentile(&self.input_brackets, 1000)
     }
-
-    /// Nearest-rank percentile over the raw intervals, nothing smoothed.
-    pub(crate) fn first_change_percentile(&self, permille: usize) -> Duration {
-        percentile(&self.first_change, permille)
+    pub(crate) fn first_change_percentile(&self, p: usize) -> Duration {
+        percentile(&self.first_change, p)
     }
-
-    pub(crate) fn frame_gap_percentile(&self, permille: usize) -> Duration {
-        percentile(&self.frame_gaps, permille)
+    pub(crate) fn frame_gap_percentile(&self, p: usize) -> Duration {
+        percentile(&self.frame_gaps, p)
+    }
+    pub(crate) fn trace_spans(&self) -> &[Duration] {
+        &self.trace_spans
     }
 
     pub(crate) fn report(&self) -> String {
-        let mut report = String::new();
-        let _ = write!(
-            report,
-            "probe cost: p50={:?} p95={:?} worst={:?} over {} samples",
-            percentile(&self.probe_cost, 500),
-            percentile(&self.probe_cost, 950),
-            self.sampling_floor(),
-            self.probe_cost.len()
-        );
-        let _ = write!(
-            report,
-            "\nharness preparation before each notch (excluded): p50={:?} worst={:?}",
-            percentile(&self.preparation, 500),
-            percentile(&self.preparation, 1_000)
-        );
-        let _ = write!(
-            report,
-            "\ninput to first visible change: p50={:?} p95={:?} p99={:?} worst={:?}",
-            self.first_change_percentile(500),
-            self.first_change_percentile(950),
-            self.first_change_percentile(990),
-            percentile(&self.first_change, 1_000)
-        );
-        let _ = write!(
-            report,
-            "\naccepted visible-frame gap: p50={:?} p95={:?} p99={:?} worst={:?} over {} gaps",
-            self.frame_gap_percentile(500),
-            self.frame_gap_percentile(950),
-            self.frame_gap_percentile(990),
-            percentile(&self.frame_gaps, 1_000),
-            self.frame_gaps.len()
-        );
-        let _ = write!(
-            report,
-            "\nsettlement after the notch: p50={:?} worst={:?}",
-            percentile(&self.settlement, 500),
-            percentile(&self.settlement, 1_000)
-        );
-        let _ = write!(report, "\nraw first-change intervals: {:?}", self.first_change);
-        report
+        format!(
+            "DXGI desktop-presentation QPC timing at {} DPI; active traces {:?}, inputs {:?}\ninput-to-first-change p95={:?}; visible gap p95={:?}, p99={:?}, max={:?}; settlement max={:?}\nSendInput brackets max={:?}; capture copy max={:?}; acquisition lag max={:?}\nraw first-change intervals={:?}\nraw visible-frame gaps={:?}\nraw settlements={:?}\nraw input uncertainty={:?}\nraw capture copy={:?}\nraw acquisition lag={:?}",
+            self.dpi, self.trace_spans, self.trace_input_counts,
+            self.first_change_percentile(950), self.frame_gap_percentile(950),
+            self.frame_gap_percentile(990), percentile(&self.frame_gaps, 1000),
+            percentile(&self.settlement, 1000), self.delivery_uncertainty(),
+            percentile(&self.copy_cost, 1000), percentile(&self.acquisition_lag, 1000),
+            self.first_change, self.frame_gaps, self.settlement,
+            self.input_brackets, self.copy_cost, self.acquisition_lag,
+        )
     }
+
+    pub(super) fn observe(
+        &mut self,
+        frame: NativeTimedClientPixelCapture,
+        strip: [u32; 4],
+    ) -> Result<ObservedScrollFrame, Failure> {
+        if self.copy_cost.len() >= 4096 {
+            return Err(Failure::InputDelivery("capture trace capacity exceeded"));
+        }
+        self.copy_cost
+            .push(interval(frame.acquired_qpc_100ns, frame.copied_qpc_100ns)?);
+        self.acquisition_lag.push(interval(
+            frame.captured_qpc_100ns,
+            frame.acquired_qpc_100ns,
+        )?);
+        let (top, length) = thumb::observed(&frame.pixels, self.dpi, strip)?;
+        Ok(ObservedScrollFrame {
+            visible: VisibleScrollFrame {
+                qpc_100ns: frame.captured_qpc_100ns,
+                thumb_top_px: top,
+                thumb_length_px: length,
+            },
+            pixels: frame.pixels,
+        })
+    }
+}
+
+pub(super) fn measure_wheel_latency(
+    world: &mut NativeBoundExecutableWorld,
+    dpi: u32,
+    interior: NativeClientPixelPoint,
+    mut expected_offset: f64,
+    notch_points: f64,
+) -> Result<ScrollLatencyEvidence, Failure> {
+    let input = world
+        .platform
+        .prepare_wheel_input(&world.native_client, interior)
+        .map_err(Failure::Native)?;
+    let exposed = world
+        .platform
+        .expose_client_area(&world.native_client)
+        .map_err(Failure::Native)?;
+    let region = RecentActivityScrollGeometry.viewport_points();
+    // Trailing column ink and the complete thumb, not a full-window movie.
+    let strip = [region[0] + region[2] - 128.0, region[1], 128.0, region[3]]
+        .map(|v| physical_px(v, dpi) as u32);
+    let mut stream = world
+        .platform
+        .start_capture_stream(&exposed, strip)
+        .map_err(Failure::Native)?;
+    let mut evidence = ScrollLatencyEvidence {
+        dpi,
+        ..Default::default()
+    };
+    let first = stream
+        .next(Duration::from_secs(3))
+        .map_err(Failure::Native)?
+        .ok_or(Failure::InputDelivery("compositor capture did not start"))?;
+    let mut previous = evidence.observe(first, strip)?;
+    if !thumb::at_offset(&previous.visible, expected_offset, dpi) {
+        return Err(Failure::InputDelivery(
+            "timing baseline does not match adjudicated drag offset",
+        ));
+    }
+    // Isolated warm notches establish causal input-to-first-change latency.
+    for notch in 0..12 {
+        trace::isolated(
+            &mut stream,
+            &input,
+            strip,
+            if notch % 2 == 0 { 1 } else { -1 },
+            &mut previous,
+            &mut evidence,
+            &mut expected_offset,
+            notch_points,
+        )?;
+    }
+    for _ in 0..3 {
+        trace::active(
+            &mut stream,
+            &input,
+            strip,
+            &mut previous,
+            &mut evidence,
+            &mut expected_offset,
+            notch_points,
+        )?;
+    }
+    stream.finish().map_err(Failure::Native)?;
+    Ok(evidence)
+}
+
+pub(super) fn interval(start: i64, end: i64) -> Result<Duration, Failure> {
+    let ticks = end
+        .checked_sub(start)
+        .and_then(|v| u64::try_from(v).ok())
+        .ok_or(Failure::InputDelivery(
+            "nonmonotonic native timing interval",
+        ))?;
+    ticks
+        .checked_mul(100)
+        .map(Duration::from_nanos)
+        .ok_or(Failure::InputDelivery("native timing interval overflow"))
 }
 
 fn percentile(samples: &[Duration], permille: usize) -> Duration {
     let mut sorted = samples.to_vec();
     sorted.sort_unstable();
-    let Some(last) = sorted.len().checked_sub(1) else {
-        return Duration::ZERO;
-    };
-    let rank = (permille * sorted.len()).div_ceil(1_000).saturating_sub(1);
-    sorted.get(rank.min(last)).copied().unwrap_or_default()
-}
-
-/// Deliver `TRIALS` real wheel notches and follow each one to a still list.
-pub(super) fn measure_wheel_latency(
-    world: &mut NativeBoundExecutableWorld,
-    dpi: u32,
-    interior: NativeClientPixelPoint,
-) -> Result<ScrollLatencyEvidence, PlatformPulseScrollJourneyFailure> {
-    let strip = strip_rect_px(dpi);
-    let mut probe_cost = Vec::with_capacity(PROBE_COST_SAMPLES);
-    {
-        let exposed = expose(world)?;
-        for _ in 0..PROBE_COST_SAMPLES {
-            let started = Instant::now();
-            let observed = sample(&world.platform, &exposed, strip)?;
-            probe_cost.push(started.elapsed());
-            drop(observed);
-        }
-    }
-
-    let mut preparation = Vec::with_capacity(TRIALS);
-    let mut first_change = Vec::with_capacity(TRIALS);
-    let mut settlement = Vec::with_capacity(TRIALS);
-    let mut frame_gaps = Vec::new();
-    for trial in 0..TRIALS {
-        std::thread::sleep(BETWEEN_TRIALS);
-        // Exposing raises the window and waits for a composition. It is the
-        // precondition of every sample in this trial, so it happens once, here,
-        // outside every interval the trial measures.
-        let exposed = expose(world)?;
-        let mut previous = sample(&world.platform, &exposed, strip)?;
-        // Alternate direction so the list never reaches an edge, where a notch
-        // would legitimately move nothing and time out as a false stall.
-        let notches = if trial % 2 == 0 { 1 } else { -1 };
-        let requested = Instant::now();
-        // The clock starts when the event leaves for the product, not when the
-        // harness starts focusing windows and qualifying the pointer for it.
-        let issued = world
-            .platform
-            .deliver_wheel_notches(&world.native_client, interior, notches)
-            .map_err(PlatformPulseScrollJourneyFailure::Native)?;
-        preparation.push(issued.saturating_duration_since(requested));
-
-        let mut seen_first = None;
-        let mut last_change = issued;
-        loop {
-            let current = sample(&world.platform, &exposed, strip)?;
-            let now = Instant::now();
-            if changed_pixels(&previous, &current) >= VISIBLE_CHANGE_PX {
-                if seen_first.is_none() {
-                    seen_first = Some(now.saturating_duration_since(issued));
-                } else {
-                    frame_gaps.push(now.saturating_duration_since(last_change));
-                }
-                last_change = now;
-                previous = current;
-            } else if seen_first.is_some()
-                && now.saturating_duration_since(last_change) >= SETTLED_QUIET
-            {
-                break;
-            }
-            let waited = now.saturating_duration_since(issued);
-            if seen_first.is_none() && waited >= FIRST_CHANGE_DEADLINE {
-                return Err(PlatformPulseScrollJourneyFailure::WheelNeverMoved(trial));
-            }
-            if waited >= TRIAL_DEADLINE {
-                break;
-            }
-        }
-        let Some(first) = seen_first else {
-            return Err(PlatformPulseScrollJourneyFailure::WheelNeverMoved(trial));
-        };
-        first_change.push(first);
-        settlement.push(last_change.saturating_duration_since(issued));
-    }
-
-    Ok(ScrollLatencyEvidence {
-        probe_cost,
-        preparation,
-        first_change,
-        frame_gaps,
-        settlement,
-    })
-}
-
-/// Hold the window where a trial's samples can read it.
-fn expose(
-    world: &NativeBoundExecutableWorld,
-) -> Result<
-    <WindowsNativePlatform as NativePlatformContract>::ExposedClientArea<'_>,
-    PlatformPulseScrollJourneyFailure,
-> {
-    world
-        .platform
-        .expose_client_area(&world.native_client)
-        .map_err(PlatformPulseScrollJourneyFailure::Native)
-}
-
-/// One timing-probe capture: cheap enough to resolve the interval measured.
-fn sample<Platform: NativePlatformContract>(
-    platform: &Platform,
-    exposed: &Platform::ExposedClientArea<'_>,
-    strip: [u32; 4],
-) -> Result<NativeClientPixelCapture, PlatformPulseScrollJourneyFailure> {
-    platform
-        .sample_exposed_strip(exposed, strip)
-        .map_err(PlatformPulseScrollJourneyFailure::Native)
-}
-
-/// A band inside the scrolled viewport, in client pixels.
-fn strip_rect_px(dpi: u32) -> [u32; 4] {
-    let viewport = RecentActivityScrollGeometry.viewport_points();
-    let edges = [
-        viewport[0] + STRIP_INSET_POINTS[0],
-        viewport[1] + STRIP_INSET_POINTS[1],
-        STRIP_SIZE_POINTS[0].min(viewport[2] - STRIP_INSET_POINTS[0] * 2.0),
-        STRIP_SIZE_POINTS[1].min(viewport[3] - STRIP_INSET_POINTS[1] * 2.0),
-    ];
-    edges.map(|value| physical_px(value, dpi).max(0) as u32)
-}
-
-/// How many pixels differ between two probes of the same strip.
-fn changed_pixels(before: &NativeClientPixelCapture, after: &NativeClientPixelCapture) -> usize {
-    if before.width() != after.width() || before.height() != after.height() {
-        return usize::MAX;
-    }
-    before
-        .rgba()
-        .chunks_exact(4)
-        .zip(after.rgba().chunks_exact(4))
-        .filter(|(before, after)| {
-            before
-                .iter()
-                .take(3)
-                .zip(after.iter().take(3))
-                .any(|(before, after)| before.abs_diff(*after) > CHANNEL_TOLERANCE)
-        })
-        .count()
+    let rank = (permille * sorted.len()).div_ceil(1000).saturating_sub(1);
+    sorted.get(rank).copied().unwrap_or_default()
 }

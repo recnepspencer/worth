@@ -60,6 +60,14 @@ pub(super) fn observe(
                 }
             }
         };
+    // Modifiers are event-time host input facts. Shift redirects only a purely
+    // vertical wheel; an explicit inline delta (including diagonal precision
+    // input) keeps both axes intact. Runtime still owns region axis policy.
+    let (x_subpixels, y_subpixels) = if state.modifiers.shift() && x_subpixels == 0 {
+        (y_subpixels, 0)
+    } else {
+        (x_subpixels, y_subpixels)
+    };
     let Some((_, _, presentation)) = state.completed else {
         return Some(state.rejection_disposition());
     };

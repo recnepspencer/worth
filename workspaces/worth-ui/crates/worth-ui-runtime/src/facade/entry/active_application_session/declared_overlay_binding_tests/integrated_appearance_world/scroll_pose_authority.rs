@@ -32,7 +32,7 @@ pub(super) struct ScrollWorld {
 
 impl ScrollWorld {
     pub(super) fn launch_published() -> Self {
-        Self::publish(World::launch())
+        Self::publish_with_nested_content(World::launch())
     }
 
     /// The same World with the third component laid out inside the scrollable
@@ -169,6 +169,13 @@ impl ScrollWorld {
             .expect("the routed owner keeps its offset")
     }
 
+    /// Publish the direct candidate through the actual NativeDisplay host
+    /// acceptance boundary; observing a delta alone never calls this implicitly.
+    pub(super) fn publish_direct(&mut self, tick: u64) {
+        let frame = self.world.prepare_surface(self.surface());
+        self.world.publish(frame, tick, true);
+    }
+
     pub(super) fn displayed_offset(&self) -> Option<UiScrollOffset> {
         self.world
             .session
@@ -220,6 +227,8 @@ fn an_immediate_wheel_commits_only_the_pose_geometry_displays() {
         panic!("an immediate wheel over scrollable content applies")
     };
     assert_eq!(receipt.transitions()[0].current(), block(20));
+    assert_eq!(scroll.accepted_offset(), block(0));
+    scroll.publish_direct(5);
     assert_eq!(scroll.accepted_offset(), block(20));
     assert_eq!(scroll.displayed_offset(), Some(block(20)));
 
@@ -243,6 +252,11 @@ fn an_immediate_wheel_commits_only_the_pose_geometry_displays() {
         scroll.wheel(UiHostScrollDeltaPrecision::Pixel, pixels(5), 9),
         UiHostScrollObservationOutcome::Applied(_)
     ));
+    assert_eq!(scroll.accepted_offset(), block(20));
+    // The painted child is already entirely above the viewport at offset 20.
+    // This successor changes accepted geometry but owes no visible paint.
+    let frame = scroll.world.prepare_surface(scroll.surface());
+    scroll.world.publish(frame, 10, false);
     assert_eq!(scroll.accepted_offset(), block(25));
     assert_eq!(scroll.displayed_offset(), Some(block(25)));
     let _ = scroll.world.session.shutdown();
@@ -287,6 +301,8 @@ fn a_thumb_placement_commits_only_the_pose_geometry_displays() {
         )
         .expect("a placement with no attempt in flight applies");
     assert_eq!(placed.transitions()[0].current(), block(10));
+    assert_eq!(scroll.accepted_offset(), block(0));
+    scroll.publish_direct(4);
     assert_eq!(scroll.accepted_offset(), block(10));
     assert_eq!(scroll.displayed_offset(), Some(block(10)));
     let _ = scroll.world.session.shutdown();

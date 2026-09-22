@@ -89,8 +89,12 @@ impl super::super::WorthUiActiveApplicationSession {
                 )
             })
             .collect::<Vec<_>>();
-        match self.apply_scroll_poses(&poses) {
-            Ok(()) => {
+        match self.mounted.apply_presented_scroll_geometries(&poses) {
+            Ok(transitions) => {
+                for transition in transitions.iter() {
+                    self.interaction
+                        .observe_presented_hit_transition(transition, &self.mounted);
+                }
                 self.scroll_settle_retry = UiScrollSettleRetry::Settled;
                 if let Err(write_back) = self.write_back_accepted_scroll_offsets(&settlements) {
                     refusal.get_or_insert(UiScrollSettleRefusal::WriteBack(write_back));

@@ -31,7 +31,8 @@ impl super::super::WorthUiActiveApplicationSession {
         let Some(device_scale) = self.mounted.scroll_chrome_device_scale(surface) else {
             return Ok(Vec::new());
         };
-        let hovered = pointer.and_then(|point| self.scroll_chrome_under_pointer(surface, point));
+        let hovered =
+            pointer.and_then(|point| self.prepared_scroll_chrome_under_pointer(surface, point));
         let drag = self.interaction.scroll_chrome_latch();
         let mut nodes = Vec::new();
         for region in self.scroll_chrome_facts(surface) {

@@ -3,6 +3,7 @@ pub enum UiFocusPlacementExecutionDenial {
     OwnerUnavailable,
     IdentityExhausted,
     MountedFrameUnavailable,
+    UnpublishedScrollGeometry,
     ForeignPublishedFrame,
     TargetReceiptMismatch,
     SurfaceUnavailable,

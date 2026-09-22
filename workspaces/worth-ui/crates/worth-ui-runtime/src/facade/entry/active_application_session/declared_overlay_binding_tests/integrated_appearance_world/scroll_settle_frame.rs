@@ -4,9 +4,8 @@
 //! A smooth notch publishes a Motion transition; nothing else moves the
 //! accepted offset. Each frame prepares and presents a Motion tick and then
 //! settles the accepted Scroll sample, so the offset Scroll holds is always the
-//! pose geometry displays. A tick that sampled only scrolled content owes the
-//! host no sample work: the displacement is geometry the settle re-lowers, so
-//! the scripted host is never scripted here. A frame refused because the host
+//! pose geometry displays. Each tick crosses the NativeDisplay sample boundary;
+//! the helper scripts that completion explicitly. A frame refused because the host
 //! holds a presentation open is reported as deferred, keeps the sample, and is
 //! paid by the next frame. A second notch inside the horizon retargets the
 //! settle from the first target rather than doubling it. A track page refused
@@ -42,12 +41,30 @@ fn presentation(scroll: &ScrollWorld) -> UiHostObservationPresentationBasis {
 /// One Motion frame the way the native shell runs it: prepare the tick,
 /// present it, then settle the accepted Scroll sample.
 pub(super) fn settle_frame(scroll: &mut ScrollWorld, tick: u64) -> UiScrollSettleDisposition {
+    settle_with_completion(scroll, tick, true)
+}
+
+pub(super) fn settle_scripted_frame(
+    scroll: &mut ScrollWorld,
+    tick: u64,
+) -> UiScrollSettleDisposition {
+    settle_with_completion(scroll, tick, false)
+}
+
+fn settle_with_completion(
+    scroll: &mut ScrollWorld,
+    tick: u64,
+    present: bool,
+) -> UiScrollSettleDisposition {
     let basis = presentation(scroll);
     let prepared = scroll
         .world
         .session
         .prepare_motion_tick(tick, basis)
         .expect("an armed settle prepares its tick");
+    if present && !prepared.receipt().samples().is_empty() {
+        scroll.world.host.push_native_display_presented();
+    }
     scroll
         .world
         .session
@@ -268,6 +285,7 @@ fn a_track_page_refused_mid_presentation_leaves_the_settle_alive() {
         )
         .expect("a page with no attempt in flight applies");
     assert_eq!(placed.transitions()[0].current(), block(3));
+    scroll.publish_direct(NOTCH_TICK + 6);
     assert_eq!(scroll.accepted_offset(), block(3));
     assert_eq!(scroll.displayed_offset(), Some(block(3)));
     assert_eq!(pending_transitions(&scroll), 0);

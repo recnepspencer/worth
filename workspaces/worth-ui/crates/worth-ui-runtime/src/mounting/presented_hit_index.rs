@@ -9,6 +9,7 @@ use worth_ui_host_contract::{UiMountedInstanceIdentity, UiSurfaceBindingGenerati
 
 mod changes;
 mod query;
+mod scroll_succession;
 pub(crate) use changes::UiPresentedHitChanges;
 #[cfg(test)]
 mod changes_tests;
@@ -34,6 +35,7 @@ pub(in crate::mounting) struct UiPresentedHitIndex {
 struct Record {
     base: UiPresentedHitTestRow,
     effective: Option<UiPresentedHitTestRow>,
+    scroll_translation: [f32; 2],
 }
 
 // Completed boxes contain no NaN components.
@@ -104,6 +106,7 @@ impl UiPresentedHitIndex {
                     Record {
                         base,
                         effective: Some(base),
+                        scroll_translation: [0.0; 2],
                     },
                 ),
             );
@@ -153,6 +156,7 @@ impl UiPresentedHitIndex {
             }
             work.motion_rows_projected += 1;
             let (effective, tracks) = record.base.with_current_motion_work(sampler, presentation);
+            let effective = effective.map(|row| row.scroll_translated(record.scroll_translation));
             work.motion_tracks_considered += tracks;
             if effective == record.effective {
                 continue;
@@ -175,13 +179,9 @@ impl UiPresentedHitIndex {
     /// Displace the presented hit rows of the occurrences a settled scroll
     /// pose moved, by exactly the distance it moved them.
     ///
-    /// Scrolled content travels by re-lowering geometry over a region's
-    /// descendants, never by translating paint commands, so no Motion sample
-    /// is filed under these rows and `apply_motion` never reaches them. The
-    /// prepared pose that moved the displayed geometry is therefore the only
-    /// evidence that can move them, and it moves them on the frame it is
-    /// applied, so a pointer that never moved resolves against the content the
-    /// settle just put beneath it.
+    /// Scroll-group samples move descendant paint, not the owner's own row.
+    /// Their accepted pose supplies the same unsnapped displacement to hits;
+    /// ordinary component/Portal Motion remains a separate projection.
     pub(in crate::mounting) fn apply_scroll_translations(
         &mut self,
         binding: UiSurfaceBindingGeneration,
@@ -218,6 +218,10 @@ impl UiPresentedHitIndex {
                     *instance,
                     Record {
                         effective,
+                        scroll_translation: [
+                            record.scroll_translation[0] + translation[0],
+                            record.scroll_translation[1] + translation[1],
+                        ],
                         ..record
                     },
                 ),

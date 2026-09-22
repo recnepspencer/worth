@@ -96,7 +96,10 @@ fn phase_1_request_and_product_scenario_preserve_explicit_inputs() {
     // The scenario carries the product's own canonical geometry. Restating
     // those numbers here only proved that two copies agreed until the product
     // world changed extent, and then the copy outlived the world it described.
-    assert_eq!(scenario.logical_extent(), PLATFORM_PULSE_CANONICAL_LOGICAL_EXTENT);
+    assert_eq!(
+        scenario.logical_extent(),
+        PLATFORM_PULSE_CANONICAL_LOGICAL_EXTENT
+    );
     assert_eq!(
         scenario.background_logical_point(),
         PLATFORM_PULSE_BACKGROUND_LOGICAL_POINT

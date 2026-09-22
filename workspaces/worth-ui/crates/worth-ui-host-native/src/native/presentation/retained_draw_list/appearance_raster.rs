@@ -44,15 +44,30 @@ impl UiNativeRetainedDrawList {
                 UiMountedPaintCommand::SemanticText { .. } => text.push(*identity),
             }
         }
-        // Sampled appearance surfaces sit outside the static replay index;
-        // the raster clip to `clear` drops those the damage does not touch.
+        // Moving appearance coverage has its own transactional spatial index;
+        // static coverage cannot select a surface that moved into this damage.
+        let query = self.sampled_appearance.intersecting(
+            worth_ui_host_contract::UiMountedCanonicalBox::canonicalize(
+                worth_ui_host_contract::UiMountedCanonicalBoxInput {
+                    // Include outward-rounded physical edge coverage.
+                    x: (left - 1.0) / basis.scale_factor(),
+                    y: (top - 1.0) / basis.scale_factor(),
+                    width: (width + 2.0) / basis.scale_factor(),
+                    height: (height + 2.0) / basis.scale_factor(),
+                    coordinate_space: worth_ui_host_contract::UiMountedCoordinateSpace::Viewport,
+                },
+            )
+            .map_err(|_| Denial::CommandMismatch)?,
+        )?;
+        counters.damage_index_branch_aabb_probes += query.branch_aabb_probes as u64;
+        counters.damage_index_leaf_command_bounds_probes += query.leaf_command_bounds_probes as u64;
+        counters.damage_index_stored_records += query.stored_records as u64;
+        counters.damage_index_high_water += query.high_water_records as u64;
         direct.extend(
-            self.sample_overrides
-                .keys()
-                .filter(|identity| identity.is_appearance_surface())
-                .map(|identity| {
-                    crate::native::presentation::appearance::UiNativeAppearanceCommandIdentity::Surface(identity.mounted_instance())
-                }),
+            query
+                .identities
+                .iter()
+                .filter_map(|identity| self.appearance_sample_identity(*identity)),
         );
         let keys = {
             let (_, appearance) = self

@@ -128,6 +128,11 @@ fn sample_contract_brands_finite_same_frame_unique_work() {
     assert_eq!(sample.affinity().predecessor(), Some(frame));
     assert_eq!(sample.affinity().successor(), frame);
     assert_eq!(sample.changes(), &[change]);
+    let mut no_paint = input(Vec::new());
+    no_paint.damage.clear();
+    let no_paint = UiMountedPresentationSample::from_inert_mechanics(no_paint).unwrap();
+    assert!(no_paint.changes().is_empty() && no_paint.damage().is_empty());
+    assert_eq!(no_paint.affinity(), sample.affinity());
     assert_eq!(
         UiMountedPresentationSample::from_inert_mechanics(input(Vec::new())),
         Err(UiMountedPresentationSampleConstructionDenial::EmptyChanges)

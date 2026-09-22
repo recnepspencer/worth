@@ -21,12 +21,12 @@ impl UiMountedOccurrenceGeometryState {
             return None;
         };
         let content = geometry.occurrences.get(owner)?.bounds;
-        let viewport = geometry
-            .regions
-            .get(declaration)?
+        let (_, slot) = geometry
+            .scroll_index
+            .regions(*owner)
             .iter()
-            .find(|row| row.0 == *owner)?
-            .2;
+            .find(|(candidate, _)| candidate == declaration)?;
+        let viewport = geometry.regions.get(declaration)?.get(*slot)?.2;
         Some((*owner, content, viewport))
     }
 
@@ -42,11 +42,7 @@ impl UiMountedOccurrenceGeometryState {
     ) -> Option<UiMountedInstanceIdentity> {
         let geometry = self.surfaces.get(&surface)?;
         let owns_region = |candidate: UiMountedInstanceIdentity| {
-            geometry
-                .regions
-                .values()
-                .flatten()
-                .any(|(owner, _, _)| *owner == candidate)
+            !geometry.scroll_index.regions(candidate).is_empty()
         };
         let mut cursor = geometry.occurrences.get(&instance)?.parent;
         while let Some(ancestor) = cursor {
@@ -88,6 +84,7 @@ impl UiMountedOccurrenceGeometryState {
             .ok_or(UiMountedOccurrenceGeometryDenial::MissingSurfaceBinding)?;
         let scale = worth_ui_host_contract::UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f64;
         let mut translations = BTreeMap::<UiMountedInstanceIdentity, (f32, f32)>::new();
+        let mut work = crate::mounting::UiHitTestSpatialWork::default();
         for (owner, offset) in poses {
             if !geometry.occurrences.contains_key(owner) {
                 return Err(UiMountedOccurrenceGeometryDenial::UnknownMountedInstance);
@@ -104,14 +101,11 @@ impl UiMountedOccurrenceGeometryState {
                 ((previous.inline_subpixels() - offset.inline_subpixels()) as f64 / scale) as f32;
             let dy =
                 ((previous.block_subpixels() - offset.block_subpixels()) as f64 / scale) as f32;
-            let mut pending = geometry.children.get(owner).cloned().unwrap_or_default();
-            while let Some(instance) = pending.pop() {
-                let translation = translations.entry(instance).or_default();
+            for instance in geometry.scroll_index.descendants(*owner) {
+                work.scroll_geometry_members_visited += 1;
+                let translation = translations.entry(*instance).or_default();
                 translation.0 += dx;
                 translation.1 += dy;
-                if let Some(children) = geometry.children.get(&instance) {
-                    pending.extend(children);
-                }
             }
         }
         let mut rows = Vec::with_capacity(translations.len());
@@ -151,11 +145,11 @@ impl UiMountedOccurrenceGeometryState {
             rows.push((*instance, row));
         }
         let mut regions = Vec::new();
-        for (declaration, occurrences) in &geometry.regions {
-            for (index, (instance, _, bounds)) in occurrences.iter().enumerate() {
-                if let Some((dx, dy)) = translations.get(instance) {
-                    regions.push((*declaration, index, translate(*bounds, *dx, *dy)?));
-                }
+        for (instance, (dx, dy)) in &translations {
+            for (declaration, index) in geometry.scroll_index.regions(*instance) {
+                work.scroll_geometry_regions_visited += 1;
+                let bounds = geometry.regions[declaration][*index].2;
+                regions.push((*declaration, *index, translate(bounds, *dx, *dy)?));
             }
         }
         Ok(UiPreparedMountedScrollPose {
@@ -164,6 +158,7 @@ impl UiMountedOccurrenceGeometryState {
             rows,
             regions,
             translations: moved,
+            work,
         })
     }
 
@@ -279,9 +274,14 @@ pub(crate) struct UiPreparedMountedScrollPose {
         UiMountedCanonicalBox,
     )>,
     translations: Vec<(UiMountedInstanceIdentity, [f32; 2])>,
+    work: crate::mounting::UiHitTestSpatialWork,
 }
 
 impl UiPreparedMountedScrollPose {
+    pub(crate) const fn work(&self) -> crate::mounting::UiHitTestSpatialWork {
+        self.work
+    }
+
     pub(crate) fn changed_instances(&self) -> Box<[UiMountedInstanceIdentity]> {
         self.rows.iter().map(|row| row.0).collect()
     }

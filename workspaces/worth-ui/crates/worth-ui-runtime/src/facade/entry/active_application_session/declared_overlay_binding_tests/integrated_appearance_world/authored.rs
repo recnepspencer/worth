@@ -16,6 +16,10 @@ pub(super) fn source() -> String {
     source_with_seam(false)
 }
 
+#[path = "scroll_only_source.rs"]
+mod scroll_only;
+pub(super) use scroll_only::scroll_only_source;
+
 pub(super) fn ap07_bootstrap_source() -> String {
     let content = format!(
         "component {} {{ appearance {{ role overlay.content1 }} region workspace.region.primary {{ sizing workspace.sizing.mosaic_support; }} }}",

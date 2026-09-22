@@ -173,21 +173,6 @@ pub(crate) trait NativePlatformContract: sealed::Sealed {
         bound: &'bound Self::BoundClientArea,
     ) -> Result<Self::ExposedClientArea<'bound>, NativePlatformFailure>;
 
-    /// One cheap capture of `strip` -- x, y, width, height in client pixels.
-    ///
-    /// `capture_client_area` proves where its pixels came from by taking three
-    /// captures from three sources and cross-checking them, which costs about
-    /// half a second; one uncrossed capture of the whole area still costs tens
-    /// of milliseconds. Both are the same order as the intervals a motion
-    /// criterion measures, so neither can time one. Movement shows in any strip
-    /// the content crosses, so a timing probe reads a strip of an already
-    /// exposed area. Never adjudicate appearance from this.
-    fn sample_exposed_strip(
-        &self,
-        exposed: &Self::ExposedClientArea<'_>,
-        strip: [u32; 4],
-    ) -> Result<NativeClientPixelCapture, NativePlatformFailure>;
-
     fn resize_bound_client_area(
         &self,
         bound: &mut Self::BoundClientArea,

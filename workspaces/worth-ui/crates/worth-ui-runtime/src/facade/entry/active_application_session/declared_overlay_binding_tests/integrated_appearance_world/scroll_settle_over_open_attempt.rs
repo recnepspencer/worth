@@ -41,6 +41,9 @@ fn settle_frame(scroll: &mut ScrollWorld, tick: u64) -> UiScrollSettleDispositio
         .session
         .prepare_motion_tick(tick, basis)
         .expect("an armed settle prepares its tick");
+    if !prepared.receipt().samples().is_empty() {
+        scroll.world.host.push_native_display_presented();
+    }
     scroll
         .world
         .session

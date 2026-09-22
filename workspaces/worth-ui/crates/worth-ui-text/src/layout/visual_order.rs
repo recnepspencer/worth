@@ -37,7 +37,10 @@ pub(super) fn order(
     line: &LinePlan,
 ) -> VisualLine {
     let units = &all_units[line.unit_start..line.unit_end];
-    let visible_len = match units.iter().position(|unit| unit.kind == UnitKind::HardBreak) {
+    let visible_len = match units
+        .iter()
+        .position(|unit| unit.kind == UnitKind::HardBreak)
+    {
         // A line that holds nothing but its break is an empty line, and an
         // empty line is carried by its anchor. Ordering the break here would
         // give that line a run and take its anchor, and with it the only caret

@@ -66,12 +66,7 @@ pub(super) fn deliver_wheel_notches(
             "a wheel delivery needs at least one notch".to_owned(),
         ));
     }
-    let screen_point = screen_point_of(observed, point)?;
-    focus_process_window(window)?;
-    super::input_environment::qualify_pointer_world(window, observed.process_id(), screen_point)
-        .map_err(NativePlatformFailure::InputEnvironment)?;
-    move_pointer_to(screen_point)?;
-    super::pointer_target::require_before_effect(window, screen_point)?;
+    prepare_wheel_target(window, observed, point)?;
     // Rolling toward the user is a negative platform delta.
     let per_notch = notches.signum().wrapping_neg().wrapping_mul(WHEEL_DELTA);
     let events: Vec<HwKbMouse> = (0..notches.unsigned_abs())
@@ -95,6 +90,20 @@ pub(super) fn deliver_wheel_notches(
     Ok(issued)
 }
 
+pub(super) fn prepare_wheel_target(
+    window: &HWND,
+    observed: ProcessBoundNativeClientAreaObservation,
+    point: NativeClientPixelPoint,
+) -> Result<(i32, i32), NativePlatformFailure> {
+    let screen_point = screen_point_of(observed, point)?;
+    focus_process_window(window)?;
+    super::input_environment::qualify_pointer_world(window, observed.process_id(), screen_point)
+        .map_err(NativePlatformFailure::InputEnvironment)?;
+    move_pointer_to(screen_point)?;
+    super::pointer_target::require_before_effect(window, screen_point)?;
+    Ok(screen_point)
+}
+
 /// Press the primary button at `from`, move the pointer in steps to `to`, and
 /// release it there.
 ///
@@ -106,8 +115,20 @@ pub(super) fn deliver_pointer_drag(
     from: NativeClientPixelPoint,
     to: NativeClientPixelPoint,
 ) -> Result<(), NativePlatformFailure> {
-    let from_screen = screen_point_of(observed, from)?;
     let to_screen = screen_point_of(observed, to)?;
+    deliver_captured_drag(window, observed, from, to_screen)?;
+    super::pointer_target::require_after_effect(window, to_screen, NativeInputProbeKind::Pointer, 2)
+}
+
+/// A captured drag may end outside the client. Qualify the press, retain the
+/// exact process/window, and always release the held button even on failure.
+pub(super) fn deliver_captured_drag(
+    window: &HWND,
+    observed: ProcessBoundNativeClientAreaObservation,
+    from: NativeClientPixelPoint,
+    to_screen: (i32, i32),
+) -> Result<(), NativePlatformFailure> {
+    let from_screen = screen_point_of(observed, from)?;
     focus_process_window(window)?;
     super::input_environment::qualify_pointer_world(window, observed.process_id(), from_screen)
         .map_err(NativePlatformFailure::InputEnvironment)?;
@@ -124,6 +145,7 @@ pub(super) fn deliver_pointer_drag(
             "SendInput delivered {pressed} of 1 drag press events"
         )));
     }
+    let release_guard = PressedPrimary;
     for step in 1..=DRAG_STEP_COUNT {
         thread::sleep(DRAG_STEP_PAUSE);
         let waypoint = (
@@ -147,7 +169,22 @@ pub(super) fn deliver_pointer_drag(
             format!("SendInput delivered {released} of 1 drag release events"),
         ));
     }
-    super::pointer_target::require_after_effect(window, to_screen, NativeInputProbeKind::Pointer, 2)
+    std::mem::forget(release_guard);
+    Ok(())
+}
+
+struct PressedPrimary;
+
+impl Drop for PressedPrimary {
+    fn drop(&mut self) {
+        let cleanup = winsafe::SendInput(&[HwKbMouse::Mouse(MOUSEINPUT {
+            dwFlags: co::MOUSEEVENTF::LEFTUP,
+            ..Default::default()
+        })]);
+        if !matches!(cleanup, Ok(1)) {
+            eprintln!("failed to release pointer after interrupted native drag: {cleanup:?}");
+        }
+    }
 }
 
 fn interpolate(from: i32, to: i32, step: i32) -> i32 {

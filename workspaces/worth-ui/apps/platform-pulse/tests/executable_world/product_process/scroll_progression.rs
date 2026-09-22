@@ -14,8 +14,10 @@ use crate::native_platform::NativePlatformContract;
 
 use super::{DashboardAtRest, NativeBoundExecutableWorld, Published, PulseExecutableWorld};
 
+mod axes;
 mod failure;
 mod latency;
+mod moving_thumb;
 mod observation;
 pub(crate) use failure::PlatformPulseScrollJourneyFailure;
 pub(crate) use latency::ScrollLatencyEvidence;
@@ -102,6 +104,8 @@ fn complete(
         ));
     }
 
+    moving_thumb::verify(world, &baseline, dpi, notch)?;
+    axes::verify(world, &baseline, dpi, notch)?;
     let interior = client_point(&baseline, dpi, geometry.content_interior_points())?;
     // The journey adjudicates geometry, not time; the issue instant belongs to
     // the latency measurement below.
@@ -136,7 +140,7 @@ fn complete(
     // The list now sits mid-travel, the process is warm, and every surface the
     // notch touches has been painted at least once: the conditions the timing
     // criterion names. Time the notches here, on this same window.
-    let latency = latency::measure_wheel_latency(world, dpi, interior)?;
+    let latency = latency::measure_wheel_latency(world, dpi, interior, drag_offset_points, notch)?;
 
     let expected_shutdown_sequence = drain_until_idle(world)?;
     Ok(PlatformPulseScrollJourneyEvidence {

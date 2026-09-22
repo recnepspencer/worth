@@ -12,10 +12,9 @@
 //! When that ending happens follows the evidence. A thumb press ends the settle
 //! at capture, because the latch is already the pointer's and a settle still
 //! walking the region would pull the thumb out from under the grab. A placed
-//! offset ends it only once its pose has landed: the pending target is retired
-//! on the successor the route stages, and the sampler track and Motion track
-//! end after mounted geometry has accepted the pose, so a refused placement
-//! leaves the settle exactly as it found it.
+//! offset ends it only once the ordinary host frame carrying its exact pending
+//! result is accepted. The target, sampler and Motion track remain authoritative
+//! while that candidate is pending or refused.
 //!
 //! The Motion track ends with its own terminal cause, published as a fact like
 //! every other ending, so the record shows the drag displaced it rather than
@@ -46,6 +45,22 @@ pub(in crate::facade::entry) struct UiScrollContentMotionEnd {
 }
 
 impl super::super::WorthUiActiveApplicationSession {
+    pub(super) fn stage_direct_scroll_succession(
+        &mut self,
+        successor: &crate::runtime::scroll::UiScrollRuntimeState,
+        receipt: &crate::runtime::scroll::UiScrollRouteReceipt,
+        occurrence: worth_ui_host_contract::UiMountedInstanceIdentity,
+        geometry: &[Option<worth_ui_host_contract::UiMountedInstanceIdentity>],
+    ) -> Result<(), crate::mounting::UiMountedOccurrenceGeometryDenial> {
+        let prepared = successor.prepare_direct_succession(receipt, occurrence, geometry);
+        self.mounted.stage_direct_scroll_geometry(&prepared)?;
+        self.scroll
+            .as_mut()
+            .expect("direct input has an installed Scroll owner")
+            .stage_direct_succession(successor, &prepared);
+        Ok(())
+    }
+
     /// End everything still moving `owner`'s content on `mounted_instance` at
     /// capture, so the pointer that just latched the thumb is the only
     /// authority left over the region.

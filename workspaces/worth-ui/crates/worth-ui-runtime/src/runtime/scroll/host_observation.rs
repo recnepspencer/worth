@@ -1,5 +1,7 @@
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) enum UiHostScrollObservationOutcome {
+    /// The input was admitted and its direct frame or smooth transition staged.
+    /// This route receipt is not proof of physical presentation acceptance.
     Applied(super::UiScrollRouteReceipt),
     Denied(UiHostScrollObservationDenial),
 }
@@ -15,6 +17,9 @@ pub(crate) enum UiHostScrollObservationDenial {
     ViewportUnavailable,
     BoundsOutOfRange,
     DeltaOutOfRange,
+    /// A layout or an earlier direct effect must be published before a
+    /// different policy can take ownership of its candidate geometry.
+    PendingGeometryPublication,
     Route(super::UiScrollRouteDenial),
     /// The declared wheel behaviour is smooth, and the settle this notch asked
     /// for could not be staged or published. Nothing scrolled: the route that

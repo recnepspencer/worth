@@ -41,7 +41,17 @@ fn inserted() -> i64 {
 
 /// The nested World with the reader ten points into the content.
 fn scrolled_world() -> ScrollWorld {
-    let mut scroll = ScrollWorld::publish_with_nested_content(World::launch());
+    // The anchor belongs to what the reader actually saw. Publish the original
+    // one-child layout before admitting a sibling into the region; an earlier
+    // unpresented layout is no longer allowed to seed accepted Scroll records.
+    let mut scroll = ScrollWorld::publish(World::launch());
+    super::geometry::scrollable::install_scrollable_primary_with_nested_content(
+        &mut scroll.world.session,
+        scroll.world.surfaces,
+        scroll.world.instances,
+    );
+    let frame = scroll.world.prepare_surface(scroll.surface());
+    scroll.world.publish(frame, 2, false);
     let outcome = scroll.wheel(
         UiHostScrollDeltaPrecision::Pixel,
         -TRAVEL_POINTS * UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
@@ -51,6 +61,7 @@ fn scrolled_world() -> ScrollWorld {
         matches!(outcome, UiHostScrollObservationOutcome::Applied(_)),
         "an immediate wheel over the region applies: {outcome:?}"
     );
+    scroll.publish_direct(5);
     assert_eq!(scroll.accepted_offset(), block(TRAVEL_POINTS));
     scroll
 }
@@ -67,6 +78,8 @@ fn content_inserted_above_the_anchor_moves_the_offset_with_it() {
         scroll.world.surfaces,
         scroll.world.instances,
     );
+    let frame = scroll.world.prepare_surface(scroll.surface());
+    scroll.world.publish(frame, 6, false);
 
     assert_eq!(
         scroll.accepted_offset(),
@@ -93,6 +106,8 @@ fn losing_the_anchor_clamps_the_offset_instead_of_following_a_sibling() {
         scroll.world.surfaces,
         scroll.world.instances,
     );
+    let frame = scroll.world.prepare_surface(scroll.surface());
+    scroll.world.publish(frame, 6, false);
 
     assert_eq!(
         scroll.accepted_offset(),

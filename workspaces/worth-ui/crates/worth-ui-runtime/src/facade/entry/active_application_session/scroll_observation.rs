@@ -3,10 +3,10 @@
 //!
 //! The order here is the whole point. The chain is resolved, the delta is
 //! turned into offset direction, bounds are reconciled and the route is run
-//! against a cloned successor; only when that successor has either placed its
-//! poses or published its settle does it become the session's Scroll state.
-//! Everything before that is evidence, and a denial anywhere leaves the
-//! accepted offset exactly where the last applied pose left it.
+//! against a chain-local successor. Direct intent stages candidate poses and carries
+//! its exact result through ordinary frame acceptance; smooth intent publishes
+//! a settle whose accepted samples alone move the offset. Input admission is
+//! not presentation, and refusal leaves the accepted predecessor intact.
 
 use super::super::WorthUiActiveApplicationSession;
 
@@ -49,18 +49,6 @@ impl WorthUiActiveApplicationSession {
         // on ours. Whatever the delta it carried was allowed to do, the latch
         // it was holding ends here, once, after the report has been made.
         self.end_scroll_gesture_latch_on_phase(*phase);
-        // Reconciling bounds along the routed chain can retire a settle target
-        // whose owner has nothing left to reach. Retiring the target does not
-        // end the track that was walking toward it, and until something does,
-        // that track keeps sampling content no one is settling. Publication
-        // sweeps for exactly this; a route is the other place a target can
-        // disappear, so it sweeps too rather than leaving the orphan to
-        // whichever frame happens to be published next.
-        //
-        // A denied observation discarded its successor, so it retired nothing
-        // and the sweep finds nothing. A settle this observation just staged
-        // is pending by the time the sweep runs and is left alone.
-        self.settle_scroll_motion_without_a_target();
         Some(outcome)
     }
 
@@ -128,6 +116,15 @@ impl WorthUiActiveApplicationSession {
             .scroll
             .as_ref()
             .expect("Scroll installation was proven before bounds preflight");
+        let surface = routed.entries()[0].owner().semantic_surface();
+        if installed.has_unpresented_layout(surface)
+            || (smooth.is_some() && installed.has_pending_direct(surface))
+        {
+            return Err(UiHostScrollObservationDenial::PendingGeometryPublication);
+        }
+        let mut successor = installed
+            .route_candidate(routed.entries(), smooth.is_none())
+            .map_err(UiHostScrollObservationDenial::Route)?;
         // Which owner this gesture belongs to, judged from the offsets the
         // chain holds now against the bounds the route is about to reconcile.
         // The route is what moves those offsets, so the question is asked
@@ -135,7 +132,7 @@ impl WorthUiActiveApplicationSession {
         let offsets = routed
             .entries()
             .iter()
-            .map(|entry| installed.offset(entry.owner(), entry.incarnation()))
+            .map(|entry| successor.state().offset(entry.owner(), entry.incarnation()))
             .collect::<Result<Vec<_>, _>>()
             .map_err(UiHostScrollObservationDenial::Route)?;
         let region = crate::runtime::scroll::latching_chain_index(&offsets, &bounds, offset_delta)
@@ -161,14 +158,13 @@ impl WorthUiActiveApplicationSession {
             },
         )
         .map_err(UiHostScrollObservationDenial::Route)?;
-        let mut successor = installed.clone();
         let receipt = successor
+            .state_mut()
             .route_with_reconciled_bounds(request, &bounds)
             .map_err(UiHostScrollObservationDenial::Route)?;
-        // `successor` is evidence until the pose it names is on mounted
-        // geometry (or its settle is published). It becomes the session's
-        // Scroll state only after that, so a refusal below leaves the accepted
-        // offset exactly where the last applied pose left it.
+        // Direct `successor` stays pending until its physical frame is accepted.
+        // Smooth succession installs only target intent; its sampled displayed
+        // offset has a separate host acceptance boundary.
         if let Some(observation) = smooth {
             // The staged settle lowers to a Motion transition request and is
             // published through the Scroll settle service-proposal lane. The
@@ -176,7 +172,7 @@ impl WorthUiActiveApplicationSession {
             // what moves it, one accepted sample at a time.
             let staged = region.or_else(|| routed.region(0));
             let settled = self
-                .stage_scroll_transition(&mut successor, &receipt, observation, staged)
+                .stage_scroll_transition(successor.state_mut(), &receipt, observation, staged)
                 .map_err(
                     |denial| crate::runtime::scroll::UiScrollSettleStop::Staging {
                         detail: format!("{denial:?}").into_boxed_str(),
@@ -194,7 +190,11 @@ impl WorthUiActiveApplicationSession {
                     return Err(UiHostScrollObservationDenial::SettleUnpublished);
                 }
             }
-            *self.scroll.as_mut().expect("installed Scroll owner") = successor;
+            self.scroll
+                .as_mut()
+                .expect("installed Scroll owner")
+                .commit_routed_candidate(successor);
+            self.settle_routed_scroll_motion_without_a_target(&routed);
             self.latch_committed_scroll_gesture(
                 &routed,
                 region,
@@ -204,23 +204,13 @@ impl WorthUiActiveApplicationSession {
             );
             return Ok(receipt);
         }
-        let poses = receipt
-            .transitions()
-            .iter()
-            .zip(geometry)
-            .filter_map(|(transition, owner)| {
-                owner.map(|owner| {
-                    (
-                        transition.owner().semantic_surface(),
-                        owner,
-                        transition.current(),
-                    )
-                })
-            })
-            .collect::<Vec<_>>();
-        self.apply_scroll_poses(&poses)
-            .map_err(UiHostScrollObservationDenial::Geometry)?;
-        *self.scroll.as_mut().expect("installed Scroll owner") = successor;
+        self.stage_direct_scroll_succession(
+            successor.state(),
+            &receipt,
+            routed.mounted_instance(),
+            &geometry,
+        )
+        .map_err(UiHostScrollObservationDenial::Geometry)?;
         self.latch_committed_scroll_gesture(
             &routed,
             region,

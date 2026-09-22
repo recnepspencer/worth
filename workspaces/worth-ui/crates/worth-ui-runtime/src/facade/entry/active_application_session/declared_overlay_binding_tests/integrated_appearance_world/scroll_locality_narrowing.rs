@@ -152,13 +152,10 @@ fn a_notch_re_resolves_the_content_its_region_carries_and_nothing_beside_it() {
     drop(prepared);
 
     let work = scroll.world.session.last_scroll_hit_index_work();
-    assert!(
-        (1..=CARRIED.len()).contains(&work.scroll_rows_displaced()),
-        "the pose moved hit rows and never more of them than the occurrences it \
-         carried: the count answers how much of the hit index this pose paid \
-         for, and a pose that reached a row outside the region would exceed \
-         that bound -- displaced {}",
-        work.scroll_rows_displaced()
+    assert_eq!(
+        work.scroll_rows_displaced(),
+        0,
+        "preparing direct geometry must not displace the accepted hit index"
     );
     let _ = scroll.world.session.shutdown();
 }
@@ -211,5 +208,88 @@ fn a_notch_on_one_surface_owes_the_other_surface_nothing() {
          the question the second surface answered was one this notch could \
          have changed"
     );
+    let _ = scroll.world.session.shutdown();
+}
+
+#[test]
+fn accepted_samples_visit_only_indexed_content_and_its_owned_regions() {
+    let mut scroll = super::scroll_settle_commit::smooth_world(true);
+    let declaration = scroll
+        .world
+        .session
+        .application
+        .authored_overlay_material()
+        .overlay_declaration_bindings()
+        .surface_named("workspace.surface.overlay")
+        .unwrap();
+    let carried_regions: usize = CARRIED
+        .iter()
+        .map(|position| {
+            let node = scroll
+                .world
+                .session
+                .mounted
+                .current_mounted_identity_basis(scroll.world.instances[*position])
+                .unwrap()
+                .graph_node_identity();
+            scroll
+                .world
+                .session
+                .application
+                .mounted_region_declarations(declaration, node)
+                .0
+                .len()
+        })
+        .sum();
+    assert!(carried_regions > 0);
+    let owner_bounds = scroll
+        .world
+        .session
+        .mounted
+        .interaction_hit_test_basis(scroll.presentation())
+        .unwrap()
+        .rows()
+        .iter()
+        .find(|row| row.mounted_instance() == scroll.target())
+        .unwrap()
+        .bounds();
+    assert!(matches!(
+        scroll.wheel(
+            super::scroll_settle_commit::ONE_NOTCH,
+            super::scroll_settle_commit::one_notch_up(),
+            5
+        ),
+        UiHostScrollObservationOutcome::Applied(_)
+    ));
+    // The first accepted sample establishes Motion's unchanged rest pose;
+    // locality must not manufacture descendant work when nothing moved.
+    super::scroll_settle_frame::settle_frame(&mut scroll, 6);
+    let rest_work = scroll.world.session.last_scroll_hit_index_work();
+    assert_eq!(rest_work.scroll_geometry_members_visited(), 0);
+    assert_eq!(rest_work.scroll_geometry_regions_visited(), 0);
+    for tick in [7, 8] {
+        assert_eq!(
+            super::scroll_settle_frame::settle_frame(&mut scroll, tick),
+            super::super::super::UiScrollSettleDisposition::Applied
+        );
+        let work = scroll.world.session.last_scroll_hit_index_work();
+        assert_eq!(work.scroll_geometry_members_visited(), CARRIED.len());
+        assert_eq!(work.scroll_geometry_regions_visited(), carried_regions,
+            "only carried occurrences' declared regions are visited; siblings and stationary owners are not scanned");
+        assert_eq!(
+            scroll
+                .world
+                .session
+                .mounted
+                .interaction_hit_test_basis(scroll.presentation())
+                .unwrap()
+                .rows()
+                .iter()
+                .find(|row| row.mounted_instance() == scroll.target())
+                .unwrap()
+                .bounds(),
+            owner_bounds
+        );
+    }
     let _ = scroll.world.session.shutdown();
 }

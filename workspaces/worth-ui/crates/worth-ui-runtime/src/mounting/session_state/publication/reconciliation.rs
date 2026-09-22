@@ -21,6 +21,9 @@ impl crate::mounting::session_state::WorthUiMountedSessionState {
         )
             -> Result<crate::mounting::UiMountedAppearanceDerivedInput, ()>,
     ) -> Result<UiMountedPublicationTransition, crate::mounting::UiMountedIdentityDenial> {
+        if !self.pending_direct_scroll.is_empty() {
+            return Err(crate::mounting::UiMountedIdentityDenial::ReconciliationBasisMismatch);
+        }
         let capability_report = host.capability_report().clone();
         let frame = self.identity.prepare_current_reconciliation_frame(
             replacements,
@@ -59,6 +62,8 @@ impl crate::mounting::session_state::WorthUiMountedSessionState {
         if replacements.is_empty() || self.identity.publication_receipt().is_none() {
             return Err(crate::mounting::UiMountedIdentityDenial::ReconciliationBasisMismatch);
         }
+        let mut frame = frame;
+        self.bind_pending_direct_scroll(&mut frame);
         let admitted = match self.identity.admit_prepared_frame_authority(frame) {
             Ok(admitted) => admitted,
             Err(rejection) => {

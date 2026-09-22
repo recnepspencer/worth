@@ -45,6 +45,14 @@ impl WorthUiNativeApplicationShell {
         if self.session.mounted.motion_sample_presentation_pending() {
             return Ok(UiNativeMotionTickDisposition::AwaitingPhysicalCompletion);
         }
+        // Candidate layout must reach the ordinary host boundary before its
+        // geometry can become the basis of another physical Scroll sample.
+        if self.session.scroll.as_ref().is_some_and(|scroll| {
+            scroll.has_unpresented_layout(self.surface)
+                || self.session.mounted.has_pending_direct_scroll(self.surface)
+        }) {
+            return Ok(UiNativeMotionTickDisposition::Active);
+        }
         let presentation = self.current_motion_presentation().ok_or(())?;
         let prepared = self
             .session
@@ -107,6 +115,7 @@ impl WorthUiNativeApplicationShell {
                 .pending_motion_sample_matches(presentation)
         }) {
             self.session.complete_motion_sample_presentation();
+            self.settle_accepted_scroll_samples();
             return self.native_motion_tick_disposition();
         }
         self.managed_rebind_completion_tick = self.managed_rebind_completion_tick.saturating_add(1);

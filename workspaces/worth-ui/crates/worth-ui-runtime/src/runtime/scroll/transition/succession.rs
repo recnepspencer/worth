@@ -3,10 +3,9 @@
 //! One target per Scroll owner, replaced in place, so a wheel burst cannot grow
 //! storage with the number of events it delivered. Accumulation runs against
 //! the owner's *current* target rather than an obsolete animation endpoint, so
-//! a second notch in the same direction adds a full notch of travel. Input in
-//! the opposite direction takes control instead: that axis restarts from the
-//! accepted displayed sample, so a reversal is felt on the next eligible frame
-//! rather than being absorbed by a target far ahead of the content.
+//! every signed notch contributes its full travel. Opposite input retargets
+//! immediately too; it does not discard pending travel. The Motion request
+//! separately starts from the latest accepted position and velocity.
 
 use std::collections::BTreeMap;
 
@@ -35,13 +34,6 @@ pub(crate) enum UiScrollTransitionReclampOutcome {
     RetiredEmptyExtent,
 }
 
-/// Which offset one axis accumulates against for an arriving delta.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-enum UiScrollAccumulationBasis {
-    CurrentTarget,
-    AcceptedSample,
-}
-
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 struct UiScrollOwnerTransition {
     target: super::UiScrollTransitionTarget,
@@ -68,6 +60,18 @@ impl UiScrollTransitionBasis {
 }
 
 impl UiScrollTransitionSuccession {
+    pub(in crate::runtime::scroll) fn copy_owner_from(
+        &mut self,
+        predecessor: &Self,
+        owner: super::super::UiScrollOwnerIdentity,
+    ) {
+        if let Some(record) = predecessor.owners.get(&owner) {
+            self.owners.insert(owner, *record);
+        } else {
+            self.owners.remove(&owner);
+        }
+    }
+
     pub(crate) const fn new() -> Self {
         Self {
             owners: BTreeMap::new(),
@@ -83,11 +87,11 @@ impl UiScrollTransitionSuccession {
         basis: UiScrollTransitionBasis,
     ) -> Result<super::UiScrollTransitionTarget, super::UiScrollTransitionDenial> {
         let delta = input.points_subpixels()?;
-        let live = self.live_transition(owner, incarnation, input.input_tick());
+        let live = self.live_transition(owner, incarnation);
         let window = live
             .map_or_else(super::UiScrollWheelWindow::closed, |live| live.window)
             .observe(input.phase(), input.input_tick());
-        let start = accumulation_start(live.map(|live| live.target), basis, delta);
+        let start = live.map_or(basis.accepted_offset, |live| live.target.target_offset());
         let (target_offset, _) = super::super::routing::consume_delta(
             basis.bounds.clamp(start),
             basis.bounds,
@@ -154,21 +158,6 @@ impl UiScrollTransitionSuccession {
         self.owners.remove(&owner).is_some()
     }
 
-    /// Retire every transition whose settle horizon has ended at `tick`.
-    pub(crate) fn advance(&mut self, tick: u64) -> usize {
-        let retired = self
-            .owners
-            .iter()
-            .filter(|(_, stored)| stored.target.horizon().is_exhausted_at(tick))
-            .map(|(owner, _)| *owner)
-            .collect::<Vec<_>>();
-        for owner in &retired {
-            self.owners.remove(owner);
-        }
-        retired.len()
-    }
-
-    #[cfg(test)]
     pub(crate) fn target(
         &self,
         owner: super::super::UiScrollOwnerIdentity,
@@ -223,53 +212,10 @@ impl UiScrollTransitionSuccession {
         &self,
         owner: super::super::UiScrollOwnerIdentity,
         incarnation: super::super::UiScrollOwnerIncarnation,
-        tick: u64,
     ) -> Option<UiScrollOwnerTransition> {
         self.owners
             .get(&owner)
             .copied()
             .filter(|stored| stored.target.binds(owner, incarnation))
-            .filter(|stored| !stored.target.horizon().is_exhausted_at(tick))
-    }
-}
-
-/// The offset the arriving delta is added to, chosen per axis.
-fn accumulation_start(
-    live: Option<super::UiScrollTransitionTarget>,
-    basis: UiScrollTransitionBasis,
-    delta: super::super::UiScrollDelta,
-) -> super::super::UiScrollOffset {
-    let Some(target) = live.map(super::UiScrollTransitionTarget::target_offset) else {
-        return basis.accepted_offset;
-    };
-    let axis = |target_axis: i64, accepted_axis: i64, delta_axis: i64| match axis_accumulation_basis(
-        target_axis - accepted_axis,
-        delta_axis,
-    ) {
-        UiScrollAccumulationBasis::CurrentTarget => target_axis,
-        UiScrollAccumulationBasis::AcceptedSample => accepted_axis,
-    };
-    super::super::UiScrollOffset::new(
-        axis(
-            target.inline_subpixels(),
-            basis.accepted_offset.inline_subpixels(),
-            delta.inline_subpixels(),
-        ),
-        axis(
-            target.block_subpixels(),
-            basis.accepted_offset.block_subpixels(),
-            delta.block_subpixels(),
-        ),
-    )
-    .expect("an accumulation start chosen from two non-negative offsets stays non-negative")
-}
-
-/// Opposite-direction input takes control: it accumulates from the accepted
-/// sample rather than from a target the content has not reached yet.
-const fn axis_accumulation_basis(pending_travel: i64, delta: i64) -> UiScrollAccumulationBasis {
-    if (pending_travel > 0 && delta < 0) || (pending_travel < 0 && delta > 0) {
-        UiScrollAccumulationBasis::AcceptedSample
-    } else {
-        UiScrollAccumulationBasis::CurrentTarget
     }
 }

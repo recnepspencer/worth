@@ -113,16 +113,9 @@ pub(super) fn stop_before_callbacks<Client: UiNativeEventLoopClient>(
         super::physical_clock::UiNativePhysicalEventClock::new(),
     );
     UiNativeEventLoopStopReport {
-        cause: if super::terminal_cleanup::terminal_cleanup_complete(
-            client_closed,
-            client_resources_complete,
-            true,
-            &terminal_census,
-        ) {
-            cause
-        } else {
-            UiNativeEventLoopRunDenial::IncompleteCleanup
-        },
+        // Cleanup has its own census and retry authority. Preserve the failure
+        // that stopped the application even when its cleanup also needs retry.
+        cause,
         effect_posture,
         peak_census: Box::new(peak_census),
         terminal_census: Box::new(terminal_census),

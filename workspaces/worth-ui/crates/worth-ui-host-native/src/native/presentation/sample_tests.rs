@@ -15,6 +15,8 @@ use worth_ui_host_contract::{
     UiMountedPresentationTransform, UiMountedRgba8,
 };
 
+#[path = "sample_tests/no_paint.rs"]
+mod no_paint;
 #[path = "sample_tests/rendering.rs"]
 mod rendering;
 #[path = "sample_tests/semantic_text.rs"]

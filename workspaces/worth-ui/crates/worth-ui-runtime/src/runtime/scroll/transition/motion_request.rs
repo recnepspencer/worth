@@ -69,13 +69,37 @@ pub(crate) fn scroll_settle_motion_request(
     }
     let settle_ticks = u32::try_from(remaining)
         .map_err(|_| UiScrollMotionRequestDenial::SettleHorizonExhausted)?;
+    motion_request(target, accepted_offset, settle_ticks, binding)
+}
+
+/// An extent accepted after the input horizon still owes its final lawful
+/// target. It settles on the next eligible sample instead of discarding that
+/// target or starting a fresh wheel duration.
+pub(crate) fn scroll_extent_motion_request(
+    target: super::UiScrollTransitionTarget,
+    accepted_offset: super::super::UiScrollOffset,
+    tick: u64,
+    binding: UiScrollMotionBinding,
+) -> Result<crate::runtime::motion::UiMotionTransitionRequest, UiScrollMotionRequestDenial> {
+    let remaining = target.horizon().remaining_ticks(tick).max(1);
+    let settle_ticks = u32::try_from(remaining)
+        .map_err(|_| UiScrollMotionRequestDenial::SettleHorizonExhausted)?;
+    motion_request(target, accepted_offset, settle_ticks, binding)
+}
+
+fn motion_request(
+    target: super::UiScrollTransitionTarget,
+    accepted_offset: super::super::UiScrollOffset,
+    settle_ticks: u32,
+    binding: UiScrollMotionBinding,
+) -> Result<crate::runtime::motion::UiMotionTransitionRequest, UiScrollMotionRequestDenial> {
     let identity = crate::runtime::motion::UiMotionTargetIdentity::from_scroll_region_owner(
         target.owner().semantic_surface(),
         binding.mounted_instance,
         binding.motion_owner_key,
     );
-    let predecessor = translated_content(binding.content, accepted_offset)?;
-    let successor = translated_content(binding.content, target.target_offset())?;
+    let predecessor = scroll_content_geometry(binding.content, accepted_offset)?;
+    let successor = scroll_content_geometry(binding.content, target.target_offset())?;
     crate::runtime::motion::UiMotionTransitionRequest::from_family_transition(
         identity,
         crate::runtime::motion::UiMotionTransitionEndpoint::new(
@@ -97,7 +121,7 @@ pub(crate) fn scroll_settle_motion_request(
 
 /// The content box as the scrolled offset places it. A positive scroll offset
 /// moves content toward the viewport origin, so the translation is negative.
-fn translated_content(
+pub(crate) fn scroll_content_geometry(
     content: worth_ui_host_contract::UiMountedCanonicalBox,
     offset: super::super::UiScrollOffset,
 ) -> Result<crate::runtime::motion::UiMotionSemanticGeometry, UiScrollMotionRequestDenial> {

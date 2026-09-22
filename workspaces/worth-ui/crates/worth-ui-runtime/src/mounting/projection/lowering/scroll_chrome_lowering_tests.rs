@@ -293,6 +293,11 @@ fn the_block_thumb_follows_the_accepted_offset_along_its_track() {
             thumb.rect().height()
         );
         let bottom = thumb.rect().y() + thumb.rect().height();
+        assert_eq!(
+            thumb.clip(),
+            canonical(0.0, 0.0, VIEWPORT_WIDTH, VIEWPORT_HEIGHT),
+            "sampling retains the stationary viewport, never the old thumb bounds"
+        );
         assert!(
             bottom <= track_length + 0.001,
             "offset {offset}: thumb bottom {bottom} leaves the {track_length} track"

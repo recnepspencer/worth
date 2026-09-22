@@ -109,7 +109,7 @@ pub(crate) fn lower_scroll_chrome(
         for part in UiScrollChromePart::PAINT_ORDER {
             let rect = snap_to_device_grid(part.rect(facts), input.device_scale)
                 .map_err(UiScrollChromeLoweringDenial::Snapping)?;
-            let Some(clip) = intersection(rect, input.clip) else {
+            let Some(_) = intersection(rect, input.clip) else {
                 continue;
             };
             nodes.push(UiMountedScrollChromeNode {
@@ -118,7 +118,9 @@ pub(crate) fn lower_scroll_chrome(
                 part,
                 role: part_role(part, input.track_role, input.thumb_role).clone(),
                 rect,
-                clip,
+                // Retain the stationary viewport, not the currently occupied
+                // rectangle: a later accepted sample moves the thumb inside it.
+                clip: input.clip,
                 appearance: UiScrollChromeAppearanceState::resolve(
                     part,
                     input

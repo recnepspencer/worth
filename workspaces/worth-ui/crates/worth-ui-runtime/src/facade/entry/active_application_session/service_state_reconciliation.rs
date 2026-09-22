@@ -14,6 +14,11 @@ impl WorthUiActiveApplicationSession {
             // reconciliation, so no frame settles content that has no room.
             self.settle_scroll_motion_without_a_target();
         }
+        if let Some(scroll) = self.scroll.as_mut() {
+            scroll.retire_stale_direct_successions();
+        }
+        self.mounted
+            .reconcile_direct_scroll_evidence(self.scroll.as_ref());
         if self
             .selection
             .as_ref()

@@ -3,11 +3,9 @@
 //!
 //! The decision is `scroll_chrome_pointer_intent`, a function of the report and
 //! the latch, so it can be read here directly against reports built from the
-//! host contract's own payloads. Driving it through a live session would need a
-//! declared mosaic region that owns a scroll viewport, which no fixture in this
-//! crate declares; the placement arithmetic those presses and drags go on to
-//! perform is proven against an independent oracle in the chrome geometry
-//! tests.
+//! host contract's own payloads. Integrated Scroll-world tests cover accepted
+//! placement and rejection/retry; these tests isolate classification, capture
+//! identity and the event-time coordinate carried by release.
 
 use super::scroll_chrome_ingress::{
     chrome_point, pointer_report_position, scroll_chrome_pointer_intent, suppress_captured_axes,
@@ -150,6 +148,7 @@ fn a_latched_drag_claims_its_own_pointers_moves_and_release() {
         UiScrollChromePointerIntent::Release {
             pointer: pointer(1),
             capture_epoch: epoch(7),
+            position: at(760.0, 90.0),
         }
     );
     assert_eq!(

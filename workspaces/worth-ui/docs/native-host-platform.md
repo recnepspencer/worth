@@ -308,25 +308,78 @@ optimized native build at 1536x1024, over three ten-second traces of active
 scrolling taken after warmup. What the repository records today is the
 qualified native profile `worth-ui-windows-dx12-v2`, which names the software
 stack and not the machine: no CPU, GPU, panel or refresh identity is checked in
-for a run to be matched against. No such run has been taken either, so what
-follows is the bar a run answers to, not a result it reported, and the first
-run has to check in the machine it ran on beside its numbers. The thresholds are a p95
-input-to-first-visible response within 50 ms, a p95 gap between accepted
-visible frames within 25 ms, a p99 within 50 ms, and no gap beyond 100 ms
-while motion or input still requires progress -- a session with nothing left to
-advance owes no frame, so a quiet gap is not a stall. Final wheel settlement is
+for a run to be matched against, so a run has to check in the machine it ran
+on beside its numbers. The thresholds are a p95 input-to-first-visible
+response within 50 ms, a p95 gap between accepted visible frames within 25 ms,
+a p99 within 50 ms, and no gap beyond 100 ms while motion or input still
+requires progress -- a session with nothing left to advance owes no frame, so a
+quiet gap is not a stall. Final wheel settlement is
 within 120 ms plus two display intervals of the last input, absent a host
 refusal injected on purpose; an injected refusal is a scenario about the
-refusal, not a missed deadline. A run
-reports the hardware, the device scale, the input device, and the raw
-intervals, with preparation and host costs named separately. Averages that
-hide a stall are not evidence; the distribution and the worst gap are.
+refusal, not a missed deadline. A run reports the hardware, the device scale,
+the input device, and the raw intervals, with preparation and host costs named
+separately. Averages that hide a stall are not evidence; the distribution and
+the worst gap are.
+
+A run has now been taken and it did not pass. It ran on an AMD Ryzen 7 9700X
+with an NVIDIA GeForce RTX 5070 driving a 3840x2160 panel the system reports
+at 59 Hz, under Windows 11, on a warm optimized build with the window at
+1536x1024 and the wheel delivered through the platform's own notch path. Over
+twelve notches it reported p50 65.3 ms and p95 115.6 ms from input to first
+visible change against the 50 ms bound, accepted visible-frame gaps of p50
+65.1 ms and p95 67.1 ms against the 25 ms bound, and settlement p50 182.2 ms
+against the 154 ms bound. A repeat of the same build did not reach the timing
+at all: the harness lost the window and stopped at `BoundWindowMissing`.
+The retained output shows the product stopping with exit status 3 before that
+observation; this is not established as a harness failure. The stop-report
+path now preserves the triggering cause separately from incomplete cleanup.
+
+A September 22 optimized rerun completed the journey but failed the first-change
+budget: p50 63.4 ms, p95 98.5 ms over twelve notches. Its observed gap p95 was
+78.9 ms and worst settlement was 233.0 ms. Probe cost was p50 16.0 ms and worst
+21.2 ms, so those gaps still do not qualify accepted frame pacing. This is
+diagnostic evidence, not the required three ten-second qualification traces.
+
+Those synchronous GDI captures cannot qualify frame pacing: each probe costs
+roughly one display interval, so sampling phase can turn one real interval into
+two observed intervals. GDI remains the independent settled-pixel oracle, not
+the timing clock. The timing harness now acquires a bounded task-owned strip
+through DXGI desktop duplication and uses its desktop presentation QPC, on the
+same checked clock basis as the actual OS input-delivery bracket. Acquisition
+and readback costs are reported separately. Future or non-monotonic timestamps,
+lost frames, protected pixels, queue exhaustion, changed monitor geometry,
+occlusion, and cursor overlap fail the run instead of supplying substitute
+evidence. Each active trace must actually span ten seconds; the final declared
+target must be visible before quiet time can establish settlement. Accepted
+host samples are joined one-to-one to compatible external visible frames;
+host acceptance alone is not compositor visibility.
+
+The first optimized DXGI run on September 22 stopped before timing acquisition:
+Windows rejected duplication initialization with `DXGI_ERROR_UNSUPPORTED`
+(`0x887A0004`). The diagnostic rerun identifies the exact task monitor as
+NVIDIA RTX 5070 output `DISPLAY2`, at desktop `[0,0,3840,2160]`, unrotated;
+that adapter is also DXGI's enumeration default. This machine also has AMD
+integrated graphics, but these facts do not establish a wrong-adapter cause.
+Neither this initialization failure nor the earlier GDI diagnostics qualify
+the native timing budgets. Moving-thumb capture also remains unverified by
+this run because its independent observation uses the same capture stream.
 
 Precision input is qualified by a run on a real precision device. A synthetic
 pixel-delta report exercises the same semantic path and proves nothing about
 timing, and absent hardware leaves the claim unverified rather than passed.
+For this closeout, the user explicitly deferred the real precision-device run
+on September 22 because no device is available. This deferral does not waive
+the native timing budgets or acceptance/rejection correctness requirements.
 
 ## Cost And Failure Posture
+
+Glyph diagnostic rows describe the ordinary frame's qualified base runs, not
+their current sampled positions. One paired alpha/intrinsic derivation is
+cached by exact frame, physical extent and atlas committed-content revision;
+same-basis samples share immutable rows without rescanning unrelated text.
+Reservations alone do not change committed atlas metadata or grant rendering
+permission. Sampled chrome observations and external pixels separately prove
+the displayed scroll pose.
 
 Presentation reports structural and physical amplification separately:
 delta rows, draw-list and order mutations, damage regions, index probes,

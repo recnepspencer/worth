@@ -69,6 +69,8 @@ pub(super) use sample_transaction::sampled_visible_bounds;
 pub(super) use sample_transaction::UiNativeRetainedSampleUndo;
 
 pub(crate) struct UiNativeRetainedDrawList {
+    pub(super) glyph_observation: super::glyph_observation::UiNativeGlyphObservationCache,
+    sampled_appearance: sampled_appearance_coverage::UiSampledAppearanceCoverage,
     physical_coverage: Option<physical_coverage::UiNativePhysicalCoverage>,
     staged_appearance: Option<(
         worth_ui_host_contract::UiMountedSurfaceBindingRequirement,
@@ -93,6 +95,9 @@ pub(crate) struct UiNativeRetainedDrawList {
     identity_overlay: super::identity_overlay::UiNativeRetainedIdentityOverlay,
     last_paint_attribution: Option<(usize, UiNativeRetainedPresentationAttribution)>,
 }
+
+mod sampled_appearance_coverage;
+mod sampled_chrome_observation;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(super) struct UiNativeRetainedPresentationAttribution {

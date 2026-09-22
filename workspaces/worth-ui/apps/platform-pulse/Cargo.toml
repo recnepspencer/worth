@@ -39,6 +39,7 @@ worth-ui-native-platform = { workspace = true }
 
 [target.'cfg(windows)'.dev-dependencies]
 uiautomation = { workspace = true }
-winsafe = { workspace = true, features = ["advapi", "dwm", "kernel", "user"] }
+winsafe = { workspace = true, features = ["advapi", "dwm", "dxgi", "kernel", "user"] }
 xcap = { workspace = true, features = ["wgc"] }
 win32job = { workspace = true }
+windows-capture = { workspace = true }

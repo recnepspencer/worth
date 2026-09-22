@@ -43,6 +43,9 @@ fn presentation(scroll: &ScrollWorld) -> UiHostObservationPresentationBasis {
 fn frame(scroll: &mut ScrollWorld, tick: u64) -> UiScrollSettleDisposition {
     let basis = presentation(scroll);
     if let Ok(prepared) = scroll.world.session.prepare_motion_tick(tick, basis) {
+        if !prepared.receipt().samples().is_empty() {
+            scroll.world.host.push_native_display_presented();
+        }
         scroll
             .world
             .session

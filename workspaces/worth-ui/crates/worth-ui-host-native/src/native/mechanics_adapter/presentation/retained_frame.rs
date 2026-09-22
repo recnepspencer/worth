@@ -132,19 +132,34 @@ pub(super) fn record_retained_frame(
                 port_crossings,
             )
         })
-        .unwrap_or_else(|| (None, Box::new([]), Box::new([])));
-    state.record_retained_frame_observation(UiNativeRetainedFrameObservation::observed(
-        view.frame().diagnostic_value(),
-        crate::native::physical_work_signal::UiNativePhysicalPresentationBasis::from_view(view),
-        kind,
-        sample_presentation_epoch,
-        pixels,
-        cost,
-        port_crossings,
-        observation,
-        intrinsic,
-        alpha,
-    ));
+        .unwrap_or_else(|| (None, std::sync::Arc::from([]), std::sync::Arc::from([])));
+    let chrome = match view.presentation_work() {
+        worth_ui_host_contract::UiMountedPresentationWorkView::Sample(sample) => state
+            .retained_draw_lists
+            .get(&key)
+            .map(|retained| {
+                retained.sampled_chrome_observation(
+                    sample.changes().iter().map(|change| change.command()),
+                )
+            })
+            .unwrap_or_default(),
+        _ => Box::new([]),
+    };
+    state.record_retained_frame_observation(
+        UiNativeRetainedFrameObservation::observed(
+            view.frame().diagnostic_value(),
+            crate::native::physical_work_signal::UiNativePhysicalPresentationBasis::from_view(view),
+            kind,
+            sample_presentation_epoch,
+            pixels,
+            cost,
+            port_crossings,
+            observation,
+            intrinsic,
+            alpha,
+        )
+        .with_sampled_chrome(chrome),
+    );
 }
 
 pub(super) fn latest_pixels(state: &UiNativeHostState) -> [[u8; 4]; 2] {

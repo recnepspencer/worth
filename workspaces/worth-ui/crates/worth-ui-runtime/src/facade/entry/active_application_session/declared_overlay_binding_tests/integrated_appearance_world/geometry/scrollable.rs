@@ -162,3 +162,29 @@ pub(in super::super) fn install_scrollable_primary_with_collapsed_content(
         None,
     );
 }
+
+/// Five points of legal travel remain, so a live target above five must be
+/// retargeted rather than handled by the empty-extent cancellation path.
+pub(in super::super) fn install_scrollable_primary_with_shorter_content(
+    session: &mut WorthUiActiveApplicationSession,
+    surfaces: [UiSemanticSurfaceIdentity; 2],
+    instances: [UiMountedInstanceIdentity; 5],
+) {
+    let mut boxes = BOXES;
+    boxes[0][3] = SCROLLABLE_PRIMARY_REGION[3] + 5.0;
+    boxes[2] = NESTED_CONTENT_BOX;
+    install_with_child_region(
+        session,
+        surfaces,
+        instances,
+        25,
+        boxes,
+        RegionOverrides {
+            child: None,
+            primary: Some(SCROLLABLE_PRIMARY_REGION),
+            nested: Some(2),
+            detach_child: false,
+        },
+        None,
+    );
+}

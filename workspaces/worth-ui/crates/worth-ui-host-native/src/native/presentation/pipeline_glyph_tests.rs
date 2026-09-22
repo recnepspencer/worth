@@ -196,6 +196,7 @@ fn command(
                 line_index: 0,
                 visual_run_index: 0,
                 clip_bounds: clip,
+                intrinsic_clip_bounds: clip,
                 layer_semantic_order: 0,
             },
         ),

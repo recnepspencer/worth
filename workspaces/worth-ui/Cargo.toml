@@ -53,6 +53,7 @@ uiautomation = { version = "=0.25.0", default-features = false, features = ["con
 winsafe = { version = "=0.0.28", default-features = false }
 windows = { version = "=0.61.3", default-features = false }
 xcap = { version = "=0.9.7", default-features = false }
+windows-capture = "=2.0.1"
 winit = { version = "=0.30.13", default-features = false, features = ["rwh_06"] }
 wgpu = { version = "=29.0.4", default-features = false, features = ["std", "parking_lot", "dx12", "wgsl"] }
 pollster = "=0.4.0"

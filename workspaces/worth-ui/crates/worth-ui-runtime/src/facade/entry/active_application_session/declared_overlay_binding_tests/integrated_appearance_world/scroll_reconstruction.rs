@@ -73,6 +73,7 @@ fn scrolled_world() -> ScrollWorld {
         ),
         UiHostScrollObservationOutcome::Applied(_)
     ));
+    scroll.publish_direct(WHEEL_TICK + 1);
     assert_eq!(scroll.accepted_offset(), block(TRAVEL_POINTS));
     scroll
 }

@@ -43,7 +43,10 @@ mod tests {
 
     #[test]
     fn every_shard_owns_exactly_two_rows() {
-        assert_eq!((0..SHARD_COUNT).map(expected_rows).sum::<usize>(), ROW_COUNT);
+        assert_eq!(
+            (0..SHARD_COUNT).map(expected_rows).sum::<usize>(),
+            ROW_COUNT
+        );
         assert!((0..SHARD_COUNT).all(|shard| expected_rows(shard) == 2));
     }
 

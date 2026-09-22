@@ -166,6 +166,7 @@ impl super::UiScrollRuntimeState {
             return false;
         }
         self.ownership_references.remove(&owner);
+        self.retire_layout_owner(owner);
         self.owners.remove(&owner).is_some()
     }
 }

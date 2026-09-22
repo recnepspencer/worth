@@ -1,5 +1,7 @@
 #[path = "motion_evidence_tests/empty_logical_damage.rs"]
 mod empty_logical_damage;
+#[path = "motion_evidence_tests/physical_change.rs"]
+mod physical_change;
 #[path = "motion_evidence_tests/target_scope.rs"]
 mod target_scope;
 #[path = "motion_evidence_tests/text_ambiguity.rs"]

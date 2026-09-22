@@ -63,6 +63,7 @@ fn a_phased_gesture_keeps_its_owner_until_the_host_ends_it() {
         ),
         UiHostScrollObservationOutcome::Applied(_)
     ));
+    scroll.publish_direct(5);
     assert_eq!(scroll.accepted_offset(), block(20));
 
     assert!(
@@ -75,6 +76,9 @@ fn a_phased_gesture_keeps_its_owner_until_the_host_ends_it() {
         ),
         "the gesture that moved this owner still owns the rest of itself"
     );
+    // At offset 20 the painted child has already left the viewport.
+    let frame = scroll.world.prepare_surface(scroll.surface());
+    scroll.world.publish(frame, 6, false);
     assert_eq!(
         scroll.accepted_offset(),
         block(25),
@@ -88,6 +92,8 @@ fn a_phased_gesture_keeps_its_owner_until_the_host_ends_it() {
         pixels(5),
         7,
     ));
+    let frame = scroll.world.prepare_surface(scroll.surface());
+    scroll.world.publish(frame, 7, false);
     assert_eq!(scroll.accepted_offset(), block(30));
 
     assert!(
@@ -128,6 +134,7 @@ fn a_cancelled_gesture_releases_its_owner_and_moves_nothing() {
         pixels(40),
         6,
     ));
+    scroll.publish_direct(6);
     assert_eq!(
         scroll.accepted_offset(),
         block(20),
@@ -168,6 +175,7 @@ fn a_refused_end_still_releases_the_gesture_it_ended() {
         ),
         UiHostScrollObservationOutcome::Applied(_)
     ));
+    scroll.publish_direct(5);
     assert_eq!(scroll.accepted_offset(), block(20));
 
     // The frame the gesture began on, held while the surface is published

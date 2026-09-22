@@ -135,10 +135,8 @@ fn burst(
     }
 }
 
-/// A burst that moves the accepted offset as it arrives. Nothing is left in
-/// flight when it ends, so whatever the session holds afterwards is residue,
-/// and there is none: the storage a burst of any length leaves is the storage
-/// the session had before it started.
+/// A direct burst coalesces one unpublished successor, independent of event
+/// count. Only its subsequent ordinary physical publication moves the offset.
 #[test]
 fn an_immediate_burst_leaves_the_storage_the_session_started_with() {
     let mut short = immediate_world(true);
@@ -161,8 +159,51 @@ fn an_immediate_burst_leaves_the_storage_the_session_started_with() {
     assert_eq!(
         storage(&short),
         at_rest,
-        "and the same storage the session held before any of them arrived"
+        "no additional service track or retained frame is created per event"
     );
+    assert_eq!(long.accepted_offset(), block(0));
+    assert_eq!(short.accepted_offset(), block(0));
+    assert_eq!(
+        long.world
+            .session
+            .scroll
+            .as_ref()
+            .unwrap()
+            .pending_direct_count(),
+        1
+    );
+    assert_eq!(
+        short
+            .world
+            .session
+            .scroll
+            .as_ref()
+            .unwrap()
+            .pending_direct_count(),
+        1
+    );
+    assert!(long
+        .world
+        .session
+        .mounted
+        .has_pending_direct_scroll(long.surface()));
+    assert!(short
+        .world
+        .session
+        .mounted
+        .has_pending_direct_scroll(short.surface()));
+    short.publish_direct(SHORT_BURST + 1);
+    long.publish_direct(LONG_BURST + 1);
+    assert!(!long
+        .world
+        .session
+        .mounted
+        .has_pending_direct_scroll(long.surface()));
+    assert!(!short
+        .world
+        .session
+        .mounted
+        .has_pending_direct_scroll(short.surface()));
     assert_eq!(
         long.accepted_offset(),
         block(CONTENT_TRAVEL_POINTS),
@@ -245,6 +286,9 @@ fn frame(scroll: &mut ScrollWorld, tick: u64) -> UiScrollSettleDisposition {
         .session
         .prepare_motion_tick(tick, basis)
         .expect("a live settle prepares its tick");
+    if !prepared.receipt().samples().is_empty() {
+        scroll.world.host.push_native_display_presented();
+    }
     scroll
         .world
         .session

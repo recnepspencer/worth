@@ -82,6 +82,7 @@ fn same_text_projection(
         && left.mounted_instance() == right.mounted_instance()
         && left.bounds() == right.bounds()
         && left.clip_bounds() == right.clip_bounds()
+        && left.intrinsic_clip_bounds() == right.intrinsic_clip_bounds()
         && left.origin_x() == right.origin_x()
         && left.origin_y() == right.origin_y()
         && left.text() == right.text()

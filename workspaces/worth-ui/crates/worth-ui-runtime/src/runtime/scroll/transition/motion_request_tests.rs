@@ -96,6 +96,56 @@ fn the_request_translates_content_by_the_negated_accepted_and_target_offsets() {
     );
 }
 
+#[test]
+fn reversal_keeps_the_accepted_start_separate_from_the_signed_target_sum() {
+    use crate::runtime::scroll::{
+        UiScrollAxes, UiScrollBounds, UiScrollOffset, UiScrollOwnerIdentity,
+        UiScrollOwnerIncarnation,
+    };
+    let owner = UiScrollOwnerIdentity::viewport(surface());
+    let incarnation = UiScrollOwnerIncarnation::new(1).unwrap();
+    let input = |notches, tick| {
+        UiScrollWheelInput::admit(
+            UiScrollWheelLineDelta::from_notches(0, notches, 3),
+            worth_ui_host_contract::UiHostScrollDeltaPhase::Updated,
+            tick,
+            20,
+            SETTLE_TICKS,
+        )
+        .unwrap()
+    };
+    let basis = |accepted| {
+        UiScrollTransitionBasis::new(
+            UiScrollOffset::new(0, accepted).unwrap(),
+            UiScrollBounds::new(0, 1_000_000).unwrap(),
+            UiScrollAxes::Block,
+        )
+    };
+    let mut succession = UiScrollTransitionSuccession::new();
+    succession
+        .accumulate_wheel(owner, incarnation, input(4, 10), basis(0))
+        .unwrap();
+    let reversed = succession
+        .accumulate_wheel(owner, incarnation, input(-1, 12), basis(30_000))
+        .unwrap();
+    let request = scroll_settle_motion_request(
+        reversed,
+        UiScrollOffset::new(0, 30_000).unwrap(),
+        12,
+        binding(),
+    )
+    .unwrap();
+    assert_eq!(
+        request.predecessor().geometry().unwrap().components()[1],
+        content().y() - 30.0
+    );
+    assert_eq!(
+        request.successor().geometry().unwrap().components()[1],
+        content().y() - 180.0
+    );
+    assert_eq!(reversed.target_offset().block_subpixels(), (4 - 1) * 60_000);
+}
+
 /// The request addresses the scrolled content group of this exact occurrence,
 /// structurally distinct from the occurrence's ordinary and Portal targets.
 #[test]

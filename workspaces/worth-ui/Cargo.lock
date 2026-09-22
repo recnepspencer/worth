@@ -3830,6 +3830,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "windows-capture"
+version = "2.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "09046acbe9b6d039cde50e8c8178d95bb0f9b33ed7feccc4465dadc5404b31b4"
+dependencies = [
+ "parking_lot",
+ "rayon",
+ "thiserror 2.0.20",
+ "windows 0.62.2",
+ "windows-future 0.3.2",
+]
+
+[[package]]
 name = "windows-collections"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4552,6 +4565,7 @@ dependencies = [
  "serde_json",
  "uiautomation",
  "win32job",
+ "windows-capture",
  "winsafe",
  "worth-query-decl",
  "worth-query-host",

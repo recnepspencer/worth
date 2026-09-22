@@ -108,6 +108,13 @@ surface acceptance, detached retry, and reconstruction settle the exact text
 revision per occurrence. Intrinsic-color glyphs retain their own color; Motion
 and appearance opacity still compose over the result.
 
+Scroll clipping does not discard offscreen glyph images or their adopted
+foreground. Intrinsic text clipping travels with the text; ancestor viewports
+remain stationary. The accepted sample derives their intersection and snaps
+presentation to the device grid. Explicit content suppression, unlike empty
+viewport coverage, retires the text. Rejection restores the predecessor sample
+and its coverage rather than acknowledging the refused foreground or pose.
+
 ## Backdrops, Portals, And Motion
 
 A Backdrop is independently authored. Its declaration states identity, scope,
@@ -185,6 +192,13 @@ decide it. The live construction is compiled in
 
 Declaring chrome on an axis a region cannot travel on reserves a gutter for a
 bar that can never move, so name only the axes whose content actually overflows.
+
+During easing, the thumb and content follow the same accepted sample. Thumb
+clipping is against the stationary viewport, not the thumb's previous bounds.
+Hover is re-resolved when accepted content moves beneath a stationary pointer;
+appearance does not require a synthetic pointer event to catch up. Captured
+dragging and extent changes publish their exact prepared geometry through the
+same host-acceptance boundary as other mounted changes.
 
 ## Live Theme Switching
 

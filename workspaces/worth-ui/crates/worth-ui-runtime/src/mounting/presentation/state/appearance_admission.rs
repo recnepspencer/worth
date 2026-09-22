@@ -41,6 +41,13 @@ impl UiMountedPresentationAdmission {
         );
         self.candidates
             .bind_appearance_sample_targets(&self.frame, &targets);
+        if self
+            .candidates
+            .bind_scroll_motion_groups(&self.frame, derived)
+            .is_err()
+        {
+            return self.deny_appearance_output();
+        }
         UiMountedAppearanceAdmission {
             admission: self,
             inspection,
@@ -79,15 +86,22 @@ impl UiMountedAppearanceAdmission {
         if !admission.frame.appearance_output_available() {
             return Err(Box::new((admission.reject_appearance_output(), inspection)));
         }
-        if refresh_visual_regions {
-            if let Err(denial) = admission
-                .retention
-                .refresh_visual_regions(admission.frame.visual_region_basis())
-            {
-                return Err(Box::new((
-                    admission.reject_retained_visual_basis(denial),
-                    inspection,
-                )));
+        let indexed_motion_bytes = admission.candidates.indexed_motion_reserved_bytes();
+        if refresh_visual_regions || indexed_motion_bytes != Some(0) {
+            match admission.retention.refresh_visual_regions(
+                admission
+                    .frame
+                    .visual_region_basis()
+                    .with_indexed_motion_reservation(indexed_motion_bytes),
+                admission.frame.manifest().surfaces(),
+            ) {
+                Ok(work) => admission.frame.record_scroll_hit_succession(work),
+                Err(denial) => {
+                    return Err(Box::new((
+                        admission.reject_retained_visual_basis(denial),
+                        inspection,
+                    )))
+                }
             }
         }
         Ok((UiMountedPresentationAttempt { admission }, inspection))

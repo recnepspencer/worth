@@ -100,6 +100,7 @@ pub(super) fn rebuild_glyph_runs<'work>(
                         line_index: positioned.line_index(),
                         visual_run_index: positioned.visual_run_index(),
                         clip_bounds: mechanic.clip_bounds(),
+                        intrinsic_clip_bounds: mechanic.intrinsic_clip_bounds(),
                         layer_semantic_order: mechanic.layer_semantic_order(),
                     })
                 })

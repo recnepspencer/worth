@@ -43,6 +43,17 @@ impl UiPresentationSampleVelocity {
         self.0
     }
 
+    /// Bound the cubic tangent by the stopping distance left by an accepted
+    /// extent, so interpolation cannot leave the lawful endpoint interval.
+    pub(super) fn within_extent(self, start: [f32; 4], end: [f32; 4], ticks: u32) -> Self {
+        let mut velocity = self.0;
+        for axis in 0..4 {
+            let limit = 3.0 * (end[axis] - start[axis]) / ticks.max(1) as f32;
+            velocity[axis] = velocity[axis].clamp(limit.min(0.0), limit.max(0.0));
+        }
+        Self(velocity)
+    }
+
     /// Differentiate the displaced curve where the interruption caught it. A
     /// non-finite rate is no evidence of motion, so it settles to rest rather
     /// than poisoning the successor's geometry.

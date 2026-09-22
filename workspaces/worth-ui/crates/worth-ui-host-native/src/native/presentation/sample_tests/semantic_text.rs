@@ -1,5 +1,9 @@
+#[path = "semantic_text/glyph_observation.rs"]
+mod glyph_observation;
 #[path = "semantic_text/order.rs"]
 mod order;
+#[path = "semantic_text/scroll.rs"]
+mod scroll;
 
 use std::sync::Arc;
 
@@ -183,6 +187,7 @@ pub(in crate::native::presentation) fn semantic_text(
         line_index: 0,
         visual_run_index: 0,
         clip_bounds: bounds,
+        intrinsic_clip_bounds: bounds,
         layer_semantic_order: 8,
     });
     (

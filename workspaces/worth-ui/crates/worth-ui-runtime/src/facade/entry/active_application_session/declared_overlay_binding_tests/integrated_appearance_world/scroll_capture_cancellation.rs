@@ -31,6 +31,9 @@ use crate::runtime::scroll::chrome::UiScrollChromeAxis;
 use crate::runtime::scroll::{UiHostScrollObservationOutcome, UiScrollOffset};
 use worth_ui_host_contract::*;
 
+#[path = "scroll_capture_cancellation/release_position.rs"]
+mod release_position;
+
 /// When the notch arrives, and the pointer and capture the host opens for the
 /// grab that interrupts it.
 const NOTCH_TICK: u64 = 5;
@@ -64,7 +67,7 @@ fn chrome_world() -> ScrollWorld {
 /// pose.
 fn block_chrome(scroll: &ScrollWorld) -> (UiMountedCanonicalBox, UiMountedCanonicalBox) {
     let surface = scroll.surface();
-    let regions = scroll.world.session.scroll_chrome_facts(surface);
+    let regions = scroll.world.session.presented_scroll_chrome_facts(surface);
     let region = regions
         .iter()
         .find(|region| region.owner() == scroll.owner)
@@ -246,6 +249,8 @@ fn a_drag_after_the_capture_places_the_offset_its_thumb_position_names() {
         "the drag placed what its thumb position names, counted from the offset \
          the capture held rather than from where the settle was aiming"
     );
+    assert_eq!(scroll.accepted_offset(), held);
+    scroll.publish_direct(NOTCH_TICK + 3);
     assert_eq!(scroll.accepted_offset(), placed);
     assert_eq!(
         scroll.displayed_offset(),

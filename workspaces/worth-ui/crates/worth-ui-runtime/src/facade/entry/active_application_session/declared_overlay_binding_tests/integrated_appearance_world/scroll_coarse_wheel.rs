@@ -44,7 +44,7 @@ pub(super) fn one_notch_down() -> i64 {
 /// The World with a wheel that moves the offset as it arrives, and a primary
 /// region that does or does not declare how far one of its lines reaches.
 pub(super) fn immediate_world(line_extent: bool) -> ScrollWorld {
-    ScrollWorld::publish(World::launch_with_scroll(WorldScroll {
+    ScrollWorld::publish_with_nested_content(World::launch_with_scroll(WorldScroll {
         policy: crate::declaration::UiScrollPolicy::nested_region(),
         region: scroll_region(line_extent),
     }))
@@ -68,6 +68,7 @@ fn one_notch_travels_the_platform_line_count_times_the_declared_extent() {
     );
 
     let travelled = i64::from(LINES_PER_NOTCH) * i64::from(LINE_EXTENT_POINTS);
+    scroll.publish_direct(6);
     assert_eq!(
         scroll.accepted_offset(),
         block(travelled),
@@ -128,6 +129,7 @@ fn a_pixel_delta_is_the_distance_the_host_reported() {
         matches!(outcome, UiHostScrollObservationOutcome::Applied(_)),
         "a pixel wheel applies: {outcome:?}"
     );
+    scroll.publish_direct(6);
     assert_eq!(
         scroll.accepted_offset(),
         block(TRAVEL_POINTS),

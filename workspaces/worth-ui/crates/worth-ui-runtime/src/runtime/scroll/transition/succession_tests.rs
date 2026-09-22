@@ -101,10 +101,10 @@ fn a_second_notch_accumulates_against_the_current_target_not_the_accepted_sample
     );
 }
 
-/// Input in the opposite direction takes control of that axis: it starts from
-/// the accepted sample rather than from a target far ahead of the content.
+/// Opposite input subtracts from the same authoritative target. Accepted frame
+/// progress must not change how much signed wheel travel the reader requested.
 #[test]
-fn opposite_direction_input_takes_control_from_the_accepted_sample() {
+fn opposite_direction_input_accumulates_against_the_scroll_target() {
     let mut succession = UiScrollTransitionSuccession::new();
     let (owner, incarnation) = (owner(), incarnation(1));
     succession
@@ -123,7 +123,7 @@ fn opposite_direction_input_takes_control_from_the_accepted_sample() {
 
     assert_eq!(
         reversed.target_offset().block_subpixels(),
-        accepted - ONE_NOTCH_SUBPIXELS
+        3 * ONE_NOTCH_SUBPIXELS
     );
 }
 
@@ -148,20 +148,25 @@ fn a_mid_settle_notch_extends_the_settle_horizon_from_the_latest_input() {
     );
 }
 
-/// A target whose horizon has ended is retired on advance, and only then:
-/// the tick before the deadline retires nothing.
+/// Elapsed time does not acknowledge a refused endpoint. Later input retains
+/// its signed travel and extends the horizon from the new input timestamp.
 #[test]
-fn an_exhausted_horizon_retires_on_advance() {
+fn an_expired_unaccepted_target_still_accumulates_later_input() {
     let mut succession = UiScrollTransitionSuccession::new();
     let (owner, incarnation) = (owner(), incarnation(1));
     succession
         .accumulate_wheel(owner, incarnation, notch(1, 10), basis(0, 10_000_000))
         .expect("staged");
 
-    assert_eq!(succession.advance(10 + u64::from(SETTLE_TICKS) - 1), 0);
-    assert_eq!(succession.advance(10 + u64::from(SETTLE_TICKS)), 1);
-    assert_eq!(succession.pending_count(), 0);
-    assert_eq!(succession.target(owner, incarnation), None);
+    let target = succession
+        .accumulate_wheel(owner, incarnation, notch(1, 100), basis(0, 10_000_000))
+        .unwrap();
+    assert_eq!(
+        target.target_offset().block_subpixels(),
+        2 * ONE_NOTCH_SUBPIXELS
+    );
+    assert_eq!(target.settle_deadline_tick(), 100 + u64::from(SETTLE_TICKS));
+    assert_eq!(succession.pending_count(), 1);
 }
 
 /// Content shrinking under a pending transition pulls the target back inside

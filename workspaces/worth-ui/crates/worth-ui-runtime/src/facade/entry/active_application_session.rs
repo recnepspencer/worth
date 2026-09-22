@@ -88,6 +88,9 @@ mod scroll_chrome_projection;
 mod scroll_chrome_tests;
 #[path = "active_application_session/scroll_direct_control.rs"]
 mod scroll_direct_control;
+#[path = "active_application_session/scroll_extent_retarget.rs"]
+mod scroll_extent_retarget;
+pub(in crate::facade::entry) use scroll_extent_retarget::settle_presented_scroll_extent;
 #[path = "active_application_session/scroll_geometry.rs"]
 mod scroll_geometry;
 #[path = "active_application_session/scroll_gesture_latching.rs"]
@@ -276,7 +279,7 @@ impl WorthUiActiveApplicationSession {
         let host_session_identity = self.host_session.identity();
         let font_collection = std::sync::Arc::clone(self.application.font_collection());
         let overlay_appearance = self.prepare_overlay_appearance_sources();
-        let motion = self.motion.as_ref();
+        let motion = self.motion.as_mut();
         let turn = self.application.execute_framework_turn(collect_sources);
         let (
             generation_identity,
@@ -332,6 +335,7 @@ impl WorthUiActiveApplicationSession {
             appearance_inspection: &mut self.appearance_inspection,
             overlay_appearance,
             motion,
+            scroll: self.scroll.as_mut(),
         })
     }
 }

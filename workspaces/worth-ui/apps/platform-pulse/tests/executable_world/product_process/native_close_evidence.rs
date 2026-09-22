@@ -14,8 +14,10 @@ pub(crate) struct PlatformPulseNativeCloseEvidence {
     sample_frames: Vec<PlatformPulseNativeSampleFrameEvidence>,
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq)]
 pub(crate) struct PlatformPulseNativeSampleFrameEvidence {
+    accepted_qpc_100ns: Option<i64>,
+    sampled_chrome: Vec<NativeChromeSampleEvidence>,
     frame: u64,
     presentation_epoch: Option<u64>,
     presentation_attempt: Option<u64>,
@@ -25,6 +27,26 @@ pub(crate) struct PlatformPulseNativeSampleFrameEvidence {
     rendered_pixels: u64,
     queue_submissions: u64,
     presents: u64,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq)]
+pub(crate) struct NativeChromeSampleEvidence {
+    owner: u64,
+    inline: bool,
+    thumb: bool,
+    bounds_milli: [i64; 4],
+}
+
+impl NativeChromeSampleEvidence {
+    pub(crate) const fn inline(&self) -> bool {
+        self.inline
+    }
+    pub(crate) const fn thumb(&self) -> bool {
+        self.thumb
+    }
+    pub(crate) const fn bounds_milli(&self) -> [i64; 4] {
+        self.bounds_milli
+    }
 }
 
 #[derive(Debug)]
@@ -56,31 +78,37 @@ impl PlatformPulseNativeCloseEvidence {
 }
 
 impl PlatformPulseNativeSampleFrameEvidence {
-    pub(crate) const fn frame(self) -> u64 {
+    pub(crate) const fn accepted_qpc_100ns(&self) -> Option<i64> {
+        self.accepted_qpc_100ns
+    }
+    pub(crate) fn sampled_chrome(&self) -> &[NativeChromeSampleEvidence] {
+        &self.sampled_chrome
+    }
+    pub(crate) const fn frame(&self) -> u64 {
         self.frame
     }
 
-    pub(crate) const fn presentation_epoch(self) -> Option<u64> {
+    pub(crate) const fn presentation_epoch(&self) -> Option<u64> {
         self.presentation_epoch
     }
 
-    pub(crate) const fn presentation_attempt(self) -> Option<u64> {
+    pub(crate) const fn presentation_attempt(&self) -> Option<u64> {
         self.presentation_attempt
     }
 
-    pub(crate) const fn logical_damage_regions(self) -> u64 {
+    pub(crate) const fn logical_damage_regions(&self) -> u64 {
         self.logical_damage_regions
     }
 
-    pub(crate) const fn rendered_pixels(self) -> u64 {
+    pub(crate) const fn rendered_pixels(&self) -> u64 {
         self.rendered_pixels
     }
 
-    pub(crate) const fn queue_submissions(self) -> u64 {
+    pub(crate) const fn queue_submissions(&self) -> u64 {
         self.queue_submissions
     }
 
-    pub(crate) const fn presents(self) -> u64 {
+    pub(crate) const fn presents(&self) -> u64 {
         self.presents
     }
 }

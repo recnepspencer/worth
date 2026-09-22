@@ -51,6 +51,32 @@ impl UiScrollSettlementScope {
 }
 
 impl super::super::WorthUiActiveApplicationSession {
+    /// Input reconciliation can retire only this chain's targets. Smooth
+    /// staging requires a declared region line extent, so surface/viewport
+    /// owners (shared by occurrences) cannot own such a host-wheel track.
+    /// Layout/lifecycle publication retains the broader sweep below.
+    pub(super) fn settle_routed_scroll_motion_without_a_target(
+        &mut self,
+        routed: &super::scroll_gesture_latching::UiScrollRoutedChain,
+    ) {
+        for entry in routed.entries() {
+            if matches!(
+                entry.owner(),
+                crate::runtime::scroll::UiScrollOwnerIdentity::Region { .. }
+            ) && self.scroll.as_ref().is_some_and(|scroll| {
+                scroll
+                    .transition_target(entry.owner(), entry.incarnation())
+                    .is_none()
+            }) {
+                self.end_scroll_content_motion(
+                    entry.owner(),
+                    routed.mounted_instance(),
+                    UiMotionTerminalCause::NowhereLeftToSettle,
+                );
+            }
+        }
+    }
+
     /// End every scroll settle `scope` reaches, recording `cause` as why.
     ///
     /// The settles are enumerated once, before any of them is ended, because

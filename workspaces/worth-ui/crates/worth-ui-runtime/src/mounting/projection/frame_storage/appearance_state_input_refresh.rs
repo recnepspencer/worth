@@ -21,7 +21,14 @@ impl UiMountedAppearanceFrameState {
         };
         let (current, work) = self.members.has_current_retained(&key);
         self.selection.record_membership_work(work);
-        if current {
+        // Geometry and chrome can both invalidate the same retained owner in
+        // this attempt. Its single node fragment carries both changes.
+        if current
+            && !self
+                .input_refresh_nodes
+                .iter()
+                .any(|pending| pending.mounted_instance == node.mounted_instance)
+        {
             self.input_refresh_nodes.push(node.clone());
         }
         current

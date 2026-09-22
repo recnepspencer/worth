@@ -41,6 +41,7 @@ pub(in crate::facade::entry) enum UiScrollChromePointerIntent {
     Release {
         pointer: worth_ui_host_contract::UiHostPointerIdentity,
         capture_epoch: worth_ui_host_contract::UiHostPointerCaptureEpoch,
+        position: worth_ui_host_contract::UiHostSurfacePosition,
     },
     /// Chrome wants nothing from this report.
     Untouched,
@@ -119,6 +120,7 @@ pub(in crate::facade::entry) fn scroll_chrome_pointer_intent(
                     UiScrollChromePointerIntent::Release {
                         pointer: *pointer,
                         capture_epoch: *capture_epoch,
+                        position: *position,
                     }
                 } else {
                     UiScrollChromePointerIntent::Untouched
@@ -263,10 +265,21 @@ impl super::super::WorthUiActiveApplicationSession {
             UiScrollChromePointerIntent::Release {
                 pointer,
                 capture_epoch,
-            } => Some(match self.release_scroll_chrome(pointer, capture_epoch) {
-                Ok(latch) => UiScrollChromeIngressOutcome::Released(latch),
-                Err(denial) => UiScrollChromeIngressOutcome::Denied(denial),
-            }),
+                position,
+            } => {
+                // The OS may coalesce the final move before button-up. Its
+                // event-time position is the final drag intent, not merely hover.
+                // Stage through ordinary acceptance, then release even on denial.
+                let placement =
+                    self.drag_scroll_chrome(chrome_point(position), pointer, capture_epoch);
+                let release = self.release_scroll_chrome(pointer, capture_epoch);
+                Some(match (placement, release) {
+                    (Ok(_), Ok(latch)) => UiScrollChromeIngressOutcome::Released(latch),
+                    (Err(denial), _) | (_, Err(denial)) => {
+                        UiScrollChromeIngressOutcome::Denied(denial)
+                    }
+                })
+            }
         }
     }
 }

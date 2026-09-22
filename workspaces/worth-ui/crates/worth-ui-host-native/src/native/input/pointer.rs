@@ -36,6 +36,10 @@ impl UiNativePointerState {
         self.pressed[button_index(button)] = pressed;
     }
 
+    pub(crate) fn has_pressed_buttons(&self) -> bool {
+        self.pressed.iter().any(|pressed| *pressed)
+    }
+
     pub(crate) fn motion(&self, position: UiHostSurfacePosition) -> UiHostObservationPayload {
         UiHostObservationPayload::PointerMotion {
             pointer: UiHostPointerIdentity::new(1),

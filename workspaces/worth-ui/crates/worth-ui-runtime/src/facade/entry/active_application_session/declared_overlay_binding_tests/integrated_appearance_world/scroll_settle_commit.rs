@@ -27,9 +27,10 @@ pub(super) const ONE_NOTCH: UiHostScrollDeltaPrecision = UiHostScrollDeltaPrecis
 };
 
 /// The World with a smooth wheel and a primary region that does or does not
-/// declare a line extent.
+/// declare a line extent. A painted descendant makes every physical sample
+/// observable; an empty region cannot prove host-accepted content movement.
 pub(super) fn smooth_world(line_extent: bool) -> ScrollWorld {
-    ScrollWorld::publish(World::launch_with_scroll(smooth_scroll(line_extent)))
+    ScrollWorld::publish_with_nested_content(World::launch_with_scroll(smooth_scroll(line_extent)))
 }
 
 /// What a smooth-wheel World declares about scrolling, so a scenario that

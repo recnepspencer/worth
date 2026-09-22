@@ -91,6 +91,7 @@ fn a_fractional_offset_paints_on_whole_device_pixels() {
     );
 
     let fractional = UiScrollOffset::new(0, travel).expect("a positive offset is admissible");
+    scroll.publish_direct(6);
     assert_eq!(
         scroll.accepted_offset(),
         fractional,

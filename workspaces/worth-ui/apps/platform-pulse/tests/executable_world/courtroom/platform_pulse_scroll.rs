@@ -30,8 +30,10 @@ fn native_wheel_notch_and_thumb_drag_move_recent_activity_by_declared_geometry()
     assert_scroll_geometry(completed.evidence());
     assert_hit_testing(completed.evidence());
     assert_wheel_latency(completed.evidence());
+    let timing = completed.evidence().latency().clone();
     let shutdown_sequence = completed.evidence().expected_shutdown_sequence();
     let closed = close_recovered_at_sequence(completed.into_ready(), shutdown_sequence);
+    timing.assert_accepted_samples(closed.evidence().native_close_evidence());
     assert!(closed.evidence().successful_exit().status().success());
     let elapsed = journey_started.elapsed();
     assert!(
@@ -75,12 +77,18 @@ fn assert_wheel_latency(evidence: &PlatformPulseScrollJourneyEvidence) {
     let latency = evidence.latency();
     let report = latency.report();
     println!("{report}");
-    // A probe no finer than the budget cannot answer whether the budget is met,
-    // so say that instead of reporting a number that would read as a verdict.
-    let floor = latency.sampling_floor();
+    assert_eq!(latency.trace_spans().len(), 3);
+    assert!(latency
+        .trace_spans()
+        .iter()
+        .all(|span| *span >= std::time::Duration::from_secs(10)));
+    // Input time is conservatively the start of the actual SendInput bracket.
+    // DXGI supplies desktop timestamps: acquisition/copy lag is reported but
+    // cannot quantize visible intervals as the old synchronous GDI probe did.
+    let uncertainty = latency.delivery_uncertainty();
     assert!(
-        floor < FIRST_CHANGE_BUDGET,
-        "one probe costs {floor:?}; this run cannot resolve a {FIRST_CHANGE_BUDGET:?} budget -- {report}"
+        uncertainty < FIRST_CHANGE_BUDGET,
+        "input delivery bracket {uncertainty:?} exceeds the first-change budget -- {report}"
     );
     let p95 = latency.first_change_percentile(950);
     assert!(

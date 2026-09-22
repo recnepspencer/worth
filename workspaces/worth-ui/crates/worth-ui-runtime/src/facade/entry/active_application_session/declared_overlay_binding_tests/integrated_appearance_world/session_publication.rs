@@ -29,6 +29,9 @@ impl World {
             UiMountedFrameOutcome::RejectedBeforeEffects(denial) => {
                 panic!("shared publication: {:?}", denial.rejections())
             }
+            UiMountedFrameOutcome::PresentationIndeterminate(frame) => {
+                panic!("shared publication at {now}: {:?}", frame.report())
+            }
             other => panic!(
                 "shared publication at {now}: {:?}",
                 std::mem::discriminant(&other)

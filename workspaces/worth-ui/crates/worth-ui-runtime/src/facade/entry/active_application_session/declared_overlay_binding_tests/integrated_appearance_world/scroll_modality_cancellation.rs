@@ -57,6 +57,7 @@ fn world_mid_gesture() -> ScrollWorld {
         ),
         "the first event of the gesture routes from the pointer and takes the latch"
     );
+    scroll.publish_direct(GESTURE_START_TICK);
     assert_eq!(scroll.accepted_offset(), block(TRAVEL_POINTS));
     scroll
 }
@@ -115,6 +116,10 @@ fn an_overlay_that_shields_only_itself_leaves_the_gesture_alone() {
         matches!(outcome, UiHostScrollObservationOutcome::Applied(_)),
         "an overlay that admits the input behind it leaves the latch answerable: {outcome:?}"
     );
+    let frame = scroll
+        .world
+        .prepare_surface_with_current_portals(scroll.surface());
+    scroll.world.publish(frame, CONTINUATION_TICK, true);
     assert_eq!(
         scroll.accepted_offset(),
         block(TRAVEL_POINTS * 2),

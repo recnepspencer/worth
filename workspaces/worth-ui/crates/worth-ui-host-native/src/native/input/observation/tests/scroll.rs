@@ -33,6 +33,67 @@ fn event_time_pointer_witness_targets_the_exact_presented_coordinate() {
 }
 
 #[test]
+fn shift_redirects_vertical_input_without_replacing_explicit_inline_or_diagonal_travel() {
+    for (input, expected) in [
+        ((0.0, -3.25), (-3_250, 0)),
+        ((1.5, -3.25), (1_500, -3_250)),
+        ((1.5, 0.0), (1_500, 0)),
+    ] {
+        let mut state = presented_state();
+        state.observe_window_event(&WindowEvent::ModifiersChanged(
+            winit::keyboard::ModifiersState::SHIFT.into(),
+        ));
+        state.observe_window_event(&WindowEvent::MouseWheel {
+            device_id: DeviceId::dummy(),
+            delta: MouseScrollDelta::PixelDelta(PhysicalPosition::new(input.0, input.1)),
+            phase: TouchPhase::Moved,
+        });
+        let batches = state.drain(HOST_SESSION).into_batches();
+        let UiHostObservationPayload::ScrollDelta {
+            x_subpixels,
+            y_subpixels,
+            ..
+        } = batches[0].reports()[0].payload()
+        else {
+            panic!("expected native Scroll report")
+        };
+        assert_eq!((*x_subpixels, *y_subpixels), expected);
+    }
+}
+
+#[test]
+fn shift_coarse_notch_keeps_platform_line_normalization_on_inline_axis() {
+    let mut state = presented_state();
+    state.observe_window_event(&WindowEvent::ModifiersChanged(
+        winit::keyboard::ModifiersState::SHIFT.into(),
+    ));
+    state.observe_window_event(&WindowEvent::MouseWheel {
+        device_id: DeviceId::dummy(),
+        delta: MouseScrollDelta::LineDelta(0.0, -0.5),
+        phase: TouchPhase::Moved,
+    });
+    let batches = state.drain(HOST_SESSION).into_batches();
+    let UiHostObservationPayload::ScrollDelta {
+        x_subpixels,
+        y_subpixels,
+        precision,
+        ..
+    } = batches[0].reports()[0].payload()
+    else {
+        panic!("expected Scroll report")
+    };
+    let units = match precision {
+        UiHostScrollDeltaPrecision::Line {
+            platform_lines_per_notch,
+            ..
+        } => i64::from(*platform_lines_per_notch),
+        UiHostScrollDeltaPrecision::Page => 1,
+        UiHostScrollDeltaPrecision::Pixel => panic!("coarse wheel is not pixel precision"),
+    };
+    assert_eq!((*x_subpixels, *y_subpixels), (-500 * units, 0));
+}
+
+#[test]
 fn wheel_delta_follows_the_count_the_observation_states_and_does_not_suppress_later_input() {
     let mut state = presented_state();
     state.observe_window_event(&WindowEvent::MouseWheel {

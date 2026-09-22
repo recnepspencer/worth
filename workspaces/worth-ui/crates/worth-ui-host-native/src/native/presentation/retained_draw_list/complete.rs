@@ -199,7 +199,7 @@ impl UiNativeRetainedDrawList {
         if sample_overrides.len() != source_sample_overrides.len()
             || sample_overrides
                 .keys()
-                .any(|identity| !identity.is_appearance_surface() && !commands.contains(identity))
+                .any(|identity| !identity.is_appearance_sample() && !commands.contains(identity))
         {
             return Err(UiNativeRetainedDrawListDenial::CommandMismatch);
         }
@@ -213,7 +213,10 @@ impl UiNativeRetainedDrawList {
             )
         }))?;
         let mut retained = Self {
+            glyph_observation: Default::default(),
             physical_coverage: None,
+            sampled_appearance:
+                super::sampled_appearance_coverage::UiSampledAppearanceCoverage::new(),
             staged_appearance: None,
             frame,
             surface,

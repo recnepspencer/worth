@@ -25,6 +25,7 @@ pub struct UiMountedPresentationSampleChange {
     command: UiMountedPaintCommandIdentity,
     transform: Option<UiMountedPresentationTransform>,
     opacity: UiMountedPresentationOpacity,
+    clip: Option<crate::UiMountedCanonicalBox>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -123,7 +124,32 @@ impl UiMountedPresentationSampleChange {
             command,
             transform,
             opacity,
+            clip: None,
         }
+    }
+
+    /// Scroll moves retained paint through an independently prepared clip.
+    /// The clip is applied after transformation, not translated with the paint.
+    #[doc(hidden)]
+    pub fn from_runtime_scroll_sampling(
+        command: UiMountedPaintCommandIdentity,
+        transform: UiMountedPresentationTransform,
+        opacity: UiMountedPresentationOpacity,
+        clip: crate::UiMountedCanonicalBox,
+    ) -> Result<Self, UiMountedPresentationSampleConstructionDenial> {
+        if clip.coordinate_space() != transform.source().coordinate_space() {
+            return Err(UiMountedPresentationSampleConstructionDenial::CoordinateSpaceMismatch);
+        }
+        Ok(Self {
+            command,
+            transform: Some(transform),
+            opacity,
+            clip: Some(clip),
+        })
+    }
+
+    pub const fn clip(self) -> Option<crate::UiMountedCanonicalBox> {
+        self.clip
     }
 
     pub const fn command(self) -> UiMountedPaintCommandIdentity {
@@ -144,7 +170,9 @@ impl UiMountedPresentationSample {
     pub fn from_inert_mechanics(
         input: UiMountedPresentationSampleInput,
     ) -> Result<Self, UiMountedPresentationSampleConstructionDenial> {
-        if input.changes.is_empty() {
+        // An exact same-frame acknowledgment can advance runtime-owned sample
+        // evidence without changing paint. It must not invent raster damage.
+        if input.changes.is_empty() && !input.damage.is_empty() {
             return Err(UiMountedPresentationSampleConstructionDenial::EmptyChanges);
         }
         let unique = input

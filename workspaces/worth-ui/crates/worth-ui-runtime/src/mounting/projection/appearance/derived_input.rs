@@ -10,6 +10,10 @@
 /// Everything one attempt's closure derived for appearance lowering.
 #[derive(Default)]
 pub(crate) struct UiMountedAppearanceDerivedInput {
+    pub(crate) scroll_geometry_reservations:
+        std::collections::BTreeMap<worth_ui_host_contract::UiSemanticSurfaceIdentity, usize>,
     pub(crate) overlays: Vec<super::UiMountedAppearanceSurfaceOverlayInput>,
     pub(crate) scroll_chrome: Vec<super::UiMountedAppearanceScrollChromeInput>,
+    pub(crate) scroll_motion:
+        Vec<crate::mounting::presentation::work_producer::UiMountedScrollMotionGroupInput>,
 }

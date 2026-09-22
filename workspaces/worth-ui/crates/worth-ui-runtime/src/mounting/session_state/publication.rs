@@ -78,6 +78,8 @@ impl WorthUiMountedSessionState {
             -> Result<crate::mounting::UiMountedAppearanceDerivedInput, ()>,
     ) -> UiMountedPublicationTransition {
         let capability_report = host.capability_report().clone();
+        let mut frame = frame;
+        self.bind_pending_direct_scroll(&mut frame);
         let admitted = match self.identity.admit_prepared_frame_authority(frame) {
             Ok(admitted) => admitted,
             Err(rejection) => {
@@ -142,6 +144,8 @@ impl WorthUiMountedSessionState {
             );
         }
         let capability_report = host.capability_report().clone();
+        let mut frame = frame;
+        self.bind_pending_direct_scroll(&mut frame);
         let admitted = match self.identity.admit_prepared_frame_authority(frame) {
             Ok(admitted) => admitted,
             Err(rejection) => {

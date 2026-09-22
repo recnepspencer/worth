@@ -3,6 +3,8 @@ use super::{UiAssembledMountedFrame, UiMountedFramePreparationDenial};
 pub struct UiPreparedMountedFrame {
     frame: UiAssembledMountedFrame,
     motion_entrance: Option<crate::runtime::motion::UiPreparedMotionEntrance>,
+    direct_scroll: Box<[crate::runtime::scroll::UiPreparedScrollDirectSuccession]>,
+    scroll_hit_succession: crate::mounting::UiHitTestSpatialWork,
 }
 
 impl UiAssembledMountedFrame {
@@ -42,6 +44,8 @@ impl UiAssembledMountedFrame {
         Ok(UiPreparedMountedFrame {
             frame: self,
             motion_entrance: None,
+            direct_scroll: Box::default(),
+            scroll_hit_succession: Default::default(),
         })
     }
 }
@@ -55,6 +59,38 @@ impl std::ops::Deref for UiPreparedMountedFrame {
 }
 
 impl UiPreparedMountedFrame {
+    pub(in crate::mounting) fn record_scroll_hit_succession(
+        &mut self,
+        work: crate::mounting::UiHitTestSpatialWork,
+    ) {
+        self.scroll_hit_succession.merge(work);
+    }
+
+    pub fn cost_report(&self) -> crate::mounting::UiMountCostReport {
+        self.frame
+            .cost_report()
+            .with_additional_hit_work(self.scroll_hit_succession)
+    }
+
+    pub fn receipt(&self) -> super::UiMountedFrameReceipt {
+        let mut receipt = self.frame.receipt();
+        receipt.cost = self.cost_report();
+        receipt
+    }
+
+    pub(in crate::mounting) fn bind_direct_scroll(
+        &mut self,
+        records: Box<[crate::runtime::scroll::UiPreparedScrollDirectSuccession]>,
+    ) {
+        self.direct_scroll = records;
+    }
+
+    pub(in crate::mounting) fn direct_scroll(
+        &self,
+    ) -> &[crate::runtime::scroll::UiPreparedScrollDirectSuccession] {
+        &self.direct_scroll
+    }
+
     pub(crate) fn bind_motion_entrance(
         &mut self,
         entrance: Option<crate::runtime::motion::UiPreparedMotionEntrance>,
@@ -76,6 +112,7 @@ impl UiPreparedMountedFrame {
 
     pub(crate) fn visual_region_basis(&self) -> crate::mounting::UiMountedVisualRegionBasis {
         let mut basis = self.frame.visual_region_basis();
+        basis = basis.with_direct_scroll_reservation(self.direct_scroll.len());
         if let Some(entrance) = self.motion_entrance {
             basis.presented_hits.prepare_motion_entrance(entrance);
         }
@@ -96,6 +133,8 @@ impl UiPreparedMountedFrame {
         Ok(Self {
             frame,
             motion_entrance: None,
+            direct_scroll: Box::default(),
+            scroll_hit_succession: Default::default(),
         })
     }
 

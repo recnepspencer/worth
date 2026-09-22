@@ -54,12 +54,12 @@ fn presentation(scroll: &ScrollWorld) -> UiHostObservationPresentationBasis {
 
 /// Put one pointer at the resting point and leave it there. Every later
 /// assertion reads the same pointer without the host reporting it again.
-fn rest_pointer_on_the_component(scroll: &mut ScrollWorld) {
+fn rest_pointer_on_the_component(scroll: &mut ScrollWorld, sequence: u64) {
     let basis = presentation(scroll);
     let batch = super::stationary_motion::inputs::pointer_batch(
         scroll.world.session.host_session.identity().as_u64(),
         basis,
-        1,
+        sequence,
         UiHostPointerIdentity::new(1),
         UiHostSurfacePosition::viewport_logical(RESTING_POINT[0], RESTING_POINT[1]),
         None,
@@ -96,6 +96,9 @@ fn settle_frame(scroll: &mut ScrollWorld, tick: u64) {
         .session
         .prepare_motion_tick(tick, basis)
         .expect("an armed settle prepares its tick");
+    if !prepared.receipt().samples().is_empty() {
+        scroll.world.host.push_native_display_presented();
+    }
     scroll
         .world
         .session
@@ -110,7 +113,7 @@ fn settle_frame(scroll: &mut ScrollWorld, tick: u64) {
 #[test]
 fn an_immediate_wheel_moves_what_the_resting_pointer_is_over() {
     let mut scroll = ScrollWorld::publish_with_nested_content(World::launch());
-    rest_pointer_on_the_component(&mut scroll);
+    rest_pointer_on_the_component(&mut scroll, 1);
     let owner = scroll.world.instances[0];
     let nested = scroll.world.instances[2];
     assert_eq!(
@@ -130,20 +133,14 @@ fn an_immediate_wheel_moves_what_the_resting_pointer_is_over() {
         ),
         UiHostScrollObservationOutcome::Applied(_)
     ));
+    assert_eq!(scroll.accepted_offset(), block(0));
+    assert_eq!(hovered(&scroll), Some(owner));
+    scroll.publish_direct(6);
     assert_eq!(scroll.accepted_offset(), block(TRAVEL_POINTS));
     assert_eq!(
         hovered(&scroll),
         Some(nested),
         "the content travelled under the pointer, so the pointer is over it"
-    );
-    assert_eq!(
-        scroll
-            .world
-            .session
-            .last_scroll_hit_index_work()
-            .scroll_rows_displaced(),
-        1,
-        "the pose displaced exactly the row it moved"
     );
     let _ = scroll.world.session.shutdown();
 }
@@ -156,7 +153,7 @@ fn an_immediate_wheel_moves_what_the_resting_pointer_is_over() {
 fn a_settle_hands_the_pointer_over_only_once_the_content_has_arrived() {
     let mut scroll =
         ScrollWorld::publish_with_nested_content(World::launch_with_scroll(smooth_scroll(true)));
-    rest_pointer_on_the_component(&mut scroll);
+    rest_pointer_on_the_component(&mut scroll, 1);
     let owner = scroll.world.instances[0];
     let nested = scroll.world.instances[2];
 
@@ -195,6 +192,39 @@ fn a_settle_hands_the_pointer_over_only_once_the_content_has_arrived() {
         hovered(&scroll),
         Some(nested),
         "the settled content is what the pointer is over"
+    );
+    let frame = scroll.world.prepare_surface(scroll.surface());
+    scroll.world.publish(frame, 100, true);
+    assert_eq!(scroll.accepted_offset(), block(TRAVEL_POINTS));
+    assert_eq!(
+        hovered(&scroll),
+        Some(nested),
+        "ordinary publication preserves the accepted hit displacement"
+    );
+    super::reconstruction::reconstruct_surface(&mut scroll.world);
+    let incarnation = scroll
+        .world
+        .session
+        .scroll_region_incarnation(scroll.target(), 0)
+        .unwrap();
+    assert_eq!(
+        scroll
+            .world
+            .session
+            .scroll
+            .as_ref()
+            .unwrap()
+            .offset(scroll.owner, incarnation)
+            .unwrap(),
+        block(TRAVEL_POINTS)
+    );
+    // Rebinding retires old-binding pointer presence. A fresh host position
+    // must resolve against the reconstructed accepted content, not old input.
+    rest_pointer_on_the_component(&mut scroll, 2);
+    assert_eq!(
+        hovered(&scroll),
+        Some(nested),
+        "new-binding pointer input reaches reconstructed accepted content"
     );
     let _ = scroll.world.session.shutdown();
 }

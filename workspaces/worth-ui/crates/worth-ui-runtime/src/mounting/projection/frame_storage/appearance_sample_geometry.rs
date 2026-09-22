@@ -14,7 +14,7 @@ pub(crate) struct UiMountedAppearanceSurfaceSampleGeometry {
 }
 
 impl UiMountedAppearanceSurfaceSampleGeometry {
-    /// The visible surface: its allocation inside its ancestor clip.
+    /// Full retained visual bounds, including paint currently outside the clip.
     pub(crate) const fn bounds(self) -> UiMountedCanonicalBox {
         self.bounds
     }
@@ -26,7 +26,8 @@ impl UiMountedAppearanceSurfaceSampleGeometry {
 
 impl UiMountedProjectionFrameOwner {
     /// `None` when the instance paints no surface, has no completed
-    /// allocation, or is suppressed or unresolved by its ancestor clip.
+    /// allocation, or its ancestor clip is suppressed or unresolved. A surface
+    /// outside a nonempty clip stays sampleable so Scroll can reveal it.
     pub(crate) fn appearance_surface_sample_geometry(
         &self,
         instance: worth_ui_host_contract::UiMountedInstanceIdentity,
@@ -36,10 +37,7 @@ impl UiMountedProjectionFrameOwner {
         let bounds = canonical_box(visual.x(), visual.y(), visual.width(), visual.height())?;
         let clip = surface.clip();
         let clip = canonical_box(clip.x(), clip.y(), clip.width(), clip.height())?;
-        Some(UiMountedAppearanceSurfaceSampleGeometry {
-            bounds: bounds.intersection(clip)?,
-            clip,
-        })
+        Some(UiMountedAppearanceSurfaceSampleGeometry { bounds, clip })
     }
 }
 

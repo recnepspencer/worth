@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use worth_ui_host_contract::{
     UiHostPresentationCostReport, UiHostPresentationEpoch, UiMountedPresentationProductionCost,
 };
@@ -7,6 +8,7 @@ mod graphics;
 pub use graphics::UiNativeGraphicsObservation;
 #[path = "observation/attribution_basis.rs"]
 mod attribution_basis;
+mod sampled_chrome;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct UiNativePresentationObservation {
@@ -27,8 +29,8 @@ pub struct UiNativePresentationObservation {
     port_crossings: u8,
     production_cost: UiMountedPresentationProductionCost,
     cost: UiHostPresentationCostReport,
-    alpha_glyphs: Box<[UiNativeGlyphObservation]>,
-    intrinsic_glyphs: Box<[UiNativeGlyphObservation]>,
+    alpha_glyphs: Arc<[UiNativeGlyphObservation]>,
+    intrinsic_glyphs: Arc<[UiNativeGlyphObservation]>,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -54,6 +56,13 @@ pub enum UiNativePresentationWorkKind {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct UiNativeRetainedFrameObservation {
+    accepted_qpc_100ns: Option<i64>,
+    sampled_chrome: Box<
+        [(
+            worth_ui_host_contract::UiMountedScrollChromeIdentity,
+            [i64; 4],
+        )],
+    >,
     frame: u64,
     basis: super::physical_work_signal::UiNativePhysicalPresentationBasis,
     kind: UiNativePresentationWorkKind,
@@ -62,8 +71,8 @@ pub struct UiNativeRetainedFrameObservation {
     retained_center_rgba8: [u8; 4],
     cost: UiHostPresentationCostReport,
     port_crossings: u8,
-    alpha_glyphs: Box<[UiNativeGlyphObservation]>,
-    intrinsic_glyphs: Box<[UiNativeGlyphObservation]>,
+    alpha_glyphs: Arc<[UiNativeGlyphObservation]>,
+    intrinsic_glyphs: Arc<[UiNativeGlyphObservation]>,
     presentation: Option<UiNativePresentationObservation>,
 }
 
@@ -85,8 +94,8 @@ pub(crate) struct UiNativePresentationInput {
     pub(crate) port_crossings: u8,
     pub(crate) production_cost: UiMountedPresentationProductionCost,
     pub(crate) cost: UiHostPresentationCostReport,
-    pub(crate) alpha_glyphs: Box<[UiNativeGlyphObservation]>,
-    pub(crate) intrinsic_glyphs: Box<[UiNativeGlyphObservation]>,
+    pub(crate) alpha_glyphs: Arc<[UiNativeGlyphObservation]>,
+    pub(crate) intrinsic_glyphs: Arc<[UiNativeGlyphObservation]>,
 }
 
 impl UiNativePresentationObservation {
@@ -283,11 +292,13 @@ impl UiNativeRetainedFrameObservation {
         cost: UiHostPresentationCostReport,
         port_crossings: u8,
         presentation: Option<UiNativePresentationObservation>,
-        intrinsic_glyphs: Box<[UiNativeGlyphObservation]>,
-        alpha_glyphs: Box<[UiNativeGlyphObservation]>,
+        intrinsic_glyphs: Arc<[UiNativeGlyphObservation]>,
+        alpha_glyphs: Arc<[UiNativeGlyphObservation]>,
     ) -> Self {
         Self {
             frame,
+            accepted_qpc_100ns: None,
+            sampled_chrome: Box::new([]),
             basis,
             kind,
             sample_presentation_epoch,

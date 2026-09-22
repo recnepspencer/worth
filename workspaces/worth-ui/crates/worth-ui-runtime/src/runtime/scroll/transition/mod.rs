@@ -15,7 +15,8 @@ mod wheel_accumulation;
 
 pub(crate) use denial::UiScrollTransitionDenial;
 pub(crate) use motion_request::{
-    scroll_settle_motion_request, UiScrollMotionBinding, UiScrollMotionRequestDenial,
+    scroll_content_geometry, scroll_extent_motion_request, scroll_settle_motion_request,
+    UiScrollMotionBinding, UiScrollMotionRequestDenial,
 };
 pub(crate) use settle_horizon::UiScrollSettleHorizon;
 pub(crate) use succession::{

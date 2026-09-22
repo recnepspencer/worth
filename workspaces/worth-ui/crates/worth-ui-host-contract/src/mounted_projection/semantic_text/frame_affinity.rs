@@ -12,6 +12,7 @@ impl super::UiMountedSemanticTextMechanic {
             && self.allocation_basis == other.allocation_basis
             && self.bounds == other.bounds
             && self.clip_bounds == other.clip_bounds
+            && self.intrinsic_clip_bounds == other.intrinsic_clip_bounds
             && self.origin_x == other.origin_x
             && self.origin_y == other.origin_y
             && self.text == other.text

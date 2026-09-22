@@ -19,6 +19,37 @@ pub(super) struct UiPresentationTrackState {
 }
 
 impl UiPresentationTrackState {
+    pub(super) fn rebase_presented_extent(
+        &mut self,
+        tick: u64,
+    ) -> Result<(), super::UiPresentationGeometrySamplingDenial> {
+        let geometry = self
+            .track
+            .predecessor_geometry()
+            .map(|geometry| geometry.components());
+        if let (Some(start), Some(end)) = (geometry, self.target_geometry()) {
+            self.start_velocity =
+                self.start_velocity
+                    .within_extent(start, end, self.duration_ticks);
+        }
+        let sample = super::UiPresentationMotionSampleReceipt::from_track_sample(
+            self.track,
+            tick,
+            self.track.successor_presentation(),
+            geometry,
+            self.current_opacity_units,
+            super::UiPresentationMotionSamplePosture::Active,
+            super::UiPresentationMotionDamage::between(geometry, geometry),
+        )?;
+        self.start_tick = Some(tick);
+        self.start_geometry = geometry;
+        self.current_geometry = geometry;
+        self.presented_geometry = geometry;
+        self.current = Some(sample);
+        self.presented = true;
+        Ok(())
+    }
+
     /// The entrance sample is accepted as this track's current sample, but it
     /// is delayed and carries no opacity: the frame that published it drew the
     /// overlay at its successor geometry, not at the entrance offset. Claiming

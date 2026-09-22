@@ -110,9 +110,10 @@ pub(super) fn await_unrouted_hit(
         match world.lifecycle.next(deadline) {
             Ok(envelope) if incidental_visual(envelope.outcome()) => {}
             Ok(envelope) => match envelope.outcome() {
-                PlatformPulseLifecycleObservation::NativeInputReached(reached)
-                    if reached.pointer_button_events() > 0 =>
-                {
+                // Shift+wheel can leave the keyboard-family ingress witness
+                // ahead of this click. It is not the hit witness; keep waiting
+                // for the exact unrouted Activate below and enforce posture.
+                PlatformPulseLifecycleObservation::NativeInputReached(reached) => {
                     if reached.posture() != PlatformPulseNativeInputIngressPosture::Retained {
                         return Err(PlatformPulseScrollJourneyFailure::InputIngressStopped);
                     }

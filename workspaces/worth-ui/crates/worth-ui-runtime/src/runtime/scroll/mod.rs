@@ -61,6 +61,7 @@ pub(crate) use settle_transition::{
     UiPreparedScrollSettleTransition, UiScrollSettleTransitionDenial,
 };
 pub(crate) use shared_owner_reconciliation::UiSharedScrollOwnerReconciliation;
+pub(crate) use state::UiPreparedScrollDirectSuccession;
 pub(crate) use state::UiScrollRuntimeState;
 
 #[cfg(test)]
