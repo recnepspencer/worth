@@ -8,7 +8,7 @@ use crate::domain_computation::primary_graph::workflow::definition::{
     CompiledWorkflowDefinition, CompiledWorkflowNode, CompiledWorkflowNodeKind,
 };
 use crate::domain_computation::primary_graph::workflow::instance::{
-    SettledWorkflowTransition, WorkflowInstanceProgress,
+    SettledWorkflowTransition, WorkflowInstanceProgress, WorkflowTransitionProgressBasis,
 };
 
 mod approval;
@@ -24,6 +24,7 @@ pub(in crate::domain_computation::primary_graph) struct SelectedWorkflowTransiti
     pub(super) occurrence: u64,
     pub(super) identity: String,
     pub(super) identity_bytes: [u8; 32],
+    pub(super) progress_basis: Option<WorkflowTransitionProgressBasis>,
     kind: SelectedWorkflowTransitionKind,
 }
 
@@ -102,9 +103,9 @@ impl SelectedWorkflowTransition {
 pub(in crate::domain_computation::primary_graph) fn select_terminal_transition(
     compiled: &CompiledWorkflowDefinition,
     instance: EntityId,
-    progress: &WorkflowInstanceProgress,
+    progress_basis: &WorkflowTransitionProgressBasis,
 ) -> Result<SelectedWorkflowTransition, WorthQueryApplicationAttemptDenial> {
-    let selected = select_current_transition(compiled, instance, progress)?;
+    let selected = select_current_transition(compiled, instance, progress_basis)?;
     if !matches!(selected.kind(), SelectedWorkflowTransitionKind::Terminal) {
         return Err(denial(
             WorthQueryApplicationAttemptDenialKind::WorkflowTransitionNodeUnsupported,
@@ -117,8 +118,9 @@ pub(in crate::domain_computation::primary_graph) fn select_terminal_transition(
 pub(in crate::domain_computation::primary_graph) fn select_current_transition(
     compiled: &CompiledWorkflowDefinition,
     instance: EntityId,
-    progress: &WorkflowInstanceProgress,
+    progress_basis: &WorkflowTransitionProgressBasis,
 ) -> Result<SelectedWorkflowTransition, WorthQueryApplicationAttemptDenial> {
+    let progress = progress_basis.progress();
     let node = select_current_node(compiled, progress)?;
     let kind = match node.kind() {
         CompiledWorkflowNodeKind::Operation {
@@ -178,16 +180,24 @@ pub(in crate::domain_computation::primary_graph) fn select_current_transition(
         }
     };
     let occurrence = progress.next_occurrence();
-    select_transition(compiled, instance, node, occurrence, kind)
+    select_transition(
+        compiled,
+        instance,
+        node,
+        occurrence,
+        kind,
+        Some(progress_basis.clone()),
+    )
 }
 
 pub(in crate::domain_computation::primary_graph) fn select_proposal_transition(
     compiled: &CompiledWorkflowDefinition,
     instance: EntityId,
-    progress: &WorkflowInstanceProgress,
+    progress_basis: &WorkflowTransitionProgressBasis,
     operation: &str,
     input_type: &str,
 ) -> Result<SelectedWorkflowTransition, WorthQueryApplicationAttemptDenial> {
+    let progress = progress_basis.progress();
     let node = select_current_node(compiled, progress)?;
     match node.kind() {
         CompiledWorkflowNodeKind::Operation {
@@ -212,6 +222,7 @@ pub(in crate::domain_computation::primary_graph) fn select_proposal_transition(
             operation: operation.to_owned(),
             input_type: input_type.to_owned(),
         }),
+        Some(progress_basis.clone()),
     )
 }
 
@@ -250,6 +261,7 @@ pub(in crate::domain_computation::primary_graph) fn select_proposal_replay_trans
             operation: operation.to_owned(),
             input_type: input_type.to_owned(),
         }),
+        None,
     )
 }
 
@@ -259,6 +271,7 @@ fn select_transition(
     node: &CompiledWorkflowNode,
     occurrence: u64,
     kind: SelectedWorkflowTransitionKind,
+    progress_basis: Option<WorkflowTransitionProgressBasis>,
 ) -> Result<SelectedWorkflowTransition, WorthQueryApplicationAttemptDenial> {
     let (identity, identity_bytes) = transition_identity(compiled, instance, node, occurrence)?;
     Ok(SelectedWorkflowTransition {
@@ -267,6 +280,7 @@ fn select_transition(
         occurrence,
         identity,
         identity_bytes,
+        progress_basis,
         kind,
     })
 }

@@ -8,7 +8,7 @@ use super::{
 };
 use crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowDefinition;
 use crate::domain_computation::primary_graph::workflow::instance::{
-    SettledWorkflowTransition, WorkflowInstanceProgress, WorkflowInstanceState,
+    SettledWorkflowTransition, WorkflowInstanceState, WorkflowTransitionProgressBasis,
 };
 use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout;
 
@@ -27,8 +27,8 @@ pub(in crate::domain_computation::primary_graph::application_attempt) struct Obs
         Vec<ObservedWorkflowTransition>,
     pub(in crate::domain_computation::primary_graph::application_attempt) facts:
         Vec<WorthQueryApplicationObservedFact>,
-    pub(in crate::domain_computation::primary_graph::application_attempt) progress:
-        WorkflowInstanceProgress,
+    pub(in crate::domain_computation::primary_graph::application_attempt) progress_basis:
+        WorkflowTransitionProgressBasis,
 }
 
 pub(in crate::domain_computation::primary_graph::application_attempt) struct ObservedWorkflowTransition
@@ -276,7 +276,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         }
     }
     let reconstruction_transition_visits = settlements.len();
-    let progress = progression::finish_progress(
+    let progress_basis = progression::finish_progress(
         handle,
         progress_observation,
         compiled,
@@ -287,7 +287,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         live_membership,
         transitions: settled_transitions,
         facts,
-        progress,
+        progress_basis,
     })
 }
 

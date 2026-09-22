@@ -1,7 +1,11 @@
+use worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome;
 use worth_relational::facade::identity::{EntityId, RelationId};
 
 use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryCompleteApplicationReadSet, WorthQueryProjectedApplicationMutation,
+};
+use crate::domain_computation::primary_graph::workflow::instance::progression::{
+    PreparedWorkflowProgressUpdate, WorkflowTransitionProgressBasis,
 };
 
 mod selection;
@@ -34,6 +38,7 @@ pub(in crate::domain_computation::primary_graph) struct AdmittedWorkflowTransiti
     pub(super) retire_live_membership: bool,
     pub(super) identity: String,
     pub(super) identity_bytes: [u8; 32],
+    progress_basis: Option<WorkflowTransitionProgressBasis>,
 }
 
 impl<Schema, Operation, Input, Scope> AdmittedWorkflowTransition<Schema, Operation, Input, Scope> {
@@ -59,6 +64,24 @@ impl<Schema, Operation, Input, Scope> AdmittedWorkflowTransition<Schema, Operati
 
     pub(in crate::domain_computation::primary_graph) fn subject(&self) -> EntityId {
         self.subject
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn prepare_progress_update(
+        &self,
+        outcome: ApplicationWorkflowControlOutcome,
+        operation_receipt_identity: Option<[u8; 32]>,
+    ) -> Result<PreparedWorkflowProgressUpdate, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial>{
+        self.progress_basis.as_ref().ok_or_else(|| {
+            crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial::new(
+                crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenialKind::WorkflowInstanceAffinityMismatch,
+                "workflow transition progress basis is unavailable",
+            )
+        })?.prepare(
+            self.node,
+            self.occurrence,
+            outcome,
+            operation_receipt_identity,
+        )
     }
 
     pub(in crate::domain_computation::primary_graph) const fn read_set(
@@ -116,5 +139,6 @@ pub(in crate::domain_computation::primary_graph) fn admit_workflow_transition<
         retire_live_membership,
         identity: selected.identity,
         identity_bytes: selected.identity_bytes,
+        progress_basis: selected.progress_basis,
     }
 }

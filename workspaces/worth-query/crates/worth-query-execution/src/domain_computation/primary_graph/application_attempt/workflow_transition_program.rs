@@ -162,7 +162,7 @@ where
                 let selected = select_terminal_transition(
                     &compiled,
                     instance.entity_id(),
-                    &observed.progress,
+                    &observed.progress_basis,
                 )?;
                 if !selected.matches_settlement(settled.settlement) {
                     return Err(denial(
@@ -193,7 +193,7 @@ where
         let selected = match select_current_transition(
             &compiled,
             instance.entity_id(),
-            &observed.progress,
+            &observed.progress_basis,
         ) {
             Ok(selected) => selected,
             Err(denial)
@@ -351,6 +351,7 @@ where
             assessment: None,
             supporting_identity: None,
             operation_receipt_identity: None,
+            progress_update: None,
             approval: None,
             approval_identity: None,
             replays: Box::default(),

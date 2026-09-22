@@ -182,7 +182,7 @@ where
         let selected = match select_current_transition(
             &compiled,
             instance.entity_id(),
-            &observed.progress,
+            &observed.progress_basis,
         ) {
             Ok(selected) => selected,
             Err(denial)
@@ -365,6 +365,7 @@ where
         },
     )?;
     let validator_work_admission = reservation.materialize(&effects)?;
+    let progress_update = admitted.prepare_progress_update(meaning.decision.outcome(), None)?;
     Ok(PreparedWorkflowAdvance::Transition {
         program: WorthQueryApplicationEffectProgram {
             read_set: admitted.into_read_set(),
@@ -390,6 +391,7 @@ where
         assessment: None,
         supporting_identity: None,
         operation_receipt_identity: None,
+        progress_update: Some(progress_update),
         approval: Some(approval_projection),
         approval_identity: Some(meaning.identity),
         replays: Box::default(),

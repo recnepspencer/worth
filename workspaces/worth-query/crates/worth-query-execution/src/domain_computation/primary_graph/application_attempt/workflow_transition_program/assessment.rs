@@ -84,6 +84,10 @@ where
             Ok::<(), WorthQueryApplicationAttemptDenial>(())
         })?;
         let validator_work_admission = reservation.materialize(&effects)?;
+        let progress_update = self.admitted.prepare_progress_update(
+            worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome::Completed,
+            None,
+        )?;
         let mut read_set = self.admitted.into_read_set();
         bind_currentness_facts(&mut read_set, &currentness_facts, &node_path)?;
         let program = WorthQueryApplicationEffectProgram {
@@ -114,6 +118,7 @@ where
             assessment,
             supporting_identity: None,
             operation_receipt_identity: None,
+            progress_update: Some(progress_update),
             approval: None,
             approval_identity: None,
             replays,

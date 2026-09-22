@@ -17,6 +17,7 @@ pub(super) use dispatch::CompiledWorkflowDispatch;
 ///
 /// This phase carries no principal, currentness, reservation, or execution
 /// authority. The instance owner must freshly admit every use.
+#[derive(Clone)]
 pub(in crate::domain_computation::primary_graph) struct CompiledWorkflowDefinition {
     pub(super) publication: Arc<CompiledWorkflowPublicationPlan>,
     pub(super) content_identity: ApplicationWorkflowDefinitionContentIdentity,

@@ -5,6 +5,7 @@ use worth_relational::facade::identity::EntityId;
 
 mod navigation;
 mod retention;
+mod update;
 use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
 };
@@ -14,6 +15,9 @@ pub use retention::WorthQueryWorkflowInstanceProgressCounters;
 pub(in crate::domain_computation::primary_graph) use retention::{
     default_progress_retention_shards, WorkflowInstanceProgressKey,
     WorkflowInstanceProgressRetention, WorkflowInstanceProgressRetentionDenial,
+};
+pub(in crate::domain_computation::primary_graph) use update::{
+    PreparedWorkflowProgressUpdate, WorkflowTransitionProgressBasis,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -135,11 +139,21 @@ impl WorkflowInstanceProgress {
         compiled: &CompiledWorkflowDefinition,
         transition: SettledWorkflowTransition,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
-        self.advance_with(transition, &mut |source, outcome, attempts| {
-            unique_successor(compiled, source, outcome, attempts).map(|node| node.entity())
-        })
+        self.validate_next(transition)?;
+        let source = transition.node();
+        let outcome = transition.outcome();
+        let attempts = if compiled.retry_successors(source, outcome).next().is_some() {
+            let attempts = self.retry_counts.entry((source, outcome)).or_default();
+            *attempts = attempts.saturating_add(1);
+            *attempts
+        } else {
+            1
+        };
+        let successor = unique_successor(compiled, source, outcome, attempts)?.entity();
+        self.finish_advance(successor)
     }
 
+    #[cfg(test)]
     fn advance_with(
         &mut self,
         transition: SettledWorkflowTransition,
@@ -149,15 +163,31 @@ impl WorkflowInstanceProgress {
             usize,
         ) -> Result<EntityId, WorthQueryApplicationAttemptDenial>,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        self.validate_next(transition)?;
+        let key = (transition.node(), transition.outcome());
+        let attempts = self.retry_counts.entry(key).or_default();
+        *attempts = attempts.saturating_add(1);
+        let successor = successor(transition.node(), transition.outcome(), *attempts)?;
+        self.finish_advance(successor)
+    }
+
+    fn validate_next(
+        &self,
+        transition: SettledWorkflowTransition,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
         if transition.occurrence() != self.next_occurrence || transition.node() != self.head {
             return Err(denial(
                 "workflow transition history is not a contiguous compiled path",
             ));
         }
-        let key = (transition.node(), transition.outcome());
-        let attempts = self.retry_counts.entry(key).or_default();
-        *attempts = attempts.saturating_add(1);
-        self.head = successor(transition.node(), transition.outcome(), *attempts)?;
+        Ok(())
+    }
+
+    fn finish_advance(
+        &mut self,
+        successor: EntityId,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        self.head = successor;
         self.next_occurrence = self.next_occurrence.checked_add(1).ok_or_else(|| {
             WorthQueryApplicationAttemptDenial::new(
                 WorthQueryApplicationAttemptDenialKind::WorkflowTransitionIdentityUnavailable,

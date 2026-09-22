@@ -116,7 +116,7 @@ where
         let selection = select_proposal_transition(
             &compiled,
             instance.entity_id(),
-            &observed.progress,
+            &observed.progress_basis,
             Operation::IDENTIFIER,
             input_type.as_str(),
         );
@@ -202,6 +202,14 @@ where
             Ok::<(), WorthQueryApplicationAttemptDenial>(())
         })?;
         let validator_work_admission = reservation.materialize(&effects)?;
+        let progress_update = if replay {
+            None
+        } else {
+            Some(admitted.prepare_progress_update(
+                worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome::Completed,
+                None,
+            )?)
+        };
         Ok(PreparedWorkflowProposal {
             program: WorthQueryApplicationEffectProgram {
                 read_set: admitted.into_read_set(),
@@ -229,6 +237,7 @@ where
             input_type: input_type.as_str().to_owned(),
             input_identity,
             source_identity,
+            progress_update,
         })
     }
 

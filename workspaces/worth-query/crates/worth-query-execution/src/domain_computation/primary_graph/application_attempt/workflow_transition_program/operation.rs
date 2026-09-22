@@ -214,6 +214,10 @@ where
         let transition_identity_bytes = *self.admitted.identity_bytes();
         let instance = self.admitted.instance();
         let node_path = self.admitted.node_path().to_owned();
+        let progress_update = self.admitted.prepare_progress_update(
+            worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome::Completed,
+            Some(receipt_identity),
+        )?;
         let program = WorthQueryApplicationEffectProgram {
             read_set: self.admitted.into_read_set(),
             effects,
@@ -240,6 +244,7 @@ where
             assessment: None,
             supporting_identity: Some(receipt_identity),
             operation_receipt_identity: Some(receipt_identity),
+            progress_update: Some(progress_update),
             approval: None,
             approval_identity: None,
             replays: self.replays,

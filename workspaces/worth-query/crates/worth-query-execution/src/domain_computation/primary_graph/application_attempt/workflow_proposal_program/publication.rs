@@ -25,6 +25,9 @@ pub struct PreparedWorkflowProposal<Schema, Operation, Input, Scope> {
     pub(super) input_type: String,
     pub(super) input_identity: [u8; 32],
     pub(super) source_identity: Option<[u8; 32]>,
+    pub(super) progress_update: Option<
+        crate::domain_computation::primary_graph::workflow::instance::PreparedWorkflowProgressUpdate,
+    >,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -193,6 +196,7 @@ where
             input_type,
             input_identity,
             source_identity,
+            progress_update,
         } = prepared;
         let Some(presented) = self
             .installed_program_support()
@@ -219,7 +223,7 @@ where
             input_identity,
             source_identity,
         };
-        match outcome {
+        let projected = match outcome {
             WorthQueryApplicationCommitOutcome::Committed(receipt) => {
                 project(receipt, context, false)
             }
@@ -227,7 +231,20 @@ where
                 project(receipt, context, true)
             }
             other => WorkflowProposalOutcome::Application(other),
+        };
+        if let (Some(progress_update), WorkflowProposalOutcome::Published(performed)) =
+            (progress_update, &projected)
+        {
+            let committed_revision = performed.receipt().commit_reference().version_id;
+            let progress_key = progress_update.key();
+            let _ = self
+                .primary_provider
+                .graph
+                .with_workflow_instance_progress_mut(progress_key, |retention| {
+                    progress_update.apply(retention, committed_revision)
+                });
         }
+        projected
     }
 }
 

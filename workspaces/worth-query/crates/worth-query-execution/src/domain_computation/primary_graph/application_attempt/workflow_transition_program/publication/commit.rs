@@ -35,6 +35,7 @@ where
             assessment,
             supporting_identity,
             operation_receipt_identity,
+            progress_update,
             approval,
             approval_identity,
         ) = match prepared {
@@ -48,6 +49,7 @@ where
                 assessment,
                 supporting_identity,
                 operation_receipt_identity,
+                progress_update,
                 approval,
                 approval_identity,
                 ..
@@ -61,6 +63,7 @@ where
                 assessment,
                 supporting_identity,
                 operation_receipt_identity,
+                progress_update,
                 approval,
                 approval_identity,
             ),
@@ -112,7 +115,7 @@ where
             program,
             idempotency,
         );
-        match outcome {
+        let projected = match outcome {
             super::super::super::WorthQueryApplicationCommitOutcome::Committed(receipt) => {
                 self.primary_provider.graph.with_runtime(|runtime| {
                     project(
@@ -144,7 +147,20 @@ where
                 })
             }
             other => WorkflowProgressOutcome::Application(other),
+        };
+        if let (Some(progress_update), WorkflowProgressOutcome::Completed(performed)) =
+            (progress_update, &projected)
+        {
+            let committed_revision = performed.receipt().commit_reference().version_id;
+            let progress_key = progress_update.key();
+            let _ = self
+                .primary_provider
+                .graph
+                .with_workflow_instance_progress_mut(progress_key, |retention| {
+                    progress_update.apply(retention, committed_revision)
+                });
         }
+        projected
     }
 }
 

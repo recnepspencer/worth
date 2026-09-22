@@ -203,6 +203,10 @@ where
             |effect| { effects.push(effect); Ok::<(), WorthQueryApplicationAttemptDenial>(()) },
         )?;
         let validator_work_admission = reservation.materialize(&effects)?;
+        let progress_update = admitted.prepare_progress_update(
+            worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome::Completed,
+            None,
+        )?;
         let program = WorthQueryApplicationEffectProgram {
             read_set: admitted.into_read_set(),
             effects,
@@ -229,6 +233,7 @@ where
             assessment: None,
             supporting_identity: None,
             operation_receipt_identity: None,
+            progress_update: Some(progress_update),
             approval: None,
             approval_identity: None,
             replays: Box::default(),

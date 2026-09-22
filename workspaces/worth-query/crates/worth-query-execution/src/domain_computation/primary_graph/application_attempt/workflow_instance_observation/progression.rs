@@ -9,6 +9,7 @@ use super::{
 use crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowDefinition;
 use crate::domain_computation::primary_graph::workflow::instance::{
     WorkflowInstanceProgress, WorkflowInstanceProgressKey, WorkflowInstanceProgressRetentionDenial,
+    WorkflowTransitionProgressBasis,
 };
 use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle;
@@ -70,22 +71,30 @@ pub(super) fn finish_progress(
     compiled: &CompiledWorkflowDefinition,
     settlements: &mut [SettledWorkflowTransition],
     reconstruction_transition_visits: usize,
-) -> Result<WorkflowInstanceProgress, WorthQueryApplicationAttemptDenial> {
-    if let Some(progress) = observation.retained {
-        return Ok(progress);
-    }
-    let progress = WorkflowInstanceProgress::reconstruct(compiled, settlements)?;
-    handle
-        .with_workflow_instance_progress_mut(observation.key, |retention| {
-            retention.retain(
-                observation.key,
-                observation.revision,
-                progress.clone(),
-                reconstruction_transition_visits,
-            )
-        })
-        .map_err(retention_denial)?;
-    Ok(progress)
+) -> Result<WorkflowTransitionProgressBasis, WorthQueryApplicationAttemptDenial> {
+    let progress = match observation.retained {
+        Some(progress) => progress,
+        None => {
+            let progress = WorkflowInstanceProgress::reconstruct(compiled, settlements)?;
+            handle
+                .with_workflow_instance_progress_mut(observation.key, |retention| {
+                    retention.retain(
+                        observation.key,
+                        observation.revision,
+                        progress.clone(),
+                        reconstruction_transition_visits,
+                    )
+                })
+                .map_err(retention_denial)?;
+            progress
+        }
+    };
+    Ok(WorkflowTransitionProgressBasis::new(
+        observation.key,
+        observation.revision,
+        compiled.clone(),
+        progress,
+    ))
 }
 
 fn retention_denial(
@@ -95,6 +104,10 @@ fn retention_denial(
         WorkflowInstanceProgressRetentionDenial::RevisionCollision => (
             WorthQueryApplicationAttemptDenialKind::WorkflowInstanceAffinityMismatch,
             "retained workflow progress collided at one source revision",
+        ),
+        WorkflowInstanceProgressRetentionDenial::ContinuityUnavailable => (
+            WorthQueryApplicationAttemptDenialKind::WorkflowInstanceAffinityMismatch,
+            "retained workflow progress continuity is unavailable",
         ),
         WorkflowInstanceProgressRetentionDenial::ByteBudgetExceeded => (
             WorthQueryApplicationAttemptDenialKind::WorkflowInstanceCapacityUnavailable,

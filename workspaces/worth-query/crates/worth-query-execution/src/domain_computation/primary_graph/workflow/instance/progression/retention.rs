@@ -54,6 +54,7 @@ struct RetainedWorkflowInstanceProgress {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum WorkflowInstanceProgressRetentionDenial {
     RevisionCollision,
+    ContinuityUnavailable,
     ByteBudgetExceeded,
 }
 
@@ -126,6 +127,60 @@ impl WorkflowInstanceProgressRetention {
             self.counters.denials = self.counters.denials.saturating_add(1);
             return Err(WorkflowInstanceProgressRetentionDenial::RevisionCollision);
         }
+        if self
+            .entries
+            .get(&key)
+            .is_some_and(|retained| retained.revision > revision)
+        {
+            self.counters.denials = self.counters.denials.saturating_add(1);
+            return Err(WorkflowInstanceProgressRetentionDenial::RevisionCollision);
+        }
+        self.store(key, revision, progress)?;
+        self.counters.cold_retains = self.counters.cold_retains.saturating_add(1);
+        self.counters.cold_reconstruction_transition_visits = self
+            .counters
+            .cold_reconstruction_transition_visits
+            .saturating_add(reconstruction_transition_visits);
+        self.counters.retained_charge_bytes = self.retained_charge_bytes;
+        Ok(())
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn advance(
+        &mut self,
+        key: WorkflowInstanceProgressKey,
+        source_revision: Option<VersionId>,
+        source: &WorkflowInstanceProgress,
+        committed_revision: Option<VersionId>,
+        advanced: WorkflowInstanceProgress,
+    ) -> Result<(), WorkflowInstanceProgressRetentionDenial> {
+        let Some(retained) = self.entries.get(&key) else {
+            self.counters.incremental_misses = self.counters.incremental_misses.saturating_add(1);
+            return Err(WorkflowInstanceProgressRetentionDenial::ContinuityUnavailable);
+        };
+        if retained.revision == committed_revision && retained.progress == advanced {
+            self.touch(key);
+            self.counters.incremental_replays = self.counters.incremental_replays.saturating_add(1);
+            return Ok(());
+        }
+        if retained.revision != source_revision || &retained.progress != source {
+            self.counters.denials = self.counters.denials.saturating_add(1);
+            return Err(WorkflowInstanceProgressRetentionDenial::RevisionCollision);
+        }
+        if committed_revision <= source_revision {
+            self.counters.denials = self.counters.denials.saturating_add(1);
+            return Err(WorkflowInstanceProgressRetentionDenial::RevisionCollision);
+        }
+        self.store(key, committed_revision, advanced)?;
+        self.counters.incremental_advances = self.counters.incremental_advances.saturating_add(1);
+        Ok(())
+    }
+
+    fn store(
+        &mut self,
+        key: WorkflowInstanceProgressKey,
+        revision: Option<VersionId>,
+        progress: WorkflowInstanceProgress,
+    ) -> Result<(), WorkflowInstanceProgressRetentionDenial> {
         let retained_charge_bytes = std::mem::size_of::<WorkflowInstanceProgressKey>()
             .saturating_add(std::mem::size_of::<RetainedWorkflowInstanceProgress>())
             .saturating_add(progress.retained_charge_bytes());
@@ -154,13 +209,19 @@ impl WorkflowInstanceProgressRetention {
         self.retained_charge_bytes = self
             .retained_charge_bytes
             .saturating_add(retained_charge_bytes);
-        self.counters.cold_retains = self.counters.cold_retains.saturating_add(1);
-        self.counters.cold_reconstruction_transition_visits = self
-            .counters
-            .cold_reconstruction_transition_visits
-            .saturating_add(reconstruction_transition_visits);
         self.counters.retained_charge_bytes = self.retained_charge_bytes;
         Ok(())
+    }
+
+    fn touch(&mut self, key: WorkflowInstanceProgressKey) {
+        let last_use = self.next_use_sequence();
+        let retained = self
+            .entries
+            .get_mut(&key)
+            .expect("retained workflow progress remains present");
+        self.least_recently_used.remove(&(retained.last_use, key));
+        retained.last_use = last_use;
+        self.least_recently_used.insert((last_use, key));
     }
 
     #[cfg(feature = "test-primary-graph-faults")]
@@ -240,6 +301,9 @@ pub struct WorthQueryWorkflowInstanceProgressCounters {
     cold_misses: usize,
     cold_retains: usize,
     cold_reconstruction_transition_visits: usize,
+    incremental_advances: usize,
+    incremental_replays: usize,
+    incremental_misses: usize,
     evictions: usize,
     denials: usize,
     releases: usize,
@@ -259,6 +323,15 @@ impl WorthQueryWorkflowInstanceProgressCounters {
     }
     pub const fn cold_reconstruction_transition_visits(self) -> usize {
         self.cold_reconstruction_transition_visits
+    }
+    pub const fn incremental_advances(self) -> usize {
+        self.incremental_advances
+    }
+    pub const fn incremental_replays(self) -> usize {
+        self.incremental_replays
+    }
+    pub const fn incremental_misses(self) -> usize {
+        self.incremental_misses
     }
     pub const fn evictions(self) -> usize {
         self.evictions
@@ -286,6 +359,15 @@ impl WorthQueryWorkflowInstanceProgressCounters {
         self.cold_reconstruction_transition_visits = self
             .cold_reconstruction_transition_visits
             .saturating_add(shard.cold_reconstruction_transition_visits);
+        self.incremental_advances = self
+            .incremental_advances
+            .saturating_add(shard.incremental_advances);
+        self.incremental_replays = self
+            .incremental_replays
+            .saturating_add(shard.incremental_replays);
+        self.incremental_misses = self
+            .incremental_misses
+            .saturating_add(shard.incremental_misses);
         self.evictions = self.evictions.saturating_add(shard.evictions);
         self.denials = self.denials.saturating_add(shard.denials);
         self.releases = self.releases.saturating_add(shard.releases);

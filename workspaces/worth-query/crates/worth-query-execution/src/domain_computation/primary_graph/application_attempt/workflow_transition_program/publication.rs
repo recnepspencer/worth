@@ -38,6 +38,9 @@ pub enum PreparedWorkflowAdvance<Schema, Operation, Input, Scope> {
         assessment: Option<PreparedWorkflowAssessmentProjection>,
         supporting_identity: Option<[u8; 32]>,
         operation_receipt_identity: Option<[u8; 32]>,
+        progress_update: Option<
+            crate::domain_computation::primary_graph::workflow::instance::PreparedWorkflowProgressUpdate,
+        >,
         approval: Option<PreparedWorkflowApprovalProjection>,
         approval_identity: Option<[u8; 32]>,
         replays: Box<[PreparedWorkflowTransitionReplay]>,

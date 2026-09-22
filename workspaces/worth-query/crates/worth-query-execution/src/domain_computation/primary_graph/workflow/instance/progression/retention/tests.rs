@@ -40,6 +40,84 @@ fn exact_revision_reuses_and_changed_revision_reconstructs() {
 }
 
 #[test]
+fn exact_owner_result_advances_once_and_duplicate_delivery_is_idempotent() {
+    let mut retention = WorkflowInstanceProgressRetention::new(4096);
+    let source_revision = Some(VersionId::new(13));
+    let committed_revision = Some(VersionId::new(14));
+    let source = progress(4);
+    let advanced = progress(5);
+    retention
+        .retain(key(1), source_revision, source.clone(), 2)
+        .expect("source progress retains");
+
+    retention
+        .advance(
+            key(1),
+            source_revision,
+            &source,
+            committed_revision,
+            advanced.clone(),
+        )
+        .expect("continuous owner result advances progress");
+    retention
+        .advance(
+            key(1),
+            source_revision,
+            &source,
+            committed_revision,
+            advanced.clone(),
+        )
+        .expect("duplicate owner result reuses the exact advance");
+
+    assert_eq!(retention.reuse(key(1), committed_revision), Some(advanced));
+    assert_eq!(retention.counters().incremental_advances(), 1);
+    assert_eq!(retention.counters().incremental_replays(), 1);
+}
+
+#[test]
+fn gap_foreign_basis_and_eviction_cannot_advance_progress() {
+    let mut retention = WorkflowInstanceProgressRetention::new(4096);
+    let source_revision = Some(VersionId::new(15));
+    let source = progress(6);
+    retention
+        .retain(key(2), source_revision, source.clone(), 2)
+        .expect("source progress retains");
+
+    assert_eq!(
+        retention.advance(
+            key(2),
+            Some(VersionId::new(99)),
+            &source,
+            Some(VersionId::new(16)),
+            progress(7),
+        ),
+        Err(WorkflowInstanceProgressRetentionDenial::RevisionCollision)
+    );
+    assert_eq!(
+        retention.advance(
+            key(3),
+            source_revision,
+            &source,
+            Some(VersionId::new(16)),
+            progress(7),
+        ),
+        Err(WorkflowInstanceProgressRetentionDenial::ContinuityUnavailable)
+    );
+    assert_eq!(
+        retention.advance(
+            key(2),
+            source_revision,
+            &source,
+            source_revision,
+            progress(7),
+        ),
+        Err(WorkflowInstanceProgressRetentionDenial::RevisionCollision)
+    );
+    assert_eq!(retention.reuse(key(2), source_revision), Some(source));
+    assert_eq!(retention.counters().incremental_misses(), 1);
+}
+
+#[test]
 fn equal_revision_collision_fails_closed() {
     let mut retention = WorkflowInstanceProgressRetention::new(4096);
     let revision = Some(VersionId::new(21));
@@ -52,6 +130,24 @@ fn equal_revision_collision_fails_closed() {
         Err(WorkflowInstanceProgressRetentionDenial::RevisionCollision)
     );
     assert_eq!(retention.counters().denials(), 1);
+}
+
+#[test]
+fn stale_reconstruction_cannot_replace_newer_progress() {
+    let mut retention = WorkflowInstanceProgressRetention::new(4096);
+    let newer = progress(7);
+    retention
+        .retain(key(2), Some(VersionId::new(23)), newer.clone(), 3)
+        .expect("newer progress retains");
+
+    assert_eq!(
+        retention.retain(key(2), Some(VersionId::new(22)), progress(6), 2),
+        Err(WorkflowInstanceProgressRetentionDenial::RevisionCollision)
+    );
+    assert_eq!(
+        retention.reuse(key(2), Some(VersionId::new(23))),
+        Some(newer)
+    );
 }
 
 #[test]

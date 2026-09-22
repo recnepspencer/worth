@@ -12,7 +12,7 @@ use super::bounded_dimension_model::{
 };
 
 #[test]
-fn progress_reuses_exact_revisions_and_rebuilds_after_release() {
+fn progress_advances_from_owner_results_and_rebuilds_after_release() {
     let application = publish_workflow_on_first_program();
     let definition = match publish_definition(
         &application,
@@ -42,6 +42,10 @@ fn progress_reuses_exact_revisions_and_rebuilds_after_release() {
     let cold = application.runtime().workflow_instance_progress_counters();
     assert_eq!(cold.cold_misses(), before.cold_misses() + 1);
     assert_eq!(cold.cold_retains(), before.cold_retains() + 1);
+    assert_eq!(
+        cold.incremental_advances(),
+        before.incremental_advances() + 1
+    );
 
     let second = propose_authoring_instance(&application, started.instance().clone(), 1_214)
         .expect("the retry proposal prepares");
@@ -50,11 +54,16 @@ fn progress_reuses_exact_revisions_and_rebuilds_after_release() {
     };
     assert_eq!(second.node_path(), "proposal/revise");
     let changed_revision = application.runtime().workflow_instance_progress_counters();
-    assert_eq!(changed_revision.cold_misses(), cold.cold_misses() + 1);
-    assert_eq!(changed_revision.cold_retains(), cold.cold_retains() + 1);
+    assert_eq!(changed_revision.warm_hits(), cold.warm_hits() + 1);
+    assert_eq!(changed_revision.cold_misses(), cold.cold_misses());
+    assert_eq!(changed_revision.cold_retains(), cold.cold_retains());
+    assert_eq!(
+        changed_revision.incremental_advances(),
+        cold.incremental_advances() + 1
+    );
     assert_eq!(
         changed_revision.cold_reconstruction_transition_visits(),
-        cold.cold_reconstruction_transition_visits() + 1
+        cold.cold_reconstruction_transition_visits()
     );
 
     assert!(matches!(
@@ -62,13 +71,11 @@ fn progress_reuses_exact_revisions_and_rebuilds_after_release() {
         Ok(WorkflowProgressOutcome::PreparationDenied(_))
     ));
     let reconstructed = application.runtime().workflow_instance_progress_counters();
-    assert_eq!(
-        reconstructed.cold_misses(),
-        changed_revision.cold_misses() + 1
-    );
+    assert_eq!(reconstructed.warm_hits(), changed_revision.warm_hits() + 1);
+    assert_eq!(reconstructed.cold_misses(), changed_revision.cold_misses());
     assert_eq!(
         reconstructed.cold_reconstruction_transition_visits(),
-        changed_revision.cold_reconstruction_transition_visits() + 2
+        changed_revision.cold_reconstruction_transition_visits()
     );
 
     assert!(matches!(
