@@ -51,6 +51,7 @@ pub enum WorthQueryApplicationAttemptDenialKind {
     WorkflowInstanceAuthorityMismatch,
     WorkflowInstanceIntentIdentityUnavailable,
     WorkflowInstanceCapacityUnavailable,
+    WorkflowHistoryReconstructionBudgetExceeded,
     WorkflowTransitionAffinityMismatch,
     WorkflowTransitionAuthorityMismatch,
     WorkflowTransitionAlreadySettled,

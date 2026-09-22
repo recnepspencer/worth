@@ -88,6 +88,7 @@ where
                 compiled.lineage(),
                 &compiled,
                 maximum_transitions,
+                installed.resources().history_reconstruction_budget(),
             )
         })?;
         let replays = publication::PreparedWorkflowTransitionReplays::retained(std::mem::take(
@@ -140,6 +141,7 @@ where
                     &layout,
                     instance.entity_id(),
                     maximum_transitions,
+                    &compiled,
                 )
             })?;
             observed.transitions.iter().find(|transition| {

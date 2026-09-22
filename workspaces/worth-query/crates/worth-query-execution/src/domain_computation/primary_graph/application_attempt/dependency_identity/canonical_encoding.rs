@@ -226,7 +226,7 @@ fn append_fact(
         WorthQueryApplicationObservedFact::WorkflowDefinitionPredecessor { .. }
         | WorthQueryApplicationObservedFact::WorkflowDefinitionCurrent { .. }
         | WorthQueryApplicationObservedFact::WorkflowInstanceCapacity { .. }
-        | WorthQueryApplicationObservedFact::WorkflowTransitionCapacity { .. } => {
+        | WorthQueryApplicationObservedFact::WorkflowHistoryBasis { .. } => {
             workflow_fact::append(entries, prefix, fact)
         }
     }

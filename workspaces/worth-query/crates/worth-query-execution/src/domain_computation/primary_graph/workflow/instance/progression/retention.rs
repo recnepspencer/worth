@@ -167,6 +167,19 @@ impl WorkflowInstanceProgressRetention {
     pub(in crate::domain_computation::primary_graph) fn observe_warm_core(&mut self) {
         self.counters.warm_core_hits = self.counters.warm_core_hits.saturating_add(1);
     }
+    pub(in crate::domain_computation::primary_graph) fn observe_history_reconstruction_charge(
+        &mut self,
+        bytes: usize,
+    ) {
+        self.counters.history_reconstruction_charge_bytes = self
+            .counters
+            .history_reconstruction_charge_bytes
+            .saturating_add(bytes);
+        self.counters.peak_history_reconstruction_charge_bytes = self
+            .counters
+            .peak_history_reconstruction_charge_bytes
+            .max(bytes);
+    }
 
     pub(in crate::domain_computation::primary_graph) fn observe_warm_history(
         &mut self,

@@ -124,6 +124,7 @@ where
                 compiled.lineage(),
                 &compiled,
                 maximum_transitions,
+                installed.resources().history_reconstruction_budget(),
             )
         })?;
         let (live_membership, retire_live_membership) = match observed.live_membership {
@@ -137,6 +138,7 @@ where
                         &layout,
                         instance.entity_id(),
                         maximum_transitions,
+                        &compiled,
                     )
                 })?;
                 if observed.transitions.is_empty() {

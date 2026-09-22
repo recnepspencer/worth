@@ -90,6 +90,14 @@ pub(super) fn derive(
             .maximum_retained_transitions_per_instance()
             .to_string(),
         resources.maximum_evidence_bytes().to_string(),
+        resources
+            .history_reconstruction_budget()
+            .maximum_transition_visits()
+            .to_string(),
+        resources
+            .history_reconstruction_budget()
+            .maximum_charge_bytes()
+            .to_string(),
     ];
     entries.push(fields(
         "resources",

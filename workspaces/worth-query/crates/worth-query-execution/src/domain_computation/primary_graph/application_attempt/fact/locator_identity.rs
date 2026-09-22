@@ -112,13 +112,7 @@ pub(super) fn encode(fact: &WorthQueryApplicationObservedFact) -> String {
             "workflow-instance-capacity:kind:{}:lineage:{lineage:?}",
             relation_kind.as_u32()
         ),
-        WorthQueryApplicationObservedFact::WorkflowTransitionCapacity {
-            relation_kind,
-            instance,
-            ..
-        } => format!(
-            "workflow-transition-capacity:kind:{}:instance:{instance:?}",
-            relation_kind.as_u32()
-        ),
+        WorthQueryApplicationObservedFact::WorkflowHistoryBasis { instance, .. } =>
+            format!("workflow-history-basis:instance:{instance:?}"),
     }
 }

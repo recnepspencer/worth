@@ -109,6 +109,7 @@ where
                 compiled.lineage(),
                 &compiled,
                 maximum_transitions,
+                installed.resources().history_reconstruction_budget(),
             )
         })?;
         let Some(live_membership) = observed.live_membership else {
@@ -135,6 +136,7 @@ where
                         &layout,
                         instance.entity_id(),
                         maximum_transitions,
+                        &compiled,
                     )
                 })?;
                 self.recover_proposal_replay(
@@ -164,13 +166,13 @@ where
         facts.append(&mut replay_facts);
         if replay {
             let transition_count = observed.transitions.len();
-            let Some(WorthQueryApplicationObservedFact::WorkflowTransitionCapacity {
+            let Some(WorthQueryApplicationObservedFact::WorkflowHistoryBasis {
                 maximum_transitions,
                 ..
             }) = observed.facts.iter_mut().find(|fact| {
                 matches!(
                     fact,
-                    WorthQueryApplicationObservedFact::WorkflowTransitionCapacity { .. }
+                    WorthQueryApplicationObservedFact::WorkflowHistoryBasis { .. }
                 )
             })
             else {

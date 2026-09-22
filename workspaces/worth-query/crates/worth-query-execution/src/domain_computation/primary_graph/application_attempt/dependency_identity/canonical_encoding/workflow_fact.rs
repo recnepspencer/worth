@@ -56,30 +56,24 @@ pub(super) fn append(
                 );
             }
         }
-        WorthQueryApplicationObservedFact::WorkflowTransitionCapacity {
+        WorthQueryApplicationObservedFact::WorkflowHistoryBasis {
             instance,
             maximum_transitions,
-            transitions,
-            ..
+            transition_count,
+            snapshot,
         } => {
-            kind(entries, prefix, "workflow-transition-capacity");
+            kind(entries, prefix, "workflow-history-basis");
             entity(entries, prefix, "instance", *instance);
             number(entries, prefix, "maximum-transitions", *maximum_transitions);
-            number(entries, prefix, "transition-count", transitions.len());
-            for (index, relation) in transitions.iter().enumerate() {
-                record(
-                    entries,
-                    prefix,
-                    &format!("transition.{index}.relation"),
-                    relation.relation_id,
-                );
-                entity(
-                    entries,
-                    prefix,
-                    &format!("transition.{index}.entity"),
-                    relation.to,
-                );
-            }
+            number(entries, prefix, "transition-count", *transition_count);
+            super::number_u64(entries, prefix, "runtime", snapshot.runtime_instance_id());
+            super::number_u64(entries, prefix, "version", snapshot.version_id().0);
+            super::push(
+                entries,
+                format!("{prefix}.branch"),
+                worth_foundational::facade::CanonicalBasisEntryKind::Identity,
+                super::text(snapshot.branch_id().0.clone()),
+            );
         }
         _ => unreachable!("workflow fact dispatcher accepts only workflow facts"),
     }

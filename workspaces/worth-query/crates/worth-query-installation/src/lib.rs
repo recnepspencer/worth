@@ -190,7 +190,7 @@ pub mod facade {
         WorthQueryProgramSupportPartialRetirementInventory,
         WorthQueryProgramSupportRetirementDenial, WorthQueryProgramSupportRetirementInventory,
         WorthQueryProgramSupportRoster, WorthQueryProgramValidationScope,
-        WorthQueryRepeatedOptionalMemberState,
+        WorthQueryRepeatedOptionalMemberState, WorthQueryWorkflowHistoryReconstructionBudget,
     };
     pub use crate::application_query::{
         prepare_canonical_read_graph_planning_basis, WorthQueryApplicationCanonicalArtifact,

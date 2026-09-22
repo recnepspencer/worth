@@ -6,6 +6,8 @@ pub struct WorthQueryWorkflowInstanceProgressCounters {
     pub(super) cold_misses: usize,
     pub(super) cold_retains: usize,
     pub(super) cold_reconstruction_transition_visits: usize,
+    pub(super) history_reconstruction_charge_bytes: usize,
+    pub(super) peak_history_reconstruction_charge_bytes: usize,
     pub(super) incremental_advances: usize,
     pub(super) incremental_replays: usize,
     pub(super) incremental_misses: usize,
@@ -34,6 +36,14 @@ impl WorthQueryWorkflowInstanceProgressCounters {
     }
     pub const fn cold_reconstruction_transition_visits(self) -> usize {
         self.cold_reconstruction_transition_visits
+    }
+    /// Cumulative separately admitted logical history-reconstruction bytes.
+    pub const fn history_reconstruction_charge_bytes(self) -> usize {
+        self.history_reconstruction_charge_bytes
+    }
+    /// Largest single history reconstruction reservation, not process RSS.
+    pub const fn peak_history_reconstruction_charge_bytes(self) -> usize {
+        self.peak_history_reconstruction_charge_bytes
     }
     pub const fn incremental_advances(self) -> usize {
         self.incremental_advances
@@ -71,6 +81,12 @@ impl WorthQueryWorkflowInstanceProgressCounters {
             .saturating_add(shard.warm_history_transition_visits);
         self.cold_misses = self.cold_misses.saturating_add(shard.cold_misses);
         self.cold_retains = self.cold_retains.saturating_add(shard.cold_retains);
+        self.history_reconstruction_charge_bytes = self
+            .history_reconstruction_charge_bytes
+            .saturating_add(shard.history_reconstruction_charge_bytes);
+        self.peak_history_reconstruction_charge_bytes = self
+            .peak_history_reconstruction_charge_bytes
+            .max(shard.peak_history_reconstruction_charge_bytes);
         self.cold_reconstruction_transition_visits = self
             .cold_reconstruction_transition_visits
             .saturating_add(shard.cold_reconstruction_transition_visits);

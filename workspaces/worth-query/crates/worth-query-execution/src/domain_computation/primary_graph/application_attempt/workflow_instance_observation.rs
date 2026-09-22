@@ -37,6 +37,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) struct Obs
     pub(in crate::domain_computation::primary_graph::application_attempt) replays:
         crate::domain_computation::primary_graph::workflow::instance::WorkflowTransitionReplayRetention,
     history_materialized: bool,
+    history_budget: worth_query_installation::facade::WorthQueryWorkflowHistoryReconstructionBudget,
 }
 
 impl ObservedWorkflowInstance {
@@ -48,6 +49,7 @@ impl ObservedWorkflowInstance {
         layout: &WorthQueryWorkflowLayout,
         instance: EntityId,
         maximum_transitions: usize,
+        compiled: &CompiledWorkflowDefinition,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
         if self.history_materialized {
             return Ok(());
@@ -59,12 +61,15 @@ impl ObservedWorkflowInstance {
             instance,
             self.live_membership.is_some(),
             maximum_transitions,
+            compiled,
+            self.history_budget,
         )?;
         let transition_visits = history.transition_visits;
         self.transitions = history.transitions;
         let (key, _) = self.progress_basis.replay_retention();
         handle.with_workflow_instance_progress_mut(key, |retention| {
-            retention.observe_warm_history(transition_visits)
+            retention.observe_warm_history(transition_visits);
+            retention.observe_history_reconstruction_charge(history.charge_bytes);
         });
         self.facts.append(&mut history.facts);
         self.history_materialized = true;
@@ -108,6 +113,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
     lineage: EntityId,
     compiled: &CompiledWorkflowDefinition,
     maximum_transitions: usize,
+    history_budget: worth_query_installation::facade::WorthQueryWorkflowHistoryReconstructionBudget,
 ) -> Result<ObservedWorkflowInstance, WorthQueryApplicationAttemptDenial> {
     let entity = instance.entity_id();
     let kind = layout.instance.entity_kind;
@@ -252,6 +258,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
                     progress_basis,
                     replays,
                     history_materialized: false,
+                    history_budget,
                 });
             }
             Err(observation) => observation,
@@ -266,6 +273,8 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         entity,
         live_membership.is_some(),
         maximum_transitions,
+        compiled,
+        history_budget,
     )?;
     let transition_visits = history.transition_visits;
     let settled_transitions = history.transitions;
@@ -306,6 +315,10 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         replay_projections,
         reconstruction_transition_visits,
     )?;
+    let (key, _) = progress_basis.replay_retention();
+    handle.with_workflow_instance_progress_mut(key, |retention| {
+        retention.observe_history_reconstruction_charge(history.charge_bytes)
+    });
     facts.append(&mut history.facts);
     Ok(ObservedWorkflowInstance {
         live_membership,
@@ -314,6 +327,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         progress_basis,
         replays,
         history_materialized: true,
+        history_budget,
     })
 }
 

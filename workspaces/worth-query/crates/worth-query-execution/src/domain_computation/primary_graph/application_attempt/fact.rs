@@ -8,9 +8,12 @@ mod indexed_entity_selection;
 mod locator_identity;
 mod source_currentness;
 mod workflow_definition_predecessor;
+mod workflow_history_basis;
 mod workflow_instance_capacity;
-mod workflow_transition_capacity;
 pub(in crate::domain_computation::primary_graph) use adjacency::observe_adjacency;
+pub(in crate::domain_computation::primary_graph) use adjacency::{
+    observe_adjacency_checked, AdjacencyObservationDenial,
+};
 pub(in crate::domain_computation::primary_graph) use indexed_entity_selection::observe_indexed_entity_selection;
 pub(in crate::domain_computation::primary_graph) use source_currentness::WorthQuerySourceCurrentnessFailure;
 
@@ -144,12 +147,13 @@ pub(in crate::domain_computation) enum WorthQueryApplicationObservedFact {
         maximum_instances: usize,
         instances: Vec<WorthQueryApplicationObservedRelation>,
     },
-    /// Exact bounded transition occupancy after retained-idempotency recovery.
-    WorkflowTransitionCapacity {
-        relation_kind: KindId,
+    /// A budgeted history read at an exact immutable native basis. It carries
+    /// currentness, not permission to address arbitrary entities in that basis.
+    WorkflowHistoryBasis {
         instance: EntityId,
         maximum_transitions: usize,
-        transitions: Vec<WorthQueryApplicationObservedRelation>,
+        transition_count: usize,
+        snapshot: worth_relational::facade::snapshots::SnapshotHandle,
     },
 }
 
@@ -342,18 +346,17 @@ impl WorthQueryApplicationObservedFact {
                 *maximum_instances,
                 instances,
             ),
-            Self::WorkflowTransitionCapacity {
-                relation_kind,
-                instance,
+            Self::WorkflowHistoryBasis {
                 maximum_transitions,
-                transitions,
-            } => workflow_transition_capacity::remains_equal(
+                transition_count,
+                snapshot: observed,
+                ..
+            } => workflow_history_basis::remains_equal(
                 runtime,
                 snapshot,
-                *relation_kind,
-                *instance,
+                observed,
                 *maximum_transitions,
-                transitions,
+                *transition_count,
             ),
         }
     }

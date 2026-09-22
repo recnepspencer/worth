@@ -33,9 +33,10 @@ $executables = @($artifacts | ForEach-Object {
 } | Select-Object -Unique)
 if ($executables.Count -ne 1) { throw "expected one application_graph test executable" }
 $testExecutable = (Resolve-Path -LiteralPath $executables[0]).Path
-$listing = @(& $testExecutable $qualifiedTest --ignored --exact --list)
+$laneArguments = if ($Lane -eq "Cold") { @() } else { @("--ignored") }
+$listing = @(& $testExecutable $qualifiedTest @laneArguments --exact --list)
 if ($LASTEXITCODE -ne 0 -or $listing -notcontains "${qualifiedTest}: test") {
-    throw "the exact scheduled workflow test was not discovered"
+    throw "the exact workflow history test was not discovered"
 }
 
 Write-Output "workflow history lane=$Lane profile=test max_private_bytes=$maximumPrivateBytes max_seconds=$maximumSeconds poll_ms=$pollMilliseconds"
@@ -45,7 +46,7 @@ Write-Output "os=$([Environment]::OSVersion) logical_processors=$([Environment]:
 $startInfo = New-Object System.Diagnostics.ProcessStartInfo
 $startInfo.FileName = $testExecutable
 $startInfo.WorkingDirectory = $taskRoot
-$startInfo.Arguments = "$qualifiedTest --ignored --exact --nocapture --test-threads=1"
+$startInfo.Arguments = "$qualifiedTest $($laneArguments -join ' ') --exact --nocapture --test-threads=1"
 $startInfo.UseShellExecute = $false
 $startInfo.CreateNoWindow = $true
 $startInfo.RedirectStandardOutput = $true

@@ -51,15 +51,6 @@ pub(super) fn evaluate(fact: &WorthQueryApplicationObservedFact, candidate: Enti
                     .iter()
                     .any(|relation| relation.from == candidate || relation.to == candidate)
         }
-        WorthQueryApplicationObservedFact::WorkflowTransitionCapacity {
-            instance,
-            transitions,
-            ..
-        } => {
-            *instance == candidate
-                || transitions
-                    .iter()
-                    .any(|relation| relation.from == candidate || relation.to == candidate)
-        }
+        WorthQueryApplicationObservedFact::WorkflowHistoryBasis { .. } => false,
     }
 }

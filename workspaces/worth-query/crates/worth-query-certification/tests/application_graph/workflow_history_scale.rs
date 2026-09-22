@@ -6,11 +6,15 @@ use worth_query_host::facade::{
     application_entry::{
         PublishedWorkflowDefinitionRef, PublishedWorkflowInstanceRef,
         WorkflowDefinitionExpectedPredecessor, WorkflowDefinitionPublicationOutcome,
-        WorkflowInstanceStartOutcome, WorkflowProposalOutcome,
+        WorkflowInstanceStartOutcome, WorkflowProposalOutcome, WorkflowProposalPreparationDenial,
+        WorthQueryWorkflowProposalPreparationDenial,
     },
     declaration::application_program::ApplicationWorkflowComponentLimits,
+    primary_graph::WorthQueryApplicationAttemptDenialKind,
 };
-use worth_query_installation::facade::WorthQueryApplicationWorkflowResourceCeiling;
+use worth_query_installation::facade::{
+    WorthQueryApplicationWorkflowResourceCeiling, WorthQueryWorkflowHistoryReconstructionBudget,
+};
 use worth_query_replay::facade::WorthQueryCertificationCostRuntimeExt;
 
 use super::bounded_dimension_model::{
@@ -34,6 +38,10 @@ struct HistoryCourt {
 
 impl HistoryCourt {
     fn new() -> Self {
+        Self::with_budget(WorthQueryWorkflowHistoryReconstructionBudget::standard())
+    }
+
+    fn with_budget(budget: WorthQueryWorkflowHistoryReconstructionBudget) -> Self {
         let resources = WorthQueryApplicationWorkflowResourceCeiling::new(
             32,
             64,
@@ -44,7 +52,8 @@ impl HistoryCourt {
             MAXIMUM_HISTORY,
             256 * 1024,
         )
-        .unwrap();
+        .unwrap()
+        .with_history_reconstruction_budget(budget);
         let application =
             retain_workflow_with_resources(publish_on_first_program_for_history_scale(), resources);
         let definition = match publish_definition(
@@ -170,6 +179,10 @@ impl HistoryCourt {
             progress.warm_history_transition_visits()
         );
         assert_eq!(after.evictions(), progress.evictions());
+        assert_eq!(
+            after.history_reconstruction_charge_bytes(),
+            progress.history_reconstruction_charge_bytes()
+        );
         assert_eq!(after.denials(), progress.denials());
         assert_eq!(compiled.cold_misses(), compilation.cold_misses());
         assert_eq!(compiled.cold_retains(), compilation.cold_retains());
@@ -196,6 +209,15 @@ impl HistoryCourt {
             .runtime()
             .workflow_instance_progress_counters();
         assert_eq!(rebuilt.cold_misses(), released.cold_misses() + 1);
+        assert!(
+            rebuilt.history_reconstruction_charge_bytes()
+                > released.history_reconstruction_charge_bytes()
+        );
+        assert!(
+            rebuilt.peak_history_reconstruction_charge_bytes()
+                <= WorthQueryWorkflowHistoryReconstructionBudget::standard().maximum_charge_bytes()
+                    as usize
+        );
         assert_eq!(
             rebuilt.cold_reconstruction_transition_visits()
                 - released.cold_reconstruction_transition_visits(),
@@ -227,12 +249,75 @@ fn started(
 }
 
 #[test]
-#[ignore = "known cold decision-fact budget failure; diagnostic until owner correction"]
 fn workflow_history_locality_smoke() {
     let mut court = HistoryCourt::new();
     court.fill(100);
     court.measure_warm(1);
     court.reconstruct();
+}
+
+#[test]
+fn workflow_history_reconstruction_denies_work_and_memory_exhaustion_without_effects() {
+    for (budget, expected_subject) in [
+        (
+            WorthQueryWorkflowHistoryReconstructionBudget::new(1, 128 * 1024 * 1024).unwrap(),
+            "workflow history reconstruction inventory ceiling",
+        ),
+        (
+            WorthQueryWorkflowHistoryReconstructionBudget::new(100, 32 * 1024).unwrap(),
+            "workflow history reconstruction memory ceiling",
+        ),
+    ] {
+        let mut court = HistoryCourt::with_budget(budget);
+        court.fill(4);
+        court
+            .application
+            .runtime()
+            .release_workflow_instance_progress_for_test();
+        let before = court
+            .application
+            .runtime()
+            .workflow_instance_progress_counters();
+        let scope = court
+            .application
+            .runtime()
+            .capture_certification_cost_scope(court.application.current_world())
+            .unwrap();
+        for _ in 0..2 {
+            let denial = match propose_authoring_instance(
+                &court.application,
+                court.instance.clone(),
+                court.next_key,
+            ) {
+                Err(WorthQueryWorkflowProposalPreparationDenial::ProposalPreparation(
+                    WorkflowProposalPreparationDenial::Attempt(denial),
+                )) => denial,
+                Err(other) => panic!("unexpected history reconstruction denial: {other:?}"),
+                Ok(_) => panic!("history reconstruction must deny before a publication outcome"),
+            };
+            assert_eq!(
+                denial.kind(),
+                WorthQueryApplicationAttemptDenialKind::WorkflowHistoryReconstructionBudgetExceeded
+            );
+            assert_eq!(denial.subject(), expected_subject);
+            let after = court
+                .application
+                .runtime()
+                .workflow_instance_progress_counters();
+            assert_eq!(after.retained_charge_bytes(), 0);
+            assert_eq!(after.cold_retains(), before.cold_retains());
+        }
+        let cost = court
+            .application
+            .runtime()
+            .observe_certification_cost(&scope)
+            .unwrap();
+        assert_eq!(
+            cost.world_history_before().installed_commits(),
+            cost.world_history_after().installed_commits()
+        );
+        assert_eq!(cost.world_retention_after().observations(), 0);
+    }
 }
 
 #[test]
