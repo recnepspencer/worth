@@ -4,6 +4,7 @@ use worth_query_declaration::facade::application_program::ApplicationWorkflowCon
 use worth_relational::facade::identity::EntityId;
 
 mod navigation;
+mod replay;
 mod retention;
 mod update;
 use crate::domain_computation::primary_graph::application_attempt::{
@@ -11,14 +12,17 @@ use crate::domain_computation::primary_graph::application_attempt::{
 };
 use crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowDefinition;
 use navigation::unique_successor;
+pub(in crate::domain_computation::primary_graph) use replay::{
+    WorkflowTransitionReplayProjection, WorkflowTransitionReplayRetention,
+};
 pub use retention::WorthQueryWorkflowInstanceProgressCounters;
 pub(in crate::domain_computation::primary_graph) use retention::{
-    default_progress_retention_shards, WorkflowInstanceProgressKey,
-    WorkflowInstanceProgressRetention, WorkflowInstanceProgressRetentionDenial,
+    default_progress_retention_shards, RetainedWorkflowInstanceProgressProjection,
+    WorkflowInstanceProgressKey, WorkflowInstanceProgressRetention,
+    WorkflowInstanceProgressRetentionDenial,
 };
 pub(in crate::domain_computation::primary_graph) use update::{
     PreparedWorkflowProgressUpdate, WorkflowTransitionProgressBasis,
-    WorkflowTransitionReplayProjection,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

@@ -68,8 +68,14 @@ where
                 usize::from(installed.resources().maximum_definition_nodes()),
                 usize::from(installed.resources().maximum_definition_connections()),
                 crate::domain_computation::primary_graph::workflow::definition::WorkflowDefinitionCompilationPosture::Retained,
-            )?;
+        )?;
         let subject = self.admission.scope_entity_id();
+        let maximum_transitions = usize::try_from(
+            installed
+                .resources()
+                .maximum_retained_transitions_per_instance(),
+        )
+        .unwrap_or(usize::MAX);
         let mut observed = self.lease.handle().with_runtime(|runtime| {
             super::super::workflow_instance_observation::observe_workflow_instance(
                 self.lease.handle(),
@@ -80,18 +86,22 @@ where
                 subject,
                 compiled.lineage(),
                 &compiled,
-                usize::try_from(
-                    installed
-                        .resources()
-                        .maximum_retained_transitions_per_instance(),
-                )
-                .unwrap_or(usize::MAX),
+                maximum_transitions,
             )
         })?;
-        let replays = publication::PreparedWorkflowTransitionReplays::retained(
-            observed.progress_basis.replay_retention(),
-            std::mem::take(&mut observed.replays).into_boxed_slice(),
-        );
+        self.lease.handle().with_runtime(|runtime| {
+            observed.ensure_history(
+                self.lease.handle(),
+                runtime,
+                self.lease.snapshot(),
+                &layout,
+                instance.entity_id(),
+                maximum_transitions,
+            )
+        })?;
+        let replays = publication::PreparedWorkflowTransitionReplays::retained(std::mem::take(
+            &mut observed.replays,
+        ));
         let approval_node = validate_requirement_definition(&compiled, required)?;
         let evidence_currentness = validate_inputs::<Schema>(
             &compiled,

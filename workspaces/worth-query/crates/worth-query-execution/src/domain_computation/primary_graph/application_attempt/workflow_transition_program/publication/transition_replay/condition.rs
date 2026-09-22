@@ -95,7 +95,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                 replays,
             ),
         };
-        let replays = replays.materialize(runtime);
+        let replays = replays.materialize();
         let Some(replay) = replays
             .iter()
             .find(|replay| replay.identity == required.transition_identity())

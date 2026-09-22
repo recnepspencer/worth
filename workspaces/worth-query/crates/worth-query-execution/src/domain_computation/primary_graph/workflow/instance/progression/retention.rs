@@ -2,7 +2,9 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use worth_relational::facade::identity::{EntityId, VersionId};
 
-use super::{WorkflowInstanceProgress, WorkflowTransitionReplayProjection};
+use super::{
+    WorkflowInstanceProgress, WorkflowTransitionReplayProjection, WorkflowTransitionReplayRetention,
+};
 
 #[path = "retention/counters.rs"]
 mod counters;
@@ -51,9 +53,14 @@ impl WorkflowInstanceProgressKey {
 struct RetainedWorkflowInstanceProgress {
     revision: Option<VersionId>,
     progress: WorkflowInstanceProgress,
-    replays: Vec<WorkflowTransitionReplayProjection>,
+    replays: WorkflowTransitionReplayRetention,
     retained_charge_bytes: usize,
     last_use: u64,
+}
+
+pub(in crate::domain_computation::primary_graph) struct RetainedWorkflowInstanceProgressProjection {
+    pub(in crate::domain_computation::primary_graph) progress: WorkflowInstanceProgress,
+    pub(in crate::domain_computation::primary_graph) replays: WorkflowTransitionReplayRetention,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -96,7 +103,7 @@ impl WorkflowInstanceProgressRetention {
         &mut self,
         key: WorkflowInstanceProgressKey,
         revision: Option<VersionId>,
-    ) -> Option<WorkflowInstanceProgress> {
+    ) -> Option<RetainedWorkflowInstanceProgressProjection> {
         let matches = self
             .entries
             .get(&key)
@@ -114,7 +121,10 @@ impl WorkflowInstanceProgressRetention {
         retained.last_use = last_use;
         self.least_recently_used.insert((last_use, key));
         self.counters.warm_hits = self.counters.warm_hits.saturating_add(1);
-        Some(retained.progress.clone())
+        Some(RetainedWorkflowInstanceProgressProjection {
+            progress: retained.progress.clone(),
+            replays: retained.replays.clone(),
+        })
     }
 
     pub(in crate::domain_computation::primary_graph) fn retain(
@@ -122,7 +132,7 @@ impl WorkflowInstanceProgressRetention {
         key: WorkflowInstanceProgressKey,
         revision: Option<VersionId>,
         progress: WorkflowInstanceProgress,
-        replays: Vec<WorkflowTransitionReplayProjection>,
+        replays: WorkflowTransitionReplayRetention,
         reconstruction_transition_visits: usize,
     ) -> Result<(), WorkflowInstanceProgressRetentionDenial> {
         if self
@@ -151,6 +161,20 @@ impl WorkflowInstanceProgressRetention {
         Ok(())
     }
 
+    pub(in crate::domain_computation::primary_graph) fn observe_warm_core(&mut self) {
+        self.counters.warm_core_hits = self.counters.warm_core_hits.saturating_add(1);
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn observe_warm_history(
+        &mut self,
+        transition_visits: usize,
+    ) {
+        self.counters.warm_history_transition_visits = self
+            .counters
+            .warm_history_transition_visits
+            .saturating_add(transition_visits);
+    }
+
     pub(in crate::domain_computation::primary_graph) fn advance(
         &mut self,
         key: WorkflowInstanceProgressKey,
@@ -177,8 +201,8 @@ impl WorkflowInstanceProgressRetention {
             self.counters.denials = self.counters.denials.saturating_add(1);
             return Err(WorkflowInstanceProgressRetentionDenial::RevisionCollision);
         }
-        let advanced_charge = retained_charge_bytes(&advanced, &retained.replays)
-            .saturating_add(replay.retained_charge_bytes());
+        let advanced_replays = retained.replays.append(replay);
+        let advanced_charge = retained_charge_bytes(&advanced, &advanced_replays);
         if advanced_charge > self.maximum_retained_charge_bytes {
             self.counters.denials = self.counters.denials.saturating_add(1);
             return Err(WorkflowInstanceProgressRetentionDenial::ByteBudgetExceeded);
@@ -191,9 +215,7 @@ impl WorkflowInstanceProgressRetention {
         self.retained_charge_bytes = self
             .retained_charge_bytes
             .saturating_sub(retained.retained_charge_bytes);
-        let mut replays = retained.replays;
-        replays.push(replay);
-        self.store(key, committed_revision, advanced, replays)?;
+        self.store(key, committed_revision, advanced, advanced_replays)?;
         self.counters.incremental_advances = self.counters.incremental_advances.saturating_add(1);
         Ok(())
     }
@@ -203,7 +225,7 @@ impl WorkflowInstanceProgressRetention {
         key: WorkflowInstanceProgressKey,
         revision: Option<VersionId>,
         progress: WorkflowInstanceProgress,
-        replays: Vec<WorkflowTransitionReplayProjection>,
+        replays: WorkflowTransitionReplayRetention,
     ) -> Result<(), WorkflowInstanceProgressRetentionDenial> {
         let retained_charge_bytes = retained_charge_bytes(&progress, &replays);
         if retained_charge_bytes > self.maximum_retained_charge_bytes {
@@ -247,16 +269,17 @@ impl WorkflowInstanceProgressRetention {
         self.least_recently_used.insert((last_use, key));
     }
 
+    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn replays(
         &mut self,
         key: WorkflowInstanceProgressKey,
         revision: Option<VersionId>,
-    ) -> Option<Box<[WorkflowTransitionReplayProjection]>> {
+    ) -> Option<WorkflowTransitionReplayRetention> {
         let retained = self.entries.get(&key)?;
         if retained.revision != revision {
             return None;
         }
-        Some(retained.replays.clone().into_boxed_slice())
+        Some(retained.replays.clone())
     }
 
     #[cfg(feature = "test-primary-graph-faults")]
@@ -326,17 +349,12 @@ impl WorkflowInstanceProgressRetention {
 
 fn retained_charge_bytes(
     progress: &WorkflowInstanceProgress,
-    replays: &[WorkflowTransitionReplayProjection],
+    replays: &WorkflowTransitionReplayRetention,
 ) -> usize {
     std::mem::size_of::<WorkflowInstanceProgressKey>()
         .saturating_add(std::mem::size_of::<RetainedWorkflowInstanceProgress>())
         .saturating_add(progress.retained_charge_bytes())
-        .saturating_add(
-            replays
-                .iter()
-                .map(WorkflowTransitionReplayProjection::retained_charge_bytes)
-                .sum::<usize>(),
-        )
+        .saturating_add(replays.retained_charge_bytes())
 }
 
 impl Default for WorkflowInstanceProgressRetention {

@@ -107,6 +107,12 @@ where
             WorkflowDefinitionCompilationPosture::Retained,
         )?;
         let subject = self.admission.scope_entity_id();
+        let maximum_transitions = usize::try_from(
+            installed
+                .resources()
+                .maximum_retained_transitions_per_instance(),
+        )
+        .unwrap_or(usize::MAX);
         let mut observed = self.lease.handle().with_runtime(|runtime| {
             super::workflow_instance_observation::observe_workflow_instance(
                 self.lease.handle(),
@@ -117,21 +123,22 @@ where
                 subject,
                 compiled.lineage(),
                 &compiled,
-                usize::try_from(
-                    installed
-                        .resources()
-                        .maximum_retained_transitions_per_instance(),
-                )
-                .unwrap_or(usize::MAX),
+                maximum_transitions,
             )
         })?;
-        let replays = publication::PreparedWorkflowTransitionReplays::retained(
-            observed.progress_basis.replay_retention(),
-            std::mem::take(&mut observed.replays).into_boxed_slice(),
-        );
         let (live_membership, retire_live_membership) = match observed.live_membership {
             Some(membership) => (membership, true),
             None => {
+                self.lease.handle().with_runtime(|runtime| {
+                    observed.ensure_history(
+                        self.lease.handle(),
+                        runtime,
+                        self.lease.snapshot(),
+                        &layout,
+                        instance.entity_id(),
+                        maximum_transitions,
+                    )
+                })?;
                 if observed.transitions.is_empty() {
                     return Err(denial(
                         WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAlreadySettled,
@@ -170,6 +177,9 @@ where
                     })?;
                 observed.facts.append(&mut settlement_facts);
                 facts.append(&mut observed.facts);
+                let replays = publication::PreparedWorkflowTransitionReplays::retained(
+                    std::mem::take(&mut observed.replays),
+                );
                 return self
                     .materialize_terminal_transition(
                         &layout, compiled, instance, selected, membership, false, facts,
@@ -189,6 +199,9 @@ where
                 if denial.kind()
                     == WorthQueryApplicationAttemptDenialKind::WorkflowTransitionNodeUnsupported =>
             {
+                let replays = publication::PreparedWorkflowTransitionReplays::retained(
+                    std::mem::take(&mut observed.replays),
+                );
                 return Ok(PreparedWorkflowAdvance::ReplayOnly {
                     read_set: self,
                     transition_identity_locator: layout.transition.identity.clone(),
@@ -202,7 +215,27 @@ where
             }
             Err(denial) => return Err(denial),
         };
+        if matches!(
+            selected.kind(),
+            SelectedWorkflowTransitionKind::Assessment(_)
+                | SelectedWorkflowTransitionKind::EvidenceJoin(_)
+                | SelectedWorkflowTransitionKind::Operation(_)
+        ) {
+            self.lease.handle().with_runtime(|runtime| {
+                observed.ensure_history(
+                    self.lease.handle(),
+                    runtime,
+                    self.lease.snapshot(),
+                    &layout,
+                    instance.entity_id(),
+                    maximum_transitions,
+                )
+            })?;
+        }
         let replay_probe_identity = *selected.identity_bytes();
+        let replays = publication::PreparedWorkflowTransitionReplays::retained(std::mem::take(
+            &mut observed.replays,
+        ));
         facts.append(&mut observed.facts);
         let prepared = match selected.kind().clone() {
             SelectedWorkflowTransitionKind::Assessment(assessment) => self

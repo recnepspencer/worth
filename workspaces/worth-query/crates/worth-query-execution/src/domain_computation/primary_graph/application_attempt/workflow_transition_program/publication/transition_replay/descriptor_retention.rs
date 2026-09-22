@@ -1,27 +1,21 @@
-use worth_relational::facade::identity::VersionId;
-
-use crate::domain_computation::primary_graph::{
-    workflow::instance::{WorkflowInstanceProgressKey, WorkflowTransitionReplayProjection},
-    WorthQueryPrimaryGraphApplicationRuntime,
+use crate::domain_computation::primary_graph::workflow::instance::{
+    WorkflowTransitionReplayProjection, WorkflowTransitionReplayRetention,
 };
 
 #[derive(Default)]
 #[doc(hidden)]
 pub struct PreparedWorkflowTransitionReplays {
-    retention: Option<(WorkflowInstanceProgressKey, Option<VersionId>)>,
+    retained: WorkflowTransitionReplayRetention,
     pub(super) probe_identity: Option<[u8; 32]>,
-    cold: Box<[WorkflowTransitionReplayProjection]>,
 }
 
 impl PreparedWorkflowTransitionReplays {
     pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) fn retained(
-        retention: (WorkflowInstanceProgressKey, Option<VersionId>),
-        cold: Box<[WorkflowTransitionReplayProjection]>,
+        retained: WorkflowTransitionReplayRetention,
     ) -> Self {
         Self {
-            retention: Some(retention),
+            retained,
             probe_identity: None,
-            cold,
         }
     }
 
@@ -33,19 +27,7 @@ impl PreparedWorkflowTransitionReplays {
         self
     }
 
-    pub(super) fn materialize<Schema>(
-        &self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    ) -> Box<[WorkflowTransitionReplayProjection]> {
-        self.retention
-            .and_then(|(key, revision)| {
-                runtime
-                    .primary_provider
-                    .graph
-                    .with_workflow_instance_progress_mut(key, |retention| {
-                        retention.replays(key, revision)
-                    })
-            })
-            .unwrap_or_else(|| self.cold.clone())
+    pub(super) fn materialize(&self) -> Box<[WorkflowTransitionReplayProjection]> {
+        self.retained.materialize()
     }
 }

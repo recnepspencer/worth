@@ -1,6 +1,8 @@
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct WorthQueryWorkflowInstanceProgressCounters {
     pub(super) warm_hits: usize,
+    pub(super) warm_core_hits: usize,
+    pub(super) warm_history_transition_visits: usize,
     pub(super) cold_misses: usize,
     pub(super) cold_retains: usize,
     pub(super) cold_reconstruction_transition_visits: usize,
@@ -17,6 +19,12 @@ pub struct WorthQueryWorkflowInstanceProgressCounters {
 impl WorthQueryWorkflowInstanceProgressCounters {
     pub const fn warm_hits(self) -> usize {
         self.warm_hits
+    }
+    pub const fn warm_core_hits(self) -> usize {
+        self.warm_core_hits
+    }
+    pub const fn warm_history_transition_visits(self) -> usize {
+        self.warm_history_transition_visits
     }
     pub const fn cold_misses(self) -> usize {
         self.cold_misses
@@ -57,6 +65,10 @@ impl WorthQueryWorkflowInstanceProgressCounters {
 
     pub(in crate::domain_computation::primary_graph) fn absorb(&mut self, shard: Self) {
         self.warm_hits = self.warm_hits.saturating_add(shard.warm_hits);
+        self.warm_core_hits = self.warm_core_hits.saturating_add(shard.warm_core_hits);
+        self.warm_history_transition_visits = self
+            .warm_history_transition_visits
+            .saturating_add(shard.warm_history_transition_visits);
         self.cold_misses = self.cold_misses.saturating_add(shard.cold_misses);
         self.cold_retains = self.cold_retains.saturating_add(shard.cold_retains);
         self.cold_reconstruction_transition_visits = self

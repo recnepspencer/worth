@@ -4,6 +4,7 @@ use worth_relational::facade::identity::{EntityId, VersionId};
 use super::{
     SettledWorkflowTransition, WorkflowInstanceProgress, WorkflowInstanceProgressKey,
     WorkflowInstanceProgressRetention, WorkflowInstanceProgressRetentionDenial,
+    WorkflowTransitionReplayProjection,
 };
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial;
 use crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowDefinition;
@@ -69,23 +70,6 @@ impl WorkflowTransitionProgressBasis {
                 operation_receipt_identity,
             },
         })
-    }
-}
-
-#[derive(Clone)]
-#[doc(hidden)]
-pub struct WorkflowTransitionReplayProjection {
-    pub(in crate::domain_computation::primary_graph) identity: String,
-    pub(in crate::domain_computation::primary_graph) identity_bytes: [u8; 32],
-    pub(in crate::domain_computation::primary_graph) node_path: String,
-    pub(in crate::domain_computation::primary_graph) operation_receipt_identity: Option<[u8; 32]>,
-}
-
-impl WorkflowTransitionReplayProjection {
-    pub(super) fn retained_charge_bytes(&self) -> usize {
-        std::mem::size_of::<Self>()
-            .saturating_add(self.identity.capacity())
-            .saturating_add(self.node_path.capacity())
     }
 }
 

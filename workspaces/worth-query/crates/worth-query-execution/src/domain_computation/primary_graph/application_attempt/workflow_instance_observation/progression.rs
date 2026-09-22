@@ -8,9 +8,10 @@ use super::{
 };
 use crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowDefinition;
 use crate::domain_computation::primary_graph::workflow::instance::{
-    select_settled_replay_transition, WorkflowInstanceProgress, WorkflowInstanceProgressKey,
-    WorkflowInstanceProgressRetentionDenial, WorkflowTransitionProgressBasis,
-    WorkflowTransitionReplayProjection,
+    select_settled_replay_transition, RetainedWorkflowInstanceProgressProjection,
+    WorkflowInstanceProgress, WorkflowInstanceProgressKey, WorkflowInstanceProgressRetentionDenial,
+    WorkflowTransitionProgressBasis, WorkflowTransitionReplayProjection,
+    WorkflowTransitionReplayRetention,
 };
 use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle;
@@ -18,7 +19,13 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationH
 pub(super) struct WorkflowProgressObservation {
     key: WorkflowInstanceProgressKey,
     revision: Option<VersionId>,
-    retained: Option<WorkflowInstanceProgress>,
+    retained: Option<RetainedWorkflowInstanceProgressProjection>,
+}
+
+impl WorkflowProgressObservation {
+    pub(super) fn retained_key(&self) -> Option<WorkflowInstanceProgressKey> {
+        self.retained.as_ref().map(|_| self.key)
+    }
 }
 
 pub(super) fn project_replays(
@@ -96,14 +103,23 @@ pub(super) fn finish_progress(
 ) -> Result<
     (
         WorkflowTransitionProgressBasis,
-        Vec<WorkflowTransitionReplayProjection>,
+        WorkflowTransitionReplayRetention,
     ),
     WorthQueryApplicationAttemptDenial,
 > {
-    let progress = match observation.retained {
-        Some(progress) => progress,
+    match observation.retained {
+        Some(retained) => Ok((
+            WorkflowTransitionProgressBasis::new(
+                observation.key,
+                observation.revision,
+                compiled.clone(),
+                retained.progress,
+            ),
+            retained.replays,
+        )),
         None => {
             let progress = WorkflowInstanceProgress::reconstruct(compiled, settlements)?;
+            let replays = WorkflowTransitionReplayRetention::from_replays(replays);
             handle
                 .with_workflow_instance_progress_mut(observation.key, |retention| {
                     retention.retain(
@@ -115,17 +131,44 @@ pub(super) fn finish_progress(
                     )
                 })
                 .map_err(retention_denial)?;
-            progress
+            Ok((
+                WorkflowTransitionProgressBasis::new(
+                    observation.key,
+                    observation.revision,
+                    compiled.clone(),
+                    progress,
+                ),
+                replays,
+            ))
         }
+    }
+}
+
+pub(super) fn finish_retained_progress(
+    observation: WorkflowProgressObservation,
+    compiled: &CompiledWorkflowDefinition,
+) -> Result<
+    (
+        WorkflowTransitionProgressBasis,
+        WorkflowTransitionReplayRetention,
+    ),
+    WorkflowProgressObservation,
+> {
+    let WorkflowProgressObservation {
+        key,
+        revision,
+        retained,
+    } = observation;
+    let Some(retained) = retained else {
+        return Err(WorkflowProgressObservation {
+            key,
+            revision,
+            retained: None,
+        });
     };
     Ok((
-        WorkflowTransitionProgressBasis::new(
-            observation.key,
-            observation.revision,
-            compiled.clone(),
-            progress,
-        ),
-        replays,
+        WorkflowTransitionProgressBasis::new(key, revision, compiled.clone(), retained.progress),
+        retained.replays,
     ))
 }
 

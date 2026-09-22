@@ -218,6 +218,7 @@ fn authenticated_advance_reconstructs_the_exact_required_assessment_without_sett
         }
         other => panic!("expected the evidence join replay, got {other:?}"),
     }
+    let before_fresh_head = application.runtime().workflow_instance_progress_counters();
     let fresh_head_cost = application
         .runtime()
         .capture_certification_cost_scope(started.instance().branch())
@@ -242,6 +243,17 @@ fn authenticated_advance_reconstructs_the_exact_required_assessment_without_sett
         fresh_head_cost.application_work().retained_resolutions(),
         1,
         "a fresh current-head key probes once instead of resolving three historical transitions",
+    );
+    let after_fresh_head = application.runtime().workflow_instance_progress_counters();
+    assert_eq!(
+        after_fresh_head.warm_core_hits(),
+        before_fresh_head.warm_core_hits() + 1,
+        "the exact retained revision must serve the current-head selection",
+    );
+    assert_eq!(
+        after_fresh_head.warm_history_transition_visits(),
+        before_fresh_head.warm_history_transition_visits(),
+        "the warm current-head selection must not enumerate its three-transition prefix",
     );
 
     let foreign_definition = match publish_definition(

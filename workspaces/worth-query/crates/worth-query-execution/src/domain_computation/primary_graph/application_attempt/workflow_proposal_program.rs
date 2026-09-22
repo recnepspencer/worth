@@ -92,6 +92,12 @@ where
             WorkflowDefinitionCompilationPosture::Retained,
         )?;
         let subject = self.admission.scope_entity_id();
+        let maximum_transitions = usize::try_from(
+            installed
+                .resources()
+                .maximum_retained_transitions_per_instance(),
+        )
+        .unwrap_or(usize::MAX);
         let mut observed = self.lease.handle().with_runtime(|runtime| {
             super::workflow_instance_observation::observe_workflow_instance(
                 self.lease.handle(),
@@ -102,12 +108,7 @@ where
                 subject,
                 compiled.lineage(),
                 &compiled,
-                usize::try_from(
-                    installed
-                        .resources()
-                        .maximum_retained_transitions_per_instance(),
-                )
-                .unwrap_or(usize::MAX),
+                maximum_transitions,
             )
         })?;
         let Some(live_membership) = observed.live_membership else {
@@ -126,6 +127,16 @@ where
                 if error.kind()
                     == WorthQueryApplicationAttemptDenialKind::WorkflowTransitionNodeUnsupported =>
             {
+                self.lease.handle().with_runtime(|runtime| {
+                    observed.ensure_history(
+                        self.lease.handle(),
+                        runtime,
+                        self.lease.snapshot(),
+                        &layout,
+                        instance.entity_id(),
+                        maximum_transitions,
+                    )
+                })?;
                 self.recover_proposal_replay(
                     &layout,
                     &compiled,

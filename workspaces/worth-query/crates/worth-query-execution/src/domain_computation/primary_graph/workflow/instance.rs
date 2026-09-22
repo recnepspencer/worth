@@ -8,10 +8,11 @@ mod transition;
 pub(in crate::domain_computation::primary_graph) use facts::visit_instance_start_facts;
 pub use progression::WorthQueryWorkflowInstanceProgressCounters;
 pub(in crate::domain_computation::primary_graph) use progression::{
-    default_progress_retention_shards, PreparedWorkflowProgressUpdate, SettledWorkflowTransition,
+    default_progress_retention_shards, PreparedWorkflowProgressUpdate,
+    RetainedWorkflowInstanceProgressProjection, SettledWorkflowTransition,
     WorkflowInstanceProgress, WorkflowInstanceProgressKey, WorkflowInstanceProgressRetention,
     WorkflowInstanceProgressRetentionDenial, WorkflowTransitionProgressBasis,
-    WorkflowTransitionReplayProjection,
+    WorkflowTransitionReplayProjection, WorkflowTransitionReplayRetention,
 };
 pub(in crate::domain_computation::primary_graph) use state::WorkflowInstanceState;
 pub(in crate::domain_computation::primary_graph) use transition::{
