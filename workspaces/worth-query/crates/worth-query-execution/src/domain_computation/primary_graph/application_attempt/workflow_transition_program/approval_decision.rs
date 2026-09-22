@@ -78,6 +78,7 @@ where
                 &instance,
                 subject,
                 compiled.lineage(),
+                &compiled,
                 usize::try_from(
                     installed
                         .resources()
@@ -177,13 +178,11 @@ where
                 ),
             });
         };
-        let mut settled = observed
-            .transitions
-            .iter()
-            .map(|transition| transition.settlement)
-            .collect::<Vec<_>>();
-        let selected = match select_current_transition(&compiled, instance.entity_id(), &mut settled)
-        {
+        let selected = match select_current_transition(
+            &compiled,
+            instance.entity_id(),
+            &observed.progress,
+        ) {
             Ok(selected) => selected,
             Err(denial)
                 if denial.kind()

@@ -1,4 +1,3 @@
-use worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome;
 use worth_relational::facade::identity::{EntityId, RelationId};
 
 use crate::domain_computation::primary_graph::application_attempt::{
@@ -35,50 +34,6 @@ pub(in crate::domain_computation::primary_graph) struct AdmittedWorkflowTransiti
     pub(super) retire_live_membership: bool,
     pub(super) identity: String,
     pub(super) identity_bytes: [u8; 32],
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) struct SettledWorkflowTransition {
-    pub(super) node: EntityId,
-    pub(super) occurrence: u64,
-    pub(super) outcome: ApplicationWorkflowControlOutcome,
-    pub(super) operation_receipt_identity: Option<[u8; 32]>,
-}
-
-impl SettledWorkflowTransition {
-    pub(in crate::domain_computation::primary_graph) const fn new(
-        node: EntityId,
-        occurrence: u64,
-        outcome: ApplicationWorkflowControlOutcome,
-        operation_receipt_identity: Option<[u8; 32]>,
-    ) -> Self {
-        Self {
-            node,
-            occurrence,
-            outcome,
-            operation_receipt_identity,
-        }
-    }
-
-    pub(in crate::domain_computation::primary_graph) const fn occurrence(self) -> u64 {
-        self.occurrence
-    }
-
-    pub(in crate::domain_computation::primary_graph) const fn node(self) -> EntityId {
-        self.node
-    }
-
-    pub(in crate::domain_computation::primary_graph) const fn outcome(
-        self,
-    ) -> ApplicationWorkflowControlOutcome {
-        self.outcome
-    }
-
-    pub(in crate::domain_computation::primary_graph) const fn operation_receipt_identity(
-        self,
-    ) -> Option<[u8; 32]> {
-        self.operation_receipt_identity
-    }
 }
 
 impl<Schema, Operation, Input, Scope> AdmittedWorkflowTransition<Schema, Operation, Input, Scope> {

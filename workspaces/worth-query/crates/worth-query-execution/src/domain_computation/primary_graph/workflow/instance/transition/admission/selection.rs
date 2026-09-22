@@ -1,22 +1,22 @@
 use worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome;
 use worth_relational::facade::identity::EntityId;
 
-use super::SettledWorkflowTransition;
 use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
 };
 use crate::domain_computation::primary_graph::workflow::definition::{
     CompiledWorkflowDefinition, CompiledWorkflowNode, CompiledWorkflowNodeKind,
 };
+use crate::domain_computation::primary_graph::workflow::instance::{
+    SettledWorkflowTransition, WorkflowInstanceProgress,
+};
 
 mod approval;
 mod identity;
-mod navigation;
 mod replay;
 use approval::select_approval;
 pub(in crate::domain_computation::primary_graph) use approval::SelectedWorkflowApproval;
 use identity::transition_identity;
-use navigation::unique_successor;
 pub(in crate::domain_computation::primary_graph) use replay::select_settled_replay_transition;
 pub(in crate::domain_computation::primary_graph) struct SelectedWorkflowTransition {
     pub(super) node: EntityId,
@@ -90,10 +90,10 @@ impl SelectedWorkflowTransition {
         &self,
         settled: SettledWorkflowTransition,
     ) -> bool {
-        settled.node == self.node
-            && settled.occurrence == self.occurrence
+        settled.node() == self.node
+            && settled.occurrence() == self.occurrence
             && matches!(
-                settled.outcome,
+                settled.outcome(),
                 ApplicationWorkflowControlOutcome::Completed
             )
     }
@@ -102,9 +102,9 @@ impl SelectedWorkflowTransition {
 pub(in crate::domain_computation::primary_graph) fn select_terminal_transition(
     compiled: &CompiledWorkflowDefinition,
     instance: EntityId,
-    settled: &mut [SettledWorkflowTransition],
+    progress: &WorkflowInstanceProgress,
 ) -> Result<SelectedWorkflowTransition, WorthQueryApplicationAttemptDenial> {
-    let selected = select_current_transition(compiled, instance, settled)?;
+    let selected = select_current_transition(compiled, instance, progress)?;
     if !matches!(selected.kind(), SelectedWorkflowTransitionKind::Terminal) {
         return Err(denial(
             WorthQueryApplicationAttemptDenialKind::WorkflowTransitionNodeUnsupported,
@@ -117,9 +117,9 @@ pub(in crate::domain_computation::primary_graph) fn select_terminal_transition(
 pub(in crate::domain_computation::primary_graph) fn select_current_transition(
     compiled: &CompiledWorkflowDefinition,
     instance: EntityId,
-    settled: &mut [SettledWorkflowTransition],
+    progress: &WorkflowInstanceProgress,
 ) -> Result<SelectedWorkflowTransition, WorthQueryApplicationAttemptDenial> {
-    let node = select_current_node(compiled, settled)?;
+    let node = select_current_node(compiled, progress)?;
     let kind = match node.kind() {
         CompiledWorkflowNodeKind::Operation {
             operation,
@@ -177,23 +177,18 @@ pub(in crate::domain_computation::primary_graph) fn select_current_transition(
             ))
         }
     };
-    let occurrence = u64::try_from(settled.len()).map_err(|_| {
-        denial(
-            WorthQueryApplicationAttemptDenialKind::WorkflowTransitionIdentityUnavailable,
-            "workflow transition occurrence exceeds supported identity range",
-        )
-    })?;
+    let occurrence = progress.next_occurrence();
     select_transition(compiled, instance, node, occurrence, kind)
 }
 
 pub(in crate::domain_computation::primary_graph) fn select_proposal_transition(
     compiled: &CompiledWorkflowDefinition,
     instance: EntityId,
-    settled: &mut [SettledWorkflowTransition],
+    progress: &WorkflowInstanceProgress,
     operation: &str,
     input_type: &str,
 ) -> Result<SelectedWorkflowTransition, WorthQueryApplicationAttemptDenial> {
-    let node = select_current_node(compiled, settled)?;
+    let node = select_current_node(compiled, progress)?;
     match node.kind() {
         CompiledWorkflowNodeKind::Operation {
             operation: installed_operation,
@@ -207,12 +202,7 @@ pub(in crate::domain_computation::primary_graph) fn select_proposal_transition(
             ))
         }
     }
-    let occurrence = u64::try_from(settled.len()).map_err(|_| {
-        denial(
-            WorthQueryApplicationAttemptDenialKind::WorkflowTransitionIdentityUnavailable,
-            "workflow transition occurrence exceeds supported identity range",
-        )
-    })?;
+    let occurrence = progress.next_occurrence();
     select_transition(
         compiled,
         instance,
@@ -286,18 +276,11 @@ fn select_transition(
 
 fn select_current_node<'compiled>(
     compiled: &'compiled CompiledWorkflowDefinition,
-    settled: &mut [SettledWorkflowTransition],
+    progress: &WorkflowInstanceProgress,
 ) -> Result<&'compiled CompiledWorkflowNode, WorthQueryApplicationAttemptDenial> {
-    let head = resolve_head_entity(
-        settled,
-        compiled.start().entity(),
-        |source, outcome, history| {
-            unique_successor(compiled, source, outcome, history).map(CompiledWorkflowNode::entity)
-        },
-    )?;
     compiled
         .nodes()
-        .find(|node| node.entity() == head)
+        .find(|node| node.entity() == progress.head())
         .ok_or_else(|| {
             denial(
                 WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,
@@ -306,42 +289,9 @@ fn select_current_node<'compiled>(
         })
 }
 
-fn resolve_head_entity(
-    settled: &mut [SettledWorkflowTransition],
-    start: EntityId,
-    mut successor: impl FnMut(
-        EntityId,
-        ApplicationWorkflowControlOutcome,
-        &[SettledWorkflowTransition],
-    ) -> Result<EntityId, WorthQueryApplicationAttemptDenial>,
-) -> Result<EntityId, WorthQueryApplicationAttemptDenial> {
-    settled.sort_unstable_by_key(|transition| transition.occurrence);
-    let mut expected = start;
-    for (index, transition) in settled.iter().enumerate() {
-        let expected_occurrence = u64::try_from(index).map_err(|_| {
-            denial(
-                WorthQueryApplicationAttemptDenialKind::WorkflowTransitionIdentityUnavailable,
-                "workflow transition history exceeds supported occurrence range",
-            )
-        })?;
-        if transition.occurrence != expected_occurrence || transition.node != expected {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,
-                "workflow transition history is not a contiguous compiled path",
-            ));
-        }
-        expected = successor(transition.node, transition.outcome, &settled[..=index])?;
-    }
-    Ok(expected)
-}
-
 fn denial(
     kind: WorthQueryApplicationAttemptDenialKind,
     subject: impl Into<String>,
 ) -> WorthQueryApplicationAttemptDenial {
     WorthQueryApplicationAttemptDenial::new(kind, subject)
 }
-
-#[path = "tests.rs"]
-#[cfg(test)]
-mod tests;

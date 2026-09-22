@@ -115,6 +115,7 @@ where
                 &instance,
                 subject,
                 compiled.lineage(),
+                &compiled,
                 usize::try_from(
                     installed
                         .resources()
@@ -157,13 +158,11 @@ where
                     .max_by_key(|(_, transition)| transition.settlement.occurrence())
                     .expect("settled transition inventory was checked as nonempty");
                 let settled = observed.transitions.remove(settled_index);
-                let mut prior = observed
-                    .transitions
-                    .iter()
-                    .map(|transition| transition.settlement)
-                    .collect::<Vec<_>>();
-                let selected =
-                    select_terminal_transition(&compiled, instance.entity_id(), &mut prior)?;
+                let selected = select_terminal_transition(
+                    &compiled,
+                    instance.entity_id(),
+                    &observed.progress,
+                )?;
                 if !selected.matches_settlement(settled.settlement) {
                     return Err(denial(
                         WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,
@@ -190,13 +189,11 @@ where
                     .map(|prepared| prepared.with_replays(replays));
             }
         };
-        let mut settled = observed
-            .transitions
-            .iter()
-            .map(|transition| transition.settlement)
-            .collect::<Vec<_>>();
-        let selected = match select_current_transition(&compiled, instance.entity_id(), &mut settled)
-        {
+        let selected = match select_current_transition(
+            &compiled,
+            instance.entity_id(),
+            &observed.progress,
+        ) {
             Ok(selected) => selected,
             Err(denial)
                 if denial.kind()

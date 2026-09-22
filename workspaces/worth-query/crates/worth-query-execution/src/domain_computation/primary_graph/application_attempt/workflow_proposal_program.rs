@@ -100,6 +100,7 @@ where
                 &instance,
                 subject,
                 compiled.lineage(),
+                &compiled,
                 usize::try_from(
                     installed
                         .resources()
@@ -111,15 +112,10 @@ where
         let Some(live_membership) = observed.live_membership else {
             return Err(denial("workflow proposal instance is already settled"));
         };
-        let mut settled = observed
-            .transitions
-            .iter()
-            .map(|transition| transition.settlement)
-            .collect::<Vec<_>>();
         let selection = select_proposal_transition(
             &compiled,
             instance.entity_id(),
-            &mut settled,
+            &observed.progress,
             Operation::IDENTIFIER,
             input_type.as_str(),
         );

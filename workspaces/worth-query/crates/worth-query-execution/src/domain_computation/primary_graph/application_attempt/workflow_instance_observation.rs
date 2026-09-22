@@ -6,8 +6,9 @@ use super::{
     WorthQueryApplicationAdjacencyDirection, WorthQueryApplicationAttemptDenial,
     WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationObservedFact,
 };
+use crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowDefinition;
 use crate::domain_computation::primary_graph::workflow::instance::{
-    SettledWorkflowTransition, WorkflowInstanceState,
+    SettledWorkflowTransition, WorkflowInstanceProgress, WorkflowInstanceState,
 };
 use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout;
 
@@ -25,6 +26,8 @@ pub(in crate::domain_computation::primary_graph::application_attempt) struct Obs
         Vec<ObservedWorkflowTransition>,
     pub(in crate::domain_computation::primary_graph::application_attempt) facts:
         Vec<WorthQueryApplicationObservedFact>,
+    pub(in crate::domain_computation::primary_graph::application_attempt) progress:
+        WorkflowInstanceProgress,
 }
 
 pub(in crate::domain_computation::primary_graph::application_attempt) struct ObservedWorkflowTransition
@@ -87,6 +90,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
     instance: &PublishedWorkflowInstanceRef,
     subject: EntityId,
     lineage: EntityId,
+    compiled: &CompiledWorkflowDefinition,
     maximum_transitions: usize,
 ) -> Result<ObservedWorkflowInstance, WorthQueryApplicationAttemptDenial> {
     let entity = instance.entity_id();
@@ -253,10 +257,26 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
             transitions,
         },
     );
+    let mut settlements = settled_transitions
+        .iter()
+        .map(|transition| transition.settlement)
+        .collect::<Vec<_>>();
+    if live_membership.is_none() {
+        let settled_index = settlements
+            .iter()
+            .enumerate()
+            .max_by_key(|(_, transition)| transition.occurrence())
+            .map(|(index, _)| index);
+        if let Some(index) = settled_index {
+            settlements.swap_remove(index);
+        }
+    }
+    let progress = WorkflowInstanceProgress::reconstruct(compiled, &mut settlements)?;
     Ok(ObservedWorkflowInstance {
         live_membership,
         transitions: settled_transitions,
         facts,
+        progress,
     })
 }
 
