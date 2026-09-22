@@ -109,9 +109,15 @@ where
     .map_err(Denial::Contributions)?;
     let (invariants, handlers, producers, conditionals) =
         configured.into_parts().map_err(Denial::Contributions)?;
-    let relational_runtime = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
-        .profile(limits.profile.relational_profile())
-        .build();
+    let mut relational_builder = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
+        .profile(limits.profile.relational_profile());
+    if let Some(publication) = limits
+        .profile
+        .publication_override(limits.maximum_publication_records)
+    {
+        relational_builder = relational_builder.publication(publication);
+    }
+    let relational_runtime = relational_builder.build();
     let decoded_checkpoint = checkpoint
         .as_ref()
         .map(super::WorthQueryApplicationCheckpoint::decode)
