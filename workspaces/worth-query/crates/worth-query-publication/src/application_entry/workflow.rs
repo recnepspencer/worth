@@ -31,7 +31,8 @@ pub use operation::{
 pub use ordinary::{
     WorthQueryOrdinaryWorkflowDraft, WorthQueryOrdinaryWorkflowPublication,
     WorthQueryOrdinaryWorkflowPublicationDenial,
-    WorthQueryOrdinaryWorkflowPublicationWithIdempotency,
+    WorthQueryOrdinaryWorkflowPublicationWithIdempotency, WorthQueryOrdinaryWorkflowStart,
+    WorthQueryOrdinaryWorkflowStartWithIdempotency,
 };
 pub use progress::{
     WorthQueryWorkflowAdvancePreparationDenial, WorthQueryWorkflowAdvancePreparationDenialKind,

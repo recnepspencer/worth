@@ -14,8 +14,8 @@ use super::bounded_dimension_model::{
     host::publish_workflow_on_first_program,
     operator_identity::{authenticate_operator, request_scope},
     workflow::{
-        start_instance, ReviewedGeometryWorkflow, WorkflowDefinitionAuthoringInput,
-        WorkflowDefinitionAuthoringIntent,
+        ReviewedGeometryWorkflow, WorkflowDefinitionAuthoringInput,
+        WorkflowDefinitionAuthoringIntent, WorkflowInstanceStartInput, WorkflowInstanceStartIntent,
     },
 };
 
@@ -65,14 +65,32 @@ fn ordinary_publication_uses_installed_binding_and_real_commit_authority() {
     };
     assert!(replay.replayed());
     assert_eq!(first.definition(), replay.definition());
-    match start_instance(&application, first.definition().clone(), 918_002)
-        .expect("the ordinary definition start prepares")
-    {
-        WorkflowInstanceStartOutcome::Started(started) => {
-            assert_eq!(started.instance().current_node_path(), "done")
-        }
+    let start_key = 918_002_u64;
+    let start = || {
+        runtime
+            .request(&principal, &scope)
+            .mutate(WorkflowInstanceStartIntent {
+                input: WorkflowInstanceStartInput {
+                    part_identity: PART_IDENTITY.to_owned(),
+                },
+            })
+            .start_workflow(&application, first.definition().clone())
+            .idempotency(&start_key)
+            .execute()
+            .expect("the ordinary definition start prepares")
+    };
+    let started = match start() {
+        WorkflowInstanceStartOutcome::Started(started) => started,
         other => panic!("the ordinary definition must start: {other:?}"),
-    }
+    };
+    assert!(!started.replayed());
+    assert_eq!(started.instance().current_node_path(), "done");
+    let replayed_start = match start() {
+        WorkflowInstanceStartOutcome::Started(started) => started,
+        other => panic!("the exact ordinary start must replay: {other:?}"),
+    };
+    assert!(replayed_start.replayed());
+    assert_eq!(started.instance(), replayed_start.instance());
 }
 
 #[test]
