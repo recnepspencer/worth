@@ -28,8 +28,14 @@ impl UiMountedProjectionFrame {
             }
         };
         let anchor = bounds(owner.occurrence_allocation)?;
-        let mut extent = [0.0_f32; 2];
-        let mut layout = [f32::MAX, f32::MAX, 0.0_f32, 0.0_f32];
+        // Content is one union measured in anchor-relative space. An authored
+        // overlay routinely begins before the control that opens it: a
+        // viewport-inset panel is wider than its anchor, and a menu opens
+        // upward. Carrying the union's near edge admits those worlds, where
+        // assuming the anchor origin bounded every child denied them outright.
+        let mut near = [f32::MAX, f32::MAX];
+        let mut far = [f32::MIN, f32::MIN];
+        let mut layout = [f32::MAX, f32::MAX, f32::MIN, f32::MIN];
         let mut has_shadow = false;
         for instance in children {
             let child = self
@@ -44,29 +50,34 @@ impl UiMountedProjectionFrame {
                 _ => 0.0,
             };
             let child = bounds(child.occurrence_allocation)?;
-            if child.coordinate_space() != anchor.coordinate_space()
-                || child.x() < anchor.x()
-                || child.y() < anchor.y()
-            {
-                return Err(UiMountedProjectionDenial::NonFiniteGeometry);
+            if child.coordinate_space() != anchor.coordinate_space() {
+                return Err(UiMountedProjectionDenial::CoordinateBasisMismatch);
             }
-            extent[0] = extent[0].max(child.x() + child.width() - anchor.x());
-            extent[1] = extent[1].max(child.y() + child.height() - anchor.y());
             if child.width() <= inset * 2.0 || child.height() <= inset * 2.0 {
-                return Err(UiMountedProjectionDenial::NonFiniteGeometry);
+                return Err(UiMountedProjectionDenial::NegativeExtent);
             }
+            near[0] = near[0].min(child.x() - anchor.x());
+            near[1] = near[1].min(child.y() - anchor.y());
+            far[0] = far[0].max(child.x() + child.width() - anchor.x());
+            far[1] = far[1].max(child.y() + child.height() - anchor.y());
             layout[0] = layout[0].min(child.x() - anchor.x() + inset);
             layout[1] = layout[1].min(child.y() - anchor.y() + inset);
             layout[2] = layout[2].max(child.x() + child.width() - anchor.x() - inset);
             layout[3] = layout[3].max(child.y() + child.height() - anchor.y() - inset);
         }
+        let extent = [far[0] - near[0], far[1] - near[1]];
         if extent
             .iter()
             .any(|value| *value <= 0.0 || value.ceil() > f32::from(u16::MAX))
         {
-            return Err(UiMountedProjectionDenial::NonFiniteGeometry);
+            return Err(UiMountedProjectionDenial::NegativeExtent);
         }
-        let paint = local_bounds([0.0, 0.0, extent[0].ceil(), extent[1].ceil()])?;
+        let paint = local_bounds([
+            near[0].floor(),
+            near[1].floor(),
+            extent[0].ceil(),
+            extent[1].ceil(),
+        ])?;
         let layout = if has_shadow {
             local_bounds([
                 layout[0].floor(),
@@ -94,5 +105,12 @@ fn local_bounds(
         height,
         coordinate_space: UiMountedCoordinateSpace::GraphNodeLocal,
     })
-    .map_err(|_| UiMountedProjectionDenial::NonFiniteGeometry)
+    .map_err(|denial| match denial {
+        worth_ui_host_contract::UiMountedGeometryDenial::NonFinite => {
+            UiMountedProjectionDenial::NonFiniteGeometry
+        }
+        worth_ui_host_contract::UiMountedGeometryDenial::NegativeExtent => {
+            UiMountedProjectionDenial::NegativeExtent
+        }
+    })
 }

@@ -241,6 +241,11 @@ pub enum UiIntentPortalPlacementStopReason {
     MissingPresentedAnchor,
     MissingPresentedViewport,
     IncompatibleCoordinateSpace,
+    /// The mounted viewport or the portal's own content could not be measured,
+    /// so no placement was ever attempted. Reporting this as an incompatible
+    /// coordinate space sent readers to the placement planner for a cause that
+    /// never reached it.
+    UnmeasurableContent,
     EmptyAnchor,
     InsufficientViewport,
     UnknownPortalParent,
