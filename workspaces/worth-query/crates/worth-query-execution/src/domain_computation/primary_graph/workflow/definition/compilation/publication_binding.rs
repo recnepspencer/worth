@@ -1,11 +1,12 @@
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 
 use worth_relational::facade::identity::EntityId;
 use worth_relational::facade::identity::VersionId;
 
 use super::plan::{
     CompiledWorkflowConnection, CompiledWorkflowDefinition, CompiledWorkflowNode,
-    CompiledWorkflowSemanticConnection, CompiledWorkflowSemanticPlan,
+    CompiledWorkflowPublicationPlan, CompiledWorkflowSemanticConnection,
+    CompiledWorkflowSemanticPlan,
 };
 
 pub(super) struct ColdCompiledWorkflowDefinition {
@@ -24,14 +25,16 @@ pub(super) struct WorkflowDefinitionPublicationRevisions {
     pub(super) connections: Option<VersionId>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone)]
 pub(super) struct WorkflowDefinitionPublicationBinding {
     pub(super) lineage: EntityId,
     pub(super) definition: EntityId,
     pub(super) start_node: EntityId,
-    pub(super) node_entities: Box<[EntityId]>,
-    pub(super) connection_entities: Box<[EntityId]>,
+    pub(super) node_entities: Arc<[EntityId]>,
+    pub(super) node_ordinals: Arc<[(EntityId, usize)]>,
+    pub(super) connection_entities: Arc<[EntityId]>,
     pub(super) revisions: WorkflowDefinitionPublicationRevisions,
+    compiled: Arc<OnceLock<Arc<CompiledWorkflowPublicationPlan>>>,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -45,7 +48,22 @@ impl WorkflowDefinitionPublicationBinding {
     pub(super) fn retained_bytes(&self) -> usize {
         std::mem::size_of::<Self>()
             .saturating_add(std::mem::size_of_val(self.node_entities.as_ref()))
+            .saturating_add(std::mem::size_of_val(self.node_ordinals.as_ref()))
             .saturating_add(std::mem::size_of_val(self.connection_entities.as_ref()))
+            .saturating_add(std::mem::size_of::<
+                OnceLock<Arc<CompiledWorkflowPublicationPlan>>,
+            >())
+            .saturating_add(std::mem::size_of::<CompiledWorkflowPublicationPlan>())
+            .saturating_add(
+                self.node_entities
+                    .len()
+                    .saturating_mul(std::mem::size_of::<CompiledWorkflowNode>()),
+            )
+            .saturating_add(
+                self.connection_entities
+                    .len()
+                    .saturating_mul(std::mem::size_of::<CompiledWorkflowConnection>()),
+            )
     }
 
     pub(super) fn bind(
@@ -54,7 +72,35 @@ impl WorkflowDefinitionPublicationBinding {
         content_identity: worth_query_declaration::facade::application_program::ApplicationWorkflowDefinitionContentIdentity,
         program_revision: worth_query_declaration::facade::application_program::ApplicationProgramRevision,
     ) -> Result<CompiledWorkflowDefinition, WorkflowDefinitionPublicationBindingDenial> {
-        self.validate_semantic(&semantic)?;
+        let publication = self.bound_publication(semantic)?;
+        Ok(CompiledWorkflowDefinition {
+            publication,
+            content_identity,
+            program_revision,
+        })
+    }
+
+    fn bound_publication(
+        &self,
+        semantic: Arc<CompiledWorkflowSemanticPlan>,
+    ) -> Result<Arc<CompiledWorkflowPublicationPlan>, WorkflowDefinitionPublicationBindingDenial>
+    {
+        let publication = if let Some(compiled) = self.compiled.get() {
+            Arc::clone(compiled)
+        } else {
+            self.validate_semantic(&semantic)?;
+            Arc::clone(
+                self.compiled
+                    .get_or_init(|| Arc::new(self.compile_publication(semantic.as_ref()))),
+            )
+        };
+        Ok(publication)
+    }
+
+    fn compile_publication(
+        &self,
+        semantic: &CompiledWorkflowSemanticPlan,
+    ) -> CompiledWorkflowPublicationPlan {
         let nodes = self
             .node_entities
             .iter()
@@ -77,15 +123,15 @@ impl WorkflowDefinitionPublicationBinding {
             })
             .collect::<Vec<_>>()
             .into_boxed_slice();
-        Ok(CompiledWorkflowDefinition {
+        CompiledWorkflowPublicationPlan {
             lineage: self.lineage,
             definition: self.definition,
-            content_identity,
-            program_revision,
-            start_node: self.start_node,
+            start: semantic.start,
             nodes,
             connections,
-        })
+            node_ordinals: Arc::clone(&self.node_ordinals),
+            dispatch: Arc::clone(&semantic.dispatch),
+        }
     }
 
     fn validate_semantic(
@@ -93,9 +139,21 @@ impl WorkflowDefinitionPublicationBinding {
         semantic: &CompiledWorkflowSemanticPlan,
     ) -> Result<(), WorkflowDefinitionPublicationBindingDenial> {
         if self.node_entities.len() != semantic.nodes.len()
+            || self.node_ordinals.len() != semantic.nodes.len()
             || self.connection_entities.len() != semantic.connections.len()
             || semantic.start >= self.node_entities.len()
             || self.node_entities[semantic.start] != self.start_node
+        {
+            return Err(WorkflowDefinitionPublicationBindingDenial::BindingCardinalityMismatch);
+        }
+        if self
+            .node_ordinals
+            .windows(2)
+            .any(|pair| pair[0].0 >= pair[1].0)
+            || self
+                .node_ordinals
+                .iter()
+                .any(|(entity, ordinal)| self.node_entities.get(*ordinal) != Some(entity))
         {
             return Err(WorkflowDefinitionPublicationBindingDenial::BindingCardinalityMismatch);
         }
@@ -163,7 +221,8 @@ pub(super) fn separate_compiled_definition(
             ))
         })
         .collect::<Result<Vec<_>, WorkflowDefinitionPublicationBindingDenial>>()?;
-    ordered_connections.sort_unstable_by(|left, right| left.0.cmp(&right.0));
+    ordered_connections
+        .sort_unstable_by(|left, right| left.0.cmp(&right.0).then(left.1.cmp(&right.1)));
     let connection_entities = ordered_connections
         .iter()
         .map(|(_, entity, _)| *entity)
@@ -179,20 +238,34 @@ pub(super) fn separate_compiled_definition(
         .map(|index| Arc::clone(&compiled.nodes[*index].meaning))
         .collect::<Vec<_>>()
         .into_boxed_slice();
-    let retained_bytes = semantic_retained_bytes(&semantic_nodes, &semantic_connections);
+    let dispatch = Arc::new(super::plan::CompiledWorkflowDispatch::build(
+        semantic_nodes.len(),
+        &semantic_connections,
+    ));
+    let retained_bytes = semantic_retained_bytes(&semantic_nodes, &semantic_connections, &dispatch);
     let semantic = Arc::new(CompiledWorkflowSemanticPlan {
         start,
         nodes: semantic_nodes,
         connections: semantic_connections,
+        dispatch,
         retained_bytes,
     });
+    let mut node_ordinals = node_entities
+        .iter()
+        .copied()
+        .enumerate()
+        .map(|(ordinal, entity)| (entity, ordinal))
+        .collect::<Vec<_>>();
+    node_ordinals.sort_unstable_by_key(|(entity, _)| *entity);
     let binding = WorkflowDefinitionPublicationBinding {
         lineage: compiled.lineage,
         definition: compiled.definition,
         start_node: compiled.start_node,
-        node_entities,
-        connection_entities,
+        node_entities: Arc::from(node_entities),
+        node_ordinals: Arc::from(node_ordinals),
+        connection_entities: Arc::from(connection_entities),
         revisions: compiled.revisions,
+        compiled: Arc::new(OnceLock::new()),
     };
     Ok((semantic, binding))
 }
@@ -200,6 +273,7 @@ pub(super) fn separate_compiled_definition(
 fn semantic_retained_bytes(
     nodes: &[Arc<super::plan::CompiledWorkflowNodeMeaning>],
     connections: &[CompiledWorkflowSemanticConnection],
+    dispatch: &super::plan::CompiledWorkflowDispatch,
 ) -> usize {
     let node_bytes = nodes.iter().fold(0usize, |total, node| {
         total
@@ -210,6 +284,7 @@ fn semantic_retained_bytes(
     std::mem::size_of::<CompiledWorkflowSemanticPlan>()
         .saturating_add(node_bytes)
         .saturating_add(std::mem::size_of_val(connections))
+        .saturating_add(dispatch.retained_bytes())
         .saturating_add(
             connections
                 .iter()
@@ -219,90 +294,5 @@ fn semantic_retained_bytes(
 }
 
 #[cfg(test)]
-mod tests {
-    use std::sync::Arc;
-
-    use worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome;
-    use worth_relational::facade::identity::{EntityId, PartitionId};
-
-    use super::*;
-    use crate::domain_computation::primary_graph::workflow::definition::compilation::plan::{
-        CompiledWorkflowConnectionKind, CompiledWorkflowNodeKind, CompiledWorkflowNodeMeaning,
-    };
-
-    #[test]
-    fn equal_meaning_normalizes_across_foreign_record_coordinates_and_inventory_order() {
-        let first = cold_definition(10, 20, false);
-        let foreign = cold_definition(110, 120, true);
-
-        let (first_semantic, first_binding) =
-            separate_compiled_definition(first).expect("first definition must separate");
-        let (foreign_semantic, foreign_binding) =
-            separate_compiled_definition(foreign).expect("foreign definition must separate");
-
-        assert_eq!(first_semantic, foreign_semantic);
-        assert_ne!(first_binding.definition, foreign_binding.definition);
-        assert_ne!(first_binding.node_entities, foreign_binding.node_entities);
-        assert_eq!(first_semantic.start, 0);
-        assert_eq!(foreign_semantic.start, 0);
-    }
-
-    #[test]
-    fn binding_cardinality_mismatch_is_denied_instead_of_truncated() {
-        let (semantic, mut binding) = separate_compiled_definition(cold_definition(10, 20, false))
-            .expect("fixture definition must separate");
-        binding.node_entities = Box::default();
-
-        assert_eq!(
-            binding.validate_semantic(&semantic),
-            Err(WorkflowDefinitionPublicationBindingDenial::BindingCardinalityMismatch)
-        );
-    }
-
-    fn cold_definition(
-        definition_slot: u64,
-        node_slot: u64,
-        reverse_inventory: bool,
-    ) -> ColdCompiledWorkflowDefinition {
-        let start = node(node_slot, "a/start");
-        let terminal = node(node_slot + 1, "z/terminal");
-        let mut nodes = vec![start, terminal];
-        if reverse_inventory {
-            nodes.reverse();
-        }
-        ColdCompiledWorkflowDefinition {
-            lineage: entity(1),
-            definition: entity(definition_slot),
-            start_node: entity(node_slot),
-            nodes: nodes.into_boxed_slice(),
-            connections: vec![CompiledWorkflowConnection {
-                entity: entity(definition_slot + 1),
-                source: entity(node_slot),
-                target: entity(node_slot + 1),
-                kind: Arc::new(CompiledWorkflowConnectionKind::Control(
-                    ApplicationWorkflowControlOutcome::Completed,
-                )),
-            }]
-            .into_boxed_slice(),
-            revisions: WorkflowDefinitionPublicationRevisions {
-                start: None,
-                nodes: None,
-                connections: None,
-            },
-        }
-    }
-
-    fn node(slot: u64, path: &str) -> CompiledWorkflowNode {
-        CompiledWorkflowNode {
-            entity: entity(slot),
-            meaning: Arc::new(CompiledWorkflowNodeMeaning {
-                path: path.to_owned(),
-                kind: CompiledWorkflowNodeKind::Terminal,
-            }),
-        }
-    }
-
-    fn entity(slot: u64) -> EntityId {
-        EntityId::new(PartitionId::new(1), slot, 1)
-    }
-}
+#[path = "publication_binding/tests.rs"]
+mod tests;

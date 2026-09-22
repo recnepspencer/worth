@@ -42,9 +42,7 @@ pub(super) fn validate_requirement_definition(
     compiled: &crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowDefinition,
     required: &RequiredWorkflowApproval,
 ) -> Result<worth_relational::facade::identity::EntityId, WorthQueryApplicationAttemptDenial> {
-    let mut matches = compiled
-        .nodes()
-        .filter(|node| node.path() == required.node_path());
+    let mut matches = compiled.nodes_with_path(required.node_path()).iter();
     let (Some(node), None) = (matches.next(), matches.next()) else {
         return Err(affinity("approval requirement node is not singular"));
     };

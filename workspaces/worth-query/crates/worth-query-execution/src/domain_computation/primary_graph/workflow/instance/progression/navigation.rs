@@ -21,31 +21,38 @@ pub(super) fn unique_successor<'compiled>(
             "settled workflow transition has ambiguous retry successors",
         ));
     }
-    let target = if let Some((target, maximum_attempts)) = retry {
+    if let Some((target, maximum_attempts)) = retry {
         if retry_attempts <= usize::from(maximum_attempts) {
-            target.entity()
+            Ok(target)
         } else {
-            unique_successor_entity(
+            unique_successor_node(
                 compiled
-                    .control_successors(source, ApplicationWorkflowControlOutcome::RetryExhausted)
-                    .map(CompiledWorkflowNode::entity),
-            )?
+                    .control_successors(source, ApplicationWorkflowControlOutcome::RetryExhausted),
+            )
         }
     } else {
-        unique_successor_entity(
-            compiled
-                .control_successors(source, outcome)
-                .map(CompiledWorkflowNode::entity),
-        )?
-    };
-    compiled
-        .nodes()
-        .find(|node| node.entity() == target)
-        .ok_or_else(|| {
-            denial("settled workflow successor is absent from the compiled node inventory")
-        })
+        unique_successor_node(compiled.control_successors(source, outcome))
+    }
 }
 
+fn unique_successor_node<'compiled>(
+    targets: impl IntoIterator<Item = &'compiled CompiledWorkflowNode>,
+) -> Result<&'compiled CompiledWorkflowNode, WorthQueryApplicationAttemptDenial> {
+    let mut targets = targets.into_iter();
+    let Some(target) = targets.next() else {
+        return Err(denial(
+            "settled workflow transition has no compiled successor",
+        ));
+    };
+    if targets.next().is_some() {
+        return Err(denial(
+            "settled workflow transition has ambiguous compiled successors",
+        ));
+    }
+    Ok(target)
+}
+
+#[cfg(test)]
 fn unique_successor_entity(
     targets: impl IntoIterator<Item = EntityId>,
 ) -> Result<EntityId, WorthQueryApplicationAttemptDenial> {

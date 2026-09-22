@@ -162,7 +162,7 @@ fn oversized_replacement_preserves_the_retained_publication_and_budget() {
         .expect("retained entry must fit");
     let retained_bytes = sizing.retained_bytes();
     let mut oversized = binding(20, 21);
-    oversized.node_entities = vec![entity(21); 16 * 1024].into_boxed_slice();
+    oversized.node_entities = Arc::from(vec![entity(21); 16 * 1024]);
 
     assert_eq!(
         sizing.retain(publication, key.clone(), semantic("retained"), oversized),

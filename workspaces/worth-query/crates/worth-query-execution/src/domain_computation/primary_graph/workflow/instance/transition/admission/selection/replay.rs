@@ -31,15 +31,12 @@ pub(in crate::domain_computation::primary_graph) fn select_settled_replay_transi
     instance: EntityId,
     settled: SettledWorkflowTransition,
 ) -> Result<SelectedWorkflowTransitionReplay, WorthQueryApplicationAttemptDenial> {
-    let node = compiled
-        .nodes()
-        .find(|node| node.entity() == settled.node())
-        .ok_or_else(|| {
-            denial(
-                WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,
-                "settled replay node is absent from the compiled node inventory",
-            )
-        })?;
+    let node = compiled.node(settled.node()).ok_or_else(|| {
+        denial(
+            WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,
+            "settled replay node is absent from the compiled node inventory",
+        )
+    })?;
     let (identity, identity_bytes) =
         transition_identity(compiled, instance, node, settled.occurrence())?;
     Ok(SelectedWorkflowTransitionReplay {

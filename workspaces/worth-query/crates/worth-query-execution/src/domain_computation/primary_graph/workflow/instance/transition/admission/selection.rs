@@ -222,15 +222,12 @@ pub(in crate::domain_computation::primary_graph) fn select_proposal_replay_trans
     operation: &str,
     input_type: &str,
 ) -> Result<SelectedWorkflowTransition, WorthQueryApplicationAttemptDenial> {
-    let node = compiled
-        .nodes()
-        .find(|node| node.entity() == settled.node())
-        .ok_or_else(|| {
-            denial(
-                WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,
-                "settled proposal node is absent from the compiled node inventory",
-            )
-        })?;
+    let node = compiled.node(settled.node()).ok_or_else(|| {
+        denial(
+            WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,
+            "settled proposal node is absent from the compiled node inventory",
+        )
+    })?;
     match node.kind() {
         CompiledWorkflowNodeKind::Operation {
             operation: installed_operation,
@@ -278,15 +275,12 @@ fn select_current_node<'compiled>(
     compiled: &'compiled CompiledWorkflowDefinition,
     progress: &WorkflowInstanceProgress,
 ) -> Result<&'compiled CompiledWorkflowNode, WorthQueryApplicationAttemptDenial> {
-    compiled
-        .nodes()
-        .find(|node| node.entity() == progress.head())
-        .ok_or_else(|| {
-            denial(
-                WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,
-                "workflow transition head is absent from the compiled node inventory",
-            )
-        })
+    compiled.node(progress.head()).ok_or_else(|| {
+        denial(
+            WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,
+            "workflow transition head is absent from the compiled node inventory",
+        )
+    })
 }
 
 fn denial(
