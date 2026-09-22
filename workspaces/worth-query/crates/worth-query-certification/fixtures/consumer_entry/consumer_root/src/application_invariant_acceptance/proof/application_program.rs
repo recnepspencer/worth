@@ -9,6 +9,7 @@ use worth_query_topology_entry::{PlanarRead, PlanarSourceAdjustment};
 use super::super::{authentication, installation, seed::length};
 use crate::ConsumerSchema;
 
+mod continuation_basis;
 mod custody;
 mod dependent_recovery;
 mod discovered;
@@ -27,6 +28,7 @@ pub(super) fn performed_source_settles_required_output(
     >,
 ) {
     settlement::performed_source_settles_required_output(foreign);
+    continuation_basis::revised_parent_publication_is_the_dependent_basis(foreign);
     discovered::performed_source_discovers_required_root(foreign);
     discovered::isolated_source_settles_without_roots(foreign);
     discovered::recovery::newer_discovered_source_retires_recovery(foreign);

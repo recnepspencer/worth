@@ -10,7 +10,9 @@ use worth_query_declaration::facade::application_schema::{
 use worth_query_execution::facade::application_contribution::{
     WorthQueryApplicationOutputDemand, WorthQueryProducerOutputFamily,
 };
-use worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime;
+use worth_query_execution::facade::application_installation::{
+    WorthQueryProgramApplicationRuntime, WorthQuerySettledProgramOutput,
+};
 use worth_query_execution::facade::primary_graph::{
     WorthQueryApplicationDiscoveredOutputConnection, WorthQueryApplicationProjection,
 };
@@ -63,6 +65,8 @@ where
         >,
     >,
     settlement: Option<WorthQueryApplicationOutputDemandSettlement<Query<Schema, Root>>>,
+    pending_authority:
+        Option<WorthQuerySettledProgramOutput<Schema, Program, Demand<Schema, Root>>>,
     continuation: Option<Box<dyn ProgramOutputContinuation<'application, Schema> + 'application>>,
     outputs: Vec<ProgramOutputRecord>,
     work: ProgramOutputTraversalWork,
@@ -125,6 +129,7 @@ where
                     demand: root.demand_clone(),
                     handle: Some(root),
                     settlement: None,
+                    pending_authority: None,
                     continuation: None,
                     outputs: Vec::new(),
                     work: ProgramOutputTraversalWork::default(),
@@ -207,6 +212,21 @@ where
         }
         let mut root_superseded = false;
         if let Some(root) = self.roots.get_mut(self.next_root) {
+            if let Some(authority) = root.pending_authority.take() {
+                let settlement = root
+                    .settlement
+                    .as_ref()
+                    .expect("a settled root retains its output settlement");
+                root.continuation = Some(Root::Dependents::start(
+                    self.application,
+                    &root.demand,
+                    settlement,
+                    &authority,
+                    &self.source,
+                    request,
+                    self.controls,
+                )?);
+            }
             if let Some(handle) = &mut root.handle {
                 match handle.advance(request) {
                     Err(crate::application_entry::WorthQueryApplicationOutputDemandDenial::Superseded) => {
@@ -226,17 +246,10 @@ where
                         settlement,
                         authority,
                     } => {
-                        root.continuation = Some(Root::Dependents::start(
-                            self.application,
-                            &root.demand,
-                            &settlement,
-                            &authority,
-                            &self.source,
-                            request,
-                            self.controls,
-                        )?);
                         root.settlement = Some(settlement);
+                        root.pending_authority = Some(authority);
                         root.handle = None;
+                        return Ok(WorthQueryDiscoveredProgramOutputProgress::Pending);
                     }
                     },
                 }

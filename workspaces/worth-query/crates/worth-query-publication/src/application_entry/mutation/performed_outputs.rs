@@ -10,7 +10,9 @@ use worth_query_declaration::facade::application_schema::{
 use worth_query_execution::facade::application_contribution::{
     WorthQueryApplicationOutputDemand, WorthQueryProducerOutputFamily,
 };
-use worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime;
+use worth_query_execution::facade::application_installation::{
+    WorthQueryProgramApplicationRuntime, WorthQuerySettledProgramOutput,
+};
 use worth_query_execution::facade::primary_graph::{
     WorthQueryApplicationProjection, WorthQueryApplicationRequiredOutputConnection,
 };
@@ -63,6 +65,8 @@ where
             Query<Schema, RootDemand<Schema, Root>>,
         >,
     >,
+    pending_root_authority:
+        Option<WorthQuerySettledProgramOutput<Schema, Program, RootDemand<Schema, Root>>>,
     continuation: Option<Box<dyn ProgramOutputContinuation<'application, Schema> + 'application>>,
     controls: crate::application_entry::WorthQueryOutputDemandControls,
     complete: bool,
@@ -98,6 +102,7 @@ where
             root: Some(root),
             root_demand,
             root_settlement: None,
+            pending_root_authority: None,
             continuation: None,
             controls,
             complete: false,
@@ -123,6 +128,7 @@ where
             root: Some(root),
             root_demand,
             root_settlement: None,
+            pending_root_authority: None,
             continuation: None,
             controls,
             complete: false,
@@ -226,19 +232,27 @@ where
                     settlement,
                     authority,
                 } => {
-                    self.continuation = Some(Root::Dependents::start(
-                        self.application,
-                        &self.root_demand,
-                        &settlement,
-                        &authority,
-                        &self.source_observation,
-                        request,
-                        self.controls,
-                    )?);
                     self.root_settlement = Some(settlement);
+                    self.pending_root_authority = Some(authority);
                     self.root = None;
+                    return Ok(WorthQueryApplicationProgramOutputProgress::Pending);
                 }
             }
+        }
+        if let Some(authority) = self.pending_root_authority.take() {
+            let settlement = self
+                .root_settlement
+                .as_ref()
+                .expect("a settled root retains its output settlement");
+            self.continuation = Some(Root::Dependents::start(
+                self.application,
+                &self.root_demand,
+                settlement,
+                &authority,
+                &self.source_observation,
+                request,
+                self.controls,
+            )?);
         }
         let continuation = self
             .continuation
