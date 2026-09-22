@@ -12,6 +12,7 @@ use crate::domain_computation::primary_graph::workflow::instance::{
 };
 use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout;
 
+mod progression;
 mod settlement;
 pub(super) use settlement::{
     observe_evidence_dependencies, observe_latest_workflow_proposal_identity,
@@ -84,6 +85,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn latest_
 }
 
 pub(in crate::domain_computation::primary_graph::application_attempt) fn observe_workflow_instance(
+    handle: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     layout: &WorthQueryWorkflowLayout,
@@ -208,6 +210,8 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         }),
         &mut facts,
     )?;
+    let progress_observation =
+        progression::observe_progress(handle, runtime, snapshot, layout, instance, &mut facts)?;
     let direction = WorthQueryApplicationAdjacencyDirection::Outgoing;
     let transitions = observe_adjacency(
         runtime,
@@ -271,7 +275,14 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
             settlements.swap_remove(index);
         }
     }
-    let progress = WorkflowInstanceProgress::reconstruct(compiled, &mut settlements)?;
+    let reconstruction_transition_visits = settlements.len();
+    let progress = progression::finish_progress(
+        handle,
+        progress_observation,
+        compiled,
+        &mut settlements,
+        reconstruction_transition_visits,
+    )?;
     Ok(ObservedWorkflowInstance {
         live_membership,
         transitions: settled_transitions,

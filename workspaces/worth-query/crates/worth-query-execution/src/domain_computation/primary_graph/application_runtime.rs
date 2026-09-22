@@ -246,6 +246,16 @@ where
             .workflow_compilation_reuse_counters()
     }
 
+    #[doc(hidden)]
+    pub fn workflow_instance_progress_counters(
+        &self,
+    ) -> super::WorthQueryWorkflowInstanceProgressCounters {
+        self.runtime
+            .retain_primary_graph_integration_handle()
+            .expect("a published application runtime retains its primary graph")
+            .workflow_instance_progress_counters()
+    }
+
     pub(in crate::domain_computation) fn graph_work_resource_support(
         &self,
     ) -> worth_query_admission::facade::resource_admission::WorthQueryExecutionResourceSupportSnapshot

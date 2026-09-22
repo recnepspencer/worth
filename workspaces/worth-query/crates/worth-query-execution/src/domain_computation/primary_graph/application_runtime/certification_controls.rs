@@ -18,6 +18,16 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema + 'static,
 {
+    /// Drops only rebuildable workflow-instance progress projections.
+    #[doc(hidden)]
+    #[cfg(feature = "test-primary-graph-faults")]
+    pub fn release_workflow_instance_progress_for_test(&self) {
+        self.runtime
+            .retain_primary_graph_integration_handle()
+            .expect("a published application runtime retains its primary graph")
+            .release_workflow_instance_progress();
+    }
+
     /// Schedules one failure at the generic Query index-publication boundary.
     #[doc(hidden)]
     #[cfg(feature = "test-primary-graph-faults")]

@@ -72,6 +72,7 @@ where
         let subject = self.admission.scope_entity_id();
         let mut observed = self.lease.handle().with_runtime(|runtime| {
             super::super::workflow_instance_observation::observe_workflow_instance(
+                self.lease.handle(),
                 runtime,
                 self.lease.snapshot(),
                 &layout,

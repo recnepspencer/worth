@@ -27,6 +27,8 @@ pub struct WorthQueryPrimaryGraph {
     output_lineage: Arc<Mutex<super::output_lineage::WorthQueryApplicationOutputLineage>>,
     workflow_compilation_reuse:
         Arc<Mutex<super::workflow::definition::WorkflowDefinitionCompilationReuse>>,
+    workflow_instance_progress_retention:
+        Arc<[Mutex<super::workflow::instance::WorkflowInstanceProgressRetention>]>,
     truth_partition_role: Option<worth_foundational::facade::TruthPartitionRole>,
 }
 
@@ -109,6 +111,8 @@ impl WorthQueryPrimaryGraph {
             )),
             output_lineage: Arc::new(Mutex::new(Default::default())),
             workflow_compilation_reuse: Arc::new(Mutex::new(Default::default())),
+            workflow_instance_progress_retention:
+                super::workflow::instance::default_progress_retention_shards(),
             truth_partition_role: None,
         }
     }
@@ -184,6 +188,9 @@ impl WorthQueryPrimaryGraph {
             aggregate_projections: Arc::clone(&self.aggregate_projections),
             output_lineage: Arc::clone(&self.output_lineage),
             workflow_compilation_reuse: Arc::clone(&self.workflow_compilation_reuse),
+            workflow_instance_progress_retention: Arc::clone(
+                &self.workflow_instance_progress_retention,
+            ),
             truth_partition_role: self.truth_partition_role.clone(),
         }
     }
@@ -221,6 +228,8 @@ pub struct WorthQueryPrimaryGraphIntegrationHandle {
         Arc<Mutex<super::output_lineage::WorthQueryApplicationOutputLineage>>,
     pub(in crate::domain_computation::primary_graph) workflow_compilation_reuse:
         Arc<Mutex<super::workflow::definition::WorkflowDefinitionCompilationReuse>>,
+    pub(in crate::domain_computation::primary_graph) workflow_instance_progress_retention:
+        Arc<[Mutex<super::workflow::instance::WorkflowInstanceProgressRetention>]>,
     pub(super) truth_partition_role: Option<worth_foundational::facade::TruthPartitionRole>,
 }
 
@@ -245,6 +254,54 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         mutate(&mut reuse)
+    }
+
+    #[doc(hidden)]
+    pub fn workflow_instance_progress_counters(
+        &self,
+    ) -> super::WorthQueryWorkflowInstanceProgressCounters {
+        let mut counters = super::WorthQueryWorkflowInstanceProgressCounters::default();
+        for shard in self.workflow_instance_progress_retention.iter() {
+            let shard = shard
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            counters.absorb(shard.counters());
+        }
+        counters
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn with_workflow_instance_progress_mut<T>(
+        &self,
+        key: super::workflow::instance::WorkflowInstanceProgressKey,
+        mutate: impl FnOnce(&mut super::workflow::instance::WorkflowInstanceProgressRetention) -> T,
+    ) -> T {
+        let shard = &self.workflow_instance_progress_retention[key.shard_index()];
+        let mut retention = shard
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        mutate(&mut retention)
+    }
+
+    #[cfg(feature = "test-primary-graph-faults")]
+    pub(in crate::domain_computation::primary_graph) fn release_workflow_instance_progress(&self) {
+        for shard in self.workflow_instance_progress_retention.iter() {
+            shard
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .release_all();
+        }
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn release_workflow_instance_progress_for_branch(
+        &self,
+        branch_occurrence: u64,
+    ) {
+        for shard in self.workflow_instance_progress_retention.iter() {
+            shard
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .release_branch(branch_occurrence);
+        }
     }
 
     #[doc(hidden)]

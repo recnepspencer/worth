@@ -132,6 +132,7 @@ mod settlement_repair;
 mod typed_bootstrap;
 mod workflow;
 pub use workflow::definition::WorthQueryWorkflowCompilationReuseCounters;
+pub use workflow::WorthQueryWorkflowInstanceProgressCounters;
 
 #[cfg(test)]
 pub(in crate::domain_computation) mod tests;

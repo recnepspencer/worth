@@ -4,11 +4,17 @@ use worth_query_declaration::facade::application_program::ApplicationWorkflowCon
 use worth_relational::facade::identity::EntityId;
 
 mod navigation;
+mod retention;
 use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
 };
 use crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowDefinition;
 use navigation::unique_successor;
+pub use retention::WorthQueryWorkflowInstanceProgressCounters;
+pub(in crate::domain_computation::primary_graph) use retention::{
+    default_progress_retention_shards, WorkflowInstanceProgressKey,
+    WorkflowInstanceProgressRetention, WorkflowInstanceProgressRetentionDenial,
+};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) struct SettledWorkflowTransition {
@@ -68,6 +74,16 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowInstanceProgress
 }
 
 impl WorkflowInstanceProgress {
+    pub(super) fn retained_charge_bytes(&self) -> usize {
+        const CONSERVATIVE_TREE_NODE_ALLOWANCE: usize = 128;
+        std::mem::size_of::<Self>().saturating_add(
+            self.retry_counts.len().saturating_mul(
+                std::mem::size_of::<((EntityId, ApplicationWorkflowControlOutcome), usize)>()
+                    .saturating_add(CONSERVATIVE_TREE_NODE_ALLOWANCE),
+            ),
+        )
+    }
+
     pub(in crate::domain_computation::primary_graph) fn reconstruct(
         compiled: &CompiledWorkflowDefinition,
         settled: &mut [SettledWorkflowTransition],
