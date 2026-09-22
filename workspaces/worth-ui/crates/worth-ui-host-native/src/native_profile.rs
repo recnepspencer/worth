@@ -1,85 +1,105 @@
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct UiNativePlatformProfileIdentity(&'static str);
+mod appearance;
+mod identity;
+mod linux_wayland_vulkan_v1;
+mod linux_x11_vulkan_software_v1;
+mod linux_x11_vulkan_v1;
+mod mechanics_capacities;
+mod qualified_target;
+mod selection;
+mod surface;
+mod windowing;
+mod windows_dx12_v2;
 
+pub(crate) use appearance::UiNativeAppearanceProfile;
+pub use identity::UiNativePlatformProfileIdentity;
+pub use mechanics_capacities::UiNativeMechanicsCapacities;
+pub use qualified_target::UiNativeQualifiedTarget;
+pub use surface::{
+    UiNativeClientBackground, UiNativeCompositeAlpha, UiNativeCpuAdapterAdmission,
+    UiNativePresentMode, UiNativeSurfaceBackends, UiNativeSurfaceFormat, UiNativeSurfaceProfile,
+};
+pub use windowing::UiNativeWindowingSystem;
+
+/// One qualified (operating system, windowing system, graphics backend) triple.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct UiNativeMechanicsCapacities {
-    pub retained_commands: u16,
-    pub rectangle_commands: u16,
-    pub text_commands: u16,
-    pub damage_regions: u16,
-    pub order_edits: u16,
-    pub text_bytes: u32,
-    pub readiness_owners: u8,
-    pub resource_registry_entries: u8,
-    pub causes_per_owner: u8,
-    pub ready_owner_slots: u8,
-    pub presentation_slots: u8,
-    pub readback_slots: u8,
-    pub readback_bytes: u32,
+pub(crate) struct UiNativeQualifiedProfile {
+    pub(crate) identity: UiNativePlatformProfileIdentity,
+    pub(crate) manifest: &'static str,
+    pub(crate) windowing_system: UiNativeWindowingSystem,
+    pub(crate) client_background: UiNativeClientBackground,
+    /// The label the graphics backend stamps on a device it opens for this
+    /// profile. Declared per profile rather than derived, because a device
+    /// label is an observed string: `qualification_tests` proves each one
+    /// against its identity so a copied profile cannot inherit another's name.
+    pub(crate) device_label: &'static str,
+    pub(crate) recovered_device_label: &'static str,
+    pub(crate) surface: UiNativeSurfaceProfile,
+    pub(crate) appearance: UiNativeAppearanceProfile,
 }
 
-pub const WORTH_UI_NATIVE_PROFILE_MANIFEST: &str =
-    include_str!("../profiles/worth-ui-windows-dx12-v2.toml");
+/// Every qualified profile, compiled for every target.
+///
+/// This is deliberately not `cfg`-gated. The closed record asserts every
+/// profile whichever host runs the suite, so a Linux run still proves the
+/// Windows record; gating the modules would silently shrink that record to
+/// whatever the host happens to be.
+pub(crate) const QUALIFIED_PROFILES: [UiNativeQualifiedProfile; 4] = [
+    windows_dx12_v2::PROFILE,
+    linux_wayland_vulkan_v1::PROFILE,
+    linux_x11_vulkan_v1::PROFILE,
+    linux_x11_vulkan_software_v1::PROFILE,
+];
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(crate) struct UiNativeAppearanceProfile {
-    pub(crate) identity: &'static str,
-    pub(crate) version: u16,
-    pub(crate) scales_milli: &'static [u16; 4],
-    pub(crate) anti_alias_fringe_physical_pixels: u8,
-    pub(crate) geometry_basis: worth_ui_host_contract::UiHostAppearanceGeometryQualificationBasis,
-    pub(crate) retained_commands: u16,
-    pub(crate) surface_commands: u16,
-    pub(crate) outline_commands: u16,
-    pub(crate) backdrop_commands: u16,
-    pub(crate) overlay_order_commands: u16,
-    pub(crate) pointer_affordance_commands: u16,
-    pub(crate) text_foreground_commands: u16,
-    pub(crate) damage_regions: u16,
-    pub(crate) primary_pointer: Option<worth_ui_host_contract::UiHostPrimaryPointerKind>,
-}
+pub(crate) const ACTIVE_PROFILE: UiNativeQualifiedProfile =
+    QUALIFIED_PROFILES[selection::ACTIVE_INDEX];
 
-pub(crate) const APPEARANCE_PROFILE: UiNativeAppearanceProfile =
-    UiNativeAppearanceProfile {
-        identity: "worth-ui-windows-dx12-v2",
-        version: 2,
-        scales_milli: &[1_000, 1_250, 1_500, 2_000],
-        anti_alias_fringe_physical_pixels: 1,
-        geometry_basis:
-            worth_ui_host_contract::UiHostAppearanceGeometryQualificationBasis::AnalyticSignedDistancePixelCenter,
-        retained_commands: 4_096,
-        surface_commands: 2_048,
-        outline_commands: 1_024,
-        backdrop_commands: 512,
-        overlay_order_commands: 4_096,
-        pointer_affordance_commands: 64,
-        text_foreground_commands: 2_048,
-        damage_regions: 4_096,
-        primary_pointer: Some(worth_ui_host_contract::UiHostPrimaryPointerKind::Mouse),
-    };
-
-impl UiNativePlatformProfileIdentity {
-    pub const WORTH_UI_WINDOWS_DX12_V2: Self = Self("worth-ui-windows-dx12-v2");
-
-    pub const fn as_str(self) -> &'static str {
-        self.0
+/// Every qualified identity in [`QUALIFIED_PROFILES`] order, derived from that
+/// array at compile time so a profile cannot be qualified without appearing
+/// here. Anything outside this crate that must enumerate the qualified set
+/// (the runtime's environment classifier proves each identity is admitted on
+/// exactly one build) iterates this instead of keeping a second literal list
+/// that a new profile can silently miss.
+pub const WORTH_UI_QUALIFIED_PROFILE_IDENTITIES: [UiNativePlatformProfileIdentity;
+    QUALIFIED_PROFILES.len()] = {
+    let mut identities = [ACTIVE_PROFILE.identity; QUALIFIED_PROFILES.len()];
+    let mut index = 0;
+    while index < QUALIFIED_PROFILES.len() {
+        identities[index] = QUALIFIED_PROFILES[index].identity;
+        index += 1;
     }
-}
+    identities
+};
 
-impl UiNativeMechanicsCapacities {
-    pub const QUALIFIED: Self = Self {
-        retained_commands: 4_096,
-        rectangle_commands: 2_048,
-        text_commands: 2_048,
-        damage_regions: 4_096,
-        order_edits: 4_096,
-        text_bytes: 1_048_576,
-        readiness_owners: 8,
-        resource_registry_entries: 32,
-        causes_per_owner: 64,
-        ready_owner_slots: 8,
-        presentation_slots: 2,
-        readback_slots: 4,
-        readback_bytes: 16_777_216,
-    };
-}
+pub const WORTH_UI_NATIVE_PROFILE_IDENTITY: UiNativePlatformProfileIdentity =
+    ACTIVE_PROFILE.identity;
+pub const WORTH_UI_NATIVE_PROFILE_MANIFEST: &str = ACTIVE_PROFILE.manifest;
+pub const WORTH_UI_NATIVE_SURFACE_PROFILE: UiNativeSurfaceProfile = ACTIVE_PROFILE.surface;
+pub const WORTH_UI_NATIVE_CLIENT_BACKGROUND: UiNativeClientBackground =
+    ACTIVE_PROFILE.client_background;
+pub const WORTH_UI_NATIVE_WINDOWING_SYSTEM: UiNativeWindowingSystem =
+    ACTIVE_PROFILE.windowing_system;
+
+/// The build flag and the selected profile name the same windowing system.
+///
+/// `selection.rs` turns the flag into an index; the profile at that index
+/// declares its own windowing system. Both are constants, so an arm indexing
+/// the wrong profile fails here rather than at the first forced event loop.
+const _: () = assert!(
+    ACTIVE_PROFILE
+        .windowing_system
+        .same_as(selection::SELECTED_WINDOWING_SYSTEM),
+    "the selected qualified profile must declare the windowing system the build flag names"
+);
+
+/// The adapter flag and the selected profile agree the same way: the arm that
+/// indexes the software profile must land on the one profile admitting a CPU
+/// adapter, and every other arm on one that denies it.
+const _: () = assert!(
+    ACTIVE_PROFILE
+        .surface
+        .cpu_adapter
+        .same_as(selection::SELECTED_CPU_ADAPTER),
+    "the selected qualified profile must declare the adapter admission the build flag names"
+);
+
+pub(crate) const APPEARANCE_PROFILE: UiNativeAppearanceProfile = ACTIVE_PROFILE.appearance;

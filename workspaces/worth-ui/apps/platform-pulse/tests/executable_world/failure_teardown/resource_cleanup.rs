@@ -3,7 +3,7 @@ use std::time::{Duration, Instant};
 use crate::external_observation::PlatformPulseLifecycleStream;
 use crate::installation::IsolatedPulseInstallation;
 use crate::native_platform::{
-    NativePlatformContract, WindowsNativePlatform, WindowsProcessBoundNativeClientArea,
+    CertifiedNativePlatform, CertifiedProcessBoundNativeClientArea, NativePlatformContract,
 };
 use crate::product_process::LivePlatformPulseProcess;
 
@@ -23,8 +23,8 @@ pub(crate) struct UnboundFailureWorldResources {
 
 pub(crate) struct NativeBoundFailureWorldResources {
     unbound: UnboundFailureWorldResources,
-    platform: WindowsNativePlatform,
-    native_client: WindowsProcessBoundNativeClientArea,
+    platform: CertifiedNativePlatform,
+    native_client: CertifiedProcessBoundNativeClientArea,
 }
 
 pub(crate) fn report_without_owned_resources(
@@ -143,8 +143,8 @@ impl UnboundFailureWorldResources {
 
     pub(crate) fn bind_native(
         self,
-        platform: WindowsNativePlatform,
-        native_client: WindowsProcessBoundNativeClientArea,
+        platform: CertifiedNativePlatform,
+        native_client: CertifiedProcessBoundNativeClientArea,
     ) -> NativeBoundFailureWorldResources {
         NativeBoundFailureWorldResources {
             unbound: self,

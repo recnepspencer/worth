@@ -1,9 +1,8 @@
-use super::UiNativeOwnedWindow;
-
 pub(super) type UiNativePointerInputPort = crate::native::UiNativePointerInputPort;
 
+#[cfg(any(target_os = "windows", target_os = "linux"))]
 pub(super) fn install_pointer_input(
-    window: &UiNativeOwnedWindow,
+    window: &super::UiNativeOwnedWindow,
 ) -> Option<Box<UiNativePointerInputPort>> {
     crate::native::platform::install_pointer_input(std::sync::Arc::clone(window))
 }
@@ -30,6 +29,12 @@ pub(super) fn event_pointer_witness(
             .and_then(|input| input.take_scroll_position())
             .map(Witness::EventTime)
             .unwrap_or(Witness::Unavailable),
+        winit::event::WindowEvent::CursorMoved { position, .. } => {
+            if let Some(input) = input.as_mut() {
+                input.observe_cursor_moved(*position);
+            }
+            Witness::Unavailable
+        }
         _ => Witness::Unavailable,
     }
 }

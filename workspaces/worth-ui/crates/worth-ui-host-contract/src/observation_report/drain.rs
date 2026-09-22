@@ -22,6 +22,15 @@ pub enum UiHostObservationRetentionDenial {
     Capacity(UiHostObservationDrainDenial),
 }
 
+/// How retention held an accepted batch: appended behind its predecessors, or
+/// folded into an immediately preceding compatible pointer motion so one
+/// retained batch stands for both submissions.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum UiHostObservationRetentionOutcome {
+    Appended,
+    ReplacedPointerMotion,
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum UiHostObservationSessionRegistrationDenial {
     ActiveSessionCapacityExceeded,
@@ -111,15 +120,20 @@ impl UiHostObservationRetention {
         &self,
         batch: UiHostObservationBatch,
     ) -> Result<(), UiHostObservationRetentionDenial> {
+        // Without coalescing every accepted batch is appended, so the outcome
+        // carries nothing the caller could act on.
         self.retain_with_pointer_coalescing(batch, false)
+            .map(|_appended| ())
     }
 
     /// Retains ordered input, replacing only an immediately preceding compatible
-    /// pointer motion and explicitly reporting its replaced sequence range.
+    /// pointer motion and explicitly reporting its replaced sequence range. The
+    /// outcome tells the caller whether this submission appended a batch or
+    /// replaced its predecessor, so batch accounting can follow the queue.
     pub fn retain_latest_pointer_motion(
         &self,
         batch: UiHostObservationBatch,
-    ) -> Result<(), UiHostObservationRetentionDenial> {
+    ) -> Result<UiHostObservationRetentionOutcome, UiHostObservationRetentionDenial> {
         self.retain_with_pointer_coalescing(batch, true)
     }
 
@@ -127,7 +141,7 @@ impl UiHostObservationRetention {
         &self,
         batch: UiHostObservationBatch,
         coalesce_pointer: bool,
-    ) -> Result<(), UiHostObservationRetentionDenial> {
+    ) -> Result<UiHostObservationRetentionOutcome, UiHostObservationRetentionDenial> {
         let (reports, bytes) = measure_batches(std::slice::from_ref(&batch))
             .map_err(UiHostObservationRetentionDenial::Capacity)?;
         let mut state = self
@@ -150,7 +164,7 @@ impl UiHostObservationRetention {
                     .batches
                     .back_mut()
                     .expect("merged retained predecessor") = merged;
-                return Ok(());
+                return Ok(UiHostObservationRetentionOutcome::ReplacedPointerMotion);
             }
         }
         if state.batches.len() == UI_HOST_OBSERVATION_DRAIN_BATCH_LIMIT {
@@ -183,7 +197,7 @@ impl UiHostObservationRetention {
         state.batches.push_back(batch);
         state.reports = next_reports;
         state.bytes = next_bytes;
-        Ok(())
+        Ok(UiHostObservationRetentionOutcome::Appended)
     }
 
     pub fn is_session_active(&self, host_session_identity: u64) -> bool {

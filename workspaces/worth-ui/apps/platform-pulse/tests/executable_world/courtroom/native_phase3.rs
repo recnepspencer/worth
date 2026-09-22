@@ -2,14 +2,14 @@ use std::panic::{catch_unwind, resume_unwind, AssertUnwindSafe};
 use std::time::{Duration, Instant};
 
 use crate::native_platform::{
-    NativePlatformContract, NativePlatformFailure, WindowsNativePlatform,
+    CertifiedNativePlatform, NativePlatformContract, NativePlatformFailure,
 };
 use crate::product_process::{CargoBuiltPlatformPulse, SuccessfulPlatformPulseExit};
 
 #[test]
-#[ignore = "requires the serialized interactive Windows 11 DX12 desktop"]
+#[ignore = "requires the serialized interactive certified native desktop (Windows 11 DX12 or Xvfb X11)"]
 fn maximum_overlap_deltas_cross_public_runtime_native_pixels_and_exact_costs() {
-    let platform = WindowsNativePlatform::certified().expect("Windows observation is qualified");
+    let platform = CertifiedNativePlatform::certified().expect("native observation is qualified");
     let mut launch = CargoBuiltPlatformPulse::exact()
         .and_then(CargoBuiltPlatformPulse::launch_native_phase3)
         .expect("the product binary launches the fixed Phase 3 native world");
@@ -32,7 +32,7 @@ fn maximum_overlap_deltas_cross_public_runtime_native_pixels_and_exact_costs() {
 }
 
 fn execute_phase3_world(
-    platform: &WindowsNativePlatform,
+    platform: &CertifiedNativePlatform,
     launch: &mut crate::product_process::NativePhase2ProcessLaunch,
     process_id: u32,
     deadline: Instant,
@@ -66,8 +66,8 @@ fn execute_phase3_world(
 }
 
 fn await_final_pixels(
-    platform: &WindowsNativePlatform,
-    client: &mut <WindowsNativePlatform as NativePlatformContract>::BoundClientArea,
+    platform: &CertifiedNativePlatform,
+    client: &mut <CertifiedNativePlatform as NativePlatformContract>::BoundClientArea,
     process: &mut crate::product_process::LivePlatformPulseProcess,
     deadline: Instant,
 ) -> crate::external_observation::NativeClientPixelCapture {

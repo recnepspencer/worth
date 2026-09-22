@@ -95,7 +95,7 @@ impl UiNativePlatformProfile {
     }
 
     pub(crate) fn validate(&self) -> Result<(), UiNativePlatformPreparationDenial> {
-        validate_environment(cfg!(target_os = "windows"), cfg!(target_arch = "x86_64"))?;
+        validate_environment(worth_ui_host_native::UiNativeQualifiedTarget::RESOLVED)?;
         if self.window.title.is_empty() {
             return Err(UiNativePlatformPreparationDenial::EmptyWindowTitle);
         }
@@ -109,26 +109,36 @@ impl UiNativePlatformProfile {
         if width > 16_384 || height > 16_384 {
             return Err(UiNativePlatformPreparationDenial::WindowExtentCapacityExceeded);
         }
-        if worth_ui_host_native::UiNativePlatformProfileIdentity::WORTH_UI_WINDOWS_DX12_V2.as_str()
-            != "worth-ui-windows-dx12-v2"
-        {
-            return Err(UiNativePlatformPreparationDenial::QualifiedProfileMismatch);
-        }
         Ok(())
     }
 }
 
+/// Classifies an already-resolved qualification verdict into a preparation
+/// denial.
+///
+/// The verdict arrives resolved so this stays a closed classifier with no
+/// lookups of its own. A qualified target naming a profile other than the one
+/// this build compiled is a mismatch, not a pass: the runtime binds exactly the
+/// profile the host-native crate selected.
 fn validate_environment(
-    is_windows: bool,
-    is_x86_64: bool,
+    target: worth_ui_host_native::UiNativeQualifiedTarget,
 ) -> Result<(), UiNativePlatformPreparationDenial> {
-    if !is_windows {
-        return Err(UiNativePlatformPreparationDenial::UnsupportedPlatform);
+    match target {
+        worth_ui_host_native::UiNativeQualifiedTarget::Qualified(identity)
+            if identity == worth_ui_host_native::WORTH_UI_NATIVE_PROFILE_IDENTITY =>
+        {
+            Ok(())
+        }
+        worth_ui_host_native::UiNativeQualifiedTarget::Qualified(_) => {
+            Err(UiNativePlatformPreparationDenial::QualifiedProfileMismatch)
+        }
+        worth_ui_host_native::UiNativeQualifiedTarget::UnqualifiedOperatingSystem => {
+            Err(UiNativePlatformPreparationDenial::UnsupportedPlatform)
+        }
+        worth_ui_host_native::UiNativeQualifiedTarget::UnqualifiedArchitecture => {
+            Err(UiNativePlatformPreparationDenial::UnsupportedArchitecture)
+        }
     }
-    if !is_x86_64 {
-        return Err(UiNativePlatformPreparationDenial::UnsupportedArchitecture);
-    }
-    Ok(())
 }
 
 #[cfg(test)]
@@ -137,14 +147,41 @@ mod tests {
 
     #[test]
     fn closed_environment_classifier_rejects_each_platform_substitution() {
-        assert_eq!(validate_environment(true, true), Ok(()));
+        use worth_ui_host_native::{
+            UiNativeQualifiedTarget, WORTH_UI_NATIVE_PROFILE_IDENTITY,
+            WORTH_UI_QUALIFIED_PROFILE_IDENTITIES,
+        };
         assert_eq!(
-            validate_environment(false, true),
+            validate_environment(UiNativeQualifiedTarget::UnqualifiedOperatingSystem),
             Err(UiNativePlatformPreparationDenial::UnsupportedPlatform)
         );
         assert_eq!(
-            validate_environment(true, false),
+            validate_environment(UiNativeQualifiedTarget::UnqualifiedArchitecture),
             Err(UiNativePlatformPreparationDenial::UnsupportedArchitecture)
+        );
+        // Every qualified identity is admitted on exactly one build: its own.
+        // The list is the host crate's own, derived from its qualified-profile
+        // array, so a profile added there is asserted here without this test
+        // changing; and exactly one iteration must take the admitted arm, or
+        // the positive branch of the classifier is unexercised on this build.
+        let mut admitted = 0;
+        for identity in WORTH_UI_QUALIFIED_PROFILE_IDENTITIES {
+            let expected = if identity == WORTH_UI_NATIVE_PROFILE_IDENTITY {
+                admitted += 1;
+                Ok(())
+            } else {
+                Err(UiNativePlatformPreparationDenial::QualifiedProfileMismatch)
+            };
+            assert_eq!(
+                validate_environment(UiNativeQualifiedTarget::Qualified(identity)),
+                expected,
+                "{}",
+                identity.as_str()
+            );
+        }
+        assert_eq!(
+            admitted, 1,
+            "the active identity must be one of the qualified identities, exactly once"
         );
     }
 }

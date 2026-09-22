@@ -246,16 +246,27 @@ scroll may visit its ownership chain and changed visible descendant commands,
 not unrelated regions or all mounted instances. Track retained allocations and
 active work; input bursts must not grow storage with historical event count.
 
-For a warm optimized native Pulse at 1536x1024 on the recorded Windows 60 Hz
-qualification machine, capture three 10-second active-scroll traces after warmup.
-Require p95 input-to-first-visible-change <=50 ms, p95 accepted visible-frame gap
-<=25 ms, p99 <=50 ms, and no gap >100 ms while motion/input requires progress.
-Final wheel settlement is within 120 ms plus two display intervals of the last
-input, absent an explicitly injected host refusal. Report hardware, scale, device,
-raw intervals, and preparation/host costs; do not average away stalls. Precision
-input requires a real precision-device run; synthetic pixel reports only prove
-semantics. Missing hardware is unverified evidence, not a pass. These are the
-qualified 60 Hz floor, not a universal or 120 Hz claim.
+Qualify scrolling with causal, platform-neutral progress and work evidence, not
+display timestamps or a machine-specific refresh-rate threshold. On the real
+native Pulse journey, deliver a wheel notch and a held thumb drag through the
+platform input adapter. Independently captured pixels must match the declared
+content translation and thumb geometry, and a click after each move must hit
+the newly displayed row. The host's accepted-sample record must contain
+successive presentation-only motion samples with advancing epochs, positive
+damage/render/present work, and less rendered work per sample than one complete
+physical client raster. Deterministic locality cases must additionally prove
+that scroll invalidation visits the affected viewport, not unrelated regions.
+Deterministic runtime cases must cover burst coalescing,
+retargeting, cancellation, final settlement, refusal/retry, and locality; an
+accepted counter alone cannot prove the pixels moved. Conversely, endpoint
+pixels alone cannot prove that intermediate work remained bounded.
+
+Elapsed wall-clock and input/capture timestamps may be recorded for diagnosis,
+but are not pass/fail criteria for 3.16.1. No three-trace DXGI or equivalent
+compositor capture is required. This qualification makes no display-cadence or
+latency claim. Precision input still requires a real precision-device run for
+its own device-specific claim; when hardware is absent, mark that claim
+unverified rather than passing it from synthetic input.
 
 Use existing runtime and certification targets; no new runner or progress ledger.
 Keep semantic native/headless parity and selected native pixels rather than
@@ -268,7 +279,7 @@ the evidence that produced accepted pixels. Material findings block closure.
 Revise only three continuing guides during implementation: `docs/appearance-and-themes.md`
 for author policy/chrome examples and limitations; `docs/runtime-subsystems.md` for
 Scroll/Motion/capture lifecycle; `docs/native-host-platform.md` for input precision,
-accepted sampling, timing qualification, and cleanup. Examples must compile/lower.
+accepted sampling, functional scroll qualification, and cleanup. Examples must compile/lower.
 No additional appearance guide or closeout document is required.
 
 3.16.2 may trust exact two-axis geometry, accepted displayed position, stable

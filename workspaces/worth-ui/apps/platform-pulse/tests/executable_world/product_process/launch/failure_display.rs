@@ -16,8 +16,8 @@ impl fmt::Display for PlatformPulseProcessLaunchFailure {
             Self::CargoExecutableMissing(path) => {
                 write!(formatter, "Cargo executable is missing: {}", path.display())
             }
-            Self::NativeDesktopLease => {
-                formatter.write_str("exclusive native desktop lease deadline elapsed")
+            Self::NativeDesktopLease(failure) => {
+                write!(formatter, "exclusive native desktop lease: {failure}")
             }
             Self::Spawn(error) => write!(formatter, "spawn product process: {error}"),
             #[cfg(target_os = "windows")]
@@ -51,8 +51,11 @@ fn format_emergency_exit_result(
     match result {
         Ok(exit) => write!(
             formatter,
-            "released(status={}, forced={}, polls={})",
-            exit.status, exit.forced_termination, exit.poll_count
+            "released(status={}, forced={}, polls={}, containment={})",
+            exit.status,
+            exit.forced_termination,
+            exit.poll_count,
+            exit.containment.name()
         ),
         Err(failure) => write!(formatter, "failed({failure})"),
     }

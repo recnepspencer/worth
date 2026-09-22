@@ -290,12 +290,12 @@ impl UiServiceProposalOccupancyTable {
         }
         let application = candidate.application().clone();
         let semantic_surface = candidate.surface().semantic_surface();
-        let mut next_slot_generation = self.next_slot_generation;
+        let first_slot_generation = self.next_slot_generation;
         self.next_slot_generation += plan.keys.len() as u64;
         let mut leases = Vec::with_capacity(plan.keys.len());
-        for (key, _family) in plan.keys.iter().cloned().zip(candidate.family_proposals()) {
-            let slot_generation = next_slot_generation;
-            next_slot_generation += 1;
+        for (slot_generation, (key, _family)) in (first_slot_generation..)
+            .zip(plan.keys.iter().cloned().zip(candidate.family_proposals()))
+        {
             leases.push(UiServiceProposalOccupancyLease {
                 key: key.clone(),
                 proposal,

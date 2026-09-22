@@ -73,7 +73,7 @@ pub(super) fn verify(
         // the edge scanner's three-pixel tolerance. Choose an observable
         // intermediate pose, not a timer delay or a settled endpoint.
         let observed_top =
-            i64::from(super::latency::thumb::observed(&current, dpi, capture_region)?.0);
+            i64::from(super::thumb_observation::observed(&current, dpi, capture_region)?.0);
         observed_range.0 = observed_range.0.min(observed_top);
         observed_range.1 = observed_range.1.max(observed_top);
         observed_range.2 += 1;
@@ -206,7 +206,7 @@ fn thumb(
     capture: &NativeClientPixelCapture,
     dpi: u32,
 ) -> Result<(u32, u32), PlatformPulseScrollJourneyFailure> {
-    super::latency::thumb::observed(capture, dpi, [0, 0, capture.width(), capture.height()])
+    super::thumb_observation::observed(capture, dpi, [0, 0, capture.width(), capture.height()])
 }
 
 fn changed_ink(

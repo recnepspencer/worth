@@ -34,6 +34,10 @@ pub enum WorthUiStatusLiveDeliveryStop {
     Unavailable,
 }
 
+/// The mutation-outcome and live-close payloads are several kilobytes each
+/// (`clippy::result_large_err`); every `Result` carrying this error would
+/// otherwise move that much on each `?`. They are boxed so the error stays
+/// pointer-sized on the hot path and pays for the payload only when it fails.
 #[derive(Debug)]
 pub enum WorthUiStatusOwnerError {
     Installation(String),

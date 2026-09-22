@@ -8,6 +8,7 @@ use super::{UiNativePointerButtonObservation, UiNativeScrollDeltaObservation};
 #[derive(Clone, Debug, Default)]
 pub(super) struct UiNativeInputObservationEvidence {
     retained_batch_count: u64,
+    coalesced_motion_batch_count: u64,
     retained_event_count: u64,
     first_retained_sequence: Option<u64>,
     last_retained_sequence: Option<u64>,
@@ -45,12 +46,22 @@ impl UiNativeInputObservationEvidence {
         }
     }
 
+    /// A retained pointer-motion batch that replaced its retained predecessor:
+    /// `record_batch` counted it, but the drain hands over one batch for both.
+    pub(super) fn record_coalesced_motion_batch(&mut self) {
+        self.coalesced_motion_batch_count = self.coalesced_motion_batch_count.saturating_add(1);
+    }
+
     pub(super) fn record_profile_transition(&mut self) {
         self.profile_transition_count = self.profile_transition_count.saturating_add(1);
     }
 
     pub(super) fn retained_batch_count(&self) -> u64 {
         self.retained_batch_count
+    }
+
+    pub(super) fn coalesced_motion_batch_count(&self) -> u64 {
+        self.coalesced_motion_batch_count
     }
 
     pub(super) fn retained_event_count(&self) -> u64 {

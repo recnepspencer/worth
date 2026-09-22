@@ -3,6 +3,9 @@
 /// This is the raw answer and nothing more. It carries no notch meaning: the
 /// wheel notch report is derived from it, never stored beside it.
 #[derive(Clone, Debug, Eq, PartialEq)]
+// Other targets can only report Absent; the Windows-only store constructs the
+// two stated-answer variants, while the shared interpreter tests all three.
+#[cfg_attr(not(target_os = "windows"), allow(dead_code))]
 pub(crate) enum UiNativeWheelScrollLinesSetting {
     /// The store held this text for the current user.
     Stated(String),

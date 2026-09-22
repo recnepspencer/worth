@@ -5,6 +5,7 @@ use worth_ui_native_platform::{
     UiNativeClientPresentationTransitionObservation as Transition, UiNativePlatformOutcome,
     UiNativePlatformProfile, UiNativeQualificationPlan, UiNativeWindowSpec, WorthUiNativePlatform,
 };
+use worth_ui_platform_pulse::visual_identity_pulse::PLATFORM_PULSE_NATIVE_WINDOW_LOGICAL_EXTENT;
 
 pub(crate) fn run() -> ExitCode {
     let qualification = UiNativeQualificationPlan::effects_indeterminate_on_presentation(3)
@@ -14,7 +15,7 @@ pub(crate) fn run() -> ExitCode {
         .expect("the Phase F physical observation ordinals are bounded");
     let profile = UiNativePlatformProfile::single_window(UiNativeWindowSpec::new(
         "WORTH UI Phase F Async Courtroom",
-        [160, 96],
+        PLATFORM_PULSE_NATIVE_WINDOW_LOGICAL_EXTENT,
     ))
     .with_native_qualification_plan(qualification);
     let Ok(platform) = WorthUiNativePlatform::prepare(profile) else {

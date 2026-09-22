@@ -62,7 +62,7 @@ fn source_owners_and_copy_rows_are_separate_and_bounded() {
 #[test]
 pub(in crate::native::text_atlas) fn real_wgpu_upload_owns_pages_and_releases_staging() {
     let (device, queue, info) = qualified_test_device();
-    assert_eq!(info.backend, wgpu::Backend::Dx12);
+    assert_eq!(info.backend, crate::native::graphics::qualified_backend());
     let mut resources = UiNativeResourceRegistry::new();
     let mut pages = UiNativeTextAtlasGpuPages::new();
     pages

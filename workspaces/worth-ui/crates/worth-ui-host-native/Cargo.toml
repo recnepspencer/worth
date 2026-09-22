@@ -3,6 +3,7 @@ name = "worth-ui-host-native"
 edition.workspace = true
 version.workspace = true
 license.workspace = true
+rust-version.workspace = true
 
 [lints]
 workspace = true
@@ -18,17 +19,19 @@ worth-ui-retained-order = { path = "../worth-ui-retained-order" }
 worth-signal.workspace = true
 sha2 = "=0.10.9"
 winit = { version = "=0.30.13", default-features = false, features = ["rwh_06"] }
-wgpu = { version = "=29.0.4", default-features = false, features = ["std", "parking_lot", "dx12", "wgsl"] }
+wgpu = { version = "=29.0.4", default-features = false, features = ["std", "parking_lot", "wgsl"] }
 pollster = "=0.4.0"
 rustybuzz = "=0.20.1"
 swash = "=0.2.10"
 
 [target.'cfg(windows)'.dependencies]
 winsafe = { version = "=0.0.28", default-features = false, features = ["advapi", "user"] }
+wgpu = { version = "=29.0.4", default-features = false, features = ["std", "parking_lot", "dx12", "wgsl"] }
 windows = { version = "=0.61.3", default-features = false, features = ["UI_ViewManagement"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
-winit = { version = "=0.30.13", default-features = false, features = ["rwh_06", "x11"] }
+winit = { version = "=0.30.13", default-features = false, features = ["rwh_06", "wayland", "wayland-dlopen", "wayland-csd-adwaita", "x11"] }
+wgpu = { version = "=29.0.4", default-features = false, features = ["std", "parking_lot", "vulkan", "wgsl"] }
 
 [dev-dependencies]
 sha2 = "=0.10.9"
@@ -41,8 +44,10 @@ pollster = "0.4.0"
 rustybuzz = "0.20.1"
 swash = "0.2.10"
 winit-features = "rwh_06"
-winit-linux-features = "rwh_06,x11"
-wgpu-features = "std,parking_lot,dx12,wgsl"
+winit-linux-features = "rwh_06,wayland,wayland-dlopen,wayland-csd-adwaita,x11"
+wgpu-features = "std,parking_lot,wgsl"
+wgpu-windows-features = "std,parking_lot,dx12,wgsl"
+wgpu-linux-features = "std,parking_lot,vulkan,wgsl"
 wgpu-device-features = "empty"
 wgpu-limits = "wgpu-29.0.4-Limits::downlevel_defaults().using_resolution(adapter.limits())"
 winsafe = "0.0.28"

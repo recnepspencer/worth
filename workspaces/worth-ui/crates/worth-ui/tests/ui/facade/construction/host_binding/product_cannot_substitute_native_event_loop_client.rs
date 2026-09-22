@@ -1,6 +1,6 @@
 use worth_ui_host_native::{
     UiNativeClientPresentationAttribution, UiNativeEventLoopClient, UiNativeEventLoopClientClose,
-    UiNativeEventLoopClientFailure, UiNativeEventLoopDirective, UiNativeObservationClock,
+    UiNativeEventLoopClientDenial, UiNativeEventLoopDirective, UiNativeObservationClock,
     UiNativeObservationReadinessGrant, UiNativeObservationTimeProgress,
     UiNativeReadinessGrant, UiNativeRetainedFrameObservation,
 };
@@ -12,13 +12,13 @@ impl UiNativeEventLoopClient for ForgedNativeClient {
     fn install_observation_clock(
         &mut self,
         _clock: UiNativeObservationClock,
-    ) -> Result<(), UiNativeEventLoopClientFailure> {
+    ) -> Result<(), UiNativeEventLoopClientDenial> {
         Ok(())
     }
 
     fn observation_time_ready(
         &mut self,
-    ) -> Result<UiNativeObservationTimeProgress, UiNativeEventLoopClientFailure> {
+    ) -> Result<UiNativeObservationTimeProgress, UiNativeEventLoopClientDenial> {
         Ok(UiNativeObservationTimeProgress::new(
             None,
             UiNativeEventLoopDirective::Continue,
@@ -28,21 +28,21 @@ impl UiNativeEventLoopClient for ForgedNativeClient {
     fn native_surface_ready(
         &mut self,
         _grant: UiNativeReadinessGrant,
-    ) -> Result<UiNativeEventLoopDirective, UiNativeEventLoopClientFailure> {
+    ) -> Result<UiNativeEventLoopDirective, UiNativeEventLoopClientDenial> {
         Ok(UiNativeEventLoopDirective::Continue)
     }
 
     fn redraw_ready(
         &mut self,
         _grant: UiNativeReadinessGrant,
-    ) -> Result<UiNativeEventLoopDirective, UiNativeEventLoopClientFailure> {
+    ) -> Result<UiNativeEventLoopDirective, UiNativeEventLoopClientDenial> {
         Ok(UiNativeEventLoopDirective::Close)
     }
 
     fn native_observations_ready(
         &mut self,
         _grant: UiNativeObservationReadinessGrant,
-    ) -> Result<UiNativeEventLoopDirective, UiNativeEventLoopClientFailure> {
+    ) -> Result<UiNativeEventLoopDirective, UiNativeEventLoopClientDenial> {
         Ok(UiNativeEventLoopDirective::Close)
     }
 

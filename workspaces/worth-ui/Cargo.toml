@@ -21,6 +21,9 @@ members = [
 edition = "2021"
 version = "0.1.0"
 license = "BUSL-1.1"
+# The toolchain CI pins (.github/actions/setup-worth-ui). Every member inherits
+# it so `clippy::incompatible_msrv` sees the floor in each crate, not only here.
+rust-version = "1.94"
 
 [workspace.dependencies]
 worth-foundational = { path = "../../crates/worth-foundational" }
@@ -53,9 +56,9 @@ uiautomation = { version = "=0.25.0", default-features = false, features = ["con
 winsafe = { version = "=0.0.28", default-features = false }
 windows = { version = "=0.61.3", default-features = false }
 xcap = { version = "=0.9.7", default-features = false }
-windows-capture = "=2.0.1"
+x11rb = { version = "=0.13.2", default-features = false }
 winit = { version = "=0.30.13", default-features = false, features = ["rwh_06"] }
-wgpu = { version = "=29.0.4", default-features = false, features = ["std", "parking_lot", "dx12", "wgsl"] }
+wgpu = { version = "=29.0.4", default-features = false, features = ["std", "parking_lot", "wgsl"] }
 pollster = "=0.4.0"
 harfrust = { version = "=0.12.0", default-features = false, features = ["std"] }
 read-fonts = { version = "=0.41.0", default-features = false, features = ["std", "experimental_traverse"] }
@@ -73,6 +76,14 @@ win32job = "=2.0.3"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
+# Only these values exist. Registering them makes a stray value in a cfg
+# predicate a compile error; the exhaustiveness guards in
+# worth-ui-host-native/src/native_profile/selection.rs cover the build flags,
+# which this lint does not reach.
+unexpected_cfgs = { level = "deny", check-cfg = [
+    'cfg(worth_ui_windowing, values("wayland", "x11"))',
+    'cfg(worth_ui_adapter, values("hardware", "software"))',
+] }
 
 [workspace.lints.clippy]
 all = { level = "deny", priority = -1 }
@@ -87,5 +98,23 @@ debug_assert_with_mut_call = "deny"
 [profile.dev]
 debug = "line-tables-only"
 
+# Dependencies (wgpu, naga, winit) are never the code under test; build them
+# optimized so debug binaries and test runs stop paying for them. This is the
+# workspaces/worth-query/Cargo.toml convention. `package."*"` does not reach
+# workspace members.
+[profile.dev.package."*"]
+opt-level = 2
+
+# Workspace members under test are ALSO optimized, which worth-query does not
+# do (it keeps members at opt-level 0). The reason is in our own code: tests
+# enumerate exhaustively by design (`0..=u16::MAX` opacity ladders, 4_096-node
+# spatial indexes) and unoptimized `worth-ui-runtime --lib` did not finish in
+# 45 minutes; optimized it completes in under 8. The trade is that members
+# re-optimize on every source edit. Debug assertions stay on and the workspace
+# `-C overflow-checks=on` rustflag still applies.
 [profile.test]
 debug = "line-tables-only"
+opt-level = 2
+
+[profile.test.package."*"]
+opt-level = 2

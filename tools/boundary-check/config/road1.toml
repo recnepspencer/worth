@@ -157,8 +157,14 @@ guidance = "Milestone 3.10.1: DSL owns authored language meaning and may not imp
 [[source_dependency_allowlists]]
 workspace_manifest = "workspaces/worth-ui/Cargo.toml"
 sources = ["worth-ui-platform-pulse"]
-allowed_targets = ["notify", "serde", "serde_json", "uiautomation", "win32job", "windows-capture", "winsafe", "worth-query-decl", "worth-query-host", "worth-ui", "worth-ui-native-platform", "xcap"]
+allowed_targets = ["notify", "png", "serde", "serde_json", "uiautomation", "win32job", "winsafe", "worth-query-decl", "worth-query-host", "worth-ui", "worth-ui-native-platform", "x11rb", "xcap"]
 guidance = "Milestones 3.13 and 3.14.1: the permanent Pulse remains a downstream application composition root. It may assemble Query declarations through worth-query-decl and worth-query-host, consume application meaning through worth-ui, and enter native effects only through worth-ui-native-platform. Raw Query, binding-owner, runtime, DSL, host-native mechanics, certification, test-support, replay, and convenience dependencies remain forbidden."
+
+[[source_dependency_allowlists.dependency_contracts]]
+target = "png"
+version_requirement = "=0.18.1"
+uses_default_features = false
+features = []
 
 [[source_dependency_allowlists.dependency_contracts]]
 target = "uiautomation"
@@ -178,13 +184,11 @@ version_requirement = "=0.0.28"
 uses_default_features = false
 features = ["advapi", "dwm", "dxgi", "kernel", "user"]
 
-# Milestone 3.16.1: Windows-only executable-world observation uses desktop
-# presentation timestamps, never product offsets or host acceptance as pixels.
 [[source_dependency_allowlists.dependency_contracts]]
-target = "windows-capture"
-version_requirement = "=2.0.1"
-uses_default_features = true
-features = []
+target = "x11rb"
+version_requirement = "=0.13.2"
+uses_default_features = false
+features = ["resource_manager", "xtest"]
 
 [[source_dependency_allowlists.dependency_contracts]]
 target = "xcap"

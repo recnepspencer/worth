@@ -7,7 +7,7 @@ use worth_ui_platform_pulse::observation_contract::{
 
 use crate::external_observation::{NativeClientPixelCapture, NativeClientPixelPoint};
 use crate::installation::{CanonicalPlatformPulse, IsolatedPulseInstallation};
-use crate::native_platform::{NativePlatformContract, WindowsNativePlatform};
+use crate::native_platform::{CertifiedNativePlatform, NativePlatformContract};
 use crate::product_process::{CargoBuiltPlatformPulse, SuccessfulPlatformPulseExit};
 use crate::source_delta::{QueryStatusV1, QueryStatusV2};
 
@@ -63,7 +63,7 @@ fn authored_query_revisions_reach_the_real_pulse_process() {
             _ => {}
         }
     }
-    let platform = WindowsNativePlatform::certified().expect("native desktop available");
+    let platform = CertifiedNativePlatform::certified().expect("native desktop available");
     let client = platform
         .bind_process_client_area(launch.process.id(), deadline)
         .expect("product presents one native client area");

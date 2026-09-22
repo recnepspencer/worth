@@ -1,3 +1,5 @@
+use crate::native_profile::UiNativeCpuAdapterAdmission;
+
 #[derive(Clone, Debug)]
 pub(crate) struct AdapterCandidate {
     pub(crate) surface_supported: bool,
@@ -11,24 +13,41 @@ pub(crate) struct AdapterCandidate {
 
 pub(crate) fn select_eligible_adapter<T>(
     mut candidates: Vec<(AdapterCandidate, T)>,
+    cpu_adapter: UiNativeCpuAdapterAdmission,
 ) -> Option<(AdapterCandidate, T)> {
     let index = candidates
         .iter()
         .enumerate()
-        .filter(|(_, (candidate, _))| candidate.surface_supported && eligible(candidate))
+        .filter(|(_, (candidate, _))| {
+            candidate.surface_supported && eligible(candidate, cpu_adapter)
+        })
         .min_by_key(|(_, (candidate, _))| selection_key(candidate))
         .map(|(index, _)| index)?;
     Some(candidates.swap_remove(index))
 }
 
-fn eligible(candidate: &AdapterCandidate) -> bool {
-    matches!(
-        candidate.device_type,
-        wgpu::DeviceType::DiscreteGpu
-            | wgpu::DeviceType::IntegratedGpu
-            | wgpu::DeviceType::VirtualGpu
-    ) && wgpu::Limits::downlevel_defaults().check_limits(&candidate.limits)
+fn eligible(candidate: &AdapterCandidate, cpu_adapter: UiNativeCpuAdapterAdmission) -> bool {
+    admitted_device_type(candidate.device_type, cpu_adapter)
+        && wgpu::Limits::downlevel_defaults().check_limits(&candidate.limits)
         && candidate.limits.max_texture_dimension_2d >= 16_384
+}
+
+/// Hardware and virtual adapters are always admitted, `Other` never is, and a
+/// software rasterizer only where the qualified profile declares it.
+fn admitted_device_type(
+    device_type: wgpu::DeviceType,
+    cpu_adapter: UiNativeCpuAdapterAdmission,
+) -> bool {
+    match device_type {
+        wgpu::DeviceType::DiscreteGpu
+        | wgpu::DeviceType::IntegratedGpu
+        | wgpu::DeviceType::VirtualGpu => true,
+        wgpu::DeviceType::Cpu => match cpu_adapter {
+            UiNativeCpuAdapterAdmission::Allow => true,
+            UiNativeCpuAdapterAdmission::Deny => false,
+        },
+        wgpu::DeviceType::Other => false,
+    }
 }
 
 fn selection_key(candidate: &AdapterCandidate) -> (u8, u32, u32, &str, &str) {
@@ -50,6 +69,7 @@ fn selection_key(candidate: &AdapterCandidate) -> (u8, u32, u32, &str, &str) {
 #[cfg(test)]
 mod tests {
     use super::{select_eligible_adapter, AdapterCandidate};
+    use crate::native_profile::UiNativeCpuAdapterAdmission;
 
     #[test]
     fn selection_returns_the_exact_qualified_candidate_and_rejects_substitutes() {
@@ -79,8 +99,48 @@ mod tests {
                 4,
             ),
         ];
-        let (_, adapter) = select_eligible_adapter(candidates).unwrap();
+        let (_, adapter) =
+            select_eligible_adapter(candidates, UiNativeCpuAdapterAdmission::Deny).unwrap();
         assert_eq!(adapter, 4);
+    }
+
+    #[test]
+    fn a_software_rasterizer_is_selected_only_where_admitted_and_never_over_hardware() {
+        let mut qualified = wgpu::Limits::downlevel_defaults();
+        qualified.max_texture_dimension_2d = 16_384;
+        let software_only = || {
+            vec![
+                (
+                    candidate(true, wgpu::DeviceType::Cpu, qualified.clone(), 0),
+                    0,
+                ),
+                (
+                    candidate(true, wgpu::DeviceType::Other, qualified.clone(), 1),
+                    1,
+                ),
+            ]
+        };
+        assert!(
+            select_eligible_adapter(software_only(), UiNativeCpuAdapterAdmission::Deny).is_none(),
+            "a denying profile refuses a rasterizer even when it is the only presenter"
+        );
+        let (_, selected) =
+            select_eligible_adapter(software_only(), UiNativeCpuAdapterAdmission::Allow).unwrap();
+        assert_eq!(
+            selected, 0,
+            "an admitting profile takes the rasterizer, never `Other`"
+        );
+        let mut with_hardware = software_only();
+        with_hardware.push((
+            candidate(true, wgpu::DeviceType::IntegratedGpu, qualified.clone(), 2),
+            2,
+        ));
+        let (_, selected) =
+            select_eligible_adapter(with_hardware, UiNativeCpuAdapterAdmission::Allow).unwrap();
+        assert_eq!(
+            selected, 2,
+            "hardware that presents still outranks an admitted rasterizer"
+        );
     }
 
     #[test]
@@ -94,7 +154,8 @@ mod tests {
             (ranked_candidate(&limits, (1, 4, "a", "z")), "driver"),
             (ranked_candidate(&limits, (1, 4, "a", "a")), "exact"),
         ];
-        let (_, selected) = select_eligible_adapter(candidates).unwrap();
+        let (_, selected) =
+            select_eligible_adapter(candidates, UiNativeCpuAdapterAdmission::Deny).unwrap();
         assert_eq!(selected, "exact");
     }
 

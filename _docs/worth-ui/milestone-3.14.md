@@ -119,7 +119,15 @@ action port, which separately enters Query/domain admission and publishes the
 new product value. The runner edits only this external service input. It does
 not publish the expected Query value or a completion event. The adapter uses
 bounded watcher/channel delivery; it performs no per-frame file read, parse, or
-policy evaluation.
+policy evaluation. Every Pulse file watcher (intent source, Query value, theme
+preference) admits an operating-system notification through one owner
+predicate: the notification must name the watched file and must not be an
+access notification. A watcher must never observe its own reads as change;
+inotify emits an open for every read, so a watcher that queued raw
+notifications re-read on its own read until its bounded channel overflowed,
+while `ReadDirectoryChangesW` emits no access notifications and the first
+qualified platform never saw the loop. Writers replace the record atomically
+(temporary file, then rename); a truncating in-place write is not the contract.
 
 ### Hostile sequence
 

@@ -68,12 +68,12 @@ impl WindowsPreparedWheelInput<'_> {
             dwFlags: co::MOUSEEVENTF::WHEEL,
             ..Default::default()
         });
-        let before_qpc_100ns = super::graphics_capture::qpc_100ns()?;
+        let before_qpc_100ns = super::observation_clock::qpc_100ns()?;
         let delivered = winsafe::SendInput(&[event])
             .map_err(|error| NativePlatformFailure::InputDelivery(error.to_string()))?;
         // Once input may have escaped, timestamp/target failures are not a
         // pre-effect denial. The caller must reject the entire trace.
-        let after_qpc_100ns = super::graphics_capture::qpc_100ns().map_err(|error| {
+        let after_qpc_100ns = super::observation_clock::qpc_100ns().map_err(|error| {
             super::input_delivery::post_effect_failure(
                 NativeInputProbeKind::Pointer,
                 delivered,

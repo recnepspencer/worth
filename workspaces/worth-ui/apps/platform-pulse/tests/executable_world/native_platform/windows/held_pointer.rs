@@ -25,11 +25,11 @@ impl<'bound> WindowsHeldPointer<'bound> {
             return Err(failure("prepared thumb pointer changed"));
         }
         super::pointer_target::require_before_effect(&bound.window, screen)?;
-        let before_qpc_100ns = super::graphics_capture::qpc_100ns()?;
+        let before_qpc_100ns = super::observation_clock::qpc_100ns()?;
         let delivered =
             winsafe::SendInput(&[button(co::MOUSEEVENTF::LEFTDOWN)]).map_err(failure)?;
         let held = Self { bound, held: true };
-        let after_qpc_100ns = super::graphics_capture::qpc_100ns().map_err(|error| {
+        let after_qpc_100ns = super::observation_clock::qpc_100ns().map_err(|error| {
             super::input_delivery::post_effect_failure(
                 NativeInputProbeKind::Pointer,
                 delivered,

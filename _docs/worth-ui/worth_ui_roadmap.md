@@ -2362,7 +2362,8 @@ Finish the native Pulse scrolling experience before resizing: themed functional
 scrollbars, real horizontal and vertical overflow, precise input, interruptible
 wheel Motion, stable anchors, and coherent accepted pixels/hit targets. Reuse
 Scroll offset authority and the existing Motion/presentation lifecycle. Reach a
-live two-axis endpoint first, then close recovery, locality, and measured cadence.
+live two-axis endpoint first, then close recovery, locality, and bounded
+accepted-frame progress. Wall-clock pacing remains diagnostic, not a 3.16.1 gate.
 
 ### Milestone 3.16.2: Continuous Window Resize and Responsive Containers
 

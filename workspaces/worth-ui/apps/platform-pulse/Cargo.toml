@@ -3,6 +3,7 @@ name = "worth-ui-platform-pulse"
 edition.workspace = true
 version.workspace = true
 license.workspace = true
+rust-version.workspace = true
 autotests = false
 build = "build.rs"
 
@@ -37,9 +38,14 @@ worth-query-host = { workspace = true }
 worth-ui = { workspace = true }
 worth-ui-native-platform = { workspace = true }
 
+[dev-dependencies]
+png = { workspace = true }
+
+[target.'cfg(target_os = "linux")'.dev-dependencies]
+x11rb = { workspace = true, features = ["resource_manager", "xtest"] }
+
 [target.'cfg(windows)'.dev-dependencies]
 uiautomation = { workspace = true }
 winsafe = { workspace = true, features = ["advapi", "dwm", "dxgi", "kernel", "user"] }
 xcap = { workspace = true, features = ["wgc"] }
 win32job = { workspace = true }
-windows-capture = { workspace = true }

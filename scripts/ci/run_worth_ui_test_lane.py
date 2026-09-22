@@ -11,6 +11,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+import worth_ui_native_platform_lane as native_platform_lane
+
 
 ROOT = Path(__file__).resolve().parents[2]
 MANIFEST = ROOT / "workspaces/worth-ui/Cargo.toml"
@@ -63,22 +65,6 @@ def documentation_commands() -> list[list[str]]:
 
 def platform_check_commands() -> list[list[str]]:
     return [cargo("check", "--workspace", "--all-targets", "--all-features")]
-
-
-def compile_only_platform_commands() -> list[list[str]]:
-    return [
-        cargo(
-            "check",
-            "--target",
-            "x86_64-unknown-linux-gnu",
-            "-p",
-            "worth-ui-platform-pulse",
-            "--features",
-            "executable-world",
-            "--test",
-            "executable_world",
-        )
-    ]
 
 
 def filesystem_contract_commands() -> list[list[str]]:
@@ -185,8 +171,8 @@ def commands_for(lane: str) -> list[list[str]]:
         return dependency_contract_commands()
     if lane == "platform-check":
         return platform_check_commands()
-    if lane == "compile-only-platform":
-        return compile_only_platform_commands()
+    if lane == native_platform_lane.LANE:
+        return native_platform_lane.plan().commands
     if lane == "filesystem-contract":
         return filesystem_contract_commands()
     if lane == "closure-stress":
@@ -207,7 +193,7 @@ def parse_args() -> argparse.Namespace:
             "hostile-certification",
             "dependency-contract",
             "platform-check",
-            "compile-only-platform",
+            native_platform_lane.LANE,
             "filesystem-contract",
             "closure-stress",
             "full",
@@ -248,6 +234,7 @@ def write_report(
     lane: str,
     outcomes: list[dict[str, Any]],
     total_duration_seconds: float | None = None,
+    evidence: dict[str, Any] | None = None,
 ) -> None:
     configured_directory = os.environ.get("WORTH_UI_LANE_REPORT_DIR")
     if configured_directory is None:
@@ -274,6 +261,8 @@ def write_report(
         "commands": outcomes,
         "compiler_cache": compiler_cache_stats(),
     }
+    if evidence is not None:
+        payload["evidence"] = evidence
     destination = report_directory / f"{lane}.json"
     destination.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
@@ -282,11 +271,16 @@ def main() -> int:
     args = parse_args()
     commands = commands_for(args.lane)
     if args.print_only:
+        if args.lane == native_platform_lane.LANE:
+            native_platform_lane.describe(native_platform_lane.plan())
+            return 0
         for command in commands:
             print("[worth-ui-test-lane]", subprocess.list2cmdline(command), flush=True)
         return 0
     if args.lane == "full":
         return run_parallel_full_lane(commands)
+    if args.lane == native_platform_lane.LANE:
+        return run_native_platform_lane()
 
     outcomes: list[dict[str, Any]] = []
     for command in commands:
@@ -298,6 +292,24 @@ def main() -> int:
             return int(outcome["exit_code"])
     write_report(args.lane, outcomes)
     return 0
+
+
+def run_native_platform_lane() -> int:
+    """The native-platform lane owns its environment, display and verdict; this
+    records its outcome in the same report shape as every other lane."""
+    plan = native_platform_lane.plan()
+    native_platform_lane.describe(plan)
+    started = time.perf_counter()
+    exit_code, evidence = native_platform_lane.execute(plan)
+    outcome = {
+        "argv": plan.command,
+        "command": subprocess.list2cmdline(plan.command),
+        "duration_seconds": round(time.perf_counter() - started, 3),
+        "exit_code": exit_code,
+        "error": None,
+    }
+    write_report(native_platform_lane.LANE, [outcome], evidence=evidence)
+    return exit_code
 
 
 def run_parallel_full_lane(commands: list[list[str]]) -> int:

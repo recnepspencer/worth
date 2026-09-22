@@ -64,6 +64,10 @@ impl super::UiNativeLifecycleOrchestrator {
         self.protocol.has_retained_observations()
     }
 
+    pub(crate) fn ime_composition_posture(&self) -> crate::native::UiNativeImeCompositionPosture {
+        self.protocol.ime_composition_posture()
+    }
+
     pub(crate) fn observation_drain_capacity_reached(&self) -> bool {
         self.protocol.observation_drain_capacity_reached()
     }

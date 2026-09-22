@@ -17,7 +17,7 @@ use worth_ui_host_contract::{
 #[test]
 fn real_port_upload_is_coupled_to_production_plan_receipt_and_census() {
     let (device, queue, info) = crate::native::text_atlas::qualified_test_device();
-    assert_eq!(info.backend, wgpu::Backend::Dx12);
+    assert_eq!(info.backend, crate::native::graphics::qualified_backend());
     let alpha_key = key();
     let color_key = key_for_glyph_and_source(2, UiGlyphRasterSource::ColorOutline);
     let layout =

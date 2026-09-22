@@ -1,51 +1,51 @@
 #[cfg(target_os = "windows")]
 mod dashboard_first_frame_progression;
 #[cfg(target_os = "windows")]
+#[cfg(worth_ui_certified_executable)]
 mod first_frame_progression;
-#[cfg(target_os = "windows")]
+#[cfg(worth_ui_certified_executable)]
 mod installation_progression;
-#[cfg(target_os = "windows")]
+#[cfg(worth_ui_certified_executable)]
 mod intent_progression;
 #[cfg(target_os = "windows")]
 mod kill_on_close_job;
 mod launch;
-#[cfg(target_os = "windows")]
 mod native_close_evidence;
-#[cfg(target_os = "windows")]
 mod native_desktop_lease;
-#[cfg(target_os = "windows")]
+#[cfg(worth_ui_certified_executable)]
 mod native_input_progression;
-#[cfg(target_os = "windows")]
+mod native_process_containment;
+#[cfg(worth_ui_certified_executable)]
 mod normal_close_progression;
 mod output_capture;
-#[cfg(target_os = "windows")]
+#[cfg(worth_ui_certified_executable)]
 mod portal_progression;
-#[cfg(target_os = "windows")]
+#[cfg(worth_ui_certified_executable)]
 mod preservation_progression;
-#[cfg(target_os = "windows")]
+#[cfg(worth_ui_certified_executable)]
 mod progression;
-#[cfg(target_os = "windows")]
+#[cfg(worth_ui_certified_executable)]
 mod query_progression;
-#[cfg(target_os = "windows")]
+#[cfg(worth_ui_certified_executable)]
 mod quiescent_observation;
-#[cfg(target_os = "windows")]
+#[cfg(worth_ui_certified_executable)]
 mod replacement_progression;
-#[cfg(target_os = "windows")]
+#[cfg(worth_ui_certified_executable)]
 mod schema_transition_progression;
 #[cfg(target_os = "windows")]
 mod scroll_progression;
 mod shutdown;
-#[cfg(target_os = "windows")]
+#[cfg(worth_ui_certified_executable)]
 mod source_action_progression;
 #[cfg(all(target_os = "windows", target_env = "msvc"))]
 mod stack_profile;
-#[cfg(target_os = "windows")]
+#[cfg(worth_ui_certified_executable)]
 mod visual_snapshot_progression;
-#[cfg(target_os = "windows")]
+#[cfg(worth_ui_certified_executable)]
 mod watched_native_observation;
 mod watched_observation;
 
-#[cfg(target_os = "windows")]
+#[cfg(worth_ui_certified_executable)]
 pub(crate) use intent_progression::{
     PlatformPulseIntentJourneyEvidence, PlatformPulseIntentJourneyFailure,
 };
@@ -53,19 +53,21 @@ pub(crate) use launch::{
     CargoBuiltPlatformPulse, EmergencyPlatformPulseExit, EmergencyPlatformPulseExitFailure,
     LivePlatformPulseProcess, NativePhase2ProcessLaunch, PlatformPulseProcessLaunchFailure,
 };
-#[cfg(target_os = "windows")]
+// Portable: the product writes the same evidence file on every platform and
+// the launcher hands it the path on every platform.
 pub(crate) use native_close_evidence::{
     PlatformPulseNativeCloseEvidence, PlatformPulseNativeCloseEvidenceFailure,
     PlatformPulseNativeSampleFrameEvidence, NATIVE_CLOSE_EVIDENCE_FILE_NAME,
     NATIVE_CLOSE_EVIDENCE_PATH_ENVIRONMENT,
 };
-#[cfg(target_os = "windows")]
+#[cfg(worth_ui_certified_executable)]
 pub(crate) use native_input_progression::NativeInputCausalStep;
-#[cfg(target_os = "windows")]
+pub(crate) use native_process_containment::NativeProcessContainment;
+#[cfg(worth_ui_certified_executable)]
 pub(crate) use portal_progression::{
     PlatformPulsePortalJourneyEvidence, PlatformPulsePortalJourneyFailure,
 };
-#[cfg(target_os = "windows")]
+#[cfg(worth_ui_certified_executable)]
 pub(crate) use progression::{
     AwaitingFirstFrame, AwaitingPreservation, AwaitingQueryCurrent, AwaitingRecovery,
     AwaitingReplacement, AwaitingSchemaStop, AwaitingStatusRecovery, Closed,
@@ -75,7 +77,7 @@ pub(crate) use progression::{
     PreservedPredecessorEvidence, Published, PulseExecutableWorld, QueryCurrent, RecoveredBlue,
     SchemaStopped, SecondCurrent, SecondQueryCurrent, SnapshotCaptured,
 };
-#[cfg(target_os = "windows")]
+#[cfg(worth_ui_certified_executable)]
 pub(crate) use quiescent_observation::PlatformPulseQuiescenceFailure;
 #[cfg(target_os = "windows")]
 pub(crate) use scroll_progression::{

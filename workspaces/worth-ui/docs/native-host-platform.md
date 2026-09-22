@@ -303,85 +303,32 @@ that interprets the former ambiguous `Focus` observation as `WindowFocus`, and
 no mixed-revision fallback that silently drops scroll affinity or focus
 settlement.
 
-Scroll timing qualifies against the recorded Windows 60 Hz machine, on a warm
-optimized native build at 1536x1024, over three ten-second traces of active
-scrolling taken after warmup. What the repository records today is the
-qualified native profile `worth-ui-windows-dx12-v2`, which names the software
-stack and not the machine: no CPU, GPU, panel or refresh identity is checked in
-for a run to be matched against, so a run has to check in the machine it ran
-on beside its numbers. The thresholds are a p95 input-to-first-visible
-response within 50 ms, a p95 gap between accepted visible frames within 25 ms,
-a p99 within 50 ms, and no gap beyond 100 ms while motion or input still
-requires progress -- a session with nothing left to advance owes no frame, so a
-quiet gap is not a stall. Final wheel settlement is
-within 120 ms plus two display intervals of the last input, absent a host
-refusal injected on purpose; an injected refusal is a scenario about the
-refusal, not a missed deadline. A run reports the hardware, the device scale,
-the input device, and the raw intervals, with preparation and host costs named
-separately. Averages that hide a stall are not evidence; the distribution and
-the worst gap are.
+Scroll qualification is deliberately independent of refresh rate and compositor
+capture APIs. The executable native journey sends a real wheel notch and held
+thumb drag, then checks independently captured content and chrome pixels against
+authored geometry and clicks the row that should now be under the pointer. The
+accepted host record must show advancing presentation-only motion samples,
+changing thumb geometry, positive damage/render/present work, and per-sample
+rendered work below one complete physical client raster. Runtime tests separately
+protect burst coalescing, retargeting, cancellation, settlement, refusal/retry,
+and viewport-local invalidation. These sources complement each other: accepted
+samples are not proof of compositor visibility, while a correct endpoint image
+does not establish bounded intermediate work.
 
-A run has now been taken and it did not pass. It ran on an AMD Ryzen 7 9700X
-with an NVIDIA GeForce RTX 5070 driving a 3840x2160 panel the system reports
-at 59 Hz, under Windows 11, on a warm optimized build with the window at
-1536x1024 and the wheel delivered through the platform's own notch path. Over
-twelve notches it reported p50 65.3 ms and p95 115.6 ms from input to first
-visible change against the 50 ms bound, accepted visible-frame gaps of p50
-65.1 ms and p95 67.1 ms against the 25 ms bound, and settlement p50 182.2 ms
-against the 154 ms bound. A repeat of the same build did not reach the timing
-at all: the harness lost the window and stopped at `BoundWindowMissing`.
-The retained output shows the product stopping with exit status 3 before that
-observation; this is not established as a harness failure. The stop-report
-path now preserves the triggering cause separately from incomplete cleanup.
-
-A September 22 optimized rerun completed the journey but failed the first-change
-budget: p50 63.4 ms, p95 98.5 ms over twelve notches. Its observed gap p95 was
-78.9 ms and worst settlement was 233.0 ms. Probe cost was p50 16.0 ms and worst
-21.2 ms, so those gaps still do not qualify accepted frame pacing. This is
-diagnostic evidence, not the required three ten-second qualification traces.
-
-Those synchronous GDI captures cannot qualify frame pacing: each probe costs
-roughly one display interval, so sampling phase can turn one real interval into
-two observed intervals. GDI remains the independent settled-pixel oracle, not
-the timing clock. The timing harness now acquires a bounded task-owned strip
-through DXGI desktop duplication and uses its desktop presentation QPC, on the
-same checked clock basis as the actual OS input-delivery bracket. Acquisition
-and readback costs are reported separately. Future or non-monotonic timestamps,
-lost frames, protected pixels, queue exhaustion, changed monitor geometry,
-occlusion, and cursor overlap fail the run instead of supplying substitute
-evidence. Each active trace must actually span ten seconds; the final declared
-target must be visible before quiet time can establish settlement. Accepted
-host samples are joined one-to-one to compatible external visible frames;
-host acceptance alone is not compositor visibility.
-
-The first optimized DXGI run on September 22 stopped before timing acquisition:
-Windows rejected duplication initialization with `DXGI_ERROR_UNSUPPORTED`
-(`0x887A0004`). The diagnostic rerun identifies the exact task monitor as
-NVIDIA RTX 5070 output `DISPLAY2`, at desktop `[0,0,3840,2160]`, unrotated;
-that adapter is also DXGI's enumeration default. This machine also has AMD
-integrated graphics, but these facts do not establish a wrong-adapter cause.
-Neither this initialization failure nor the earlier GDI diagnostics qualify
-the native timing budgets. The subsequent moving-thumb functional probe uses
-direct GDI observations under an already qualified exposure; observation
-completion is only an upper bound, never a frame-pacing timestamp. The
-optimized native rerun now passes the real button-down, stable held pose,
-30-pixel drag, origin restore, horizontal and vertical endpoints, and return
-pixels. The capture waits for any in-flight physical sample and derives the grab
-from its accepted thumb without relabeling the old event-time presentation.
-The same journey still stops when its later timing trace asks this Windows
-session for DXGI duplication: `DuplicateOutput1` returns
-`DXGI_ERROR_UNSUPPORTED`. No timing budget is claimed from the successful GDI
-functional observations.
-Windows Graphics Capture was evaluated as a fallback, but this dependency's
-one-frame pool can coalesce upstream frames without a loss report; its timing
-population therefore cannot replace the required loss-checked DXGI trace.
+The former three ten-second DXGI timestamp gate and its p95/p99 deadlines have
+been retired from 3.16.1. GDI and X11 captures remain functional pixel oracles,
+not frame-pacing clocks. On this Windows machine, DXGI desktop duplication
+returned `DXGI_ERROR_UNSUPPORTED`; that adapter failure no longer blocks this
+functional qualification and is not converted into a timing pass. Elapsed times
+may be retained for troubleshooting, but this milestone claims neither a
+latency percentile nor display cadence on Windows or Linux.
 
 Precision input is qualified by a run on a real precision device. A synthetic
 pixel-delta report exercises the same semantic path and proves nothing about
 timing, and absent hardware leaves the claim unverified rather than passed.
 For this closeout, the user explicitly deferred the real precision-device run
-on September 22 because no device is available. This deferral does not waive
-the native timing budgets or acceptance/rejection correctness requirements.
+on September 22 because no device is available. Its device-specific claim
+remains unverified; this does not waive semantic acceptance/rejection tests.
 
 ## Cost And Failure Posture
 

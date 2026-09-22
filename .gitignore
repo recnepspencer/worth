@@ -62,3 +62,6 @@ _docs/worth-ui/milestone-3.14.1-proof-ledger.lock
 
 # Claude Code personal overrides
 .claude/settings.local.json
+
+# Linux platform-qualification scratch notes and the windowing spike
+.linux-ui-notes/

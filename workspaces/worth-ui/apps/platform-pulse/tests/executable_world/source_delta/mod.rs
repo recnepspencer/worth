@@ -1,6 +1,6 @@
 mod atomic_replacement;
 mod canonical_deltas;
-#[cfg(target_os = "windows")]
+#[cfg(worth_ui_certified_executable)]
 mod causal_action_manifest;
 mod intent_values;
 mod portal_focus_fallback;
@@ -14,7 +14,7 @@ pub(crate) use canonical_deltas::{
     CanonicalBlueRecoverySourceDelta, GreenPulseSourceDelta, IntentRouteRemovalSourceDelta,
     MalformedPulseSourceDelta, PulseSourceDeltaDefinitionFailure,
 };
-#[cfg(target_os = "windows")]
+#[cfg(worth_ui_certified_executable)]
 pub(crate) use causal_action_manifest::{
     PulseCausalActionCursor, PulseCausalActionManifest, PulseCausalActionManifestFailure,
 };

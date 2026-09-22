@@ -42,8 +42,38 @@ pub(crate) struct NormalNativeCloseRequestObservation {
     request_count: u32,
 }
 
+/// How the observer took the window out of view and brought it back. The
+/// product's resource lifecycle differs by mechanism (an iconic window has no
+/// surface extent; an occluded one keeps its extent and only its visibility
+/// changes), so the courtroom keys its lifecycle assertions on this rather
+/// than assuming one desktop's behaviour everywhere.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum NativeWindowVisibilityTransitionMechanism {
+    /// ICCCM iconic state through the window manager (`ShowWindow(SW_MINIMIZE)`).
+    IconicState,
+    /// Fully covered by another top-level window, then uncovered.
+    FullOcclusion,
+}
+
+impl NativeWindowVisibilityTransitionMechanism {
+    /// The closed vocabulary every qualified profile's
+    /// `client_visibility_transition_observation` must name (or declare
+    /// `unobserved`).
+    pub(crate) const ALL: [Self; 2] = [Self::IconicState, Self::FullOcclusion];
+
+    /// The spelling the qualified profile record's
+    /// `client_visibility_transition_observation` ends with.
+    pub(crate) const fn declared_as(self) -> &'static str {
+        match self {
+            Self::IconicState => "iconic-state",
+            Self::FullOcclusion => "full-occlusion",
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct NativeWindowVisibilityTransitionObservation {
+    mechanism: NativeWindowVisibilityTransitionMechanism,
     minimized_observations: u32,
     restored_observations: u32,
     restored_client: ProcessBoundNativeClientAreaObservation,
@@ -270,12 +300,20 @@ impl NormalNativeCloseRequestObservation {
 }
 
 impl NativeWindowVisibilityTransitionObservation {
-    pub(crate) fn observed(restored_client: ProcessBoundNativeClientAreaObservation) -> Self {
+    pub(crate) fn observed(
+        mechanism: NativeWindowVisibilityTransitionMechanism,
+        restored_client: ProcessBoundNativeClientAreaObservation,
+    ) -> Self {
         Self {
+            mechanism,
             minimized_observations: 1,
             restored_observations: 1,
             restored_client,
         }
+    }
+
+    pub(crate) const fn mechanism(self) -> NativeWindowVisibilityTransitionMechanism {
+        self.mechanism
     }
 
     pub(crate) const fn minimized_observations(self) -> u32 {

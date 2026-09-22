@@ -16,7 +16,6 @@ pub(crate) struct PlatformPulseNativeCloseEvidence {
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq)]
 pub(crate) struct PlatformPulseNativeSampleFrameEvidence {
-    accepted_qpc_100ns: Option<i64>,
     sampled_chrome: Vec<NativeChromeSampleEvidence>,
     frame: u64,
     presentation_epoch: Option<u64>,
@@ -78,9 +77,6 @@ impl PlatformPulseNativeCloseEvidence {
 }
 
 impl PlatformPulseNativeSampleFrameEvidence {
-    pub(crate) const fn accepted_qpc_100ns(&self) -> Option<i64> {
-        self.accepted_qpc_100ns
-    }
     pub(crate) fn sampled_chrome(&self) -> &[NativeChromeSampleEvidence] {
         &self.sampled_chrome
     }

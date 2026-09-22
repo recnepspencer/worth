@@ -5,6 +5,8 @@ use std::time::Duration;
 
 use notify::Watcher;
 
+use crate::bears_on_watched_file;
+
 use super::decode::read_record;
 use super::{
     PlatformPulseIntentInputRecord, PlatformPulseIntentInputWatchDenial, CHANNEL_CAPACITY,
@@ -43,7 +45,10 @@ pub(super) fn run_watch(
     let (notification_sender, notification_receiver) = mpsc::sync_channel(CHANNEL_CAPACITY);
     let notification_overflow = Arc::new(AtomicBool::new(false));
     let callback_overflow = Arc::clone(&notification_overflow);
-    let watcher = notify::recommended_watcher(move |event| {
+    let watcher = notify::recommended_watcher(move |event: notify::Result<notify::Event>| {
+        if !bears_on_watched_file(&event, INPUT_FILE) {
+            return;
+        }
         if notification_sender.try_send(event).is_err() {
             callback_overflow.store(true, Ordering::Release);
         }

@@ -28,7 +28,13 @@ pub(super) fn arm_pointer_at(
     let mut drifted_to = screen_point;
     for _ in 0..ATTEMPTS {
         prime_pointer_motion(window, screen_point)?;
-        super::pointer_visual_settlement::await_client_stability(observed)?;
+        crate::native_platform::pointer_visual_settlement::await_client_stability(|| {
+            Ok(
+                super::gdi_capture::capture_client_area(observed.bounds(), observed.process_id())?
+                    .rgba()
+                    .to_vec(),
+            )
+        })?;
         super::pointer_target::require_before_effect(window, screen_point)?;
         let cursor = Mouse::get_cursor_pos().map_err(input_failure)?;
         let held = (cursor.get_x(), cursor.get_y());

@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use super::{
     UiNativeEventLoopClient, UiNativeEventLoopClientCleanup, UiNativeEventLoopClientClose,
-    UiNativeEventLoopClientFailure, UiNativeEventLoopDirective, UiNativeObservationReadinessGrant,
+    UiNativeEventLoopClientDenial, UiNativeEventLoopDirective, UiNativeObservationReadinessGrant,
     UiNativeReadinessGrant,
 };
 use crate::native::presentation::UiNativePendingExternalObligation;
@@ -48,12 +48,12 @@ impl UiNativeEventLoopClient for CleanupClient {
     fn install_observation_clock(
         &mut self,
         _clock: super::UiNativeObservationClock,
-    ) -> Result<(), UiNativeEventLoopClientFailure> {
+    ) -> Result<(), UiNativeEventLoopClientDenial> {
         Ok(())
     }
     fn observation_time_ready(
         &mut self,
-    ) -> Result<super::UiNativeObservationTimeProgress, UiNativeEventLoopClientFailure> {
+    ) -> Result<super::UiNativeObservationTimeProgress, UiNativeEventLoopClientDenial> {
         Ok(super::UiNativeObservationTimeProgress::new(
             None,
             UiNativeEventLoopDirective::Continue,
@@ -63,21 +63,21 @@ impl UiNativeEventLoopClient for CleanupClient {
     fn native_surface_ready(
         &mut self,
         _grant: super::UiNativeReadinessGrant,
-    ) -> Result<UiNativeEventLoopDirective, UiNativeEventLoopClientFailure> {
+    ) -> Result<UiNativeEventLoopDirective, UiNativeEventLoopClientDenial> {
         unreachable!("cleanup proof never enters callbacks")
     }
 
     fn redraw_ready(
         &mut self,
         _grant: UiNativeReadinessGrant,
-    ) -> Result<UiNativeEventLoopDirective, UiNativeEventLoopClientFailure> {
+    ) -> Result<UiNativeEventLoopDirective, UiNativeEventLoopClientDenial> {
         unreachable!("cleanup proof never enters callbacks")
     }
 
     fn native_observations_ready(
         &mut self,
         _grant: UiNativeObservationReadinessGrant,
-    ) -> Result<UiNativeEventLoopDirective, UiNativeEventLoopClientFailure> {
+    ) -> Result<UiNativeEventLoopDirective, UiNativeEventLoopClientDenial> {
         unreachable!("cleanup proof never enters callbacks")
     }
 

@@ -33,10 +33,14 @@ pub(super) fn colrv1_gradient_and_composite_cross_the_font_backed_raster_boundar
         ],
     ));
     assert!(gradient
-        .chunks_exact(4)
+        .as_chunks::<4>()
+        .0
+        .iter()
         .any(|pixel| { pixel[3] != 0 && pixel[0] > pixel[2] }));
     assert!(gradient
-        .chunks_exact(4)
+        .as_chunks::<4>()
+        .0
+        .iter()
         .any(|pixel| { pixel[3] != 0 && pixel[2] > pixel[0] }));
 
     let composite = raster_application_face(with_tables(
@@ -257,9 +261,10 @@ fn raster_application_face(bytes: Arc<[u8]>) -> Vec<u8> {
 
 fn fullest_pixel(pixels: &[u8]) -> [u8; 4] {
     pixels
-        .chunks_exact(4)
+        .as_chunks::<4>()
+        .0
+        .iter()
         .max_by_key(|pixel| pixel[3])
-        .unwrap()
-        .try_into()
+        .copied()
         .unwrap()
 }

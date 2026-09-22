@@ -81,7 +81,7 @@ pub(crate) use recovery::UiNativeTextAtlasGeneration;
 pub use recovery::{UiNativeTextAtlasDenial, UiNativeTextAtlasRecovery};
 pub(crate) use settlement::UiNativeTextAtlasCommitOutcome;
 #[cfg(test)]
-pub(crate) use test_device_tests::qualified_test_device;
+pub(crate) use test_device_tests::{qualified_test_adapter, qualified_test_device};
 pub(crate) use transaction::{
     UiNativeTextAtlasExternalOutcome, UiNativeTextAtlasPinRequest, UiNativeTextAtlasPinTransition,
     UiNativeTextAtlasTransactionPlan,

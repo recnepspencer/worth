@@ -15,7 +15,7 @@ use crate::failure_teardown::{
     PulseExecutableWorldFailureReport, UnboundFailureWorldResources,
 };
 use crate::native_platform::{
-    NativePlatformContract, WindowsNativePlatform, WindowsProcessBoundNativeClientArea,
+    CertifiedNativePlatform, CertifiedProcessBoundNativeClientArea, NativePlatformContract,
 };
 
 use super::{
@@ -30,8 +30,8 @@ pub(super) struct BoundFirstFrameWorld {
     pub(super) pending_issued: PlatformPulseLifecycleObservationEnvelope,
     pub(super) first_frame: PlatformPulseLifecycleObservationEnvelope,
     pub(super) pending_published: PlatformPulseLifecycleObservationEnvelope,
-    pub(super) platform: WindowsNativePlatform,
-    pub(super) native_client: WindowsProcessBoundNativeClientArea,
+    pub(super) platform: CertifiedNativePlatform,
+    pub(super) native_client: CertifiedProcessBoundNativeClientArea,
     pub(super) launch_to_first_publication: Duration,
 }
 
@@ -111,7 +111,7 @@ pub(super) fn bind_first_frame_world(
         .map_err(PulseExecutableWorldFailure::Lifecycle)?;
     let launch_to_first_publication = launch_started.elapsed();
     let platform =
-        WindowsNativePlatform::certified().map_err(PulseExecutableWorldFailure::Native)?;
+        CertifiedNativePlatform::certified().map_err(PulseExecutableWorldFailure::Native)?;
     let native_client = platform
         .bind_process_client_area(process.id(), deadline)
         .map_err(PulseExecutableWorldFailure::Native)?;

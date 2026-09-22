@@ -9,7 +9,13 @@ use super::{
 
 mod font_coverage;
 mod native_appearance;
+mod native_profile_record;
 mod qualified_dependencies;
+mod qualified_profile;
+
+use crate::native_profile::QUALIFIED_PROFILES;
+use native_profile_record::QUALIFIED_PROFILE_RECORDS;
+use qualified_profile::assert_qualified_profile;
 
 #[test]
 fn qualified_asset_license_and_manifests_have_exact_digests() {
@@ -25,10 +31,17 @@ fn qualified_asset_license_and_manifests_have_exact_digests() {
         sha256(WORTH_UI_TEXT_PROFILE_MANIFEST.as_bytes()),
         "6f140249866e6815e9284fe1c8c959a8bb1b8cab252cfbe8c7c397f9a7eb9b01"
     );
-    assert_eq!(
-        sha256(WORTH_UI_NATIVE_PROFILE_MANIFEST.as_bytes()),
-        "b964f129d89c978a32716902d46b8b2deec27de8f90b1c6c852bbd5a08566585"
-    );
+    for (profile, record) in QUALIFIED_PROFILES
+        .iter()
+        .zip(QUALIFIED_PROFILE_RECORDS.iter())
+    {
+        assert_eq!(
+            sha256(profile.manifest.as_bytes()),
+            record.manifest_sha256,
+            "manifest digest for {}",
+            profile.identity.as_str()
+        );
+    }
 }
 
 #[test]
@@ -95,32 +108,83 @@ fn qualified_capacity_types_match_the_canonical_manifests() {
     );
 }
 
+/// The `worth_ui_windowing` and `worth_ui_adapter` spellings and the selected
+/// profile's declared axes are independent tables; this is the second binding.
+/// `native_profile.rs` binds the selection arm to the profile it indexes, but
+/// an arm can misdeclare its own meaning, and both sides of that assert then
+/// move together. Here the expected spellings come straight from the cfgs,
+/// and the pair must pick out exactly one qualified profile: two profiles
+/// share `x11`, so the windowing axis alone no longer names a profile.
+#[test]
+fn the_build_flag_spellings_select_the_profile_declaring_those_axes() {
+    #[cfg(not(target_os = "linux"))]
+    const FLAGGED_WINDOWING: &str = "win32";
+    #[cfg(all(target_os = "linux", worth_ui_windowing = "wayland"))]
+    const FLAGGED_WINDOWING: &str = "wayland";
+    #[cfg(all(target_os = "linux", worth_ui_windowing = "x11"))]
+    const FLAGGED_WINDOWING: &str = "x11";
+    #[cfg(any(not(target_os = "linux"), worth_ui_adapter = "hardware"))]
+    const FLAGGED_ADAPTER: &str = "deny";
+    #[cfg(all(target_os = "linux", worth_ui_adapter = "software"))]
+    const FLAGGED_ADAPTER: &str = "allow";
+    assert_eq!(
+        crate::native_profile::WORTH_UI_NATIVE_WINDOWING_SYSTEM.as_str(),
+        FLAGGED_WINDOWING,
+        "the selected profile's windowing_system must be the one the build flag names"
+    );
+    assert_eq!(
+        crate::native_profile::WORTH_UI_NATIVE_SURFACE_PROFILE
+            .cpu_adapter
+            .as_str(),
+        FLAGGED_ADAPTER,
+        "the selected profile's cpu_adapter must be the one the build flag names"
+    );
+    let declaring = crate::native_profile::QUALIFIED_PROFILES
+        .iter()
+        .filter(|profile| {
+            profile.windowing_system.as_str() == FLAGGED_WINDOWING
+                && profile.surface.cpu_adapter.as_str() == FLAGGED_ADAPTER
+        })
+        .map(|profile| profile.identity.as_str())
+        .collect::<Vec<_>>();
+    assert_eq!(
+        declaring,
+        [crate::native_profile::WORTH_UI_NATIVE_PROFILE_IDENTITY.as_str()],
+        "exactly the profile declaring the flagged windowing system and adapter admission must be active"
+    );
+}
+
+/// Admission is a certification-only axis: exactly one qualified profile may
+/// admit a software rasterizer, and it is the X11 software profile. Asserted on
+/// every host and under every flag, so a product profile cannot drift to
+/// `allow` behind a flag nobody builds.
+#[test]
+fn exactly_one_qualified_profile_admits_a_software_rasterizer() {
+    let admitting = crate::native_profile::QUALIFIED_PROFILES
+        .iter()
+        .filter(|profile| profile.surface.cpu_adapter.as_str() == "allow")
+        .map(|profile| profile.identity.as_str())
+        .collect::<Vec<_>>();
+    assert_eq!(
+        admitting,
+        ["worth-ui-linux-x11-vulkan-software-v1"],
+        "exactly one qualified profile admits a software rasterizer, and it is the certification one"
+    );
+}
+
 #[test]
 fn every_qualified_semantic_and_dependency_pin_matches_the_closed_record() {
+    #[cfg(target_os = "windows")]
     assert_eq!(
         crate::native::QUALIFIED_DX12_PRESENTATION_SYSTEM,
         wgpu::Dx12SwapchainKind::DxgiFromVisual
     );
-    assert_eq!(
-        crate::native::GPU_WAIT_DEADLINE.as_millis(),
-        integer(
-            &manifest(WORTH_UI_NATIVE_PROFILE_MANIFEST),
-            "gpu_wait_deadline_ms"
-        ) as u128,
-    );
     let text = manifest(WORTH_UI_TEXT_PROFILE_MANIFEST);
-    let platform = manifest(WORTH_UI_NATIVE_PROFILE_MANIFEST);
     assert_exact_manifest(
         &text,
         TEXT_STRING_FIELDS,
         TEXT_INTEGER_FIELDS,
         TEXT_BOOL_FIELDS,
-    );
-    assert_exact_manifest(
-        &platform,
-        NATIVE_STRING_FIELDS,
-        NATIVE_INTEGER_FIELDS,
-        NATIVE_BOOL_FIELDS,
     );
     assert_eq!(
         integer(&text, "asset_bytes"),
@@ -130,13 +194,16 @@ fn every_qualified_semantic_and_dependency_pin_matches_the_closed_record() {
         text.get("subpixel").and_then(toml::Value::as_bool),
         Some(false)
     );
-    assert_eq!(integer(&platform, "windows"), 1);
-    assert_eq!(integer(&platform, "surfaces"), 1);
-    assert_eq!(integer(&platform, "sample_count"), 1);
+    for (profile, record) in QUALIFIED_PROFILES
+        .iter()
+        .zip(QUALIFIED_PROFILE_RECORDS.iter())
+    {
+        assert_qualified_profile(profile, record);
+    }
+    let active = manifest(WORTH_UI_NATIVE_PROFILE_MANIFEST);
     assert_eq!(
-        platform.get("wheel_line_logical_subpixels"),
-        None,
-        "the host qualifies no content distance for a wheel line"
+        crate::native::GPU_WAIT_DEADLINE.as_millis(),
+        integer(&active, "gpu_wait_deadline_ms") as u128,
     );
     qualified_dependencies::assert_qualified_dependencies();
 }
@@ -220,117 +287,6 @@ const TEXT_INTEGER_FIELDS: &[(&str, i64)] = &[
 ];
 
 const TEXT_BOOL_FIELDS: &[(&str, bool)] = &[("subpixel", false)];
-
-const NATIVE_STRING_FIELDS: &[(&str, &str)] = &[
-    ("identity", "worth-ui-windows-dx12-v2"),
-    ("profile_stage", "current"),
-    ("live_emission", "enabled"),
-    ("platform", "windows-11-x86_64"),
-    ("desktop", "composition-enabled"),
-    ("event_backend", "winit-0.30.13"),
-    ("event_backend_features", "rwh_06"),
-    ("graphics_backend", "wgpu-29.0.4-dx12-only"),
-    ("graphics_backend_features", "std;parking_lot;dx12;wgsl"),
-    ("device_features", "empty"),
-    (
-        "required_limits",
-        "wgpu-29.0.4-Limits::downlevel_defaults().using_resolution(adapter.limits())",
-    ),
-    ("dx12_presentation_system", "DxgiFromVisual"),
-    ("runtime_backend_selection", "Backends::DX12"),
-    ("joiner", "pollster-0.4.0"),
-    (
-        "adapter_order",
-        "discrete;integrated;virtual;vendor-id;device-id;name;driver-info",
-    ),
-    ("cpu_adapter", "deny"),
-    ("other_adapter", "deny"),
-    ("surface_format", "Bgra8UnormSrgb"),
-    ("target_format", "Rgba8UnormSrgb"),
-    ("present_mode", "Fifo"),
-    ("composite_alpha", "PreMultiplied"),
-    ("shader_input", "logical-straight-rgba"),
-    ("shader_output", "premultiplied-rgb-and-alpha"),
-    ("blend", "src-One;dst-OneMinusSrcAlpha;op-Add"),
-    ("filled_rect_antialiasing", "none"),
-    ("appearance_surface_pipeline", "rounded-fill-inward-border"),
-    ("appearance_outline_pipeline", "outside-ring-full-fringe"),
-    (
-        "appearance_antialiasing",
-        "analytic-signed-distance-pixel-center",
-    ),
-    ("appearance_qualified_scales", "1.0;1.25;1.5;2.0"),
-    ("text_antialiasing", "qualified-grayscale-coverage"),
-    ("coordinate_rounding", "min-floor;max-ceil;half-open"),
-    ("baseline_rgba", "0;0;0;0"),
-    (
-        "baseline_authority",
-        "same-surface-binding-profile-runtime-receipt",
-    ),
-    (
-        "unsupported_mode",
-        "typed-denial-before-effects-no-fallback",
-    ),
-    ("initial_logical_size", "application-profile"),
-    ("client_background", "transparent"),
-    (
-        "qualification_observations",
-        "os-build;adapter-name;vendor-id;device-id;driver-info;scale-factors;required-modes;required-limits;message-position;wrapped-coordinate;move-dpi-order",
-    ),
-    ("presented_source_observation", "retained-target-readback"),
-    (
-        "client_area_observation",
-        "pulse-executable-world-xcap-0.9.7-wgc",
-    ),
-    (
-        "client_window_observation",
-        "winsafe-0.0.28-dwm-kernel-user",
-    ),
-    (
-        "native_pointer_position_observation",
-        "winsafe-0.0.28-user:GetMessagePos;event-ordered-client-origin;low16-wrapping;no-cursor-query",
-    ),
-    (
-        "reduced_motion_observation",
-        "windows-0.61.3-UI_ViewManagement:UISettings.AnimationsEnabled",
-    ),
-    (
-        "wheel_notch_observation",
-        r"winsafe-0.0.28-advapi:RegGetValue;HKCU\Control Panel\Desktop\WheelScrollLines;REG_SZ;page-scroll-stated-not-truncated",
-    ),
-    (
-        "client_input_observation",
-        "uiautomation-0.25.0-control-input",
-    ),
-];
-
-const NATIVE_INTEGER_FIELDS: &[(&str, i64)] = &[
-    ("sample_count", 1),
-    ("appearance_anti_alias_fringe_physical_pixels", 1),
-    ("windows", 1),
-    ("surfaces", 1),
-    ("retained_commands", 4_096),
-    ("surface_commands", 2_048),
-    ("outline_commands", 1_024),
-    ("backdrop_commands", 512),
-    ("overlay_order_commands", 4_096),
-    ("pointer_affordance_commands", 64),
-    ("rectangle_commands", 2_048),
-    ("text_commands", 2_048),
-    ("damage_regions", 4_096),
-    ("order_edits", 4_096),
-    ("text_bytes", 1_048_576),
-    ("readiness_owners", 8),
-    ("resource_registry_entries", 32),
-    ("causes_per_owner", 64),
-    ("ready_owner_slots", 8),
-    ("presentation_slots", 2),
-    ("readback_slots", 4),
-    ("readback_bytes", 16_777_216),
-    ("gpu_wait_deadline_ms", 5_000),
-];
-
-const NATIVE_BOOL_FIELDS: &[(&str, bool)] = &[("required_surface_compatibility", true)];
 
 fn assert_exact_manifest(
     manifest: &toml::Value,

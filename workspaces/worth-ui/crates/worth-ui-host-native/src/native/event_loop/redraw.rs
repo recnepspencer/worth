@@ -1,5 +1,6 @@
 use winit::event_loop::ActiveEventLoop;
 
+use super::client_invocation::UiNativeEventLoopClientInvocation;
 use super::{
     physical_progression, UiNativeEventLoopApplication, UiNativeEventLoopClient,
     UiNativeEventLoopRunDenial, UiNativeReadinessGrant,
@@ -36,10 +37,11 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
             work.scale_factor_milli,
             work.client_physical_size,
         );
-        let directive = self
-            .client
-            .as_mut()
-            .and_then(|client| client.redraw_ready(readiness).ok());
+        let directive = self.client_or_denied().and_then(|client| {
+            client
+                .invoke_redraw_ready(readiness)
+                .map_err(UiNativeEventLoopRunDenial::ClientCallback)
+        });
         self.request_physical_signal_redraw();
         if self.finish_client_progress(event_loop, directive) {
             return;
@@ -52,21 +54,25 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
         event_loop: &ActiveEventLoop,
         grant: super::UiNativePhysicalProgressGrant,
     ) -> bool {
-        let directive = self
-            .client
-            .as_mut()
-            .and_then(|client| client.physical_work_progressed(grant).ok());
+        let directive = self.client_or_denied().and_then(|client| {
+            client
+                .invoke_physical_work_progressed(grant)
+                .map_err(UiNativeEventLoopRunDenial::ClientCallback)
+        });
         self.finish_client_progress(event_loop, directive)
     }
 
     fn finish_client_progress(
         &mut self,
         event_loop: &ActiveEventLoop,
-        directive: Option<super::UiNativeEventLoopDirective>,
+        directive: Result<super::UiNativeEventLoopDirective, UiNativeEventLoopRunDenial>,
     ) -> bool {
-        let Some(directive) = directive else {
-            self.fail(event_loop, UiNativeEventLoopRunDenial::ApplicationDriver);
-            return true;
+        let directive = match directive {
+            Ok(directive) => directive,
+            Err(denial) => {
+                self.fail(event_loop, denial);
+                return true;
+            }
         };
         self.apply_qualified_surface_basis_successor(event_loop)
             || self.apply_client_directive(event_loop, directive)

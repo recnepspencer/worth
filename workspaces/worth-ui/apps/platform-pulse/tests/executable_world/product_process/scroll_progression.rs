@@ -16,11 +16,10 @@ use super::{DashboardAtRest, NativeBoundExecutableWorld, Published, PulseExecuta
 
 mod axes;
 mod failure;
-mod latency;
 mod moving_thumb;
 mod observation;
+mod thumb_observation;
 pub(crate) use failure::PlatformPulseScrollJourneyFailure;
-pub(crate) use latency::ScrollLatencyEvidence;
 use observation::{
     await_moved_content, await_unrouted_hit, capture, drain_until_idle, export_capture,
     MovedContentEvidence,
@@ -47,7 +46,6 @@ pub(crate) struct PlatformPulseScrollJourneyEvidence {
     resting_hits: [u64; 3],
     hit_after_wheel: u64,
     hit_after_drag: u64,
-    latency: ScrollLatencyEvidence,
     expected_shutdown_sequence: u64,
 }
 
@@ -107,8 +105,6 @@ fn complete(
     moving_thumb::verify(world, &baseline, dpi, notch)?;
     axes::verify(world, &baseline, dpi, notch)?;
     let interior = client_point(&baseline, dpi, geometry.content_interior_points())?;
-    // The journey adjudicates geometry, not time; the issue instant belongs to
-    // the latency measurement below.
     let _issued = world
         .platform
         .deliver_wheel_notches(&world.native_client, interior, 1)
@@ -137,11 +133,6 @@ fn complete(
     let hit_after_drag = await_unrouted_hit(world, dot_center_point(&baseline, dpi, 0)?)?;
     require_hit(hit_after_drag, resting_hits[2], resting_hits[1])?;
 
-    // The list now sits mid-travel, the process is warm, and every surface the
-    // notch touches has been painted at least once: the conditions the timing
-    // criterion names. Time the notches here, on this same window.
-    let latency = latency::measure_wheel_latency(world, dpi, interior, drag_offset_points, notch)?;
-
     let expected_shutdown_sequence = drain_until_idle(world)?;
     Ok(PlatformPulseScrollJourneyEvidence {
         dpi,
@@ -153,7 +144,6 @@ fn complete(
         resting_hits,
         hit_after_wheel,
         hit_after_drag,
-        latency,
         expected_shutdown_sequence,
     })
 }
@@ -259,10 +249,6 @@ impl PlatformPulseScrollJourneyEvidence {
 
     pub(crate) const fn hits_after_motion(&self) -> [u64; 2] {
         [self.hit_after_wheel, self.hit_after_drag]
-    }
-
-    pub(crate) const fn latency(&self) -> &ScrollLatencyEvidence {
-        &self.latency
     }
 
     pub(crate) const fn expected_shutdown_sequence(&self) -> u64 {

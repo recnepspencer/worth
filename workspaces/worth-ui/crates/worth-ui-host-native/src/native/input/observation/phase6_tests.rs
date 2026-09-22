@@ -236,6 +236,13 @@ fn pointer_coalescing_preserves_button_and_presentation_boundaries() {
     state.observe_window_event(&motion);
     let batches = state.drain(HOST_SESSION).into_batches();
     assert_eq!(batches.len(), 4);
+    let report = state.report();
+    assert_eq!(report.retained_batch_count(), 6);
+    assert_eq!(report.coalesced_motion_batch_count(), 2);
+    assert_eq!(
+        report.retained_batch_count() - report.coalesced_motion_batch_count(),
+        batches.len() as u64
+    );
     assert_eq!(
         batches
             .iter()

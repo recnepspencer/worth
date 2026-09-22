@@ -133,7 +133,13 @@ pub(super) fn deliver_captured_drag(
     super::input_environment::qualify_pointer_world(window, observed.process_id(), from_screen)
         .map_err(NativePlatformFailure::InputEnvironment)?;
     prime_pointer_motion(window, from_screen)?;
-    super::pointer_visual_settlement::await_client_stability(observed)?;
+    crate::native_platform::pointer_visual_settlement::await_client_stability(|| {
+        Ok(
+            super::gdi_capture::capture_client_area(observed.bounds(), observed.process_id())?
+                .rgba()
+                .to_vec(),
+        )
+    })?;
     super::pointer_target::require_before_effect(window, from_screen)?;
     let pressed = winsafe::SendInput(&[HwKbMouse::Mouse(MOUSEINPUT {
         dwFlags: co::MOUSEEVENTF::LEFTDOWN,

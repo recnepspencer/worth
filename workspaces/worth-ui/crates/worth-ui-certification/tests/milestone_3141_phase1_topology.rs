@@ -147,7 +147,7 @@ fn phase_one_product_preparation_is_effect_free_and_host_neutral() {
         .source("crates/worth-ui-runtime/src/native_platform/profile.rs")
         .expect("native platform profile validation owner");
     let native_profile = inventory
-        .source("crates/worth-ui-host-native/src/native_profile.rs")
+        .source("crates/worth-ui-host-native/src/native_profile/identity.rs")
         .expect("qualified native profile identity owner");
     let observed_effect_surfaces = preparation_call_graph::validate(
         platform_preparation.text(),

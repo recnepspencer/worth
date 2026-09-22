@@ -124,18 +124,7 @@ impl UiNativePendingExternalObligation for UiNativePendingWgpuObligation {
 
 #[cfg(test)]
 pub(crate) fn prove_pending_readback_handoff() {
-    let mut descriptor = wgpu::InstanceDescriptor::new_without_display_handle();
-    descriptor.backends = wgpu::Backends::DX12;
-    let instance = wgpu::Instance::new(descriptor);
-    let adapter = pollster::block_on(instance.enumerate_adapters(wgpu::Backends::DX12))
-        .into_iter()
-        .next()
-        .expect("one DX12 adapter for the qualified readback control");
-    let (device, queue) = pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor {
-        required_limits: wgpu::Limits::downlevel_defaults().using_resolution(adapter.limits()),
-        ..Default::default()
-    }))
-    .expect("qualified readback device");
+    let (device, queue, _) = crate::native::text_atlas::qualified_test_device();
     let source = evidence_source(&device);
     let readback = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("worth-ui-readback-control-target"),
