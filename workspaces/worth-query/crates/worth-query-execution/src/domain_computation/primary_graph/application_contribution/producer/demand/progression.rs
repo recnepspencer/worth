@@ -133,6 +133,10 @@ where
             principal,
             request_scope,
             delivery_branch,
+            matches!(
+                commit_authority,
+                WorthQueryProducerCommitAuthority::ProgramOutput
+            ),
             disclosure,
         )?;
         use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandAdvanceAdmission as Admission;
