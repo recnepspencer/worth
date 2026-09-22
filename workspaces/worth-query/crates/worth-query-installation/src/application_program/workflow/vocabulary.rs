@@ -3,7 +3,8 @@ use std::marker::PhantomData;
 
 use worth_query_declaration::facade::{
     application_program::{
-        ApplicationProgramRevision, ApplicationWorkflowSpec, ValidatedWorkflowDefinition,
+        ApplicationProgramRevision, ApplicationWorkflowComponentLimits, ApplicationWorkflowSpec,
+        ValidatedWorkflowDefinition,
     },
     application_schema::{ApplicationSchema, ApplicationSchemaBindingIdentity},
     portable_identity::WorthQueryPortableTypeIdentity,
@@ -18,7 +19,7 @@ pub struct WorthQueryApplicationWorkflowResourceCeiling {
     maximum_definition_nodes: u16,
     maximum_definition_connections: u16,
     maximum_definition_effects: u16,
-    maximum_component_depth: u8,
+    component_limits: ApplicationWorkflowComponentLimits,
     maximum_canonical_bytes: u32,
     maximum_live_instances: u32,
     maximum_retained_transitions_per_instance: u32,
@@ -30,7 +31,7 @@ impl WorthQueryApplicationWorkflowResourceCeiling {
         maximum_definition_nodes: u16,
         maximum_definition_connections: u16,
         maximum_definition_effects: u16,
-        maximum_component_depth: u8,
+        component_limits: ApplicationWorkflowComponentLimits,
         maximum_canonical_bytes: u32,
         maximum_live_instances: u32,
         maximum_retained_transitions_per_instance: u32,
@@ -39,7 +40,6 @@ impl WorthQueryApplicationWorkflowResourceCeiling {
         if maximum_definition_nodes == 0
             || maximum_definition_connections == 0
             || maximum_definition_effects == 0
-            || maximum_component_depth == 0
             || maximum_canonical_bytes == 0
             || maximum_live_instances == 0
             || maximum_retained_transitions_per_instance == 0
@@ -51,7 +51,7 @@ impl WorthQueryApplicationWorkflowResourceCeiling {
                 maximum_definition_nodes,
                 maximum_definition_connections,
                 maximum_definition_effects,
-                maximum_component_depth,
+                component_limits,
                 maximum_canonical_bytes,
                 maximum_live_instances,
                 maximum_retained_transitions_per_instance,
@@ -73,7 +73,11 @@ impl WorthQueryApplicationWorkflowResourceCeiling {
     }
 
     pub const fn maximum_component_depth(self) -> u8 {
-        self.maximum_component_depth
+        self.component_limits.maximum_depth()
+    }
+
+    pub const fn component_limits(self) -> ApplicationWorkflowComponentLimits {
+        self.component_limits
     }
 
     pub const fn maximum_canonical_bytes(self) -> u32 {

@@ -82,12 +82,17 @@ where
 }
 
 fn limits_record(limits: ApplicationWorkflowDefinitionLimits) -> String {
+    let components = limits.component_limits();
     format!(
-        "nodes={};connections={};effects={};depth={};bytes={}",
+        "nodes={};connections={};effects={};component-occurrences={};component-depth={};node-provenance={};connection-provenance={};port-provenance={};bytes={}",
         limits.maximum_nodes(),
         limits.maximum_connections(),
         limits.maximum_effects(),
-        limits.maximum_component_depth(),
+        components.maximum_occurrences(),
+        components.maximum_depth(),
+        components.maximum_node_provenance(),
+        components.maximum_connection_provenance(),
+        components.maximum_port_provenance(),
         limits.maximum_canonical_bytes()
     )
 }

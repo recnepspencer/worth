@@ -1,3 +1,4 @@
+use worth_query_host::facade::declaration::application_program::ApplicationWorkflowComponentLimits;
 use worth_query_installation::facade::{
     WorthQueryApplicationWorkflowResourceCeiling, WorthQueryApplicationWorkflowSpecInstallation,
 };
@@ -54,6 +55,15 @@ pub fn retain_workflow_with_resources(
 }
 
 fn workflow_resources() -> WorthQueryApplicationWorkflowResourceCeiling {
-    WorthQueryApplicationWorkflowResourceCeiling::new(32, 64, 4, 4, 64 * 1024, 32, 128, 256 * 1024)
-        .expect("the workflow installation limits are nonzero")
+    WorthQueryApplicationWorkflowResourceCeiling::new(
+        32,
+        64,
+        4,
+        ApplicationWorkflowComponentLimits::new(32, 4, 128, 256, 256).unwrap(),
+        64 * 1024,
+        32,
+        128,
+        256 * 1024,
+    )
+    .expect("the workflow installation limits are nonzero")
 }

@@ -10,8 +10,9 @@ use worth_query_host::facade::{
         WorthQueryWorkflowProposalPreparationDenial,
     },
     declaration::application_program::{
-        ApplicationWorkflowControlOutcome, ApplicationWorkflowDefinitionBuilder,
-        ApplicationWorkflowDefinitionLimits, ValidatedWorkflowDefinition,
+        ApplicationWorkflowComponentLimits, ApplicationWorkflowControlOutcome,
+        ApplicationWorkflowDefinitionBuilder, ApplicationWorkflowDefinitionLimits,
+        ValidatedWorkflowDefinition,
     },
 };
 use worth_query_installation::facade::WorthQueryInstalledWorkflowDefinitionContract;
@@ -300,6 +301,12 @@ pub fn publish_definition(
 }
 
 pub(super) fn definition_limits() -> ApplicationWorkflowDefinitionLimits {
-    ApplicationWorkflowDefinitionLimits::new(32, 64, 4, 4, 64 * 1024)
-        .expect("the workflow definition limits are nonzero")
+    ApplicationWorkflowDefinitionLimits::new(
+        32,
+        64,
+        4,
+        ApplicationWorkflowComponentLimits::new(32, 4, 128, 256, 256).unwrap(),
+        64 * 1024,
+    )
+    .expect("the workflow definition limits are nonzero")
 }

@@ -260,36 +260,6 @@ fn same_identity_component_handles_cannot_cross_builder_ownership(
 }
 
 #[test]
-fn component_provenance_limits_deny_before_mutating_the_definition(
-) -> Result<(), Box<dyn std::error::Error>> {
-    let mut component =
-        ApplicationWorkflowComponentBuilder::<ReviewedGeometry>::new("bounded-ports")?;
-    let internal = component.assessment::<StructuralAssessment>("internal")?;
-    component.input_port("first", &internal)?;
-    component.input_port("second", &internal)?;
-    let component = component.finish()?;
-
-    let mut definition = ApplicationWorkflowDefinitionBuilder::<ReviewedGeometry>::new(
-        "bounded-component-provenance",
-        ApplicationWorkflowDefinitionLimits::new(1, 1, 1, 1, 1_024).unwrap(),
-    )?;
-    assert!(matches!(
-        definition.expand_component("review", &component),
-        Err(
-            ApplicationWorkflowAuthoringDenial::ComponentResourceLimitExceeded {
-                resource: ApplicationWorkflowComponentResource::PortProvenance,
-                maximum: 1,
-            }
-        )
-    ));
-    let authored = definition.finish()?;
-    assert!(authored.nodes.is_empty());
-    assert!(authored.connections.is_empty());
-    assert!(authored.component_expansions.is_empty());
-    Ok(())
-}
-
-#[test]
 fn component_port_identity_is_unique_within_the_component() -> Result<(), Box<dyn std::error::Error>>
 {
     let mut component =

@@ -11,6 +11,7 @@ use bank_domain::{
         Principal,
     },
 };
+use worth_query_host::facade::declaration::application_program::ApplicationWorkflowComponentLimits;
 use worth_query_host::facade::{
     application_installation::{
         in_memory_rostered_program, in_memory_rostered_program_with_authorization_time_source,
@@ -155,7 +156,7 @@ fn payment_workflow_resources() -> WorthQueryApplicationWorkflowResourceCeiling 
         32,
         64,
         4,
-        4,
+        ApplicationWorkflowComponentLimits::new(32, 4, 128, 256, 256).unwrap(),
         64 * 1_024,
         32,
         128,

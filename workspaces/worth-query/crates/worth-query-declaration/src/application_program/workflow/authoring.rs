@@ -105,6 +105,7 @@ pub enum ApplicationWorkflowComponentResource {
     ExpandedNodes,
     ExpandedConnections,
     ComponentOccurrences,
+    ComponentDepth,
     NodeProvenance,
     ConnectionProvenance,
     PortProvenance,
@@ -119,6 +120,7 @@ impl std::fmt::Display for ApplicationWorkflowComponentResource {
             Self::ExpandedNodes => "expanded nodes",
             Self::ExpandedConnections => "expanded connections",
             Self::ComponentOccurrences => "component occurrences",
+            Self::ComponentDepth => "component depth",
             Self::NodeProvenance => "node provenance",
             Self::ConnectionProvenance => "connection provenance",
             Self::PortProvenance => "port provenance",
@@ -197,6 +199,7 @@ where
     nodes: Vec<ApplicationWorkflowNode>,
     connections: Vec<ApplicationWorkflowConnection>,
     component_expansions: Vec<super::ApplicationWorkflowComponentExpansion>,
+    component_expansion_usage: component::ComponentExpansionUsage,
     marker: PhantomData<fn() -> Spec>,
 }
 
@@ -216,6 +219,7 @@ where
             nodes: Vec::new(),
             connections: Vec::new(),
             component_expansions: Vec::new(),
+            component_expansion_usage: component::ComponentExpansionUsage::default(),
             marker: PhantomData,
         })
     }

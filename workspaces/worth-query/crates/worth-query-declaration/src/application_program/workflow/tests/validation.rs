@@ -3,8 +3,14 @@ use super::*;
 #[test]
 fn authored_effect_ceiling_is_enforced_before_graph_execution(
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let limits = ApplicationWorkflowDefinitionLimits::new(4, 4, 1, 2, 4096)
-        .expect("the focused limits are nonzero");
+    let limits = ApplicationWorkflowDefinitionLimits::new(
+        4,
+        4,
+        1,
+        ApplicationWorkflowComponentLimits::new(4, 2, 8, 8, 8).unwrap(),
+        4096,
+    )
+    .expect("the focused limits are nonzero");
     let mut builder =
         ApplicationWorkflowDefinitionBuilder::<ReviewedGeometry>::new("effect-ceiling", limits)?;
     let first = builder.operation::<ProposeChange>("first", false)?;

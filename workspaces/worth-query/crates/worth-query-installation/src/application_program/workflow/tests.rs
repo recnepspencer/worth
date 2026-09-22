@@ -1,6 +1,6 @@
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityMarkerIdentity;
 use worth_query_declaration::facade::application_program::{
-    ApplicationWorkflowSpec, ApplicationWorkflowSpecIdentity,
+    ApplicationWorkflowComponentLimits, ApplicationWorkflowSpec, ApplicationWorkflowSpecIdentity,
 };
 
 use super::{
@@ -34,8 +34,17 @@ impl ApplicationWorkflowSpec for SupportWorkflow {
 }
 
 fn resources() -> WorthQueryApplicationWorkflowResourceCeiling {
-    WorthQueryApplicationWorkflowResourceCeiling::new(8, 16, 2, 4, 4096, 8, 32, 4096)
-        .expect("the test ceilings are nonzero")
+    WorthQueryApplicationWorkflowResourceCeiling::new(
+        8,
+        16,
+        2,
+        ApplicationWorkflowComponentLimits::new(8, 4, 32, 64, 64).unwrap(),
+        4096,
+        8,
+        32,
+        4096,
+    )
+    .expect("the test ceilings are nonzero")
 }
 
 #[test]

@@ -75,6 +75,44 @@ fn lineage_identity_is_not_part_of_canonical_content_identity(
 }
 
 #[test]
+fn component_resource_limits_are_part_of_canonical_meaning(
+) -> Result<(), Box<dyn std::error::Error>> {
+    fn definition(
+        component_limits: ApplicationWorkflowComponentLimits,
+    ) -> Result<ValidatedWorkflowDefinition<ReviewedGeometry>, Box<dyn std::error::Error>> {
+        let limits =
+            ApplicationWorkflowDefinitionLimits::new(4, 4, 1, component_limits, 4_096).unwrap();
+        let mut builder =
+            ApplicationWorkflowDefinitionBuilder::<ReviewedGeometry>::new("limits", limits)?;
+        let operation = builder.operation::<ProposeChange>("operation", false)?;
+        let terminal = builder.terminal("terminal")?;
+        builder.start(&operation).control(
+            &operation,
+            ApplicationWorkflowControlOutcome::Completed,
+            &terminal,
+        );
+        Ok(builder.finish()?.validate()?)
+    }
+
+    let identities = [
+        ApplicationWorkflowComponentLimits::new(2, 3, 5, 7, 11).unwrap(),
+        ApplicationWorkflowComponentLimits::new(3, 3, 5, 7, 11).unwrap(),
+        ApplicationWorkflowComponentLimits::new(2, 4, 5, 7, 11).unwrap(),
+        ApplicationWorkflowComponentLimits::new(2, 3, 6, 7, 11).unwrap(),
+        ApplicationWorkflowComponentLimits::new(2, 3, 5, 8, 11).unwrap(),
+        ApplicationWorkflowComponentLimits::new(2, 3, 5, 7, 12).unwrap(),
+    ]
+    .into_iter()
+    .map(definition)
+    .collect::<Result<Vec<_>, _>>()?
+    .into_iter()
+    .map(|definition| definition.content_identity().clone())
+    .collect::<std::collections::BTreeSet<_>>();
+    assert_eq!(identities.len(), 6);
+    Ok(())
+}
+
+#[test]
 fn canonical_node_fields_are_unambiguously_framed() -> Result<(), Box<dyn std::error::Error>> {
     fn definition<Operation>(
         identity: &str,

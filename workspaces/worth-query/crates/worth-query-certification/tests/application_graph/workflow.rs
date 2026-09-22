@@ -1,5 +1,6 @@
 //! Public certification for authored workflow-definition publication.
 
+use worth_query_host::facade::declaration::application_program::ApplicationWorkflowComponentLimits;
 use worth_query_host::facade::{
     application_entry::{
         WorkflowDefinitionExpectedPredecessor, WorkflowDefinitionPublicationOutcome,
@@ -25,7 +26,7 @@ fn installed_resource_ceiling_rejects_a_definition_declaring_broader_limits() {
             32,
             64,
             1,
-            4,
+            ApplicationWorkflowComponentLimits::new(32, 4, 128, 256, 256).unwrap(),
             64 * 1024,
             32,
             128,
@@ -40,6 +41,36 @@ fn installed_resource_ceiling_rejects_a_definition_declaring_broader_limits() {
         super::bounded_dimension_model::workflow::reviewed_geometry_definition("completed"),
     ) {
         Ok(_) => panic!("definition limits exceeded the installed effect ceiling"),
+        Err(denial) => denial,
+    };
+    assert_eq!(
+        denial.kind(),
+        worth_query_installation::facade::WorthQueryApplicationWorkflowInstallationDenialKind::DefinitionLimitExceeded
+    );
+}
+
+#[test]
+fn installed_component_ceiling_rejects_only_the_broader_component_contract() {
+    let resources =
+        worth_query_installation::facade::WorthQueryApplicationWorkflowResourceCeiling::new(
+            32,
+            64,
+            4,
+            ApplicationWorkflowComponentLimits::new(31, 4, 128, 256, 256).unwrap(),
+            64 * 1024,
+            32,
+            128,
+            256 * 1024,
+        )
+        .expect("the constrained workflow resources are nonzero");
+    let application = super::bounded_dimension_model::workflow::retain_workflow_with_resources(
+        super::bounded_dimension_model::host::publish_on_first_program(),
+        resources,
+    );
+    let denial = match application.workflow_spec().bind_definition(
+        super::bounded_dimension_model::workflow::reviewed_geometry_definition("completed"),
+    ) {
+        Ok(_) => panic!("definition component limits exceed installed resources"),
         Err(denial) => denial,
     };
     assert_eq!(

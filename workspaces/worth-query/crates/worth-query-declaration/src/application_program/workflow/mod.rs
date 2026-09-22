@@ -34,11 +34,11 @@ pub use identity::{
     ApplicationWorkflowSpecIdentity,
 };
 pub use model::{
-    ApplicationWorkflowConnection, ApplicationWorkflowConnectionKind,
-    ApplicationWorkflowControlOutcome, ApplicationWorkflowDataFlow,
-    ApplicationWorkflowDefinitionLimits, ApplicationWorkflowEvidenceJoinPolicy,
-    ApplicationWorkflowNode, ApplicationWorkflowNodeKind, ApplicationWorkflowRetry,
-    AuthoredWorkflowDefinition, ValidatedWorkflowDefinition,
+    ApplicationWorkflowComponentLimits, ApplicationWorkflowConnection,
+    ApplicationWorkflowConnectionKind, ApplicationWorkflowControlOutcome,
+    ApplicationWorkflowDataFlow, ApplicationWorkflowDefinitionLimits,
+    ApplicationWorkflowEvidenceJoinPolicy, ApplicationWorkflowNode, ApplicationWorkflowNodeKind,
+    ApplicationWorkflowRetry, AuthoredWorkflowDefinition, ValidatedWorkflowDefinition,
 };
 pub use provenance::{
     ApplicationWorkflowComponentExpansion, ApplicationWorkflowComponentPortDirection,
