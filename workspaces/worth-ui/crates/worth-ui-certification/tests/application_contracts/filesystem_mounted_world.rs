@@ -13,7 +13,7 @@ use worth_ui_runtime::facade::host::{
     UiHostMeasurementNormalizationContext,
 };
 use worth_ui_runtime::facade::mounted::{
-    UiHostSurfacePresentationMode, UiMountedFramePreparationDenial, UiMountedFrameRequest,
+    UiHostSurfacePresentationMode, UiMountedFramePreparationDenial,
 };
 use worth_ui_test_support::{
     WorthUiActiveSessionCertificationExt, WorthUiFrameworkTurnCertificationExt,
@@ -264,10 +264,11 @@ pub(super) fn prepare_frame(
     UiMountedFramePreparationDenial,
 > {
     crate::mounted_geometry_fixture::install_current_occurrence_geometry(session);
+    let request = session.mounted_frame_request();
     session
         .execute_framework_turn(|_| {})
         .expect("no presentation lease is active")
         .into_execution()
         .unwrap_or_else(|_| panic!("the visual identity world admits ordinary execution"))
-        .prepare_mounted_frame(UiMountedFrameRequest::all_bound_surfaces())
+        .prepare_mounted_frame(request)
 }
