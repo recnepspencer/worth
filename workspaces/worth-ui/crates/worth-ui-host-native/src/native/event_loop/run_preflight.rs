@@ -27,7 +27,7 @@ pub(super) fn prepare(
 ) -> Result<UiNativeEventLoopRunPreflight, UiNativeEventLoopRunDenial> {
     let mut builder =
         EventLoop::<crate::native::readiness::UiNativeApplicationWake>::with_user_event();
-    thread_posture.configure(&mut builder);
+    super::windowing_system::force_qualified(&mut builder, thread_posture)?;
     let event_loop = builder
         .build()
         .map_err(|_| UiNativeEventLoopRunDenial::EventLoopCreation)?;

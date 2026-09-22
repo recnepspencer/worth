@@ -41,6 +41,9 @@ pub(crate) enum PulseSourceActionFailure {
     WriteTemporary(std::io::Error),
     FlushTemporary(std::io::Error),
     SyncTemporary(std::io::Error),
+    /// `MoveFileEx` takes UTF-16; a path that is not Unicode cannot be named
+    /// to it. Other targets replace by `rename`, which takes any byte path.
+    #[cfg(target_os = "windows")]
     NonUnicodeWindowsPath(PathBuf),
     AtomicReplace {
         primary: String,
@@ -57,6 +60,7 @@ impl fmt::Display for PulseSourceActionFailure {
             Self::WriteTemporary(error) => write!(formatter, "write delta file: {error}"),
             Self::FlushTemporary(error) => write!(formatter, "flush delta file: {error}"),
             Self::SyncTemporary(error) => write!(formatter, "sync delta file: {error}"),
+            #[cfg(target_os = "windows")]
             Self::NonUnicodeWindowsPath(path) => {
                 write!(
                     formatter,

@@ -178,7 +178,7 @@ pub(super) fn qualified_sbix_png_and_one_hop_dupe_rasterize_as_intrinsic_color()
     let raster = rasterize_intrinsic_color(&layout, &demand).unwrap();
     assert!(raster.batch().records().iter().any(|record| {
         record.key().source() == UiGlyphRasterSource::ColorBitmap
-            && record.pixels().chunks_exact(4).any(|pixel| pixel[3] != 0)
+            && any_visible_pixel(record.pixels())
     }));
 }
 
@@ -288,7 +288,7 @@ fn assert_colr_owner_produces_pixels(
     assert!(!raster.batch().records().is_empty(), "{name}");
     assert!(raster.batch().records().iter().all(|record| {
         record.key().source() == UiGlyphRasterSource::ColorOutline
-            && record.pixels().chunks_exact(4).any(|pixel| pixel[3] != 0)
+            && any_visible_pixel(record.pixels())
     }));
 }
 
@@ -392,4 +392,8 @@ fn full_damage() -> UiMountedLogicalDamage {
         })
         .unwrap(),
     )
+}
+
+fn any_visible_pixel(pixels: &[u8]) -> bool {
+    pixels.as_chunks::<4>().0.iter().any(|pixel| pixel[3] != 0)
 }

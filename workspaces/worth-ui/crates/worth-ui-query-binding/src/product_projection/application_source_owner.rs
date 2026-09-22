@@ -167,7 +167,9 @@ impl WorthUiStatusSourceOwner {
                     retained
                 }
                 WorthQueryApplicationRetainedMutationOutcome::Other(outcome) => {
-                    return Err(WorthUiStatusOwnerError::SourceMutationOutcome(outcome))
+                    return Err(WorthUiStatusOwnerError::SourceMutationOutcome(Box::new(
+                        outcome,
+                    )))
                 }
             };
             let outcome = live

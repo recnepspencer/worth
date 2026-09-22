@@ -47,17 +47,17 @@ fn classify(
     let mut intrinsic_bytes = Vec::new();
     let mut occupied_columns = vec![false; capture.width() as usize];
     let mut occupied_rows = vec![false; capture.height() as usize];
-    for (index, pixel) in capture.rgba().chunks_exact(4).enumerate() {
+    for (index, pixel) in capture.rgba().as_chunks::<4>().0.iter().enumerate() {
         let x = (index % capture.width() as usize) as u32;
         let y = (index / capture.width() as usize) as u32;
-        if pixel == AUTHORED_BACKGROUND {
+        if *pixel == AUTHORED_BACKGROUND {
             classes.background += 1;
         } else if in_authored_content_region(x, y, capture.width(), capture.height()) {
             if alpha_bounds.is_none_or(|bounds| in_any_bounds(x, y, bounds))
                 && is_authored_glyph_pixel(pixel)
             {
                 classes.glyph += 1;
-                classes.antialiased += usize::from(pixel != AUTHORED_FOREGROUND);
+                classes.antialiased += usize::from(*pixel != AUTHORED_FOREGROUND);
                 occupied_columns[x as usize] = true;
                 occupied_rows[y as usize] = true;
                 extend_bounds(&mut classes.bounds, x, y);
@@ -220,7 +220,7 @@ fn compositor_edges_and_unrelated_bright_pixels_cannot_satisfy_the_authored_text
     let width = 80;
     let height = 48;
     let mut rgba = vec![0_u8; width * height * 4];
-    for pixel in rgba.chunks_exact_mut(4) {
+    for pixel in rgba.as_chunks_mut::<4>().0 {
         pixel.copy_from_slice(&AUTHORED_BACKGROUND);
     }
     for x in 0..width {

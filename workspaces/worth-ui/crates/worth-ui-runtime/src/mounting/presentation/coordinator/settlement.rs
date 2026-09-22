@@ -38,7 +38,6 @@ impl UiMountedPresentationCoordinator {
             pending,
             rejected,
             completed,
-            superseded_costs: _,
             ..
         } = state;
         let affected = aggregate_affected(&completed, &pending, &rejected);
@@ -282,7 +281,6 @@ impl UiMountedPresentationCoordinator {
             pending,
             rejected,
             completed,
-            superseded_costs: _,
             ..
         } = state;
         let affected = aggregate_affected(&completed, &pending, &rejected);

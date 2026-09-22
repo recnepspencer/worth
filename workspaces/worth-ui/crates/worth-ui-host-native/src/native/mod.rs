@@ -50,19 +50,19 @@ pub use event_loop::{
     UiNativePhysicalProgressGrant, UiNativeReadinessGrant, UiNativeReducedMotionPosture,
     WorthUiNativeEventLoop,
 };
-#[cfg(test)]
+#[cfg(all(test, target_os = "windows"))]
 pub(crate) use graphics::QUALIFIED_DX12_PRESENTATION_SYSTEM;
 pub(crate) use graphics::{
     UiNativeDeviceGeneration, UiNativeGraphicsRecovery, UiNativeOwnedDevice,
 };
 pub(crate) use host_state::UiNativeHostState;
 pub use host_state::{UiNativeEffectPosture, UiNativePresentationEffectPhase};
+pub(crate) use input::{
+    UiNativeImeCompositionPosture, UiNativeInputObservationDisposition,
+    UiNativeInputObservationState, UiNativePointerPositionWitness,
+};
 #[cfg(feature = "certification-support")]
 pub use input::{UiNativeInputObservationContract, UiNativeInputObservationContractDisposition};
-pub(crate) use input::{
-    UiNativeInputObservationDisposition, UiNativeInputObservationState,
-    UiNativePointerPositionWitness,
-};
 pub use input::{
     UiNativeInputObservationEventFamily, UiNativeInputObservationReport,
     UiNativeInputObservationStop, UiNativePointerButtonObservation, UiNativeScrollDeltaObservation,

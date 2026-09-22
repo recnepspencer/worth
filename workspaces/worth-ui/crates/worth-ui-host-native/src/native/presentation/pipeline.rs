@@ -44,14 +44,14 @@ pub(crate) fn presentation_pipelines(device: &wgpu::Device) -> UiNativePresentat
     let blended = pipeline_with_blend(
         device,
         &shader,
-        wgpu::TextureFormat::Rgba8UnormSrgb,
+        crate::native::graphics::qualified_target_format(),
         Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
         &buffers,
     );
     let replacing = pipeline_with_blend(
         device,
         &shader,
-        wgpu::TextureFormat::Rgba8UnormSrgb,
+        crate::native::graphics::qualified_target_format(),
         Some(wgpu::BlendState::REPLACE),
         &buffers,
     );
@@ -62,7 +62,7 @@ pub(crate) fn presentation_pipelines(device: &wgpu::Device) -> UiNativePresentat
     let surface = pipeline_with_blend(
         device,
         &surface_shader,
-        wgpu::TextureFormat::Rgba8UnormSrgb,
+        crate::native::graphics::qualified_target_format(),
         Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
         &buffers,
     );
@@ -82,14 +82,14 @@ pub(crate) fn presentation_pipelines(device: &wgpu::Device) -> UiNativePresentat
     let alpha = pipeline_with_blend(
         device,
         &alpha_shader,
-        wgpu::TextureFormat::Rgba8UnormSrgb,
+        crate::native::graphics::qualified_target_format(),
         Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
         &glyph_buffers,
     );
     let color = pipeline_with_blend(
         device,
         &color_shader,
-        wgpu::TextureFormat::Rgba8UnormSrgb,
+        crate::native::graphics::qualified_target_format(),
         Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
         &glyph_buffers,
     );
@@ -108,7 +108,7 @@ pub(crate) fn presentation_pipelines(device: &wgpu::Device) -> UiNativePresentat
     let transfer = transfer_pipeline(
         device,
         &transfer_shader,
-        wgpu::TextureFormat::Bgra8UnormSrgb,
+        crate::native::graphics::qualified_surface_format(),
     );
     UiNativePresentationPipelines {
         filled: blended,

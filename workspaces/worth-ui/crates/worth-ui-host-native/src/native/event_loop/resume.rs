@@ -117,14 +117,18 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
     }
 }
 
-#[cfg(target_os = "windows")]
+/// A qualified platform must produce its pointer port: without one the first
+/// button event reports its position unavailable and input observation stops
+/// for the session, so a missing port is a window-creation denial, not a
+/// degraded start.
+#[cfg(any(target_os = "windows", target_os = "linux"))]
 fn install_pointer(
     window: &UiNativeOwnedWindow,
 ) -> Option<Option<Box<pointer_position::UiNativePointerInputPort>>> {
     pointer_position::install_pointer_input(window).map(Some)
 }
 
-#[cfg(not(target_os = "windows"))]
+#[cfg(not(any(target_os = "windows", target_os = "linux")))]
 fn install_pointer(
     _window: &UiNativeOwnedWindow,
 ) -> Option<Option<Box<pointer_position::UiNativePointerInputPort>>> {

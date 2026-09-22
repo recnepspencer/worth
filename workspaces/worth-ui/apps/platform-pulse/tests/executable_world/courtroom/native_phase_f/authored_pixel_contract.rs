@@ -1,3 +1,7 @@
+use worth_ui_platform_pulse::visual_identity_pulse::PLATFORM_PULSE_NATIVE_WINDOW_LOGICAL_EXTENT;
+
+use crate::native_platform::{certified_physical_extent, CERTIFIED_SCALE_MILLI};
+
 pub(super) struct AuthoredPixelContract {
     pub(super) alpha_bounds: Box<[[u32; 4]]>,
     pub(super) intrinsic_bounds: Box<[[u32; 4]]>,
@@ -7,9 +11,11 @@ pub(super) fn assert_owner_projection(evidence: &serde_json::Value) -> AuthoredP
     let presentation = &evidence["presentation"];
     assert_eq!(
         presentation["client_physical_size"],
-        serde_json::json!([240, 144])
+        serde_json::json!(certified_physical_extent(
+            PLATFORM_PULSE_NATIVE_WINDOW_LOGICAL_EXTENT
+        ))
     );
-    assert_eq!(presentation["scale_factor_milli"], 1_500);
+    assert_eq!(presentation["scale_factor_milli"], CERTIFIED_SCALE_MILLI);
     let alpha = presentation["alpha_glyphs"]
         .as_array()
         .expect("native alpha glyph attribution");

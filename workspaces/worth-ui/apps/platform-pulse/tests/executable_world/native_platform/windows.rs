@@ -10,12 +10,13 @@ use xcap::Window;
 
 use crate::external_observation::{
     NativeClientPixelCapture, NativeClientPixelPoint, NativeInputDeliveryObservation,
-    NativeInputProbeKind, NativeWindowIdentity, NativeWindowVisibilityTransitionObservation,
-    NormalNativeCloseRequestObservation, ProcessBoundNativeClientAreaObservation,
+    NativeInputProbeKind, NativeWindowIdentity, NativeWindowVisibilityTransitionMechanism,
+    NativeWindowVisibilityTransitionObservation, NormalNativeCloseRequestObservation,
+    ProcessBoundNativeClientAreaObservation,
 };
 
 use super::contract::sealed::Sealed;
-use super::{NativePlatformContract, NativePlatformFailure};
+use super::{CreationSurfaceSuccession, NativePlatformContract, NativePlatformFailure};
 
 mod capture_consistency;
 mod capture_region;
@@ -27,11 +28,10 @@ mod input_delivery;
 mod input_delivery_tests;
 mod input_environment;
 mod pointer_target;
-mod pointer_visual_settlement;
 mod process_windows;
 mod window_state;
 
-pub(super) use input_environment::WindowsInputEnvironmentDenial;
+pub(crate) use input_environment::WindowsInputEnvironmentDenial;
 
 use capture_consistency::{require_matching_capture_sources, require_matching_composited_sources};
 use capture_region::{
@@ -71,6 +71,11 @@ impl Drop for WindowsCaptureExposure<'_> {
 }
 
 impl WindowsNativePlatform {
+    /// The visibility transition this observer actuates; the profile record's
+    /// `client_visibility_transition_observation` names the same mechanism.
+    pub(crate) const VISIBILITY_TRANSITION_MECHANISM: NativeWindowVisibilityTransitionMechanism =
+        NativeWindowVisibilityTransitionMechanism::IconicState;
+
     pub(crate) fn certified() -> Result<Self, NativePlatformFailure> {
         if std::env::consts::ARCH != "x86_64" {
             return Err(NativePlatformFailure::EnvironmentQualification(
@@ -158,6 +163,8 @@ fn independent_window_capture_rejects_monitor_pixel_substitution() {
 
 impl NativePlatformContract for WindowsNativePlatform {
     type BoundClientArea = WindowsProcessBoundNativeClientArea;
+
+    const CREATION_SURFACE_SUCCESSION: CreationSurfaceSuccession = CreationSurfaceSuccession::Once;
 
     fn bind_process_client_area(
         &self,

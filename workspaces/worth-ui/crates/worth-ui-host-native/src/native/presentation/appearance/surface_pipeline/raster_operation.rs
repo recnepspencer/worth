@@ -56,7 +56,8 @@ impl UiNativeSurfaceRasterOperation {
                 self.storage[27] *= scale;
             }
             let omission_count = self.storage[24] as usize;
-            for row in self.storage[28..].chunks_exact_mut(4).take(omission_count) {
+            let (rows, _) = self.storage[28..].as_chunks_mut::<4>();
+            for row in rows.iter_mut().take(omission_count) {
                 let axis_scale = if row[0] == 0.0 || row[0] == 2.0 {
                     sampled.width() / source.width()
                 } else {

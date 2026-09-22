@@ -3,6 +3,7 @@ name = "worth-ui-native-platform"
 edition.workspace = true
 version.workspace = true
 license.workspace = true
+rust-version.workspace = true
 
 [lib]
 name = "worth_ui_native_platform"

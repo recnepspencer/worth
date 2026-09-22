@@ -3,11 +3,12 @@ use std::process::ExitCode;
 use worth_ui_native_platform::{
     UiNativePlatformOutcome, UiNativePlatformProfile, UiNativeWindowSpec, WorthUiNativePlatform,
 };
+use worth_ui_platform_pulse::visual_identity_pulse::PLATFORM_PULSE_NATIVE_WINDOW_LOGICAL_EXTENT;
 
 pub(crate) fn run() -> ExitCode {
     let profile = UiNativePlatformProfile::single_window(UiNativeWindowSpec::new(
         "WORTH UI Platform Pulse Phase 8",
-        [160, 96],
+        PLATFORM_PULSE_NATIVE_WINDOW_LOGICAL_EXTENT,
     ));
     let Ok(platform) = WorthUiNativePlatform::prepare(profile) else {
         return ExitCode::from(2);

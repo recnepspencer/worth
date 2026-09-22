@@ -41,8 +41,13 @@ impl fmt::Display for WorthUiSourceModuleId {
 }
 
 fn canonicalize_relative_path(relative_path: &Path) -> Result<PathBuf, String> {
+    // Module paths may be spelled with either separator on any host. Normalize
+    // before walking: on Linux `\` is an ordinary file-name byte, so without
+    // this `.\app\main.wui` keeps its `CurDir` and canonicalizes to
+    // `./app/main.wui`, a second identity for the same module.
+    let portable = relative_path.to_string_lossy().replace('\\', "/");
     let mut normalized = PathBuf::new();
-    for component in relative_path.components() {
+    for component in Path::new(&portable).components() {
         match component {
             Component::CurDir => {}
             Component::Normal(part) => normalized.push(part),

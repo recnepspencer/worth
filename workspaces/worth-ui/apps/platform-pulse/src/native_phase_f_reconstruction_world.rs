@@ -6,6 +6,7 @@ use worth_ui_native_platform::{
     UiNativeRuntimeDerivedStateLossClass, UiNativeRuntimeQualificationPlan, UiNativeWindowSpec,
     WorthUiNativePlatform,
 };
+use worth_ui_platform_pulse::visual_identity_pulse::PLATFORM_PULSE_NATIVE_WINDOW_LOGICAL_EXTENT;
 
 mod exact_reconstruction;
 use exact_reconstruction::{
@@ -82,7 +83,7 @@ pub(crate) fn run(class_name: &str) -> ExitCode {
 fn execute_world(scenario: ReconstructionScenario) -> Result<UiNativePlatformCloseReceipt, String> {
     let profile = UiNativePlatformProfile::single_window(UiNativeWindowSpec::new(
         "WORTH UI Phase F Reconstruction Courtroom",
-        [160, 96],
+        PLATFORM_PULSE_NATIVE_WINDOW_LOGICAL_EXTENT,
     ));
     let profile = match scenario {
         ReconstructionScenario::Host(class) => profile.with_native_qualification_plan(

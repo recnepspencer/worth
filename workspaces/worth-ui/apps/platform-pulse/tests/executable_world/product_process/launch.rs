@@ -7,8 +7,10 @@ use crate::external_observation::PlatformPulseLifecycleStream;
 
 #[cfg(target_os = "windows")]
 use super::kill_on_close_job::KillOnCloseJob;
-#[cfg(target_os = "windows")]
-use super::native_desktop_lease::{NativeDesktopCourtroomLease, NativeDesktopLease};
+use super::native_desktop_lease::{
+    NativeDesktopCourtroomLease, NativeDesktopLease, NativeDesktopLeaseFailure,
+};
+use super::native_process_containment::NativeProcessContainment;
 use super::output_capture::NativeProcessOutputCapture;
 
 mod failure_display;
@@ -16,7 +18,6 @@ mod failure_display;
 // The product-world journey ceiling is 45 seconds. An adjacent honest runner
 // receives one full journey plus teardown headroom before contention is typed
 // as an environment denial.
-#[cfg(target_os = "windows")]
 const NATIVE_DESKTOP_LEASE_DEADLINE: Duration = Duration::from_secs(60);
 
 #[derive(Clone, Debug)]
@@ -36,15 +37,14 @@ pub(crate) struct NativePhase2ProcessLaunch {
 }
 
 pub(crate) struct LivePlatformPulseProcess {
-    #[cfg(target_os = "windows")]
     _native_desktop_lease: NativeDesktopLease,
-    #[cfg(target_os = "windows")]
     _native_desktop_courtroom: NativeDesktopCourtroomLease,
     child: Child,
     #[cfg(target_os = "windows")]
     _kill_on_close_job: KillOnCloseJob,
     fallback_termination_required: bool,
     exit_status: Option<ExitStatus>,
+    containment: NativeProcessContainment,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -52,13 +52,14 @@ pub(crate) struct EmergencyPlatformPulseExit {
     status: ExitStatus,
     forced_termination: bool,
     poll_count: u32,
+    containment: NativeProcessContainment,
 }
 
 #[derive(Debug)]
 pub(crate) enum PlatformPulseProcessLaunchFailure {
     CargoExecutableNotAbsolute(PathBuf),
     CargoExecutableMissing(PathBuf),
-    NativeDesktopLease,
+    NativeDesktopLease(NativeDesktopLeaseFailure),
     Spawn(std::io::Error),
     #[cfg(target_os = "windows")]
     KillOnCloseJob(String),
@@ -95,21 +96,19 @@ impl CargoBuiltPlatformPulse {
         query_source_root: &Path,
         intent_source_root: &Path,
     ) -> Result<PlatformPulseProcessLaunch, PlatformPulseProcessLaunchFailure> {
-        #[cfg(target_os = "windows")]
         let native_desktop_courtroom = NativeDesktopCourtroomLease::acquire();
-        #[cfg(target_os = "windows")]
         let desktop_wait_started = Instant::now();
-        #[cfg(target_os = "windows")]
         let desktop_deadline = desktop_wait_started
             .checked_add(NATIVE_DESKTOP_LEASE_DEADLINE)
-            .ok_or(PlatformPulseProcessLaunchFailure::NativeDesktopLease)?;
-        #[cfg(target_os = "windows")]
+            .ok_or(PlatformPulseProcessLaunchFailure::NativeDesktopLease(
+                NativeDesktopLeaseFailure::Deadline,
+            ))?;
         let native_desktop_lease = NativeDesktopLease::acquire(desktop_deadline)
-            .map_err(|_| PlatformPulseProcessLaunchFailure::NativeDesktopLease)?;
+            .map_err(PlatformPulseProcessLaunchFailure::NativeDesktopLease)?;
         let launch_started = Instant::now();
         let native_close_evidence_path = source_root.join(super::NATIVE_CLOSE_EVIDENCE_FILE_NAME);
         let mut command = Command::new(&self.executable);
-        let mut child = command
+        let child = command
             .arg("--source-root")
             .arg(source_root)
             .arg("--query-source-root")
@@ -125,18 +124,21 @@ impl CargoBuiltPlatformPulse {
             .stderr(Stdio::inherit())
             .spawn()
             .map_err(PlatformPulseProcessLaunchFailure::Spawn)?;
+        // Only the kill-on-close job assignment mutates the child at launch.
+        #[cfg(target_os = "windows")]
+        let mut child = child;
         #[cfg(target_os = "windows")]
         let kill_on_close_job = assign_kill_on_close_job(&mut child)?;
+        let containment = NativeProcessContainment::observe();
         let mut process = LivePlatformPulseProcess {
-            #[cfg(target_os = "windows")]
             _native_desktop_lease: native_desktop_lease,
-            #[cfg(target_os = "windows")]
             _native_desktop_courtroom: native_desktop_courtroom,
             child,
             #[cfg(target_os = "windows")]
             _kill_on_close_job: kill_on_close_job,
             fallback_termination_required: true,
             exit_status: None,
+            containment,
         };
         let Some(stdout) = process.child.stdout.take() else {
             let teardown = process.terminate_after_failure(Instant::now() + Duration::from_secs(5));
@@ -215,35 +217,37 @@ impl CargoBuiltPlatformPulse {
         self,
         arguments: &[&str],
     ) -> Result<NativePhase2ProcessLaunch, PlatformPulseProcessLaunchFailure> {
-        #[cfg(target_os = "windows")]
         let native_desktop_courtroom = NativeDesktopCourtroomLease::acquire();
-        #[cfg(target_os = "windows")]
         let deadline = Instant::now()
             .checked_add(NATIVE_DESKTOP_LEASE_DEADLINE)
-            .ok_or(PlatformPulseProcessLaunchFailure::NativeDesktopLease)?;
-        #[cfg(target_os = "windows")]
+            .ok_or(PlatformPulseProcessLaunchFailure::NativeDesktopLease(
+                NativeDesktopLeaseFailure::Deadline,
+            ))?;
         let native_desktop_lease = NativeDesktopLease::acquire(deadline)
-            .map_err(|_| PlatformPulseProcessLaunchFailure::NativeDesktopLease)?;
+            .map_err(PlatformPulseProcessLaunchFailure::NativeDesktopLease)?;
         let mut command = Command::new(&self.executable);
-        let mut child = command
+        let child = command
             .args(arguments)
             .stdin(Stdio::null())
             .stdout(Stdio::piped())
             .stderr(Stdio::inherit())
             .spawn()
             .map_err(PlatformPulseProcessLaunchFailure::Spawn)?;
+        // Only the kill-on-close job assignment mutates the child at launch.
+        #[cfg(target_os = "windows")]
+        let mut child = child;
         #[cfg(target_os = "windows")]
         let kill_on_close_job = assign_kill_on_close_job(&mut child)?;
+        let containment = NativeProcessContainment::observe();
         let mut process = LivePlatformPulseProcess {
-            #[cfg(target_os = "windows")]
             _native_desktop_lease: native_desktop_lease,
-            #[cfg(target_os = "windows")]
             _native_desktop_courtroom: native_desktop_courtroom,
             child,
             #[cfg(target_os = "windows")]
             _kill_on_close_job: kill_on_close_job,
             fallback_termination_required: true,
             exit_status: None,
+            containment,
         };
         let Some(stdout) = process.child.stdout.take() else {
             let teardown = process.terminate_after_failure(Instant::now() + Duration::from_secs(5));
@@ -284,12 +288,12 @@ impl LivePlatformPulseProcess {
     ) -> Result<EmergencyPlatformPulseExit, EmergencyPlatformPulseExitFailure> {
         let initial_poll_count = 1_u32;
         if let Some(status) = self.poll_exit_after_failure()? {
-            return Ok(emergency_exit(status, false, initial_poll_count));
+            return Ok(self.emergency_exit(status, false, initial_poll_count));
         }
         if let Err(error) = self.child.kill() {
             let race_poll_count = initial_poll_count.saturating_add(1);
             if let Some(status) = self.poll_exit_after_failure()? {
-                return Ok(emergency_exit(status, false, race_poll_count));
+                return Ok(self.emergency_exit(status, false, race_poll_count));
             }
             return Err(EmergencyPlatformPulseExitFailure::Terminate(error));
         }
@@ -305,12 +309,26 @@ impl LivePlatformPulseProcess {
         loop {
             poll_count = poll_count.saturating_add(1);
             if let Some(status) = self.poll_exit_after_failure()? {
-                return Ok(emergency_exit(status, true, poll_count));
+                return Ok(self.emergency_exit(status, true, poll_count));
             }
             if Instant::now() >= deadline {
                 return Err(EmergencyPlatformPulseExitFailure::Deadline);
             }
             thread::sleep(Duration::from_millis(10));
+        }
+    }
+
+    fn emergency_exit(
+        &self,
+        status: ExitStatus,
+        forced_termination: bool,
+        poll_count: u32,
+    ) -> EmergencyPlatformPulseExit {
+        EmergencyPlatformPulseExit {
+            status,
+            forced_termination,
+            poll_count,
+            containment: self.containment,
         }
     }
 
@@ -343,18 +361,6 @@ fn assign_kill_on_close_job(
     })
 }
 
-fn emergency_exit(
-    status: ExitStatus,
-    forced_termination: bool,
-    poll_count: u32,
-) -> EmergencyPlatformPulseExit {
-    EmergencyPlatformPulseExit {
-        status,
-        forced_termination,
-        poll_count,
-    }
-}
-
 impl Drop for LivePlatformPulseProcess {
     fn drop(&mut self) {
         if self.fallback_termination_required {
@@ -362,7 +368,8 @@ impl Drop for LivePlatformPulseProcess {
                 self.terminate_after_failure(Instant::now() + Duration::from_secs(2))
             {
                 eprintln!(
-                    "fallback Platform Pulse teardown deferred to kill-on-close containment: {failure}"
+                    "fallback Platform Pulse teardown deferred to {} containment: {failure}",
+                    self.containment.name()
                 );
             }
         }

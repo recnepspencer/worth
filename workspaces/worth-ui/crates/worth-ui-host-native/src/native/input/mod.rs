@@ -25,3 +25,4 @@ pub use report::{
     UiNativeInputObservationEventFamily, UiNativeInputObservationReport,
     UiNativeInputObservationStop, UiNativePointerButtonObservation, UiNativeScrollDeltaObservation,
 };
+pub(crate) use text_ime::UiNativeImeCompositionPosture;

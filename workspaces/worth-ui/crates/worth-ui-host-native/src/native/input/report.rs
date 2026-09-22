@@ -141,6 +141,7 @@ pub struct UiNativeInputObservationReport {
     pub(super) terminal_stop: Option<UiNativeInputObservationStop>,
     pub(super) stop_history_complete: bool,
     pub(super) retained_batch_count: u64,
+    pub(super) coalesced_motion_batch_count: u64,
     pub(super) retained_event_count: u64,
     pub(super) first_retained_sequence: Option<u64>,
     pub(super) last_retained_sequence: Option<u64>,
@@ -174,6 +175,13 @@ impl UiNativeInputObservationReport {
 
     pub const fn retained_batch_count(&self) -> u64 {
         self.retained_batch_count
+    }
+
+    /// Retained pointer-motion batches that replaced their retained predecessor
+    /// instead of appending. The drain hands over `retained_batch_count` minus
+    /// this many batches, so ingress accounting must add it back.
+    pub const fn coalesced_motion_batch_count(&self) -> u64 {
+        self.coalesced_motion_batch_count
     }
 
     pub const fn retained_event_count(&self) -> u64 {

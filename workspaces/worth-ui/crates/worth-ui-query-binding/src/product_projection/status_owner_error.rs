@@ -34,6 +34,10 @@ pub enum WorthUiStatusLiveDeliveryStop {
     Unavailable,
 }
 
+/// The mutation-outcome and live-close payloads are several kilobytes each
+/// (`clippy::result_large_err`); every `Result` carrying this error would
+/// otherwise move that much on each `?`. They are boxed so the error stays
+/// pointer-sized on the hot path and pays for the payload only when it fails.
 #[derive(Debug)]
 pub enum WorthUiStatusOwnerError {
     Installation(String),
@@ -43,13 +47,13 @@ pub enum WorthUiStatusOwnerError {
     MissingUniqueRecord,
     LiveOpen(String),
     MutationRequest(String),
-    SourceMutationOutcome(WorthUiStatusMutationOutcome),
-    ActionMutationOutcome(WorthUiStatusActionMutationOutcome),
+    SourceMutationOutcome(Box<WorthUiStatusMutationOutcome>),
+    ActionMutationOutcome(Box<WorthUiStatusActionMutationOutcome>),
     LiveDelivery(WorthUiStatusLiveDeliveryStop),
     PublicationMismatch,
     OperationAndLiveClose {
         operation: Box<WorthUiStatusOwnerError>,
-        close: WorthQueryApplicationLiveCloseOutcome,
+        close: Box<WorthQueryApplicationLiveCloseOutcome>,
     },
 }
 
@@ -68,7 +72,7 @@ impl WorthUiStatusOwnerError {
     pub(super) fn with_live_close(self, close: WorthQueryApplicationLiveCloseOutcome) -> Self {
         Self::OperationAndLiveClose {
             operation: Box::new(self),
-            close,
+            close: Box::new(close),
         }
     }
 }

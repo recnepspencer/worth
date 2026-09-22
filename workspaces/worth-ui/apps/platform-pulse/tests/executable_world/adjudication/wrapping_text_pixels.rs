@@ -310,7 +310,7 @@ mod tests {
 
     fn base_capture() -> Vec<u8> {
         let mut rgba = vec![0; 960 * 600 * 4];
-        for pixel in rgba.chunks_exact_mut(4) {
+        for pixel in rgba.as_chunks_mut::<4>().0 {
             pixel.copy_from_slice(&[11, 15, 20, 255]);
         }
         paint(&mut rgba, [48, 176, 168, 64], [17, 22, 28, 255]);

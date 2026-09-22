@@ -11,9 +11,11 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
         event_loop: &ActiveEventLoop,
         event: &WindowEvent,
     ) {
+        let composition = self.shared.borrow().lifecycle.ime_composition_posture();
         let reachability =
             crate::native::event_loop::contract::UiNativeInputReachability::observe_window_event(
                 event,
+                composition,
             );
         let event_tick = self.physical_clock.current_tick();
         let pointer_witness =

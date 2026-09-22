@@ -1,5 +1,6 @@
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum UiNativePlatformStopReason {
+    WindowingSystemUnavailable,
     EventLoopCreation,
     WindowCreation,
     GraphicsPreparation,
@@ -189,6 +190,9 @@ impl UiNativePlatformStopReport {
 
     pub const fn reason(&self) -> UiNativePlatformStopReason {
         match self.report.cause() {
+            worth_ui_host_native::UiNativeEventLoopRunDenial::WindowingSystemUnavailable => {
+                UiNativePlatformStopReason::WindowingSystemUnavailable
+            }
             worth_ui_host_native::UiNativeEventLoopRunDenial::EventLoopCreation => {
                 UiNativePlatformStopReason::EventLoopCreation
             }

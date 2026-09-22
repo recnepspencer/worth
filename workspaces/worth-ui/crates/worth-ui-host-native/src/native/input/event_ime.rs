@@ -5,6 +5,16 @@ use super::{
 };
 use winit::event::{Ime, WindowEvent};
 
+impl UiNativeInputObservationState {
+    pub(crate) fn ime_composition_posture(&self) -> ime::UiNativeImeCompositionPosture {
+        if self.ime_composition_active {
+            ime::UiNativeImeCompositionPosture::Composing
+        } else {
+            ime::UiNativeImeCompositionPosture::Idle
+        }
+    }
+}
+
 pub(super) fn observe(
     state: &mut UiNativeInputObservationState,
     event: &WindowEvent,

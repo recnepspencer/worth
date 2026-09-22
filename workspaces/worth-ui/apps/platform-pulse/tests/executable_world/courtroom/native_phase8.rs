@@ -1,7 +1,8 @@
 use std::panic::{catch_unwind, resume_unwind, AssertUnwindSafe};
 use std::time::{Duration, Instant};
 
-use crate::native_platform::{NativePlatformContract, WindowsNativePlatform};
+use crate::external_observation::NativeWindowVisibilityTransitionMechanism;
+use crate::native_platform::{CertifiedNativePlatform, NativePlatformContract};
 use crate::product_process::{CargoBuiltPlatformPulse, SuccessfulPlatformPulseExit};
 
 const CLIENT_GROWTH: [u32; 2] = [64, 40];
@@ -9,9 +10,9 @@ const INITIAL_RGBA: [u8; 4] = [47, 129, 247, 255];
 const POST_RESTORE_RGBA: [u8; 4] = [63, 185, 80, 255];
 
 #[test]
-#[ignore = "requires the serialized interactive Windows 11 DX12 desktop"]
-fn windows_native_boundary_world_actuates_resize_minimize_restore_and_reconstruction() {
-    let platform = WindowsNativePlatform::certified().expect("Windows observation is qualified");
+#[ignore = "requires the serialized interactive certified native desktop (Windows 11 DX12 or Xvfb X11)"]
+fn certified_native_boundary_world_actuates_resize_minimize_restore_and_reconstruction() {
+    let platform = CertifiedNativePlatform::certified().expect("native observation is qualified");
     let mut launch = CargoBuiltPlatformPulse::exact()
         .and_then(CargoBuiltPlatformPulse::launch_native_phase8)
         .expect("the native Phase 8 product process launches");
@@ -26,7 +27,7 @@ fn windows_native_boundary_world_actuates_resize_minimize_restore_and_reconstruc
 }
 
 fn execute(
-    platform: &WindowsNativePlatform,
+    platform: &CertifiedNativePlatform,
     launch: &mut crate::product_process::NativePhase2ProcessLaunch,
     process_id: u32,
 ) {
@@ -99,12 +100,19 @@ fn execute(
         .expect("Phase 8 evidence is readable");
     let evidence: serde_json::Value =
         serde_json::from_str(stdout.trim()).expect("Phase 8 evidence is JSON");
-    assert_evidence(&evidence, initial, resized, resized_client, &external);
+    assert_evidence(
+        &evidence,
+        initial,
+        resized,
+        resized_client,
+        &external,
+        visibility.mechanism(),
+    );
 }
 
 fn await_presented_pixels(
-    platform: &WindowsNativePlatform,
-    client: &mut <WindowsNativePlatform as NativePlatformContract>::BoundClientArea,
+    platform: &CertifiedNativePlatform,
+    client: &mut <CertifiedNativePlatform as NativePlatformContract>::BoundClientArea,
     process: &mut crate::product_process::LivePlatformPulseProcess,
     deadline: Instant,
     resized: Option<(
@@ -187,13 +195,14 @@ fn assert_evidence(
     resized: crate::external_observation::ProcessBoundNativeClientAreaObservation,
     resized_client: [u32; 2],
     external: &crate::external_observation::NativeClientPixelCapture,
+    mechanism: NativeWindowVisibilityTransitionMechanism,
 ) {
     assert_eq!(evidence["schema"], "worth-ui-native-phase8-evidence-v1");
     assert_eq!(initial.window(), resized.window());
     assert_eq!(initial.dpi(), resized.dpi());
     assert_snapshot_basis(evidence, resized_client, external);
     assert_reconstruction(evidence);
-    assert_resource_lifecycle(evidence);
+    assert_resource_lifecycle(evidence, mechanism);
     assert_resized_pixels(initial, resized, external);
 }
 
@@ -259,12 +268,34 @@ fn assert_reconstruction(evidence: &serde_json::Value) {
     assert_eq!(evidence["graphics_generations"]["surface"], 1);
 }
 
-fn assert_resource_lifecycle(evidence: &serde_json::Value) {
-    assert!(evidence["surface_suspension"]["count"].as_u64().unwrap() >= 1);
-    assert_eq!(
-        evidence["surface_suspension"]["targetless_count"],
-        evidence["surface_suspension"]["count"]
-    );
+/// Surface suspension follows the transition mechanism, not the platform
+/// name: an iconic window loses its extent, so the product must suspend the
+/// surface and every suspension must be targetless; an occluded window keeps
+/// its extent, so the product must not suspend at all (a suspension there
+/// would be a resize path taken for a visibility change). Both arms bind the
+/// same peak and generation facts: one surface, one device, one queue.
+fn assert_resource_lifecycle(
+    evidence: &serde_json::Value,
+    mechanism: NativeWindowVisibilityTransitionMechanism,
+) {
+    let suspension = &evidence["surface_suspension"];
+    let count = suspension["count"].as_u64().expect("suspension count");
+    let targetless = suspension["targetless_count"]
+        .as_u64()
+        .expect("targetless count");
+    match mechanism {
+        NativeWindowVisibilityTransitionMechanism::IconicState => {
+            assert!(
+                count >= 1,
+                "iconic state suspends the surface: {suspension}"
+            );
+            assert_eq!(targetless, count, "iconic suspensions are targetless");
+        }
+        NativeWindowVisibilityTransitionMechanism::FullOcclusion => {
+            assert_eq!(count, 0, "occlusion keeps the surface extent: {suspension}");
+            assert_eq!(targetless, 0);
+        }
+    }
     assert_eq!(evidence["peak"]["surfaces"], 1);
     assert_eq!(evidence["peak"]["devices"], 1);
     assert_eq!(evidence["peak"]["queues"], 1);
@@ -307,7 +338,7 @@ fn pixel(
 }
 
 fn finalize_failed_world(
-    platform: &WindowsNativePlatform,
+    platform: &CertifiedNativePlatform,
     process: &mut crate::product_process::LivePlatformPulseProcess,
     process_id: u32,
 ) {

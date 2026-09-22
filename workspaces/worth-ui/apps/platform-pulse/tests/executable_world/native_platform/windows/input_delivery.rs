@@ -168,7 +168,14 @@ fn deliver_at(
     let (delivered_event_count, qualified_point) = match kind {
         NativeInputProbeKind::Pointer => {
             prime_pointer_motion(window, (screen_x, screen_y))?;
-            super::pointer_visual_settlement::await_client_stability(observed)?;
+            crate::native_platform::pointer_visual_settlement::await_client_stability(|| {
+                Ok(super::gdi_capture::capture_client_area(
+                    observed.bounds(),
+                    observed.process_id(),
+                )?
+                .rgba()
+                .to_vec())
+            })?;
             super::pointer_target::require_before_effect(window, (screen_x, screen_y))?;
             let cursor = Mouse::get_cursor_pos().map_err(input_failure)?;
             let qualified_point = (cursor.get_x(), cursor.get_y());

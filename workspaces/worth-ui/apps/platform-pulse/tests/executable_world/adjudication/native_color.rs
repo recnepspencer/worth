@@ -147,7 +147,7 @@ fn target_pixel_summary(
     let mut matching_pixels = 0;
     let mut minimum = [u32::MAX, u32::MAX];
     let mut maximum = [0, 0];
-    for (index, rgba) in pixels.rgba().chunks_exact(4).enumerate() {
+    for (index, rgba) in pixels.rgba().as_chunks::<4>().0.iter().enumerate() {
         let matches = rgba[..3]
             .iter()
             .zip(manifest.target_rgba())

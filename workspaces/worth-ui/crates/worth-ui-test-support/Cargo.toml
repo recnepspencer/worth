@@ -3,6 +3,7 @@ name = "worth-ui-test-support"
 edition.workspace = true
 version.workspace = true
 license.workspace = true
+rust-version.workspace = true
 description = "Synthetic proof and harness helpers for Worth UI certification and runtime tests."
 
 [lib]

@@ -7,8 +7,10 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use serde::Serialize;
 
 use crate::external_observation::LifecycleFailureSnapshot;
-use crate::native_platform::{current_platform_posture, NativePlatformPosture};
+use crate::native_platform::current_platform_posture;
+use crate::product_process::NativeProcessContainment;
 
+use super::native_capture_png::{encode_native_capture_png, NativeCapturePngFailure};
 use super::report::{ExecutableWorldFailureTeardown, PulseExecutableWorldFailure};
 
 const MAXIMUM_ARTIFACT_BYTES: usize = 64 * 1_024 * 1_024;
@@ -29,8 +31,7 @@ pub(crate) struct FailureArtifactDiscardEvidence {
 #[derive(Debug)]
 pub(crate) enum FailureArtifactFailure {
     Encode(serde_json::Error),
-    EncodeNativeCapture(xcap::image::ImageError),
-    InvalidNativeCapture,
+    NativeCapture(NativeCapturePngFailure),
     BudgetExceeded(usize),
     CreateRoot(std::io::Error),
     WriteFile {
@@ -74,6 +75,7 @@ struct FailureEnvironment {
     operating_system: &'static str,
     architecture: &'static str,
     native_posture: &'static str,
+    process_containment: &'static str,
 }
 
 #[derive(Serialize)]
@@ -204,19 +206,14 @@ fn manifest<'a>(
         environment: FailureEnvironment {
             operating_system: std::env::consts::OS,
             architecture: std::env::consts::ARCH,
-            native_posture: posture_name(current_platform_posture()),
+            native_posture: current_platform_posture().name(),
+            process_containment: NativeProcessContainment::observe().name(),
         },
         lifecycle,
         source_snapshot: inputs.source_snapshot.as_ref().map(|_| "source.wui"),
         native_capture,
         retained_by_default: true,
         maximum_artifact_bytes: MAXIMUM_ARTIFACT_BYTES,
-    }
-}
-
-fn posture_name(posture: NativePlatformPosture) -> &'static str {
-    match posture {
-        NativePlatformPosture::CertifiedExecutable => "certified_executable",
     }
 }
 
@@ -273,23 +270,9 @@ fn encode_native_capture(
     let Some(FailureNativeCaptureInput::Captured(capture)) = input else {
         return Ok(None);
     };
-    encode_native_capture_png(capture).map(Some)
-}
-
-pub(crate) fn encode_native_capture_png(
-    capture: &crate::external_observation::NativeClientPixelCapture,
-) -> Result<Vec<u8>, FailureArtifactFailure> {
-    let image = xcap::image::RgbaImage::from_raw(
-        capture.width(),
-        capture.height(),
-        capture.rgba().to_vec(),
-    )
-    .ok_or(FailureArtifactFailure::InvalidNativeCapture)?;
-    let mut bytes = std::io::Cursor::new(Vec::new());
-    xcap::image::DynamicImage::ImageRgba8(image)
-        .write_to(&mut bytes, xcap::image::ImageFormat::Png)
-        .map_err(FailureArtifactFailure::EncodeNativeCapture)?;
-    Ok(bytes.into_inner())
+    encode_native_capture_png(capture)
+        .map(Some)
+        .map_err(FailureArtifactFailure::NativeCapture)
 }
 
 fn write_synced(path: &Path, bytes: &[u8]) -> Result<(), FailureArtifactFailure> {
@@ -313,12 +296,7 @@ impl fmt::Display for FailureArtifactFailure {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Encode(error) => write!(formatter, "encode failure manifest: {error}"),
-            Self::EncodeNativeCapture(error) => {
-                write!(formatter, "encode native failure capture: {error}")
-            }
-            Self::InvalidNativeCapture => {
-                formatter.write_str("native failure capture dimensions do not match its bytes")
-            }
+            Self::NativeCapture(failure) => write!(formatter, "native failure capture: {failure}"),
             Self::BudgetExceeded(bytes) => {
                 write!(
                     formatter,

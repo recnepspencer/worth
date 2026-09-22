@@ -39,6 +39,7 @@ mod terminal_cleanup;
 mod tests;
 mod thread_posture;
 mod window_port;
+mod windowing_system;
 
 #[cfg(test)]
 use run::stop_before_callbacks;

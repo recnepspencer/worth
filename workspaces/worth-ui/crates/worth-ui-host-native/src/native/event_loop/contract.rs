@@ -233,6 +233,12 @@ pub struct UiNativeReadinessGrant {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum UiNativeEventLoopRunDenial {
+    /// The qualified profile's windowing system cannot be driven on this
+    /// host: a library it needs is absent, or the profile names a windowing
+    /// system this target does not offer. Denied before the event loop is
+    /// built, because winit surfaces the missing library as a panic rather
+    /// than an error.
+    WindowingSystemUnavailable,
     EventLoopCreation,
     WindowCreation,
     GraphicsPreparation,

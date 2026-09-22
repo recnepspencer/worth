@@ -66,7 +66,9 @@ pub(super) fn qualified_color_transaction_preserves_cluster_and_rgba_identity() 
             && record.digest().bytes() == digest
             && record
                 .pixels()
-                .chunks_exact(4)
+                .as_chunks::<4>()
+                .0
+                .iter()
                 .any(|pixel| pixel[3] != 0 && (pixel[0] != pixel[1] || pixel[1] != pixel[2]))
     }));
 }
@@ -163,7 +165,7 @@ fn duplicated_color_demand_completes_as_one_aggregate_record_set() {
     assert!(transaction.batches()[1].batch().records().is_empty());
     assert_eq!(
         transaction.completion().unique_records(),
-        admission.unique_records() as u32
+        admission.unique_records()
     );
 }
 
@@ -259,7 +261,12 @@ pub(super) fn every_unicode_17_rgi_sequence_crosses_intrinsic_color_owner() {
             ));
             assert_eq!(record.stride(), record.extent().width() * 4);
             assert!(!record.pixels().is_empty());
-            assert!(record.pixels().chunks_exact(4).any(|pixel| pixel[3] != 0));
+            assert!(record
+                .pixels()
+                .as_chunks::<4>()
+                .0
+                .iter()
+                .any(|pixel| pixel[3] != 0));
             let digest: [u8; 32] = Sha256::digest(record.pixels()).into();
             assert_eq!(record.digest().bytes(), digest);
         }

@@ -5,6 +5,8 @@ use std::time::Duration;
 
 use notify::{Event, EventHandler};
 
+use super::filesystem_watcher_event_translation::bears_on_source_tree;
+
 const NOTIFICATION_QUEUE_CAPACITY: usize = 256;
 
 pub(super) struct WorthUiFilesystemNotificationQueue {
@@ -68,6 +70,11 @@ impl WorthUiFilesystemNotificationQueue {
 
 impl EventHandler for WorthUiFilesystemNotificationHandler {
     fn handle_event(&mut self, event: notify::Result<Event>) {
+        if let Ok(event) = &event {
+            if !bears_on_source_tree(&event.kind) {
+                return;
+            }
+        }
         let _ = self.observed_notification_count.fetch_update(
             Ordering::Relaxed,
             Ordering::Relaxed,
@@ -90,9 +97,27 @@ impl EventHandler for WorthUiFilesystemNotificationHandler {
 mod tests {
     use std::time::Duration;
 
+    use notify::event::{AccessKind, AccessMode};
     use notify::{Event, EventHandler, EventKind};
 
     use super::{filesystem_notification_queue, NOTIFICATION_QUEUE_CAPACITY};
+
+    #[test]
+    fn access_notifications_are_neither_counted_nor_queued() {
+        let (queue, mut handler) = filesystem_notification_queue();
+        for _ in 0..3 {
+            handler.handle_event(Ok(Event::new(EventKind::Access(AccessKind::Open(
+                AccessMode::Any,
+            )))));
+        }
+
+        assert_eq!(queue.observed_notification_count(), 0);
+        assert!(queue.recv_timeout(Duration::ZERO).is_err());
+
+        handler.handle_event(Ok(Event::new(EventKind::Any)));
+        assert_eq!(queue.observed_notification_count(), 1);
+        assert!(queue.recv_timeout(Duration::ZERO).is_ok());
+    }
 
     #[test]
     fn overflow_remains_bounded_and_preserves_a_resnapshot_trigger() {

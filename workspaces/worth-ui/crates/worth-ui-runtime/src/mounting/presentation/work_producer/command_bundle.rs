@@ -269,7 +269,7 @@ impl UiMountedPresentationCommandKey {
 
 fn portal_identity_digest(identity: u64) -> [u8; 32] {
     let mut digest = [0_u8; 32];
-    for (index, chunk) in digest.chunks_exact_mut(8).enumerate() {
+    for (index, chunk) in digest.as_chunks_mut::<8>().0.iter_mut().enumerate() {
         chunk.copy_from_slice(&identity.rotate_left((index * 13) as u32).to_le_bytes());
     }
     digest

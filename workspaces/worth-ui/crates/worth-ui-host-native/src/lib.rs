@@ -76,7 +76,11 @@ pub use native::{
     UiNativeReadinessContractWork,
 };
 pub use native_profile::{
-    UiNativeMechanicsCapacities, UiNativePlatformProfileIdentity, WORTH_UI_NATIVE_PROFILE_MANIFEST,
+    UiNativeClientBackground, UiNativeCpuAdapterAdmission, UiNativeMechanicsCapacities,
+    UiNativePlatformProfileIdentity, UiNativeQualifiedTarget, UiNativeSurfaceProfile,
+    UiNativeWindowingSystem, WORTH_UI_NATIVE_CLIENT_BACKGROUND, WORTH_UI_NATIVE_PROFILE_IDENTITY,
+    WORTH_UI_NATIVE_PROFILE_MANIFEST, WORTH_UI_NATIVE_SURFACE_PROFILE,
+    WORTH_UI_NATIVE_WINDOWING_SYSTEM, WORTH_UI_QUALIFIED_PROFILE_IDENTITIES,
 };
 pub use prepared_host::{
     UiNativeWindowConfiguration, WorthUiPreparedNativeHost, WorthUiPreparedNativeMechanics,

@@ -6,56 +6,185 @@ const QUALIFIED_DEPENDENCIES: &[(&str, &str)] = &[
     ("swash", "0.2.10"),
 ];
 
+/// Which Cargo feature metadata each qualified profile's manifest must agree
+/// with.
+///
+/// Keyed by profile identity and consulted for every entry of
+/// `QUALIFIED_PROFILES`, so a profile added without an entry here fails rather
+/// than skipping the check.
+const PROFILE_FEATURE_AGREEMENTS: &[(&str, &str, &str)] = &[
+    (
+        "worth-ui-windows-dx12-v2",
+        "wgpu-windows-features",
+        "winit-features",
+    ),
+    (
+        "worth-ui-linux-wayland-vulkan-v1",
+        "wgpu-linux-features",
+        "winit-linux-features",
+    ),
+    (
+        "worth-ui-linux-x11-vulkan-v1",
+        "wgpu-linux-features",
+        "winit-linux-features",
+    ),
+    (
+        "worth-ui-linux-x11-vulkan-software-v1",
+        "wgpu-linux-features",
+        "winit-linux-features",
+    ),
+];
+
 pub(super) fn assert_qualified_dependencies() {
     let crate_manifest = manifest(include_str!("../../Cargo.toml"));
     let workspace_manifest = manifest(include_str!("../../../../Cargo.toml"));
-    let qualified = crate_manifest
-        .get("package")
-        .and_then(|package| package.get("metadata"))
-        .and_then(|metadata| metadata.get("worth-ui-qualified-dependencies"))
-        .and_then(toml::Value::as_table)
-        .expect("qualified dependency metadata");
-    let declarations = crate_manifest
-        .get("dependencies")
-        .and_then(toml::Value::as_table)
-        .expect("native dependency declarations");
-    let workspace = workspace_manifest["workspace"]["dependencies"]
-        .as_table()
-        .expect("workspace dependency declarations");
-    let windows = crate_manifest["target"]["cfg(windows)"]["dependencies"]
-        .as_table()
-        .expect("Windows dependency declarations");
-    let linux = crate_manifest["target"]["cfg(target_os = \"linux\")"]["dependencies"]
-        .as_table()
-        .expect("Linux dependency declarations");
+    let tables = QualifiedDependencyTables {
+        qualified: table(&crate_manifest["package"]["metadata"]["worth-ui-qualified-dependencies"]),
+        declarations: table(&crate_manifest["dependencies"]),
+        workspace: table(&workspace_manifest["workspace"]["dependencies"]),
+        windows: table(&crate_manifest["target"]["cfg(windows)"]["dependencies"]),
+        linux: table(&crate_manifest["target"]["cfg(target_os = \"linux\")"]["dependencies"]),
+    };
+    assert_qualified_pins(&tables);
+    assert_qualified_declared_features(&tables);
+    assert_qualified_feature_metadata(tables.qualified);
+    assert_profile_features_match_metadata(tables.qualified);
+}
+
+/// The five manifest tables a qualified dependency record is spread across.
+///
+/// They are carried together because every pin is proved by comparing them, not
+/// by reading any one of them alone.
+struct QualifiedDependencyTables<'a> {
+    qualified: &'a toml::Table,
+    declarations: &'a toml::Table,
+    workspace: &'a toml::Table,
+    windows: &'a toml::Table,
+    linux: &'a toml::Table,
+}
+
+fn assert_qualified_pins(tables: &QualifiedDependencyTables<'_>) {
     for &(name, version) in QUALIFIED_DEPENDENCIES {
-        assert_exact_pin(name, version, qualified, declarations, workspace);
+        assert_exact_pin(
+            name,
+            version,
+            tables.qualified,
+            tables.declarations,
+            tables.workspace,
+        );
     }
-    assert_exact_pin("winsafe", "0.0.28", qualified, windows, workspace);
-    assert_exact_pin("windows", "0.61.3", qualified, windows, workspace);
-    for entries in [declarations, workspace] {
+    assert_exact_pin(
+        "winsafe",
+        "0.0.28",
+        tables.qualified,
+        tables.windows,
+        tables.workspace,
+    );
+    assert_exact_pin(
+        "windows",
+        "0.61.3",
+        tables.qualified,
+        tables.windows,
+        tables.workspace,
+    );
+}
+
+/// Asserts the features each target's declaration actually requests.
+///
+/// The graphics backend is declared per target rather than in the shared base,
+/// so a Linux build resolves Vulkan alone and a Windows build DX12 alone. A
+/// backend left in the base would resolve into every target and contradict the
+/// `graphics_backend` each profile manifest declares.
+fn assert_qualified_declared_features(tables: &QualifiedDependencyTables<'_>) {
+    for entries in [tables.declarations, tables.workspace] {
         assert_dependency_features(entries, "winit", &["rwh_06"]);
-        assert_dependency_features(entries, "wgpu", &["std", "parking_lot", "dx12", "wgsl"]);
+        assert_dependency_features(entries, "wgpu", &["std", "parking_lot", "wgsl"]);
     }
-    assert_dependency_features(workspace, "winsafe", &[]);
-    assert_dependency_features(windows, "winsafe", &["user"]);
-    assert_dependency_features(workspace, "windows", &[]);
-    assert_dependency_features(windows, "windows", &["UI_ViewManagement"]);
-    assert_dependency_features(linux, "winit", &["rwh_06", "x11"]);
-    assert_eq!(qualified["winit-features"].as_str(), Some("rwh_06"));
-    assert_eq!(
-        qualified["winit-linux-features"].as_str(),
-        Some("rwh_06,x11")
+    assert_dependency_features(
+        tables.windows,
+        "wgpu",
+        &["std", "parking_lot", "dx12", "wgsl"],
     );
-    assert_eq!(
-        qualified["wgpu-features"].as_str(),
-        Some("std,parking_lot,dx12,wgsl")
+    assert_dependency_features(tables.workspace, "winsafe", &[]);
+    assert_dependency_features(tables.windows, "winsafe", &["user"]);
+    assert_dependency_features(tables.workspace, "windows", &[]);
+    assert_dependency_features(tables.windows, "windows", &["UI_ViewManagement"]);
+    assert_dependency_features(
+        tables.linux,
+        "winit",
+        &[
+            "rwh_06",
+            "wayland",
+            "wayland-dlopen",
+            "wayland-csd-adwaita",
+            "x11",
+        ],
     );
-    assert_eq!(qualified["wgpu-device-features"].as_str(), Some("empty"));
-    assert_eq!(
-        qualified["wgpu-limits"].as_str(),
-        Some("wgpu-29.0.4-Limits::downlevel_defaults().using_resolution(adapter.limits())")
+    assert_dependency_features(
+        tables.linux,
+        "wgpu",
+        &["std", "parking_lot", "vulkan", "wgsl"],
     );
+}
+
+/// Asserts each profile's declared backend features against the Cargo feature
+/// closure its target actually compiles.
+///
+/// A profile manifest declaring `vulkan` while its target's metadata compiles
+/// `dx12` is a contradiction no other gate sees: the manifest side is checked
+/// against its closed record and the Cargo side against the dependency tables,
+/// but nothing compares the two. Left unchecked it stays latent until the
+/// backend is read from the profile, at which point it becomes an adapter
+/// enumeration failure on a machine the author may not own.
+fn assert_profile_features_match_metadata(qualified: &toml::Table) {
+    for profile in &crate::native_profile::QUALIFIED_PROFILES {
+        let identity = profile.identity.as_str();
+        let (_, wgpu_key, winit_key) = PROFILE_FEATURE_AGREEMENTS
+            .iter()
+            .find(|(named, _, _)| *named == identity)
+            .unwrap_or_else(|| panic!("{identity} declares which feature metadata it agrees with"));
+        let declared = manifest(profile.manifest);
+        for (manifest_key, metadata_key) in [
+            ("graphics_backend_features", wgpu_key),
+            ("event_backend_features", winit_key),
+        ] {
+            let profile_features = declared[manifest_key]
+                .as_str()
+                .expect("profile declares its feature closure")
+                .replace(';', ",");
+            assert_eq!(
+                profile_features,
+                qualified[*metadata_key]
+                    .as_str()
+                    .expect("metadata declares its feature closure"),
+                "{identity} {manifest_key} contradicts Cargo metadata {metadata_key}"
+            );
+        }
+    }
+}
+
+fn assert_qualified_feature_metadata(qualified: &toml::Table) {
+    for (key, value) in [
+        ("winit-features", "rwh_06"),
+        (
+            "winit-linux-features",
+            "rwh_06,wayland,wayland-dlopen,wayland-csd-adwaita,x11",
+        ),
+        ("wgpu-features", "std,parking_lot,wgsl"),
+        ("wgpu-windows-features", "std,parking_lot,dx12,wgsl"),
+        ("wgpu-linux-features", "std,parking_lot,vulkan,wgsl"),
+        ("wgpu-device-features", "empty"),
+        (
+            "wgpu-limits",
+            "wgpu-29.0.4-Limits::downlevel_defaults().using_resolution(adapter.limits())",
+        ),
+    ] {
+        assert_eq!(qualified[key].as_str(), Some(value), "metadata {key}");
+    }
+}
+
+fn table(value: &toml::Value) -> &toml::Table {
+    value.as_table().expect("qualified dependency table")
 }
 
 fn assert_exact_pin(

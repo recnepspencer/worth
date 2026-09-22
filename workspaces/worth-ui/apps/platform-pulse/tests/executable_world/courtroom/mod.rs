@@ -1,33 +1,33 @@
-#[cfg(target_os = "windows")]
+#[cfg(worth_ui_certified_executable)]
 mod journey_cost;
-#[cfg(target_os = "windows")]
+#[cfg(worth_ui_certified_executable)]
 mod native_cutover;
-#[cfg(target_os = "windows")]
+#[cfg(worth_ui_certified_executable)]
 mod native_gate_d_pin;
-#[cfg(target_os = "windows")]
+#[cfg(worth_ui_certified_executable)]
 mod native_phase2;
-#[cfg(target_os = "windows")]
+#[cfg(worth_ui_certified_executable)]
 mod native_phase3;
-#[cfg(target_os = "windows")]
+#[cfg(worth_ui_certified_executable)]
 mod native_phase6;
-#[cfg(target_os = "windows")]
+#[cfg(worth_ui_certified_executable)]
 mod native_phase7;
-#[cfg(target_os = "windows")]
+#[cfg(worth_ui_certified_executable)]
 mod native_phase8;
-#[cfg(target_os = "windows")]
+#[cfg(worth_ui_certified_executable)]
 mod native_phase_f;
 mod native_phase_f_reconstruction;
-#[cfg(target_os = "windows")]
+#[cfg(worth_ui_certified_executable)]
 mod platform_pulse_cleanup;
-#[cfg(target_os = "windows")]
+#[cfg(worth_ui_certified_executable)]
 mod platform_pulse_input;
-#[cfg(target_os = "windows")]
+#[cfg(worth_ui_certified_executable)]
 mod platform_pulse_intent;
-#[cfg(target_os = "windows")]
+#[cfg(worth_ui_certified_executable)]
 mod platform_pulse_journey;
-#[cfg(target_os = "windows")]
+#[cfg(worth_ui_certified_executable)]
 mod platform_pulse_lifecycle;
-#[cfg(target_os = "windows")]
+#[cfg(worth_ui_certified_executable)]
 mod platform_pulse_portal;
-#[cfg(target_os = "windows")]
+#[cfg(worth_ui_certified_executable)]
 mod query_application_launch;

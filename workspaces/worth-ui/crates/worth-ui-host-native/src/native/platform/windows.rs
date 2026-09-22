@@ -35,6 +35,10 @@ impl UiNativePointerInputPort {
     pub(crate) fn refresh_client_origin(&mut self) {
         self.client_origin = self.window.inner_position().ok();
     }
+
+    /// Windows samples the message position when the button message itself
+    /// is dispatched, so the cursor stream carries nothing this port needs.
+    pub(crate) fn observe_cursor_moved(&mut self, _position: PhysicalPosition<f64>) {}
 }
 
 impl UiNativePointerInputPort {

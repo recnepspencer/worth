@@ -1,4 +1,13 @@
-pub(super) fn assert_exact_resource_evidence(evidence: &serde_json::Value) {
+use crate::native_platform::CreationSurfaceSuccession;
+
+/// The peak census of a one-frame world. Two classes follow the platform's
+/// declared creation-time surface succession; the retained-frame class counts
+/// the retained history plus the last retained frame (host-native
+/// `lifecycle/census.rs`), so one presented frame peaks at two.
+pub(super) fn assert_exact_resource_evidence(
+    evidence: &serde_json::Value,
+    succession: CreationSurfaceSuccession,
+) {
     let mut expected = PHASE_FIVE_RESOURCE_CLASSES
         .iter()
         .map(|field| ((*field).to_owned(), serde_json::Value::from(0)))
@@ -9,7 +18,7 @@ pub(super) fn assert_exact_resource_evidence(evidence: &serde_json::Value) {
         ("adapters", 1),
         ("devices", 1),
         ("queues", 1),
-        ("retained_targets", 2),
+        ("retained_targets", succession.peak_retained_targets()),
         ("registrations", 1),
         ("readback_buffers", 1),
         ("pending_submissions", 1),
@@ -20,8 +29,11 @@ pub(super) fn assert_exact_resource_evidence(evidence: &serde_json::Value) {
         ("physical_signal_transition_observations", 1),
         ("retained_draw_lists", 1),
         ("presentation_epochs", 1),
-        ("reconstruction_requirements", 1),
-        ("retained_frame_observations", 1),
+        (
+            "reconstruction_requirements",
+            succession.reconstruction_requirements(),
+        ),
+        ("retained_frame_observations", 2),
     ] {
         expected.insert(field.to_owned(), count.into());
     }

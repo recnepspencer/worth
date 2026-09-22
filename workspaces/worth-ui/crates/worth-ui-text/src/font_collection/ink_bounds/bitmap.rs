@@ -278,7 +278,9 @@ fn bgra_alpha(bytes: &[u8], width: u32, height: u32) -> Option<Vec<u8>> {
     let expected = pixels.checked_mul(4)?;
     (bytes.len() >= expected).then(|| {
         bytes[..expected]
-            .chunks_exact(4)
+            .as_chunks::<4>()
+            .0
+            .iter()
             .map(|pixel| pixel[3])
             .collect()
     })

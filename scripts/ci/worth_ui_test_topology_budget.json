@@ -19,6 +19,7 @@
       "uses: ./.github/actions/setup-worth-ui",
       "python3 scripts/ci/test_worth_ui_test_topology.py",
       "python3 scripts/ci/test_worth_ui_test_lane.py",
+      "python3 scripts/ci/test_worth_ui_native_platform_lane.py",
       "python3 scripts/ci/test_worth_ui_native_features.py",
       "python3 scripts/ci/check_worth_ui_test_topology.py",
       "python3 scripts/ci/run_worth_ui_test_lane.py fast",
@@ -26,7 +27,7 @@
       "python3 scripts/ci/run_worth_ui_test_lane.py compile-contracts",
       "python3 scripts/ci/run_worth_ui_test_lane.py hostile-certification",
       "python3 scripts/ci/run_worth_ui_test_lane.py dependency-contract",
-      "python3 scripts/ci/run_worth_ui_test_lane.py compile-only-platform",
+      "python3 scripts/ci/run_worth_ui_test_lane.py native-platform",
       "python scripts/ci/run_worth_ui_test_lane.py platform-check",
       "cargo fmt --all --manifest-path workspaces/worth-ui/Cargo.toml -- --check",
       "cargo clippy --workspace --all-targets --all-features --manifest-path workspaces/worth-ui/Cargo.toml -- -D warnings",
@@ -74,7 +75,7 @@
     "dependency-contract": [
       "worth-ui-certification:host_contract_only_adapter"
     ],
-    "compile-only-platform": [
+    "native-platform": [
       "worth-ui-platform-pulse:executable_world"
     ]
   },

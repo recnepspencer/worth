@@ -1,5 +1,5 @@
 use super::super::native_profile::{
-    UiNativePlatformProfileIdentity, APPEARANCE_PROFILE, WORTH_UI_NATIVE_PROFILE_MANIFEST,
+    ACTIVE_PROFILE, APPEARANCE_PROFILE, WORTH_UI_NATIVE_PROFILE_MANIFEST,
 };
 
 use worth_ui_host_contract::{
@@ -16,11 +16,11 @@ use worth_ui_host_contract::{
 };
 
 #[test]
-fn current_v2_profile_carries_the_native_appearance_long_pole() {
+fn the_active_profile_carries_the_native_appearance_long_pole() {
     let live = parse(WORTH_UI_NATIVE_PROFILE_MANIFEST);
     assert_eq!(
         live["identity"].as_str(),
-        Some(UiNativePlatformProfileIdentity::WORTH_UI_WINDOWS_DX12_V2.as_str())
+        Some(ACTIVE_PROFILE.identity.as_str())
     );
     assert_eq!(live["identity"].as_str(), Some(APPEARANCE_PROFILE.identity));
     assert_eq!(live["profile_stage"].as_str(), Some("current"));
@@ -146,7 +146,7 @@ fn certification_report_carries_each_native_scale_fringe_enclosure_without_fallb
 }
 
 #[test]
-fn live_native_preparation_uses_v2_appearance_and_cutover_protocol() {
+fn live_native_preparation_uses_the_active_appearance_and_cutover_protocol() {
     let (mechanics, _event_loop) =
         crate::WorthUiPreparedNativeHost::prepare_qualified().into_parts(
             crate::UiNativeWindowConfiguration::qualified("host-admission", [800, 600]),
@@ -163,7 +163,7 @@ fn live_native_preparation_uses_v2_appearance_and_cutover_protocol() {
             .parse::<toml::Value>()
             .expect("live native profile manifest parses")["identity"]
             .as_str(),
-        Some(UiNativePlatformProfileIdentity::WORTH_UI_WINDOWS_DX12_V2.as_str())
+        Some(ACTIVE_PROFILE.identity.as_str())
     );
     assert_eq!(protocol.protocol().revision(), 9);
     assert_eq!(protocol.mounted_frame().revision(), 8);

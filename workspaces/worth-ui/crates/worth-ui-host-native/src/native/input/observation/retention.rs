@@ -1,7 +1,8 @@
 use worth_ui_host_contract::{
     UiHostObservationBatch, UiHostObservationBatchInput, UiHostObservationLoss,
-    UiHostObservationPayload, UiHostObservationReport, UiHostObservationSequence,
-    UiHostObservationSequenceRange, UiHostObservationTimeBasis, UiHostPointerDeviceKind,
+    UiHostObservationPayload, UiHostObservationReport, UiHostObservationRetentionOutcome,
+    UiHostObservationSequence, UiHostObservationSequenceRange, UiHostObservationTimeBasis,
+    UiHostPointerDeviceKind,
 };
 
 use super::{
@@ -108,10 +109,16 @@ impl UiNativeInputObservationState {
         };
         let evidence_checkpoint = self.evidence.clone();
         self.evidence.record_batch(batch.reports());
-        if let Err(denial) = self.retention.retain_latest_pointer_motion(batch) {
-            self.evidence = evidence_checkpoint;
-            self.record_terminal_stop(UiNativeInputObservationStop::Retention(denial));
-            return UiNativeInputObservationDisposition::Stopped;
+        match self.retention.retain_latest_pointer_motion(batch) {
+            Ok(UiHostObservationRetentionOutcome::Appended) => {}
+            Ok(UiHostObservationRetentionOutcome::ReplacedPointerMotion) => {
+                self.evidence.record_coalesced_motion_batch();
+            }
+            Err(denial) => {
+                self.evidence = evidence_checkpoint;
+                self.record_terminal_stop(UiNativeInputObservationStop::Retention(denial));
+                return UiNativeInputObservationDisposition::Stopped;
+            }
         }
         self.next_sequence = Some(next_sequence);
         UiNativeInputObservationDisposition::Retained

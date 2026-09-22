@@ -6,6 +6,17 @@ use worth_ui_host_contract::{
     UiHostObservationPayload,
 };
 
+/// Whether an IME composition is in progress, as the composition owner
+/// tracks it. `Ime::Disabled` cancels a composition only while one is in
+/// progress; a window that never composed receives the same event as the
+/// platform's availability notice (X11 sends it at window creation), and that
+/// notice is not input.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum UiNativeImeCompositionPosture {
+    Idle,
+    Composing,
+}
+
 #[derive(Debug)]
 pub(crate) enum UiNativeImeDenial {
     RevisionExhausted,

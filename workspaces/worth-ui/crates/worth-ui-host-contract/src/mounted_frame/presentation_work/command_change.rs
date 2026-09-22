@@ -136,8 +136,9 @@ impl UiMountedPaintCommandIdentity {
             ^ family
             ^ u64::from(self.semantic_slot);
         if let Some(row) = self.collection_row {
-            for chunk in row.chunks_exact(8) {
-                digest ^= u64::from_le_bytes(chunk.try_into().expect("eight-byte chunk"));
+            let (chunks, _) = row.as_chunks::<8>();
+            for chunk in chunks {
+                digest ^= u64::from_le_bytes(*chunk);
                 digest = digest.rotate_left(13).wrapping_mul(0xff51_afd7_ed55_8ccd);
             }
         }
@@ -183,8 +184,9 @@ impl UiMountedPaintCommand {
 
 fn portal_identity_digest(identity: u64) -> [u8; 32] {
     let mut digest = [0_u8; 32];
-    for (index, chunk) in digest.chunks_exact_mut(8).enumerate() {
-        chunk.copy_from_slice(&identity.rotate_left((index * 13) as u32).to_le_bytes());
+    let (chunks, _) = digest.as_chunks_mut::<8>();
+    for (index, chunk) in chunks.iter_mut().enumerate() {
+        *chunk = identity.rotate_left((index * 13) as u32).to_le_bytes();
     }
     digest
 }

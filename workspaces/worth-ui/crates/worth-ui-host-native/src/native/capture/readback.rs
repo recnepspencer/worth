@@ -257,18 +257,7 @@ mod tests {
 
     #[test]
     fn production_readback_removes_gpu_row_padding_without_changing_rgba_bytes() {
-        let mut descriptor = wgpu::InstanceDescriptor::new_without_display_handle();
-        descriptor.backends = wgpu::Backends::DX12;
-        let instance = wgpu::Instance::new(descriptor);
-        let adapter = pollster::block_on(instance.enumerate_adapters(wgpu::Backends::DX12))
-            .into_iter()
-            .next()
-            .expect("one qualified DX12 adapter");
-        let (device, queue) = pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor {
-            required_limits: wgpu::Limits::downlevel_defaults().using_resolution(adapter.limits()),
-            ..Default::default()
-        }))
-        .expect("qualified readback device");
+        let (device, queue, _) = crate::native::text_atlas::qualified_test_device();
         let texture = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("worth-ui-capture-canonicalization-source"),
             size: wgpu::Extent3d {
@@ -279,7 +268,7 @@ mod tests {
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            format: crate::native::graphics::qualified_target_format(),
             usage: wgpu::TextureUsages::COPY_DST | wgpu::TextureUsages::COPY_SRC,
             view_formats: &[],
         });
