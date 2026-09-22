@@ -73,6 +73,7 @@ where
                     denial(
                         WorthQueryApplicationOneShotDenialKind::SourceIdentityExhausted,
                         plan.query.name(),
+                        plan.query.name(),
                     )
                 })?;
             Ok(super::super::WorthQueryObservedSource {
@@ -95,6 +96,7 @@ where
         return Err(denial(
             WorthQueryApplicationOneShotDenialKind::BasisReleaseFailed,
             plan.query.name(),
+            plan.query.name(),
         ));
     }
     validate_basis_lifetime(&plan.controls, plan.query.name())?;
@@ -108,6 +110,7 @@ where
         |projection: crate::domain_computation::primary_graph::WorthQueryApplicationProjectionDenial| {
             denial(
                 WorthQueryApplicationOneShotDenialKind::Projection(projection.kind()),
+                plan.query.name(),
                 projection.subject(),
             )
         },
@@ -125,6 +128,7 @@ where
         .map_err(|_| {
             denial(
                 WorthQueryApplicationOneShotDenialKind::ForeignPlan,
+                plan.query.name(),
                 plan.query.name(),
             )
         })?;
