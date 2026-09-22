@@ -119,16 +119,17 @@ impl RelationalAuthoritativeAllocationAccounting {
                 .logical_region_object_bytes
                 .saturating_add(region.root_region_bytes)
                 .saturating_add(region.partition_state_bytes);
-            self.insert(
-                RelationalAuthoritativeAllocationLocator::new(
+            let partition = root
+                .partition_state(region.partition_id)
+                .expect("observed region owns its partition");
+            for allocation in
+                crate::inspection::mvcc::partition_allocations::authoritative_partition_allocations(
                     runtime_instance_id,
-                    RelationalAuthoritativeAllocationKind::PartitionPayload,
-                    region.region_id,
-                    region.creation_root_id,
-                    Some(region.partition_id),
-                ),
-                region.authoritative_bytes,
-            );
+                    partition,
+                )
+            {
+                self.insert(allocation.locator(), allocation.authoritative_bytes());
+            }
             self.insert(
                 RelationalAuthoritativeAllocationLocator::new(
                     runtime_instance_id,
@@ -149,15 +150,30 @@ impl RelationalAuthoritativeAllocationAccounting {
                 ),
                 region.partition_state_bytes,
             );
-            self.excluded_allocations.insert(
-                (0, region.region_id),
-                RelationalExcludedAllocationBytes {
-                    diagnostics: region.diagnostic_bytes,
-                    retention_metadata: region.retention_metadata_bytes,
-                    allocator_bookkeeping: region.allocator_bookkeeping_bytes,
-                    optional_cache: region.optional_cache_bytes,
-                },
-            );
+            for (lane, allocation) in
+                crate::inspection::mvcc::partition_allocations::excluded_partition_allocations(
+                    partition, root,
+                )
+            {
+                use crate::inspection::mvcc::allocation_ledger::RelationalExcludedAllocationLane;
+                let mut bytes = RelationalExcludedAllocationBytes::default();
+                match lane {
+                    RelationalExcludedAllocationLane::Diagnostics => {
+                        bytes.diagnostics = allocation.bytes
+                    }
+                    RelationalExcludedAllocationLane::RetentionMetadata => {
+                        bytes.retention_metadata = allocation.bytes
+                    }
+                    RelationalExcludedAllocationLane::AllocatorBookkeeping => {
+                        bytes.allocator_bookkeeping = allocation.bytes
+                    }
+                    RelationalExcludedAllocationLane::OptionalCache => {
+                        bytes.optional_cache = allocation.bytes
+                    }
+                }
+                self.excluded_allocations
+                    .insert((2 + lane as u8, allocation.id), bytes);
+            }
         }
     }
 

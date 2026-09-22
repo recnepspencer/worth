@@ -5,10 +5,10 @@ use super::observation::RelationalBranchSharingObservation;
 /// authoritative totals.
 ///
 /// Any change to what an existing metric means requires a new version rather
-/// than a silent redefinition. Version 4 reports every owner-defined
-/// authoritative allocation reachable from the selected branches, together with
-/// the complete-root visibility commitments.
-pub const RELATIONAL_SHARING_INSPECTION_VERSION: u16 = 4;
+/// than a silent redefinition. Version 5 retains the complete-owner scope and
+/// visibility commitments, but identifies payloads at shared node/value
+/// granularity rather than treating a whole partition as one allocation.
+pub const RELATIONAL_SHARING_INSPECTION_VERSION: u16 = 5;
 
 /// Explicit scope of the live authoritative byte totals in a sharing
 /// observation.
@@ -33,11 +33,11 @@ pub enum RelationalSharingByteMetricScope {
     /// Historical scope under which the byte totals covered authoritative
     /// partition payloads only.
     ///
-    /// Inspection version 4 never produces this variant; it always reports
+    /// Inspection versions 4 and later never produce this variant; they report
     /// `CompleteAuthoritativeOwnerAllocations`. The variant remains public so
     /// that callers matching on the scope keep compiling across the change.
     #[deprecated(
-        note = "inspection version 4 reports complete owner allocations; this scope is never produced"
+        note = "inspection versions 4 and later report complete owner allocations; this scope is never produced"
     )]
     AuthoritativePartitionPayloadsOnly,
 }

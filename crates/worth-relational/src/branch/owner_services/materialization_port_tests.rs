@@ -105,6 +105,7 @@ fn external_endpoint_group_restores_only_its_exact_relation_endpoints() {
 fn durability_replays_suspended_and_restored_materialization_roots() {
     let runtime = persisted_runtime_with_test_schema();
     let (created, entity_fields, relation_fields) = create_generated_group(&runtime);
+    assert_cold_inventory(&runtime);
     let entities = changed_entities(&created);
     let relation = changed_relations(&created)[0];
     let identity = runtime.main_branch_identity();
@@ -121,9 +122,11 @@ fn durability_replays_suspended_and_restored_materialization_roots() {
         .materialization_port()
         .suspend_generated_materialization(&source_basis, &entities)
         .expect("the durable source suspends through owner authority");
+    assert_cold_inventory(&runtime);
 
     let (_, recovered) =
         crate::tests::support::recover_with(&runtime, persisted_runtime_with_test_schema);
+    assert_cold_inventory(&recovered);
     let recovered_identity = recovered.main_branch_identity();
     let (_, recovered_basis) = recovered
         .observe_branch(&recovered_identity)
@@ -161,6 +164,7 @@ fn durability_replays_suspended_and_restored_materialization_roots() {
             }],
         )
         .expect("the original owner restores the exact group");
+    assert_cold_inventory(&runtime);
     runtime
         .snapshots()
         .release_snapshot(&restored.snapshot)
@@ -168,6 +172,7 @@ fn durability_replays_suspended_and_restored_materialization_roots() {
 
     let (_, recovered_restored) =
         crate::tests::support::recover_with(&runtime, persisted_runtime_with_test_schema);
+    assert_cold_inventory(&recovered_restored);
     let current = recovered_restored.visibility_authority().snapshot();
     let read = recovered_restored
         .read_truth()
@@ -181,6 +186,15 @@ fn durability_replays_suspended_and_restored_materialization_roots() {
         entities
     );
     assert_eq!(read.relations()[0].relation_id, relation);
+}
+
+fn assert_cold_inventory(runtime: &crate::runtime::RelationalRuntime) {
+    let (_, basis) = runtime
+        .observe_branch(&runtime.main_branch_identity())
+        .unwrap();
+    let root = &basis.inner.root;
+    assert!(root.is_complete(&runtime.services.symbols.interner_snapshot()));
+    root.assert_derived_inventory_matches_cold();
 }
 
 fn create_generated_group(

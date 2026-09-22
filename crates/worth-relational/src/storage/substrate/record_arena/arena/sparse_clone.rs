@@ -1,3 +1,4 @@
+use crate::storage::substrate::SharedColumn;
 use std::collections::BTreeMap;
 
 use super::{RecordArena, RecordKind};
@@ -18,10 +19,18 @@ impl<K: RecordKind> RecordArena<K> {
             let Some(physical) = self.physical_index(slot) else {
                 continue;
             };
-            clone.metadata_history[physical] = self.metadata_history[physical].clone();
-            clone.extra[physical] = self.extra[physical].clone();
-            clone.aspect_versions[physical] = self.aspect_versions[physical].clone();
-            clone.diagnostics_enrichment[physical] = self.diagnostics_enrichment[physical].clone();
+            clone
+                .metadata_history
+                .copy_value_from(physical, &self.metadata_history, physical);
+            clone.extra.copy_value_from(physical, &self.extra, physical);
+            clone
+                .aspect_versions
+                .copy_value_from(physical, &self.aspect_versions, physical);
+            clone.diagnostics_enrichment.copy_value_from(
+                physical,
+                &self.diagnostics_enrichment,
+                physical,
+            );
         }
 
         clone
@@ -54,12 +63,10 @@ impl<K: RecordKind> RecordArena<K> {
         clone.live_bitset = self.live_bitset.clone();
         clone.reclaimable_bitset = self.reclaimable_bitset.clone();
 
-        clone.metadata_history.resize_with(slot_count, Vec::new);
-        clone.extra.resize_with(slot_count, K::empty_extra);
-        clone.aspect_versions.resize_with(slot_count, BTreeMap::new);
-        clone
-            .diagnostics_enrichment
-            .resize_with(slot_count, BTreeMap::new);
+        clone.metadata_history = SharedColumn::with_default(slot_count, SharedColumn::default());
+        clone.extra = SharedColumn::with_default(slot_count, K::empty_extra());
+        clone.aspect_versions = SharedColumn::with_default(slot_count, BTreeMap::new());
+        clone.diagnostics_enrichment = SharedColumn::with_default(slot_count, BTreeMap::new());
 
         clone
     }

@@ -26,6 +26,22 @@ pub(crate) fn retry_lineage_after_timeout(
     truth_basis: BridgeAsyncRequestTruthViewBasis,
     timeout_tick: u64,
 ) -> BridgeAsyncRetryLineage {
+    runtime
+        .admit_async_retry_lineage_after_timeout(timeout_retry_request(
+            runtime,
+            node,
+            truth_basis,
+            timeout_tick,
+        ))
+        .expect("timeout retry lineage should admit")
+}
+
+pub(crate) fn timeout_retry_request(
+    runtime: &RuntimeBridge,
+    node: NodeId,
+    truth_basis: BridgeAsyncRequestTruthViewBasis,
+    timeout_tick: u64,
+) -> BridgeAsyncRetryLineageRequest {
     let prior =
         admit_retryable_timeout_request_response_identity(runtime, node, truth_basis, timeout_tick);
     let (timeout_report, retry_schedule, retry_admission) =
@@ -67,15 +83,12 @@ pub(crate) fn retry_lineage_after_timeout(
             (timeout_report, retry_schedule, retry_admission)
         })
         .expect("signal runtime should stay on the owning thread");
-    let request = BridgeAsyncRetryLineageRequest::after_timeout(
+    BridgeAsyncRetryLineageRequest::after_timeout(
         &prior,
         &timeout_report,
         &retry_schedule,
         &retry_admission,
-    );
-    runtime
-        .admit_async_retry_lineage_after_timeout(request)
-        .expect("timeout retry lineage should admit")
+    )
 }
 
 pub(crate) fn retry_lineage_after_cancellation(
@@ -149,7 +162,7 @@ pub(crate) fn cancellation_retry_rejection_for_cross_declaration(
         .expect_err("cross-declaration retry lineage should reject")
 }
 
-fn admit_retryable_request_response_identity(
+pub(crate) fn admit_retryable_request_response_identity(
     runtime: &RuntimeBridge,
     node: NodeId,
     truth_basis: BridgeAsyncRequestTruthViewBasis,

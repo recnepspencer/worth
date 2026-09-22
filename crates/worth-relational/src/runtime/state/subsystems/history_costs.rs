@@ -19,6 +19,9 @@ pub struct RelationalBranchSharingCostCounters {
     pub publication_touched_region_count: u64,
     pub publication_reused_region_count: u64,
     pub publication_persistent_index_path_nodes: u64,
+    /// Changed record/history/membership/bitset values encoded by root publication.
+    /// Unchanged retained values contribute zero; digest index nodes are not values.
+    pub publication_content_values_hashed: u64,
     pub publication_new_authoritative_bytes: u64,
     pub reclaimable_unique_bytes: u64,
 }
@@ -81,6 +84,10 @@ impl RelationalBranchSharingCostCounters {
             publication_new_authoritative_bytes: delta(
                 self.publication_new_authoritative_bytes,
                 baseline.publication_new_authoritative_bytes,
+            ),
+            publication_content_values_hashed: delta(
+                self.publication_content_values_hashed,
+                baseline.publication_content_values_hashed,
             ),
             reclaimable_unique_bytes: delta(
                 self.reclaimable_unique_bytes,

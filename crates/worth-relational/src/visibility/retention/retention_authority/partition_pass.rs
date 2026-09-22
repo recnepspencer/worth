@@ -198,9 +198,9 @@ mod tests {
                 1,
             )
             .unwrap();
-        *entity_arena
-            .adjust_named_pin(high_slot, PinClass::Branch)
-            .unwrap() = 1;
+        entity_arena
+            .adjust_named_pin(high_slot, PinClass::Branch, 1)
+            .unwrap();
         let adjacency_policy = runtime.config.storage.adjacency_policy.clone();
         runtime.edit_partitions().insert(
             partition_id,

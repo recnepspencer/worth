@@ -21,6 +21,17 @@ pub struct BridgeAsyncRetryLineageRequest {
 }
 
 impl BridgeAsyncRetryLineageRequest {
+    pub(crate) fn validate_runtime(
+        &self,
+        key: u64,
+    ) -> Result<(), super::BridgeAsyncForwardCausalityRejection> {
+        super::runtime_binding::validate_lineage_runtime(key, &self.prior)?;
+        if let Some(newer) = &self.newer_request {
+            super::runtime_binding::validate_lineage_runtime(key, newer)?;
+        }
+        Ok(())
+    }
+
     pub fn after_timeout(
         prior: &AdmittedBridgeAsyncRequestIdentity,
         timeout_report: &ResourceTimeoutReport,

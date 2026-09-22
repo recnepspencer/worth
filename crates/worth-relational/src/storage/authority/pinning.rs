@@ -31,9 +31,7 @@ impl StorageAuthority<'_> {
             if arena.snapshot_pin_count(slot).is_none() {
                 return;
             }
-            if let Some(pin_count) = arena.adjust_named_pin(slot, class) {
-                *pin_count = pin_count.saturating_add_signed(delta);
-            }
+            arena.adjust_named_pin(slot, class, delta);
             arena.retired_at_for_slot(slot)
         };
         self.refresh_retention_state::<K>(partition_id, slot, retired_at, retention_fence);

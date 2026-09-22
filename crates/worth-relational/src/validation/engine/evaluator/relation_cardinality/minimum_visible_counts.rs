@@ -270,7 +270,7 @@ fn visible_relation_metadata<'state>(
 ) -> Option<&'state VersionedRelationMetadata> {
     let history = arena.metadata_history_at(slot)?;
     let end = history.partition_point(|entry| entry.effective_at() <= state_view.version_id());
-    history[..end].iter().rev().find(|entry| {
+    (0..end).rev().map(|index| &history[index]).find(|entry| {
         entry.effective_at() <= state_view.version_id()
             && entry
                 .retired_at()

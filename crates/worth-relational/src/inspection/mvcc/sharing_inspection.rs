@@ -101,7 +101,7 @@ fn partition_region_locators(
         .iter()
         .filter_map(|allocation| {
             let locator = allocation.locator();
-            (locator.kind() == RelationalAuthoritativeAllocationKind::PartitionPayload).then(|| {
+            (locator.kind() == RelationalAuthoritativeAllocationKind::RootRegionObject).then(|| {
                 RelationalStorageRegionLocator::new(
                     locator.runtime_instance_id(),
                     locator.creation_owner_id(),

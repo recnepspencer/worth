@@ -15,6 +15,7 @@ pub enum BridgeAsyncForwardCausalityRejectionKind {
     PriorAndNewerSignalHandleMismatch,
     RequestIdentityAdmissionRejected,
     SignalRuntimeThreadAffinityViolation,
+    SignalRuntimeIdentityMismatch,
     StaleSignalGenerationRejected,
     BasisDriftRequiredForRevalidation,
     BasisDriftForbiddenForRetry,

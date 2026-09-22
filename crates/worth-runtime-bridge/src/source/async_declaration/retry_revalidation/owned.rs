@@ -19,6 +19,7 @@ pub(crate) fn admit_owned_retry_lineage(
     retry_schedule_report: &ResourceRetryScheduleReport,
     retry_admission_report: &ResourceRetryAdmissionReport,
 ) -> Result<BridgeAsyncRetryLineage, BridgeAsyncForwardCausalityRejection> {
+    super::runtime_binding::validate_lineage_runtime(prior.bridge_runtime_key(), &newer)?;
     let scheduled = retry_schedule_report
         .scheduled_retry()
         .cloned()
@@ -78,6 +79,7 @@ pub(crate) fn admit_owned_revalidation_lineage(
     newer: AdmittedBridgeAsyncRequestIdentity,
     resource_report: &ResourceRevalidationReport,
 ) -> Result<BridgeAsyncRevalidationLineage, BridgeAsyncForwardCausalityRejection> {
+    super::runtime_binding::validate_lineage_runtime(prior.bridge_runtime_key(), &newer)?;
     if let Some(denied) = resource_report.denied_revalidation() {
         return match denied.class() {
             ResourceRevalidationDenialClass::ExpectedActiveRequestMismatch

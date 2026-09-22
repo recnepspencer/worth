@@ -1,3 +1,5 @@
+mod runtime_binding;
+
 use super::support::{
     activation_ready_for_branch_head, activation_ready_for_snapshot,
     cancellation_retry_rejection_for_cross_declaration, preview_active_subscription_with_basis,

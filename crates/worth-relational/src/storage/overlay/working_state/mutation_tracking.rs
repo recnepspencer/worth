@@ -42,22 +42,6 @@ impl WorkingState {
             .insert(slot);
     }
 
-    pub(crate) fn reserve_entity_slots(&mut self, partition_id: PartitionId, additional: usize) {
-        if additional == 0 {
-            return;
-        }
-        let partition = self.get_partition_mut(partition_id);
-        partition.entity_arena.reserve_additional(additional);
-    }
-
-    pub(crate) fn reserve_relation_slots(&mut self, partition_id: PartitionId, additional: usize) {
-        if additional == 0 {
-            return;
-        }
-        let partition = self.get_partition_mut(partition_id);
-        partition.relation_arena.reserve_additional(additional);
-    }
-
     pub(crate) fn mutation_journal(
         &self,
     ) -> &BTreeMap<PartitionId, super::super::PartitionMutationJournal> {

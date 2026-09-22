@@ -269,10 +269,12 @@ impl<'state> InvariantStateView<'state> {
 
     fn visible_entity_metadata(
         &self,
-        history: &'state [crate::storage::substrate::VersionedEntityMetadata],
+        history: &'state crate::storage::substrate::SharedColumn<
+            crate::storage::substrate::VersionedEntityMetadata,
+        >,
     ) -> Option<&'state crate::storage::substrate::VersionedEntityMetadata> {
         let end = history.partition_point(|entry| entry.effective_at() <= self.version_id);
-        history[..end].iter().rev().find(|entry| {
+        (0..end).rev().map(|index| &history[index]).find(|entry| {
             entry.effective_at() <= self.version_id
                 && entry
                     .retired_at()
@@ -282,10 +284,12 @@ impl<'state> InvariantStateView<'state> {
 
     fn visible_relation_metadata(
         &self,
-        history: &'state [crate::storage::substrate::VersionedRelationMetadata],
+        history: &'state crate::storage::substrate::SharedColumn<
+            crate::storage::substrate::VersionedRelationMetadata,
+        >,
     ) -> Option<&'state crate::storage::substrate::VersionedRelationMetadata> {
         let end = history.partition_point(|entry| entry.effective_at() <= self.version_id);
-        history[..end].iter().rev().find(|entry| {
+        (0..end).rev().map(|index| &history[index]).find(|entry| {
             entry.effective_at() <= self.version_id
                 && entry
                     .retired_at()

@@ -24,7 +24,7 @@ pub(super) fn existing_relation_targets_for_source(
         return false;
     };
 
-    for relation_id in outgoing_relations.as_slice().iter().copied() {
+    for relation_id in outgoing_relations.current_ids().iter().copied() {
         instrumentation.count(|counters| counters.relation_identity_candidates_scanned += 1);
         if relation_candidate_matches_target_identity(
             state,

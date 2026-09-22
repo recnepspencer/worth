@@ -1,7 +1,11 @@
 use crate::config::data::{AdjacencyBackend, AdjacencyPolicy};
 use crate::identity::data::{KindId, RelationId, VersionId};
 
-use std::collections::BTreeMap;
+use crate::storage::substrate::SharedMap;
+mod allocation;
+mod ids;
+pub(crate) use ids::AdjacencyIds;
+type RelationSet = SharedMap<RelationId, ()>;
 
 #[derive(Debug, Clone)]
 pub(crate) enum AdjacencySet {
@@ -12,18 +16,31 @@ pub(crate) enum AdjacencySet {
 #[derive(Debug, Clone)]
 // The kind indexes are cold until a kind-filtered traversal first needs them.
 // Keeping them indirect preserves the small ordinary adjacency value layout.
-#[allow(clippy::box_collection)]
 pub(crate) struct AdjacencyEntries {
-    current: Vec<RelationId>,
-    current_by_kind: Option<Box<BTreeMap<KindId, Vec<RelationId>>>>,
-    historical_by_kind: Option<Box<BTreeMap<KindId, Vec<RelationId>>>>,
-    structural_revision_by_kind: Option<Box<BTreeMap<KindId, VersionId>>>,
+    current: RelationSet,
+    current_by_kind: Option<SharedMap<KindId, RelationSet>>,
+    historical_by_kind: Option<SharedMap<KindId, RelationSet>>,
+    structural_revision_by_kind: Option<SharedMap<KindId, VersionId>>,
 }
 
 impl AdjacencySet {
+    pub(crate) fn changed_current_memberships(
+        &self,
+        previous: Option<&Self>,
+    ) -> Vec<(RelationId, bool)> {
+        let empty = RelationSet::default();
+        let previous = previous.map(|set| &set.entries().current).unwrap_or(&empty);
+        self.entries()
+            .current
+            .changed_keys_since(previous)
+            .into_iter()
+            .map(|id| (id, self.entries().current.contains_key(&id)))
+            .collect()
+    }
+
     pub(crate) fn new(policy: &AdjacencyPolicy) -> Self {
         let entries = || AdjacencyEntries {
-            current: Vec::with_capacity(policy.small_degree_inline_capacity),
+            current: RelationSet::new(),
             current_by_kind: None,
             historical_by_kind: None,
             structural_revision_by_kind: None,
@@ -39,11 +56,11 @@ impl AdjacencySet {
         structural_revisions: Vec<(KindId, VersionId)>,
     ) -> Self {
         Self::Compressed(AdjacencyEntries {
-            current,
+            current: current.into_iter().map(|id| (id, ())).collect(),
             current_by_kind: None,
             historical_by_kind: None,
             structural_revision_by_kind: (!structural_revisions.is_empty())
-                .then(|| Box::new(structural_revisions.into_iter().collect())),
+                .then(|| structural_revisions.into_iter().collect()),
         })
     }
 
@@ -90,7 +107,7 @@ impl AdjacencySet {
         let revisions = self
             .entries_mut()
             .structural_revision_by_kind
-            .get_or_insert_with(|| Box::new(BTreeMap::new()));
+            .get_or_insert_with(|| SharedMap::new());
         let revision = revisions.entry(kind_id).or_insert(version_id);
         *revision = (*revision).max(version_id);
     }
@@ -100,7 +117,7 @@ impl AdjacencySet {
         remove_sorted(&mut entries.current, relation_id);
         if let Some(relations) = entries
             .current_by_kind
-            .as_deref_mut()
+            .as_mut()
             .and_then(|by_kind| by_kind.get_mut(&kind_id))
         {
             remove_sorted(relations, relation_id);
@@ -120,7 +137,7 @@ impl AdjacencySet {
     pub(crate) fn structural_revision(&self, kind_id: KindId) -> Option<VersionId> {
         self.entries()
             .structural_revision_by_kind
-            .as_deref()
+            .as_ref()
             .and_then(|revisions| revisions.get(&kind_id))
             .copied()
     }
@@ -128,7 +145,7 @@ impl AdjacencySet {
     pub(crate) fn structural_revisions(&self) -> Vec<(KindId, VersionId)> {
         self.entries()
             .structural_revision_by_kind
-            .as_deref()
+            .as_ref()
             .map(|revisions| {
                 revisions
                     .iter()
@@ -138,22 +155,22 @@ impl AdjacencySet {
             .unwrap_or_default()
     }
 
-    pub(crate) fn current_kind_slice(&self, kind_id: KindId) -> &[RelationId] {
-        self.entries()
-            .current_by_kind
-            .as_deref()
-            .and_then(|by_kind| by_kind.get(&kind_id))
-            .map(Vec::as_slice)
-            .unwrap_or_default()
+    pub(crate) fn current_kind_ids(&self, kind_id: KindId) -> AdjacencyIds<'_> {
+        AdjacencyIds::new(
+            self.entries()
+                .current_by_kind
+                .as_ref()
+                .and_then(|kinds| kinds.get(&kind_id)),
+        )
     }
 
-    pub(crate) fn historical_kind_slice(&self, kind_id: KindId) -> &[RelationId] {
-        self.entries()
-            .historical_by_kind
-            .as_deref()
-            .and_then(|by_kind| by_kind.get(&kind_id))
-            .map(Vec::as_slice)
-            .unwrap_or_default()
+    pub(crate) fn historical_kind_ids(&self, kind_id: KindId) -> AdjacencyIds<'_> {
+        AdjacencyIds::new(
+            self.entries()
+                .historical_by_kind
+                .as_ref()
+                .and_then(|kinds| kinds.get(&kind_id)),
+        )
     }
 
     fn entries(&self) -> &AdjacencyEntries {
@@ -168,84 +185,65 @@ impl AdjacencySet {
         }
     }
 
-    pub(crate) fn as_slice(&self) -> &[RelationId] {
-        &self.entries().current
+    pub(crate) fn current_ids(&self) -> AdjacencyIds<'_> {
+        AdjacencyIds::new(Some(&self.entries().current))
     }
 
     pub(crate) fn ids(&self) -> Vec<RelationId> {
-        self.as_slice().to_vec()
+        self.current_ids().to_vec()
     }
 
     pub(crate) fn extend_into(&self, target: &mut std::collections::BTreeSet<RelationId>) {
-        target.extend(self.as_slice().iter().copied())
+        target.extend(self.current_ids().iter().copied())
     }
 
     pub(crate) fn authoritative_allocation_bytes(&self) -> u64 {
-        let entries = self.entries();
-        (entries.current.capacity() as u64).saturating_mul(std::mem::size_of::<RelationId>() as u64)
+        self.entries().current.allocation_bytes()
     }
 
     pub(crate) fn optional_cache_allocation_bytes(&self) -> u64 {
         let entries = self.entries();
-        let mut bytes = 0_u64;
-        for buckets in [&entries.current_by_kind, &entries.historical_by_kind] {
-            if let Some(buckets) = buckets.as_deref() {
-                bytes = bytes
-                    .saturating_add(std::mem::size_of::<BTreeMap<KindId, Vec<RelationId>>>() as u64)
-                    .saturating_add((buckets.len() as u64).saturating_mul(std::mem::size_of::<(
-                        KindId,
-                        Vec<RelationId>,
-                    )>()
-                        as u64));
-                bytes = bytes.saturating_add(
-                    buckets
+        [&entries.current_by_kind, &entries.historical_by_kind]
+            .into_iter()
+            .flatten()
+            .map(|kinds| {
+                kinds.allocation_bytes().saturating_add(
+                    kinds
                         .values()
-                        .map(|relations| {
-                            (relations.capacity() as u64).saturating_mul(std::mem::size_of::<
-                                RelationId,
-                            >(
-                            )
-                                as u64)
-                        })
+                        .map(RelationSet::allocation_bytes)
                         .sum::<u64>(),
-                );
-            }
-        }
-        if let Some(revisions) = entries.structural_revision_by_kind.as_deref() {
-            bytes = bytes
-                .saturating_add(std::mem::size_of::<BTreeMap<KindId, VersionId>>() as u64)
-                .saturating_add(
-                    (revisions.len() as u64)
-                        .saturating_mul(std::mem::size_of::<(KindId, VersionId)>() as u64),
-                );
-        }
-        bytes
+                )
+            })
+            .sum::<u64>()
+            .saturating_add(
+                entries
+                    .structural_revision_by_kind
+                    .as_ref()
+                    .map_or(0, SharedMap::allocation_bytes),
+            )
     }
 }
 
-#[allow(clippy::box_collection)]
 fn insert_kind_relation(
-    buckets: &mut Option<Box<BTreeMap<KindId, Vec<RelationId>>>>,
+    buckets: &mut Option<SharedMap<KindId, RelationSet>>,
     kind_id: KindId,
     relation_id: RelationId,
 ) {
     let relations = buckets
-        .get_or_insert_with(|| Box::new(BTreeMap::new()))
+        .get_or_insert_with(|| SharedMap::new())
         .entry(kind_id)
         .or_default();
     insert_sorted(relations, relation_id);
 }
 
-fn insert_sorted(relations: &mut Vec<RelationId>, relation_id: RelationId) {
-    if let Err(index) = relations.binary_search(&relation_id) {
-        relations.insert(index, relation_id);
+fn insert_sorted(relations: &mut RelationSet, relation_id: RelationId) {
+    if !relations.contains_key(&relation_id) {
+        relations.insert(relation_id, ());
     }
 }
 
-fn remove_sorted(relations: &mut Vec<RelationId>, relation_id: &RelationId) {
-    if let Ok(index) = relations.binary_search(relation_id) {
-        relations.remove(index);
-    }
+fn remove_sorted(relations: &mut RelationSet, relation_id: &RelationId) {
+    relations.remove(relation_id);
 }
 
 #[cfg(test)]
@@ -265,11 +263,11 @@ mod tests {
         adjacency.insert(KindId(7), first);
         adjacency.insert(KindId(8), unrelated);
 
-        assert_eq!(adjacency.current_kind_slice(KindId(7)), [first]);
-        assert_eq!(adjacency.current_kind_slice(KindId(8)), [unrelated]);
+        assert_eq!(adjacency.current_kind_ids(KindId(7)), [first]);
+        assert_eq!(adjacency.current_kind_ids(KindId(8)), [unrelated]);
 
         adjacency.remove(KindId(7), &first);
-        assert!(adjacency.current_kind_slice(KindId(7)).is_empty());
-        assert_eq!(adjacency.historical_kind_slice(KindId(7)), [first]);
+        assert!(adjacency.current_kind_ids(KindId(7)).is_empty());
+        assert_eq!(adjacency.historical_kind_ids(KindId(7)), [first]);
     }
 }

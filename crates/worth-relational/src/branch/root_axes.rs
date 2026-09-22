@@ -42,7 +42,7 @@ pub(super) fn storage_root_from_authoritative_regions(
 fn storage_root_from_commitment(region_count: usize, commitment: [u8; 32]) -> [u8; 32] {
     use sha2::{Digest, Sha256};
     let mut digest = Sha256::new();
-    digest.update(b"worth.relational.branch-storage-content.v2\0");
+    digest.update(b"worth.relational.branch-storage-content.v3\0");
     digest.update((region_count as u64).to_be_bytes());
     digest.update(commitment);
     digest.finalize().into()

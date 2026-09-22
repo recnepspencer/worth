@@ -13,7 +13,7 @@ pub(crate) fn outgoing_relation_candidates_from_state(
     state
         .get_partition(entity_id.partition_id)
         .and_then(|partition| partition.adjacency.get(entity_id.slot_index()))
-        .map(|relations| relations.as_slice().to_vec())
+        .map(|relations| relations.current_ids().to_vec())
         .unwrap_or_default()
 }
 
@@ -24,7 +24,7 @@ pub(crate) fn incoming_relation_candidates_from_state(
     state
         .get_partition(entity_id.partition_id)
         .and_then(|partition| partition.reverse_adjacency.get(entity_id.slot_index()))
-        .map(|relations| relations.as_slice().to_vec())
+        .map(|relations| relations.current_ids().to_vec())
         .unwrap_or_default()
 }
 
@@ -109,7 +109,7 @@ fn whole_neighborhood(
     let candidates = edition
         .partition(entity_id.partition_id)
         .and_then(|partition| direction.table(partition).get(slot))
-        .map(|relations| relations.as_slice().to_vec())
+        .map(|relations| relations.current_ids().to_vec())
         .unwrap_or_default();
     charge_copied_ids(runtime, candidates.len());
     retain_visible(runtime, &edition, candidates, version_id)
@@ -129,7 +129,7 @@ fn kind_neighborhood(
         .and_then(|partition| direction.table(partition).get(slot))
         .map(|relations| {
             relations
-                .kind_slice(AdjacencyKindBasis::Current, kind_id)
+                .kind_ids(AdjacencyKindBasis::Current, kind_id)
                 .to_vec()
         })
         .unwrap_or_default();

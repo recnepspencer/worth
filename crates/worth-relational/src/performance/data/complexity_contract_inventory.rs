@@ -11,12 +11,20 @@ pub const COMPLEXITY_CONTRACTS: &[ComplexityContract] = &[
         proof_tests: &["tests::complexity::contracts::complexity_budget_partition_local_commit_reports_touched_partitions"],
     },
     ComplexityContract {
-        id: "runtime.bulk_create.reserve",
-        function_path: "authority/mutation/record_changes.rs::{reserve_bulk_entity_capacity,reserve_bulk_relation_capacity}",
-        declared_time_complexity: "O(partitions_with_bulk_intents)",
-        budget_summary: "Bulk create paths must reserve partition-local capacity up front instead of relying on repeated slot-by-slot vector growth.",
+        id: "runtime.bulk_create.allocate",
+        function_path: "authority/mutation/intents/{bulk_create_entities.rs,bulk_create_relations.rs}",
+        declared_time_complexity: "O(rows * log(occupied_records))",
+        budget_summary: "Bulk rows reserve exact logical record identities; persistent pages allocate only occupied paths, without a whole-arena capacity reservation.",
         status: ComplexityStatus::Verified,
-        proof_tests: &["tests::complexity::contracts::complexity_budget_bulk_create_reserves_partition_local_capacity"],
+        proof_tests: &["tests::complexity::contracts::commit_budgets::partition_local_commit::complexity_budget_bulk_create_reserves_exact_logical_slots"],
+    },
+    ComplexityContract {
+        id: "runtime.root_content_commitment",
+        function_path: "storage/overlay/partition_content.rs::PartitionContentCommitment::capture",
+        declared_time_complexity: "O(changed_owner_paths * log(N) + changed_value_bytes); no unchanged record/history encoding",
+        budget_summary: "Publication carries the exact count of hashed content values; a one-record append retires one tail and hashes one new history value plus one record, independent of retained history and population. Cold verification rebuilds from truth.",
+        status: ComplexityStatus::Verified,
+        proof_tests: &["storage::overlay::partition_content::incremental_tests::one_record_update_hashes_three_values_regardless_of_population_or_history"],
     },
     ComplexityContract {
         id: "runtime.slot_local_mutation_journal",
@@ -29,7 +37,7 @@ pub const COMPLEXITY_CONTRACTS: &[ComplexityContract] = &[
     ComplexityContract {
         id: "runtime.partition_edition.acquire",
         function_path: "runtime/state/subsystems/storage/partition_edition.rs::PartitionEdition, runtime/state/runtime_state/partition_edition_access.rs::RelationalRuntimeState::acquire_partition_edition",
-        declared_time_complexity: "O(1) per acquisition. A write that finds a reader edition outstanding pays O(partitions) for the spine plus O(slots in that partition) for each partition it then mutates; both are charged to a named lane",
+        declared_time_complexity: "O(1) per acquisition. A write under an outstanding edition copies O(partitions) spine handles, O(1) partition handles, then only changed persistent column/index paths; each copy lane is counted",
         budget_summary: "Readers must be lent the partition spine under one reference-count acquisition rather than handed a deep copy of every partition and slot. Owning the spine is not owning the partitions behind it, so the per-partition copy-on-write a write is forced into is counted separately from the spine and attributed to the ordinary or reconstructive lane rather than absorbed silently.",
         status: ComplexityStatus::Verified,
         proof_tests: &[

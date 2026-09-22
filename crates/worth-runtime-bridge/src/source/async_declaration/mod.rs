@@ -36,11 +36,13 @@ pub use lowering::{BridgeAsyncSourceLoweringIdentity, LoweredBridgeAsyncSourceDe
 pub use rejection::{
     BridgeAsyncSourceDeclarationRejection, BridgeAsyncSourceDeclarationRejectionKind,
 };
+#[cfg(test)]
+pub(crate) use request_identity::state::runtime_storage_for_test;
 pub(crate) use request_identity::state::{
     with_signal_runtime as with_async_request_signal_runtime, BridgeSignalRuntime,
 };
 pub(crate) use request_identity::{
-    admit_from_owned_signal_request, SignalRuntimeThreadAffinityError,
+    admit_from_owned_signal_request, BridgeSignalRuntimeCustody, SignalRuntimeThreadAffinityError,
 };
 pub use request_identity::{
     AdmittedBridgeAsyncRequestIdentity, BridgeAsyncInFlightRequestIdentity,
@@ -55,7 +57,7 @@ pub use request_identity::{
 };
 pub(crate) use retry_revalidation::{
     admit_owned_retry_lineage, admit_owned_revalidation_lineage, admit_retry_lineage,
-    admit_revalidation_lineage,
+    admit_revalidation_lineage, validate_lineage_runtime,
 };
 pub use retry_revalidation::{
     BridgeAsyncForwardCausalityClass, BridgeAsyncForwardCausalityCounters,

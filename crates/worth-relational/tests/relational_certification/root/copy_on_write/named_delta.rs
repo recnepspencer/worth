@@ -16,7 +16,7 @@ use worth_relational::facade::inspection::{
 use worth_relational::facade::runtime::RelationalRuntime;
 
 #[test]
-fn every_supply_chain_delta_copies_its_exact_declared_partition_footprint() {
+fn every_supply_chain_delta_shares_payloads_within_its_declared_partition_footprint() {
     let scenarios = [
         ("storm", BranchLabel::Storm, DeltaId::StormRerouteAurora),
         (
@@ -89,7 +89,7 @@ fn prove_named_delta_cow(branch: &str, label: BranchLabel, delta: DeltaId) {
         .iter()
         .map(|allocation| allocation.locator())
         .collect::<BTreeSet<_>>();
-    let exact_copied_bytes = before_owner_ledger
+    let whole_touched_partition_bytes = before_owner_ledger
         .authoritative_allocations()
         .iter()
         .filter(|allocation| {
@@ -146,7 +146,11 @@ fn prove_named_delta_cow(branch: &str, label: BranchLabel, delta: DeltaId) {
         touched.len() as u64
     );
     assert_eq!(publication.publication_reused_region_count, reused);
-    assert_eq!(publication.copied_truth_bytes, exact_copied_bytes);
+    assert!(publication.copied_truth_bytes > 0);
+    assert!(
+        publication.copied_truth_bytes < whole_touched_partition_bytes,
+        "named delta must not copy every owner in its touched partitions"
+    );
     let after_owner_ledger = world
         .runtime
         .inspect_owner_allocation_ledger(std::slice::from_ref(&selected))

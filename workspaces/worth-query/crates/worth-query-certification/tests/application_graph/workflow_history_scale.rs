@@ -123,7 +123,7 @@ impl HistoryCourt {
         self.next_key += 1;
     }
 
-    fn measure_warm(&mut self, instances: usize) {
+    fn measure_warm(&mut self, instances: usize) -> u64 {
         let history = self.history;
         let native_scope = self
             .application
@@ -189,7 +189,16 @@ impl HistoryCourt {
         assert!(after.retained_charge_bytes() <= after.maximum_retained_charge_bytes());
         micros.sort_unstable();
         println!("workflow history={history} instances={instances} samples={SAMPLES} p50_us={} p95_us={} progress_retained={} plan_retained={} plan_peak={}", micros[9], micros[18], after.retained_charge_bytes(), compiled.retained_bytes(), compiled.peak_retained_bytes());
-        println!("native history={history} samples={SAMPLES} copied_truth_bytes={} new_authoritative_bytes={} touched_regions={} reused_regions={} world_commits={} world_observations={}", native_delta.copied_truth_bytes, native_delta.publication_new_authoritative_bytes, native_delta.publication_touched_region_count, native_delta.publication_reused_region_count, native.world_history_after().installed_commits(), native.world_retention_after().observations());
+        println!("native history={history} samples={SAMPLES} copied_truth_bytes={} new_authoritative_bytes={} content_values_hashed={} touched_regions={} reused_regions={} world_commits={} world_observations={}", native_delta.copied_truth_bytes, native_delta.publication_new_authoritative_bytes, native_delta.publication_content_values_hashed, native_delta.publication_touched_region_count, native_delta.publication_reused_region_count, native.world_history_after().installed_commits(), native.world_retention_after().observations());
+        assert!(native_delta.publication_content_values_hashed > 0);
+        let sharing = native.relational().sharing();
+        println!(
+            "native live history={history} payload={} canonical={} optional_cache={}",
+            sharing.unique_physical_partition_payload_bytes(),
+            sharing.unique_physical_canonical_commit_bytes(),
+            sharing.unique_optional_cache_bytes()
+        );
+        native_delta.publication_content_values_hashed
     }
 
     fn reconstruct(&mut self) {
@@ -331,7 +340,7 @@ fn workflow_history_native_cost_diagnostic() {
 }
 
 #[test]
-#[ignore = "scheduled history qualification is currently red on native copy cost; run query-workflow-history-scale"]
+#[ignore = "scheduled history qualification; run query-workflow-history-scale"]
 fn workflow_history_and_instance_scale() {
     let mut court = HistoryCourt::new();
     for history in [100, 1_000, 10_000] {

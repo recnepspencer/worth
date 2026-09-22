@@ -1,16 +1,32 @@
-use std::collections::BTreeMap;
+use crate::storage::substrate::{SharedColumn, SharedMap};
 
 #[derive(Debug, Clone, Default)]
 pub(crate) struct RecordSlotDirectory {
-    logical_by_physical: Vec<u64>,
-    physical_by_logical: BTreeMap<u64, usize>,
+    logical_by_physical: SharedColumn<u64>,
+    physical_by_logical: SharedMap<u64, usize>,
 }
 
 impl RecordSlotDirectory {
+    pub(super) fn visit_new_allocations(
+        &self,
+        previous: &Self,
+        visitor: &mut dyn crate::storage::substrate::StorageAllocationVisitor,
+    ) {
+        self.logical_by_physical.visit_new_allocations(
+            &previous.logical_by_physical,
+            visitor,
+            &mut crate::storage::substrate::visit_new_inline_value,
+        );
+        self.physical_by_logical.visit_new_allocations(
+            &previous.physical_by_logical,
+            visitor,
+            &mut crate::storage::substrate::visit_new_inline_value,
+        );
+    }
     pub(crate) fn with_capacity(capacity: usize) -> Self {
         Self {
-            logical_by_physical: Vec::with_capacity(capacity),
-            physical_by_logical: BTreeMap::new(),
+            logical_by_physical: SharedColumn::with_capacity(capacity),
+            physical_by_logical: SharedMap::new(),
         }
     }
 
@@ -28,14 +44,20 @@ impl RecordSlotDirectory {
             .copied()
     }
 
-    pub(crate) fn insert(&mut self, logical_slot: u64) -> Result<usize, &'static str> {
+    pub(super) fn logical_slot(&self, physical: usize) -> Option<usize> {
+        self.logical_by_physical
+            .get(physical)
+            .map(|slot| *slot as usize)
+    }
+
+    /// Insert one slot and return the bytes of index paths actually copied.
+    pub(crate) fn insert(&mut self, logical_slot: u64) -> Result<u64, &'static str> {
         if self.physical_by_logical.contains_key(&logical_slot) {
             return Err("record slot directory contains a duplicate logical slot");
         }
         let physical = self.logical_by_physical.len();
-        self.logical_by_physical.push(logical_slot);
-        self.physical_by_logical.insert(logical_slot, physical);
-        Ok(physical)
+        let copied_bytes = self.logical_by_physical.push(logical_slot);
+        Ok(copied_bytes.saturating_add(self.physical_by_logical.insert(logical_slot, physical)))
     }
 
     pub(crate) fn occupied_slots(&self) -> Vec<usize> {
@@ -45,7 +67,7 @@ impl RecordSlotDirectory {
             .collect()
     }
 
-    pub(crate) fn slots(&self) -> &[u64] {
+    pub(crate) fn slots(&self) -> &SharedColumn<u64> {
         &self.logical_by_physical
     }
 
@@ -54,12 +76,25 @@ impl RecordSlotDirectory {
     }
 
     pub(crate) fn allocation_bytes(&self) -> u64 {
-        (self.logical_by_physical.capacity() as u64)
-            .saturating_mul(std::mem::size_of::<u64>() as u64)
-            .saturating_add(
-                (self.physical_by_logical.len() as u64).saturating_mul(
-                    (std::mem::size_of::<u64>() + std::mem::size_of::<usize>()) as u64,
-                ),
-            )
+        self.logical_by_physical
+            .allocation_bytes()
+            .saturating_add(self.physical_by_logical.allocation_bytes())
+    }
+
+    pub(super) fn visit_allocations(
+        &self,
+        unique: bool,
+        visitor: &mut dyn crate::storage::substrate::StorageAllocationVisitor,
+    ) {
+        self.logical_by_physical.visit_allocations(
+            unique,
+            visitor,
+            &mut crate::storage::substrate::visit_inline_value,
+        );
+        self.physical_by_logical.visit_allocations(
+            unique,
+            visitor,
+            &mut crate::storage::substrate::visit_inline_value,
+        );
     }
 }

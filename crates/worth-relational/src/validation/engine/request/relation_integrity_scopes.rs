@@ -219,13 +219,13 @@ impl<'access, 'runtime> RelationIntegrityScopeAccumulator<'access, 'runtime> {
             let outgoing = partition
                 .adjacency
                 .get(slot)
-                .map(|set| set.as_slice().to_vec())
+                .map(|set| set.current_ids().to_vec())
                 .unwrap_or_default();
             self.scan_relation_ids(outgoing)?;
             let incoming = partition
                 .reverse_adjacency
                 .get(slot)
-                .map(|set| set.as_slice().to_vec())
+                .map(|set| set.current_ids().to_vec())
                 .unwrap_or_default();
             self.scan_relation_ids(incoming)?;
         }

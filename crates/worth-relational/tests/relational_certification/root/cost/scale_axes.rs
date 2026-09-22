@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use super::world::supply_chain::{
     assert_oracle_matches, certified_supply_chain_world, commit_branch_batch_with_result,
     lower_cargo_footprint_batch, SupplyChainScale,
@@ -8,6 +10,7 @@ use worth_relational::facade::transactions::WorkerIntentBatch;
 
 #[test]
 fn production_write_footprints_report_exact_records_and_local_publication_cost() {
+    let small_copy = single_record_copy_cost(SupplyChainScale::court());
     let scale = SupplyChainScale::standard();
     let (world, expected) = certified_supply_chain_world(scale);
     assert_oracle_matches(&world, &expected);
@@ -20,7 +23,16 @@ fn production_write_footprints_report_exact_records_and_local_publication_cost()
             .unwrap();
         world.runtime.fork_branch(branch.clone(), source).unwrap();
         let identity = world.runtime.branch_identity(&branch).unwrap();
-        let scope = RelationalMvccCostScope::capture(&world.runtime, vec![identity]);
+        let scope = RelationalMvccCostScope::capture(&world.runtime, vec![identity.clone()]);
+        let before = world
+            .runtime
+            .inspect_owner_allocation_ledger(std::slice::from_ref(&identity))
+            .unwrap();
+        let old_allocations: BTreeSet<_> = before
+            .authoritative_allocations()
+            .iter()
+            .map(|allocation| allocation.locator())
+            .collect();
         let batch = lower_cargo_footprint_batch(&world.handles, scale, footprint);
         let committed = commit_branch_batch_with_result(&world.runtime, branch, batch);
         assert_eq!(
@@ -39,6 +51,24 @@ fn production_write_footprints_report_exact_records_and_local_publication_cost()
         assert_eq!(delta.publication_attempts, 1);
         assert_eq!(delta.branch_population_scans, 0);
         assert_eq!(delta.copied_commit_envelopes, 0);
+        let after = world
+            .runtime
+            .inspect_owner_allocation_ledger(std::slice::from_ref(&identity))
+            .unwrap();
+        let independently_new_bytes: u64 = after
+            .authoritative_allocations()
+            .iter()
+            .filter(|allocation| !old_allocations.contains(&allocation.locator()))
+            .map(|allocation| allocation.authoritative_bytes())
+            .sum();
+        assert_eq!(
+            delta.publication_new_authoritative_bytes,
+            independently_new_bytes
+        );
+        assert!(after
+            .authoritative_allocations()
+            .iter()
+            .any(|allocation| old_allocations.contains(&allocation.locator())));
         physical_costs.push((
             footprint,
             delta.publication_touched_region_count,
@@ -49,14 +79,54 @@ fn production_write_footprints_report_exact_records_and_local_publication_cost()
     }
     assert!(physical_costs.windows(2).all(|pair| pair[0].1 == pair[1].1));
     assert!(physical_costs.windows(2).all(|pair| pair[0].2 == pair[1].2));
-    assert!(physical_costs.windows(2).all(|pair| pair[0].3 == pair[1].3));
-    let new_bytes = physical_costs
-        .iter()
-        .map(|sample| (sample.0 as f64, sample.4 as f64))
-        .collect::<Vec<_>>();
-    let (slope, intercept) = fitted_line(&new_bytes);
-    assert!((2_200.0..=2_250.0).contains(&slope));
-    assert!(maximum_residual(&new_bytes, slope, intercept) <= 256.0);
+    assert!(physical_costs.windows(2).all(|pair| pair[0].3 < pair[1].3));
+    assert!(physical_costs.windows(2).all(|pair| pair[0].4 < pair[1].4));
+    assert!(physical_costs[0].3 > 0);
+    // The same one-record edit at 32x cargo population may add index levels,
+    // but must not approach linear copying. Fourfold headroom covers the
+    // additional binary page-index levels (4 pages -> 128 pages).
+    assert_eq!(scale.cargo_lots, SupplyChainScale::court().cargo_lots * 32);
+    assert!(
+        physical_costs[0].3 <= small_copy * 4,
+        "one-record copy grew from {small_copy} to {} at 32x population",
+        physical_costs[0].3
+    );
+    assert!(
+        physical_costs[2].3 < physical_costs[0].3 * physical_costs[2].0 as u64,
+        "one publication must share copied paths across its changed records"
+    );
+}
+
+fn single_record_copy_cost(scale: SupplyChainScale) -> u64 {
+    let (world, expected) = certified_supply_chain_world(scale);
+    assert_oracle_matches(&world, &expected);
+    let branch = BranchId("single-record-copy".to_owned());
+    let (_, source) = world
+        .runtime
+        .observe_fork_source(&BranchId("main".to_owned()))
+        .unwrap();
+    world.runtime.fork_branch(branch.clone(), source).unwrap();
+    let identity = world.runtime.branch_identity(&branch).unwrap();
+    let scope = RelationalMvccCostScope::capture(&world.runtime, vec![identity]);
+    let batch = lower_cargo_footprint_batch(&world.handles, scale, 1);
+    let committed = commit_branch_batch_with_result(&world.runtime, branch, batch);
+    assert_eq!(
+        committed.publication_summary().unwrap().patch_record_count,
+        1
+    );
+    world
+        .runtime
+        .snapshots()
+        .release_snapshot(&committed.snapshot)
+        .unwrap();
+    let copied = world
+        .runtime
+        .observe_mvcc_cost(&scope)
+        .unwrap()
+        .sharing_cost_delta()
+        .copied_truth_bytes;
+    assert!(copied > 0);
+    copied
 }
 
 #[test]
@@ -143,27 +213,4 @@ fn assert_flat_history_samples(history_lengths: &[usize]) {
             .unwrap();
     }
     assert!(samples.windows(2).all(|pair| pair[0] == pair[1]));
-}
-
-fn fitted_line(samples: &[(f64, f64)]) -> (f64, f64) {
-    let count = samples.len() as f64;
-    let mean_x = samples.iter().map(|sample| sample.0).sum::<f64>() / count;
-    let mean_y = samples.iter().map(|sample| sample.1).sum::<f64>() / count;
-    let numerator = samples
-        .iter()
-        .map(|sample| (sample.0 - mean_x) * (sample.1 - mean_y))
-        .sum::<f64>();
-    let denominator = samples
-        .iter()
-        .map(|sample| (sample.0 - mean_x).powi(2))
-        .sum::<f64>();
-    let slope = numerator / denominator;
-    (slope, mean_y - slope * mean_x)
-}
-
-fn maximum_residual(samples: &[(f64, f64)], slope: f64, intercept: f64) -> f64 {
-    samples
-        .iter()
-        .map(|sample| (sample.1 - (intercept + slope * sample.0)).abs())
-        .fold(0.0, f64::max)
 }

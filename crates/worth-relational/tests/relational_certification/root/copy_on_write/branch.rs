@@ -50,7 +50,7 @@ fn phase5_forked_topology_write_copies_only_touched_regions() {
         .iter()
         .map(|allocation| allocation.locator())
         .collect::<BTreeSet<_>>();
-    let expected_copied_touched_bytes = before_owner_ledger
+    let whole_touched_partition_bytes = before_owner_ledger
         .authoritative_allocations()
         .iter()
         .filter(|allocation| {
@@ -139,40 +139,10 @@ fn phase5_forked_topology_write_copies_only_touched_regions() {
         before_rewire.len() as u64 - declared_touched_partitions.len() as u64,
         "every untouched ancestor partition must be reused"
     );
-    assert_eq!(
-        publication.copied_truth_bytes, expected_copied_touched_bytes,
-        "copied truth equals the exact pre-write owner allocation of touched partitions"
-    );
-    let whole_world_clone_mutant = before_all.unique_physical_partition_payload_bytes();
-    assert_ne!(
-        publication.copied_truth_bytes, whole_world_clone_mutant,
-        "a whole-world first-write clone must turn the touched-byte oracle red"
-    );
-    let omitted_touched_partition_mutant =
-        declared_touched_partitions
-            .iter()
-            .next()
-            .map_or(0, |omitted| {
-                before_owner_ledger
-                    .authoritative_allocations()
-                    .iter()
-                    .filter(|allocation| {
-                        allocation.locator().kind()
-                            == RelationalAuthoritativeAllocationKind::PartitionPayload
-                            && allocation
-                                .locator()
-                                .partition_id()
-                                .is_some_and(|partition| {
-                                    declared_touched_partitions.contains(&partition)
-                                        && partition != *omitted
-                                })
-                    })
-                    .map(|allocation| allocation.authoritative_bytes())
-                    .sum()
-            });
-    assert_ne!(
-        publication.copied_truth_bytes,
-        omitted_touched_partition_mutant
+    assert!(publication.copied_truth_bytes > 0);
+    assert!(
+        publication.copied_truth_bytes < whole_touched_partition_bytes,
+        "selected publication must copy paths, not complete touched partitions"
     );
     assert_eq!(publication.copied_commit_envelopes, 0);
     assert!(publication.publication_new_authoritative_bytes > 0);

@@ -1,30 +1,53 @@
-use std::collections::BTreeMap;
+use crate::storage::substrate::SharedMap;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct DenseSlotBitSet {
-    words: BTreeMap<usize, u64>,
+    words: SharedMap<usize, u64>,
 }
 
 impl DenseSlotBitSet {
+    pub(crate) fn changed_words_since(&self, previous: Option<&Self>) -> Vec<(usize, Option<u64>)> {
+        let empty = SharedMap::default();
+        let previous = previous.map(|set| &set.words).unwrap_or(&empty);
+        self.words
+            .changed_keys_since(previous)
+            .into_iter()
+            .map(|key| (key, self.words.get(&key).copied()))
+            .collect()
+    }
+
+    pub(crate) fn visit_new_allocations(
+        &self,
+        previous: &Self,
+        visitor: &mut dyn crate::storage::substrate::StorageAllocationVisitor,
+    ) {
+        self.words.visit_new_allocations(
+            &previous.words,
+            visitor,
+            &mut crate::storage::substrate::visit_new_inline_value,
+        );
+    }
     pub(crate) fn with_capacity(_capacity: usize) -> Self {
         Self {
-            words: BTreeMap::new(),
+            words: SharedMap::new(),
         }
     }
 
-    pub(crate) fn set(&mut self, slot: usize, value: bool) {
+    pub(crate) fn set(&mut self, slot: usize, value: bool) -> u64 {
         let word = slot / 64;
         let bit = slot % 64;
-        if value {
-            *self.words.entry(word).or_default() |= 1 << bit;
+        let previous = self.words.get(&word).copied().unwrap_or(0);
+        let next = if value {
+            previous | (1 << bit)
         } else {
-            let remove = self.words.get_mut(&word).is_some_and(|value| {
-                *value &= !(1 << bit);
-                *value == 0
-            });
-            if remove {
-                self.words.remove(&word);
-            }
+            previous & !(1 << bit)
+        };
+        if next == previous {
+            0
+        } else if next == 0 {
+            self.words.remove(&word).1
+        } else {
+            self.words.insert(word, next)
         }
     }
 
@@ -130,7 +153,18 @@ impl DenseSlotBitSet {
     }
 
     pub(crate) fn authoritative_allocation_bytes(&self) -> u64 {
-        (self.words.len() as u64)
-            .saturating_mul((std::mem::size_of::<usize>() + std::mem::size_of::<u64>()) as u64)
+        self.words.allocation_bytes()
+    }
+
+    pub(crate) fn visit_allocations(
+        &self,
+        unique: bool,
+        visitor: &mut dyn crate::storage::substrate::StorageAllocationVisitor,
+    ) {
+        self.words.visit_allocations(
+            unique,
+            visitor,
+            &mut crate::storage::substrate::visit_inline_value,
+        );
     }
 }

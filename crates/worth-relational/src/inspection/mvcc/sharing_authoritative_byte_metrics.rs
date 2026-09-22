@@ -22,10 +22,10 @@ impl RelationalBranchSharingObservation {
         self.logical_branch_partition_payload_bytes
     }
 
-    /// Partition payload bytes summed once per distinct region.
+    /// Partition payload bytes summed once per distinct native allocation.
     ///
-    /// Truth source: the same regions, deduplicated by allocation locator, so
-    /// one region reached through several branches is counted once.
+    /// Truth source: each region's storage owners, deduplicated by allocation
+    /// locator. Reused nodes and values are counted once even across different regions.
     pub const fn unique_physical_partition_payload_bytes(&self) -> u64 {
         self.unique_physical_partition_payload_bytes
     }
@@ -122,18 +122,19 @@ impl RelationalBranchSharingObservation {
     /// Retention metadata bytes held by the observed regions.
     ///
     /// Truth source: the same owner walk, deduplicated per region.
+    /// Immutable roots have no runtime pin counters, so their contribution is
+    /// zero; live runtime pin storage is outside this selected-root inspection.
     ///
     /// Byte scope: excluded from every authoritative total above.
     pub const fn unique_retention_metadata_bytes(&self) -> u64 {
         self.unique_retention_metadata_bytes
     }
 
-    /// Allocator bookkeeping bytes held by the observed regions.
+    /// Owner-reported allocator bookkeeping outside authoritative storage.
     ///
-    /// Truth source: the same owner walk, deduplicated per region.
-    ///
-    /// Byte scope: excluded from every authoritative total above. This is
-    /// capacity overhead, not truth.
+    /// Version 5 reports zero: shared allocations expose their owned payload
+    /// layout, not allocator-private headers, slack, or process heap overhead.
+    /// This is not evidence that those unmeasured costs are absent.
     pub const fn unique_allocator_bookkeeping_bytes(&self) -> u64 {
         self.unique_allocator_bookkeeping_bytes
     }

@@ -192,7 +192,11 @@ fn phase5_full_authoritative_accounting_deduplicates_one_shared_envelope_and_roo
         excluded[&RelationalExcludedAllocationLane::OptionalCache]
     );
     assert!(observation.unique_diagnostic_bytes() > 0);
-    assert!(observation.unique_retention_metadata_bytes() > 0);
+    assert_eq!(
+        observation.unique_retention_metadata_bytes(),
+        0,
+        "immutable roots clear runtime pins without allocating zero-count rows"
+    );
 
     let sabotaged_total_without_reachability = mutant_total_excluding(
         allocations,

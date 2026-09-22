@@ -8,7 +8,7 @@ use crate::identity::data::PartitionId;
 /// contribute one entry per distinct locator, not one entry per branch.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum RelationalAuthoritativeAllocationKind {
-    /// Authoritative record bytes held by one partition's storage region.
+    /// One native shared storage allocation reachable through a partition.
     PartitionPayload,
     /// The partition-state object that owns one region's payload.
     PartitionStateObject,
@@ -155,10 +155,11 @@ impl RelationalAuthoritativeAllocationObservation {
 
 /// Runtime-affine, owner-issued identity for one immutable storage region.
 ///
-/// This is the partition-payload projection of
+/// This is the region-object projection of
 /// [`RelationalAuthoritativeAllocationLocator`]: exactly the locators whose
-/// kind is [`RelationalAuthoritativeAllocationKind::PartitionPayload`],
-/// re-expressed as a region identity. It names storage; it opens no authority
+/// kind is [`RelationalAuthoritativeAllocationKind::RootRegionObject`],
+/// re-expressed as a region identity. Payload allocations may be shared across
+/// distinct regions. This identity opens no authority
 /// and cannot be turned back into a root, a branch, or a transaction binding.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct RelationalStorageRegionLocator {

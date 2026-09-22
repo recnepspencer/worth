@@ -68,7 +68,10 @@ fn select_publication_strategy(
     if let Some(layout) = entity_layout {
         return PartitionPublicationStrategy::ExistingEntityOnly(layout);
     }
-    if matches!(clone_mode, PartitionCloneMode::GraphSparseEntities) {
+    if matches!(
+        clone_mode,
+        PartitionCloneMode::GraphSparseEntities | PartitionCloneMode::EntityOnly
+    ) {
         return PartitionPublicationStrategy::ExistingHybridGraph {
             entity_layout: (!journal.entity_slots.is_empty())
                 .then(|| select_entity_layout(journal.entity_slots.len())),

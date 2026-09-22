@@ -70,13 +70,6 @@ impl PartitionState {
         self.relation_arena.clear_all_pins();
     }
 
-    /// Storage-owner accounting for one immutable region.  This is a
-    /// capacity/layout metric, not a semantic slot estimate; callers must
-    /// label it as authoritative allocation bytes.
-    pub(crate) fn authoritative_allocation_bytes(&self) -> u64 {
-        self.allocation_inventory().authoritative_bytes
-    }
-
     pub(crate) fn allocation_inventory(&self) -> RelationalPartitionAllocationInventory {
         let adjacency_bytes = self
             .adjacency
@@ -206,26 +199,40 @@ impl PartitionState {
         &mut self,
         overlay: &mut Self,
         journal: &PartitionMutationJournal,
-    ) {
+    ) -> u64 {
+        let mut copied_bytes = 0_u64;
         if !journal.entity_slots.is_empty() {
-            self.entity_arena
+            copied_bytes = self
+                .entity_arena
                 .merge_slots_from_owned(&mut overlay.entity_arena, &journal.entity_slots);
         }
         if !journal.relation_slots.is_empty() {
             if overlay.relation_overlay_is_sparse {
-                self.relation_arena
-                    .merge_slots_from_owned(&mut overlay.relation_arena, &journal.relation_slots);
+                copied_bytes =
+                    copied_bytes.saturating_add(self.relation_arena.merge_slots_from_owned(
+                        &mut overlay.relation_arena,
+                        &journal.relation_slots,
+                    ));
             } else {
                 self.relation_arena = overlay.relation_arena.clone();
             }
         }
-        if !journal.adjacency_slots.is_empty() {
-            self.adjacency = overlay.adjacency.clone();
-        }
-        if !journal.reverse_adjacency_slots.is_empty() {
-            self.reverse_adjacency = overlay.reverse_adjacency.clone();
-        }
+        copied_bytes = copied_bytes.saturating_add(self.merge_adjacency_from(overlay, journal));
         self.relation_overlay_is_sparse = false;
+        copied_bytes
+    }
+
+    pub(crate) fn merge_adjacency_from(
+        &mut self,
+        overlay: &Self,
+        journal: &PartitionMutationJournal,
+    ) -> u64 {
+        self.adjacency
+            .merge_slots_from(&overlay.adjacency, &journal.adjacency_slots)
+            .saturating_add(
+                self.reverse_adjacency
+                    .merge_slots_from(&overlay.reverse_adjacency, &journal.reverse_adjacency_slots),
+            )
     }
 }
 

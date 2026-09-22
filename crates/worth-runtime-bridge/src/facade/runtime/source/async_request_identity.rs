@@ -24,6 +24,7 @@ impl RuntimeBridge {
                 signal_runtime,
                 request,
             )
+            .map(|request| request.retain_runtime(self.signal_runtime_custody.clone()))
         })
         .map_err(|error| {
             BridgeAsyncRequestIdentityRejection::new(

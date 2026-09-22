@@ -203,7 +203,7 @@ fn source_generated_manifest(
             .into_iter()
             .flatten()
             {
-                incident_relations.extend(adjacency.as_slice().iter().copied());
+                incident_relations.extend(adjacency.current_ids().iter().copied());
             }
         }
     }

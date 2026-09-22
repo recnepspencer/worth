@@ -84,7 +84,7 @@ impl<'state> InvariantStateView<'state> {
             count.saturating_add(
                 table
                     .get(entity_id.slot_index())
-                    .map_or(0, |relations| relations.as_slice().len()),
+                    .map_or(0, |relations| relations.current_ids().len()),
             )
         })
     }

@@ -130,6 +130,7 @@ fn publish_hybrid_partition(
     crate::identity::data::PartitionId,
     crate::storage::overlay::PartitionState,
 ) {
+    base.merge_adjacency_from(&publication.partition_state, &publication.journal);
     if let Some(layout) = entity_layout {
         let published_chunks = merge_entity_slots(&mut base, &mut publication, layout);
         count_published_chunks(runtime, published_chunks);
@@ -151,22 +152,19 @@ fn publish_hybrid_partition(
             .relation_arena
             .preserve_runtime_pins_from(&base.relation_arena);
     }
-    if publication.journal.adjacency_slots.is_empty() {
-        publication.partition_state.adjacency = base.adjacency;
-    }
-    if publication.journal.reverse_adjacency_slots.is_empty() {
-        publication.partition_state.reverse_adjacency = base.reverse_adjacency;
-    }
+    publication.partition_state.adjacency = base.adjacency;
+    publication.partition_state.reverse_adjacency = base.reverse_adjacency;
     (publication.partition_id, publication.partition_state)
 }
 
 fn publish_whole_partition(
     mut publication: PlannedPartitionPublication,
-    base: crate::storage::overlay::PartitionState,
+    mut base: crate::storage::overlay::PartitionState,
 ) -> (
     crate::identity::data::PartitionId,
     crate::storage::overlay::PartitionState,
 ) {
+    base.merge_adjacency_from(&publication.partition_state, &publication.journal);
     if publication.journal.entity_slots.is_empty() {
         publication.partition_state.entity_arena = base.entity_arena;
     } else {
@@ -183,11 +181,7 @@ fn publish_whole_partition(
             .relation_arena
             .preserve_runtime_pins_from(&base.relation_arena);
     }
-    if publication.journal.adjacency_slots.is_empty() {
-        publication.partition_state.adjacency = base.adjacency;
-    }
-    if publication.journal.reverse_adjacency_slots.is_empty() {
-        publication.partition_state.reverse_adjacency = base.reverse_adjacency;
-    }
+    publication.partition_state.adjacency = base.adjacency;
+    publication.partition_state.reverse_adjacency = base.reverse_adjacency;
     (publication.partition_id, publication.partition_state)
 }

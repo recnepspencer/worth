@@ -17,10 +17,9 @@ impl RelationalBranchSharingObservation {
     /// partition payloads.
     ///
     /// Truth source: the owner walk, restricted to allocations whose kind is
-    /// [`RelationalAuthoritativeAllocationKind::PartitionPayload`](super::allocation_inventory::RelationalAuthoritativeAllocationKind::PartitionPayload).
-    /// The count of these locators is the deduplication basis of
-    /// [`Self::unique_physical_partition_payload_bytes`]; equal locators
-    /// appearing under several branches are already collapsed.
+    /// [`RelationalAuthoritativeAllocationKind::RootRegionObject`](super::allocation_inventory::RelationalAuthoritativeAllocationKind::RootRegionObject).
+    /// Equal regions are collapsed. Distinct regions may still share payload
+    /// allocations; payload byte deduplication uses allocation identities.
     pub fn region_locators(&self) -> &[RelationalStorageRegionLocator] {
         &self.region_locators
     }

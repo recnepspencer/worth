@@ -220,6 +220,9 @@ pub(super) fn finalize_revalidation_lineage(
     newer: AdmittedBridgeAsyncRequestIdentity,
     resource_report: &ResourceRevalidationReport,
 ) -> Result<BridgeAsyncRevalidationLineage, BridgeAsyncForwardCausalityRejection> {
+    let newer = newer
+        .inherit_runtime(&prior)
+        .ok_or_else(super::runtime_binding::runtime_mismatch)?;
     let admitted = resource_report.admitted_revalidation().ok_or_else(|| {
         rejected(
             BridgeAsyncForwardCausalityRejectionKind::RevalidationAdmissionMissing,

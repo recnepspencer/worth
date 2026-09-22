@@ -153,7 +153,9 @@ pub struct DurableBranchRootImage {
 }
 
 impl DurableBranchRootImage {
-    pub(crate) const CURRENT_FORMAT_VERSION: u16 = 2;
+    // Version 3 binds partition-content-v2 / branch-storage-content-v3.
+    // Earlier descriptors cannot be readmitted under the new commitment grammar.
+    pub(crate) const CURRENT_FORMAT_VERSION: u16 = 3;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

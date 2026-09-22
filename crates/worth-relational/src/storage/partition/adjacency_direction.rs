@@ -1,4 +1,4 @@
-use crate::identity::data::{EntityId, KindId, RelationId};
+use crate::identity::data::{EntityId, KindId};
 use crate::storage::data::RelationReadRecord;
 use crate::storage::overlay::PartitionState;
 
@@ -51,14 +51,18 @@ impl AdjacencyKindBasis {
 impl AdjacencySet {
     /// Lend one kind's adjacency ids without copying them.
     ///
-    /// The slice borrows the partition, which borrows the caller's pinned
+    /// The view borrows the partition, which borrows the caller's pinned
     /// edition. A bounded reader must consume this lease under its work budget
     /// rather than materializing it first: the whole point of a bound is that
     /// the fanout is never fully touched.
-    pub(crate) fn kind_slice(&self, basis: AdjacencyKindBasis, kind_id: KindId) -> &[RelationId] {
+    pub(crate) fn kind_ids(
+        &self,
+        basis: AdjacencyKindBasis,
+        kind_id: KindId,
+    ) -> super::AdjacencyIds<'_> {
         match basis {
-            AdjacencyKindBasis::Current => self.current_kind_slice(kind_id),
-            AdjacencyKindBasis::Historical => self.historical_kind_slice(kind_id),
+            AdjacencyKindBasis::Current => self.current_kind_ids(kind_id),
+            AdjacencyKindBasis::Historical => self.historical_kind_ids(kind_id),
         }
     }
 }
