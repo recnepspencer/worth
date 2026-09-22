@@ -9,8 +9,10 @@ mod mutation;
 mod observation;
 mod publication;
 mod retention;
+pub(in crate::physical_runtime) use retention::PendingPublicationLease;
 pub(in crate::physical_runtime) use retention::PhysicalPublicationAdmissionDenial;
 pub(in crate::physical_runtime) use retention::PhysicalRetentionProfile;
+pub(in crate::physical_runtime) use retention::GarbageClaim;
 mod settlement;
 mod wal;
 

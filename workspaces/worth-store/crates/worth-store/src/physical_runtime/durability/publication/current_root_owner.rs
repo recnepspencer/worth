@@ -2,6 +2,7 @@ use std::sync::Mutex;
 
 #[cfg(feature = "certification-test-authority")]
 mod capture_pause;
+mod displaced;
 #[cfg(feature = "certification-test-authority")]
 pub use capture_pause::{CertificationReadRootCapturePauseGate, CertificationReadRootCaptureStage};
 
@@ -27,7 +28,8 @@ pub(in crate::physical_runtime) struct PhysicalCurrentRootOwner {
     state: Mutex<PhysicalCurrentRootState>,
     transition: PhysicalRootPublicationTransitionOwner,
     publication: std::sync::Arc<crate::physical_runtime::durability::retention::PhysicalPublicationAdmission>,
-    rewrite_growth: Mutex<Option<crate::physical_runtime::durability::retention::CandidateGrowthLease>>,
+    rewrite_growth: Mutex<Vec<crate::physical_runtime::durability::retention::CandidateGrowthLease>>,
+    displaced: Mutex<Option<crate::physical_runtime::durability::retention::DisplacedSegment>>,
 }
 
 struct PhysicalCurrentRootState {
@@ -92,8 +94,41 @@ impl PhysicalCurrentRootOwner {
                     crate::physical_runtime::durability::retention::PhysicalRetentionProfile::store_default(),
                 ),
             ),
-            rewrite_growth: Mutex::new(None),
+            rewrite_growth: Mutex::new(Vec::new()),
+            displaced: Mutex::new(None),
         }
+    }
+
+    pub(in crate::physical_runtime) fn charged_growth_bytes(&self) -> u64 {
+        self.publication.charged_growth_bytes()
+    }
+
+    pub(in crate::physical_runtime) fn reconstruct_retained_bytes(&self, bytes: u64) {
+        self.publication.reconstruct_retained_bytes(bytes);
+    }
+
+    pub(in crate::physical_runtime) fn restore_displaced_segment(
+        &self,
+        source_root: u64,
+        segment_id: u64,
+        generation: u64,
+        bytes: u64,
+    ) {
+        self.publication.retain_displaced(
+            crate::physical_runtime::durability::retention::DisplacedSegment {
+                source_root,
+                segment_id,
+                generation,
+                bytes,
+            },
+        );
+    }
+
+    pub(in crate::physical_runtime) fn publication_admission(
+        &self,
+    ) -> std::sync::Arc<crate::physical_runtime::durability::retention::PhysicalPublicationAdmission>
+    {
+        std::sync::Arc::clone(&self.publication)
     }
 
     pub(in crate::physical_runtime) fn register_pending_publication(
@@ -119,29 +154,11 @@ impl PhysicalCurrentRootOwner {
             .publication
             .reserve_candidate(generation, bytes)
             .map_err(|_| ())?;
-        *self
-            .rewrite_growth
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner()) = Some(lease);
-        Ok(())
-    }
-
-    pub(in crate::physical_runtime) fn release_rewrite_candidate(&self) {
         self.rewrite_growth
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .take();
-    }
-
-    pub(in crate::physical_runtime) fn commit_rewrite_candidate(&self) {
-        let lease = self
-            .rewrite_growth
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .take();
-        if let Some(lease) = lease {
-            self.publication.seal_candidate_charge(lease.generation());
-        }
+            .push(lease);
+        Ok(())
     }
 
     pub(in crate::physical_runtime) fn install_retention_profile(

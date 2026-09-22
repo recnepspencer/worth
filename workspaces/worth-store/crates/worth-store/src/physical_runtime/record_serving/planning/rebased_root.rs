@@ -51,10 +51,15 @@ pub(in crate::physical_runtime::record_serving) fn project_settled_root(
     if let Err(cause) = require_capacity(&context) {
         return Err((prepared, cause));
     }
-    let projected = match projection::project_successor_root(&context, &prepared, generation) {
+    let maintenance = prepared.requires_maintenance_protocol
+        || context.current_root.requires_maintenance_protocol();
+    let mut projected = match projection::project_successor_root(&context, &prepared, generation) {
         Ok(projected) => projected,
         Err(cause) => return Err((prepared, cause)),
     };
+    if maintenance {
+        projected.root = projected.root.with_maintenance_protocol();
+    }
     let payload_manifests = prepared.payload_manifests;
     let publication = PublicationPlan {
         generation,

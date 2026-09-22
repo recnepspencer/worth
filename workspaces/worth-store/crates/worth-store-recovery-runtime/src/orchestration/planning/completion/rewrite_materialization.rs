@@ -1,12 +1,13 @@
 use sha2::{Digest, Sha256};
 use worth_store::physical_runtime::BoundedRecoveryFilesystemDiscovery;
 use worth_store_physical_format::{
-    restamp_inline_page_generation, CurrentPhysicalRecordPlacement, DurableInlineRecordPlacement,
-    PersistedInlineSegmentAllocation, PersistedPhysicalDataFrameSubject,
-    PersistedPhysicalRecoveryFrame, PersistedPhysicalRecoveryProjection,
-    PersistedPhysicalRecoveryRootState, PersistedRecordIdentity, PhysicalGeneration,
-    PhysicalGenerationAuthority, PhysicalPageId, PhysicalRecordFormatDeclaration, PhysicalSegmentId,
-    RecordArtifactFile, RecordFrameCoordinate, RecordSegmentPageManifestEntry,
+    encode_data_frame_page_lsn, restamp_inline_page_generation, CurrentPhysicalRecordPlacement,
+    DurableFrameKind, DurableInlineRecordPlacement, PersistedInlineSegmentAllocation,
+    PersistedPhysicalDataFrameSubject, PersistedPhysicalRecoveryFrame,
+    PersistedPhysicalRecoveryProjection, PersistedPhysicalRecoveryRootState, PersistedRecordIdentity,
+    PhysicalGeneration, PhysicalGenerationAuthority, PhysicalPageId, PhysicalPageLsn,
+    PhysicalRecordFormatDeclaration, PhysicalSegmentId, RecordArtifactFile, RecordFrameCoordinate,
+    RecordSegmentPageManifestEntry,
 };
 use worth_store_recovery_physics::{
     PhysicalRedoProjection, PhysicalRewriteAdmission, RecoveryOperationFate,
@@ -98,12 +99,12 @@ fn project_rewrite(
         .copied()
         .ok_or(())?;
     let entry = selected.entry;
+    let page_bytes = u64::from(format.page_size().bytes());
     if entry.page_generation() != rewrite.source_placement()
         || entry.data_generation() != rewrite.source_generation()
-        || entry.data_page_count() != 1
-        || entry.frame_index() != 0
-        || u64::from(entry.frame_index()) * u64::from(format.page_size().bytes())
-            != rewrite.source_offset()
+        || entry.data_page_count() == 0
+        || entry.frame_index() >= entry.data_page_count()
+        || u64::from(entry.frame_index()) * page_bytes != rewrite.source_offset()
     {
         return Err(());
     }
@@ -125,10 +126,16 @@ fn project_rewrite(
     if digest != rewrite.source_digest() {
         return Err(());
     }
-    let restamped = restamp_inline_page_generation(
+    let mut restamped = restamp_inline_page_generation(
         format,
         &page,
         rewrite.destination_placement(),
+    )
+    .map_err(|_| ())?;
+    encode_data_frame_page_lsn(
+        &mut restamped,
+        DurableFrameKind::InlinePage,
+        PhysicalPageLsn::new(rewrite.page_lsn()),
     )
     .map_err(|_| ())?;
     let authority = PhysicalGenerationAuthority::for_canonical_physical_format();

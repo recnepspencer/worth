@@ -17,35 +17,9 @@ use crate::physical_runtime::{
     WalDurablePhysicalMutation,
 };
 
-struct RewriteGrowthGuard<'a> {
-    owner: &'a crate::physical_runtime::durability::PhysicalCurrentRootOwner,
-    committed: bool,
-}
+mod obligations;
 
-impl<'a> RewriteGrowthGuard<'a> {
-    fn new(owner: &'a crate::physical_runtime::durability::PhysicalCurrentRootOwner) -> Self {
-        Self {
-            owner,
-            committed: false,
-        }
-    }
-
-    fn commit(&mut self) {
-        if self.committed {
-            return;
-        }
-        self.owner.commit_rewrite_candidate();
-        self.committed = true;
-    }
-}
-
-impl Drop for RewriteGrowthGuard<'_> {
-    fn drop(&mut self) {
-        if !self.committed {
-            self.owner.release_rewrite_candidate();
-        }
-    }
-}
+use obligations::{keep_unresolved, RewriteGrowthGuard};
 
 impl RecordPublicationDirector {
     pub(in crate::physical_runtime) fn execute_managed_mutation(
@@ -92,14 +66,34 @@ impl RecordPublicationDirector {
             ));
         }
         let mut growth = RewriteGrowthGuard::new(&self.root_owner);
-        let appended = self.append_managed_wal(prepared, attempt)?;
-        let _pending = pending;
-        let (basis, durable) = self.synchronize_managed_wal(appended, attempt)?;
-        let settled = self.settle_managed_data(basis, durable, attempt)?;
-        let prepared_root = self.prepare_managed_root(settled, attempt)?;
-        let replaced_root = self.replace_managed_root(prepared_root, attempt)?;
-        let durable_root = self.synchronize_managed_root(replaced_root, attempt)?;
-        let completed = self.advance_managed_root(durable_root, attempt)?;
+        let appended = match self.append_managed_wal(prepared, attempt) {
+            Ok(appended) => appended,
+            Err(terminal) => return Err(keep_unresolved(growth, pending, terminal)),
+        };
+        let (basis, durable) = match self.synchronize_managed_wal(appended, attempt) {
+            Ok(durable) => durable,
+            Err(terminal) => return Err(keep_unresolved(growth, pending, terminal)),
+        };
+        let settled = match self.settle_managed_data(basis, durable, attempt) {
+            Ok(settled) => settled,
+            Err(terminal) => return Err(keep_unresolved(growth, pending, terminal)),
+        };
+        let prepared_root = match self.prepare_managed_root(settled, attempt) {
+            Ok(prepared_root) => prepared_root,
+            Err(terminal) => return Err(keep_unresolved(growth, pending, terminal)),
+        };
+        let replaced_root = match self.replace_managed_root(prepared_root, attempt) {
+            Ok(replaced_root) => replaced_root,
+            Err(terminal) => return Err(keep_unresolved(growth, pending, terminal)),
+        };
+        let durable_root = match self.synchronize_managed_root(replaced_root, attempt) {
+            Ok(durable_root) => durable_root,
+            Err(terminal) => return Err(keep_unresolved(growth, pending, terminal)),
+        };
+        let completed = match self.advance_managed_root(durable_root, attempt) {
+            Ok(completed) => completed,
+            Err(terminal) => return Err(keep_unresolved(growth, pending, terminal)),
+        };
         growth.commit();
         Ok(completed)
     }
@@ -150,15 +144,23 @@ impl RecordPublicationDirector {
                     attempt,
                     PhysicalMutationProvenNoEffectCause::AdmissionDeniedBeforeGroupSeal,
                 )),
-            PhysicalWalGroupAppendOutcome::NotStarted(_)
-            | PhysicalWalGroupAppendOutcome::PartiallyAppended(_)
-            | PhysicalWalGroupAppendOutcome::Indeterminate(_) => {
+            PhysicalWalGroupAppendOutcome::NotStarted(_) => {
                 attempt.commit_settlement();
                 drop(effect_cutover);
                 Err(indeterminate(
                     attempt,
                     PhysicalMutationIndeterminateStage::WalAppend,
                     0,
+                ))
+            }
+            PhysicalWalGroupAppendOutcome::PartiallyAppended(_)
+            | PhysicalWalGroupAppendOutcome::Indeterminate(_) => {
+                attempt.commit_settlement();
+                drop(effect_cutover);
+                Err(indeterminate(
+                    attempt,
+                    PhysicalMutationIndeterminateStage::WalAppend,
+                    1,
                 ))
             }
         }

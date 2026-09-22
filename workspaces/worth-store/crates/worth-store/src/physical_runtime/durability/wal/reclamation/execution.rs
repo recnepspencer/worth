@@ -35,6 +35,20 @@ impl PhysicalWalReclamationOwner {
         }
     }
 
+    pub(in crate::physical_runtime) fn certification_under_pressure(
+        &self,
+        checkpoint: worth_store_physical_format::PhysicalCheckpointIdentity,
+        foreground_pressure_events: u64,
+    ) -> bool {
+        let Some(scope) = certification_scope(checkpoint) else {
+            return false;
+        };
+        matches!(
+            self.work.execute(scope, foreground_pressure_events),
+            Err(PhysicalWalReclamationActionFailure::BackgroundUnavailable)
+        )
+    }
+
     pub(in crate::physical_runtime::durability) fn eligibility_denied(
         &self,
         checkpoint: worth_store_physical_format::PhysicalCheckpointIdentity,
@@ -158,6 +172,26 @@ impl PhysicalWalReclamationFoundation {
             ),
         }
     }
+}
+
+fn certification_scope(
+    checkpoint: worth_store_physical_format::PhysicalCheckpointIdentity,
+) -> Option<crate::physical_runtime::work::PhysicalWalReclamationScope> {
+    let start = worth_store_wal::LogSequenceNumber::new(1);
+    let end = worth_store_wal::LogSequenceNumber::new(2);
+    let range = worth_store_wal::WalLsnRange::new(start, end).ok()?;
+    crate::physical_runtime::work::PhysicalWalReclamationScope::new(
+        checkpoint,
+        1,
+        [1; 32],
+        end,
+        worth_store_wal::WalSegmentArtifactIdentity::new(
+            worth_store_wal::WalSegmentId::new(1).ok()?,
+            worth_store_wal::WalSegmentGeneration::new(1).ok()?,
+        ),
+        range,
+        64,
+    )
 }
 
 impl PhysicalWalReclamationActionFailure {

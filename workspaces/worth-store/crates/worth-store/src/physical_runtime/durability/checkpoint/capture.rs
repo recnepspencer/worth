@@ -124,7 +124,7 @@ impl PhysicalCheckpointCaptureOwner {
                 PhysicalCheckpointCaptureFailureKind::SourceAuthorityMismatch,
             ));
         }
-        let source = PhysicalCheckpointSource::secured_concurrent(
+        let mut source = PhysicalCheckpointSource::secured_concurrent(
             identity,
             wal,
             CheckpointRootBasis::new(root.generation(), root.tree_identity()),
@@ -133,6 +133,9 @@ impl PhysicalCheckpointCaptureOwner {
             self.idempotency_policy.retention().get().get(),
         )
         .expect("an admitted durability policy has a nonzero canonical security binding");
+        if root.requires_maintenance_protocol() {
+            source = source.with_maintenance_protocol();
+        }
         Ok(AdmittedPhysicalCheckpointCapture {
             basis: PhysicalCheckpointCaptureBasis::new(source, self.policy),
             session,
@@ -157,6 +160,46 @@ impl PhysicalCheckpointCaptureOwner {
                 PhysicalCheckpointCaptureFailureKind::SequenceExhausted,
             ))?;
         Ok(PhysicalCheckpointIdentity::new(self.store, sequence))
+    }
+
+    pub(in crate::physical_runtime) fn certification_checkpoint_under_pressure(
+        &self,
+        foreground_pressure_events: u64,
+    ) -> bool {
+        let Ok(identity) = self.next_identity() else {
+            return false;
+        };
+        matches!(
+            self.work.execute(
+                identity,
+                crate::physical_runtime::work::PhysicalCheckpointWorkAction::CreateCandidate {
+                    byte_count: 64,
+                },
+                None,
+                foreground_pressure_events,
+            ),
+            Err(super::PhysicalCheckpointActionFailure::BackgroundYielded)
+        )
+    }
+
+    pub(in crate::physical_runtime) fn release_background_selection(&self) {
+        self.work.release_background_selection();
+    }
+
+    #[cfg(feature = "certification-test-authority")]
+    pub(in crate::physical_runtime) fn fail_next_admission(&self) {
+        self.work.fail_next_admission_after_noting_head();
+    }
+
+    pub(in crate::physical_runtime) fn certification_reclamation_under_pressure(
+        &self,
+        foreground_pressure_events: u64,
+    ) -> bool {
+        let Ok(identity) = self.next_identity() else {
+            return false;
+        };
+        self.reclamation
+            .certification_under_pressure(identity, foreground_pressure_events)
     }
 }
 

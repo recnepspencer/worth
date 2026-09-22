@@ -123,25 +123,19 @@ impl PhysicalWalReclamationWorkPort {
                 return Err(PhysicalWalReclamationActionFailure::DependencyBlocked)
             }
         };
-        let (pacing, backend, policy) = self
+        let (pacing, backend, policy, capacity) = self
             .scheduler
             .wal_reclamation_background(
                 self.record.scheduler_security(),
                 scope.byte_count(),
                 foreground_pressure_events,
             )
-            .map_err(|_| {
-                self.scheduler.cancel_wal_reclamation_background_head();
-                PhysicalWalReclamationActionFailure::SchedulerCapacityUnavailable
-            })?;
+            .map_err(|_| PhysicalWalReclamationActionFailure::SchedulerCapacityUnavailable)?;
         let lease = match require_complete_lease(pacing) {
             Ok(lease) => lease,
-            Err(failure) => {
-                self.scheduler.cancel_wal_reclamation_background_head();
-                return Err(failure);
-            }
+            Err(failure) => return Err(failure),
         };
-        let demand = PhysicalSchedulerDemand::wal_reclamation_background(ready, lease)
+        let demand = PhysicalSchedulerDemand::wal_reclamation_background(ready, lease, capacity)
             .map_err(|_| PhysicalWalReclamationActionFailure::SchedulerDemandRejected)?;
         PhysicalWorkAdmission::require_current(
             &runtime.submission,

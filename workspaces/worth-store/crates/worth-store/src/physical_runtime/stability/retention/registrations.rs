@@ -229,6 +229,15 @@ impl RootProtectionRegistry {
         )
     }
 
+    pub(in crate::physical_runtime) fn protects_root(&self, generation: u64) -> bool {
+        let mut state = self
+            .state
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        state.index_probes = state.index_probes.saturating_add(1);
+        state.roots.contains_key(&generation)
+    }
+
     pub(super) fn root_acquisitions(&self, binding: PhysicalProtectedRootObservation) -> u32 {
         if binding.runtime() != self.runtime {
             return 0;

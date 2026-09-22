@@ -60,6 +60,13 @@ impl<'media> ServingRecordArtifacts<'media> {
         self.tree.file_exists(artifact)
     }
 
+    pub(in crate::physical_runtime::record_serving) fn file_length(
+        &self,
+        artifact: RecordArtifactFile,
+    ) -> Result<u64, ArtifactTreeFailure> {
+        self.tree.file_length(artifact)
+    }
+
     pub(in crate::physical_runtime::record_serving) fn load_exact(
         &self,
         allocation: &worth_store_buffer_pool::OperationAllocationGrant,

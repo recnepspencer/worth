@@ -37,7 +37,7 @@ pub struct PhysicalDurabilityGroupMemberBinding {
 }
 
 pub struct AdmittedPhysicalDurabilityGroupMember {
-    prepared: PreparedPhysicalMutation,
+    pub(in crate::physical_runtime) prepared: PreparedPhysicalMutation,
     binding: PhysicalDurabilityGroupMemberBinding,
 }
 
@@ -341,16 +341,6 @@ impl AdmittedPhysicalDurabilityGroup {
                 )
             })
             .collect()
-    }
-
-    pub(in crate::physical_runtime) fn into_rejected(
-        self,
-        cause: PhysicalDurabilityGroupAdmissionDenial,
-    ) -> RejectedPhysicalDurabilityGroup {
-        RejectedPhysicalDurabilityGroup {
-            members: self.members.map(|member| member.into_parts().0),
-            cause,
-        }
     }
 
     pub(in crate::physical_runtime) fn into_parts(

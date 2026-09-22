@@ -6,8 +6,6 @@ use worth_store_io_scheduler::foreground_reservation::{
     BandwidthToken, DirtyPageBudget, ForegroundLaneDeclaration, ForegroundLatencyEnvelope,
     ForegroundResourceBudget, QueueSlot, WorkerPermit, WriteBackWindow,
 };
-use worth_store_io_scheduler::BackgroundPacingOutcome;
-
 use super::{
     executor::admitted_write,
     fixture::{foreground_saturation_fixture, serving_from_initialization_with_work_profile},
@@ -45,10 +43,7 @@ fn yielded_checkpoint_and_reclamation_heads_block_foreground_until_admit_or_canc
         serving.execute_physical_work(command).unwrap();
     }
 
-    assert!(matches!(
-        serving.certification_pace_checkpoint_background(1),
-        BackgroundPacingOutcome::Yield(_)
-    ));
+    assert!(serving.certification_checkpoint_work_yields_for_foreground_pressure());
     assert!(matches!(
         serving.reserve_physical_scheduler_foreground(page_write_lane()),
         Err(RecordSchedulerReservationDenial::OwedBackgroundTurn)
@@ -58,18 +53,12 @@ fn yielded_checkpoint_and_reclamation_heads_block_foreground_until_admit_or_canc
         .reserve_physical_scheduler_foreground(page_write_lane())
         .expect("cancelling the checkpoint head releases the owed turn");
 
-    assert!(matches!(
-        serving.certification_pace_wal_reclamation_background(1),
-        BackgroundPacingOutcome::Yield(_)
-    ));
+    assert!(serving.certification_reclamation_work_yields_for_foreground_pressure());
     assert!(matches!(
         serving.reserve_physical_scheduler_foreground(page_write_lane()),
         Err(RecordSchedulerReservationDenial::OwedBackgroundTurn)
     ));
-    assert!(matches!(
-        serving.certification_pace_wal_reclamation_background(0),
-        BackgroundPacingOutcome::AdmittedWithDebt(_)
-    ));
+    assert!(serving.certification_reclamation_work_admits_when_foreground_is_idle());
     serving
         .reserve_physical_scheduler_foreground(page_write_lane())
         .expect("an admitted reclamation quantum releases the owed turn");

@@ -99,6 +99,12 @@ impl PhysicalRecordResidencyPolicyBuilder {
         self
     }
 
+    /// Withholds bytes from ordinary scopes so maintenance can still allocate.
+    pub const fn progress_headroom_bytes(mut self, bytes: u64) -> Self {
+        self.declaration = self.declaration.progress_headroom_bytes(bytes);
+        self
+    }
+
     /// Sets one speculative work kind's frame ceiling.
     pub const fn speculative_frames(
         mut self,

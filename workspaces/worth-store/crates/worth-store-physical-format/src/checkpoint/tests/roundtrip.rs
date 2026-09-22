@@ -27,6 +27,18 @@ fn security_binding_roundtrips_as_checkpoint_owned_persisted_truth() {
 }
 
 #[test]
+fn maintenance_checkpoint_is_a_distinct_envelope() {
+    use crate::PhysicalCheckpointSource;
+    let source = source(4).with_maintenance_protocol();
+    let (_, header) = CheckpointStreamEncoder::begin(source);
+    assert_eq!(header[8], 2);
+    assert!(PhysicalCheckpointSource::decode_c9_legacy_stream_header_record(&header).is_err());
+    assert!(PhysicalCheckpointSource::decode_stream_header_record(&header)
+        .unwrap()
+        .requires_maintenance_protocol());
+}
+
+#[test]
 fn independently_framed_stream_roundtrips_without_whole_artifact_memory() {
     let source = source(3);
     let bases = [

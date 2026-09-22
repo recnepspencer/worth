@@ -24,8 +24,7 @@ pub enum RecordSchedulerReservationDenial {
     OwedBackgroundTurn,
 }
 
-/// Store-owned admission route from qualified media evidence into scheduler
-/// capability. It owns no media and cannot execute a physical effect.
+/// Store-owned admission from qualified media evidence. It owns no media.
 #[derive(Clone)]
 pub(in crate::physical_runtime) struct PhysicalSchedulerAdmissionOwner {
     buffered_file: IoSchedulerBackendCapabilityAdmission,
@@ -245,18 +244,18 @@ impl PhysicalSchedulerAdmissionOwner {
         self.dispatch.release_ready_background();
     }
 
+    pub(in crate::physical_runtime) fn note_wal_reclamation_background_head(&self) { self.heads.note(background_head::BackgroundHeadKind::Reclamation, &self.dispatch); }
+
+    pub(in crate::physical_runtime) fn note_checkpoint_background_head(&self) {
+        self.heads.note(background_head::BackgroundHeadKind::Checkpoint, &self.dispatch);
+    }
+
     pub(in crate::physical_runtime) fn cancel_checkpoint_background_head(&self) {
-        self.heads.cancel(
-            background_head::BackgroundHeadKind::Checkpoint,
-            &self.dispatch,
-        );
+        self.heads.cancel(background_head::BackgroundHeadKind::Checkpoint, &self.dispatch);
     }
 
     pub(in crate::physical_runtime) fn cancel_wal_reclamation_background_head(&self) {
-        self.heads.cancel(
-            background_head::BackgroundHeadKind::Reclamation,
-            &self.dispatch,
-        );
+        self.heads.cancel(background_head::BackgroundHeadKind::Reclamation, &self.dispatch);
     }
 
     pub(in crate::physical_runtime) fn effects(
@@ -278,6 +277,7 @@ impl PhysicalSchedulerAdmissionOwner {
             .dispatch
             .begin_foreground()
             .map_err(|_| RecordSchedulerReservationDenial::OwedBackgroundTurn)?;
+        capacity::deny_queue_headroom(self.foreground.snapshot(), lane.requested_budget())?;
         let reservation = self.foreground.reserve(lane, backend, security).map_err(
             RecordSchedulerReservationDenial::Admission,
         )?;

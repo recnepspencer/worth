@@ -50,6 +50,8 @@ pub(in crate::physical_runtime) struct PhysicalCheckpointWorkPort {
     scheduler: PhysicalSchedulerAdmissionOwner,
     record: Arc<RecordWorkAdmission>,
     yieldpoints: Arc<PhysicalCheckpointYieldpointOwner>,
+    #[cfg(feature = "certification-test-authority")]
+    fail_next_capacity: std::sync::Arc<std::sync::atomic::AtomicBool>,
 }
 
 impl PhysicalCheckpointWorkPort {
@@ -67,7 +69,20 @@ impl PhysicalCheckpointWorkPort {
             scheduler,
             record,
             yieldpoints: PhysicalCheckpointYieldpointOwner::new(),
+            #[cfg(feature = "certification-test-authority")]
+            fail_next_capacity: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
         }
+    }
+
+    pub(in crate::physical_runtime) fn release_background_selection(&self) {
+        self.scheduler.cancel_checkpoint_background_head();
+        self.scheduler.cancel_wal_reclamation_background_head();
+    }
+
+    #[cfg(feature = "certification-test-authority")]
+    pub(in crate::physical_runtime) fn fail_next_admission_after_noting_head(&self) {
+        self.fail_next_capacity
+            .store(true, std::sync::atomic::Ordering::Release);
     }
 
     pub(in crate::physical_runtime) fn yieldpoints(
@@ -151,25 +166,27 @@ impl PhysicalCheckpointWorkPort {
                 return Err(PhysicalCheckpointActionFailure::DependencyBlocked)
             }
         };
-        let (pacing, backend, policy) = self
+        #[cfg(feature = "certification-test-authority")]
+        if self
+            .fail_next_capacity
+            .swap(false, std::sync::atomic::Ordering::AcqRel)
+        {
+            self.scheduler.note_checkpoint_background_head();
+            return Err(PhysicalCheckpointActionFailure::SchedulerCapacityUnavailable);
+        }
+        let (pacing, backend, policy, capacity) = self
             .scheduler
             .checkpoint_background(
                 self.record.scheduler_security(),
                 scope.accounted_bytes(),
                 foreground_pressure_events,
             )
-            .map_err(|_denial| {
-                self.scheduler.cancel_checkpoint_background_head();
-                PhysicalCheckpointActionFailure::SchedulerCapacityUnavailable
-            })?;
+            .map_err(|_denial| PhysicalCheckpointActionFailure::SchedulerCapacityUnavailable)?;
         let lease = match require_complete_lease(pacing) {
             Ok(lease) => lease,
-            Err(failure) => {
-                self.scheduler.cancel_checkpoint_background_head();
-                return Err(failure);
-            }
+            Err(failure) => return Err(failure),
         };
-        let demand = PhysicalSchedulerDemand::checkpoint_background(ready, lease)
+        let demand = PhysicalSchedulerDemand::checkpoint_background(ready, lease, capacity)
             .map_err(|_denial| PhysicalCheckpointActionFailure::SchedulerDemandRejected)?;
         PhysicalWorkAdmission::require_current(
             &runtime.submission,

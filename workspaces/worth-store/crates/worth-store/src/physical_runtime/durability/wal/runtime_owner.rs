@@ -18,6 +18,14 @@ pub(in crate::physical_runtime) struct PhysicalWalRuntimeOwner {
     pub(super) preparation: Arc<PhysicalWalPreparationAdmission>,
 }
 
+struct PlannedMaintenanceFrame {
+    bytes: Vec<u8>,
+    frontier: WalAppendFrontier,
+    segment: worth_store_wal::WalSegmentId,
+    generation: worth_store_wal::WalSegmentGeneration,
+    lsn_range: worth_store_wal::WalLsnRange,
+}
+
 pub(super) struct PhysicalWalRuntimeState {
     pub(super) frontier: WalAppendFrontier,
     pub(super) durable_lsn_end: Option<LogSequenceNumber>,
@@ -35,6 +43,7 @@ pub(super) struct PhysicalWalRuntimeState {
     pub(super) reopened_bytes: u64,
     pub(super) reopen_peak_buffer_bytes: u64,
     pub(super) segments: PhysicalWalSegmentInventory,
+    maintenance: Option<PlannedMaintenanceFrame>,
 }
 
 pub(super) enum PhysicalWalMemberCompletionDenial {
@@ -68,12 +77,91 @@ impl PhysicalWalRuntimeOwner {
                 reopened_bytes: inventory.byte_count,
                 reopen_peak_buffer_bytes: inventory.peak_buffer_bytes,
                 segments: inventory.segments,
+                maintenance: None,
             })),
             preparation: Arc::new(PhysicalWalPreparationAdmission::new(
                 media.store_identity(),
                 runtime,
                 signal_profile,
             )),
+        }
+    }
+
+    pub(in crate::physical_runtime) fn plan_maintenance_frame(
+        &self,
+        payload: &[u8],
+    ) -> Result<(ArtifactTreeFile, u64, Vec<u8>), ()> {
+        let mut state = self
+            .shared
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        if state.sealed || state.in_flight {
+            return Err(());
+        }
+        let start = state.frontier.last_lsn_end().unwrap_or(LogSequenceNumber::new(
+            LogSequenceNumber::GENESIS.get() + 1,
+        ));
+        let end = LogSequenceNumber::new(start.get().checked_add(1).ok_or(())?);
+        let range = worth_store_wal::WalLsnRange::new(start, end).map_err(|_| ())?;
+        let planned = worth_store_wal::plan_wal_frame_append(
+            state.frontier,
+            range,
+            "store.physical.retirement.v1",
+            payload,
+        )
+        .map_err(|_| ())?;
+        let byte_limit = state.policy.segment_byte_limit().get().get();
+        if planned.resulting_frontier().valid_prefix_bytes() > byte_limit {
+            return Err(());
+        }
+        let bytes = planned.frame().encoded_frame().to_vec();
+        let offset = state.frontier.valid_prefix_bytes();
+        state.in_flight = true;
+        state.maintenance = Some(PlannedMaintenanceFrame {
+            bytes: bytes.clone(),
+            frontier: planned.resulting_frontier(),
+            segment: state.frontier.segment(),
+            generation: state.frontier.generation(),
+            lsn_range: range,
+        });
+        Ok((state.active_artifact.clone(), offset, bytes))
+    }
+
+    pub(in crate::physical_runtime) fn abort_maintenance_frame(&self) {
+        let mut state = self
+            .shared
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        state.maintenance = None;
+        state.in_flight = false;
+    }
+
+    pub(in crate::physical_runtime) fn finish_maintenance_frame(&self) -> Result<(), ()> {
+        let mut state = self
+            .shared
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let planned = state.maintenance.take().ok_or(())?;
+        let identity = worth_store_wal::WalSegmentArtifactIdentity::new(planned.segment, planned.generation);
+        if state
+            .segments
+            .record_completed_append(identity, planned.lsn_range, planned.bytes.len() as u64)
+            .is_err()
+        {
+            state.sealed = true;
+            state.in_flight = false;
+            return Err(());
+        }
+        state.frontier = planned.frontier;
+        state.appended_frames = state.appended_frames.saturating_add(1);
+        state.appended_bytes = state.appended_bytes.saturating_add(planned.bytes.len() as u64);
+        state.in_flight = false;
+        let start = planned.lsn_range.start().get();
+        let end = planned.lsn_range.end_exclusive().get();
+        if state.record_durable_barrier(start, end) {
+            Ok(())
+        } else {
+            Err(())
         }
     }
 

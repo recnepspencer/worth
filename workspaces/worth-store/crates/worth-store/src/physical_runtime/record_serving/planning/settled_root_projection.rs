@@ -72,6 +72,7 @@ pub(in crate::physical_runtime::record_serving) fn merge_settled_root_projection
             merged.last_inline_record = projection.last_inline_record;
             merged.last_inline_segment = projection.last_inline_segment;
         }
+        merged.requires_maintenance_protocol |= projection.requires_maintenance_protocol;
         merge_observation(&mut merged.observation, projection.observation);
     }
     Ok(MergedSettledRootProjection {

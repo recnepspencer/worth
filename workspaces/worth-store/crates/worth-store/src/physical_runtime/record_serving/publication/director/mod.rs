@@ -85,6 +85,11 @@ pub(in crate::physical_runtime) struct RecordPublicationFoundation {
     pub(in crate::physical_runtime) access: AdmittedRecordAccessPolicy,
     pub(in crate::physical_runtime) current_root: DurablePhysicalRootManifest,
     pub(in crate::physical_runtime) previous_root: Option<DurablePhysicalRootManifest>,
+    pub(in crate::physical_runtime) displaced_segments:
+        Vec<crate::physical_runtime::record_serving::admission::bootstrap::DisplacedSegmentCharge>,
+    pub(in crate::physical_runtime) retained_extent_bytes: u64,
+    pub(in crate::physical_runtime) retained_inline_bytes: u64,
+    pub(in crate::physical_runtime) retained_publication_overhead: u64,
     pub(in crate::physical_runtime) free_space: DurableFreeSpaceManifestHeader,
     pub(in crate::physical_runtime) allocation_frontier: RecordAllocationFrontier,
     pub(in crate::physical_runtime) residue: RecordPublicationResidueObservation,
@@ -106,6 +111,31 @@ impl RecordPublicationDirector {
         foundation: RecordPublicationFoundation,
     ) -> Arc<Self> {
         let writeback = mutation.frame_writeback_port(foundation.frame_ports.clone());
+        let page_bytes = u64::from(foundation.format.declaration().page_size().bytes());
+        let displaced = foundation.displaced_segments.clone();
+        let root_owner = crate::physical_runtime::durability::PhysicalCurrentRootOwner::new(
+            runtime,
+            foundation.current_root.clone(),
+            foundation.previous_root,
+            foundation.free_space.clone(),
+            foundation.read_protection,
+        );
+        let mut retained = foundation.retained_inline_bytes;
+        retained = retained.saturating_add(foundation.retained_publication_overhead);
+        retained = retained.saturating_add(foundation.wal.observation().reopened_bytes());
+        retained = retained.saturating_add(foundation.retained_extent_bytes);
+        root_owner.reconstruct_retained_bytes(retained);
+        for segment in displaced {
+            root_owner.restore_displaced_segment(
+                segment.source_root,
+                segment.segment_id,
+                segment.generation,
+                page_bytes,
+            );
+        }
+        foundation
+            .wal
+            .bind_publication_admission(root_owner.publication_admission());
         Arc::new_cyclic(|director| Self {
             runtime: Arc::downgrade(runtime),
             mutation_identity: runtime.submission.mutation_submission(),
@@ -117,13 +147,7 @@ impl RecordPublicationDirector {
             wal: foundation.wal,
             wal_barrier: foundation.wal_barrier,
             root_work: foundation.root_work,
-            root_owner: crate::physical_runtime::durability::PhysicalCurrentRootOwner::new(
-                runtime,
-                foundation.current_root.clone(),
-                foundation.previous_root,
-                foundation.free_space.clone(),
-                foundation.read_protection,
-            ),
+            root_owner,
             residency: PhysicalResidencyWorkPort::new(
                 foundation.frame_ports,
                 CanonicalFrameReadSource::new(planning_read),
@@ -205,6 +229,10 @@ impl RecordPublicationDirector {
         }
     }
 
+    pub(in crate::physical_runtime) fn charged_growth_bytes(&self) -> u64 {
+        self.root_owner.charged_growth_bytes()
+    }
+
     pub(in crate::physical_runtime) fn pending_publication_count(&self) -> usize {
         self.root_owner.pending_publication_count()
     }
@@ -235,6 +263,11 @@ impl RecordPublicationDirector {
         checkpoint: crate::physical_runtime::durability::PhysicalMutationCheckpoint,
     ) -> crate::physical_runtime::durability::PhysicalMutationPauseGate {
         self.mutations.pause_at(checkpoint)
+    }
+
+    #[cfg(feature = "certification-test-authority")]
+    pub(in crate::physical_runtime) fn fail_next_wal_member_before_effect(&self) {
+        self.wal.fail_next_member_before_effect();
     }
 
     #[cfg(feature = "certification-test-authority")]

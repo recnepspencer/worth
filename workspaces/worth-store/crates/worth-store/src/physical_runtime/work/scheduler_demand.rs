@@ -82,6 +82,7 @@ impl PhysicalSchedulerDemand {
     pub(in crate::physical_runtime) fn checkpoint_background(
         ready: ReadyPhysicalWork,
         lease: BackgroundIdleCapacityLease,
+        capacity: PhysicalInstanceForegroundCapacityLease,
     ) -> Result<Self, PhysicalSchedulerDenial> {
         ready
             .require_consumer_active()
@@ -98,13 +99,14 @@ impl PhysicalSchedulerDemand {
         Ok(Self {
             ready,
             work: lower_background_queue_lease(lease),
-            capacity: None,
+            capacity: Some(capacity),
         })
     }
 
     pub(in crate::physical_runtime) fn wal_reclamation_background(
         ready: ReadyPhysicalWork,
         lease: BackgroundIdleCapacityLease,
+        capacity: PhysicalInstanceForegroundCapacityLease,
     ) -> Result<Self, PhysicalSchedulerDenial> {
         ready
             .require_consumer_active()
@@ -121,7 +123,7 @@ impl PhysicalSchedulerDemand {
         Ok(Self {
             ready,
             work: lower_background_queue_lease(lease),
-            capacity: None,
+            capacity: Some(capacity),
         })
     }
 

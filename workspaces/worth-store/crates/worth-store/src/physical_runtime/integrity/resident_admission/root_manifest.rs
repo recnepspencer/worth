@@ -75,6 +75,7 @@ struct AdmittedRootManifestProjection {
     free_space_root: Option<worth_store_physical_format::FreeSpaceBlockReference>,
     last_inline_record: Option<worth_store_physical_format::PersistedRecordIdentity>,
     last_inline_segment: Option<worth_store_physical_format::SegmentGenerationCell>,
+    requires_maintenance_protocol: bool,
 }
 
 pub(in crate::physical_runtime) fn admit_loaded_root_manifest<'frame>(
@@ -211,11 +212,12 @@ impl AdmittedRootManifestProjection {
             free_space_root: validated.free_space_root(),
             last_inline_record: validated.last_inline_record(),
             last_inline_segment: validated.last_inline_segment(),
+            requires_maintenance_protocol: validated.requires_maintenance_protocol(),
         }
     }
 
     fn project(self) -> Result<DurablePhysicalRootManifest, RootProtocolAdmissionDenial> {
-        DurablePhysicalRootManifest::builder(
+        let admitted = DurablePhysicalRootManifest::builder(
             self.generation,
             self.tree_identity,
             self.node_capacity,
@@ -230,6 +232,11 @@ impl AdmittedRootManifestProjection {
         .last_inline_record(self.last_inline_record)
         .last_inline_segment(self.last_inline_segment)
         .admit()
-        .ok_or(RootProtocolAdmissionDenial::OwnerProjectionRejected)
+        .ok_or(RootProtocolAdmissionDenial::OwnerProjectionRejected)?;
+        Ok(if self.requires_maintenance_protocol {
+            admitted.with_maintenance_protocol()
+        } else {
+            admitted
+        })
     }
 }

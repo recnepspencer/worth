@@ -164,7 +164,7 @@ fn admit_background_removal(
         u64::from(coordination.take_certification_cleanup_background_deferral());
     #[cfg(not(feature = "certification-test-authority"))]
     let foreground_pressure_events = 0;
-    let (pacing, backend, policy) = coordination
+    let (pacing, backend, policy, capacity) = coordination
         .scheduler
         .wal_reclamation_background(
             &coordination.scheduler_security,
@@ -182,9 +182,15 @@ fn admit_background_removal(
     let lease = match pacing {
         BackgroundPacingOutcome::AdmittedWithDebt(admitted) => admitted.into_lease(),
         other => {
-            coordination
-                .scheduler
-                .cancel_wal_reclamation_background_head();
+            drop(capacity);
+            if matches!(
+                other,
+                BackgroundPacingOutcome::Denied(_) | BackgroundPacingOutcome::Violation(_)
+            ) {
+                coordination
+                    .scheduler
+                    .cancel_wal_reclamation_background_head();
+            }
             return Err(after_cancel(
                 coordination,
                 consumer,
@@ -193,7 +199,7 @@ fn admit_background_removal(
         }
     };
     let demand =
-        PhysicalSchedulerDemand::wal_reclamation_background(ready, lease).map_err(|denial| {
+        PhysicalSchedulerDemand::wal_reclamation_background(ready, lease, capacity).map_err(|denial| {
             after_cancel(
                 coordination,
                 consumer,

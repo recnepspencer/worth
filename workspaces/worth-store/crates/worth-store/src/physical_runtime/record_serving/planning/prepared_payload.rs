@@ -43,6 +43,7 @@ pub(in crate::physical_runtime::record_serving) struct PreparedRecordPayloadPlan
     pub(in crate::physical_runtime::record_serving) last_inline_segment:
         Option<SegmentGenerationCell>,
     pub(in crate::physical_runtime::record_serving) observation: PublicationObservation,
+    pub(in crate::physical_runtime::record_serving) requires_maintenance_protocol: bool,
 }
 
 pub(in crate::physical_runtime::record_serving) fn prepare_payload_plan(
@@ -119,6 +120,7 @@ pub(in crate::physical_runtime::record_serving) fn prepare_payload_plan(
         last_inline_record,
         last_inline_segment,
         observation,
+        requires_maintenance_protocol: current_root.requires_maintenance_protocol(),
     })
 }
 

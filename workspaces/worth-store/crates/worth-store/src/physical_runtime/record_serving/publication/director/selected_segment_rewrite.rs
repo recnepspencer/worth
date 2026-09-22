@@ -63,7 +63,7 @@ impl RecordPublicationDirector {
         let Some(record) = root.last_inline_record() else {
             return map_record_denial(RecordAppendDenial::PublishedLayoutDamaged);
         };
-        let digest = rewrite_basis_digest(root.generation(), record);
+        let digest = rewrite_basis_digest(record);
         let group_queue_admission = match self.group_queue_admission_tick() {
             Ok(tick) => tick,
             Err(outcome) => return outcome,
@@ -285,6 +285,12 @@ impl RecordPublicationDirector {
             .map_err(|()| {
                 RecordAppendError::Denied(RecordAppendDenial::PhysicalPressure)
             })?;
+        self.root_owner.note_displaced_segment(
+            current_root.generation(),
+            segment.segment.segment_id().get(),
+            page_entry.data_generation(),
+            page_bytes,
+        );
         let data = PreparedPhysicalDataPlan::new(vec![frame], 1)
             .map_err(|_| damaged())?
             .with_rewrite(rewrite);
@@ -294,12 +300,14 @@ impl RecordPublicationDirector {
             manifest_capacity_transition: prepared.manifest_capacity_transition(),
             placement: prepared.placement(),
             records,
+            inserted_records: 0,
             payload_manifests: Vec::new(),
             placements,
             segment_updates,
             inline_allocations: vec![working.allocation()],
             last_inline_record: Some(tail),
             last_inline_segment: Some(segment.segment),
+            requires_maintenance_protocol: true,
             observation: PublicationObservation {
                 records: loaded.records.len() as u64,
                 logical_bytes,
@@ -364,10 +372,9 @@ fn admitted_terminal(
         }
     }
 }
-fn rewrite_basis_digest(root_generation: u64, record: PersistedRecordIdentity) -> [u8; 32] {
+fn rewrite_basis_digest(record: PersistedRecordIdentity) -> [u8; 32] {
     let mut digest = Sha256::new();
     digest.update(b"store.physical.rewrite-basis.v1");
-    digest.update(root_generation.to_le_bytes());
     digest.update(record.allocation_epoch());
     digest.update(record.ordinal().to_le_bytes());
     digest.finalize().into()

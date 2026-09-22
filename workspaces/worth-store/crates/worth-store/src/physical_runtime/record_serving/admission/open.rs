@@ -142,7 +142,7 @@ pub(in crate::physical_runtime::record_serving) fn load_current_root(
         counters,
         resident_integrity_counters,
     };
-    let current_root = load_root_manifest(&admission)?;
+    let current_root = load_root_manifest(&admission, true)?;
     let previous_root = if generation == 1 {
         None
     } else {
@@ -151,9 +151,33 @@ pub(in crate::physical_runtime::record_serving) fn load_current_root(
             lifecycle: std::sync::Arc::clone(&admission.lifecycle),
             ..admission.clone()
         };
-        Some(load_root_manifest(&previous)?)
+        Some(load_root_manifest(&previous, true)?)
     };
+    let artifacts = ServingRecordArtifacts::new(media, loader);
+    let prior_roots = publication_roots(&admission, &current_root, previous_root.as_ref())?;
+    let displaced_segments = if current_root.requires_maintenance_protocol() {
+        super::displaced_segments::retained_displaced_segments(
+            &prior_roots,
+            &current_root,
+            &artifacts,
+        )?
+    } else {
+        Vec::new()
+    };
+    let mut charged_roots = prior_roots.clone();
+    charged_roots.push(current_root.clone());
+    let retained_publication_overhead =
+        super::publication_charge::retained_publication_overhead(&charged_roots);
     let free_space = load_free_space_manifest(&admission, &current_root)?;
+    let retained_inline_bytes = super::inline_charge::retained_inline_bytes(
+        &artifacts,
+        free_space.next_segment(),
+        current_root.generation(),
+    )?;
+    let retained_extent_bytes = super::extent_charge::retained_extent_bytes(
+        &artifacts,
+        free_space.next_extent(),
+    )?;
     let publication_residue = observe_publication_residue(
         &ServingRecordArtifacts::new(media, loader),
         &current_root,
@@ -166,14 +190,42 @@ pub(in crate::physical_runtime::record_serving) fn load_current_root(
         access: bootstrap.access,
         current_root,
         previous_root,
+        displaced_segments,
+        retained_extent_bytes,
+        retained_inline_bytes,
+        retained_publication_overhead,
         publication_residue,
         free_space,
         root_protocol_counters: counters.snapshot(),
     })
 }
 
+fn publication_roots(
+    admission: &CurrentRootAdmission<'_>,
+    current_root: &DurablePhysicalRootManifest,
+    previous_root: Option<&DurablePhysicalRootManifest>,
+) -> Result<Vec<DurablePhysicalRootManifest>, BootstrapTransitionFailure> {
+    let mut prior = Vec::new();
+    for generation in 1..current_root.generation() {
+        let root = match previous_root {
+            Some(root) if root.generation() == generation => root.clone(),
+            _ => {
+                let older = CurrentRootAdmission {
+                    generation,
+                    lifecycle: std::sync::Arc::clone(&admission.lifecycle),
+                    ..admission.clone()
+                };
+                load_root_manifest(&older, false)?
+            }
+        };
+        prior.push(root);
+    }
+    Ok(prior)
+}
+
 fn load_root_manifest(
     admission: &CurrentRootAdmission<'_>,
+    record_route: bool,
 ) -> Result<DurablePhysicalRootManifest, BootstrapTransitionFailure> {
     let root_frame = ServingRecordArtifacts::new(admission.media, admission.loader)
         .load_bounded(
@@ -216,7 +268,9 @@ fn load_root_manifest(
             admission.resident_integrity_counters,
         )
         .map_err(classify_root)?;
-    admission.counters.observe_root(admission.route);
+    if record_route {
+        admission.counters.observe_root(admission.route);
+    }
     if !super::super::planning::policy_units::manifest_capacity_can_branch(
         current_root.node_capacity(),
     ) {

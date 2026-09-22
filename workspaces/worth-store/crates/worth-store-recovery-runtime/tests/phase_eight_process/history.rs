@@ -32,6 +32,7 @@ pub(super) use process::{
     launch_killed_cleanup_writer_with_operation_count,
     launch_killed_durable_unacknowledged_writer_with_operation_count,
     launch_killed_mutation_writer, launch_killed_mutation_writer_with_operation_count,
+    launch_multi_page_rewrite_root,
     launch_killed_production_writer, launch_killed_production_writer_with_operation_count,
     KilledProductionWriter,
 };

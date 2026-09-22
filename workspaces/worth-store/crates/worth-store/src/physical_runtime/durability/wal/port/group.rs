@@ -10,8 +10,8 @@ use crate::physical_runtime::durability::{
     ReservedPhysicalWalGroupMembers,
 };
 use crate::physical_runtime::{
-    AdmittedPhysicalDurabilityGroupMember, PhysicalDurabilityGroupAdmissionDenial,
-    PhysicalDurabilityGroupBasis, PhysicalDurabilityGroupSealingDenial,
+    AdmittedPhysicalDurabilityGroupMember, PhysicalDurabilityGroupBasis,
+    PhysicalDurabilityGroupSealingDenial,
     PhysicalWalReservationDenial, PreparedPhysicalMutation, RejectedPhysicalDurabilityGroup,
     SealedPhysicalDurabilityGroupMembers, WalAppendedPhysicalMutation, WalBarrierMember,
     WalRangeReservedPhysicalMutation,
@@ -34,6 +34,7 @@ pub enum PhysicalWalGroupAppendFailureCause {
     RuntimeReleased,
     SignalClockUnavailable,
     Reservation(PhysicalWalReservationDenial),
+    PublicationGrowth,
     Append(PhysicalWalAppendFailureCause),
 }
 
@@ -100,13 +101,8 @@ impl PhysicalWalAppendPort {
                 Err(rejected) => return PhysicalWalGroupAppendOutcome::AdmissionRejected(rejected),
             };
         let sealing_bindings = admitted.idempotency_sealing_bindings();
-        if let Err(denial) = self.idempotency.seal_group(&sealing_bindings) {
-            return PhysicalWalGroupAppendOutcome::AdmissionRejected(
-                admitted.into_rejected(group_seal_denial(denial)),
-            );
-        }
         let (basis, members) = admitted.into_parts();
-        self.reserve_and_append_group(basis, Vec::new(), members)
+        self.reserve_charge_and_append(basis, Vec::new(), members, &sealing_bindings)
     }
 
     #[cfg_attr(not(feature = "certification-test-authority"), allow(dead_code))]
@@ -122,7 +118,7 @@ impl PhysicalWalAppendPort {
         } = continuation;
         match remaining {
             PhysicalWalGroupAppendRemainder::Admitted(members) => {
-                self.reserve_and_append_group(basis, appended, members)
+                self.reserve_charge_and_append(basis, appended, members, &[])
             }
             PhysicalWalGroupAppendRemainder::Reserved(members) => {
                 self.append_reserved_group(basis, appended, members)
@@ -130,20 +126,93 @@ impl PhysicalWalAppendPort {
         }
     }
 
-    fn reserve_and_append_group(
+    fn reserve_charge_and_append(
         &self,
         basis: PhysicalDurabilityGroupBasis,
         appended: Vec<WalBarrierMember<WalAppendedPhysicalMutation>>,
         members: NonEmpty<AdmittedPhysicalDurabilityGroupMember>,
+        sealing_bindings: &[crate::physical_runtime::durability::PhysicalMutationGroupSealingBinding],
     ) -> PhysicalWalGroupAppendOutcome {
+        let sealing_bindings = if sealing_bindings.is_empty() {
+            members
+                .as_slice()
+                .iter()
+                .map(|member| {
+                    crate::physical_runtime::durability::PhysicalMutationGroupSealingBinding::new(
+                        crate::physical_runtime::durability::PhysicalMutationUnresolvedBindingObservation::new(
+                            member.prepared.idempotency_identity(),
+                            member.prepared.request_fingerprint(),
+                            member.prepared.mutation_identity(),
+                        ),
+                        member.binding(),
+                    )
+                })
+                .collect::<Vec<_>>()
+        } else {
+            sealing_bindings.to_vec()
+        };
         match self.owner.reserve_group(members) {
-            Ok(reserved) => self.append_reserved_group(basis, appended, reserved.into_members()),
+            Ok(reserved) => {
+                self.charge_and_append(basis, appended, reserved, &sealing_bindings)
+            }
             Err((members, cause)) => continuation_outcome(
                 basis,
                 appended,
                 PhysicalWalGroupAppendRemainder::Admitted(members),
                 PhysicalWalGroupAppendFailureCause::Reservation(cause),
             ),
+        }
+    }
+
+    fn charge_and_append(
+        &self,
+        basis: PhysicalDurabilityGroupBasis,
+        appended: Vec<WalBarrierMember<WalAppendedPhysicalMutation>>,
+        reserved: ReservedPhysicalWalGroupMembers,
+        sealing_bindings: &[crate::physical_runtime::durability::PhysicalMutationGroupSealingBinding],
+    ) -> PhysicalWalGroupAppendOutcome {
+        let growth = reserved.retained_publication_bytes();
+        let charged = self
+            .publication
+            .get()
+            .and_then(|admission| admission.reserve_retained_bytes(growth).ok());
+        if growth > 0 && charged.is_none() {
+            return self.growth_denied(reserved);
+        }
+        if !sealing_bindings.is_empty() {
+            if let Err(denial) = self.idempotency.seal_group(sealing_bindings) {
+                if !matches!(
+                    denial,
+                    PhysicalMutationIdempotencyGroupSealDenial::AlreadyGroupSealed
+                ) {
+                    drop(charged);
+                    return self.growth_denied(reserved);
+                }
+            }
+        }
+        let outcome = self.append_reserved_group(basis, appended, reserved.into_members());
+        if let Some(lease) = charged {
+            if !matches!(outcome, PhysicalWalGroupAppendOutcome::NotStarted(_)) {
+                lease.seal();
+            }
+        }
+        outcome
+    }
+
+    fn growth_denied(
+        &self,
+        reserved: ReservedPhysicalWalGroupMembers,
+    ) -> PhysicalWalGroupAppendOutcome {
+        let prepared = reserved
+            .release_after_no_effect()
+            .into_vec()
+            .into_iter()
+            .map(|member| member.into_parts().0)
+            .collect();
+        self.owner.release_group_before_effect();
+        PhysicalWalGroupAppendOutcome::NotAdmitted {
+            members: nonempty(prepared),
+            cause: PhysicalWalGroupAppendFailureCause::PublicationGrowth,
         }
     }
 
@@ -196,28 +265,6 @@ impl PhysicalWalAppendPort {
         match SealedPhysicalDurabilityGroupMembers::seal(basis, appended) {
             Ok(sealed) => PhysicalWalGroupAppendOutcome::Appended(sealed),
             Err(failure) => sealing_indeterminate(basis, failure),
-        }
-    }
-}
-
-fn group_seal_denial(
-    denial: PhysicalMutationIdempotencyGroupSealDenial,
-) -> PhysicalDurabilityGroupAdmissionDenial {
-    match denial {
-        PhysicalMutationIdempotencyGroupSealDenial::AuthorityReleased => {
-            PhysicalDurabilityGroupAdmissionDenial::IdempotencyAuthorityReleased
-        }
-        PhysicalMutationIdempotencyGroupSealDenial::BindingMismatch => {
-            PhysicalDurabilityGroupAdmissionDenial::IdempotencyBindingMismatch
-        }
-        PhysicalMutationIdempotencyGroupSealDenial::AlreadyGroupSealed => {
-            PhysicalDurabilityGroupAdmissionDenial::IdempotencyAlreadyGroupSealed
-        }
-        PhysicalMutationIdempotencyGroupSealDenial::ProvenNoEffect => {
-            PhysicalDurabilityGroupAdmissionDenial::IdempotencyProvenNoEffect
-        }
-        PhysicalMutationIdempotencyGroupSealDenial::ReopenedUnresolved => {
-            PhysicalDurabilityGroupAdmissionDenial::IdempotencyReopenedUnresolved
         }
     }
 }

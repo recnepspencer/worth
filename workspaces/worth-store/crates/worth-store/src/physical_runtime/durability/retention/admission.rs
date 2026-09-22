@@ -23,6 +23,31 @@ struct AdmissionState {
     charged_bytes: u64,
     pending: HashMap<PhysicalMutationIdentity, u32>,
     generations: BTreeMap<u64, (u64, u32)>,
+    garbage: BTreeMap<u64, RetainedGarbage>,
+}
+
+struct RetainedGarbage {
+    bytes: u64,
+    source_root: u64,
+    segment_id: u64,
+    claimed: bool,
+    completed: bool,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(in crate::physical_runtime) struct DisplacedSegment {
+    pub(in crate::physical_runtime) source_root: u64,
+    pub(in crate::physical_runtime) segment_id: u64,
+    pub(in crate::physical_runtime) generation: u64,
+    pub(in crate::physical_runtime) bytes: u64,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(in crate::physical_runtime) enum GarbageClaim {
+    Claimed(DisplacedSegment),
+    AlreadyClaimed(DisplacedSegment),
+    Completed,
+    Absent,
 }
 
 pub(in crate::physical_runtime) struct PhysicalPublicationAdmission {
@@ -47,6 +72,7 @@ impl PhysicalPublicationAdmission {
                 charged_bytes: 0,
                 pending: HashMap::new(),
                 generations: BTreeMap::new(),
+                garbage: BTreeMap::new(),
             }),
         }
     }
@@ -146,6 +172,22 @@ impl PhysicalPublicationAdmission {
     ///
     /// Publication success converts a candidate into retained growth. The lease
     /// Drop becomes a no-op once the holder entry is removed here.
+    /// Restores a sealed byte charge from published page identities.
+    ///
+    /// Reopen has no in-flight leases. The charge is the pages already named by
+    /// the free-space frontier, so a new generation still reserves on top.
+    pub(in crate::physical_runtime) fn charged_growth_bytes(&self) -> u64 {
+        self.lock().charged_bytes
+    }
+
+    pub(in crate::physical_runtime) fn reconstruct_retained_bytes(&self, bytes: u64) {
+        if bytes == 0 {
+            return;
+        }
+        let mut state = self.lock();
+        state.charged_bytes = state.charged_bytes.saturating_add(bytes);
+    }
+
     pub(in crate::physical_runtime) fn seal_candidate_charge(&self, generation: u64) {
         let mut state = self.lock();
         state.generations.remove(&generation);
@@ -158,6 +200,79 @@ impl PhysicalPublicationAdmission {
 
     pub(in crate::physical_runtime) fn remaining_growth_bytes(&self) -> u64 {
         self.lock().remaining_bytes()
+    }
+
+    pub(in crate::physical_runtime) fn retain_displaced(&self, displaced: DisplacedSegment) {
+        let mut state = self.lock();
+        if state.garbage.contains_key(&displaced.generation) {
+            return;
+        }
+        state.garbage.insert(
+            displaced.generation,
+            RetainedGarbage {
+                bytes: displaced.bytes,
+                source_root: displaced.source_root,
+                segment_id: displaced.segment_id,
+                claimed: false,
+                completed: false,
+            },
+        );
+    }
+
+    pub(in crate::physical_runtime) fn next_displaced(&self) -> Option<DisplacedSegment> {
+        let state = self.lock();
+        state.garbage.iter().find_map(|(generation, garbage)| {
+            (!garbage.completed).then_some(DisplacedSegment {
+                source_root: garbage.source_root,
+                segment_id: garbage.segment_id,
+                generation: *generation,
+                bytes: garbage.bytes,
+            })
+        })
+    }
+
+    pub(in crate::physical_runtime) fn claim_displaced(&self, generation: u64) -> GarbageClaim {
+        let mut state = self.lock();
+        let Some(garbage) = state.garbage.get_mut(&generation) else {
+            return GarbageClaim::Absent;
+        };
+        if garbage.completed {
+            return GarbageClaim::Completed;
+        }
+        let displaced = DisplacedSegment {
+            source_root: garbage.source_root,
+            segment_id: garbage.segment_id,
+            generation,
+            bytes: garbage.bytes,
+        };
+        if garbage.claimed {
+            return GarbageClaim::AlreadyClaimed(displaced);
+        }
+        garbage.claimed = true;
+        GarbageClaim::Claimed(displaced)
+    }
+
+    pub(in crate::physical_runtime) fn revert_displaced_claim(&self, generation: u64) {
+        let mut state = self.lock();
+        if let Some(garbage) = state.garbage.get_mut(&generation) {
+            if !garbage.completed {
+                garbage.claimed = false;
+            }
+        }
+    }
+
+    pub(in crate::physical_runtime) fn complete_displaced(&self, generation: u64) {
+        let mut state = self.lock();
+        let Some(garbage) = state.garbage.get_mut(&generation) else {
+            return;
+        };
+        if garbage.completed {
+            return;
+        }
+        let bytes = garbage.bytes;
+        garbage.completed = true;
+        garbage.claimed = true;
+        state.charged_bytes = state.charged_bytes.saturating_sub(bytes);
     }
 
     fn lock(&self) -> std::sync::MutexGuard<'_, AdmissionState> {
@@ -184,6 +299,16 @@ impl AdmissionState {
 impl CandidateGrowthLease {
     pub(in crate::physical_runtime) const fn generation(&self) -> u64 {
         self.generation
+    }
+}
+
+impl PendingPublicationLease {
+    /// Leaves the publication identity pending after an unresolved effect.
+    ///
+    /// Drop would clear the obligation. An indeterminate predecessor must keep
+    /// blocking the next root change until recovery settles it.
+    pub(in crate::physical_runtime) fn retain_unresolved(mut self) {
+        self.admission = Weak::new();
     }
 }
 
@@ -220,6 +345,9 @@ impl Drop for CandidateGrowthLease {
         }
     }
 }
+
+#[path = "retained_bytes.rs"]
+mod retained_bytes;
 
 #[cfg(test)]
 mod tests {
@@ -260,5 +388,8 @@ mod tests {
         assert_eq!(denied.remaining_bytes, 0);
         assert_eq!(denied.requested_bytes, 1);
     }
-
 }
+
+#[cfg(test)]
+#[path = "admission_unresolved.rs"]
+mod admission_unresolved;

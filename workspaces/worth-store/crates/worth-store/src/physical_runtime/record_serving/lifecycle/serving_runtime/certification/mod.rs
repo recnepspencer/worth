@@ -42,6 +42,10 @@ impl ServingPhysicalRuntime {
     ///
     /// `usable_growth_bytes` is the allowance after progress headroom. Headroom stays
     /// at the store default (64 KiB) so one-byte-over claims remain honest.
+    pub fn certification_charged_growth_bytes(&self) -> u64 {
+        self.parts.publication.charged_growth_bytes()
+    }
+
     pub fn certification_limit_candidate_growth_bytes(&self, usable_growth_bytes: u64) {
         self.parts
             .publication
@@ -154,40 +158,65 @@ impl ServingPhysicalRuntime {
         self.parts.work_runtime.health.revoke();
     }
 
-    pub fn certification_pace_checkpoint_background(
-        &self,
-        foreground_pressure_events: u64,
-    ) -> worth_store_io_scheduler::BackgroundPacingOutcome {
+    /// Drive one checkpoint attempt through the production work port.
+    /// Foreground pressure yields before a media effect and keeps the owed turn.
+    pub fn certification_checkpoint_work_yields_for_foreground_pressure(&self) -> bool {
+        self.parts
+            .checkpoint
+            .certification_checkpoint_under_pressure(1)
+    }
+
+    /// Drive one reclamation attempt through the production work port.
+    pub fn certification_reclamation_work_yields_for_foreground_pressure(&self) -> bool {
+        self.parts.checkpoint.certification_reclamation_under_pressure(1)
+    }
+
+    /// A quiet foreground admits the reclamation quantum through the work port.
+    pub fn certification_reclamation_work_admits_when_foreground_is_idle(&self) -> bool {
+        !self
+            .parts
+            .checkpoint
+            .certification_reclamation_under_pressure(0)
+    }
+
+    pub fn certification_note_reclamation_background_head(&self) {
         self.parts
             .scheduler_admission
-            .checkpoint_background(
+            .note_wal_reclamation_background_head();
+    }
+
+    pub fn certification_fail_next_checkpoint_admission(&self) {
+        self.parts
+            .checkpoint
+            .certification_fail_next_admission();
+    }
+
+    pub fn certification_foreground_is_blocked_by_background(&self) -> bool {
+        use worth_store_io_scheduler::foreground_reservation::{
+            BandwidthToken, DirtyPageBudget, ForegroundLaneDeclaration, ForegroundResourceBudget,
+            QueueSlot, WorkerPermit, WriteBackWindow,
+        };
+        let lane = ForegroundLaneDeclaration::ordinary_page_write().with_budget(
+            ForegroundResourceBudget::new()
+                .with_queue_slots(QueueSlot::new(1).expect("one foreground slot is nonzero"))
+                .with_bandwidth(BandwidthToken::bytes(4_096).expect("bandwidth is nonzero"))
+                .with_write_back(WriteBackWindow::pages(1).expect("one page is nonzero"))
+                .with_dirty_pages(DirtyPageBudget::pages(1).expect("one dirty page is nonzero"))
+                .with_worker_permits(WorkerPermit::new(1).expect("one worker is nonzero")),
+        );
+        matches!(
+            self.parts.scheduler_admission.reserve_record_lane(
+                lane,
                 self.parts.record_work.scheduler_security(),
-                4_096,
-                foreground_pressure_events,
-            )
-            .map(|(pacing, _, _)| pacing)
-            .expect("checkpoint background pacing reaches the scheduler")
+            ),
+            Err(crate::physical_runtime::RecordSchedulerReservationDenial::OwedBackgroundTurn)
+        )
     }
 
     pub fn certification_cancel_checkpoint_background_head(&self) {
         self.parts
             .scheduler_admission
             .cancel_checkpoint_background_head();
-    }
-
-    pub fn certification_pace_wal_reclamation_background(
-        &self,
-        foreground_pressure_events: u64,
-    ) -> worth_store_io_scheduler::BackgroundPacingOutcome {
-        self.parts
-            .scheduler_admission
-            .wal_reclamation_background(
-                self.parts.record_work.scheduler_security(),
-                4_096,
-                foreground_pressure_events,
-            )
-            .map(|(pacing, _, _)| pacing)
-            .expect("reclamation background pacing reaches the scheduler")
     }
 
     pub fn certification_cancel_wal_reclamation_background_head(&self) {
@@ -248,6 +277,12 @@ impl ServingPhysicalRuntime {
             .residency
             .ports()
             .reject_next_candidate_publication();
+    }
+
+    pub fn certification_fail_next_wal_member_before_effect(&self) {
+        self.parts
+            .publication
+            .fail_next_wal_member_before_effect();
     }
 
     pub fn certification_reject_next_candidate_retention_before_effect(&self) {

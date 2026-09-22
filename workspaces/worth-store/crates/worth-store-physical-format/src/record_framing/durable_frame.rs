@@ -3,7 +3,8 @@ use crate::{PhysicalRecordFormatDeclaration, PhysicalRecordFormatDenial};
 
 pub const FRAME_HEADER_BYTES: usize = 48;
 const FRAME_MAGIC: [u8; 8] = *b"WRC5FRM\0";
-const FRAME_SCHEMA: u8 = 2;
+pub const FRAME_SCHEMA: u8 = 2;
+pub const MAINTENANCE_ROOT_SCHEMA: u8 = 3;
 const PAGE_LSN_OFFSET: usize = 36;
 const CHECKSUM_OFFSET: usize = 44;
 
@@ -55,6 +56,7 @@ pub(crate) struct DecodedFrame<'a> {
     pub(crate) identity: u64,
     pub(crate) page_lsn: PhysicalPageLsn,
     pub(crate) payload: &'a [u8],
+    pub(crate) schema: u8,
 }
 
 pub(crate) fn encode_frame(
@@ -76,6 +78,19 @@ pub(crate) fn encode_frame(
     bytes[FRAME_HEADER_BYTES..].copy_from_slice(payload);
     let checksum = crc32c::checksum(&[&bytes[..CHECKSUM_OFFSET], &bytes[FRAME_HEADER_BYTES..]]);
     bytes[CHECKSUM_OFFSET..FRAME_HEADER_BYTES].copy_from_slice(&checksum.to_le_bytes());
+    bytes
+}
+
+pub(crate) fn encode_frame_schema(
+    kind: DurableFrameKind,
+    format: PhysicalRecordFormatDeclaration,
+    identity: u64,
+    payload: &[u8],
+    schema: u8,
+) -> Vec<u8> {
+    let mut bytes = encode_frame(kind, format, identity, payload);
+    bytes[9] = schema;
+    refresh_checksum(&mut bytes);
     bytes
 }
 
@@ -175,7 +190,7 @@ pub(crate) fn decode_frame(
     if bytes[8] != expected_kind as u8 {
         return Err(DurableFrameDenial::IllegalKind(bytes[8]));
     }
-    if bytes[9] != FRAME_SCHEMA {
+    if !admitted_schema(expected_kind, bytes[9]) {
         return Err(DurableFrameDenial::UnsupportedSchema(bytes[9]));
     }
     let format = PhysicalRecordFormatDeclaration::decode(
@@ -220,6 +235,7 @@ pub(crate) fn decode_frame(
         DecodedFrame {
             identity: u64::from_le_bytes(bytes[28..36].try_into().unwrap()),
             page_lsn,
+            schema: bytes[9],
             payload: &bytes[FRAME_HEADER_BYTES..],
         },
     ))
@@ -227,6 +243,11 @@ pub(crate) fn decode_frame(
 
 fn write_page_lsn(bytes: &mut [u8], page_lsn: PhysicalPageLsn) {
     bytes[PAGE_LSN_OFFSET..PAGE_LSN_OFFSET + 8].copy_from_slice(&page_lsn.get().to_le_bytes());
+}
+
+fn admitted_schema(kind: DurableFrameKind, schema: u8) -> bool {
+    schema == FRAME_SCHEMA
+        || (kind == DurableFrameKind::RootManifest && schema == MAINTENANCE_ROOT_SCHEMA)
 }
 
 fn require_data_kind(kind: DurableFrameKind) -> Result<(), DurableFrameDenial> {

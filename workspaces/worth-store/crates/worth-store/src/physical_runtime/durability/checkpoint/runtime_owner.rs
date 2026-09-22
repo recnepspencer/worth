@@ -95,6 +95,25 @@ impl PhysicalCheckpointRuntimeOwner {
         self.yieldpoints.install(step)
     }
 
+    pub(in crate::physical_runtime) fn certification_checkpoint_under_pressure(
+        &self,
+        foreground_pressure_events: u64,
+    ) -> bool {
+        self.capture
+            .certification_checkpoint_under_pressure(foreground_pressure_events)
+    }
+
+    #[cfg(feature = "certification-test-authority")]
+    pub(in crate::physical_runtime) fn certification_fail_next_admission(&self) { self.capture.fail_next_admission(); }
+
+    pub(in crate::physical_runtime) fn certification_reclamation_under_pressure(
+        &self,
+        foreground_pressure_events: u64,
+    ) -> bool {
+        self.capture
+            .certification_reclamation_under_pressure(foreground_pressure_events)
+    }
+
     pub(in crate::physical_runtime) fn submission(
         owner: &Arc<Self>,
     ) -> PhysicalCheckpointSubmission {
@@ -358,6 +377,7 @@ fn run_worker(
     };
     let terminal = result.terminal();
     owner.record_result(result, panicked);
+    owner.capture.release_background_selection();
     attempt.complete(terminal);
 }
 

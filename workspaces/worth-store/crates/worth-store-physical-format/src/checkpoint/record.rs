@@ -2,6 +2,7 @@ use crate::record_framing::crc32c;
 
 const MAGIC: [u8; 8] = *b"WCP7REC\0";
 const SCHEMA: u8 = 1;
+pub(super) const MAINTENANCE_CHECKPOINT_SCHEMA: u8 = 2;
 const PREFIX_BYTES: usize = 16;
 const CHECKSUM_BYTES: usize = 4;
 
@@ -40,10 +41,10 @@ pub enum CheckpointStreamDecodeDenial {
     AggregateDigestMismatch,
 }
 
-pub(super) fn encode_record(kind: u8, payload: &[u8]) -> Vec<u8> {
+pub(super) fn encode_record_schema(schema: u8, kind: u8, payload: &[u8]) -> Vec<u8> {
     let mut record = vec![0; PREFIX_BYTES + payload.len() + CHECKSUM_BYTES];
     record[..8].copy_from_slice(&MAGIC);
-    record[8] = SCHEMA;
+    record[8] = schema;
     record[9] = kind;
     record[12..16].copy_from_slice(&(payload.len() as u32).to_le_bytes());
     record[PREFIX_BYTES..PREFIX_BYTES + payload.len()].copy_from_slice(payload);
@@ -63,7 +64,7 @@ pub(super) fn decode_record(
     if record[..8] != MAGIC {
         return Err(CheckpointStreamDecodeDenial::WrongMagic);
     }
-    if record[8] != SCHEMA {
+    if record[8] != SCHEMA && record[8] != MAINTENANCE_CHECKPOINT_SCHEMA {
         return Err(CheckpointStreamDecodeDenial::UnsupportedSchema(record[8]));
     }
     if record[9] != expected_kind {
@@ -101,7 +102,7 @@ pub(super) fn decode_bounded_record(
     if record[..8] != MAGIC {
         return Err(CheckpointStreamDecodeDenial::WrongMagic);
     }
-    if record[8] != SCHEMA {
+    if record[8] != SCHEMA && record[8] != MAINTENANCE_CHECKPOINT_SCHEMA {
         return Err(CheckpointStreamDecodeDenial::UnsupportedSchema(record[8]));
     }
     if record[9] != expected_kind {
@@ -146,7 +147,7 @@ pub(super) fn decode_bounded_record_frame_bytes(
     if prefix[..8] != MAGIC {
         return Err(CheckpointStreamDecodeDenial::WrongMagic);
     }
-    if prefix[8] != SCHEMA {
+    if prefix[8] != SCHEMA && prefix[8] != MAINTENANCE_CHECKPOINT_SCHEMA {
         return Err(CheckpointStreamDecodeDenial::UnsupportedSchema(prefix[8]));
     }
     if prefix[9] != expected_kind {

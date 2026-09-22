@@ -112,13 +112,21 @@ impl RecordPublicationDirector {
         prepared
             .materialization_observation()
             .apply_to(&mut payload.observation);
-        materialize_durable_data(
+        let (data, root) = materialize_durable_data(
             payload,
             self.format,
             std::num::NonZeroU64::new(bytes)
                 .expect("an admitted nonempty append has nonzero planning bytes"),
             prepared.manifest_capacity_transition(),
-        )
+        )?;
+        for (generation, growth_bytes) in data.retained_growth() {
+            self.root_owner
+                .hold_rewrite_candidate(generation, growth_bytes)
+                .map_err(|()| {
+                    RecordAppendError::Denied(RecordAppendDenial::PhysicalPressure)
+                })?;
+        }
+        Ok((data, root))
     }
 }
 

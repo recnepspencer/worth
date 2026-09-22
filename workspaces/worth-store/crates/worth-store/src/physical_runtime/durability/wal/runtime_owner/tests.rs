@@ -85,6 +85,7 @@ fn wal_state(lsn_start: u64, lsn_end: u64) -> PhysicalWalRuntimeState {
         reclaimed_segments: 0,
         reclaimed_bytes: 0,
         reopened_frames: 0,
+        maintenance: None,
         reopened_bytes: 0,
         reopen_peak_buffer_bytes: 0,
         segments,

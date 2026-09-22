@@ -21,6 +21,39 @@ pub(super) fn start(
     )
 }
 
+pub(super) fn start_dirty_checkpoint_batch(
+    serving: &ServingPhysicalRuntime,
+    placement: AdmittedRecordPlacementPolicy,
+    material: [u8; 32],
+    payloads: [Vec<u8>; 2],
+) -> Result<PhysicalMutationHandle, String> {
+    let submission = serving.record_submission();
+    let key = submission
+        .issue_idempotency_key(PhysicalMutationIdempotencyMaterial::new(material))
+        .map_err(|denial| format!("C8 mutation identity denied: {denial:?}"))?;
+    let batch = RecordAppendBatch::try_from_iter(payloads)
+        .map_err(|denial| format!("C8 mutation batch denied: {denial:?}"))?;
+    let request = PhysicalMutationRequest::platform_durable(
+        key,
+        PhysicalMutationDeadline::after_milliseconds(30_000)
+            .expect("C8 mutation deadline is nonzero"),
+    );
+    match submission
+        .prepare_durable_append_with_manifest_capacity_transition(
+            batch,
+            placement,
+            PhysicalManifestCapacityTransition::PreserveCurrent,
+            request,
+        )
+        .into_raw()
+    {
+        TransitionOutcome::Success(PhysicalMutationPreparationSuccess::Prepared(prepared)) => {
+            Ok(prepared.start())
+        }
+        _ => Err("ordinary C8 mutation was not prepared".to_owned()),
+    }
+}
+
 pub(super) fn start_dirty_checkpoint(
     serving: &ServingPhysicalRuntime,
     placement: AdmittedRecordPlacementPolicy,

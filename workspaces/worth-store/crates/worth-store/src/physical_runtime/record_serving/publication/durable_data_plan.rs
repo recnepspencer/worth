@@ -55,12 +55,16 @@ pub(in crate::physical_runtime::record_serving) fn materialize_durable_data(
     }
     let data = PreparedPhysicalDataPlan::new(frames, payload.records.len() as u32)
         .map_err(|_| invalid_plan())?;
+    let requires_maintenance_protocol = payload.source_root.requires_maintenance_protocol();
+    let inserted_records = payload.records.len() as u64;
     let root = PreparedPhysicalRootProjection {
         root_publication_allocation_bytes,
         source_root: payload.source_root,
+        requires_maintenance_protocol,
         manifest_capacity_transition,
         placement: payload.placement,
         records: payload.records,
+        inserted_records,
         payload_manifests: payload.payload_manifests,
         placements: payload.placements,
         segment_updates: payload.segment_updates,

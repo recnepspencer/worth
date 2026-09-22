@@ -24,6 +24,7 @@ pub struct IntegrityValidatedRootManifest<'media> {
     free_space_root: Option<FreeSpaceBlockReference>,
     last_inline_record: Option<PersistedRecordIdentity>,
     last_inline_segment: Option<SegmentGenerationCell>,
+    requires_maintenance_protocol: bool,
     validation_record: PhysicalIntegrityValidationRecord,
     inspected: UntrustedPhysicalArtifact<'media>,
 }
@@ -65,6 +66,7 @@ impl<'media> IntegrityValidatedRootManifest<'media> {
             free_space_root: manifest.free_space_root(),
             last_inline_record: manifest.last_inline_record(),
             last_inline_segment: manifest.last_inline_segment(),
+            requires_maintenance_protocol: manifest.requires_maintenance_protocol(),
             validation_record,
             inspected,
         })
@@ -123,6 +125,10 @@ impl<'media> IntegrityValidatedRootManifest<'media> {
 
     pub const fn last_inline_record(&self) -> Option<PersistedRecordIdentity> {
         self.last_inline_record
+    }
+
+    pub const fn requires_maintenance_protocol(&self) -> bool {
+        self.requires_maintenance_protocol
     }
 
     pub const fn last_inline_segment(&self) -> Option<SegmentGenerationCell> {

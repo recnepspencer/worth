@@ -1,4 +1,7 @@
-use std::sync::{Arc, Weak};
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc, OnceLock, Weak,
+};
 
 use worth_proof::TransitionOutcome;
 use worth_signal::facade::{AsyncNodeAdmissionClass, AsyncNodeConditionBlockClass};
@@ -69,6 +72,9 @@ pub(in crate::physical_runtime) struct PhysicalWalAppendPort {
     grouping: PhysicalDurabilityGroupingRuntimeAuthority,
     idempotency: PhysicalMutationIdempotencyRuntimeAuthority,
     durability: PhysicalDurabilityObservation,
+    publication: Arc<OnceLock<Arc<crate::physical_runtime::durability::retention::PhysicalPublicationAdmission>>>,
+    #[cfg(feature = "certification-test-authority")]
+    fail_next_member_before_effect: Arc<AtomicBool>,
 }
 
 impl PhysicalWalAppendPort {
@@ -93,7 +99,23 @@ impl PhysicalWalAppendPort {
             grouping,
             idempotency,
             durability,
+            publication: Arc::new(OnceLock::new()),
+            #[cfg(feature = "certification-test-authority")]
+            fail_next_member_before_effect: Arc::new(AtomicBool::new(false)),
         }
+    }
+
+    #[cfg(feature = "certification-test-authority")]
+    pub(in crate::physical_runtime) fn fail_next_member_before_effect(&self) {
+        self.fail_next_member_before_effect
+            .store(true, Ordering::Release);
+    }
+
+    pub(in crate::physical_runtime) fn bind_publication_admission(
+        &self,
+        admission: Arc<crate::physical_runtime::durability::retention::PhysicalPublicationAdmission>,
+    ) {
+        let _ = self.publication.set(admission);
     }
 
     pub(super) fn append_group_member(
@@ -112,6 +134,21 @@ impl PhysicalWalAppendPort {
 
     pub(in crate::physical_runtime) fn observation(&self) -> super::PhysicalWalObservation {
         self.owner.observation()
+    }
+
+    pub(in crate::physical_runtime) fn plan_maintenance_frame(
+        &self,
+        payload: &[u8],
+    ) -> Result<(worth_store_physical_backend::ArtifactTreeFile, u64, Vec<u8>), ()> {
+        self.owner.plan_maintenance_frame(payload)
+    }
+
+    pub(in crate::physical_runtime) fn abort_maintenance_frame(&self) {
+        self.owner.abort_maintenance_frame();
+    }
+
+    pub(in crate::physical_runtime) fn finish_maintenance_frame(&self) -> Result<(), ()> {
+        self.owner.finish_maintenance_frame()
     }
 
     pub(in crate::physical_runtime) fn checkpoint_source_range(
@@ -136,6 +173,15 @@ impl PhysicalWalAppendPort {
         &self,
         reserved: &WalRangeReservedPhysicalMutation,
     ) -> Result<PhysicalExecutorCommand, PhysicalWalAppendFailureCause> {
+        #[cfg(feature = "certification-test-authority")]
+        if self
+            .fail_next_member_before_effect
+            .swap(false, Ordering::AcqRel)
+        {
+            return Err(PhysicalWalAppendFailureCause::PreEffect(
+                PhysicalWorkPreEffectDenial::ConsumerCancelled,
+            ));
+        }
         let runtime = self
             .runtime
             .upgrade()

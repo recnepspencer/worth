@@ -1,3 +1,6 @@
+use worth_store::physical_runtime::{
+    PhysicalMutationIndeterminateStage, PhysicalMutationOutcome, PhysicalMutationProvenNoEffectCause,
+};
 use worth_store_physical_backend::MediaOperationRole;
 
 use super::*;
@@ -29,6 +32,48 @@ fn pending_publication_is_registered_before_the_first_wal_effect() {
             .attempts_for(MediaOperationRole::PositionedWrite)
             > before.attempts_for(MediaOperationRole::PositionedWrite)
     );
+    serving.close();
+}
+
+#[test]
+fn indeterminate_wal_append_with_no_effects_keeps_the_publication_hold() {
+    let parent = tempfile::tempdir().unwrap();
+    let serving = serving_from_initialization(&parent.path().join("store"));
+    let (_, placement, _) = configuration();
+    let writes = serving
+        .media_counters()
+        .attempts_for(MediaOperationRole::PositionedWrite);
+    serving.certification_fail_next_wal_member_before_effect();
+    match prepare(&serving, placement, [21; 32], b"wal-not-started").execute() {
+        PhysicalMutationOutcome::Indeterminate(fate) => {
+            assert_eq!(fate.stage(), PhysicalMutationIndeterminateStage::WalAppend);
+            assert_eq!(fate.completed_effect_count(), 0);
+        }
+        PhysicalMutationOutcome::ProvenNoEffect(fate) => {
+            panic!("unstarted WAL append must stay indeterminate: {:?}", fate.cause())
+        }
+        PhysicalMutationOutcome::Completed(_) => {
+            panic!("unstarted WAL append must not complete")
+        }
+    }
+    assert_eq!(serving.certification_pending_publication_count(), 1);
+    assert_eq!(
+        serving
+            .media_counters()
+            .attempts_for(MediaOperationRole::PositionedWrite),
+        writes
+    );
+    match prepare(&serving, placement, [22; 32], b"blocked-by-indeterminate").execute() {
+        PhysicalMutationOutcome::ProvenNoEffect(fate) => {
+            assert_eq!(fate.cause(), PhysicalMutationProvenNoEffectCause::ScopeConflict);
+        }
+        PhysicalMutationOutcome::Completed(_) => {
+            panic!("an indeterminate publication must block the next root change")
+        }
+        PhysicalMutationOutcome::Indeterminate(_) => {
+            panic!("the blocked successor must prove no effect")
+        }
+    }
     serving.close();
 }
 
