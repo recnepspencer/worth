@@ -248,14 +248,17 @@ impl<'run> WorthQueryAdmittedProviderExecutionPlan<'run> {
         mut self,
         product: crate::basis::WorthQueryProductBranchLease,
     ) -> Result<Self, WorthQueryProviderSessionFailure> {
-        let Some(expected_product) = self.contract.application_product_observation() else {
+        let Some(expected_product) = self.contract.application_product_identity() else {
             return Err(failure(
                 WorthQueryProviderSessionDenialKind::ForeignExecutionBasis,
                 "application product cannot bind a standalone provider plan",
                 &self.counters,
             ));
         };
-        if product.observation() != expected_product {
+        if &crate::basis::WorthQueryProductBranchReadIdentity::from_observation(
+            product.observation(),
+        ) != expected_product
+        {
             return Err(failure(
                 WorthQueryProviderSessionDenialKind::ForeignExecutionBasis,
                 "provider plan snapshot does not belong to the selected product occurrence",

@@ -5,6 +5,9 @@ use worth_runtime_world::facade::{
 
 /// Describes the exact World occurrence used by a read. It carries no live
 /// admission or publication authority and retains no owner resources.
+/// Equality preserves every observation axis: World validates that the
+/// snapshot owner equals the owner embedded in its branch, incarnation,
+/// commit and basis when issuing `ProductBranchReferenceSnapshot`.
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct WorthQueryProductBranchReadIdentity {
     branch: ProductBranchIdentity,

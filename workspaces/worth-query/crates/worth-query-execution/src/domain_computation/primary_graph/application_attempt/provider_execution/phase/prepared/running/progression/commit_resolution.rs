@@ -74,10 +74,16 @@ impl<'a> WorthQueryAuthorizedCompareContext<'a> {
         Input: Clone + Send + Sync + 'static,
     {
         let admission = authority.admission();
-        let product = provider_session
-            .application_product()
-            .expect("an application provider session carries its selected product")
-            .clone();
+        let product = authority.product.publication_binding();
+        assert_eq!(
+            provider_session.application_product_identity(),
+            Some(
+                &crate::basis::WorthQueryProductBranchReadIdentity::from_observation(
+                    product.observation()
+                )
+            ),
+            "commit authority retains the product admitted to this provider session",
+        );
         Self {
             provider: authority.provider(),
             idempotency: authority.idempotency(),

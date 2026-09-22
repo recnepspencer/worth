@@ -19,5 +19,7 @@ mod workflow_condition;
 mod workflow_progress_retention;
 #[path = "application_graph/workflow_proposal.rs"]
 mod workflow_proposal;
+#[path = "application_graph/workflow_receipt_lifecycle.rs"]
+mod workflow_receipt_lifecycle;
 #[path = "application_graph/workflow_retry.rs"]
 mod workflow_retry;

@@ -59,10 +59,10 @@ impl WorthQueryProviderSessionTerminalBinding {
         &self.inner.plan
     }
 
-    pub(in crate::domain_computation) fn application_product(
+    pub(in crate::domain_computation) fn application_product_identity(
         &self,
-    ) -> Option<&crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding>{
-        self.inner.product.application_product()
+    ) -> Option<&crate::basis::WorthQueryProductBranchReadIdentity> {
+        self.inner.product.application_product_identity()
     }
 
     pub(in crate::domain_computation) fn admits_session_view(

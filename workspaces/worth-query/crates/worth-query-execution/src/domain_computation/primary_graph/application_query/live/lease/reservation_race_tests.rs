@@ -127,6 +127,13 @@ fn publication_without_a_joining_subscriber_releases_marker_and_observation() {
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap();
+    let retention_before = world
+        .application
+        .product_runtime()
+        .owner
+        .inspection_port()
+        .retention_snapshot()
+        .unwrap();
     let program = live_activity_program(
         &world,
         world.application.product_runtime().default_branch(),
@@ -135,13 +142,6 @@ fn publication_without_a_joining_subscriber_releases_marker_and_observation() {
         &request,
         "no-join",
     );
-    let retention_before = world
-        .application
-        .product_runtime()
-        .owner
-        .inspection_port()
-        .retention_snapshot()
-        .unwrap();
 
     let WorthQueryApplicationCommitOutcome::Committed(committed) =
         world.application.compare_and_commit_application(
@@ -165,12 +165,9 @@ fn publication_without_a_joining_subscriber_releases_marker_and_observation() {
             .retained_application_emission_bytes(),
         0
     );
-    let committed_branch = committed
-        .committed_product_publication()
-        .product_branch()
-        .clone();
-    drop(committed);
-    let retention_after_receipt_release = world
+    // Compare before preparing the live attempt and after it finishes, with
+    // the descriptive receipt still retained. Neither receipt owner pins it.
+    let retention_after_publication = world
         .application
         .product_runtime()
         .owner
@@ -178,11 +175,11 @@ fn publication_without_a_joining_subscriber_releases_marker_and_observation() {
         .retention_snapshot()
         .unwrap();
     assert_eq!(
-        retention_after_receipt_release.observations(),
+        retention_after_publication.observations(),
         retention_before.observations()
     );
     assert_eq!(
-        &committed_branch,
+        committed.committed_product_publication().product_branch(),
         world.application.product_runtime().default_branch()
     );
 }

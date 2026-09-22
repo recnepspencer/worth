@@ -102,6 +102,7 @@ struct WorthQueryApplicationCommitProgressionAuthority<
         crate::domain_computation::authorization::WorthQueryRegisteredCommitAuthorization,
     idempotency: WorthQueryApplicationIdempotencyBinding,
     coordination: &'a WorthQueryApplicationBranchCommitCoordination<'provider>,
+    product: &'a crate::basis::WorthQueryProductBranchLease,
     aftermath_causality: Option<
         crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
     >,
@@ -256,6 +257,7 @@ where
         authorization,
         idempotency,
         coordination: &coordination,
+        product: &product,
         aftermath_causality,
     };
     registered_session.progress(&authority)

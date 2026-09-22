@@ -7,6 +7,12 @@ use super::definition::definition_limits;
 use super::{ReviewedGeometryWorkflow, WorkflowDefinitionAuthoringOperation};
 
 pub fn bounded_retry_definition() -> ValidatedWorkflowDefinition<ReviewedGeometryWorkflow> {
+    bounded_retry_definition_with_attempts(2)
+}
+
+pub fn bounded_retry_definition_with_attempts(
+    attempts: u16,
+) -> ValidatedWorkflowDefinition<ReviewedGeometryWorkflow> {
     let mut builder = ApplicationWorkflowDefinitionBuilder::<ReviewedGeometryWorkflow>::new(
         "bounded-retry",
         definition_limits(),
@@ -24,7 +30,7 @@ pub fn bounded_retry_definition() -> ValidatedWorkflowDefinition<ReviewedGeometr
     let retry = ApplicationWorkflowRetry::new(
         ApplicationWorkflowControlOutcome::Completed,
         "proposal-revision",
-        2,
+        attempts,
     )
     .expect("the retry policy is bounded");
     builder

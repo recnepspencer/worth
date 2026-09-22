@@ -44,7 +44,7 @@ pub use mutation::{
     WorkflowDefinitionAuthoringIntent, WorkflowInstanceStartBinding, WorkflowInstanceStartHandler,
     WorkflowInstanceStartIntent,
 };
-pub use retry_definition::bounded_retry_definition;
+pub use retry_definition::{bounded_retry_definition, bounded_retry_definition_with_attempts};
 pub use runtime::{retain_workflow, retain_workflow_with_resources};
 
 pub fn declare(
