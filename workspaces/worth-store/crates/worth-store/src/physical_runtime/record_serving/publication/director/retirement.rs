@@ -162,6 +162,34 @@ impl RecordPublicationDirector {
         }
     }
 
+    #[cfg(feature = "certification-test-authority")]
+    pub(in crate::physical_runtime) fn arm_retirement_kill(
+        &self,
+        seam: u8,
+    ) -> std::sync::Arc<std::sync::atomic::AtomicBool> {
+        self.retirement_kill_arrived
+            .store(false, std::sync::atomic::Ordering::Relaxed);
+        self.retirement_kill_seam
+            .store(seam, std::sync::atomic::Ordering::Release);
+        std::sync::Arc::clone(&self.retirement_kill_arrived)
+    }
+
+    #[cfg(feature = "certification-test-authority")]
+    pub(in crate::physical_runtime) fn pause_retirement_kill(&self, seam: u8) {
+        if self
+            .retirement_kill_seam
+            .load(std::sync::atomic::Ordering::Acquire)
+            != seam
+        {
+            return;
+        }
+        self.retirement_kill_arrived
+            .store(true, std::sync::atomic::Ordering::Release);
+        loop {
+            std::thread::park();
+        }
+    }
+
     fn append_retirement(&self, payload: &[u8]) -> Result<(), PhysicalRetirementDenial> {
         match self.wal.append_scheduled_maintenance(payload) {
             Ok(()) => Ok(()),
@@ -193,6 +221,8 @@ impl RecordPublicationDirector {
             PhysicalPublicationEffect::RemoveArtifact,
             Some(permit),
         )?;
+        #[cfg(feature = "certification-test-authority")]
+        self.pause_retirement_kill(2);
         self.execute_record_effect(
             RecordArtifactFile::BootstrapCatalog,
             PhysicalPublicationEffect::SynchronizeRecordFamily,

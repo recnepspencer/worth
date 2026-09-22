@@ -1,7 +1,9 @@
 use sha2::{Digest, Sha256};
 use worth_store::physical_runtime::BoundedRecoveryFilesystemDiscovery;
 use worth_store_physical_format::{
-    encode_data_frame_page_lsn, restamp_inline_page_generation, CurrentPhysicalRecordPlacement,
+    decode_data_frame_page_lsn, encode_data_frame_page_lsn, inspect_inline_page,
+    inspect_inline_page_records, restamp_inline_page_generation,
+    CurrentPhysicalRecordPlacement,
     DurableFrameKind, DurableInlineRecordPlacement, PersistedInlineSegmentAllocation,
     PersistedPhysicalDataFrameSubject, PersistedPhysicalRecoveryFrame,
     PersistedPhysicalRecoveryProjection, PersistedPhysicalRecoveryRootState, PersistedRecordIdentity,
@@ -36,7 +38,28 @@ pub(super) fn install(
     let mut discovery = media
         .bounded_discovery(64, byte_limit)
         .expect("admitted nonzero recovery limits create a bounded planning reader");
-    let built = pending
+    let mut applying = Vec::new();
+    for admission in pending {
+        match rewrite_disposition(
+            &mut discovery,
+            &context.selection,
+            format,
+            byte_limit,
+            admission,
+        ) {
+            Ok(RewriteDisposition::Published) => {}
+            Ok(RewriteDisposition::Apply) => applying.push(admission),
+            Err(()) => {
+                context.authority.media = discovery.finish();
+                return Err(context.redo_block(basis.planning_counters(), None));
+            }
+        }
+    }
+    if applying.is_empty() {
+        context.authority.media = discovery.finish();
+        return Ok(context);
+    }
+    let built = applying
         .into_iter()
         .map(|admission| {
             project_rewrite(
@@ -58,6 +81,117 @@ pub(super) fn install(
         basis.redo.install_rewrite_materialization(projection);
     }
     Ok(context)
+}
+
+enum RewriteDisposition {
+    Apply,
+    Published,
+}
+
+fn rewrite_disposition(
+    discovery: &mut BoundedRecoveryFilesystemDiscovery,
+    selection: &worth_store_recovery_physics::PhysicalSourceSelection,
+    format: PhysicalRecordFormatDeclaration,
+    byte_limit: u64,
+    admission: PhysicalRewriteAdmission,
+) -> Result<RewriteDisposition, ()> {
+    let rewrite = admission.redo();
+    let selected = selection.root().selected().selector().root_generation();
+    if rewrite.resulting_root_generation() == selected {
+        prove_published_rewrite(discovery, selection, format, byte_limit, admission)?;
+        return Ok(RewriteDisposition::Published);
+    }
+    if rewrite.source_root_generation() == selected
+        && rewrite.resulting_root_generation() == selected.saturating_add(1)
+    {
+        return Ok(RewriteDisposition::Apply);
+    }
+    Err(())
+}
+
+fn prove_published_rewrite(
+    discovery: &mut BoundedRecoveryFilesystemDiscovery,
+    selection: &worth_store_recovery_physics::PhysicalSourceSelection,
+    format: PhysicalRecordFormatDeclaration,
+    byte_limit: u64,
+    admission: PhysicalRewriteAdmission,
+) -> Result<(), ()> {
+    let rewrite = admission.redo();
+    if rewrite.destination_offset() != 0 || rewrite.destination_length() != format.page_size().bytes()
+    {
+        return Err(());
+    }
+    let record = decode_record(rewrite.record_identity())?;
+    let inline = selection
+        .page_facts()
+        .placements()
+        .iter()
+        .copied()
+        .find_map(|placement| match placement {
+            CurrentPhysicalRecordPlacement::Inline(inline)
+                if inline.record() == record
+                    && inline.page_generation() == rewrite.destination_placement()
+                    && inline.segment_generation() == rewrite.destination_generation() =>
+            {
+                Some(inline)
+            }
+            _ => None,
+        })
+        .ok_or(())?;
+    let source_page = discovery
+        .read_segment_range(
+            inline.segment().get(),
+            rewrite.source_generation(),
+            rewrite.source_offset(),
+            rewrite.source_length(),
+            byte_limit,
+        )
+        .map_err(|_| ())?
+        .into_bytes()
+        .ok_or(())?;
+    let source_digest: [u8; 32] = Sha256::digest(&source_page).into();
+    if source_digest != rewrite.source_digest() {
+        return Err(());
+    }
+    let mut expected = restamp_inline_page_generation(
+        format,
+        &source_page,
+        rewrite.destination_placement(),
+    )
+    .map_err(|_| ())?;
+    encode_data_frame_page_lsn(
+        &mut expected,
+        DurableFrameKind::InlinePage,
+        PhysicalPageLsn::new(rewrite.page_lsn()),
+    )
+    .map_err(|_| ())?;
+    let page = discovery
+        .read_segment_range(
+            inline.segment().get(),
+            rewrite.destination_generation(),
+            rewrite.destination_offset(),
+            rewrite.destination_length(),
+            byte_limit,
+        )
+        .map_err(|_| ())?
+        .into_bytes()
+        .ok_or(())?;
+    if page != expected {
+        return Err(());
+    }
+    let geometry = inspect_inline_page(format, &page).map_err(|_| ())?;
+    if geometry.page_cell() != inline.page_cell() {
+        return Err(());
+    }
+    let page_lsn = decode_data_frame_page_lsn(&page, DurableFrameKind::InlinePage).map_err(|_| ())?;
+    if page_lsn.get() != rewrite.page_lsn() {
+        return Err(());
+    }
+    let records = inspect_inline_page_records(format, &page).map_err(|_| ())?;
+    if !records.iter().any(|found| found.record() == record) {
+        return Err(());
+    }
+    Ok(())
 }
 
 fn project_rewrite(

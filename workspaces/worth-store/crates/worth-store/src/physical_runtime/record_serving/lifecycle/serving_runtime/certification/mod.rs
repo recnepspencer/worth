@@ -82,6 +82,17 @@ impl ServingPhysicalRuntime {
         self.parts.publication.release_retirement_intent_gate();
     }
 
+    /// Parks the retirement that is in flight at `seam` until the process is killed.
+    ///
+    /// Seam 1 is after the durable intent and checkpoint, before unlink.
+    /// Seam 2 is after unlink, before the removal directory sync.
+    pub fn certification_arm_retirement_kill(
+        &self,
+        seam: u8,
+    ) -> std::sync::Arc<std::sync::atomic::AtomicBool> {
+        self.parts.publication.arm_retirement_kill(seam)
+    }
+
     /// Stops retirement after the intent and checkpoint, before the segment unlink.
     pub fn certification_stop_before_retirement_delete(&self) {
         self.parts

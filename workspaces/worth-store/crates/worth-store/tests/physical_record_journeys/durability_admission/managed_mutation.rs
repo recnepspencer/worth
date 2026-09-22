@@ -29,6 +29,8 @@ mod retirement_wal_hold;
 mod selected_segment_rewrite;
 #[path = "managed_mutation/maintenance_capability.rs"]
 mod maintenance_capability;
+#[path = "managed_mutation/phase_five_lifecycle.rs"]
+mod phase_five_lifecycle;
 
 #[test]
 fn managed_mutation_completion_is_the_only_acknowledgment_source() {
@@ -355,7 +357,7 @@ fn prepare_with_deadline(
     }
 }
 
-fn completed(
+pub(super) fn completed(
     outcome: PhysicalMutationOutcome,
 ) -> worth_store::physical_runtime::CompletedPhysicalMutation {
     match outcome {

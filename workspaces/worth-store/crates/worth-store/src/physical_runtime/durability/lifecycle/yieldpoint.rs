@@ -22,6 +22,7 @@ pub enum PhysicalMutationCheckpoint {
     DuringDataSettlement,
     AfterDataSettlement,
     DuringRootPublication,
+    AfterRootReplacement,
     BeforeTerminalFinalization,
     RuntimeClosingMarked,
 }

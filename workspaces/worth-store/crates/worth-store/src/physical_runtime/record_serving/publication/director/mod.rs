@@ -1,5 +1,5 @@
 #[cfg(feature = "certification-test-authority")]
-use std::sync::atomic::AtomicBool;
+use std::sync::atomic::{AtomicBool, AtomicU8};
 use std::sync::{Arc, Mutex, Weak};
 
 use worth_store_physical_format::{DurableFreeSpaceManifestHeader, DurablePhysicalRootManifest};
@@ -56,6 +56,10 @@ pub(in crate::physical_runtime) struct RecordPublicationDirector {
     mutations: Arc<crate::physical_runtime::PhysicalMutationRuntimeOwner>,
     #[cfg(feature = "certification-test-authority")]
     retirement_intent_gate: retirement::RetirementIntentGate,
+    #[cfg(feature = "certification-test-authority")]
+    retirement_kill_seam: AtomicU8,
+    #[cfg(feature = "certification-test-authority")]
+    retirement_kill_arrived: std::sync::Arc<AtomicBool>,
     #[cfg(feature = "certification-test-authority")]
     stop_before_retirement_delete: AtomicBool,
     #[cfg(feature = "certification-test-authority")]
@@ -192,6 +196,10 @@ impl RecordPublicationDirector {
             mutations: crate::physical_runtime::PhysicalMutationRuntimeOwner::new(director.clone()),
             #[cfg(feature = "certification-test-authority")]
             retirement_intent_gate: retirement::RetirementIntentGate::new(),
+            #[cfg(feature = "certification-test-authority")]
+            retirement_kill_seam: AtomicU8::new(0),
+            #[cfg(feature = "certification-test-authority")]
+            retirement_kill_arrived: std::sync::Arc::new(AtomicBool::new(false)),
             #[cfg(feature = "certification-test-authority")]
             stop_before_retirement_delete: AtomicBool::new(false),
             #[cfg(feature = "certification-test-authority")]

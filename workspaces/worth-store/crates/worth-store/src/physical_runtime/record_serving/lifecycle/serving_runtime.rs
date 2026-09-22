@@ -152,6 +152,8 @@ impl ServingPhysicalRuntime {
                 .revert_retirement_claim(displaced.segment_id, displaced.generation);
             return Err(crate::physical_runtime::PhysicalRetirementDenial::Retained);
         }
+        #[cfg(feature = "certification-test-authority")]
+        self.parts.publication.pause_retirement_kill(1);
         self.parts.publication.finish_retirement(displaced)
     }
 

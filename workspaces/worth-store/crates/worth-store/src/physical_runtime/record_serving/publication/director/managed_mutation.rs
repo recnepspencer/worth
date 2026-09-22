@@ -16,7 +16,6 @@ use crate::physical_runtime::{
     RootReplacedPhysicalMutationMembers, SealedPhysicalDurabilityGroupMembers,
     WalDurablePhysicalMutation,
 };
-
 mod obligations;
 
 use obligations::{keep_unresolved, RewriteGrowthGuard};
@@ -292,7 +291,10 @@ impl RecordPublicationDirector {
     ) -> Result<RootReplacedPhysicalMutationMembers, PhysicalMutationTerminalFact> {
         attempt.enter(PhysicalMutationProgressPhase::RootReplacement);
         match self.replace_prepared_root(prepared_root) {
-            PhysicalRootReplacementOutcome::Replaced(replaced) => Ok(replaced),
+            PhysicalRootReplacementOutcome::Replaced(replaced) => {
+                self.mutations.reach_checkpoint(crate::physical_runtime::durability::PhysicalMutationCheckpoint::AfterRootReplacement);
+                Ok(replaced)
+            }
             PhysicalRootReplacementOutcome::NotStarted(_)
             | PhysicalRootReplacementOutcome::InspectionRequired(_) => Err(indeterminate(
                 attempt,
