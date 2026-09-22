@@ -1,4 +1,3 @@
-use std::collections::BTreeMap;
 use std::marker::PhantomData;
 
 use worth_foundational::facade::CanonicalDigestDerivationDenial;
@@ -7,7 +6,16 @@ use super::{ApplicationWorkflowSpec, AuthoredWorkflowDefinition, ValidatedWorkfl
 
 mod connections;
 mod control;
+mod dominance;
+mod index;
 mod limits;
+mod work;
+
+use work::ValidationWorkMeter;
+pub use work::{
+    ApplicationWorkflowRetryValidationComplexityContract,
+    ApplicationWorkflowValidationComplexityContract, ApplicationWorkflowValidationWork,
+};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ApplicationWorkflowValidationDenialKind {
@@ -82,22 +90,25 @@ where
             authored.identity.as_str(),
         )
     })?;
-    limits::enforce(&authored)?;
-    let nodes = authored
-        .nodes
-        .iter()
-        .map(|node| (node.identity(), node))
-        .collect::<BTreeMap<_, _>>();
-    if !nodes.contains_key(&start) {
+    let mut validation_work = ValidationWorkMeter::default();
+    limits::enforce(&authored, &mut validation_work)?;
+    let graph = index::ValidationGraph::build(
+        &authored.nodes,
+        &authored.connections,
+        &mut validation_work,
+    )?;
+    let Some(start_index) = graph.resolve(&start, &mut validation_work) else {
         return Err(denial(
             ApplicationWorkflowValidationDenialKind::UnknownStart,
             start.as_str(),
         ));
-    }
-    connections::validate(&nodes, &authored.connections)?;
-    connections::validate_requirements(&nodes, &authored.connections)?;
-    control::validate(&start, &nodes, &authored.connections)?;
-    connections::validate_availability(&start, &nodes, &authored.connections)?;
+    };
+    connections::validate(&graph, &mut validation_work)?;
+    connections::validate_requirements(&graph, &mut validation_work)?;
+    let control = control::validate(start_index, &graph, &mut validation_work)?;
+    dominance::validate_availability(start_index, &graph, &control, &mut validation_work)?;
+    let validation_work = validation_work.finish();
+    drop(graph);
     let (content_identity, nodes, connections) = super::canonical::canonicalize::<Spec>(
         authored.limits,
         start.as_str(),
@@ -119,6 +130,7 @@ where
         nodes,
         connections,
         component_expansions: component_expansions.into_boxed_slice(),
+        validation_work,
         marker: PhantomData,
     })
 }

@@ -299,6 +299,10 @@ impl ApplicationWorkflowConnection {
     pub fn kind(&self) -> ApplicationWorkflowConnectionKind {
         self.kind.clone()
     }
+
+    pub(super) const fn kind_ref(&self) -> &ApplicationWorkflowConnectionKind {
+        &self.kind
+    }
 }
 
 pub struct AuthoredWorkflowDefinition<Spec>
@@ -340,6 +344,7 @@ where
     pub(super) nodes: Box<[ApplicationWorkflowNode]>,
     pub(super) connections: Box<[ApplicationWorkflowConnection]>,
     pub(super) component_expansions: Box<[ApplicationWorkflowComponentExpansion]>,
+    pub(super) validation_work: super::ApplicationWorkflowValidationWork,
     pub(super) marker: PhantomData<fn() -> Spec>,
 }
 
@@ -373,5 +378,9 @@ where
 
     pub fn component_expansions(&self) -> &[ApplicationWorkflowComponentExpansion] {
         &self.component_expansions
+    }
+
+    pub const fn validation_work(&self) -> super::ApplicationWorkflowValidationWork {
+        self.validation_work
     }
 }

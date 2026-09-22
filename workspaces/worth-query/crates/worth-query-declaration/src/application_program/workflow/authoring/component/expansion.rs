@@ -20,11 +20,7 @@ where
 {
     super::super::super::identity::require_identity_segment(occurrence)
         .map_err(ApplicationWorkflowAuthoringDenial::InvalidIdentity)?;
-    if builder
-        .component_expansions
-        .iter()
-        .any(|expanded| expanded.occurrence_path() == occurrence)
-    {
+    if builder.component_occurrences.contains(occurrence) {
         return Err(
             ApplicationWorkflowAuthoringDenial::DuplicateComponentOccurrence(occurrence.to_owned()),
         );
@@ -42,12 +38,10 @@ where
             ))
         })
         .collect::<Result<Vec<_>, ApplicationWorkflowAuthoringDenial>>()?;
-    if let Some(duplicate) = expanded_nodes.iter().find(|expanded| {
-        builder
-            .nodes
-            .iter()
-            .any(|existing| existing.identity() == expanded.identity())
-    }) {
+    if let Some(duplicate) = expanded_nodes
+        .iter()
+        .find(|expanded| builder.node_identities.contains(expanded.identity()))
+    {
         return Err(ApplicationWorkflowAuthoringDenial::DuplicateNode(
             duplicate.identity().clone(),
         ));
@@ -121,6 +115,9 @@ where
         })
         .collect::<Result<Vec<_>, _>>()?;
 
+    builder
+        .node_identities
+        .extend(expanded_nodes.iter().map(|node| node.identity().clone()));
     builder.nodes.extend(expanded_nodes);
     builder.connections.extend(expanded_connections);
     builder
@@ -132,6 +129,12 @@ where
             node_provenance,
             connection_provenance,
         ));
+    builder.component_occurrences.insert(occurrence.to_owned());
+    builder.component_occurrences.extend(
+        nested_expansions
+            .iter()
+            .map(|expansion| expansion.occurrence_path().to_owned()),
+    );
     builder.component_expansions.extend(nested_expansions);
     builder.component_expansion_usage = ComponentExpansionUsage {
         occurrences: builder

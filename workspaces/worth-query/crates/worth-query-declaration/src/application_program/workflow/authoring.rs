@@ -1,4 +1,4 @@
-use std::marker::PhantomData;
+use std::{collections::BTreeSet, marker::PhantomData};
 
 use crate::{
     application_capability::ApplicationCapabilityMarkerIdentity,
@@ -197,8 +197,10 @@ where
     limits: ApplicationWorkflowDefinitionLimits,
     start: Option<ApplicationWorkflowNodeIdentity>,
     nodes: Vec<ApplicationWorkflowNode>,
+    node_identities: BTreeSet<ApplicationWorkflowNodeIdentity>,
     connections: Vec<ApplicationWorkflowConnection>,
     component_expansions: Vec<super::ApplicationWorkflowComponentExpansion>,
+    component_occurrences: BTreeSet<String>,
     component_expansion_usage: component::ComponentExpansionUsage,
     marker: PhantomData<fn() -> Spec>,
 }
@@ -217,8 +219,10 @@ where
             limits,
             start: None,
             nodes: Vec::new(),
+            node_identities: BTreeSet::new(),
             connections: Vec::new(),
             component_expansions: Vec::new(),
+            component_occurrences: BTreeSet::new(),
             component_expansion_usage: component::ComponentExpansionUsage::default(),
             marker: PhantomData,
         })
@@ -378,7 +382,7 @@ where
         identity: ApplicationWorkflowNodeIdentity,
         kind: ApplicationWorkflowNodeKind,
     ) -> Result<(), ApplicationWorkflowAuthoringDenial> {
-        if self.nodes.iter().any(|node| node.identity() == &identity) {
+        if !self.node_identities.insert(identity.clone()) {
             return Err(ApplicationWorkflowAuthoringDenial::DuplicateNode(identity));
         }
         self.nodes

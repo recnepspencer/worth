@@ -1,9 +1,13 @@
 use crate::application_program::workflow::{ApplicationWorkflowSpec, AuthoredWorkflowDefinition};
 
-use super::{denial, ApplicationWorkflowValidationDenial, ApplicationWorkflowValidationDenialKind};
+use super::{
+    denial, ApplicationWorkflowValidationDenial, ApplicationWorkflowValidationDenialKind,
+    ValidationWorkMeter,
+};
 
 pub(super) fn enforce<Spec>(
     authored: &AuthoredWorkflowDefinition<Spec>,
+    work: &mut ValidationWorkMeter,
 ) -> Result<(), ApplicationWorkflowValidationDenial>
 where
     Spec: ApplicationWorkflowSpec,
@@ -21,11 +25,10 @@ where
             authored.connections.len().to_string(),
         ));
     }
-    let effects = authored
-        .nodes
-        .iter()
-        .filter(|node| node.kind().is_effect())
-        .count();
+    let effects = authored.nodes.iter().fold(0_usize, |effects, node| {
+        work.visit_limit_node();
+        effects + usize::from(node.kind().is_effect())
+    });
     if effects > usize::from(limits.maximum_effects()) {
         return Err(denial(
             ApplicationWorkflowValidationDenialKind::EffectLimitExceeded,
@@ -43,6 +46,7 @@ where
     let mut connection_provenance = 0_usize;
     let mut port_provenance = 0_usize;
     for expansion in &authored.component_expansions {
+        work.visit_provenance_record();
         let depth = expansion.occurrence_path().split('/').count();
         if depth > usize::from(component_limits.maximum_depth()) {
             return Err(denial(
