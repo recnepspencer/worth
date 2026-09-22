@@ -15,6 +15,9 @@ pub enum UiScrollSettleDisposition {
     /// Mounted geometry is mid-presentation. The accepted offsets stay true and
     /// the next frame applies them.
     DeferredPresentationInFlight,
+    /// A direct-input or layout candidate owns staged geometry. Reconciliation
+    /// waits for that publication rather than overwriting its unaccepted pose.
+    DeferredPendingGeometry,
     /// Some part of the settlement was refused. Whatever resolved was still
     /// applied; the refusal names the first sample that was not.
     Refused(UiScrollSettleRefusal),

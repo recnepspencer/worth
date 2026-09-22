@@ -162,7 +162,6 @@ impl WorthUiActiveApplicationSession {
                     if let Ok(prepared) = self.prepare_motion_tick(tick, core.presentation()) {
                         self.present_prepared_motion_tick(prepared, core.presentation());
                     }
-                    self.settle_accepted_scroll_sample(core.presentation());
                 } else if self.awaits_scroll_settle_retry() {
                     // A settle deferred while a presentation was in flight is
                     // owed this frame even though no Motion tick asked for one.

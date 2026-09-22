@@ -36,6 +36,9 @@ pub(crate) enum UiScrollChromeInteractionDenial {
     /// A new extent is staged but not displayed. Direct control cannot mutate
     /// that candidate while the pointer still names the retained predecessor.
     UnpresentedLayout,
+    /// Physical acceptance has not yet reconciled into this owner's displayed
+    /// geometry. Capture must not discard the sample still owed to that pose.
+    AcceptedPoseUnsettled,
     Latch(UiScrollChromeLatchDenial),
     Route(crate::runtime::scroll::UiScrollRouteDenial),
     /// The placed offset left the range a Scroll offset admits.
@@ -108,6 +111,22 @@ impl super::super::WorthUiActiveApplicationSession {
         let region = self
             .region_chrome_for_owner(answer.owner())
             .ok_or(UiScrollChromeInteractionDenial::ChromeUnavailable)?;
+        let target = super::scroll_direct_control::scroll_content_motion_target(
+            region.owner(),
+            region.mounted_instance(),
+        );
+        if let Some(sample) = self.mounted.accepted_scroll_group_translation(target) {
+            let settlement = self.accepted_scroll_settlement(target, sample, surface);
+            let accepted = self
+                .scroll
+                .as_ref()
+                .and_then(|scroll| scroll.offset(region.owner(), region.incarnation()).ok());
+            if !matches!(settlement, Ok(Some(settled))
+                if settled.offset == region.displayed_offset() && Some(settled.offset) == accepted)
+            {
+                return Err(UiScrollChromeInteractionDenial::AcceptedPoseUnsettled);
+            }
+        }
         let axis_facts = region
             .facts()
             .axis(part.axis())

@@ -149,8 +149,12 @@ impl super::WorthUiActiveApplicationSession {
             for terminal in sampling.terminals().iter().copied() {
                 self.settle_motion_terminal_request(terminal);
             }
-            if sampling.presented_surface().is_some() {
+            if let Some(presented) = sampling.presented_surface() {
                 self.refresh_motion_appearance_owner_receipt_sources();
+                // Every completion path, including an input drain, must make
+                // Scroll geometry agree with these accepted pixels before a
+                // pointer can derive a grab and retire the sample.
+                self.settle_accepted_scroll_sample(presented.presentation());
             }
         }
     }

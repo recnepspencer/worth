@@ -31,6 +31,8 @@ use crate::runtime::scroll::chrome::UiScrollChromeAxis;
 use crate::runtime::scroll::{UiHostScrollObservationOutcome, UiScrollOffset};
 use worth_ui_host_contract::*;
 
+#[path = "scroll_capture_cancellation/pending_sample.rs"]
+mod pending_sample;
 #[path = "scroll_capture_cancellation/release_position.rs"]
 mod release_position;
 

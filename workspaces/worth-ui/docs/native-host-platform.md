@@ -361,8 +361,15 @@ NVIDIA RTX 5070 output `DISPLAY2`, at desktop `[0,0,3840,2160]`, unrotated;
 that adapter is also DXGI's enumeration default. This machine also has AMD
 integrated graphics, but these facts do not establish a wrong-adapter cause.
 Neither this initialization failure nor the earlier GDI diagnostics qualify
-the native timing budgets. Moving-thumb capture also remains unverified by
-this run because its independent observation uses the same capture stream.
+the native timing budgets. The subsequent moving-thumb functional probe uses
+direct GDI observations under an already qualified exposure; observation
+completion is only an upper bound, never a frame-pacing timestamp. The
+optimized native run now reaches its real button-down, stable held pose, and
+drag check. It fails there: the visible thumb advances while a newer Motion
+presentation is physically in flight, after the press latched the older accepted
+pose. The held drag therefore moves the thumb less than the pointer's 30-pixel
+travel. The pending physical sample, old event-time epoch, and capture must be
+reconciled without relabeling the input before this functional proof can pass.
 
 Precision input is qualified by a run on a real precision device. A synthetic
 pixel-delta report exercises the same semantic path and proves nothing about

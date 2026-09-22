@@ -22,7 +22,8 @@ pub(crate) struct ExecutableFirstFrameEvidence<Verdict = NativeColorVerdict> {
     process_started: PlatformPulseLifecycleObservationEnvelope,
     pending_issued: PlatformPulseQueryProjectionEvidence,
     first_frame_envelope: PlatformPulseLifecycleObservationEnvelope,
-    pending_published: PlatformPulseQueryProjectionPublished,
+    pending_issued_sequence: u64,
+    pending_published_sequence: u64,
     first_frame: PlatformPulseFirstFramePublished,
     client_area: ProcessBoundNativeClientAreaObservation,
     liveness: StableProcessLivenessObservation,
@@ -130,7 +131,7 @@ pub(crate) fn adjudicate_first_frame<Verdict>(
         liveness,
         pixels,
     } = observations;
-    let (pending_issued, first_frame, pending_published) = require_causal_publication(&causal)?;
+    let (pending_issued, first_frame, _) = require_causal_publication(&causal)?;
     require_native_effect(first_frame)?;
     require_one_process_identity(&causal, client_area, liveness, &pixels)?;
     require_client_capture_size(client_area, &pixels)?;
@@ -140,7 +141,8 @@ pub(crate) fn adjudicate_first_frame<Verdict>(
         process_started: causal.process_started,
         pending_issued,
         first_frame_envelope: causal.first_frame_envelope,
-        pending_published,
+        pending_issued_sequence: causal.pending_issued.sequence().value(),
+        pending_published_sequence: causal.pending_published.sequence().value(),
         first_frame,
         client_area,
         liveness,
@@ -227,9 +229,9 @@ impl<Verdict> ExecutableFirstFrameEvidence<Verdict> {
     pub(crate) fn sequence_quad(&self) -> (u64, u64, u64, u64) {
         (
             self.process_started.sequence().value(),
-            self.pending_issued.owner_order(),
+            self.pending_issued_sequence,
             self.first_frame_envelope.sequence().value(),
-            self.pending_published.projection().owner_order(),
+            self.pending_published_sequence,
         )
     }
 

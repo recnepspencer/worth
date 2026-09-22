@@ -26,7 +26,7 @@ pub(super) fn launch_dashboard_at_rest() -> PulseExecutableWorld<Published<Dashb
             panic!("causal first publication plus the dashboard at rest: {failure}")
         });
     let evidence = published.evidence();
-    assert_eq!(evidence.sequence_quad(), (1, 1, 3, 1));
+    assert_eq!(evidence.sequence_quad(), (1, 2, 3, 4));
     assert_eq!(
         evidence.pending_projection().projection_identity(),
         "platform.pulse.status"

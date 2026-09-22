@@ -60,7 +60,14 @@ impl super::super::WorthUiActiveApplicationSession {
         };
         let accepted = self.mounted.accepted_scroll_group_translations();
         if accepted.is_empty() {
+            self.scroll_settle_retry = UiScrollSettleRetry::Settled;
             return UiScrollSettleDisposition::Idle;
+        }
+        if self.scroll.as_ref().is_some_and(|scroll| {
+            scroll.has_pending_direct(surface) || scroll.has_unpresented_layout(surface)
+        }) {
+            self.scroll_settle_retry = UiScrollSettleRetry::AwaitingNextFrame;
+            return UiScrollSettleDisposition::DeferredPendingGeometry;
         }
         let mut settlements = Vec::with_capacity(accepted.len());
         let mut refusal = None;

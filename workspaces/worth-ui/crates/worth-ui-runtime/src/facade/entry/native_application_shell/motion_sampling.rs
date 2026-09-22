@@ -60,7 +60,6 @@ impl WorthUiNativeApplicationShell {
             .map_err(|_| ())?;
         self.session
             .present_prepared_motion_tick(prepared, presentation);
-        self.session.settle_accepted_scroll_sample(presentation);
         Ok(self.native_motion_tick_disposition())
     }
 
@@ -115,7 +114,6 @@ impl WorthUiNativeApplicationShell {
                 .pending_motion_sample_matches(presentation)
         }) {
             self.session.complete_motion_sample_presentation();
-            self.settle_accepted_scroll_samples();
             return self.native_motion_tick_disposition();
         }
         self.managed_rebind_completion_tick = self.managed_rebind_completion_tick.saturating_add(1);

@@ -158,6 +158,21 @@ impl NativeClientPixelCapture {
         &self.rgba
     }
 
+    pub(crate) fn cropped(&self, [x, y, width, height]: [u32; 4]) -> Option<Self> {
+        let right = x.checked_add(width)?;
+        let bottom = y.checked_add(height)?;
+        if width == 0 || height == 0 || right > self.width || bottom > self.height {
+            return None;
+        }
+        let mut rgba = Vec::with_capacity(width as usize * height as usize * 4);
+        for row in y..bottom {
+            let start = (row as usize * self.width as usize + x as usize) * 4;
+            rgba.extend_from_slice(&self.rgba[start..start + width as usize * 4]);
+        }
+        Self::new(self.process_id, width, height, rgba)
+            .map(|capture| capture.with_capture_count(self.capture_count))
+    }
+
     pub(crate) fn capture_count(&self) -> u32 {
         self.capture_count
     }
@@ -200,6 +215,40 @@ impl NativeClientPixelPoint {
 
     pub(crate) fn landing_tolerance(self) -> u32 {
         self.landing_tolerance
+    }
+}
+
+#[test]
+fn cropped_pixels_preserve_selected_rows_and_capture_provenance() {
+    let rgba: Vec<u8> = (0_u8..12)
+        .flat_map(|value| [value, value, value, 255])
+        .collect();
+    let capture = NativeClientPixelCapture::new(7, 4, 3, rgba)
+        .unwrap()
+        .with_capture_count(3);
+    let cropped = capture.cropped([1, 1, 2, 2]).unwrap();
+    assert_eq!(
+        (
+            cropped.process_id(),
+            cropped.width(),
+            cropped.height(),
+            cropped.capture_count()
+        ),
+        (7, 2, 2, 3)
+    );
+    let selected: Vec<_> = cropped
+        .rgba()
+        .chunks_exact(4)
+        .map(|pixel| pixel[0])
+        .collect();
+    assert_eq!(selected, [5, 6, 9, 10]);
+    for region in [
+        [0, 0, 0, 1],
+        [3, 0, 2, 1],
+        [0, 2, 1, 2],
+        [u32::MAX, 0, 2, 1],
+    ] {
+        assert!(capture.cropped(region).is_none());
     }
 }
 

@@ -201,4 +201,12 @@ impl super::WorthUiMountedSessionState {
             })
             .collect()
     }
+
+    pub(crate) fn accepted_scroll_group_translation(
+        &self,
+        target: crate::runtime::motion::UiMotionTargetIdentity,
+    ) -> Option<[f32; 2]> {
+        self.motion_sampling
+            .accepted_scroll_group_translation(target)
+    }
 }

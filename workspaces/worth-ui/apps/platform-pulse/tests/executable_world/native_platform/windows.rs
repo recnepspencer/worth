@@ -80,6 +80,11 @@ impl Drop for WindowsCaptureExposure<'_> {
 }
 
 impl WindowsNativePlatform {
+    /// Time an external observation's completion, not a desktop presentation.
+    pub(crate) fn observation_qpc_100ns(&self) -> Result<i64, NativePlatformFailure> {
+        graphics_capture::qpc_100ns()
+    }
+
     pub(crate) fn certified() -> Result<Self, NativePlatformFailure> {
         if std::env::consts::ARCH != "x86_64" {
             return Err(NativePlatformFailure::EnvironmentQualification(
