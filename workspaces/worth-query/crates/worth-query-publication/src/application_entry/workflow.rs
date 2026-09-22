@@ -31,7 +31,9 @@ pub use operation::{
 pub use ordinary::{
     WorthQueryOrdinaryWorkflowDraft, WorthQueryOrdinaryWorkflowPublication,
     WorthQueryOrdinaryWorkflowPublicationDenial,
-    WorthQueryOrdinaryWorkflowPublicationWithIdempotency, WorthQueryOrdinaryWorkflowStart,
+    WorthQueryOrdinaryWorkflowPublicationWithIdempotency, WorthQueryOrdinaryWorkflowRun,
+    WorthQueryOrdinaryWorkflowRunProgress, WorthQueryOrdinaryWorkflowRunStop,
+    WorthQueryOrdinaryWorkflowRunWithKeys, WorthQueryOrdinaryWorkflowStart,
     WorthQueryOrdinaryWorkflowStartWithIdempotency,
 };
 pub use progress::{

@@ -144,6 +144,22 @@ where
             source_preparation: std::marker::PhantomData,
         }
     }
+
+    pub(in crate::application_entry) fn repeat_for_workflow_run(&self) -> Self
+    where
+        Intent: Clone,
+        Intent::Binding:
+            ApplicationMutationBinding<Schema, SourceExpectation = NoApplicationMutationSource>,
+    {
+        Self::new(
+            self.application,
+            self.principal,
+            self.scope,
+            self.branch,
+            self.intent.clone(),
+        )
+        .preconditions(self.preconditions.clone())
+    }
 }
 
 impl<'application, 'principal, 'scope, Schema, Intent, SourcePreparation>
@@ -169,6 +185,12 @@ where
         &self,
     ) -> worth_query_execution::facade::product::WorthQueryProductBranch {
         self.branch
+    }
+
+    pub(in crate::application_entry) const fn request_scope(
+        &self,
+    ) -> &'scope WorthQueryRequestScope {
+        self.scope
     }
 
     pub fn preconditions(
