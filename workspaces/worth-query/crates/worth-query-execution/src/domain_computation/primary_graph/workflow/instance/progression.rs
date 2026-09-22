@@ -1,12 +1,17 @@
+use im::OrdMap;
+#[cfg(test)]
 use std::collections::BTreeMap;
 
 use worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome;
 use worth_relational::facade::identity::EntityId;
 
+mod accounting;
 mod locator;
 mod navigation;
 mod replay;
 mod retention;
+#[cfg(test)]
+mod scaling;
 mod update;
 use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
@@ -84,33 +89,19 @@ impl SettledWorkflowTransition {
 pub(in crate::domain_computation::primary_graph) struct WorkflowInstanceProgress {
     head: EntityId,
     next_occurrence: u64,
-    retry_counts: BTreeMap<(EntityId, ApplicationWorkflowControlOutcome), usize>,
-    latest_transitions: BTreeMap<EntityId, WorkflowTransitionLocator>,
-    latest_assessment_evidence: BTreeMap<EntityId, WorkflowAssessmentEvidenceLocator>,
+    retry_counts: OrdMap<(EntityId, ApplicationWorkflowControlOutcome), usize>,
+    latest_transitions: OrdMap<EntityId, WorkflowTransitionLocator>,
+    latest_assessment_evidence: OrdMap<EntityId, WorkflowAssessmentEvidenceLocator>,
 }
 
 impl WorkflowInstanceProgress {
     pub(super) fn retained_charge_bytes(&self) -> usize {
-        const CONSERVATIVE_TREE_NODE_ALLOWANCE: usize = 128;
         std::mem::size_of::<Self>()
-            .saturating_add(
-                self.retry_counts.len().saturating_mul(
-                    std::mem::size_of::<((EntityId, ApplicationWorkflowControlOutcome), usize)>()
-                        .saturating_add(CONSERVATIVE_TREE_NODE_ALLOWANCE),
-                ),
-            )
-            .saturating_add(
-                self.latest_transitions.len().saturating_mul(
-                    std::mem::size_of::<(EntityId, WorkflowTransitionLocator)>()
-                        .saturating_add(CONSERVATIVE_TREE_NODE_ALLOWANCE),
-                ),
-            )
-            .saturating_add(
-                self.latest_assessment_evidence.len().saturating_mul(
-                    std::mem::size_of::<(EntityId, WorkflowAssessmentEvidenceLocator)>()
-                        .saturating_add(CONSERVATIVE_TREE_NODE_ALLOWANCE),
-                ),
-            )
+            .saturating_add(accounting::map_charge_bytes(&self.retry_counts))
+            .saturating_add(accounting::map_charge_bytes(&self.latest_transitions))
+            .saturating_add(accounting::map_charge_bytes(
+                &self.latest_assessment_evidence,
+            ))
     }
 
     pub(in crate::domain_computation::primary_graph) fn reconstruct(
@@ -121,9 +112,9 @@ impl WorkflowInstanceProgress {
         let mut progress = Self {
             head: compiled.start().entity(),
             next_occurrence: 0,
-            retry_counts: BTreeMap::new(),
-            latest_transitions: BTreeMap::new(),
-            latest_assessment_evidence: BTreeMap::new(),
+            retry_counts: OrdMap::new(),
+            latest_transitions: OrdMap::new(),
+            latest_assessment_evidence: OrdMap::new(),
         };
         for transition in settled {
             progress.advance(compiled, *transition)?;
@@ -145,9 +136,9 @@ impl WorkflowInstanceProgress {
         let mut progress = Self {
             head: start,
             next_occurrence: 0,
-            retry_counts: BTreeMap::new(),
-            latest_transitions: BTreeMap::new(),
-            latest_assessment_evidence: BTreeMap::new(),
+            retry_counts: OrdMap::new(),
+            latest_transitions: OrdMap::new(),
+            latest_assessment_evidence: OrdMap::new(),
         };
         for transition in settled {
             progress.advance_with(*transition, &mut successor)?;
@@ -334,9 +325,9 @@ mod tests {
         let mut progress = WorkflowInstanceProgress {
             head: node,
             next_occurrence: 2,
-            retry_counts: BTreeMap::new(),
-            latest_transitions: BTreeMap::new(),
-            latest_assessment_evidence: BTreeMap::new(),
+            retry_counts: OrdMap::new(),
+            latest_transitions: OrdMap::new(),
+            latest_assessment_evidence: OrdMap::new(),
         };
         let latest = WorkflowTransitionLocator::new(entity(52), completed(node, 1));
         progress.retain_observation(WorkflowTransitionProgressObservation::new(latest, None));
@@ -354,9 +345,9 @@ mod tests {
         let mut progress = WorkflowInstanceProgress {
             head: node,
             next_occurrence: 2,
-            retry_counts: BTreeMap::new(),
-            latest_transitions: BTreeMap::new(),
-            latest_assessment_evidence: BTreeMap::new(),
+            retry_counts: OrdMap::new(),
+            latest_transitions: OrdMap::new(),
+            latest_assessment_evidence: OrdMap::new(),
         };
         let evidence_transition = WorkflowTransitionLocator::new(entity(61), completed(node, 0));
         progress.retain_observation(WorkflowTransitionProgressObservation::new(

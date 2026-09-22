@@ -4320,6 +4320,7 @@ dependencies = [
 name = "worth-query-execution"
 version = "0.1.0"
 dependencies = [
+ "im",
  "sha2",
  "worth-foundational",
  "worth-proof",

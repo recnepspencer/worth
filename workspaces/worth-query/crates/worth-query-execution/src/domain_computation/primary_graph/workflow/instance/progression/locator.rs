@@ -115,7 +115,7 @@ impl WorkflowInstanceProgress {
 }
 
 fn retain_latest<Value: Copy>(
-    retained: &mut std::collections::BTreeMap<EntityId, Value>,
+    retained: &mut im::OrdMap<EntityId, Value>,
     node: EntityId,
     candidate: Value,
     occurrence: impl Fn(Value) -> u64,

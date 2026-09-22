@@ -11,7 +11,10 @@ mod counters;
 pub use counters::WorthQueryWorkflowInstanceProgressCounters;
 
 pub(super) const SHARD_COUNT: usize = 16;
-const TOTAL_RETAINED_CHARGE_BUDGET: usize = 16 * 1024 * 1024;
+// Each shard admits 100 small instances even when their keys collide: three
+// single-node OrdMaps plus two short replay descriptors cost under 2 MiB.
+// Larger histories consume this same finite budget, not a per-instance allowance.
+const TOTAL_RETAINED_CHARGE_BUDGET: usize = SHARD_COUNT * 2 * 1024 * 1024;
 
 pub(in crate::domain_computation::primary_graph) fn default_progress_retention_shards(
 ) -> std::sync::Arc<[std::sync::Mutex<WorkflowInstanceProgressRetention>]> {

@@ -14,12 +14,12 @@ fn progress(head: u64) -> WorkflowInstanceProgress {
     WorkflowInstanceProgress {
         head: entity(head),
         next_occurrence: 2,
-        retry_counts: BTreeMap::from([(
+        retry_counts: im::OrdMap::from_iter([(
             (entity(1), ApplicationWorkflowControlOutcome::Completed),
-            2,
+            2usize,
         )]),
-        latest_transitions: BTreeMap::new(),
-        latest_assessment_evidence: BTreeMap::new(),
+        latest_transitions: im::OrdMap::new(),
+        latest_assessment_evidence: im::OrdMap::new(),
     }
 }
 
@@ -36,6 +36,10 @@ fn no_replays() -> WorkflowTransitionReplayRetention {
     WorkflowTransitionReplayRetention::default()
 }
 
+fn entry_budget(entries: usize) -> usize {
+    entries * (retained_charge_bytes(&progress(0), &no_replays()) + 4096)
+}
+
 fn reused_progress(
     retention: &mut WorkflowInstanceProgressRetention,
     key: WorkflowInstanceProgressKey,
@@ -48,16 +52,20 @@ fn reused_progress(
 
 #[test]
 fn exact_revision_reuses_and_changed_revision_reconstructs() {
-    let mut retention = WorkflowInstanceProgressRetention::new(4096);
+    let mut retention = WorkflowInstanceProgressRetention::new(entry_budget(1));
     let revision = Some(VersionId::new(11));
+    let source = progress(4);
     retention
-        .retain(key(1), revision, progress(4), no_replays(), 2)
+        .retain(key(1), revision, source.clone(), no_replays(), 2)
         .expect("bounded progress retains");
 
-    assert_eq!(
-        reused_progress(&mut retention, key(1), revision),
-        Some(progress(4))
-    );
+    let reused = reused_progress(&mut retention, key(1), revision).unwrap();
+    assert!(source.retry_counts.ptr_eq(&reused.retry_counts));
+    assert!(source.latest_transitions.ptr_eq(&reused.latest_transitions));
+    assert!(source
+        .latest_assessment_evidence
+        .ptr_eq(&reused.latest_assessment_evidence));
+    assert_eq!(reused, source);
     assert!(retention.reuse(key(1), Some(VersionId::new(12))).is_none());
     assert_eq!(retention.counters().warm_hits(), 1);
     assert_eq!(retention.counters().cold_misses(), 1);
@@ -68,8 +76,30 @@ fn exact_revision_reuses_and_changed_revision_reconstructs() {
 }
 
 #[test]
+fn default_shard_keeps_one_hundred_small_instances_warm() {
+    let mut retention = WorkflowInstanceProgressRetention::default();
+    let revision = Some(VersionId::new(11));
+    let keys = (0..100)
+        .map(|slot| key(slot * SHARD_COUNT as u64))
+        .collect::<Vec<_>>();
+    for instance in &keys {
+        assert_eq!(instance.shard_index(), keys[0].shard_index());
+        let replays = WorkflowTransitionReplayRetention::from_replays([replay(1), replay(2)]);
+        retention
+            .retain(*instance, revision, progress(4), replays, 2)
+            .unwrap();
+    }
+    assert_eq!(retention.counters().evictions(), 0);
+    for instance in keys {
+        assert!(retention.reuse(instance, revision).is_some());
+    }
+    assert_eq!(retention.counters().warm_hits(), 100);
+    assert!(retention.retained_charge_bytes <= 2 * 1024 * 1024);
+}
+
+#[test]
 fn exact_owner_result_advances_once_and_duplicate_delivery_is_idempotent() {
-    let mut retention = WorkflowInstanceProgressRetention::new(4096);
+    let mut retention = WorkflowInstanceProgressRetention::new(entry_budget(1));
     let source_revision = Some(VersionId::new(13));
     let committed_revision = Some(VersionId::new(14));
     let source = progress(4);
@@ -143,7 +173,7 @@ fn oversized_incremental_replay_preserves_the_reconstructable_source() {
 
 #[test]
 fn gap_foreign_basis_and_eviction_cannot_advance_progress() {
-    let mut retention = WorkflowInstanceProgressRetention::new(4096);
+    let mut retention = WorkflowInstanceProgressRetention::new(entry_budget(1));
     let source_revision = Some(VersionId::new(15));
     let source = progress(6);
     retention
@@ -192,7 +222,7 @@ fn gap_foreign_basis_and_eviction_cannot_advance_progress() {
 
 #[test]
 fn equal_revision_collision_fails_closed() {
-    let mut retention = WorkflowInstanceProgressRetention::new(4096);
+    let mut retention = WorkflowInstanceProgressRetention::new(entry_budget(1));
     let revision = Some(VersionId::new(21));
     retention
         .retain(key(2), revision, progress(5), no_replays(), 2)
@@ -207,7 +237,7 @@ fn equal_revision_collision_fails_closed() {
 
 #[test]
 fn stale_reconstruction_cannot_replace_newer_progress() {
-    let mut retention = WorkflowInstanceProgressRetention::new(4096);
+    let mut retention = WorkflowInstanceProgressRetention::new(entry_budget(1));
     let newer = progress(7);
     retention
         .retain(
@@ -266,7 +296,7 @@ fn least_recently_used_progress_evicts_within_the_shard_budget() {
 
 #[test]
 fn branch_release_removes_only_the_retired_occurrence() {
-    let mut retention = WorkflowInstanceProgressRetention::new(8192);
+    let mut retention = WorkflowInstanceProgressRetention::new(entry_budget(2));
     let other = WorkflowInstanceProgressKey::new(4, entity(5), entity(90));
     retention
         .retain(
