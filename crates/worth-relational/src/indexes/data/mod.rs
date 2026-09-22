@@ -2,8 +2,11 @@ mod allocation_accounting;
 mod bounded_entity_field_lookup;
 mod bounded_related_entity_ordered_lookup;
 mod bounded_relation_join_lookup;
+mod generation_selection_counters;
 mod related_entity_ordering;
 mod relation_join;
+
+pub use generation_selection_counters::DerivedIndexSelectionCounters;
 
 pub use bounded_entity_field_lookup::{
     BoundedEntityFieldLookupDenial, BoundedEntityFieldLookupDenialKind,

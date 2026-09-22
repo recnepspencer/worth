@@ -1,6 +1,4 @@
-use crate::indexes::data::{
-    DerivedIndexDefinition, DerivedIndexGeneration, DerivedIndexPublicationStatus,
-};
+use crate::indexes::data::{DerivedIndexDefinition, DerivedIndexGeneration};
 use crate::runtime::RelationalRuntime;
 use crate::snapshots::data::SnapshotHandle;
 
@@ -14,15 +12,10 @@ pub(super) fn exact_published_generation(
         .read_truth()
         .query_plan_context(snapshot)?
         .schema_version;
-    runtime
-        .indexes
-        .generations_for(definition.index_id)
-        .into_iter()
-        .rev()
-        .find(|generation| {
-            generation.status == DerivedIndexPublicationStatus::Published
-                && generation.applicability.version_id == snapshot.version_id
-                && generation.applicability.schema_version == schema_version
-                && (!definition.branch_scoped || generation.applicability.branch_id == *branch_id)
-        })
+    runtime.indexes.exact_generation(
+        definition.index_id,
+        definition.branch_scoped.then_some(branch_id),
+        snapshot.version_id,
+        schema_version,
+    )
 }

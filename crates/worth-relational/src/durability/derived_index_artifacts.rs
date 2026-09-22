@@ -13,11 +13,7 @@ pub(crate) fn restore_checkpoint_derived_index_artifacts(
     artifacts: &DerivedIndexArtifacts,
 ) {
     for generation in artifacts.generations() {
-        indexes
-            .generations
-            .entry(generation.index_id)
-            .or_default()
-            .push(std::sync::Arc::new(generation.clone()));
+        indexes.restore_generation(generation.clone());
     }
 }
 

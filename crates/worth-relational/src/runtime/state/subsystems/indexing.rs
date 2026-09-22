@@ -3,11 +3,18 @@ use std::sync::Arc;
 
 use worth_foundational::facade::AspectFieldLocator;
 
-use crate::history::data::CommitId;
+mod generation_catalog;
+
+use generation_catalog::GenerationCatalog;
+
+use crate::history::data::{BranchId, CommitId};
+use crate::identity::data::VersionId;
 use crate::indexes::data::{
-    DerivedIndexArtifacts, DerivedIndexDefinition, DerivedIndexGeneration, DerivedIndexId,
+    DerivedIndexArtifacts, DerivedIndexDefinition, DerivedIndexGeneration,
+    DerivedIndexGenerationId, DerivedIndexId,
 };
 use crate::runtime::state::subsystems::{RuntimeOwnedState, RuntimeSubsystem};
+use crate::schema::data::SchemaVersionId;
 use crate::storage::data::AuthoritativeFieldComparisonKey;
 
 /// Every entity that currently carries a tracked unique aspect field value.
@@ -16,15 +23,15 @@ pub(crate) type UniqueEntityAspectFieldIndex = BTreeMap<
     BTreeMap<AuthoritativeFieldComparisonKey, BTreeSet<crate::identity::data::EntityId>>,
 >;
 
-/// The derived-index subsystem's authoritative contents.
+/// Definitions and retained derived generations owned by the native index runtime.
 ///
 /// Definitions and generations are held behind `Arc` so a reader can carry one
 /// out of the subsystem lock without copying its entries and without retaining
 /// the guard.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub(crate) struct IndexingState {
     pub(crate) definitions: BTreeMap<DerivedIndexId, Arc<DerivedIndexDefinition>>,
-    pub(crate) generations: BTreeMap<DerivedIndexId, Vec<Arc<DerivedIndexGeneration>>>,
+    generations: GenerationCatalog,
     pub(crate) entity_unique_aspect_field_index: UniqueEntityAspectFieldIndex,
     pub(crate) next_index_id: u64,
     pub(crate) next_generation_id: u64,
@@ -34,7 +41,7 @@ impl IndexingState {
     fn empty() -> Self {
         Self {
             definitions: BTreeMap::new(),
-            generations: BTreeMap::new(),
+            generations: GenerationCatalog::default(),
             entity_unique_aspect_field_index: BTreeMap::new(),
             next_index_id: 1,
             next_generation_id: 1,
@@ -42,8 +49,24 @@ impl IndexingState {
     }
 
     pub(crate) fn insert_definition(&mut self, definition: DerivedIndexDefinition) {
+        self.next_index_id = self
+            .next_index_id
+            .max(definition.index_id.0.saturating_add(1));
         self.definitions
             .insert(definition.index_id, Arc::new(definition));
+    }
+
+    pub(crate) fn restore_generation(&mut self, generation: DerivedIndexGeneration) {
+        self.next_generation_id = self
+            .next_generation_id
+            .max(generation.generation_id.0.saturating_add(1));
+        self.generations.insert(generation);
+    }
+}
+
+impl Default for IndexingState {
+    fn default() -> Self {
+        Self::empty()
     }
 }
 
@@ -78,25 +101,72 @@ impl IndexingSubsystem {
             .collect()
     }
 
-    pub(crate) fn generations_for(
+    pub(crate) fn generation(
         &self,
-        index_id: DerivedIndexId,
-    ) -> Vec<Arc<DerivedIndexGeneration>> {
+        id: DerivedIndexGenerationId,
+    ) -> Option<Arc<DerivedIndexGeneration>> {
+        self.state.read().generations.generation(id)
+    }
+
+    pub(crate) fn latest_generation(
+        &self,
+        index: DerivedIndexId,
+        branch: Option<&BranchId>,
+    ) -> Option<Arc<DerivedIndexGeneration>> {
+        self.state.read().generations.latest(index, branch)
+    }
+
+    pub(crate) fn exact_generation(
+        &self,
+        index: DerivedIndexId,
+        branch: Option<&BranchId>,
+        version: VersionId,
+        schema: SchemaVersionId,
+    ) -> Option<Arc<DerivedIndexGeneration>> {
         self.state
             .read()
             .generations
-            .get(&index_id)
-            .map(|generations| generations.iter().map(Arc::clone).collect())
-            .unwrap_or_default()
+            .exact(index, branch, version, schema)
+    }
+
+    pub(crate) fn published_generation_for_commit(
+        &self,
+        index: DerivedIndexId,
+        branch: Option<&BranchId>,
+        commit: CommitId,
+        version: VersionId,
+    ) -> Option<Arc<DerivedIndexGeneration>> {
+        self.state
+            .read()
+            .generations
+            .published_for_commit(index, branch, commit, version)
+    }
+
+    pub(crate) fn candidate_generation(
+        &self,
+        index: DerivedIndexId,
+        branch: Option<&BranchId>,
+        version: VersionId,
+        schema: SchemaVersionId,
+    ) -> Option<Arc<DerivedIndexGeneration>> {
+        self.state
+            .read()
+            .generations
+            .candidate(index, branch, version, schema)
+    }
+
+    pub(crate) fn any_generation_at_or_before(&self, version: VersionId) -> bool {
+        self.state.read().generations.any_at_or_before(version)
     }
 
     pub(crate) fn all_generations(&self) -> Vec<Arc<DerivedIndexGeneration>> {
-        self.state
-            .read()
-            .generations
-            .values()
-            .flat_map(|generations| generations.iter().map(Arc::clone))
-            .collect()
+        self.state.read().generations.all()
+    }
+
+    pub(crate) fn generation_selection_counters(
+        &self,
+    ) -> crate::indexes::data::DerivedIndexSelectionCounters {
+        self.state.read().generations.selection_counters()
     }
 
     /// Allocate the next definition identity and record the definition.
@@ -106,7 +176,10 @@ impl IndexingSubsystem {
     ) -> DerivedIndexDefinition {
         let mut state = self.state.write();
         definition.index_id = DerivedIndexId(state.next_index_id);
-        state.next_index_id += 1;
+        state.next_index_id = state
+            .next_index_id
+            .checked_add(1)
+            .expect("derived index identity exhausted");
         state.insert_definition(definition.clone());
         definition
     }
@@ -115,33 +188,21 @@ impl IndexingSubsystem {
     pub(crate) fn next_generation_id(&self) -> u64 {
         let mut state = self.state.write();
         let generation_id = state.next_generation_id;
-        state.next_generation_id += 1;
+        state.next_generation_id = state
+            .next_generation_id
+            .checked_add(1)
+            .expect("derived generation identity exhausted");
         generation_id
     }
 
     pub(crate) fn publish_generation(&self, generation: DerivedIndexGeneration) {
-        self.state
-            .write()
-            .generations
-            .entry(generation.index_id)
-            .or_default()
-            .push(Arc::new(generation));
+        self.state.write().generations.publish(generation);
     }
 
     /// Install a generation carried by a canonical envelope, replacing any
     /// earlier copy of the same generation identity.
     pub(crate) fn restore_generation(&self, generation: DerivedIndexGeneration) {
-        let mut state = self.state.write();
-        let generations = state.generations.entry(generation.index_id).or_default();
-        if let Some(existing) = generations
-            .iter_mut()
-            .find(|candidate| candidate.generation_id == generation.generation_id)
-        {
-            *existing = Arc::new(generation);
-        } else {
-            generations.push(Arc::new(generation));
-            generations.sort_by_key(|candidate| candidate.generation_id);
-        }
+        self.state.write().restore_generation(generation);
     }
 
     pub(crate) fn derived_artifacts_for_commit(
@@ -152,9 +213,8 @@ impl IndexingSubsystem {
             self.state
                 .read()
                 .generations
-                .values()
-                .flat_map(|generations| generations.iter())
-                .filter(|generation| generation.source_commit_id == commit_id)
+                .for_commit(commit_id)
+                .into_iter()
                 .map(|generation| generation.as_ref().clone())
                 .collect(),
         )
@@ -185,12 +245,12 @@ impl IndexingSubsystem {
         corrupt: impl FnOnce(&mut DerivedIndexGeneration),
     ) {
         let mut state = self.state.write();
-        let generation = state
+        let mut generation = state
             .generations
-            .get_mut(&index_id)
-            .and_then(|generations| generations.last_mut())
+            .latest(index_id, None)
             .expect("court installs the generation it corrupts");
-        corrupt(Arc::make_mut(generation));
+        corrupt(Arc::make_mut(&mut generation));
+        state.generations.insert(generation.as_ref().clone());
     }
 
     pub(crate) fn clear_unique_index(&self) {

@@ -1,6 +1,9 @@
 use super::{ComplexityContract, ComplexityStatus};
 
 #[cfg(test)]
+mod index_access;
+
+#[cfg(test)]
 pub const COMPLEXITY_CONTRACTS: &[ComplexityContract] = &[
     ComplexityContract {
         id: "runtime.partition_local_commit",
@@ -150,22 +153,9 @@ pub const COMPLEXITY_CONTRACTS: &[ComplexityContract] = &[
             "tests::complexity::contracts::visibility_budgets::complexity_budget_query_packetization_reports_serial_shape_for_narrow_reads",
         ],
     },
-    ComplexityContract {
-        id: "runtime.query.index_entity_aspect_field_equals",
-        function_path: "indexes/logic/access.rs::IndexAccess::execute_entity_field_equals_from_generation",
-        declared_time_complexity: "O(index_hits + matched_record_materialization)",
-        budget_summary: "Index-backed field equality reads must resolve candidate IDs from derived index entries, must avoid whole-snapshot materialization, and must report index attempts, parity verification, and emitted record counts explicitly.",
-        status: ComplexityStatus::Verified,
-        proof_tests: &["tests::complexity::contracts::visibility_budgets::complexity_budget_index_entity_field_equals_avoids_snapshot_materialization"],
-    },
-    ComplexityContract {
-        id: "runtime.query.index_relation_aspect_field_equals",
-        function_path: "indexes/logic/access.rs::IndexAccess::execute_index_backed_query_from_generation",
-        declared_time_complexity: "O(index_hits + matched_relation_materialization)",
-        budget_summary: "Index-backed relation field equality reads must resolve candidate relation IDs from derived index entries, must avoid whole-snapshot relation materialization, and must report index attempts, parity verification, and emitted relation counts explicitly.",
-        status: ComplexityStatus::Verified,
-        proof_tests: &["tests::complexity::contracts::visibility_budgets::complexity_budget_index_relation_field_equals_avoids_snapshot_materialization"],
-    },
+    index_access::ENTITY_FIELD,
+    index_access::RELATION_FIELD,
+    index_access::GENERATION_SELECTION,
     ComplexityContract {
         id: "runtime.bulk_mutation.planning",
         function_path: "transactions/logic/mod.rs::RelationalTransaction::plan_bulk_mutation_batch",

@@ -25,9 +25,7 @@ pub(crate) fn admissible_access_path(
                 IndexQueryRejectionClass::MissingGeneration
             } else if runtime
                 .indexes
-                .all_generations()
-                .iter()
-                .any(|generation| generation.applicability.version_id <= plan.snapshot.version_id)
+                .any_generation_at_or_before(plan.snapshot.version_id)
             {
                 IndexQueryRejectionClass::UnsupportedScope
             } else {
@@ -161,7 +159,14 @@ fn candidate_generation_for_packet(
                         if indexed_field_locator == field_locator
                 )
             })
-            .flat_map(|definition| runtime.indexes.generations_for(definition.index_id))
+            .filter_map(|definition| {
+                runtime.indexes.candidate_generation(
+                    definition.index_id,
+                    definition.branch_scoped.then_some(branch_id),
+                    packet.context_id.version_id,
+                    packet.context_id.schema_version,
+                )
+            })
             .max_by(|left, right| {
                 generation_preference(runtime, left.as_ref(), packet, branch_id)
                     .cmp(&generation_preference(
@@ -184,7 +189,14 @@ fn candidate_generation_for_packet(
                         if indexed_field_locator == field_locator
                 )
             })
-            .flat_map(|definition| runtime.indexes.generations_for(definition.index_id))
+            .filter_map(|definition| {
+                runtime.indexes.candidate_generation(
+                    definition.index_id,
+                    definition.branch_scoped.then_some(branch_id),
+                    packet.context_id.version_id,
+                    packet.context_id.schema_version,
+                )
+            })
             .max_by(|left, right| {
                 generation_preference(runtime, left.as_ref(), packet, branch_id)
                     .cmp(&generation_preference(

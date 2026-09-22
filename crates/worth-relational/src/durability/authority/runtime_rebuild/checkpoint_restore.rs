@@ -197,12 +197,9 @@ fn prepare_lineage(
 
 fn prepare_indexes(checkpoint: &DurableCheckpoint) -> IndexingState {
     let mut indexes = IndexingState::default();
-    indexes.definitions = checkpoint
-        .index_definitions
-        .iter()
-        .cloned()
-        .map(|definition| (definition.index_id, std::sync::Arc::new(definition)))
-        .collect();
+    for definition in &checkpoint.index_definitions {
+        indexes.insert_definition(definition.clone());
+    }
     restore_checkpoint_derived_index_artifacts(&mut indexes, &checkpoint.derived_index_artifacts);
     indexes
 }
