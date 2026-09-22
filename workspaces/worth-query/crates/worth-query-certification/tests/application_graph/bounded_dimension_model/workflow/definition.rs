@@ -326,7 +326,7 @@ pub fn publish_definition(
         .map(|request| request.execute())
 }
 
-pub(super) fn definition_limits() -> ApplicationWorkflowDefinitionLimits {
+pub(crate) fn definition_limits() -> ApplicationWorkflowDefinitionLimits {
     ApplicationWorkflowDefinitionLimits::new(
         32,
         64,

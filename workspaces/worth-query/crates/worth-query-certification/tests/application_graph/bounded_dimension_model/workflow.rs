@@ -28,6 +28,7 @@ pub use declaration::{
     WorkflowDefinitionAuthoringInput, WorkflowDefinitionAuthoringOperation,
     WorkflowInstanceStartCapability, WorkflowInstanceStartInput, WorkflowInstanceStartOperation,
 };
+pub(crate) use definition::definition_limits;
 pub use definition::{
     advance_instance, approval_retry_definition, approve_instance, condition_terminal_definition,
     proposal_terminal_definition, propose_authoring_instance, propose_instance,
