@@ -20,7 +20,9 @@ pub use advance::{
     WorkflowAdvanceInput, WorkflowAdvanceIntent, WorkflowAdvanceOperation, WorkflowApprovalBinding,
     WorkflowApprovalCapability, WorkflowApprovalHandler, WorkflowApprovalIntent,
 };
-pub use assessment::{accept_assessment, settle_assessment, spoofed_assessment_denial};
+pub use assessment::{
+    accept_assessment, settle_assessment, settle_assessment_for, spoofed_assessment_denial,
+};
 pub use declaration::{
     seed_authoring, ReviewedGeometryWorkflow, WorkflowDefinitionAuthoringCapability,
     WorkflowDefinitionAuthoringInput, WorkflowDefinitionAuthoringOperation,
@@ -35,7 +37,7 @@ pub use definition::{
 };
 pub use join_replay_definition::{
     assessment_join_terminal_definition, assessment_join_terminal_definition_with_policy,
-    assessment_retry_definition,
+    assessment_retry_definition, multi_subject_assessment_retry_definition,
 };
 pub use mutation::{
     WorkflowDefinitionAuthoringBinding, WorkflowDefinitionAuthoringHandler,

@@ -148,7 +148,7 @@ where
     })
 }
 
-pub(super) fn prepare<Schema, Intent, SourcePreparation>(
+pub(in crate::application_entry) fn prepare<Schema, Intent, SourcePreparation>(
     request: &mut WorthQueryApplicationMutationRequestWithIdempotency<
         '_,
         '_,

@@ -259,6 +259,9 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
         required: &RequiredWorkflowOperation,
         receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
         idempotency: WorthQueryApplicationIdempotencyBinding,
+        recovery: Option<
+            &crate::domain_computation::application_aftermath::WorthQueryRecoverySafeRetryAdmission,
+        >,
     ) -> Result<Option<WorkflowProgressOutcome>, WorthQueryApplicationIdempotencyResolutionDenial>
     where
         Schema: ApplicationSchema,
@@ -350,6 +353,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                 admission.scope_entity_id(),
                 branch,
                 receipt,
+                recovery,
             )
         else {
             return Ok(None);

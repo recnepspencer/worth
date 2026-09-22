@@ -14,13 +14,20 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
     layout: &WorthQueryWorkflowLayout,
     transitions: &[ObservedWorkflowTransition],
     maximum_facts: usize,
-) -> Result<(String, Vec<WorthQueryApplicationObservedFact>), WorthQueryApplicationAttemptDenial> {
+) -> Result<
+    (
+        worth_relational::facade::identity::EntityId,
+        String,
+        Vec<WorthQueryApplicationObservedFact>,
+    ),
+    WorthQueryApplicationAttemptDenial,
+> {
     if transitions.len() > maximum_facts {
         return Err(budget_denial());
     }
     let direction = WorthQueryApplicationAdjacencyDirection::Outgoing;
     let mut facts = Vec::new();
-    let mut latest = None;
+    let mut latest: Option<(u64, worth_relational::facade::identity::EntityId, String)> = None;
     for transition in transitions {
         let relations = observe_adjacency(
             runtime,
@@ -73,9 +80,9 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
                 });
                 if latest
                     .as_ref()
-                    .is_none_or(|(occurrence, _)| transition.settlement.occurrence() > *occurrence)
+                    .is_none_or(|(occurrence, ..)| transition.settlement.occurrence() > *occurrence)
                 {
-                    latest = Some((transition.settlement.occurrence(), identity));
+                    latest = Some((transition.settlement.occurrence(), proposal, identity));
                 }
             }
             _ => return Err(denial("workflow transition has duplicate proposals")),
@@ -85,7 +92,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         }
     }
     latest
-        .map(|(_, identity)| (identity, facts))
+        .map(|(_, proposal, identity)| (proposal, identity, facts))
         .ok_or_else(|| denial("workflow assessment has no proposal dependency"))
 }
 

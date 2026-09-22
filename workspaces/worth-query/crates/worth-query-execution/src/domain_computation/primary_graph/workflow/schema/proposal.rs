@@ -30,6 +30,7 @@ pub(super) fn lower_proposal(
     let input_identity = planned_field_locator(PROPOSAL_ASPECT, "input-identity")?;
     let source_identity = planned_field_locator(PROPOSAL_ASPECT, "source-identity")?;
     let node_path = planned_field_locator(PROPOSAL_ASPECT, "node-path")?;
+    let coverage_count = planned_field_locator(PROPOSAL_ASPECT, "coverage-count")?;
     let shape = aspects()
         .struct_fields()
         .required("identity", ScalarAspectType::String)
@@ -39,6 +40,7 @@ pub(super) fn lower_proposal(
         .required("input-identity", ScalarAspectType::String)
         .optional("source-identity", ScalarAspectType::String)
         .required("node-path", ScalarAspectType::String)
+        .required("coverage-count", ScalarAspectType::UInt64)
         .finish()
         .map_err(|_| invalid_member(PROPOSAL_ASPECT))?;
     let registry = register_platform_entity(
@@ -62,6 +64,7 @@ pub(super) fn lower_proposal(
             input_identity,
             source_identity,
             node_path,
+            coverage_count,
             identity_index_id: DerivedIndexId(0),
         },
     ))

@@ -6,6 +6,8 @@ use worth_relational::facade::identity::EntityId;
 
 use super::super::codec::{WorkflowConnectionTag, WorkflowNodeTag};
 
+mod coverage;
+
 /// Rebuildable workflow meaning for one exact performed definition revision.
 ///
 /// This phase carries no principal, currentness, reservation, or execution
@@ -37,6 +39,7 @@ pub(in crate::domain_computation::primary_graph) enum CompiledWorkflowNodeKind {
         parameter_type: String,
         result_type: String,
         binding: String,
+        subject: worth_query_declaration::facade::application_program::ApplicationWorkflowSubjectSelector,
     },
     Condition {
         query: String,
@@ -110,12 +113,14 @@ impl CompiledWorkflowNode {
                 parameter_type,
                 result_type,
                 binding,
+                subject,
             } => vec![
                 WorkflowNodeTag::Assessment.identity().to_owned(),
                 query.clone(),
                 parameter_type.clone(),
                 result_type.clone(),
                 binding.clone(),
+                subject.persistence_identity(),
             ],
             CompiledWorkflowNodeKind::Condition {
                 query,

@@ -324,6 +324,12 @@ fn create_node(
             text(hex(binding.installed_capability_identity)),
         );
     }
+    if let ApplicationWorkflowNodeKind::Assessment(assessment) = node.kind() {
+        fields.insert(
+            layout.node.assessment_subject.clone(),
+            text(assessment.subject().persistence_identity()),
+        );
+    }
     WorthQueryApplicationRealizedEffect::CreateEntity {
         kind: reference.kind_id,
         key: raw_key(reference),

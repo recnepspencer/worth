@@ -23,7 +23,9 @@ pub use instance::{
     WorthQueryWorkflowInstanceStartPreparationDenialKind, WorthQueryWorkflowInstanceStartRequest,
 };
 pub use operation::{
-    WorthQueryWorkflowOperationAcceptanceDenial, WorthQueryWorkflowOperationBindingDenial,
+    WorthQueryPreparedWorkflowOperationRecovery, WorthQueryWorkflowOperationAcceptanceDenial,
+    WorthQueryWorkflowOperationBindingDenial, WorthQueryWorkflowOperationRecoveryDenial,
+    WorthQueryWorkflowOperationRecoveryPreparationDenial,
 };
 pub use progress::{
     WorthQueryWorkflowAdvancePreparationDenial, WorthQueryWorkflowAdvancePreparationDenialKind,

@@ -209,6 +209,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt::workflow_t
                 binding: assessment.binding,
                 subject: assessment.subject,
                 proposal_identity: assessment.proposal_identity,
+                coverage_identity: assessment.coverage_identity,
                 source_identity: assessment.source_identity,
                 passing: assessment.passing,
                 publication_identity: assessment.publication_identity,

@@ -229,6 +229,12 @@ where
         Intent::Binding::input_identity(self.request.intent.input())
     }
 
+    pub(in crate::application_entry) const fn workflow_transition_identity(
+        &self,
+    ) -> Option<[u8; 32]> {
+        self.workflow_transition_identity
+    }
+
     pub(in crate::application_entry) const fn application_runtime(
         &self,
     ) -> &'application WorthQueryPrimaryGraphApplicationRuntime<Schema> {

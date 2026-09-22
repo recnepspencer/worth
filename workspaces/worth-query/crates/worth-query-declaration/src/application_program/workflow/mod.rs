@@ -51,4 +51,5 @@ pub use validation::{
 pub use vocabulary::{
     ApplicationWorkflowApprovalRef, ApplicationWorkflowAssessmentRef,
     ApplicationWorkflowConditionRef, ApplicationWorkflowOperationRef, ApplicationWorkflowSpec,
+    ApplicationWorkflowSubjectSelector,
 };

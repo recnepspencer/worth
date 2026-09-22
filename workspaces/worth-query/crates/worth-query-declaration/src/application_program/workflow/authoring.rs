@@ -12,7 +12,7 @@ use super::{
     ApplicationWorkflowDefinitionIdentity, ApplicationWorkflowDefinitionLimits,
     ApplicationWorkflowEvidenceJoinPolicy, ApplicationWorkflowNode,
     ApplicationWorkflowNodeIdentity, ApplicationWorkflowNodeKind, ApplicationWorkflowOperationRef,
-    ApplicationWorkflowSpec, AuthoredWorkflowDefinition,
+    ApplicationWorkflowSpec, ApplicationWorkflowSubjectSelector, AuthoredWorkflowDefinition,
 };
 
 mod command;
@@ -250,12 +250,25 @@ where
     where
         Query: ApplicationQueryMarkerIdentity<Spec::Schema> + 'static,
     {
+        self.assessment_for::<Query>(identity, ApplicationWorkflowSubjectSelector::Resource)
+    }
+
+    pub fn assessment_for<Query>(
+        &mut self,
+        identity: impl Into<String>,
+        subject: ApplicationWorkflowSubjectSelector,
+    ) -> Result<
+        ApplicationWorkflowNodeRef<ApplicationWorkflowAssessmentNode>,
+        ApplicationWorkflowAuthoringDenial,
+    >
+    where
+        Query: ApplicationQueryMarkerIdentity<Spec::Schema> + 'static,
+    {
         self.push_node(
             identity,
-            ApplicationWorkflowNodeKind::Assessment(ApplicationWorkflowAssessmentRef::declared::<
-                Spec,
-                Query,
-            >()),
+            ApplicationWorkflowNodeKind::Assessment(
+                ApplicationWorkflowAssessmentRef::declared_for::<Spec, Query>(subject),
+            ),
         )
     }
 

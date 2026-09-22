@@ -1,7 +1,4 @@
 //! Query-owned relational vocabulary for authored workflow model facts.
-//!
-//! These kinds extend the application's existing schema registry. They do not
-//! create another graph, scheduler, or state store.
 
 use worth_foundational::facade::AspectIdentity;
 use worth_relational::facade::identity::KindId;
@@ -14,6 +11,7 @@ mod assessment;
 mod evidence_dependency;
 mod layout;
 mod proposal;
+mod proposal_coverage;
 mod relations;
 mod transition;
 pub(in crate::domain_computation::primary_graph) mod version;
@@ -23,6 +21,7 @@ pub(in crate::domain_computation::primary_graph) use layout::*;
 use approval::lower_approval;
 use evidence_dependency::lower_evidence_dependency;
 use proposal::lower_proposal;
+use proposal_coverage::lower_proposal_coverage;
 use relations::{
     allocate_kinds, connection_endpoint_integrity, current_definition_integrity, lower_connection,
     lower_definition, lower_instance, lower_lineage, lower_node, owned_fact_integrity,
@@ -48,7 +47,7 @@ pub(in crate::domain_computation::primary_graph) fn lower_workflow(
     schema_id: &SchemaId,
     schema_version_id: SchemaVersionId,
     first_kind: KindId,
-    identities: [AspectIdentity; 10],
+    identities: [AspectIdentity; 11],
 ) -> Result<
     (RelationalSchemaRegistry, WorthQueryWorkflowLayout),
     WorthQueryPrimaryGraphInstallationDenial,
@@ -92,6 +91,14 @@ pub(in crate::domain_computation::primary_graph) fn lower_workflow(
         schema_version_id,
         kinds[20],
         identities[7],
+    )?;
+    registry = next;
+    let (next, proposal_coverage) = lower_proposal_coverage(
+        registry,
+        schema_id,
+        schema_version_id,
+        kinds[28],
+        identities[10],
     )?;
     registry = next;
     let (next, approval) = lower_approval(
@@ -205,6 +212,16 @@ pub(in crate::domain_computation::primary_graph) fn lower_workflow(
         registry,
         schema_id,
         schema_version_id,
+        "worth-query-workflow-proposal-coverage",
+        kinds[29],
+        kinds[18],
+        kinds[28],
+        owned_fact_integrity(),
+    )?;
+    registry = register_relation(
+        registry,
+        schema_id,
+        schema_version_id,
         "worth-query-workflow-transition-proposal",
         kinds[19],
         kinds[14],
@@ -311,6 +328,7 @@ pub(in crate::domain_computation::primary_graph) fn lower_workflow(
             instance,
             transition,
             proposal,
+            proposal_coverage,
             assessment_evidence,
             approval,
             evidence_dependency,
@@ -327,6 +345,7 @@ pub(in crate::domain_computation::primary_graph) fn lower_workflow(
             instance_transition_relation: kinds[15],
             transition_node_relation: kinds[16],
             transition_proposal_relation: kinds[19],
+            proposal_coverage_relation: kinds[29],
             transition_assessment_evidence_relation: kinds[21],
             transition_approval_relation: kinds[23],
             approval_proposal_relation: kinds[24],

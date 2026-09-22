@@ -135,6 +135,7 @@ pub(super) fn lower_node(
     let parameter_type = planned_field_locator(NODE_ASPECT, "parameter-type")?;
     let result_type = planned_field_locator(NODE_ASPECT, "result-type")?;
     let assessment_binding = planned_field_locator(NODE_ASPECT, "assessment-binding")?;
+    let assessment_subject = planned_field_locator(NODE_ASPECT, "assessment-subject")?;
     let condition_binding = planned_field_locator(NODE_ASPECT, "condition-binding")?;
     let capability_type = planned_field_locator(NODE_ASPECT, "capability-type")?;
     let approval_operation = planned_field_locator(NODE_ASPECT, "approval-operation")?;
@@ -150,6 +151,7 @@ pub(super) fn lower_node(
         .optional("parameter-type", ScalarAspectType::String)
         .optional("result-type", ScalarAspectType::String)
         .optional("assessment-binding", ScalarAspectType::String)
+        .optional("assessment-subject", ScalarAspectType::String)
         .optional("condition-binding", ScalarAspectType::String)
         .optional("capability-type", ScalarAspectType::String)
         .optional("approval-operation", ScalarAspectType::String)
@@ -178,6 +180,7 @@ pub(super) fn lower_node(
             parameter_type,
             result_type,
             assessment_binding,
+            assessment_subject,
             condition_binding,
             capability_type,
             approval_operation,
@@ -323,9 +326,9 @@ pub(super) fn register_platform_entity(
 
 pub(super) fn allocate_kinds(
     first: KindId,
-) -> Result<[KindId; 28], WorthQueryPrimaryGraphInstallationDenial> {
+) -> Result<[KindId; 30], WorthQueryPrimaryGraphInstallationDenial> {
     let mut next = first.0;
-    let mut kinds = [first; 28];
+    let mut kinds = [first; 30];
     for kind in kinds.iter_mut().skip(1) {
         next = next.checked_add(1).ok_or_else(kind_space_exhausted)?;
         *kind = KindId(next);

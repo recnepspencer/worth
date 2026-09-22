@@ -117,6 +117,7 @@ fn node_record(node: &ApplicationWorkflowNode) -> String {
                 assessment.identifier(),
                 assessment.parameter_type().as_str(),
                 assessment.result_type().as_str(),
+                &subject_selector_record(assessment.subject()),
             ],
         ),
         ApplicationWorkflowNodeKind::Condition(condition) => framed_record(
@@ -144,6 +145,10 @@ fn node_record(node: &ApplicationWorkflowNode) -> String {
             framed_record("terminal", &[node.identity().as_str()])
         }
     }
+}
+
+fn subject_selector_record(selector: &super::ApplicationWorkflowSubjectSelector) -> String {
+    selector.persistence_identity()
 }
 
 fn connection_record(connection: &ApplicationWorkflowConnection) -> String {

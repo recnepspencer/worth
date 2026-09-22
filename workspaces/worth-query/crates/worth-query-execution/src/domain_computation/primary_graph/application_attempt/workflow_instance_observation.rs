@@ -45,7 +45,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) struct Obs
     pub(in crate::domain_computation::primary_graph::application_attempt) result_type: String,
     pub(in crate::domain_computation::primary_graph::application_attempt) binding: String,
     pub(in crate::domain_computation::primary_graph::application_attempt) passing: bool,
-    pub(in crate::domain_computation::primary_graph::application_attempt) proposal_identity: String,
+    pub(in crate::domain_computation::primary_graph::application_attempt) coverage_identity: String,
     pub(in crate::domain_computation::primary_graph::application_attempt) source_identity: String,
     pub(in crate::domain_computation::primary_graph::application_attempt) publication_identity:
         String,

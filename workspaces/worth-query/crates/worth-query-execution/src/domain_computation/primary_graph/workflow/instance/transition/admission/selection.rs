@@ -51,6 +51,8 @@ pub(in crate::domain_computation::primary_graph) struct SelectedWorkflowAssessme
     pub(in crate::domain_computation::primary_graph) parameter_type: String,
     pub(in crate::domain_computation::primary_graph) result_type: String,
     pub(in crate::domain_computation::primary_graph) binding: String,
+    pub(in crate::domain_computation::primary_graph) subject:
+        worth_query_declaration::facade::application_program::ApplicationWorkflowSubjectSelector,
 }
 
 #[derive(Clone)]
@@ -132,11 +134,13 @@ pub(in crate::domain_computation::primary_graph) fn select_current_transition(
             parameter_type,
             result_type,
             binding,
+            subject,
         } => SelectedWorkflowTransitionKind::Assessment(SelectedWorkflowAssessment {
             query: query.clone(),
             parameter_type: parameter_type.clone(),
             result_type: result_type.clone(),
             binding: binding.clone(),
+            subject: subject.clone(),
         }),
         CompiledWorkflowNodeKind::Condition {
             query,

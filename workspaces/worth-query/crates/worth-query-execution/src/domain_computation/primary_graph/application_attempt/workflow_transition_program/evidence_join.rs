@@ -63,6 +63,7 @@ where
             parameter_type,
             result_type,
             binding,
+            ..
         } = node.kind() else {
             return Err(denial(
                 WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,

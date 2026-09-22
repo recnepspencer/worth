@@ -285,7 +285,7 @@ where
         )
         .ok_or_else(|| affinity("approval proposal transition is absent"))?;
     let mut proposal_facts = handle.with_runtime(|runtime| {
-        crate::domain_computation::primary_graph::workflow::proposal::observe_workflow_proposal(
+        crate::domain_computation::primary_graph::workflow::proposal::observe_workflow_proposal_identity(
             runtime,
             snapshot,
             layout,

@@ -15,6 +15,13 @@ use worth_query_installation::facade::ApplicationSchema;
 use super::progress::WorthQueryWorkflowAdvanceRequest;
 use crate::application_entry::mutation::WorthQueryApplicationMutationRequestWithIdempotency;
 
+#[path = "operation/recovery.rs"]
+mod recovery;
+pub use recovery::{
+    WorthQueryPreparedWorkflowOperationRecovery, WorthQueryWorkflowOperationRecoveryDenial,
+    WorthQueryWorkflowOperationRecoveryPreparationDenial,
+};
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryWorkflowOperationBindingDenial {
     RuntimeMismatch,
@@ -25,6 +32,8 @@ pub enum WorthQueryWorkflowOperationBindingDenial {
 pub enum WorthQueryWorkflowOperationAcceptanceDenial {
     NotAwaitingOperation,
     RequirementMismatch,
+    RecoveryRequired,
+    RecoveryNotRequired,
     Replay(
         worth_query_execution::facade::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial,
     ),
@@ -37,6 +46,12 @@ impl std::fmt::Display for WorthQueryWorkflowOperationAcceptanceDenial {
             Self::NotAwaitingOperation => formatter.write_str("workflow is not awaiting operation"),
             Self::RequirementMismatch => {
                 formatter.write_str("operation receipt does not match the workflow requirement")
+            }
+            Self::RecoveryRequired => formatter.write_str(
+                "operation receipt has unresolved external custody and requires recovery",
+            ),
+            Self::RecoveryNotRequired => {
+                formatter.write_str("operation receipt does not require recovery")
             }
             Self::Replay(denial) => denial.fmt(formatter),
             Self::Attempt(denial) => denial.fmt(formatter),
@@ -119,6 +134,9 @@ where
         {
             return Err(WorthQueryWorkflowOperationAcceptanceDenial::RequirementMismatch);
         }
+        if WorthQueryWorkflowAdvanceAdapter::operation_receipt_requires_recovery(receipt) {
+            return Err(WorthQueryWorkflowOperationAcceptanceDenial::RecoveryRequired);
+        }
         if let Some(replayed) = WorthQueryWorkflowAdvanceAdapter::resolve_operation_replay::<
             Schema,
             Operation,
@@ -157,6 +175,72 @@ where
             Scope,
             Binding,
         >(self.application, prepared, receipt, self.idempotency)
+        .map_err(WorthQueryWorkflowOperationAcceptanceDenial::Attempt)
+    }
+
+    pub fn accept_recovered_operation<Binding>(
+        self,
+        required: &RequiredWorkflowOperation,
+        receipt: &worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
+        recovery: &worth_query_execution::facade::primary_graph::WorthQueryRecoverySafeRetryAdmission,
+    ) -> Result<WorkflowProgressOutcome, WorthQueryWorkflowOperationAcceptanceDenial>
+    where
+        Binding: ApplicationMutationBinding<Schema>,
+    {
+        if required.operation() != Binding::Operation::IDENTIFIER
+            || required.input_type() != Binding::InputBinding::IDENTITY.as_str()
+        {
+            return Err(WorthQueryWorkflowOperationAcceptanceDenial::RequirementMismatch);
+        }
+        if !WorthQueryWorkflowAdvanceAdapter::operation_receipt_requires_recovery(receipt) {
+            return Err(WorthQueryWorkflowOperationAcceptanceDenial::RecoveryNotRequired);
+        }
+        if let Some(replayed) =
+            WorthQueryWorkflowAdvanceAdapter::resolve_recovered_operation_replay::<
+                Schema,
+                Operation,
+                Input,
+                Scope,
+                Binding,
+            >(
+                self.application,
+                &self.prepared,
+                required,
+                receipt,
+                recovery,
+                self.idempotency,
+            )
+            .map_err(WorthQueryWorkflowOperationAcceptanceDenial::Replay)?
+        {
+            return Ok(replayed);
+        }
+        let prepared = match self.prepared {
+            PreparedWorkflowAdvance::AwaitingOperation(prepared) => prepared,
+            PreparedWorkflowAdvance::Transition { .. }
+            | PreparedWorkflowAdvance::AwaitingAssessment(_)
+            | PreparedWorkflowAdvance::AwaitingCondition(_)
+            | PreparedWorkflowAdvance::AwaitingEvidence { .. }
+            | PreparedWorkflowAdvance::AwaitingApproval { .. }
+            | PreparedWorkflowAdvance::ReplayOnly { .. } => {
+                return Err(WorthQueryWorkflowOperationAcceptanceDenial::NotAwaitingOperation)
+            }
+        };
+        if !same_requirement(prepared.required(), required) {
+            return Err(WorthQueryWorkflowOperationAcceptanceDenial::RequirementMismatch);
+        }
+        WorthQueryWorkflowAdvanceAdapter::compare_and_commit_recovered_operation::<
+            Schema,
+            Operation,
+            Input,
+            Scope,
+            Binding,
+        >(
+            self.application,
+            prepared,
+            receipt,
+            recovery,
+            self.idempotency,
+        )
         .map_err(WorthQueryWorkflowOperationAcceptanceDenial::Attempt)
     }
 }

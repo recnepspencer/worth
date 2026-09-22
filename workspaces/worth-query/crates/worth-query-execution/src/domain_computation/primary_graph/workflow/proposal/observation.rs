@@ -8,6 +8,10 @@ use crate::domain_computation::primary_graph::application_attempt::{
 };
 use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout;
 
+mod coverage;
+use coverage::observe_coverages;
+pub(in crate::domain_computation::primary_graph) use coverage::observe_workflow_proposal_coverage;
+
 pub(in crate::domain_computation::primary_graph) fn observe_workflow_operation_input(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
@@ -99,6 +103,23 @@ pub(in crate::domain_computation::primary_graph) fn observe_workflow_operation_i
     )?;
     let input_identity = decode_identity(&input_identity_text)
         .ok_or_else(|| denial("workflow operation input identity is malformed"))?;
+    let coverage_count = required_u64(
+        runtime,
+        snapshot,
+        proposal,
+        kind,
+        &layout.proposal.coverage_count,
+        &mut facts,
+    )?;
+    let coverages = observe_coverages(
+        runtime,
+        snapshot,
+        layout,
+        proposal,
+        usize::try_from(coverage_count)
+            .map_err(|_| denial("workflow proposal coverage count exceeds this host"))?,
+        &mut facts,
+    )?;
     let expected = super::derive_workflow_proposal(
         transition_identity,
         &operation,
@@ -106,6 +127,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_workflow_operation_i
         input_identity,
         source_identity,
         &node_path,
+        coverages,
     );
     if identity != expected.identity()
         || operation != expected_operation
@@ -118,6 +140,81 @@ pub(in crate::domain_computation::primary_graph) fn observe_workflow_operation_i
 }
 
 pub(in crate::domain_computation::primary_graph) fn observe_workflow_proposal(
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    layout: &WorthQueryWorkflowLayout,
+    transition: EntityId,
+    expected: &super::WorkflowProposalMeaning,
+) -> Result<Vec<WorthQueryApplicationObservedFact>, WorthQueryApplicationAttemptDenial> {
+    let direction = WorthQueryApplicationAdjacencyDirection::Outgoing;
+    let relations = observe_adjacency(
+        runtime,
+        snapshot,
+        layout.transition_proposal_relation,
+        transition,
+        direction,
+        2,
+    )
+    .ok_or_else(|| denial("workflow proposal relation is unavailable"))?;
+    let [relation] = relations.as_slice() else {
+        return Err(denial(
+            "workflow transition does not own exactly one proposal",
+        ));
+    };
+    let proposal = relation.to;
+    let kind = layout.proposal.entity_kind;
+    let expected_identity =
+        AspectValue::String(InternedString::Raw(expected.identity().to_owned()));
+    let value = observe_field_value(runtime, snapshot, proposal, kind, &layout.proposal.identity)
+        .ok_or_else(|| denial("workflow proposal identity is unavailable"))?;
+    if value != expected_identity {
+        return Err(denial("workflow proposal identity changed"));
+    }
+    let mut facts = vec![
+        WorthQueryApplicationObservedFact::Adjacency {
+            relation_kind: layout.transition_proposal_relation,
+            anchor: transition,
+            direction,
+            maximum_work_units: 2,
+            relations,
+        },
+        WorthQueryApplicationObservedFact::Entity {
+            entity_id: proposal,
+            kind,
+        },
+        WorthQueryApplicationObservedFact::Field {
+            entity_id: proposal,
+            kind,
+            locator: layout.proposal.identity.clone(),
+            value,
+        },
+    ];
+    let coverage_count = required_u64(
+        runtime,
+        snapshot,
+        proposal,
+        kind,
+        &layout.proposal.coverage_count,
+        &mut facts,
+    )?;
+    if usize::try_from(coverage_count).ok() != Some(expected.coverages.len()) {
+        return Err(denial("workflow proposal coverage count changed"));
+    }
+    let coverages = observe_coverages(
+        runtime,
+        snapshot,
+        layout,
+        proposal,
+        expected.coverages.len(),
+        &mut facts,
+    )?;
+    if coverages.as_slice() != expected.coverages.as_ref() {
+        return Err(denial("workflow proposal coverage changed"));
+    }
+    Ok(facts)
+}
+
+pub(in crate::domain_computation::primary_graph) fn observe_workflow_proposal_identity(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     layout: &WorthQueryWorkflowLayout,
@@ -196,6 +293,28 @@ fn required_text(
         value,
     });
     Ok(text)
+}
+
+fn required_u64(
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    entity: EntityId,
+    kind: worth_relational::facade::identity::KindId,
+    locator: &worth_foundational::facade::AspectFieldLocator,
+    facts: &mut Vec<WorthQueryApplicationObservedFact>,
+) -> Result<u64, WorthQueryApplicationAttemptDenial> {
+    let value = observe_field_value(runtime, snapshot, entity, kind, locator)
+        .ok_or_else(|| denial("workflow proposal numeric field is unavailable"))?;
+    let AspectValue::UInt64(number) = value else {
+        return Err(denial("workflow proposal numeric field has the wrong type"));
+    };
+    facts.push(WorthQueryApplicationObservedFact::Field {
+        entity_id: entity,
+        kind,
+        locator: locator.clone(),
+        value: AspectValue::UInt64(number),
+    });
+    Ok(number)
 }
 
 fn optional_identity(

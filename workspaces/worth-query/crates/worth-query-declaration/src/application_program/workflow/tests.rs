@@ -15,6 +15,7 @@ mod authoring;
 mod condition;
 mod retry;
 mod shape;
+mod subject_selector;
 mod validation;
 
 struct TestSchema;

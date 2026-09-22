@@ -33,7 +33,7 @@ where
             .allowed_graph_contract()
             .decision_fact_budget()
             .saturating_sub(self.facts.len().saturating_add(facts.len()));
-        let (proposal_identity, proposal_facts) = self.lease.handle().with_runtime(|runtime| {
+        let (proposal_entity, proposal_identity, proposal_facts) = self.lease.handle().with_runtime(|runtime| {
             super::super::workflow_instance_observation::observe_latest_workflow_proposal_identity(
                 runtime,
                 self.lease.snapshot(),
@@ -43,6 +43,16 @@ where
             )
         })?;
         facts.extend(proposal_facts);
+        let (coverage, coverage_facts) = self.lease.handle().with_runtime(|runtime| {
+            crate::domain_computation::primary_graph::workflow::proposal::observe_workflow_proposal_coverage(
+                runtime,
+                self.lease.snapshot(),
+                layout,
+                proposal_entity,
+                &assessment.subject,
+            )
+        })?;
+        facts.extend(coverage_facts);
         if let Some(evidence) =
             super::super::workflow_instance_observation::latest_assessment_evidence(
                 transitions,
@@ -59,7 +69,7 @@ where
                     "retained assessment evidence contract differs from its authored requirement",
                 ));
             }
-            if evidence.proposal_identity == proposal_identity {
+            if evidence.coverage_identity == coverage.identity {
                 let maximum_facts = self
                     .admission
                     .allowed_graph_contract()
@@ -92,6 +102,7 @@ where
                         retire_live_membership,
                         facts,
                         currentness,
+                        coverage.subject,
                     );
                 }
             }
@@ -108,7 +119,7 @@ where
             ));
         }
         self.facts.extend(facts);
-        let subject = self.admission.scope_entity_id();
+        let subject = coverage.subject;
         let admitted = admit_workflow_transition(
             self,
             selected,
@@ -124,6 +135,7 @@ where
             admitted.occurrence(),
             assessment,
             proposal_identity,
+            coverage.identity,
         );
         Ok(PreparedWorkflowAdvance::AwaitingAssessment(
             PreparedWorkflowAssessment {
@@ -147,6 +159,7 @@ where
         retire_live_membership: bool,
         facts: Vec<super::super::WorthQueryApplicationObservedFact>,
         currentness: Vec<super::super::WorthQueryApplicationObservedFact>,
+        subject: worth_relational::facade::identity::EntityId,
     ) -> Result<
         PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
         WorthQueryApplicationAttemptDenial,
@@ -164,7 +177,6 @@ where
         }
         self.facts.extend(facts);
         assessment::bind_currentness_facts(&mut self, &currentness, selected.node_path())?;
-        let subject = self.admission.scope_entity_id();
         let admitted = admit_workflow_transition(
             self,
             selected,

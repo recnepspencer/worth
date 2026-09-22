@@ -5,16 +5,16 @@ use super::{contract_space_exhausted, WorthQueryPrimaryGraphInstallationDenial};
 
 pub(super) fn allocate_platform_aspect_identities(
     catalog: &WorthQueryInstalledApplicationSchemaContractCatalog,
-) -> Result<[AspectIdentity; 14], WorthQueryPrimaryGraphInstallationDenial> {
+) -> Result<[AspectIdentity; 15], WorthQueryPrimaryGraphInstallationDenial> {
     allocate_after(catalog.maximum_aspect_identity())
 }
 
 fn allocate_after(
     maximum_application_identity: Option<AspectIdentity>,
-) -> Result<[AspectIdentity; 14], WorthQueryPrimaryGraphInstallationDenial> {
+) -> Result<[AspectIdentity; 15], WorthQueryPrimaryGraphInstallationDenial> {
     let maximum = maximum_application_identity.map_or(0, |identity| identity.0);
     let mut next = maximum;
-    let mut identities = [AspectIdentity(0); 14];
+    let mut identities = [AspectIdentity(0); 15];
     for identity in &mut identities {
         next = next.checked_add(1).ok_or_else(contract_space_exhausted)?;
         *identity = AspectIdentity(next);
@@ -49,15 +49,17 @@ mod tests {
                 AspectIdentity(12),
                 AspectIdentity(13),
                 AspectIdentity(14),
+                AspectIdentity(15),
             ]
         );
     }
 
     #[test]
-    fn maximum_minus_fourteen_is_the_last_successful_application_identity() {
+    fn maximum_minus_fifteen_is_the_last_successful_application_identity() {
         assert_eq!(
-            allocate_after(Some(AspectIdentity(u64::MAX - 14))).unwrap(),
+            allocate_after(Some(AspectIdentity(u64::MAX - 15))).unwrap(),
             [
+                AspectIdentity(u64::MAX - 14),
                 AspectIdentity(u64::MAX - 13),
                 AspectIdentity(u64::MAX - 12),
                 AspectIdentity(u64::MAX - 11),
@@ -77,8 +79,8 @@ mod tests {
     }
 
     #[test]
-    fn final_fourteen_identity_positions_deny_platform_allocation() {
-        for maximum in (u64::MAX - 13)..=u64::MAX {
+    fn final_fifteen_identity_positions_deny_platform_allocation() {
+        for maximum in (u64::MAX - 14)..=u64::MAX {
             let denial = allocate_after(Some(AspectIdentity(maximum))).unwrap_err();
             assert_eq!(
                 denial.kind(),

@@ -19,7 +19,7 @@ use crate::domain_computation::primary_graph::workflow::{
     },
     proposal::{
         derive_workflow_proposal, derive_workflow_proposal_context_identity,
-        observe_workflow_proposal, visit_workflow_proposal_facts,
+        observe_workflow_proposal, visit_workflow_proposal_facts, WorkflowProposalCoverageMeaning,
     },
 };
 
@@ -143,6 +143,7 @@ where
             }
             Err(error) => return Err(error),
         };
+        let coverages = self.proposal_coverages(&compiled, selected.node())?;
         let proposal = derive_workflow_proposal(
             selected.identity(),
             Operation::IDENTIFIER,
@@ -150,6 +151,7 @@ where
             input_identity,
             source_identity,
             selected.node_path(),
+            coverages,
         );
         let replay = !replay_facts.is_empty();
         facts.append(&mut replay_facts);
@@ -271,6 +273,7 @@ where
                 input_identity,
                 source_identity,
                 selected.node_path(),
+                self.proposal_coverages(compiled, selected.node())?,
             );
             let proposal_facts = self.lease.handle().with_runtime(|runtime| {
                 observe_workflow_proposal(
@@ -278,7 +281,7 @@ where
                     self.lease.snapshot(),
                     layout,
                     transition.entity,
-                    proposal.identity(),
+                    &proposal,
                 )
             });
             if let Ok(proposal_facts) = proposal_facts {
@@ -297,6 +300,26 @@ where
             ));
         };
         Ok((selected, proposal_facts))
+    }
+
+    fn proposal_coverages(
+        &self,
+        compiled: &crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowDefinition,
+        proposal_node: worth_relational::facade::identity::EntityId,
+    ) -> Result<Vec<WorkflowProposalCoverageMeaning>, WorthQueryApplicationAttemptDenial> {
+        compiled
+            .proposal_coverage_selectors(proposal_node)
+            .map_err(|_| denial("workflow proposal coverage targets are invalid"))?
+            .into_iter()
+            .map(|selector| {
+                self.admission
+                    .workflow_subject(&selector)
+                    .map(|subject| WorkflowProposalCoverageMeaning::new(selector, subject))
+                    .ok_or_else(|| {
+                        denial("workflow proposal subject is absent from admitted capability scope")
+                    })
+            })
+            .collect()
     }
 }
 

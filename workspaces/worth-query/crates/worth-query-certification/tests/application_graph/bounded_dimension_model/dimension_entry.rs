@@ -42,6 +42,7 @@ pub use candidate_tracking::{candidate_count, reset_candidate_count};
 
 /// The one part every host in this court seeds and both programs act on.
 pub const PART_IDENTITY: &str = "part-1";
+pub const RELATED_PART_IDENTITY: &str = "part-2";
 /// Reserved fixture value whose candidate-authoring count proves migration recovery does not replay.
 pub const MIGRATION_CANDIDATE_PROBE_DIMENSION: u64 = 17;
 

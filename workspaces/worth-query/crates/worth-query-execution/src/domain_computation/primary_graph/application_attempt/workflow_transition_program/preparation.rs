@@ -287,7 +287,49 @@ impl WorthQueryWorkflowAdvanceAdapter {
             Schema,
         >,
     {
-        prepared.resolve_operation_replay::<Binding>(runtime, required, receipt, idempotency)
+        prepared.resolve_operation_replay::<Binding>(runtime, required, receipt, idempotency, None)
+    }
+
+    pub fn resolve_recovered_operation_replay<Schema, Operation, Input, Scope, Binding>(
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        prepared: &PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
+        required: &super::RequiredWorkflowOperation,
+        receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+        recovery: &crate::domain_computation::application_aftermath::WorthQueryRecoverySafeRetryAdmission,
+        idempotency: WorthQueryApplicationIdempotencyBinding,
+    ) -> Result<
+        Option<WorkflowProgressOutcome>,
+        crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial,
+    >
+    where
+        Schema: ApplicationSchema,
+        Operation: 'static,
+        Input: Clone + Send + Sync + 'static,
+        Binding: worth_query_declaration::facade::application_operation::ApplicationMutationBinding<
+            Schema,
+        >,
+    {
+        prepared.resolve_operation_replay::<Binding>(
+            runtime,
+            required,
+            receipt,
+            idempotency,
+            Some(recovery),
+        )
+    }
+
+    pub fn operation_receipt_requires_recovery(
+        receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+    ) -> bool {
+        super::operation::operation_receipt_requires_recovery(receipt)
+    }
+
+    #[doc(hidden)]
+    pub fn recovery_request_matches_receipt(
+        request: WorthQueryApplicationIdempotencyBinding,
+        receipt: WorthQueryApplicationIdempotencyBinding,
+    ) -> bool {
+        receipt.matches_recovery_request(&request)
     }
 
     pub fn prepare<Schema, Capability, Operation, Input, Scope, Spec, Program>(

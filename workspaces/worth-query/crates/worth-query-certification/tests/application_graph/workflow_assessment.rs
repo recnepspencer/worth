@@ -14,6 +14,7 @@ use worth_query_host::facade::primary_graph::{
 
 use super::bounded_dimension_model::{
     assessment_output::PartAssessmentBinding,
+    dimension_entry::{PART_IDENTITY, RELATED_PART_IDENTITY},
     host::{publish_workflow_on_first_program, SEED_DIMENSION},
     presented_request::set_dimension,
     schema::Part,
@@ -21,7 +22,8 @@ use super::bounded_dimension_model::{
     workflow::{
         accept_assessment, advance_instance, assessment_join_terminal_definition,
         assessment_join_terminal_definition_with_policy, assessment_retry_definition,
-        propose_instance, publish_definition, reviewed_geometry_definition, settle_assessment,
+        multi_subject_assessment_retry_definition, propose_instance, publish_definition,
+        reviewed_geometry_definition, settle_assessment, settle_assessment_for,
         spoofed_assessment_denial, start_instance,
     },
 };
@@ -30,6 +32,8 @@ use super::bounded_dimension_model::{
 mod currentness;
 #[path = "workflow_assessment/join_policy.rs"]
 mod join_policy;
+#[path = "workflow_assessment/multi_subject_currentness.rs"]
+mod multi_subject_currentness;
 
 #[test]
 fn authenticated_advance_reconstructs_the_exact_required_assessment_without_settling_it() {

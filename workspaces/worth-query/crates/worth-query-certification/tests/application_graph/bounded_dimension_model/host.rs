@@ -25,7 +25,9 @@ use super::assessment_output::{
     PartAssessmentBinding, PartAssessmentHandler, PartAssessmentProducer, PartAssessmentProvider,
 };
 use super::assessment_readiness::PartAssessmentReadiness;
-use super::dimension_entry::{SetPartDimensionBinding, SetPartDimensionHandler, PART_IDENTITY};
+use super::dimension_entry::{
+    SetPartDimensionBinding, SetPartDimensionHandler, PART_IDENTITY, RELATED_PART_IDENTITY,
+};
 use super::programs::{
     validated_changed_feature_program, validated_changed_operation_program,
     validated_first_program, validated_first_resource_program, validated_foreign_rule_program,
@@ -230,6 +232,20 @@ fn seed_part(graph: &mut primary_graph::WorthQueryPrimaryGraphBootstrap<BoundedD
             .field(PartDimensionField::reference(), SEED_DIMENSION),
         )
         .expect("the part must seed");
+    graph
+        .bind_entity(
+            primary_graph::WorthQueryApplicationEntitySeed::new(
+                Part::reference(),
+                primary_graph::WorthQueryApplicationEntityKey::new("part-row-2")
+                    .expect("the related row key is valid"),
+            )
+            .field(
+                PartIdentityField::reference(),
+                RELATED_PART_IDENTITY.to_owned(),
+            )
+            .field(PartDimensionField::reference(), SEED_DIMENSION),
+        )
+        .expect("the related part must seed");
 }
 
 fn host_limits() -> WorthQueryInMemoryApplicationLimits {

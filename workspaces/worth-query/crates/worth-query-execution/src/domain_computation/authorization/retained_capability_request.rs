@@ -102,6 +102,21 @@ impl WorthQueryRetainedCapabilityRequest {
         &self.context
     }
 
+    pub(in crate::domain_computation) fn workflow_subject(
+        &self,
+        selector: &worth_query_declaration::facade::application_program::ApplicationWorkflowSubjectSelector,
+    ) -> Option<worth_relational::facade::identity::EntityId> {
+        use worth_query_declaration::facade::application_program::ApplicationWorkflowSubjectSelector;
+        match selector {
+            ApplicationWorkflowSubjectSelector::Resource => Some(self.resource),
+            ApplicationWorkflowSubjectSelector::Related => self.related,
+            ApplicationWorkflowSubjectSelector::Context(slot) => self
+                .context
+                .get(&WorthQueryCapabilityContextKey::from_slot(slot))
+                .copied(),
+        }
+    }
+
     pub(in crate::domain_computation::authorization) fn matches_elevated_request(
         &self,
         candidate: &Self,

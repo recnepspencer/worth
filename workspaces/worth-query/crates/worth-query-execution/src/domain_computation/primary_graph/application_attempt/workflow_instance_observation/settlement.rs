@@ -165,6 +165,14 @@ pub(super) fn observe_assessment_evidence(
         &layout.assessment_evidence.output_content_identity,
         facts,
     )?;
+    observed_text(
+        runtime,
+        snapshot,
+        evidence,
+        kind,
+        &layout.assessment_evidence.proposal_identity,
+        facts,
+    )?;
     for locator in [
         &layout.assessment_evidence.subject_partition,
         &layout.assessment_evidence.subject_slot,
@@ -215,12 +223,12 @@ pub(super) fn observe_assessment_evidence(
             &layout.assessment_evidence.passing,
             facts,
         )?,
-        proposal_identity: observed_text(
+        coverage_identity: observed_text(
             runtime,
             snapshot,
             evidence,
             kind,
-            &layout.assessment_evidence.proposal_identity,
+            &layout.assessment_evidence.coverage_identity,
             facts,
         )?,
         source_identity,

@@ -3,9 +3,9 @@ use worth_query_decl::facade::{
     worth_query_operation_reads,
 };
 use worth_query_host::facade::declaration::application_capability::{
-    ApplicationCapabilityEntitySelector, ApplicationCapabilityRequest,
-    ApplicationCapabilityRequestContext, ApplicationCapabilityRequestProjection,
-    ApplicationCapabilityRequestProjectionDenial,
+    ApplicationCapabilityEntitySelector, ApplicationCapabilityRelatedEntitySelector,
+    ApplicationCapabilityRequest, ApplicationCapabilityRequestContext,
+    ApplicationCapabilityRequestProjection, ApplicationCapabilityRequestProjectionDenial,
 };
 use worth_query_host::facade::declaration::application_program::{
     ApplicationWorkflowSpec, ApplicationWorkflowSpecIdentity,
@@ -24,7 +24,7 @@ use worth_query_host::facade::{
 };
 
 use super::super::{
-    dimension_entry::PART_IDENTITY,
+    dimension_entry::{PART_IDENTITY, RELATED_PART_IDENTITY},
     schema::{
         BoundedDimensionSchema, Part, PartIdentityField, Principal, SetPartDimensionInput,
         SetPartDimensionInputBinding,
@@ -52,6 +52,7 @@ worth_query_field!(pub WorkflowGrantDelegationLimitField for BoundedDimensionSch
 
 worth_query_relation!(pub WorkflowPartOwner in BoundedDimensionSchema, Principal => Part; integrity = same_context_unbounded_retain_dangling);
 worth_query_relation!(pub WorkflowGrantResource in BoundedDimensionSchema, WorkflowAuthoringGrant => Part; integrity = same_context_unbounded_retain_dangling);
+worth_query_relation!(pub WorkflowGrantRelated in BoundedDimensionSchema, WorkflowAuthoringGrant => Part; integrity = same_context_unbounded_retain_dangling);
 worth_query_relation!(pub WorkflowGrantParent in BoundedDimensionSchema, WorkflowAuthoringGrant => WorkflowAuthoringGrant; integrity = same_context_unbounded_retain_dangling);
 worth_query_relation!(pub WorkflowGrantGrantor in BoundedDimensionSchema, Principal => WorkflowAuthoringGrant; integrity = same_context_unbounded_retain_dangling);
 worth_query_relation!(pub WorkflowGrantGrantee in BoundedDimensionSchema, Principal => WorkflowAuthoringGrant; integrity = same_context_unbounded_retain_dangling);
@@ -106,7 +107,14 @@ impl ApplicationCapabilityRequest<BoundedDimensionSchema, WorkflowDefinitionAuth
             ApplicationCapabilityRequestContext::new(
                 WorkflowDefinitionAuthoringContext::reference(),
             ),
-        ))
+        )
+        .related_entity(ApplicationCapabilityRelatedEntitySelector::new(
+            WorkflowGrantRelated::reference(),
+            ApplicationCapabilityEntitySelector::new(
+                PartIdentityField::reference(),
+                encoded(RELATED_PART_IDENTITY.to_owned()),
+            ),
+        )))
     }
 }
 
@@ -182,6 +190,11 @@ pub(super) fn install_members(
         )
         .relation(
             WorkflowGrantResource::reference(),
+            WorkflowAuthoringGrant::reference(),
+            Part::reference(),
+        )
+        .relation(
+            WorkflowGrantRelated::reference(),
             WorkflowAuthoringGrant::reference(),
             Part::reference(),
         )
@@ -273,6 +286,14 @@ pub fn seed_authoring(graph: &mut WorthQueryPrimaryGraphBootstrap<BoundedDimensi
             entity_key::<Part>("part-row-1"),
         ))
         .expect("workflow grant resource must seed");
+    graph
+        .bind_relation(WorthQueryApplicationRelationSeed::new(
+            WorkflowGrantRelated::reference(),
+            "workflow-grant-related",
+            entity_key::<WorkflowAuthoringGrant>("workflow-authoring-grant"),
+            entity_key::<Part>("part-row-2"),
+        ))
+        .expect("workflow grant related subject must seed");
     graph
         .bind_relation(WorthQueryApplicationRelationSeed::new(
             WorkflowGrantGrantor::reference(),

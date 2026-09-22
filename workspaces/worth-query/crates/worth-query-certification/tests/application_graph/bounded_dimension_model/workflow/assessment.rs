@@ -43,6 +43,15 @@ pub fn settle_assessment(
     instance: worth_query_host::facade::application_entry::PublishedWorkflowInstanceRef,
     idempotency: u64,
 ) -> WorthQueryWorkflowAssessmentDemandSettlement<PartDimensionQuery> {
+    settle_assessment_for(application, instance, idempotency, PART_IDENTITY)
+}
+
+pub fn settle_assessment_for(
+    application: &BoundedDimensionWorkflowRuntime,
+    instance: worth_query_host::facade::application_entry::PublishedWorkflowInstanceRef,
+    idempotency: u64,
+    subject_identity: &str,
+) -> WorthQueryWorkflowAssessmentDemandSettlement<PartDimensionQuery> {
     let runtime = application.runtime();
     let scope = request_scope();
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
@@ -57,7 +66,7 @@ pub fn settle_assessment(
         .idempotency(&idempotency)
         .prepare_workflow_advance(application, instance)
         .expect("assessment-head workflow admission must succeed")
-        .into_assessment_demand(PartAssessmentDemand::new(PART_IDENTITY))
+        .into_assessment_demand(PartAssessmentDemand::new(subject_identity))
         .expect("the typed demand must match the installed assessment contract")
         .controls(WorthQueryOutputDemandControls::new(
             std::num::NonZeroUsize::new(512).unwrap(),

@@ -156,7 +156,41 @@ where
             self.admitted.subject(),
             self.admitted.read_set().lease.product().product_branch(),
             receipt,
+            None,
         )?;
+        self.settle_validated(receipt_identity)
+    }
+
+    pub(super) fn settle_recovered<Binding>(
+        self,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        receipt: &WorthQueryApplicationCommitReceipt,
+        recovery: &crate::domain_computation::application_aftermath::WorthQueryRecoverySafeRetryAdmission,
+    ) -> Result<
+        PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
+        WorthQueryApplicationAttemptDenial,
+    >
+    where
+        Binding: ApplicationMutationBinding<Schema>,
+    {
+        let receipt_identity = validate_operation_receipt::<Schema, Binding>(
+            runtime,
+            &self.required,
+            self.admitted.subject(),
+            self.admitted.read_set().lease.product().product_branch(),
+            receipt,
+            Some(recovery),
+        )?;
+        self.settle_validated(receipt_identity)
+    }
+
+    fn settle_validated(
+        self,
+        receipt_identity: [u8; 32],
+    ) -> Result<
+        PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
+        WorthQueryApplicationAttemptDenial,
+    > {
         let mut demand = super::PlatformEffectDemand::default();
         visit_workflow_operation_transition_facts(
             &self.layout,
@@ -219,6 +253,9 @@ pub(super) fn validate_operation_receipt<Schema, Binding>(
     subject: worth_relational::facade::identity::EntityId,
     branch: crate::basis::WorthQueryProductBranch,
     receipt: &WorthQueryApplicationCommitReceipt,
+    recovery: Option<
+        &crate::domain_computation::application_aftermath::WorthQueryRecoverySafeRetryAdmission,
+    >,
 ) -> Result<[u8; 32], WorthQueryApplicationAttemptDenial>
 where
     Schema: ApplicationSchema,
@@ -255,7 +292,31 @@ where
     {
         return Err(mismatch(required.node_path()));
     }
-    receipt_identity(receipt).ok_or_else(|| mismatch(required.node_path()))
+    validate_operation_receipt_custody(required.node_path(), receipt, recovery)
+}
+
+pub(super) fn operation_receipt_requires_recovery(
+    receipt: &WorthQueryApplicationCommitReceipt,
+) -> bool {
+    receipt.dispatch_outbox().is_some()
+        && !receipt
+            .external_dispatch()
+            .is_some_and(|dispatch| dispatch.is_external_completion())
+}
+
+fn validate_operation_receipt_custody(
+    node_path: &str,
+    receipt: &WorthQueryApplicationCommitReceipt,
+    recovery: Option<
+        &crate::domain_computation::application_aftermath::WorthQueryRecoverySafeRetryAdmission,
+    >,
+) -> Result<[u8; 32], WorthQueryApplicationAttemptDenial> {
+    if operation_receipt_requires_recovery(receipt)
+        && !recovery.is_some_and(|proof| proof.completes_receipt(receipt))
+    {
+        return Err(mismatch(node_path));
+    }
+    receipt_identity(receipt).ok_or_else(|| mismatch(node_path))
 }
 
 fn receipt_identity(receipt: &WorthQueryApplicationCommitReceipt) -> Option<[u8; 32]> {
@@ -280,3 +341,7 @@ fn denial(
 ) -> WorthQueryApplicationAttemptDenial {
     WorthQueryApplicationAttemptDenial::new(kind, subject)
 }
+
+#[cfg(test)]
+#[path = "operation/tests.rs"]
+mod tests;

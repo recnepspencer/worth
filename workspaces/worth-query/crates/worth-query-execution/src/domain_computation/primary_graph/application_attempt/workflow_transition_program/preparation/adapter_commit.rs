@@ -69,6 +69,28 @@ impl WorthQueryWorkflowAdvanceAdapter {
         Ok(runtime.compare_and_commit_workflow_advance(prepared, idempotency))
     }
 
+    pub fn compare_and_commit_recovered_operation<Schema, Operation, Input, Scope, Binding>(
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        prepared: super::super::PreparedWorkflowOperation<Schema, Operation, Input, Scope>,
+        receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+        recovery: &crate::domain_computation::application_aftermath::WorthQueryRecoverySafeRetryAdmission,
+        idempotency: WorthQueryApplicationIdempotencyBinding,
+    ) -> Result<
+        WorkflowProgressOutcome,
+        crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
+    >
+    where
+        Schema: ApplicationSchema,
+        Operation: 'static,
+        Input: Clone + Send + Sync + 'static,
+        Binding: worth_query_declaration::facade::application_operation::ApplicationMutationBinding<
+            Schema,
+        >,
+    {
+        let prepared = prepared.settle_recovered::<Binding>(runtime, receipt, recovery)?;
+        Ok(runtime.compare_and_commit_workflow_advance(prepared, idempotency))
+    }
+
     pub fn compare_and_commit<Schema, Operation, Input, Scope>(
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         prepared: PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,

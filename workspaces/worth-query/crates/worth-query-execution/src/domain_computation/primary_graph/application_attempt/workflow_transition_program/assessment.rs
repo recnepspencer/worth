@@ -206,7 +206,7 @@ where
         .product_branch();
     let valid = settlement.belongs_to(runtime)
         && source.source_root() == prepared.admitted.subject()
-        && source.query_identifier == prepared.required.query
+        && source.query_identifier == prepared.required.query()
         && source.selected_product_occurrence() == Some(receipt.product_branch().occurrence())
         && receipt.idempotency_binding().source_identity() == Some(source.idempotency_identity())
         && receipt.product_branch() == fresh_branch;
@@ -264,6 +264,7 @@ fn evidence_meaning<Query>(
         required.result_type(),
         required.binding(),
         required.proposal_identity(),
+        required.coverage_identity(),
         &source_identity,
         &publication_identity,
         &output_content_identity,
@@ -285,6 +286,7 @@ fn evidence_meaning<Query>(
         binding: required.binding().to_owned(),
         subject,
         proposal_identity: required.proposal_identity().to_owned(),
+        coverage_identity: required.coverage_identity().to_owned(),
         source_identity,
         passing,
         publication_identity,
@@ -318,6 +320,7 @@ fn projection_with_locator(
         binding: meaning.binding,
         subject: meaning.subject,
         proposal_identity: meaning.proposal_identity,
+        coverage_identity: meaning.coverage_identity,
         source_identity: meaning.source_identity,
         passing: meaning.passing,
         publication_identity: meaning.publication_identity,

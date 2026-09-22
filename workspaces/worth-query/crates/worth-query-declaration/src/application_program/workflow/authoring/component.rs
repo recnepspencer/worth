@@ -17,7 +17,7 @@ use super::{
 use crate::application_program::workflow::{
     ApplicationWorkflowComponentIdentity, ApplicationWorkflowDefinitionLimits,
     ApplicationWorkflowEvidenceJoinPolicy, ApplicationWorkflowNodeIdentity,
-    ApplicationWorkflowSpec,
+    ApplicationWorkflowSpec, ApplicationWorkflowSubjectSelector,
 };
 
 mod connections;
@@ -105,9 +105,23 @@ where
     where
         Query: ApplicationQueryMarkerIdentity<Spec::Schema> + 'static,
     {
+        self.assessment_for::<Query>(identity, ApplicationWorkflowSubjectSelector::Resource)
+    }
+
+    pub fn assessment_for<Query>(
+        &mut self,
+        identity: impl Into<String>,
+        subject: ApplicationWorkflowSubjectSelector,
+    ) -> Result<
+        ApplicationWorkflowComponentNodeRef<ApplicationWorkflowAssessmentNode>,
+        ApplicationWorkflowAuthoringDenial,
+    >
+    where
+        Query: ApplicationQueryMarkerIdentity<Spec::Schema> + 'static,
+    {
         self.require_node_capacity()?;
         self.graph
-            .assessment::<Query>(identity)
+            .assessment_for::<Query>(identity, subject)
             .map(|inner| ApplicationWorkflowComponentNodeRef {
                 inner,
                 owner: Arc::clone(&self.owner),

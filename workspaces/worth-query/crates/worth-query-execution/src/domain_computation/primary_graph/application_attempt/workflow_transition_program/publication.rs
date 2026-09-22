@@ -12,6 +12,8 @@ mod commit;
 mod evidence_readiness;
 #[path = "publication/operation.rs"]
 mod operation;
+#[path = "publication/required_assessment.rs"]
+mod required_assessment;
 #[path = "publication/transition_replay.rs"]
 mod transition_replay;
 pub use approval::{RequiredWorkflowApproval, WorkflowApprovalDecision};
@@ -19,6 +21,7 @@ pub use assessment_evidence::PerformedWorkflowAssessmentEvidence;
 pub(super) use commit::project;
 pub use evidence_readiness::RequiredWorkflowEvidence;
 pub use operation::{PreparedWorkflowOperation, RequiredWorkflowOperation};
+pub use required_assessment::RequiredWorkflowAssessment;
 pub use transition_replay::PreparedWorkflowTransitionReplay;
 
 #[must_use = "prepared workflow advance owns a live application attempt"]
@@ -122,6 +125,7 @@ pub struct PreparedWorkflowAssessmentProjection {
     pub(super) binding: String,
     pub(super) subject: worth_relational::facade::identity::EntityId,
     pub(super) proposal_identity: String,
+    pub(super) coverage_identity: String,
     pub(super) source_identity: String,
     pub(super) passing: bool,
     pub(super) publication_identity: String,
@@ -175,75 +179,6 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAssessment<Schema, Operati
 
     pub fn into_required(self) -> RequiredWorkflowAssessment {
         self.required
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct RequiredWorkflowAssessment {
-    pub(super) instance: worth_relational::facade::identity::EntityId,
-    pub(super) node_path: String,
-    pub(super) transition_identity: String,
-    pub(super) occurrence: u64,
-    pub(super) query: String,
-    pub(super) parameter_type: String,
-    pub(super) result_type: String,
-    pub(super) binding: String,
-    pub(super) proposal_identity: String,
-}
-
-impl RequiredWorkflowAssessment {
-    pub(in crate::domain_computation::primary_graph) fn from_selected(
-        instance: worth_relational::facade::identity::EntityId,
-        node_path: String,
-        transition_identity: String,
-        occurrence: u64,
-        selected: crate::domain_computation::primary_graph::workflow::instance::SelectedWorkflowAssessment,
-        proposal_identity: String,
-    ) -> Self {
-        Self {
-            instance,
-            node_path,
-            transition_identity,
-            occurrence,
-            query: selected.query,
-            parameter_type: selected.parameter_type,
-            result_type: selected.result_type,
-            binding: selected.binding,
-            proposal_identity,
-        }
-    }
-
-    pub const fn instance(&self) -> worth_relational::facade::identity::EntityId {
-        self.instance
-    }
-    pub fn node_path(&self) -> &str {
-        &self.node_path
-    }
-    pub fn transition_identity(&self) -> &str {
-        &self.transition_identity
-    }
-    pub const fn occurrence(&self) -> u64 {
-        self.occurrence
-    }
-
-    pub fn query(&self) -> &str {
-        &self.query
-    }
-
-    pub fn parameter_type(&self) -> &str {
-        &self.parameter_type
-    }
-
-    pub fn result_type(&self) -> &str {
-        &self.result_type
-    }
-
-    pub fn binding(&self) -> &str {
-        &self.binding
-    }
-
-    pub fn proposal_identity(&self) -> &str {
-        &self.proposal_identity
     }
 }
 

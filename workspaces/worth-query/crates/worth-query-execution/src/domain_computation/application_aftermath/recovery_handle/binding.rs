@@ -48,7 +48,7 @@ pub struct WorthQueryRecoveryHandleBinding {
 }
 
 impl WorthQueryRecoveryHandleBinding {
-    pub(super) fn from_receipt(
+    pub(in crate::domain_computation::application_aftermath) fn from_receipt(
         receipt: &WorthQueryApplicationCommitReceipt,
         expires_at_unix_ms: Option<u64>,
     ) -> Result<Self, WorthQueryRecoveryHandleDenial> {
