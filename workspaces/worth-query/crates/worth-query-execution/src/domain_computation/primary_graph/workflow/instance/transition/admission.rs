@@ -81,6 +81,9 @@ impl<Schema, Operation, Input, Scope> AdmittedWorkflowTransition<Schema, Operati
             self.occurrence,
             outcome,
             operation_receipt_identity,
+            self.identity.clone(),
+            self.identity_bytes,
+            self.node_path.clone(),
         )
     }
 

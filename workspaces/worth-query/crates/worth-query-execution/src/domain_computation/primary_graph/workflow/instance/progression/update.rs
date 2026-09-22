@@ -37,12 +37,21 @@ impl WorkflowTransitionProgressBasis {
         &self.progress
     }
 
+    pub(in crate::domain_computation::primary_graph) const fn replay_retention(
+        &self,
+    ) -> (WorkflowInstanceProgressKey, Option<VersionId>) {
+        (self.key, self.revision)
+    }
+
     pub(in crate::domain_computation::primary_graph) fn prepare(
         &self,
         node: EntityId,
         occurrence: u64,
         outcome: ApplicationWorkflowControlOutcome,
         operation_receipt_identity: Option<[u8; 32]>,
+        transition_identity: String,
+        transition_identity_bytes: [u8; 32],
+        node_path: String,
     ) -> Result<PreparedWorkflowProgressUpdate, WorthQueryApplicationAttemptDenial> {
         let settlement =
             SettledWorkflowTransition::new(node, occurrence, outcome, operation_receipt_identity);
@@ -53,7 +62,30 @@ impl WorkflowTransitionProgressBasis {
             source_revision: self.revision,
             source: self.progress.clone(),
             advanced,
+            replay: WorkflowTransitionReplayProjection {
+                identity: transition_identity,
+                identity_bytes: transition_identity_bytes,
+                node_path,
+                operation_receipt_identity,
+            },
         })
+    }
+}
+
+#[derive(Clone)]
+#[doc(hidden)]
+pub struct WorkflowTransitionReplayProjection {
+    pub(in crate::domain_computation::primary_graph) identity: String,
+    pub(in crate::domain_computation::primary_graph) identity_bytes: [u8; 32],
+    pub(in crate::domain_computation::primary_graph) node_path: String,
+    pub(in crate::domain_computation::primary_graph) operation_receipt_identity: Option<[u8; 32]>,
+}
+
+impl WorkflowTransitionReplayProjection {
+    pub(super) fn retained_charge_bytes(&self) -> usize {
+        std::mem::size_of::<Self>()
+            .saturating_add(self.identity.capacity())
+            .saturating_add(self.node_path.capacity())
     }
 }
 
@@ -64,6 +96,7 @@ pub struct PreparedWorkflowProgressUpdate {
     source_revision: Option<VersionId>,
     source: WorkflowInstanceProgress,
     advanced: WorkflowInstanceProgress,
+    replay: WorkflowTransitionReplayProjection,
 }
 
 impl PreparedWorkflowProgressUpdate {
@@ -83,6 +116,7 @@ impl PreparedWorkflowProgressUpdate {
             source_revision,
             source,
             advanced,
+            replay,
         } = self;
         retention.advance(
             key,
@@ -90,6 +124,7 @@ impl PreparedWorkflowProgressUpdate {
             &source,
             Some(committed_revision),
             advanced,
+            replay,
         )
     }
 }

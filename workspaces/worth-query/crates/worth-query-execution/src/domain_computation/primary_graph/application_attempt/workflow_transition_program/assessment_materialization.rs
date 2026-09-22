@@ -143,7 +143,7 @@ where
                 required,
                 layout: layout.clone(),
                 program_revision,
-                replays: Box::default(),
+                replays: Default::default(),
             },
         ))
     }
@@ -236,7 +236,7 @@ where
             progress_update: Some(progress_update),
             approval: None,
             approval_identity: None,
-            replays: Box::default(),
+            replays: Default::default(),
         })
     }
 }

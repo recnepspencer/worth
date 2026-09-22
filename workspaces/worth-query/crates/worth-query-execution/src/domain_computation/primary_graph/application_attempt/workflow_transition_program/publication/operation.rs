@@ -1,6 +1,6 @@
 use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
 
-use super::PreparedWorkflowTransitionReplay;
+use super::PreparedWorkflowTransitionReplays;
 
 pub struct PreparedWorkflowOperation<Schema, Operation, Input, Scope> {
     pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) admitted:
@@ -17,7 +17,7 @@ pub struct PreparedWorkflowOperation<Schema, Operation, Input, Scope> {
     pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) program_revision:
         ApplicationProgramRevision,
     pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) replays:
-        Box<[PreparedWorkflowTransitionReplay]>,
+        PreparedWorkflowTransitionReplays,
 }
 
 impl<Schema, Operation, Input, Scope> PreparedWorkflowOperation<Schema, Operation, Input, Scope> {

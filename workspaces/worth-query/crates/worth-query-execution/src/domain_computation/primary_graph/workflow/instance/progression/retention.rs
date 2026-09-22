@@ -2,7 +2,11 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use worth_relational::facade::identity::{EntityId, VersionId};
 
-use super::WorkflowInstanceProgress;
+use super::{WorkflowInstanceProgress, WorkflowTransitionReplayProjection};
+
+#[path = "retention/counters.rs"]
+mod counters;
+pub use counters::WorthQueryWorkflowInstanceProgressCounters;
 
 pub(super) const SHARD_COUNT: usize = 16;
 const TOTAL_RETAINED_CHARGE_BUDGET: usize = 16 * 1024 * 1024;
@@ -47,6 +51,7 @@ impl WorkflowInstanceProgressKey {
 struct RetainedWorkflowInstanceProgress {
     revision: Option<VersionId>,
     progress: WorkflowInstanceProgress,
+    replays: Vec<WorkflowTransitionReplayProjection>,
     retained_charge_bytes: usize,
     last_use: u64,
 }
@@ -117,6 +122,7 @@ impl WorkflowInstanceProgressRetention {
         key: WorkflowInstanceProgressKey,
         revision: Option<VersionId>,
         progress: WorkflowInstanceProgress,
+        replays: Vec<WorkflowTransitionReplayProjection>,
         reconstruction_transition_visits: usize,
     ) -> Result<(), WorkflowInstanceProgressRetentionDenial> {
         if self
@@ -135,7 +141,7 @@ impl WorkflowInstanceProgressRetention {
             self.counters.denials = self.counters.denials.saturating_add(1);
             return Err(WorkflowInstanceProgressRetentionDenial::RevisionCollision);
         }
-        self.store(key, revision, progress)?;
+        self.store(key, revision, progress, replays)?;
         self.counters.cold_retains = self.counters.cold_retains.saturating_add(1);
         self.counters.cold_reconstruction_transition_visits = self
             .counters
@@ -152,6 +158,7 @@ impl WorkflowInstanceProgressRetention {
         source: &WorkflowInstanceProgress,
         committed_revision: Option<VersionId>,
         advanced: WorkflowInstanceProgress,
+        replay: WorkflowTransitionReplayProjection,
     ) -> Result<(), WorkflowInstanceProgressRetentionDenial> {
         let Some(retained) = self.entries.get(&key) else {
             self.counters.incremental_misses = self.counters.incremental_misses.saturating_add(1);
@@ -170,7 +177,23 @@ impl WorkflowInstanceProgressRetention {
             self.counters.denials = self.counters.denials.saturating_add(1);
             return Err(WorkflowInstanceProgressRetentionDenial::RevisionCollision);
         }
-        self.store(key, committed_revision, advanced)?;
+        let advanced_charge = retained_charge_bytes(&advanced, &retained.replays)
+            .saturating_add(replay.retained_charge_bytes());
+        if advanced_charge > self.maximum_retained_charge_bytes {
+            self.counters.denials = self.counters.denials.saturating_add(1);
+            return Err(WorkflowInstanceProgressRetentionDenial::ByteBudgetExceeded);
+        }
+        let retained = self
+            .entries
+            .remove(&key)
+            .expect("continuous retained workflow progress remains present");
+        self.least_recently_used.remove(&(retained.last_use, key));
+        self.retained_charge_bytes = self
+            .retained_charge_bytes
+            .saturating_sub(retained.retained_charge_bytes);
+        let mut replays = retained.replays;
+        replays.push(replay);
+        self.store(key, committed_revision, advanced, replays)?;
         self.counters.incremental_advances = self.counters.incremental_advances.saturating_add(1);
         Ok(())
     }
@@ -180,10 +203,9 @@ impl WorkflowInstanceProgressRetention {
         key: WorkflowInstanceProgressKey,
         revision: Option<VersionId>,
         progress: WorkflowInstanceProgress,
+        replays: Vec<WorkflowTransitionReplayProjection>,
     ) -> Result<(), WorkflowInstanceProgressRetentionDenial> {
-        let retained_charge_bytes = std::mem::size_of::<WorkflowInstanceProgressKey>()
-            .saturating_add(std::mem::size_of::<RetainedWorkflowInstanceProgress>())
-            .saturating_add(progress.retained_charge_bytes());
+        let retained_charge_bytes = retained_charge_bytes(&progress, &replays);
         if retained_charge_bytes > self.maximum_retained_charge_bytes {
             self.counters.denials = self.counters.denials.saturating_add(1);
             return Err(WorkflowInstanceProgressRetentionDenial::ByteBudgetExceeded);
@@ -201,6 +223,7 @@ impl WorkflowInstanceProgressRetention {
             RetainedWorkflowInstanceProgress {
                 revision,
                 progress,
+                replays,
                 retained_charge_bytes,
                 last_use,
             },
@@ -222,6 +245,18 @@ impl WorkflowInstanceProgressRetention {
         self.least_recently_used.remove(&(retained.last_use, key));
         retained.last_use = last_use;
         self.least_recently_used.insert((last_use, key));
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn replays(
+        &mut self,
+        key: WorkflowInstanceProgressKey,
+        revision: Option<VersionId>,
+    ) -> Option<Box<[WorkflowTransitionReplayProjection]>> {
+        let retained = self.entries.get(&key)?;
+        if retained.revision != revision {
+            return None;
+        }
+        Some(retained.replays.clone().into_boxed_slice())
     }
 
     #[cfg(feature = "test-primary-graph-faults")]
@@ -289,94 +324,24 @@ impl WorkflowInstanceProgressRetention {
     }
 }
 
+fn retained_charge_bytes(
+    progress: &WorkflowInstanceProgress,
+    replays: &[WorkflowTransitionReplayProjection],
+) -> usize {
+    std::mem::size_of::<WorkflowInstanceProgressKey>()
+        .saturating_add(std::mem::size_of::<RetainedWorkflowInstanceProgress>())
+        .saturating_add(progress.retained_charge_bytes())
+        .saturating_add(
+            replays
+                .iter()
+                .map(WorkflowTransitionReplayProjection::retained_charge_bytes)
+                .sum::<usize>(),
+        )
+}
+
 impl Default for WorkflowInstanceProgressRetention {
     fn default() -> Self {
         Self::with_budget(TOTAL_RETAINED_CHARGE_BUDGET / SHARD_COUNT)
-    }
-}
-
-#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub struct WorthQueryWorkflowInstanceProgressCounters {
-    warm_hits: usize,
-    cold_misses: usize,
-    cold_retains: usize,
-    cold_reconstruction_transition_visits: usize,
-    incremental_advances: usize,
-    incremental_replays: usize,
-    incremental_misses: usize,
-    evictions: usize,
-    denials: usize,
-    releases: usize,
-    retained_charge_bytes: usize,
-    maximum_retained_charge_bytes: usize,
-}
-
-impl WorthQueryWorkflowInstanceProgressCounters {
-    pub const fn warm_hits(self) -> usize {
-        self.warm_hits
-    }
-    pub const fn cold_misses(self) -> usize {
-        self.cold_misses
-    }
-    pub const fn cold_retains(self) -> usize {
-        self.cold_retains
-    }
-    pub const fn cold_reconstruction_transition_visits(self) -> usize {
-        self.cold_reconstruction_transition_visits
-    }
-    pub const fn incremental_advances(self) -> usize {
-        self.incremental_advances
-    }
-    pub const fn incremental_replays(self) -> usize {
-        self.incremental_replays
-    }
-    pub const fn incremental_misses(self) -> usize {
-        self.incremental_misses
-    }
-    pub const fn evictions(self) -> usize {
-        self.evictions
-    }
-    pub const fn denials(self) -> usize {
-        self.denials
-    }
-    pub const fn releases(self) -> usize {
-        self.releases
-    }
-    /// Logical charge used by the bounded retention policy. It includes owned
-    /// values and a conservative per-entry/tree-node allowance; it is not a
-    /// process allocator or resident-set measurement.
-    pub const fn retained_charge_bytes(self) -> usize {
-        self.retained_charge_bytes
-    }
-    pub const fn maximum_retained_charge_bytes(self) -> usize {
-        self.maximum_retained_charge_bytes
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn absorb(&mut self, shard: Self) {
-        self.warm_hits = self.warm_hits.saturating_add(shard.warm_hits);
-        self.cold_misses = self.cold_misses.saturating_add(shard.cold_misses);
-        self.cold_retains = self.cold_retains.saturating_add(shard.cold_retains);
-        self.cold_reconstruction_transition_visits = self
-            .cold_reconstruction_transition_visits
-            .saturating_add(shard.cold_reconstruction_transition_visits);
-        self.incremental_advances = self
-            .incremental_advances
-            .saturating_add(shard.incremental_advances);
-        self.incremental_replays = self
-            .incremental_replays
-            .saturating_add(shard.incremental_replays);
-        self.incremental_misses = self
-            .incremental_misses
-            .saturating_add(shard.incremental_misses);
-        self.evictions = self.evictions.saturating_add(shard.evictions);
-        self.denials = self.denials.saturating_add(shard.denials);
-        self.releases = self.releases.saturating_add(shard.releases);
-        self.retained_charge_bytes = self
-            .retained_charge_bytes
-            .saturating_add(shard.retained_charge_bytes);
-        self.maximum_retained_charge_bytes = self
-            .maximum_retained_charge_bytes
-            .saturating_add(shard.maximum_retained_charge_bytes);
     }
 }
 

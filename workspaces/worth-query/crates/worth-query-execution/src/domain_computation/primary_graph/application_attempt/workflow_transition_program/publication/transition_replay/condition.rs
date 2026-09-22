@@ -33,7 +33,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                     .product_branch()
                     .occurrence(),
                 transition_identity_locator,
-                replays.as_ref(),
+                replays,
             ),
             Self::AwaitingAssessment(prepared) => (
                 &prepared.admitted.read_set().admission,
@@ -45,7 +45,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                     .product_branch()
                     .occurrence(),
                 &prepared.layout.transition.identity,
-                prepared.replays.as_ref(),
+                &prepared.replays,
             ),
             Self::AwaitingCondition(prepared) => (
                 &prepared.admitted.read_set().admission,
@@ -57,7 +57,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                     .product_branch()
                     .occurrence(),
                 &prepared.layout.transition.identity,
-                prepared.replays.as_ref(),
+                &prepared.replays,
             ),
             Self::AwaitingOperation(prepared) => (
                 &prepared.admitted.read_set().admission,
@@ -69,7 +69,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                     .product_branch()
                     .occurrence(),
                 &prepared.layout.transition.identity,
-                prepared.replays.as_ref(),
+                &prepared.replays,
             ),
             Self::AwaitingEvidence {
                 read_set,
@@ -92,9 +92,10 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                 &read_set.admission,
                 read_set.lease.product().product_branch().occurrence(),
                 transition_identity_locator,
-                replays.as_ref(),
+                replays,
             ),
         };
+        let replays = replays.materialize(runtime);
         let Some(replay) = replays
             .iter()
             .find(|replay| replay.identity == required.transition_identity())

@@ -11,6 +11,7 @@ use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationCommitOutcome, WorthQueryApplicationOutputRole,
     WorthQueryOutputDemandDenialKind, WorthQueryPreserveOutput,
 };
+use worth_query_replay::facade::WorthQueryCertificationCostRuntimeExt;
 
 use super::bounded_dimension_model::{
     assessment_output::PartAssessmentBinding,
@@ -217,6 +218,10 @@ fn authenticated_advance_reconstructs_the_exact_required_assessment_without_sett
         }
         other => panic!("expected the evidence join replay, got {other:?}"),
     }
+    let fresh_head_cost = application
+        .runtime()
+        .capture_certification_cost_scope(started.instance().branch())
+        .expect("the workflow branch admits cost observation");
     match advance_instance(&application, started.instance().clone(), 454)
         .expect("the successor must remain reconstructible after the join settles")
     {
@@ -229,6 +234,15 @@ fn authenticated_advance_reconstructs_the_exact_required_assessment_without_sett
         }
         other => panic!("expected the exact approval requirement, got {other:?}"),
     }
+    let fresh_head_cost = application
+        .runtime()
+        .observe_certification_cost(&fresh_head_cost)
+        .expect("the workflow branch remains available for cost observation");
+    assert_eq!(
+        fresh_head_cost.application_work().retained_resolutions(),
+        1,
+        "a fresh current-head key probes once instead of resolving three historical transitions",
+    );
 
     let foreign_definition = match publish_definition(
         &application,

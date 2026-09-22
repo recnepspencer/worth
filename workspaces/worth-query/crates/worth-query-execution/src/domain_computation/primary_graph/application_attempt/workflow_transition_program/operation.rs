@@ -128,7 +128,7 @@ where
                 required,
                 layout: layout.clone(),
                 program_revision: compiled.program_revision().clone(),
-                replays: Box::default(),
+                replays: Default::default(),
             },
         ))
     }

@@ -73,6 +73,10 @@ impl SelectedWorkflowTransition {
         &self.identity
     }
 
+    pub(in crate::domain_computation::primary_graph) const fn identity_bytes(&self) -> &[u8; 32] {
+        &self.identity_bytes
+    }
+
     pub(in crate::domain_computation::primary_graph) const fn occurrence(&self) -> u64 {
         self.occurrence
     }

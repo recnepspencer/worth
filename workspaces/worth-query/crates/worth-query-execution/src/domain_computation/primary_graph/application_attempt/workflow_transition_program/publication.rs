@@ -22,7 +22,7 @@ pub(super) use commit::project;
 pub use evidence_readiness::RequiredWorkflowEvidence;
 pub use operation::{PreparedWorkflowOperation, RequiredWorkflowOperation};
 pub use required_assessment::RequiredWorkflowAssessment;
-pub use transition_replay::PreparedWorkflowTransitionReplay;
+pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) use transition_replay::PreparedWorkflowTransitionReplays;
 
 #[must_use = "prepared workflow advance owns a live application attempt"]
 pub enum PreparedWorkflowAdvance<Schema, Operation, Input, Scope> {
@@ -43,7 +43,7 @@ pub enum PreparedWorkflowAdvance<Schema, Operation, Input, Scope> {
         >,
         approval: Option<PreparedWorkflowApprovalProjection>,
         approval_identity: Option<[u8; 32]>,
-        replays: Box<[PreparedWorkflowTransitionReplay]>,
+        replays: PreparedWorkflowTransitionReplays,
     },
     AwaitingAssessment(PreparedWorkflowAssessment<Schema, Operation, Input, Scope>),
     AwaitingCondition(PreparedWorkflowCondition<Schema, Operation, Input, Scope>),
@@ -60,7 +60,7 @@ pub enum PreparedWorkflowAdvance<Schema, Operation, Input, Scope> {
         assessment_identity_locator: worth_foundational::facade::AspectFieldLocator,
         instance: worth_relational::facade::identity::EntityId,
         required: RequiredWorkflowEvidence,
-        replays: Box<[PreparedWorkflowTransitionReplay]>,
+        replays: PreparedWorkflowTransitionReplays,
     },
     AwaitingApproval {
         read_set: super::super::WorthQueryCompleteApplicationReadSet<
@@ -74,7 +74,7 @@ pub enum PreparedWorkflowAdvance<Schema, Operation, Input, Scope> {
         assessment_identity_locator: worth_foundational::facade::AspectFieldLocator,
         instance: worth_relational::facade::identity::EntityId,
         required: RequiredWorkflowApproval,
-        replays: Box<[PreparedWorkflowTransitionReplay]>,
+        replays: PreparedWorkflowTransitionReplays,
     },
     ReplayOnly {
         read_set: super::super::WorthQueryCompleteApplicationReadSet<
@@ -89,7 +89,7 @@ pub enum PreparedWorkflowAdvance<Schema, Operation, Input, Scope> {
         instance: worth_relational::facade::identity::EntityId,
         approval: Option<PreparedWorkflowApprovalProjection>,
         approval_identity: Option<[u8; 32]>,
-        replays: Box<[PreparedWorkflowTransitionReplay]>,
+        replays: PreparedWorkflowTransitionReplays,
         denial: super::super::WorthQueryApplicationAttemptDenial,
     },
 }
@@ -147,7 +147,7 @@ pub struct PreparedWorkflowAssessment<Schema, Operation, Input, Scope> {
     pub(super) layout:
         crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
     pub(super) program_revision: ApplicationProgramRevision,
-    pub(super) replays: Box<[PreparedWorkflowTransitionReplay]>,
+    pub(super) replays: PreparedWorkflowTransitionReplays,
 }
 
 pub struct PreparedWorkflowCondition<Schema, Operation, Input, Scope> {
@@ -162,7 +162,7 @@ pub struct PreparedWorkflowCondition<Schema, Operation, Input, Scope> {
     pub(super) layout:
         crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
     pub(super) program_revision: ApplicationProgramRevision,
-    pub(super) replays: Box<[PreparedWorkflowTransitionReplay]>,
+    pub(super) replays: PreparedWorkflowTransitionReplays,
 }
 
 impl<Schema, Operation, Input, Scope> PreparedWorkflowCondition<Schema, Operation, Input, Scope> {

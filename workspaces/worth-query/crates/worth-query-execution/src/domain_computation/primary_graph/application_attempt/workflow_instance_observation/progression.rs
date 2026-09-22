@@ -1,15 +1,16 @@
-use worth_relational::facade::identity::VersionId;
+use worth_relational::facade::identity::{EntityId, VersionId};
 use worth_relational::facade::runtime::RelationalAdjacencyDirection;
 
 use super::{
-    denial, PublishedWorkflowInstanceRef, SettledWorkflowTransition,
+    denial, ObservedWorkflowTransition, PublishedWorkflowInstanceRef, SettledWorkflowTransition,
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
     WorthQueryApplicationObservedFact,
 };
 use crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowDefinition;
 use crate::domain_computation::primary_graph::workflow::instance::{
-    WorkflowInstanceProgress, WorkflowInstanceProgressKey, WorkflowInstanceProgressRetentionDenial,
-    WorkflowTransitionProgressBasis,
+    select_settled_replay_transition, WorkflowInstanceProgress, WorkflowInstanceProgressKey,
+    WorkflowInstanceProgressRetentionDenial, WorkflowTransitionProgressBasis,
+    WorkflowTransitionReplayProjection,
 };
 use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle;
@@ -18,6 +19,26 @@ pub(super) struct WorkflowProgressObservation {
     key: WorkflowInstanceProgressKey,
     revision: Option<VersionId>,
     retained: Option<WorkflowInstanceProgress>,
+}
+
+pub(super) fn project_replays(
+    compiled: &CompiledWorkflowDefinition,
+    instance: EntityId,
+    transitions: &[ObservedWorkflowTransition],
+) -> Result<Vec<WorkflowTransitionReplayProjection>, WorthQueryApplicationAttemptDenial> {
+    transitions
+        .iter()
+        .map(|transition| {
+            select_settled_replay_transition(compiled, instance, transition.settlement).map(
+                |selected| WorkflowTransitionReplayProjection {
+                    identity: selected.identity().to_owned(),
+                    identity_bytes: *selected.identity_bytes(),
+                    node_path: selected.node_path().to_owned(),
+                    operation_receipt_identity: transition.settlement.operation_receipt_identity(),
+                },
+            )
+        })
+        .collect()
 }
 
 pub(super) fn observe_progress(
@@ -70,8 +91,15 @@ pub(super) fn finish_progress(
     observation: WorkflowProgressObservation,
     compiled: &CompiledWorkflowDefinition,
     settlements: &mut [SettledWorkflowTransition],
+    replays: Vec<WorkflowTransitionReplayProjection>,
     reconstruction_transition_visits: usize,
-) -> Result<WorkflowTransitionProgressBasis, WorthQueryApplicationAttemptDenial> {
+) -> Result<
+    (
+        WorkflowTransitionProgressBasis,
+        Vec<WorkflowTransitionReplayProjection>,
+    ),
+    WorthQueryApplicationAttemptDenial,
+> {
     let progress = match observation.retained {
         Some(progress) => progress,
         None => {
@@ -82,6 +110,7 @@ pub(super) fn finish_progress(
                         observation.key,
                         observation.revision,
                         progress.clone(),
+                        replays.clone(),
                         reconstruction_transition_visits,
                     )
                 })
@@ -89,11 +118,14 @@ pub(super) fn finish_progress(
             progress
         }
     };
-    Ok(WorkflowTransitionProgressBasis::new(
-        observation.key,
-        observation.revision,
-        compiled.clone(),
-        progress,
+    Ok((
+        WorkflowTransitionProgressBasis::new(
+            observation.key,
+            observation.revision,
+            compiled.clone(),
+            progress,
+        ),
+        replays,
     ))
 }
 

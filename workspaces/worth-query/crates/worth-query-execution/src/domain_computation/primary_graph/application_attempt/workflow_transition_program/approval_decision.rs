@@ -88,24 +88,10 @@ where
                 .unwrap_or(usize::MAX),
             )
         })?;
-        let replays = observed
-            .transitions
-            .iter()
-            .map(|transition| {
-                select_settled_replay_transition(
-                    &compiled,
-                    instance.entity_id(),
-                    transition.settlement,
-                )
-                .map(|selected| publication::PreparedWorkflowTransitionReplay {
-                    identity: selected.identity().to_owned(),
-                    identity_bytes: *selected.identity_bytes(),
-                    node_path: selected.node_path().to_owned(),
-                    operation_receipt_identity: transition.settlement.operation_receipt_identity(),
-                })
-            })
-            .collect::<Result<Vec<_>, _>>()?
-            .into_boxed_slice();
+        let replays = publication::PreparedWorkflowTransitionReplays::retained(
+            observed.progress_basis.replay_retention(),
+            std::mem::take(&mut observed.replays).into_boxed_slice(),
+        );
         let approval_node = validate_requirement_definition(&compiled, required)?;
         let evidence_currentness = validate_inputs::<Schema>(
             &compiled,
@@ -216,6 +202,7 @@ where
                 "approval requirement is stale or belongs to another transition",
             ));
         }
+        let replay_probe_identity = *selected.identity_bytes();
         facts.append(&mut observed.facts);
         if self.facts.len().saturating_add(facts.len())
             > self
@@ -251,7 +238,7 @@ where
             evidence_currentness,
             approval_projection,
         )
-        .map(|prepared| prepared.with_replays(replays))
+        .map(|prepared| prepared.with_replays(replays.with_probe_identity(replay_probe_identity)))
     }
 }
 
@@ -394,6 +381,6 @@ where
         progress_update: Some(progress_update),
         approval: Some(approval_projection),
         approval_identity: Some(meaning.identity),
-        replays: Box::default(),
+        replays: Default::default(),
     })
 }

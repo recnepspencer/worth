@@ -9,6 +9,7 @@ use super::{
 use crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowDefinition;
 use crate::domain_computation::primary_graph::workflow::instance::{
     SettledWorkflowTransition, WorkflowInstanceState, WorkflowTransitionProgressBasis,
+    WorkflowTransitionReplayProjection,
 };
 use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout;
 
@@ -29,6 +30,8 @@ pub(in crate::domain_computation::primary_graph::application_attempt) struct Obs
         Vec<WorthQueryApplicationObservedFact>,
     pub(in crate::domain_computation::primary_graph::application_attempt) progress_basis:
         WorkflowTransitionProgressBasis,
+    pub(in crate::domain_computation::primary_graph::application_attempt) replays:
+        Vec<WorkflowTransitionReplayProjection>,
 }
 
 pub(in crate::domain_computation::primary_graph::application_attempt) struct ObservedWorkflowTransition
@@ -276,11 +279,13 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         }
     }
     let reconstruction_transition_visits = settlements.len();
-    let progress_basis = progression::finish_progress(
+    let replay_projections = progression::project_replays(compiled, entity, &settled_transitions)?;
+    let (progress_basis, replays) = progression::finish_progress(
         handle,
         progress_observation,
         compiled,
         &mut settlements,
+        replay_projections,
         reconstruction_transition_visits,
     )?;
     Ok(ObservedWorkflowInstance {
@@ -288,6 +293,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         transitions: settled_transitions,
         facts,
         progress_basis,
+        replays,
     })
 }
 

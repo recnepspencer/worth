@@ -11,6 +11,7 @@ pub(in crate::domain_computation::primary_graph) use progression::{
     default_progress_retention_shards, PreparedWorkflowProgressUpdate, SettledWorkflowTransition,
     WorkflowInstanceProgress, WorkflowInstanceProgressKey, WorkflowInstanceProgressRetention,
     WorkflowInstanceProgressRetentionDenial, WorkflowTransitionProgressBasis,
+    WorkflowTransitionReplayProjection,
 };
 pub(in crate::domain_computation::primary_graph) use state::WorkflowInstanceState;
 pub(in crate::domain_computation::primary_graph) use transition::{

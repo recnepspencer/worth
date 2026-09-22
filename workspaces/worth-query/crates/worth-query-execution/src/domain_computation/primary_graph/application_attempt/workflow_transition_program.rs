@@ -125,24 +125,10 @@ where
                 .unwrap_or(usize::MAX),
             )
         })?;
-        let replays = observed
-            .transitions
-            .iter()
-            .map(|transition| {
-                select_settled_replay_transition(
-                    &compiled,
-                    instance.entity_id(),
-                    transition.settlement,
-                )
-                .map(|selected| publication::PreparedWorkflowTransitionReplay {
-                    identity: selected.identity().to_owned(),
-                    identity_bytes: *selected.identity_bytes(),
-                    node_path: selected.node_path().to_owned(),
-                    operation_receipt_identity: transition.settlement.operation_receipt_identity(),
-                })
-            })
-            .collect::<Result<Vec<_>, _>>()?
-            .into_boxed_slice();
+        let replays = publication::PreparedWorkflowTransitionReplays::retained(
+            observed.progress_basis.replay_retention(),
+            std::mem::take(&mut observed.replays).into_boxed_slice(),
+        );
         let (live_membership, retire_live_membership) = match observed.live_membership {
             Some(membership) => (membership, true),
             None => {
@@ -170,6 +156,7 @@ where
                         "settled workflow transition does not close the compiled terminal head",
                     ));
                 }
+                let replay_probe_identity = *selected.identity_bytes();
                 let (membership, mut settlement_facts) =
                     self.lease.handle().with_runtime(|runtime| {
                         super::workflow_instance_observation::recover_settled_live_membership(
@@ -187,7 +174,9 @@ where
                     .materialize_terminal_transition(
                         &layout, compiled, instance, selected, membership, false, facts,
                     )
-                    .map(|prepared| prepared.with_replays(replays));
+                    .map(|prepared| {
+                        prepared.with_replays(replays.with_probe_identity(replay_probe_identity))
+                    });
             }
         };
         let selected = match select_current_transition(
@@ -213,6 +202,7 @@ where
             }
             Err(denial) => return Err(denial),
         };
+        let replay_probe_identity = *selected.identity_bytes();
         facts.append(&mut observed.facts);
         let prepared = match selected.kind().clone() {
             SelectedWorkflowTransitionKind::Assessment(assessment) => self
@@ -273,7 +263,7 @@ where
                     operation,
                 ),
         }?;
-        Ok(prepared.with_replays(replays))
+        Ok(prepared.with_replays(replays.with_probe_identity(replay_probe_identity)))
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -354,7 +344,7 @@ where
             progress_update: None,
             approval: None,
             approval_identity: None,
-            replays: Box::default(),
+            replays: Default::default(),
         })
     }
 }

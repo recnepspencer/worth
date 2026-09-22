@@ -106,7 +106,7 @@ where
                 assessment_identity_locator: layout.assessment_evidence.identity.clone(),
                 instance: instance.entity_id(),
                 required,
-                replays: Box::default(),
+                replays: Default::default(),
             });
         }
         let satisfied = match policy {
@@ -212,7 +212,7 @@ where
             progress_update: Some(progress_update),
             approval: None,
             approval_identity: None,
-            replays: Box::default(),
+            replays: Default::default(),
         })
     }
 }

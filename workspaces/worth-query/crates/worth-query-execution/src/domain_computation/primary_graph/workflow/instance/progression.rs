@@ -18,6 +18,7 @@ pub(in crate::domain_computation::primary_graph) use retention::{
 };
 pub(in crate::domain_computation::primary_graph) use update::{
     PreparedWorkflowProgressUpdate, WorkflowTransitionProgressBasis,
+    WorkflowTransitionReplayProjection,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
