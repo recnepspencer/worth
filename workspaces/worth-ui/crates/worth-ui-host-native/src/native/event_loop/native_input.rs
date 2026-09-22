@@ -1,3 +1,4 @@
+use super::client_invocation::UiNativeEventLoopClientInvocation;
 use super::{
     UiNativeEventLoopApplication, UiNativeEventLoopClient, UiNativeEventLoopDirective,
     UiNativeEventLoopRunDenial, UiNativeObservationReadinessGrant,
@@ -92,19 +93,21 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
             return false;
         };
         let reachability = std::mem::take(&mut self.pending_input_reachability);
-        let directive = self.client.as_mut().and_then(|client| {
+        let directive = self.client_or_denied().and_then(|client| {
             client
-                .native_observations_ready(UiNativeObservationReadinessGrant::issued(
+                .invoke_native_observations_ready(UiNativeObservationReadinessGrant::issued(
                     grant.generation(),
                     reachability,
                 ))
-                .ok()
+                .map_err(UiNativeEventLoopRunDenial::ClientCallback)
         });
-        if directive.is_none() {
-            self.fail(event_loop, UiNativeEventLoopRunDenial::ApplicationDriver);
-            return true;
-        }
-        let directive = directive.expect("checked observation directive");
+        let directive = match directive {
+            Ok(directive) => directive,
+            Err(denial) => {
+                self.fail(event_loop, denial);
+                return true;
+            }
+        };
         let work_remains = self.shared.borrow().lifecycle.has_retained_observations()
             || !self.pending_input_reachability.is_empty();
         if work_remains {

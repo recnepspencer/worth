@@ -133,10 +133,24 @@ class NativePlatformLaneVerdictTests(TestCase):
         floor = lane.CERTIFIED_WORLD_FLOOR
         clean = {"passed": 82, "failed": 0, "ignored": 0}
 
-        self.assertEqual(lane.verdict(floor, clean, 0), "ok")
+        clean_scan = lane.ArtifactScan(1, [])
+
+        self.assertEqual(lane.verdict(floor, clean, 0, clean_scan), "ok")
         self.assertEqual(
-            lane.verdict(floor, clean, 0, ["executable_world-45841bd787a4c978"]),
+            lane.verdict(
+                floor, clean, 0, lane.ArtifactScan(1, ["executable_world-45841bd787a4c978"])
+            ),
             "instrumentation-residue",
+        )
+
+    def test_verdict_refuses_a_run_whose_residue_scan_looked_at_nothing(self) -> None:
+        """A scan that saw no artifact returns the same empty list as one that found none."""
+        floor = lane.CERTIFIED_WORLD_FLOOR
+        clean = {"passed": 82, "failed": 0, "ignored": 0}
+
+        self.assertEqual(lane.verdict(floor, clean, 0, lane.ArtifactScan(1, [])), "ok")
+        self.assertEqual(
+            lane.verdict(floor, clean, 0, lane.ArtifactScan(0, [])), "residue-scan-empty"
         )
 
     def test_residue_scan_names_only_the_world_artifacts_carrying_the_marker(self) -> None:
@@ -155,7 +169,13 @@ class NativePlatformLaneVerdictTests(TestCase):
 
             self.assertEqual(
                 lane.instrumentation_residue(Path(directory)),
-                ["executable_world-0000000000000001"],
+                lane.ArtifactScan(2, ["executable_world-0000000000000001"]),
+            )
+
+    def test_residue_scan_reports_looking_at_nothing(self) -> None:
+        with TemporaryDirectory() as directory:
+            self.assertEqual(
+                lane.instrumentation_residue(Path(directory)), lane.ArtifactScan(0, [])
             )
 
     def test_report_line_is_machine_readable(self) -> None:

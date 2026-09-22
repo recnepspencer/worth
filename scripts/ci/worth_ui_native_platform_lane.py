@@ -29,7 +29,7 @@ import sys
 import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Mapping, Sequence
+from typing import Any, Callable, Mapping, NamedTuple
 
 ROOT = Path(__file__).resolve().parents[2]
 MANIFEST = ROOT / "workspaces/worth-ui/Cargo.toml"
@@ -282,30 +282,46 @@ def carries_marker(artifact: Path, marker: bytes = INSTRUMENTATION_MARKER) -> bo
     return False
 
 
-def instrumentation_residue(directory: Path) -> list[str]:
+class ArtifactScan(NamedTuple):
+    """What the residue scan looked at, so nothing can be mistaken for nothing found."""
+
+    scanned: int
+    residue: list[str]
+
+
+def instrumentation_residue(directory: Path) -> ArtifactScan:
     """Built world artifacts still carrying temporary instrumentation.
 
     Cargo decides freshness from mtime, so a source file restored to its original
     bytes can also be restored to its original mtime, leaving an instrumented
     artifact permanently fresh. The tree then reads clean while every later run
     executes code that is not in it. Source cannot show that; the artifact can.
+
+    The count travels with the result because a scan that looked at nothing returns
+    the same empty list as a scan that found nothing, and a check whose own silence
+    reads as success is the failure it exists to prevent.
     """
-    deps = directory / "debug" / "deps"
-    return [
-        artifact.name
-        for artifact in sorted(deps.glob(f"{TEST_TARGET}-*"))
-        if not artifact.suffix and artifact.is_file() and carries_marker(artifact)
+    artifacts = [
+        artifact
+        for artifact in sorted((directory / "debug" / "deps").glob(f"{TEST_TARGET}-*"))
+        if not artifact.suffix and artifact.is_file()
     ]
+    return ArtifactScan(
+        len(artifacts), [artifact.name for artifact in artifacts if carries_marker(artifact)]
+    )
 
 
 def verdict(
     worlds_listed: int,
     result: dict[str, int] | None,
     cargo_exit: int,
-    residue: Sequence[str] = (),
+    scan: ArtifactScan | None = None,
 ) -> str:
-    if residue:
-        return "instrumentation-residue"
+    if scan is not None:
+        if scan.residue:
+            return "instrumentation-residue"
+        if scan.scanned == 0:
+            return "residue-scan-empty"
     if worlds_listed < CERTIFIED_WORLD_FLOOR:
         return "below-world-floor"
     if result is None:
@@ -350,10 +366,11 @@ def execute(
     result = parse_test_result(output)
     if result is not None:
         evidence.update(executed=result["passed"] + result["failed"], **result)
-    residue = instrumentation_residue(target_directory(environment))
-    for artifact in residue:
+    scan = instrumentation_residue(target_directory(environment))
+    for artifact in scan.residue:
         print(f"{REPORT_TAG} instrumentation residue: {artifact}", flush=True)
-    evidence["result"] = verdict(worlds_listed, result, cargo_exit, residue)
+    evidence["scanned"] = scan.scanned
+    evidence["result"] = verdict(worlds_listed, result, cargo_exit, scan)
     print(render_report(evidence), flush=True)
     if evidence["result"] == "ok":
         return 0, evidence

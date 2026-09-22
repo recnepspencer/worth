@@ -6,6 +6,7 @@ use super::UiNativeEventLoopCleanup;
 
 mod application_readiness;
 mod client_derived_state;
+mod client_failure;
 mod client_resources;
 mod client_shutdown;
 mod observation_readiness;
@@ -20,6 +21,9 @@ pub use application_readiness::{
 };
 pub use client_derived_state::{
     UiNativeClientDerivedStateLossClass, UiNativeClientDerivedStateReconstructionObservation,
+};
+pub use client_failure::{
+    UiNativeEventLoopClientCallback, UiNativeEventLoopClientDenial, UiNativeEventLoopClientFailure,
 };
 pub use client_resources::UiNativeClientResourceObservation;
 pub use client_shutdown::mounted_identity::UiNativeClientAuthoredMountedInstanceObservation;
@@ -41,10 +45,10 @@ pub trait UiNativeEventLoopClient {
     fn install_observation_clock(
         &mut self,
         clock: super::UiNativeObservationClock,
-    ) -> Result<(), UiNativeEventLoopClientFailure>;
+    ) -> Result<(), UiNativeEventLoopClientDenial>;
     fn observation_time_ready(
         &mut self,
-    ) -> Result<super::UiNativeObservationTimeProgress, UiNativeEventLoopClientFailure>;
+    ) -> Result<super::UiNativeObservationTimeProgress, UiNativeEventLoopClientDenial>;
 
     fn application_readiness_owner_count(&self) -> UiNativeApplicationReadinessOwnerCount {
         UiNativeApplicationReadinessOwnerCount::none()
@@ -52,40 +56,40 @@ pub trait UiNativeEventLoopClient {
     fn install_application_readiness(
         &mut self,
         ports: Vec<crate::UiNativeApplicationReadinessPort>,
-    ) -> Result<(), UiNativeEventLoopClientFailure> {
+    ) -> Result<(), UiNativeEventLoopClientDenial> {
         if ports.is_empty() {
             Ok(())
         } else {
-            Err(UiNativeEventLoopClientFailure::Rejected)
+            Err(UiNativeEventLoopClientDenial::Unsupported)
         }
     }
     fn application_readiness_ready(
         &mut self,
         _grant: UiNativeApplicationReadinessGrant,
-    ) -> Result<UiNativeEventLoopDirective, UiNativeEventLoopClientFailure> {
-        Err(UiNativeEventLoopClientFailure::Rejected)
+    ) -> Result<UiNativeEventLoopDirective, UiNativeEventLoopClientDenial> {
+        Err(UiNativeEventLoopClientDenial::Unsupported)
     }
     fn native_surface_ready(
         &mut self,
         grant: UiNativeReadinessGrant,
-    ) -> Result<UiNativeEventLoopDirective, UiNativeEventLoopClientFailure>;
+    ) -> Result<UiNativeEventLoopDirective, UiNativeEventLoopClientDenial>;
     fn redraw_ready(
         &mut self,
         grant: UiNativeReadinessGrant,
-    ) -> Result<UiNativeEventLoopDirective, UiNativeEventLoopClientFailure>;
+    ) -> Result<UiNativeEventLoopDirective, UiNativeEventLoopClientDenial>;
     fn physical_work_progressed(
         &mut self,
         _grant: UiNativePhysicalProgressGrant,
-    ) -> Result<UiNativeEventLoopDirective, UiNativeEventLoopClientFailure> {
+    ) -> Result<UiNativeEventLoopDirective, UiNativeEventLoopClientDenial> {
         Ok(UiNativeEventLoopDirective::Continue)
     }
     fn native_observations_ready(
         &mut self,
         grant: UiNativeObservationReadinessGrant,
-    ) -> Result<UiNativeEventLoopDirective, UiNativeEventLoopClientFailure>;
+    ) -> Result<UiNativeEventLoopDirective, UiNativeEventLoopClientDenial>;
     fn external_close_requested(
         &mut self,
-    ) -> Result<UiNativeEventLoopDirective, UiNativeEventLoopClientFailure> {
+    ) -> Result<UiNativeEventLoopDirective, UiNativeEventLoopClientDenial> {
         Ok(UiNativeEventLoopDirective::Close)
     }
     fn presentation_attribution(
@@ -101,11 +105,6 @@ pub struct UiNativePhysicalProgressGrant {
     presentation: Option<super::UiNativePhysicalPresentationCorrelation>,
     originating_presentation: Option<super::UiNativePhysicalPresentationCorrelation>,
     duplicate_presentation_observed: bool,
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum UiNativeEventLoopClientFailure {
-    Rejected,
 }
 
 impl UiNativePhysicalProgressGrant {
@@ -243,6 +242,10 @@ pub enum UiNativeEventLoopRunDenial {
     WindowCreation,
     GraphicsPreparation,
     ApplicationDriver,
+    /// The client refused a callback the loop invoked, named on both
+    /// axes. Distinct from `ApplicationDriver`, which stays the denial
+    /// for a driver that is absent rather than one that refused.
+    ClientCallback(UiNativeEventLoopClientFailure),
     PresentationDeadlineExpired,
     EventLoopRun,
     IncompleteCleanup,

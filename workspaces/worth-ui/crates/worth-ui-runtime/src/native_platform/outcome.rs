@@ -5,6 +5,10 @@ pub enum UiNativePlatformStopReason {
     WindowCreation,
     GraphicsPreparation,
     ApplicationDriver,
+    /// The client refused a callback the event loop invoked. Carries the
+    /// host's naming of both axes so a stop report says which callback
+    /// refused and why, rather than attributing every refusal to the driver.
+    ClientCallback(worth_ui_host_native::UiNativeEventLoopClientFailure),
     PresentationDeadlineExpired,
     EventLoopRun,
     IncompleteCleanup,
@@ -204,6 +208,9 @@ impl UiNativePlatformStopReport {
             }
             worth_ui_host_native::UiNativeEventLoopRunDenial::ApplicationDriver => {
                 UiNativePlatformStopReason::ApplicationDriver
+            }
+            worth_ui_host_native::UiNativeEventLoopRunDenial::ClientCallback(failure) => {
+                UiNativePlatformStopReason::ClientCallback(failure)
             }
             worth_ui_host_native::UiNativeEventLoopRunDenial::PresentationDeadlineExpired => {
                 UiNativePlatformStopReason::PresentationDeadlineExpired

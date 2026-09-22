@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use winit::event_loop::ActiveEventLoop;
 
+use super::client_invocation::UiNativeEventLoopClientInvocation;
 use super::{
     callback_thread, directive, pointer_position, window_port, UiNativeEventLoopApplication,
     UiNativeEventLoopClient, UiNativeEventLoopRunDenial, UiNativeOwnedWindow,
@@ -31,8 +32,9 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
             }
         };
         self.install_surface(window, device, surface, pointer_input);
-        let Some(directive) = self.surface_ready_directive() else {
-            return self.fail(event_loop, UiNativeEventLoopRunDenial::ApplicationDriver);
+        let directive = match self.surface_ready_directive() {
+            Ok(directive) => directive,
+            Err(denial) => return self.fail(event_loop, denial),
         };
         if directive::apply(event_loop, directive) {
             return event_loop.exit();
@@ -101,9 +103,14 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
         self.pointer_input = pointer_input;
     }
 
-    fn surface_ready_directive(&mut self) -> Option<super::UiNativeEventLoopDirective> {
+    fn surface_ready_directive(
+        &mut self,
+    ) -> Result<super::UiNativeEventLoopDirective, UiNativeEventLoopRunDenial> {
         let state = self.shared.borrow();
-        let surface = state.presentation_surface.as_ref()?;
+        let surface = state
+            .presentation_surface
+            .as_ref()
+            .ok_or(UiNativeEventLoopRunDenial::GraphicsPreparation)?;
         let preparation = {
             UiNativeReadinessGrant::issued(
                 0,
@@ -113,7 +120,9 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
             )
         };
         drop(state);
-        self.client.as_mut()?.native_surface_ready(preparation).ok()
+        self.client_or_denied()?
+            .invoke_native_surface_ready(preparation)
+            .map_err(UiNativeEventLoopRunDenial::ClientCallback)
     }
 }
 

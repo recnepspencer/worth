@@ -3,6 +3,7 @@ use std::rc::Rc;
 
 use winit::event_loop::ControlFlow;
 
+use super::client_invocation::UiNativeEventLoopClientInvocation;
 use super::{
     run_preflight, UiNativeEventLoopApplication, UiNativeEventLoopCleanup, UiNativeEventLoopClient,
     UiNativeEventLoopRunDenial, UiNativeEventLoopRunReport, UiNativeEventLoopStopReport,
@@ -33,13 +34,12 @@ impl WorthUiNativeEventLoop {
             loop_resources,
         } = preflight;
         let physical_clock = super::physical_clock::UiNativePhysicalEventClock::new();
-        if client
-            .install_observation_clock(physical_clock.observation_clock())
-            .is_err()
-            || client
-                .install_application_readiness(application_readiness_ports.into_vec())
-                .is_err()
-        {
+        let installed = client
+            .invoke_install_observation_clock(physical_clock.observation_clock())
+            .and_then(|()| {
+                client.invoke_install_application_readiness(application_readiness_ports.into_vec())
+            });
+        if let Err(failure) = installed {
             let mut expected = vec![
                 readiness_owner,
                 physical_readiness_owner,
@@ -50,7 +50,7 @@ impl WorthUiNativeEventLoop {
             return Err(stop_before_callbacks(
                 self.state,
                 client,
-                UiNativeEventLoopRunDenial::ApplicationDriver,
+                UiNativeEventLoopRunDenial::ClientCallback(failure),
             ));
         }
         event_loop.set_control_flow(ControlFlow::Wait);

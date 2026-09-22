@@ -1,5 +1,6 @@
 use winit::event_loop::ActiveEventLoop;
 
+use super::client_invocation::UiNativeEventLoopClientInvocation;
 use super::{
     UiNativeApplicationReadinessGrant, UiNativeEventLoopApplication, UiNativeEventLoopClient,
     UiNativeEventLoopRunDenial,
@@ -18,18 +19,19 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
             };
             let physical_tick = self.physical_clock.current_tick();
             let reduced_motion = crate::native::platform::observe_reduced_motion_posture();
-            let directive = self.client.as_mut().and_then(|client| {
+            let directive = self.client_or_denied().and_then(|client| {
                 client
-                    .application_readiness_ready(UiNativeApplicationReadinessGrant::issued(
+                    .invoke_application_readiness_ready(UiNativeApplicationReadinessGrant::issued(
                         owner_ordinal,
                         ready.generation(),
                         physical_tick,
                         reduced_motion,
                     ))
-                    .ok()
+                    .map_err(UiNativeEventLoopRunDenial::ClientCallback)
             });
-            let Some(directive) = directive else {
-                return self.fail(event_loop, UiNativeEventLoopRunDenial::ApplicationDriver);
+            let directive = match directive {
+                Ok(directive) => directive,
+                Err(denial) => return self.fail(event_loop, denial),
             };
             // An application readiness callback can submit text-atlas or
             // presentation work through the runtime shell. Probe the physical
