@@ -84,8 +84,8 @@ fn report(
         port_crossings: 2,
         production_cost: Default::default(),
         cost: Default::default(),
-        alpha_glyphs: Box::new([]),
-        intrinsic_glyphs: Box::new([]),
+        alpha_glyphs: std::sync::Arc::from([]),
+        intrinsic_glyphs: std::sync::Arc::from([]),
     });
     UiNativeRetainedFrameObservation::observed(
         frame.diagnostic_value(),
@@ -96,7 +96,7 @@ fn report(
         Default::default(),
         2,
         Some(observation),
-        Box::new([]),
-        Box::new([]),
+        std::sync::Arc::from([]),
+        std::sync::Arc::from([]),
     )
 }

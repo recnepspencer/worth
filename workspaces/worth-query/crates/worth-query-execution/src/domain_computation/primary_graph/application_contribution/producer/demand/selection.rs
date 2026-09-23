@@ -36,16 +36,45 @@ where
             ));
         };
         let output_bindings = self.installed_producers.family_output_bindings::<Family>();
-        let (candidates, lineage_work) = self
+        let scope = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(source.source_root());
+        let mut lineage = self
             .primary_provider
             .graph
             .output_lineage
             .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        for recovered in &self.recovered_outputs {
+            let checkpoint = &recovered.checkpoint;
+            let Some(binding) = recovered.correspondence.binding_type() else {
+                continue;
+            };
+            if checkpoint.scope != scope
+                || checkpoint.source_partition != source.partition_identity()
+                || !output_bindings.contains(&binding)
+            {
+                continue;
+            }
+            lineage.record_recovered_prior_output(
+                binding,
+                self.runtime.authority_identity().as_u64(),
+                self.installed_schema.binding_identity(),
+                scope,
+                observation.lifecycle_incarnation(),
+                observation.reference_generation().get(),
+                std::sync::Arc::clone(&recovered.correspondence),
+                crate::domain_computation::primary_graph::output_lineage::RecordedSourceIdentity::Checkpoint(
+                    crate::domain_computation::primary_graph::application_query::WorthQueryCheckpointSourceIdentity::new(checkpoint.source),
+                ),
+                checkpoint.source_partition,
+                checkpoint.producer_dependency,
+                checkpoint.idempotency_key,
+            );
+        }
+        let (candidates, lineage_work) = lineage
             .retained_output_candidates(
                 self.runtime.authority_identity().as_u64(),
                 &self.installed_schema.binding_identity(),
-                crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(source.source_root()),
+                scope,
                 observation.lifecycle_incarnation(),
                 observation.reference_generation().get(),
                 &output_bindings,
@@ -53,13 +82,14 @@ where
                 maximum_work,
             )
             .map_err(|()| selection_budget_denial(Family::IDENTITY))?;
+        drop(lineage);
         let mut live_candidates = Vec::new();
-        for (binding, correspondence, source_identity, source_facts) in candidates {
+        for candidate in candidates {
             let role = self
                 .installed_producers
-                .family_output_role::<Family>(binding)?;
-            if let Some(entity) = correspondence.active_entity_for_role(role) {
-                live_candidates.push((binding, entity, source_identity, source_facts));
+                .family_output_role::<Family>(candidate.binding)?;
+            if let Some(entity) = candidate.correspondence.active_entity_for_role(role) {
+                live_candidates.push((candidate, entity));
             }
         }
         if !live_candidates.is_empty() {
@@ -103,14 +133,21 @@ where
                     })?;
                 let mut remaining_work = maximum_work - required_work;
                 let mut current = Vec::with_capacity(live_candidates.len());
-                for (_, entity, identity, facts) in &live_candidates {
+                for (candidate, entity) in &live_candidates {
                     let live = view.entity_record_with_projection_scope(
                         *entity,
                         ProjectionAspectScope::empty(),
                         |record| Some(record.lifecycle()),
                     ) == Some(RecordLifecycleState::Live);
-                    let mut facts_current = live;
-                    if live && *identity == Some(source.idempotency_identity()) {
+                    let identity_current = candidate.source_identity.is_some_and(|identity| {
+                        match identity {
+                            crate::domain_computation::primary_graph::output_lineage::RecordedSourceIdentity::Runtime(runtime) => runtime == source.idempotency_identity(),
+                            crate::domain_computation::primary_graph::output_lineage::RecordedSourceIdentity::Checkpoint(checkpoint) => checkpoint == source.checkpoint_identity(),
+                        }
+                    });
+                    let mut facts_current = live && identity_current;
+                    if facts_current {
+                        if let Some(facts) = &candidate.observed_source_facts {
                         for fact in facts.iter() {
                             let (equal, work) = fact
                                 .source_currentness_in(
@@ -135,20 +172,24 @@ where
                                 break;
                             }
                         }
+                        } else if !matches!(candidate.source_identity, Some(crate::domain_computation::primary_graph::output_lineage::RecordedSourceIdentity::Checkpoint(_))) {
+                            facts_current = false;
+                        }
                     }
                     current.push((live, facts_current));
                 }
                 Ok::<_, WorthQueryOutputDemandDenial>(current)
             })?;
             let mut retained_output = false;
-            for ((binding, _, identity, _), (live, facts_current)) in
-                live_candidates.into_iter().zip(current)
+            for ((candidate, _), (live, facts_current)) in live_candidates.into_iter().zip(current)
             {
                 if !live {
                     continue;
                 }
-                if identity == Some(source.idempotency_identity()) && facts_current {
-                    return self.installed_producers.select_exact::<Family>(binding);
+                if facts_current {
+                    return self
+                        .installed_producers
+                        .select_exact::<Family>(candidate.binding);
                 }
                 retained_output = true;
             }

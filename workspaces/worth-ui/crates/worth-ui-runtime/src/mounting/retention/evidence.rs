@@ -1,3 +1,5 @@
+mod hit_scroll_refresh;
+
 use worth_ui_host_contract::{
     UiHostPresentationEpoch, UiMountedFrameIdentity, UiMountedInstanceIdentity,
     UiMountedNodeReceiptIdentity, UiSurfaceBindingGeneration,

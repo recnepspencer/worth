@@ -8,7 +8,17 @@ impl WorthUiActiveApplicationSession {
             .is_some_and(|scroll| scroll.has_mounted_ownership())
         {
             self.reconcile_published_scroll_owners();
+            // Reconciling bounds is where an owner's extent can collapse, and
+            // a collapsed extent retires the target it left nowhere to reach.
+            // The motion that target was driving ends here, in the same
+            // reconciliation, so no frame settles content that has no room.
+            self.settle_scroll_motion_without_a_target();
         }
+        if let Some(scroll) = self.scroll.as_mut() {
+            scroll.retire_stale_direct_successions();
+        }
+        self.mounted
+            .reconcile_direct_scroll_evidence(self.scroll.as_ref());
         if self
             .selection
             .as_ref()
@@ -24,7 +34,10 @@ impl WorthUiActiveApplicationSession {
             .scroll
             .as_ref()
             .expect("mounted Scroll ownership was checked above")
-            .ownership_instances();
+            .ownership_instances()
+            // Gathered before the walk: retiring an instance the mounted state
+            // no longer names changes the catalog this walk reads.
+            .collect::<Vec<_>>();
         for mounted_instance in mounted_instances {
             let Some(target) = self
                 .mounted

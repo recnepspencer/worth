@@ -172,6 +172,22 @@ impl ReservedPhysicalWalGroupMembers {
         self.0
     }
 
+    pub(super) fn retained_publication_bytes(&self) -> u64 {
+        self.0.as_slice().iter().fold(0, |total, member| {
+            let mutation = member.mutation();
+            let wal = mutation.encoded_frame().len() as u64;
+            let metadata = mutation
+                .root_projection()
+                .retained_publication_metadata_bytes();
+            total.saturating_add(wal).saturating_add(metadata)
+        })
+    }
+
+    pub(super) fn publication_segment(&self) -> (u64, u64) {
+        let frontier = self.resulting_frontier();
+        (frontier.segment().get(), frontier.generation().get())
+    }
+
     fn resulting_frontier(&self) -> WalAppendFrontier {
         self.0
             .as_slice()

@@ -141,6 +141,11 @@ impl PhysicalWalGroupBarrierPort {
                 RecordSchedulerReservationDenial::Admission(denial) => {
                     PhysicalWalGroupBarrierFailureCause::SchedulerReservationDenied(denial)
                 }
+                RecordSchedulerReservationDenial::OwedBackgroundTurn => {
+                    PhysicalWalGroupBarrierFailureCause::Scheduler(
+                        crate::physical_runtime::PhysicalSchedulerDenial::OwedBackgroundTurn,
+                    )
+                }
             })?;
         let demand = PhysicalSchedulerDemand::foreground(ready, reservation, None)
             .map_err(PhysicalWalGroupBarrierFailureCause::Scheduler)?;
@@ -152,7 +157,7 @@ impl PhysicalWalGroupBarrierPort {
         .map_err(PhysicalWalGroupBarrierFailureCause::PreEffect)?;
         let policy =
             crate::physical_runtime::record_serving::admit_record_queue_policy(demand.queue_work());
-        let work = PhysicalWorkScheduler::admit(demand, &backend, policy)
+        let work = PhysicalWorkScheduler::admit(self.scheduler.effects(), demand, &backend, policy)
             .map_err(PhysicalWalGroupBarrierFailureCause::Scheduler)?;
         PhysicalExecutorCommand::wal_barrier(
             work,

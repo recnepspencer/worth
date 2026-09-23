@@ -222,6 +222,7 @@ impl UiMountedAppearanceFrameState {
         input
             .compose_accepted_motion(geometry)
             .map_err(|_| UiMountedAppearanceOutputDenial::NodeLowering)?;
+        input.attach_owned_scroll_chrome(geometry);
         let affinity = UiAppearanceMountAffinity {
             session: context.target().session(),
             generation: context.generation().clone(),

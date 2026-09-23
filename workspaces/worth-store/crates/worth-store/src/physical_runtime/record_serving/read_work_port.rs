@@ -138,6 +138,14 @@ impl CanonicalRecordReadPort {
         }
     }
 
+    pub(in crate::physical_runtime) fn note_ready_background(&self) {
+        self.scheduler.note_ready_background();
+    }
+
+    pub(in crate::physical_runtime) fn release_ready_background(&self) {
+        self.scheduler.release_ready_background();
+    }
+
     pub(in crate::physical_runtime) fn prepare(
         &self,
         coordinate: RecordFrameCoordinate,

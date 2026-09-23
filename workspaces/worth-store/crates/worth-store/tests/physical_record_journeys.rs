@@ -61,6 +61,8 @@ mod identity_process;
 mod integrity_scrub;
 #[path = "physical_record_journeys/locator_free_space.rs"]
 mod locator_free_space;
+#[path = "physical_record_journeys/maintenance_interference/mod.rs"]
+mod maintenance_interference;
 #[path = "physical_record_journeys/manifest_fixture.rs"]
 mod manifest_fixture;
 #[path = "physical_record_journeys/manifest_scale.rs"]

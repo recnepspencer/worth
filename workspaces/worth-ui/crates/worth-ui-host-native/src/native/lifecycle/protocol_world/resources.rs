@@ -57,7 +57,8 @@ impl UiProtocolResources {
     pub(in crate::native::lifecycle) fn finish_queued_work(&mut self) {
         if let Some(queued) = self.queued_readiness.take() {
             let _ = queued.registry.take(queued.owner);
-            debug_assert_eq!(queued.registry.close(), 1);
+            let closed = queued.registry.close();
+            debug_assert_eq!(closed, 1);
         }
     }
 
@@ -105,7 +106,8 @@ impl UiProtocolResources {
 
     pub(in crate::native::lifecycle) fn release_all(&mut self) {
         if let Some(queued) = self.queued_readiness.take() {
-            debug_assert_eq!(queued.registry.close(), 1);
+            let closed = queued.registry.close();
+            debug_assert_eq!(closed, 1);
         }
         release(&mut self.registry, &mut self.prepared_upload);
         release(&mut self.registry, &mut self.presentation);

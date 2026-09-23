@@ -202,6 +202,27 @@ pub fn append_inline_records_owned(
     Ok((page, appended))
 }
 
+/// Copies an admitted inline page and reseals it at the successor page generation.
+///
+/// Record slots and payload bytes stay in place. The previous page LSN is preserved
+/// until the WAL bind stamps the rewrite's physical coverage.
+pub fn restamp_inline_page_generation(
+    format: PhysicalRecordFormatDeclaration,
+    page: &[u8],
+    generation: u64,
+) -> Result<Vec<u8>, InlinePageDenial> {
+    if page.len() != format.page_bytes() as usize {
+        return Err(InlinePageDenial::InvalidGeometry);
+    }
+    let current = inspect_inline_page(format, page)?;
+    if generation <= current.page_cell().generation().get() {
+        return Err(InlinePageDenial::InvalidPageIdentity);
+    }
+    let mut bytes = page.to_vec();
+    reseal_durable_frame(&mut bytes, DurableFrameKind::InlinePage, format, generation);
+    Ok(bytes)
+}
+
 pub fn encode_inline_page(
     format: PhysicalRecordFormatDeclaration,
     page: PageGenerationCell,

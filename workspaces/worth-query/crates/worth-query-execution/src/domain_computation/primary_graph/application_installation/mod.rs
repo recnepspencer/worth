@@ -9,17 +9,18 @@ pub use denial::WorthQueryInMemoryApplicationDenial;
 pub use limits::WorthQueryInMemoryApplicationLimits;
 pub use profile::WorthQueryInMemoryApplicationProfile;
 pub use program::{
-    in_memory_program, in_memory_program_with_authorization_time_source,
-    in_memory_rostered_program, in_memory_rostered_program_with_authorization_time_source,
-    WorthQueryAdmittedProgramOperation, WorthQueryAdmittedProgramOutput,
-    WorthQueryApplicationPreviewReadmissionDenial, WorthQueryApplicationPreviewRequest,
-    WorthQueryApplicationPreviewSession, WorthQueryApplicationProgramRoots,
-    WorthQueryApplicationProgramRoster, WorthQueryProgramApplicationRuntime,
-    WorthQueryProgramOutputAdvance, WorthQueryProgramOwner, WorthQueryProgramRootDemand,
-    WorthQueryProgramSupportRetirementReceipt, WorthQueryReadmittedApplicationPreview,
-    WorthQuerySelectedProgramOwner, WorthQuerySelectedProgramOwnerDenial,
-    WorthQuerySettledProgramOutput, WorthQuerySupportedProgramHandle,
-    WorthQueryWorkflowApplicationRuntime, WorthQueryWorkflowRuntimeBindingDenial,
+    in_memory_program, in_memory_program_from_checkpoint,
+    in_memory_program_with_authorization_time_source, in_memory_rostered_program,
+    in_memory_rostered_program_with_authorization_time_source, WorthQueryAdmittedProgramOperation,
+    WorthQueryAdmittedProgramOutput, WorthQueryApplicationPreviewReadmissionDenial,
+    WorthQueryApplicationPreviewRequest, WorthQueryApplicationPreviewSession,
+    WorthQueryApplicationProgramRoots, WorthQueryApplicationProgramRoster,
+    WorthQueryProgramApplicationRuntime, WorthQueryProgramOutputAdvance, WorthQueryProgramOwner,
+    WorthQueryProgramRootDemand, WorthQueryProgramSupportRetirementReceipt,
+    WorthQueryReadmittedApplicationPreview, WorthQuerySelectedProgramOwner,
+    WorthQuerySelectedProgramOwnerDenial, WorthQuerySettledProgramOutput,
+    WorthQuerySupportedProgramHandle, WorthQueryWorkflowApplicationRuntime,
+    WorthQueryWorkflowRuntimeBindingDenial,
 };
 use program_admission::WorthQueryProgramAdmissionStep;
 
@@ -61,6 +62,7 @@ where
         initial_state,
         None,
         None,
+        None,
     )
 }
 
@@ -76,6 +78,7 @@ pub(super) fn in_memory_with_contributions<Schema, Contributions>(
         Box<dyn crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSource>,
     >,
     program_admission: Option<WorthQueryProgramAdmissionStep<'_, Schema>>,
+    checkpoint: Option<super::WorthQueryApplicationCheckpoint>,
 ) -> Result<WorthQueryPrimaryGraphApplicationRuntime<Schema>, WorthQueryInMemoryApplicationDenial>
 where
     Schema: ApplicationSchemaComposition,
@@ -128,28 +131,66 @@ where
             ),
         );
     }
-    let relational_runtime = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
-        .profile(limits.profile.relational_profile())
-        .build();
-    let mut graph = authority
-        .prepare_primary_graph_with_relational_runtime_and_invariants(
+    let mut relational_builder = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
+        .profile(limits.profile.relational_profile());
+    if let Some(publication) = limits
+        .profile
+        .publication_override(limits.maximum_publication_records)
+    {
+        relational_builder = relational_builder.publication(publication);
+    }
+    let relational_runtime = relational_builder.build();
+    let decoded_checkpoint = checkpoint
+        .as_ref()
+        .map(super::WorthQueryApplicationCheckpoint::decode)
+        .transpose()
+        .map_err(|detail| {
+            Denial::Graph(WorthQueryPrimaryGraphInstallationDenial::new(
+                super::WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
+                detail,
+            ))
+        })?;
+    let restoring = decoded_checkpoint.is_some();
+    let mut graph = match decoded_checkpoint.as_ref() {
+        Some(checkpoint) => authority.prepare_primary_graph_from_native_checkpoint_with_invariants(
             &runtime,
             &installed,
             relational_runtime,
             limits.world,
             invariants,
-        )
-        .map_err(Denial::Graph)?;
-    graph.mutation_handlers = handlers;
-    if let Some(support) = &admitted_program_support {
-        graph.program_activation_seed = Some(
-            super::bootstrap::WorthQueryProgramActivationSeed::for_initial_program(
-                &support.initial_revision,
-                activation.clone(),
-            ),
-        );
+            checkpoint,
+        ),
+        None => authority.prepare_primary_graph_with_relational_runtime_and_invariants(
+            &runtime,
+            &installed,
+            relational_runtime,
+            limits.world,
+            invariants,
+        ),
     }
-    initial_state(&mut graph, &installed).map_err(Denial::InitialState)?;
+    .map_err(Denial::Graph)?;
+    graph.mutation_handlers = handlers;
+    if restoring {
+        if let Some(support) = &admitted_program_support {
+            super::bootstrap::recover_program_activation(
+                &graph.graph,
+                &support.roster,
+                &activation,
+            )
+            .map_err(Denial::Graph)?;
+        }
+    }
+    if !restoring {
+        if let Some(support) = &admitted_program_support {
+            graph.program_activation_seed = Some(
+                super::bootstrap::WorthQueryProgramActivationSeed::for_initial_program(
+                    &support.initial_revision,
+                    activation.clone(),
+                ),
+            );
+        }
+        initial_state(&mut graph, &installed).map_err(Denial::InitialState)?;
+    }
     let (mut application, installed_conditionals) =
         if conditionals.is_empty() && producers.is_empty() {
             let application = match authorization_time_source {
@@ -210,5 +251,29 @@ where
             ),
         );
     }
+    application.recovered_outputs = decoded_checkpoint
+        .map(|checkpoint| {
+            checkpoint
+                .accepted_outputs
+                .into_iter()
+                .map(|accepted| {
+                    let correspondence = application
+                        .installed_producers
+                        .readmit_checkpoint_output(&application.installed_schema, &accepted)
+                        .map_err(|detail| {
+                            Denial::Graph(WorthQueryPrimaryGraphInstallationDenial::new(
+                                super::WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
+                                detail,
+                            ))
+                        })?;
+                    Ok(super::application_output_demand::WorthQueryReadmittedAcceptedOutput {
+                        checkpoint: accepted,
+                        correspondence,
+                    })
+                })
+                .collect::<Result<Vec<_>, Denial>>()
+        })
+        .transpose()?
+        .unwrap_or_default();
     Ok(application)
 }

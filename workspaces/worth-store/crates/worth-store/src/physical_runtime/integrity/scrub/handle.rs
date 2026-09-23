@@ -36,6 +36,7 @@ pub struct ManagedPhysicalIntegrityScrubHandle {
     terminal: Option<ManagedPhysicalIntegrityScrubProgress>,
     validator: worth_store_physical_integrity::PhysicalIntegrityScrubValidator,
     checkpoint_source: Option<worth_store_physical_backend::InspectionSourceVersion>,
+    background_ready: bool,
 }
 
 impl ManagedPhysicalIntegrityScrubHandle {
@@ -73,7 +74,15 @@ impl ManagedPhysicalIntegrityScrubHandle {
             terminal: None,
             validator: worth_store_physical_integrity::PhysicalIntegrityScrubValidator::new(),
             checkpoint_source: None,
+            background_ready: false,
         })
+    }
+
+    fn release_background(&mut self) {
+        if self.background_ready {
+            self.read.release_ready_background();
+            self.background_ready = false;
+        }
     }
 
     pub fn cancellation(&self) -> PhysicalIntegrityScrubCancellation {
@@ -173,6 +182,10 @@ impl ManagedPhysicalIntegrityScrubHandle {
         self.counters.peak_allocation_bytes =
             self.counters.peak_allocation_bytes.max(allocation.bytes());
         let destination = vec![0; target.range().length() as usize].into_boxed_slice();
+        if !self.background_ready {
+            self.read.note_ready_background();
+            self.background_ready = true;
+        }
         let evidence = match self.read.inspect(target.range(), destination) {
             Ok(evidence) => evidence,
             Err(cause) => {
@@ -191,6 +204,10 @@ impl ManagedPhysicalIntegrityScrubHandle {
         );
         drop(allocation);
         self.next_target += 1;
+        // This quantum was dispatched. The next pull queues its own head, so
+        // foreground work between windows is not held for a quantum nobody has
+        // requested. A capacity-deferred pull keeps the head until it runs.
+        self.release_background();
         // A cancellation arriving after I/O preserves this real completed window.
         // The next pull emits the terminal state with the same counters.
         ManagedPhysicalIntegrityScrubProgress::WindowInspected(observation)
@@ -228,6 +245,7 @@ impl ManagedPhysicalIntegrityScrubHandle {
     ) -> ManagedPhysicalIntegrityScrubProgress {
         self.request.targets = Box::new([]);
         self.checkpoint_source = None;
+        self.release_background();
         self.registration.finished.store(true, Ordering::Release);
         self.terminal = Some(terminal);
         terminal
@@ -236,6 +254,7 @@ impl ManagedPhysicalIntegrityScrubHandle {
 
 impl Drop for ManagedPhysicalIntegrityScrubHandle {
     fn drop(&mut self) {
+        self.release_background();
         self.registration.finished.store(true, Ordering::Release);
     }
 }

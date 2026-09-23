@@ -1,3 +1,4 @@
+#[allow(dead_code)]
 mod phase_three_support;
 
 use phase_three_support::*;

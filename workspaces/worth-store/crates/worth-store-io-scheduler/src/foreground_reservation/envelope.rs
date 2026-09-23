@@ -58,6 +58,13 @@ impl ForegroundLatencyEnvelope {
         }
     }
 
+    pub const fn claims_unprovided_service_time(self) -> bool {
+        matches!(
+            self.kind,
+            ForegroundLatencyEnvelopeKind::HardBound | ForegroundLatencyEnvelopeKind::SoftSlo
+        )
+    }
+
     pub const fn kind(self) -> ForegroundLatencyEnvelopeKind {
         self.kind
     }

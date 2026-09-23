@@ -115,6 +115,13 @@ pub(super) fn line(
                 baseline,
                 output.glyphs,
             );
+            // No caret belongs inside a hard break. The boundary before it is
+            // the trailing edge of the character it follows and the boundary
+            // after it opens the next line, so a cluster here would offer the
+            // reader a second name for a position that already has one.
+            if unit.kind == UnitKind::HardBreak {
+                continue;
+            }
             output.positioned_units.push(PositionedCluster {
                 original_range: unit.original_range,
                 line_index: u32::try_from(line_index).expect("line cap fits u32"),

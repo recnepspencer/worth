@@ -11,6 +11,12 @@ pub(crate) use fixtures::{
 pub(crate) use json::parse_json;
 pub(crate) use temporary_root::TemporaryRoot;
 
+/// Wall-clock budget for fixture observations. Windows file identity launches two
+/// processes per artifact, so parallel suite load must never surface as a bound.
+pub(crate) const FIXTURE_ELAPSED_MILLISECONDS: u64 = 120_000;
+/// The same budget as a command-line argument.
+pub(crate) const FIXTURE_ELAPSED_ARGUMENT: &str = "120000";
+
 use std::path::PathBuf;
 
 use worth_store_offline_integrity_observer::{
@@ -21,7 +27,16 @@ use worth_store_offline_integrity_observer::{
 pub(crate) fn request(fixture: &StoreFixture) -> OfflineIntegrityObservationRequest {
     OfflineIntegrityObservationRequest::new(
         fixture.store.clone(),
-        OfflineIntegrityObservationLimits::new(100, 16 * 1024, 5, 8, 0, 5_000, 64 * 1024).unwrap(),
+        OfflineIntegrityObservationLimits::new(
+            100,
+            16 * 1024,
+            5,
+            8,
+            0,
+            FIXTURE_ELAPSED_MILLISECONDS,
+            64 * 1024,
+        )
+        .unwrap(),
         OfflineIntegrityReportDestination::file(fixture.report.clone()).unwrap(),
         OfflineIntegrityProtocolContext::new(
             "fixture-observer",

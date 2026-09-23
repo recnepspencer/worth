@@ -68,7 +68,6 @@ fn admitted_bootstrap_projects_without_raw_owner_decoder_entry() {
     .unwrap();
     let projection = admitted.project(context).unwrap();
 
-    assert_eq!(projection.record_format, format);
     assert_eq!(projection.current_root.generation().get(), 1);
     assert!(lease.integrity_validation().is_some());
     let observed = counters.snapshot();

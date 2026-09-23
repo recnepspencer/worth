@@ -1,3 +1,4 @@
+mod checkpoint;
 mod conditional;
 mod construction;
 mod demand;
@@ -10,6 +11,7 @@ mod roster_authoring;
 mod specialized_action;
 mod speculation;
 mod supported_program;
+pub use checkpoint::in_memory_program_from_checkpoint;
 mod workflow_assessment;
 mod workflow_runtime;
 pub use construction::{

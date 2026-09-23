@@ -161,5 +161,6 @@ fn rebuilder(
         PhysicalNamespaceDurableCheckpointGeneration::from_namespace_durable_checkpoint(1),
         PhysicalBindingDecodingContext::new(fixture.store, fixture.policy, idempotency),
         Some(1),
+        Vec::new(),
     )
 }

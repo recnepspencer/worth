@@ -1,10 +1,15 @@
 mod authored_overlay_material;
+mod authored_scroll_region_clauses;
+#[cfg(test)]
+mod authored_scroll_region_tests;
 mod authored_service_policy;
 mod declaration_material;
 mod denial;
 mod evidence;
 mod material;
 mod preparation;
+#[cfg(test)]
+mod scroll_wheel_tests;
 mod service_declaration_admission;
 mod snapshot_succession;
 #[cfg(test)]

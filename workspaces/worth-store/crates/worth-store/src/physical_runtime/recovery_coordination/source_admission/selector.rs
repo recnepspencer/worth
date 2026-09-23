@@ -4,23 +4,15 @@ use worth_store_physical_format::{
     RecordArtifactFile, RootSelectorIdentity, RootSelectorRole,
 };
 use worth_store_physical_integrity::{
-    validate_current_root_selector, validate_previous_root_selector,
-    CurrentRootSelectorIntegrityValidation, IntegrityValidatedCurrentRootSelector,
-    IntegrityValidatedPreviousRootSelector, PhysicalArtifactScope, PhysicalByteRange,
-    PreviousRootSelectorIntegrityValidation, UntrustedPhysicalArtifact,
+    validate_current_root_selector, CurrentRootSelectorIntegrityValidation,
+    IntegrityValidatedCurrentRootSelector, PhysicalArtifactScope, PhysicalByteRange,
+    UntrustedPhysicalArtifact,
 };
 
 use super::completed_read::{BoundScheduledRootProtocolSource, ScheduledRootProtocolSource};
 use crate::physical_runtime::RootProtocolAdmissionDenial;
 
 pub(in crate::physical_runtime::recovery_coordination) struct IntegrityAdmittedCurrentRootSelector<
-    'source,
-> {
-    source: ScheduledRootProtocolSource<'source>,
-    projection: AdmittedSelectorProjection,
-}
-
-pub(in crate::physical_runtime::recovery_coordination) struct IntegrityAdmittedPreviousRootSelector<
     'source,
 > {
     source: ScheduledRootProtocolSource<'source>,
@@ -65,37 +57,6 @@ pub(in crate::physical_runtime::recovery_coordination) fn admit_scheduled_curren
     Ok(IntegrityAdmittedCurrentRootSelector { source, projection })
 }
 
-pub(in crate::physical_runtime::recovery_coordination) fn admit_scheduled_previous_selector(
-    read: &CompletedScheduledRecoveryReopenRead,
-    store: StableStoreIdentity,
-    format: PhysicalRecordFormatDeclaration,
-) -> Result<IntegrityAdmittedPreviousRootSelector<'_>, RootProtocolAdmissionDenial> {
-    let (input, scope) = selector_input(
-        read,
-        store,
-        format,
-        RecordArtifactFile::PreviousRootSelector,
-    )?;
-    let source = BoundScheduledRootProtocolSource::bind(
-        read,
-        RecordArtifactFile::PreviousRootSelector,
-        scope,
-    )?;
-    let (validation, _) = validate_previous_root_selector(input, scope);
-    let validated = match validation {
-        PreviousRootSelectorIntegrityValidation::Intact(validated) => validated,
-        PreviousRootSelectorIntegrityValidation::Rejected(rejection) => {
-            return Err(RootProtocolAdmissionDenial::from_validation(rejection))
-        }
-    };
-    if !validated.matches_input(input) {
-        return Err(RootProtocolAdmissionDenial::SourceIncarnationMismatch);
-    }
-    let projection = previous_projection(&validated);
-    let source = source.admit(validated.into_validation_record())?;
-    Ok(IntegrityAdmittedPreviousRootSelector { source, projection })
-}
-
 fn selector_input(
     read: &CompletedScheduledRecoveryReopenRead,
     store: StableStoreIdentity,
@@ -136,30 +97,7 @@ fn current_projection(
     }
 }
 
-fn previous_projection(
-    validated: &IntegrityValidatedPreviousRootSelector<'_>,
-) -> AdmittedSelectorProjection {
-    AdmittedSelectorProjection {
-        store: validated.scope().store_identity(),
-        format: validated.record_format(),
-        identity: validated.selector_identity(),
-        role: RootSelectorRole::Previous,
-        root_generation: validated.root_generation(),
-        linked_selector: validated.linked_selector(),
-        linked_root_generation: validated.linked_root_generation(),
-    }
-}
-
 impl IntegrityAdmittedCurrentRootSelector<'_> {
-    pub(in crate::physical_runtime::recovery_coordination) fn project(
-        self,
-    ) -> Result<DurableRootSelector, RootProtocolAdmissionDenial> {
-        let _source_incarnation = (self.source.operation(), self.source.validation());
-        self.projection.project()
-    }
-}
-
-impl IntegrityAdmittedPreviousRootSelector<'_> {
     pub(in crate::physical_runtime::recovery_coordination) fn project(
         self,
     ) -> Result<DurableRootSelector, RootProtocolAdmissionDenial> {

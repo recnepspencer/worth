@@ -14,7 +14,7 @@ impl<Query> WorthQueryObservedResultSet<Query> {
     }
 
     pub(in crate::domain_computation) fn idempotency_identity(&self) -> [u8; 32] {
-        self.source.idempotency_identity()
+        self.source.idempotency_identity().bytes()
     }
 
     #[cfg(test)]
@@ -22,7 +22,8 @@ impl<Query> WorthQueryObservedResultSet<Query> {
         &self,
     ) -> &super::WorthQueryObservedRootSelection {
         self.source
-            .footprint
+            .source_meaning
+            .footprint()
             .root_selection
             .as_deref()
             .expect("result-set evidence retains native selection facts")

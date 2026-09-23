@@ -104,6 +104,12 @@ impl CanonicalRedoRecords {
         self.digest
     }
 
+    pub(in crate::physical_runtime) fn with_encoded_payload(mut self, encoded: Vec<u8>) -> Self {
+        self.digest = Sha256::digest(&encoded).into();
+        self.encoded = encoded;
+        self
+    }
+
     pub(in crate::physical_runtime) fn into_prepared_record_bytes(self) -> Vec<Vec<u8>> {
         self.records
             .into_parts()

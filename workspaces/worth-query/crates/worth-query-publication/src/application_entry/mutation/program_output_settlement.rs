@@ -30,19 +30,23 @@ pub struct WorthQueryApplicationProgramOutputSettlement<RootQuery> {
 }
 
 impl<RootQuery> WorthQueryApplicationProgramOutputSettlement<RootQuery> {
-    pub(in crate::application_entry) fn receipts(
+    pub(in crate::application_entry) fn retained_settlements(
         &self,
     ) -> impl Iterator<
-        Item = &worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
+        Item = &worth_query_execution::facade::primary_graph::WorthQueryOutputDemandSettlement,
     > {
-        std::iter::once(self.root.receipt())
-            .chain(self.outputs.iter().map(ProgramOutputRecord::receipt))
+        std::iter::once(self.root.retained_settlement()).chain(
+            self.outputs
+                .iter()
+                .map(ProgramOutputRecord::retained_settlement),
+        )
     }
 
     pub fn root_receipt(
         &self,
-    ) -> &worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt {
-        self.root.receipt()
+    ) -> Option<&worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt>
+    {
+        self.root.application_commit_receipt()
     }
 
     pub fn root_observation(
@@ -147,7 +151,11 @@ pub struct ProgramOutputRecord {
     composition_instance: &'static str,
     demand: Box<dyn Any>,
     settlement: Box<dyn Any>,
-    receipt: worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
+    retained_settlement: std::sync::Arc<
+        worth_query_execution::facade::primary_graph::WorthQueryOutputDemandSettlement,
+    >,
+    receipt:
+        Option<worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt>,
     readiness_delivery: Option<
         worth_query_execution::facade::primary_graph::WorthQueryOutputReadinessDeliveryEvidence,
     >,
@@ -155,6 +163,12 @@ pub struct ProgramOutputRecord {
 }
 
 impl ProgramOutputRecord {
+    fn retained_settlement(
+        &self,
+    ) -> &worth_query_execution::facade::primary_graph::WorthQueryOutputDemandSettlement {
+        self.retained_settlement.as_ref()
+    }
+
     pub(super) fn typed_for<Schema, Connection>(
         &self,
     ) -> Option<(
@@ -193,8 +207,9 @@ impl ProgramOutputRecord {
 
     pub(super) fn receipt(
         &self,
-    ) -> &worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt {
-        &self.receipt
+    ) -> Option<&worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt>
+    {
+        self.receipt.as_ref()
     }
 
     pub(super) fn readiness_delivery(
@@ -219,7 +234,8 @@ impl ProgramOutputRecord {
         Query<Schema, Connection::Binding>: 'static,
     {
         let observation = settlement.observation().retained_clone();
-        let receipt = settlement.receipt().clone();
+        let retained_settlement = settlement.retain_settlement();
+        let receipt = settlement.application_commit_receipt().cloned();
         let readiness_delivery = settlement.readiness_delivery().cloned();
         let declaration = Connection::declaration();
         Self {
@@ -227,6 +243,7 @@ impl ProgramOutputRecord {
             composition_instance: declaration.target_instance(),
             demand: Box::new(demand),
             settlement: Box::new(settlement),
+            retained_settlement,
             receipt,
             readiness_delivery,
             observation,

@@ -36,6 +36,8 @@ pub struct WorthQueryProductRuntime {
     pub(crate) default_occurrence: ProductBranchIncarnation,
     next_public_branch_ordinal: Arc<std::sync::atomic::AtomicU64>,
     pub(crate) root_identity: Arc<WorthQueryProductRootIdentity>,
+    pub(crate) recovered_root_authority:
+        Option<Arc<worth_runtime_world::facade::RecoveredRuntimeWorldRootAuthority>>,
 }
 
 impl WorthQueryProductRuntime {
@@ -59,6 +61,9 @@ impl WorthQueryProductRuntime {
         owner_cleanup: WorthQueryProductBranchOwnerCleanupRegistry,
         default_branch: ProductBranchIdentity,
         default_occurrence: ProductBranchIncarnation,
+        recovered_root_authority: Option<
+            Arc<worth_runtime_world::facade::RecoveredRuntimeWorldRootAuthority>,
+        >,
     ) -> Self {
         #[cfg(not(test))]
         let _ = default_branch;
@@ -76,6 +81,7 @@ impl WorthQueryProductRuntime {
             default_occurrence,
             next_public_branch_ordinal: Arc::new(std::sync::atomic::AtomicU64::new(1)),
             root_identity: Arc::new(WorthQueryProductRootIdentity { _private: () }),
+            recovered_root_authority,
         }
     }
 

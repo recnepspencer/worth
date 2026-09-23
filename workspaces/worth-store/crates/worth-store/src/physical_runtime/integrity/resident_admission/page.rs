@@ -1,5 +1,5 @@
 use sha2::{Digest, Sha256};
-use worth_store_buffer_pool::{PhysicalFrameLease, PhysicalResidentFrameGeneration};
+use worth_store_buffer_pool::PhysicalFrameLease;
 use worth_store_physical_format::{RecordArtifactFile, RecordFrameCoordinate};
 use worth_store_physical_integrity::{
     validate_inline_page, InlinePageIntegrityValidation, InlineRecordProjectionDenial,
@@ -169,25 +169,12 @@ impl IntegrityAdmittedResidentPageView<'_> {
             .ok_or(InlineRecordProjectionDenial::PayloadLengthMismatch)?;
         Ok(ResidentInlineRecordProjection {
             payload: start..end,
-            page_lsn: admitted_page_lsn(bytes)
-                .ok_or(InlineRecordProjectionDenial::PayloadLengthMismatch)?,
         })
-    }
-
-    pub(in crate::physical_runtime) const fn scope(&self) -> PhysicalArtifactScope {
-        self.scope
-    }
-
-    pub(in crate::physical_runtime) const fn frame_generation(
-        &self,
-    ) -> PhysicalResidentFrameGeneration {
-        self.lease.resident_generation()
     }
 }
 
 pub(in crate::physical_runtime) struct ResidentInlineRecordProjection {
     pub(in crate::physical_runtime) payload: std::ops::Range<usize>,
-    pub(in crate::physical_runtime) page_lsn: worth_store_physical_format::PhysicalPageLsn,
 }
 
 pub(in crate::physical_runtime) struct ResidentInlinePageProjection {

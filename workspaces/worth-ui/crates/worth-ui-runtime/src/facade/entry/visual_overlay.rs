@@ -110,7 +110,12 @@ impl WorthUiActiveApplicationSession {
         Ok(self.visual_overlays.begin_clear(published))
     }
 
-    pub(super) fn mounted_frame_request(&self) -> crate::mounting::UiMountedFrameRequest {
+    /// The frame request that states this session's current overlay truth: every
+    /// Portal it still presents, and the visual overlay it has selected. A bare
+    /// `UiMountedFrameRequest` states the opposite - that nothing is overlaid -
+    /// so a caller replaces these only to lower a transition away from what the
+    /// session currently holds.
+    pub fn mounted_frame_request(&self) -> crate::mounting::UiMountedFrameRequest {
         let overlay = self
             .visual_overlays
             .active_selection()

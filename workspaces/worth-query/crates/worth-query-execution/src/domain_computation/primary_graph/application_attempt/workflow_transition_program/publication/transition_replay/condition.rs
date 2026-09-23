@@ -124,7 +124,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
         }
         let binding = idempotency
             .bind_workflow_transition(&replay.identity_bytes)
-            .bind_workflow_condition(&observed.idempotency_identity());
+            .bind_workflow_condition(&observed.idempotency_identity().bytes());
         let [resolution] = runtime
             .resolve_admitted_application_idempotencies(admission, [binding])?
             .try_into()

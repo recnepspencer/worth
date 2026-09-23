@@ -27,6 +27,7 @@ pub enum PhysicalWorkRecoveryTarget {
     ArtifactParentSynchronization(RecordArtifactFile),
     CatalogReplacement(RecordArtifactFile),
     RecordNamespaceSynchronization,
+    ArtifactRemoval(RecordArtifactFile),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

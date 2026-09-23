@@ -35,6 +35,7 @@ pub struct PhysicalReadProtectionObservation {
     acquisitions: u64,
     releases: u64,
     index_probes: u64,
+    examined_entries: u64,
     revoked: bool,
 }
 
@@ -46,6 +47,7 @@ impl PhysicalReadProtectionObservation {
         acquisitions: u64,
         releases: u64,
         index_probes: u64,
+        examined_entries: u64,
         revoked: bool,
     ) -> Self {
         Self {
@@ -55,6 +57,7 @@ impl PhysicalReadProtectionObservation {
             acquisitions,
             releases,
             index_probes,
+            examined_entries,
             revoked,
         }
     }
@@ -76,6 +79,9 @@ impl PhysicalReadProtectionObservation {
     }
     pub const fn index_probes(self) -> u64 {
         self.index_probes
+    }
+    pub const fn examined_entries(self) -> u64 {
+        self.examined_entries
     }
     pub const fn revoked(self) -> bool {
         self.revoked

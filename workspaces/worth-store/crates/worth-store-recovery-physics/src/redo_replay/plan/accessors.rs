@@ -5,6 +5,54 @@ impl ImmutablePhysicalRedoPlan {
     pub const fn supersession_scratch_bytes(&self) -> u64 {
         self.scratch_bytes
     }
+
+    pub fn rewrites(&self) -> &[worth_store_physical_format::PhysicalRewriteRedo] {
+        &self.rewrites
+    }
+
+    pub fn rewrite_admissions(&self) -> &[PhysicalRewriteAdmission] {
+        &self.rewrite_admissions
+    }
+
+    pub fn install_rewrite_materialization(&mut self, projection: PhysicalRedoProjection) {
+        let mut projections = self.projections.to_vec();
+        projections.push(projection);
+        self.projections = projections.into_boxed_slice();
+    }
+}
+
+impl PhysicalRewriteAdmission {
+    pub const fn operation(self) -> [u8; 32] {
+        self.operation
+    }
+
+    pub const fn group(self) -> PhysicalRedoGroupBinding {
+        self.group
+    }
+
+    pub const fn fate(self) -> RecoveryOperationFate {
+        self.fate
+    }
+
+    pub const fn redo(self) -> worth_store_physical_format::PhysicalRewriteRedo {
+        self.redo
+    }
+}
+
+impl PhysicalRedoProjection {
+    pub fn from_rewrite_materialization(
+        operation: [u8; 32],
+        group: PhysicalRedoGroupBinding,
+        fate: RecoveryOperationFate,
+        materialization: PersistedPhysicalRecoveryProjection,
+    ) -> Self {
+        Self {
+            operation,
+            group,
+            fate,
+            materialization,
+        }
+    }
 }
 
 impl PhysicalRedoMemberInput {

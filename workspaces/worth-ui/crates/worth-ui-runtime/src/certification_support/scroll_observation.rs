@@ -23,6 +23,19 @@ pub enum UiScrollObservationCertificationDenial {
     BoundsOutOfRange,
     DeltaOutOfRange,
     Route,
+    SettleUnpublished,
+    AxisHeldByChromeDrag,
+    PendingChromeRelease,
+    /// A latched gesture outlived the frame's willingness to admit its owner,
+    /// which is what an accepted modal Portal does to the content behind it.
+    LatchedOwnerNotAdmitted,
+    /// Mounted geometry refused the displayed pose, so the route was not
+    /// committed either.
+    Geometry,
+    PendingGeometryPublication,
+    /// A wheel reported in lines latched to an owner that declares no line
+    /// extent, so the notch had no distance to travel.
+    OwnerDeclaresNoLineExtent,
 }
 
 pub trait WorthUiScrollObservationCertificationExt {
@@ -101,5 +114,22 @@ fn map_denial(
         Denial::BoundsOutOfRange => UiScrollObservationCertificationDenial::BoundsOutOfRange,
         Denial::DeltaOutOfRange => UiScrollObservationCertificationDenial::DeltaOutOfRange,
         Denial::Route(_) => UiScrollObservationCertificationDenial::Route,
+        Denial::SettleUnpublished => UiScrollObservationCertificationDenial::SettleUnpublished,
+        Denial::AxisHeldByChromeDrag => {
+            UiScrollObservationCertificationDenial::AxisHeldByChromeDrag
+        }
+        Denial::PendingChromeRelease => {
+            UiScrollObservationCertificationDenial::PendingChromeRelease
+        }
+        Denial::LatchedOwnerNotAdmitted(_) => {
+            UiScrollObservationCertificationDenial::LatchedOwnerNotAdmitted
+        }
+        Denial::Geometry(_) => UiScrollObservationCertificationDenial::Geometry,
+        Denial::PendingGeometryPublication => {
+            UiScrollObservationCertificationDenial::PendingGeometryPublication
+        }
+        Denial::OwnerDeclaresNoLineExtent => {
+            UiScrollObservationCertificationDenial::OwnerDeclaresNoLineExtent
+        }
     }
 }

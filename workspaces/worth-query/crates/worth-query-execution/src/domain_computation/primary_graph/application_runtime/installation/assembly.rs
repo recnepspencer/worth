@@ -38,6 +38,7 @@ where
             ))?,
         &mut graph.bridge.conditional_lifecycle(),
         graph.product_world_resources,
+        graph.recovered_relational_authority,
     ).map_err(|denial| WorthQueryPrimaryGraphInstallationDenial::new(
         WorthQueryPrimaryGraphInstallationDenialKind::RuntimeBridgeRejected,
         denial.detail(),
@@ -94,6 +95,9 @@ where
         primary_provider: graph.primary_provider,
         primary_graph_authority: graph.primary_graph_authority,
         result_buffers: Default::default(),
+        source_meanings: crate::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceMeaningRegistry::new(
+            runtime_authority.as_u64(),
+        ),
         basis_leases: Default::default(),
         next_external_dispatch_attempt: std::sync::atomic::AtomicU64::new(1),
         external_effect_transport: std::sync::OnceLock::new(),
@@ -106,6 +110,7 @@ where
         next_output_producer_attempt: std::sync::atomic::AtomicU64::new(1),
         next_application_mutation_partition: std::sync::atomic::AtomicU32::new(1),
         output_demands: Default::default(),
+        recovered_outputs: Vec::new(),
         program_required_bindings,
         program_required_operations,
         program_support: None,

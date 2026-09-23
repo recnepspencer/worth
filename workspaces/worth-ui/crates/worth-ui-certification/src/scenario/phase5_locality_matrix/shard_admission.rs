@@ -46,26 +46,31 @@ pub(super) fn validate_wave(wave: &[usize]) -> Result<(), String> {
 
 #[cfg(test)]
 mod tests {
-    use super::{next_wave, validate_wave, MAX_LARGE, MAX_TOTAL};
+    use super::{is_large, next_wave, validate_wave, MAX_LARGE, MAX_TOTAL, SHARD_COUNT};
 
     #[test]
     fn deterministic_admission_caps_native_load() {
-        let pending = (0..16).collect::<Vec<_>>();
+        let pending = (0..SHARD_COUNT).collect::<Vec<_>>();
         let wave = next_wave(&pending);
         validate_wave(&wave).unwrap();
-        assert_eq!(wave, [8, 9, 10, 11, 12, 13, 14, 15]);
-        assert!(wave.len() <= MAX_TOTAL);
-        assert_eq!(wave.iter().filter(|shard| **shard >= 8).count(), MAX_LARGE);
+        assert_eq!(wave.len(), MAX_TOTAL.min(SHARD_COUNT));
+        let large = wave.iter().filter(|shard| is_large(**shard)).count();
+        assert!(large <= MAX_LARGE);
+        assert_eq!(large, (SHARD_COUNT - SHARD_COUNT / 2).min(MAX_LARGE));
+        assert!(wave[..large].iter().all(|shard| is_large(*shard)));
+        assert!(wave[large..].iter().all(|shard| !is_large(*shard)));
     }
 
     #[test]
     fn deterministic_admission_completes_large_first_in_two_waves() {
-        let mut pending = (0..16).collect::<Vec<_>>();
+        let mut pending = (0..SHARD_COUNT).collect::<Vec<_>>();
         let first = next_wave(&pending);
+        validate_wave(&first).unwrap();
+        assert!((SHARD_COUNT / 2..SHARD_COUNT).all(|shard| first.contains(&shard)));
         pending.retain(|shard| !first.contains(shard));
         let second = next_wave(&pending);
         validate_wave(&second).unwrap();
-        assert_eq!(second, [0, 1, 2, 3, 4, 5, 6, 7]);
+        assert!(second.iter().all(|shard| !is_large(*shard)));
         pending.retain(|shard| !second.contains(shard));
         assert!(pending.is_empty());
     }

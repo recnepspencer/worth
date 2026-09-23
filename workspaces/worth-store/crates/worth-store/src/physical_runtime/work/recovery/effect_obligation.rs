@@ -263,7 +263,17 @@ impl PhysicalEffectRecoveryInventory {
     }
 
     pub(in crate::physical_runtime) fn requires_inspection(&self) -> bool {
-        !self.observations.is_empty()
+        if self.observations.len() != self.obligations.len() {
+            return true;
+        }
+        self.obligations.iter().any(|obligation| {
+            !matches!(
+                obligation.target(),
+                super::PhysicalWorkRecoveryTarget::ArtifactRemoval(
+                    worth_store_physical_format::RecordArtifactFile::Segment { .. }
+                )
+            )
+        })
     }
 
     pub(in crate::physical_runtime) fn obligations(&self) -> &[PhysicalWorkRecoveryLocator] {

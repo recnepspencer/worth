@@ -3,22 +3,20 @@ use worth_proof::TransitionOutcome;
 use super::RecordPublicationDirector;
 use crate::physical_runtime::{
     durability::{
-        AdmittedPhysicalMutation, PhysicalMutationFingerprintInput,
-        PhysicalMutationIdempotencyRegistryAdmission,
+        AdmittedPhysicalMutation, PhysicalMutationIdempotencyRegistryAdmission,
         PhysicalMutationIdempotencyRegistryAdmissionError,
         PhysicalMutationIdempotencyRegistryDenial, PhysicalMutationOperationFamily,
-        PhysicalMutationPayloadDigest, PhysicalMutationRequestScope, PhysicalMutationSecurityBasis,
     },
     record_serving::{
         planning::batch_placement::preflight_placement,
         publication::{
-            prepare_canonical_payload, record_append_scope_identity,
-            CanonicalPayloadPreparationError, CanonicalRecordAppendPayload,
-            PhysicalMutationPreparationDeferred, PhysicalMutationPreparationDenial,
-            PhysicalMutationPreparationFailure, PhysicalMutationPreparationOutcome,
-            PhysicalMutationPreparationRebindRequired, PhysicalMutationPreparationStale,
-            PhysicalMutationPreparationSuccess, PhysicalMutationResourceShape,
-            PreparedPhysicalMutation, PreparedPhysicalMutationContext,
+            prepare_canonical_payload, CanonicalPayloadPreparationError,
+            CanonicalRecordAppendPayload, PhysicalMutationPreparationDeferred,
+            PhysicalMutationPreparationDenial, PhysicalMutationPreparationFailure,
+            PhysicalMutationPreparationOutcome, PhysicalMutationPreparationRebindRequired,
+            PhysicalMutationPreparationStale, PhysicalMutationPreparationSuccess,
+            PhysicalMutationResourceShape, PreparedPhysicalMutation,
+            PreparedPhysicalMutationContext,
         },
         AdmittedRecordPlacementPolicy, RecordAppendBatch, RecordAppendDenial, RecordAppendError,
     },
@@ -28,12 +26,12 @@ use crate::physical_runtime::{
     PhysicalWorkSubmissionStale,
 };
 
-struct AdmittedMutationPreparation {
-    admission: AdmittedPhysicalMutation,
-    deadline: PhysicalMutationDeadline,
+pub(super) struct AdmittedMutationPreparation {
+    pub(super) admission: AdmittedPhysicalMutation,
+    pub(super) deadline: PhysicalMutationDeadline,
 }
 
-enum PhysicalMutationPreparationAdmission {
+pub(super) enum PhysicalMutationPreparationAdmission {
     Prepared(AdmittedMutationPreparation),
     Completed(crate::physical_runtime::CompletedPhysicalMutation),
     ProvenNoEffect(crate::physical_runtime::ProvenNoEffectPhysicalMutation),
@@ -69,6 +67,7 @@ impl RecordPublicationDirector {
             manifest_capacity_transition,
             payload.digest,
             request,
+            PhysicalMutationOperationFamily::RecordAppend,
         ) {
             Ok(admitted) => admitted,
             Err(outcome) => return outcome,
@@ -112,13 +111,19 @@ impl RecordPublicationDirector {
                     start: crate::physical_runtime::PhysicalMutationRuntimeOwner::start_port(
                         &self.mutations,
                     ),
+                    selected_segment_rewrite: false,
+                    rewrite_pages: 0,
+                    source_root_generation: 0,
+                    rewrite_anchor: None,
                 },
             ),
         ))
         .into()
     }
 
-    fn require_preparation_health(&self) -> Result<(), PhysicalMutationPreparationOutcome> {
+    pub(super) fn require_preparation_health(
+        &self,
+    ) -> Result<(), PhysicalMutationPreparationOutcome> {
         let runtime = self.runtime.upgrade().ok_or_else(|| {
             stale_preparation(PhysicalMutationPreparationStale::PublicationAuthorityReleased)
         })?;
@@ -129,7 +134,7 @@ impl RecordPublicationDirector {
             .map_err(|()| map_record_denial(RecordAppendDenial::ServingRequiresInspection))
     }
 
-    fn group_queue_admission_tick(
+    pub(super) fn group_queue_admission_tick(
         &self,
     ) -> Result<PhysicalGroupQueueAdmissionTick, PhysicalMutationPreparationOutcome> {
         let runtime = self.runtime.upgrade().ok_or_else(|| {
@@ -168,12 +173,13 @@ impl RecordPublicationDirector {
         Ok(())
     }
 
-    fn admit_mutation_preparation(
+    pub(super) fn admit_mutation_preparation(
         &self,
         placement: AdmittedRecordPlacementPolicy,
         manifest_capacity_transition: crate::physical_runtime::PhysicalManifestCapacityTransition,
         payload_digest: [u8; 32],
         request: PhysicalMutationRequest,
+        family: PhysicalMutationOperationFamily,
     ) -> Result<PhysicalMutationPreparationAdmission, PhysicalMutationPreparationOutcome> {
         let (key, deadline, durability_request) = request.into_parts();
         let lease = key.lease();
@@ -183,6 +189,7 @@ impl RecordPublicationDirector {
                 manifest_capacity_transition,
                 payload_digest,
                 durability_request,
+                family,
             )
             .map_err(|()| canonical_request_failure())?;
         let admission = self
@@ -217,30 +224,6 @@ impl RecordPublicationDirector {
         ))
     }
 
-    fn derive_record_append_fingerprint(
-        &self,
-        placement: AdmittedRecordPlacementPolicy,
-        manifest_capacity_transition: crate::physical_runtime::PhysicalManifestCapacityTransition,
-        payload_digest: [u8; 32],
-        durability_request: crate::physical_runtime::durability::PhysicalMutationDurabilityRequest,
-    ) -> Result<PhysicalMutationRequestFingerprint, ()> {
-        let scope =
-            record_append_scope_identity(self.format, placement, manifest_capacity_transition);
-        let security = [PhysicalMutationSecurityBasis::from_admitted_security(
-            self.security_basis,
-        )];
-        PhysicalMutationRequestFingerprint::derive(PhysicalMutationFingerprintInput {
-            store: self.durability.store_identity(),
-            durability_policy: self.durability.policy_identity(),
-            scope: PhysicalMutationRequestScope::record_append(scope),
-            payload: PhysicalMutationPayloadDigest::from_validated_payload(payload_digest),
-            durability_request,
-            operation_family: PhysicalMutationOperationFamily::RecordAppend,
-            security_bases: &security,
-        })
-        .map_err(|_| ())
-    }
-
     fn admit_idempotency_binding(
         &self,
         key: PhysicalMutationIdempotencyKey,
@@ -262,7 +245,7 @@ impl RecordPublicationDirector {
     }
 }
 
-fn stale_preparation(
+pub(super) fn stale_preparation(
     stale: PhysicalMutationPreparationStale,
 ) -> PhysicalMutationPreparationOutcome {
     TransitionOutcome::stale(stale).into()
@@ -297,11 +280,11 @@ fn map_record_preflight(error: RecordAppendError) -> PhysicalMutationPreparation
     }
 }
 
-fn map_record_denial(denial: RecordAppendDenial) -> PhysicalMutationPreparationOutcome {
+pub(super) fn map_record_denial(denial: RecordAppendDenial) -> PhysicalMutationPreparationOutcome {
     TransitionOutcome::denied(PhysicalMutationPreparationDenial::RecordAppend(denial)).into()
 }
 
-fn canonical_request_failure() -> PhysicalMutationPreparationOutcome {
+pub(super) fn canonical_request_failure() -> PhysicalMutationPreparationOutcome {
     TransitionOutcome::failed(PhysicalMutationPreparationFailure::CanonicalRequestRejected).into()
 }
 

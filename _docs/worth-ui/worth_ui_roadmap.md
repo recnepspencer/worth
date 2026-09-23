@@ -2358,11 +2358,16 @@ detached golden image cannot replace the cumulative world.
 
 Detailed spec: [milestone-3.16.1.md](./milestone-3.16.1.md)
 
+Status: Closed on 2026-09-22 under the OS-neutral functional and accepted-frame
+gate. Real precision-device qualification remains unverified pending hardware;
+no display-cadence or latency claim is made.
+
 Finish the native Pulse scrolling experience before resizing: themed functional
 scrollbars, real horizontal and vertical overflow, precise input, interruptible
 wheel Motion, stable anchors, and coherent accepted pixels/hit targets. Reuse
 Scroll offset authority and the existing Motion/presentation lifecycle. Reach a
-live two-axis endpoint first, then close recovery, locality, and measured cadence.
+live two-axis endpoint first, then close recovery, locality, and bounded
+accepted-frame progress. Wall-clock pacing remains diagnostic, not a 3.16.1 gate.
 
 ### Milestone 3.16.2: Continuous Window Resize and Responsive Containers
 
@@ -2371,7 +2376,8 @@ Detailed spec: [milestone-3.16.2.md](./milestone-3.16.2.md)
 Build on 3.16.1 with continuous native border-drag presentation and declared
 Mosaic allocation for the complete dashboard. Coalesce obsolete extent work,
 preserve exact viewport/owner succession, and verify text, scrollbars, overlays,
-recovery, and timing during the drag. Milestone 4 retains docking, persisted
+recovery, and timing during the drag with a qualified 60 Hz trace on a supported
+desktop OS. Milestone 4 retains docking, persisted
 workspace layouts, and multi-window breadth; it consumes this responsive core.
 
 ### Milestone 3.17: DSL Expressions, Conditions, and Semantic Evaluation

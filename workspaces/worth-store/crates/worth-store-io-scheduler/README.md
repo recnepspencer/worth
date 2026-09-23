@@ -225,6 +225,16 @@ settlement or backend completion evidence.
 - Producer-specific buffer-pool lowering remains available only for real pool
   read and writeback producers while those adapters are part of the scheduler
   owner.
+- Foreground and background share one permit stream. `PhysicalDispatchSelection`
+  gives a ready background head a dispatch after at most three foreground
+  dispatches, and an owed turn cannot be stolen by foreground refill.
+- Only bounded-interference foreground envelopes are admitted. Hard
+  service-time bounds and soft SLO percentiles are refused before media as
+  `UnsupportedServiceTimeEnvelope`; reserved queue slots are not device-latency
+  guarantees, and no deployment is hardware-qualified.
+- Background pressure classes for compaction, replication, ingest, migration,
+  backup, repair and verification are vocabulary only. The Store has no
+  producer for them yet, so they create no work.
 
 ## Related Docs
 

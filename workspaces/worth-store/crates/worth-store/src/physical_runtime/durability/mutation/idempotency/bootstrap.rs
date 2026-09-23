@@ -26,6 +26,7 @@ use super::runtime_owner::PhysicalMutationIdempotencyRuntimeOwner;
 use super::PhysicalNamespaceDurableCheckpointGeneration;
 
 mod checkpoint_compaction;
+mod retirement_gap;
 #[cfg(test)]
 #[path = "bootstrap/tests.rs"]
 mod tests;
@@ -63,6 +64,7 @@ pub(in crate::physical_runtime) fn rebuild_idempotency(
     idempotency: PhysicalIdempotencyPolicy,
     checkpoint: &ReopenedPhysicalBindingCompaction,
     wal_members: Vec<ReopenedPhysicalWalMember>,
+    retirement_spans: Vec<(u64, u64)>,
 ) -> Result<RebuiltPhysicalMutationIdempotency, PhysicalIdempotencyReopenFailure> {
     let store = media.store_identity();
     let context = PhysicalBindingDecodingContext::new(store, policy, idempotency);
@@ -83,6 +85,7 @@ pub(in crate::physical_runtime) fn rebuild_idempotency(
         generation,
         context,
         checkpoint.wal_cutoff_lsn_exclusive(),
+        retirement_spans,
     );
     let (checkpoint_counters, checkpoint_admission) = match checkpoint {
         ReopenedPhysicalBindingCompaction::GenerationZero => (
@@ -113,6 +116,7 @@ struct PhysicalIdempotencyRegistryRebuilder {
     generation: PhysicalNamespaceDurableCheckpointGeneration,
     last_compaction_key: Option<PhysicalMutationIdempotencyKeyIdentity>,
     next_tail_lsn: Option<u64>,
+    retirement_spans: Vec<(u64, u64)>,
     pending_count: usize,
     live_limit: usize,
     pending_limit: usize,
@@ -127,6 +131,7 @@ impl PhysicalIdempotencyRegistryRebuilder {
         generation: PhysicalNamespaceDurableCheckpointGeneration,
         context: PhysicalBindingDecodingContext,
         wal_cutoff_lsn_exclusive: Option<u64>,
+        retirement_spans: Vec<(u64, u64)>,
     ) -> Self {
         let mut registry = PhysicalMutationIdempotencyRegistry::generation_zero(
             store,
@@ -141,6 +146,7 @@ impl PhysicalIdempotencyRegistryRebuilder {
             generation,
             last_compaction_key: None,
             next_tail_lsn: wal_cutoff_lsn_exclusive,
+            retirement_spans,
             pending_count: 0,
             live_limit: idempotency.live_binding_limit().get().get() as usize,
             pending_limit: idempotency.pending_unresolved_limit().get().get() as usize,
@@ -212,11 +218,11 @@ impl PhysicalIdempotencyRegistryRebuilder {
         &mut self,
         member: ReopenedPhysicalWalMember,
     ) -> Result<(), PhysicalIdempotencyReopenFailure> {
-        if let Some(next) = self.next_tail_lsn {
-            if member.lsn_range().start().get() != next {
-                return Err(PhysicalIdempotencyReopenFailure::WalTailDiscontinuity);
-            }
-        }
+        retirement_gap::require_contiguous(
+            &self.retirement_spans,
+            self.next_tail_lsn,
+            member.lsn_range().start().get(),
+        )?;
         self.next_tail_lsn = Some(member.lsn_range().end_exclusive().get());
         let persisted = super::PersistedPhysicalMutationAttemptBinding::decode_from_wal_member(
             member.persisted_binding(),

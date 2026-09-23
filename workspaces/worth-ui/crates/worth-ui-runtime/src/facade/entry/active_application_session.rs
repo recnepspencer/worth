@@ -18,6 +18,9 @@ mod appearance_projection_tests;
 #[cfg(test)]
 #[path = "active_application_session/appearance_receipt_distinction_tests.rs"]
 mod appearance_receipt_distinction_tests;
+#[cfg(test)]
+#[path = "active_application_session/appearance_test_access.rs"]
+mod appearance_test_access;
 #[path = "active_application_session/command_context.rs"]
 mod command_context;
 #[path = "active_application_session/command_observation.rs"]
@@ -57,10 +60,66 @@ mod portal_motion;
 mod portal_observation;
 #[path = "active_application_session/runtime_access.rs"]
 mod runtime_access;
+#[path = "active_application_session/scroll_accepted_offset_write_back.rs"]
+mod scroll_accepted_offset_write_back;
+#[path = "active_application_session/scroll_accepted_sample_settlement.rs"]
+mod scroll_accepted_sample_settlement;
+#[path = "active_application_session/scroll_chrome_admission.rs"]
+mod scroll_chrome_admission;
+#[path = "active_application_session/scroll_chrome_appearance.rs"]
+mod scroll_chrome_appearance;
+#[path = "active_application_session/scroll_chrome_ingress.rs"]
+mod scroll_chrome_ingress;
+#[cfg(test)]
+#[path = "active_application_session/scroll_chrome_ingress_tests.rs"]
+mod scroll_chrome_ingress_tests;
+#[path = "active_application_session/scroll_chrome_interaction.rs"]
+mod scroll_chrome_interaction;
+#[path = "active_application_session/scroll_chrome_pending_completion.rs"]
+mod scroll_chrome_pending_completion;
+pub(crate) use scroll_chrome_ingress::UiScrollChromeIngressOutcome;
+#[cfg(any(test, feature = "certification-support"))]
+pub(crate) use scroll_chrome_interaction::UiScrollChromePressOutcome;
+pub(in crate::facade::entry) use scroll_settlement_lifecycle::UiScrollSettlementScope;
+#[path = "active_application_session/scroll_chrome_presentation.rs"]
+mod scroll_chrome_presentation;
+#[path = "active_application_session/scroll_chrome_projection.rs"]
+mod scroll_chrome_projection;
+#[cfg(test)]
+#[path = "active_application_session/scroll_chrome_tests.rs"]
+mod scroll_chrome_tests;
+#[path = "active_application_session/scroll_direct_control.rs"]
+mod scroll_direct_control;
+#[path = "active_application_session/scroll_extent_retarget.rs"]
+mod scroll_extent_retarget;
+pub(in crate::facade::entry) use scroll_extent_retarget::settle_presented_scroll_extent;
 #[path = "active_application_session/scroll_geometry.rs"]
 mod scroll_geometry;
+#[path = "active_application_session/scroll_gesture_latching.rs"]
+mod scroll_gesture_latching;
 #[path = "active_application_session/scroll_observation.rs"]
 mod scroll_observation;
+#[path = "active_application_session/scroll_pose_application.rs"]
+mod scroll_pose_application;
+#[path = "active_application_session/scroll_region_declaration.rs"]
+mod scroll_region_declaration;
+#[path = "active_application_session/scroll_settle_disposition.rs"]
+mod scroll_settle_disposition;
+#[path = "active_application_session/scroll_settlement_lifecycle.rs"]
+mod scroll_settlement_lifecycle;
+#[path = "active_application_session/scroll_target_resolution.rs"]
+mod scroll_target_resolution;
+pub use scroll_settle_disposition::{
+    UiAcceptedScrollSettlementDenial, UiScrollSettleDisposition, UiScrollSettleRefusal,
+    UiScrollWriteBackRefusal,
+};
+#[path = "active_application_session/scroll_settle_publication.rs"]
+mod scroll_settle_publication;
+#[path = "active_application_session/scroll_transition_preparation.rs"]
+mod scroll_transition_preparation;
+#[cfg(test)]
+#[path = "active_application_session/scroll_transition_tests.rs"]
+mod scroll_transition_tests;
 #[path = "active_application_session/semantic_text_registration.rs"]
 mod semantic_text_registration;
 #[path = "active_application_session/service_inspection.rs"]
@@ -127,6 +186,9 @@ pub struct WorthUiActiveApplicationSession {
     pub(super) visual_captures: crate::inspection::visual_snapshot::UiVisualCaptureRegistry,
     pub(super) visual_overlays: crate::inspection::visual_snapshot::UiVisualOverlayRegistry,
     pub(super) rebind: crate::runtime::rebind::UiRebindRuntimeState,
+    pub(super) scroll_settle_retry: scroll_accepted_sample_settlement::UiScrollSettleRetry,
+    pub(super) last_scroll_settle_stop: Option<crate::runtime::scroll::UiScrollSettleStop>,
+    pub(super) last_scroll_settle_disposition: UiScrollSettleDisposition,
 }
 
 impl WorthUiActiveApplicationSession {
@@ -167,84 +229,6 @@ impl WorthUiActiveApplicationSession {
 
     pub fn capabilities(&self) -> &crate::facade::registry::snapshot::CapabilitySnapshot {
         self.application.capabilities()
-    }
-
-    #[cfg(test)]
-    pub(crate) const fn has_appearance_owner_snapshot_for_test(&self) -> bool {
-        self.appearance_owner_snapshot.is_some()
-    }
-
-    #[cfg(test)]
-    pub(crate) const fn appearance_owner_snapshot_for_test(
-        &self,
-    ) -> Option<&crate::runtime::appearance::UiAppearanceOwnerSnapshot> {
-        self.appearance_owner_snapshot.as_ref()
-    }
-
-    #[cfg(test)]
-    pub(crate) fn replace_appearance_theme_definition_for_test(
-        &mut self,
-        definition: &str,
-        changed_token: &crate::capability::ThemeTokenId,
-    ) {
-        let receipts = {
-            let themes = self
-                .capabilities()
-                .appearance_themes()
-                .expect("appearance test session must carry a theme bundle");
-            let identity = crate::capability::UiThemeDefinitionIdentity::new(definition).unwrap();
-            let roles = self.capabilities().appearance_roles();
-            self.presentation
-                .appearance_theme_state()
-                .expect("appearance test session must have active theme bindings")
-                .active_bindings()
-                .map(|binding| {
-                    crate::runtime::appearance::UiThemeCapabilityAdmission::
-                        from_frozen_capabilities(
-                            themes,
-                            &identity,
-                            roles,
-                            binding.capability().host_profile(),
-                        )
-                        .unwrap()
-                        .issue(
-                            binding
-                                .capability()
-                                .required_roles()
-                                .iter()
-                                .map(|role| role.identity().clone()),
-                            binding.surface(),
-                            self.active_generation_identity(),
-                        )
-                        .unwrap()
-                })
-                .collect::<Vec<_>>()
-        };
-        let authority = self.application.prepared_authority();
-        let index = authority.consumed_fact_index();
-        let declarations = authority.authored_declaration_lookup();
-        let authored = declarations
-            .theme_token_declaration_identity(changed_token.as_str())
-            .unwrap_or(changed_token.as_str());
-        let selected = index
-            .select_appearance_slot_consumers(index.basis(), changed_token.as_str(), authored)
-            .expect("test theme switch selects declared slot consumers");
-        for receipt in receipts {
-            let (batch, _) =
-                crate::runtime::appearance::UiAppearanceInvalidationBatch::theme_surface(
-                    index,
-                    &self.mounted,
-                    self.graph(),
-                    receipt.surface(),
-                    selected.consumers(),
-                )
-                .expect("test theme switch selects only the bound surface");
-            self.presentation
-                .replace_appearance_theme_binding_for_test(receipt);
-            self.presentation
-                .queue_appearance_invalidation(batch)
-                .expect("test theme switch queues its surface invalidation");
-        }
     }
 
     pub fn resolve_affected_scope(
@@ -297,7 +281,7 @@ impl WorthUiActiveApplicationSession {
         let host_session_identity = self.host_session.identity();
         let font_collection = std::sync::Arc::clone(self.application.font_collection());
         let overlay_appearance = self.prepare_overlay_appearance_sources();
-        let motion = self.motion.as_ref();
+        let motion = self.motion.as_mut();
         let turn = self.application.execute_framework_turn(collect_sources);
         let (
             generation_identity,
@@ -353,6 +337,7 @@ impl WorthUiActiveApplicationSession {
             appearance_inspection: &mut self.appearance_inspection,
             overlay_appearance,
             motion,
+            scroll: self.scroll.as_mut(),
         })
     }
 }

@@ -142,6 +142,104 @@ Graph must never import mounting. Planning cannot mutate mounted or observation
 state. Observation cannot publish a frame. Inspection cannot reconstruct
 operational truth.
 
+## Scroll, Motion, And Direct Control
+
+Scroll owns region bounds, routing, semantic targets and accepted offsets.
+Motion owns interpolation and velocity-continuous retargeting. Mounted
+presentation binds each track to its exact Scroll occurrence and indexed paint
+group, then carries one prepared result through ordinary host acceptance.
+Preparation is not acceptance: refused frames preserve predecessor offsets,
+geometry and pixels, with bounded pending evidence available for retry.
+
+The native shell and admitted tick observations use the same settling path:
+
+```text
+prepare_motion_tick
+-> present_prepared_motion_tick
+-> settle_accepted_scroll_sample
+```
+
+The curve is time-based; Pulse selects a 120 ms horizon from the latest coarse input.
+A dropped or rejected frame does not advance accepted state or change the
+endpoint. New input accumulates against the pending target and retargets from
+accepted position and velocity, including direction reversals. An elapsed
+horizon alone cannot retire a target whose endpoint the host has not accepted.
+Displayed geometry, hit testing, hover and
+thumbs consume the accepted sample, never the ahead target. A first sample may
+still be at rest; settlement is not a promise about a fixed number of frames.
+The native wake lane offers samples frequently enough not to withhold a display
+interval; FIFO presentation and the actual display determine visible cadence.
+
+Pixel deltas already express travel and apply directly, including OS momentum.
+For coarse input, the host admits the platform lines-per-notch and runtime
+multiplies by the consuming region's declared line extent. Pulse declares
+20 points, giving 60 points for the usual three-line notch. Page input uses the
+viewport-minus-line step. Missing required line extent is a typed refusal, not
+an implicit one-point conversion. The immediate default remains usable without
+Motion; smooth policy requires admitted Motion support.
+
+A phased gesture remains latched to its first consuming owner until end or
+cancellation, even when that owner reaches an edge. A new gesture beginning at
+an edge may select a consuming ancestor. Unphased wheel input uses its declared
+quiet interval. Modality loss, removal and reincarnation invalidate the latch.
+Nested Scroll groups compose each ancestor displacement exactly once. Their
+membership and clip provenance are indexed at ordinary frame admission, not
+rediscovered by a graph walk on each motion sample.
+
+Moving commands retain intrinsic geometry and clipping separately from their
+stationary viewport clips. A fully clipped glyph remains available to reveal
+when content moves back into view; explicitly suppressed content retires.
+Presentation derives device-grid-snapped text, outlines and thumb geometry
+without changing semantic subpixel offsets. Hit targets retain the unsnapped
+accepted pose. Native sampled-appearance coverage has its own spatial index,
+updated transactionally and restored on rejection or reconstruction, so local
+damage does not scan every retained sampled command.
+
+A Mosaic region declares chrome axes, metrics and registered appearance roles.
+Runtime derives the track and thumb from accepted bounds and offset; applications
+do not supply thumb coordinates. The thumb's clip remains its viewport, not its
+old rectangle, so subsequent samples can move throughout the track.
+
+Pressing a moving thumb takes capture at the accepted pose and ends its easing
+with `DisplacedByDirectControl`. If a sampled frame is still physically in
+flight, the admitted press retains its original presentation, pointer and
+capture epoch until those pixels are accepted and reconciled; the grab is then
+derived from the actual displayed thumb. A pending move or release retains its
+event-time position, while focus or binding loss cancels the capture. The press
+does not place content. Drag and track
+placement stage exact direct successors; their offsets and transition retirement
+commit only when the corresponding ordinary frame is accepted. Further direct
+input accumulates on bounded pending intent. Wheel and keyboard input cannot
+restart the captured axis. Release outside the gutter retains capture semantics
+until release and leaves the accepted drag offset in place.
+Native client exit preserves the held button and capture epoch; focus loss
+still cancels capture, and a release outside the window clears the held button.
+Release submits its event-time position through ordinary direct succession
+before dropping capture, so a coalesced final move cannot lose the endpoint.
+A released pending capture refuses later same-axis wheel input until its final
+placement is staged, and the native physical callback wakes the ordinary frame
+that must publish that placement.
+
+Layout extent succession also stays pending until presentation. Accepted
+bounds and offsets remain coherent with displayed content while a resized or
+reclamped candidate is refused. Acceptance reconciles the pending target and
+accepted offset together. New input cannot overwrite an unpublished layout or
+direct successor with incompatible evidence.
+
+Empty paint groups still cross ordinary host completion: an accepted semantic
+Scroll sample can change geometry without inventing a paint command. No-host
+acknowledgement is not a substitute. Stationary-pointer hover re-resolves from
+accepted geometry across ordinary frame succession. Reconstruction restores
+accepted geometry but retires pointer presence from the old binding; newly
+admitted input resolves against the replacement binding.
+
+Empty content, removal, attention loss and shutdown terminate tracks with named
+causes and retire capture, latches and retained sample work. Routing and sampling
+visit the consuming chain and indexed affected commands/regions, not unrelated
+mounted instances. Delivered reports retire after synchronous consumers; exact
+pending input consequences remain bounded until acceptance or cancellation.
+Neither event history nor wheel duration grows retained storage.
+
 ## Rebind Construction
 
 Every active session constructs `UiRebindRuntimeState` from the prepared

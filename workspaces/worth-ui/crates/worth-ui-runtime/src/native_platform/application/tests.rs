@@ -40,6 +40,22 @@ impl crate::native_platform::UiNativeApplicationRuntime for OneOwnerRuntime {
         ))
     }
 
+    fn native_motion_settlement_ready(
+        &mut self,
+        application: crate::facade::WorthUiNativeApplicationShell,
+    ) -> Result<
+        (
+            crate::facade::WorthUiNativeApplicationShell,
+            crate::native_platform::UiNativeApplicationRuntimeDirective,
+        ),
+        super::super::UiNativeApplicationRuntimeProgressStopped,
+    > {
+        Ok((
+            application,
+            crate::native_platform::UiNativeApplicationRuntimeDirective::Continue,
+        ))
+    }
+
     fn readiness_ready(
         &mut self,
         _application: crate::facade::WorthUiNativeApplicationShell,

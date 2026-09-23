@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{mpsc, Arc, Mutex};
 use std::time::{Duration, Instant};
-use worth_ui_platform_pulse::PlatformPulseApplicationReadinessSignal;
+use worth_ui_platform_pulse::{bears_on_watched_file, PlatformPulseApplicationReadinessSignal};
 
 const FILE_NAME: &str = "platform-pulse-theme.json";
 const MAXIMUM_BYTES: u64 = 4096;
@@ -36,14 +36,7 @@ impl PlatformPulseThemePreferenceWatch {
         let callback_failed = Arc::clone(&failed);
         let mut watcher =
             notify::recommended_watcher(move |event: notify::Result<notify::Event>| {
-                let relevant = event.as_ref().map_or(true, |event| {
-                    !matches!(event.kind, notify::EventKind::Access(_))
-                        && event
-                            .paths
-                            .iter()
-                            .any(|path| path.file_name().is_some_and(|name| name == FILE_NAME))
-                });
-                if !relevant {
+                if !bears_on_watched_file(&event, FILE_NAME) {
                     return;
                 }
                 if event.is_err() {

@@ -19,6 +19,8 @@ mod reclaim_region;
 mod reclaimed_byte_interpretation;
 mod record_free_space_entry;
 mod routing_tree_height;
+
+pub use routing_tree_height::required_tree_level;
 #[cfg(test)]
 mod tests;
 mod universe;

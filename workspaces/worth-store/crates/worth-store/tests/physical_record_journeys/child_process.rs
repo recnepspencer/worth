@@ -21,5 +21,5 @@ pub(super) use locator_codec::{decode_locator, hex, unhex};
 const CHILD_TEST: &str = "child_process::dispatch::c5_child_role";
 const ROLE_ENV: &str = "WORTH_STORE_C5_CHILD_ROLE";
 const ROOT_ENV: &str = "WORTH_STORE_C5_CHILD_ROOT";
-const LOCATOR_ENV: &str = "WORTH_STORE_C5_LOCATOR";
+pub(super) const LOCATOR_ENV: &str = "WORTH_STORE_C5_LOCATOR";
 const ORACLE_ENV: &str = "WORTH_STORE_C5_ORACLE";

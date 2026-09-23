@@ -5,6 +5,7 @@ use worth_ui_host_contract::{
 };
 
 use super::{production_cost, LocalWorkCost, RetainedTraversalCost, UiMountedPresentationState};
+use crate::runtime::motion::UiMotionTargetScope;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum UiMountedMotionSampleWorkDenial {
@@ -37,6 +38,21 @@ impl UiMountedPresentationState {
         let mut damage = Vec::new();
         let mut acceptance = Vec::new();
         let mut selected = std::collections::HashSet::new();
+        let mut scroll_acceptance = Vec::new();
+        for (change, sample) in self.scroll_sample_changes(sampling.samples())? {
+            selected.insert(change.command());
+            damage.extend(
+                change
+                    .clip()
+                    .map(UiMountedLogicalDamage::from_runtime_mounting),
+            );
+            acceptance.push(self.prepare_command_motion_update_with_change(
+                change.command(),
+                sample,
+                change,
+            ));
+            changes.push(change);
+        }
         for sample in sampling.samples() {
             if sample.presentation_basis() != presentation
                 || sample.target().semantic_surface() != self.requirement.semantic_surface()
@@ -44,8 +60,20 @@ impl UiMountedPresentationState {
                 return Err(UiMountedMotionSampleWorkDenial::PresentationBasisMismatch);
             }
             let portal_group = self.portal_motion_group(sample.target());
-            if sample.target().is_portal_contents() && portal_group.is_none() {
-                return Err(UiMountedMotionSampleWorkDenial::UnknownTargetCommands);
+            match sample.target().scope() {
+                UiMotionTargetScope::ScrollContents => {
+                    scroll_acceptance.push(
+                        super::scroll_motion_groups::UiScrollGroupMotionUpdate::prepare(
+                            self, *sample,
+                        )
+                        .ok_or(UiMountedMotionSampleWorkDenial::UnknownTargetCommands)?,
+                    );
+                    continue;
+                }
+                UiMotionTargetScope::PortalContents if portal_group.is_none() => {
+                    return Err(UiMountedMotionSampleWorkDenial::UnknownTargetCommands);
+                }
+                UiMotionTargetScope::Ordinary | UiMotionTargetScope::PortalContents => {}
             }
             let portal_clip = portal_group
                 .as_ref()
@@ -125,7 +153,10 @@ impl UiMountedPresentationState {
         }
         // Text image coverage may remain visible outside its logical allocation.
         // The host derives physical damage from retained admitted images.
-        if changes.is_empty() {
+        // A Scroll group can contain hit-only/empty content. Its exact group
+        // update still crosses the host boundary; no paint is manufactured to
+        // make the sample nonempty, and an unknown ordinary target still fails.
+        if changes.is_empty() && scroll_acceptance.is_empty() {
             return Err(UiMountedMotionSampleWorkDenial::UnknownTargetCommands);
         }
         let work = lease.issue_sample(UiMountedPresentationSampleInput {
@@ -150,7 +181,8 @@ impl UiMountedPresentationState {
         });
         Ok((
             work,
-            super::motion_evidence::UiPreparedCommandMotionAcceptance::new(acceptance),
+            super::motion_evidence::UiPreparedCommandMotionAcceptance::new(acceptance)
+                .with_scroll_groups(scroll_acceptance),
         ))
     }
 

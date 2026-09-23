@@ -17,6 +17,7 @@ mod overlay_order;
 mod pointer_affordance;
 mod portal_surface;
 mod radii;
+mod scroll_chrome;
 mod surface;
 mod surface_border;
 mod surface_geometry;
@@ -81,6 +82,11 @@ pub use portal_surface::{
     UiMountedPortalSurfaceAppearanceCompletionDenial, UiMountedPortalSurfaceAppearanceMechanic,
 };
 pub use radii::UiAppearanceNormalizedLogicalRadii;
+pub use scroll_chrome::{
+    UiMountedScrollChromeAppearanceAttribution, UiMountedScrollChromeAxis,
+    UiMountedScrollChromeCompletionDenial, UiMountedScrollChromeCompletionInput,
+    UiMountedScrollChromeIdentity, UiMountedScrollChromeMechanic, UiMountedScrollChromePart,
+};
 pub use surface::{
     UiMountedSurfaceAppearanceCompletionDenial, UiMountedSurfaceAppearanceCompletionInput,
     UiMountedSurfaceAppearanceMechanic, UiMountedSurfaceBorderEdges, UiMountedSurfacePaint,

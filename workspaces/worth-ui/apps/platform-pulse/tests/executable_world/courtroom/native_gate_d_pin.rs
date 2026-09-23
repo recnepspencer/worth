@@ -4,7 +4,7 @@ use std::time::{Duration, Instant};
 use crate::product_process::{CargoBuiltPlatformPulse, SuccessfulPlatformPulseExit};
 
 #[test]
-#[ignore = "requires the serialized interactive Windows 11 DX12 desktop"]
+#[ignore = "requires the serialized interactive certified native desktop (Windows 11 DX12 or Xvfb X11)"]
 fn live_layout_pins_cross_runtime_native_signal_and_release_at_last_owner() {
     let mut launch = CargoBuiltPlatformPulse::exact()
         .and_then(CargoBuiltPlatformPulse::launch_native_gate_d_pin_world)

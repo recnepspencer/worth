@@ -1,6 +1,7 @@
+//! Before a button is delivered the client's pixels must have stopped
+//! changing, so a pointer-hover repaint is not mistaken for the click's
+//! effect. Neutral over any observer: the caller supplies its own capture.
 use std::time::{Duration, Instant};
-
-use crate::external_observation::ProcessBoundNativeClientAreaObservation;
 
 use super::NativePlatformFailure;
 
@@ -8,15 +9,15 @@ const SETTLEMENT_DEADLINE: Duration = Duration::from_secs(2);
 const SAMPLE_INTERVAL: Duration = Duration::from_millis(16);
 const REQUIRED_STABLE_SAMPLES: u8 = 3;
 
-pub(super) fn await_client_stability(
-    observed: ProcessBoundNativeClientAreaObservation,
+pub(in crate::native_platform) fn await_client_stability(
+    capture: impl Fn() -> Result<Vec<u8>, NativePlatformFailure>,
 ) -> Result<(), NativePlatformFailure> {
     let deadline = Instant::now() + SETTLEMENT_DEADLINE;
-    let mut prior = capture(observed)?;
+    let mut prior = capture()?;
     let mut stable_samples = 0;
     loop {
         std::thread::sleep(SAMPLE_INTERVAL);
-        let current = capture(observed)?;
+        let current = capture()?;
         if current == prior {
             stable_samples += 1;
             if stable_samples == REQUIRED_STABLE_SAMPLES {
@@ -32,14 +33,4 @@ pub(super) fn await_client_stability(
             ));
         }
     }
-}
-
-fn capture(
-    observed: ProcessBoundNativeClientAreaObservation,
-) -> Result<Vec<u8>, NativePlatformFailure> {
-    Ok(
-        super::gdi_capture::capture_client_area(observed.bounds(), observed.process_id())?
-            .rgba()
-            .to_vec(),
-    )
 }

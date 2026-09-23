@@ -225,7 +225,10 @@ fn lane_specific_missing_resource_denies_before_capacity_accounting() {
     let security = io_qos_security_scope_admission();
     let backend = backend_admission(IoSchedulerBackendCapabilityRequirement::Fsync);
     let lane = ForegroundLaneDeclaration::commit_critical_wal_write()
-        .with_latency_envelope(ForegroundLatencyEnvelope::hard_bound("wal-commit", 1))
+        .with_latency_envelope(ForegroundLatencyEnvelope::bounded_interference(
+            "wal-commit",
+            1,
+        ))
         .with_budget(
             ForegroundResourceBudget::new()
                 .with_queue_slots(QueueSlot::new(1).unwrap())

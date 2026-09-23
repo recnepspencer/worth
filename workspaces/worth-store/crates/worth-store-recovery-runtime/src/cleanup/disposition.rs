@@ -28,6 +28,7 @@ pub enum RecoveryCleanupDeferralReason {
     CandidateLimit,
     ByteLimit,
     UnresolvedOperationFate,
+    UnresolvedRetirement,
     FreshnessUnavailable,
     PublishedGenerationChanged,
     EligibilityChanged,

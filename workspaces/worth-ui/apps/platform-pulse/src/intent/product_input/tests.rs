@@ -1,10 +1,17 @@
 use super::decode::read_record;
 use super::watch::{classify_revision, AdmittedRevisionRelation};
 use super::{
-    PlatformPulseExecutorGatePosture, PlatformPulseIntentInputInstallation,
-    PlatformPulseIntentInputOperability, PlatformPulseIntentInputWatchDenial,
+    PlatformPulseExecutorGatePosture, PlatformPulseIntentInputEvent,
+    PlatformPulseIntentInputInstallation, PlatformPulseIntentInputOperability,
+    PlatformPulseIntentInputWatch, PlatformPulseIntentInputWatchDenial, CHANNEL_CAPACITY,
+    INPUT_FILE,
 };
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::time::{Duration, Instant};
+
+const SUCCESSOR_DEADLINE: Duration = Duration::from_secs(5);
+const SETTLE_WINDOW: Duration = Duration::from_millis(400);
+const POLL_INTERVAL: Duration = Duration::from_millis(10);
 
 static NEXT_INSTALLATION: AtomicU64 = AtomicU64::new(1);
 
@@ -81,6 +88,85 @@ fn intent_installation_reads_once_before_starting_the_bounded_watch() {
     assert!(shutdown.worker_joined());
     assert_eq!(shutdown.pending_event_count(), 0);
     std::fs::remove_dir_all(root).expect("remove intent input fixture");
+}
+
+/// Falsifier for the ingress rule: the watcher must not observe its own reads, nor
+/// sibling traffic in its root, as change. Before the shared predicate every
+/// `std::fs::read` of the watched file re-entered the notify queue on inotify and
+/// the worker stopped with `ChannelCapacityExceeded` during `query_application_launch`.
+#[test]
+fn intent_watch_survives_own_reads_and_sibling_traffic_then_admits_a_successor() {
+    let root = isolated_root();
+    let target = root.join(INPUT_FILE);
+    std::fs::write(
+        &target,
+        include_bytes!("../../../intent_samples/ready.json"),
+    )
+    .expect("write initial intent input");
+    let installation = PlatformPulseIntentInputInstallation::open(&root)
+        .expect("open bounded intent input installation");
+    let (initial, mut watch) = installation.into_parts();
+    assert_eq!(initial.revision(), 1);
+    for ordinal in 0..(CHANNEL_CAPACITY * 3) {
+        std::fs::read(&target).expect("watched intent file stays readable");
+        std::fs::write(root.join(format!("sibling-{ordinal}.json")), b"{}")
+            .expect("write sibling traffic");
+    }
+    let settle_until = Instant::now() + SETTLE_WINDOW;
+    while Instant::now() < settle_until {
+        assert_no_event(&mut watch, "own reads and sibling traffic");
+        std::thread::sleep(POLL_INTERVAL);
+    }
+    // Writers replace the record atomically (temporary + rename), as the worlds'
+    // `atomic_replacement` does; a truncating in-place write is not the contract.
+    let temporary = root.join("platform-pulse-intent.json.tmp");
+    std::fs::write(
+        &temporary,
+        br#"{"protocol":"worth-ui.platform-pulse.intent-source","schema_version":1,"revision":2,"operability":"ready","executor_gate":"released"}"#,
+    )
+    .expect("write successor intent input");
+    std::fs::rename(&temporary, &target).expect("replace intent input atomically");
+    let successor = await_record(&mut watch);
+    assert_eq!(successor.revision(), 2);
+    assert_eq!(
+        successor.executor_gate(),
+        PlatformPulseExecutorGatePosture::Released
+    );
+    let shutdown = watch.shutdown().expect("shut down intent input watch");
+    assert!(shutdown.worker_joined());
+    assert_eq!(shutdown.pending_event_count(), 0);
+    std::fs::remove_dir_all(root).expect("remove intent input fixture");
+}
+
+fn assert_no_event(watch: &mut PlatformPulseIntentInputWatch, phase: &str) {
+    match watch.try_next() {
+        None => {}
+        Some(PlatformPulseIntentInputEvent::Record(record)) => {
+            panic!(
+                "{phase} must not surface a record, saw revision {}",
+                record.revision()
+            )
+        }
+        Some(PlatformPulseIntentInputEvent::Failed(denial)) => {
+            panic!("{phase} must not stop the watch, saw {denial}")
+        }
+    }
+}
+
+fn await_record(
+    watch: &mut PlatformPulseIntentInputWatch,
+) -> super::PlatformPulseIntentInputRecord {
+    let deadline = Instant::now() + SUCCESSOR_DEADLINE;
+    while Instant::now() < deadline {
+        match watch.try_next() {
+            None => std::thread::sleep(POLL_INTERVAL),
+            Some(PlatformPulseIntentInputEvent::Record(record)) => return record,
+            Some(PlatformPulseIntentInputEvent::Failed(denial)) => {
+                panic!("successor write must not stop the watch, saw {denial}")
+            }
+        }
+    }
+    panic!("successor intent record did not arrive within {SUCCESSOR_DEADLINE:?}")
 }
 
 fn isolated_root() -> std::path::PathBuf {

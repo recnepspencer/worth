@@ -1,3 +1,6 @@
+#[path = "integrated_appearance_world/portal_order_assertion.rs"]
+mod portal_order_assertion;
+use portal_order_assertion::assert_portal_backdrop_order;
 #[path = "integrated_appearance_world/authored.rs"]
 mod authored;
 #[path = "integrated_appearance_world/backdrop_role_succession.rs"]
@@ -44,12 +47,58 @@ mod reconstruction;
 mod replacement;
 #[path = "integrated_appearance_world/replacement_geometry.rs"]
 mod replacement_geometry;
+#[path = "integrated_appearance_world/scroll_capture_cancellation.rs"]
+mod scroll_capture_cancellation;
+#[path = "integrated_appearance_world/scroll_chrome_fixture.rs"]
+mod scroll_chrome_fixture;
+#[path = "integrated_appearance_world/scroll_chrome_layout_rejection.rs"]
+mod scroll_chrome_layout_rejection;
+#[path = "integrated_appearance_world/scroll_coarse_wheel.rs"]
+mod scroll_coarse_wheel;
+#[path = "integrated_appearance_world/scroll_content_anchoring.rs"]
+mod scroll_content_anchoring;
+#[path = "integrated_appearance_world/scroll_direct_acceptance.rs"]
+mod scroll_direct_acceptance;
+#[path = "integrated_appearance_world/scroll_empty_sample_acceptance.rs"]
+mod scroll_empty_sample_acceptance;
+#[path = "integrated_appearance_world/scroll_extent_acceptance.rs"]
+mod scroll_extent_acceptance;
+#[path = "integrated_appearance_world/scroll_gesture_latching.rs"]
+mod scroll_gesture_latching;
+#[path = "integrated_appearance_world/scroll_hover_reresolution.rs"]
+mod scroll_hover_reresolution;
+#[path = "integrated_appearance_world/scroll_input_burst.rs"]
+mod scroll_input_burst;
+#[path = "integrated_appearance_world/scroll_locality_narrowing.rs"]
+mod scroll_locality_narrowing;
+#[path = "integrated_appearance_world/scroll_modality_cancellation.rs"]
+mod scroll_modality_cancellation;
+#[path = "integrated_appearance_world/scroll_pose_authority.rs"]
+mod scroll_pose_authority;
+#[path = "integrated_appearance_world/scroll_presentation_snapping.rs"]
+mod scroll_presentation_snapping;
+#[path = "integrated_appearance_world/scroll_reconstruction.rs"]
+mod scroll_reconstruction;
+#[path = "integrated_appearance_world/scroll_reduced_motion.rs"]
+mod scroll_reduced_motion;
+#[path = "integrated_appearance_world/scroll_sample_acceptance.rs"]
+mod scroll_sample_acceptance;
+#[path = "integrated_appearance_world/scroll_settle_commit.rs"]
+mod scroll_settle_commit;
+#[path = "integrated_appearance_world/scroll_settle_frame.rs"]
+mod scroll_settle_frame;
+#[path = "integrated_appearance_world/scroll_settle_over_open_attempt.rs"]
+mod scroll_settle_over_open_attempt;
+#[path = "integrated_appearance_world/scroll_settlement_lifecycle.rs"]
+mod scroll_settlement_lifecycle;
 #[path = "integrated_appearance_world/seam.rs"]
 mod seam;
 #[path = "integrated_appearance_world/services.rs"]
 mod services;
 #[path = "integrated_appearance_world/session.rs"]
 mod session;
+#[path = "integrated_appearance_world/session_publication.rs"]
+mod session_publication;
 #[path = "integrated_appearance_world/stationary_motion.rs"]
 mod stationary_motion;
 #[path = "integrated_appearance_world/surface_continuity.rs"]
@@ -222,6 +271,17 @@ fn disjoint_mounted_region_neighborhood_suppresses_child_appearance() {
     let _ = world.session.shutdown();
 }
 
+fn backdrop_projection(world: &World, name: &str) -> String {
+    let declaration = world
+        .session
+        .application
+        .authored_overlay_material()
+        .overlay_declaration_bindings()
+        .backdrop_named(name)
+        .unwrap();
+    format!("backdrop:{}", declaration.value())
+}
+
 fn assert_always_region_backdrop(output: &UiUnpublishedAppearanceFrameProjection, world: &World) {
     let transcript =
         worth_ui_host_headless::translate_appearance_projection_for_certification(output).unwrap();
@@ -263,93 +323,4 @@ fn assert_always_region_backdrop(output: &UiUnpublishedAppearanceFrameProjection
             .straight_srgba(),
         [0, 0, 0, 0]
     );
-}
-
-fn assert_portal_backdrop_order(output: &UiUnpublishedAppearanceFrameProjection, world: &World) {
-    let overlay = output
-        .fragments()
-        .iter()
-        .find(|fragment| {
-            fragment.identity()
-                == UiUnpublishedAppearanceFragmentIdentity::SurfaceOverlay(world.surfaces[0])
-        })
-        .unwrap();
-    let order = overlay.work().successor().overlay_order().bottom_to_top();
-    for portal in world.instances[..2].iter().copied() {
-        let before = overlay
-            .work()
-            .successor()
-            .mechanics()
-            .iter()
-            .find_map(|mechanic| match mechanic {
-                UiMountedAppearanceMechanic::Backdrop(backdrop)
-                    if backdrop.identity().declaration_projection()
-                        == backdrop_projection(world, "overlay.scrim")
-                        && backdrop.identity().scope()
-                            == UiMountedBackdropScope::PerPortalInstance(portal) =>
-                {
-                    Some(backdrop.identity().clone())
-                }
-                _ => None,
-            })
-            .unwrap_or_else(|| {
-                panic!(
-                    "missing before Backdrop for {portal:?}; mechanics: {:?}",
-                    overlay.work().successor().mechanics()
-                )
-            });
-        let after = overlay
-            .work()
-            .successor()
-            .mechanics()
-            .iter()
-            .find_map(|mechanic| match mechanic {
-                UiMountedAppearanceMechanic::Backdrop(backdrop)
-                    if backdrop.identity().declaration_projection()
-                        == backdrop_projection(world, "overlay.after")
-                        && backdrop.identity().scope()
-                            == UiMountedBackdropScope::PerPortalInstance(portal) =>
-                {
-                    Some(backdrop.identity().clone())
-                }
-                _ => None,
-            })
-            .unwrap_or_else(|| {
-                panic!(
-                    "missing after Backdrop for {portal:?}; mechanics: {:?}",
-                    overlay.work().successor().mechanics()
-                )
-            });
-        let position = |participant: &UiOverlayParticipantIdentity| {
-            order
-                .iter()
-                .position(|candidate| candidate == participant)
-                .unwrap()
-        };
-        let before = position(&UiOverlayParticipantIdentity::Backdrop(before));
-        let portal = position(&UiOverlayParticipantIdentity::Portal(portal));
-        let after = position(&UiOverlayParticipantIdentity::Backdrop(after));
-        assert_eq!((before + 1, portal + 1), (portal, after));
-    }
-    assert!(overlay
-        .work()
-        .successor()
-        .mechanics()
-        .iter()
-        .all(|mechanic| {
-            !matches!(mechanic, UiMountedAppearanceMechanic::Backdrop(backdrop)
-            if backdrop.identity().scope()
-                == UiMountedBackdropScope::PerPortalInstance(world.instances[2]))
-        }));
-}
-
-fn backdrop_projection(world: &World, name: &str) -> String {
-    let declaration = world
-        .session
-        .application
-        .authored_overlay_material()
-        .overlay_declaration_bindings()
-        .backdrop_named(name)
-        .unwrap();
-    format!("backdrop:{}", declaration.value())
 }

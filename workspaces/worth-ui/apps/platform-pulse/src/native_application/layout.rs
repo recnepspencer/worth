@@ -5,9 +5,9 @@ use worth_ui::facade::app::{
 use worth_ui::facade::declaration::{
     ComponentAllocationMeasurementContract, ComponentViewportAxisPlacement,
 };
-use worth_ui_platform_pulse::product_world::{
-    dashboard_elements, DashboardScrollPanel, PlatformPulseMosaicRegion,
-};
+use worth_ui_platform_pulse::product_world::{dashboard_elements, PlatformPulseMosaicRegion};
+
+mod scroll_region_bounds;
 
 pub(super) fn publish_native_layout(
     shell: &mut WorthUiNativeApplicationShell,
@@ -85,17 +85,10 @@ fn prepare_native_layout_batch(
         } else {
             UiMountedCoordinateSpace::HostSurface
         };
-        let mut bounds = resolve_allocation(contract, viewport, coordinate_space)?;
-        if let Some(panel) = panel {
-            let [x, y, _, _] = panel.content_rect();
-            bounds = canonical_box(
-                bounds.x() - f32::from(x),
-                bounds.y() - f32::from(y),
-                bounds.width(),
-                bounds.height(),
-                coordinate_space,
-            )?;
-        }
+        // A scrolled child's allocation is already content-local: the product
+        // authors it from its panel's content origin, so layout subtracts
+        // nothing here and owns no scroll geometry.
+        let bounds = resolve_allocation(contract, viewport, coordinate_space)?;
         occurrences.push(match parent {
             Some(parent) => {
                 UiMountedOccurrenceGeometry::parent_relative(component.instance(), parent, bounds)
@@ -196,24 +189,29 @@ fn region_bounds(
     viewport: UiMountedCanonicalBox,
     owner: UiMountedCanonicalBox,
 ) -> Result<UiMountedCanonicalBox, String> {
+    let (x, y, region_width, region_height) =
+        match scroll_region_bounds::scroll_region_surface_bounds(region_kind, viewport)? {
+            Some(bounds) => (bounds.x(), bounds.y(), bounds.width(), bounds.height()),
+            None => surface_region_bounds(region_kind, viewport, owner)?,
+        };
+    canonical_box(
+        x - owner.x(),
+        y - owner.y(),
+        region_width,
+        region_height,
+        UiMountedCoordinateSpace::GraphNodeLocal,
+    )
+}
+
+/// Host-surface rectangles for the regions the surface itself allocates.
+fn surface_region_bounds(
+    region_kind: &str,
+    viewport: UiMountedCanonicalBox,
+    owner: UiMountedCanonicalBox,
+) -> Result<(f32, f32, f32, f32), String> {
     let width = viewport.width();
     let height = viewport.height();
-    let (x, y, region_width, region_height) = match region_kind {
-        kind if DashboardScrollPanel::ALL
-            .iter()
-            .any(|panel| panel.region() == kind) =>
-        {
-            let panel = DashboardScrollPanel::ALL
-                .into_iter()
-                .find(|panel| panel.region() == kind)
-                .unwrap();
-            (
-                owner.x(),
-                owner.y(),
-                owner.width(),
-                f32::from(panel.viewport_height()),
-            )
-        }
+    let bounds = match region_kind {
         kind if kind == PlatformPulseMosaicRegion::Viewport.id() => (0.0, 0.0, width, height),
         kind if kind == PlatformPulseMosaicRegion::Masthead.id() => {
             (235.0, 0.0, (width - 235.0).max(0.0), 58.0)
@@ -235,13 +233,7 @@ fn region_bounds(
         }
         _ => return Err(format!("native-layout-unknown-mosaic-region:{region_kind}")),
     };
-    canonical_box(
-        x - owner.x(),
-        y - owner.y(),
-        region_width,
-        region_height,
-        UiMountedCoordinateSpace::GraphNodeLocal,
-    )
+    Ok(bounds)
 }
 
 fn resolve_host_bounds(

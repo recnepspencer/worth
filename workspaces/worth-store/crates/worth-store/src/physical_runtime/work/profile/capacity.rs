@@ -1,6 +1,7 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PhysicalWorkCapacity {
     commands: usize,
+    dispatch_permits: usize,
     scope_members_per_work: usize,
     total_scope_members: usize,
     semantic_bytes_per_work: usize,
@@ -26,6 +27,7 @@ impl PhysicalWorkCapacity {
         }
         Some(Self {
             commands,
+            dispatch_permits: commands,
             scope_members_per_work,
             total_scope_members,
             semantic_bytes_per_work,
@@ -44,6 +46,19 @@ impl PhysicalWorkCapacity {
 
     pub const fn commands(self) -> usize {
         self.commands
+    }
+
+    /// Worker permits. Ready slots stay on `commands`. The default keeps them equal.
+    pub fn with_dispatch_permits(mut self, permits: usize) -> Option<Self> {
+        if permits == 0 {
+            return None;
+        }
+        self.dispatch_permits = permits;
+        Some(self)
+    }
+
+    pub const fn dispatch_permits(self) -> usize {
+        self.dispatch_permits
     }
     pub const fn scope_members_per_work(self) -> usize {
         self.scope_members_per_work
@@ -66,6 +81,7 @@ impl Default for PhysicalWorkCapacity {
     fn default() -> Self {
         Self {
             commands: 1_024,
+            dispatch_permits: 1_024,
             scope_members_per_work: 256,
             total_scope_members: 32_768,
             semantic_bytes_per_work: 1024 * 1024,
@@ -87,5 +103,19 @@ mod tests {
             .unwrap()
             .with_terminal_evidence_capacity(0)
             .is_none());
+    }
+
+    #[test]
+    fn dispatch_permits_default_to_ready_slots_and_reject_zero() {
+        let capacity = PhysicalWorkCapacity::new(8, 1, 8, 1, 1).unwrap();
+        assert_eq!(capacity.dispatch_permits(), 8);
+        assert!(capacity.with_dispatch_permits(0).is_none());
+        assert_eq!(
+            capacity
+                .with_dispatch_permits(4)
+                .unwrap()
+                .dispatch_permits(),
+            4
+        );
     }
 }

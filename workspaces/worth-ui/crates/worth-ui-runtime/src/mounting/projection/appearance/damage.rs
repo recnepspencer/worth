@@ -73,7 +73,21 @@ fn push_shape(
                 .map_err(|_| UiMountedAppearanceLoweringDenial::WorkConstruction)?
         }
         UiMountedAppearanceDamageShape::Backdrop { extent, clip } => {
-            let Some(region) = clipped_backdrop(*extent, *clip)? else {
+            let Some(region) = clipped(
+                extent.x(),
+                extent.y(),
+                extent.width(),
+                extent.height(),
+                *clip,
+            )?
+            else {
+                return Ok(());
+            };
+            region
+        }
+        UiMountedAppearanceDamageShape::ScrollChrome { rect, clip } => {
+            let Some(region) = clipped(rect.x(), rect.y(), rect.width(), rect.height(), *clip)?
+            else {
                 return Ok(());
             };
             region
@@ -83,15 +97,19 @@ fn push_shape(
     Ok(())
 }
 
-fn clipped_backdrop(
-    extent: worth_ui_host_contract::UiAppearanceBackdropExtent,
+/// The part of a rectangle a clip leaves, or `None` when it leaves nothing.
+fn clipped(
+    rect_x: i32,
+    rect_y: i32,
+    rect_width: u32,
+    rect_height: u32,
     clip: worth_ui_host_contract::UiAppearanceClip,
 ) -> Result<Option<UiAppearanceDamageRegion>, UiMountedAppearanceLoweringDenial> {
-    let x = extent.x().max(clip.x());
-    let y = extent.y().max(clip.y());
-    let right = (i64::from(extent.x()) + i64::from(extent.width()))
+    let x = rect_x.max(clip.x());
+    let y = rect_y.max(clip.y());
+    let right = (i64::from(rect_x) + i64::from(rect_width))
         .min(i64::from(clip.x()) + i64::from(clip.width()));
-    let bottom = (i64::from(extent.y()) + i64::from(extent.height()))
+    let bottom = (i64::from(rect_y) + i64::from(rect_height))
         .min(i64::from(clip.y()) + i64::from(clip.height()));
     if right <= i64::from(x) || bottom <= i64::from(y) {
         return Ok(None);

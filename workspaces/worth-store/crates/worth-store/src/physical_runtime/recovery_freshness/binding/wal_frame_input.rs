@@ -22,6 +22,7 @@ impl RecoveryWalFrameInput for IntegrityAdmittedRecoveryWalFrame {
 }
 
 pub(in crate::physical_runtime::recovery_freshness) fn sample_binding<'frame>(
+    covered: super::CheckpointCoveredMembers,
     freshness: &super::super::PhysicalRecoveryFreshnessAuthority,
     checkpoint_basis: Option<&super::StoreRecoveryCheckpointBindingBasis>,
     media: &AdmittedRecoveryFilesystemMedia,
@@ -31,6 +32,7 @@ pub(in crate::physical_runtime::recovery_freshness) fn sample_binding<'frame>(
     maximum_redo_bytes: u64,
 ) -> Result<StoreRecoveryBindingFreshnessSample, StoreRecoveryBindingSampleFailure> {
     super::sample_binding_from_frames(
+        covered,
         freshness,
         checkpoint_basis,
         media,

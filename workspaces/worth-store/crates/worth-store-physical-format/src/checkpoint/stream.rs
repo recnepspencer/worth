@@ -12,8 +12,8 @@ use super::footer::{encode_footer, CheckpointStreamFooter};
 #[cfg(test)]
 use super::record::{decode_bounded_record, decode_record};
 use super::record::{
-    encode_record, CheckpointStreamDecodeDenial, BINDING_COMPACTION_HEADER_KIND,
-    BINDING_RECORD_KIND, DIRTY_BASIS_KIND, FOOTER_KIND, HEADER_KIND,
+    encode_record_schema, CheckpointStreamDecodeDenial, BINDING_COMPACTION_HEADER_KIND,
+    BINDING_RECORD_KIND, DIRTY_BASIS_KIND, FOOTER_KIND, HEADER_KIND, MAINTENANCE_CHECKPOINT_SCHEMA,
 };
 use super::source::encode_header;
 #[cfg(test)]
@@ -60,7 +60,11 @@ pub(crate) struct CheckpointBindingCompactionDecoder {
 
 impl CheckpointStreamEncoder {
     pub fn begin(source: PhysicalCheckpointSource) -> (Self, Vec<u8>) {
-        let header = encode_record(HEADER_KIND, &encode_header(source));
+        let header = encode_record_schema(
+            checkpoint_schema(&source),
+            HEADER_KIND,
+            &encode_header(source),
+        );
         let encoded_bytes = header.len() as u64;
         (
             Self {
@@ -73,7 +77,11 @@ impl CheckpointStreamEncoder {
     }
 
     pub fn encode_dirty_basis(&mut self, basis: CheckpointDirtyFrameBasis) -> Vec<u8> {
-        let record = encode_record(DIRTY_BASIS_KIND, &encode_dirty_basis(basis));
+        let record = encode_record_schema(
+            checkpoint_schema(&self.source),
+            DIRTY_BASIS_KIND,
+            &encode_dirty_basis(basis),
+        );
         self.dirty_records
             .include(&record)
             .expect("a checkpoint record aggregate fits the physical u64 format");
@@ -88,7 +96,8 @@ impl CheckpointStreamEncoder {
         self,
         header: CheckpointBindingCompactionHeader,
     ) -> (CheckpointBindingCompactionEncoder, Vec<u8>) {
-        let record = encode_record(
+        let record = encode_record_schema(
+            checkpoint_schema(&self.source),
             BINDING_COMPACTION_HEADER_KIND,
             &encode_binding_compaction_header(header),
         );
@@ -116,7 +125,11 @@ impl CheckpointBindingCompactionEncoder {
         if payload.len() > MAX_CHECKPOINT_BINDING_RECORD_BYTES {
             return Err(CheckpointStreamDecodeDenial::BindingRecordTooLarge);
         }
-        let record = encode_record(BINDING_RECORD_KIND, payload);
+        let record = encode_record_schema(
+            checkpoint_schema(&self.source),
+            BINDING_RECORD_KIND,
+            payload,
+        );
         self.binding_records.include(&record)?;
         Ok(record)
     }
@@ -135,7 +148,11 @@ impl CheckpointBindingCompactionEncoder {
             binding_record_bytes: bindings.encoded_bytes(),
             binding_records_digest: bindings.digest(),
         };
-        let record = encode_record(FOOTER_KIND, &encode_footer(footer));
+        let record = encode_record_schema(
+            checkpoint_schema(&self.source),
+            FOOTER_KIND,
+            &encode_footer(footer),
+        );
         (footer, record)
     }
 }
@@ -238,5 +255,13 @@ impl CheckpointBindingCompactionDecoder {
             return Err(CheckpointStreamDecodeDenial::AggregateDigestMismatch);
         }
         Ok(footer)
+    }
+}
+
+fn checkpoint_schema(source: &PhysicalCheckpointSource) -> u8 {
+    if source.requires_maintenance_protocol() {
+        MAINTENANCE_CHECKPOINT_SCHEMA
+    } else {
+        1
     }
 }

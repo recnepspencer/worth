@@ -13,7 +13,7 @@ impl UiNormalizedServicePolicyPlan {
         defaults: super::UiServicePolicyDefaults,
         authored: super::UiServicePolicyDefaults,
         support: crate::capability::UiRuntimeServiceSupport,
-    ) -> Self {
+    ) -> Result<Self, super::UiServicePolicyNormalizationDenial> {
         use crate::capability::{UiRuntimeServiceFamily as Family, UiRuntimeServiceSupportPosture};
         let installed =
             |family| support.posture(family) == UiRuntimeServiceSupportPosture::Installed;
@@ -29,34 +29,50 @@ impl UiNormalizedServicePolicyPlan {
                 .or(defaults.focus())
                 .unwrap_or(super::UiFocusPolicy::workbench())
         });
-        Self {
+        let motion = installed(Family::Motion).then(|| {
+            authored
+                .motion()
+                .or(defaults.motion())
+                .unwrap_or(super::UiMotionPolicy::system_respecting())
+        });
+        let command_routing = installed(Family::CommandRouting).then(|| {
+            authored
+                .command_routing()
+                .or(defaults.command_routing())
+                .unwrap_or(super::UiCommandRoutingPolicy::desktop())
+        });
+        let scroll = installed(Family::Scroll).then(|| {
+            authored
+                .scroll()
+                .or(defaults.scroll())
+                .unwrap_or(super::UiScrollPolicy::nested_region())
+        });
+        let selection = installed(Family::Selection).then(|| {
+            authored
+                .selection()
+                .or(defaults.selection())
+                .unwrap_or(super::UiSelectionPolicy::single())
+        });
+        if let Some(settle_ticks) = scroll
+            .map(super::UiScrollPolicy::wheel_behavior)
+            .and_then(super::UiScrollWheelBehavior::settle_ticks)
+        {
+            if motion.is_none() {
+                return Err(
+                    super::UiServicePolicyNormalizationDenial::SmoothWheelWithoutMotionOwner {
+                        settle_ticks,
+                    },
+                );
+            }
+        }
+        Ok(Self {
             portal,
             focus,
-            motion: installed(Family::Motion).then(|| {
-                authored
-                    .motion()
-                    .or(defaults.motion())
-                    .unwrap_or(super::UiMotionPolicy::system_respecting())
-            }),
-            command_routing: installed(Family::CommandRouting).then(|| {
-                authored
-                    .command_routing()
-                    .or(defaults.command_routing())
-                    .unwrap_or(super::UiCommandRoutingPolicy::desktop())
-            }),
-            scroll: installed(Family::Scroll).then(|| {
-                authored
-                    .scroll()
-                    .or(defaults.scroll())
-                    .unwrap_or(super::UiScrollPolicy::nested_region())
-            }),
-            selection: installed(Family::Selection).then(|| {
-                authored
-                    .selection()
-                    .or(defaults.selection())
-                    .unwrap_or(super::UiSelectionPolicy::single())
-            }),
-        }
+            motion,
+            command_routing,
+            scroll,
+            selection,
+        })
     }
 
     pub const fn portal(self) -> Option<super::UiPortalPolicy> {

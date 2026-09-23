@@ -2,21 +2,56 @@ use super::{authored, overlay, palette, test_support};
 use crate::capability::*;
 
 pub(super) fn builder(
-    seam: bool,
-    multi_region_owner: bool,
-    role: Option<&worth_ui_dsl::UiAppearanceRoleDeclaration>,
+    capabilities: &super::WorldCapabilities,
 ) -> crate::facade::entry::WorthUiCertificationApplicationBuilder {
-    let mut builder = test_support::authored_overlay_builder_with_component(authored::component(0))
-        .with_focus_policy_defaults(crate::declaration::UiFocusPolicy::workbench())
-        .with_motion_policy_defaults(crate::declaration::UiMotionPolicy::system_respecting())
-        .with_scroll_policy_defaults(crate::declaration::UiScrollPolicy::nested_region())
-        .register_surface(SurfaceDescriptor::new(SurfaceId::new("workspace.surface.secondary").unwrap(),
-            SurfaceKind::overlay_content(), ComponentId::new(authored::COMPONENTS[0]).unwrap(),
-            SurfacePlacementClass::overlay_layer(), SurfaceStateClass::restorable()))
-        .register_surface(SurfaceDescriptor::new(SurfaceId::new("aaa.surface").unwrap(),
-            SurfaceKind::overlay_content(), ComponentId::new(authored::COMPONENTS[0]).unwrap(),
-            SurfacePlacementClass::overlay_layer(), SurfaceStateClass::restorable()))
-        .register_theme_token(crate::runtime::tests::appearance_component_session_test_support::appearance_theme_token(ThemeTokenId::new(palette::TEXT_TOKEN).unwrap()));
+    let seam = capabilities.seam;
+    let multi_region_owner = capabilities.multi_region_owner;
+    let role = capabilities.role.as_ref();
+    let builder = if capabilities.motion {
+        test_support::authored_overlay_builder_with_component_and_region(
+            authored::component(0),
+            capabilities.scroll.region.clone(),
+        )
+    } else {
+        // Registering the shared OpenPortal intent also installs Motion. The
+        // no-Motion world declares only the actual Scroll/render capabilities.
+        crate::facade::WorthUi::app()
+            .with_change_profile(crate::runtime::rebind::UiChangeProfile::platform_pulse())
+            .register_component(authored::component(0))
+            .register_surface(SurfaceDescriptor::new(
+                SurfaceId::new("workspace.surface.overlay").unwrap(),
+                SurfaceKind::overlay_content(), ComponentId::new(authored::COMPONENTS[0]).unwrap(),
+                SurfacePlacementClass::overlay_layer(), SurfaceStateClass::restorable(),
+            ))
+            .register_mosaic_region_kind(capabilities.scroll.region.clone())
+            .register_mosaic_sizing_contract(crate::runtime::tests::source_ingress_boundary_test_support::source_backed_package_sizing())
+    };
+    let mut builder = builder
+    .with_focus_policy_defaults(crate::declaration::UiFocusPolicy::workbench())
+    .with_scroll_policy_defaults(capabilities.scroll.policy)
+    .register_surface(SurfaceDescriptor::new(
+        SurfaceId::new("workspace.surface.secondary").unwrap(),
+        SurfaceKind::overlay_content(),
+        ComponentId::new(authored::COMPONENTS[0]).unwrap(),
+        SurfacePlacementClass::overlay_layer(),
+        SurfaceStateClass::restorable(),
+    ))
+    .register_surface(SurfaceDescriptor::new(
+        SurfaceId::new("aaa.surface").unwrap(),
+        SurfaceKind::overlay_content(),
+        ComponentId::new(authored::COMPONENTS[0]).unwrap(),
+        SurfacePlacementClass::overlay_layer(),
+        SurfaceStateClass::restorable(),
+    ))
+    .register_theme_token(
+        crate::runtime::tests::appearance_component_session_test_support::appearance_theme_token(
+            ThemeTokenId::new(palette::TEXT_TOKEN).unwrap(),
+        ),
+    );
+    if capabilities.motion {
+        builder = builder
+            .with_motion_policy_defaults(crate::declaration::UiMotionPolicy::system_respecting());
+    }
     if seam {
         let primary = MosaicRegionKindId::new("workspace.region.primary").unwrap();
         let secondary = MosaicRegionKindId::new("workspace.region.secondary").unwrap();
@@ -54,6 +89,11 @@ pub(super) fn builder(
                 authored::role(index)
             })
             .unwrap();
+    }
+    for role in
+        super::super::scroll_chrome_fixture::declared_chrome_roles(&capabilities.scroll.region)
+    {
+        builder = builder.register_appearance_role(role).unwrap();
     }
     builder
         .register_mosaic_sizing_contract(super::super::replacement_geometry::alternate_sizing())

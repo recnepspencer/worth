@@ -1,4 +1,4 @@
-//! Sample targets addressing the staged surface paint of appearance-only instances.
+//! Sample targets addressing staged node surfaces and derived scrollbar parts.
 use super::appearance_regions::{canonical_clip, canonical_visual};
 use super::sample_transaction::{sampled_bounds, sampled_visible_bounds};
 use super::{UiNativeRetainedDrawList, UiNativeRetainedDrawListDenial as Denial};
@@ -14,8 +14,8 @@ impl UiNativeRetainedDrawList {
     /// A sample may address a retained paint command or the staged surface
     /// paint of an appearance-only instance.
     pub(super) fn admits_sample_target(&self, identity: UiMountedPaintCommandIdentity) -> bool {
-        if identity.is_appearance_surface() {
-            self.appearance_surface_visible_bounds(identity).is_ok()
+        if identity.is_appearance_sample() {
+            self.appearance_sample_bounds(identity).is_ok()
         } else {
             self.commands.contains(&identity)
         }
@@ -27,10 +27,14 @@ impl UiNativeRetainedDrawList {
         identity: UiMountedPaintCommandIdentity,
         change: Option<UiMountedPresentationSampleChange>,
     ) -> Result<Option<UiMountedCanonicalBox>, Denial> {
-        if identity.is_appearance_surface() {
-            return self
-                .appearance_surface_visible_bounds(identity)?
-                .map_or(Ok(None), |bounds| sampled_bounds(bounds, change));
+        if identity.is_appearance_sample() {
+            let (bounds, clip) = self.appearance_sample_bounds(identity)?;
+            let visible = if change.is_some_and(|change| change.clip().is_some()) {
+                Some(bounds)
+            } else {
+                bounds.intersection(clip)
+            };
+            return visible.map_or(Ok(None), |bounds| sampled_bounds(bounds, change));
         }
         let command = self
             .commands
@@ -39,32 +43,59 @@ impl UiNativeRetainedDrawList {
         sampled_visible_bounds(command, change)
     }
 
-    fn appearance_surface_visible_bounds(
+    fn appearance_sample_bounds(
         &self,
         identity: UiMountedPaintCommandIdentity,
-    ) -> Result<Option<UiMountedCanonicalBox>, Denial> {
-        if !identity.is_appearance_surface() {
-            return Err(Denial::CommandMismatch);
-        }
+    ) -> Result<(UiMountedCanonicalBox, UiMountedCanonicalBox), Denial> {
         let (_, appearance) = self
             .staged_appearance
             .as_ref()
             .ok_or(Denial::CommandMismatch)?;
         let key = appearance
-            .key_for_identity(&UiNativeAppearanceCommandIdentity::Surface(
+            .key_for_identity(
+                &self
+                    .appearance_sample_identity(identity)
+                    .ok_or(Denial::CommandMismatch)?,
+            )
+            .ok_or(Denial::CommandMismatch)?;
+        let (bounds, clip) = match appearance.command(key) {
+            Some(UiNativeAppearanceCommand::Surface(surface)) => (
+                canonical_visual(surface.visual_bounds()),
+                canonical_clip(surface.clip()),
+            ),
+            Some(UiNativeAppearanceCommand::ScrollChrome(chrome)) => (
+                super::appearance_regions::canonical(
+                    chrome.rect().x(),
+                    chrome.rect().y(),
+                    chrome.rect().width(),
+                    chrome.rect().height(),
+                ),
+                canonical_clip(chrome.clip()),
+            ),
+            _ => return Err(Denial::CommandMismatch),
+        };
+        Ok((
+            bounds.ok_or(Denial::CommandMismatch)?,
+            clip.ok_or(Denial::CommandMismatch)?,
+        ))
+    }
+
+    pub(super) fn appearance_sample_identity(
+        &self,
+        identity: UiMountedPaintCommandIdentity,
+    ) -> Option<UiNativeAppearanceCommandIdentity> {
+        if identity.is_appearance_surface() {
+            Some(UiNativeAppearanceCommandIdentity::Surface(
                 identity.mounted_instance(),
             ))
-            .ok_or(Denial::CommandMismatch)?;
-        let Some(UiNativeAppearanceCommand::Surface(surface)) = appearance.command(key) else {
-            return Err(Denial::CommandMismatch);
-        };
-        let (Some(visual), Some(clip)) = (
-            canonical_visual(surface.visual_bounds()),
-            canonical_clip(surface.clip()),
-        ) else {
-            return Ok(None);
-        };
-        Ok(visual.intersection(clip))
+        } else {
+            identity.scroll_chrome_identity().map(|identity| {
+                UiNativeAppearanceCommandIdentity::ScrollChrome {
+                    surface: self.surface,
+                    identity,
+                }
+            })
+        }
     }
 
     /// Retained surface samples whose staged surface mechanic this work
@@ -84,6 +115,9 @@ impl UiNativeRetainedDrawList {
             .filter_map(|change| match change.identity() {
                 Some(UiMountedAppearanceMechanicIdentity::Surface(instance)) => {
                     Some(UiMountedPaintCommandIdentity::appearance_surface(*instance))
+                }
+                Some(UiMountedAppearanceMechanicIdentity::ScrollChrome(identity)) => {
+                    Some(UiMountedPaintCommandIdentity::scroll_chrome(*identity))
                 }
                 _ => None,
             })

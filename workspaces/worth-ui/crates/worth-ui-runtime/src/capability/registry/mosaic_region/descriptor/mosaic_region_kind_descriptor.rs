@@ -3,6 +3,7 @@ use crate::capability::{MosaicRegionKindId, SurfacePlacementClass};
 use super::{
     MosaicChildRule, MosaicClippingPosture, MosaicFocusScopeKind, MosaicHitTestPosture,
     MosaicRegionPersistence, MosaicRegionRole, MosaicScrollOwnership, MosaicSizingBehavior,
+    UiScrollChromeContract, UiScrollLineExtent,
 };
 
 /// Declarative mosaic-owned structural region kind supplied by an application.
@@ -18,6 +19,8 @@ pub struct MosaicRegionKindDescriptor {
     persistence: Option<MosaicRegionPersistence>,
     clipping: Option<MosaicClippingPosture>,
     hit_test: Option<MosaicHitTestPosture>,
+    scroll_chrome: Option<UiScrollChromeContract>,
+    scroll_line_extent: Option<UiScrollLineExtent>,
     label: Option<String>,
 }
 
@@ -34,6 +37,8 @@ impl MosaicRegionKindDescriptor {
             persistence: None,
             clipping: None,
             hit_test: None,
+            scroll_chrome: None,
+            scroll_line_extent: None,
             label: None,
         }
     }
@@ -75,6 +80,16 @@ impl MosaicRegionKindDescriptor {
 
     pub fn with_hit_test(mut self, hit_test: MosaicHitTestPosture) -> Self {
         self.hit_test = Some(hit_test);
+        self
+    }
+
+    pub fn with_scroll_chrome(mut self, contract: UiScrollChromeContract) -> Self {
+        self.scroll_chrome = Some(contract);
+        self
+    }
+
+    pub const fn with_scroll_line_extent(mut self, extent: UiScrollLineExtent) -> Self {
+        self.scroll_line_extent = Some(extent);
         self
     }
 
@@ -121,6 +136,14 @@ impl MosaicRegionKindDescriptor {
 
     pub fn hit_test(&self) -> Option<&MosaicHitTestPosture> {
         self.hit_test.as_ref()
+    }
+
+    pub fn scroll_chrome(&self) -> Option<&UiScrollChromeContract> {
+        self.scroll_chrome.as_ref()
+    }
+
+    pub const fn scroll_line_extent(&self) -> Option<UiScrollLineExtent> {
+        self.scroll_line_extent
     }
 
     pub fn label(&self) -> Option<&str> {

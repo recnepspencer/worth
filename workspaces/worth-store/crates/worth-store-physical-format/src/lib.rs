@@ -37,6 +37,7 @@ mod record_framing;
 mod record_identity;
 mod recovery_projection;
 mod reference;
+mod rewrite_redo;
 mod root_selector;
 mod security_metadata;
 pub mod store_namespace;
@@ -163,18 +164,19 @@ pub use in_memory_physical_format_model::{
     PlatformPhysicalScanReport,
 };
 pub use manifest::{
-    maximum_current_root_entries, maximum_segment_manifest_pages, AllocationClassManifestEntry,
-    BoundedFreeSpaceMembershipBlockDecodeDenial, BoundedRootRoutingBlockDecodeDenial,
-    BoundedSegmentMembershipBlockDecodeDenial, CurrentPhysicalRecordPlacement,
-    DurableArtifactCrc32c, DurableExtentManifest, DurableExtentRecordPlacement,
-    DurableFreeSpaceManifestHeader, DurableInlineRecordPlacement, DurablePhysicalRootManifest,
-    DurablePhysicalRootManifestBuilder, DurableSegmentManifest, ExtentManifestEntry,
-    ExtentManifestVocabulary, FreeSpaceBlockReference, FreeSpaceHeaderScopeIdentity, FreeSpaceKey,
-    FreeSpaceManifestEntry, FreeSpaceMembershipBlockDecodeLimits,
-    FreeSpaceMembershipBlockScopeIdentity, FreeSpaceRoutingDenial, ManifestBlockReference,
-    ManifestDiscoveryAuthority, ManifestDiscoveryCounterSnapshot, ManifestDiscoveryDenial,
-    ManifestDiscoveryDenialKind, ManifestDiscoveryReport, ManifestVocabularyKind,
-    MembershipManifestDenial, PhysicalCurrentReachabilitySource, PhysicalFreeSpaceMembershipBlock,
+    maximum_current_root_entries, maximum_segment_manifest_pages, required_tree_level,
+    AllocationClassManifestEntry, BoundedFreeSpaceMembershipBlockDecodeDenial,
+    BoundedRootRoutingBlockDecodeDenial, BoundedSegmentMembershipBlockDecodeDenial,
+    CurrentPhysicalRecordPlacement, DurableArtifactCrc32c, DurableExtentManifest,
+    DurableExtentRecordPlacement, DurableFreeSpaceManifestHeader, DurableInlineRecordPlacement,
+    DurablePhysicalRootManifest, DurablePhysicalRootManifestBuilder, DurableSegmentManifest,
+    ExtentManifestEntry, ExtentManifestVocabulary, FreeSpaceBlockReference,
+    FreeSpaceHeaderScopeIdentity, FreeSpaceKey, FreeSpaceManifestEntry,
+    FreeSpaceMembershipBlockDecodeLimits, FreeSpaceMembershipBlockScopeIdentity,
+    FreeSpaceRoutingDenial, ManifestBlockReference, ManifestDiscoveryAuthority,
+    ManifestDiscoveryCounterSnapshot, ManifestDiscoveryDenial, ManifestDiscoveryDenialKind,
+    ManifestDiscoveryReport, ManifestVocabularyKind, MembershipManifestDenial,
+    PhysicalCurrentReachabilitySource, PhysicalFreeSpaceMembershipBlock,
     PhysicalManifestUniverseBuilder, PhysicalReclaimRegion, PhysicalReclaimRegionDenial,
     PhysicalRootManifest, PhysicalRootManifestRebuildRow, PhysicalRootManifestRebuildSource,
     PhysicalRootManifestRebuildWitness, PhysicalRootManifestVocabulary, PhysicalRootRoutingBlock,
@@ -195,11 +197,12 @@ pub use offline_verifier::{
 };
 pub use page_record::{
     append_inline_records_owned, decode_inline_record, encode_inline_page, inspect_inline_page,
-    inspect_inline_page_records, AppendedInlineRecord, InlinePageDenial, InlinePageGeometry,
-    InlinePageRecordDescriptor, InlineRecordAppend, InlineRecordRange, PageRecordCounterSnapshot,
-    PageRecordDenial, PageRecordDenialKind, PhysicalPageRecordAuthority, RecordAppendReport,
-    RecordLocateReport, SlotAppendRequest, SlotDirectory, SlotDirectoryEntry,
-    SlotDirectoryEntryState, DURABLE_INLINE_PAGE_PREFIX_BYTES, DURABLE_INLINE_SLOT_BYTES,
+    inspect_inline_page_records, restamp_inline_page_generation, AppendedInlineRecord,
+    InlinePageDenial, InlinePageGeometry, InlinePageRecordDescriptor, InlineRecordAppend,
+    InlineRecordRange, PageRecordCounterSnapshot, PageRecordDenial, PageRecordDenialKind,
+    PhysicalPageRecordAuthority, RecordAppendReport, RecordLocateReport, SlotAppendRequest,
+    SlotDirectory, SlotDirectoryEntry, SlotDirectoryEntryState, DURABLE_INLINE_PAGE_PREFIX_BYTES,
+    DURABLE_INLINE_SLOT_BYTES,
 };
 pub use payload::{PhysicalPayloadView, PhysicalPayloadViewAdmission};
 pub use physical_data_frame_identity::{
@@ -229,6 +232,7 @@ pub use reference::{
     PhysicalReferenceValidationDenial, PhysicalReferenceValidationWitness, PhysicalScopeFamily,
     RootManifestIntegrityPosture, RootPublicationValidationWitness, StalePhysicalReference,
 };
+pub use rewrite_redo::{PhysicalRewriteRedo, PhysicalRewriteRedoDenial, REWRITE_REDO_DOMAIN};
 pub use root_selector::{
     DurableRootSelector, RootSelectorDecodeDenial, RootSelectorIdentity, RootSelectorRole,
     ROOT_SELECTOR_BYTES,

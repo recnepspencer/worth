@@ -1,3 +1,4 @@
+#[cfg(any(test, feature = "certification-authority"))]
 use super::PhysicalIsolationCounterSnapshot;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -7,6 +8,7 @@ pub struct ExecutedIsolationBasis {
 }
 
 impl ExecutedIsolationBasis {
+    #[cfg(any(test, feature = "certification-authority"))]
     pub(crate) const fn from_executed_isolation(
         executed_isolation_identity: u64,
         counters: PhysicalIsolationCounterSnapshot,
@@ -26,6 +28,7 @@ impl ExecutedIsolationBasis {
     }
 }
 
+#[cfg(any(test, feature = "certification-authority"))]
 const fn counter_identity(counters: PhysicalIsolationCounterSnapshot) -> u64 {
     let mut digest = 0xcbf2_9ce4_8422_2325_u64;
     digest = mix_u64(digest, counters.outcome_count());
@@ -39,6 +42,7 @@ const fn counter_identity(counters: PhysicalIsolationCounterSnapshot) -> u64 {
     mix_u64(digest, counters.protected_byte_footprint())
 }
 
+#[cfg(any(test, feature = "certification-authority"))]
 const fn mix_u64(mut digest: u64, value: u64) -> u64 {
     let bytes = value.to_le_bytes();
     let mut index = 0;

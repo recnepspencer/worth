@@ -176,7 +176,7 @@ impl WorthQueryOutputDemandRegistry {
                         })
                 })
             })
-            .map(|source| source.identity)
+            .map(|source| source.identity.clone())
             .collect::<Vec<_>>();
         for (other_commit, other) in &mut state.source_custody {
             if other_commit == commit || other.retired.is_some() {
@@ -190,7 +190,7 @@ impl WorthQueryOutputDemandRegistry {
             retire_stale_records(&mut state, occurrence, source.scope, &source.identity);
         }
         let mut bound = sources.to_vec();
-        bound.sort_by_key(|source| source.identity);
+        bound.sort_by_key(|source| source.identity.clone());
         let custody = state
             .source_custody
             .get_mut(commit)
@@ -235,7 +235,7 @@ impl WorthQueryOutputDemandRegistry {
                 .map(|custody| (custody.retired.clone(), custody.bound_sources.clone()))
         };
         let mut expected = sources.to_vec();
-        expected.sort_by_key(|source| source.identity);
+        expected.sort_by_key(|source| source.identity.clone());
         if let Some((Some(retired), _)) = bound() {
             return Err(retired);
         }
@@ -281,7 +281,7 @@ impl SourceCustody {
                     .iter()
                     .any(|successor| root_revision_order(prior, successor) == Some(Ordering::Less))
             })
-            .map(|prior| prior.identity)
+            .map(|prior| prior.identity.clone())
             .collect::<Vec<_>>();
         for identity in retired {
             if self.source_denial(&identity).is_none() {

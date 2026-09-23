@@ -30,12 +30,12 @@ impl WorthUiActiveApplicationSession {
             let transition = self
                 .mounted
                 .supersede_presentation(&self.host_session, in_flight);
-            return self.finish_mounted_transition(transition);
+            return self.finish_mounted_transition(transition, now);
         }
         let transition = self
             .mounted
             .complete_presentation(&self.host_session, in_flight, now);
-        self.finish_mounted_transition(transition)
+        self.finish_mounted_transition(transition, now)
     }
 
     pub fn cancel_mounted_presentation(
@@ -45,7 +45,7 @@ impl WorthUiActiveApplicationSession {
         let transition = self
             .mounted
             .cancel_presentation(&self.host_session, in_flight);
-        self.finish_mounted_transition(transition)
+        self.finish_mounted_transition(transition, u64::MAX)
     }
 
     pub(crate) fn supersede_mounted_presentation(
@@ -55,7 +55,7 @@ impl WorthUiActiveApplicationSession {
         let transition = self
             .mounted
             .supersede_presentation(&self.host_session, in_flight);
-        self.finish_mounted_transition(transition)
+        self.finish_mounted_transition(transition, u64::MAX)
     }
 
     pub(crate) fn admit_duplicate_native_presentation_observation(
@@ -82,12 +82,13 @@ impl WorthUiActiveApplicationSession {
         outcome: UiMountedPresentationOutcome,
     ) -> UiMountedFrameOutcome {
         let transition = self.mounted.finish_presentation(outcome);
-        self.finish_mounted_transition(transition)
+        self.finish_mounted_transition(transition, u64::MAX)
     }
 
     fn finish_mounted_transition(
         &mut self,
         transition: crate::mounting::UiMountedPublicationTransition,
+        now: u64,
     ) -> UiMountedFrameOutcome {
         let active_generation = self.active_generation_identity();
         let outcome = finish_mounted_transition_with_ports(
@@ -105,14 +106,29 @@ impl WorthUiActiveApplicationSession {
             Some(&mut self.presentation),
         );
         self.overlay_composition_owners.settle(&outcome);
+        self.settle_presented_scroll_extent(&outcome, now);
+        self.settle_pending_mounted_owner_receipt_succession(&outcome);
+        outcome
+    }
+
+    pub(in crate::facade::entry) fn settle_presented_scroll_extent(
+        &mut self,
+        outcome: &UiMountedFrameOutcome,
+        now: u64,
+    ) {
+        super::active_application_session::settle_presented_scroll_extent(
+            self.scroll.as_mut(),
+            self.motion.as_mut(),
+            &mut self.mounted,
+            outcome,
+            now,
+        );
         if matches!(
             outcome,
             UiMountedFrameOutcome::Published(_) | UiMountedFrameOutcome::Reconciled(_)
         ) {
             self.reconcile_service_state_after_mounted_publication();
         }
-        self.settle_pending_mounted_owner_receipt_succession(&outcome);
-        outcome
     }
 
     pub(super) fn reconcile_prepared_focus_after_published_frame(

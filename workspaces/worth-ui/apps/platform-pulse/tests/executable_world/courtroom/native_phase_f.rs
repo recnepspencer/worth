@@ -1,7 +1,7 @@
 use std::panic::{catch_unwind, resume_unwind, AssertUnwindSafe};
 use std::time::{Duration, Instant};
 
-use crate::native_platform::{NativePlatformContract, WindowsNativePlatform};
+use crate::native_platform::{CertifiedNativePlatform, NativePlatformContract};
 use crate::product_process::{CargoBuiltPlatformPulse, SuccessfulPlatformPulseExit};
 
 #[path = "native_phase_f/authored_pixel_contract.rs"]
@@ -15,9 +15,9 @@ mod pixels;
 use pixels::{attributed_pixel_classes, pixel_classes};
 
 #[test]
-#[ignore = "requires the serialized interactive Windows 11 DX12 desktop"]
+#[ignore = "requires the serialized interactive certified native desktop (Windows 11 DX12 or Xvfb X11)"]
 fn query_async_reconstruction_joins_exact_transitions_to_external_pixels_and_cleanup() {
-    let platform = WindowsNativePlatform::certified().expect("Windows observation is qualified");
+    let platform = CertifiedNativePlatform::certified().expect("native observation is qualified");
     let binary =
         CargoBuiltPlatformPulse::exact().expect("the prebuilt Phase F product binary is available");
     let mut launch = binary
@@ -42,7 +42,7 @@ fn query_async_reconstruction_joins_exact_transitions_to_external_pixels_and_cle
 }
 
 fn execute_world(
-    platform: &WindowsNativePlatform,
+    platform: &CertifiedNativePlatform,
     launch: &mut crate::product_process::NativePhase2ProcessLaunch,
     process_id: u32,
     deadline: Instant,
@@ -135,8 +135,8 @@ fn assert_alpha_attribution(evidence: &serde_json::Value) {
 }
 
 fn await_quiescent_text_pixels(
-    platform: &WindowsNativePlatform,
-    client: &mut <WindowsNativePlatform as NativePlatformContract>::BoundClientArea,
+    platform: &CertifiedNativePlatform,
+    client: &mut <CertifiedNativePlatform as NativePlatformContract>::BoundClientArea,
     deadline: Instant,
 ) -> (
     Option<crate::external_observation::NativeClientPixelCapture>,

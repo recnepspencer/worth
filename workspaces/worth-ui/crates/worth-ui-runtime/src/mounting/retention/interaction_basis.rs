@@ -186,6 +186,22 @@ impl UiPresentedHitTestRow {
         self.mounted
     }
 
+    /// The same row, displaced by the distance a settled scroll pose moved the
+    /// occurrence it stands for.
+    ///
+    /// Bounds and clip travel together. A presented hit row's clip is its own
+    /// allocation, narrowed by whatever hit inset the component declares, so
+    /// it belongs to the row rather than to anything the row sits inside;
+    /// leaving it behind would strand the row against a clip its bounds had
+    /// already left and make the occurrence unreachable everywhere.
+    pub(in crate::mounting) fn scroll_translated(self, translation: [f32; 2]) -> Self {
+        Self {
+            bounds: translated_presented_box(self.bounds, translation),
+            clip_bounds: translated_presented_box(self.clip_bounds, translation),
+            ..self
+        }
+    }
+
     pub(in crate::mounting) const fn portal_motion_target(
         self,
     ) -> Option<crate::runtime::motion::UiMotionTargetIdentity> {
@@ -226,6 +242,25 @@ impl UiPresentedHitTestRow {
     pub(crate) const fn node_receipt(self) -> worth_ui_host_contract::UiMountedNodeReceiptIdentity {
         self.mounted.node_receipt()
     }
+}
+
+/// A canonical box moved by a finite distance. A scroll translation is a whole
+/// number of subpixels divided by a fixed scale, so it is always finite, and a
+/// canonical box displaced by a finite distance stays canonical.
+fn translated_presented_box(
+    bounds: worth_ui_host_contract::UiMountedCanonicalBox,
+    translation: [f32; 2],
+) -> worth_ui_host_contract::UiMountedCanonicalBox {
+    worth_ui_host_contract::UiMountedCanonicalBox::canonicalize(
+        worth_ui_host_contract::UiMountedCanonicalBoxInput {
+            x: bounds.x() + translation[0],
+            y: bounds.y() + translation[1],
+            width: bounds.width(),
+            height: bounds.height(),
+            coordinate_space: bounds.coordinate_space(),
+        },
+    )
+    .expect("a canonical box displaced by a finite distance stays canonical")
 }
 
 fn portal_motion_target(

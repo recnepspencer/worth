@@ -3,9 +3,9 @@ use std::{any::TypeId, sync::Arc};
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 
 use super::{
-    latest_output_in_partition_budgeted, ProductCoordinate, SemanticSource,
-    WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationOutputLineage,
-    WorthQueryProducerLineageHead,
+    latest_output_in_partition_budgeted, latest_output_matching, ProductCoordinate,
+    RecordedSourceIdentity, SemanticSource, WorthQueryApplicationOutputLineage,
+    WorthQueryProducerLineageHead, WorthQueryRetainedOutputCandidate,
 };
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
 
@@ -101,17 +101,83 @@ impl WorthQueryApplicationOutputLineage {
             if work > maximum_work {
                 return Err(());
             }
-            if let Some(recorded) = versions
-                .get(&coordinate.occurrence)
-                .and_then(|history| history.range(..=coordinate.generation).next_back())
-                .map(|(_, recorded)| recorded)
-            {
-                return Ok((recorded.source_identity == Some(source_identity)
-                    && std::ptr::eq(
-                        recorded.correspondence.as_ref(),
-                        receipt.output_correspondence(),
-                    ))
-                .then(|| (std::sync::Arc::clone(&recorded.observed_source_facts), work)));
+            if let Some(recorded) = versions.get(&coordinate.occurrence).and_then(|history| {
+                latest_output_matching(history, coordinate.generation, |recorded| {
+                    recorded.source_identity
+                        == Some(RecordedSourceIdentity::Runtime(
+                            crate::domain_computation::primary_graph::application_query::WorthQueryRuntimeSourceIdentity::new(source_identity),
+                        ))
+                        && std::ptr::eq(
+                            recorded.correspondence.as_ref(),
+                            receipt.output_correspondence(),
+                        )
+                })
+            }) {
+                let Some(facts) = recorded.observed_source_facts.as_ref() else {
+                    return Ok(None);
+                };
+                return Ok(Some((std::sync::Arc::clone(facts), work)));
+            }
+            let Some(parent) = self.origins.get(&coordinate.occurrence).copied() else {
+                return Ok(None);
+            };
+            coordinate = parent;
+        }
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn source_facts_for_restored_output(
+        &self,
+        runtime_authority: u64,
+        schema: &ApplicationSchemaBindingIdentity,
+        observation: &worth_runtime_world::facade::ProductBranchObservation,
+        settlement: &crate::domain_computation::primary_graph::WorthQueryOutputDemandSettlement,
+        maximum_work: usize,
+    ) -> Result<
+        Option<(
+            std::sync::Arc<[super::super::application_attempt::WorthQueryApplicationObservedFact]>,
+            usize,
+        )>,
+        (),
+    > {
+        let Some(restored) = settlement.restored_source.as_ref() else {
+            return Ok(None);
+        };
+        let Some(output_binding) = settlement.output_correspondence.binding_type() else {
+            return Ok(None);
+        };
+        let source = SemanticSource {
+            runtime_authority,
+            schema: schema.clone(),
+            scope: restored.scope,
+            output_binding,
+        };
+        let Some(versions) = self.by_source.get(&source) else {
+            return Ok(None);
+        };
+        let mut coordinate = ProductCoordinate {
+            occurrence: observation.lifecycle_incarnation(),
+            generation: observation.reference_generation().get(),
+        };
+        let mut work = 0_usize;
+        loop {
+            work = work.checked_add(1).ok_or(())?;
+            if work > maximum_work {
+                return Err(());
+            }
+            if let Some(recorded) = versions.get(&coordinate.occurrence).and_then(|history| {
+                latest_output_matching(history, coordinate.generation, |recorded| {
+                    recorded.source_identity
+                        == Some(RecordedSourceIdentity::Checkpoint(restored.identity))
+                        && std::ptr::eq(
+                            recorded.correspondence.as_ref(),
+                            settlement.output_correspondence.as_ref(),
+                        )
+                })
+            }) {
+                let Some(facts) = recorded.observed_source_facts.as_ref() else {
+                    return Ok(None);
+                };
+                return Ok(Some((std::sync::Arc::clone(facts), work)));
             }
             let Some(parent) = self.origins.get(&coordinate.occurrence).copied() else {
                 return Ok(None);
@@ -141,18 +207,7 @@ impl WorthQueryApplicationOutputLineage {
         output_bindings: &[TypeId],
         source_partition_identity: [u8; 32],
         maximum_work: usize,
-    ) -> Result<
-        (
-            Vec<(
-                TypeId,
-                Arc<WorthQueryApplicationOutputCorrespondence>,
-                Option<[u8; 32]>,
-                Arc<[super::super::application_attempt::WorthQueryApplicationObservedFact]>,
-            )>,
-            usize,
-        ),
-        (),
-    > {
+    ) -> Result<(Vec<WorthQueryRetainedOutputCandidate>, usize), ()> {
         let mut candidates = Vec::new();
         let mut work = 0_usize;
         for output_binding in output_bindings {
@@ -188,12 +243,12 @@ impl WorthQueryApplicationOutputLineage {
                     return Err(());
                 }
                 if let Some((_, recorded)) = recorded {
-                    candidates.push((
-                        *output_binding,
-                        Arc::clone(&recorded.correspondence),
-                        recorded.source_identity,
-                        Arc::clone(&recorded.observed_source_facts),
-                    ));
+                    candidates.push(WorthQueryRetainedOutputCandidate {
+                        binding: *output_binding,
+                        correspondence: Arc::clone(&recorded.correspondence),
+                        source_identity: recorded.source_identity,
+                        observed_source_facts: recorded.observed_source_facts.clone(),
+                    });
                     break;
                 }
                 let Some(parent) = self.origins.get(&coordinate.occurrence).copied() else {

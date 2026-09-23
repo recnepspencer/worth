@@ -99,7 +99,7 @@ fn run_native_gate_d_pin_world() -> ExitCode {
     };
     let profile = UiNativePlatformProfile::single_window(UiNativeWindowSpec::new(
         "WORTH UI Gate D Pin Courtroom",
-        [160, 96],
+        worth_ui_platform_pulse::visual_identity_pulse::PLATFORM_PULSE_NATIVE_WINDOW_LOGICAL_EXTENT,
     ));
     let Ok(platform) = WorthUiNativePlatform::prepare(profile) else {
         return ExitCode::from(2);
@@ -180,7 +180,7 @@ fn run_native_phase3_world() -> ExitCode {
     };
     let profile = UiNativePlatformProfile::single_window(UiNativeWindowSpec::new(
         "WORTH UI Platform Pulse Phase 3",
-        [160, 96],
+        worth_ui_platform_pulse::visual_identity_pulse::PLATFORM_PULSE_NATIVE_WINDOW_LOGICAL_EXTENT,
     ));
     let Ok(platform) = WorthUiNativePlatform::prepare(profile) else {
         return ExitCode::from(2);
@@ -254,7 +254,10 @@ fn run_native_phase2_world() -> ExitCode {
     use worth_ui_native_platform::{
         UiNativePlatformOutcome, UiNativePlatformProfile, UiNativeWindowSpec, WorthUiNativePlatform,
     };
-    let window = UiNativeWindowSpec::new("WORTH UI Platform Pulse", [160, 96]);
+    let window = UiNativeWindowSpec::new(
+        "WORTH UI Platform Pulse",
+        worth_ui_platform_pulse::visual_identity_pulse::PLATFORM_PULSE_NATIVE_WINDOW_LOGICAL_EXTENT,
+    );
     let profile = UiNativePlatformProfile::single_window(window);
     let Ok(platform) = WorthUiNativePlatform::prepare(profile) else {
         return ExitCode::from(2);
@@ -284,7 +287,7 @@ fn run_native_phase6_world() -> ExitCode {
     };
     let profile = UiNativePlatformProfile::single_window(UiNativeWindowSpec::new(
         "WORTH UI Platform Pulse Phase 6",
-        [160, 96],
+        worth_ui_platform_pulse::visual_identity_pulse::PLATFORM_PULSE_NATIVE_WINDOW_LOGICAL_EXTENT,
     ));
     let Ok(platform) = WorthUiNativePlatform::prepare(profile) else {
         return ExitCode::from(2);
@@ -294,13 +297,7 @@ fn run_native_phase6_world() -> ExitCode {
             if receipt.terminal_census().is_zero()
                 && receipt.input_observations().retained_event_count() > 0
                 && receipt.input_observations().last_pointer_button().is_some()
-                && receipt.client_shutdown().is_some_and(|shutdown| {
-                    let counts = shutdown.observation_ingress().counts();
-                    counts[0] > 0
-                        && counts[4] == 0
-                        && counts[..4].iter().sum::<u64>()
-                            >= receipt.input_observations().retained_batch_count()
-                }) =>
+                && native_phase6_evidence::ingress_settles_retained_batches(&receipt) =>
         {
             println!(
                 "{}",
@@ -321,7 +318,7 @@ fn run_native_phase7_world(points: &[[u32; 2]]) -> ExitCode {
     };
     let profile = UiNativePlatformProfile::single_window(UiNativeWindowSpec::new(
         "WORTH UI Platform Pulse Phase 7",
-        [160, 96],
+        worth_ui_platform_pulse::visual_identity_pulse::PLATFORM_PULSE_NATIVE_WINDOW_LOGICAL_EXTENT,
     ));
     let Ok(platform) = WorthUiNativePlatform::prepare(profile) else {
         return ExitCode::from(2);

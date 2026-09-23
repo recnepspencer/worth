@@ -59,6 +59,13 @@ pub(super) fn derive(
     )
     .admit()
     .ok_or(CandidateBuildDenial::Invalid)?;
+    let root = if selected.requires_maintenance_protocol()
+        || observed.root.requires_maintenance_protocol()
+    {
+        root.with_maintenance_protocol()
+    } else {
+        root
+    };
     matcher.match_artifact(
         RecordArtifactFile::RootManifest { generation },
         root.encode(format),

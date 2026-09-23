@@ -34,6 +34,19 @@ impl UiInteractionReportOutcome {
     }
 }
 
+/// The outcome of a report this owner did not route because another lane had
+/// already answered for it. It counts as ignored, exactly as a report this
+/// owner itself declines does.
+pub(super) fn claimed_elsewhere() -> UiInteractionReportOutcome {
+    UiInteractionReportOutcome {
+        targeting_work: Default::default(),
+        transitions: Vec::new(),
+        ignored: true,
+        pointer_presence_transition: None,
+        pointer_presence_denials: Vec::new(),
+    }
+}
+
 pub(super) fn process(
     state: &mut UiInteractionRuntimeState,
     core: UiHostObservationCanonicalCore,

@@ -55,6 +55,7 @@ pub(super) fn build(
     observed_successor: Option<RecoveryObservedSuccessorCandidate>,
     format: PhysicalRecordFormatDeclaration,
     publication: u64,
+    maintenance: bool,
 ) -> Result<RecoveryCandidateBasis, CandidateBuildDenial> {
     let generation = base.destination_generation();
     let selected = base.selected_root();
@@ -76,7 +77,7 @@ pub(super) fn build(
             observed_build(format, observed)?
         }
         None => {
-            let (root, build) = build_new(base, source, &final_inventory, format)?;
+            let (root, build) = build_new(base, source, &final_inventory, format, maintenance)?;
             let referenced_artifacts = topology_artifacts(&build.artifacts);
             (root, build, referenced_artifacts)
         }
@@ -182,6 +183,7 @@ fn build_new(
     source: &RecoverySelectedSourceInventory,
     final_inventory: &inventory::FinalInventory,
     format: PhysicalRecordFormatDeclaration,
+    maintenance: bool,
 ) -> Result<(DurablePhysicalRootManifest, CandidateBuild), CandidateBuildDenial> {
     let generation = base.destination_generation();
     let selected = base.selected_root();
@@ -255,6 +257,11 @@ fn build_new(
     )
     .admit()
     .ok_or(CandidateBuildDenial::Invalid)?;
+    let root = if maintenance || selected.requires_maintenance_protocol() {
+        root.with_maintenance_protocol()
+    } else {
+        root
+    };
     build.push(
         RecordArtifactFile::RootManifest { generation },
         root.encode(format),

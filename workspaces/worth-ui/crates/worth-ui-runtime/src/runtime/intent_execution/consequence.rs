@@ -209,11 +209,43 @@ impl From<crate::runtime::session::UiPortalProposalPreparationDenial>
     }
 }
 
+impl From<crate::runtime::session::UiScrollSettlePublicationDenial>
+    for UiRuntimeServiceProposalStop
+{
+    fn from(denial: crate::runtime::session::UiScrollSettlePublicationDenial) -> Self {
+        use crate::runtime::session::UiScrollSettlePublicationDenial as Denial;
+        use UiRuntimeServiceProposalStopReason as Reason;
+        let (reason, detail) = match denial {
+            Denial::UnpublishedSurface => (
+                Reason::MountedFrameMismatch,
+                "the published frame presents no basis for the settling surface".to_owned(),
+            ),
+            Denial::RequestBasis(detail) => (Reason::RequestBasis, format!("{detail:?}")),
+            Denial::Demand(detail) => (Reason::Demand, format!("{detail:?}")),
+            Denial::Preflight(detail) => (Reason::Preflight, format!("{detail:?}")),
+            Denial::Reservation(detail) => (Reason::Reservation, format!("{detail:?}")),
+            Denial::Staging(detail) => (Reason::Staging, format!("{detail:?}")),
+            Denial::Publication(detail) => (Reason::Publication, format!("{detail:?}")),
+            Denial::MotionStaging(detail) => (Reason::Motion, format!("{detail:?}")),
+            Denial::Coalesced(detail) => (Reason::Coalesced, format!("coalesced with {detail:?}")),
+        };
+        Self {
+            reason,
+            detail: detail.into_boxed_str(),
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum UiIntentPortalPlacementStopReason {
     MissingPresentedAnchor,
     MissingPresentedViewport,
     IncompatibleCoordinateSpace,
+    /// The mounted viewport or the portal's own content could not be measured,
+    /// so no placement was ever attempted. Reporting this as an incompatible
+    /// coordinate space sent readers to the placement planner for a cause that
+    /// never reached it.
+    UnmeasurableContent,
     EmptyAnchor,
     InsufficientViewport,
     UnknownPortalParent,

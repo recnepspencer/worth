@@ -47,6 +47,12 @@ pub(super) fn seal(
             successor_candidate,
             selection.root().selected().selector().format(),
             publication_identity,
+            selection
+                .root()
+                .selected()
+                .manifest()
+                .requires_maintenance_protocol()
+                || !redo.rewrites().is_empty(),
         )
         .map_err(|denial| match denial {
             super::super::publication_candidate::CandidateBuildDenial::SuccessorCandidate(

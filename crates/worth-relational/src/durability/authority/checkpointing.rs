@@ -22,6 +22,14 @@ use crate::durability::log::local_store::{
 use crate::durability::log::native_file_codec::write_checkpoint_file;
 
 impl<'runtime> DurabilityAuthority<'runtime> {
+    pub fn native_checkpoint(
+        &self,
+    ) -> Result<crate::durability::data::RelationalNativeCheckpoint, DurabilityError> {
+        let checkpoint = self.capture_checkpoint_basis()?.build_checkpoint_image()?;
+        let bytes = crate::durability::log::native_file_codec::encode_checkpoint(checkpoint)?;
+        Ok(crate::durability::data::RelationalNativeCheckpoint::from_captured_bytes(bytes))
+    }
+
     pub fn checkpoint(&self) -> Result<DurableCheckpoint, DurabilityError> {
         let captured = self.capture_checkpoint_basis()?;
         self.finalize_captured_checkpoint(captured)

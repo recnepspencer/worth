@@ -87,11 +87,36 @@ impl PhysicalExecutorCommand {
         {
             return Err(PhysicalExecutorCommandDenial::ArtifactCommandRequiresArtifactScope);
         }
+        if matches!(effect, PhysicalPublicationEffect::RemoveArtifact) {
+            return Err(PhysicalExecutorCommandDenial::RetirementRemovalRequiresClaim);
+        }
         Ok(Self::PublicationEffect(
             PhysicalPublicationExecutorCommand {
                 work,
                 artifact,
                 effect,
+            },
+        ))
+    }
+
+    pub(in crate::physical_runtime) fn retirement_removal(
+        work: ResourceAdmittedPhysicalWork,
+        permit: crate::physical_runtime::durability::RetirementRemovalPermit,
+    ) -> Result<Self, PhysicalExecutorCommandDenial> {
+        require_family(&work, PhysicalWorkOperationFamily::ArtifactPublication)?;
+        let artifact = work
+            .intent()
+            .scope()
+            .artifact_target()
+            .ok_or(PhysicalExecutorCommandDenial::ArtifactCommandRequiresArtifactScope)?;
+        if !permit.admits(artifact) {
+            return Err(PhysicalExecutorCommandDenial::RetirementRemovalRequiresClaim);
+        }
+        Ok(Self::PublicationEffect(
+            PhysicalPublicationExecutorCommand {
+                work,
+                artifact,
+                effect: PhysicalPublicationEffect::RemoveArtifact,
             },
         ))
     }

@@ -9,6 +9,8 @@ mod projection;
 mod publication;
 mod raster_cache_reconstruction;
 mod replacement;
+mod scroll_chrome_pose;
+mod scroll_direct_publication;
 mod scroll_geometry;
 mod selection_binding;
 #[cfg(test)]
@@ -38,6 +40,11 @@ pub(crate) struct WorthUiMountedSessionState {
     presentation: super::UiMountedPresentationCoordinator,
     motion_sampling: super::presentation::motion_sampling::UiMountedMotionSampler,
     last_motion_sampling_cost: Option<super::UiPresentationMotionSamplingCost>,
+    last_scroll_hit_index_work: super::UiHitTestSpatialWork,
+    pending_direct_scroll: BTreeMap<
+        crate::runtime::scroll::UiScrollOwnerIdentity,
+        crate::runtime::scroll::UiPreparedScrollDirectSuccession,
+    >,
     selection_bindings: super::selection_binding::UiMountedSelectionBindings,
     publication_reservations:
         BTreeMap<UiMountedPresentationAttemptIdentity, super::UiMountedFramePublicationCandidate>,
@@ -62,6 +69,8 @@ impl WorthUiMountedSessionState {
             presentation: super::UiMountedPresentationCoordinator::new(presentation_async),
             motion_sampling: Default::default(),
             last_motion_sampling_cost: None,
+            last_scroll_hit_index_work: Default::default(),
+            pending_direct_scroll: BTreeMap::new(),
             selection_bindings: Default::default(),
             publication_reservations: BTreeMap::new(),
             reconciliation_reservations: BTreeMap::new(),
@@ -113,6 +122,7 @@ impl WorthUiMountedSessionState {
     ) {
         let _ = self.presentation.cancel_motion_sample(host.effect_port());
         self.selection_bindings.clear();
+        self.pending_direct_scroll.clear();
         self.presentation.shutdown(host.effect_port())
     }
 

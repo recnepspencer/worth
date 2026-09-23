@@ -296,6 +296,7 @@ impl UiNativeInputObservationState {
             terminal_stop: self.terminal_stop,
             stop_history_complete: self.stop_history_complete,
             retained_batch_count: self.evidence.retained_batch_count(),
+            coalesced_motion_batch_count: self.evidence.coalesced_motion_batch_count(),
             retained_event_count: self.evidence.retained_event_count(),
             first_retained_sequence: self.evidence.first_retained_sequence(),
             last_retained_sequence: self.evidence.last_retained_sequence(),

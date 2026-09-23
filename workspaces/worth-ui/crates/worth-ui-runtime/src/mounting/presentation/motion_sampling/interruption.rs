@@ -1,52 +1,84 @@
+use super::velocity::{UiPresentationOutgoingCurve, UiPresentationSampleVelocity};
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(super) enum UiPresentationMotionInstallation {
     Install {
         geometry: Option<[f32; 4]>,
         opacity_units: u16,
+        start_velocity: UiPresentationSampleVelocity,
         duration_ticks: u32,
     },
     SnapToTarget,
 }
 
+/// The sample a successor track is displacing, plus the curve that produced it.
+/// Position alone cannot tell a retarget how fast the content was already
+/// moving, so the outgoing curve travels with it.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(super) struct UiPresentationInterruptedSample {
+    pub(super) geometry: Option<[f32; 4]>,
+    pub(super) opacity_units: u16,
+    pub(super) outgoing: Option<UiPresentationOutgoingCurve>,
+}
+
 pub(super) fn resolve(
     track: crate::runtime::motion::UiCommittedMotionTrack,
-    current: Option<(Option<[f32; 4]>, u16)>,
+    current: Option<UiPresentationInterruptedSample>,
     reduced_motion: super::UiPresentationReducedMotionPosture,
 ) -> UiPresentationMotionInstallation {
     let declaration = track.declaration();
-    if reduced_motion == super::UiPresentationReducedMotionPosture::Reduce
-        && declaration.reduced_motion()
-            == crate::runtime::motion::UiMotionReducedMotionPolicy::SystemRespecting
-    {
-        if declaration.decorative() {
+    if reduced_motion == super::UiPresentationReducedMotionPosture::Reduce {
+        // Arriving as the track installs is right for anything whose
+        // installation mints the frame that shows it: the entrance carries the
+        // arrived sample, so the reader sees the destination and never the
+        // journey. A Scroll content group is the one thing it is wrong for. A
+        // settle submits into the frame already on screen, so there is no
+        // entrance to carry the sample and nothing would present it; the
+        // offset the sample settles would never learn where the content went,
+        // and a reader who asked for less motion would get none. The tick path
+        // snaps that track on its first tick instead, which is the same
+        // arrival by way of a frame that can carry it.
+        if declaration.settles_directly_under_reduced_motion()
+            && track.target().scope() != crate::runtime::motion::UiMotionTargetScope::ScrollContents
+        {
             return UiPresentationMotionInstallation::SnapToTarget;
         }
-        return UiPresentationMotionInstallation::Install {
-            geometry: semantic_predecessor(track),
-            opacity_units: predecessor_opacity_units(track),
-            duration_ticks: 1,
-        };
+        if declaration.shortens_under_reduced_motion() {
+            return UiPresentationMotionInstallation::Install {
+                geometry: semantic_predecessor(track),
+                opacity_units: predecessor_opacity_units(track),
+                start_velocity: UiPresentationSampleVelocity::RESTING,
+                duration_ticks: 1,
+            };
+        }
     }
     let duration_ticks = declaration.duration_ticks();
     match track.retarget() {
         None => UiPresentationMotionInstallation::Install {
             geometry: semantic_predecessor(track),
             opacity_units: predecessor_opacity_units(track),
+            start_velocity: UiPresentationSampleVelocity::RESTING,
             duration_ticks,
         },
         Some(crate::runtime::motion::UiMotionRetargetDisposition::Install {
             predecessor:
                 crate::runtime::motion::UiMotionRetargetPredecessor::CurrentPresentationSample,
         }) => {
-            let (geometry, opacity_units) = current.unwrap_or_else(|| {
-                (
-                    semantic_predecessor(track),
-                    predecessor_opacity_units(track),
-                )
-            });
+            let Some(interrupted) = current else {
+                return UiPresentationMotionInstallation::Install {
+                    geometry: semantic_predecessor(track),
+                    opacity_units: predecessor_opacity_units(track),
+                    start_velocity: UiPresentationSampleVelocity::RESTING,
+                    duration_ticks,
+                };
+            };
             UiPresentationMotionInstallation::Install {
-                geometry,
-                opacity_units,
+                geometry: interrupted.geometry,
+                opacity_units: interrupted.opacity_units,
+                start_velocity: interrupted.outgoing.map_or(
+                    UiPresentationSampleVelocity::RESTING,
+                    UiPresentationSampleVelocity::of_outgoing_curve,
+                ),
                 duration_ticks,
             }
         }

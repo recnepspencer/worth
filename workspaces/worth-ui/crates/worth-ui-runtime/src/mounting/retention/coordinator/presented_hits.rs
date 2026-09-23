@@ -167,6 +167,45 @@ impl UiMountedFrameRetentionCoordinator {
         Ok((relation, query))
     }
 
+    /// Apply one settled scroll pose's translations to the current retained
+    /// frame for its surface, and report the hit transition that crossing
+    /// leaves behind.
+    ///
+    /// The predecessor is taken before the refresh and the successor after it,
+    /// so the two name the same frame with the rows in the positions they held
+    /// on either side of the pose. That pair is what tells interaction which
+    /// rows moved under a pointer that did not.
+    pub(in crate::mounting) fn refresh_presented_hit_scroll(
+        &mut self,
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+        translations: &[(worth_ui_host_contract::UiMountedInstanceIdentity, [f32; 2])],
+    ) -> (
+        Option<super::super::UiCommittedPresentedHitTransition>,
+        UiHitTestSpatialWork,
+    ) {
+        let mut work = UiHitTestSpatialWork::default();
+        if translations.is_empty() {
+            return (None, work);
+        }
+        let frame = {
+            let authority = self.authority.borrow();
+            authority.frames.surface_frames.get(&surface).copied()
+        };
+        let Some(frame) = frame else {
+            return (None, work);
+        };
+        let predecessor = self.hit_evidence(frame);
+        {
+            let mut authority = self.authority.borrow_mut();
+            let Some(mut evidence) = authority.evidence_rc(frame) else {
+                return (None, work);
+            };
+            work.merge(Rc::make_mut(&mut evidence).refresh_hit_scroll(surface, translations));
+            authority.replace_evidence(evidence);
+        }
+        (self.committed_hit_transition(predecessor, frame), work)
+    }
+
     pub(in crate::mounting) fn refresh_presented_hit_motion(
         &mut self,
         sampler: &crate::mounting::presentation::motion_sampling::UiMountedMotionSampler,

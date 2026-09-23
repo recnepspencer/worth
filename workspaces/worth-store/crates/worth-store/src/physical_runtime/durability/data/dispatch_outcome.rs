@@ -39,6 +39,9 @@ pub enum PhysicalDataDispatchFailureCause {
     ExistingArtifactWriteback(PhysicalRecordWritebackFailureEvidence),
     IncompleteFrameSet,
     MissingEffectSettlement,
+    /// A maintenance candidate read back from media differs from its WAL-bound
+    /// bytes, so no root may name it.
+    CandidateReadBackMismatch,
 }
 
 pub struct IndeterminatePhysicalDataDispatch {

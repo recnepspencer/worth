@@ -68,14 +68,22 @@ where
         .into_iter()
         .map(|footprint| {
             let selection = basis_identity.selection().clone();
-            let source_identity =
-                super::super::observed_source::source_identity::derive_source_identity(
+            let source_meaning = application
+                .source_meanings
+                .intern(
                     plan.query.identity().as_bytes(),
                     plan.parameters.identity().bytes(),
-                    &footprint,
+                    footprint,
                     &selection,
-                );
-            super::super::WorthQueryObservedSource {
+                )
+                .ok_or_else(|| {
+                    denial(
+                        WorthQueryApplicationOneShotDenialKind::SourceIdentityExhausted,
+                        plan.query.name(),
+                        plan.query.name(),
+                    )
+                })?;
+            Ok(super::super::WorthQueryObservedSource {
                 runtime_authority: plan.runtime_authority.as_u64(),
                 schema_binding: plan.query.binding_identity().clone(),
                 query_identity: plan.query.identity().clone(),
@@ -84,12 +92,11 @@ where
                 branch: basis_identity.branch_id().clone(),
                 selection,
                 model_root: plan.scope.entity_id(),
-                footprint,
-                source_identity,
+                source_meaning,
                 _marker: PhantomData,
-            }
+            })
         })
-        .collect();
+        .collect::<Result<Vec<_>, WorthQueryApplicationOneShotDenial>>()?;
     let result_set_footprint = super::super::observed_source::WorthQueryObservedSourceFootprint {
         root: plan.scope.entity_id(),
         complete: true,
@@ -98,13 +105,21 @@ where
         adjacencies: Vec::new(),
         root_selection: Some(result_set_selection),
     };
-    let result_set_identity =
-        super::super::observed_source::source_identity::derive_result_set_identity(
+    let result_set_meaning = application
+        .source_meanings
+        .intern_result_set(
             plan.query.identity().as_bytes(),
             plan.parameters.identity().bytes(),
-            &result_set_footprint,
+            result_set_footprint,
             basis_identity.selection(),
-        );
+        )
+        .ok_or_else(|| {
+            denial(
+                WorthQueryApplicationOneShotDenialKind::SourceIdentityExhausted,
+                plan.query.name(),
+                plan.query.name(),
+            )
+        })?;
     let result_set_observation =
         super::super::WorthQueryObservedResultSet::new(super::super::WorthQueryObservedSource {
             runtime_authority: plan.runtime_authority.as_u64(),
@@ -115,8 +130,7 @@ where
             branch: basis_identity.branch_id().clone(),
             selection: basis_identity.selection().clone(),
             model_root: plan.scope.entity_id(),
-            footprint: result_set_footprint,
-            source_identity: result_set_identity,
+            source_meaning: result_set_meaning,
             _marker: PhantomData,
         });
     let basis_release = plan.basis.release();
@@ -124,6 +138,7 @@ where
     if !released {
         return Err(denial(
             WorthQueryApplicationOneShotDenialKind::BasisReleaseFailed,
+            plan.query.name(),
             plan.query.name(),
         ));
     }
@@ -138,6 +153,7 @@ where
         |projection: crate::domain_computation::primary_graph::WorthQueryApplicationProjectionDenial| {
             denial(
                 WorthQueryApplicationOneShotDenialKind::Projection(projection.kind()),
+                plan.query.name(),
                 projection.subject(),
             )
         },
@@ -155,6 +171,7 @@ where
         .map_err(|_| {
             denial(
                 WorthQueryApplicationOneShotDenialKind::ForeignPlan,
+                plan.query.name(),
                 plan.query.name(),
             )
         })?;

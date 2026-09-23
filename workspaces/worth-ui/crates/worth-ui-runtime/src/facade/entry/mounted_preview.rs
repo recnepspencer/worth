@@ -58,6 +58,8 @@ pub struct WorthUiMountedPreviewCompletionRejection<'session> {
 }
 
 struct WorthUiMountedPreviewPorts<'session> {
+    motion: Option<&'session mut crate::runtime::motion::UiMotionRuntimeState>,
+    scroll: Option<&'session mut crate::runtime::scroll::UiScrollRuntimeState>,
     application_session_identity: crate::facade::WorthUiActiveApplicationSessionIdentity,
     generation_identity:
         crate::facade::prepared_application_authority::WorthUiPreparedApplicationGenerationIdentity,
@@ -71,6 +73,7 @@ struct WorthUiMountedPreviewPorts<'session> {
 
 #[derive(Debug, PartialEq)]
 pub enum WorthUiMountedPreviewPreparationDenial {
+    UnpresentedScrollLayout,
     UnknownMountedInstance,
     PreviewTargetMismatch,
     MissingSurfaceBinding,

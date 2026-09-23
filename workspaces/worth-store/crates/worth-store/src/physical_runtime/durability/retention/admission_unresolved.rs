@@ -1,0 +1,85 @@
+use std::num::NonZeroU64;
+
+use worth_store_physical_format::store_namespace::{
+    ProposedStoreIdentity, StoreNamespaceIdentityRecord, StoreNamespaceVersion,
+};
+
+use super::tests::segment;
+use super::{
+    DisplacedArtifact, PhysicalPublicationAdmission, PhysicalPublicationAdmissionDenial,
+    PhysicalRetentionProfile, RetiredArtifact,
+};
+use crate::physical_runtime::{
+    LifecycleGeneration, PhysicalMutationIdentity, PhysicalOperationIdentity,
+    PhysicalWorkGeneration, PhysicalWorkIdentity, RuntimeIdentity,
+};
+
+fn identity(operation: u64) -> PhysicalMutationIdentity {
+    let store = StoreNamespaceIdentityRecord::new(
+        StoreNamespaceVersion::CURRENT,
+        ProposedStoreIdentity::from_nonzero_bytes([0x41; 16]).unwrap(),
+    )
+    .published_identity();
+    PhysicalMutationIdentity::from_reserved_operation(PhysicalWorkIdentity::from_instance_owner(
+        store,
+        RuntimeIdentity::from_reopened(NonZeroU64::new(1).unwrap()),
+        PhysicalWorkGeneration::from_lifecycle(LifecycleGeneration::from_reopened(
+            NonZeroU64::new(1).unwrap(),
+        )),
+        PhysicalOperationIdentity::from_reopened(NonZeroU64::new(operation).unwrap()),
+    ))
+}
+
+#[test]
+fn retained_publication_blocks_the_next_root_change() {
+    let profile = PhysicalRetentionProfile::new(100, 4, 40, 1).unwrap();
+    let admission = std::sync::Arc::new(PhysicalPublicationAdmission::new(profile));
+    let held = admission
+        .register_exclusive_pending(identity(1))
+        .expect("the first publication registers");
+    held.retain_unresolved();
+    assert_eq!(admission.pending_len(), 1);
+    match admission.register_exclusive_pending(identity(2)) {
+        Err(PhysicalPublicationAdmissionDenial::ScopeConflict(blocker)) => {
+            assert_eq!(blocker, identity(1));
+        }
+        Ok(_) => panic!("an unresolved publication must block the next root change"),
+        Err(PhysicalPublicationAdmissionDenial::Growth(_)) => {
+            panic!("the blocker is the pending publication, not growth")
+        }
+    }
+}
+
+#[test]
+fn obsolete_displacement_occupies_growth_until_reclaim() {
+    let profile = PhysicalRetentionProfile::new(100, 4, 40, 1).unwrap();
+    let admission = std::sync::Arc::new(PhysicalPublicationAdmission::new(profile));
+    let displaced = RetiredArtifact::Segment {
+        segment: 4,
+        generation: 1,
+    };
+    admission.retain_displaced(DisplacedArtifact {
+        source_root: 1,
+        artifact: displaced,
+        bytes: 60,
+    });
+    assert_eq!(admission.remaining_growth_bytes(), 0);
+    admission.complete_displaced(displaced);
+    assert_eq!(admission.charged_growth_bytes(), 0);
+    assert!(admission.reserve_candidate(segment(3), 60).is_ok());
+}
+
+#[test]
+fn sealed_candidate_charge_survives_lease_drop() {
+    let profile = PhysicalRetentionProfile::new(100, 4, 40, 1).unwrap();
+    let admission = std::sync::Arc::new(PhysicalPublicationAdmission::new(profile));
+    let lease = admission.reserve_candidate(segment(9), 60).unwrap();
+    admission.seal_candidate_charge(lease.artifact());
+    drop(lease);
+    assert_eq!(admission.remaining_growth_bytes(), 0);
+    let Err(denied) = admission.reserve_candidate(segment(10), 1) else {
+        panic!("sealed retained growth must keep denying one-over requests");
+    };
+    assert_eq!(denied.remaining_bytes, 0);
+    assert_eq!(denied.requested_bytes, 1);
+}

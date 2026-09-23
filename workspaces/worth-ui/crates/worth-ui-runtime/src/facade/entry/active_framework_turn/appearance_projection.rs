@@ -9,7 +9,7 @@ impl WorthUiActiveFrameworkTurnExecution<'_> {
     ) -> crate::mounting::UiMountedPublicationTransition {
         let generation = &self.generation_identity;
         let portal = self.portal.as_deref();
-        let motion = self.motion;
+        let motion = self.motion.as_deref();
         let presentation = &*self.presentation;
         let capabilities = self.capabilities;
         let appearance = self.appearance_owner_snapshot.as_ref();

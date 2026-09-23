@@ -34,7 +34,13 @@ binding additionally checks the exact physical plan and expected manifest epoch.
 The former recovery-gated cutover proof is removed. Recovery's selected
 checkpoint compaction product describes an operation-binding index, not physical
 rewrite visibility. Isolation has no Store or Recovery dependency; all three
-upward edges are denied by the repository boundary checker.
+upward edges are denied by the repository boundary checker, and an allowlist
+limits its dependencies to the lower physical, budget, security, WAL, proof
+and Foundational owners.
+
+Live protection, retirement claims and effect lowering are Store-owned. Isolation
+cannot construct a protection registry, a retirement claim or a deletion
+permit, and its local plans never authorize media deletion.
 
 Publication planning ends at `CopyOnWritePublicationPlan::complete_plan()` and
 returns `PhysicalPublicationPlanCompletion`. It carries validated roots, epochs,

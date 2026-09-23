@@ -137,6 +137,14 @@ separate:
 - `ScrollDelta` reports source, phase, precision, high-resolution x/y delta,
   and exact coordinate, mounted-target, or current presented-surface affinity.
   The runtime Scroll owner resolves and updates the semantic owner and offset.
+  Precision is part of the report, not a hint. A pixel delta is travel already
+  and reaches the offset untouched, which is the path a precision device --
+  touchpad, precision wheel -- takes. A line delta is a count of lines in
+  thousandths, already multiplied by the platform's lines-per-notch reading, and
+  the runtime turns it into travel with the region author's declared line
+  extent; a region that declares none is denied rather than moved. The adapter
+  never converts one precision into the other, and a synthetic pixel delta
+  therefore proves the semantics of a precision device and not its timing.
 - `Tick` and the existing level-triggered readiness path wake presentation
   sampling. They do not give the host a motion timeline or interpolation
   authority.
@@ -144,6 +152,22 @@ separate:
   its geometry, layer, lifecycle, and input shielding, but does not own logical
   open/close state. An operating-system popup surface is unsupported in this
   contract.
+
+A settling region is driven by the shell on the frames it already runs, not by
+a timeline the host owns:
+
+```text
+prepare_motion_tick
+-> present_prepared_motion_tick
+-> settle_accepted_scroll_sample
+```
+
+The accepted offset is what the last presented sample actually placed, not what
+the settle is aiming at. A host that presented a frame has moved the reader's
+content; one that prepared a frame it never presented has not, and the accepted
+offset must not claim otherwise. Because a region's owner box at rest is its
+content box, the first frame after an input samples the rest pose and moves
+nothing, so a settle declaring N ticks arrives on frame N + 1.
 
 Focus placement preserves the physical-effect boundary:
 
@@ -279,7 +303,52 @@ that interprets the former ambiguous `Focus` observation as `WindowFocus`, and
 no mixed-revision fallback that silently drops scroll affinity or focus
 settlement.
 
+Scroll qualification is deliberately independent of refresh rate and compositor
+capture APIs. The executable native journey sends a real wheel notch and held
+thumb drag, then checks independently captured content and chrome pixels against
+authored geometry and clicks the row that should now be under the pointer. The
+accepted host record must show advancing presentation-only motion samples,
+changing thumb geometry, positive damage/render/present work, and per-sample
+rendered work below one complete physical client raster. Runtime tests separately
+protect burst coalescing, retargeting, cancellation, settlement, refusal/retry,
+and viewport-local invalidation. These sources complement each other: accepted
+samples are not proof of compositor visibility, while a correct endpoint image
+does not establish bounded intermediate work.
+
+The executable-world lane uses the current 1536-by-1024 dashboard for native
+Query/review interaction, imported-source replacement and denial/recovery, and
+wheel/thumb journeys. Five older 960-by-600 Pulse live-journey tests remain
+explicitly ignored: their snapshot publication and control coordinates describe
+the predecessor product, so they cannot certify the current dashboard. The
+current journeys provide the 3.16.1 acceptance evidence through independent
+native pixels and causal input, including modal focus/close, predecessor pixels
+after compilation denial, and post-scroll row hits. This does not claim that
+every historical 3.15 scenario has been ported.
+
+The former three ten-second DXGI timestamp gate and its p95/p99 deadlines have
+been retired from 3.16.1. GDI and X11 captures remain functional pixel oracles,
+not frame-pacing clocks. On this Windows machine, DXGI desktop duplication
+returned `DXGI_ERROR_UNSUPPORTED`; that adapter failure no longer blocks this
+functional qualification and is not converted into a timing pass. Elapsed times
+may be retained for troubleshooting, but this milestone claims neither a
+latency percentile nor display cadence on Windows or Linux.
+
+Precision input is qualified by a run on a real precision device. A synthetic
+pixel-delta report exercises the same semantic path and proves nothing about
+timing, and absent hardware leaves the claim unverified rather than passed.
+For this closeout, the user explicitly deferred the real precision-device run
+on September 22 because no device is available. Its device-specific claim
+remains unverified; this does not waive semantic acceptance/rejection tests.
+
 ## Cost And Failure Posture
+
+Glyph diagnostic rows describe the ordinary frame's qualified base runs, not
+their current sampled positions. One paired alpha/intrinsic derivation is
+cached by exact frame, physical extent and atlas committed-content revision;
+same-basis samples share immutable rows without rescanning unrelated text.
+Reservations alone do not change committed atlas metadata or grant rendering
+permission. Sampled chrome observations and external pixels separately prove
+the displayed scroll pose.
 
 Presentation reports structural and physical amplification separately:
 delta rows, draw-list and order mutations, damage regions, index probes,
@@ -314,6 +383,13 @@ ordinal; retained reconstruction resumes from current mounted authority and
 presents a distinct product frame. A later minimize/restore cycle cannot reuse
 the earlier title/barrier observation. The Windows lifecycle courtroom verifies
 each successor presentation before it accepts compositor pixels.
+
+A settle is the tail of a gesture somebody is watching. A window that stops
+being the reader's, an unmounted subject, content that empties or shrinks to
+fit, and a pointer that takes a thumb each end the track explicitly, at the
+sample the reader last saw, rather than finishing on their own and moving
+content behind the reader's back. No motion survives the thing it was moving,
+so the census a close waits on is reached rather than approached.
 
 Close uses one ordered shutdown progression: stop admission, settle external
 presentation and readback obligations, release derived/recovery state, release

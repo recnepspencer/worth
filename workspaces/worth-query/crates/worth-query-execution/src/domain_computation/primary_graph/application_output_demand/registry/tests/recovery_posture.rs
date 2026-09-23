@@ -2,9 +2,12 @@ use super::super::WorthQueryOutputProgress;
 use super::*;
 use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandAdvanceAdmission;
 use crate::domain_computation::primary_graph::application_output_demand::{
-    WorthQueryOutputCheckpoint, WorthQueryPendingOutputDelivery,
+    WorthQueryAcceptedOutputAuthority, WorthQueryOutputCheckpoint, WorthQueryPendingOutputDelivery,
 };
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture;
+
+mod checkpoint_capture;
+mod restored_admission;
 
 #[test]
 fn retryable_publication_stale_keeps_required_scheduled_obligation() {
@@ -122,6 +125,7 @@ fn no_change_checkpoint_keeps_its_real_receipt_across_claims() {
     assert_eq!(
         checkpoint
             .receipt()
+            .expect("ordinary checkpoint receipt")
             .committed_product_publication()
             .composite_commit(),
         &original_commit
@@ -146,6 +150,7 @@ fn no_change_checkpoint_keeps_its_real_receipt_across_claims() {
     assert_eq!(
         retried
             .receipt()
+            .expect("ordinary retry receipt")
             .committed_product_publication()
             .composite_commit(),
         &original_commit
@@ -172,7 +177,7 @@ fn stale_ready_successor_admission_forces_a_new_execution_cycle() {
                 occurrence,
                 DemandState::Output(WorthQueryOutputProgress::new(
                     WorthQueryOutputCheckpoint::Ready(super::super::WorthQueryCompletedOutputDemand {
-                        receipt: receipt.clone(),
+                        authority: WorthQueryAcceptedOutputAuthority::Committed(receipt.clone()),
                         readiness: crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputReadinessDeliveryEvidence::for_test(),
                     }),
                 )),
@@ -212,7 +217,7 @@ fn stopped_ready_record_rejects_successor_without_reviving_custody() {
     let scope = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(root(1));
     let mut output = WorthQueryOutputProgress::new(WorthQueryOutputCheckpoint::Ready(
         super::super::WorthQueryCompletedOutputDemand {
-            receipt: receipt.clone(),
+            authority: WorthQueryAcceptedOutputAuthority::Committed(receipt.clone()),
             readiness: crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputReadinessDeliveryEvidence::for_test(),
         },
     ));
@@ -268,7 +273,7 @@ fn failed_successor_admission_preserves_ready_custody() {
                 occurrence,
                 DemandState::Output(WorthQueryOutputProgress::new(
                     WorthQueryOutputCheckpoint::Ready(super::super::WorthQueryCompletedOutputDemand {
-                        receipt: receipt.clone(),
+                        authority: WorthQueryAcceptedOutputAuthority::Committed(receipt.clone()),
                         readiness: crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputReadinessDeliveryEvidence::for_test(),
                     }),
                 )),
@@ -350,6 +355,8 @@ fn closed_occurrence_stops_a_claim_without_losing_published_identity() {
     assert_eq!(
         output
             .receipt
+            .as_ref()
+            .expect("ordinary output receipt")
             .committed_product_publication()
             .composite_commit(),
         &commit,
@@ -360,6 +367,7 @@ fn closed_occurrence_stops_a_claim_without_losing_published_identity() {
             .as_ref()
             .expect("stopped output retains its checkpoint")
             .receipt()
+            .expect("ordinary stopped checkpoint receipt")
             .committed_product_publication()
             .composite_commit(),
         &commit,

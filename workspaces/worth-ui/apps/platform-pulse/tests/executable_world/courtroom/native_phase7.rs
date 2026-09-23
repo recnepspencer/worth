@@ -1,7 +1,7 @@
 use std::panic::{catch_unwind, resume_unwind, AssertUnwindSafe};
 use std::time::{Duration, Instant};
 
-use crate::native_platform::{NativePlatformContract, WindowsNativePlatform};
+use crate::native_platform::{CertifiedNativePlatform, NativePlatformContract};
 use crate::product_process::{CargoBuiltPlatformPulse, SuccessfulPlatformPulseExit};
 
 struct ControlManifest {
@@ -31,8 +31,8 @@ struct PendingControlPoint {
 }
 
 #[test]
-#[ignore = "requires the serialized interactive Windows 11 DX12 desktop"]
-fn windows_native_boundary_world_correlates_presented_source_snapshot_and_client_pixels() {
+#[ignore = "requires the serialized interactive certified native desktop (Windows 11 DX12 or Xvfb X11)"]
+fn certified_native_boundary_world_correlates_presented_source_snapshot_and_client_pixels() {
     let controls = control_manifest();
     let argument = controls
         .native_seed_control_point
@@ -40,7 +40,7 @@ fn windows_native_boundary_world_correlates_presented_source_snapshot_and_client
         .map(|control| format!("{},{}", control.logical[0], control.logical[1]))
         .collect::<Vec<_>>()
         .join(";");
-    let platform = WindowsNativePlatform::certified().expect("Windows observation is qualified");
+    let platform = CertifiedNativePlatform::certified().expect("native observation is qualified");
     let mut launch = CargoBuiltPlatformPulse::exact()
         .and_then(|product| product.launch_native_phase7(&argument))
         .expect("the native Phase 7 product process launches");
@@ -55,7 +55,7 @@ fn windows_native_boundary_world_correlates_presented_source_snapshot_and_client
 }
 
 fn execute(
-    platform: &WindowsNativePlatform,
+    platform: &CertifiedNativePlatform,
     launch: &mut crate::product_process::NativePhase2ProcessLaunch,
     process_id: u32,
     controls: &ControlManifest,
@@ -89,8 +89,8 @@ fn execute(
 }
 
 fn await_control_pixels(
-    platform: &WindowsNativePlatform,
-    client: &<WindowsNativePlatform as NativePlatformContract>::BoundClientArea,
+    platform: &CertifiedNativePlatform,
+    client: &<CertifiedNativePlatform as NativePlatformContract>::BoundClientArea,
     controls: &ControlManifest,
     dpi: u32,
     deadline: Instant,
@@ -362,7 +362,7 @@ fn project_with_os_dpi(logical: u32, dpi: u32) -> u32 {
 }
 
 fn finalize_failed_world(
-    platform: &WindowsNativePlatform,
+    platform: &CertifiedNativePlatform,
     process: &mut crate::product_process::LivePlatformPulseProcess,
     process_id: u32,
 ) {

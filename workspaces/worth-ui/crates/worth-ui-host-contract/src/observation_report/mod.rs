@@ -26,9 +26,10 @@ pub use batch::{
 };
 pub use drain::{
     UiHostObservationDrain, UiHostObservationDrainDenial, UiHostObservationRetention,
-    UiHostObservationRetentionDenial, UiHostObservationSessionRegistrationDenial,
-    UI_HOST_OBSERVATION_ACTIVE_SESSION_LIMIT, UI_HOST_OBSERVATION_DRAIN_BATCH_LIMIT,
-    UI_HOST_OBSERVATION_DRAIN_BYTE_LIMIT, UI_HOST_OBSERVATION_DRAIN_REPORT_LIMIT,
+    UiHostObservationRetentionDenial, UiHostObservationRetentionOutcome,
+    UiHostObservationSessionRegistrationDenial, UI_HOST_OBSERVATION_ACTIVE_SESSION_LIMIT,
+    UI_HOST_OBSERVATION_DRAIN_BATCH_LIMIT, UI_HOST_OBSERVATION_DRAIN_BYTE_LIMIT,
+    UI_HOST_OBSERVATION_DRAIN_REPORT_LIMIT,
 };
 pub use family::UiHostObservationFamily;
 pub use ime::{
@@ -57,7 +58,8 @@ pub use report::{
 };
 pub use scroll::{
     UiHostScrollDeltaPhase, UiHostScrollDeltaPrecision, UiHostScrollDeltaSource,
-    UiHostScrollDeltaTargetAffinity,
+    UiHostScrollDeltaTargetAffinity, UiHostScrollLineCountBasis,
+    UI_HOST_SCROLL_DEFAULT_LINES_PER_NOTCH,
 };
 pub use sequence::{UiHostObservationSequence, UiHostObservationSequenceRange};
 pub use time_basis::UiHostObservationTimeBasis;

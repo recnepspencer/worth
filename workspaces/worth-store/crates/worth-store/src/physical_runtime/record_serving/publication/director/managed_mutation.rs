@@ -3,19 +3,26 @@ use std::sync::Arc;
 use worth_proof::NonEmpty;
 
 use super::RecordPublicationDirector;
+use crate::physical_runtime::durability::{
+    PhysicalMutationCheckpoint, PhysicalPublicationAdmissionDenial,
+};
 use crate::physical_runtime::{
     CompletedPhysicalMutationFact, DataSettledPhysicalMutationMembers,
     IndeterminatePhysicalMutation, PhysicalCurrentRootAdvanceOutcome, PhysicalDataDispatchOutcome,
     PhysicalDataSettlementOutcome, PhysicalDurabilityGroupBasis, PhysicalMutationAttempt,
     PhysicalMutationIndeterminateStage, PhysicalMutationProgressPhase,
     PhysicalMutationProvenNoEffectCause, PhysicalMutationTerminalFact,
-    PhysicalPreSealCancellationOutcome, PhysicalRootNamespaceDurabilityOutcome,
-    PhysicalRootPublicationPreparationOutcome, PhysicalRootReplacementOutcome,
+    PhysicalRootNamespaceDurabilityOutcome, PhysicalRootPublicationPreparationOutcome,
+    PhysicalRootReplacementOutcome, PhysicalWalGroupAppendFailureCause,
     PhysicalWalGroupAppendOutcome, PhysicalWalGroupBarrierOutcome, PreparedPhysicalMutation,
-    RootNamespaceDurablePhysicalMutationMembers, RootPublicationPreparedPhysicalMutationMembers,
-    RootReplacedPhysicalMutationMembers, SealedPhysicalDurabilityGroupMembers,
-    WalDurablePhysicalMutation,
+    RecordAppendDenial, RootNamespaceDurablePhysicalMutationMembers,
+    RootPublicationPreparedPhysicalMutationMembers, RootReplacedPhysicalMutationMembers,
+    SealedPhysicalDurabilityGroupMembers, WalDurablePhysicalMutation,
 };
+mod obligations;
+mod pre_effect;
+
+use obligations::{keep_unresolved, RewriteGrowthGuard};
 
 impl RecordPublicationDirector {
     pub(in crate::physical_runtime) fn execute_managed_mutation(
@@ -34,13 +41,64 @@ impl RecordPublicationDirector {
         prepared: PreparedPhysicalMutation,
         attempt: &PhysicalMutationAttempt,
     ) -> Result<Arc<CompletedPhysicalMutationFact>, PhysicalMutationTerminalFact> {
-        let appended = self.append_managed_wal(prepared, attempt)?;
-        let (basis, durable) = self.synchronize_managed_wal(appended, attempt)?;
-        let settled = self.settle_managed_data(basis, durable, attempt)?;
-        let prepared_root = self.prepare_managed_root(settled, attempt)?;
-        let replaced_root = self.replace_managed_root(prepared_root, attempt)?;
-        let durable_root = self.synchronize_managed_root(replaced_root, attempt)?;
-        self.advance_managed_root(durable_root, attempt)
+        let pending = match self
+            .root_owner
+            .register_pending_publication(attempt.identity())
+        {
+            Ok(pending) => pending,
+            Err(PhysicalPublicationAdmissionDenial::ScopeConflict(_)) => {
+                return Err(self.pre_effect_terminal(
+                    prepared,
+                    attempt,
+                    PhysicalMutationProvenNoEffectCause::ScopeConflict,
+                ))
+            }
+            Err(PhysicalPublicationAdmissionDenial::Growth(_)) => {
+                return Err(self.pre_effect_terminal(
+                    prepared,
+                    attempt,
+                    PhysicalMutationProvenNoEffectCause::RetentionPressure,
+                ))
+            }
+        };
+        if self.rewrite_source_changed(&prepared) {
+            return Err(self.pre_effect_terminal(
+                prepared,
+                attempt,
+                PhysicalMutationProvenNoEffectCause::SourceChanged,
+            ));
+        }
+        let mut growth = RewriteGrowthGuard::new(&self.root_owner);
+        let appended = match self.append_managed_wal(prepared, attempt) {
+            Ok(appended) => appended,
+            Err(terminal) => return Err(keep_unresolved(growth, pending, terminal)),
+        };
+        let (basis, durable) = match self.synchronize_managed_wal(appended, attempt) {
+            Ok(durable) => durable,
+            Err(terminal) => return Err(keep_unresolved(growth, pending, terminal)),
+        };
+        let settled = match self.settle_managed_data(basis, durable, attempt) {
+            Ok(settled) => settled,
+            Err(terminal) => return Err(keep_unresolved(growth, pending, terminal)),
+        };
+        let prepared_root = match self.prepare_managed_root(settled, attempt) {
+            Ok(prepared_root) => prepared_root,
+            Err(terminal) => return Err(keep_unresolved(growth, pending, terminal)),
+        };
+        let replaced_root = match self.replace_managed_root(prepared_root, attempt) {
+            Ok(replaced_root) => replaced_root,
+            Err(terminal) => return Err(keep_unresolved(growth, pending, terminal)),
+        };
+        let durable_root = match self.synchronize_managed_root(replaced_root, attempt) {
+            Ok(durable_root) => durable_root,
+            Err(terminal) => return Err(keep_unresolved(growth, pending, terminal)),
+        };
+        let completed = match self.advance_managed_root(durable_root, attempt) {
+            Ok(completed) => completed,
+            Err(terminal) => return Err(keep_unresolved(growth, pending, terminal)),
+        };
+        growth.commit();
+        Ok(completed)
     }
 
     fn append_managed_wal(
@@ -55,38 +113,43 @@ impl RecordPublicationDirector {
         attempt.enter(PhysicalMutationProgressPhase::WalAppend);
         let planned = match self.plan_prepared_group_for_wal(NonEmpty::new(prepared, Vec::new())) {
             Ok(planned) => planned,
-            Err((members, _)) => {
-                return Err(self.pre_effect_terminal(
-                    one(members),
-                    attempt,
-                    PhysicalMutationProvenNoEffectCause::AdmissionDeniedBeforeGroupSeal,
-                ))
+            Err((members, denial)) => {
+                let prepared = one(members);
+                let cause = if self.rewrite_source_changed(&prepared) {
+                    PhysicalMutationProvenNoEffectCause::SourceChanged
+                } else if denial == RecordAppendDenial::RetentionPressure {
+                    PhysicalMutationProvenNoEffectCause::RetentionPressure
+                } else {
+                    PhysicalMutationProvenNoEffectCause::AdmissionDeniedBeforeGroupSeal
+                };
+                return Err(self.pre_effect_terminal(prepared, attempt, cause));
             }
         };
+        self.mutations
+            .reach_checkpoint(PhysicalMutationCheckpoint::BeforeWalAppend);
         match self.wal.append_prepared_group(planned) {
             PhysicalWalGroupAppendOutcome::Appended(appended) => {
                 attempt.commit_settlement();
                 drop(effect_cutover);
-                self.mutations.reach_checkpoint(
-                    crate::physical_runtime::durability::PhysicalMutationCheckpoint::AfterGroupSeal,
-                );
+                self.mutations
+                    .reach_checkpoint(PhysicalMutationCheckpoint::AfterGroupSeal);
                 Ok(appended)
             }
-            PhysicalWalGroupAppendOutcome::NotAdmitted { members, .. } => Err(self
-                .pre_effect_terminal(
-                    one(members),
-                    attempt,
-                    PhysicalMutationProvenNoEffectCause::AdmissionDeniedBeforeGroupSeal,
-                )),
+            PhysicalWalGroupAppendOutcome::NotAdmitted { members, cause } => {
+                let cause = if cause == PhysicalWalGroupAppendFailureCause::PublicationGrowth {
+                    PhysicalMutationProvenNoEffectCause::RetentionPressure
+                } else {
+                    PhysicalMutationProvenNoEffectCause::AdmissionDeniedBeforeGroupSeal
+                };
+                Err(self.pre_effect_terminal(one(members), attempt, cause))
+            }
             PhysicalWalGroupAppendOutcome::AdmissionRejected(rejected) => Err(self
                 .pre_effect_terminal(
                     one(rejected.into_members()),
                     attempt,
                     PhysicalMutationProvenNoEffectCause::AdmissionDeniedBeforeGroupSeal,
                 )),
-            PhysicalWalGroupAppendOutcome::NotStarted(_)
-            | PhysicalWalGroupAppendOutcome::PartiallyAppended(_)
-            | PhysicalWalGroupAppendOutcome::Indeterminate(_) => {
+            PhysicalWalGroupAppendOutcome::NotStarted(_) => {
                 attempt.commit_settlement();
                 drop(effect_cutover);
                 Err(indeterminate(
@@ -95,20 +158,16 @@ impl RecordPublicationDirector {
                     0,
                 ))
             }
-        }
-    }
-
-    fn pre_seal_denial(
-        &self,
-        attempt: &PhysicalMutationAttempt,
-    ) -> Option<PhysicalMutationProvenNoEffectCause> {
-        if attempt.cancellation_requested() {
-            return Some(PhysicalMutationProvenNoEffectCause::CancelledBeforeGroupSeal);
-        }
-        match self.deadline_elapsed(attempt) {
-            Ok(true) => Some(PhysicalMutationProvenNoEffectCause::DeadlineElapsedBeforeGroupSeal),
-            Err(()) => Some(PhysicalMutationProvenNoEffectCause::WorkerUnavailableBeforeGroupSeal),
-            Ok(false) => None,
+            PhysicalWalGroupAppendOutcome::PartiallyAppended(_)
+            | PhysicalWalGroupAppendOutcome::Indeterminate(_) => {
+                attempt.commit_settlement();
+                drop(effect_cutover);
+                Err(indeterminate(
+                    attempt,
+                    PhysicalMutationIndeterminateStage::WalAppend,
+                    1,
+                ))
+            }
         }
     }
 
@@ -134,9 +193,8 @@ impl RecordPublicationDirector {
         };
         let basis = durable.basis();
         let durable = one(durable.into_members());
-        self.mutations.reach_checkpoint(
-            crate::physical_runtime::durability::PhysicalMutationCheckpoint::AfterWalDurability,
-        );
+        self.mutations
+            .reach_checkpoint(PhysicalMutationCheckpoint::AfterWalDurability);
         Ok((basis, durable))
     }
 
@@ -160,9 +218,8 @@ impl RecordPublicationDirector {
             }
         };
         attempt.enter(PhysicalMutationProgressPhase::DataSettlement);
-        self.mutations.reach_checkpoint(
-            crate::physical_runtime::durability::PhysicalMutationCheckpoint::DuringDataSettlement,
-        );
+        self.mutations
+            .reach_checkpoint(PhysicalMutationCheckpoint::DuringDataSettlement);
         let settled = match dispatched.settle_exact_effects() {
             PhysicalDataSettlementOutcome::Settled(settled) => settled,
             PhysicalDataSettlementOutcome::InspectionRequired { .. } => {
@@ -186,9 +243,8 @@ impl RecordPublicationDirector {
                 ))
             }
         };
-        self.mutations.reach_checkpoint(
-            crate::physical_runtime::durability::PhysicalMutationCheckpoint::AfterDataSettlement,
-        );
+        self.mutations
+            .reach_checkpoint(PhysicalMutationCheckpoint::AfterDataSettlement);
         Ok(settled)
     }
 
@@ -211,9 +267,8 @@ impl RecordPublicationDirector {
                 ))
             }
         };
-        self.mutations.reach_checkpoint(
-            crate::physical_runtime::durability::PhysicalMutationCheckpoint::DuringRootPublication,
-        );
+        self.mutations
+            .reach_checkpoint(PhysicalMutationCheckpoint::DuringRootPublication);
         Ok(prepared_root)
     }
 
@@ -224,7 +279,11 @@ impl RecordPublicationDirector {
     ) -> Result<RootReplacedPhysicalMutationMembers, PhysicalMutationTerminalFact> {
         attempt.enter(PhysicalMutationProgressPhase::RootReplacement);
         match self.replace_prepared_root(prepared_root) {
-            PhysicalRootReplacementOutcome::Replaced(replaced) => Ok(replaced),
+            PhysicalRootReplacementOutcome::Replaced(replaced) => {
+                self.mutations
+                    .reach_checkpoint(PhysicalMutationCheckpoint::AfterRootReplacement);
+                Ok(replaced)
+            }
             PhysicalRootReplacementOutcome::NotStarted(_)
             | PhysicalRootReplacementOutcome::InspectionRequired(_) => Err(indeterminate(
                 attempt,
@@ -277,32 +336,6 @@ impl RecordPublicationDirector {
             attempt.fingerprint(),
             completed.current_root().generation(),
         ))
-    }
-
-    fn deadline_elapsed(&self, attempt: &PhysicalMutationAttempt) -> Result<bool, ()> {
-        self.runtime
-            .upgrade()
-            .ok_or(())?
-            .signal
-            .clock_observation()
-            .map(|clock| attempt.deadline().signal_deadline().get() <= clock.current_tick())
-            .map_err(|_| ())
-    }
-
-    fn pre_effect_terminal(
-        &self,
-        prepared: PreparedPhysicalMutation,
-        attempt: &PhysicalMutationAttempt,
-        cause: PhysicalMutationProvenNoEffectCause,
-    ) -> PhysicalMutationTerminalFact {
-        match self.settle_prepared_before_group_seal(prepared, cause) {
-            PhysicalPreSealCancellationOutcome::ProvenNoEffect(terminal) => {
-                PhysicalMutationTerminalFact::ProvenNoEffect(terminal)
-            }
-            PhysicalPreSealCancellationOutcome::NotCancelled { .. } => {
-                indeterminate(attempt, PhysicalMutationIndeterminateStage::WalAppend, 0)
-            }
-        }
     }
 }
 

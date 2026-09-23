@@ -3,16 +3,16 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use crate::native_platform::{
-    NativePlatformContract, NativePlatformFailure, WindowsNativePlatform,
+    CertifiedNativePlatform, NativePlatformContract, NativePlatformFailure,
 };
 use crate::product_process::{CargoBuiltPlatformPulse, SuccessfulPlatformPulseExit};
 
 mod evidence;
 
 #[test]
-#[ignore = "requires the serialized interactive Windows 11 DX12 desktop"]
-fn windows_native_boundary_world_retains_click_time_pointer_after_cursor_moves() {
-    let platform = WindowsNativePlatform::certified().expect("Windows observation is qualified");
+#[ignore = "requires the serialized interactive certified native desktop (Windows 11 DX12 or Xvfb X11)"]
+fn certified_native_boundary_world_retains_click_time_pointer_after_cursor_moves() {
+    let platform = CertifiedNativePlatform::certified().expect("native observation is qualified");
     let mut launch = CargoBuiltPlatformPulse::exact()
         .and_then(CargoBuiltPlatformPulse::launch_native_phase6)
         .expect("the native phase 6 product process launches");
@@ -27,7 +27,7 @@ fn windows_native_boundary_world_retains_click_time_pointer_after_cursor_moves()
 }
 
 fn execute_boundary_world(
-    platform: &WindowsNativePlatform,
+    platform: &CertifiedNativePlatform,
     launch: &mut crate::product_process::NativePhase2ProcessLaunch,
     process_id: u32,
 ) {
@@ -52,7 +52,7 @@ fn execute_boundary_world(
                 "native input environment denied: {}",
                 serde_json::json!({
                     "schema": "worth-ui-native-phase6-environment-denial-v1",
-                    "requirement": "P6-WINDOWS-WORLD-01",
+                    "requirement": crate::native_platform::world_requirement(6),
                     "delivery_route": "system-input-to-native-message-queue",
                     "result": "environment-denied",
                     "denial": denial.to_string(),
@@ -116,7 +116,7 @@ fn execute_boundary_world(
 }
 
 fn finalize_failed_world(
-    platform: &WindowsNativePlatform,
+    platform: &CertifiedNativePlatform,
     process: &mut crate::product_process::LivePlatformPulseProcess,
     process_id: u32,
 ) {

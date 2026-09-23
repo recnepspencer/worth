@@ -6,8 +6,12 @@ use super::super::command::{
 
 pub(super) fn family_slot(family: UiNativeAppearanceCommandFamily) -> usize {
     match family {
+        // Chrome is a surface fill with a reserved paint order; it is counted
+        // and budgeted with the surfaces rather than against a family of its
+        // own.
         UiNativeAppearanceCommandFamily::Surface
-        | UiNativeAppearanceCommandFamily::PortalSurface => 0,
+        | UiNativeAppearanceCommandFamily::PortalSurface
+        | UiNativeAppearanceCommandFamily::ScrollChrome => 0,
         UiNativeAppearanceCommandFamily::Outline => 1,
         UiNativeAppearanceCommandFamily::TextForeground => 2,
         UiNativeAppearanceCommandFamily::Backdrop => 3,
@@ -22,7 +26,8 @@ pub(super) fn family_capacity(
 ) -> usize {
     match family {
         UiNativeAppearanceCommandFamily::Surface
-        | UiNativeAppearanceCommandFamily::PortalSurface => usize::from(profile.surface_commands),
+        | UiNativeAppearanceCommandFamily::PortalSurface
+        | UiNativeAppearanceCommandFamily::ScrollChrome => usize::from(profile.surface_commands),
         UiNativeAppearanceCommandFamily::Outline => usize::from(profile.outline_commands),
         UiNativeAppearanceCommandFamily::TextForeground => {
             usize::from(profile.text_foreground_commands)

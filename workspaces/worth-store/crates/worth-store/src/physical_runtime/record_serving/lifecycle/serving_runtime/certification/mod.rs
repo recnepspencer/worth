@@ -34,6 +34,101 @@ impl ServingPhysicalRuntime {
             .map_err(|_| crate::physical_runtime::PhysicalWorkRetryFailure::DerivedStateUnavailable)
     }
 
+    pub fn certification_pending_publication_count(&self) -> usize {
+        self.parts.publication.pending_publication_count()
+    }
+
+    /// Retained-storage bytes currently charged against the growth ceiling.
+    pub fn certification_charged_growth_bytes(&self) -> u64 {
+        self.parts.publication.charged_growth_bytes()
+    }
+
+    /// Owes a background turn after the next retirement frame is written, before its barrier.
+    pub fn certification_owe_before_retirement_barrier(&self) {
+        self.parts
+            .publication
+            .certification_owe_before_maintenance_barrier();
+    }
+
+    /// Makes the next foreground reservation wait for a background turn.
+    pub fn certification_owe_background_turn(&self) {
+        self.parts
+            .scheduler_admission
+            .certification_owe_background_turn();
+    }
+
+    /// Clears the background turn installed by `certification_owe_background_turn`.
+    pub fn certification_release_owed_background_turn(&self) {
+        self.parts
+            .scheduler_admission
+            .certification_release_owed_background_turn();
+    }
+
+    /// Holds the retirement owner after the claim and before the intent append.
+    pub fn certification_pause_before_retirement_intent(&self) {
+        self.parts.publication.arm_retirement_intent_gate();
+    }
+
+    pub fn certification_retirement_intent_arrived(&self) -> bool {
+        self.parts.publication.retirement_intent_arrived()
+    }
+
+    pub fn certification_release_retirement_intent(&self) {
+        self.parts.publication.release_retirement_intent_gate();
+    }
+
+    /// Parks the retirement that is in flight at `seam` until the process is killed.
+    ///
+    /// Seam 1 is after the durable intent and checkpoint, before unlink.
+    /// Seam 2 is after unlink, before the removal directory sync.
+    pub fn certification_arm_retirement_kill(
+        &self,
+        seam: u8,
+    ) -> std::sync::Arc<std::sync::atomic::AtomicBool> {
+        self.parts.publication.arm_retirement_kill(seam)
+    }
+
+    /// Stops retirement after the intent and checkpoint, before the segment unlink.
+    pub fn certification_stop_before_retirement_delete(&self) {
+        self.parts
+            .publication
+            .certification_stop_before_retirement_delete();
+    }
+
+    /// Fails the next segment-removal directory sync after the unlink has returned.
+    pub fn certification_fail_next_removal_directory_sync(&self) {
+        self.parts
+            .work_runtime
+            .executor
+            .record_serving_media()
+            .certification_fail_next_removal_directory_sync();
+    }
+
+    /// Stops retirement after the segment file is gone and before completion.
+    pub fn certification_stop_after_retirement_delete(&self) {
+        self.parts
+            .publication
+            .certification_stop_after_retirement_delete();
+    }
+
+    /// Ordinary publication work cannot remove a segment. The public command
+    /// constructor refuses before any media effect.
+    pub fn certification_public_segment_removal_rejected(&self) -> bool {
+        self.parts
+            .publication
+            .certification_public_segment_removal_rejected()
+    }
+
+    /// Limits usable candidate growth so rewrite admission can be denied one-over.
+    ///
+    /// `usable_growth_bytes` is the allowance after progress headroom. Headroom stays
+    /// at the store default (64 KiB) so one-byte-over claims remain honest.
+    pub fn certification_limit_candidate_growth_bytes(&self, usable_growth_bytes: u64) {
+        self.parts
+            .publication
+            .limit_candidate_growth_bytes(usable_growth_bytes);
+    }
+
     pub fn certification_pause_physical_mutation_at(
         &self,
         checkpoint: crate::physical_runtime::certification::CertificationPhysicalMutationCheckpoint,
@@ -140,6 +235,72 @@ impl ServingPhysicalRuntime {
         self.parts.work_runtime.health.revoke();
     }
 
+    /// Drive one checkpoint attempt through the production work port.
+    /// Foreground pressure yields before a media effect and keeps the owed turn.
+    pub fn certification_checkpoint_work_yields_for_foreground_pressure(&self) -> bool {
+        self.parts
+            .checkpoint
+            .certification_checkpoint_under_pressure(1)
+    }
+
+    /// Drive one reclamation attempt through the production work port.
+    pub fn certification_reclamation_work_yields_for_foreground_pressure(&self) -> bool {
+        self.parts
+            .checkpoint
+            .certification_reclamation_under_pressure(1)
+    }
+
+    /// A quiet foreground admits the reclamation quantum through the work port.
+    pub fn certification_reclamation_work_admits_when_foreground_is_idle(&self) -> bool {
+        !self
+            .parts
+            .checkpoint
+            .certification_reclamation_under_pressure(0)
+    }
+
+    pub fn certification_note_reclamation_background_head(&self) {
+        self.parts
+            .scheduler_admission
+            .note_wal_reclamation_background_head();
+    }
+
+    pub fn certification_fail_next_checkpoint_admission(&self) {
+        self.parts.checkpoint.certification_fail_next_admission();
+    }
+
+    pub fn certification_foreground_is_blocked_by_background(&self) -> bool {
+        use worth_store_io_scheduler::foreground_reservation::{
+            BandwidthToken, DirtyPageBudget, ForegroundLaneDeclaration, ForegroundResourceBudget,
+            QueueSlot, WorkerPermit, WriteBackWindow,
+        };
+        let lane = ForegroundLaneDeclaration::ordinary_page_write().with_budget(
+            ForegroundResourceBudget::new()
+                .with_queue_slots(QueueSlot::new(1).expect("one foreground slot is nonzero"))
+                .with_bandwidth(BandwidthToken::bytes(4_096).expect("bandwidth is nonzero"))
+                .with_write_back(WriteBackWindow::pages(1).expect("one page is nonzero"))
+                .with_dirty_pages(DirtyPageBudget::pages(1).expect("one dirty page is nonzero"))
+                .with_worker_permits(WorkerPermit::new(1).expect("one worker is nonzero")),
+        );
+        matches!(
+            self.parts
+                .scheduler_admission
+                .reserve_record_lane(lane, self.parts.record_work.scheduler_security(),),
+            Err(crate::physical_runtime::RecordSchedulerReservationDenial::OwedBackgroundTurn)
+        )
+    }
+
+    pub fn certification_cancel_checkpoint_background_head(&self) {
+        self.parts
+            .scheduler_admission
+            .cancel_checkpoint_background_head();
+    }
+
+    pub fn certification_cancel_wal_reclamation_background_head(&self) {
+        self.parts
+            .scheduler_admission
+            .cancel_wal_reclamation_background_head();
+    }
+
     pub fn certification_publication_summary(
         &self,
     ) -> Result<
@@ -192,6 +353,10 @@ impl ServingPhysicalRuntime {
             .residency
             .ports()
             .reject_next_candidate_publication();
+    }
+
+    pub fn certification_fail_next_wal_member_before_effect(&self) {
+        self.parts.publication.fail_next_wal_member_before_effect();
     }
 
     pub fn certification_reject_next_candidate_retention_before_effect(&self) {

@@ -24,7 +24,14 @@ impl UiMountedProjectionFrameOwner {
         profile: Option<&worth_ui_host_contract::UiHostAppearanceProfileContract>,
         motion: crate::mounting::presentation::UiAcceptedAppearanceMotion,
     ) -> Vec<crate::runtime::appearance::UiAppearanceInspectionRecord> {
-        self.lower_appearance_with_motion_and_overlays(presentation, bindings, profile, motion, &[])
+        self.lower_appearance_with_motion_and_overlays(
+            presentation,
+            bindings,
+            profile,
+            motion,
+            &[],
+            &[],
+        )
     }
 
     pub(crate) fn lower_appearance_with_motion_and_overlays(
@@ -34,10 +41,18 @@ impl UiMountedProjectionFrameOwner {
         profile: Option<&worth_ui_host_contract::UiHostAppearanceProfileContract>,
         motion: crate::mounting::presentation::UiAcceptedAppearanceMotion,
         overlays: &[crate::mounting::UiMountedAppearanceSurfaceOverlayInput],
+        scroll_chrome: &[crate::mounting::UiMountedAppearanceScrollChromeInput],
     ) -> Vec<crate::runtime::appearance::UiAppearanceInspectionRecord> {
         let mut candidate = self.appearance.clone();
         if let Err(_denial) =
             candidate.stage_portal_ownership_changes(&self.projection, bindings, overlays)
+        {
+            self.unpublished_appearance =
+                Err(super::UiMountedAppearanceOutputDenial::CurrentProjectionUnavailable);
+            return self.appearance.reject_unpublished_output(Vec::new());
+        }
+        if let Err(_denial) =
+            candidate.stage_scroll_chrome_changes(&self.projection, bindings, scroll_chrome)
         {
             self.unpublished_appearance =
                 Err(super::UiMountedAppearanceOutputDenial::CurrentProjectionUnavailable);
@@ -71,7 +86,8 @@ impl UiMountedProjectionFrameOwner {
         let geometry =
             crate::mounting::projection::appearance::UiMountedAppearanceGeometryScope::with_motion(
                 bindings, profile, motion,
-            );
+            )
+            .with_scroll_chrome(scroll_chrome);
         let records = match candidate.lower(presentation, &geometry) {
             Ok(records) => records,
             Err(denial) => {
@@ -87,6 +103,14 @@ impl UiMountedProjectionFrameOwner {
             )
         }) {
             self.unpublished_appearance = Err(super::UiMountedAppearanceOutputDenial::NodeLowering);
+            return self.appearance.reject_unpublished_output(records);
+        }
+        if let Err(denial) = candidate.lower_scroll_chrome_owners(
+            self.projection.frame_identity(),
+            presentation,
+            &geometry,
+        ) {
+            self.unpublished_appearance = Err(denial);
             return self.appearance.reject_unpublished_output(records);
         }
         if let Err(_denial) =

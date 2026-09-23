@@ -10,7 +10,7 @@ use worth_store_physical_format::store_namespace::StableStoreIdentity;
 use worth_store_physical_format::{
     CurrentPhysicalRecordPlacement, PersistedPhysicalDataFrameSubject,
     PersistedPhysicalRecoveryProjection, PhysicalRecordFormatDeclaration,
-    PhysicalRecoveryProjectionDecodeLimits,
+    PhysicalRecoveryProjectionDecodeLimits, PhysicalRewriteRedo,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -26,6 +26,8 @@ pub struct AdmittedPhysicalRedoMembers {
     scratch_bytes: u64,
     members: Box<[AdmittedPhysicalRedoMember]>,
     group_allocations: BTreeMap<[u8; 32], u64>,
+    rewrites: Box<[PhysicalRewriteRedo]>,
+    rewrite_admissions: Box<[PhysicalRewriteAdmission]>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -86,6 +88,16 @@ pub struct ImmutablePhysicalRedoPlan {
     projections: Box<[PhysicalRedoProjection]>,
     recovery_root_allocation_bytes: u64,
     counters: PhysicalRedoPlanCounters,
+    rewrites: Box<[PhysicalRewriteRedo]>,
+    rewrite_admissions: Box<[PhysicalRewriteAdmission]>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PhysicalRewriteAdmission {
+    operation: [u8; 32],
+    group: PhysicalRedoGroupBinding,
+    fate: RecoveryOperationFate,
+    redo: PhysicalRewriteRedo,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

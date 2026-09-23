@@ -13,20 +13,30 @@ impl AdmittedWalInventory {
         self.segments.push(segment);
     }
 
-    pub(crate) fn selected_frames<'a>(
+    /// Every admitted frame in the retained tail or a checkpoint-covered segment.
+    ///
+    /// The retained tail's selected frames omit the prefix the checkpoint
+    /// already covers. Retirement intents in that prefix are still obligations.
+    pub(crate) fn recoverable_frames<'a>(
         &'a self,
         selected: &'a worth_store_recovery_physics::SelectedPhysicalWalTail,
-    ) -> impl Iterator<Item = &'a IntegrityAdmittedRecoveryWalFrame> {
-        selected.segments().iter().flat_map(|selected_segment| {
-            let admitted = self.segment(selected_segment.identity());
-            selected_segment.frame_facts().iter().map(|selected_frame| {
-                admitted
-                    .frames()
+    ) -> Vec<&'a IntegrityAdmittedRecoveryWalFrame> {
+        let mut frames = Vec::new();
+        for segment in &self.segments {
+            let identity = segment.inspection().identity();
+            let named = selected
+                .segments()
+                .iter()
+                .any(|candidate| candidate.identity() == identity)
+                || selected
+                    .checkpoint_covered()
                     .iter()
-                    .find(|frame| frame.lsn_range() == selected_frame.lsn_range())
-                    .expect("selected WAL frame remains bound to its C.9 admission")
-            })
-        })
+                    .any(|covered| covered.identity() == identity);
+            if named {
+                frames.extend(segment.frames());
+            }
+        }
+        frames
     }
 
     pub(crate) fn cleanup_segments(

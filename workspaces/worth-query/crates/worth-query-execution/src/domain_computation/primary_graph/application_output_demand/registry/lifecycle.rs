@@ -184,12 +184,11 @@ impl WorthQueryOutputDemandRegistry {
                     (
                         outputs + 1,
                         pinned
-                            + usize::from(
-                                output
-                                    .receipt
+                            + usize::from(output.receipt.as_ref().is_some_and(|receipt| {
+                                receipt
                                     .committed_product_publication()
-                                    .has_output_demand_observation_for_test(),
-                            ),
+                                    .has_output_demand_observation_for_test()
+                            })),
                     )
                 } else {
                     (outputs, pinned)

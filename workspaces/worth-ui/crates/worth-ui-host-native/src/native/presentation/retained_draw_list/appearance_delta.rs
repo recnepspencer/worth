@@ -153,6 +153,7 @@ fn native_command(mechanic: &Mechanic) -> Result<UiNativeAppearanceCommand, Deni
         Mechanic::Outline(value) => Ok(UiNativeAppearanceCommand::Outline(value.clone())),
         Mechanic::Pointer(value) => Ok(UiNativeAppearanceCommand::PointerAffordance(*value)),
         Mechanic::Backdrop(value) => Ok(UiNativeAppearanceCommand::Backdrop(value.clone())),
+        Mechanic::ScrollChrome(value) => Ok(UiNativeAppearanceCommand::ScrollChrome(*value)),
         Mechanic::TextForeground(_) => Err(Denial::CommandMismatch),
     }
 }
@@ -179,6 +180,10 @@ fn native_identity(
         Identity::Backdrop(identity) => Ok(UiNativeAppearanceCommandIdentity::Backdrop {
             surface,
             identity: identity.clone(),
+        }),
+        Identity::ScrollChrome(identity) => Ok(UiNativeAppearanceCommandIdentity::ScrollChrome {
+            surface,
+            identity: *identity,
         }),
         Identity::TextForeground { .. } => Err(Denial::CommandMismatch),
     }

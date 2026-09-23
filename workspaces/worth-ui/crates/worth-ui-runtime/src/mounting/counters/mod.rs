@@ -199,6 +199,14 @@ impl UiMountCostReport {
         self.hit_index
     }
 
+    pub(in crate::mounting) fn with_additional_hit_work(
+        mut self,
+        work: super::hit_test_work::UiHitTestSpatialWork,
+    ) -> Self {
+        self.hit_index.merge(work);
+        self
+    }
+
     pub(in crate::mounting) fn with_projection_work(
         mut self,
         appearance: super::projection::UiMountedAppearanceSelectionCostReport,

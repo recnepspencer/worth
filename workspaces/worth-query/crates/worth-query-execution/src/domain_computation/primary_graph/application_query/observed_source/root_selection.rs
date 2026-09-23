@@ -5,7 +5,7 @@ use super::{WorthQueryObservedAdjacencyRevision, WorthQueryObservedAspectRevisio
 
 /// One immutable root-path witness for a returned row.
 /// Native revisions, not the selected ID alone, prove its currentness.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub(in crate::domain_computation::primary_graph) struct WorthQueryObservedRootSelection {
     pub(in crate::domain_computation::primary_graph) entities: Vec<EntityId>,
     pub(in crate::domain_computation::primary_graph) aspects: Vec<WorthQueryObservedAspectRevision>,

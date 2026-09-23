@@ -45,6 +45,7 @@ impl DeclaredApplicationMemberMarker {
 /// owning [`super::ApplicationSchema::declaration`] implementation.
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct ApplicationSchemaMemberProvenance {
+    entities: Vec<(String, TypeId)>,
     field_bindings: Vec<ApplicationFieldBindingRecipe>,
     conflicting_field_binding: bool,
     operations: Vec<DeclaredApplicationMemberMarker>,
@@ -57,10 +58,16 @@ impl ApplicationSchemaMemberProvenance {
     #[doc(hidden)]
     pub fn is_empty(&self) -> bool {
         self.field_bindings.is_empty()
+            && self.entities.is_empty()
             && self.operations.is_empty()
             && self.effects.is_empty()
             && self.mutation_bindings.is_empty()
             && self.query_bindings.is_empty()
+    }
+
+    pub(super) fn register_entity<Entity: 'static>(&mut self, name: &'static str) {
+        self.entities
+            .push((name.to_owned(), TypeId::of::<Entity>()));
     }
 
     pub(super) fn register_field_binding(&mut self, recipe: ApplicationFieldBindingRecipe) {
@@ -111,6 +118,7 @@ impl ApplicationSchemaMemberProvenance {
     }
 
     pub(super) fn normalize(&mut self) {
+        self.entities.sort_by(|left, right| left.0.cmp(&right.0));
         let order = |left: &DeclaredApplicationMemberMarker,
                      right: &DeclaredApplicationMemberMarker| {
             (left.name.as_str(), left.value_identity.as_str())
@@ -124,6 +132,13 @@ impl ApplicationSchemaMemberProvenance {
             .sort_by(|left, right| left.identity().cmp(right.identity()));
         self.mutation_bindings
             .sort_by(|left, right| left.identity().cmp(right.identity()));
+    }
+
+    #[doc(hidden)]
+    pub fn entity_marker_type(&self, name: &str) -> Option<TypeId> {
+        self.entities
+            .iter()
+            .find_map(|(entity, marker)| (entity == name).then_some(*marker))
     }
 
     pub(super) const fn has_conflicting_field_binding(&self) -> bool {

@@ -123,19 +123,6 @@ impl<'frame> IntegrityAdmittedResidentSegmentMembershipBlock<'frame> {
     }
 }
 
-macro_rules! resident_tree_view {
-    ($view:ty) => {
-        impl $view {
-            pub(in crate::physical_runtime) const fn scope(&self) -> PhysicalArtifactScope {
-                self.scope
-            }
-        }
-    };
-}
-
-resident_tree_view!(IntegrityAdmittedResidentRootRoutingView<'_>);
-resident_tree_view!(IntegrityAdmittedResidentSegmentMembershipView<'_>);
-
 impl IntegrityAdmittedResidentRootRoutingView<'_> {
     pub(in crate::physical_runtime) fn project_block(
         &self,

@@ -110,14 +110,14 @@ pub use publication::streaming::{
 pub use publication::CertificationPhysicalRecordSubmission;
 pub use publication::RecordPublicationStage;
 pub use publication::{
-    PhysicalManifestCapacityTransition, PhysicalMutationAdmissionDisposition,
-    PhysicalMutationPreparationDeferred, PhysicalMutationPreparationDenial,
-    PhysicalMutationPreparationFailure, PhysicalMutationPreparationOutcome,
-    PhysicalMutationPreparationRebindRequired, PhysicalMutationPreparationStale,
-    PhysicalMutationPreparationSuccess, PhysicalMutationResourceShape,
-    PhysicalPreSealCancellationDenial, PhysicalPreSealCancellationOutcome,
-    PhysicalRecordSubmission, PreparedPhysicalMutation, RootPublicationCandidatePlan,
-    RootPublicationPlanningMembers,
+    InlineArtifactRewritePlanDenial, PhysicalManifestCapacityTransition,
+    PhysicalMutationAdmissionDisposition, PhysicalMutationPreparationDeferred,
+    PhysicalMutationPreparationDenial, PhysicalMutationPreparationFailure,
+    PhysicalMutationPreparationOutcome, PhysicalMutationPreparationRebindRequired,
+    PhysicalMutationPreparationStale, PhysicalMutationPreparationSuccess,
+    PhysicalMutationResourceShape, PhysicalPreSealCancellationDenial,
+    PhysicalPreSealCancellationOutcome, PhysicalRecordSubmission, PlannedInlineRewriteArtifact,
+    PreparedPhysicalMutation, RootPublicationCandidatePlan, RootPublicationPlanningMembers,
 };
 pub(in crate::physical_runtime) use publication::{
     PlannedPhysicalMutationParts, PreparedPhysicalMutationContext, PreparedPhysicalRootCandidate,

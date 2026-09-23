@@ -206,14 +206,18 @@ impl SourceWorld {
         self.sequence += 1;
         let request = UiMotionTransitionRequest::from_family_transition(
             self.targets[index],
-            before,
-            after,
-            self.presentation,
-            None,
-            false,
-            self.presentation,
-            None,
-            true,
+            crate::runtime::motion::UiMotionTransitionEndpoint::new(
+                before,
+                self.presentation,
+                None,
+                false,
+            ),
+            crate::runtime::motion::UiMotionTransitionEndpoint::new(
+                after,
+                self.presentation,
+                None,
+                true,
+            ),
             UiMotionDeclaration::portal_entrance(),
         )
         .unwrap();

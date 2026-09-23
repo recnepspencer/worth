@@ -71,11 +71,11 @@ impl UiAppearanceProjection {
     }
 }
 
-fn fold(digest: u64, value: u64) -> u64 {
+pub(super) fn fold(digest: u64, value: u64) -> u64 {
     digest.wrapping_mul(0x0000_0100_0000_01b3) ^ value
 }
 
-fn fold_text(mut digest: u64, value: &str) -> u64 {
+pub(super) fn fold_text(mut digest: u64, value: &str) -> u64 {
     digest = fold(digest, value.len() as u64);
     for byte in value.as_bytes() {
         digest = fold(digest, u64::from(*byte));

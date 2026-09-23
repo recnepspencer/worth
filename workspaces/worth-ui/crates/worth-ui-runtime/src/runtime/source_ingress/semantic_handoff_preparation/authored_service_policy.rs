@@ -67,7 +67,8 @@ impl WorthUiAuthoredServiceDeclaration {
                 WorthUiAuthoredServicePolicy::Scroll(
                     crate::declaration::UiScrollPolicy::nested_region()
                         .with_remainder_bubbling(scroll.nested())
-                        .with_anchor_behavior(anchor),
+                        .with_anchor_behavior(anchor)
+                        .with_wheel_behavior(wheel_behavior(scroll.wheel())),
                 )
             }
             worth_ui_dsl::WorthUiServiceDeclarationMeaning::Selection(selection) => {
@@ -86,6 +87,24 @@ impl WorthUiAuthoredServiceDeclaration {
                 WorthUiAuthoredServicePolicy::Selection(policy)
             }
         })
+    }
+}
+
+/// Lower the authored wheel policy. Service declaration admission already
+/// refused every horizon the runtime cannot honour, so a smooth wheel that
+/// reaches lowering has an admissible horizon.
+fn wheel_behavior(
+    wheel: worth_ui_dsl::WorthUiScrollWheelPolicy,
+) -> crate::declaration::UiScrollWheelBehavior {
+    match wheel {
+        worth_ui_dsl::WorthUiScrollWheelPolicy::Immediate => {
+            crate::declaration::UiScrollWheelBehavior::immediate()
+        }
+        worth_ui_dsl::WorthUiScrollWheelPolicy::Smooth { settle_ticks } => {
+            crate::declaration::UiScrollWheelBehavior::smooth(settle_ticks).expect(
+                "service declaration admission refused an inadmissible smooth wheel horizon",
+            )
+        }
     }
 }
 

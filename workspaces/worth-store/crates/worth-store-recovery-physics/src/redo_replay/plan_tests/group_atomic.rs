@@ -129,6 +129,8 @@ fn plan_with_group_decisions(
         projections: vec![first, second].into_boxed_slice(),
         recovery_root_allocation_bytes: 0,
         counters: base.counters,
+        rewrites: Box::new([]),
+        rewrite_admissions: Box::new([]),
     }
 }
 

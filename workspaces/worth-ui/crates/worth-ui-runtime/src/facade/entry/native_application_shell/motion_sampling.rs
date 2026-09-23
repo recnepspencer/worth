@@ -32,14 +32,48 @@ impl WorthUiNativeApplicationShell {
             }
             UiPortalExitTerminalProgress::Published | UiPortalExitTerminalProgress::Idle => {}
         }
+        if self
+            .session
+            .interaction
+            .scroll_chrome_pending_capture()
+            .is_some()
+        {
+            if self.session.mounted.motion_sample_presentation_pending() {
+                return Ok(UiNativeMotionTickDisposition::AwaitingPhysicalCompletion);
+            }
+            // The physical frame may have completed without Scroll accepting
+            // its geometry yet. Reconcile that debt before retrying the grab.
+            self.settle_accepted_scroll_samples();
+            self.session.finish_pending_scroll_chrome_capture();
+            if self
+                .session
+                .interaction
+                .scroll_chrome_pending_capture()
+                .is_some()
+            {
+                return Ok(UiNativeMotionTickDisposition::Active);
+            }
+        }
         self.session
             .mounted
             .set_reduced_motion_posture(map_reduced_motion(reduced_motion));
         if !self.session.mounted.has_active_motion_samples() {
-            return Ok(UiNativeMotionTickDisposition::Inactive);
+            // A settle deferred by a presentation attempt is still owed its
+            // frame. The accepted sample outlives the track that produced it,
+            // so the retry runs here even after sampling has gone quiet.
+            self.settle_accepted_scroll_samples();
+            return Ok(self.native_motion_tick_disposition());
         }
         if self.session.mounted.motion_sample_presentation_pending() {
             return Ok(UiNativeMotionTickDisposition::AwaitingPhysicalCompletion);
+        }
+        // Candidate layout must reach the ordinary host boundary before its
+        // geometry can become the basis of another physical Scroll sample.
+        if self.session.scroll.as_ref().is_some_and(|scroll| {
+            scroll.has_unpresented_layout(self.surface)
+                || self.session.mounted.has_pending_direct_scroll(self.surface)
+        }) {
+            return Ok(UiNativeMotionTickDisposition::Active);
         }
         let presentation = self.current_motion_presentation().ok_or(())?;
         let prepared = self
@@ -51,9 +85,24 @@ impl WorthUiNativeApplicationShell {
         Ok(self.native_motion_tick_disposition())
     }
 
+    /// Apply whatever accepted Scroll samples are outstanding, if the surface
+    /// still has a published presentation to apply them against.
+    fn settle_accepted_scroll_samples(&mut self) {
+        let Some(presentation) = self.current_motion_presentation() else {
+            return;
+        };
+        self.session.settle_accepted_scroll_sample(presentation);
+    }
+
     pub(crate) fn native_motion_sampling_active(&self) -> bool {
         self.session.mounted.has_active_motion_samples()
             || self.session.portal_exit_terminal_work_pending()
+            || self.session.awaits_scroll_settle_retry()
+            || self
+                .session
+                .interaction
+                .scroll_chrome_pending_capture()
+                .is_some()
     }
 
     /// Whether Motion or retained Portal-exit work currently owns native

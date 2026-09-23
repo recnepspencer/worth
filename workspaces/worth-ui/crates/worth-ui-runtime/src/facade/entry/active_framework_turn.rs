@@ -48,7 +48,8 @@ pub struct WorthUiActiveFrameworkTurnCompletion<'session> {
         &'session mut crate::runtime::appearance::UiAppearanceInspectionProducer,
     pub(super) overlay_appearance:
         Result<super::active_application_session::UiActiveOverlayAppearancePreparation, ()>,
-    pub(super) motion: Option<&'session crate::runtime::motion::UiMotionRuntimeState>,
+    pub(super) motion: Option<&'session mut crate::runtime::motion::UiMotionRuntimeState>,
+    pub(super) scroll: Option<&'session mut crate::runtime::scroll::UiScrollRuntimeState>,
 }
 
 /// Executable framework-turn authority lent by one active application session.
@@ -87,7 +88,8 @@ pub struct WorthUiActiveFrameworkTurnExecution<'session> {
         &'session mut crate::runtime::appearance::UiAppearanceInspectionProducer,
     pub(super) overlay_appearance:
         Result<super::active_application_session::UiActiveOverlayAppearancePreparation, ()>,
-    pub(super) motion: Option<&'session crate::runtime::motion::UiMotionRuntimeState>,
+    pub(super) motion: Option<&'session mut crate::runtime::motion::UiMotionRuntimeState>,
+    pub(super) scroll: Option<&'session mut crate::runtime::scroll::UiScrollRuntimeState>,
     pub(super) host_protocol: worth_ui_host_contract::UiHostProtocolAgreement,
     pub(super) host_capability_generation:
         worth_ui_host_contract::WorthUiHostCapabilityObservationGeneration,
@@ -135,6 +137,7 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
             appearance_inspection,
             overlay_appearance,
             motion,
+            scroll,
         } = self;
         let host_protocol = host_session.protocol();
         let capability_report = host_session.capability_report();
@@ -167,6 +170,7 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
                 appearance_inspection,
                 overlay_appearance,
                 motion,
+                scroll,
                 host_protocol,
                 host_capability_generation: capability_report.observation_generation(),
                 host_capability_profile_digest: capability_report.profile_identity_digest(),
@@ -200,6 +204,7 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
                 appearance_inspection,
                 overlay_appearance,
                 motion,
+                scroll,
             })),
         }
     }

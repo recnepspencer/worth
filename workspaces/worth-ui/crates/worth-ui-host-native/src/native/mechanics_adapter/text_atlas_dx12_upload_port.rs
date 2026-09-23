@@ -23,7 +23,7 @@ impl QualifiedDx12UploadPort {
 
     fn with_settlement(settle_immediately: bool) -> Self {
         let (device, queue, info) = crate::native::text_atlas::qualified_test_device();
-        assert_eq!(info.backend, wgpu::Backend::Dx12);
+        assert_eq!(info.backend, crate::native::graphics::qualified_backend());
         Self {
             device,
             queue,

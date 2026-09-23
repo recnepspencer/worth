@@ -88,7 +88,11 @@ fn authenticated_advance_reconstructs_the_exact_required_assessment_without_sett
     assert_eq!(settled.required().node_path(), "checks/structural");
     assert_eq!(settled.required().query(), "part_dimension_query");
     assert_eq!(
-        settled.settlement().receipt().product_branch(),
+        settled
+            .settlement()
+            .application_commit_receipt()
+            .expect("fresh assessment has a commit receipt")
+            .product_branch(),
         started.instance().branch()
     );
 
@@ -131,7 +135,8 @@ fn authenticated_advance_reconstructs_the_exact_required_assessment_without_sett
             );
             let output = settled
                 .settlement()
-                .receipt()
+                .application_commit_receipt()
+                .expect("fresh assessment has a commit receipt")
                 .output_correspondence()
                 .entity(WorthQueryApplicationOutputRole::<
                     PartAssessmentBinding,

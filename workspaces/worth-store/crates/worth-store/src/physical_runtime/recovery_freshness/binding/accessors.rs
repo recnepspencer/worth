@@ -19,6 +19,9 @@ impl StoreRecoveryBindingFreshnessSample {
     pub fn wal_members(&self) -> &[StoreRecoveryWalMember] {
         &self.wal_members
     }
+    pub fn retirements(&self) -> &[StoreRecoveryRetirementObligation] {
+        &self.retirements
+    }
 }
 
 impl StoreRecoveryOperationEvidence {

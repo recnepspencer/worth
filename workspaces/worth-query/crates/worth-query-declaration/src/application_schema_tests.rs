@@ -30,6 +30,9 @@ struct InvalidOwnerSchema;
 struct DottedMemberSchema;
 struct IdentifierEntity;
 
+#[path = "application_schema_marker_identity_tests.rs"]
+mod application_schema_marker_identity_tests;
+
 crate::worth_query_structured_value_binding!(
     SchemaInputBinding for SchemaInput {
         identity: "worth.query.test.schema-input"

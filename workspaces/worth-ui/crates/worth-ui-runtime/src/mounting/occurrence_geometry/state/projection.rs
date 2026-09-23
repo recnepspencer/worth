@@ -22,8 +22,15 @@ impl super::UiMountedOccurrenceGeometryState {
                 crate::mounting::UiMountedOccurrenceGeometryDenial::StaleOccurrenceGeometry,
             );
         }
+        // The box on record is where the accepted offset put it. What is
+        // painted is that box moved onto the device grid, derived here and
+        // written nowhere, so the offset behind it keeps its precision.
+        let bounds = match self.presented_scroll_grid_correction(surface, instance.identity())? {
+            Some((dx, dy)) => super::scroll::translate(row.bounds, dx, dy)?,
+            None => row.bounds,
+        };
         Ok(Some(UiMountedAllocationProjection::Known {
-            bounds: row.bounds,
+            bounds,
             basis: row.basis,
         }))
     }

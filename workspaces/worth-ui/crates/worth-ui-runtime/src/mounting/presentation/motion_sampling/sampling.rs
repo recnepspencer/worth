@@ -1,6 +1,7 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 mod presented_samples;
+mod scroll_group;
 
 pub(super) const MAX_PRESENTATION_TRACKS: usize = 64;
 
@@ -22,6 +23,10 @@ pub(crate) struct UiMountedMotionSampler {
     reduced_motion: super::UiPresentationReducedMotionPosture,
     denial_count: u64,
     last_denial: Option<UiPresentationMotionSamplingDenial>,
+    /// Targets retired since the last tick was prepared. A tick in flight was
+    /// sampled from a clone taken before the retirement, so the commit that
+    /// lands it drops these again rather than reinstating them.
+    retired_since_prepare: BTreeSet<crate::runtime::motion::UiMotionTargetIdentity>,
 }
 
 #[must_use = "prepared motion samples must be committed after presentation or discarded"]
@@ -57,6 +62,7 @@ impl Default for UiMountedMotionSampler {
             reduced_motion: super::UiPresentationReducedMotionPosture::NoPreference,
             denial_count: 0,
             last_denial: None,
+            retired_since_prepare: BTreeSet::new(),
         }
     }
 }
@@ -99,6 +105,7 @@ impl UiMountedMotionSampler {
     {
         let track = receipt.track();
         let target = track.target();
+        self.retired_since_prepare.remove(&target);
         if !self.tracks.contains_key(&target) && self.tracks.len() == MAX_PRESENTATION_TRACKS {
             let settled = self
                 .tracks
@@ -110,15 +117,21 @@ impl UiMountedMotionSampler {
                 return self.deny(UiPresentationMotionSamplingDenial::TrackCapacityExceeded);
             }
         }
+        let interruption_tick = self.last_tick.unwrap_or(0);
         let current = self.tracks.get(&target).and_then(|state| {
             state
                 .active
-                .then_some((state.current_geometry, state.current_opacity_units))
+                .then(|| super::interruption::UiPresentationInterruptedSample {
+                    geometry: state.current_geometry,
+                    opacity_units: state.current_opacity_units,
+                    outgoing: state.outgoing_curve(interruption_tick),
+                })
         });
         match super::interruption::resolve(track, current, self.reduced_motion) {
             super::interruption::UiPresentationMotionInstallation::Install {
                 geometry,
                 opacity_units,
+                start_velocity,
                 duration_ticks,
             } => {
                 let state = match super::track_sampling::UiPresentationTrackState::new(
@@ -126,6 +139,7 @@ impl UiMountedMotionSampler {
                     None,
                     geometry,
                     opacity_units,
+                    start_velocity,
                     duration_ticks,
                 ) {
                     Ok(state) => state,
@@ -175,6 +189,7 @@ impl UiMountedMotionSampler {
             return self.deny(UiPresentationMotionSamplingDenial::NonMonotonicTick);
         }
         let mut successor = self.clone();
+        successor.retired_since_prepare.clear();
         match successor.sample_tick(tick, presentation) {
             Ok(receipt) => Ok(UiPreparedMotionSampling { successor, receipt }),
             Err(denial) => self.deny(denial),
@@ -191,9 +206,34 @@ impl UiMountedMotionSampler {
         &mut self,
         prepared: UiPreparedMotionSampling,
     ) -> super::UiPresentationMotionSamplingReceipt {
-        let UiPreparedMotionSampling { successor, receipt } = prepared;
+        let UiPreparedMotionSampling {
+            mut successor,
+            mut receipt,
+        } = prepared;
+        // A track retired while this tick was in flight stays retired: the
+        // successor was cloned before the retirement and would otherwise bring
+        // the track back, active, against the pointer that displaced it.
+        let retired = std::mem::take(&mut self.retired_since_prepare);
+        let dropped = successor.drop_retired_tracks(&retired);
+        receipt.drop_tracks(&dropped);
         *self = successor;
         receipt
+    }
+
+    fn drop_retired_tracks(
+        &mut self,
+        retired: &BTreeSet<crate::runtime::motion::UiMotionTargetIdentity>,
+    ) -> Vec<crate::runtime::motion::UiMotionTrackIdentity> {
+        let mut dropped = Vec::new();
+        for target in retired {
+            if let Some(state) = self.tracks.remove(target) {
+                dropped.push(state.track.identity());
+                if let Some(queued) = state.queued {
+                    dropped.push(queued.identity());
+                }
+            }
+        }
+        dropped
     }
 
     fn sample_tick(
@@ -216,11 +256,9 @@ impl UiMountedMotionSampler {
                 ));
                 continue;
             }
-            if self.reduced_motion == super::UiPresentationReducedMotionPosture::Reduce
-                && state.track.declaration().reduced_motion()
-                    == crate::runtime::motion::UiMotionReducedMotionPolicy::SystemRespecting
-            {
-                if state.track.declaration().decorative() {
+            if self.reduced_motion == super::UiPresentationReducedMotionPosture::Reduce {
+                let declaration = state.track.declaration();
+                if declaration.settles_directly_under_reduced_motion() {
                     let sample = state
                         .snap_system_reduced_motion(tick, presentation)
                         .map_err(UiPresentationMotionSamplingDenial::InvalidSampleGeometry)?;
@@ -231,7 +269,9 @@ impl UiMountedMotionSampler {
                     ));
                     continue;
                 }
-                state.shorten_system_reduced_motion();
+                if declaration.shortens_under_reduced_motion() {
+                    state.shorten_system_reduced_motion();
+                }
             }
             let sample = match state.sample(tick, presentation) {
                 Ok(sample) => sample,

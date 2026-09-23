@@ -21,6 +21,11 @@ pub(in crate::physical_runtime) struct PreparedPhysicalRootProjection {
     pub(in crate::physical_runtime::record_serving) placement:
         crate::physical_runtime::record_serving::AdmittedRecordPlacementPolicy,
     pub(in crate::physical_runtime::record_serving) records: Vec<PersistedRecordIdentity>,
+    /// Identities this publication inserts into the routing tree.
+    ///
+    /// A rewrite lists existing page records in `records`. Those identities are
+    /// already in the source count and must not raise routing height.
+    pub(in crate::physical_runtime::record_serving) inserted_records: u64,
     pub(in crate::physical_runtime::record_serving) payload_manifests:
         Vec<(RecordArtifactFile, Vec<u8>)>,
     pub(in crate::physical_runtime::record_serving) placements:
@@ -34,6 +39,7 @@ pub(in crate::physical_runtime) struct PreparedPhysicalRootProjection {
     pub(in crate::physical_runtime::record_serving) last_inline_segment:
         Option<SegmentGenerationCell>,
     pub(in crate::physical_runtime::record_serving) observation: PublicationObservation,
+    pub(in crate::physical_runtime::record_serving) requires_maintenance_protocol: bool,
 }
 
 impl PreparedPhysicalRootProjection {
@@ -79,6 +85,25 @@ impl PreparedPhysicalRootProjection {
         &self,
     ) -> NonZeroU64 {
         self.root_publication_allocation_bytes
+    }
+
+    /// Bytes every publication retains beside its data frames.
+    ///
+    /// Fixed root, free-space header, selector, and catalog bytes are included.
+    /// Record, segment, and free-space routing are charged as full trees of
+    /// full-capacity blocks. Payload manifests are not added again: the WAL
+    /// frame already carries them, and reopen can price only what it reads.
+    pub(in crate::physical_runtime) fn retained_publication_metadata_bytes(&self) -> u64 {
+        canonical_publication_metadata_bytes().saturating_add(self.routing_publication_bound())
+    }
+
+    fn routing_publication_bound(&self) -> u64 {
+        let entries = self
+            .source_root
+            .record_count()
+            .saturating_add(self.inserted_records)
+            .max(1);
+        routing_publication_bound(u64::from(self.placement.manifest_capacity().get()), entries)
     }
 
     pub(in crate::physical_runtime) fn recovery_inline_allocations(
@@ -132,6 +157,81 @@ impl PreparedPhysicalRootProjection {
             last_inline_record: self.last_inline_record,
             last_inline_segment: self.last_inline_segment,
             observation: self.observation,
+            requires_maintenance_protocol: self.requires_maintenance_protocol,
         }
     }
+}
+
+pub(in crate::physical_runtime) fn sealed_publication_overhead(
+    root: &worth_store_physical_format::DurablePhysicalRootManifest,
+) -> u64 {
+    canonical_publication_metadata_bytes().saturating_add(routing_publication_bound(
+        u64::from(root.node_capacity()),
+        root.record_count().max(1),
+    ))
+}
+
+fn routing_publication_bound(capacity: u64, entries: u64) -> u64 {
+    let (leaves, branches) = routing_tree_shape(entries, capacity);
+    let record = tree_bytes(leaves, branches, capacity, 88, 72);
+    let membership = tree_bytes(leaves, branches, capacity, 40, 56);
+    record.saturating_add(membership).saturating_add(membership)
+}
+
+/// Leaf count and branch count of one full routing tree.
+fn routing_tree_shape(entries: u64, capacity: u64) -> (u64, u64) {
+    if entries == 0 || capacity < 2 {
+        return (0, 0);
+    }
+    let leaves = entries.div_ceil(capacity);
+    let mut branches = 0_u64;
+    let mut nodes = leaves;
+    while nodes > 1 {
+        nodes = nodes.div_ceil(capacity);
+        branches = branches.saturating_add(nodes);
+    }
+    (leaves, branches)
+}
+
+fn tree_bytes(
+    leaves: u64,
+    branches: u64,
+    capacity: u64,
+    leaf_entry: u64,
+    branch_entry: u64,
+) -> u64 {
+    let header = worth_store_physical_format::DURABLE_FRAME_HEADER_BYTES as u64;
+    let block = |entry: u64| {
+        header
+            .saturating_add(40)
+            .saturating_add(capacity.saturating_mul(entry))
+    };
+    leaves
+        .saturating_mul(block(leaf_entry))
+        .saturating_add(branches.saturating_mul(block(branch_entry)))
+}
+
+#[cfg(test)]
+mod routing_bound_tests {
+    use super::routing_publication_bound;
+
+    #[test]
+    fn wide_publication_reserves_every_routing_node() {
+        // Capacity 2 and 32 records emit 16 leaves and 15 branches.
+        // Full record leaves are 264 bytes and branches 232, so record routing
+        // alone is 7704. Segment and free-space trees share that shape.
+        assert_eq!(routing_publication_bound(2, 32), 7_704 + 5_688 + 5_688);
+    }
+}
+
+fn canonical_publication_metadata_bytes() -> u64 {
+    let header = worth_store_physical_format::DURABLE_FRAME_HEADER_BYTES as u64;
+    let root_manifest = header.saturating_add(320);
+    let free_space = header.saturating_add(128);
+    let selectors = 2 * worth_store_physical_format::ROOT_SELECTOR_BYTES as u64;
+    let catalog = worth_store_physical_format::BOOTSTRAP_CATALOG_BYTES as u64;
+    root_manifest
+        .saturating_add(free_space)
+        .saturating_add(selectors)
+        .saturating_add(catalog)
 }

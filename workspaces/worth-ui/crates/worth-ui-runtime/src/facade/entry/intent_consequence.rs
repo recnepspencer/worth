@@ -110,7 +110,7 @@ impl WorthUiActiveApplicationSession {
                         return self.stop_intent_consequence(
                             handoff,
                             UiIntentConsequenceStopReason::RuntimeServicePortalPlacement(
-                                crate::runtime::intent_execution::UiIntentPortalPlacementStopReason::IncompatibleCoordinateSpace,
+                                crate::runtime::intent_execution::UiIntentPortalPlacementStopReason::UnmeasurableContent,
                             ),
                         )
                     }
@@ -144,7 +144,7 @@ impl WorthUiActiveApplicationSession {
                     Ok(extent) => extent,
                     Err(_) => return self.stop_intent_consequence(handoff,
                         UiIntentConsequenceStopReason::RuntimeServicePortalPlacement(
-                            crate::runtime::intent_execution::UiIntentPortalPlacementStopReason::IncompatibleCoordinateSpace)),
+                            crate::runtime::intent_execution::UiIntentPortalPlacementStopReason::UnmeasurableContent)),
                 };
                 let request = request.with_content_extent(extent);
                 let Some(portal) = self.portal.as_ref() else {

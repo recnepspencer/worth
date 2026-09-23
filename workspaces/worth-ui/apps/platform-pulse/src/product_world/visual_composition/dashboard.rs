@@ -12,6 +12,9 @@ pub use scrolling::DashboardScrollPanel;
 mod signals;
 mod traffic;
 
+#[cfg(test)]
+mod declaration_coverage_tests;
+
 pub use graphics::DashboardGraphic;
 
 #[derive(Clone, Copy, Debug)]

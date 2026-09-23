@@ -60,6 +60,56 @@ fn validation_preserves_disjoint_typed_mechanics_and_half_open_edges() {
 }
 
 #[test]
+fn fully_clipped_scroll_descendant_is_validated_but_not_indexed() {
+    let world = SpatialWorld::new();
+    let paint_bounds = bounds(330.0, 1278.0, 420.0, 23.0);
+    let empty_clip = bounds(330.0, 1278.0, 420.0, 0.0);
+    let row = crate::mounting::UiMountedUnsupportedPaintBasis::new(
+        world.receipt,
+        paint_bounds,
+        empty_clip,
+        1,
+        17,
+    );
+    let basis = crate::mounting::UiMountedVisualRegionBasis::new(
+        vec![row].into_boxed_slice(),
+        Vec::new().into_boxed_slice(),
+    );
+    let indexed = validate_and_index(
+        42,
+        &basis,
+        &[observed_paint(row, 1)],
+        transform([1536, 1024]),
+    )
+    .expect("the exact empty-clip row is valid but has no visible area");
+    let (visible, hit_test, cost) = indexed.into_parts();
+    assert_eq!(visible.len(), 0);
+    assert_eq!(hit_test.len(), 0);
+    assert_eq!(cost.region_records_examined(), 1);
+}
+
+#[test]
+fn empty_paint_bounds_remain_invalid_even_with_an_empty_clip() {
+    let world = SpatialWorld::new();
+    let empty = bounds(330.0, 1278.0, 0.0, 23.0);
+    let row =
+        crate::mounting::UiMountedUnsupportedPaintBasis::new(world.receipt, empty, empty, 1, 17);
+    let basis = crate::mounting::UiMountedVisualRegionBasis::new(
+        vec![row].into_boxed_slice(),
+        Vec::new().into_boxed_slice(),
+    );
+    assert!(matches!(
+        validate_and_index(
+            43,
+            &basis,
+            &[observed_paint(row, 1)],
+            transform([1536, 1024])
+        ),
+        Err(UiSpatialValidationDenial::InvalidGeometry)
+    ));
+}
+
+#[test]
 fn unsupported_text_paint_is_validated_without_becoming_exact_attribution() {
     let world = SpatialWorld::new();
     let base = paint(&world, bounds(0.0, 0.0, 24.0, 8.0), 1, u8::MAX);

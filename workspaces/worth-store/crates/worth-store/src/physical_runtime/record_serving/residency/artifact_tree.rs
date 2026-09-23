@@ -221,6 +221,16 @@ impl<'media> PhysicalRecordArtifactTree<'media> {
         )
     }
 
+    pub(in crate::physical_runtime) fn remove_scheduled_artifact(
+        &self,
+        artifact: RecordArtifactFile,
+        binding: BackendQueueExecutionPlanBinding,
+        adaptation: BackendQueueExecutionAdaptation,
+    ) -> ScheduledArtifactTreePublicationEffectOutcome {
+        self.tree
+            .remove_scheduled_file_durably(&self.artifact(artifact), binding, adaptation)
+    }
+
     pub(in crate::physical_runtime) fn synchronize_scheduled_artifact(
         &self,
         artifact: RecordArtifactFile,

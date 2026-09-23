@@ -3,8 +3,12 @@ use worth_query_admission::facade::authenticated_principal::{
 };
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 
+mod denial;
 mod outcome;
 mod result;
+
+use denial::{authorization_denial, denial};
+pub use denial::{WorthQueryApplicationOneShotDenial, WorthQueryApplicationOneShotDenialKind};
 
 use super::authorized_read::{
     execute_authorized_read, refresh_governed_authorization,
@@ -13,52 +17,12 @@ use super::authorized_read::{
 use super::read_execution::{read_bounded_root_rows, WorthQueryApplicationReadExecutionDenialKind};
 use super::{
     WorthQueryAdmittedApplicationQueryControls, WorthQueryAdmittedApplicationQueryPlan,
-    WorthQueryApplicationProjection, WorthQueryApplicationProjectionDenialKind,
-    WorthQueryApplicationQueryAccessReceipt,
+    WorthQueryApplicationProjection, WorthQueryApplicationQueryAccessReceipt,
 };
 use crate::domain_computation::primary_graph::{
-    WorthQueryAuthenticatedPrincipal, WorthQueryOperationAuthorizationDenial,
-    WorthQueryPrimaryGraphApplicationRuntime,
+    WorthQueryAuthenticatedPrincipal, WorthQueryPrimaryGraphApplicationRuntime,
 };
 use outcome::finalize_one_shot;
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryApplicationOneShotDenialKind {
-    ForeignPlan,
-    StaleInstalledQuery,
-    StalePrincipal,
-    StaleScope,
-    Authorization(
-        crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind,
-    ),
-    Cancelled,
-    DeadlineExceeded,
-    BasisUnavailable,
-    ActiveSnapshotCapacityExhausted {
-        maximum_active_snapshots: usize,
-    },
-    RetentionCapacityExhausted,
-    RetentionIdentityExhausted,
-    SnapshotIdentityExhausted,
-    ExpiredBasis,
-    BasisReleaseFailed,
-    PredicateIndexUnavailable,
-    PredicateLookupOverflow,
-    ResultLimitExceeded,
-    CardinalityMismatch,
-    TraversalUnavailable,
-    ProjectionUnavailable,
-    Projection(WorthQueryApplicationProjectionDenialKind),
-    ResultBufferLimitExceeded,
-    WorkLimitExceeded,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthQueryApplicationOneShotDenial {
-    kind: WorthQueryApplicationOneShotDenialKind,
-    authorization_denial: Option<Box<WorthQueryOperationAuthorizationDenial>>,
-    subject: String,
-}
 
 pub struct WorthQueryApplicationOneShotResult<Query, QueryResult> {
     rows: Vec<QueryResult>,
@@ -67,7 +31,6 @@ pub struct WorthQueryApplicationOneShotResult<Query, QueryResult> {
     request_affinity: super::admitted_result::WorthQueryApplicationQueryRequestAffinity,
     receipt: WorthQueryApplicationQueryAccessReceipt,
 }
-
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema,
@@ -105,6 +68,7 @@ where
             return Err(denial(
                 WorthQueryApplicationOneShotDenialKind::ForeignPlan,
                 plan.query.name(),
+                plan.query.name(),
             ));
         }
         let request = plan.controls.request_scope();
@@ -115,6 +79,7 @@ where
             return Err(denial(
                 WorthQueryApplicationOneShotDenialKind::BasisUnavailable,
                 plan.query.name(),
+                plan.query.name(),
             ));
         }
         refresh_governed_authorization(self, &mut plan)
@@ -123,6 +88,7 @@ where
         self.runtime.primary_graph().ok_or_else(|| {
             denial(
                 WorthQueryApplicationOneShotDenialKind::StaleInstalledQuery,
+                plan.query.name(),
                 plan.query.name(),
             )
         })?;
@@ -142,20 +108,20 @@ where
 
 fn map_authorized_read_denial(
     denial_value: WorthQueryAuthorizedApplicationReadDenial,
-    subject: &str,
+    query: &str,
 ) -> WorthQueryApplicationOneShotDenial {
     let (kind, subject) = match denial_value {
         WorthQueryAuthorizedApplicationReadDenial::StalePrincipal => (
             WorthQueryApplicationOneShotDenialKind::StalePrincipal,
-            subject.to_string(),
+            query.to_string(),
         ),
         WorthQueryAuthorizedApplicationReadDenial::StaleScope
         | WorthQueryAuthorizedApplicationReadDenial::StaleBasisScope => (
             WorthQueryApplicationOneShotDenialKind::StaleScope,
-            subject.to_string(),
+            query.to_string(),
         ),
         WorthQueryAuthorizedApplicationReadDenial::Authorization(denial) => {
-            return authorization_denial(denial);
+            return authorization_denial(denial, query);
         }
         WorthQueryAuthorizedApplicationReadDenial::Read(read) => {
             let kind = match read.kind() {
@@ -193,14 +159,14 @@ fn map_authorized_read_denial(
                     WorthQueryApplicationOneShotDenialKind::TraversalUnavailable
                 }
             };
-            (kind, read.subject().to_string())
+            return denial(kind, query, read.subject());
         }
         WorthQueryAuthorizedApplicationReadDenial::Session => (
             WorthQueryApplicationOneShotDenialKind::ForeignPlan,
-            subject.to_string(),
+            query.to_string(),
         ),
     };
-    denial(kind, subject)
+    denial(kind, query, subject)
 }
 
 fn validate_authentication_lifetime<Schema, Principal, PrincipalIdentity>(
@@ -211,6 +177,7 @@ fn validate_authentication_lifetime<Schema, Principal, PrincipalIdentity>(
     if application.authentication_is_expired(principal.valid_until()) {
         Err(denial(
             WorthQueryApplicationOneShotDenialKind::StalePrincipal,
+            subject,
             subject,
         ))
     } else {
@@ -225,6 +192,7 @@ fn validate_basis_lifetime(
     if controls.basis_is_expired() {
         Err(denial(
             WorthQueryApplicationOneShotDenialKind::ExpiredBasis,
+            subject,
             subject,
         ))
     } else {
@@ -260,6 +228,7 @@ where
         return Err(denial(
             WorthQueryApplicationOneShotDenialKind::ForeignPlan,
             plan.query.name(),
+            plan.query.name(),
         ));
     }
     application
@@ -270,6 +239,7 @@ where
             denial(
                 WorthQueryApplicationOneShotDenialKind::StaleInstalledQuery,
                 plan.query.name(),
+                plan.query.name(),
             )
         })?;
     application
@@ -278,6 +248,7 @@ where
         .map_err(|_| {
             denial(
                 WorthQueryApplicationOneShotDenialKind::StaleInstalledQuery,
+                plan.query.name(),
                 plan.query.name(),
             )
         })
@@ -291,75 +262,13 @@ fn admit_request(
         Some(WorthQueryRequestInterruption::Cancelled) => Err(denial(
             WorthQueryApplicationOneShotDenialKind::Cancelled,
             subject,
+            subject,
         )),
         Some(WorthQueryRequestInterruption::DeadlineExceeded) => Err(denial(
             WorthQueryApplicationOneShotDenialKind::DeadlineExceeded,
+            subject,
             subject,
         )),
         None => Ok(()),
     }
 }
-
-fn denial(
-    kind: WorthQueryApplicationOneShotDenialKind,
-    subject: impl Into<String>,
-) -> WorthQueryApplicationOneShotDenial {
-    WorthQueryApplicationOneShotDenial {
-        kind,
-        authorization_denial: None,
-        subject: subject.into(),
-    }
-}
-
-fn authorization_denial(
-    denial: WorthQueryOperationAuthorizationDenial,
-) -> WorthQueryApplicationOneShotDenial {
-    let kind = match denial.kind() {
-        crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::ActiveSnapshotCapacityExhausted {
-            maximum_active_snapshots,
-        } => WorthQueryApplicationOneShotDenialKind::ActiveSnapshotCapacityExhausted {
-            maximum_active_snapshots,
-        },
-        crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::RetentionCapacityExhausted => {
-            WorthQueryApplicationOneShotDenialKind::RetentionCapacityExhausted
-        }
-        crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::RetentionIdentityExhausted => {
-            WorthQueryApplicationOneShotDenialKind::RetentionIdentityExhausted
-        }
-        crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::SnapshotIdentityExhausted => {
-            WorthQueryApplicationOneShotDenialKind::SnapshotIdentityExhausted
-        }
-        kind => WorthQueryApplicationOneShotDenialKind::Authorization(kind),
-    };
-    WorthQueryApplicationOneShotDenial {
-        kind,
-        subject: denial.subject().to_string(),
-        authorization_denial: Some(Box::new(denial)),
-    }
-}
-
-impl WorthQueryApplicationOneShotDenial {
-    pub const fn kind(&self) -> WorthQueryApplicationOneShotDenialKind {
-        self.kind
-    }
-
-    pub fn subject(&self) -> &str {
-        &self.subject
-    }
-
-    pub fn authorization_denial(&self) -> Option<&WorthQueryOperationAuthorizationDenial> {
-        self.authorization_denial.as_deref()
-    }
-}
-
-impl std::fmt::Display for WorthQueryApplicationOneShotDenial {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            formatter,
-            "application-query one-shot denied: {:?} ({})",
-            self.kind, self.subject
-        )
-    }
-}
-
-impl std::error::Error for WorthQueryApplicationOneShotDenial {}

@@ -30,10 +30,13 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryOutputClaimIde
 impl WorthQueryOutputCheckpoint {
     pub(in crate::domain_computation::primary_graph) fn receipt(
         &self,
-    ) -> &WorthQueryApplicationCommitReceipt {
+    ) -> Option<&WorthQueryApplicationCommitReceipt> {
         match self {
-            Self::Published { receipt, .. } | Self::Delivered { receipt, .. } => receipt,
-            Self::Ready(completion) => &completion.receipt,
+            Self::Published { receipt, .. } | Self::Delivered { receipt, .. } => Some(receipt),
+            Self::Ready(completion) => match &completion.authority {
+                super::WorthQueryAcceptedOutputAuthority::Committed(receipt) => Some(receipt),
+                super::WorthQueryAcceptedOutputAuthority::Restored(_) => None,
+            },
         }
     }
 }
@@ -48,7 +51,7 @@ pub(super) enum WorthQueryOutputAdvancement {
 }
 
 pub(super) struct WorthQueryOutputProgress {
-    pub(super) receipt: WorthQueryApplicationCommitReceipt,
+    pub(super) receipt: Option<WorthQueryApplicationCommitReceipt>,
     pub(super) checkpoint: Option<WorthQueryOutputCheckpoint>,
     pub(super) advancement: WorthQueryOutputAdvancement,
     pub(super) next_claim: u64,
@@ -56,13 +59,23 @@ pub(super) struct WorthQueryOutputProgress {
 
 impl WorthQueryOutputProgress {
     pub(super) fn new(checkpoint: WorthQueryOutputCheckpoint) -> Self {
-        let _ = checkpoint
-            .receipt()
-            .committed_product_publication()
-            .take_output_demand_observation();
+        if let Some(receipt) = checkpoint.receipt() {
+            let _ = receipt
+                .committed_product_publication()
+                .take_output_demand_observation();
+        }
         Self {
-            receipt: checkpoint.receipt().clone(),
+            receipt: checkpoint.receipt().cloned(),
             checkpoint: Some(checkpoint),
+            advancement: WorthQueryOutputAdvancement::Idle,
+            next_claim: 0,
+        }
+    }
+
+    pub(super) fn restored(completion: WorthQueryCompletedOutputDemand) -> Self {
+        Self {
+            receipt: None,
+            checkpoint: Some(WorthQueryOutputCheckpoint::Ready(completion)),
             advancement: WorthQueryOutputAdvancement::Idle,
             next_claim: 0,
         }

@@ -36,6 +36,7 @@ pub(in crate::physical_runtime::record_serving::admission) fn canonical_residenc
         .speculative_frames(Speculation::Prefetch, count(256))
         .speculative_frames(Speculation::ReadAhead, count(256))
         .speculative_frames(Speculation::WriteBehind, count(64))
+        .progress_headroom_bytes(64 * 1024)
         .admit(format)
         .into_result()
         .expect("canonical residency declaration must admit every supported format")

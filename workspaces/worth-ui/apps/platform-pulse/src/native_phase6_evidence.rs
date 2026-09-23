@@ -1,3 +1,20 @@
+/// Every batch the host retained must reach a typed runtime disposition, except
+/// a pointer motion that retention folded into its predecessor: that submission
+/// was retained, but the drain hands it over inside the predecessor's batch.
+pub(super) fn ingress_settles_retained_batches(
+    receipt: &worth_ui_native_platform::UiNativePlatformCloseReceipt,
+) -> bool {
+    let input = receipt.input_observations();
+    let coalesced = input.coalesced_motion_batch_count();
+    receipt.client_shutdown().is_some_and(|shutdown| {
+        let counts = shutdown.observation_ingress().counts();
+        counts[0] > 0
+            && counts[4] == 0
+            && coalesced <= input.retained_batch_count()
+            && counts[..4].iter().sum::<u64>() + coalesced >= input.retained_batch_count()
+    })
+}
+
 pub(super) fn native_phase6_evidence(
     receipt: &worth_ui_native_platform::UiNativePlatformCloseReceipt,
 ) -> serde_json::Value {
@@ -10,12 +27,13 @@ pub(super) fn native_phase6_evidence(
     if let serde_json::Value::Object(fields) = &mut evidence {
         fields.insert(
             "schema".to_owned(),
-            serde_json::Value::String("worth-ui-native-phase6-evidence-v1".to_owned()),
+            serde_json::Value::String("worth-ui-native-phase6-evidence-v2".to_owned()),
         );
         fields.insert(
             "input".to_owned(),
             serde_json::json!({
                 "retained_batches": input.retained_batch_count(),
+                "coalesced_motion_batches": input.coalesced_motion_batch_count(),
                 "retained_events": input.retained_event_count(),
                 "first_sequence": input.first_retained_sequence(),
                 "last_sequence": input.last_retained_sequence(),
@@ -39,6 +57,8 @@ pub(super) fn native_phase6_evidence(
                         "event_tick": scroll.event_tick(),
                         "x_subpixels": scroll.x_subpixels(),
                         "y_subpixels": scroll.y_subpixels(),
+                        "lines_per_notch": scroll.lines_per_notch(),
+                        "line_count_basis": scroll.line_count_basis().map(|basis| format!("{basis:?}")),
                     })
                 }),
                 "last_horizontal_scroll": input.last_horizontal_scroll().map(|scroll| {
@@ -47,6 +67,8 @@ pub(super) fn native_phase6_evidence(
                         "event_tick": scroll.event_tick(),
                         "x_subpixels": scroll.x_subpixels(),
                         "y_subpixels": scroll.y_subpixels(),
+                        "lines_per_notch": scroll.lines_per_notch(),
+                        "line_count_basis": scroll.line_count_basis().map(|basis| format!("{basis:?}")),
                     })
                 }),
             }),

@@ -74,7 +74,7 @@ pub use denial::{WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemp
 pub(in crate::domain_computation::primary_graph) use effect_program::{
     WorthQueryAdmittedApplicationEmissionBatch, WorthQueryApplicationCreationPartition,
     WorthQueryApplicationEmission, WorthQueryApplicationRealizedEffect,
-    WorthQueryCandidateValidatorWorkAdmission,
+    WorthQueryCandidateValidatorWorkAdmission, WorthQueryCheckpointOutputRole,
 };
 pub use effect_program::{
     WorthQueryApplicationEffectEntity, WorthQueryApplicationEffectProgram,

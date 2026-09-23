@@ -1,6 +1,20 @@
 //! Project mounted logical surface geometry into the client viewport.
 use super::UiMountedProjectionDenial;
 
+impl super::UiMountedProjectionFrame {
+    pub(in crate::mounting) fn scroll_sample_viewport_bounds(
+        &self,
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+        bounds: worth_ui_host_contract::UiMountedCanonicalBox,
+    ) -> Result<worth_ui_host_contract::UiMountedCanonicalBox, UiMountedProjectionDenial> {
+        let surface = self
+            .semantic
+            .surface_for(surface)
+            .ok_or(UiMountedProjectionDenial::CoordinateBasisMismatch)?;
+        viewport_bounds(bounds, surface.coordinate_posture)
+    }
+}
+
 pub(in crate::mounting::projection) fn viewport_allocation(
     allocation: worth_ui_host_contract::UiMountedAllocationProjection,
     posture: crate::mounting::UiSurfaceBindingCoordinatePosture,

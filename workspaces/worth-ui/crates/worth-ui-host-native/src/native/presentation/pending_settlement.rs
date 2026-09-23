@@ -200,6 +200,14 @@ impl UiNativePendingSurfaceSettlement {
         observation: super::port::UiNativePresentationPortObservation,
     ) -> Option<worth_ui_host_contract::UiMountedSurfacePresentationCompletion> {
         let kind = self.work_kind();
+        let chrome = match &self {
+            Self::Sample(undo) => state
+                .retained_draw_lists
+                .get(&basis.binding().diagnostic_value())
+                .map(|retained| retained.sampled_chrome_observation(undo.changed_identities()))
+                .unwrap_or_default(),
+            _ => Box::new([]),
+        };
         let effects = match &self {
             Self::Initial(retained) | Self::Reconstruction { retained, .. } => {
                 super::UiNativePresentationEffects::new(true, retained.identity_overlay_active())
@@ -255,7 +263,7 @@ impl UiNativePendingSurfaceSettlement {
                     port_crossings,
                 )
             })
-            .unwrap_or_else(|| (None, Box::new([]), Box::new([])));
+            .unwrap_or_else(|| (None, std::sync::Arc::from([]), std::sync::Arc::from([])));
         state.record_retained_frame_observation(
             crate::native::UiNativeRetainedFrameObservation::observed(
                 frame.diagnostic_value(),
@@ -268,7 +276,8 @@ impl UiNativePendingSurfaceSettlement {
                 last_presentation,
                 intrinsic,
                 alpha,
-            ),
+            )
+            .with_sampled_chrome(chrome),
         );
         if resolve_required {
             state.lifecycle.resolve_recovery(key);
@@ -308,11 +317,11 @@ fn observation_for_physical_basis(
     port_crossings: u8,
 ) -> (
     Option<crate::native::UiNativePresentationObservation>,
-    Box<[crate::native::UiNativeGlyphObservation]>,
-    Box<[crate::native::UiNativeGlyphObservation]>,
+    std::sync::Arc<[crate::native::UiNativeGlyphObservation]>,
+    std::sync::Arc<[crate::native::UiNativeGlyphObservation]>,
 ) {
-    let intrinsic = super::glyph_observation::intrinsic(retained, atlas, graphics.extent());
-    let alpha = super::glyph_observation::alpha(retained, atlas, graphics.extent());
+    let glyphs = super::glyph_observation::observe(retained, atlas, graphics.extent());
+    let (intrinsic, alpha) = (glyphs.intrinsic, glyphs.alpha);
     let [retained_baseline_rgba8, retained_center_rgba8] = pixels;
     let observation = retained
         .top_paint_attribution()

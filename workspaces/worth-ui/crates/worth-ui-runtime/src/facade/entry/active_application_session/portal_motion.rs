@@ -63,14 +63,18 @@ impl super::WorthUiActiveApplicationSession {
             .unwrap_or(presentation);
         construct_portal_motion_transition(
             target,
-            transition.expected_revision(),
-            transition.successor_revision(),
-            presentation,
-            predecessor_geometry,
-            predecessor.is_some(),
-            successor_presentation,
-            successor_geometry,
-            transition.opens_portal(),
+            crate::runtime::motion::UiMotionTransitionEndpoint::new(
+                transition.expected_revision(),
+                presentation,
+                predecessor_geometry,
+                predecessor.is_some(),
+            ),
+            crate::runtime::motion::UiMotionTransitionEndpoint::new(
+                transition.successor_revision(),
+                successor_presentation,
+                successor_geometry,
+                transition.opens_portal(),
+            ),
             declaration,
         )
         .map(Some)
@@ -91,41 +95,27 @@ fn portal_entrance_start_geometry(
     .expect("a finite portal placement plus the named entrance offset remains valid")
 }
 
-#[allow(clippy::too_many_arguments)]
+/// A Portal transition whose successor keeps the predecessor's presentation
+/// family is an ordinary family transition; one whose successor is published
+/// against another binding or host surface is a rebind, and is constructed as
+/// one so the changed binding is admitted rather than refused.
 fn construct_portal_motion_transition(
     target: crate::runtime::motion::UiMotionTargetIdentity,
-    predecessor_revision: u64,
-    successor_revision: u64,
-    predecessor_presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
-    predecessor_geometry: Option<crate::runtime::motion::UiMotionSemanticGeometry>,
-    predecessor_visible: bool,
-    successor_presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
-    successor_geometry: Option<crate::runtime::motion::UiMotionSemanticGeometry>,
-    successor_visible: bool,
+    predecessor: crate::runtime::motion::UiMotionTransitionEndpoint,
+    successor: crate::runtime::motion::UiMotionTransitionEndpoint,
     declaration: crate::runtime::motion::UiMotionDeclaration,
 ) -> Result<
     crate::runtime::motion::UiMotionTransitionRequest,
     crate::runtime::motion::UiMotionTransitionRequestDenial,
 > {
-    let constructor = if predecessor_presentation.binding() == successor_presentation.binding()
-        && predecessor_presentation.host_surface() == successor_presentation.host_surface()
+    let constructor = if predecessor.presentation().binding() == successor.presentation().binding()
+        && predecessor.presentation().host_surface() == successor.presentation().host_surface()
     {
         crate::runtime::motion::UiMotionTransitionRequest::from_family_transition
     } else {
         crate::runtime::motion::UiMotionTransitionRequest::from_rebind_transition
     };
-    constructor(
-        target,
-        predecessor_revision,
-        successor_revision,
-        predecessor_presentation,
-        predecessor_geometry,
-        predecessor_visible,
-        successor_presentation,
-        successor_geometry,
-        successor_visible,
-        declaration,
-    )
+    constructor(target, predecessor, successor, declaration)
 }
 
 #[cfg(test)]
@@ -167,28 +157,36 @@ mod tests {
                 crate::runtime::motion::UiMotionTargetIdentity::from_portal_owner(
                     semantic, mounted, 7,
                 ),
-                1,
-                2,
-                predecessor,
-                Some(geometry),
-                true,
-                successor,
-                Some(geometry),
-                true,
+                crate::runtime::motion::UiMotionTransitionEndpoint::new(
+                    1,
+                    predecessor,
+                    Some(geometry),
+                    true,
+                ),
+                crate::runtime::motion::UiMotionTransitionEndpoint::new(
+                    2,
+                    successor,
+                    Some(geometry),
+                    true,
+                ),
                 crate::runtime::motion::UiMotionDeclaration::rebind_geometry(),
             ),
             Err(crate::runtime::motion::UiMotionTransitionRequestDenial::BindingChangedWithoutRebind)
         ));
         construct_portal_motion_transition(
             crate::runtime::motion::UiMotionTargetIdentity::from_portal_owner(semantic, mounted, 7),
-            1,
-            2,
-            predecessor,
-            Some(geometry),
-            true,
-            successor,
-            Some(geometry),
-            true,
+            crate::runtime::motion::UiMotionTransitionEndpoint::new(
+                1,
+                predecessor,
+                Some(geometry),
+                true,
+            ),
+            crate::runtime::motion::UiMotionTransitionEndpoint::new(
+                2,
+                successor,
+                Some(geometry),
+                true,
+            ),
             crate::runtime::motion::UiMotionDeclaration::rebind_geometry(),
         )
         .expect("production portal proposal compilation must admit the rebind successor");

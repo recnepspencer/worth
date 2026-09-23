@@ -11,7 +11,13 @@ pub(crate) struct UiMotionPropertyChannels(u8);
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum UiMotionEasing {
+    /// A fixed-shape ease shared by every animated component. Its start rate is
+    /// whatever the shape dictates, so an interruption restarts the shape.
     EaseOutCubic,
+    /// A cubic Hermite that leaves the interrupted sample at the rate that
+    /// sample was already moving and arrives at the endpoint at rest. This is
+    /// the one declared curve family for retargeted settlement.
+    VelocityMatchedCubic,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -27,7 +33,16 @@ pub(crate) enum UiMotionInterruptionPolicy {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum UiMotionReducedMotionPolicy {
+    /// Under a reduced-motion posture the transition still happens, shortened
+    /// to the next frame, unless it is decorative -- in which case its end
+    /// state is all it had to say and it arrives outright.
     SystemRespecting,
+    /// Under a reduced-motion posture the transition does not run at all: the
+    /// next frame shows its final state. A scroll settle declares this because
+    /// the offset the reader asked for is the point and the travel toward it
+    /// is not; arriving directly is the answer, not a faster version of the
+    /// same journey.
+    SettleDirectly,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -98,6 +113,50 @@ impl UiMotionDeclaration {
         }
     }
 
+    /// Settlement of a Scroll region's content toward its succession target.
+    /// `settle_ticks` is the horizon measured from the latest accepted input,
+    /// not a fixed duration restarted per event, and an interrupting notch
+    /// retargets from the current sample's position and velocity.
+    pub(crate) const fn scroll_settle(settle_ticks: u32) -> Self {
+        Self {
+            channels: UiMotionPropertyChannels::one(UiMotionPropertyChannel::TranslationX)
+                .with(UiMotionPropertyChannel::TranslationY),
+            easing: UiMotionEasing::VelocityMatchedCubic,
+            duration_ticks: settle_ticks,
+            delay_ticks: 0,
+            fill: UiMotionFillPolicy::FinalState,
+            interruption: UiMotionInterruptionPolicy::RetargetFromCurrentSample,
+            reduced_motion: UiMotionReducedMotionPolicy::SettleDirectly,
+            decorative: false,
+        }
+    }
+
+    /// Whether a reduced-motion posture makes this transition arrive outright
+    /// rather than run.
+    ///
+    /// Two declarations reach the same answer by different routes. A
+    /// decorative one has nothing to say that its end state does not. A scroll
+    /// settle is not decorative -- it carries the reader to a place they asked
+    /// for -- but the carrying is what reduced motion is about, so it settles
+    /// directly too. Everywhere the posture is consulted asks here, so the two
+    /// routes cannot drift apart.
+    pub(crate) const fn settles_directly_under_reduced_motion(self) -> bool {
+        match self.reduced_motion {
+            UiMotionReducedMotionPolicy::SettleDirectly => true,
+            UiMotionReducedMotionPolicy::SystemRespecting => self.decorative,
+        }
+    }
+
+    /// Whether a reduced-motion posture shortens this transition to the next
+    /// frame rather than letting it run its declared horizon. This is what is
+    /// left once the transitions that arrive outright have been answered.
+    pub(crate) const fn shortens_under_reduced_motion(self) -> bool {
+        matches!(
+            self.reduced_motion,
+            UiMotionReducedMotionPolicy::SystemRespecting
+        ) && !self.decorative
+    }
+
     pub(crate) const fn channels(self) -> UiMotionPropertyChannels {
         self.channels
     }
@@ -120,14 +179,6 @@ impl UiMotionDeclaration {
 
     pub(in crate::runtime) const fn interruption(self) -> UiMotionInterruptionPolicy {
         self.interruption
-    }
-
-    pub(crate) const fn reduced_motion(self) -> UiMotionReducedMotionPolicy {
-        self.reduced_motion
-    }
-
-    pub(crate) const fn decorative(self) -> bool {
-        self.decorative
     }
 
     pub(super) const fn with_policy(mut self, policy: crate::declaration::UiMotionPolicy) -> Self {
@@ -160,9 +211,14 @@ mod tests {
         assert!(entrance
             .channels()
             .contains(UiMotionPropertyChannel::TranslationY));
-        assert_eq!(
-            entrance.reduced_motion(),
-            UiMotionReducedMotionPolicy::SystemRespecting
+        assert!(
+            entrance.settles_directly_under_reduced_motion(),
+            "a portal entrance is decorative, so its end state is all it had to \
+             say and a reader who declined motion is shown that"
+        );
+        assert!(
+            !entrance.shortens_under_reduced_motion(),
+            "an entrance that arrives outright has no horizon left to shorten"
         );
         assert_eq!(
             UiMotionDeclaration::portal_exit().fill(),
@@ -186,8 +242,45 @@ mod tests {
             UiMotionFillPolicy::FinalState
         );
         assert_eq!(
+            UiMotionDeclaration::scroll_settle(120).fill(),
+            UiMotionFillPolicy::FinalState
+        );
+        assert_eq!(
             UiMotionDeclaration::portal_exit().fill(),
             UiMotionFillPolicy::ExitRetention
+        );
+    }
+
+    /// Scroll settlement is the declared curve family for retargeting: it moves
+    /// only the two translation channels and carries the settle horizon it was
+    /// given. It is not decorative -- it carries the reader to an offset they
+    /// asked for -- and yet reduced motion settles it directly, because the
+    /// travel is the part reduced motion is about and the offset is not.
+    #[test]
+    fn scroll_settlement_declares_translation_only_velocity_matched_motion() {
+        let settle = UiMotionDeclaration::scroll_settle(120);
+
+        assert!(settle
+            .channels()
+            .contains(UiMotionPropertyChannel::TranslationX));
+        assert!(settle
+            .channels()
+            .contains(UiMotionPropertyChannel::TranslationY));
+        assert!(!settle.channels().contains(UiMotionPropertyChannel::Opacity));
+        assert!(!settle
+            .channels()
+            .contains(UiMotionPropertyChannel::Geometry));
+        assert_eq!(settle.easing(), UiMotionEasing::VelocityMatchedCubic);
+        assert_eq!(settle.duration_ticks(), 120);
+        assert_eq!(settle.delay_ticks(), 0);
+        assert_eq!(
+            settle.interruption(),
+            UiMotionInterruptionPolicy::RetargetFromCurrentSample
+        );
+        assert!(settle.settles_directly_under_reduced_motion());
+        assert!(
+            !settle.shortens_under_reduced_motion(),
+            "a settle that arrives outright has no horizon left to shorten"
         );
     }
 
@@ -199,10 +292,7 @@ mod tests {
             ),
         );
 
-        assert!(!declaration.decorative());
-        assert_eq!(
-            declaration.reduced_motion(),
-            UiMotionReducedMotionPolicy::SystemRespecting
-        );
+        assert!(!declaration.settles_directly_under_reduced_motion());
+        assert!(declaration.shortens_under_reduced_motion());
     }
 }

@@ -37,10 +37,22 @@ pub(super) fn order(
     line: &LinePlan,
 ) -> VisualLine {
     let units = &all_units[line.unit_start..line.unit_end];
-    let visible_len = units
+    let visible_len = match units
         .iter()
         .position(|unit| unit.kind == UnitKind::HardBreak)
-        .unwrap_or(units.len());
+    {
+        // A line that holds nothing but its break is an empty line, and an
+        // empty line is carried by its anchor. Ordering the break here would
+        // give that line a run and take its anchor, and with it the only caret
+        // the reader has to land on.
+        Some(0) => 0,
+        // A hard break paints nothing and advances nothing, but it belongs to
+        // the line it ends: the line's original range reaches it and an
+        // authored span may style it. Ordering it keeps the runs of a line
+        // covering the whole of what that line spans.
+        Some(index) => index + 1,
+        None => units.len(),
+    };
     let visible = &units[..visible_len];
     let probe = visible
         .first()

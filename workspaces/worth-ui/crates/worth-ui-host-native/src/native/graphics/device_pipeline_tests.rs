@@ -2,10 +2,7 @@ use super::*;
 
 #[test]
 fn presentation_pipelines_are_reused_only_within_their_device_generation() {
-    let instance = wgpu::Instance::default();
-    let adapter =
-        pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions::default()))
-            .expect("native pipeline proof requires the qualified GPU adapter");
+    let adapter = crate::native::text_atlas::qualified_test_adapter();
     let prepare = |identity| {
         let (device, queue) =
             pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor::default()))

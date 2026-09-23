@@ -1,0 +1,2 @@
+error[E0433]: failed to resolve: could not find `UiPreparedScrollSettleTransition` in `service`
+ --> $WORKSPACE/crates/worth-ui/tests/ui/facade/service/fail/scroll_presentation_cannot_consume_an_unprepared_settle.rs

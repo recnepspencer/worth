@@ -105,7 +105,7 @@ fn held_resource_with_clean_client_cannot_report_a_clean_stop() {
         );
         assert_eq!(
             report.cause(),
-            UiNativeEventLoopRunDenial::IncompleteCleanup
+            UiNativeEventLoopRunDenial::EventLoopCreation
         );
         assert!(!report.terminal_census().is_zero(), "omitted {class:?}");
         assert!(report.client_cleanup_complete());
@@ -125,7 +125,7 @@ fn incomplete_client_without_held_resources_cannot_report_a_clean_stop() {
     );
     assert_eq!(
         report.cause(),
-        UiNativeEventLoopRunDenial::IncompleteCleanup
+        UiNativeEventLoopRunDenial::EventLoopCreation
     );
     assert!(report.terminal_census().is_zero());
     assert!(!report.client_cleanup_complete());
@@ -163,7 +163,7 @@ fn client_resource_debt_cannot_report_complete_cleanup() {
     );
     assert_eq!(
         report.cause(),
-        UiNativeEventLoopRunDenial::IncompleteCleanup
+        UiNativeEventLoopRunDenial::EventLoopCreation
     );
     assert!(!report.client_cleanup_complete());
 }
@@ -211,10 +211,7 @@ fn indeterminate_external_work_moves_into_retryable_cleanup_authority() {
         },
         UiNativeEventLoopRunDenial::EventLoopRun,
     );
-    assert_eq!(
-        report.cause(),
-        UiNativeEventLoopRunDenial::IncompleteCleanup
-    );
+    assert_eq!(report.cause(), UiNativeEventLoopRunDenial::EventLoopRun);
     assert!(!dropped.get());
     let cleanup = report.into_cleanup().expect("pending cleanup authority");
     let cleanup = match cleanup.retry() {

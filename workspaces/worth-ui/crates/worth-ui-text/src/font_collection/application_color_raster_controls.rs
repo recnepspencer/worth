@@ -141,9 +141,10 @@ fn raster_application_face_at_dpi(
 
 fn fullest_pixel(pixels: &[u8]) -> [u8; 4] {
     pixels
-        .chunks_exact(4)
+        .as_chunks::<4>()
+        .0
+        .iter()
         .max_by_key(|pixel| pixel[3])
-        .unwrap()
-        .try_into()
+        .copied()
         .unwrap()
 }

@@ -11,7 +11,6 @@ use super::super::super::{
 };
 
 pub(crate) struct IntegrityAdmittedExtentManifest<'media> {
-    source: ObservedRecoverySource<'media>,
     validated: IntegrityValidatedExtentManifest<'media>,
 }
 
@@ -21,7 +20,6 @@ pub(crate) struct ExtentManifestProjection {
     pub record_format: PhysicalRecordFormatDeclaration,
     pub logical_bytes: u64,
     pub maximum_frame_bytes: u32,
-    pub chunk_payload_capacity: u32,
     pub chunk_count: u32,
 }
 
@@ -72,7 +70,7 @@ impl<'media> IntegrityAdmittedExtentManifest<'media> {
         require_observed_recovery_source(&source, validated.scope(), |input| {
             validated.matches_input(input)
         })?;
-        Ok(Self { source, validated })
+        Ok(Self { validated })
     }
 
     pub(crate) fn project(
@@ -86,13 +84,8 @@ impl<'media> IntegrityAdmittedExtentManifest<'media> {
             record_format: self.validated.record_format(),
             logical_bytes: self.validated.logical_bytes(),
             maximum_frame_bytes: self.validated.maximum_frame_bytes(),
-            chunk_payload_capacity: self.validated.chunk_payload_capacity(),
             chunk_count: self.validated.chunk_count(),
         }
-    }
-
-    pub(crate) fn scope(&self) -> worth_store_physical_integrity::PhysicalArtifactScope {
-        self.source.scope()
     }
 }
 

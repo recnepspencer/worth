@@ -11,10 +11,12 @@ use worth_relational::facade::{
 
 use super::resource_lifecycle::WorthQueryApplicationBasisSelectionIdentity;
 
+mod denial;
 mod fact_conversion;
 mod footprint_accounting;
 mod result_set;
 mod root_selection;
+pub use denial::{WorthQuerySourceExpectationDenial, WorthQuerySourceExpectationDenialKind};
 pub use result_set::WorthQueryObservedResultSet;
 
 pub struct WorthQueryBoundSourceExpectation {
@@ -32,72 +34,14 @@ impl WorthQueryBoundSourceExpectation {
             .bind_source_partition(&self.partition_identity)
     }
 }
-pub(super) mod source_identity;
+pub(in crate::domain_computation::primary_graph) mod source_identity;
 pub(in crate::domain_computation::primary_graph) use root_selection::WorthQueryObservedRootSelection;
-pub(in crate::domain_computation::primary_graph) use source_identity::WorthQueryObservedSourceEpoch;
+pub(in crate::domain_computation::primary_graph) use source_identity::{
+    WorthQueryCheckpointSourceIdentity, WorthQueryObservedSourceEpoch,
+    WorthQueryRuntimeSourceIdentity,
+};
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQuerySourceExpectationDenialKind {
-    MissingExpectation,
-    ForeignApplication,
-    ForeignInstallation,
-    ForeignSchema,
-    ForeignModel,
-    ForeignBranch,
-    SourceRetired,
-    SourceChanged,
-    IncompleteFootprint,
-    SourceContractMismatch,
-    WorkBudgetExceeded,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthQuerySourceExpectationDenial {
-    kind: WorthQuerySourceExpectationDenialKind,
-    subject: String,
-}
-
-impl WorthQuerySourceExpectationDenial {
-    pub const fn kind(&self) -> WorthQuerySourceExpectationDenialKind {
-        self.kind
-    }
-
-    pub fn subject(&self) -> &str {
-        &self.subject
-    }
-
-    #[doc(hidden)]
-    pub fn new_missing(subject: impl Into<String>) -> Self {
-        Self::new(
-            WorthQuerySourceExpectationDenialKind::MissingExpectation,
-            subject,
-        )
-    }
-
-    pub(in crate::domain_computation) fn new(
-        kind: WorthQuerySourceExpectationDenialKind,
-        subject: impl Into<String>,
-    ) -> Self {
-        Self {
-            kind,
-            subject: subject.into(),
-        }
-    }
-}
-
-impl std::fmt::Display for WorthQuerySourceExpectationDenial {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            formatter,
-            "source expectation denied: {:?} ({})",
-            self.kind, self.subject
-        )
-    }
-}
-
-impl std::error::Error for WorthQuerySourceExpectationDenial {}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub(in crate::domain_computation) struct WorthQueryObservedAspectRevision {
     pub(in crate::domain_computation::primary_graph) entity: EntityId,
     pub(in crate::domain_computation::primary_graph) entity_name: String,
@@ -117,7 +61,43 @@ pub(in crate::domain_computation) struct WorthQueryObservedAdjacencyRevision {
     pub(in crate::domain_computation::primary_graph) endpoints: Vec<EntityId>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+impl Ord for WorthQueryObservedAdjacencyRevision {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        (
+            self.anchor,
+            self.relation_kind,
+            adjacency_direction_rank(self.direction),
+            self.native_revision,
+            self.comparison_work_limit,
+            &self.endpoints,
+        )
+            .cmp(&(
+                other.anchor,
+                other.relation_kind,
+                adjacency_direction_rank(other.direction),
+                other.native_revision,
+                other.comparison_work_limit,
+                &other.endpoints,
+            ))
+    }
+}
+
+impl PartialOrd for WorthQueryObservedAdjacencyRevision {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+const fn adjacency_direction_rank(
+    direction: worth_relational::facade::runtime::RelationalAdjacencyDirection,
+) -> u8 {
+    match direction {
+        worth_relational::facade::runtime::RelationalAdjacencyDirection::Outgoing => 0,
+        worth_relational::facade::runtime::RelationalAdjacencyDirection::Incoming => 1,
+    }
+}
+
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub(in crate::domain_computation) struct WorthQueryObservedSourceFootprint {
     pub(in crate::domain_computation::primary_graph) root: EntityId,
     pub(in crate::domain_computation::primary_graph) complete: bool,
@@ -140,8 +120,7 @@ pub struct WorthQueryObservedSource<Query> {
     pub(in crate::domain_computation) branch: BranchId,
     pub(in crate::domain_computation) selection: WorthQueryApplicationBasisSelectionIdentity,
     pub(in crate::domain_computation) model_root: EntityId,
-    pub(super) footprint: WorthQueryObservedSourceFootprint,
-    pub(super) source_identity: [u8; 32],
+    pub(super) source_meaning: std::sync::Arc<source_identity::WorthQueryObservedSourceMeaning>,
     pub(in crate::domain_computation) _marker: PhantomData<fn() -> Query>,
 }
 
@@ -164,8 +143,7 @@ impl<Query> Clone for WorthQueryObservedSource<Query> {
             branch: self.branch.clone(),
             selection: self.selection.clone(),
             model_root: self.model_root,
-            footprint: self.footprint.clone(),
-            source_identity: self.source_identity,
+            source_meaning: std::sync::Arc::clone(&self.source_meaning),
             _marker: PhantomData,
         }
     }
@@ -173,10 +151,10 @@ impl<Query> Clone for WorthQueryObservedSource<Query> {
 
 impl<Query> WorthQueryObservedSource<Query> {
     pub(in crate::domain_computation) fn partition_identity(&self) -> [u8; 32] {
-        source_identity::derive_partition_identity(
-            self.query_identity.as_bytes(),
-            self.parameter_binding_identity.bytes(),
-        )
+        // The installed source expectation fixes the query contract before
+        // this enters output lineage. Its admitted parameter identity is the
+        // exact varying partition coordinate.
+        *self.parameter_binding_identity.bytes()
     }
 
     pub(in crate::domain_computation::primary_graph) fn selected_product_commit(
@@ -205,19 +183,16 @@ impl<Query> WorthQueryObservedSource<Query> {
         &self,
         subject: &str,
     ) -> Result<(), WorthQuerySourceExpectationDenial> {
-        self.footprint.complete.then_some(()).ok_or_else(|| {
-            WorthQuerySourceExpectationDenial::new(
-                WorthQuerySourceExpectationDenialKind::IncompleteFootprint,
-                subject,
-            )
-        })
-    }
-
-    /// Collision-resistant digest of the complete normalized source footprint.
-    /// Runtime, installation, query, and branch affinity are validated before
-    /// idempotency lookup; branch-local sibling work leaves this digest intact.
-    pub(in crate::domain_computation) fn idempotency_identity(&self) -> [u8; 32] {
-        self.source_identity
+        self.source_meaning
+            .footprint()
+            .complete
+            .then_some(())
+            .ok_or_else(|| {
+                WorthQuerySourceExpectationDenial::new(
+                    WorthQuerySourceExpectationDenialKind::IncompleteFootprint,
+                    subject,
+                )
+            })
     }
 
     pub(in crate::domain_computation::primary_graph) fn output_source_epoch(
@@ -226,21 +201,21 @@ impl<Query> WorthQueryObservedSource<Query> {
         source_identity::WorthQueryObservedSourceEpoch::from_observation(
             self.query_identity.as_bytes(),
             self.parameter_binding_identity.bytes(),
-            &self.footprint,
+            self.source_meaning.footprint().root,
             &self.selection,
-            self.source_identity,
+            std::sync::Arc::clone(&self.source_meaning),
         )
     }
 
-    pub(in crate::domain_computation::primary_graph) const fn source_root(&self) -> EntityId {
-        self.footprint.root
+    pub(in crate::domain_computation::primary_graph) fn source_root(&self) -> EntityId {
+        self.source_meaning.footprint().root
     }
 
     #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) const fn footprint_for_test(
+    pub(in crate::domain_computation::primary_graph) fn footprint_for_test(
         &self,
     ) -> &WorthQueryObservedSourceFootprint {
-        &self.footprint
+        self.source_meaning.footprint()
     }
 }
 
@@ -266,7 +241,7 @@ where
             Schema,
         >,
     {
-        let identity = source.idempotency_identity();
+        let identity = source.idempotency_identity().bytes();
         self.bind_checked_source_expectation::<Binding, Scope>(admission, source, identity)
     }
 

@@ -20,6 +20,10 @@ pub(in crate::physical_runtime) struct RecordServingState {
     pub(in crate::physical_runtime) access: AdmittedRecordAccessPolicy,
     pub(in crate::physical_runtime) current_root: DurablePhysicalRootManifest,
     pub(in crate::physical_runtime) previous_root: Option<DurablePhysicalRootManifest>,
+    /// Rewrite sources that still occupy growth until retirement removes them.
+    pub(in crate::physical_runtime) displaced_artifacts:
+        Vec<crate::physical_runtime::durability::DisplacedArtifact>,
+    pub(in crate::physical_runtime) publication_overheads: Vec<u64>,
     pub(in crate::physical_runtime) publication_residue: RecordPublicationResidueObservation,
     pub(in crate::physical_runtime) free_space: DurableFreeSpaceManifestHeader,
     pub(in crate::physical_runtime) root_protocol_counters:

@@ -1,8 +1,7 @@
 use crate::facade::{WorthUiApp, WorthUiNativeApplicationShell};
 use worth_ui_host_native::{
-    UiNativeEventLoopClient, UiNativeEventLoopClientClose, UiNativeEventLoopClientFailure,
-    UiNativeEventLoopDirective, UiNativeObservationReadinessGrant, UiNativeReadinessGrant,
-    WorthUiNativeEventLoop,
+    UiNativeEventLoopClient, UiNativeEventLoopClientClose, UiNativeEventLoopDirective,
+    UiNativeObservationReadinessGrant, UiNativeReadinessGrant, WorthUiNativeEventLoop,
 };
 
 #[path = "application_driver/application_runtime.rs"]

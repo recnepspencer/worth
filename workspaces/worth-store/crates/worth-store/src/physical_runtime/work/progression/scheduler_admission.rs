@@ -2,8 +2,8 @@ use worth_store_io_scheduler::QueueExecutionReadyPlan;
 
 use super::{DispatchedPhysicalWork, ReadyPhysicalWork};
 use crate::physical_runtime::work::{
-    PhysicalWorkConcurrencyScope, PhysicalWorkConsumerHandle, PhysicalWorkIntent,
-    PhysicalWorkPreEffectDenial, PhysicalWorkTerminalStage,
+    PhysicalEffectAdmissionLease, PhysicalWorkConcurrencyScope, PhysicalWorkConsumerHandle,
+    PhysicalWorkIntent, PhysicalWorkPreEffectDenial, PhysicalWorkTerminalStage,
 };
 
 pub struct ResourceAdmittedPhysicalWork {
@@ -12,6 +12,7 @@ pub struct ResourceAdmittedPhysicalWork {
     scheduler_capacity: Option<
         worth_store_io_scheduler::foreground_reservation::PhysicalInstanceForegroundCapacityLease,
     >,
+    effect_lease: PhysicalEffectAdmissionLease,
 }
 
 impl ResourceAdmittedPhysicalWork {
@@ -20,12 +21,14 @@ impl ResourceAdmittedPhysicalWork {
         queue_plan: QueueExecutionReadyPlan,
         scheduler_capacity:
             Option<worth_store_io_scheduler::foreground_reservation::PhysicalInstanceForegroundCapacityLease>,
+        effect_lease: PhysicalEffectAdmissionLease,
     ) -> Self {
         ready.admitted.mark_stage(PhysicalWorkTerminalStage::Queued);
         Self {
             ready,
             queue_plan,
             scheduler_capacity,
+            effect_lease,
         }
     }
 
@@ -62,6 +65,7 @@ impl ResourceAdmittedPhysicalWork {
             ready,
             queue_plan,
             scheduler_capacity,
+            effect_lease,
         } = self;
         let ReadyPhysicalWork { admitted, signal } = ready;
         let effect_activity = admitted
@@ -74,6 +78,7 @@ impl ResourceAdmittedPhysicalWork {
                 signal,
                 effect_activity: Some(effect_activity),
                 scheduler_capacity,
+                effect_lease: Some(effect_lease),
                 scheduler_binding: queue_plan
                     .backend_completion_binding()
                     .backend_execution_binding(),

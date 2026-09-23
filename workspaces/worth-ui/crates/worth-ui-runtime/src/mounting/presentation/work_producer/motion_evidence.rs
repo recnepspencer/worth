@@ -1,5 +1,8 @@
 use std::{cell::Cell, rc::Rc};
-use worth_ui_host_contract::{UiHostObservationPresentationBasis, UiMountedPaintCommandIdentity};
+use worth_ui_host_contract::{
+    UiHostObservationPresentationBasis, UiMountedPaintCommandIdentity,
+    UiMountedPresentationSampleChange,
+};
 
 use super::super::motion_sampling::UiPresentationMotionSampleReceipt;
 use super::UiMountedPresentationState;
@@ -7,11 +10,17 @@ use super::UiMountedPresentationState;
 /// Live physical evidence, shared only by versions of one unchanged command.
 /// It is never exposed as an immutable historical frame snapshot.
 #[derive(Clone, Default)]
-pub(super) struct UiCommandMotionAcceptance(Rc<Cell<Option<UiPresentationMotionSampleReceipt>>>);
+pub(super) struct UiCommandMotionAcceptance(Rc<Cell<Option<UiAcceptedCommandMotion>>>);
+
+#[derive(Clone, Copy)]
+struct UiAcceptedCommandMotion {
+    sample: UiPresentationMotionSampleReceipt,
+    change: UiMountedPresentationSampleChange,
+}
 
 impl UiCommandMotionAcceptance {
     pub(super) fn sample(&self) -> Option<UiPresentationMotionSampleReceipt> {
-        self.0.get()
+        self.0.get().map(|accepted| accepted.sample)
     }
 }
 
@@ -19,12 +28,19 @@ pub(super) struct UiCommandMotionUpdate {
     command: UiMountedPaintCommandIdentity,
     slot: UiCommandMotionAcceptance,
     sample: UiPresentationMotionSampleReceipt,
+    change: UiMountedPresentationSampleChange,
 }
 
 #[derive(Clone)]
 pub(super) struct UiPreparedEntranceAcceptance {
     entrance: crate::runtime::motion::UiPreparedMotionEntrance,
-    commands: Box<[(UiMountedPaintCommandIdentity, UiCommandMotionAcceptance)]>,
+    commands: Box<
+        [(
+            UiMountedPaintCommandIdentity,
+            UiCommandMotionAcceptance,
+            UiMountedPresentationSampleChange,
+        )],
+    >,
 }
 
 impl UiMountedPresentationState {
@@ -36,7 +52,7 @@ impl UiMountedPresentationState {
         let commands = changes
             .iter()
             .map(|change| {
-                self.motion_slot(change.command()).cloned().map(|slot| (change.command(), slot))
+                self.motion_slot(change.command()).cloned().map(|slot| (change.command(), slot, *change))
                 .ok_or(worth_ui_host_contract::UiHostSurfacePresentationDenial::MalformedProjection)
             })
             .collect::<Result<Vec<_>, _>>()?;
@@ -69,10 +85,11 @@ impl UiMountedPresentationState {
         let updates = prepared
             .commands
             .iter()
-            .map(|(command, slot)| UiCommandMotionUpdate {
+            .map(|(command, slot, change)| UiCommandMotionUpdate {
                 command: *command,
                 slot: slot.clone(),
                 sample,
+                change: *change,
             })
             .collect();
         UiPreparedCommandMotionAcceptance::new(updates)
@@ -86,6 +103,7 @@ impl UiMountedPresentationState {
 #[derive(Default)]
 pub(in crate::mounting::presentation) struct UiPreparedCommandMotionAcceptance {
     updates: Box<[UiCommandMotionUpdate]>,
+    scroll: Box<[super::scroll_motion_groups::UiScrollGroupMotionUpdate]>,
 }
 
 #[derive(Debug)]
@@ -99,7 +117,16 @@ impl UiPreparedCommandMotionAcceptance {
     pub(super) fn new(updates: Vec<UiCommandMotionUpdate>) -> Self {
         Self {
             updates: updates.into_boxed_slice(),
+            scroll: Box::new([]),
         }
+    }
+
+    pub(super) fn with_scroll_groups(
+        mut self,
+        scroll: Vec<super::scroll_motion_groups::UiScrollGroupMotionUpdate>,
+    ) -> Self {
+        self.scroll = scroll.into_boxed_slice();
+        self
     }
 
     pub(in crate::mounting::presentation) fn accept(
@@ -116,6 +143,9 @@ impl UiPreparedCommandMotionAcceptance {
         }
         // Validate every command and reattribute every receipt before any write.
         for update in &mut self.updates {
+            if update.change.command() != update.command {
+                return Err(UiCommandMotionAcceptanceDenial::SampleBasis);
+            }
             let slot = current
                 .motion_slot(update.command)
                 .ok_or(UiCommandMotionAcceptanceDenial::CommandReplaced)?;
@@ -127,8 +157,17 @@ impl UiPreparedCommandMotionAcceptance {
                 .with_presentation_basis(presentation)
                 .map_err(|_| UiCommandMotionAcceptanceDenial::SampleBasis)?;
         }
+        for group in &mut self.scroll {
+            group.validate(current, presentation)?;
+        }
         for update in self.updates {
-            update.slot.0.set(Some(update.sample));
+            update.slot.0.set(Some(UiAcceptedCommandMotion {
+                sample: update.sample,
+                change: update.change,
+            }));
+        }
+        for group in self.scroll {
+            group.commit();
         }
         Ok(())
     }
@@ -145,37 +184,73 @@ impl UiMountedPresentationState {
                 self.command_identities_for_instance(*instance)
                     .filter_map(|identity| self.command_sample_change(identity))
                     .chain(self.appearance_surface_sample_change(*instance))
+                    .chain(
+                        self.scroll_motion_groups
+                            .chrome_identities()
+                            .filter(move |identity| identity.mounted_instance() == *instance)
+                            .filter_map(|identity| self.accepted_motion_change(identity)),
+                    )
             })
             .collect()
     }
 
-    fn command_sample_change(
+    pub(super) fn command_sample_change(
         &self,
         identity: UiMountedPaintCommandIdentity,
     ) -> Option<worth_ui_host_contract::UiMountedPresentationSampleChange> {
-        let sample = self.motion_for_command(identity)??;
-        let command = self.command_option(identity)?;
-        let transform = super::motion_sample::sample_transform(
-            sample,
-            command.clip_bounds().coordinate_space(),
-        )
-        .ok()?;
-        Some(
-            worth_ui_host_contract::UiMountedPresentationSampleChange::from_runtime_sampling(
+        let accepted = self.accepted_motion_change(identity)?;
+        let opacity = super::super::compose_opacity(
+            self.appearance_opacity_for_command(identity),
+            accepted.opacity().motion_units(),
+        );
+        Some(match accepted.clip() {
+            Some(clip) => UiMountedPresentationSampleChange::from_runtime_scroll_sampling(
                 identity,
-                transform,
-                super::super::compose_opacity(
-                    self.appearance_opacity_for_command(identity),
-                    sample.opacity_units(),
-                ),
+                accepted.transform()?,
+                opacity,
+                clip,
+            )
+            .expect("accepted physical sample preserves its coordinate space"),
+            None => UiMountedPresentationSampleChange::from_runtime_sampling(
+                identity,
+                accepted.transform(),
+                opacity,
             ),
-        )
+        })
     }
 
     pub(super) fn prepare_command_motion_update(
         &self,
         command: UiMountedPaintCommandIdentity,
         sample: UiPresentationMotionSampleReceipt,
+    ) -> UiCommandMotionUpdate {
+        let coordinate_space = if command.is_appearance_surface() {
+            self.appearance_surface_sample_target(command.mounted_instance())
+                .expect("prepared appearance target is admitted")
+                .geometry()
+                .clip()
+                .coordinate_space()
+        } else {
+            self.command(command).clip_bounds().coordinate_space()
+        };
+        let transform = super::motion_sample::sample_transform(sample, coordinate_space)
+            .expect("prepared sample geometry is admitted");
+        let change = UiMountedPresentationSampleChange::from_runtime_sampling(
+            command,
+            transform,
+            super::super::compose_opacity(
+                self.appearance_opacity_for_command(command),
+                sample.opacity_units(),
+            ),
+        );
+        self.prepare_command_motion_update_with_change(command, sample, change)
+    }
+
+    pub(super) fn prepare_command_motion_update_with_change(
+        &self,
+        command: UiMountedPaintCommandIdentity,
+        sample: UiPresentationMotionSampleReceipt,
+        change: UiMountedPresentationSampleChange,
     ) -> UiCommandMotionUpdate {
         UiCommandMotionUpdate {
             command,
@@ -184,6 +259,7 @@ impl UiMountedPresentationState {
                 .expect("prepared command is admitted")
                 .clone(),
             sample,
+            change,
         }
     }
 
@@ -191,6 +267,9 @@ impl UiMountedPresentationState {
         &self,
         command: UiMountedPaintCommandIdentity,
     ) -> Option<&UiCommandMotionAcceptance> {
+        if let Some(identity) = command.scroll_chrome_identity() {
+            return self.scroll_motion_groups.motion_slot(identity);
+        }
         if command.is_appearance_surface() {
             return self
                 .appearance_surface_sample_target(command.mounted_instance())
@@ -199,6 +278,16 @@ impl UiMountedPresentationState {
         self.commands_by_instance
             .get(&command.mounted_instance())?
             .motion_slot(command)
+    }
+
+    pub(super) fn accepted_motion_change(
+        &self,
+        command: UiMountedPaintCommandIdentity,
+    ) -> Option<UiMountedPresentationSampleChange> {
+        self.motion_slot(command)?
+            .0
+            .get()
+            .map(|accepted| accepted.change)
     }
 
     pub(in crate::mounting::presentation) fn motion_for_command(
@@ -234,6 +323,7 @@ impl UiMountedPresentationState {
             return;
         }
         self.inherit_appearance_surface_targets(predecessor);
+        self.scroll_motion_groups = predecessor.scroll_motion_groups.clone();
         let affected = predecessor
             .rebound_from_binding
             .unwrap_or_else(|| predecessor.requirement.binding());
@@ -263,27 +353,15 @@ impl UiMountedPresentationState {
         &self,
     ) -> Vec<worth_ui_host_contract::UiMountedPresentationSampleChange> {
         self.reconstruction_appearance_motion()
-            .filter_map(|(identity, sample)| {
-                let sample = sample?;
-                let command = self.command_option(identity)?;
-                let transform = super::motion_sample::sample_transform(
-                    sample,
-                    command.clip_bounds().coordinate_space(),
-                )
-                .expect("accepted Motion geometry remains valid for an equivalent command");
-                let opacity = super::super::compose_opacity(
-                    self.appearance_opacity_for_command(identity),
-                    sample.opacity_units(),
-                );
-                Some(
-                    worth_ui_host_contract::UiMountedPresentationSampleChange::from_runtime_sampling(
-                        identity, transform, opacity,
-                    ),
-                )
-            })
+            .filter_map(|(identity, _)| self.command_sample_change(identity))
             .chain(
                 self.bound_appearance_surface_instances()
                     .filter_map(|instance| self.appearance_surface_sample_change(instance)),
+            )
+            .chain(
+                self.scroll_motion_groups
+                    .chrome_identities()
+                    .filter_map(|identity| self.accepted_motion_change(identity)),
             )
             .collect()
     }
@@ -294,7 +372,7 @@ impl UiMountedPresentationState {
 /// The command count is an admitted upper bound, including clipped commands.
 pub(in crate::mounting) fn motion_acceptance_reserved_bytes(commands: usize) -> Option<usize> {
     let per_command = std::mem::size_of::<UiCommandMotionAcceptance>()
-        .checked_add(std::mem::size_of::<Option<UiPresentationMotionSampleReceipt>>())?
+        .checked_add(std::mem::size_of::<Option<UiAcceptedCommandMotion>>())?
         .checked_add(2 * std::mem::size_of::<usize>())?;
     commands.checked_mul(per_command.checked_add(std::mem::size_of::<UiCommandMotionUpdate>())?)
 }

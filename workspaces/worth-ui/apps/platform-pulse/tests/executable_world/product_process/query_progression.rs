@@ -1,7 +1,7 @@
 use std::time::Instant;
 
 use crate::adjudication::{
-    adjudicate_default_wrapping_text, adjudicate_query_current, adjudicate_visual_retirement,
+    adjudicate_dashboard_status_badge, adjudicate_query_current, adjudicate_visual_retirement,
     adjudicate_visual_snapshot,
 };
 use crate::failure_teardown::{
@@ -18,7 +18,7 @@ use super::{
 
 struct QueryExpectation<'value> {
     value: &'value str,
-    owner_order: u64,
+    predecessor_owner_order: u64,
     requires_wrapping_text: bool,
     deadline: Instant,
 }
@@ -53,11 +53,17 @@ impl PulseExecutableWorld<AwaitingQueryCurrent<NativeInputReached<InitialBlue>, 
         deadline: Instant,
     ) -> Result<PulseExecutableWorld<Published<FirstCurrent>>, PulseExecutableWorldFailureReport>
     {
+        let predecessor_owner_order = self
+            .state
+            .prior
+            .first_frame_evidence()
+            .pending_projection()
+            .owner_order();
         await_query(
             self,
             QueryExpectation {
                 value: QueryStatusV1::VALUE,
-                owner_order: 2,
+                predecessor_owner_order,
                 requires_wrapping_text: false,
                 deadline,
             },
@@ -72,11 +78,18 @@ impl PulseExecutableWorld<AwaitingQueryCurrent<OverlayCleared<FirstCurrent>, Que
         deadline: Instant,
     ) -> Result<PulseExecutableWorld<Published<SecondCurrent>>, PulseExecutableWorldFailureReport>
     {
+        let predecessor_owner_order = self
+            .state
+            .prior
+            .initial()
+            .evidence
+            .projection()
+            .owner_order();
         let current = await_query(
             self,
             QueryExpectation {
                 value: QueryStatusV2::VALUE,
-                owner_order: 5,
+                predecessor_owner_order,
                 requires_wrapping_text: true,
                 deadline,
             },
@@ -216,14 +229,14 @@ fn await_query<Stage, Kind>(
             issued,
             published,
             expectation.value,
-            expectation.owner_order,
+            expectation.predecessor_owner_order,
             native.client,
             native.pixels,
             predecessor.rgba(),
         )
         .map_err(PulseExecutableWorldFailure::QueryCurrent)?;
         if expectation.requires_wrapping_text {
-            adjudicate_default_wrapping_text(evidence.pixels())
+            adjudicate_dashboard_status_badge(evidence.pixels())
                 .map_err(crate::adjudication::ExecutableQueryCurrentFailure::WrappingText)
                 .map_err(PulseExecutableWorldFailure::QueryCurrent)?;
         }

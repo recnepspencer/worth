@@ -18,7 +18,7 @@ pub use encoded_digest::checkpoint_stream_encoded_digest;
 pub use footer::{CheckpointStreamFooter, CHECKPOINT_STREAM_FOOTER_RECORD_BYTES};
 pub use identity::PhysicalCheckpointIdentity;
 #[cfg(test)]
-pub(crate) use inspection::{inspect_checkpoint_stream, VerifiedCheckpointStream};
+pub(crate) use inspection::inspect_checkpoint_stream;
 pub use record::CheckpointStreamDecodeDenial;
 pub use selective_aggregate::{
     CheckpointSelectiveRecordAggregate, CheckpointSelectiveRecordSummary,
@@ -28,7 +28,7 @@ pub use source::{
     PhysicalCheckpointSource, CHECKPOINT_STREAM_HEADER_RECORD_BYTES,
 };
 #[cfg(test)]
-pub(crate) use stream::{CheckpointBindingCompactionDecoder, CheckpointStreamDecoder};
+pub(crate) use stream::CheckpointStreamDecoder;
 pub use stream::{CheckpointBindingCompactionEncoder, CheckpointStreamEncoder};
 
 #[cfg(test)]

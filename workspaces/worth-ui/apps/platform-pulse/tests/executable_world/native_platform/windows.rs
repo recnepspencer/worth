@@ -10,28 +10,35 @@ use xcap::Window;
 
 use crate::external_observation::{
     NativeClientPixelCapture, NativeClientPixelPoint, NativeInputDeliveryObservation,
-    NativeInputProbeKind, NativeWindowIdentity, NativeWindowVisibilityTransitionObservation,
-    NormalNativeCloseRequestObservation, ProcessBoundNativeClientAreaObservation,
+    NativeInputProbeKind, NativeWindowIdentity, NativeWindowVisibilityTransitionMechanism,
+    NativeWindowVisibilityTransitionObservation, NormalNativeCloseRequestObservation,
+    ProcessBoundNativeClientAreaObservation,
 };
 
 use super::contract::sealed::Sealed;
-use super::{NativePlatformContract, NativePlatformFailure};
+use super::{CreationSurfaceSuccession, NativePlatformContract, NativePlatformFailure};
 
 mod capture_consistency;
 mod capture_region;
+mod capture_settlement;
 mod client_capture;
 mod environment;
 mod gdi_capture;
+mod held_pointer;
 mod input_delivery;
 #[cfg(test)]
 mod input_delivery_tests;
 mod input_environment;
+mod observation_clock;
+mod pointer_arming;
 mod pointer_target;
-mod pointer_visual_settlement;
 mod process_windows;
+mod scroll_input_delivery;
+mod scroll_probe_input;
+mod timed_wheel_input;
 mod window_state;
 
-pub(super) use input_environment::WindowsInputEnvironmentDenial;
+pub(crate) use input_environment::WindowsInputEnvironmentDenial;
 
 use capture_consistency::{require_matching_capture_sources, require_matching_composited_sources};
 use capture_region::{
@@ -49,7 +56,7 @@ pub(crate) struct WindowsProcessBoundNativeClientArea {
     observation: ProcessBoundNativeClientAreaObservation,
 }
 
-struct WindowsCaptureExposure<'bound> {
+pub(crate) struct WindowsCaptureExposure<'bound> {
     bound: &'bound WindowsProcessBoundNativeClientArea,
 }
 
@@ -71,6 +78,15 @@ impl Drop for WindowsCaptureExposure<'_> {
 }
 
 impl WindowsNativePlatform {
+    /// Time an external observation's completion, not a desktop presentation.
+    pub(crate) fn observation_qpc_100ns(&self) -> Result<i64, NativePlatformFailure> {
+        observation_clock::qpc_100ns()
+    }
+    /// The visibility transition this observer actuates; the profile record's
+    /// `client_visibility_transition_observation` names the same mechanism.
+    pub(crate) const VISIBILITY_TRANSITION_MECHANISM: NativeWindowVisibilityTransitionMechanism =
+        NativeWindowVisibilityTransitionMechanism::IconicState;
+
     pub(crate) fn certified() -> Result<Self, NativePlatformFailure> {
         if std::env::consts::ARCH != "x86_64" {
             return Err(NativePlatformFailure::EnvironmentQualification(
@@ -92,26 +108,6 @@ impl WindowsNativePlatform {
         }
     }
 
-    fn expose_bound_client_area<'bound>(
-        &self,
-        bound: &'bound WindowsProcessBoundNativeClientArea,
-    ) -> Result<WindowsCaptureExposure<'bound>, NativePlatformFailure> {
-        self.observe_bound_client_area(bound)?;
-        bound
-            .window
-            .SetWindowPos(
-                HwndPlace::Place(co::HWND_PLACE::TOPMOST),
-                POINT::default(),
-                SIZE::default(),
-                co::SWP::NOMOVE | co::SWP::NOSIZE | co::SWP::NOACTIVATE | co::SWP::SHOWWINDOW,
-            )
-            .map_err(|error| NativePlatformFailure::ClientExposure(error.to_string()))?;
-        win::DwmFlush()
-            .map_err(|error| NativePlatformFailure::ClientExposure(error.to_string()))?;
-        self.observe_bound_client_area(bound)?;
-        Ok(WindowsCaptureExposure { bound })
-    }
-
     fn capture_exposed_client_area(
         exposure: WindowsCaptureExposure<'_>,
     ) -> Result<NativeClientPixelCapture, NativePlatformFailure> {
@@ -119,17 +115,20 @@ impl WindowsNativePlatform {
         let client = bound.observation.bounds();
         let monitor = monitor_for_client(client)?;
         let region = monitor_capture_region(&monitor, client)?;
-        let monitor_capture =
-            capture_bound_client_area(&monitor, region, bound.observation.process_id())?;
-        let window_capture = client_capture::capture_client_area(
-            &bound.capture_window,
-            client,
-            bound.observation.process_id(),
-        )?;
-        require_matching_capture_sources(&monitor_capture, &window_capture)?;
-        let gdi_capture = gdi_capture::capture_client_area(client, bound.observation.process_id())?;
-        require_matching_composited_sources(&monitor_capture, &gdi_capture)?;
-        Ok(monitor_capture)
+        capture_settlement::settled_exposure(|| {
+            let monitor_capture =
+                capture_bound_client_area(&monitor, region, bound.observation.process_id())?;
+            let window_capture = client_capture::capture_client_area(
+                &bound.capture_window,
+                client,
+                bound.observation.process_id(),
+            )?;
+            require_matching_capture_sources(&monitor_capture, &window_capture)?;
+            let gdi_capture =
+                gdi_capture::capture_client_area(client, bound.observation.process_id())?;
+            require_matching_composited_sources(&monitor_capture, &gdi_capture)?;
+            Ok(monitor_capture)
+        })
     }
 }
 
@@ -158,6 +157,8 @@ fn independent_window_capture_rejects_monitor_pixel_substitution() {
 
 impl NativePlatformContract for WindowsNativePlatform {
     type BoundClientArea = WindowsProcessBoundNativeClientArea;
+
+    const CREATION_SURFACE_SUCCESSION: CreationSurfaceSuccession = CreationSurfaceSuccession::Once;
 
     fn bind_process_client_area(
         &self,
@@ -250,8 +251,30 @@ impl NativePlatformContract for WindowsNativePlatform {
         &self,
         bound: &Self::BoundClientArea,
     ) -> Result<NativeClientPixelCapture, NativePlatformFailure> {
-        let exposure = self.expose_bound_client_area(bound)?;
+        let exposure = self.expose_client_area(bound)?;
         Self::capture_exposed_client_area(exposure)
+    }
+
+    type ExposedClientArea<'bound> = WindowsCaptureExposure<'bound>;
+
+    fn expose_client_area<'bound>(
+        &self,
+        bound: &'bound Self::BoundClientArea,
+    ) -> Result<Self::ExposedClientArea<'bound>, NativePlatformFailure> {
+        self.observe_bound_client_area(bound)?;
+        bound
+            .window
+            .SetWindowPos(
+                HwndPlace::Place(co::HWND_PLACE::TOPMOST),
+                POINT::default(),
+                SIZE::default(),
+                co::SWP::NOMOVE | co::SWP::NOSIZE | co::SWP::NOACTIVATE | co::SWP::SHOWWINDOW,
+            )
+            .map_err(|error| NativePlatformFailure::ClientExposure(error.to_string()))?;
+        win::DwmFlush()
+            .map_err(|error| NativePlatformFailure::ClientExposure(error.to_string()))?;
+        self.observe_bound_client_area(bound)?;
+        Ok(WindowsCaptureExposure { bound })
     }
 
     fn resize_bound_client_area(
@@ -306,6 +329,26 @@ impl NativePlatformContract for WindowsNativePlatform {
     ) -> Result<(), NativePlatformFailure> {
         let observed = self.observe_bound_client_area(bound)?;
         input_delivery::deliver_wheel_deltas(&bound.window, observed)
+    }
+
+    fn deliver_wheel_notches(
+        &self,
+        bound: &Self::BoundClientArea,
+        point: NativeClientPixelPoint,
+        notches: i32,
+    ) -> Result<Instant, NativePlatformFailure> {
+        let observed = self.observe_bound_client_area(bound)?;
+        scroll_input_delivery::deliver_wheel_notches(&bound.window, observed, point, notches)
+    }
+
+    fn deliver_pointer_drag(
+        &self,
+        bound: &Self::BoundClientArea,
+        from: NativeClientPixelPoint,
+        to: NativeClientPixelPoint,
+    ) -> Result<(), NativePlatformFailure> {
+        let observed = self.observe_bound_client_area(bound)?;
+        scroll_input_delivery::deliver_pointer_drag(&bound.window, observed, from, to)
     }
 
     fn move_cursor(&self, screen_point: (i32, i32)) -> Result<(), NativePlatformFailure> {

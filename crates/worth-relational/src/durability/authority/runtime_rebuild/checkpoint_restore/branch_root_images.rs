@@ -54,12 +54,19 @@ pub(super) fn restore_branch_root_images(
         let root_contracts = crate::durability::checkpoints::aspect_state_images::CheckpointAspectContractCatalog::from_contracts(
             schema_authority.retained_aspect_contracts(),
         )?;
-        let restored_partitions = restore_unique_partition_images_with_schema(
+        let mut restored_partitions = restore_unique_partition_images_with_schema(
             &image.partition_images,
             schema_authority.aspect_plans(),
             &root_contracts,
             &owner,
         )?;
+        crate::storage::partition::rebuild_adjacency_kind_buckets(&mut restored_partitions)
+            .map_err(|detail| {
+                corrupt_checkpoint(format!(
+                    "branch-root image `{}` adjacency recovery failed: {detail}",
+                    image.commit_id.0
+                ))
+            })?;
         if partitions
             .insert(image.commit_id, restored_partitions)
             .is_some()

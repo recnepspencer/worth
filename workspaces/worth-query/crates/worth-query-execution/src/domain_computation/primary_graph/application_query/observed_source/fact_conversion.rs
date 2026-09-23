@@ -24,6 +24,21 @@ impl<Query> WorthQueryObservedSource<Query> {
             expected_query_identifier,
             expected_query_identity,
         )?;
+        self.validated_facts(layout, expected_query_identifier)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn retained_checkpoint_facts(
+        &self,
+        layout: &WorthQueryPrimaryGraphLayout,
+    ) -> Result<std::sync::Arc<[Fact]>, WorthQuerySourceExpectationDenial> {
+        Ok(self.validated_facts(layout, &self.query_identifier)?.into())
+    }
+
+    fn validated_facts(
+        &self,
+        layout: &WorthQueryPrimaryGraphLayout,
+        expected_query_identifier: &str,
+    ) -> Result<Vec<Fact>, WorthQuerySourceExpectationDenial> {
         self.validate_completeness(expected_query_identifier)?;
         let WorthQueryObservedSourceFootprint {
             entities,
@@ -31,7 +46,7 @@ impl<Query> WorthQueryObservedSource<Query> {
             adjacencies,
             root_selection,
             ..
-        } = self.footprint;
+        } = self.source_meaning.footprint().clone();
         let selection = root_selection.as_deref();
         let mut facts = Vec::with_capacity(
             entities

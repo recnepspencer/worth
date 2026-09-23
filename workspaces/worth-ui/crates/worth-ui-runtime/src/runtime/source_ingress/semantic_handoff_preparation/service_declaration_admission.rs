@@ -24,6 +24,13 @@ pub(super) fn admit_service_declarations(
                 WorthUiServiceDeclarationAdmissionCause::DuplicateIdentity,
             ));
         }
+        // The wheel horizon is judged before the policy digest is taken: lowering
+        // an authored policy relies on every horizon having been admitted.
+        if let worth_ui_dsl::WorthUiServiceDeclarationMeaning::Scroll(scroll) =
+            declaration.meaning()
+        {
+            admit_scroll_wheel(declaration_index, scroll.wheel())?;
+        }
         if let Some(policy) = declaration.policy_digest() {
             if family_policies
                 .insert(family, policy)
@@ -139,6 +146,27 @@ const fn route_scope(scope: worth_ui_dsl::WorthUiCommandScope) -> UiCommandRoute
         worth_ui_dsl::WorthUiCommandScope::ActiveRegion => UiCommandRouteScope::ActiveRegion,
         worth_ui_dsl::WorthUiCommandScope::FocusedControl => UiCommandRouteScope::FocusedControl,
         worth_ui_dsl::WorthUiCommandScope::ActivePortal => UiCommandRouteScope::ActivePortal,
+    }
+}
+
+/// A smooth wheel is only admissible with a horizon the runtime honours; the
+/// DSL owns the spelling, the runtime owns the range.
+fn admit_scroll_wheel(
+    declaration_index: usize,
+    wheel: worth_ui_dsl::WorthUiScrollWheelPolicy,
+) -> Result<(), WorthUiSemanticHandoffPreparationStop> {
+    match wheel {
+        worth_ui_dsl::WorthUiScrollWheelPolicy::Immediate => Ok(()),
+        worth_ui_dsl::WorthUiScrollWheelPolicy::Smooth { settle_ticks } => {
+            crate::declaration::UiScrollWheelBehavior::smooth(settle_ticks)
+                .map(|_| ())
+                .map_err(|denial| {
+                    service_stop(
+                        declaration_index,
+                        WorthUiServiceDeclarationAdmissionCause::ScrollWheelHorizon(denial),
+                    )
+                })
+        }
     }
 }
 

@@ -3,11 +3,15 @@ use std::sync::Arc;
 use winit::window::Window;
 
 mod mechanics;
+mod surface_selection;
 
 pub(crate) use mechanics::{
     UiNativePreparedGraphicsRecovery, UiWgpuDeviceGenerationMechanics, UiWgpuDeviceMechanics,
     UiWgpuRetainedTarget, UiWgpuSurfaceHandle, UiWgpuSurfaceMechanics,
 };
+#[cfg(test)]
+pub(crate) use surface_selection::{qualified_backend, qualified_backends};
+pub(crate) use surface_selection::{qualified_surface_format, qualified_target_format};
 
 use super::port::{
     UiNativeGraphicsPort, UiNativeGraphicsPortDenial, UiNativeGraphicsRecovery,
@@ -20,6 +24,15 @@ use crate::native::presentation::{UiNativeOwnedPresentationSurface, UiNativePres
 
 pub(crate) struct UiWgpuNativeGraphicsPort;
 
+/// The surface axes of the compiled profile, read once and named so the
+/// instance, capability validation, swapchain and retained target cannot
+/// disagree about which record they serve.
+const SURFACE: crate::native_profile::UiNativeSurfaceProfile =
+    crate::native_profile::WORTH_UI_NATIVE_SURFACE_PROFILE;
+
+/// DirectComposition is how the Windows profile obtains `PreMultiplied`; it
+/// is a DX12 option and applies only where DX12 is the qualified backend.
+#[cfg(target_os = "windows")]
 pub(crate) const QUALIFIED_DX12_PRESENTATION_SYSTEM: wgpu::Dx12SwapchainKind =
     wgpu::Dx12SwapchainKind::DxgiFromVisual;
 
@@ -58,8 +71,12 @@ impl UiNativeGraphicsPort for UiWgpuNativeGraphicsPort {
         window: Arc<Window>,
     ) -> Result<UiNativePreparedGraphics, UiNativeGraphicsPortDenial> {
         let mut descriptor = wgpu::InstanceDescriptor::new_without_display_handle();
-        descriptor.backends = wgpu::Backends::DX12;
-        descriptor.backend_options.dx12.presentation_system = QUALIFIED_DX12_PRESENTATION_SYSTEM;
+        descriptor.backends = surface_selection::backends(SURFACE.backends);
+        #[cfg(target_os = "windows")]
+        {
+            descriptor.backend_options.dx12.presentation_system =
+                QUALIFIED_DX12_PRESENTATION_SYSTEM;
+        }
         let instance = wgpu::Instance::new(descriptor);
         let surface = instance
             .create_surface(Arc::clone(&window))
@@ -68,7 +85,7 @@ impl UiNativeGraphicsPort for UiWgpuNativeGraphicsPort {
         let adapter_info = adapter.get_info();
         validate_surface_capabilities(&surface.get_capabilities(&adapter))?;
         let descriptor = wgpu::DeviceDescriptor {
-            label: Some("worth-ui-windows-dx12-v2-device"),
+            label: Some(crate::native_profile::ACTIVE_PROFILE.device_label),
             required_features: wgpu::Features::empty(),
             required_limits: qualified_required_limits(&adapter),
             ..Default::default()
@@ -153,7 +170,7 @@ impl UiNativeGraphicsPort for UiWgpuNativeGraphicsPort {
             }
             UiNativeGraphicsRecovery::DeviceLost => {
                 let descriptor = wgpu::DeviceDescriptor {
-                    label: Some("worth-ui-windows-dx12-v2-recovered-device"),
+                    label: Some(crate::native_profile::ACTIVE_PROFILE.recovered_device_label),
                     required_features: wgpu::Features::empty(),
                     required_limits: qualified_required_limits(&device.state().mechanics.adapter),
                     ..Default::default()
@@ -197,7 +214,9 @@ fn select_adapter(
     instance: &wgpu::Instance,
     surface: &wgpu::Surface<'_>,
 ) -> Result<wgpu::Adapter, UiNativeGraphicsPortDenial> {
-    let candidates = pollster::block_on(instance.enumerate_adapters(wgpu::Backends::DX12));
+    let candidates = pollster::block_on(
+        instance.enumerate_adapters(surface_selection::backends(SURFACE.backends)),
+    );
     let observed = candidates
         .into_iter()
         .map(|adapter| {
@@ -216,7 +235,7 @@ fn select_adapter(
             )
         })
         .collect::<Vec<_>>();
-    adapter_selection::select_eligible_adapter(observed)
+    adapter_selection::select_eligible_adapter(observed, SURFACE.cpu_adapter)
         .map(|(_, adapter)| adapter)
         .ok_or(UiNativeGraphicsPortDenial::Adapter)
 }
@@ -224,16 +243,7 @@ fn select_adapter(
 fn validate_surface_capabilities(
     capabilities: &wgpu::SurfaceCapabilities,
 ) -> Result<(), UiNativeGraphicsPortDenial> {
-    let exact = capabilities
-        .formats
-        .contains(&wgpu::TextureFormat::Bgra8UnormSrgb)
-        && capabilities
-            .present_modes
-            .contains(&wgpu::PresentMode::Fifo)
-        && capabilities
-            .alpha_modes
-            .contains(&wgpu::CompositeAlphaMode::PreMultiplied);
-    exact
+    surface_selection::surface_offers_profile(capabilities, SURFACE)
         .then_some(())
         .ok_or(UiNativeGraphicsPortDenial::Surface)
 }
@@ -245,12 +255,12 @@ fn qualified_required_limits(adapter: &wgpu::Adapter) -> wgpu::Limits {
 fn surface_configuration(extent: [u32; 2]) -> wgpu::SurfaceConfiguration {
     wgpu::SurfaceConfiguration {
         usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-        format: wgpu::TextureFormat::Bgra8UnormSrgb,
+        format: surface_selection::texture_format(SURFACE.surface_format),
         width: extent[0],
         height: extent[1],
-        present_mode: wgpu::PresentMode::Fifo,
+        present_mode: surface_selection::present_mode(SURFACE.present_mode),
         desired_maximum_frame_latency: 2,
-        alpha_mode: wgpu::CompositeAlphaMode::PreMultiplied,
+        alpha_mode: surface_selection::composite_alpha(SURFACE.composite_alpha),
         view_formats: Vec::new(),
     }
 }
@@ -266,7 +276,7 @@ fn retained_target(device: &wgpu::Device, extent: [u32; 2]) -> wgpu::Texture {
         mip_level_count: 1,
         sample_count: 1,
         dimension: wgpu::TextureDimension::D2,
-        format: wgpu::TextureFormat::Rgba8UnormSrgb,
+        format: surface_selection::texture_format(SURFACE.target_format),
         usage: wgpu::TextureUsages::RENDER_ATTACHMENT
             | wgpu::TextureUsages::COPY_SRC
             | wgpu::TextureUsages::TEXTURE_BINDING,

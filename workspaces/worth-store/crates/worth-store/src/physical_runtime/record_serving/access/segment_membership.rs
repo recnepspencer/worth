@@ -1,4 +1,3 @@
-#[cfg(feature = "certification-test-authority")]
 use worth_store_physical_backend::QualifiedFilesystemMedia;
 use worth_store_physical_format::{
     DurablePhysicalRootManifest, PhysicalPageId, PhysicalSegmentId, PhysicalSegmentMembershipBlock,
@@ -13,6 +12,7 @@ use super::super::access::manifest_routing::{
 use super::super::residency::{record_frame_reader::RecordFrameReader, PhysicalResidencyWorkPort};
 use super::super::{AdmittedPhysicalRecordFormat, AdmittedRecordAccessPolicy};
 
+mod segment_range;
 mod update_planning;
 pub(in crate::physical_runtime::record_serving) use update_planning::{
     plan_segment_membership_updates, SegmentMembershipPublicationPlan,
@@ -32,7 +32,6 @@ pub(in crate::physical_runtime::record_serving) struct SegmentMembershipReader<'
 }
 
 impl<'media> SegmentMembershipReader<'media> {
-    #[cfg(feature = "certification-test-authority")]
     pub(in crate::physical_runtime::record_serving) fn with_loader(
         media: &'media QualifiedFilesystemMedia,
         loader: &'media (dyn super::super::residency::frame_ports::FrameLoadPort + Send + Sync),

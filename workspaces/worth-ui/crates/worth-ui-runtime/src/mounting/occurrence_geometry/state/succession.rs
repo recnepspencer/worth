@@ -123,6 +123,8 @@ impl UiMountedOccurrenceGeometryState {
                 }
             }
             geometry.regions = regions;
+            geometry.scroll_index =
+                std::sync::Arc::new(super::scroll_index::UiScrollGeometryIndex::build(geometry));
             geometry.generation = Some(successor.clone());
         }
         Ok(())

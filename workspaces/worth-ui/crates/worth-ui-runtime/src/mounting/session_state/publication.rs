@@ -57,7 +57,7 @@ impl WorthUiMountedSessionState {
             appearance_inspection,
             deadline,
             now,
-            |_, _, _| Ok(Vec::new()),
+            |_, _, _| Ok(Default::default()),
         )
     }
 
@@ -74,12 +74,12 @@ impl WorthUiMountedSessionState {
             worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
             &[worth_ui_host_contract::UiSemanticSurfaceIdentity],
             Option<&crate::runtime::appearance::UiActiveThemeBinding>,
-        ) -> Result<
-            Vec<crate::mounting::UiMountedAppearanceSurfaceOverlayInput>,
-            (),
-        >,
+        )
+            -> Result<crate::mounting::UiMountedAppearanceDerivedInput, ()>,
     ) -> UiMountedPublicationTransition {
         let capability_report = host.capability_report().clone();
+        let mut frame = frame;
+        self.bind_pending_direct_scroll(&mut frame);
         let admitted = match self.identity.admit_prepared_frame_authority(frame) {
             Ok(admitted) => admitted,
             Err(rejection) => {
@@ -126,10 +126,8 @@ impl WorthUiMountedSessionState {
             worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
             &[worth_ui_host_contract::UiSemanticSurfaceIdentity],
             Option<&crate::runtime::appearance::UiActiveThemeBinding>,
-        ) -> Result<
-            Vec<crate::mounting::UiMountedAppearanceSurfaceOverlayInput>,
-            (),
-        >,
+        )
+            -> Result<crate::mounting::UiMountedAppearanceDerivedInput, ()>,
     ) -> UiMountedPublicationTransition {
         if !self
             .presentation
@@ -146,6 +144,8 @@ impl WorthUiMountedSessionState {
             );
         }
         let capability_report = host.capability_report().clone();
+        let mut frame = frame;
+        self.bind_pending_direct_scroll(&mut frame);
         let admitted = match self.identity.admit_prepared_frame_authority(frame) {
             Ok(admitted) => admitted,
             Err(rejection) => {
@@ -196,10 +196,8 @@ impl WorthUiMountedSessionState {
             worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
             &[worth_ui_host_contract::UiSemanticSurfaceIdentity],
             Option<&crate::runtime::appearance::UiActiveThemeBinding>,
-        ) -> Result<
-            Vec<crate::mounting::UiMountedAppearanceSurfaceOverlayInput>,
-            (),
-        >,
+        )
+            -> Result<crate::mounting::UiMountedAppearanceDerivedInput, ()>,
     ) -> UiMountedPublicationTransition {
         let admission =
             match self
@@ -226,8 +224,8 @@ impl WorthUiMountedSessionState {
             &surfaces,
             admission.frame().prepared_theme_binding(),
         ) {
-            Ok(overlays) => admission
-                .lower_appearance_with_overlays(capability_report.appearance_profile(), &overlays),
+            Ok(derived) => admission
+                .lower_appearance_with_overlays(capability_report.appearance_profile(), &derived),
             Err(()) => admission.deny_appearance_output(),
         };
         let (admission, appearance_batch) = match appearance.admit_appearance_retention() {

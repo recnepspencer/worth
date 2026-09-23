@@ -52,6 +52,27 @@ impl<'runtime> IndexAccess<'runtime> {
             .latest_generation(index_id, definition.branch_scoped.then_some(branch_id))
     }
 
+    /// Finds the installed definition with the same semantic identity.
+    ///
+    /// The caller-supplied numeric identity is deliberately ignored: a
+    /// recovered owner must bind the identity restored with the checkpoint,
+    /// not allocate a look-alike definition after recovery.
+    pub fn matching_definition(
+        &self,
+        expected: &DerivedIndexDefinition,
+    ) -> Option<DerivedIndexDefinition> {
+        self.runtime
+            .indexes
+            .definitions()
+            .into_iter()
+            .find(|candidate| {
+                candidate.name == expected.name
+                    && candidate.kind == expected.kind
+                    && candidate.branch_scoped == expected.branch_scoped
+            })
+            .map(|definition| definition.as_ref().clone())
+    }
+
     pub fn published_generation_for_commit(
         &self,
         index_id: DerivedIndexId,

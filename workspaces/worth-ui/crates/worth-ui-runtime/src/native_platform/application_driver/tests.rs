@@ -1,3 +1,5 @@
+#[path = "tests/motion_settlement.rs"]
+mod motion_settlement;
 #[path = "tests/shutdown.rs"]
 mod shutdown;
 

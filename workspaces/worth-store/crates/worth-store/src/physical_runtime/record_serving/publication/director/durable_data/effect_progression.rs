@@ -73,6 +73,23 @@ impl<'director, 'media> DurableFrameDispatch<'director, 'media> {
                 ),
             );
         }
+        // Only a rewrite's candidates are read back; ordinary appends keep
+        // their residency-accounted path even after a rewrite set the root's
+        // maintenance protocol.
+        if durable.carries_rewrite()
+            && !super::candidate_verification::candidates_read_back_exactly(
+                self.media,
+                durable.data_frames(),
+            )
+        {
+            return PhysicalDataDispatchOutcome::Indeterminate(
+                IndeterminatePhysicalDataDispatch::new(
+                    durable,
+                    effects,
+                    PhysicalDataDispatchFailureCause::CandidateReadBackMismatch,
+                ),
+            );
+        }
         PhysicalDataDispatchOutcome::Dispatched(DataDispatchedPhysicalMutation::new(
             durable, effects,
         ))

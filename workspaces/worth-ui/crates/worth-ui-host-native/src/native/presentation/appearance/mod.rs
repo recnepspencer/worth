@@ -22,6 +22,7 @@ mod replay;
 #[cfg(test)]
 mod replay_tests;
 mod retained;
+mod scroll_chrome_pipeline;
 #[cfg(feature = "certification-support")]
 mod surface_certification;
 mod surface_pipeline;
@@ -46,6 +47,8 @@ mod outline_tests;
 #[cfg(test)]
 mod retained_tests;
 #[cfg(test)]
+mod scroll_chrome_tests;
+#[cfg(test)]
 mod surface_tests;
 #[cfg(test)]
 mod surface_wgpu_tests;
@@ -59,6 +62,7 @@ pub(crate) use outline_pipeline::UiNativeOutlinePipeline;
 pub(crate) use retained::{
     UiNativeAppearanceCommandUndo, UiNativeAppearanceRetained, UiNativeTextCoverageUndo,
 };
+pub(crate) use scroll_chrome_pipeline::UiNativeScrollChromePipeline;
 pub(crate) use surface_pipeline::{
     UiNativeSurfacePipeline, UiNativeSurfacePrimitive, UiNativeSurfaceRasterOperation,
 };

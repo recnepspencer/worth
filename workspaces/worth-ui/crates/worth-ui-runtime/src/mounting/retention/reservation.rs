@@ -120,8 +120,25 @@ impl UiMountedRetentionReservation {
 
     pub(crate) fn refresh_visual_regions(
         &mut self,
-        visual_regions: super::super::UiMountedVisualRegionBasis,
-    ) -> Result<(), UiMountedRetentionRefreshDenial> {
+        mut visual_regions: super::super::UiMountedVisualRegionBasis,
+        surfaces: &[worth_ui_host_contract::UiMountedSurfaceBindingRequirement],
+    ) -> Result<crate::mounting::UiHitTestSpatialWork, UiMountedRetentionRefreshDenial> {
+        let mut hit_work = crate::mounting::UiHitTestSpatialWork::default();
+        {
+            let authority = self.authority.borrow();
+            if authority.revision != self.expected_revision {
+                return Err(UiMountedRetentionRefreshDenial::RevisionChanged);
+            }
+            for surface in surfaces {
+                if let Some(previous) = authority.surface_evidence(surface.semantic_surface()) {
+                    hit_work.merge(
+                        visual_regions
+                            .presented_hits
+                            .inherit_accepted_scroll(&previous.hit_index(), surface.binding()),
+                    );
+                }
+            }
+        }
         let candidate = self
             .successor
             .current
@@ -188,7 +205,7 @@ impl UiMountedRetentionReservation {
             .insert(self.identity, replacement_bytes);
         authority.in_flight_structural_bytes = in_flight_bytes;
         self.structural_bytes = replacement_bytes;
-        Ok(())
+        Ok(hit_work)
     }
 
     pub(crate) const fn identity(&self) -> UiMountedRetentionReservationIdentity {

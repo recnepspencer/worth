@@ -256,6 +256,13 @@ impl<'session> WorthUiActiveFrameworkTurnCompletion<'session> {
                     Some(&mut *execution.overlay_composition_owners),
                 );
                 execution.settle_new_mounted_owner_receipts(owner_receipts, &outcome);
+                super::active_application_session::settle_presented_scroll_extent(
+                    execution.scroll.as_deref_mut(),
+                    execution.motion.as_deref_mut(),
+                    execution.mounted,
+                    &outcome,
+                    now,
+                );
                 Ok(outcome)
             }
         }

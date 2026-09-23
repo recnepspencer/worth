@@ -28,12 +28,16 @@ use super::{
 };
 
 mod binding_denial;
+mod checkpoint;
+mod preparation;
+mod program_activation_recovery;
 mod program_activation_seeding;
 mod publication;
 mod publication_target;
 mod seed_batches;
 use binding_denial::map_binding_denial_kind;
 mod truth_partition;
+pub(super) use program_activation_recovery::recover_program_activation;
 use program_activation_seeding::commit_initial_program_activation;
 pub(super) use program_activation_seeding::WorthQueryProgramActivationSeed;
 pub use publication::WorthQueryPrimaryGraphPublication;
@@ -71,6 +75,9 @@ pub struct WorthQueryPrimaryGraphBootstrap<Schema> {
     committed_relation_count: usize,
     last_seed_commit_id: Option<worth_relational::facade::history::CommitId>,
     seed_batch_failed: bool,
+    pub(super) recovered_publication: Option<WorthQueryPrimaryGraphPublication>,
+    recovered_relational_authority:
+        Option<worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority>,
     pub(super) mutation_handlers: super::handler::PendingMutationHandlerRegistry<Schema>,
     /// The initial program this installation activates, seeded before any
     /// ordinary bootstrap row so those rows are validated under its rules.
@@ -81,140 +88,16 @@ pub struct WorthQueryPrimaryGraphBootstrap<Schema> {
     _schema: PhantomData<fn() -> Schema>,
 }
 
-impl WorthQueryExecutionInstallationAuthority {
-    pub fn prepare_primary_graph<Schema>(
-        &self,
-        runtime: &WorthQueryExecutionRuntime,
-        installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
-        product_world_resources: crate::domain_computation::execution_runtime::product_world::WorthQueryProductWorldResources,
-    ) -> Result<WorthQueryPrimaryGraphBootstrap<Schema>, WorthQueryPrimaryGraphInstallationDenial>
-    where
-        Schema: ApplicationSchema,
-    {
-        let factories =
-            WorthQueryApplicationInvariantFactories::for_installed_schema(installed_schema);
-        self.prepare_primary_graph_with_relational_runtime_and_invariants(
-            runtime,
-            installed_schema,
-            RelationalRuntimeApi::builder().build(),
-            product_world_resources,
-            factories,
-        )
-    }
-
-    pub(crate) fn prepare_primary_graph_with_relational_runtime<Schema>(
-        &self,
-        runtime: &WorthQueryExecutionRuntime,
-        installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
-        relational_runtime: RelationalRuntime,
-        product_world_resources: crate::domain_computation::execution_runtime::product_world::WorthQueryProductWorldResources,
-    ) -> Result<WorthQueryPrimaryGraphBootstrap<Schema>, WorthQueryPrimaryGraphInstallationDenial>
-    where
-        Schema: ApplicationSchema,
-    {
-        let factories =
-            WorthQueryApplicationInvariantFactories::for_installed_schema(installed_schema);
-        self.prepare_primary_graph_with_relational_runtime_and_invariants(
-            runtime,
-            installed_schema,
-            relational_runtime,
-            product_world_resources,
-            factories,
-        )
-    }
-
-    pub(crate) fn prepare_primary_graph_with_relational_runtime_and_invariants<Schema>(
-        &self,
-        runtime: &WorthQueryExecutionRuntime,
-        installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
-        mut relational_runtime: RelationalRuntime,
-        product_world_resources: crate::domain_computation::execution_runtime::product_world::WorthQueryProductWorldResources,
-        invariant_factories: WorthQueryApplicationInvariantFactories<Schema>,
-    ) -> Result<WorthQueryPrimaryGraphBootstrap<Schema>, WorthQueryPrimaryGraphInstallationDenial>
-    where
-        Schema: ApplicationSchema,
-    {
-        if !self.belongs_to(runtime) {
-            return Err(primary_graph_denial(
-                WorthQueryPrimaryGraphInstallationDenialKind::ForeignRuntime,
-                "execution installation authority belongs to another runtime",
-            ));
-        }
-        if runtime.primary_graph().is_some() {
-            return Err(primary_graph_denial(
-                WorthQueryPrimaryGraphInstallationDenialKind::AlreadyInstalled,
-                "execution runtime already owns a primary graph",
-            ));
-        }
-        runtime
-            .installed_packages()
-            .validate_application_schema(installed_schema)
-            .map_err(|denial| {
-                primary_graph_denial(
-                    WorthQueryPrimaryGraphInstallationDenialKind::StaleInstalledSchema,
-                    denial.subject(),
-                )
-            })?;
-        let (layout, additions) = WorthQueryPrimaryGraphLayout::lower(
-            installed_schema.installed_declaration(),
-            installed_schema.native_contracts(),
-            &relational_runtime.config().schema.registry,
-        )?;
-        let registrations =
-            invariant_factories.lower(installed_schema.binding_identity(), &layout)?;
-        let expected_invariant_inventory_digest =
-            worth_relational::facade::runtime::custom_invariant_inventory_digest(&registrations);
-        let invariant_installation_receipt = relational_runtime
-            .prepare_initial_schema_installation()
-            .map_err(map_initial_schema_installation_denial)?
-            .install_with_custom_invariants(additions, registrations)
-            .map_err(map_initial_schema_installation_denial)?;
-        if invariant_installation_receipt.custom_invariant_inventory_digest()
-            != &expected_invariant_inventory_digest
-        {
-            return Err(primary_graph_denial(
-                WorthQueryPrimaryGraphInstallationDenialKind::InvariantInstallationReceiptMismatch,
-                "Relational installed an invariant inventory outside the application catalog",
-            ));
-        }
-        let graph = WorthQueryPrimaryGraph::new(
-            runtime.authority_identity(),
-            installed_schema.binding_identity(),
-            layout,
-            relational_runtime,
-        );
-        Ok(WorthQueryPrimaryGraphBootstrap {
-            runtime_authority: runtime.authority_identity(),
-            installed_packages: runtime.retain_installed_packages(),
-            graph,
-            product_world_resources,
-            rows: Vec::new(),
-            external_identities: BTreeSet::new(),
-            principal_identities: BTreeSet::new(),
-            principal_keys: BTreeSet::new(),
-            entity_keys: BTreeSet::new(),
-            pending_entity_keys: BTreeSet::new(),
-            relation_keys: BTreeSet::new(),
-            entity_rows: Vec::new(),
-            relation_rows: Vec::new(),
-            committed_principal_count: 0,
-            committed_entity_count: 0,
-            committed_relation_count: 0,
-            last_seed_commit_id: None,
-            seed_batch_failed: false,
-            mutation_handlers: Default::default(),
-            program_activation_seed: None,
-            invariant_installation_receipt,
-            expected_invariant_inventory_digest,
-            _schema: PhantomData,
-        })
-    }
-}
-
 impl<Schema> WorthQueryPrimaryGraphBootstrap<Schema>
 where
     Schema: ApplicationSchema,
 {
+    pub(super) fn take_recovered_relational_authority(
+        &mut self,
+    ) -> Option<worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority> {
+        self.recovered_relational_authority.take()
+    }
+
     pub fn bind_principal<
         Binding,
         Mapping,
@@ -330,6 +213,10 @@ where
                 "a previous installation seed batch failed",
             ));
         }
+        if let Some(publication) = self.recovered_publication {
+            runtime.install_primary_graph(self.graph);
+            return Ok(publication);
+        }
         if self.rows.is_empty() && self.committed_principal_count == 0 {
             return Err(primary_graph_denial(
                 WorthQueryPrimaryGraphInstallationDenialKind::EmptyBootstrap,
@@ -380,6 +267,7 @@ where
             application_equality_index_count,
             policy_entity_count: entity_count,
             policy_relation_count: relation_count,
+            bootstrap_commit_id: commit_id,
         })
     }
 }

@@ -109,6 +109,9 @@ impl UiNativeRetainedDrawList {
                     UiMountedAppearanceMechanic::Backdrop(value) => {
                         UiNativeAppearanceCommand::Backdrop(value.clone())
                     }
+                    UiMountedAppearanceMechanic::ScrollChrome(value) => {
+                        UiNativeAppearanceCommand::ScrollChrome(*value)
+                    }
                     UiMountedAppearanceMechanic::Pointer(value) => {
                         UiNativeAppearanceCommand::PointerAffordance(*value)
                     }
@@ -139,6 +142,7 @@ impl UiNativeRetainedDrawList {
             .map_err(|_| Denial::CommandMismatch)?;
         retained.take_damage();
         self.staged_appearance = Some((work.requirement(), retained));
+        self.reconstruct_sampled_appearance_coverage()?;
         Ok(())
     }
 }

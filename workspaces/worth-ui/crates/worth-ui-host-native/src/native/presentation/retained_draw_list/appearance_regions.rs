@@ -37,6 +37,7 @@ impl UiNativeRetainedDrawList {
                 UiNativeAppearanceCommand::Outline(_)
                 | UiNativeAppearanceCommand::TextForeground(_)
                 | UiNativeAppearanceCommand::Backdrop(_)
+                | UiNativeAppearanceCommand::ScrollChrome(_)
                 | UiNativeAppearanceCommand::OverlayOrder(_)
                 | UiNativeAppearanceCommand::PointerAffordance(_) => continue,
             };

@@ -40,13 +40,13 @@ pub(super) fn observe(
                     }
                 }
             }
-            MouseScrollDelta::LineDelta(x_lines, y_lines) => {
+            MouseScrollDelta::LineDelta(x_notches, y_notches) => {
                 match pointer::logical_line_delta(
-                    *x_lines,
-                    *y_lines,
-                    profile.wheel_line_logical_units,
+                    *x_notches,
+                    *y_notches,
+                    profile.wheel_units_per_notch(),
                 ) {
-                    Ok((x, y)) => (x, y, UiHostScrollDeltaPrecision::Line),
+                    Ok((x, y)) => (x, y, profile.wheel_precision()),
                     Err(pointer::UiNativePointerCoordinateDenial::NotFinite) => {
                         return Some(state.terminal_disposition(
                             UiNativeInputObservationStop::CoordinateNotFinite,
@@ -60,6 +60,14 @@ pub(super) fn observe(
                 }
             }
         };
+    // Modifiers are event-time host input facts. Shift redirects only a purely
+    // vertical wheel; an explicit inline delta (including diagonal precision
+    // input) keeps both axes intact. Runtime still owns region axis policy.
+    let (x_subpixels, y_subpixels) = if state.modifiers.shift() && x_subpixels == 0 {
+        (y_subpixels, 0)
+    } else {
+        (x_subpixels, y_subpixels)
+    };
     let Some((_, _, presentation)) = state.completed else {
         return Some(state.rejection_disposition());
     };

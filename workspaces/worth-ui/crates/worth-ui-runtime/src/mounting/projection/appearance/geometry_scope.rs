@@ -12,6 +12,10 @@ pub(crate) struct UiMountedAppearanceGeometryScope {
         Result<UiAppearanceLogicalLength, UiMountedAppearanceLoweringDenial>,
     >,
     motion: crate::mounting::presentation::UiAcceptedAppearanceMotion,
+    scroll_chrome: BTreeMap<
+        worth_ui_host_contract::UiMountedInstanceIdentity,
+        Vec<super::UiMountedAppearanceScrollChromeInput>,
+    >,
 }
 
 impl UiMountedAppearanceGeometryScope {
@@ -37,6 +41,7 @@ impl UiMountedAppearanceGeometryScope {
         Self {
             fringe_by_surface,
             motion: Default::default(),
+            scroll_chrome: BTreeMap::new(),
         }
     }
 
@@ -48,6 +53,31 @@ impl UiMountedAppearanceGeometryScope {
         let mut scope = Self::new(bindings, profile);
         scope.motion = motion;
         scope
+    }
+
+    /// Carry this attempt's derived chrome, keyed by the occurrence whose node
+    /// fragment paints it, so every node lowering path can pick up its own.
+    pub(crate) fn with_scroll_chrome(
+        mut self,
+        chrome: &[super::UiMountedAppearanceScrollChromeInput],
+    ) -> Self {
+        for input in chrome {
+            self.scroll_chrome
+                .entry(input.owner_instance())
+                .or_default()
+                .push(*input);
+        }
+        self
+    }
+
+    pub(crate) fn owned_scroll_chrome(
+        &self,
+        owner: worth_ui_host_contract::UiMountedInstanceIdentity,
+    ) -> impl Iterator<Item = super::UiMountedAppearanceScrollChromeInput> + '_ {
+        self.scroll_chrome
+            .get(&owner)
+            .into_iter()
+            .flat_map(|chrome| chrome.iter().copied())
     }
 
     pub(crate) fn outline_fringe(

@@ -8,8 +8,7 @@ use worth_store_physical_integrity::VerifiedCheckpointStream;
 use worth_store_wal::WalLsnRange;
 
 use crate::physical_runtime::durability::{
-    DecodedPhysicalMutationBindingRecord, PersistedPhysicalMutationAttemptBinding,
-    PersistedPhysicalMutationFate, PhysicalBindingDecodingContext,
+    PersistedPhysicalMutationAttemptBinding, PhysicalBindingDecodingContext,
 };
 use crate::physical_runtime::{
     PhysicalDurabilityPolicyIdentity, PhysicalIdempotencyPolicy, PhysicalMutationIdentity,
@@ -18,9 +17,11 @@ use crate::physical_runtime::{
 
 mod accessors;
 mod checkpoint_basis;
+mod evidence;
 mod failure;
 #[cfg(test)]
 mod merge_tests;
+mod retirement_obligation;
 mod wal_frame_input;
 mod wal_payload;
 
@@ -29,9 +30,11 @@ pub use checkpoint_basis::{
 };
 pub use failure::StoreRecoveryBindingSampleFailure;
 use failure::{empty_failure, sample_failure};
+use retirement_obligation::retirement_obligations;
+pub use retirement_obligation::{StoreRecoveryRetiredArtifact, StoreRecoveryRetirementObligation};
 pub(super) use wal_frame_input::sample_binding;
 use wal_frame_input::RecoveryWalFrameInput;
-use wal_payload::decode_wal_member_payload;
+use wal_payload::ClassifiedWalPayload;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StoreRecoveryBindingFreshnessSample {
@@ -41,6 +44,7 @@ pub struct StoreRecoveryBindingFreshnessSample {
     policy_identity: [u8; 32],
     operations: Box<[StoreRecoveryOperationEvidence]>,
     wal_members: Box<[StoreRecoveryWalMember]>,
+    retirements: Box<[StoreRecoveryRetirementObligation]>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -94,7 +98,18 @@ pub enum StoreRecoveryBindingSampleDenial {
     RedoByteLimit,
 }
 
+/// Which WAL members the checkpoint already covers are sampled.
+///
+/// Planning redoes only the tail after the checkpoint cutoff; cleanup proves the
+/// covered members it is about to delete are terminal.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(in crate::physical_runtime::recovery_freshness) enum CheckpointCoveredMembers {
+    Skip,
+    Sample,
+}
+
 fn sample_binding_from_frames<'frame, Frame: RecoveryWalFrameInput + 'frame>(
+    covered: CheckpointCoveredMembers,
     freshness: &super::PhysicalRecoveryFreshnessAuthority,
     checkpoint_basis: Option<&StoreRecoveryCheckpointBindingBasis>,
     media: &AdmittedRecoveryFilesystemMedia,
@@ -128,17 +143,32 @@ fn sample_binding_from_frames<'frame, Frame: RecoveryWalFrameInput + 'frame>(
     let idempotency = PhysicalIdempotencyPolicy::from_recovery_binding(retention);
     let context = PhysicalBindingDecodingContext::new(store, policy, idempotency);
     let selected_generation = checkpoint.compaction_cutover().product_generation();
+    let wal_cutoff = checkpoint.compaction_cutover().wal_cutoff_lsn_exclusive();
     let mut operations = checkpoint_basis
         .ok_or_else(|| empty_failure(StoreRecoveryBindingSampleDenial::InvalidCheckpointBinding))?
         .operations(checkpoint, maximum_operation_bindings)?;
     let mut wal_members = Vec::new();
     let mut wal_group_bindings = Vec::new();
+    let mut retirement_records = Vec::new();
     let mut redo_bytes = 0_u64;
     for frame in wal_frames {
-        let (binding_bytes, canonical_redo) = decode_wal_member_payload(frame.recovery_payload())
-            .map_err(|denial| {
-            sample_failure(denial, &operations, wal_members.len(), redo_bytes)
-        })?;
+        let classified = wal_payload::classify_wal_payload(frame.recovery_payload())
+            .map_err(|denial| sample_failure(denial, &operations, wal_members.len(), redo_bytes))?;
+        let ClassifiedWalPayload::Member {
+            binding: binding_bytes,
+            redo: canonical_redo,
+        } = classified
+        else {
+            if let ClassifiedWalPayload::Retirement(record) = classified {
+                retirement_records.push(record);
+            }
+            continue;
+        };
+        if covered == CheckpointCoveredMembers::Skip
+            && frame.recovery_lsn_range().end_exclusive().get() <= wal_cutoff
+        {
+            continue;
+        }
         redo_bytes = redo_bytes
             .checked_add(canonical_redo.len() as u64)
             .ok_or_else(|| {
@@ -172,7 +202,7 @@ fn sample_binding_from_frames<'frame, Frame: RecoveryWalFrameInput + 'frame>(
                 redo_bytes,
             )
         })?;
-        let evidence = evidence_from_persisted(
+        let evidence = evidence::evidence_from_persisted(
             &binding,
             selected_generation,
             StoreRecoveryOperationFate::Indeterminate,
@@ -249,95 +279,15 @@ fn sample_binding_from_frames<'frame, Frame: RecoveryWalFrameInput + 'frame>(
             .collect::<Vec<_>>()
             .into_boxed_slice(),
         wal_members: wal_members.into_boxed_slice(),
+        retirements: retirement_obligations(retirement_records),
     })
 }
 
 fn checkpoint_evidence(
-    record: DecodedPhysicalMutationBindingRecord,
+    record: crate::physical_runtime::durability::DecodedPhysicalMutationBindingRecord,
     selected_generation: u64,
 ) -> StoreRecoveryOperationEvidence {
-    match record {
-        DecodedPhysicalMutationBindingRecord::RebuiltUnsealed(basis)
-        | DecodedPhysicalMutationBindingRecord::RebuiltGroupSealed { basis, .. } => {
-            evidence_from_basis(
-                basis.key(),
-                basis.fingerprint(),
-                basis.mutation(),
-                selected_generation,
-                StoreRecoveryOperationFate::Indeterminate,
-                None,
-            )
-        }
-        DecodedPhysicalMutationBindingRecord::WalBound { persisted, .. } => {
-            evidence_from_persisted(
-                &persisted,
-                selected_generation,
-                StoreRecoveryOperationFate::Indeterminate,
-            )
-        }
-        DecodedPhysicalMutationBindingRecord::Terminal { basis, fate } => {
-            let fate = match fate {
-                PersistedPhysicalMutationFate::Completed(_) => {
-                    StoreRecoveryOperationFate::AcknowledgedDurable
-                }
-                PersistedPhysicalMutationFate::ProvenNoEffect(_) => {
-                    StoreRecoveryOperationFate::ProvenNoEffect
-                }
-                PersistedPhysicalMutationFate::Indeterminate(_) => {
-                    StoreRecoveryOperationFate::Indeterminate
-                }
-            };
-            evidence_from_basis(
-                basis.key(),
-                basis.fingerprint(),
-                basis.mutation(),
-                selected_generation,
-                fate,
-                None,
-            )
-        }
-    }
-}
-
-fn evidence_from_persisted(
-    binding: &PersistedPhysicalMutationAttemptBinding,
-    selected_generation: u64,
-    fate: StoreRecoveryOperationFate,
-) -> StoreRecoveryOperationEvidence {
-    let attempt_binding_identity = Sha256::digest(binding.bytes()).into();
-    evidence_from_basis(
-        binding.key(),
-        binding.fingerprint(),
-        binding.mutation(),
-        selected_generation,
-        fate,
-        Some(attempt_binding_identity),
-    )
-}
-
-fn evidence_from_basis(
-    key: &crate::physical_runtime::PhysicalMutationIdempotencyKey,
-    fingerprint: PhysicalMutationRequestFingerprint,
-    mutation: PhysicalMutationIdentity,
-    selected_generation: u64,
-    fate: StoreRecoveryOperationFate,
-    attempt_binding_identity: Option<[u8; 32]>,
-) -> StoreRecoveryOperationEvidence {
-    let lease = key.lease();
-    StoreRecoveryOperationEvidence {
-        idempotency_identity: key.identity().bytes(),
-        mutation,
-        request_fingerprint: fingerprint,
-        lease_issuance_generation: lease.issuance_generation().get(),
-        lease_expiry_generation: lease.expiry_generation().get(),
-        freshness: if selected_generation >= lease.expiry_generation().get() {
-            StoreRecoveryBindingFreshness::ExpiredAtSelectedCheckpoint
-        } else {
-            StoreRecoveryBindingFreshness::Retained
-        },
-        fate,
-        attempt_binding_identity,
-    }
+    evidence::checkpoint_evidence(record, selected_generation)
 }
 
 fn merge_evidence(

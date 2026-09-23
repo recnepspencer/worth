@@ -14,7 +14,8 @@ pub(crate) mod registry;
 mod retirement;
 
 pub use bootstrap::{
-    NoEffectRuntimeWorldBootstrap, PerformedRuntimeWorldBootstrap, RuntimeWorldBootstrapIntent,
+    NoEffectRuntimeWorldBootstrap, PerformedRuntimeWorldBootstrap,
+    RecoveredRuntimeWorldRootAuthority, RuntimeWorldBootstrapIntent,
     RuntimeWorldBootstrapNoEffectCause, RuntimeWorldBootstrapOutcome,
 };
 pub(crate) use creation::LoweredBranchCreationPlan;

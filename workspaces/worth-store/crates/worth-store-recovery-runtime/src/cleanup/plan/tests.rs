@@ -8,6 +8,7 @@ use crate::entry::PhysicalRecoveryLimitDeclaration;
 fn interrupted_checkpoint_covered_wal_is_quarantined_before_limit_classification() {
     let kind = checkpoint_covered_disposition(CheckpointCoveredWalDecision {
         cleanup_safe: false,
+        unresolved_retirement: false,
         unresolved: false,
         next_count: 1,
         next_bytes: Some(1),
@@ -21,8 +22,17 @@ fn interrupted_checkpoint_covered_wal_is_quarantined_before_limit_classification
 
 #[test]
 fn cleanup_limit_dimensions_remain_causally_distinct() {
+    let retirement = checkpoint_covered_disposition(CheckpointCoveredWalDecision {
+        cleanup_safe: true,
+        unresolved_retirement: true,
+        unresolved: false,
+        next_count: 1,
+        next_bytes: Some(1),
+        limits: cleanup_limits(1, 1),
+    });
     let unresolved = checkpoint_covered_disposition(CheckpointCoveredWalDecision {
         cleanup_safe: true,
+        unresolved_retirement: false,
         unresolved: true,
         next_count: 1,
         next_bytes: Some(1),
@@ -30,6 +40,7 @@ fn cleanup_limit_dimensions_remain_causally_distinct() {
     });
     let candidates = checkpoint_covered_disposition(CheckpointCoveredWalDecision {
         cleanup_safe: true,
+        unresolved_retirement: false,
         unresolved: false,
         next_count: 2,
         next_bytes: Some(1),
@@ -37,6 +48,7 @@ fn cleanup_limit_dimensions_remain_causally_distinct() {
     });
     let bytes = checkpoint_covered_disposition(CheckpointCoveredWalDecision {
         cleanup_safe: true,
+        unresolved_retirement: false,
         unresolved: false,
         next_count: 1,
         next_bytes: Some(2),
@@ -44,11 +56,18 @@ fn cleanup_limit_dimensions_remain_causally_distinct() {
     });
     let eligible = checkpoint_covered_disposition(CheckpointCoveredWalDecision {
         cleanup_safe: true,
+        unresolved_retirement: false,
         unresolved: false,
         next_count: 1,
         next_bytes: Some(1),
         limits: cleanup_limits(1, 1),
     });
+    assert_eq!(
+        retirement,
+        RecoveryCleanupDispositionKind::Deferred(
+            RecoveryCleanupDeferralReason::UnresolvedRetirement
+        )
+    );
     assert_eq!(
         unresolved,
         RecoveryCleanupDispositionKind::Deferred(

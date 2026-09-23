@@ -1,15 +1,16 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 use std::sync::{Arc, Mutex};
 
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
-use worth_relational::facade::indexes::{DerivedIndexDefinition, DerivedIndexKind};
 use worth_relational::facade::runtime::RelationalRuntime;
 
 use super::schema_layout::WorthQueryPrimaryGraphLayout;
 use crate::domain_computation::execution_runtime::product_world::WorthQueryRelationalSourceOwner;
 
+mod index_installation;
 #[cfg(test)]
 mod test_inspection;
+use index_installation::register_primary_graph_indexes;
 
 /// Execution-owned primary logical graph for one installed application schema.
 ///
@@ -36,71 +37,34 @@ impl WorthQueryPrimaryGraph {
     pub(super) fn new(
         runtime_authority: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
         binding_identity: ApplicationSchemaBindingIdentity,
-        mut layout: WorthQueryPrimaryGraphLayout,
+        layout: WorthQueryPrimaryGraphLayout,
         runtime: RelationalRuntime,
     ) -> Self {
+        Self::install(runtime_authority, binding_identity, layout, runtime, false)
+            .expect("ordinary primary-graph index registration is infallible")
+    }
+
+    pub(super) fn from_recovered_runtime(
+        runtime_authority: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+        binding_identity: ApplicationSchemaBindingIdentity,
+        layout: WorthQueryPrimaryGraphLayout,
+        runtime: RelationalRuntime,
+    ) -> Result<Self, String> {
+        Self::install(runtime_authority, binding_identity, layout, runtime, true)
+    }
+
+    fn install(
+        runtime_authority: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
+        binding_identity: ApplicationSchemaBindingIdentity,
+        mut layout: WorthQueryPrimaryGraphLayout,
+        runtime: RelationalRuntime,
+        recovered: bool,
+    ) -> Result<Self, String> {
         let relational_runtime_instance_id = runtime.main_branch_identity().runtime_instance_id();
-        let mut indexes_by_locator = BTreeMap::new();
-        for (binding, binding_layout) in layout.principal_bindings_mut() {
-            let installed = runtime.index_authority().register(DerivedIndexDefinition {
-                index_id: worth_relational::facade::indexes::DerivedIndexId(0),
-                name: format!("application-principal.{binding}"),
-                kind: DerivedIndexKind::EntityField {
-                    field_locator: binding_layout.identity_locator.clone(),
-                },
-                branch_scoped: false,
-            });
-            binding_layout.index_id = installed.index_id;
-            indexes_by_locator.insert(binding_layout.identity_locator.clone(), installed.index_id);
-        }
-        for ((entity, aspect, field), field_layout) in layout.equality_fields_mut() {
-            let index_id = indexes_by_locator
-                .get(&field_layout.locator)
-                .copied()
-                .unwrap_or_else(|| {
-                    let installed = runtime.index_authority().register(DerivedIndexDefinition {
-                        index_id: worth_relational::facade::indexes::DerivedIndexId(0),
-                        name: format!("application-entity.{entity}.{aspect}.{field}"),
-                        kind: DerivedIndexKind::EntityField {
-                            field_locator: field_layout.locator.clone(),
-                        },
-                        branch_scoped: false,
-                    });
-                    indexes_by_locator.insert(field_layout.locator.clone(), installed.index_id);
-                    installed.index_id
-                });
-            field_layout.equality_index_id = Some(index_id);
-        }
-        layout.register_continuation_orderings(|definition| {
-            runtime.index_authority().register(definition).index_id
-        });
-        layout.register_capability_grant_joins(|definition| {
-            runtime.index_authority().register(definition).index_id
-        });
-        let provider_idempotency = layout.provider_idempotency_mut();
-        let installed = runtime.index_authority().register(DerivedIndexDefinition {
-            index_id: worth_relational::facade::indexes::DerivedIndexId(0),
-            name: "worth-query-provider.idempotency-key".to_owned(),
-            kind: DerivedIndexKind::EntityField {
-                field_locator: provider_idempotency.key_locator.clone(),
-            },
-            branch_scoped: false,
-        });
-        provider_idempotency.key_index_id = installed.index_id;
-        let aftermath_causality = layout.provider_aftermath_causality_mut();
-        let installed = runtime.index_authority().register(DerivedIndexDefinition {
-            index_id: worth_relational::facade::indexes::DerivedIndexId(0),
-            name: "worth-query-provider.aftermath-causality-key".to_owned(),
-            kind: DerivedIndexKind::EntityField {
-                field_locator: aftermath_causality.key_locator.clone(),
-            },
-            branch_scoped: false,
-        });
-        aftermath_causality.key_index_id = installed.index_id;
-        super::workflow::schema::register_indexes(&runtime, layout.workflow_mut());
+        register_primary_graph_indexes(&mut layout, &runtime, recovered)?;
         let source_owner = WorthQueryRelationalSourceOwner::new(runtime, "primary")
             .expect("the installed primary graph role is canonical");
-        Self {
+        Ok(Self {
             runtime_authority,
             relational_runtime_instance_id,
             binding_identity,
@@ -114,7 +78,7 @@ impl WorthQueryPrimaryGraph {
             workflow_instance_progress_retention:
                 super::workflow::instance::default_progress_retention_shards(),
             truth_partition_role: None,
-        }
+        })
     }
 
     pub(super) fn bind_truth_partition(

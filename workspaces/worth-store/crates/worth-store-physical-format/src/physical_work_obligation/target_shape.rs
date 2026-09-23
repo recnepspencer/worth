@@ -34,6 +34,9 @@ pub(super) fn valid_target_shape(
         ) => !has_digest,
         PhysicalWorkObligationTargetCode::CatalogReplacement(_) => false,
         PhysicalWorkObligationTargetCode::RecordNamespaceSynchronization => !has_digest,
+        PhysicalWorkObligationTargetCode::ArtifactRemoval(artifact) => {
+            valid_artifact(artifact) && !has_digest
+        }
     }
 }
 

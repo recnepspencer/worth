@@ -1354,13 +1354,87 @@ before rewrite effects; Phase 4 adds actual reclamation and pressure recovery.
 Each effect-bearing phase owns its lifecycle/recovery contract; later phases
 complete the combined interference, crash and handoff evidence.
 
-Phase 1's protected-reader checkpoint is implemented: `records()` acquires
-bounded, root-indexed protection under the sole publication owner's lock;
-descendant sessions retain it through final release. Deterministic capture/
-publication races and real cold-read/membership journeys cover that boundary.
-Isolation now supplies local planning contracts without Store/Recovery imports
-or synthetic publication execution/recovery receipts. Phase 2 next joins exact
-effect scopes and bounded class-aware dispatch to the existing scheduler.
+### C.10 Current Contract And Successor Links
+
+All seven phases are implemented on the sole production path:
+
+- **Protected reads (Phase 1).** `ServingPhysicalRuntime::records()` acquires
+  bounded, root-indexed protection under the sole publication owner's lock and
+  fails as `PhysicalReadProtectionDenial`; descendant sessions and chunks retain
+  it through final release. Isolation supplies local planning contracts only,
+  without Store/Recovery imports or synthetic execution/recovery receipts.
+- **Exact effects and dispatch (Phase 2).** Every physical effect lowers
+  exhaustively into exact artifact, range, root, WAL, allocator and namespace
+  keys; disjoint effects overlap and real overlaps serialize at their own key.
+  The one C.5.1 scheduler serves foreground and background from one permit
+  stream: a ready background head earns a dispatch after at most three
+  foreground dispatches, and an owed turn cannot be stolen by foreground refill.
+- **Record-preserving rewrite (Phase 3).** `PhysicalRecordSubmission`'s
+  `rewrite_selected_inline_segment`, `rewrite_selected_inline_pages`,
+  `rewrite_selected_extent_record` (copy-on-write extent generation g+1) and
+  planned inline-artifact rewrites are caller-submitted managed mutations with
+  canonical rewrite redo. Retained-storage growth and pending-publication
+  admission precede any WAL/data effect; growth refusal is the typed
+  `PhysicalMutationProvenNoEffectCause::RetentionPressure`, a durable
+  predecessor is `ScopeConflict`, and a published predecessor is
+  `SourceChanged`. A span rewrite publishes a compact destination generation
+  from frame 0.
+- **Retirement and bounded retention (Phase 4).**
+  `ServingPhysicalRuntime::retire_displaced_segment()` claims one displaced
+  generation only when no live reader protects it, makes the intent WAL-durable,
+  checkpoints the successor root, deletes, synchronizes the namespace and then
+  releases the charge. `PhysicalRetirementDenial` names each refusal. The
+  default profile reserves progress headroom inside hard byte and obligation
+  ceilings, and widens the byte ceiling by the declared retained WAL tail.
+- **Lifecycle and crash completion (Phase 5).** Cancellation, deadlines,
+  abandonment, close/drain and fresh incarnations settle once. Fresh recovery
+  reconciles mixed append/rewrite tails, span layouts, retirement intent and
+  uncertain deletion from persisted authority, and a second reopen is
+  idempotent.
+- **Interference and scale (Phase 6).** Canonical larger-than-memory
+  interleaving, independent lease/root/ready-queue/artifact-scope axes,
+  16/32/64 KiB page variants, delayed-sync pressure and flat retirement-index
+  cost are covered by `physical_record_journeys::maintenance_interference`. The
+  128x resident-budget world runs in the scheduled release-scale lane.
+- **Final cutover (Phase 7).** No alternate admission or execution path remains.
+  Recovery integrity ingress no longer carries unused selector admissions or
+  projection fields. Boundary rules pin isolation's downward dependencies,
+  live-plan/retirement constructor privacy, exhaustive effect lowering and
+  executor-only maintenance effects.
+
+Matrix review against actual behavior found two gaps, now closed. Growth refusal
+was reported as generic pre-seal admission denial; it is now the distinct
+`RetentionPressure` cause at pending-publication, candidate and WAL-group
+admission. No test damaged a rewrite source; a damaged-source twin now proves
+refusal before owner entry with no write. The remaining rows have direct
+evidence at their named boundary. Rewrite candidates are read back from media
+and compared with their WAL-bound bytes before root publication; a mismatch
+ends the dispatch as indeterminate (`CandidateReadBackMismatch`) and publishes
+no root. The following limits are disclosed, not claimed:
+
+- **Backend posture.** Only `PosixFileFsyncDirSync` and
+  `WindowsFlushFileBuffers` admit platform durability, and the process and
+  interference evidence ran on the development Windows host. No named
+  deployment is hardware-qualified. A process kill does not model power loss.
+- **QoS.** The scheduler admits only bounded-interference foreground envelopes.
+  Hard service-time bounds and soft SLO percentiles are refused before media as
+  `UnsupportedServiceTimeEnvelope`. Reserved queue slots are not device-latency
+  guarantees.
+- **Maintenance producers.** Rewrite and retirement are caller-invoked. Store
+  lowers background work only for checkpoint, scrub and WAL reclamation.
+  Compaction, backup, replication, repair and blob pressure classes exist in the
+  scheduler vocabulary but have no Store producer and create no work.
+- **Disposition adapters.** Read-protection disposition adapters stay test-only
+  until a C.11 owner consumes them.
+
+C.11 receives live protected reads (`records()` and its root-bound sessions),
+safe publication and retirement through the sole publication owner, and the
+scheduled producer contracts: exact effect lowering, class-preserving dispatch,
+retention/pending-publication admission before effects, and canonical
+maintenance redo. It does not receive a certification receipt, a matrix
+verdict or semantic authority. C.12 models the actual acquire/publish/retire
+and dispatch transitions without granting capabilities. C.13 joins the
+production workload over the same facade and lifecycle.
 
 GitHub CI currently runs the Rust line-cap check only. C.10's focused,
 integration and release/manual test products remain direct implementation and
@@ -1443,6 +1517,17 @@ not acquire a global mutation lock, and shared physical coordination must not
 be represented as branch or global semantic authority.
 
 ## C.11: Layout, Index, And Native Blob Adoption
+
+Engineering specification:
+[Layout, index, and native blob adoption](physical-reconstruction-c11-layout-index-and-native-blob-adoption.md).
+It first replaces one file per extent with packed, range-allocated extent
+arenas with published free-range reuse, then fixes blob chunks, chunk-tree
+nodes, generation publications and index nodes as C.5 physical records under
+the one publication owner, the dependency
+inversion of the S.7/S.8 mechanism crates, the artifact-family registry, the
+proof-consuming reclaim protocol, the crash-seam matrix, and the phase plan
+that reaches a native blob above the residency window before any registry,
+dedupe, LSM or reclaim machinery exists.
 
 ### Goal
 
@@ -1673,7 +1758,7 @@ implementation:
 - `physical-reconstruction-c8-fresh-process-recovery-and-reopen.md`
 - `physical-reconstruction-c9-integrity-and-offline-truth.md`
 - `physical-reconstruction-c10-isolation-and-io-coordination.md`
-- `physical-reconstruction-c11-layout-index-blob-adoption.md`
+- `physical-reconstruction-c11-layout-index-and-native-blob-adoption.md`
 - `physical-reconstruction-c12-formal-owner-rebinding.md`
 - `physical-reconstruction-c13-platform-integration-and-s10-entry.md`
 

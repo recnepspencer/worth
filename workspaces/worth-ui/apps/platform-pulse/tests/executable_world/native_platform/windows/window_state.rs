@@ -4,7 +4,8 @@ use std::time::{Duration, Instant};
 use winsafe::{co, HwndPlace, POINT, SIZE};
 
 use crate::external_observation::{
-    NativeWindowVisibilityTransitionObservation, ProcessBoundNativeClientAreaObservation,
+    NativeWindowVisibilityTransitionMechanism, NativeWindowVisibilityTransitionObservation,
+    ProcessBoundNativeClientAreaObservation,
 };
 use crate::native_platform::NativePlatformFailure;
 
@@ -68,6 +69,7 @@ pub(super) fn minimize_and_restore(
     }
     bound.observation = restored;
     Ok(NativeWindowVisibilityTransitionObservation::observed(
+        NativeWindowVisibilityTransitionMechanism::IconicState,
         restored,
     ))
 }

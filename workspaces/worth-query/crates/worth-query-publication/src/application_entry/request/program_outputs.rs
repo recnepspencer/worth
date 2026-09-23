@@ -49,7 +49,7 @@ where
             return Err(WorthQueryProgramOutputCurrentnessDenial::ForeignBranch);
         }
         selected
-            .require_current_output_receipts(settlement.receipts(), maximum_work)
+            .require_current_output_settlements(settlement.retained_settlements(), maximum_work)
             .map_err(WorthQueryProgramOutputCurrentnessDenial::Output)
     }
 }

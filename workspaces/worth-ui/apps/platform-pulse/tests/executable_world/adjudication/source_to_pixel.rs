@@ -18,16 +18,17 @@ use super::{
 };
 
 #[derive(Debug)]
-pub(crate) struct ExecutableFirstFrameEvidence {
+pub(crate) struct ExecutableFirstFrameEvidence<Verdict = NativeColorVerdict> {
     process_started: PlatformPulseLifecycleObservationEnvelope,
     pending_issued: PlatformPulseQueryProjectionEvidence,
     first_frame_envelope: PlatformPulseLifecycleObservationEnvelope,
-    pending_published: PlatformPulseQueryProjectionPublished,
+    pending_issued_sequence: u64,
+    pending_published_sequence: u64,
     first_frame: PlatformPulseFirstFramePublished,
     client_area: ProcessBoundNativeClientAreaObservation,
     liveness: StableProcessLivenessObservation,
     pixels: NativeClientPixelCapture,
-    color: NativeColorVerdict,
+    verdict: Verdict,
 }
 
 pub(crate) struct CausalFirstFrameObservationSet {
@@ -59,6 +60,11 @@ pub(crate) enum ExecutableFirstFrameFailure {
     LivenessHoldTooShort(Duration),
     NativeColor(NativeColorFailure),
     Appearance(super::FirstFrameAppearanceFailure),
+    RestingScrollChrome(super::ScrollChromePixelFailure),
+    DeclaredClientExtent {
+        expected: [i64; 2],
+        observed: [i64; 2],
+    },
 }
 
 impl fmt::Display for ExecutableFirstFrameFailure {
@@ -98,39 +104,81 @@ impl fmt::Display for ExecutableFirstFrameFailure {
             ),
             Self::NativeColor(failure) => write!(formatter, "native color: {failure}"),
             Self::Appearance(failure) => write!(formatter, "appearance: {failure}"),
+            Self::RestingScrollChrome(failure) => {
+                write!(formatter, "resting scroll chrome: {failure}")
+            }
+            Self::DeclaredClientExtent { expected, observed } => write!(
+                formatter,
+                "client area {observed:?} px is not the declared extent {expected:?} px"
+            ),
         }
     }
 }
 
-pub(crate) fn adjudicate_first_frame(
+/// Adjudicate one first frame: the causal lifecycle publication, one process
+/// behind every observation, a capture the size of the client area, held
+/// liveness, and the oracle's independent pixel verdict on the captured frame.
+pub(crate) fn adjudicate_first_frame<Verdict>(
     observations: ExecutableFirstFrameObservationSet,
-) -> Result<ExecutableFirstFrameEvidence, ExecutableFirstFrameFailure> {
+    oracle: impl FnOnce(
+        &NativeClientPixelCapture,
+        ProcessBoundNativeClientAreaObservation,
+    ) -> Result<Verdict, ExecutableFirstFrameFailure>,
+) -> Result<ExecutableFirstFrameEvidence<Verdict>, ExecutableFirstFrameFailure> {
     let ExecutableFirstFrameObservationSet {
         causal,
         client_area,
         liveness,
         pixels,
     } = observations;
-    let (pending_issued, first_frame, pending_published) = require_causal_publication(&causal)?;
+    let (pending_issued, first_frame, _) = require_causal_publication(&causal)?;
     require_native_effect(first_frame)?;
     require_one_process_identity(&causal, client_area, liveness, &pixels)?;
     require_client_capture_size(client_area, &pixels)?;
     require_stable_liveness(liveness)?;
-    let color = adjudicate_native_color(&pixels, ExpectedNativeColor::Blue)
-        .map_err(ExecutableFirstFrameFailure::NativeColor)?;
-    super::adjudicate_first_frame_appearance(&pixels)
-        .map_err(ExecutableFirstFrameFailure::Appearance)?;
+    let verdict = oracle(&pixels, client_area)?;
     Ok(ExecutableFirstFrameEvidence {
         process_started: causal.process_started,
         pending_issued,
         first_frame_envelope: causal.first_frame_envelope,
-        pending_published,
+        pending_issued_sequence: causal.pending_issued.sequence().value(),
+        pending_published_sequence: causal.pending_published.sequence().value(),
         first_frame,
         client_area,
         liveness,
         pixels,
-        color,
+        verdict,
     })
+}
+
+/// The source-signal pixel oracle: the canonical positive state at its
+/// design control point and the authored first-frame dashboard appearance.
+pub(crate) fn adjudicate_source_signal_first_frame(
+    pixels: &NativeClientPixelCapture,
+    _client_area: ProcessBoundNativeClientAreaObservation,
+) -> Result<NativeColorVerdict, ExecutableFirstFrameFailure> {
+    let color = adjudicate_native_color(pixels, ExpectedNativeColor::Blue)
+        .map_err(ExecutableFirstFrameFailure::NativeColor)?;
+    super::adjudicate_first_frame_appearance(pixels)
+        .map_err(ExecutableFirstFrameFailure::Appearance)?;
+    Ok(color)
+}
+
+impl ExecutableFirstFrameEvidence<NativeColorVerdict> {
+    pub(crate) fn matching_blue_samples(&self) -> usize {
+        self.verdict.matching_samples()
+    }
+
+    pub(crate) fn sampled_pixels(&self) -> usize {
+        self.verdict.sampled_pixels()
+    }
+}
+
+impl ExecutableFirstFrameEvidence<super::VerticalThumbEvidence> {
+    /// The Recent activity thumb the first frame painted at rest.
+    pub(crate) fn resting_thumb(&self) -> super::VerticalThumbEvidence {
+        self.verdict
+    }
 }
 
 impl CausalFirstFrameObservationSet {
@@ -165,7 +213,7 @@ impl CausalFirstFrameObservationSet {
     }
 }
 
-impl ExecutableFirstFrameEvidence {
+impl<Verdict> ExecutableFirstFrameEvidence<Verdict> {
     pub(crate) fn first_frame(&self) -> PlatformPulseFirstFramePublished {
         self.first_frame
     }
@@ -178,20 +226,12 @@ impl ExecutableFirstFrameEvidence {
         self.liveness
     }
 
-    pub(crate) fn matching_blue_samples(&self) -> usize {
-        self.color.matching_samples()
-    }
-
-    pub(crate) fn sampled_pixels(&self) -> usize {
-        self.color.sampled_pixels()
-    }
-
     pub(crate) fn sequence_quad(&self) -> (u64, u64, u64, u64) {
         (
             self.process_started.sequence().value(),
-            self.pending_issued.owner_order(),
+            self.pending_issued_sequence,
             self.first_frame_envelope.sequence().value(),
-            self.pending_published.projection().owner_order(),
+            self.pending_published_sequence,
         )
     }
 

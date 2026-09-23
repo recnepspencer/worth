@@ -203,7 +203,12 @@ fn validate<Schema, Operation, Input, Scope, Query>(
 where
     Schema: ApplicationSchema,
 {
-    let receipt = settlement.receipt();
+    let receipt = settlement.application_commit_receipt().ok_or_else(|| {
+        WorthQueryApplicationAttemptDenial::new(
+            WorthQueryApplicationAttemptDenialKind::WorkflowAssessmentEvidenceMismatch,
+            prepared.required.node_path(),
+        )
+    })?;
     let fresh_branch = prepared
         .admitted
         .read_set()
@@ -214,7 +219,8 @@ where
         && source.source_root() == prepared.admitted.subject()
         && source.query_identifier == prepared.required.query()
         && source.selected_product_occurrence() == Some(receipt.product_branch().occurrence())
-        && receipt.idempotency_binding().source_identity() == Some(source.idempotency_identity())
+        && receipt.idempotency_binding().source_identity()
+            == Some(source.idempotency_identity().bytes())
         && receipt.product_branch() == fresh_branch;
     if !valid {
         return Err(WorthQueryApplicationAttemptDenial::new(
@@ -242,10 +248,13 @@ fn evidence_meaning<Query>(
         [crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact],
     >,
 ) -> WorkflowAssessmentEvidenceMeaning {
-    let receipt = settlement.receipt();
+    let receipt = settlement
+        .application_commit_receipt()
+        .expect("workflow assessment validation required a committed output receipt");
     let publication = receipt.committed_product_publication();
-    let source_identity = hex(source.idempotency_identity());
-    let output_content_identity = output_content_identity(receipt, source.idempotency_identity());
+    let source_identity = hex(source.idempotency_identity().bytes());
+    let output_content_identity =
+        output_content_identity(receipt, source.idempotency_identity().bytes());
     let publication_identity = format!(
         "{}:{}:{}:{}:{}:{}:{}:{}:{}",
         publication.product_branch().owner_identity().get(),

@@ -12,6 +12,7 @@ mod cleanup;
 mod client_close;
 #[cfg(feature = "certification-support")]
 mod client_close_certification;
+mod client_invocation;
 mod close_request;
 mod completion_report;
 mod contract;
@@ -39,6 +40,7 @@ mod terminal_cleanup;
 mod tests;
 mod thread_posture;
 mod window_port;
+mod windowing_system;
 
 #[cfg(test)]
 use run::stop_before_callbacks;
@@ -60,13 +62,13 @@ pub use contract::{
     UiNativeClientTextPresentationWorkObservation, UiNativeClientVisualCoordinateOrientation,
     UiNativeClientVisualCoordinateRounding, UiNativeClientVisualPixelColorSpace,
     UiNativeClientVisualSnapshotInput, UiNativeClientVisualSnapshotObservation,
-    UiNativeClientVisualSnapshotRelation, UiNativeEventLoopClient, UiNativeEventLoopClientCleanup,
-    UiNativeEventLoopClientClose, UiNativeEventLoopClientFailure, UiNativeEventLoopDirective,
-    UiNativeEventLoopRunDenial, UiNativeEventLoopRunReport,
-    UiNativeEventLoopShutdownOverlapObservation, UiNativeEventLoopStopReport,
-    UiNativeInputReachability, UiNativeObservationReadinessGrant, UiNativeObservationTimeProgress,
-    UiNativePhysicalProgressClass, UiNativePhysicalProgressGrant, UiNativeReadinessGrant,
-    UiNativeReducedMotionPosture,
+    UiNativeClientVisualSnapshotRelation, UiNativeEventLoopClient, UiNativeEventLoopClientCallback,
+    UiNativeEventLoopClientCleanup, UiNativeEventLoopClientClose, UiNativeEventLoopClientDenial,
+    UiNativeEventLoopClientFailure, UiNativeEventLoopDirective, UiNativeEventLoopRunDenial,
+    UiNativeEventLoopRunReport, UiNativeEventLoopShutdownOverlapObservation,
+    UiNativeEventLoopStopReport, UiNativeInputReachability, UiNativeObservationReadinessGrant,
+    UiNativeObservationTimeProgress, UiNativePhysicalProgressClass, UiNativePhysicalProgressGrant,
+    UiNativeReadinessGrant, UiNativeReducedMotionPosture,
 };
 use physical_clock::UiNativePhysicalEventClock;
 pub use presentation_correlation::UiNativePhysicalPresentationCorrelation;

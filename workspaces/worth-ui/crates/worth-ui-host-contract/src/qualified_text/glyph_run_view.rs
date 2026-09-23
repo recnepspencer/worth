@@ -20,6 +20,7 @@ pub struct UiGlyphRunView {
     line_index: u32,
     visual_run_index: u32,
     clip_bounds: UiMountedCanonicalBox,
+    intrinsic_clip_bounds: UiMountedCanonicalBox,
     layer_semantic_order: u32,
 }
 
@@ -37,6 +38,7 @@ pub struct UiGlyphRunViewInput {
     pub line_index: u32,
     pub visual_run_index: u32,
     pub clip_bounds: UiMountedCanonicalBox,
+    pub intrinsic_clip_bounds: UiMountedCanonicalBox,
     pub layer_semantic_order: u32,
 }
 
@@ -55,6 +57,7 @@ impl UiGlyphRunView {
             line_index: input.line_index,
             visual_run_index: input.visual_run_index,
             clip_bounds: input.clip_bounds,
+            intrinsic_clip_bounds: input.intrinsic_clip_bounds,
             layer_semantic_order: input.layer_semantic_order,
         }
     }
@@ -103,6 +106,10 @@ impl UiGlyphRunView {
         self.clip_bounds
     }
 
+    pub const fn intrinsic_clip_bounds(self) -> UiMountedCanonicalBox {
+        self.intrinsic_clip_bounds
+    }
+
     pub const fn layer_semantic_order(self) -> u32 {
         self.layer_semantic_order
     }
@@ -138,11 +145,12 @@ impl UiGlyphRunView {
         bytes.extend_from_slice(&self.origin_y_millipoints().to_le_bytes());
         bytes.extend_from_slice(&self.line_index().to_le_bytes());
         bytes.extend_from_slice(&self.visual_run_index().to_le_bytes());
-        let clip = self.clip_bounds();
-        bytes.extend_from_slice(&clip.x().to_bits().to_le_bytes());
-        bytes.extend_from_slice(&clip.y().to_bits().to_le_bytes());
-        bytes.extend_from_slice(&clip.width().to_bits().to_le_bytes());
-        bytes.extend_from_slice(&clip.height().to_bits().to_le_bytes());
+        for clip in [self.clip_bounds(), self.intrinsic_clip_bounds()] {
+            bytes.extend_from_slice(&clip.x().to_bits().to_le_bytes());
+            bytes.extend_from_slice(&clip.y().to_bits().to_le_bytes());
+            bytes.extend_from_slice(&clip.width().to_bits().to_le_bytes());
+            bytes.extend_from_slice(&clip.height().to_bits().to_le_bytes());
+        }
         bytes.extend_from_slice(&self.layer_semantic_order().to_le_bytes());
         bytes
     }
@@ -243,6 +251,7 @@ mod tests {
             line_index: 2,
             visual_run_index: 3,
             clip_bounds: mechanic_clip(),
+            intrinsic_clip_bounds: mechanic_clip(),
             layer_semantic_order: 4,
         });
         assert_eq!(view.mechanic(), mechanic);

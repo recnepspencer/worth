@@ -160,6 +160,7 @@ impl WorthUiMountedSessionState {
             preserve_for_rebind,
         );
         let semantic_surface = self.identity.commit_surface_deregistration(candidate);
+        self.retire_direct_scroll_surface(semantic_surface);
         self.retention.retire_surface(semantic_surface);
         if !preserve_for_rebind {
             self.selection_bindings.retire_surface(semantic_surface);
@@ -290,6 +291,7 @@ impl WorthUiMountedSessionState {
         let mut successor_geometry = self.occurrence_geometry.clone();
         let affected = successor_geometry.retire_instance(identity);
         self.identity.unmount(identity, &affected)?;
+        self.retire_direct_scroll_occurrence(identity);
         self.occurrence_geometry = successor_geometry;
         self.selection_bindings.retire_mount(identity);
         Ok(())

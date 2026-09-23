@@ -165,13 +165,14 @@ fn settle_staged_sample(
     }
 }
 
+/// A command that clips to nothing, or that a sample fades to zero opacity,
+/// has no sampled bounds. The retained transaction already represents that as
+/// no bounds, so this reports it rather than treating it as malformed.
 pub(super) fn sampled_command_bounds(
     command: &UiMountedPaintCommand,
     change: Option<UiMountedPresentationSampleChange>,
-) -> Result<UiMountedCanonicalBox, UiHostSurfacePresentationDenial> {
-    super::retained_draw_list::sampled_visible_bounds(command, change)
-        .map_err(|_| malformed())?
-        .ok_or_else(malformed)
+) -> Result<Option<UiMountedCanonicalBox>, UiHostSurfacePresentationDenial> {
+    super::retained_draw_list::sampled_visible_bounds(command, change).map_err(|_| malformed())
 }
 
 pub(super) fn transform_physical_box(

@@ -9,6 +9,7 @@ use worth_ui_host_contract::{
     UiSurfaceBindingGeneration,
 };
 
+mod pointer_capture;
 mod recipient_absence;
 mod scroll;
 

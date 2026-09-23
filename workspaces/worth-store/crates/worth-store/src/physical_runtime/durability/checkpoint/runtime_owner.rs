@@ -17,6 +17,9 @@ use crate::physical_runtime::{
     PhysicalCheckpointStartOutcome, PhysicalCheckpointStartStale,
 };
 
+#[cfg(feature = "certification-test-authority")]
+mod certification;
+
 pub(in crate::physical_runtime) struct PhysicalCheckpointRuntimeOwner {
     capture: PhysicalCheckpointCaptureOwner,
     work_runtime: Weak<crate::physical_runtime::instance::PhysicalStoreWorkRuntime>,
@@ -358,6 +361,7 @@ fn run_worker(
     };
     let terminal = result.terminal();
     owner.record_result(result, panicked);
+    owner.capture.release_background_selection();
     attempt.complete(terminal);
 }
 

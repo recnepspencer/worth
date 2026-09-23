@@ -1,10 +1,16 @@
 use std::collections::BTreeMap;
 
+mod accepted_settlement;
 mod anchor_access;
+mod direct_succession;
+pub(crate) use direct_succession::UiPreparedScrollDirectSuccession;
 #[cfg(any(test, feature = "certification-support"))]
 mod certification;
+mod layout_succession;
 mod ownership_catalog;
 mod reconciliation;
+mod route_candidate;
+mod transition_binding;
 
 use reconciliation::reconcile_owner_record;
 
@@ -28,17 +34,25 @@ struct UiScrollOwnershipCatalogRecord {
 /// Query- or host-provided extents establish bounds; only this state changes offsets.
 #[derive(Clone)]
 pub(crate) struct UiScrollRuntimeState {
+    #[cfg(test)]
+    clone_observation: route_candidate::UiScrollStateCloneObservation,
     policy: crate::declaration::UiScrollPolicy,
     owners: BTreeMap<super::UiScrollOwnerIdentity, UiScrollOwnerRecord>,
     ownership_catalog:
         BTreeMap<worth_ui_host_contract::UiMountedInstanceIdentity, UiScrollOwnershipCatalogRecord>,
     ownership_references: BTreeMap<super::UiScrollOwnerIdentity, u64>,
+    transition_targets: super::transition::UiScrollTransitionSuccession,
     counters: super::UiScrollCounters,
     ownership_resolutions: u64,
     ownership_graph_nodes_visited: u64,
     ownership_plan_nodes_visited: u64,
     revision: u64,
     last_owner: Option<super::UiScrollOwnerInspectionRecord>,
+    pending_layouts: BTreeMap<
+        worth_ui_host_contract::UiSemanticSurfaceIdentity,
+        layout_succession::UiScrollLayoutSuccessor,
+    >,
+    pending_direct: BTreeMap<super::UiScrollOwnerIdentity, UiPreparedScrollDirectSuccession>,
 }
 
 impl UiScrollRuntimeState {
@@ -53,16 +67,21 @@ impl UiScrollRuntimeState {
         policy: crate::declaration::UiScrollPolicy,
     ) -> Self {
         Self {
+            #[cfg(test)]
+            clone_observation: route_candidate::UiScrollStateCloneObservation,
             policy,
             owners: BTreeMap::new(),
             ownership_catalog: BTreeMap::new(),
             ownership_references: BTreeMap::new(),
+            transition_targets: super::transition::UiScrollTransitionSuccession::new(),
             counters: super::UiScrollCounters::new(),
             ownership_resolutions: 0,
             ownership_graph_nodes_visited: 0,
             ownership_plan_nodes_visited: 0,
             revision: 0,
             last_owner: None,
+            pending_layouts: BTreeMap::new(),
+            pending_direct: BTreeMap::new(),
         }
     }
 
@@ -77,7 +96,7 @@ impl UiScrollRuntimeState {
     }
 
     #[cfg(any(test, feature = "certification-support"))]
-    pub(in crate::runtime) fn register(
+    pub(crate) fn register(
         &mut self,
         registration: super::UiScrollOwnerRegistration,
     ) -> Result<(), super::UiScrollRouteDenial> {
@@ -147,6 +166,11 @@ impl UiScrollRuntimeState {
                 offset,
                 anchor,
             },
+        );
+        self.reconcile_transition_bounds(
+            registration.identity(),
+            registration.incarnation(),
+            registration.bounds(),
         );
         Ok(super::UiScrollAnchorReconciliationReceipt::new(
             outcome, offset,
@@ -251,12 +275,27 @@ impl UiScrollRuntimeState {
             .filter(|transition| transition.previous() != transition.current())
             .count();
         let next_counters = self.counters.after_admission(owners_visited, changed)?;
-        for (index, (entry, transition)) in request.chain().iter().zip(&transitions).enumerate() {
-            let record = self.exact_owner_mut(entry.owner(), entry.incarnation())?;
-            if let Some(bounds) = reconciled_bounds {
-                record.bounds = bounds[index];
+        // Reconciled bounds are live geometry for every owner the chain names,
+        // so they land on all of them. Only the owners the route visited have
+        // a new offset to take: a route stops where the travel runs out, and
+        // an owner it never reached is exactly where it was. Writing bounds
+        // only that far would leave an ancestor measuring itself against
+        // geometry from whenever a delta last had something left for it --
+        // which, for the zero delta a smooth wheel routes, is never.
+        if let Some(bounds) = reconciled_bounds {
+            for (index, entry) in request.chain().iter().enumerate() {
+                self.exact_owner_mut(entry.owner(), entry.incarnation())?
+                    .bounds = bounds[index];
             }
-            record.offset = transition.current();
+        }
+        for (entry, transition) in request.chain().iter().zip(&transitions) {
+            self.exact_owner_mut(entry.owner(), entry.incarnation())?
+                .offset = transition.current();
+        }
+        if let Some(bounds) = reconciled_bounds {
+            for (index, entry) in request.chain().iter().enumerate() {
+                self.reconcile_transition_bounds(entry.owner(), entry.incarnation(), bounds[index]);
+            }
         }
         self.counters = next_counters;
         self.revision = next_revision;
@@ -281,7 +320,10 @@ impl UiScrollRuntimeState {
         self.owners.clear();
         self.ownership_catalog.clear();
         self.ownership_references.clear();
+        self.release_transitions();
         self.last_owner = None;
+        self.pending_layouts.clear();
+        self.pending_direct.clear();
         released
     }
 

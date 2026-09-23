@@ -2,10 +2,7 @@ use std::fmt;
 
 use crate::external_observation::{NativeClientPixelCapture, NativeClientPixelPoint};
 
-use super::visual_contract_manifest::{
-    checked_in_adjudication_contract, PlatformPulseVisualAdjudicationContract,
-    PlatformPulseVisualContractFailure,
-};
+use super::dashboard_visual_oracle as oracle;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum ExpectedNativeColor {
@@ -22,7 +19,6 @@ pub(crate) struct NativeColorVerdict {
 
 #[derive(Debug)]
 pub(crate) enum NativeColorFailure {
-    VisualContract(PlatformPulseVisualContractFailure),
     InsufficientPixelSamples,
     ExpectedColorNotVisible {
         expected: ExpectedNativeColor,
@@ -51,9 +47,7 @@ pub(crate) fn adjudicate_native_color(
     pixels: &NativeClientPixelCapture,
     expected: ExpectedNativeColor,
 ) -> Result<NativeColorVerdict, NativeColorFailure> {
-    let manifest =
-        checked_in_adjudication_contract().map_err(NativeColorFailure::VisualContract)?;
-    let samples = signal_samples(pixels, expected, &manifest);
+    let samples = signal_samples(pixels, expected);
     let sampled_pixels = samples.len();
     let matching_samples = samples
         .iter()
@@ -69,22 +63,16 @@ pub(crate) fn adjudicate_native_color(
             samples: samples.into_boxed_slice(),
         });
     }
-    let target_point = scaled_point(
-        pixels,
-        manifest.target_logical_point(),
-        manifest.logical_client_extent(),
-    );
+    let target_point = scaled_point(pixels, oracle::REVIEW_TARGET_POINT, oracle::LOGICAL_EXTENT);
     let target_rgba = pixel_at(pixels, target_point);
     let target_point_visible = target_rgba.is_some_and(|rgba| {
         rgba[..3]
             .iter()
-            .zip(manifest.target_rgba())
-            .all(|(&observed, expected)| {
-                observed.abs_diff(expected) <= manifest.channel_tolerance()
-            })
+            .zip(oracle::REVIEW_TARGET_RGB)
+            .all(|(&observed, expected)| observed.abs_diff(expected) <= oracle::CHANNEL_TOLERANCE)
     });
     if !target_point_visible {
-        let target_summary = target_pixel_summary(pixels, &manifest);
+        let target_summary = target_pixel_summary(pixels);
         return Err(NativeColorFailure::ExpectedTargetNotVisible {
             point: target_point,
             rgba: target_rgba,
@@ -104,9 +92,7 @@ pub(crate) fn adjudicate_native_background_point(
     pixels: &NativeClientPixelCapture,
     expected: ExpectedNativeColor,
 ) -> Result<NativeClientPixelPoint, NativeColorFailure> {
-    let manifest =
-        checked_in_adjudication_contract().map_err(NativeColorFailure::VisualContract)?;
-    let expected_rgb = expected.rgb(&manifest);
+    let expected_rgb = expected.rgb();
     let mut interior = Vec::new();
     for y in 1..pixels.height().saturating_sub(1) {
         for x in 1..pixels.width().saturating_sub(1) {
@@ -117,7 +103,7 @@ pub(crate) fn adjudicate_native_background_point(
                             .iter()
                             .zip(expected_rgb)
                             .all(|(&observed, expected)| {
-                                observed.abs_diff(expected) <= manifest.channel_tolerance()
+                                observed.abs_diff(expected) <= oracle::CHANNEL_TOLERANCE
                             })
                     })
                 })
@@ -140,20 +126,15 @@ struct TargetPixelSummary {
     bounds: Option<([u32; 2], [u32; 2])>,
 }
 
-fn target_pixel_summary(
-    pixels: &NativeClientPixelCapture,
-    manifest: &PlatformPulseVisualAdjudicationContract,
-) -> TargetPixelSummary {
+fn target_pixel_summary(pixels: &NativeClientPixelCapture) -> TargetPixelSummary {
     let mut matching_pixels = 0;
     let mut minimum = [u32::MAX, u32::MAX];
     let mut maximum = [0, 0];
-    for (index, rgba) in pixels.rgba().chunks_exact(4).enumerate() {
+    for (index, rgba) in pixels.rgba().as_chunks::<4>().0.iter().enumerate() {
         let matches = rgba[..3]
             .iter()
-            .zip(manifest.target_rgba())
-            .all(|(&observed, expected)| {
-                observed.abs_diff(expected) <= manifest.channel_tolerance()
-            });
+            .zip(oracle::REVIEW_TARGET_RGB)
+            .all(|(&observed, expected)| observed.abs_diff(expected) <= oracle::CHANNEL_TOLERANCE);
         if !matches {
             continue;
         }
@@ -172,13 +153,8 @@ fn target_pixel_summary(
 fn signal_samples(
     pixels: &NativeClientPixelCapture,
     expected: ExpectedNativeColor,
-    manifest: &PlatformPulseVisualAdjudicationContract,
 ) -> Vec<NativePixelSampleObservation> {
-    let point = scaled_point(
-        pixels,
-        manifest.source_signal_logical_point(),
-        manifest.logical_client_extent(),
-    );
+    let point = scaled_point(pixels, oracle::SOURCE_SIGNAL_POINT, oracle::LOGICAL_EXTENT);
     let xs = [
         point[0].saturating_sub(1),
         point[0],
@@ -189,7 +165,7 @@ fn signal_samples(
         point[1],
         point[1].saturating_add(1),
     ];
-    let expected_rgb = expected.rgb(manifest);
+    let expected_rgb = expected.rgb();
     let mut samples = Vec::with_capacity(9);
     let width = pixels.width() as usize;
     for y in ys {
@@ -202,7 +178,7 @@ fn signal_samples(
                         .iter()
                         .zip(expected_rgb)
                         .all(|(&observed, expected)| {
-                            observed.abs_diff(expected) <= manifest.channel_tolerance()
+                            observed.abs_diff(expected) <= oracle::CHANNEL_TOLERANCE
                         });
                 samples.push(NativePixelSampleObservation {
                     x: x as usize,
@@ -253,10 +229,10 @@ impl NativeColorVerdict {
 }
 
 impl ExpectedNativeColor {
-    fn rgb(self, manifest: &PlatformPulseVisualAdjudicationContract) -> [u8; 3] {
+    fn rgb(self) -> [u8; 3] {
         match self {
-            Self::Blue => manifest.blue_rgba()[..3].try_into().expect("RGB prefix"),
-            Self::Green => manifest.green_rgba()[..3].try_into().expect("RGB prefix"),
+            Self::Blue => oracle::POSITIVE_RGB,
+            Self::Green => oracle::CAUTION_RGB,
         }
     }
 }
@@ -264,9 +240,6 @@ impl ExpectedNativeColor {
 impl fmt::Display for NativeColorFailure {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::VisualContract(failure) => {
-                write!(formatter, "Platform Pulse visual contract: {failure:?}")
-            }
             Self::InsufficientPixelSamples => {
                 formatter.write_str("native client capture yielded fewer than nine samples")
             }

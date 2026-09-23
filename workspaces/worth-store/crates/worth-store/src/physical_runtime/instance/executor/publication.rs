@@ -111,6 +111,11 @@ impl PhysicalWorkExecutor {
                     binding,
                     BackendQueueExecutionAdaptation::None,
                 ),
+            PhysicalPublicationEffect::RemoveArtifact => tree.remove_scheduled_artifact(
+                artifact,
+                binding,
+                BackendQueueExecutionAdaptation::None,
+            ),
         };
         #[cfg(feature = "certification-test-authority")]
         if matches!(effect, PhysicalPublicationEffect::ReplaceCatalog)
@@ -197,6 +202,9 @@ fn publication_recovery_target(
         }
         PhysicalPublicationEffect::SynchronizeRecordFamily => {
             crate::physical_runtime::PhysicalWorkRecoveryTarget::RecordNamespaceSynchronization
+        }
+        PhysicalPublicationEffect::RemoveArtifact => {
+            crate::physical_runtime::PhysicalWorkRecoveryTarget::ArtifactRemoval(artifact)
         }
     }
 }

@@ -6,6 +6,32 @@ use worth_ui_host_contract::UiSurfaceBindingGeneration;
 use worth_ui_host_contract::{UiHostObservationPresentationBasis, UiMountedPaintCommandIdentity};
 
 impl UiMountedPresentationCoordinator {
+    pub(in crate::mounting) fn retained_scroll_chrome_geometry(
+        &self,
+        presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
+        target: crate::runtime::motion::UiMotionTargetIdentity,
+    ) -> Option<(
+        worth_ui_host_contract::UiMountedCanonicalBox,
+        worth_ui_host_contract::UiMountedCanonicalBox,
+        worth_ui_host_contract::UiMountedCanonicalBox,
+    )> {
+        let state = self.presentation_states.get(&presentation.binding())?;
+        let requirement = state.motion_sample_requirement();
+        if self
+            .reconstruction_bindings
+            .contains(&presentation.binding())
+            || self
+                .host_truth
+                .surface_requires_reconciliation(target.semantic_surface())
+            || state.frame() != presentation.frame()
+            || requirement.host_surface() != presentation.host_surface()
+            || requirement.semantic_surface() != target.semantic_surface()
+        {
+            return None;
+        }
+        state.retained_scroll_chrome_geometry(target)
+    }
+
     pub(in crate::mounting) fn accept_published_entrance(
         &mut self,
         sample: super::super::motion_sampling::UiPresentationMotionSampleReceipt,

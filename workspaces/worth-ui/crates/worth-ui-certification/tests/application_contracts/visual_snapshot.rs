@@ -12,8 +12,9 @@ use worth_ui::facade::inspection::{
     UiVisualSnapshotRequest, UiVisualVisibleOutcome,
 };
 use worth_ui_platform_pulse::visual_identity_pulse::{
-    PlatformPulseVisualIdentityScenario, PLATFORM_PULSE_IDENTITY_TARGET_AUTHORED_NAME,
-    PLATFORM_PULSE_TARGET_RGB,
+    PlatformPulseVisualIdentityScenario, PLATFORM_PULSE_BACKGROUND_LOGICAL_POINT,
+    PLATFORM_PULSE_CANONICAL_LOGICAL_EXTENT, PLATFORM_PULSE_IDENTITY_TARGET_AUTHORED_NAME,
+    PLATFORM_PULSE_TARGET_LOGICAL_POINT, PLATFORM_PULSE_TARGET_RGB,
 };
 use worth_ui_runtime::facade::mounted::{
     UiMountedFrameOutcome, UiMountedInspectionReceipt, UiMountedInspectionRequest,
@@ -92,9 +93,27 @@ fn phase_1_request_and_product_scenario_preserve_explicit_inputs() {
         scenario.target_authored_name(),
         PLATFORM_PULSE_IDENTITY_TARGET_AUTHORED_NAME
     );
-    assert_eq!(scenario.logical_extent(), [960, 600]);
-    assert_eq!(scenario.background_logical_point(), [8, 8]);
-    assert_eq!(scenario.target_logical_point(), [304, 424]);
+    // The scenario carries the product's own canonical geometry. Restating
+    // those numbers here only proved that two copies agreed until the product
+    // world changed extent, and then the copy outlived the world it described.
+    assert_eq!(
+        scenario.logical_extent(),
+        PLATFORM_PULSE_CANONICAL_LOGICAL_EXTENT
+    );
+    assert_eq!(
+        scenario.background_logical_point(),
+        PLATFORM_PULSE_BACKGROUND_LOGICAL_POINT
+    );
+    assert_eq!(
+        scenario.target_logical_point(),
+        PLATFORM_PULSE_TARGET_LOGICAL_POINT
+    );
+    assert!(scenario.background_logical_point() != scenario.target_logical_point());
+    assert!(
+        scenario.target_logical_point()[0] < scenario.logical_extent()[0]
+            && scenario.target_logical_point()[1] < scenario.logical_extent()[1],
+        "the adjudicated target point must fall inside the captured extent"
+    );
     assert_eq!(PLATFORM_PULSE_TARGET_RGB, [172, 103, 242]);
 }
 

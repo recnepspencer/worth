@@ -21,8 +21,17 @@ mod tests;
 #[derive(Clone, Debug, Eq, PartialEq)]
 struct CommittedOutputBinding {
     posture: WorthQueryApplicationOutputPosture,
+    entity_name: String,
     entity_type: TypeId,
     entity: EntityId,
+}
+
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub(in crate::domain_computation::primary_graph) struct WorthQueryCheckpointOutputRole {
+    pub(in crate::domain_computation::primary_graph) role: String,
+    pub(in crate::domain_computation::primary_graph) posture: WorthQueryApplicationOutputPosture,
+    pub(in crate::domain_computation::primary_graph) entity_name: String,
+    pub(in crate::domain_computation::primary_graph) entity: EntityId,
 }
 
 /// Sealed role-to-identity correspondence resolved from one Relational commit.
@@ -86,6 +95,54 @@ impl<Binding, Entity> WorthQueryApplicationOutputFamilyEntry<'_, Binding, Entity
 }
 
 impl WorthQueryApplicationOutputCorrespondence {
+    pub(in crate::domain_computation::primary_graph) fn from_checkpoint_roles(
+        binding_type: TypeId,
+        roles: Vec<WorthQueryCheckpointOutputRole>,
+        mut entity_type: impl FnMut(&str) -> Option<TypeId>,
+    ) -> Result<Self, String> {
+        let mut rebound = BTreeMap::new();
+        for role in roles {
+            super::output_correspondence::role::validate_output_role_name(&role.role)
+                .map_err(|denial| format!("checkpoint output role {}: {denial}", role.role))?;
+            let marker = entity_type(&role.entity_name).ok_or_else(|| {
+                format!(
+                    "checkpoint output role {} names an uninstalled entity {}",
+                    role.role, role.entity_name
+                )
+            })?;
+            let binding = CommittedOutputBinding {
+                posture: role.posture,
+                entity_name: role.entity_name,
+                entity_type: marker,
+                entity: role.entity,
+            };
+            if rebound.insert(role.role.clone(), binding).is_some() {
+                return Err(format!(
+                    "checkpoint output role {} is duplicated",
+                    role.role
+                ));
+            }
+        }
+        Ok(Self {
+            binding_type: Some(binding_type),
+            roles: rebound,
+        })
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn checkpoint_roles(
+        &self,
+    ) -> Vec<WorthQueryCheckpointOutputRole> {
+        self.roles
+            .iter()
+            .map(|(role, binding)| WorthQueryCheckpointOutputRole {
+                role: role.clone(),
+                posture: binding.posture,
+                entity_name: binding.entity_name.clone(),
+                entity: binding.entity,
+            })
+            .collect()
+    }
+
     pub(in crate::domain_computation::primary_graph) fn workflow_content_identity(
         &self,
     ) -> [u8; 32] {

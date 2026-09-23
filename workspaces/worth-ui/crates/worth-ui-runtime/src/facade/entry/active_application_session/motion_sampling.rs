@@ -131,27 +131,38 @@ impl super::WorthUiActiveApplicationSession {
         &mut self,
         settlement: crate::mounting::UiMountedMotionSampleSettlement,
     ) {
-        if let crate::mounting::UiMountedMotionSampleSettlement::Committed(mut sampling) =
-            settlement
-        {
-            if let (Some(presented), Some(portal)) =
-                (sampling.presented_surface(), self.portal.as_mut())
-            {
-                portal.rebind_presented_motion_presentation(
-                    presented.semantic_surface(),
-                    presented.presentation(),
-                );
+        match settlement {
+            crate::mounting::UiMountedMotionSampleSettlement::Committed(mut sampling) => {
+                if let (Some(presented), Some(portal)) =
+                    (sampling.presented_surface(), self.portal.as_mut())
+                {
+                    portal.rebind_presented_motion_presentation(
+                        presented.semantic_surface(),
+                        presented.presentation(),
+                    );
+                }
+                if let Some(transition) = sampling.take_hit_transition() {
+                    self.interaction
+                        .observe_presented_hit_transition(&transition, &self.mounted);
+                }
+                for terminal in sampling.terminals().iter().copied() {
+                    self.settle_motion_terminal_request(terminal);
+                }
+                if let Some(presented) = sampling.presented_surface() {
+                    self.refresh_motion_appearance_owner_receipt_sources();
+                    // Every completion path, including an input drain, must make
+                    // Scroll geometry agree with these accepted pixels before a
+                    // pointer can derive a grab and retire the sample.
+                    self.settle_accepted_scroll_sample(presented.presentation());
+                }
             }
-            if let Some(transition) = sampling.take_hit_transition() {
-                self.interaction
-                    .observe_presented_hit_transition(&transition, &self.mounted);
+            crate::mounting::UiMountedMotionSampleSettlement::Discarded => {
+                self.finish_pending_scroll_chrome_capture();
             }
-            for terminal in sampling.terminals().iter().copied() {
-                self.settle_motion_terminal_request(terminal);
+            crate::mounting::UiMountedMotionSampleSettlement::PresentationIndeterminate => {
+                self.interaction.scroll_chrome_latch_mut().take_pending();
             }
-            if sampling.presented_surface().is_some() {
-                self.refresh_motion_appearance_owner_receipt_sources();
-            }
+            crate::mounting::UiMountedMotionSampleSettlement::Deferred => {}
         }
     }
 

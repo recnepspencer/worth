@@ -43,8 +43,8 @@ pub(crate) fn assert_touched_record_slopes() {
         assert_eq!(work.invariant_state_fact_count(), touched_records);
         assert_eq!(
             work.invariant_work_units(),
-            touched_records as u64,
-            "one fixed Input decision read is charged for each touched record"
+            touched_records as u64 + 1,
+            "one Input decision read per touched record plus the fixed workflow-publication immutability check"
         );
         assert_eq!(
             receipt.terminal().kind(),

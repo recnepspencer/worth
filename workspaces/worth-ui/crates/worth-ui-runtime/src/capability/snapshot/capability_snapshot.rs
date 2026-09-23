@@ -16,6 +16,9 @@ use super::{CapabilitySnapshotDigest, SnapshotMetrics};
 #[path = "authored_role_succession.rs"]
 mod authored_role_succession;
 
+#[path = "authored_scroll_region_succession.rs"]
+mod authored_scroll_region_succession;
+
 /// Immutable capability snapshot consumed by later lowering phases.
 #[derive(Debug, Eq, PartialEq)]
 pub struct CapabilitySnapshot {

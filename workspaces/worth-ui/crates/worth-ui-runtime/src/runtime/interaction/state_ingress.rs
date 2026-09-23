@@ -23,10 +23,19 @@ impl super::UiInteractionRuntimeState {
         batch: crate::facade::observation_report::UiValidatedHostObservationBatch,
         mounted: &crate::mounting::WorthUiMountedSessionState,
         generation: &WorthUiActiveApplicationGenerationIdentity,
+        claimed_elsewhere: &[worth_ui_host_contract::UiHostObservationSequence],
     ) -> UiInteractionBatchReceipt {
         let core = batch.canonical_core();
         let mut receipt = receipt::UiInteractionBatchReceiptBuilder::default();
         for validated in batch.reports() {
+            // A report another lane already answered for is not this owner's to
+            // route: scroll chrome claims the press that landed on a scrollbar
+            // and the moves of the pointer it captured, and routing them again
+            // here would press whatever node the bar is drawn over.
+            if claimed_elsewhere.contains(&validated.report().sequence()) {
+                receipt.record(report::claimed_elsewhere());
+                continue;
+            }
             receipt.record(report::process(
                 self,
                 core,

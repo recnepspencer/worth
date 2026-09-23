@@ -118,6 +118,7 @@ where
                 application,
                 admitted,
                 self.demand,
+                None,
             ),
             observation,
         ))
@@ -205,6 +206,7 @@ where
                 application,
                 admitted,
                 self.demand,
+                None,
             ),
             observation,
         ))
@@ -234,6 +236,11 @@ where
             Demand = Demand,
         >,
     {
+        let source_observation = self
+            .observation
+            .as_ref()
+            .cloned()
+            .ok_or(WorthQueryApplicationOutputDemandDenial::FreshRequestMismatch)?;
         let source_result = self.query_source()?;
         let maximum_work = self
             .controls
@@ -256,6 +263,7 @@ where
             application,
             admitted,
             self.demand,
+            Some(source_observation),
         ))
     }
 
@@ -327,6 +335,7 @@ where
             application,
             admitted,
             self.demand,
+            None,
         ))
     }
 

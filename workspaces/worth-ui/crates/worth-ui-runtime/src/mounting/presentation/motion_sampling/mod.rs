@@ -8,6 +8,9 @@ mod sampling;
 #[cfg(test)]
 mod tests;
 mod track_sampling;
+mod velocity;
+#[cfg(test)]
+mod velocity_continuity_tests;
 
 pub(crate) use damage::{UiPresentationMotionDamage, UiPresentationSampledClipGeometry};
 pub use receipt::UiPresentationMotionSamplingCost;

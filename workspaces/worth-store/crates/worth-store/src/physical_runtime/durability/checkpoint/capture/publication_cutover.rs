@@ -70,12 +70,43 @@ impl PhysicalCheckpointCaptureOwner {
             Ok(captured) => captured,
             Err(terminal) => return terminal,
         };
+        // The candidate file sync is FlushFileBuffers. The WAL runtime mutex
+        // and this registry are the foreground append path: a member completion
+        // holds the WAL lock and then records its binding. Keeping either
+        // across that sync stalls every mutation for the device barrier.
+        let pending = binding_cutover.release_registry();
+        drop(cutover);
         let durable = match synchronize_capture_candidate(captured, context.attempt, context.key) {
             Ok(durable) => durable,
             Err(terminal) => return terminal,
         };
+        let Some(cutover) = self.wal.checkpoint_cutover() else {
+            return remove_durable_candidate(
+                durable,
+                context.attempt,
+                context.key,
+                PhysicalCheckpointProvenNoEffectCause::FailedAndCandidateRemoved(
+                    PhysicalCheckpointCaptureFailureKind::RetainedWalTailUnavailable,
+                ),
+            );
+        };
+        let binding_cutover = match self.binding_compaction.resume_binding_compaction(pending) {
+            Ok(cutover) => cutover,
+            Err(_) => {
+                drop(cutover);
+                return remove_durable_candidate(
+                    durable,
+                    context.attempt,
+                    context.key,
+                    PhysicalCheckpointProvenNoEffectCause::FailedAndCandidateRemoved(
+                        PhysicalCheckpointCaptureFailureKind::BindingCompactionUnavailable,
+                    ),
+                );
+            }
+        };
         if !context.attempt.begin_publication() {
             drop(cutover);
+            drop(binding_cutover);
             return remove_durable_candidate(
                 durable,
                 context.attempt,

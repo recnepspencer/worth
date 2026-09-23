@@ -77,7 +77,10 @@ impl UiNativeWindowPort for UiWinitNativeWindowPort {
         let [width, height] = configuration.initial_logical_size();
         let attributes = WindowAttributes::default()
             .with_title(configuration.title())
-            .with_transparent(true)
+            .with_transparent(
+                crate::native_profile::WORTH_UI_NATIVE_CLIENT_BACKGROUND
+                    .requests_transparent_window(),
+            )
             .with_inner_size(LogicalSize::new(f64::from(width), f64::from(height)));
         event_loop
             .create_window(attributes)

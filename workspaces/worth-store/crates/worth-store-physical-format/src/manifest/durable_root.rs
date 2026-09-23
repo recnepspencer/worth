@@ -1,4 +1,4 @@
-use crate::record_framing::{decode_durable_frame, encode_durable_frame};
+use crate::record_framing::{decode_durable_frame, encode_durable_frame_schema, FRAME_SCHEMA};
 use crate::{
     DurableFrameDenial, DurableFrameKind, PersistedRecordIdentity, PhysicalGeneration,
     PhysicalGenerationAuthority, PhysicalRecordFormatDeclaration, PhysicalRootReference,
@@ -47,6 +47,7 @@ pub struct DurablePhysicalRootManifest {
     free_space_root: Option<FreeSpaceBlockReference>,
     last_inline_record: Option<PersistedRecordIdentity>,
     last_inline_segment: Option<SegmentGenerationCell>,
+    requires_maintenance_protocol: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -158,11 +159,12 @@ impl DurablePhysicalRootManifest {
             payload[304..312].copy_from_slice(&segment.segment_id().get().to_le_bytes());
             payload[312..320].copy_from_slice(&segment.generation().get().to_le_bytes());
         }
-        encode_durable_frame(
+        encode_durable_frame_schema(
             DurableFrameKind::RootManifest,
             format,
             self.generation(),
             &payload,
+            FRAME_SCHEMA + u8::from(self.requires_maintenance_protocol),
         )
     }
 
@@ -262,7 +264,7 @@ impl DurablePhysicalRootManifest {
         .last_inline_record(last_inline_record)
         .last_inline_segment(last_inline_segment)
         .admit()
-        .map(|manifest| (manifest, format))
+        .map(|manifest| (manifest.with_root_schema(frame.schema), format))
         .ok_or(RootManifestDenial::InvalidPlacement)
     }
 }
@@ -376,6 +378,7 @@ impl DurablePhysicalRootManifestBuilder {
             free_space_root,
             last_inline_record,
             last_inline_segment,
+            requires_maintenance_protocol: false,
         })
     }
 }
@@ -391,3 +394,6 @@ pub enum RootManifestDenial {
     InvalidRecordIdentity,
     InvalidPlacement,
 }
+
+#[path = "maintenance.rs"]
+mod maintenance;

@@ -9,12 +9,13 @@ use worth_store_physical_format::{
 };
 use worth_store_physical_integrity::{
     validate_bootstrap_catalog, validate_current_root_selector,
-    CurrentRootSelectorIntegrityValidation, PhysicalArtifactScope, PhysicalByteRange,
+    CurrentRootSelectorIntegrityValidation, IntegrityValidatedCurrentRootSelector,
+    PhysicalArtifactScope, PhysicalByteRange,
 };
 
 use super::super::admitted_artifact::IntegrityAdmittedRecoveryArtifact;
 use super::super::{
-    ObservedRecoverySource, RecoveryIntegrityIngressCounters,
+    admit_current_root_selector, ObservedRecoverySource, RecoveryIntegrityIngressCounters,
     RecoveryIntegrityIngressObservationOutcome, RecoveryIntegrityIngressRejection,
 };
 
@@ -73,41 +74,23 @@ fn exact_c4_incarnation_and_scope_gate_typed_projection() {
         PhysicalByteRange::new(0, ROOT_SELECTOR_BYTES as u64).unwrap(),
     );
 
-    let validation = validate_selector(&source_a, selector_scope);
     let mut counters = RecoveryIntegrityIngressCounters::default();
-    let admitted = IntegrityAdmittedRecoveryArtifact::bind_current_selector(
-        &source_a,
-        selector_scope,
-        validation,
-        &mut counters,
-    );
-    assert_eq!(
-        admitted.observation().outcome(),
-        RecoveryIntegrityIngressObservationOutcome::Admitted
-    );
-    let IntegrityAdmittedRecoveryArtifact::CurrentSelector(admitted) =
-        admitted.into_outcome().unwrap()
-    else {
-        panic!("current selector admission routed to the wrong family")
+    let Ok(admitted) = admit_current_root_selector(
+        ObservedRecoverySource::complete(&source_a, selector_scope),
+        validate_selector(&source_a, selector_scope),
+    ) else {
+        panic!("the exact current selector source was not admitted")
     };
-    assert_eq!(
-        admitted.project_for_recovery(&mut counters).role(),
-        RootSelectorRole::Current
-    );
+    assert_eq!(admitted.project().role(), RootSelectorRole::Current);
 
-    let validation = validate_selector(&source_a, selector_scope);
-    let substituted = IntegrityAdmittedRecoveryArtifact::bind_current_selector(
-        &source_b,
-        selector_scope,
-        validation,
-        &mut counters,
+    let substituted = admit_current_root_selector(
+        ObservedRecoverySource::complete(&source_b, selector_scope),
+        validate_selector(&source_a, selector_scope),
     );
-    assert_eq!(
-        substituted.observation().outcome(),
-        RecoveryIntegrityIngressObservationOutcome::Rejected(
-            RecoveryIntegrityIngressRejection::SourceIncarnationMismatch
-        )
-    );
+    assert!(matches!(
+        substituted,
+        Err(RecoveryIntegrityIngressRejection::SourceIncarnationMismatch)
+    ));
 
     let bootstrap_scope = PhysicalArtifactScope::bootstrap_catalog(
         store,
@@ -148,22 +131,18 @@ fn exact_c4_incarnation_and_scope_gate_typed_projection() {
             RecoveryIntegrityIngressRejection::SourceIncarnationMismatch
         )
     );
-    assert_eq!((counters.attempted, counters.admitted), (4, 2));
-    assert_eq!(counters.rejected_source_binding, 2);
-    assert_eq!(counters.owner_projection_entries, 2);
+    assert_eq!((counters.attempted, counters.admitted), (2, 1));
+    assert_eq!(counters.rejected_source_binding, 1);
+    assert_eq!(counters.owner_projection_entries, 1);
     assert_eq!(counters.owner_decoder_entries, 0);
 
-    let validation = validate_selector(&source_a, selector_scope);
     let wrong_scope =
         PhysicalArtifactScope::previous_root_selector(store, format, selector_scope.byte_range());
     assert!(matches!(
-        IntegrityAdmittedRecoveryArtifact::bind_current_selector(
-            &source_a,
-            wrong_scope,
-            validation,
-            &mut counters,
-        )
-        .into_outcome(),
+        admit_current_root_selector(
+            ObservedRecoverySource::complete(&source_a, wrong_scope),
+            validate_selector(&source_a, selector_scope),
+        ),
         Err(RecoveryIntegrityIngressRejection::ScopeMismatch)
     ));
     drop(discovery.finish());
@@ -172,9 +151,12 @@ fn exact_c4_incarnation_and_scope_gate_typed_projection() {
 fn validate_selector<'media>(
     source: &'media worth_store::physical_runtime::ObservedRecoveryArtifact,
     scope: PhysicalArtifactScope,
-) -> CurrentRootSelectorIntegrityValidation<'media> {
+) -> IntegrityValidatedCurrentRootSelector<'media> {
     let input = ObservedRecoverySource::complete(source, scope)
         .input()
         .expect("present selector");
-    validate_current_root_selector(input, scope).0
+    match validate_current_root_selector(input, scope).0 {
+        CurrentRootSelectorIntegrityValidation::Intact(validated) => validated,
+        CurrentRootSelectorIntegrityValidation::Rejected(_) => panic!("canonical selector"),
+    }
 }

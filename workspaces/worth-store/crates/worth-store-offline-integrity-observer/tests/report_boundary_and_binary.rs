@@ -75,7 +75,16 @@ fn file_report_requires_two_open_handle_slots_before_observation() {
     let fixture = clean_store("report-open-bound");
     let request = OfflineIntegrityObservationRequest::new(
         fixture.store.clone(),
-        OfflineIntegrityObservationLimits::new(100, 16 * 1024, 1, 8, 0, 5_000, 65_536).unwrap(),
+        OfflineIntegrityObservationLimits::new(
+            100,
+            16 * 1024,
+            1,
+            8,
+            0,
+            crate::support::FIXTURE_ELAPSED_MILLISECONDS,
+            65_536,
+        )
+        .unwrap(),
         OfflineIntegrityReportDestination::file(fixture.report.clone()).unwrap(),
         request(&fixture).protocol_context().clone(),
     )
@@ -127,7 +136,7 @@ fn shipped_observe_binary_emits_the_version_one_report() {
             "--max-symlinks",
             "0",
             "--max-elapsed-ms",
-            "5000",
+            crate::support::FIXTURE_ELAPSED_ARGUMENT,
             "--max-report-bytes",
             "65536",
         ])
@@ -172,7 +181,7 @@ fn shipped_observe_binary_defaults_run_identity_to_its_process() {
             "--max-symlinks",
             "0",
             "--max-elapsed-ms",
-            "5000",
+            crate::support::FIXTURE_ELAPSED_ARGUMENT,
             "--max-report-bytes",
             "65536",
         ])
@@ -214,7 +223,16 @@ fn clean_damaged_unsupported_and_indeterminate_wires_are_independent_json() {
     }
 
     let fixture = clean_store("indeterminate-wire");
-    let limits = OfflineIntegrityObservationLimits::new(100, 72, 5, 8, 0, 5_000, 65_536).unwrap();
+    let limits = OfflineIntegrityObservationLimits::new(
+        100,
+        72,
+        5,
+        8,
+        0,
+        crate::support::FIXTURE_ELAPSED_MILLISECONDS,
+        65_536,
+    )
+    .unwrap();
     let report = observe_store(&bounded_request(&fixture, limits)).unwrap();
     assert_wire_posture(
         &encode_offline_integrity_report(&report).unwrap(),

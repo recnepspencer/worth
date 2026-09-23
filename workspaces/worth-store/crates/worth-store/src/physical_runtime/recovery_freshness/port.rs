@@ -37,6 +37,7 @@ impl PhysicalRecoveryFreshnessPort {
         maximum_redo_bytes: u64,
     ) -> Result<StoreRecoveryBindingFreshnessSample, StoreRecoveryBindingSampleFailure> {
         binding::sample_binding(
+            binding::CheckpointCoveredMembers::Skip,
             coordination.freshness(),
             coordination.checkpoint_binding_basis(),
             media,

@@ -2,10 +2,6 @@ mod diagnostics;
 mod disposition;
 #[cfg(feature = "recovery-runtime-owner")]
 mod recovery_wal_admission;
-#[allow(
-    dead_code,
-    reason = "Wave A establishes family cutover seams before record-serving consumers move"
-)]
 pub(in crate::physical_runtime) mod resident_admission;
 mod root_protocol_admission_denial;
 mod scrub;
@@ -15,11 +11,6 @@ pub use diagnostics::{
 };
 pub(in crate::physical_runtime) use diagnostics::{
     ResidentAdmissionCounterCells, RootProtocolRouteCounterCells,
-};
-pub(in crate::physical_runtime) use disposition::{
-    project_resident_current_root_selector_authority,
-    project_resident_previous_root_selector_authority, project_resident_root_manifest_authority,
-    StoreOwnerDispositionAdapterDenial,
 };
 pub use disposition::{
     DamagedPhysicalAuthorityObservation, DamagedPhysicalDerivedDisposition,

@@ -120,6 +120,9 @@ pub(super) fn target_to_format(
         PhysicalWorkRecoveryTarget::RecordNamespaceSynchronization => {
             PhysicalWorkObligationTargetCode::RecordNamespaceSynchronization
         }
+        PhysicalWorkRecoveryTarget::ArtifactRemoval(artifact) => {
+            PhysicalWorkObligationTargetCode::ArtifactRemoval(artifact_to_format(artifact))
+        }
     }
 }
 
@@ -180,6 +183,9 @@ pub(super) fn target_from_format(
         PhysicalWorkObligationTargetCode::RecordNamespaceSynchronization => {
             Some(PhysicalWorkRecoveryTarget::RecordNamespaceSynchronization)
         }
+        PhysicalWorkObligationTargetCode::ArtifactRemoval(artifact) => Some(
+            PhysicalWorkRecoveryTarget::ArtifactRemoval(artifact_from_format(artifact)?),
+        ),
     }
 }
 

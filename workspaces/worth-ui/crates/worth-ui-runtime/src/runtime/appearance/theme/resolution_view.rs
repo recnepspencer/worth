@@ -114,10 +114,7 @@ impl UiThemeResolutionView {
         }
         let mut current_id = requested_id.clone();
         let mut aliases_compared = 0_u8;
-        loop {
-            let Some(target) = declaration.alias_target().cloned() else {
-                break;
-            };
+        while let Some(target) = declaration.alias_target().cloned() {
             aliases_compared = aliases_compared.checked_add(1).ok_or_else(|| {
                 UiThemeResolutionFailure::new(UiThemeResolutionDenial::MissingAliasTarget, work)
             })?;

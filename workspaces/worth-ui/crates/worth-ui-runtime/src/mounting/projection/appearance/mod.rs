@@ -7,6 +7,7 @@ mod fact;
 mod geometry;
 mod geometry_input;
 pub(crate) use geometry_input::UiMountedAppearanceGeometryInput;
+mod derived_input;
 mod geometry_scope;
 mod input;
 mod lowering;
@@ -17,6 +18,9 @@ mod overlay_order;
 mod portal_geometry;
 mod reconstruction;
 mod resolved_node_source;
+pub(crate) use derived_input::UiMountedAppearanceDerivedInput;
+mod scroll_chrome;
+pub(crate) use scroll_chrome::UiMountedAppearanceScrollChromeInput;
 mod style;
 pub(in crate::mounting::projection) use style::resolved_opacity;
 mod surface;
@@ -68,6 +72,13 @@ pub(crate) enum UiMountedAppearanceLoweringDenial {
     Outline(worth_ui_host_contract::UiMountedOutlineAppearanceCompletionDenial),
     TextForeground(worth_ui_host_contract::UiMountedTextForegroundAppearanceCompletionDenial),
     Backdrop(worth_ui_host_contract::UiMountedBackdropCompletionDenial),
+    ScrollChrome(worth_ui_host_contract::UiMountedScrollChromeCompletionDenial),
+    /// Chrome named an occurrence that presented no node fragment this frame.
+    ScrollChromeOwnerMissing,
+    /// Chrome could not name its owner and role in a transportable attribution.
+    ScrollChromeAttributionUnavailable,
+    /// A chrome part's role declared no Background, so there is nothing to paint.
+    ScrollChromeBackgroundMissing,
     OverlayOrder(worth_ui_host_contract::UiMountedOverlayOrderMechanicDenial),
     Frame(worth_ui_host_contract::UiMountedAppearanceFrameDenial),
     WorkConstruction,
@@ -86,6 +97,8 @@ impl UiMountedAppearanceLoweringInput {
             presentation,
             nodes: Vec::new(),
             backdrops: Vec::new(),
+            scroll_chrome: Vec::new(),
+            chrome_owner: None,
             overlay: fact::UiMountedAppearanceOverlayInput {
                 semantic_surface,
                 presentation,
@@ -110,6 +123,23 @@ impl UiMountedAppearanceLoweringInput {
     pub(in crate::mounting::projection) fn into_nodes(self) -> Vec<UiMountedAppearanceNodeInput> {
         self.nodes
     }
+
+    /// The chrome the owning occurrences of this input present this frame.
+    ///
+    /// Chrome is attached after the node projection was resolved because it is
+    /// derived from the accepted pose and the interaction state, neither of
+    /// which is part of a node's authored appearance. Only chrome whose owner
+    /// is one of this input's nodes is taken; chrome for an owner lowered on
+    /// another path stays with that path.
+    pub(in crate::mounting::projection) fn attach_owned_scroll_chrome(
+        &mut self,
+        scope: &UiMountedAppearanceGeometryScope,
+    ) {
+        for node in &self.nodes {
+            self.scroll_chrome
+                .extend(scope.owned_scroll_chrome(node.node_receipt.mounted_instance()));
+        }
+    }
 }
 
 impl UiMountedAppearanceSurfaceOverlayInput {
@@ -125,6 +155,8 @@ impl UiMountedAppearanceSurfaceOverlayInput {
             presentation,
             nodes,
             backdrops: self.backdrops.to_vec(),
+            scroll_chrome: Vec::new(),
+            chrome_owner: None,
             overlay: fact::UiMountedAppearanceOverlayInput {
                 semantic_surface: self.semantic_surface,
                 presentation,

@@ -87,6 +87,10 @@ fn v6_round_trips_every_target_code() {
             None,
         ),
         (
+            PhysicalWorkObligationTargetCode::ArtifactRemoval(artifact),
+            None,
+        ),
+        (
             PhysicalWorkObligationTargetCode::WalSegmentReclamation {
                 segment: 17,
                 generation: 3,

@@ -81,6 +81,7 @@ fn producer(
         output_family: "family".to_owned(),
         output_family_type: TypeId::of::<()>(),
         output_roles: vec!["output".to_owned()],
+        output_role_descriptors: Vec::new(),
         output_role_families: Vec::new(),
         output_role: "output".to_owned(),
         operation: "operation".to_owned(),

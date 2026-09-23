@@ -1,5 +1,3 @@
-#[cfg(test)]
-use worth_store_physical_format::{ExtentGenerationCell, SlotGenerationCell};
 use worth_store_physical_format::{
     PageGenerationCell, PhysicalBinaryEncodingWitness, PhysicalHeaderAuthority, PhysicalPageKind,
     PHYSICAL_HEADER_LENGTH,
@@ -9,22 +7,6 @@ pub(crate) fn data_page_bytes(cell: PageGenerationCell, payload: &[u8]) -> Vec<u
     let headers = header_authority();
     encoded_bytes(
         headers.encode_page_header(cell, PhysicalPageKind::DataPage, payload_length(payload)),
-        payload,
-    )
-}
-
-#[cfg(test)]
-pub(crate) fn record_frame_bytes(cell: SlotGenerationCell, payload: &[u8]) -> Vec<u8> {
-    encoded_bytes(
-        header_authority().encode_record_frame_header(cell, payload_length(payload)),
-        payload,
-    )
-}
-
-#[cfg(test)]
-pub(crate) fn extent_frame_bytes(cell: ExtentGenerationCell, payload: &[u8]) -> Vec<u8> {
-    encoded_bytes(
-        header_authority().encode_extent_frame_header(cell, payload_length(payload)),
         payload,
     )
 }

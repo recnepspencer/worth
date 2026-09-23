@@ -114,6 +114,14 @@ pub(in crate::application) fn register_structure(
                     ComponentHitTestOrder::front_to_back(ordinal as u32),
                     allocation,
                 ));
+        } else if element.scroll_panel.is_some() {
+            // Scrolled content hit-tests as itself, in front of the owner that
+            // scrolls it, so a click resolves to the row under the cursor at
+            // the displayed offset rather than to the panel.
+            descriptor = descriptor.with_hit_test(ComponentHitTestContract::allocation_bounds(
+                ComponentHitTestOrder::front_to_back(ordinal as u32),
+                allocation,
+            ));
         } else if element.id == "seed"
             || element.id == "review_surface"
             || element.id == "portal_surface"

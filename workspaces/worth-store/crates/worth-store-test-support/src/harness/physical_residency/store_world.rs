@@ -25,7 +25,8 @@ use crate::TemporaryDirectory;
 
 use super::configuration::{
     dense_recovery_planning_configuration, record_publication_configuration,
-    recovery_planning_configuration, PhysicalResidencyStoreConfiguration,
+    recovery_planning_configuration, span_rewrite_configuration,
+    PhysicalResidencyStoreConfiguration,
 };
 
 #[derive(Debug)]
@@ -66,6 +67,17 @@ impl PhysicalResidencyStoreWorld {
         Self::initialize_with_configuration(
             label,
             recovery_planning_configuration(),
+            NonZeroU64::new(16 * 1024 * 1024).unwrap(),
+        )
+    }
+
+    pub fn initialize_for_span_rewrite(
+        label: &str,
+        segment_pages: u32,
+    ) -> Result<Self, PhysicalResidencyStoreWorldConstructionFailure> {
+        Self::initialize_with_configuration(
+            label,
+            span_rewrite_configuration(segment_pages),
             NonZeroU64::new(16 * 1024 * 1024).unwrap(),
         )
     }

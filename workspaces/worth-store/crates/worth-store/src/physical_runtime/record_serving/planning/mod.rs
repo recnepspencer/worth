@@ -17,7 +17,9 @@ pub(super) mod rebased_root;
 pub(super) mod reusable_inline_tail;
 mod settled_root_projection;
 
-pub(in crate::physical_runtime) use prepared_root_projection::PreparedPhysicalRootProjection;
+pub(in crate::physical_runtime) use prepared_root_projection::{
+    sealed_publication_overhead, PreparedPhysicalRootProjection,
+};
 pub(in crate::physical_runtime::record_serving) use settled_root_projection::merge_settled_root_projections;
 pub(in crate::physical_runtime) use settled_root_projection::RejectedSettledRootProjections;
 pub use settled_root_projection::SettledRootProjectionMergeDenial;

@@ -50,7 +50,7 @@ where
         let selected_product = crate::basis::WorthQueryProductBranchReadIdentity::from_observation(
             self.admitted.read_set().lease.product().observation(),
         );
-        let condition_identity = source.idempotency_identity();
+        let condition_identity = source.idempotency_identity().bytes();
         let currentness_facts = source
             .validate_and_into_facts(
                 runtime.runtime.authority_identity().as_u64(),

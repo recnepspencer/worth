@@ -27,6 +27,21 @@ pub(in crate::physical_runtime::record_serving) fn load_reusable_segment(
     context: ReusableSegmentContext<'_>,
     last: Option<DurableInlineRecordPlacement>,
 ) -> Result<(Option<PlanningSegment>, usize), RecordAppendError> {
+    load_segment(context, last, false)
+}
+
+pub(in crate::physical_runtime::record_serving) fn load_published_segment(
+    context: ReusableSegmentContext<'_>,
+    last: Option<DurableInlineRecordPlacement>,
+) -> Result<(Option<PlanningSegment>, usize), RecordAppendError> {
+    load_segment(context, last, true)
+}
+
+fn load_segment(
+    context: ReusableSegmentContext<'_>,
+    last: Option<DurableInlineRecordPlacement>,
+    accept_exhausted: bool,
+) -> Result<(Option<PlanningSegment>, usize), RecordAppendError> {
     let ReusableSegmentContext {
         allocation,
         residency,
@@ -70,7 +85,17 @@ pub(in crate::physical_runtime::record_serving) fn load_reusable_segment(
     .locate(allocation, key, &mut free_discovery)
     .map_err(super::inline_plan_failure::manifest_lookup_failure)?
     else {
-        return Ok((None, free_discovery.bytes_read() as usize));
+        let page_capacity = placement.segment_pages().get();
+        if !accept_exhausted || last.segment_page_capacity() != page_capacity {
+            return Ok((None, free_discovery.bytes_read() as usize));
+        }
+        return published_segment(
+            last,
+            page,
+            page_capacity,
+            page_capacity,
+            free_discovery.bytes_read(),
+        );
     };
     let used_pages =
         placement
@@ -85,6 +110,22 @@ pub(in crate::physical_runtime::record_serving) fn load_reusable_segment(
     if used_pages == 0 || last.segment_page_capacity() != placement.segment_pages().get() {
         return Ok((None, free_discovery.bytes_read() as usize));
     }
+    published_segment(
+        last,
+        page,
+        placement.segment_pages().get(),
+        used_pages,
+        free_discovery.bytes_read(),
+    )
+}
+
+fn published_segment(
+    last: DurableInlineRecordPlacement,
+    page: worth_store_physical_format::RecordSegmentPageManifestEntry,
+    page_capacity: u32,
+    used_pages: u32,
+    bytes_read: u64,
+) -> Result<(Option<PlanningSegment>, usize), RecordAppendError> {
     let next_generation = last
         .segment_generation()
         .checked_add(1)
@@ -97,12 +138,12 @@ pub(in crate::physical_runtime::record_serving) fn load_reusable_segment(
             segment: PhysicalGenerationAuthority::for_canonical_physical_format()
                 .segment_cell(last.segment())
                 .with_segment_generation(next_generation),
-            page_capacity: placement.segment_pages().get(),
+            page_capacity,
             used_pages,
             last_published_page: Some(page),
             candidate_pages: Vec::new(),
             data_pages: Vec::new(),
         }),
-        free_discovery.bytes_read() as usize,
+        bytes_read as usize,
     ))
 }

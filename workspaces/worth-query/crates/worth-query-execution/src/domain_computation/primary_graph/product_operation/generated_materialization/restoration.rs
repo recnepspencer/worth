@@ -281,7 +281,7 @@ where
                         producer.scope,
                         &observation,
                         correspondence,
-                        producer.source_identity,
+                        producer.recorded_source_identity,
                         producer.source_partition_identity,
                         producer.producer_dependency_identity,
                         producer.idempotency_key_identity,

@@ -23,3 +23,16 @@ jobs:
       - uses: actions/checkout@v4
       - name: Enforce the 400-line Rust file cap
         run: bash scripts/ci/check_workspace_rust_line_caps.sh workspace
+
+  query-checkpoint-recovery:
+    name: Query checkpoint recovery court
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prove restored accepted outputs avoid producer contact
+        run: >-
+          cargo test
+          --manifest-path workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml
+          -p worth-query-topology-entry
+          -- --test-threads=1

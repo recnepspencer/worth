@@ -44,23 +44,16 @@ impl<'media> IntegrityAdmittedRootManifest<'media> {
         .last_inline_segment(self.validated.last_inline_segment())
         .admit()
         .expect("sealed root-manifest fields preserve the format contract");
+        let manifest = if self.validated.requires_maintenance_protocol() {
+            manifest.with_maintenance_protocol()
+        } else {
+            manifest
+        };
         (manifest, self.validated.record_format())
     }
 
     pub(crate) fn project(self) -> (DurablePhysicalRootManifest, PhysicalRecordFormatDeclaration) {
         self.manifest()
-    }
-
-    pub(crate) fn project_for_recovery(
-        &self,
-        counters: &mut RecoveryIntegrityIngressCounters,
-    ) -> (DurablePhysicalRootManifest, PhysicalRecordFormatDeclaration) {
-        counters.record_owner_projection();
-        self.manifest()
-    }
-
-    pub(crate) fn scope(&self) -> worth_store_physical_integrity::PhysicalArtifactScope {
-        self.source.scope()
     }
 
     pub(crate) fn bind_checkpoint_base(

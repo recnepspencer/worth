@@ -76,7 +76,7 @@ pub(super) fn rebuild_glyph_runs<'work>(
                     let span = spans
                         .next()
                         .expect("text demand admitted exactly one covering paint span");
-                    debug_assert!(spans.next().is_none());
+                    debug_assert_eq!(spans.count(), 0);
                     let positioned = demand
                         .positioned_glyph_for_record(layout, record_index)
                         .expect("retained demand preserves positioned-glyph provenance");
@@ -100,6 +100,7 @@ pub(super) fn rebuild_glyph_runs<'work>(
                         line_index: positioned.line_index(),
                         visual_run_index: positioned.visual_run_index(),
                         clip_bounds: mechanic.clip_bounds(),
+                        intrinsic_clip_bounds: mechanic.intrinsic_clip_bounds(),
                         layer_semantic_order: mechanic.layer_semantic_order(),
                     })
                 })

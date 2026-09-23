@@ -97,6 +97,7 @@ impl UiProjectedMountedFrameCandidate {
         profile: Option<&worth_ui_host_contract::UiHostAppearanceProfileContract>,
         motion: crate::mounting::presentation::UiAcceptedAppearanceMotion,
         overlays: &[super::super::UiMountedAppearanceSurfaceOverlayInput],
+        scroll_chrome: &[super::super::UiMountedAppearanceScrollChromeInput],
     ) -> Vec<crate::runtime::appearance::UiAppearanceInspectionRecord> {
         self.owner.lower_appearance_with_motion_and_overlays(
             presentation,
@@ -104,6 +105,7 @@ impl UiProjectedMountedFrameCandidate {
             profile,
             motion,
             overlays,
+            scroll_chrome,
         )
     }
 

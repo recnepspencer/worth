@@ -81,6 +81,7 @@ fn physical_only_reconstruction_reissues_exact_paint_for_the_current_node() {
                 mechanic.node_receipt() == successor_receipt
             }
             worth_ui_host_contract::UiMountedAppearanceMechanic::Pointer(_)
+            | worth_ui_host_contract::UiMountedAppearanceMechanic::ScrollChrome(_)
             | worth_ui_host_contract::UiMountedAppearanceMechanic::Backdrop(_) => false,
         }));
     assert_eq!(

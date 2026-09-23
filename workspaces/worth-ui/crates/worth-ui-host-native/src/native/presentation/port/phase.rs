@@ -34,14 +34,12 @@ pub(super) struct UiNativeEncodedPresentation {
 #[must_use]
 pub(super) struct UiNativeSubmittedPresentation {
     output: wgpu::SurfaceTexture,
-    submission: wgpu::SubmissionIndex,
     readback: wgpu::Buffer,
     cost: UiHostPresentationCostReport,
 }
 
 #[must_use]
 pub(super) struct UiNativePresentHandoff {
-    submission: wgpu::SubmissionIndex,
     readback: wgpu::Buffer,
     cost: UiHostPresentationCostReport,
 }
@@ -106,10 +104,9 @@ impl UiNativeSurfaceAcquiredPresentation {
 
 impl UiNativeEncodedPresentation {
     pub(super) fn submit(self, queue: &wgpu::Queue) -> UiNativeSubmittedPresentation {
-        let submission = queue.submit([self.commands]);
+        queue.submit([self.commands]);
         UiNativeSubmittedPresentation {
             output: self.output,
-            submission,
             readback: self.readback,
             cost: self.cost,
         }
@@ -120,7 +117,6 @@ impl UiNativeSubmittedPresentation {
     pub(super) fn hand_off(self) -> UiNativePresentHandoff {
         self.output.present();
         UiNativePresentHandoff {
-            submission: self.submission,
             readback: self.readback,
             cost: self.cost,
         }
@@ -128,13 +124,7 @@ impl UiNativeSubmittedPresentation {
 }
 
 impl UiNativePresentHandoff {
-    pub(super) fn into_parts(
-        self,
-    ) -> (
-        wgpu::Buffer,
-        wgpu::SubmissionIndex,
-        UiHostPresentationCostReport,
-    ) {
-        (self.readback, self.submission, self.cost)
+    pub(super) fn into_parts(self) -> (wgpu::Buffer, UiHostPresentationCostReport) {
+        (self.readback, self.cost)
     }
 }

@@ -18,6 +18,7 @@ pub struct PhysicalResidencyLimitsBuilder {
     operation_bytes: Option<NonZeroU64>,
     scope_bytes: [Option<NonZeroU64>; 7],
     speculative_frames: [Option<NonZeroU32>; 3],
+    progress_headroom_bytes: u64,
 }
 
 impl PhysicalResidencyLimitsBuilder {
@@ -84,6 +85,11 @@ impl PhysicalResidencyLimitsBuilder {
         self
     }
 
+    pub const fn progress_headroom_bytes(mut self, bytes: u64) -> Self {
+        self.progress_headroom_bytes = bytes;
+        self
+    }
+
     pub fn admit(
         self,
         page_bytes: NonZeroU64,
@@ -123,6 +129,7 @@ impl PhysicalResidencyLimitsBuilder {
             operation_bytes,
             scope_bytes,
             speculative_frames,
+            progress_headroom_bytes: self.progress_headroom_bytes,
         };
         validate_relationships(admitted, page_bytes)?;
         Ok(admitted)

@@ -105,7 +105,7 @@ impl UiNativeRetainedDrawList {
             .iter()
             // Appearance surfaces carry analytic coverage in their own replay
             // index; only paint commands own retained text/image coverage here.
-            .filter(|change| !change.command().is_appearance_surface())
+            .filter(|change| !change.command().is_appearance_sample())
             .map(|change| {
                 let identity = change.command();
                 let command = self.command(identity).ok_or(Denial::CommandMismatch)?;
@@ -219,15 +219,11 @@ impl UiNativeRetainedDrawList {
     ) -> Result<UiNativeCommandImageCoverage, Denial> {
         let base = match command {
             UiMountedPaintCommand::SemanticText { identity, .. } => {
-                super::super::text::plan_glyph_commands(
-                    self.glyph_runs(*identity),
-                    atlas,
-                    basis.extent(),
-                )
-                .map_err(|_| Denial::CommandMismatch)?
-                .iter()
-                .map(|glyph| glyph.target)
-                .collect()
+                super::super::text::plan_raw_glyph_commands(self.glyph_runs(*identity), atlas)
+                    .map_err(|_| Denial::CommandMismatch)?
+                    .iter()
+                    .map(|glyph| glyph.target)
+                    .collect()
             }
             _ => sampled_images(command, &[], None, basis)?,
         };
@@ -247,18 +243,23 @@ fn sampled_images(
     sample: Option<worth_ui_host_contract::UiMountedPresentationSampleChange>,
     basis: UiNativeRasterBasis,
 ) -> Result<Box<[[f32; 4]]>, Denial> {
-    if matches!(command, UiMountedPaintCommand::SemanticText { .. }) {
+    if let UiMountedPaintCommand::SemanticText { mechanic, .. } = command {
         let images: Vec<[f32; 4]> = base
             .iter()
             .map(|image| {
-                sample
-                    .and_then(|s| s.transform())
-                    .map_or(Ok(*image), |transform| {
-                        super::super::sample::transform_physical_box(*image, transform, basis)
-                            .map_err(|_| Denial::CommandMismatch)
-                    })
+                super::super::text::sampled_image(
+                    *image,
+                    command.clip_bounds(),
+                    mechanic.intrinsic_clip_bounds(),
+                    sample,
+                    basis,
+                )
+                .map_err(|_| Denial::CommandMismatch)
             })
-            .collect::<Result<_, _>>()?;
+            .collect::<Result<Vec<_>, _>>()?
+            .into_iter()
+            .flatten()
+            .collect();
         if images.iter().flatten().any(|value| !value.is_finite()) {
             return Err(Denial::CommandMismatch);
         }

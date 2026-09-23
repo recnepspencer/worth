@@ -181,6 +181,7 @@ fn phase_six_warm_consumers_cannot_hide_hashing_behind_a_helper() {
     let manifest = Path::new(env!("CARGO_MANIFEST_DIR"));
     for relative in [
         "../worth-query-execution/src/domain_computation/primary_graph/application_query",
+        "../worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/progression/admission/restoration.rs",
         "../worth-query-execution/src/domain_computation/authorization",
         "../worth-query-execution/src/domain_computation/primary_graph/application_attempt/idempotency_resolution.rs",
         "../worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_recomparison.rs",
@@ -208,6 +209,8 @@ fn phase_six_warm_consumers_cannot_hide_hashing_behind_a_helper() {
 }
 
 fn assert_warm_path_has_no_hashing(path: &Path) {
+    let is_source_meaning_owner =
+        path.ends_with("application_query/observed_source/source_identity.rs");
     if path.is_dir() {
         for entry in std::fs::read_dir(path)
             .unwrap_or_else(|error| panic!("failed to read {}: {error}", path.display()))
@@ -263,6 +266,7 @@ fn assert_warm_path_has_no_hashing(path: &Path) {
         "execution_digest",
         "admission_digest",
         "publication_digest",
+        "checkpoint_source_identity",
         "Sha256",
         "sha2::",
         "prepare_canonical_basis_sequence",
@@ -271,6 +275,11 @@ fn assert_warm_path_has_no_hashing(path: &Path) {
         ".render_support_hex()",
         ".render_hex()",
     ] {
+        if is_source_meaning_owner && forbidden == "checkpoint_source_identity" {
+            // The intern miss path is the named cold derivation boundary. The
+            // rest of this file remains subject to every inline hashing rule.
+            continue;
+        }
         assert!(
             !source.contains(forbidden),
             "{} reintroduced warm-path canonical or digest work through `{forbidden}`",

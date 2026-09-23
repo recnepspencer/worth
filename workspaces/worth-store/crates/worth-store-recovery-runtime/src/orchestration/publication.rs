@@ -3,10 +3,7 @@ use worth_store::physical_runtime::{
     PhysicalRecoveryPublicationCommandOutcome,
 };
 
-use crate::entry::{
-    PhysicalRecoveryOutcome, PhysicalRecoveryPublicationCounters,
-    PhysicalRecoveryPublicationSettlement,
-};
+use crate::entry::{PhysicalRecoveryOutcome, PhysicalRecoveryPublicationSettlement};
 use crate::progression::{NamespaceDurablePhysicalRecovery, StagedPhysicalRecovery};
 
 mod counters;

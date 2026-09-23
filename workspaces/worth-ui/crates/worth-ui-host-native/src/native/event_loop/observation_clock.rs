@@ -1,5 +1,6 @@
 use winit::event_loop::{ActiveEventLoop, ControlFlow};
 
+use super::client_invocation::UiNativeEventLoopClientInvocation;
 use super::{UiNativeEventLoopApplication, UiNativeEventLoopClient, UiNativeEventLoopRunDenial};
 
 impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
@@ -20,9 +21,14 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
         let Some(client) = self.client.as_mut() else {
             return;
         };
-        let progress = match client.observation_time_ready() {
+        let progress = match client.invoke_observation_time_ready() {
             Ok(progress) => progress,
-            Err(_) => return self.fail(event_loop, UiNativeEventLoopRunDenial::ApplicationDriver),
+            Err(failure) => {
+                return self.fail(
+                    event_loop,
+                    UiNativeEventLoopRunDenial::ClientCallback(failure),
+                )
+            }
         };
         match progress.directive() {
             super::UiNativeEventLoopDirective::Continue => {}

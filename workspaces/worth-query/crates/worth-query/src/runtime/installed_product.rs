@@ -74,14 +74,18 @@ impl WorthQueryInstalledProduct {
                 message: denial.to_string(),
             }
         })?;
-        let world =
-            WorthQueryProductRuntime::install(source, &mut conditional, product_world_resources)
-                .map_err(
-                    |denial| super::WorthQueryRuntimeError::InvariantRegistration {
-                        stage: "product_world_installation",
-                        message: denial.detail().to_string(),
-                    },
-                )?;
+        let world = WorthQueryProductRuntime::install(
+            source,
+            &mut conditional,
+            product_world_resources,
+            None,
+        )
+        .map_err(
+            |denial| super::WorthQueryRuntimeError::InvariantRegistration {
+                stage: "product_world_installation",
+                message: denial.detail().to_string(),
+            },
+        )?;
         let conditional_evaluations =
             conditional_evaluation::WorthQueryConditionalEvaluationRegistry::new(cache_budget)
                 .map_err(

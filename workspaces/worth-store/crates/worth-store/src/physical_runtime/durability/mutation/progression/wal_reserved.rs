@@ -187,6 +187,10 @@ impl WalRangeReservedPhysicalMutation {
                 durability_policy_basis: self.basis.durability_policy_basis,
                 resources: self.basis.resources,
                 start: self.basis.start,
+                selected_segment_rewrite: false,
+                rewrite_pages: 0,
+                source_root_generation: 0,
+                rewrite_anchor: None,
             },
         })
     }

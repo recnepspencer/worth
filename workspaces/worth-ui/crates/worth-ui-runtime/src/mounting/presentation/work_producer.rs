@@ -26,6 +26,11 @@ mod motion_sample;
 mod overlay_attribution;
 #[path = "work_producer/portal_motion_groups.rs"]
 mod portal_motion_groups;
+#[path = "work_producer/scroll_motion_groups.rs"]
+mod scroll_motion_groups;
+pub(crate) use scroll_motion_groups::{
+    UiMountedScrollMotionClip, UiMountedScrollMotionGroupInput, UiMountedScrollMotionMember,
+};
 #[path = "work_producer/projection_row_count.rs"]
 mod projection_row_count;
 #[path = "work_producer/state.rs"]

@@ -50,6 +50,7 @@ where
         limits,
         initial_state,
         None,
+        None,
     )
 }
 
@@ -81,6 +82,7 @@ where
         limits,
         initial_state,
         Some(Box::new(source)),
+        None,
     )
 }
 
@@ -118,6 +120,7 @@ where
         limits,
         initial_state,
         None,
+        None,
     )
 }
 
@@ -150,10 +153,11 @@ where
         limits,
         initial_state,
         Some(Box::new(source)),
+        None,
     )
 }
 
-fn in_memory_program_with_optional_authorization_time_source<Schema, Program>(
+pub(super) fn in_memory_program_with_optional_authorization_time_source<Schema, Program>(
     program: ValidatedApplicationProgram<Schema, Program>,
     roster: WorthQueryApplicationProgramRoster<'_, Schema>,
     declaration: ApplicationSchemaDeclaration<Schema>,
@@ -166,6 +170,7 @@ fn in_memory_program_with_optional_authorization_time_source<Schema, Program>(
     authorization_time_source: Option<
         Box<dyn crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSource>,
     >,
+    checkpoint: Option<crate::domain_computation::primary_graph::WorthQueryApplicationCheckpoint>,
 ) -> Result<WorthQueryProgramApplicationRuntime<Schema, Program>, WorthQueryInMemoryApplicationDenial>
 where
     Schema: ApplicationSchemaComposition,
@@ -190,6 +195,7 @@ where
             admitted = Some((installed, supported));
             Ok(support)
         })),
+        checkpoint,
     )?;
     let (installed, supported) =
         admitted.ok_or(WorthQueryInMemoryApplicationDenial::ProgramAdmissionIncomplete)?;

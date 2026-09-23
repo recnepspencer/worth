@@ -11,7 +11,7 @@ pub use plan::{
     AdmittedPhysicalRedoMembers, ImmutablePhysicalRedoPlan, PhysicalRedoAdmissionLimits,
     PhysicalRedoDecision, PhysicalRedoDecisionKind, PhysicalRedoDecisionPrior,
     PhysicalRedoDecisionView, PhysicalRedoGroupBinding, PhysicalRedoMemberInput,
-    PhysicalRedoPlanCounters, PhysicalRedoProjection,
+    PhysicalRedoPlanCounters, PhysicalRedoProjection, PhysicalRewriteAdmission,
 };
 pub use record::{
     decode_physical_redo_records, PhysicalRedoExtentCoordinate, PhysicalRedoRecord,

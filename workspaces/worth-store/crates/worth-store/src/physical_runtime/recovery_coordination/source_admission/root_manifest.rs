@@ -31,6 +31,7 @@ struct AdmittedRootManifestProjection {
     free_space_root: Option<worth_store_physical_format::FreeSpaceBlockReference>,
     last_inline_record: Option<worth_store_physical_format::PersistedRecordIdentity>,
     last_inline_segment: Option<worth_store_physical_format::SegmentGenerationCell>,
+    requires_maintenance_protocol: bool,
 }
 
 pub(in crate::physical_runtime::recovery_coordination) fn admit_scheduled_root_manifest(
@@ -93,6 +94,7 @@ fn projection(validated: &IntegrityValidatedRootManifest<'_>) -> AdmittedRootMan
         free_space_root: validated.free_space_root(),
         last_inline_record: validated.last_inline_record(),
         last_inline_segment: validated.last_inline_segment(),
+        requires_maintenance_protocol: validated.requires_maintenance_protocol(),
     }
 }
 
@@ -122,6 +124,13 @@ impl AdmittedRootManifestProjection {
         .last_inline_record(self.last_inline_record)
         .last_inline_segment(self.last_inline_segment)
         .admit()
+        .map(|root| {
+            if self.requires_maintenance_protocol {
+                root.with_maintenance_protocol()
+            } else {
+                root
+            }
+        })
         .ok_or(RootProtocolAdmissionDenial::OwnerProjectionRejected)
     }
 }

@@ -16,14 +16,11 @@ mod trace;
 #[cfg(test)]
 mod tests;
 
-#[allow(unused_imports)]
 pub(crate) use admitted_artifact::IntegrityAdmittedRecoveryArtifact;
 pub(crate) use checkpoint_stream::{
     admit_observed_checkpoint_stream, CheckpointStreamAdmissionFailure,
 };
 pub use counters::RecoveryIntegrityIngressCounters;
-#[allow(unused_imports)]
-pub(crate) use families::checkpoint::IntegrityAdmittedCheckpointStream;
 pub(crate) use families::checkpoint::OwnerCheckpointProjection;
 pub(crate) use families::extent::{
     admit_extent_chunk_projection, admit_extent_manifest_projection,
@@ -42,7 +39,6 @@ pub(crate) use root_protocol::{
     admit_addressed_root, admit_current_selector, admit_observed_bootstrap_catalog,
     admit_observed_root_manifest, admit_previous_selector,
 };
-#[allow(unused_imports)]
 pub(crate) use routing::{observe_absent_recovery_artifact, RecoveryIntegrityIngressAttempt};
 use source::{ObservedRecoverySource, ObservedWalFrameSource};
 pub(crate) use trace::RecoveryIntegrityIngressTrace;

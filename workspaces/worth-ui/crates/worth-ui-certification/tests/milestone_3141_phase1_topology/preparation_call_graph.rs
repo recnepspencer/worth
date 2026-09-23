@@ -27,11 +27,7 @@ pub(super) fn validate(
         profile_source,
         "validate",
         &["Err", "Ok", "validate_environment"],
-        &[
-            "self.window.title.is_empty",
-            "self.window.title.len",
-            "worth_ui_host_native::UiNativePlatformProfileIdentity::WORTH_UI_WINDOWS_DX12_V2.as_str",
-        ],
+        &["self.window.title.is_empty", "self.window.title.len"],
     )?;
     validate_function(profile_source, "validate_environment", &["Err", "Ok"], &[])?;
     validate_function(native_profile_source, "as_str", &[], &[])?;

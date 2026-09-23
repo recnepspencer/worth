@@ -71,6 +71,31 @@ fn mounted_shadow_caster_and_paint_are_measured_separately() {
     }
 }
 
+#[test]
+fn content_beginning_before_its_anchor_is_measured_from_the_union() {
+    // The overlay is a viewport-inset panel wider than the control that opens
+    // it, so its near edge precedes the anchor origin on both axes. Measuring
+    // from the anchor origin denied that world outright and reported the
+    // refusal as an incompatible coordinate space.
+    let mut world = GeometryWorld::new();
+    let frame = world.frame(&[], None);
+    let measured = frame
+        .portal_content_extent(world.owners[0])
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        [
+            measured.paint.x(),
+            measured.paint.y(),
+            measured.paint.width(),
+            measured.paint.height()
+        ],
+        [-12.0, -8.0, 220.0, 120.0]
+    );
+    assert_eq!(measured.layout, measured.paint);
+    complete_measured_content(&world, measured);
+}
+
 fn complete_measured_content(
     world: &GeometryWorld,
     content: crate::runtime::portal::UiPortalContentBounds,

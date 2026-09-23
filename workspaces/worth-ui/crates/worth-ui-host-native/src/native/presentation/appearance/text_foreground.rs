@@ -4,7 +4,7 @@ mod paint;
 
 use super::damage::{UiNativeAppearanceDamage, UiNativeAppearanceDamageRect};
 use crate::native::presentation::text::{
-    mechanic_contains_run, plan_glyph_commands, UiNativeGlyphCommandDenial,
+    mechanic_contains_run, plan_raw_glyph_commands, sampled_glyph, UiNativeGlyphCommandDenial,
 };
 use crate::native::text_atlas::{UiNativeTextAtlas, UiNativeTextAtlasImageObservation};
 use worth_ui_host_contract::*;
@@ -182,7 +182,7 @@ impl UiNativeTextForegroundJoin {
             .observe_images()
             .map_err(|_| Denial::AtlasImageBasis)?;
         let mut commands =
-            plan_glyph_commands(&self.runs, atlas, extent).map_err(|denial| match denial {
+            plan_raw_glyph_commands(&self.runs, atlas).map_err(|denial| match denial {
                 UiNativeGlyphCommandDenial::MissingAtlasEntry => Denial::MissingAtlasEntry,
                 UiNativeGlyphCommandDenial::GeometryOverflow => Denial::Geometry,
             })?;
@@ -196,7 +196,21 @@ impl UiNativeTextForegroundJoin {
         for command in commands.iter_mut() {
             command.foreground = foreground;
             command.opacity = opacity;
-            let [x, y, width, height] = command.target;
+            // Paint applies to every admitted image, including offscreen rows
+            // a Scroll sample can reveal. Only present coverage contributes damage.
+            let Some(visible) = sampled_glyph(
+                *command,
+                None,
+                crate::native::presentation::raster::UiNativeRasterBasis::new(
+                    extent,
+                    self.binding.device_scale_milli() as f32 / 1_000.0,
+                ),
+            )
+            .map_err(|_| Denial::Geometry)?
+            else {
+                continue;
+            };
+            let [x, y, width, height] = visible.target;
             let edges = [
                 x.floor(),
                 y.floor(),

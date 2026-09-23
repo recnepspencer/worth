@@ -42,6 +42,13 @@ impl<'session> WorthUiPreparedMountedPreview<'session> {
             None,
             None,
         );
+        super::super::active_application_session::settle_presented_scroll_extent(
+            ports.scroll.as_deref_mut(),
+            ports.motion.as_deref_mut(),
+            ports.mounted,
+            &outcome,
+            now,
+        );
         finish_preview_outcome(outcome, before, transition, planning_counters, ports)
     }
 
@@ -99,6 +106,13 @@ impl<'session> WorthUiMountedPreviewInFlight<'session> {
             None,
             None,
             None,
+        );
+        super::super::active_application_session::settle_presented_scroll_extent(
+            ports.scroll.as_deref_mut(),
+            ports.motion.as_deref_mut(),
+            ports.mounted,
+            &outcome,
+            now,
         );
         if let crate::mounting::UiMountedFrameOutcome::CompletionDenied(denial) = outcome {
             return WorthUiMountedPreviewOutcome::CompletionDenied(Box::new(

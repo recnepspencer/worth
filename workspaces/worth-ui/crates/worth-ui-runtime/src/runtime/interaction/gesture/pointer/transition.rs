@@ -295,6 +295,10 @@ impl UiPointerGestureRuntimeState {
     }
 
     fn focus_loss(&mut self, sequence: UiHostObservationSequence) -> Vec<UiPointerGestureOutcome> {
+        // A captured thumb is a gesture, and losing the window loses every
+        // gesture. Leaving the capture behind would hand the reader's next
+        // pointer move to a drag they abandoned when they looked away.
+        self.scroll_chrome.cancel();
         let active = std::mem::take(&mut self.active);
         if !active.is_empty() {
             self.bump_appearance_revision();

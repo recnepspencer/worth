@@ -46,6 +46,7 @@ pub(crate) enum PulseExecutableWorldFailure {
     Preservation(ExecutablePredecessorPreservationFailure),
     IntentJourney(crate::product_process::PlatformPulseIntentJourneyFailure),
     PortalJourney(crate::product_process::PlatformPulsePortalJourneyFailure),
+    ScrollJourney(crate::product_process::PlatformPulseScrollJourneyFailure),
     ProcessExit(PlatformPulseProcessExitFailure),
     NativeCloseEvidence(PlatformPulseNativeCloseEvidenceFailure),
     Cleanup(ExecutableLifecycleCleanupFailure),
@@ -281,6 +282,7 @@ impl fmt::Display for PulseExecutableWorldFailure {
             }
             Self::IntentJourney(failure) => write!(formatter, "intent journey: {failure}"),
             Self::PortalJourney(failure) => write!(formatter, "portal journey: {failure}"),
+            Self::ScrollJourney(failure) => write!(formatter, "scroll journey: {failure}"),
             Self::ProcessExit(failure) => write!(formatter, "process exit: {failure}"),
             Self::NativeCloseEvidence(failure) => {
                 write!(formatter, "native close evidence: {failure}")

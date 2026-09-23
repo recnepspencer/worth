@@ -90,6 +90,11 @@ operating-system watcher hint
 ```
 
 The watcher is transport. Source settlement owns the frozen revision.
+Transport reports only what bears on the source tree: creation, content or
+structure modification, rename, and removal. Access notifications (opens and
+closes, which inotify emits for every file the watcher or compiler itself
+reads) are dropped at ingress and never become a source hint, because a
+hint that fires on reading would settle a revision that nothing edited.
 `worth-ui-dsl` owns parsing, legality, normalization, lowering, compile
 diagnostics, authored spans, and package provenance. Declaration contracts own
 semantic fact and aspect meaning. Runtime observation and rebind owners own

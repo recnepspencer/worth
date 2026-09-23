@@ -124,6 +124,39 @@ The first process owns recovery authority and effects. The second owns only a
 bounded read-only observation. Comparing the two reports belongs to a
 certification or operator tool; the observer must not decide recovery success.
 
+## Maintenance Reconciliation
+
+A WAL tail may mix ordinary appends, record-preserving rewrites and retirement
+records. Recovery decodes each canonical payload and redoes a sealed rewrite
+only from its complete admitted group. A strict WAL prefix or incomplete group
+supplies neither redo nor a successful fate, and absence is not no-effect
+evidence. A rewritten span must name a compact destination generation that
+starts at frame 0; any other destination layout is denied rather than guessed.
+An extent rewrite is proven against the published generation g+1, or rebuilt
+from generation g after its manifest, chunks and payload digest verify against
+the redo. A damaged source or successor blocks recovery rather than publishing
+guessed bytes.
+
+Retirement intent is a durable obligation. Recovery keeps an unresolved intent
+through checkpoint and WAL reclamation, and defers WAL cleanup with
+`UnresolvedRetirement` until the completion record is durable. A generation
+deleted before its namespace synchronization or completion record is reconciled
+from the actual directory contents. It is never treated as completed for a
+different identity, and its generation is not reused while cleanup is
+incomplete.
+
+Recovery discards dead-process read leases, pending-publication holds and
+scheduler state. The fresh runtime issues new leases and rebuilds retained-
+storage charges from persisted facts: retained WAL bytes, the newest
+publications whose frames remain, and every unresolved retirement. Displaced
+extent generations are found by walking the routing blocks each same-count
+maintenance root wrote.
+
+A root or checkpoint written after a rewrite carries the maintenance protocol
+requirement (checkpoint schema 2). Software that does not understand it
+refuses to open or recover the Store before any effect, and compacting the
+old WAL does not drop that requirement.
+
 ## How It Relates To Other Features
 
 C.4 remains the only physical effect executor. C.5.1 schedules recovery work.
@@ -159,6 +192,8 @@ publication. A report path must remain outside the Store root.
 - Do not call recovery while the ordinary writer is live.
 - Do not bypass the facade through backend media or Store coordination types.
 - Do not treat cleanup deferral as failed recovery.
+- Do not delete a displaced segment by hand because no reader holds it; an
+  unresolved retirement intent still owns it.
 
 ## Current Limits
 

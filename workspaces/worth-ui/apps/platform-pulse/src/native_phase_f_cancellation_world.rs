@@ -10,13 +10,14 @@ use worth_ui_native_platform::{
     UiNativePhysicalSignalWorkClass as Work, UiNativePlatformOutcome, UiNativePlatformProfile,
     UiNativeQualificationPlan, UiNativeWindowSpec, WorthUiNativePlatform,
 };
+use worth_ui_platform_pulse::visual_identity_pulse::PLATFORM_PULSE_NATIVE_WINDOW_LOGICAL_EXTENT;
 
 pub(crate) fn run() -> ExitCode {
     let qualification = UiNativeQualificationPlan::deferred_completion_on_presentation(2)
         .expect("the Phase F cancellation presentation ordinal is bounded");
     let profile = UiNativePlatformProfile::single_window(UiNativeWindowSpec::new(
         "WORTH UI Phase F Partial Effects Cancellation Courtroom",
-        [160, 96],
+        PLATFORM_PULSE_NATIVE_WINDOW_LOGICAL_EXTENT,
     ))
     .with_native_qualification_plan(qualification);
     let Ok(platform) = WorthUiNativePlatform::prepare(profile) else {

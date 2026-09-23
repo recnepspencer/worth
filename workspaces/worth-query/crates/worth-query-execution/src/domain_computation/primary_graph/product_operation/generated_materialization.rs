@@ -46,7 +46,12 @@ pub(super) struct ProducerQualification {
     output_binding_type: TypeId,
     binding_identity: &'static str,
     provider_identity: &'static str,
-    source_identity: [u8; 32],
+    runtime_source_identity:
+        crate::domain_computation::primary_graph::application_query::WorthQueryRuntimeSourceIdentity,
+    checkpoint_source_identity:
+        crate::domain_computation::primary_graph::application_query::WorthQueryCheckpointSourceIdentity,
+    recorded_source_identity:
+        crate::domain_computation::primary_graph::output_lineage::RecordedSourceIdentity,
     source_partition_identity: [u8; 32],
     producer_dependency_identity: Option<[u8; 32]>,
     idempotency_key_identity: [u8; 32],
@@ -131,10 +136,11 @@ impl WorthQuerySuspendedGeneratedOutput {
                 self.producer.scope,
                 self.producer.output_occurrence,
                 self.producer.output_generation,
-                self.producer.source_identity,
+                self.producer.runtime_source_identity,
+                self.producer.checkpoint_source_identity,
             )
             .is_some_and(|exact| {
-                exact.source_identity == self.producer.source_identity
+                exact.source_identity == self.producer.recorded_source_identity
                     && exact.runtime_authority == self.producer.runtime_authority
                     && exact.schema == self.producer.schema
                     && exact.scope == self.producer.scope
@@ -164,7 +170,10 @@ pub(super) struct ExpectedSourceQualification {
     runtime_authority: u64,
     schema: worth_query_installation::facade::ApplicationSchemaBindingIdentity,
     scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
-    source_identity: [u8; 32],
+    runtime_source_identity:
+        crate::domain_computation::primary_graph::application_query::WorthQueryRuntimeSourceIdentity,
+    checkpoint_source_identity:
+        crate::domain_computation::primary_graph::application_query::WorthQueryCheckpointSourceIdentity,
     selection: crate::basis::WorthQueryProductBranchReadIdentity,
 }
 
@@ -183,6 +192,7 @@ where
         Producer: WorthQueryApplicationProducerBinding<Schema>,
     {
         let source_identity = source.idempotency_identity();
+        let checkpoint_source_identity = source.checkpoint_identity();
         let source_root = source.source_root();
         let crate::domain_computation::primary_graph::application_query::WorthQueryApplicationBasisSelectionIdentity::Product(selection) = source.selection.clone() else {
             return Err(WorthQueryGeneratedOutputSuspensionFailure::Qualification(
@@ -195,7 +205,8 @@ where
                 runtime_authority: source.runtime_authority,
                 schema: source.schema_binding,
                 scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(source_root),
-                source_identity,
+                runtime_source_identity: source_identity,
+                checkpoint_source_identity,
                 selection,
             },
         )
@@ -254,7 +265,8 @@ where
                 source.scope,
                 observation.lifecycle_incarnation(),
                 observation.reference_generation().get(),
-                source.source_identity,
+                source.runtime_source_identity,
+                source.checkpoint_source_identity,
             )
             .ok_or_else(|| {
                 let denial = if lineage.has_output_at_or_before::<Producer::Operation>(
@@ -278,10 +290,7 @@ where
                 WorthQueryGeneratedOutputSuspensionDenial::ForeignSchema,
             ));
         }
-        if source.runtime_authority != exact.runtime_authority
-            || source.schema != exact.schema
-            || source.source_identity != exact.source_identity
-        {
+        if source.runtime_authority != exact.runtime_authority || source.schema != exact.schema {
             return Err(WorthQueryGeneratedOutputSuspensionFailure::Qualification(
                 WorthQueryGeneratedOutputSuspensionDenial::SourceMismatch,
             ));
@@ -312,7 +321,9 @@ where
             output_binding_type: TypeId::of::<Producer::Operation>(),
             binding_identity: Producer::IDENTITY,
             provider_identity: Producer::Provider::SEMANTIC_IDENTITY,
-            source_identity: exact.source_identity,
+            runtime_source_identity: source.runtime_source_identity,
+            checkpoint_source_identity: source.checkpoint_source_identity,
+            recorded_source_identity: exact.source_identity,
             source_partition_identity: exact.source_partition_identity,
             producer_dependency_identity: exact.producer_dependency_identity,
             idempotency_key_identity: exact.idempotency_key_identity,

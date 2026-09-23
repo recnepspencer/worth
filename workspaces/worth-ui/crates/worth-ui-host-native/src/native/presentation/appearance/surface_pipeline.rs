@@ -4,11 +4,14 @@ use worth_ui_host_contract::{
 };
 
 mod content_geometry;
+#[path = "surface_pipeline/encoding.rs"]
+mod encoding;
 #[path = "surface_pipeline/raster_operation.rs"]
 mod raster_operation;
 #[path = "surface_pipeline/storage.rs"]
 mod storage;
 use content_geometry::NativeSurfaceGeometry;
+use encoding::{border_edge_bits, color_vector, micros_to_pixels};
 
 use super::antialiasing::{
     coverage_from_signed_distance, rounded_signed_distance, UiNativeAnalyticCoverage,
@@ -140,6 +143,28 @@ impl UiNativeSurfacePipeline {
                 .collect::<Result<Vec<_>, UiNativeGeometryDenial>>()?
                 .into_boxed_slice(),
         })
+    }
+
+    /// One chrome rectangle as an ordinary rounded fill. Chrome has no border
+    /// and no non-rectangular geometry, so the whole primitive is its fill.
+    pub(crate) fn prepare_scroll_chrome(
+        chrome: &super::scroll_chrome_pipeline::UiNativeScrollChromePrimitive,
+    ) -> UiNativeSurfacePrimitive {
+        UiNativeSurfacePrimitive {
+            allocation: chrome.rect(),
+            geometry: NativeSurfaceGeometry::Rectangle,
+            clip: chrome.clip(),
+            radii: chrome.radii(),
+            border_width: 0,
+            paint_kind: UiNativeSurfacePaintKind::Fill,
+            fill: Some(worth_ui_host_contract::UiMountedSurfaceFill::Solid(
+                chrome.background(),
+            )),
+            border_color: None,
+            opacity: chrome.opacity(),
+            border_edges: UiMountedSurfaceBorderEdges::ALL,
+            border_omissions: Box::new([]),
+        }
     }
 
     pub(crate) fn prepare_outline(
@@ -351,24 +376,6 @@ impl UiNativeSurfacePrimitive {
                 omission.side == side && omission.start <= offset && offset < omission.end
             })
     }
-}
-
-fn micros_to_pixels(value: i64) -> f32 {
-    value as f32 / super::geometry::PHYSICAL_MICROS_PER_PIXEL as f32
-}
-
-fn color_vector(color: Option<UiMountedAppearanceColor>) -> [f32; 4] {
-    let Some(color) = color else {
-        return [0.0; 4];
-    };
-    crate::native::presentation::raster::premultiplied_linear_color(color.straight_srgba())
-}
-
-const fn border_edge_bits(edges: UiMountedSurfaceBorderEdges) -> u8 {
-    (if edges.top() { 1 } else { 0 })
-        | (if edges.right() { 2 } else { 0 })
-        | (if edges.bottom() { 4 } else { 0 })
-        | (if edges.left() { 8 } else { 0 })
 }
 
 #[cfg(test)]

@@ -21,13 +21,53 @@ impl UiMountedOccurrenceGeometryState {
             return None;
         };
         let content = geometry.occurrences.get(owner)?.bounds;
-        let viewport = geometry
-            .regions
-            .get(declaration)?
+        let (_, slot) = geometry
+            .scroll_index
+            .regions(*owner)
             .iter()
-            .find(|row| row.0 == *owner)?
-            .2;
+            .find(|(candidate, _)| candidate == declaration)?;
+        let viewport = geometry.regions.get(declaration)?.get(*slot)?.2;
         Some((*owner, content, viewport))
+    }
+
+    /// The Scroll region owner whose offset moves `instance`, when `instance`
+    /// is content laid out relative to such an owner rather than an owner
+    /// itself. Scrolled content is not the region's graph descendant, so its
+    /// own ownership chain never names the region; the layout parent link is
+    /// what ties it to the offset it travels with.
+    pub(crate) fn scrolled_content_owner(
+        &self,
+        surface: UiSemanticSurfaceIdentity,
+        instance: UiMountedInstanceIdentity,
+    ) -> Option<UiMountedInstanceIdentity> {
+        let geometry = self.surfaces.get(&surface)?;
+        let owns_region = |candidate: UiMountedInstanceIdentity| {
+            !geometry.scroll_index.regions(candidate).is_empty()
+        };
+        let mut cursor = geometry.occurrences.get(&instance)?.parent;
+        while let Some(ancestor) = cursor {
+            if owns_region(ancestor) {
+                return Some(ancestor);
+            }
+            cursor = geometry.occurrences.get(&ancestor)?.parent;
+        }
+        None
+    }
+
+    /// The offset the displayed pose of one region occurrence was last built
+    /// from. This is the displayed truth rather than the semantic target: the
+    /// accepted-sample settlement writes it, so a region still travelling
+    /// toward a new offset reports the one the host has already presented.
+    pub(crate) fn applied_scroll_pose(
+        &self,
+        surface: UiSemanticSurfaceIdentity,
+        owner_instance: UiMountedInstanceIdentity,
+    ) -> Option<crate::runtime::scroll::UiScrollOffset> {
+        self.surfaces
+            .get(&surface)?
+            .scroll_poses
+            .get(&owner_instance)
+            .copied()
     }
 
     pub(crate) fn prepare_scroll_pose(
@@ -44,6 +84,7 @@ impl UiMountedOccurrenceGeometryState {
             .ok_or(UiMountedOccurrenceGeometryDenial::MissingSurfaceBinding)?;
         let scale = worth_ui_host_contract::UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f64;
         let mut translations = BTreeMap::<UiMountedInstanceIdentity, (f32, f32)>::new();
+        let mut work = crate::mounting::UiHitTestSpatialWork::default();
         for (owner, offset) in poses {
             if !geometry.occurrences.contains_key(owner) {
                 return Err(UiMountedOccurrenceGeometryDenial::UnknownMountedInstance);
@@ -60,21 +101,20 @@ impl UiMountedOccurrenceGeometryState {
                 ((previous.inline_subpixels() - offset.inline_subpixels()) as f64 / scale) as f32;
             let dy =
                 ((previous.block_subpixels() - offset.block_subpixels()) as f64 / scale) as f32;
-            let mut pending = geometry.children.get(owner).cloned().unwrap_or_default();
-            while let Some(instance) = pending.pop() {
-                let translation = translations.entry(instance).or_default();
+            for instance in geometry.scroll_index.descendants(*owner) {
+                work.scroll_geometry_members_visited += 1;
+                let translation = translations.entry(*instance).or_default();
                 translation.0 += dx;
                 translation.1 += dy;
-                if let Some(children) = geometry.children.get(&instance) {
-                    pending.extend(children);
-                }
             }
         }
         let mut rows = Vec::with_capacity(translations.len());
+        let mut moved = Vec::with_capacity(translations.len());
         for (instance, (dx, dy)) in &translations {
             let Some(row) = geometry.occurrences.get(instance) else {
                 continue;
             };
+            moved.push((*instance, [*dx, *dy]));
             let mut row = row.clone();
             row.bounds = translate(row.bounds, *dx, *dy)?;
             for (binding, clip) in row
@@ -105,11 +145,11 @@ impl UiMountedOccurrenceGeometryState {
             rows.push((*instance, row));
         }
         let mut regions = Vec::new();
-        for (declaration, occurrences) in &geometry.regions {
-            for (index, (instance, _, bounds)) in occurrences.iter().enumerate() {
-                if let Some((dx, dy)) = translations.get(instance) {
-                    regions.push((*declaration, index, translate(*bounds, *dx, *dy)?));
-                }
+        for (instance, (dx, dy)) in &translations {
+            for (declaration, index) in geometry.scroll_index.regions(*instance) {
+                work.scroll_geometry_regions_visited += 1;
+                let bounds = geometry.regions[declaration][*index].2;
+                regions.push((*declaration, *index, translate(bounds, *dx, *dy)?));
             }
         }
         Ok(UiPreparedMountedScrollPose {
@@ -117,6 +157,8 @@ impl UiMountedOccurrenceGeometryState {
             poses: poses.to_vec(),
             rows,
             regions,
+            translations: moved,
+            work,
         })
     }
 
@@ -126,8 +168,15 @@ impl UiMountedOccurrenceGeometryState {
         identity: &crate::mounting::UiMountedIdentityState,
         scroll: &mut crate::runtime::scroll::UiScrollRuntimeState,
     ) -> Result<Box<[UiMountedInstanceIdentity]>, UiMountedOccurrenceGeometryDenial> {
+        let binding = identity
+            .projection_surface(surface)
+            .ok_or(UiMountedOccurrenceGeometryDenial::MissingSurfaceBinding)?
+            .0
+            .binding_generation();
         let mut poses = BTreeMap::new();
-        for target in scroll.ownership_instances() {
+        // Gathered before the walk: each restored owner is reconciled back
+        // into the same Scroll state the instances came from.
+        for target in scroll.ownership_instances().collect::<Vec<_>>() {
             let Ok(chain) = scroll.ownership_chain(target).cloned() else {
                 continue;
             };
@@ -157,11 +206,26 @@ impl UiMountedOccurrenceGeometryState {
                     bounds,
                     crate::runtime::scroll::UiScrollOffset::origin(),
                 );
+                let (anchor, policy) = self.scroll_rebind_anchor(
+                    surface,
+                    mounted,
+                    binding,
+                    scroll.owner_anchor(owner, incarnation).ok().flatten(),
+                    // An owner with no record and an owner whose record belongs
+                    // to an earlier incarnation are the same thing to a restore:
+                    // neither names an offset this surface has travelled, so both
+                    // start it at rest rather than at a distance nothing here can
+                    // account for.
+                    scroll
+                        .offset(owner, incarnation)
+                        .unwrap_or_else(|_| crate::runtime::scroll::UiScrollOffset::origin()),
+                    bounds,
+                );
                 scroll
                     .reconcile_rebind(crate::runtime::scroll::UiScrollRebindRequest::new(
                         registration,
-                        None,
-                        crate::runtime::scroll::UiScrollAnchorPolicy::Clamp,
+                        anchor,
+                        policy,
                     ))
                     .expect("origin is within validated region extents");
                 poses.insert(
@@ -209,15 +273,37 @@ pub(crate) struct UiPreparedMountedScrollPose {
         usize,
         UiMountedCanonicalBox,
     )>,
+    translations: Vec<(UiMountedInstanceIdentity, [f32; 2])>,
+    work: crate::mounting::UiHitTestSpatialWork,
 }
 
 impl UiPreparedMountedScrollPose {
+    pub(crate) const fn work(&self) -> crate::mounting::UiHitTestSpatialWork {
+        self.work
+    }
+
     pub(crate) fn changed_instances(&self) -> Box<[UiMountedInstanceIdentity]> {
         self.rows.iter().map(|row| row.0).collect()
     }
+
+    pub(crate) const fn surface(&self) -> UiSemanticSurfaceIdentity {
+        self.surface
+    }
+
+    /// How far this pose moves each occurrence it moves, in presented points.
+    ///
+    /// Displayed geometry and the presented hit rows are two readings of the
+    /// same displacement, so both follow this one list. Handing it out is what
+    /// lets a pointer resolve against the content a settle just put under it
+    /// rather than the content that was there before.
+    pub(crate) fn translations(&self) -> &[(UiMountedInstanceIdentity, [f32; 2])] {
+        &self.translations
+    }
 }
 
-fn translate(
+/// One box moved by a displacement, still canonical. Both the pose that stores
+/// a displacement and the presentation that corrects one place a box this way.
+pub(super) fn translate(
     bounds: UiMountedCanonicalBox,
     dx: f32,
     dy: f32,

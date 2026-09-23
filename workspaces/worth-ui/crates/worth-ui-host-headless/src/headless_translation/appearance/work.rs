@@ -149,5 +149,11 @@ fn validate(mechanic: &UiMountedAppearanceMechanic) -> bool {
         }
         UiMountedAppearanceMechanic::Pointer(mechanic) => mechanic.pointer().value() != 0,
         UiMountedAppearanceMechanic::Backdrop(mechanic) => !mechanic.participates_in_hit_testing(),
+        UiMountedAppearanceMechanic::ScrollChrome(mechanic) => {
+            // The attribution proves the rectangle came from the occurrence the
+            // identity names, so a change that renamed one without the other is
+            // not a chrome change this host will replay.
+            mechanic.attribution().owner_instance() == mechanic.identity().owner_instance()
+        }
     }
 }
