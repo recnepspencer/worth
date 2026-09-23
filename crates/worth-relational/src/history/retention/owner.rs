@@ -8,7 +8,9 @@ use crate::branch::{RelationalBranchIdentity, RelationalBranchRoot};
 use super::cost_counters::{RelationalRetentionAtomicCounters, RelationalRetentionCostCounters};
 
 const MAX_LIVE_ROOT_OBLIGATIONS: usize = 65_536;
-const MAX_RETIRED_BRANCH_ROOTS: usize = 4_096;
+// Exact history consumers can retain a root for each of 10k publications.
+// Keep this owner inventory finite while admitting that supported history.
+const MAX_RETIRED_BRANCH_ROOTS: usize = 16_384;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum RelationalRetentionAcquisitionDenial {
