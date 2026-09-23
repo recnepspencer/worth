@@ -12,9 +12,6 @@ use super::super::{
 };
 use super::{WorkflowAdvanceInput, WorkflowAdvanceIntent};
 
-const ASSESSMENT_SETTLEMENT_ATTEMPTS: std::num::NonZeroUsize =
-    std::num::NonZeroUsize::new(64).unwrap();
-
 pub fn accept_assessment(
     application: &BoundedDimensionWorkflowRuntime,
     instance: worth_query_host::facade::application_entry::PublishedWorkflowInstanceRef,
@@ -71,13 +68,10 @@ pub fn settle_assessment_for(
         .expect("assessment-head workflow admission must succeed")
         .into_assessment_demand(PartAssessmentDemand::new(subject_identity))
         .expect("the typed demand must match the installed assessment contract")
-        .controls(
-            WorthQueryOutputDemandControls::new(
-                std::num::NonZeroUsize::new(512).unwrap(),
-                std::num::NonZeroUsize::new(1024).unwrap(),
-            )
-            .settlement_attempts(ASSESSMENT_SETTLEMENT_ATTEMPTS),
-        )
+        .controls(WorthQueryOutputDemandControls::new(
+            std::num::NonZeroUsize::new(512).unwrap(),
+            std::num::NonZeroUsize::new(1024).unwrap(),
+        ))
         .start()
         .expect("the installed assessment output demand must start");
     match handle

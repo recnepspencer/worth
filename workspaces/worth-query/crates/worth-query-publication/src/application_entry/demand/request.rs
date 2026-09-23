@@ -7,6 +7,8 @@ use worth_query_execution::facade::application_contribution::WorthQueryApplicati
 use worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use worth_query_installation::facade::ApplicationSchema;
 
+const DEFAULT_SETTLEMENT_ATTEMPTS: NonZeroUsize = NonZeroUsize::new(64).unwrap();
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorthQueryOutputDemandControls {
     maximum_work: NonZeroUsize,
@@ -19,11 +21,11 @@ impl WorthQueryOutputDemandControls {
         Self {
             maximum_work,
             maximum_retained_bytes,
-            maximum_settlement_attempts: NonZeroUsize::MIN,
+            maximum_settlement_attempts: DEFAULT_SETTLEMENT_ATTEMPTS,
         }
     }
 
-    /// Bounds source-refresh/advance contacts in one `settle` call; defaults to one.
+    /// Bounds source-refresh/advance contacts in one `settle` call; defaults to 64.
     /// Producer work and retained-byte budgets remain independent.
     pub const fn settlement_attempts(mut self, maximum_attempts: NonZeroUsize) -> Self {
         self.maximum_settlement_attempts = maximum_attempts;
