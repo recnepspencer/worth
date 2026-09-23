@@ -45,7 +45,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn read_live
             plan.query.name(),
         )
     })?;
-    let selection = select_bounded_roots(runtime, graph, plan)?;
+    let selection = select_bounded_roots(runtime, graph, plan, &mut result_buffer)?;
     super::validate_cardinality_and_limit(
         contract.cardinality(),
         selection.candidates.len(),
@@ -88,6 +88,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn read_live
         &plan.parameters,
         &selection.candidates,
         selection.selected_predicate_source.as_ref(),
+        selection.root_path_source.as_ref(),
         plan.controls
             .maximum_work()
             .get()

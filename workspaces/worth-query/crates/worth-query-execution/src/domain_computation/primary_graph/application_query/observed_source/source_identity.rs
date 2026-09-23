@@ -95,7 +95,7 @@ pub(in crate::domain_computation::primary_graph) fn derive_source_identity(
     selection: &WorthQueryApplicationBasisSelectionIdentity,
 ) -> [u8; 32] {
     let mut digest = Sha256::new();
-    digest.update(b"worth-query:observed-source:v3");
+    digest.update(b"worth-query:observed-source:v4");
     digest.update(query);
     digest.update(parameters);
     match selection {
@@ -136,6 +136,13 @@ pub(in crate::domain_computation::primary_graph) fn derive_source_identity(
         for endpoint in &adjacency.endpoints {
             entity(&mut digest, *endpoint);
         }
+    }
+    match &footprint.root_selection {
+        Some(selection) => {
+            digest.update([1]);
+            digest.update(selection.identity());
+        }
+        None => digest.update([0]),
     }
     digest.finalize().into()
 }
@@ -246,6 +253,7 @@ mod tests {
             entities: vec![root],
             aspects,
             adjacencies: Vec::new(),
+            root_selection: None,
         }
     }
 

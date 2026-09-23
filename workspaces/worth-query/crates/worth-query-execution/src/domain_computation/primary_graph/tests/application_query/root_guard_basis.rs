@@ -16,8 +16,8 @@ use crate::domain_computation::primary_graph::{
     tests::fixture::{
         installed_authorization_world, AccountIdentity, AccountStatus, CrossRootQuery,
     },
-    WorthQueryApplicationQueryAccessContext, WorthQueryApplicationQueryBasisPosture,
-    WorthQueryPrincipalResolutionMode,
+    WorthQueryApplicationObservedFact, WorthQueryApplicationQueryAccessContext,
+    WorthQueryApplicationQueryBasisPosture, WorthQueryPrincipalResolutionMode,
 };
 
 #[test]
@@ -87,6 +87,31 @@ fn root_path_guard_reads_its_pinned_truth_version() {
 
     assert_eq!(pinned_result.rows().len(), 2);
     assert!(current_result.rows().is_empty());
+    let selection = pinned_result.observed_sources()[0]
+        .footprint_for_test()
+        .root_selection
+        .as_ref()
+        .expect("pinned path result retains the guard source");
+    let guard = selection
+        .aspects
+        .iter()
+        .find(|aspect| aspect.entity == account.entity_id())
+        .unwrap();
+    let fact = WorthQueryApplicationObservedFact::SourceAspectRevision {
+        entity_id: guard.entity,
+        aspect: guard.aspect.clone(),
+        native_revision: guard.native_revision,
+    };
+    let current = world.selected_product();
+    let graph = world.application.runtime.primary_graph().unwrap();
+    assert!(
+        !graph.integration_handle().with_runtime(|runtime| {
+            fact.source_currentness_in(runtime, current.application_basis().snapshot_handle(), 1)
+                .unwrap()
+                .0
+        }),
+        "changed root-path guard must stale the selected source"
+    );
     assert_eq!(
         pinned_result.receipt().basis_posture(),
         WorthQueryApplicationQueryBasisPosture::SelectedProduct

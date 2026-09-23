@@ -85,6 +85,7 @@ pub(super) fn materialize_result_tree(
     parameters: &WorthQueryAdmittedApplicationQueryParameters,
     root_ids: &[EntityId],
     selected_predicate_source: Option<&crate::domain_computation::primary_graph::application_query::observed_source::WorthQueryObservedAspectRevision>,
+    root_path_source: Option<&BTreeMap<EntityId, Arc<crate::domain_computation::primary_graph::application_query::observed_source::WorthQueryObservedRootSelection>>>,
     maximum_work: usize,
     collection_selection: ResultTreeCollectionSelection,
     result_buffer: &mut WorthQueryApplicationResultBufferReservation,
@@ -110,6 +111,9 @@ pub(super) fn materialize_result_tree(
         &mut collection_selection,
         result_buffer,
     )?;
+    if rows.len() != root_ids.len() {
+        return Err(projection_denial(contract.root_entity()));
+    }
     order_collection(contract, governance, "root", &mut rows, &mut work)?;
     let source_footprints = source_footprint::collect_source_footprints(
         &projection,
@@ -118,6 +122,7 @@ pub(super) fn materialize_result_tree(
         governance,
         &rows,
         selected_predicate_source,
+        root_path_source,
         &mut work,
         result_buffer,
     )?;

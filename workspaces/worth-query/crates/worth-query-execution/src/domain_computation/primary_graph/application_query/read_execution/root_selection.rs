@@ -10,12 +10,19 @@ use super::{
 };
 use crate::domain_computation::primary_graph::application_query::WorthQueryAdmittedApplicationQueryPlan;
 
+mod evidence;
 mod path_union;
 
 pub(super) struct BoundedRootSelection {
     pub(super) candidates: Vec<EntityId>,
     pub(super) selected_predicate_source:
         Option<super::super::observed_source::WorthQueryObservedAspectRevision>,
+    pub(super) root_path_source: Option<
+        std::collections::BTreeMap<
+            EntityId,
+            std::sync::Arc<super::super::observed_source::WorthQueryObservedRootSelection>,
+        >,
+    >,
     pub(super) examined_candidates: usize,
     pub(super) predicate_work_units: usize,
     pub(super) work_units: usize,
@@ -95,6 +102,35 @@ impl RootSelectionWork {
         self.predicate_work_units = self.predicate_work_units.saturating_add(charged);
         Ok(())
     }
+
+    fn charge_source_observation(
+        &mut self,
+        subject: &str,
+    ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
+        if self.work_units >= self.maximum_work {
+            return Err(read_execution_denial(
+                WorthQueryApplicationReadExecutionDenialKind::WorkLimitExceeded,
+                subject,
+            ));
+        }
+        self.work_units += 1;
+        Ok(())
+    }
+
+    fn charge_source_copy(
+        &mut self,
+        units: usize,
+        subject: &str,
+    ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
+        if self.work_units.saturating_add(units) > self.maximum_work {
+            return Err(read_execution_denial(
+                WorthQueryApplicationReadExecutionDenialKind::WorkLimitExceeded,
+                subject,
+            ));
+        }
+        self.work_units += units;
+        Ok(())
+    }
 }
 
 pub(super) fn select_bounded_roots<
@@ -118,15 +154,23 @@ pub(super) fn select_bounded_roots<
         PrincipalIdentity,
         Scope,
     >,
+    result_buffer: &mut super::super::resource_lifecycle::WorthQueryApplicationResultBufferReservation,
 ) -> Result<BoundedRootSelection, WorthQueryApplicationReadExecutionDenial> {
     let contract = plan.query.read_family_binding().planning_contract();
     if !contract.root_paths().is_empty() {
-        return path_union::select_root_path_union(runtime, graph, plan, contract.root_paths());
+        return path_union::select_root_path_union(
+            runtime,
+            graph,
+            plan,
+            contract.root_paths(),
+            result_buffer,
+        );
     }
     match contract.predicates() {
         [] => Ok(BoundedRootSelection {
             candidates: vec![plan.scope.entity_id()],
             selected_predicate_source: None,
+            root_path_source: None,
             examined_candidates: 1,
             predicate_work_units: 1,
             work_units: 1,
@@ -276,6 +320,7 @@ fn select_indexed_root<
     Ok(BoundedRootSelection {
         candidates: scoped.into_iter().collect(),
         selected_predicate_source,
+        root_path_source: None,
         examined_candidates: lookup.examined_entry_count(),
         predicate_work_units: lookup.examined_entry_count(),
         work_units: lookup.examined_entry_count(),

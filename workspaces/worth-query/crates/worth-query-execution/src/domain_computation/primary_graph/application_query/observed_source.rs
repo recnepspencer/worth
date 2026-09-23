@@ -11,8 +11,11 @@ use worth_relational::facade::{
 
 use super::resource_lifecycle::WorthQueryApplicationBasisSelectionIdentity;
 
+mod fact_conversion;
 mod footprint_accounting;
+mod root_selection;
 pub(super) mod source_identity;
+pub(in crate::domain_computation::primary_graph) use root_selection::WorthQueryObservedRootSelection;
 pub(in crate::domain_computation::primary_graph) use source_identity::WorthQueryObservedSourceEpoch;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -104,6 +107,8 @@ pub(in crate::domain_computation) struct WorthQueryObservedSourceFootprint {
     pub(in crate::domain_computation::primary_graph) aspects: Vec<WorthQueryObservedAspectRevision>,
     pub(in crate::domain_computation::primary_graph) adjacencies:
         Vec<WorthQueryObservedAdjacencyRevision>,
+    pub(in crate::domain_computation::primary_graph) root_selection:
+        Option<std::sync::Arc<WorthQueryObservedRootSelection>>,
 }
 
 /// Opaque proof of the native source projected into one public query row.
@@ -221,119 +226,6 @@ impl<Query> WorthQueryObservedSource<Query> {
         &self,
     ) -> &WorthQueryObservedSourceFootprint {
         &self.footprint
-    }
-    pub(in crate::domain_computation) fn validate_and_into_facts(
-        self,
-        runtime_authority: u64,
-        binding: &ApplicationSchemaBindingIdentity,
-        branch: &BranchId,
-        model_root: EntityId,
-        selected_product: &crate::basis::WorthQueryProductBranchReadIdentity,
-        expected_query_identifier: &str,
-        expected_query_identity: &WorthQueryInstalledApplicationQueryIdentity,
-        layout: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
-    ) -> Result<
-        Vec<crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact>,
-        WorthQuerySourceExpectationDenial,
-    > {
-        use crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact as Fact;
-        use WorthQuerySourceExpectationDenialKind as Kind;
-
-        if self.runtime_authority != runtime_authority {
-            return Err(WorthQuerySourceExpectationDenial::new(
-                Kind::ForeignApplication,
-                expected_query_identifier,
-            ));
-        }
-        if self.schema_binding.runtime_ordinal() != binding.runtime_ordinal()
-            || self.schema_binding.generation() != binding.generation()
-        {
-            return Err(WorthQuerySourceExpectationDenial::new(
-                Kind::ForeignInstallation,
-                expected_query_identifier,
-            ));
-        }
-        if self.schema_binding.schema_identity() != binding.schema_identity()
-            || self.schema_binding.package_identity() != binding.package_identity()
-        {
-            return Err(WorthQuerySourceExpectationDenial::new(
-                Kind::ForeignSchema,
-                expected_query_identifier,
-            ));
-        }
-        if self.query_identifier != expected_query_identifier {
-            return Err(WorthQuerySourceExpectationDenial::new(
-                Kind::SourceContractMismatch,
-                expected_query_identifier,
-            ));
-        }
-        if &self.query_identity != expected_query_identity {
-            return Err(WorthQuerySourceExpectationDenial::new(
-                Kind::SourceContractMismatch,
-                expected_query_identifier,
-            ));
-        }
-        let WorthQueryApplicationBasisSelectionIdentity::Product(observed_product) =
-            &self.selection
-        else {
-            return Err(WorthQuerySourceExpectationDenial::new(
-                Kind::ForeignBranch,
-                expected_query_identifier,
-            ));
-        };
-        if &self.branch != branch || !selected_product.same_branch_occurrence(observed_product) {
-            return Err(WorthQuerySourceExpectationDenial::new(
-                Kind::ForeignBranch,
-                expected_query_identifier,
-            ));
-        }
-        if self.model_root != model_root {
-            return Err(WorthQuerySourceExpectationDenial::new(
-                Kind::ForeignModel,
-                expected_query_identifier,
-            ));
-        }
-        self.validate_completeness(expected_query_identifier)?;
-        let mut facts = Vec::with_capacity(
-            self.footprint
-                .entities
-                .len()
-                .saturating_add(self.footprint.aspects.len())
-                .saturating_add(self.footprint.adjacencies.len()),
-        );
-        facts.extend(
-            self.footprint
-                .entities
-                .into_iter()
-                .map(|entity_id| Fact::SourceEntity { entity_id }),
-        );
-        for aspect in self.footprint.aspects {
-            layout
-                .aspect_contract(&aspect.entity_name, &aspect.aspect)
-                .filter(|contract| contract.revision() == aspect.contract_revision)
-                .ok_or_else(|| {
-                    WorthQuerySourceExpectationDenial::new(
-                        Kind::SourceContractMismatch,
-                        aspect.aspect.as_str(),
-                    )
-                })?;
-            facts.push(Fact::SourceAspectRevision {
-                entity_id: aspect.entity,
-                aspect: aspect.aspect,
-                native_revision: aspect.native_revision,
-            });
-        }
-        facts.extend(self.footprint.adjacencies.into_iter().map(|adjacency| {
-            Fact::SourceAdjacencyRevision {
-                relation_kind: adjacency.relation_kind,
-                anchor: adjacency.anchor,
-                direction: adjacency.direction,
-                native_revision: adjacency.native_revision,
-                comparison_work_limit: adjacency.comparison_work_limit,
-                endpoints: adjacency.endpoints,
-            }
-        }));
-        Ok(facts)
     }
 }
 

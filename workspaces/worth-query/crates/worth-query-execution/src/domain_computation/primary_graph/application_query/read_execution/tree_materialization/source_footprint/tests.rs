@@ -27,6 +27,7 @@ fn normalization_deduplicates_revisited_native_dependencies() {
         entities: vec![entity, entity],
         aspects: vec![aspect.clone(), aspect],
         adjacencies: vec![incoming.clone(), outgoing.clone(), incoming, outgoing],
+        root_selection: None,
     };
 
     let retained_before = footprint.retained_bytes();

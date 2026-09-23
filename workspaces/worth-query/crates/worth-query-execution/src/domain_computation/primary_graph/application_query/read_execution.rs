@@ -78,7 +78,7 @@ pub(super) fn read_bounded_root_rows<
     mut result_buffer: WorthQueryApplicationResultBufferReservation,
 ) -> Result<RawNonLiveKernelOutcome, WorthQueryApplicationReadExecutionDenial> {
     let contract = plan.query.read_family_binding().planning_contract();
-    let selection = select_bounded_roots(runtime, graph, plan)?;
+    let selection = select_bounded_roots(runtime, graph, plan, &mut result_buffer)?;
     validate_cardinality_and_limit(contract.cardinality(), selection.candidates.len(), plan)?;
     let tree = materialize_result_tree(
         runtime,
@@ -89,6 +89,7 @@ pub(super) fn read_bounded_root_rows<
         &plan.parameters,
         &selection.candidates,
         selection.selected_predicate_source.as_ref(),
+        selection.root_path_source.as_ref(),
         plan.controls
             .maximum_work()
             .get()
@@ -178,7 +179,7 @@ pub(super) fn read_continuation_page<
             plan.query.name(),
         )
     })?;
-    let selection = select_bounded_roots(runtime, graph, plan)?;
+    let selection = select_bounded_roots(runtime, graph, plan, &mut result_buffer)?;
     validate_cardinality_and_limit(contract.cardinality(), selection.candidates.len(), plan)?;
     let tree = materialize_result_tree(
         runtime,
@@ -189,6 +190,7 @@ pub(super) fn read_continuation_page<
         &plan.parameters,
         &selection.candidates,
         selection.selected_predicate_source.as_ref(),
+        selection.root_path_source.as_ref(),
         plan.controls
             .maximum_work()
             .get()
@@ -281,6 +283,16 @@ fn verify_result_tree_accounting(
             )),
             usize::saturating_add,
         );
+    let retained_bytes = source_footprints
+        .iter()
+        .fold(retained_bytes, |bytes, footprint| {
+            bytes.saturating_add(
+                footprint
+                    .root_selection
+                    .as_ref()
+                    .map_or(0, |source| source.retained_bytes()),
+            )
+        });
     reservation.verify_retained(retained_bytes).map_err(|()| {
         read_execution_denial(
             WorthQueryApplicationReadExecutionDenialKind::ResultBufferLimitExceeded,

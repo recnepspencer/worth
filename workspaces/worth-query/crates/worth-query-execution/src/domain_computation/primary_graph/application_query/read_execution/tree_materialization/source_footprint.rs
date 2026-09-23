@@ -22,6 +22,7 @@ pub(super) fn collect_source_footprints(
     governance: &WorthQueryApplicationQueryGovernance,
     roots: &[WorthQueryApplicationProjectionNode],
     selected_predicate_source: Option<&WorthQueryObservedAspectRevision>,
+    root_path_source: Option<&std::collections::BTreeMap<worth_relational::facade::identity::EntityId, std::sync::Arc<crate::domain_computation::primary_graph::application_query::observed_source::WorthQueryObservedRootSelection>>>,
     work: &mut ResultTreeWork,
     result_buffer: &mut WorthQueryApplicationResultBufferReservation,
 ) -> Result<Vec<WorthQueryObservedSourceFootprint>, WorthQueryApplicationReadExecutionDenial> {
@@ -48,6 +49,14 @@ pub(super) fn collect_source_footprints(
                 counts.relations,
                 root.result_path(),
             )?,
+            root_selection: root_path_source
+                .map(|sources| {
+                    sources
+                        .get(&root.entity_id())
+                        .cloned()
+                        .ok_or_else(|| projection_denial(root.result_path()))
+                })
+                .transpose()?,
         };
         collect_node(
             projection,
