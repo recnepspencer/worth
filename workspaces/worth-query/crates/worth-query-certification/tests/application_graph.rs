@@ -13,6 +13,8 @@ mod workflow_approval;
 mod workflow_assessment;
 #[path = "application_graph/workflow_compilation.rs"]
 mod workflow_compilation;
+#[path = "application_graph/workflow_component_scale.rs"]
+mod workflow_component_scale;
 #[path = "application_graph/workflow_condition.rs"]
 mod workflow_condition;
 #[path = "application_graph/workflow_geometry_scale.rs"]
