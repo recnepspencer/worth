@@ -1,4 +1,4 @@
-use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
+use std::collections::HashSet;
 
 use super::{
     adjacency, connection, denial, exact_adjacent, node,
@@ -13,6 +13,7 @@ use crate::domain_computation::primary_graph::workflow::{
     definition::compilation::publication_binding::ColdCompiledWorkflowDefinition,
     schema::WorthQueryWorkflowLayout,
 };
+use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn reconstruct_cold_definition(
@@ -74,6 +75,7 @@ pub(super) fn reconstruct_cold_definition(
         .iter()
         .map(|node| node::compile_node(runtime, snapshot, layout, *node, &mut facts))
         .collect::<Result<Vec<_>, _>>()?;
+    let node_membership: HashSet<_> = nodes.iter().copied().collect();
     let connections = adjacency(
         runtime,
         snapshot,
@@ -96,7 +98,7 @@ pub(super) fn reconstruct_cold_definition(
                 snapshot,
                 layout,
                 *connection,
-                &nodes,
+                &node_membership,
                 &mut facts,
             )
         })
