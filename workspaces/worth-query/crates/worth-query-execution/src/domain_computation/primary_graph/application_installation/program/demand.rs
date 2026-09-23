@@ -278,7 +278,7 @@ where
                 Family<Schema, WorthQueryProgramRootDemand<Schema, Root>>,
             >(
                 source,
-                Some(current),
+                current,
                 maximum_work,
                 maximum_retained_bytes,
                 source_receipt,

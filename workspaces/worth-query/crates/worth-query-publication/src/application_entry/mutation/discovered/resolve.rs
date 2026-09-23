@@ -101,6 +101,7 @@ where
     let demands = RootConnection::<Schema, Root>::demands_from_discovery(row)
         .map_err(WorthQueryRequiredOutputPreparationDenial::Connection)?;
     let mut sources = Vec::with_capacity(demands.len());
+    let mut current_sources = Vec::with_capacity(demands.len());
     let mut stale_roots = Vec::new();
     for (index, demand) in demands.iter().enumerate() {
         let result = request
@@ -112,7 +113,7 @@ where
             return Err(WorthQueryRequiredOutputPreparationDenial::MissingSource);
         }
         let retained_source = result.into_output_demand_source();
-        if matches!(start_kind, DiscoveredRootStartKind::Recovery) {
+        let current_source = if matches!(start_kind, DiscoveredRootStartKind::Recovery) {
             let current = request
                 .query(demand.source_intent())
                 .execute()
@@ -136,8 +137,12 @@ where
                     return Err(WorthQueryRequiredOutputPreparationDenial::DemandExecution(denial));
                 }
             }
-        }
+            Some(current_source)
+        } else {
+            None
+        };
         sources.push(retained_source);
+        current_sources.push(current_source);
     }
     application
         .bind_prepared_discovered_program_root_sources::<Root>(
@@ -148,7 +153,12 @@ where
         .map_err(WorthQueryRequiredOutputPreparationDenial::DemandExecution)?;
     let mut roots = Vec::with_capacity(demands.len());
     let mut superseded = Vec::new();
-    for (index, (demand, source)) in demands.into_iter().zip(sources).enumerate() {
+    for (index, ((demand, source), current_source)) in demands
+        .into_iter()
+        .zip(sources)
+        .zip(current_sources)
+        .enumerate()
+    {
         if stale_roots.contains(&index) {
             superseded.push(demand);
             continue;
@@ -162,14 +172,18 @@ where
                     controls.maximum_retained_bytes().get(),
                     prepared,
                 ),
-            DiscoveredRootStartKind::Recovery => application
-                .recover_discovered_program_root_output::<Root>(
+            DiscoveredRootStartKind::Recovery => {
+                let current_source = current_source
+                    .ok_or(WorthQueryRequiredOutputPreparationDenial::MissingSource)?;
+                application.recover_discovered_program_root_output::<Root>(
                     &worth_query_execution::publication_boundary::program_publication_access(),
                     source,
+                    current_source,
                     controls.maximum_work().get(),
                     controls.maximum_retained_bytes().get(),
                     receipt,
-                ),
+                )
+            }
         };
         let admitted = match admitted {
             Ok(admitted) => admitted,

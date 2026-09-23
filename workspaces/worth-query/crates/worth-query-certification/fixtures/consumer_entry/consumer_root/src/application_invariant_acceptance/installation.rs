@@ -159,9 +159,9 @@ pub(super) fn assert_required_output_source_cannot_be_an_action() {
         },
     );
     let application = result.expect("the overlapping program remains declaration-valid");
-    let denial = match application.admit_program_operation::<
-        worth_query_topology_entry::AdjustPlanarSource,
-    >() {
+    let denial = match application
+        .admit_program_operation::<worth_query_topology_entry::AdjustPlanarSource>()
+    {
         Err(denial) => denial,
         Ok(_) => panic!("required output source was admitted as an ordinary action"),
     };
@@ -336,6 +336,17 @@ fn install_with_resource_bytes(
                 WorthQueryPrincipalMappingStatus::Enabled,
             )?;
             seed::seed_cycles(graph);
+            graph.bind_principal(
+                &principal,
+                primary_graph::WorthQueryApplicationPrincipalKey::new("sibling-owner").unwrap(),
+                2_u64,
+                worth_query_host::facade::declaration::authentication::WorthQueryExternalPrincipalIdentity::new(
+                    "https://consumer.invalid/local",
+                    "sibling-owner",
+                )
+                .unwrap(),
+                WorthQueryPrincipalMappingStatus::Enabled,
+            )?;
             Ok(())
         },
     )

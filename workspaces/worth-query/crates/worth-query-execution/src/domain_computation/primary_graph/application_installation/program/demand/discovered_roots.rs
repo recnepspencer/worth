@@ -149,6 +149,10 @@ where
             SourceQuery<Schema, Root>,
             SourceValue<Schema, Root>,
         >,
+        current: WorthQueryApplicationOutputDemandSource<
+            SourceQuery<Schema, Root>,
+            SourceValue<Schema, Root>,
+        >,
         maximum_work: usize,
         maximum_retained_bytes: usize,
         source_receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
@@ -177,7 +181,7 @@ where
         self.runtime
             .admit_recovered_output_demand::<Family<Schema, Root>>(
                 source,
-                None,
+                current,
                 maximum_work,
                 maximum_retained_bytes,
                 source_receipt,

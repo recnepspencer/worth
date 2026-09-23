@@ -128,24 +128,9 @@ where
             ),
         );
     }
-    let relational_profile = limits.profile.relational_profile();
-    let mut relational_builder = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
-        .profile(relational_profile);
-    if let Some(capacity) = limits.relational_transaction_capacity {
-        let defaults = worth_relational::facade::runtime::RelationalRuntimeConfig::resolved(
-            relational_profile,
-            Default::default(),
-        );
-        let mut publication = defaults.publication.policy;
-        publication.max_patch_records_per_commit = capacity.patch_records;
-        publication.max_transaction_footprint_loci = capacity.footprint_loci;
-        let mut integrity = defaults.execution.relation_integrity_scope_budget;
-        integrity.max_touched_entities = capacity.touched_entities;
-        relational_builder = relational_builder
-            .publication(publication)
-            .relation_integrity_scope_budget(integrity);
-    }
-    let relational_runtime = relational_builder.build();
+    let relational_runtime = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
+        .profile(limits.profile.relational_profile())
+        .build();
     let mut graph = authority
         .prepare_primary_graph_with_relational_runtime_and_invariants(
             &runtime,

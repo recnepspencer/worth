@@ -55,6 +55,9 @@ pub(super) fn seed_cycles(graph: &mut WorthQueryPrimaryGraphBootstrap<ConsumerSc
             entity_key("remote-b"),
         ))
         .expect("the authored anchor discovers an independent output source");
+    graph
+        .commit_seed_batch()
+        .expect("the complete bounded seed batch commits before installation finishes");
 }
 
 fn entity_key(key: &str) -> WorthQueryApplicationEntityKey<ConsumerSchema, Body> {
