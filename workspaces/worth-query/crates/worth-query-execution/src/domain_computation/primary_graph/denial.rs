@@ -66,6 +66,7 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     /// reserve its branch program activation read needs.
     ProgramActivationWorkReserveOverflow,
     InvariantInstallationReceiptMismatch,
+    CheckpointRecoveryRejected,
     MissingProducerBinding,
     DuplicateProducerBinding,
     DuplicateProducerOperationBinding,

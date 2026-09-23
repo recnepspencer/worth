@@ -143,6 +143,12 @@ impl WorthQueryApplicationCommitReceipt {
         self.output_correspondence.as_ref()
     }
 
+    pub(in crate::domain_computation::primary_graph) fn retain_output_correspondence(
+        &self,
+    ) -> std::sync::Arc<WorthQueryApplicationOutputCorrespondence> {
+        std::sync::Arc::clone(&self.output_correspondence)
+    }
+
     pub(crate) fn publication_source(&self) -> WorthQueryApplicationCommitPublicationSource {
         WorthQueryApplicationCommitPublicationSource::from_receipt(self)
     }
@@ -289,6 +295,16 @@ impl WorthQueryApplicationCommitReceipt {
         runtime: u64,
     ) -> Self {
         self.provider_runtime_instance_id = runtime;
+        self
+    }
+
+    #[cfg(test)]
+    pub(in crate::domain_computation::primary_graph) fn with_idempotency_binding_for_test(
+        mut self,
+        binding: super::super::WorthQueryApplicationIdempotencyBinding,
+    ) -> Self {
+        self.authority_binding
+            .replace_idempotency_binding_for_test(binding);
         self
     }
 }

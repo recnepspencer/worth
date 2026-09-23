@@ -1,9 +1,9 @@
 use worth_query_declaration::facade::application_aftermath::DeclaredApplicationAftermathContract;
 use worth_query_declaration::facade::application_schema::{
     ApplicationAbilityRef, ApplicationAspectRef, ApplicationAuthorizationPathBuilder,
-    ApplicationEffectRef, ApplicationEntityRef, ApplicationFieldRef,
-    ApplicationOperationMarkerIdentity, ApplicationOperationRef, ApplicationPolicyRef,
-    ApplicationPrincipalBindingRef, ApplicationPrincipalBindingRequirements,
+    ApplicationEffectRef, ApplicationEntityMarkerIdentity, ApplicationEntityRef,
+    ApplicationFieldRef, ApplicationOperationMarkerIdentity, ApplicationOperationRef,
+    ApplicationPolicyRef, ApplicationPrincipalBindingRef, ApplicationPrincipalBindingRequirements,
     ApplicationPrincipalIdentityRequirement, ApplicationPrincipalMappingIdentityRequirement,
     ApplicationPrincipalMappingStatusRequirement, ApplicationPrincipalTargetRequirement,
     ApplicationRelationRef, ApplicationSchema, ApplicationSchemaDeclaration,
@@ -44,6 +44,10 @@ use principal_binding::test_principal_binding;
 struct TestSchema;
 struct DriftedSchema;
 struct AddedEntity;
+
+impl ApplicationEntityMarkerIdentity<DriftedSchema> for AddedEntity {
+    const IDENTIFIER: &'static str = "AddedEntity";
+}
 struct TestAbility;
 struct TestOperation<Schema>(std::marker::PhantomData<Schema>);
 struct TestInput;

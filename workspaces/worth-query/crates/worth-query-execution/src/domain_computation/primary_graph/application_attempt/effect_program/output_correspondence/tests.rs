@@ -48,6 +48,48 @@ fn runtime_role_names_reject_ambiguous_or_unbounded_representations() {
 }
 
 #[test]
+fn checkpoint_roles_reject_invalid_names_unknown_entities_and_duplicates() {
+    let entity = EntityId::new(PartitionId::main(), 1, 1);
+    let checkpoint_role = |role: &str, entity_name: &str| WorthQueryCheckpointOutputRole {
+        role: role.into(),
+        posture: WorthQueryApplicationOutputPosture::Preserve,
+        entity_name: entity_name.into(),
+        entity,
+    };
+
+    assert!(
+        WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
+            TypeId::of::<Binding>(),
+            vec![checkpoint_role(" invalid", "entity")],
+            |_| Some(TypeId::of::<Entity>()),
+        )
+        .unwrap_err()
+        .contains("checkpoint output role  invalid")
+    );
+    assert!(
+        WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
+            TypeId::of::<Binding>(),
+            vec![checkpoint_role("valid", "unknown")],
+            |_| None,
+        )
+        .unwrap_err()
+        .contains("names an uninstalled entity unknown")
+    );
+    assert!(
+        WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
+            TypeId::of::<Binding>(),
+            vec![
+                checkpoint_role("same", "entity"),
+                checkpoint_role("same", "entity"),
+            ],
+            |_| Some(TypeId::of::<Entity>()),
+        )
+        .unwrap_err()
+        .contains("role same is duplicated")
+    );
+}
+
+#[test]
 fn duplicate_and_foreign_binding_roles_are_denied_before_commit() {
     let program = Arc::new(());
     let existing = existing_handle(EntityId::new(PartitionId::main(), 1, 0), &program);

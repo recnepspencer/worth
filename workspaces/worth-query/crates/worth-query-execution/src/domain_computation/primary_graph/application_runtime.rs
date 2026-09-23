@@ -108,6 +108,8 @@ pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
     pub(super) result_buffers:
         super::application_query::resource_lifecycle::WorthQueryApplicationResultBufferRegistry,
+    pub(super) source_meanings:
+        super::application_query::observed_source::source_identity::WorthQueryObservedSourceMeaningRegistry,
     pub(super) next_external_dispatch_attempt: AtomicU64,
     pub(super) external_effect_transport:
         std::sync::OnceLock<std::sync::Arc<dyn WorthQueryExternalEffectTransport>>,
@@ -125,6 +127,7 @@ pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(super) next_output_producer_attempt: AtomicU64,
     pub(super) next_application_mutation_partition: AtomicU32,
     pub(super) output_demands: super::application_output_demand::WorthQueryOutputDemandRegistry,
+    pub(super) recovered_outputs: super::application_output_demand::WorthQueryRecoveredOutputs,
     pub(super) program_required_bindings: std::collections::BTreeSet<std::any::TypeId>,
     pub(super) program_required_operations: std::collections::BTreeSet<std::any::TypeId>,
     pub(super) program_support:

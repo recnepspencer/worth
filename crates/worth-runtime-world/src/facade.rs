@@ -34,8 +34,9 @@ pub use crate::branch::{
     ProductBranchCreationIntent, ProductBranchCreationPlans, ProductBranchHistoryTraversal,
     ProductBranchName, ProductBranchNameDenial, ProductBranchObservation,
     ProductBranchObservationMismatch, ProductBranchObservationMismatchAxis,
-    ProductBranchReferenceSnapshot, ProductBranchRetirementReport, RelationalBranchCreationPlan,
-    RuntimeWorldBootstrapIntent, RuntimeWorldBootstrapNoEffectCause, RuntimeWorldBootstrapOutcome,
+    ProductBranchReferenceSnapshot, ProductBranchRetirementReport,
+    RecoveredRuntimeWorldRootAuthority, RelationalBranchCreationPlan, RuntimeWorldBootstrapIntent,
+    RuntimeWorldBootstrapNoEffectCause, RuntimeWorldBootstrapOutcome,
     RuntimeWorldBranchAdmissionDenial, RuntimeWorldBranchRetirementDenial,
     SignalBranchCreationPlan,
 };

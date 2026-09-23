@@ -61,14 +61,22 @@ where
         .into_iter()
         .map(|footprint| {
             let selection = basis_identity.selection().clone();
-            let source_identity =
-                super::super::observed_source::source_identity::derive_source_identity(
+            let source_meaning = application
+                .source_meanings
+                .intern(
                     plan.query.identity().as_bytes(),
                     plan.parameters.identity().bytes(),
-                    &footprint,
+                    footprint,
                     &selection,
-                );
-            super::super::WorthQueryObservedSource {
+                )
+                .ok_or_else(|| {
+                    denial(
+                        WorthQueryApplicationOneShotDenialKind::SourceIdentityExhausted,
+                        plan.query.name(),
+                        plan.query.name(),
+                    )
+                })?;
+            Ok(super::super::WorthQueryObservedSource {
                 runtime_authority: plan.runtime_authority.as_u64(),
                 schema_binding: plan.query.binding_identity().clone(),
                 query_identity: plan.query.identity().clone(),
@@ -77,17 +85,17 @@ where
                 branch: basis_identity.branch_id().clone(),
                 selection,
                 model_root: plan.scope.entity_id(),
-                footprint,
-                source_identity,
+                source_meaning,
                 _marker: PhantomData,
-            }
+            })
         })
-        .collect();
+        .collect::<Result<Vec<_>, WorthQueryApplicationOneShotDenial>>()?;
     let basis_release = plan.basis.release();
     let released = basis_release.released();
     if !released {
         return Err(denial(
             WorthQueryApplicationOneShotDenialKind::BasisReleaseFailed,
+            plan.query.name(),
             plan.query.name(),
         ));
     }
@@ -102,6 +110,7 @@ where
         |projection: crate::domain_computation::primary_graph::WorthQueryApplicationProjectionDenial| {
             denial(
                 WorthQueryApplicationOneShotDenialKind::Projection(projection.kind()),
+                plan.query.name(),
                 projection.subject(),
             )
         },
@@ -119,6 +128,7 @@ where
         .map_err(|_| {
             denial(
                 WorthQueryApplicationOneShotDenialKind::ForeignPlan,
+                plan.query.name(),
                 plan.query.name(),
             )
         })?;

@@ -303,21 +303,51 @@ where
             ));
         };
         let output_bindings = self.installed_producers.family_output_bindings::<Family>();
-        let source_posture = self
+        let scope = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(source.source_root());
+        let mut lineage = self
             .primary_provider
             .graph
             .output_lineage
             .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .source_posture_for_any_output_binding(
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        for recovered in &self.recovered_outputs {
+            let checkpoint = &recovered.checkpoint;
+            let Some(binding) = recovered.correspondence.binding_type() else {
+                continue;
+            };
+            if checkpoint.scope != scope
+                || checkpoint.source_partition != source.partition_identity()
+                || !output_bindings.contains(&binding)
+            {
+                continue;
+            }
+            lineage.record_recovered_prior_output(
+                binding,
                 self.runtime.authority_identity().as_u64(),
-                &self.installed_schema.binding_identity(),
-                crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(source.source_root()),
+                self.installed_schema.binding_identity(),
+                scope,
                 observation.lifecycle_incarnation(),
                 observation.reference_generation().get(),
-                &output_bindings,
-                source.idempotency_identity(),
+                std::sync::Arc::clone(&recovered.correspondence),
+                super::super::super::output_lineage::RecordedSourceIdentity::Checkpoint(
+                    crate::domain_computation::primary_graph::application_query::WorthQueryCheckpointSourceIdentity::new(checkpoint.source),
+                ),
+                checkpoint.source_partition,
+                checkpoint.producer_dependency,
+                checkpoint.idempotency_key,
             );
+        }
+        let source_posture = lineage.source_posture_for_any_output_binding(
+            self.runtime.authority_identity().as_u64(),
+            &self.installed_schema.binding_identity(),
+            scope,
+            observation.lifecycle_incarnation(),
+            observation.reference_generation().get(),
+            &output_bindings,
+            source.idempotency_identity(),
+            source.checkpoint_identity(),
+        );
+        drop(lineage);
         let lifecycle = match source_posture {
             super::super::super::output_lineage::WorthQueryOutputSourcePosture::Exact(binding) => {
                 return self.installed_producers.select_exact::<Family>(binding)

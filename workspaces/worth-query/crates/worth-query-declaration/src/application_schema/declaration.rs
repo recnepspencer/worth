@@ -241,7 +241,12 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
         }
     }
 
-    pub fn entity<Entity>(mut self, reference: ApplicationEntityRef<Schema, Entity>) -> Self {
+    pub fn entity<Entity>(mut self, reference: ApplicationEntityRef<Schema, Entity>) -> Self
+    where
+        Entity: super::ApplicationEntityMarkerIdentity<Schema> + 'static,
+    {
+        self.member_provenance
+            .register_entity::<Entity>(reference.name());
         self.members.push(ApplicationSchemaMember::Entity {
             entity: reference.name().to_string(),
         });

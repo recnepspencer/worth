@@ -171,4 +171,12 @@ impl WorthQueryApplicationCommitAuthorityBinding {
     ) -> Option<&WorthQueryRetainedGovernedInput> {
         self.retained_governed_input.as_ref()
     }
+
+    #[cfg(test)]
+    pub(crate) fn replace_idempotency_binding_for_test(
+        &mut self,
+        binding: WorthQueryApplicationIdempotencyBinding,
+    ) {
+        self.idempotency_binding = binding;
+    }
 }

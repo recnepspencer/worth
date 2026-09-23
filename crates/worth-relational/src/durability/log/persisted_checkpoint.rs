@@ -66,6 +66,50 @@ impl PersistedDurableCheckpointFile {
         }
     }
 
+    pub(super) fn from_checkpoint(checkpoint: DurableCheckpoint) -> Self {
+        let DurableCheckpoint {
+            coverage,
+            branch_cells,
+            branch_roots,
+            branch_root_schema_images,
+            record_identity,
+            record_generation_high_water,
+            reusable_record_slots,
+            record_slot_frontiers,
+            envelopes,
+            partition_images,
+            aspect_contracts,
+            lineage,
+            index_definitions,
+            derived_index_artifacts,
+            symbol_table,
+            runtime_name,
+        } = checkpoint;
+        Self {
+            checkpoint: PersistedDurableCheckpoint {
+                coverage,
+                branch_cells,
+                branch_roots,
+                branch_root_schema_images,
+                record_identity,
+                record_generation_high_water,
+                reusable_record_slots,
+                record_slot_frontiers,
+                envelopes: envelopes
+                    .iter()
+                    .map(PersistedCanonicalCommit::from_positioned)
+                    .collect(),
+                partition_images,
+                aspect_contracts,
+                lineage,
+                index_definitions,
+                derived_index_artifacts,
+                symbol_table,
+                runtime_name,
+            },
+        }
+    }
+
     pub(super) fn readmit(self) -> Result<DurableCheckpointFile, DurabilityError> {
         let checkpoint = self.checkpoint;
         let envelopes = checkpoint

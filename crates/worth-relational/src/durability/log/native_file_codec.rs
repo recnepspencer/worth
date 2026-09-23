@@ -43,6 +43,30 @@ pub(crate) fn write_checkpoint_file(
     write_native_file(path, &PersistedDurableCheckpointFile::from_current(file))
 }
 
+pub(crate) fn encode_checkpoint(
+    checkpoint: crate::durability::data::DurableCheckpoint,
+) -> Result<Vec<u8>, DurabilityError> {
+    rmp_serde::to_vec_named(&PersistedDurableCheckpointFile::from_checkpoint(checkpoint)).map_err(
+        |error| {
+            DurabilityError::new(
+                RecoveryFailureClass::DurableIoFailure,
+                format!("failed to encode native checkpoint: {error}"),
+            )
+        },
+    )
+}
+
+pub(crate) fn decode_checkpoint(bytes: &[u8]) -> Result<DurableCheckpointFile, DurabilityError> {
+    rmp_serde::from_slice::<PersistedDurableCheckpointFile>(bytes)
+        .map_err(|error| {
+            DurabilityError::new(
+                RecoveryFailureClass::CorruptCheckpoint,
+                format!("failed to decode native checkpoint: {error}"),
+            )
+        })?
+        .readmit()
+}
+
 fn read_native_file<T: for<'de> Deserialize<'de>>(path: &Path) -> Result<T, DurabilityError> {
     let bytes = fs::read(path).map_err(super::local_store::io_error)?;
     rmp_serde::from_slice(&bytes).map_err(|error| {

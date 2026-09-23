@@ -67,7 +67,8 @@ where
         intent: RuntimeWorldBootstrapIntent,
     ) -> RuntimeWorldBootstrapOutcome {
         let cancellation = intent.cancellation().cloned();
-        let (creation, relational, signal, correspondence, generation) = intent.into_parts();
+        let (creation, relational, signal, correspondence, generation, posture) =
+            intent.into_parts();
         let branch_reservation = match self.state.branches.reserve_root(self.owner_identity()) {
             Ok(reservation) => reservation,
             Err(_) => return no_effect(RuntimeWorldBootstrapNoEffectCause::CapacityExhausted),
@@ -241,7 +242,8 @@ where
             .commit();
         *bootstrap = RuntimeWorldBootstrapState::Performed;
         drop(bootstrap);
-        PerformedRuntimeWorldBootstrap::new(bootstrap_attempt, basis, observation).into_outcome()
+        PerformedRuntimeWorldBootstrap::new(bootstrap_attempt, basis, observation, posture)
+            .into_outcome()
     }
 }
 

@@ -12,7 +12,8 @@ pub(super) fn map_initial_schema_installation_denial(
             WorthQueryPrimaryGraphInstallationDenialKind::RelationalRuntimeAlreadyPublished
         }
         RelationalInitialSchemaInstallationDenialKind::InitialInvariantsAlreadySealed
-        | RelationalInitialSchemaInstallationDenialKind::DuplicateCustomInvariant => {
+        | RelationalInitialSchemaInstallationDenialKind::DuplicateCustomInvariant
+        | RelationalInitialSchemaInstallationDenialKind::RecoveredAuthorityMismatch => {
             WorthQueryPrimaryGraphInstallationDenialKind::InvariantInstallationReceiptMismatch
         }
         RelationalInitialSchemaInstallationDenialKind::SchemaRejected

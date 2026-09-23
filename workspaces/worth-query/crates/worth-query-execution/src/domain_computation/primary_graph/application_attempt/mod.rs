@@ -67,7 +67,7 @@ pub use delegation_activation_program::WorthQueryDelegationActivationProgram;
 pub use denial::{WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind};
 pub(in crate::domain_computation::primary_graph) use effect_program::{
     WorthQueryAdmittedApplicationEmissionBatch, WorthQueryApplicationEmission,
-    WorthQueryCandidateValidatorWorkAdmission,
+    WorthQueryCandidateValidatorWorkAdmission, WorthQueryCheckpointOutputRole,
 };
 pub use effect_program::{
     WorthQueryApplicationEffectEntity, WorthQueryApplicationEffectProgram,

@@ -133,6 +133,10 @@ where
             principal,
             request_scope,
             delivery_branch,
+            matches!(
+                commit_authority,
+                WorthQueryProducerCommitAuthority::ProgramOutput
+            ),
             disclosure,
         )?;
         use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandAdvanceAdmission as Admission;
@@ -189,47 +193,58 @@ where
                         .output_demands
                         .finish_superseded(interest, Family::IDENTITY));
                 }
-                let current = self.on_branch(delivery_branch).select().map_err(|denial| {
-                    WorthQueryOutputDemandDenial::product_selection(
-                        denial,
-                        "ready output currentness basis could not be selected",
-                    )
-                })?;
-                match current.require_current_output_receipts(
-                    [&completion.receipt],
-                    demand.currentness_work_limit,
-                ) {
-                    Ok(()) => {}
-                    Err(denial)
-                        if denial.kind() == WorthQueryOutputDemandDenialKind::Superseded =>
-                    {
-                        return self.refresh_output_demand(
-                            demand,
-                            disclosed_value,
-                            disclosed_source,
-                            &completion.receipt,
+                return match completion.authority {
+                    crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority::Committed(receipt) => {
+                        let current = self.on_branch(delivery_branch).select().map_err(|denial| {
+                            WorthQueryOutputDemandDenial::product_selection(
+                                denial,
+                                "ready output currentness basis could not be selected",
+                            )
+                        })?;
+                        match current.require_current_output_receipts(
+                            [&receipt],
+                            demand.currentness_work_limit,
+                        ) {
+                            Ok(()) => {}
+                            Err(denial)
+                                if denial.kind() == WorthQueryOutputDemandDenialKind::Superseded =>
+                            {
+                                return self.refresh_output_demand(
+                                    demand,
+                                    disclosed_value,
+                                    disclosed_source,
+                                    &receipt,
+                                );
+                            }
+                            Err(denial) => return Err(denial),
+                        }
+                        let settlement = crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandSettlement::from_commit(
+                            self,
+                            &receipt,
+                            &completion.readiness,
                         );
+                        match settlement {
+                            Ok(settlement) => Ok(WorthQueryOutputDemandAdvance::Settled(settlement)),
+                            Err(denial)
+                                if denial.kind() == WorthQueryOutputDemandDenialKind::Superseded =>
+                            {
+                                self.refresh_output_demand(
+                                    demand,
+                                    disclosed_value,
+                                    disclosed_source,
+                                    &receipt,
+                                )
+                            }
+                            Err(denial) => Err(denial),
+                        }
                     }
-                    Err(denial) => return Err(denial),
-                }
-                let settlement = crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandSettlement::from_commit(
-                    self,
-                    &completion.receipt,
-                    &completion.readiness,
-                );
-                return match settlement {
-                    Ok(settlement) => Ok(WorthQueryOutputDemandAdvance::Settled(settlement)),
-                    Err(denial)
-                        if denial.kind() == WorthQueryOutputDemandDenialKind::Superseded =>
-                    {
-                        self.refresh_output_demand(
-                            demand,
-                            disclosed_value,
-                            disclosed_source,
-                            &completion.receipt,
+                    crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority::Restored(restored) => {
+                        crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandSettlement::from_restoration(
+                            self,
+                            &restored,
                         )
+                        .map(WorthQueryOutputDemandAdvance::Settled)
                     }
-                    Err(denial) => Err(denial),
                 };
             }
             Admission::Failed(denial) => return Err(denial),

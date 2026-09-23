@@ -66,17 +66,10 @@ where
             .observed_sources()
             .first()
             .filter(|_| source.rows().len() == 1 && source.observed_sources().len() == 1);
-        let parent_commit = parent
-            .retained
-            .receipt()
-            .committed_product_publication()
-            .composite_commit();
-        let parent_occurrence = parent.retained.receipt().product_branch().occurrence();
-        let parent_branch = parent
-            .retained
-            .receipt()
-            .committed_product_publication()
-            .product_branch();
+        let parent_observation = parent.retained.retained_read();
+        let parent_commit = parent_observation.selected_commit();
+        let parent_occurrence = parent_observation.branch_incarnation();
+        let parent_branch = parent_observation.branch_identity();
         if self
             .runtime
             .select_application_read_observation(basis)

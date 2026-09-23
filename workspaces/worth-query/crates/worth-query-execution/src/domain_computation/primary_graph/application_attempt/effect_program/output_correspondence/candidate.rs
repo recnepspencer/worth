@@ -297,6 +297,7 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
                     role,
                     CommittedOutputBinding {
                         posture: binding.posture,
+                        entity_name: binding.entity_name,
                         entity_type: binding.entity_type,
                         entity,
                     },
