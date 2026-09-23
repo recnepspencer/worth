@@ -102,18 +102,21 @@ pub(super) fn runtime_with_cardinality_minimum() -> RelationalRuntime {
                         self_edges_allowed: false,
                         cross_context_policy: CrossContextPolicy::AllowExplicit,
                     }],
-                    vec![crate::schema::data::CardinalityContractDeclaration {
-                        contract_id: "min_one".into(),
-                        source_max: None,
-                        source_min: Some(1),
-                        target_max: None,
-                        target_min: None,
-                        pair_max: None,
-                        pair_min: None,
-                        pair_min_semantics: crate::schema::data::PairMinimumSemantics::ObservedDirectedPairs,
-                        minimum_enforcement:
-                            crate::schema::data::MinimumCardinalityEnforcement::CertificationBoundary,
-                    }],
+                    ["min_one", "min_one_again"]
+                        .into_iter()
+                        .map(|contract_id| crate::schema::data::CardinalityContractDeclaration {
+                            contract_id: contract_id.into(),
+                            source_max: None,
+                            source_min: Some(1),
+                            target_max: None,
+                            target_min: None,
+                            pair_max: None,
+                            pair_min: None,
+                            pair_min_semantics: crate::schema::data::PairMinimumSemantics::ObservedDirectedPairs,
+                            minimum_enforcement:
+                                crate::schema::data::MinimumCardinalityEnforcement::CertificationBoundary,
+                        })
+                        .collect(),
                     Vec::new(),
                     Vec::new(),
                     Vec::new(),

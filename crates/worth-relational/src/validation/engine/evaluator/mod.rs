@@ -6,6 +6,7 @@ mod relation_edge_rules;
 mod relation_endpoint_kind;
 mod relation_traversal;
 mod unique_entity_fields;
+pub(crate) use relation_cardinality::CurrentVersionMinimumIndex;
 
 use crate::validation::data::{InvariantClass, InvariantRule, InvariantViolation};
 

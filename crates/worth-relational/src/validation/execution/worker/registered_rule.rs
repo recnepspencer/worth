@@ -75,6 +75,7 @@ fn evaluate_native_registration(
         packet.current_version_id,
         packet.merged_plan,
         packet.relation_integrity_scopes.clone(),
+        std::sync::Arc::clone(&packet.current_version_minimum_index),
     );
     let violations = evaluate_rule(
         &context,

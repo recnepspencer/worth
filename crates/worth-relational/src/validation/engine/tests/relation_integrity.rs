@@ -220,7 +220,7 @@ fn minimum_cardinality_current_version_scans_only_live_slots() {
     delete_txn.commit(&runtime).expect("retire relation");
 
     runtime.performance_access().reset_counters();
-    let _results = InvariantEngine::new(&runtime).execute(
+    let results = InvariantEngine::new(&runtime).execute(
         InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::CertificationBoundary,
             &runtime,
@@ -231,7 +231,26 @@ fn minimum_cardinality_current_version_scans_only_live_slots() {
         ),
     );
 
+    let violating_contracts = results
+        .results()
+        .iter()
+        .filter_map(|result| match (&result.rule, &result.verdict) {
+            (
+                crate::validation::data::InvariantReportedRule::Native(
+                    crate::validation::data::InvariantRule::CardinalityMinimumContract(contract),
+                ),
+                crate::validation::data::InvariantVerdict::Violation(_),
+            ) => Some(contract.contract_id.as_str()),
+            _ => None,
+        })
+        .collect::<std::collections::BTreeSet<_>>();
+    assert_eq!(violating_contracts, ["min_one", "min_one_again"].into());
+
     let counters = runtime.performance_access().counters();
+    assert_eq!(
+        counters.relation_cardinality_minimum_certification_contracts_evaluated,
+        2,
+    );
     assert_eq!(
         counters.relation_cardinality_minimum_certification_relation_slot_scans,
         1
@@ -239,5 +258,53 @@ fn minimum_cardinality_current_version_scans_only_live_slots() {
     assert_eq!(
         counters.relation_cardinality_minimum_certification_entity_slot_scans,
         3
+    );
+}
+
+#[test]
+fn minimum_cardinality_shared_index_preserves_both_passing_contracts() {
+    let runtime = runtime_with_cardinality_minimum();
+    let first = create_entity_of_kind(&runtime, KindId(1), "first");
+    let second = create_entity_of_kind(&runtime, KindId(1), "second");
+    create_relation_of_kind(&runtime, KindId(2), first, second, "forward");
+    create_relation_of_kind(&runtime, KindId(2), second, first, "reverse");
+
+    runtime.performance_access().reset_counters();
+    let results = InvariantEngine::new(&runtime).execute(
+        InvariantExecutionRequest::from_profile_with_contract(
+            InvariantRequestProfile::CertificationBoundary,
+            &runtime,
+            InvariantObservation::committed(runtime.storage_access().current_edition()),
+            runtime.current_version_id(),
+            None,
+            None,
+        ),
+    );
+    let passing_contracts = results
+        .results()
+        .iter()
+        .filter_map(|result| match (&result.rule, &result.verdict) {
+            (
+                crate::validation::data::InvariantReportedRule::Native(
+                    crate::validation::data::InvariantRule::CardinalityMinimumContract(contract),
+                ),
+                crate::validation::data::InvariantVerdict::Pass,
+            ) => Some(contract.contract_id.as_str()),
+            _ => None,
+        })
+        .collect::<std::collections::BTreeSet<_>>();
+    assert_eq!(passing_contracts, ["min_one", "min_one_again"].into());
+    let counters = runtime.performance_access().counters();
+    assert_eq!(
+        counters.relation_cardinality_minimum_certification_contracts_evaluated,
+        2,
+    );
+    assert_eq!(
+        counters.relation_cardinality_minimum_certification_relation_slot_scans,
+        2,
+    );
+    assert_eq!(
+        counters.relation_cardinality_minimum_certification_entity_slot_scans,
+        2,
     );
 }

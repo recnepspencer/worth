@@ -126,6 +126,7 @@ fn invariant_work_packets<'state>(
 ) -> Vec<crate::authority::commit::preparation::InvariantWorkPacket<'state>> {
     let observation = request.observation();
     let relation_integrity_scopes = request.relation_integrity_scopes().cloned();
+    let current_version_minimum_index = Arc::new(std::sync::OnceLock::new());
 
     registrations
         .into_iter()
@@ -175,6 +176,7 @@ fn invariant_work_packets<'state>(
                 current_version_id: request.current_version_id(),
                 merged_plan: request.merged_plan(),
                 relation_integrity_scopes: relation_integrity_scopes.clone(),
+                current_version_minimum_index: Arc::clone(&current_version_minimum_index),
             }
         })
         .collect()
