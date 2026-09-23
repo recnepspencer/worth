@@ -30,6 +30,20 @@ struct RetainedWorkflowTransitionReplay {
     previous: Option<Arc<Self>>,
 }
 
+impl Drop for RetainedWorkflowTransitionReplay {
+    fn drop(&mut self) {
+        // A settled history is an Arc-linked prefix. Letting its last owner
+        // recurse through `previous` would consume one stack frame per replay.
+        let mut previous = self.previous.take();
+        while let Some(link) = previous {
+            match Arc::try_unwrap(link) {
+                Ok(mut replay) => previous = replay.previous.take(),
+                Err(_) => break, // A shared prefix belongs to another owner.
+            }
+        }
+    }
+}
+
 impl WorkflowTransitionReplayRetention {
     pub(in crate::domain_computation::primary_graph) fn from_replays(
         replays: impl IntoIterator<Item = WorkflowTransitionReplayProjection>,
@@ -111,5 +125,34 @@ mod tests {
             .map(|replay| replay.identity.as_str())
             .collect::<Vec<_>>();
         assert_eq!(identities, ["transition-1", "transition-2", "transition-3"]);
+    }
+
+    #[test]
+    fn dropping_a_long_history_and_shared_prefix_uses_bounded_stack() {
+        std::thread::Builder::new()
+            .stack_size(256 * 1024)
+            .spawn(|| {
+                let prefix = WorkflowTransitionReplayRetention::from_replays(
+                    (0..10_000).map(|index| replay(index as u8)),
+                );
+                let advanced = prefix.append(replay(7));
+                drop(advanced);
+                let materialized = prefix.materialize();
+                assert_eq!(materialized.len(), 10_000);
+                assert_eq!(materialized[0].identity, "transition-0");
+                assert_eq!(materialized[9_999].identity, "transition-15");
+                drop(prefix);
+
+                let prefix = WorkflowTransitionReplayRetention::from_replays(
+                    (0..10_000).map(|index| replay(index as u8)),
+                );
+                let advanced = prefix.append(replay(7));
+                assert_eq!(advanced.len(), 10_001);
+                drop(prefix);
+                drop(advanced);
+            })
+            .unwrap()
+            .join()
+            .unwrap();
     }
 }
