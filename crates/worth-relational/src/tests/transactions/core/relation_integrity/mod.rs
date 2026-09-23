@@ -5,5 +5,6 @@ mod contract_counters;
 mod endpoint_deletion;
 mod endpoint_kind;
 mod fixtures;
+mod minimum_local_scope;
 mod symmetry;
 mod uniqueness;

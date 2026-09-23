@@ -71,6 +71,18 @@ impl InvariantPlanContract {
         if let MutationIntent::Entity(EntityMutationIntent::Revalidate(_)) = intent {
             self.must_rejudge = InvariantGroupSet::all();
         }
+        // A new endpoint can owe a minimum relation without changing an edge.
+        // Select the rule without reporting a graph-topology mutation.
+        if matches!(
+            intent,
+            MutationIntent::Create(CreateIntent::Entity(_))
+                | MutationIntent::Create(CreateIntent::EntityAspects(_))
+                | MutationIntent::Create(CreateIntent::BulkEntities(_))
+        ) {
+            self.must_rejudge = self
+                .must_rejudge
+                .union(InvariantGroupSet::of(InvariantGroup::RelationIntegrity));
+        }
         let groups = match intent {
             MutationIntent::Create(CreateIntent::Entity(_))
             | MutationIntent::Create(CreateIntent::EntityAspects(_))
@@ -159,7 +171,7 @@ mod tests {
     };
 
     #[test]
-    fn contract_marks_entity_create_as_aspect_patch_and_uniqueness_sensitive() {
+    fn entity_create_selects_relation_minimum_without_claiming_graph_mutation() {
         let plan = MergedCommitPlan {
             transaction_id: TransactionId(1),
             merged_intents: vec![MutationIntent::Create(CreateIntent::BulkEntities(
@@ -177,6 +189,12 @@ mod tests {
         assert!(contract
             .may_invalidate_groups()
             .contains(crate::validation::data::InvariantGroup::SchemaCompliance));
+        assert!(contract
+            .selected_groups()
+            .contains(crate::validation::data::InvariantGroup::RelationIntegrity));
+        assert!(!contract
+            .may_invalidate_groups()
+            .contains(crate::validation::data::InvariantGroup::RelationIntegrity));
     }
 
     #[test]

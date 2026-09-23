@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
 use crate::identity::data::{EntityId, KindId, RelationId};
-use crate::transactions::data::EntityReference;
+use crate::transactions::data::{CreatedEntityRef, EntityReference};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub(crate) struct PlannedRelationEdge {
@@ -30,6 +30,8 @@ pub(crate) struct PreparedRelationEndpointKey {
 
 #[derive(Debug, Clone, Default)]
 pub(crate) struct PreparedRelationIntegrityScope {
+    pub(crate) created_candidate_entities: BTreeSet<CreatedEntityRef>,
+    pub(crate) minimum_touched_entities: BTreeSet<EntityId>,
     pub(crate) planned_edges: Vec<PlannedRelationEdge>,
     pub(crate) visible_edges: Vec<PreparedVisibleRelationEdge>,
     pub(crate) visible_successors: BTreeMap<EntityReference, Vec<EntityReference>>,
@@ -63,7 +65,9 @@ impl PreparedRelationIntegrityScopes {
 
 impl PreparedRelationIntegrityScope {
     pub(crate) fn is_empty(&self) -> bool {
-        self.planned_edges.is_empty()
+        self.created_candidate_entities.is_empty()
+            && self.minimum_touched_entities.is_empty()
+            && self.planned_edges.is_empty()
             && self.visible_edges.is_empty()
             && self.source_counts.is_empty()
             && self.target_counts.is_empty()

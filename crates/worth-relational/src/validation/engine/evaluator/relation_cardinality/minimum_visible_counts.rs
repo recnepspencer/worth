@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use crate::identity::data::{EntityId, KindId};
 use crate::schema::data::LoweredCardinalityMinimumContract;
 use crate::storage::substrate::{HistoricalMetadata, RelationArena, VersionedRelationMetadata};
-use crate::transactions::data::{CreatedEntityRef, EntityReference};
+use crate::transactions::data::EntityReference;
 
 use super::super::super::context::InvariantExecutionContext;
 use super::super::super::state_view::InvariantStateView;
@@ -87,6 +87,9 @@ pub(super) fn visible_relation_counts(
     context: &InvariantExecutionContext<'_>,
     contract: &LoweredCardinalityMinimumContract,
 ) -> VisibleRelationCountSnapshot {
+    if context.merged_plan().is_some() {
+        return planned_visible_relation_counts(context, contract);
+    }
     let state_view = context.state_view();
     let mut snapshot = VisibleRelationCountSnapshot::default();
 
@@ -124,7 +127,6 @@ pub(super) fn visible_relation_counts(
                 }
             }
         }
-        collect_planned_counts(context, contract, &mut snapshot);
         return snapshot;
     }
 
@@ -142,7 +144,69 @@ pub(super) fn visible_relation_counts(
         );
     }
 
-    collect_planned_counts(context, contract, &mut snapshot);
+    snapshot
+}
+
+fn planned_visible_relation_counts(
+    context: &InvariantExecutionContext<'_>,
+    contract: &LoweredCardinalityMinimumContract,
+) -> VisibleRelationCountSnapshot {
+    let mut snapshot = VisibleRelationCountSnapshot::default();
+    let Some(scope) = context.relation_integrity_scope(contract.relation_kind_id) else {
+        return snapshot;
+    };
+    for (key, count) in &scope.source_counts {
+        snapshot.source_counts.insert(key.entity_id.clone(), *count);
+    }
+    for (key, count) in &scope.target_counts {
+        snapshot.target_counts.insert(key.entity_id.clone(), *count);
+    }
+    for (key, count) in &scope.directed_pair_counts {
+        snapshot
+            .directed_pair_counts
+            .insert((key.source.clone(), key.target.clone()), *count);
+    }
+    for edge in &scope.visible_edges {
+        if scope.deleted_entities.contains(&edge.source)
+            || scope.deleted_entities.contains(&edge.target)
+        {
+            subtract_relation_references(
+                &mut snapshot,
+                EntityReference::Existing(edge.source),
+                EntityReference::Existing(edge.target),
+            );
+        }
+    }
+    for edge in &scope.planned_edges {
+        let deleted_endpoint = [&edge.source, &edge.target].into_iter().any(|endpoint| {
+            matches!(endpoint, EntityReference::Existing(id) if scope.deleted_entities.contains(id))
+        });
+        if deleted_endpoint {
+            subtract_relation_references(&mut snapshot, edge.source.clone(), edge.target.clone());
+        }
+    }
+    let state_view = context.state_view();
+    for id in &scope.minimum_touched_entities {
+        if scope.deleted_entities.contains(id) {
+            continue;
+        }
+        if let Some(metadata) = state_view.entity_metadata(*id) {
+            record_candidate_entity(
+                contract,
+                &mut snapshot,
+                metadata.kind_id,
+                EntityReference::Existing(*id),
+            );
+        }
+    }
+    for created in &scope.created_candidate_entities {
+        record_candidate_entity(
+            contract,
+            &mut snapshot,
+            created.kind_id,
+            EntityReference::Created(created.clone()),
+        );
+    }
     snapshot
 }
 
@@ -197,72 +261,6 @@ fn collect_historical_candidate_entities(
     }
 }
 
-fn collect_planned_counts(
-    context: &InvariantExecutionContext<'_>,
-    contract: &LoweredCardinalityMinimumContract,
-    snapshot: &mut VisibleRelationCountSnapshot,
-) {
-    let Some(merged_plan) = context.merged_plan() else {
-        return;
-    };
-    for intent in &merged_plan.merged_intents {
-        match intent {
-            crate::transactions::data::MutationIntent::Create(
-                crate::transactions::data::CreateIntent::Entity(spec),
-            ) => {
-                let entity = EntityReference::Created(CreatedEntityRef {
-                    partition_id: spec.partition_id,
-                    kind_id: spec.kind_id,
-                    client_key: spec.client_key.clone(),
-                });
-                record_candidate_entity(contract, snapshot, spec.kind_id, entity);
-            }
-            crate::transactions::data::MutationIntent::Create(
-                crate::transactions::data::CreateIntent::BulkEntities(spec),
-            ) => {
-                for client_key in &spec.client_keys {
-                    let entity = EntityReference::Created(CreatedEntityRef {
-                        partition_id: spec.partition_id,
-                        kind_id: spec.kind_id,
-                        client_key: client_key.clone(),
-                    });
-                    record_candidate_entity(contract, snapshot, spec.kind_id, entity);
-                }
-            }
-            crate::transactions::data::MutationIntent::Create(
-                crate::transactions::data::CreateIntent::Relation(spec),
-            ) => {
-                if spec.kind_id == contract.relation_kind_id {
-                    record_relation_references(snapshot, spec.source.clone(), spec.target.clone());
-                }
-            }
-            crate::transactions::data::MutationIntent::Create(
-                crate::transactions::data::CreateIntent::BulkRelations(spec),
-            ) => {
-                if spec.kind_id == contract.relation_kind_id {
-                    for (source, target) in &spec.endpoints {
-                        record_relation_references(snapshot, source.clone(), target.clone());
-                    }
-                }
-            }
-            crate::transactions::data::MutationIntent::Materialization(
-                crate::transactions::data::MaterializationMutationIntent::RematerializeRelation(
-                    spec,
-                ),
-            ) => {
-                if spec.kind_id == contract.relation_kind_id {
-                    record_relation_references(
-                        snapshot,
-                        EntityReference::Existing(spec.source),
-                        EntityReference::Existing(spec.target),
-                    );
-                }
-            }
-            _ => {}
-        }
-    }
-}
-
 fn record_existing_relation_endpoints(
     snapshot: &mut VisibleRelationCountSnapshot,
     source: crate::identity::data::EntityId,
@@ -286,6 +284,25 @@ fn record_relation_references(
         .directed_pair_counts
         .entry((source, target))
         .or_insert(0) += 1;
+}
+
+fn subtract_relation_references(
+    snapshot: &mut VisibleRelationCountSnapshot,
+    source: EntityReference,
+    target: EntityReference,
+) {
+    decrement_count(&mut snapshot.source_counts, source.clone());
+    decrement_count(&mut snapshot.target_counts, target.clone());
+    decrement_count(&mut snapshot.directed_pair_counts, (source, target));
+}
+
+fn decrement_count<Key: Ord>(counts: &mut BTreeMap<Key, usize>, key: Key) {
+    if let Some(count) = counts.get_mut(&key) {
+        *count -= 1;
+        if *count == 0 {
+            counts.remove(&key);
+        }
+    }
 }
 
 fn record_candidate_entity(

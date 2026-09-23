@@ -351,7 +351,7 @@ pub(super) fn default_profile_config(profile: RelationalRuntimeProfile) -> Relat
             CompiledLanePolicy::Disabled,
             RelationIntegrityScopeBudget {
                 max_relation_kinds: 1_024,
-                max_touched_entities: 8_192,
+                max_touched_entities: 32_768,
                 max_deleted_entities: 4_096,
                 max_scanned_relations: 65_536,
                 max_planned_edges: 32_768,
