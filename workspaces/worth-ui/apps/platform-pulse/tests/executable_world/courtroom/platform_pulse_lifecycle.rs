@@ -44,6 +44,7 @@ fn expired_first_frame_deadline_preserves_primary_failure_and_teardown_dispositi
 }
 
 #[test]
+#[ignore = "3.15 snapshot-gated green-source journey; current 3.16 imported-source denial/recovery replaces this evidence"]
 fn expired_green_observation_preserves_action_failure_and_teardown_disposition() {
     let canonical = CanonicalPlatformPulse::checked_in();
     let green_delta = GreenPulseSourceDelta::from_checked_in(canonical)

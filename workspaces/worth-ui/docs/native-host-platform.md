@@ -315,6 +315,16 @@ and viewport-local invalidation. These sources complement each other: accepted
 samples are not proof of compositor visibility, while a correct endpoint image
 does not establish bounded intermediate work.
 
+The executable-world lane uses the current 1536-by-1024 dashboard for native
+Query/review interaction, imported-source replacement and denial/recovery, and
+wheel/thumb journeys. Five older 960-by-600 Pulse live-journey tests remain
+explicitly ignored: their snapshot publication and control coordinates describe
+the predecessor product, so they cannot certify the current dashboard. The
+current journeys provide the 3.16.1 acceptance evidence through independent
+native pixels and causal input, including modal focus/close, predecessor pixels
+after compilation denial, and post-scroll row hits. This does not claim that
+every historical 3.15 scenario has been ported.
+
 The former three ten-second DXGI timestamp gate and its p95/p99 deadlines have
 been retired from 3.16.1. GDI and X11 captures remain functional pixel oracles,
 not frame-pacing clocks. On this Windows machine, DXGI desktop duplication

@@ -3,6 +3,8 @@ mod appearance_pixels;
 #[cfg(worth_ui_certified_executable)]
 mod content_fingerprint;
 #[cfg(worth_ui_certified_executable)]
+pub(crate) mod dashboard_visual_oracle;
+#[cfg(worth_ui_certified_executable)]
 mod identity_trace;
 #[cfg(worth_ui_certified_executable)]
 mod intent_control_points;
@@ -132,6 +134,6 @@ pub(crate) use visual_overlay_pixels::{
 };
 #[cfg(worth_ui_certified_executable)]
 pub(crate) use wrapping_text_pixels::{
-    adjudicate_default_wrapping_text, adjudicate_resized_wrapping_text,
+    adjudicate_dashboard_status_badge, adjudicate_resized_wrapping_text,
     PlatformPulseWrappingTextFailure,
 };

@@ -1,5 +1,12 @@
 # Milestone 3.16.1: Responsive Scrolling and Scrollbars
 
+Status: Closed on 2026-09-22 for the OS-neutral functional and accepted-frame
+qualification. The executable-world native suite passed (62 passed, 13
+explicitly ignored historical/device-dependent cases), including the real
+two-axis scroll, pixel, hit-target, source-replacement, and recovery journeys.
+The real precision-device claim remains unverified because no precision device
+was available; this closure does not claim measured display cadence or latency.
+
 ## Goal and placement
 
 Scrolling must feel attached to input: immediate, finely controllable, steady,

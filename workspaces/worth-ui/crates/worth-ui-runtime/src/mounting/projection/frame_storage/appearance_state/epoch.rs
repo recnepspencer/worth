@@ -23,12 +23,21 @@ impl UiMountedAppearanceFrameState {
         };
         let mut retired_memberships = 0;
         if self.epoch.as_ref() != Some(&epoch) {
+            let session_changed = self
+                .epoch
+                .as_ref()
+                .is_none_or(|previous| previous.session != session);
             let (retired, work) = self.members.clear_for_epoch();
             retired_memberships = retired;
             self.selection.record_membership_work(work);
             self.epoch = Some(epoch);
             self.capacity_error = None;
-            self.scroll_chrome.clear_for_epoch();
+            // A source-generation change preserves the mounted surface and its
+            // retained chrome. Keep the chrome predecessor so the next frame
+            // diffs it instead of inserting a duplicate host command.
+            if session_changed {
+                self.scroll_chrome.clear_for_epoch();
+            }
         }
         let (retired, work) = self
             .members

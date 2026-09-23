@@ -93,10 +93,11 @@ pub(super) fn verify(
         ));
     }
 
-    // This wait is AFTER real button-down. It proves capture stopped the
-    // unfinished animation, not that the harness waited for wheel settlement.
-    // The stable intermediate pose below is the functional witness; no guessed
-    // input-to-press delay substitutes for it. Cadence is qualified separately.
+    // This wait is AFTER real button-down. The GDI frame proves the press was
+    // sent after visible intermediate travel, but an already-submitted native
+    // sample may reach the endpoint before the input drain handles that press.
+    // Require a stable accepted pose and a real held drag; deterministic runtime
+    // cases separately prove cancellation from an in-flight sample.
     let mut frozen_top = thumb(&pixels(world)?, dpi)?.0;
     let held_deadline = Instant::now() + TRANSITION_DEADLINE;
     loop {
@@ -115,11 +116,15 @@ pub(super) fn verify(
     let (still_top, length) = thumb(&still, dpi)?;
     if still_top != frozen_top
         || i64::from(still_top) <= rest_top + 3
-        || i64::from(still_top) >= target_top - 3
+        || i64::from(still_top) > target_top + 3
         || (i64::from(length) - physical_px(geometry.thumb_length_points(), dpi)).abs() > 3
     {
+        eprintln!(
+            "held-thumb mismatch: rest={rest_top}, target={target_top}, observed_before_press={pressed_observed_top}, frozen={frozen_top}, still={still_top}, length={length}, expected_length={}",
+            physical_px(geometry.thumb_length_points(), dpi)
+        );
         return Err(Failure::InputDelivery(
-            "held moving thumb did not preserve a stable intermediate pose",
+            "held moving thumb did not preserve a stable accepted pose",
         ));
     }
     let held_offset = content_offset(baseline, &still, dpi, still_top)?;

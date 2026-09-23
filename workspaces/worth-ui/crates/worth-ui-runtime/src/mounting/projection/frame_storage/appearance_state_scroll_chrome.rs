@@ -285,3 +285,31 @@ impl UiMountedAppearanceFrameState {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn source_generation_transition_retains_scroll_chrome_predecessor() {
+        let (session, _, _, _, _) = crate::runtime::appearance::projection_test_inputs();
+        let successor = crate::runtime::tests::appearance_component_session_test_support::
+            source_backed_appearance_consumer_session();
+        let session_identity = session.session_identity();
+        let first = session.active_generation_identity();
+        let next = crate::runtime::WorthUiActiveApplicationGenerationIdentity::current(
+            session_identity,
+            successor.generation_identity(),
+        );
+        let owner = UiMountedInstanceIdentity::mint_unbound().unwrap();
+        let mut state = UiMountedAppearanceFrameState::default();
+        state.begin_epoch(session_identity, &first, &[]);
+        state.scroll_chrome.by_owner.insert(owner, Vec::new());
+
+        state.begin_epoch(session_identity, &next, &[]);
+
+        assert!(state.scroll_chrome.by_owner.contains_key(&owner));
+        let _ = successor.shutdown();
+        let _ = session.shutdown();
+    }
+}

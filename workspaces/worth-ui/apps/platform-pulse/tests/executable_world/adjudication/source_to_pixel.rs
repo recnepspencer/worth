@@ -151,8 +151,8 @@ pub(crate) fn adjudicate_first_frame<Verdict>(
     })
 }
 
-/// The source-signal pixel oracle: the canonical blue at its control point and
-/// the authored first-frame appearance.
+/// The source-signal pixel oracle: the canonical positive state at its
+/// design control point and the authored first-frame dashboard appearance.
 pub(crate) fn adjudicate_source_signal_first_frame(
     pixels: &NativeClientPixelCapture,
     _client_area: ProcessBoundNativeClientAreaObservation,

@@ -4,6 +4,7 @@ use crate::source_delta::PulseCausalActionManifest;
 use super::platform_pulse_journey::{self, PlatformPulseJourneyDeltas};
 
 #[test]
+#[ignore = "3.15 960x600 visual-snapshot journey; current 3.16 dashboard source, query, and scroll journeys replace this evidence"]
 fn pulse_native_cutover_runs_the_complete_causal_journey() {
     assert_eq!(
         current_platform_posture(),

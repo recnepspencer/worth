@@ -1,4 +1,6 @@
 #[cfg(worth_ui_certified_executable)]
+mod dashboard_source_replacement;
+#[cfg(worth_ui_certified_executable)]
 mod journey_cost;
 #[cfg(worth_ui_certified_executable)]
 mod native_cutover;

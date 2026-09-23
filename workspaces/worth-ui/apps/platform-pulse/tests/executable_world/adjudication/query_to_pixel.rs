@@ -67,7 +67,7 @@ pub(crate) fn adjudicate_query_current(
     issued: PlatformPulseLifecycleObservationEnvelope,
     published: PlatformPulseLifecycleObservationEnvelope,
     expected_value: &str,
-    expected_owner_order: u64,
+    predecessor_owner_order: u64,
     client: ProcessBoundNativeClientAreaObservation,
     pixels: NativeClientPixelCapture,
     predecessor_pixels: &[u8],
@@ -91,9 +91,9 @@ pub(crate) fn adjudicate_query_current(
     {
         return Err(ExecutableQueryCurrentFailure::WrongValue);
     }
-    if issued.owner_order() != expected_owner_order {
+    if issued.owner_order() <= predecessor_owner_order {
         return Err(ExecutableQueryCurrentFailure::WrongOwnerOrder {
-            expected: expected_owner_order,
+            expected: predecessor_owner_order.saturating_add(1),
             observed: issued.owner_order(),
             issued_sequence,
         });

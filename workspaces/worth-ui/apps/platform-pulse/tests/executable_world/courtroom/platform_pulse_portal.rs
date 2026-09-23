@@ -12,6 +12,7 @@ use super::platform_pulse_cleanup::close_recovered_at_sequence;
 use super::platform_pulse_journey::complete_portal_open;
 
 #[test]
+#[ignore = "3.15 960x600 visual-snapshot journey; current 3.16 native review-modal focus/close replaces this evidence"]
 fn native_portal_opens_focuses_and_closes_through_intent_and_escape() {
     let ready = complete_portal_open();
     let journey_started = ready.native_journey_started();

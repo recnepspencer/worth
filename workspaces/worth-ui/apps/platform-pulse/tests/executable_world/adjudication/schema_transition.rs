@@ -8,6 +8,7 @@ use worth_ui_platform_pulse::observation_contract::{
 
 use crate::external_observation::NativeClientPixelCapture;
 
+use super::dashboard_visual_oracle as oracle;
 use super::ExecutableReplacementEvidence;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -36,7 +37,6 @@ pub(crate) enum ExecutableSchemaTransitionFailure {
     QueryOwnerDidNotReachSecondCurrent,
     QueryGenerationMissing,
     CaptureExtentChanged,
-    VisualContract,
     StableControlRegionChanged { differing_bytes: usize },
     PostureRegionDidNotChange,
     CanonicalCurrentPostureNotRestored,
@@ -135,11 +135,9 @@ fn require_visible_preservation(
     if predecessor.width() != successor.width() || predecessor.height() != successor.height() {
         return Err(ExecutableSchemaTransitionFailure::CaptureExtentChanged);
     }
-    let manifest = super::visual_contract_manifest::checked_in_adjudication_contract()
-        .map_err(|_| ExecutableSchemaTransitionFailure::VisualContract)?;
     let stable_control_region = scaled_region(
-        manifest.schema_stable_control_region(),
-        manifest.logical_client_extent(),
+        oracle::STABLE_BRAND_REGION,
+        oracle::LOGICAL_EXTENT,
         successor,
     )?;
     let predecessor_control = region_bytes(predecessor, stable_control_region)?;
@@ -170,11 +168,9 @@ pub(crate) fn schema_posture_changed_pixel_bytes(
     if predecessor.width() != successor.width() || predecessor.height() != successor.height() {
         return Err(ExecutableSchemaTransitionFailure::CaptureExtentChanged);
     }
-    let manifest = super::visual_contract_manifest::checked_in_adjudication_contract()
-        .map_err(|_| ExecutableSchemaTransitionFailure::VisualContract)?;
     let posture_region = scaled_region(
-        manifest.schema_posture_region(),
-        manifest.logical_client_extent(),
+        oracle::QUERY_POSTURE_REGION,
+        oracle::LOGICAL_EXTENT,
         successor,
     )?;
     let predecessor_posture = region_bytes(predecessor, posture_region)?;
@@ -193,11 +189,9 @@ pub(crate) fn schema_posture_matches(
     if expected.width() != observed.width() || expected.height() != observed.height() {
         return Err(ExecutableSchemaTransitionFailure::CaptureExtentChanged);
     }
-    let manifest = super::visual_contract_manifest::checked_in_adjudication_contract()
-        .map_err(|_| ExecutableSchemaTransitionFailure::VisualContract)?;
     let posture_region = scaled_region(
-        manifest.schema_posture_region(),
-        manifest.logical_client_extent(),
+        oracle::QUERY_POSTURE_REGION,
+        oracle::LOGICAL_EXTENT,
         observed,
     )?;
     Ok(region_bytes(expected, posture_region)? == region_bytes(observed, posture_region)?)
@@ -294,7 +288,6 @@ impl fmt::Display for ExecutableSchemaTransitionFailure {
             }
             Self::QueryGenerationMissing => "retained Query basis omitted generation identity",
             Self::CaptureExtentChanged => "schema transition changed native capture extent",
-            Self::VisualContract => "schema transition visual contract is invalid",
             Self::StableControlRegionChanged { .. } => unreachable!(),
             Self::PostureRegionDidNotChange => {
                 "schema transition did not visibly change the native posture region"

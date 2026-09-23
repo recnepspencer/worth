@@ -14,6 +14,18 @@ impl CanonicalPlatformPulse {
             "/app/dashboard_signals.wui"
         ))
     }
+    pub(crate) fn review_source_bytes(self) -> &'static [u8] {
+        include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/app/dashboard_review.wui"
+        ))
+    }
+    pub(crate) fn navigation_source_bytes(self) -> &'static [u8] {
+        include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/app/dashboard_navigation.wui"
+        ))
+    }
     pub(crate) fn intent_source_bytes(self) -> &'static [u8] {
         include_bytes!(concat!(
             env!("CARGO_MANIFEST_DIR"),

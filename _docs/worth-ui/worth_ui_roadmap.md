@@ -2358,6 +2358,10 @@ detached golden image cannot replace the cumulative world.
 
 Detailed spec: [milestone-3.16.1.md](./milestone-3.16.1.md)
 
+Status: Closed on 2026-09-22 under the OS-neutral functional and accepted-frame
+gate. Real precision-device qualification remains unverified pending hardware;
+no display-cadence or latency claim is made.
+
 Finish the native Pulse scrolling experience before resizing: themed functional
 scrollbars, real horizontal and vertical overflow, precise input, interruptible
 wheel Motion, stable anchors, and coherent accepted pixels/hit targets. Reuse

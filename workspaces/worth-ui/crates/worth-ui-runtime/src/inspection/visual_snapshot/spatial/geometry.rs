@@ -24,9 +24,16 @@ pub(crate) fn project_clipped_region(
     {
         return Err(UiSpatialProjectionDenial::UnsupportedCoordinateSpace);
     }
-    if bounds.posture() != UiMountedGeometryPosture::Area
-        || clip.posture() != UiMountedGeometryPosture::Area
-    {
+    // A fully clipped Scroll descendant is a valid host row with no visible
+    // or hit-test pixels. Its exact mechanic is still matched by the caller;
+    // only the spatial index entry is omitted.
+    if bounds.posture() != UiMountedGeometryPosture::Area {
+        return Err(UiSpatialProjectionDenial::InvalidGeometry);
+    }
+    if clip.posture() == UiMountedGeometryPosture::Empty {
+        return Ok(None);
+    }
+    if clip.posture() != UiMountedGeometryPosture::Area {
         return Err(UiSpatialProjectionDenial::InvalidGeometry);
     }
     let translation = transform.translation();
