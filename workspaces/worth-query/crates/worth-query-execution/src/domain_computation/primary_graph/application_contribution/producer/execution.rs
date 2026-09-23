@@ -60,6 +60,7 @@ pub(super) trait InstalledProducerExecutor<Schema>: Send + Sync {
         observed_source: &dyn Any,
         successor_of: Option<[u8; 32]>,
         commit_authority: WorthQueryProducerCommitAuthority,
+        maximum_lineage_work: usize,
     ) -> Result<WorthQueryApplicationCommitReceipt, WorthQueryOutputDemandDenial>;
 
     fn resources(&self, source: &dyn Any) -> Option<super::WorthQueryProducerDemandResources>;
@@ -175,6 +176,7 @@ where
         observed_source: &dyn Any,
         successor_of: Option<[u8; 32]>,
         commit_authority: WorthQueryProducerCommitAuthority,
+        maximum_lineage_work: usize,
     ) -> Result<WorthQueryApplicationCommitReceipt, WorthQueryOutputDemandDenial> {
         let source = source
             .downcast_ref::<SourceValue<Schema, Binding>>()
@@ -202,6 +204,7 @@ where
             observed_source.clone(),
             successor_of,
             commit_authority,
+            maximum_lineage_work,
         )
     }
 }
@@ -216,6 +219,7 @@ fn execute_typed<Schema, Binding>(
     observed_source: WorthQueryObservedSource<SourceQuery<Schema, Binding>>,
     successor_of: Option<[u8; 32]>,
     commit_authority: WorthQueryProducerCommitAuthority,
+    maximum_lineage_work: usize,
 ) -> Result<WorthQueryApplicationCommitReceipt, WorthQueryOutputDemandDenial>
 where
     Schema: ApplicationSchema + 'static,
@@ -305,12 +309,23 @@ where
             runtime,
             Operation::<Schema, Binding>::idempotency_key_identity(&key),
             successor_of,
+            maximum_lineage_work,
         )
         .map_err(|identity_denial| {
-            denial(
-                WorthQueryOutputDemandDenialKind::ProducerUnavailable,
-                format!("{}: {identity_denial:?}", Binding::IDENTITY),
-            )
+            if identity_denial
+                == crate::domain_computation::primary_graph::application_attempt::WorthQueryProducerIdentityDenial::LineageLookupBudgetExceeded
+            {
+                // This admitted demand cannot increase its limit; execution closes terminally.
+                denial(
+                    WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
+                    Binding::IDENTITY,
+                )
+            } else {
+                denial(
+                    WorthQueryOutputDemandDenialKind::ProducerUnavailable,
+                    format!("{}: {identity_denial:?}", Binding::IDENTITY),
+                )
+            }
         })?;
     let idempotency = bound_source
         .bind_idempotency(WorthQueryApplicationIdempotencyBinding::new(

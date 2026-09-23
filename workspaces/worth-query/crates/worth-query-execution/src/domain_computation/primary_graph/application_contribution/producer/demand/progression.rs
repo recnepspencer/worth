@@ -11,7 +11,6 @@ use super::{
     WorthQueryProducerOutputFamily,
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
-use admission::OutputLifecycleRequirement;
 
 mod admission;
 mod selected_program;
@@ -262,6 +261,7 @@ where
             &disclosed_source,
             successor_of,
             commit_authority,
+            demand.currentness_work_limit.get(),
         );
         let mut receipt = match result {
             Ok(receipt) => receipt,
@@ -327,7 +327,6 @@ where
             demand.admission_kind,
             None,
             Some(stale_receipt),
-            OutputLifecycleRequirement::PreserveExisting,
         )?;
         if let Some(interest) = demand.interest.take() {
             self.output_demands.finish_replaced_interest(

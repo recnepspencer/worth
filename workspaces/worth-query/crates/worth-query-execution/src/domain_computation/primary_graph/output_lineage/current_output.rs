@@ -1,10 +1,10 @@
-use std::any::TypeId;
+use std::{any::TypeId, sync::Arc};
 
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 
 use super::{
-    latest_output_in_partition, ProductCoordinate, SemanticSource,
-    WorthQueryApplicationOutputLineage, WorthQueryOutputSourcePosture,
+    latest_output_in_partition_budgeted, ProductCoordinate, SemanticSource,
+    WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationOutputLineage,
     WorthQueryProducerLineageHead,
 };
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
@@ -15,37 +15,50 @@ impl WorthQueryApplicationOutputLineage {
         scope: &crate::domain_computation::authorization::WorthQueryOperationScopeBinding,
         observation: &worth_runtime_world::facade::ProductBranchObservation,
         source_partition_identity: [u8; 32],
-    ) -> Option<WorthQueryProducerLineageHead> {
+        maximum_work: usize,
+    ) -> Result<(Option<WorthQueryProducerLineageHead>, usize), ()> {
         let source = SemanticSource {
             runtime_authority: scope.runtime_authority(),
             schema: scope.binding_identity().clone(),
             scope: scope.scope(),
             output_binding: TypeId::of::<Binding>(),
         };
-        let versions = self.by_source.get(&source)?;
+        let Some(versions) = self.by_source.get(&source) else {
+            return (maximum_work > 0).then_some((None, 1)).ok_or(());
+        };
         let mut coordinate = ProductCoordinate {
             occurrence: observation.lifecycle_incarnation(),
             generation: observation.reference_generation().get(),
         };
+        let mut work = 0_usize;
         loop {
-            if let Some(recorded) = versions
-                .get(&coordinate.occurrence)
-                .and_then(|history| {
-                    latest_output_in_partition(
-                        history,
-                        coordinate.generation,
-                        source_partition_identity,
-                    )
-                })
-                .map(|(_, recorded)| recorded)
-            {
-                return Some(WorthQueryProducerLineageHead {
-                    occurrence: coordinate.occurrence,
-                    dependency_identity: recorded.producer_dependency_identity,
-                    idempotency_key_identity: recorded.idempotency_key_identity,
-                });
+            let (recorded, lookup_work) = match versions.get(&coordinate.occurrence) {
+                Some(history) => latest_output_in_partition_budgeted(
+                    history,
+                    coordinate.generation,
+                    source_partition_identity,
+                    maximum_work.saturating_sub(work),
+                )?,
+                None => (None, 1),
+            };
+            work = work.checked_add(lookup_work).ok_or(())?;
+            if work > maximum_work {
+                return Err(());
             }
-            coordinate = self.origins.get(&coordinate.occurrence).copied()?;
+            if let Some((_, recorded)) = recorded {
+                return Ok((
+                    Some(WorthQueryProducerLineageHead {
+                        occurrence: coordinate.occurrence,
+                        dependency_identity: recorded.producer_dependency_identity,
+                        idempotency_key_identity: recorded.idempotency_key_identity,
+                    }),
+                    work,
+                ));
+            }
+            let Some(parent) = self.origins.get(&coordinate.occurrence).copied() else {
+                return Ok((None, work));
+            };
+            coordinate = parent;
         }
     }
 
@@ -118,7 +131,7 @@ impl WorthQueryApplicationOutputLineage {
             .is_ok_and(|facts| facts.is_some())
     }
 
-    pub(in crate::domain_computation::primary_graph) fn source_posture_for_any_output_binding(
+    pub(in crate::domain_computation::primary_graph) fn retained_output_candidates(
         &self,
         runtime_authority: u64,
         schema: &ApplicationSchemaBindingIdentity,
@@ -126,9 +139,21 @@ impl WorthQueryApplicationOutputLineage {
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
         generation: u64,
         output_bindings: &[TypeId],
-        current_source_identity: [u8; 32],
-    ) -> WorthQueryOutputSourcePosture {
-        let mut retained_output = false;
+        source_partition_identity: [u8; 32],
+        maximum_work: usize,
+    ) -> Result<
+        (
+            Vec<(
+                TypeId,
+                Arc<WorthQueryApplicationOutputCorrespondence>,
+                Option<[u8; 32]>,
+            )>,
+            usize,
+        ),
+        (),
+    > {
+        let mut candidates = Vec::new();
+        let mut work = 0_usize;
         for output_binding in output_bindings {
             let source = SemanticSource {
                 runtime_authority,
@@ -137,6 +162,10 @@ impl WorthQueryApplicationOutputLineage {
                 output_binding: *output_binding,
             };
             let Some(versions) = self.by_source.get(&source) else {
+                work = work.checked_add(1).ok_or(())?;
+                if work > maximum_work {
+                    return Err(());
+                }
                 continue;
             };
             let mut coordinate = ProductCoordinate {
@@ -144,21 +173,26 @@ impl WorthQueryApplicationOutputLineage {
                 generation,
             };
             loop {
-                if versions.get(&coordinate.occurrence).is_some_and(|history| {
-                    history
-                        .range(..=coordinate.generation)
-                        .next_back()
-                        .is_some()
-                }) {
-                    let recorded = versions
-                        .get(&coordinate.occurrence)
-                        .and_then(|history| history.range(..=coordinate.generation).next_back())
-                        .map(|(_, recorded)| recorded)
-                        .expect("retained output was just found");
-                    if recorded.source_identity == Some(current_source_identity) {
-                        return WorthQueryOutputSourcePosture::Exact(*output_binding);
-                    }
-                    retained_output = true;
+                let (recorded, lookup_work) = match versions.get(&coordinate.occurrence) {
+                    Some(history) => latest_output_in_partition_budgeted(
+                        history,
+                        coordinate.generation,
+                        source_partition_identity,
+                        maximum_work.saturating_sub(work),
+                    )?,
+                    None => (None, 1),
+                };
+                work = work.checked_add(lookup_work).ok_or(())?;
+                if work > maximum_work {
+                    return Err(());
+                }
+                if let Some((_, recorded)) = recorded {
+                    candidates.push((
+                        *output_binding,
+                        Arc::clone(&recorded.correspondence),
+                        recorded.source_identity,
+                    ));
+                    break;
                 }
                 let Some(parent) = self.origins.get(&coordinate.occurrence).copied() else {
                     break;
@@ -166,10 +200,6 @@ impl WorthQueryApplicationOutputLineage {
                 coordinate = parent;
             }
         }
-        if retained_output {
-            WorthQueryOutputSourcePosture::Drifted
-        } else {
-            WorthQueryOutputSourcePosture::Absent
-        }
+        Ok((candidates, work))
     }
 }

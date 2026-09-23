@@ -4,20 +4,12 @@ mod source_custody;
 
 use super::super::{
     FamilySourceQuery, FamilySourceValue, WorthQueryAdmittedOutputDemand,
-    WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
-    WorthQueryProducerApplicability, WorthQueryProducerLifecyclePosture,
-    WorthQueryProducerOutputFamily,
+    WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind, WorthQueryProducerOutputFamily,
 };
 use super::denial;
 use crate::domain_computation::primary_graph::{
     WorthQueryObservedSource, WorthQueryPrimaryGraphApplicationRuntime,
 };
-
-#[derive(Clone, Copy, Eq, PartialEq)]
-pub(super) enum OutputLifecycleRequirement {
-    SelectCurrent,
-    PreserveExisting,
-}
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
@@ -52,7 +44,6 @@ where
             crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind::Ordinary,
             None,
             None,
-            OutputLifecycleRequirement::SelectCurrent,
         )
     }
 
@@ -86,7 +77,6 @@ where
             crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind::Required,
             None,
             None,
-            OutputLifecycleRequirement::SelectCurrent,
         )
     }
 
@@ -121,7 +111,6 @@ where
             crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind::Recovery,
             Some(source_receipt.committed_product_publication().composite_commit()),
             None,
-            OutputLifecycleRequirement::SelectCurrent,
         )
     }
 
@@ -160,7 +149,6 @@ where
             crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind::Required,
             None,
             None,
-            OutputLifecycleRequirement::SelectCurrent,
         )
     }
 
@@ -177,7 +165,6 @@ where
         successor_of: Option<
             &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
         >,
-        lifecycle_requirement: OutputLifecycleRequirement,
     ) -> Result<WorthQueryAdmittedOutputDemand<Schema, Family>, WorthQueryOutputDemandDenial>
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
@@ -192,15 +179,8 @@ where
                     super::super::WorthQueryOutputDemandRecoveryPosture::Retryable,
                 )
             })?;
-        let selected = if lifecycle_requirement == OutputLifecycleRequirement::PreserveExisting {
-            self.installed_producers
-                .select::<Family>(WorthQueryProducerApplicability::new(
-                    profile_kind,
-                    WorthQueryProducerLifecyclePosture::Preserve,
-                ))?
-        } else {
-            self.select_output_producer::<Family>(&observed_source, profile_kind)?
-        };
+        let selected =
+            self.select_output_producer::<Family>(&observed_source, profile_kind, maximum_work)?;
         let entry = self
             .installed_producers
             .entries

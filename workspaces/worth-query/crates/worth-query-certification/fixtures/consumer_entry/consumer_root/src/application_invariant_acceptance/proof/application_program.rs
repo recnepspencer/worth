@@ -206,6 +206,7 @@ pub(super) fn lifecycle_proofs(
         ConsumerSchema,
     >,
 ) {
+    owner_demand_boundary::producer_lifecycle_probe(foreign);
     custody::abandoned_and_superseded_preparations_are_bounded(foreign);
     custody::close_before_required_output_start_is_typed(foreign);
     lifecycle::supersession_retires_pending_predecessor(foreign);

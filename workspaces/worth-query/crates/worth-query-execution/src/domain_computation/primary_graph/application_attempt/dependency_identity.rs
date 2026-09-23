@@ -11,6 +11,7 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryProducerIdentity
     DependencyByteCapacityUnsupported,
     DependencyCanonicalizationRejected,
     MissingSourcePartition,
+    LineageLookupBudgetExceeded,
     LineageCanonicalizationRejected,
 }
 
@@ -26,6 +27,7 @@ impl<Schema, Operation, Input, Scope>
         >,
         declared_key: [u8; 32],
         successor_of: Option<[u8; 32]>,
+        maximum_lineage_work: usize,
     ) -> Result<([u8; 32], [u8; 32]), WorthQueryProducerIdentityDenial>
     where
         OutputBinding: 'static,
@@ -53,7 +55,7 @@ impl<Schema, Operation, Input, Scope>
         self.read_set
             .admission
             .retain_execution_canonical_work(work);
-        let head = runtime
+        let (head, _) = runtime
             .primary_provider
             .graph
             .output_lineage
@@ -66,7 +68,9 @@ impl<Schema, Operation, Input, Scope>
                     .admission
                     .source_partition_identity()
                     .ok_or(WorthQueryProducerIdentityDenial::MissingSourcePartition)?,
-            );
+                maximum_lineage_work,
+            )
+            .map_err(|()| WorthQueryProducerIdentityDenial::LineageLookupBudgetExceeded)?;
         let force_successor = successor_of.is_some_and(|stale_key| {
             head.is_some_and(|head| head.idempotency_key_identity == stale_key)
         });

@@ -2,6 +2,7 @@
 
 mod current_output;
 mod qualification;
+mod record;
 mod retention;
 #[cfg(test)]
 mod tests;
@@ -111,119 +112,6 @@ pub struct WorthQueryPriorOutputDenial {
 }
 
 impl WorthQueryApplicationOutputLineage {
-    #[allow(clippy::too_many_arguments)]
-    pub(super) fn record_restoration(
-        &mut self,
-        output_binding: TypeId,
-        runtime_authority: u64,
-        schema: ApplicationSchemaBindingIdentity,
-        scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
-        observation: &worth_runtime_world::facade::ProductBranchObservation,
-        correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
-        source_identity: [u8; 32],
-        source_partition_identity: [u8; 32],
-        producer_dependency_identity: Option<[u8; 32]>,
-        idempotency_key_identity: [u8; 32],
-        observed_source_facts: Arc<[super::application_attempt::WorthQueryApplicationObservedFact]>,
-    ) {
-        let source = SemanticSource {
-            runtime_authority,
-            schema,
-            scope,
-            output_binding,
-        };
-        let replaced = self
-            .by_source
-            .entry(source)
-            .or_default()
-            .entry(observation.lifecycle_incarnation())
-            .or_default()
-            .insert(
-                observation.reference_generation().get(),
-                RecordedOutput {
-                    correspondence,
-                    source_identity: Some(source_identity),
-                    source_partition_identity: Some(source_partition_identity),
-                    producer_dependency_identity,
-                    idempotency_key_identity,
-                    observed_source_facts,
-                },
-            );
-        assert!(
-            replaced.is_none(),
-            "one product generation may restore one output binding once"
-        );
-        self.live_occurrences
-            .insert(observation.lifecycle_incarnation());
-    }
-
-    pub(super) fn install_output_families(&mut self, families: BTreeMap<String, Vec<TypeId>>) {
-        assert!(self.output_families.is_empty());
-        self.output_families.extend(families);
-    }
-
-    pub(crate) fn register_fork(
-        &mut self,
-        source: &worth_runtime_world::facade::ProductBranchObservation,
-        destination: &worth_runtime_world::facade::ProductBranchObservation,
-    ) {
-        let source = ProductCoordinate {
-            occurrence: source.lifecycle_incarnation(),
-            generation: source.reference_generation().get(),
-        };
-        let destination = destination.lifecycle_incarnation();
-        self.live_occurrences.insert(source.occurrence);
-        self.live_occurrences.insert(destination);
-        assert!(
-            self.origins.insert(destination, source).is_none(),
-            "one product occurrence may be registered as a fork once"
-        );
-    }
-
-    pub(super) fn record(&mut self, application: &WorthQueryPrimaryGraphCommittedApplication) {
-        let evidence = application.commit_evidence();
-        let correspondence = evidence.output_correspondence();
-        let scope = evidence.operation_scope();
-        let head = application.product_publication().new_product_head();
-        let coordinate = ProductCoordinate {
-            occurrence: head.lifecycle_incarnation(),
-            generation: head.reference_generation().get(),
-        };
-        self.live_occurrences.insert(coordinate.occurrence);
-        let Some(output_binding) = correspondence.binding_type() else {
-            return;
-        };
-        let source = SemanticSource {
-            runtime_authority: scope.runtime_authority(),
-            schema: scope.binding_identity().clone(),
-            scope: scope.scope(),
-            output_binding,
-        };
-        let replaced = self
-            .by_source
-            .entry(source)
-            .or_default()
-            .entry(head.lifecycle_incarnation())
-            .or_default()
-            .insert(
-                head.reference_generation().get(),
-                RecordedOutput {
-                    correspondence: evidence.retain_output_correspondence(),
-                    source_identity: evidence.idempotency().source_identity(),
-                    source_partition_identity: evidence.idempotency().source_partition_identity(),
-                    producer_dependency_identity: evidence
-                        .idempotency()
-                        .producer_dependency_identity(),
-                    idempotency_key_identity: *evidence.idempotency().key_identity(),
-                    observed_source_facts: evidence.retain_observed_source_facts(),
-                },
-            );
-        assert!(
-            replaced.is_none(),
-            "one product generation may publish one output binding once"
-        );
-    }
-
     pub(super) fn resolve_current_family(
         &self,
         runtime_authority: u64,
@@ -305,6 +193,9 @@ impl WorthQueryApplicationOutputLineage {
             output_binding: TypeId::of::<Binding>(),
         };
         let Some(versions) = self.by_source.get(&source) else {
+            if maximum_source_lookups == 0 {
+                return Err(());
+            }
             return Ok(WorthQueryPriorOutputBindingResolution {
                 correspondence: None,
                 source_lookups: 1,
@@ -314,25 +205,24 @@ impl WorthQueryApplicationOutputLineage {
             occurrence,
             generation,
         };
-        let mut source_lookups = 0;
+        let mut source_lookups = 0_usize;
         loop {
-            source_lookups += 1;
+            let (recorded, work) = match versions.get(&coordinate.occurrence) {
+                Some(history) => latest_output_in_partition_budgeted(
+                    history,
+                    coordinate.generation,
+                    source_partition_identity,
+                    maximum_source_lookups.saturating_sub(source_lookups),
+                )?,
+                None => (None, 1),
+            };
+            source_lookups = source_lookups.checked_add(work).ok_or(())?;
             if source_lookups > maximum_source_lookups {
                 return Err(());
             }
-            if let Some(correspondence) = versions
-                .get(&coordinate.occurrence)
-                .and_then(|history| {
-                    latest_output_in_partition(
-                        history,
-                        coordinate.generation,
-                        source_partition_identity,
-                    )
-                })
-                .map(|(_, recorded)| recorded.correspondence.clone())
-            {
+            if let Some((_, recorded)) = recorded {
                 return Ok(WorthQueryPriorOutputBindingResolution {
-                    correspondence: Some(correspondence),
+                    correspondence: Some(Arc::clone(&recorded.correspondence)),
                     source_lookups,
                 });
             }
@@ -347,6 +237,7 @@ impl WorthQueryApplicationOutputLineage {
     }
 }
 
+#[cfg(test)]
 fn latest_output_in_partition(
     history: &BTreeMap<u64, RecordedOutput>,
     maximum_generation: u64,
@@ -358,11 +249,30 @@ fn latest_output_in_partition(
         .find(|(_, recorded)| recorded.source_partition_identity == Some(source_partition_identity))
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(super) enum WorthQueryOutputSourcePosture {
-    Absent,
-    Exact(TypeId),
-    Drifted,
+fn latest_output_in_partition_budgeted(
+    history: &BTreeMap<u64, RecordedOutput>,
+    maximum_generation: u64,
+    source_partition_identity: [u8; 32],
+    maximum_work: usize,
+) -> Result<(Option<(&u64, &RecordedOutput)>, usize), ()> {
+    let mut work = 0_usize;
+    for entry in history.range(..=maximum_generation).rev() {
+        work = work.checked_add(1).ok_or(())?;
+        if work > maximum_work {
+            return Err(());
+        }
+        if entry.1.source_partition_identity == Some(source_partition_identity) {
+            return Ok((Some(entry), work));
+        }
+    }
+    // An empty generation range still performs one source-coordinate lookup.
+    if work == 0 {
+        if maximum_work == 0 {
+            return Err(());
+        }
+        work = 1;
+    }
+    Ok((None, work))
 }
 
 impl WorthQueryPriorOutputDenial {
