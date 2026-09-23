@@ -147,6 +147,7 @@ impl WorthQueryApplicationOutputLineage {
                 TypeId,
                 Arc<WorthQueryApplicationOutputCorrespondence>,
                 Option<[u8; 32]>,
+                Arc<[super::super::application_attempt::WorthQueryApplicationObservedFact]>,
             )>,
             usize,
         ),
@@ -191,6 +192,7 @@ impl WorthQueryApplicationOutputLineage {
                         *output_binding,
                         Arc::clone(&recorded.correspondence),
                         recorded.source_identity,
+                        Arc::clone(&recorded.observed_source_facts),
                     ));
                     break;
                 }

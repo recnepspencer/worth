@@ -1,5 +1,6 @@
 use super::*;
 use crate::domain_computation::primary_graph::{
+    application_attempt::WorthQuerySourceCurrentnessFailure,
     WorthQueryApplicationBasisSelectionIdentity, WorthQueryPrimaryGraphApplicationRuntime,
 };
 use worth_relational::facade::{runtime::ProjectionAspectScope, storage::RecordLifecycleState};
@@ -53,12 +54,12 @@ where
             )
             .map_err(|()| selection_budget_denial(Family::IDENTITY))?;
         let mut live_candidates = Vec::new();
-        for (binding, correspondence, source_identity) in candidates {
+        for (binding, correspondence, source_identity, source_facts) in candidates {
             let role = self
                 .installed_producers
                 .family_output_role::<Family>(binding)?;
             if let Some(entity) = correspondence.active_entity_for_role(role) {
-                live_candidates.push((binding, entity, source_identity));
+                live_candidates.push((binding, entity, source_identity, source_facts));
             }
         }
         if !live_candidates.is_empty() {
@@ -90,7 +91,7 @@ where
                 )
                 .with_recovery_posture(WorthQueryOutputDemandRecoveryPosture::Retryable));
             }
-            let live = self.primary_provider.graph.with_runtime(|runtime| {
+            let current = self.primary_provider.graph.with_runtime(|runtime| {
                 let truth = runtime.read_truth();
                 let view = truth
                     .project_snapshot(selected.application_basis().snapshot_handle())
@@ -100,25 +101,53 @@ where
                             Family::IDENTITY,
                         )
                     })?;
-                Ok::<_, WorthQueryOutputDemandDenial>(
-                    live_candidates
-                        .iter()
-                        .map(|(_, entity, _)| {
-                            view.entity_record_with_projection_scope(
-                                *entity,
-                                ProjectionAspectScope::empty(),
-                                |record| Some(record.lifecycle()),
-                            ) == Some(RecordLifecycleState::Live)
-                        })
-                        .collect::<Vec<_>>(),
-                )
+                let mut remaining_work = maximum_work - required_work;
+                let mut current = Vec::with_capacity(live_candidates.len());
+                for (_, entity, identity, facts) in &live_candidates {
+                    let live = view.entity_record_with_projection_scope(
+                        *entity,
+                        ProjectionAspectScope::empty(),
+                        |record| Some(record.lifecycle()),
+                    ) == Some(RecordLifecycleState::Live);
+                    let mut facts_current = live;
+                    if live && *identity == Some(source.idempotency_identity()) {
+                        for fact in facts.iter() {
+                            let (equal, work) = fact
+                                .source_currentness_in(
+                                    runtime,
+                                    selected.application_basis().snapshot_handle(),
+                                    remaining_work,
+                                )
+                                .map_err(|failure| match failure {
+                                    WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded => {
+                                        selection_budget_denial(Family::IDENTITY)
+                                    }
+                                    WorthQuerySourceCurrentnessFailure::Unavailable => {
+                                        WorthQueryOutputDemandDenial::new(
+                                            WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
+                                            Family::IDENTITY,
+                                        )
+                                    }
+                                })?;
+                            remaining_work -= work;
+                            if !equal {
+                                facts_current = false;
+                                break;
+                            }
+                        }
+                    }
+                    current.push((live, facts_current));
+                }
+                Ok::<_, WorthQueryOutputDemandDenial>(current)
             })?;
             let mut retained_output = false;
-            for ((binding, _, identity), live) in live_candidates.into_iter().zip(live) {
+            for ((binding, _, identity, _), (live, facts_current)) in
+                live_candidates.into_iter().zip(current)
+            {
                 if !live {
                     continue;
                 }
-                if identity == Some(source.idempotency_identity()) {
+                if identity == Some(source.idempotency_identity()) && facts_current {
                     return self.installed_producers.select_exact::<Family>(binding);
                 }
                 retained_output = true;
