@@ -23,7 +23,7 @@ where
         WorthQueryApplicationOutputDemandProgress<SourceQuery<Schema, Demand>>,
         WorthQueryApplicationOutputDemandDenial,
     > {
-        for _ in 0..self.controls.maximum_work().get() {
+        for _ in 0..self.controls.maximum_settlement_attempts().get() {
             let progress = self.advance(fresh_request)?;
             if matches!(
                 progress,

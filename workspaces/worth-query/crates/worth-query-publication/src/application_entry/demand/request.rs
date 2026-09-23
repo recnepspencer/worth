@@ -11,6 +11,7 @@ use worth_query_installation::facade::ApplicationSchema;
 pub struct WorthQueryOutputDemandControls {
     maximum_work: NonZeroUsize,
     maximum_retained_bytes: NonZeroUsize,
+    maximum_settlement_attempts: NonZeroUsize,
 }
 
 impl WorthQueryOutputDemandControls {
@@ -18,7 +19,15 @@ impl WorthQueryOutputDemandControls {
         Self {
             maximum_work,
             maximum_retained_bytes,
+            maximum_settlement_attempts: NonZeroUsize::MIN,
         }
+    }
+
+    /// Bounds source-refresh/advance contacts in one `settle` call; defaults to one.
+    /// Producer work and retained-byte budgets remain independent.
+    pub const fn settlement_attempts(mut self, maximum_attempts: NonZeroUsize) -> Self {
+        self.maximum_settlement_attempts = maximum_attempts;
+        self
     }
 
     pub const fn maximum_work(self) -> NonZeroUsize {
@@ -27,6 +36,10 @@ impl WorthQueryOutputDemandControls {
 
     pub const fn maximum_retained_bytes(self) -> NonZeroUsize {
         self.maximum_retained_bytes
+    }
+
+    pub const fn maximum_settlement_attempts(self) -> NonZeroUsize {
+        self.maximum_settlement_attempts
     }
 }
 

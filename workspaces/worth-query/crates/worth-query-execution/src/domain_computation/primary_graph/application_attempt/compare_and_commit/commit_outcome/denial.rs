@@ -1,5 +1,7 @@
 //! Pre-publication application denial categories and owner evidence.
 
+mod program_binding;
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationCommitDenialKind {
     ProviderRejected,
@@ -320,58 +322,6 @@ impl WorthQueryApplicationCommitDenial {
             kind: WorthQueryApplicationCommitDenialKind::ApplicationProgramRequired,
             stage: WorthQueryApplicationCommitDenialStage::ProposalBinding,
             detail: None,
-            custom_invariant: None,
-        }
-    }
-
-    /// Refuses a program-gated commit whose occurrence carries no activation
-    /// this host can attribute to an admitted rostered program, naming which
-    /// fail-closed integrity path refused it.
-    pub(in crate::domain_computation::primary_graph::application_attempt) fn program_activation_unresolved(
-        unresolved: WorthQueryProgramActivationUnresolved,
-    ) -> Self {
-        Self {
-            kind: WorthQueryApplicationCommitDenialKind::ProgramActivationUnresolved,
-            stage: WorthQueryApplicationCommitDenialStage::ProposalBinding,
-            detail: Some(std::sync::Arc::from(unresolved.detail())),
-            custom_invariant: None,
-        }
-    }
-
-    /// Refuses a program-gated commit presented through a rostered program that
-    /// is not the one this occurrence activated.
-    pub(in crate::domain_computation::primary_graph::application_attempt) fn program_not_active_on_occurrence(
-        presented: &worth_query_declaration::facade::application_program::ApplicationProgramIdentity,
-        active: &worth_query_declaration::facade::application_program::ApplicationProgramIdentity,
-    ) -> Self {
-        Self {
-            kind: WorthQueryApplicationCommitDenialKind::ProgramNotActiveOnOccurrence,
-            stage: WorthQueryApplicationCommitDenialStage::ProposalBinding,
-            detail: Some(std::sync::Arc::from(format!(
-                "presented program {} is not active on this occurrence: {} is",
-                presented.as_str(),
-                active.as_str()
-            ))),
-            custom_invariant: None,
-        }
-    }
-
-    pub(in crate::domain_computation::primary_graph::application_attempt) fn program_revision_not_active_on_occurrence(
-        presented_identity: &worth_query_declaration::facade::application_program::ApplicationProgramIdentity,
-        presented_revision: &worth_query_declaration::facade::application_program::ApplicationProgramRevision,
-        active_identity: &worth_query_declaration::facade::application_program::ApplicationProgramIdentity,
-        active_revision: &worth_query_declaration::facade::application_program::ApplicationProgramRevision,
-    ) -> Self {
-        Self {
-            kind: WorthQueryApplicationCommitDenialKind::ProgramNotActiveOnOccurrence,
-            stage: WorthQueryApplicationCommitDenialStage::ProposalBinding,
-            detail: Some(std::sync::Arc::from(format!(
-                "presented program {} revision {} is not active on this occurrence: {} revision {} is",
-                presented_identity.as_str(),
-                presented_revision,
-                active_identity.as_str(),
-                active_revision,
-            ))),
             custom_invariant: None,
         }
     }
