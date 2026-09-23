@@ -1520,8 +1520,10 @@ be represented as branch or global semantic authority.
 
 Engineering specification:
 [Layout, index, and native blob adoption](physical-reconstruction-c11-layout-index-and-native-blob-adoption.md).
-It fixes blob chunks, chunk-tree nodes, generation publications and index nodes
-as C.5 physical records under the one publication owner, the dependency
+It first replaces one file per extent with packed, range-allocated extent
+arenas with published free-range reuse, then fixes blob chunks, chunk-tree
+nodes, generation publications and index nodes as C.5 physical records under
+the one publication owner, the dependency
 inversion of the S.7/S.8 mechanism crates, the artifact-family registry, the
 proof-consuming reclaim protocol, the crash-seam matrix, and the phase plan
 that reaches a native blob above the residency window before any registry,

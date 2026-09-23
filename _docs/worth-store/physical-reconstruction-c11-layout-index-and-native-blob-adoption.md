@@ -46,12 +46,12 @@ about the production join.
 
 The spec-designer process asks the user where the sources leave a choice open.
 No user was reachable, so each choice below is a recorded decision with its
-rationale. A reviewer who disagrees changes the decision here before Phase 1.
+rationale. A reviewer who disagrees changes the decision here before implementation starts.
 
 | # | Decision | Rationale |
 | --- | --- | --- |
 | D1 | This document is `physical-reconstruction-c11-layout-index-and-native-blob-adoption.md`; the roadmap's spec list is corrected to this name. | The requested name states the native-blob priority; the roadmap listed a shorter placeholder name before the spec existed. |
-| D2 | Blob chunk bytes, chunk-tree nodes and generation publications are stored as C.5 extent-backed physical records (`RecordArtifactFile::Extent`/`ExtentManifest`, `PhysicalExtentRecordAuthority`), not a new media file family. | Extents already run through append, WAL, group commit, root publication, `ExtentChunk` integrity, `rewrite_selected_extent_record`, retirement, recovery and offline walk. A packed blob-segment family would be exactly the parallel path C.11 exists to remove. The file-count cost is declared and measured (Cost Contracts). |
+| D2 | Blob chunk bytes, chunk-tree nodes and generation publications are stored as C.5 extent-backed physical records (`RecordArtifactFile::Extent`/`ExtentManifest`, `PhysicalExtentRecordAuthority`), not a new media file family. | Extents already run through append, WAL, group commit, root publication, `ExtentChunk` integrity, `rewrite_selected_extent_record`, retirement, recovery and offline walk. A packed blob-segment family would be exactly the parallel path C.11 exists to remove. The file-per-extent cost is not accepted; it is repaired in the extent platform itself (D16), so blobs, LSM runs and every large row share the fix. |
 | D3 | Chunk identity is SHA-256 over the stored chunk frame; the current 64-bit FNV-1a `ChunkTreeRoot` fold in `worth-store-blob-chunks::chunk_integrity` is demoted to comparison evidence and denied as native authority. | The roadmap requires content-addressed chunk trees; a 64-bit non-cryptographic fold is neither collision-resistant nor content addressing. `sha2` is already a dependency of `worth-store` and `worth-store-blob-chunks`. |
 | D4 | Chunking is fixed-size in C.11 with an admitted `BlobChunkSize` of 64 KiB to 256 KiB (default 256 KiB); content-defined chunking is a Part II customization. | S.7 leaves the rule open. Fixed size makes every chunk one extent record with a bounded frame, bounded resident window, and exact counters. Larger sizes exceed the extent payload limit that the durability doc states for `rewrite_selected_extent_record`. |
 | D5 | The chunk tree is a real durable tree: leaf nodes list ordered chunk digests plus record identities, interior nodes list child-node digests plus record identities, and the generation root is the SHA-256 of the root node frame. | A flat manifest for a blob above memory does not fit one record and cannot be verified with a bounded window. A tree gives bounded verification, byte-range seeking and localized corruption. |
@@ -59,12 +59,14 @@ rationale. A reviewer who disagrees changes the decision here before Phase 1.
 | D7 | Dedupe scope in C.11 is `SameStoreSameKeyScope` (new; built over `worth_store_security::StoreKeyScope`) only; cross-scope reuse stays a typed denial through the existing `ScopeMismatchCase` law, with no executable branch. | S.7 leaves the first index scope open; tenant and key policy are Part II inputs the Store may enforce but not decide. |
 | D8 | `worth-store-blob-chunks` drops its `worth-store` dependency, normal and dev, and every Store-importing file is cut over as enumerated in [Cycle removal](#cycle-removal-blob-chunks-to-worth-store); `worth-store` then depends on `worth-store-blob-chunks`, `worth-store-layout-indexes` and `worth-store-lsm-authority` as downward mechanism crates. | This is the C.10 precedent for `worth-store-physical-isolation`. `cargo tree -i worth-store -e normal` shows the single edge `worth-store-blob-chunks -> worth-store`; `worth-store-layout-indexes` reaches the Store only through it and `worth-store-lsm-authority` not at all, so removing that one edge is sufficient. The dev edge must go too: a dev cycle compiles a second copy of `worth-store-blob-chunks` whose types do not unify with the Store's. Decision Lock 15 keeps the mechanism crates Signal-agnostic; live owners are Store parts. |
 | D9 | The B-tree index adopted in C.11 is a new N-ary slotted node format in `worth-store-physical-format` over C.5 inline-segment pages; the `BaselineBTree*` root-plus-two-leaves format and its hard-coded counters are removed. | The baseline cannot hold indexed data larger than memory and its counters are constants, which the roadmap forbids as access receipts. |
-| D10 | LSM is adopted as one strategy of the same layout owner: WAL-backed bounded memtable, sorted runs stored as extent records, membership through `worth-store-lsm-authority` records persisted by the Store WAL, compaction as the `CompactionRewrite` scheduler class. LSM ships in Phase 6 after the B-tree, blob and reclaim paths. | The roadmap must-ship names both strategies; ordering the LSM last keeps the blob priority and lets it reuse proven publication and retirement contracts. |
+| D10 | LSM is adopted as one strategy of the same layout owner: WAL-backed bounded memtable, sorted runs stored as extent records, membership through `worth-store-lsm-authority` records persisted by the Store WAL, compaction as the `CompactionRewrite` scheduler class. LSM ships in Phase 7 after the B-tree, blob and reclaim paths. | The roadmap must-ship names both strategies; ordering the LSM last keeps the blob priority and lets it reuse proven publication and retirement contracts. |
 | D11 | Physical reclaim of a published generation consumes a typed `AdmittedBlobReleaseProof` (new, placed in `worth-proof` because it decides legality) whose production issuer is a successor (Part II retention or S.10 repair); C.11 ships the consumer, the independent reclaim of failed-ingest residue proven by resume-session records, and the destroy/rebuild of derived structures. | Roadmap C.11 Must Ship states this split verbatim. A test-only issuer under `certification-test-authority` exercises the consumer; that mirrors C.10's read-protection disposition adapters. |
 | D12 | `InstalledCapabilityStatus` becomes truthful: `CapabilityAvailability` gains `Present`, and Layout/Blob report `Present` only when the owning Store parts are constructed. | Today every capability reports `Absent`, including media and page records that C.4 to C.10 installed. Decision Lock 13 forbids a public surface that reports a shell; a permanently false report is the same defect. |
 | D13 | Export and import in C.11 are bounded streaming over the same read/ingest sessions with a `BlobExportManifest` record; capsules, replication, and backup holds stay S.10/Part II. | Roadmap must-ship lists export/import with streaming; S.7 says export is not backup correctness. |
 | D14 | C.11 builds on the C.10 maintenance code where it actually landed and creates no `physical_runtime/maintenance/` directory. The C.10 spec's destination topology is corrected to the as-built homes in the same change as this spec. | C.10's planned `maintenance/`, `scheduler_admission/rewrite.rs`, `worth-store-physical-format::maintenance_record/` and `worth-store-recovery-physics::maintenance_recovery/` were never created; rewrite and retirement live in `record_serving/publication/director/`, `durability/retention/`, `durability/publication/current_root_owner/`, `worth-store-physical-format::{rewrite_redo, manifest::maintenance}` and `worth-store-recovery-runtime::orchestration::planning::completion::rewrite_*`. Creating the planned directory now would open a second maintenance owner beside the working one. See [C.10 as-built homes](#c10-as-built-homes-c11-extends). |
-| D15 | `worth-store-layout-indexes::maintenance::operational_repair` (raw `std::fs` rename and canonicalize) is deleted with its tests, including `LayoutOperationalRepairOwner`, `DerivedIndexRepairReceipt` and `DerivedIndexRepairExecutionDenial`; `worth-store-operations::workflow::repair` keeps its pure plan, lowering and classification law, and its derived-index execution arm returns an operations-owned typed denial (new variant) naming the Store rebuild owner. | `worth-store-operations` does not depend on `worth-store`, so it cannot call `layouts().rebuild()`; keeping a filesystem executor beside the Store rebuild owner is a parallel authority lane. Operator-authorized repair of authoritative bytes is S.10; derived-index rebuild is the Store's (Phase 3). |
+| D15 | `worth-store-layout-indexes::maintenance::operational_repair` (raw `std::fs` rename and canonicalize) is deleted with its tests, including `LayoutOperationalRepairOwner`, `DerivedIndexRepairReceipt` and `DerivedIndexRepairExecutionDenial`; `worth-store-operations::workflow::repair` keeps its pure plan, lowering and classification law, and its derived-index execution arm returns an operations-owned typed denial (new variant) naming the Store rebuild owner. | `worth-store-operations` does not depend on `worth-store`, so it cannot call `layouts().rebuild()`; keeping a filesystem executor beside the Store rebuild owner is a parallel authority lane. Operator-authorized repair of authoritative bytes is S.10; derived-index rebuild is the Store's (Phase 4). |
+| D16 | Extent storage becomes packed, range-allocated **extent arenas**, and this ships as Phase 1, before the first blob. An arena is a large file (admitted `ExtentArenaCapacity`, 64 MiB to 4 GiB, default 1 GiB) holding many aligned extent data and manifest frames. An extent's private placement becomes (arena, offset, length, extent generation). Free space becomes range truth with reuse, published with the root. See [Extent arenas](#extent-arenas). | Today every record at or above the extent threshold (which must be below one page, 16 KiB by default) gets its own data file plus its own manifest file, and free space is a bump allocator (`next_extent`, `first_unallocated`) that never reuses anything. A 4 GiB blob would be about 32 000 files, and so would 16 000 ordinary 20 KiB rows. That is a platform scaling defect, not a blob detail, so it is fixed where it lives. The model is the one used by serious storage engines (copy-on-write range allocation over large files, as in shadow-paging, LMDB's free list and BlueStore's allocator): the file count scales with bytes, not objects; writes are large and aligned; and because no allocation may overwrite a range routed by any protected root, torn writes need no double-write or full-page-image scheme. C.5 already separates stable `PhysicalRecordId` from private placement, so no public identity changes. |
+| D17 | The on-disk format version is bumped for arenas; a store in the per-file extent layout is refused at open with a typed format-version denial. No migration or dual-read path exists. | No production store exists in the old layout, and AGENTS.md forbids compatibility surfaces and parallel lanes. |
 
 ## Current Boundary And Required Cutovers
 
@@ -72,6 +74,7 @@ The code provides real mechanisms with specific integration gaps:
 
 | Present boundary | C.11 decision |
 | --- | --- |
+| Every extent-backed record is one `families/records/extents/extent-{id}-{generation}.data` file plus one `extent-manifests/...manifest` file. The free-space header and membership blocks are bump frontiers (`next_segment`, `next_page`, `next_extent`, `next_block`, `first_unallocated`, `unallocated_count`), so freed space is never reused, and retirement means deleting files. | Extent arenas with range allocation, published free-range truth and reuse fenced by C.10 protection (D16, Phase 1). Retiring an extent releases its range; only an evacuated arena is deleted as a file. |
 | `worth-store-blob-chunks` never persists bytes. `BlobStreamingChunkWriter` has only test implementations; `BlobBackendChunkWriteSession::store_owned()` is `pub(crate)` dead code; ingest, read, publication and reachability consume caller-supplied witnesses and in-memory `Vec` registries. Its README claims blob bytes live inside the Store. | The Store implements the production chunk writer and observation source. `worth-store/src/physical_runtime/blob/` owns ingest, tree, publication, read, dedupe, reachability and reclaim sessions; the mechanism crate keeps pure proof, sequence and denial law. The README is corrected when the join exists. |
 | `ChunkTreeRoot` is an FNV-1a fold rendered as `s7:{lane}:{hash}`; there is no chunk-tree node structure, only `layout_projection::chunk_tree` reports. | New durable `BlobTreeNode` frames in `worth-store-physical-format` with SHA-256 digests. FNV roots may be compared as `s7` lane evidence; `reject_*` denials refuse them as publication authority. |
 | `worth-store-physical-format::blob_manifest` has two placeholder rows (`Reachability`, `Placement`) with test-only constructors. `worth-store-physical-backend::placement_observation` has `BlobBackendChunkWriteSession`, residue-scan and manifest-traversal sessions over `Backend` generics with no Store producer. | Replace `blob_manifest` rows with the real `blob_record` family. Cut `placement_observation` sessions over to the Store executor, or remove those with no consumer after the cutover. |
@@ -108,7 +111,7 @@ else.
 
 `worth-store-blob-chunks/Cargo.toml` names `worth-store` in both
 `[dependencies]` and `[dev-dependencies]`; both entries are removed in
-Phase 1. Fifteen files import `worth_store::`:
+Phase 2. Fifteen files import `worth_store::`:
 
 | Files | Store types used | Disposition |
 | --- | --- | --- |
@@ -123,7 +126,7 @@ Phase 1. Fifteen files import `worth_store::`:
 `cargo tree -i worth-store -e normal` shows that this is the only edge:
 `worth-store-layout-indexes` reaches the Store only through
 `worth-store-blob-chunks`, and `worth-store-lsm-authority` does not reach it.
-The Phase 1 proof is threefold: `cargo tree -p worth-store-blob-chunks -e all
+The Phase 2 proof is threefold: `cargo tree -p worth-store-blob-chunks -e all
 -i worth-store` finds no path, a search for `worth_store::` in the crate is
 empty, and the boundary-check DAG snapshot records the inverted edges.
 
@@ -152,7 +155,7 @@ correcting the constants:
   lookups over trees of height 1, 2 and 3 must report exactly that height. The
   offline observer recomputes the expected touches from the tree on media.
 
-Consumers are cut over in Phase 3:
+Consumers are cut over in Phase 4:
 
 | Consumer | Uses | Disposition |
 | --- | --- | --- |
@@ -160,7 +163,7 @@ Consumers are cut over in Phase 3:
 | `worth-store-test-support` (2 files) | `BaselineBTree{CorruptionMarker, ExecutionWitness, ReadPreflight, ReadSource}` | Fixtures deleted; corruption fixtures re-authored as on-media `BTreeNode` corruption |
 | `worth-store-offline-verifier` (1 file), `worth-store-layout-indexes/src/backup_verification/bounded_index_decode.rs` | `LayoutIndexBackupFormat::BaselineBTree{Leaf,Root}V1` | Variants replaced by `BTreeNodeV1`. No Store ever persisted baseline nodes, so nothing needs migrating. The decoder's read-only `std::fs` access is offline artifact tooling, off the runtime path; S.10 owns its future |
 | `worth-store-operations/src/workflow/repair/` (6 files) | `LayoutOperationalRepairOwner`, `InMemoryPhysicalFormatModel` | D15 |
-| `worth-store-operations/src/certification_scenario/backup_artifacts*`, `worth-store-claim-boundaries/src/{backend_family,promotion}.rs` | `InMemoryPhysicalFormatModel` | Stays a format-owner model. Phase 3 review confirms that neither cites it as Store runtime or access evidence, and removes any claim that does |
+| `worth-store-operations/src/certification_scenario/backup_artifacts*`, `worth-store-claim-boundaries/src/{backend_family,promotion}.rs` | `InMemoryPhysicalFormatModel` | Stays a format-owner model. Phase 4 review confirms that neither cites it as Store runtime or access evidence, and removes any claim that does |
 
 ### C.10 as-built homes C.11 extends
 
@@ -233,6 +236,11 @@ streams byte-exact.
 
 | Case | Boundary | Passes only when |
 | --- | --- | --- |
+| Arena file count | Store placement + media | 16 384 extent records of 256 KiB and 16 384 of 20 KiB produce at most ceil(bytes / arena capacity) + 1 arena files per writer lane, and no per-extent data or manifest file exists on media. |
+| Range reuse after retirement | Retirement + free map + protection | A retired extent's range is reallocated only after the releasing root is durable and no protected root routes it; while a reader holds the old root the range is not reused, and its bytes still read exactly. |
+| No allocation over a protected range | Allocation owner | An adversarial allocation request that best-fits into a range routed by a held root is refused; the injected defect of ignoring protection is caught by the offline overlap check. |
+| Stale bytes in a reused range | Frame validation | A reader routed to a reused range sees only the new extent's frame; a forged route to the old identity or generation is rejected by frame identity, not accepted as data. |
+| Arena evacuation | Compaction producer + rewrite + retirement | A sparse arena's live extents move with stable record ids and exact bytes; the empty arena file is deleted through retirement; space amplification stays within the admitted bound. |
 | Bounded ingest above window | Store blob owner + executor + media | Peak resident bytes stay under window + 2 node frames + 1 publication frame across the whole ingest; every chunk is one durable extent record; counters equal observed backend writes. |
 | Whole-object substitution | Store blob owner | A frame at or above the declared total, a `Vec<u8>` full blob, and a window at or above the object are typed denials before any effect. |
 | Interrupted ingest and resume | Writer process + WAL + recovery | Resume continues from the last durable frontier record; readmission re-verifies the last chunk digest; a forged token, changed rule or changed declared total is denied; no chunk is written twice. |
@@ -259,13 +267,17 @@ offline. The required fate is exact.
 
 | Seam | Durable at kill | Required fate |
 | --- | --- | --- |
+| Arena range written, root not published | Arena bytes | Range is free in the published free map; nothing routes it; no residue scan runs; the next allocation may reuse it. |
+| Range release in WAL, releasing root not published | WAL retirement intent | The range stays routed-or-held until the root publishes; redo completes the release exactly once. |
+| Evacuation copies durable, root not published | Destination ranges | Source arena stays current; destination ranges are free by construction. |
+| Arena empty in every root, file deletion partial | Retirement intent | C.10 retirement completion; a missing arena file is a completed deletion, not corruption. |
 | Chunk record appended, frontier record not | Extent record | Chunk is resume-verified or abandoned residue; never orphan candidate for external proof. |
 | Frontier record durable, next chunk partial | WAL frontier | Resume from frontier; partial extent is failed-op residue reclaimed independently. |
 | All chunks durable, tree nodes partial | Chunks + some nodes | Resume rebuilds the missing nodes from chunk records; no re-ingest. |
 | Tree root durable, publication WAL not | Nodes | Session resumable; no generation visible. |
 | Publication WAL durable, root not advanced | WAL payload | C.8 redo publishes the generation exactly once; catalog index entry appears after rebuild or live maintenance. |
 | Drop publication durable, retirement intent not | WAL payload | Records unrouted after reopen; extents displaced; retirement runs later; nothing is served from them. |
-| Retirement intent durable, deletion partial | WAL + checkpoint | Existing C.10 retirement completion; missing files are completed deletions, not corruption. |
+| Retirement intent durable, release or deletion partial | WAL + checkpoint | Existing C.10 retirement completion: extent ranges are released exactly once; for an evacuated arena, a missing file is a completed deletion, not corruption. |
 | Rebuild partially published | Some index pages | Rebuild candidate is discarded; the previous derived generation or `Absent` posture is reported; no mixed index. |
 | Memtable WAL durable, run not sealed | WAL entries | Memtable replays from WAL; unsealed run extent is failed-op residue. |
 | Compaction output durable, membership not | Run extents | Old membership stays current; output runs are failed-op residue. |
@@ -281,6 +293,56 @@ facade is `ServingPhysicalRuntime::blobs()` and `::layouts()` over physical
 identities, digests, keys and generations only; the forbidden semantic
 decisions are blob meaning, record liveness, tenant/key authorization,
 retention, visibility, and any branch or MVCC registry.
+
+### Extent arenas
+
+Extent arenas replace one file per extent for every extent-backed record, not
+only blob records.
+
+- **Arena file.** `families/records/arenas/arena-{id}.data` (new) grows by
+  append up to its admitted `ExtentArenaCapacity`. It is placement policy, not
+  format compatibility, in the C.5 sense. Frames start on the qualified
+  media's alignment unit reported by C.4, so a later direct-I/O backend needs
+  no format change.
+- **Frames.** An extent's manifest frame and its data chunk frames live in
+  the same arena. Each frame carries extent identity, extent generation, frame
+  kind, length and checksum, so bytes left in a reused range can never be
+  admitted as another extent's frame. Root manifest routing blocks name
+  (arena, offset, length, generation); nothing else locates an extent.
+- **Free-range truth.** The free-space manifest gains per-arena runs of free
+  ranges, sorted and coalesced, published as part of the root. This replaces
+  the `next_extent`/`first_unallocated` bump frontier for extents. Segment
+  and page frontiers are unchanged.
+- **Allocation law.** A new extent takes a best-fit range that is free in the
+  current published root and not reserved by an in-flight submission, or else
+  appends to the arena that is filling. Every allocation is copy-on-write: it
+  can never overlap a range routed by the current root or by any root that
+  C.10 protection still holds.
+- **Reuse law.** Retiring an extent generation releases its range. The range
+  enters the published free map only in a root published after the
+  retirement intent is durable, and becomes allocatable only once C.10 shows
+  no reader lease or recovery obligation references a root that routes it.
+  This is the C.10 retirement protocol with "release range" in place of
+  "delete file".
+- **Crash law.** A range written but never published is free by construction
+  in the published free map, so recovery needs no residue scan for it. A
+  reader follows routes only from a published root, and frame identity plus
+  generation plus checksum reject stale bytes. Torn writes can only affect
+  unpublished ranges, so no double-write buffer or full-page image is needed.
+- **Fragmentation and evacuation.** An arena whose live ratio falls below its
+  admitted evacuation threshold is evacuated by the `CompactionRewrite`
+  producer through `rewrite_selected_extent_record`, which moves live extents
+  to other arenas. Once empty in every protected root, the arena file is
+  retired as a whole through the existing retirement owner. That is the only
+  case in which an extent retirement deletes a file. Space amplification is
+  bounded by the evacuation threshold plus one filling arena per writer lane.
+- **Integrity and offline walk.** C.9 gains the `ExtentArenaFrame` family and
+  validator; the offline observer walks arenas through root routing and the
+  free map without runtime APIs, and reports overlapping routes,
+  routed-but-free ranges and unaccounted bytes as corruption.
+- **Out of scope.** Hole punching (sparse release inside a live arena), raw
+  block devices and NUMA-aware arena placement belong to S.12 qualification
+  and performance, and must not force a format change.
 
 ### Blob record families
 
@@ -520,8 +582,17 @@ worth-store/src/physical_runtime/
     parts.rs                                    E constructs registry, blob, layout parts
     scheduler_admission/
       blob_ingest.rs, blob_reclaim.rs           N exact producers
+      arena_evacuation.rs                       N CompactionRewrite producer for sparse arenas (Phase 1)
       index_rebuild.rs, lsm_compaction.rs       N exact producers
       background_head.rs                        E ingest and compaction heads
+  record_serving/planning/
+    placement_policy.rs                         E ExtentArenaCapacity, evacuation threshold (Phase 1)
+    batch_placement.rs                          E arena range placement instead of extent files
+    free_space_projection/, free_space_routing/ E per-arena free-range runs replace the extent bump frontier
+  record_serving/arena/                         N arena owner (Phase 1)
+    mod.rs, allocation.rs, free_ranges.rs, release.rs, evacuation.rs
+  record_serving/access/locate/extent/          E resolve (arena, offset, length, generation)
+  durability/retention/retirement.rs            E release range; delete only an evacuated arena
   artifact_family/                              N one live registry
     mod.rs, registry.rs, declaration.rs, admission.rs
     families/physical_record.rs, blob.rs, index.rs
@@ -564,6 +635,10 @@ worth-store/tests/
   physical_runtime_authority/                   E trybuild cases (physical_runtime_authority_ui target) for blob/layout misuse, incl. cases moved from blob-chunks compile_fail
 
 worth-store-physical-format/src/
+  extent_record/, manifest/durable_extent.rs   E arena placement and frame identity; format version bump (D17)
+  arena_frame/                                  N arena frame header and alignment law
+  manifest/physical_free_space_membership_block/, binary_format/free_space_policy.rs  E free-range runs
+  integrity_declarations/families/extent_*.rs   E extent frames declared inside arenas
   blob_record/                                  N chunk_frame.rs, tree_node.rs, generation.rs, resume_session.rs, export_manifest.rs
   btree_node/                                   N slotted.rs, separator.rs, sibling.rs
   lsm_run/                                      N header.rs, entries.rs, membership.rs
@@ -572,9 +647,12 @@ worth-store-physical-format/src/
   offline_walk/                                 E blob and index families
 
 worth-store-physical-integrity/src/artifact/
+  extent_arena/                                 N arena frame validator (Phase 1)
+  free_space/                                   E free-range run validation
   blob_chunk/, blob_tree_node/, blob_generation/, btree_node/, lsm_run/  N validators and validated views
 
 worth-store-offline-integrity-observer/src/integrity_observation/families/
+  extent_arena/                                 N overlap, routed-but-free and unaccounted-byte checks
   blob/, index/                                 N independent offline families
 
 worth-store-recovery-physics/src/redo_replay/    E blob/index payload kinds in record.rs and plan/admission.rs typed arms
@@ -619,7 +697,7 @@ worth-store-offline-verifier/                   E BTreeNodeV1 backup format
 tools/boundary-check/config/road1.toml, snapshots/crate-dag.toml  E inverted edges recorded
 ```
 
-Dependency direction after Phase 1: `worth-store` imports the three mechanism
+Dependency direction after Phase 2: `worth-store` imports the three mechanism
 crates; none of them imports `worth-store`; `worth-store-recovery-runtime`,
 `worth-store-offline-verifier` and `worth-store-test-support` keep importing
 `worth-store` from above. The boundary-check snapshot is the proof.
@@ -628,7 +706,8 @@ crates; none of them imports `worth-store`; `worth-store-recovery-runtime`,
 
 | Path | Ordinary cost | Ceiling and scale axis |
 | --- | --- | --- |
-| Blob ingest | One chunk record write per chunk, one leaf write per 4096 chunks, one WAL frontier per admitted interval (default every 64 chunks), one root publication | Resident bytes <= window + 2 node frames + 1 frame buffer; file count = chunks + nodes + 1 |
+| Blob ingest | One chunk record write per chunk, one leaf write per 4096 chunks, one WAL frontier per admitted interval (default every 64 chunks), one root publication | Resident bytes <= window + 2 node frames + 1 frame buffer; arena files = ceil(bytes / arena capacity) + 1, independent of chunk count |
+| Extent allocation | Best-fit lookup in the published free map, or append to the filling arena | O(log free runs); no media read; free runs per arena bounded by the evacuation threshold |
 | Blob range read | Node path (height <= 3 for 2^36 chunks) plus chunks touched | Read amplification <= 1 chunk per side; resident <= window |
 | Dedupe hit | 1 B-tree probe plus 1 bounded byte comparison on first reuse | No whole-object comparison; comparison window = chunk size |
 | Publication | 1 WAL payload + root member | Payload bytes <= 1 KiB |
@@ -644,13 +723,36 @@ never from planned envelopes alone.
 
 ## Phase Plan And Fast Feedback
 
-The design is frozen here; execution reaches a real blob journey first.
+The design is frozen here. Execution first repairs extent storage (Phase 1),
+because every later phase writes extents, and then reaches a real blob
+journey (Phase 2) before any registry, dedupe, reclaim or LSM work.
 No phase creates public operational shells backed by flags, `Absent`,
 test-only owners, or copied evidence. Each effect-bearing path ships its
 cancellation, close, and recoverable/indeterminate fate with its owning
 phase. Later phases strengthen combined evidence.
 
-### Phase 1: Dependency inversion and the first native blob — the working MVP
+### Phase 1: Packed extent arenas
+
+Replace one file per extent with extent arenas for every extent-backed record
+(D16, D17): the arena frame format and its C.9 family, (arena, offset,
+length, generation) placement in root routing, published free-range truth,
+copy-on-write best-fit allocation fenced by C.10 protection, range release
+through the existing retirement protocol, recovery redo for release, the
+offline overlap and accounting walk, and arena evacuation through
+`rewrite_selected_extent_record` with whole-arena retirement. The C.10 extent
+rewrite, retirement, reopen-recharge and crash tests keep passing unchanged
+in intent, with their file-existence assertions rewritten as range and
+route assertions.
+
+Closeout gate: the arena rows of the test matrix and the four arena crash
+seams pass in distinct processes with offline observation; no per-extent
+file exists anywhere on media; the existing C.5, C.8, C.9 and C.10 lanes
+(store, recovery, Phase 8 process, isolation, certification) are green on the
+arena layout; opening a per-file-extent store is a typed format-version
+denial. Proof obligation: the injected defect of allocating over a protected
+range fails the offline overlap check.
+
+### Phase 2: Dependency inversion and the first native blob — the working MVP
 
 Invert the crate direction (D8), install `blob_record` frames, the
 `BlobChunkFrame`/`BlobTreeNode`/`BlobGenerationPublication` families with
@@ -659,9 +761,9 @@ their C.9 declarations and validators, the Store `BlobIngestSession` over
 `BlobReadSession` over protected reads. No registry, dedupe, resume,
 reclaim or index yet; the catalog lookup for this phase is a bounded scan of
 publication records admitted as the `Rebuild` lane shape, and it is replaced
-in Phase 3. `CapabilityAvailability::Present` (D12) lands here together with
+in Phase 4. `CapabilityAvailability::Present` (D12) lands here together with
 `blobs()`, so the capability status and the accessor become real in the same
-change; `layouts()` and Layout `Present` land together in Phase 3.
+change; `layouts()` and Layout `Present` land together in Phase 4.
 
 Closeout gate: a blob of 4 x the window ingests through the production path
 with measured resident bytes under the ceiling, publishes exactly once,
@@ -674,7 +776,7 @@ the offline observer walks the new families without runtime APIs. Proof obligati
 the controlled defect of hiding a full materialization fails the residency
 predicate.
 
-### Phase 2: Interrupted ingest, resume, and independent residue reclaim
+### Phase 3: Interrupted ingest, resume, and independent residue reclaim
 
 Add `BlobResumeSession` records and payload, frontier publication, resume
 readmission, session limits, abandonment, and the Store-independent reclaim
@@ -688,7 +790,7 @@ each reopens to the exact required fate; resumed ingest writes no chunk
 twice; abandoned residue is reclaimed with retained bytes falling and no
 external proof; forged or mismatched tokens are denied.
 
-### Phase 3: Artifact-family registry and the first derived index
+### Phase 4: Artifact-family registry and the first derived index
 
 Install the live registry in `instance/parts.rs`, the `BTreeNode` format and
 validator, the Store `layout/btree` owner over the protected page port, and
@@ -709,7 +811,7 @@ table has its disposition, D15 is executed, and a search for `BaselineBTree`,
 `LayoutReadRuntime` and `LayoutOperationalRepairOwner` across the workspace is
 empty.
 
-### Phase 4: Corruption localization, scrub, and rebuild fallback
+### Phase 5: Corruption localization, scrub, and rebuild fallback
 
 Join scrub and resident admission for the new families, localized chunk and
 node corruption in reads, derived-index corruption fallback, and the offline
@@ -720,7 +822,7 @@ outside it streaming; a corrupted leaf denies lookups rather than returning
 empty, rebuilds from authority, and reports exact rebuild counters; scrub
 and offline observation agree on family, identity and disposition.
 
-### Phase 5: Proof-consuming reclaim, reachability, and tier movement
+### Phase 6: Proof-consuming reclaim, reachability, and tier movement
 
 Add `AdmittedBlobReleaseProof` consumption, reachability traversal and
 classification, reader/recovery-pin deferral, batched drop publications,
@@ -733,7 +835,7 @@ regardless of references or age; a second reclaim is proven no effect; tier
 movement never exposes a half-moved chunk; the crash seams for drop and
 retirement reopen to their required fates.
 
-### Phase 6: LSM strategy, compaction, and export/import
+### Phase 7: LSM strategy, compaction, and export/import
 
 Install the memtable payload, `LsmRun` records, membership persistence
 through the Store WAL, the compaction producer over C.10 rewrite, and
@@ -745,11 +847,11 @@ stale runs through retirement; the two LSM crash seams reopen correctly;
 export streams under the window and import produces a generation with the
 same root.
 
-### Phase 7: Full matrix, heavy lane, cutover and successor handoff
+### Phase 8: Full matrix, heavy lane, cutover and successor handoff
 
 Run the decisive interleaving and the 4 GiB heavy lane; confirm
 `InstalledCapabilityStatus` reports every constructed family truthfully
-(Blob became `Present` in Phase 1 and Layout in Phase 3, with the accessor
+(Blob became `Present` in Phase 2 and Layout in Phase 4, with the accessor
 that made them real); remove dead placement-observation
 sessions, fake harness receipts and static inventory rows; revise the
 documentation deliverables; update the roadmap's C.11 entry with the current
@@ -765,13 +867,14 @@ docs compile their examples.
 
 | Work | May start | Integrates when |
 | --- | --- | --- |
-| `blob_record`, `btree_node`, `lsm_run` formats and validators | Immediately | Phase 1 (blob families), Phase 3 (B-tree), Phase 6 (LSM) |
-| Offline observer families | After format frames are frozen | Phase 1 closeout |
-| Dependency inversion of `worth-store-blob-chunks` | Immediately | Phase 1 closeout; boundary-check snapshot |
-| Mechanism-crate cleanup (baseline tree, InMemory runtime, fs repair) | After Phase 1 | Phase 3 closeout |
-| Recovery-physics payload kinds | After payload versions are frozen | Phase 2 (resume, reclaim), Phase 6 (LSM) |
-| Writer binary and heavy generator | Immediately | First use in Phase 1 |
-| Scheduler producers | After Phase 1 | Phase 2 (ingest head), Phase 5, Phase 6 |
+| Arena frame format, free-range runs and offline overlap walk | Immediately | Phase 1 closeout; it gates everything after |
+| `blob_record`, `btree_node`, `lsm_run` formats and validators | Immediately | Phase 2 (blob families), Phase 4 (B-tree), Phase 7 (LSM) |
+| Offline observer families | After format frames are frozen | Phase 2 closeout |
+| Dependency inversion of `worth-store-blob-chunks` | Immediately | Phase 2 closeout; boundary-check snapshot |
+| Mechanism-crate cleanup (baseline tree, InMemory runtime, fs repair) | After Phase 2 | Phase 4 closeout |
+| Recovery-physics payload kinds | After payload versions are frozen | Phase 3 (resume, reclaim), Phase 7 (LSM) |
+| Writer binary and heavy generator | Immediately | First use in Phase 2 |
+| Scheduler producers | After Phase 2 | Phase 3 (ingest head), Phase 6, Phase 7 |
 
 ## QA Considerations And Verification
 
@@ -802,8 +905,11 @@ Implementation revises these against real APIs, compiling every example:
   B-tree and LSM access, rebuild, corruption fallback, scan denial.
 - `bounded-physical-record-access.md`: blob and index sessions as successor
   allocation consumers; record-read chunk versus blob chunk vocabulary.
-- `physical-durability-and-checkpoints.md`: record-dropping publication,
-  blob and LSM payloads, retained-storage effects of reclaim.
+- `physical-durability-and-checkpoints.md`: extent arenas, free-range truth,
+  range release and arena evacuation; record-dropping publication, blob and
+  LSM payloads, retained-storage effects of reclaim.
+- The C.5 record-path spec and `bounded-physical-record-access.md`: extent
+  placement is an arena range; per-extent files are gone.
 - `physical-recovery-and-reopen.md`: blob generation, resume, drop and
   membership redo; residue fates.
 - `physical-integrity-and-offline-verification.md`: new families, derived
