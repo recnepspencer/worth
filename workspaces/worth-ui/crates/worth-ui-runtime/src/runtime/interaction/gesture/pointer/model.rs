@@ -67,6 +67,10 @@ pub(crate) struct UiPointerGestureRuntimeState {
     pub(super) counters: UiPointerGestureLifecycleCounters,
     pub(super) appearance_revision: u64,
     pub(super) appearance_enabled: bool,
+    /// A thumb drag in progress. Scroll chrome is not a mounted node, so it
+    /// cannot occupy `active`; it sits beside it and is ended by the same
+    /// lifecycle owners.
+    pub(super) scroll_chrome: super::scroll_chrome_latch::UiScrollChromeLatchState,
 }
 
 pub(super) struct UiActivePointerGesture {

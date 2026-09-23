@@ -4,7 +4,7 @@ use winit::dpi::PhysicalPosition;
 use winit::event::{DeviceId, MouseScrollDelta, TouchPhase, WindowEvent};
 use worth_ui_host_contract::{
     UiHostObservationPayload, UiHostScrollDeltaPhase, UiHostScrollDeltaPrecision,
-    UiHostScrollDeltaSource,
+    UiHostScrollDeltaSource, UiHostScrollLineCountBasis, UI_HOST_SCROLL_DEFAULT_LINES_PER_NOTCH,
 };
 
 #[test]
@@ -33,7 +33,68 @@ fn event_time_pointer_witness_targets_the_exact_presented_coordinate() {
 }
 
 #[test]
-fn qualified_line_wheel_is_canonical_and_does_not_suppress_later_input() {
+fn shift_redirects_vertical_input_without_replacing_explicit_inline_or_diagonal_travel() {
+    for (input, expected) in [
+        ((0.0, -3.25), (-3_250, 0)),
+        ((1.5, -3.25), (1_500, -3_250)),
+        ((1.5, 0.0), (1_500, 0)),
+    ] {
+        let mut state = presented_state();
+        state.observe_window_event(&WindowEvent::ModifiersChanged(
+            winit::keyboard::ModifiersState::SHIFT.into(),
+        ));
+        state.observe_window_event(&WindowEvent::MouseWheel {
+            device_id: DeviceId::dummy(),
+            delta: MouseScrollDelta::PixelDelta(PhysicalPosition::new(input.0, input.1)),
+            phase: TouchPhase::Moved,
+        });
+        let batches = state.drain(HOST_SESSION).into_batches();
+        let UiHostObservationPayload::ScrollDelta {
+            x_subpixels,
+            y_subpixels,
+            ..
+        } = batches[0].reports()[0].payload()
+        else {
+            panic!("expected native Scroll report")
+        };
+        assert_eq!((*x_subpixels, *y_subpixels), expected);
+    }
+}
+
+#[test]
+fn shift_coarse_notch_keeps_platform_line_normalization_on_inline_axis() {
+    let mut state = presented_state();
+    state.observe_window_event(&WindowEvent::ModifiersChanged(
+        winit::keyboard::ModifiersState::SHIFT.into(),
+    ));
+    state.observe_window_event(&WindowEvent::MouseWheel {
+        device_id: DeviceId::dummy(),
+        delta: MouseScrollDelta::LineDelta(0.0, -0.5),
+        phase: TouchPhase::Moved,
+    });
+    let batches = state.drain(HOST_SESSION).into_batches();
+    let UiHostObservationPayload::ScrollDelta {
+        x_subpixels,
+        y_subpixels,
+        precision,
+        ..
+    } = batches[0].reports()[0].payload()
+    else {
+        panic!("expected Scroll report")
+    };
+    let units = match precision {
+        UiHostScrollDeltaPrecision::Line {
+            platform_lines_per_notch,
+            ..
+        } => i64::from(*platform_lines_per_notch),
+        UiHostScrollDeltaPrecision::Page => 1,
+        UiHostScrollDeltaPrecision::Pixel => panic!("coarse wheel is not pixel precision"),
+    };
+    assert_eq!((*x_subpixels, *y_subpixels), (-500 * units, 0));
+}
+
+#[test]
+fn wheel_delta_follows_the_count_the_observation_states_and_does_not_suppress_later_input() {
     let mut state = presented_state();
     state.observe_window_event(&WindowEvent::MouseWheel {
         device_id: DeviceId::dummy(),
@@ -56,13 +117,45 @@ fn qualified_line_wheel_is_canonical_and_does_not_suppress_later_input() {
     };
     assert_eq!(*source, UiHostScrollDeltaSource::PointerWheel);
     assert_eq!(*phase, UiHostScrollDeltaPhase::Updated);
-    assert_eq!(*precision, UiHostScrollDeltaPrecision::Line);
+    // The reader's own platform setting decides the count here, so this test
+    // pins the coherence between what the observation states and what it
+    // carries, never a particular machine's answer. The mapping from each
+    // platform answer to a stated count lives in the wheel notch and event
+    // profile unit tests, which need no platform at all.
+    let lines_per_notch = match *precision {
+        UiHostScrollDeltaPrecision::Line {
+            platform_lines_per_notch,
+            basis,
+        } => {
+            match basis {
+                UiHostScrollLineCountBasis::PlatformReported => assert!(
+                    platform_lines_per_notch >= 1,
+                    "a count the platform reported is a count of at least one line"
+                ),
+                UiHostScrollLineCountBasis::DefaultedAfterMissing
+                | UiHostScrollLineCountBasis::DefaultedAfterInvalid => assert_eq!(
+                    platform_lines_per_notch, UI_HOST_SCROLL_DEFAULT_LINES_PER_NOTCH,
+                    "a defaulted count is the one default this contract names"
+                ),
+            }
+            i64::from(platform_lines_per_notch)
+        }
+        UiHostScrollDeltaPrecision::Page => 1,
+        UiHostScrollDeltaPrecision::Pixel => {
+            panic!("a notch-denominated wheel event never carries pixel precision")
+        }
+    };
     assert!(target.is_surface_fallback());
     assert_eq!(
         target.presentation(),
         batches[0].canonical_core().presentation()
     );
-    assert_eq!((*x_subpixels, *y_subpixels), (40_000, -80_000));
+    // One notch right and two notches up, each notch worth exactly the unit
+    // count the observation itself states, carried at 1000 per unit.
+    assert_eq!(
+        (*x_subpixels, *y_subpixels),
+        (1_000 * lines_per_notch, -2_000 * lines_per_notch)
+    );
     assert!(matches!(
         batches[1].reports()[0].payload(),
         UiHostObservationPayload::WindowFocus { focused: true, .. }
@@ -77,7 +170,7 @@ fn qualified_line_wheel_is_canonical_and_does_not_suppress_later_input() {
             scroll.x_subpixels(),
             scroll.y_subpixels()
         )),
-        Some((1, 40_000, -80_000))
+        Some((1, 1_000 * lines_per_notch, -2_000 * lines_per_notch))
     );
     assert_eq!(
         report.last_horizontal_scroll().map(|scroll| (
@@ -85,7 +178,7 @@ fn qualified_line_wheel_is_canonical_and_does_not_suppress_later_input() {
             scroll.x_subpixels(),
             scroll.y_subpixels()
         )),
-        Some((1, 40_000, -80_000))
+        Some((1, 1_000 * lines_per_notch, -2_000 * lines_per_notch))
     );
 }
 

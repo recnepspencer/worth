@@ -35,7 +35,11 @@ fn real_raster_images_finalize_exact_clipped_coverage_and_reuse_atlas_hits() {
         output.regions().as_ref(),
         world.expected_images(0, [5, 0, 75, 48])
     );
-    assert_eq!(output.cost().image_commands, 2);
+    assert_eq!(
+        output.cost().image_commands,
+        3,
+        "retain all images, not only visible coverage"
+    );
     assert_eq!(atlas.validate_images(&output), Ok(()));
     let foreign_atlas = UiNativeTextForegroundAtlasModel::new();
     assert_eq!(

@@ -5,9 +5,11 @@ use worth_ui_platform_pulse::observation_contract::{
     PlatformPulseSemanticFocusCause,
 };
 
-use crate::external_observation::{NativeClientPixelCapture, NativeClientPixelPoint};
+use crate::external_observation::{
+    NativeClientPixelCapture, NativeClientPixelPoint, NativeKeyboardCommand,
+};
 use crate::installation::{CanonicalPlatformPulse, IsolatedPulseInstallation};
-use crate::native_platform::{NativePlatformContract, WindowsNativePlatform};
+use crate::native_platform::{CertifiedNativePlatform, NativePlatformContract};
 use crate::product_process::{CargoBuiltPlatformPulse, SuccessfulPlatformPulseExit};
 use crate::source_delta::{QueryStatusV1, QueryStatusV2};
 
@@ -63,7 +65,7 @@ fn authored_query_revisions_reach_the_real_pulse_process() {
             _ => {}
         }
     }
-    let platform = WindowsNativePlatform::certified().expect("native desktop available");
+    let platform = CertifiedNativePlatform::certified().expect("native desktop available");
     let client = platform
         .bind_process_client_area(launch.process.id(), deadline)
         .expect("product presents one native client area");
@@ -153,10 +155,85 @@ fn authored_query_revisions_reach_the_real_pulse_process() {
     let baseline = platform
         .capture_client_area(&client)
         .expect("capture current dashboard");
-    let review_target = NativeClientPixelPoint::interior(
+    let bell_target = NativeClientPixelPoint::interior(
         &baseline,
-        1434 * baseline.width() / 1536,
-        792 * baseline.height() / 1024,
+        1420 * baseline.width() / 1536,
+        32 * baseline.height() / 1024,
+        1,
+    )
+    .expect("signals target lies inside the native client area");
+    platform
+        .deliver_pointer_activation(&client, bell_target)
+        .expect("open the signals popover through the native target");
+    let mut signals_focused = false;
+    while !signals_focused {
+        let envelope = launch
+            .lifecycle
+            .next(deadline)
+            .expect("signals lifecycle event");
+        match envelope.outcome() {
+            PlatformPulseLifecycleObservation::SemanticFocusPublished(focus) => {
+                signals_focused = focus.cause() == PlatformPulseSemanticFocusCause::PortalInitial;
+            }
+            PlatformPulseLifecycleObservation::TerminalFailure(failure) => {
+                panic!("product failed while opening signals: {failure:?}")
+            }
+            _ => {}
+        }
+    }
+    let signals_region = [1207, 61, 307, 253];
+    let signals_open = loop {
+        let capture = platform
+            .capture_client_area(&client)
+            .expect("capture signals popover");
+        if changed_region_pixels(&baseline, &capture, signals_region) >= 24 {
+            break capture;
+        }
+        assert!(
+            Instant::now() < deadline,
+            "signals popover did not reach native pixels"
+        );
+        std::thread::sleep(Duration::from_millis(10));
+    };
+    platform
+        .deliver_keyboard_command(&client, NativeKeyboardCommand::Escape)
+        .expect("dismiss signals through native Escape");
+    let mut signals_dismissed = false;
+    let mut focus_restored = false;
+    while !signals_dismissed || !focus_restored {
+        let envelope = launch
+            .lifecycle
+            .next(deadline)
+            .expect("signals dismissal event");
+        match envelope.outcome() {
+            PlatformPulseLifecycleObservation::PortalDismissed(_) => signals_dismissed = true,
+            PlatformPulseLifecycleObservation::SemanticFocusPublished(focus) => {
+                focus_restored |=
+                    focus.cause() == PlatformPulseSemanticFocusCause::PortalRestoration;
+            }
+            PlatformPulseLifecycleObservation::TerminalFailure(failure) => {
+                panic!("product failed while dismissing signals: {failure:?}")
+            }
+            _ => {}
+        }
+    }
+    let signals_closed = loop {
+        let capture = platform
+            .capture_client_area(&client)
+            .expect("capture restored dashboard");
+        if changed_region_pixels(&signals_open, &capture, signals_region) >= 24 {
+            break capture;
+        }
+        assert!(
+            Instant::now() < deadline,
+            "Escape did not restore native pixels"
+        );
+        std::thread::sleep(Duration::from_millis(10));
+    };
+    let review_target = NativeClientPixelPoint::interior(
+        &signals_closed,
+        1434 * signals_closed.width() / 1536,
+        792 * signals_closed.height() / 1024,
         1,
     )
     .expect("review target lies inside the native client area");
@@ -249,11 +326,19 @@ fn changed_status_pixels(
     before: &NativeClientPixelCapture,
     after: &NativeClientPixelCapture,
 ) -> usize {
+    changed_region_pixels(before, after, [1392, 779, 85, 27])
+}
+
+fn changed_region_pixels(
+    before: &NativeClientPixelCapture,
+    after: &NativeClientPixelCapture,
+    region: [u32; 4],
+) -> usize {
     assert_eq!(
         [before.width(), before.height()],
         [after.width(), after.height()]
     );
-    let [x, y, width, height] = [1392_u32, 779, 85, 27];
+    let [x, y, width, height] = region;
     let left = x * before.width() / 1536;
     let top = y * before.height() / 1024;
     let right = (x + width) * before.width() / 1536;

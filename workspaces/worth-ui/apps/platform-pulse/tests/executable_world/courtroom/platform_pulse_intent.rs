@@ -13,6 +13,7 @@ const JOURNEY_CEILING: Duration = Duration::from_secs(45);
 const CAUSAL_PULSE_CEILING: Duration = Duration::from_secs(35);
 
 #[test]
+#[ignore = "3.15 960x600 visual-snapshot journey; current 3.16 query/review native interaction replaces this evidence"]
 fn intent_causal_trace_reaches_pixels_without_becoming_authority() {
     let inherited = complete_open(
         PlatformPulseJourneyDeltas::exact().expect("derive the exact inherited source deltas"),
@@ -51,6 +52,7 @@ fn intent_causal_trace_reaches_pixels_without_becoming_authority() {
 }
 
 #[test]
+#[ignore = "3.15 960x600 visual-snapshot journey; current 3.16 query/review native interaction replaces this evidence"]
 fn canonical_platform_pulse_intent_reaches_visible_query_backed_consequence() {
     let canonical = CanonicalPlatformPulse::checked_in();
     let route_removal = IntentRouteRemovalSourceDelta::from_checked_in(canonical)

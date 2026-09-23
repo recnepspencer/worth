@@ -9,12 +9,15 @@ mod portal_certification;
 mod portal_dismissal;
 #[path = "request_basis/portal_exit_terminal.rs"]
 mod portal_exit_terminal;
+#[path = "request_basis/scroll_settle.rs"]
+mod scroll_settle;
 
 pub(in crate::runtime) use admitted_intent::UiAdmittedIntentServiceRequestAuthority;
 #[cfg(test)]
 pub(in crate::runtime) use portal_certification::UiPortalCertificationServiceRequestAuthority;
 pub(in crate::runtime) use portal_dismissal::UiPortalDismissalServiceRequestAuthority;
 pub(in crate::runtime) use portal_exit_terminal::UiPortalExitTerminalServiceRequestAuthority;
+pub(in crate::runtime) use scroll_settle::UiScrollSettleServiceRequestAuthority;
 
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub(in crate::runtime) struct UiServiceRequestIdentity(NonZeroU64);

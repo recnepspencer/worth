@@ -93,7 +93,8 @@ impl<'a> Clauses<'a> {
             ));
         }
         let mut entries = Vec::with_capacity(words.len() / 2);
-        for pair in words.chunks_exact(2) {
+        let (pairs, _) = words.as_chunks::<2>();
+        for pair in pairs {
             if !matches!(
                 pair[0],
                 "view"

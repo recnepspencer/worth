@@ -140,24 +140,8 @@ impl UiMountedPresentationState {
         &self,
         instance: UiMountedInstanceIdentity,
     ) -> Option<worth_ui_host_contract::UiMountedPresentationSampleChange> {
-        let target = self.appearance_surface_sample_target(instance)?;
-        let sample = target.motion.sample()?;
         let identity = UiMountedPaintCommandIdentity::appearance_surface(instance);
-        let transform = super::super::motion_sample::sample_transform(
-            sample,
-            target.geometry.clip().coordinate_space(),
-        )
-        .ok()?;
-        Some(
-            worth_ui_host_contract::UiMountedPresentationSampleChange::from_runtime_sampling(
-                identity,
-                transform,
-                crate::mounting::presentation::compose_opacity(
-                    self.appearance_opacity_for_command(identity),
-                    sample.opacity_units(),
-                ),
-            ),
-        )
+        self.command_sample_change(identity)
     }
 
     pub(in crate::mounting::presentation::work_producer) fn bound_appearance_surface_instances(

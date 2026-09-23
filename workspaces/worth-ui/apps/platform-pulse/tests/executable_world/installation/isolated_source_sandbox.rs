@@ -161,6 +161,14 @@ impl IsolatedPulseInstallation {
         self.root.join("dashboard_signals.wui")
     }
 
+    pub(crate) fn review_source(&self) -> PathBuf {
+        self.root.join("dashboard_review.wui")
+    }
+
+    pub(crate) fn navigation_source(&self) -> PathBuf {
+        self.root.join("dashboard_navigation.wui")
+    }
+
     pub(crate) fn failure_source_snapshot(&self) -> Option<Box<[u8]>> {
         fs::read(self.entry_source())
             .ok()

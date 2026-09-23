@@ -100,10 +100,16 @@ impl super::UiScrollRuntimeState {
             .map_err(|denial| *denial)
     }
 
+    /// Every mounted instance whose ownership chain this catalog holds.
+    ///
+    /// The instances are borrowed from the catalog rather than gathered into a
+    /// list: a caller that only reads them pays nothing for the walk, and a
+    /// caller that has to change the catalog while it walks them gathers at its
+    /// own call site, where the reason for the copy is visible.
     pub(crate) fn ownership_instances(
         &self,
-    ) -> Box<[worth_ui_host_contract::UiMountedInstanceIdentity]> {
-        self.ownership_catalog.keys().copied().collect()
+    ) -> impl Iterator<Item = worth_ui_host_contract::UiMountedInstanceIdentity> + '_ {
+        self.ownership_catalog.keys().copied()
     }
 
     pub(crate) fn retire_mounted_instance(
@@ -160,6 +166,7 @@ impl super::UiScrollRuntimeState {
             return false;
         }
         self.ownership_references.remove(&owner);
+        self.retire_layout_owner(owner);
         self.owners.remove(&owner).is_some()
     }
 }

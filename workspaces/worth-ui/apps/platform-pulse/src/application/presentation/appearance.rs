@@ -1,3 +1,4 @@
+pub(in crate::application) mod scroll_chrome;
 mod theme;
 use worth_ui::facade::app::{
     UiChangeProfileInstalled, UiIntentWiringSatisfied, WorthUiApplicationBuilder,
@@ -13,12 +14,14 @@ use worth_ui_platform_pulse::product_world::{
 #[derive(Debug)]
 pub(crate) enum PlatformPulseAppearanceRegistrationDenial {
     Role(AppearanceRoleRegistrationDenial),
+    ScrollChrome(UiAppearanceRoleAuthoringDenial),
     Theme(FrozenAppearanceThemeCapabilitiesDenial),
 }
 impl std::fmt::Display for PlatformPulseAppearanceRegistrationDenial {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Role(denial) => write!(f, "role registration: {denial:?}"),
+            Self::ScrollChrome(denial) => write!(f, "scroll chrome authoring: {denial:?}"),
             Self::Theme(denial) => write!(f, "theme registration: {denial:?}"),
         }
     }
@@ -155,6 +158,13 @@ pub(crate) fn register(
     builder = builder
         .register_appearance_role(role)
         .map_err(PlatformPulseAppearanceRegistrationDenial::Role)?;
+    for role in
+        scroll_chrome::roles().map_err(PlatformPulseAppearanceRegistrationDenial::ScrollChrome)?
+    {
+        builder = builder
+            .register_appearance_role(role)
+            .map_err(PlatformPulseAppearanceRegistrationDenial::Role)?;
+    }
     builder
         .register_appearance_theme_bundle(theme::theme_bundle())
         .map_err(PlatformPulseAppearanceRegistrationDenial::Theme)

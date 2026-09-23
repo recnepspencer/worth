@@ -36,6 +36,25 @@ pub(crate) fn plan_glyph_commands(
     atlas: &UiNativeTextAtlas,
     target_extent: [u32; 2],
 ) -> Result<Box<[UiNativeGlyphCommand]>, UiNativeGlyphCommandDenial> {
+    plan_raw_glyph_commands(runs, atlas)?
+        .into_vec()
+        .into_iter()
+        .map(|command| {
+            Ok(clip_glyph_command(
+                command,
+                physical_clip(command.run, target_extent)?,
+            ))
+        })
+        .collect::<Result<Vec<_>, UiNativeGlyphCommandDenial>>()
+        .map(|commands| commands.into_iter().flatten().collect())
+}
+
+/// Retain the full admitted image so a later Scroll sample can reveal pixels
+/// that were outside the previous viewport. Atlas/raster meaning is unchanged.
+pub(crate) fn plan_raw_glyph_commands(
+    runs: &[UiGlyphRunView],
+    atlas: &UiNativeTextAtlas,
+) -> Result<Box<[UiNativeGlyphCommand]>, UiNativeGlyphCommandDenial> {
     let mut commands = runs
         .iter()
         .copied()
@@ -45,30 +64,35 @@ pub(crate) fn plan_glyph_commands(
                 .entry_view(run.raster_key())
                 .ok_or(UiNativeGlyphCommandDenial::MissingAtlasEntry);
             entry.and_then(|entry| {
-                command_for_run(run, entry, target_extent).map(|value| {
-                    value.map(|command| (run.layer_semantic_order(), ordinal, command))
-                })
+                raw_command_for_run(run, entry)
+                    .map(|command| (run.layer_semantic_order(), ordinal, command))
             })
         })
         .collect::<Result<Vec<_>, _>>()?;
-    commands.sort_by_key(|command| {
-        command
-            .as_ref()
-            .map(|(layer, ordinal, _)| (*layer, *ordinal))
-    });
+    commands.sort_by_key(|(layer, ordinal, _)| (*layer, *ordinal));
     Ok(commands
         .into_iter()
-        .flatten()
         .map(|(_, _, command)| command)
         .collect::<Vec<_>>()
         .into_boxed_slice())
 }
 
+#[cfg(test)]
 fn command_for_run(
     run: UiGlyphRunView,
     entry: UiNativeTextAtlasEntryView,
     target_extent: [u32; 2],
 ) -> Result<Option<UiNativeGlyphCommand>, UiNativeGlyphCommandDenial> {
+    Ok(clip_glyph_command(
+        raw_command_for_run(run, entry)?,
+        physical_clip(run, target_extent)?,
+    ))
+}
+
+fn raw_command_for_run(
+    run: UiGlyphRunView,
+    entry: UiNativeTextAtlasEntryView,
+) -> Result<UiNativeGlyphCommand, UiNativeGlyphCommandDenial> {
     let extent = UiGlyphRasterExtent::new(entry.extent[0], entry.extent[1])
         .ok_or(UiNativeGlyphCommandDenial::GeometryOverflow)?;
     let raw = entry
@@ -79,32 +103,22 @@ fn command_for_run(
             run.raster_key().dpi_milli(),
         )
         .ok_or(UiNativeGlyphCommandDenial::GeometryOverflow)?;
-    let clip = physical_clip(run, target_extent)?;
-    let Some(target) = intersect(raw, clip) else {
-        return Ok(None);
-    };
-    let relative = [
-        (target[0] - raw[0]) / raw[2],
-        (target[1] - raw[1]) / raw[3],
-        target[2] / raw[2],
-        target[3] / raw[3],
-    ];
     let page_extent = [entry.page_extent[0] as f32, entry.page_extent[1] as f32];
     let texture_uv = [
-        (entry.origin[0] as f32 + relative[0] * entry.extent[0] as f32) / page_extent[0],
-        (entry.origin[1] as f32 + relative[1] * entry.extent[1] as f32) / page_extent[1],
-        relative[2] * entry.extent[0] as f32 / page_extent[0],
-        relative[3] * entry.extent[1] as f32 / page_extent[1],
+        entry.origin[0] as f32 / page_extent[0],
+        entry.origin[1] as f32 / page_extent[1],
+        entry.extent[0] as f32 / page_extent[0],
+        entry.extent[1] as f32 / page_extent[1],
     ];
-    Ok(Some(UiNativeGlyphCommand {
+    Ok(UiNativeGlyphCommand {
         run,
         foreground: run.foreground(),
         atlas_kind: entry.kind,
         atlas_page: entry.page,
-        target,
+        target: raw,
         texture_uv,
         opacity: 1.0,
-    }))
+    })
 }
 
 fn physical_clip(

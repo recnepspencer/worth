@@ -2,7 +2,7 @@ use std::panic::{catch_unwind, resume_unwind, AssertUnwindSafe};
 use std::time::{Duration, Instant};
 
 use crate::native_platform::{
-    NativePlatformContract, NativePlatformFailure, WindowsNativePlatform,
+    CertifiedGraphicsRecord, CertifiedNativePlatform, NativePlatformContract, NativePlatformFailure,
 };
 use crate::product_process::{CargoBuiltPlatformPulse, SuccessfulPlatformPulseExit};
 
@@ -10,9 +10,9 @@ use crate::product_process::{CargoBuiltPlatformPulse, SuccessfulPlatformPulseExi
 mod resource_evidence;
 
 #[test]
-#[ignore = "requires the serialized interactive Windows 11 DX12 desktop"]
-fn windows_native_boundary_world_presents_quiesces_and_closes_without_residue() {
-    let platform = WindowsNativePlatform::certified().expect("Windows observation is qualified");
+#[ignore = "requires the serialized interactive certified native desktop (Windows 11 DX12 or Xvfb X11)"]
+fn certified_native_boundary_world_presents_quiesces_and_closes_without_residue() {
+    let platform = CertifiedNativePlatform::certified().expect("native observation is qualified");
     let mut launch = CargoBuiltPlatformPulse::exact()
         .and_then(CargoBuiltPlatformPulse::launch_native_phase2)
         .expect("the one product binary launches under the native desktop lease");
@@ -27,7 +27,7 @@ fn windows_native_boundary_world_presents_quiesces_and_closes_without_residue() 
 }
 
 fn execute_boundary_world(
-    platform: &WindowsNativePlatform,
+    platform: &CertifiedNativePlatform,
     launch: &mut crate::product_process::NativePhase2ProcessLaunch,
     process_id: u32,
 ) {
@@ -66,7 +66,7 @@ fn execute_boundary_world(
 }
 
 fn finalize_failed_world(
-    platform: &WindowsNativePlatform,
+    platform: &CertifiedNativePlatform,
     process: &mut crate::product_process::LivePlatformPulseProcess,
     process_id: u32,
 ) {
@@ -100,7 +100,10 @@ fn assert_exact_native_evidence(
     assert_exact_attribution(&evidence["presentation"], &evidence["runtime_attribution"]);
     assert_exact_counters(&evidence["counters"]);
     assert_exact_graphics(&evidence["graphics"]);
-    resource_evidence::assert_exact_resource_evidence(evidence);
+    resource_evidence::assert_exact_resource_evidence(
+        evidence,
+        CertifiedNativePlatform::CREATION_SURFACE_SUCCESSION,
+    );
 }
 
 fn assert_quiescent_control_points(
@@ -196,16 +199,22 @@ fn assert_exact_counters(counters: &serde_json::Value) {
         .is_some_and(|count| count <= 4));
 }
 
+/// The graphics axes are the certified record's, not a vendor's spelling: the
+/// same courtroom certifies DX12 on Windows and software Vulkan under Xvfb.
 fn assert_exact_graphics(graphics: &serde_json::Value) {
-    assert_eq!(graphics["backend"], "Dx12");
-    assert!(matches!(
-        graphics["device_type"].as_str(),
-        Some("DiscreteGpu" | "IntegratedGpu" | "VirtualGpu")
-    ));
-    assert_eq!(graphics["surface_format"], "Bgra8UnormSrgb");
-    assert_eq!(graphics["present_mode"], "Fifo");
-    assert_eq!(graphics["alpha_mode"], "PreMultiplied");
-    assert_eq!(graphics["retained_format"], "Rgba8UnormSrgb");
+    let record = CertifiedGraphicsRecord::from_certified_manifest();
+    assert_eq!(graphics["backend"], record.backend());
+    assert!(
+        graphics["device_type"]
+            .as_str()
+            .is_some_and(|device_type| record.admits_device_type(device_type)),
+        "the record does not admit {}",
+        graphics["device_type"]
+    );
+    assert_eq!(graphics["surface_format"], record.surface_format());
+    assert_eq!(graphics["present_mode"], record.present_mode());
+    assert_eq!(graphics["alpha_mode"], record.composite_alpha());
+    assert_eq!(graphics["retained_format"], record.target_format());
     assert_eq!(graphics["event_loop_thread_matches_launch"], true);
     assert_eq!(
         graphics["event_loop_thread_posture"],
@@ -236,8 +245,8 @@ fn independent_text_digest(text: &str) -> u64 {
 }
 
 fn await_exact_pixels(
-    platform: &WindowsNativePlatform,
-    client: &mut <WindowsNativePlatform as NativePlatformContract>::BoundClientArea,
+    platform: &CertifiedNativePlatform,
+    client: &mut <CertifiedNativePlatform as NativePlatformContract>::BoundClientArea,
     process: &mut crate::product_process::LivePlatformPulseProcess,
     deadline: Instant,
 ) -> crate::external_observation::NativeClientPixelCapture {

@@ -122,6 +122,14 @@ impl UiScrollBounds {
         self.max_block_subpixels
     }
 
+    /// Whether these bounds leave anywhere to scroll to. Content that emptied
+    /// and content that shrank to fit its viewport both land here, and neither
+    /// has a second offset to reach, so a settle under them is travelling
+    /// toward the only place it can already be.
+    pub(crate) const fn admits_no_travel(self) -> bool {
+        self.max_inline_subpixels == 0 && self.max_block_subpixels == 0
+    }
+
     pub(super) const fn contains(self, offset: UiScrollOffset) -> bool {
         offset.inline_subpixels <= self.max_inline_subpixels
             && offset.block_subpixels <= self.max_block_subpixels
@@ -140,6 +148,37 @@ impl UiScrollBounds {
                 offset.block_subpixels
             },
         }
+    }
+
+    /// The offset nearest `[inline, block]` that these bounds admit, for a pair
+    /// of axis values that has not been proven non-negative.
+    ///
+    /// An offset is a distance travelled from rest, so a negative one names a
+    /// place behind rest and lands at rest. Alignment arithmetic reaches that
+    /// place routinely -- revealing something already at the top asks to scroll
+    /// past the beginning -- and answering it here is what lets the reveal lane
+    /// construct an offset without asserting a range it did not check.
+    pub(crate) const fn clamp_subpixels(
+        self,
+        inline_subpixels: i64,
+        block_subpixels: i64,
+    ) -> UiScrollOffset {
+        UiScrollOffset {
+            inline_subpixels: clamp_axis(inline_subpixels, self.max_inline_subpixels),
+            block_subpixels: clamp_axis(block_subpixels, self.max_block_subpixels),
+        }
+    }
+}
+
+/// One axis of `clamp_subpixels`: rest is the floor, the declared extent the
+/// ceiling, and a ceiling below rest collapses to rest.
+const fn clamp_axis(value: i64, max: i64) -> i64 {
+    if value < 0 {
+        0
+    } else if value > max {
+        max
+    } else {
+        value
     }
 }
 

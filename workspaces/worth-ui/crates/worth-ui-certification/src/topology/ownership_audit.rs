@@ -41,10 +41,8 @@ fn collect_use_aliases(
                 collect_use_aliases(item, prefix, aliases);
             }
         }
-        UseTree::Rename(rename) => {
-            if prefix.len() == 1 {
-                aliases.insert(rename.rename.to_string(), prefix[0].clone());
-            }
+        UseTree::Rename(rename) if prefix.len() == 1 => {
+            aliases.insert(rename.rename.to_string(), prefix[0].clone());
         }
         _ => {}
     }

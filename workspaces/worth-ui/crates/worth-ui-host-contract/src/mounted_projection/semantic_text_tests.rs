@@ -20,6 +20,9 @@ use crate::{
 #[path = "semantic_text/frame_affinity_tests.rs"]
 mod frame_affinity_tests;
 
+#[path = "semantic_text_tests/clipping.rs"]
+mod clipping;
+
 #[test]
 fn completion_preserves_runtime_owned_semantic_text_meaning() {
     let input = fixture();
@@ -275,29 +278,10 @@ pub(in crate::mounted_projection) fn fixture() -> UiMountedSemanticTextCompletio
     }
 }
 
-#[test]
-fn raw_text_cannot_impersonate_a_different_qualified_layout() {
-    let mut input = fixture();
-    input.text = Arc::from("UPDATED");
-    assert_denial(
-        input,
-        UiMountedSemanticTextCompletionDenial::QualifiedLayoutSourceMismatch,
-    );
-}
-
-#[test]
-fn foreground_spans_must_match_the_canonical_layout_itemization() {
-    let mut input = fixture();
-    input.foregrounds = Arc::from([UiMountedTextForegroundSpan::from_runtime_mounting(
-        crate::UiTextOriginalRange::new(0, 5).unwrap(),
-        UiMountedRgba8::new(255, 255, 255, 255),
-        UiMountedTextPaintSpanIdentity::from_runtime_mounting([7; 32]),
-    )]);
-    assert_denial(
-        input,
-        UiMountedSemanticTextCompletionDenial::ForegroundSpanMismatch,
-    );
-}
+// `tests` is itself reached through a path, so its own parts name their
+// file too; a bare declaration would look beside this file, not beneath it.
+#[path = "semantic_text_tests/refusals.rs"]
+mod refusals;
 
 fn inert_layout(source: &str) -> UiQualifiedTextLayoutView<'static> {
     inert_layout_with_identity(source, 7)

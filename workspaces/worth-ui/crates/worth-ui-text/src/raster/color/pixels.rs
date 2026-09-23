@@ -32,7 +32,7 @@ pub(super) fn canonicalize_pixels(
         return Err(UiGlyphRasterizationDenial::InvalidColorPixels);
     }
     let mut output = Vec::with_capacity(pixels.len());
-    for pixel in pixels.chunks_exact(4) {
+    for pixel in pixels.as_chunks::<4>().0 {
         let alpha = pixel[3];
         let (channels, premultiplied) = match encoding {
             UiColorPixelEncoding::StraightRgba => ([pixel[0], pixel[1], pixel[2]], false),
@@ -247,7 +247,7 @@ fn encode_linear_premultiplied_for_srgb_texture(
     if !pixels.len().is_multiple_of(4) {
         return Err(UiGlyphRasterizationDenial::InvalidColorPixels);
     }
-    for pixel in pixels.chunks_exact_mut(4) {
+    for pixel in pixels.as_chunks_mut::<4>().0 {
         for channel in &mut pixel[..3] {
             *channel = linear_to_srgb(*channel);
         }

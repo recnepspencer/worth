@@ -179,6 +179,10 @@ impl UiNativeLifecycleProtocol {
         self.input.has_retained_observations()
     }
 
+    pub(crate) fn ime_composition_posture(&self) -> super::UiNativeImeCompositionPosture {
+        self.input.ime_composition_posture()
+    }
+
     pub(crate) fn observation_drain_capacity_reached(&self) -> bool {
         self.input.observation_drain_capacity_reached()
     }

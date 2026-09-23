@@ -8,7 +8,11 @@ use crate::UiMountedInstanceIdentity;
 pub(super) fn validate_completion(
     input: &UiMountedSemanticTextCompletionInput,
 ) -> Result<(), UiMountedSemanticTextCompletionDenial> {
-    if input.bounds.posture() != super::super::UiMountedGeometryPosture::Area {
+    // Scrolling carries an admitted row past the surface origin. Such a row keeps
+    // positive, finite extent, so it qualifies and lays out exactly as any other;
+    // the completed ancestor clip controls visibility without discarding the
+    // retained row. Only geometry with no extent at all is malformed here.
+    if input.bounds.posture() == super::super::UiMountedGeometryPosture::Empty {
         return Err(UiMountedSemanticTextCompletionDenial::NonAreaGeometry);
     }
     if input.clip_bounds.coordinate_space() != input.bounds.coordinate_space() {

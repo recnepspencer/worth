@@ -22,10 +22,6 @@ impl PlatformPulseVisualAdjudicationContract {
         self.control_point("canvas")
     }
 
-    pub(in crate::adjudication) fn source_signal_logical_point(&self) -> [u32; 2] {
-        self.control_point("source-signal-active")
-    }
-
     pub(in crate::adjudication) fn target_logical_point(&self) -> [u32; 2] {
         self.control_point("live-action")
     }
@@ -66,39 +62,6 @@ impl PlatformPulseVisualAdjudicationContract {
         self.pixel_region("portal-primary-label")
     }
 
-    pub(in crate::adjudication) fn schema_stable_control_region(&self) -> [u32; 4] {
-        self.pixel_region("schema-stable-control")
-    }
-
-    pub(in crate::adjudication) fn schema_posture_region(&self) -> [u32; 4] {
-        self.pixel_region("schema-posture")
-    }
-
-    pub(in crate::adjudication) fn brand_region(&self) -> [u32; 4] {
-        self.text_rect("platform.pulse.text.brand")
-    }
-
-    pub(in crate::adjudication) fn query_card_region(&self) -> [u32; 4] {
-        self.pixel_region("query-card")
-    }
-
-    pub(in crate::adjudication) fn query_card_radius(&self) -> u32 {
-        self.default_layout()
-            .pixel_regions
-            .iter()
-            .find(|region| region.identity == "query-card")
-            .expect("validated query-card pixel region")
-            .corner_radius
-    }
-
-    pub(in crate::adjudication) fn blue_rgba(&self) -> [u8; 4] {
-        self.token("source-signal-blue")
-    }
-
-    pub(in crate::adjudication) fn green_rgba(&self) -> [u8; 4] {
-        self.token("source-signal-green")
-    }
-
     pub(in crate::adjudication) fn canvas_rgba(&self) -> [u8; 4] {
         self.token("canvas")
     }
@@ -117,10 +80,6 @@ impl PlatformPulseVisualAdjudicationContract {
 
     pub(in crate::adjudication) fn raised_surface_rgba(&self) -> [u8; 4] {
         self.token("raised-surface")
-    }
-
-    pub(in crate::adjudication) fn structural_rule_rgba(&self) -> [u8; 4] {
-        self.token("structural-rule")
     }
 
     pub(in crate::adjudication) fn principal_accent_rgba(&self) -> [u8; 4] {
@@ -186,15 +145,6 @@ impl PlatformPulseVisualAdjudicationContract {
             .iter()
             .find(|target| target.identity == identity)
             .expect("validated adjudication target")
-            .rect
-    }
-
-    fn text_rect(&self, identity: &str) -> [u32; 4] {
-        self.default_layout()
-            .text_bounds
-            .iter()
-            .find(|text| text.identity == identity)
-            .expect("validated adjudication text")
             .rect
     }
 

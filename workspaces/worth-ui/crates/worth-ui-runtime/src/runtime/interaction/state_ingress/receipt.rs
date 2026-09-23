@@ -44,6 +44,7 @@ impl UiInteractionBatchReceiptBuilder {
             ignored_reports: self.ignored_reports,
             state: state.snapshot(),
             scroll_observations: Box::new([]),
+            scroll_chrome_interactions: Box::new([]),
             command_routes: Box::new([]),
             focus_publications: Box::new([]),
             pointer_presence_transitions: self.pointer_presence_transitions.into_boxed_slice(),

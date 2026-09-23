@@ -22,8 +22,9 @@ pub(crate) use projection::projection_test_inputs;
 pub(crate) use projection::projection_test_inputs_from_session;
 pub(crate) use projection::{
     UiAppearanceAttemptContext, UiAppearanceChangeReceipt, UiAppearanceMountAffinity,
-    UiAppearanceProjection, UiAppearanceProjectionAttempt, UiAppearanceResolver,
-    UiAppearanceSupportPosture, UiBackdropAppearanceProjection, UiOverlayStackSnapshot,
+    UiAppearanceProjection, UiAppearanceProjectionAttempt, UiAppearanceResolutionFailure,
+    UiAppearanceResolver, UiAppearanceSupportPosture, UiBackdropAppearanceProjection,
+    UiOverlayStackSnapshot, UiScrollChromeAppearanceProjection,
 };
 #[cfg(test)]
 pub(crate) use state::validate_presentation_for_test;

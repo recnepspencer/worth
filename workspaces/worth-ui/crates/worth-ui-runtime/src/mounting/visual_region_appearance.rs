@@ -46,7 +46,8 @@ impl UiMountedRetainedAppearanceVisualMechanic {
             UiMountedAppearanceMechanic::Outline(_)
             | UiMountedAppearanceMechanic::TextForeground(_)
             | UiMountedAppearanceMechanic::Pointer(_)
-            | UiMountedAppearanceMechanic::Backdrop(_) => return None,
+            | UiMountedAppearanceMechanic::Backdrop(_)
+            | UiMountedAppearanceMechanic::ScrollChrome(_) => return None,
         };
         let (paint_alpha, uniform_fill) = match surface.paint() {
             UiMountedSurfacePaint::Fill(fill) => (

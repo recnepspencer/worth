@@ -182,10 +182,8 @@ impl WorthUiMountedSessionState {
         prepare_overlays: impl FnOnce(
             worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
             &[worth_ui_host_contract::UiSemanticSurfaceIdentity],
-        ) -> Result<
-            Vec<crate::mounting::UiMountedAppearanceSurfaceOverlayInput>,
-            (),
-        >,
+        )
+            -> Result<crate::mounting::UiMountedAppearanceDerivedInput, ()>,
     ) -> UiMountedGraphReplacementPreparation {
         let capability_report = host.capability_report().clone();
         let admitted = match successor.identity.admit_prepared_frame_authority(frame) {
@@ -237,8 +235,8 @@ impl WorthUiMountedSessionState {
             .map(|surface| surface.requirement().semantic_surface())
             .collect::<Vec<_>>();
         let appearance = match prepare_overlays(admission.attempt(), &surfaces) {
-            Ok(overlays) => admission
-                .lower_appearance_with_overlays(capability_report.appearance_profile(), &overlays),
+            Ok(derived) => admission
+                .lower_appearance_with_overlays(capability_report.appearance_profile(), &derived),
             Err(()) => admission.deny_appearance_output(),
         };
         let (admission, appearance_batch) = match appearance.admit_appearance_retention() {

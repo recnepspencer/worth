@@ -42,8 +42,38 @@ pub(crate) struct NormalNativeCloseRequestObservation {
     request_count: u32,
 }
 
+/// How the observer took the window out of view and brought it back. The
+/// product's resource lifecycle differs by mechanism (an iconic window has no
+/// surface extent; an occluded one keeps its extent and only its visibility
+/// changes), so the courtroom keys its lifecycle assertions on this rather
+/// than assuming one desktop's behaviour everywhere.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum NativeWindowVisibilityTransitionMechanism {
+    /// ICCCM iconic state through the window manager (`ShowWindow(SW_MINIMIZE)`).
+    IconicState,
+    /// Fully covered by another top-level window, then uncovered.
+    FullOcclusion,
+}
+
+impl NativeWindowVisibilityTransitionMechanism {
+    /// The closed vocabulary every qualified profile's
+    /// `client_visibility_transition_observation` must name (or declare
+    /// `unobserved`).
+    pub(crate) const ALL: [Self; 2] = [Self::IconicState, Self::FullOcclusion];
+
+    /// The spelling the qualified profile record's
+    /// `client_visibility_transition_observation` ends with.
+    pub(crate) const fn declared_as(self) -> &'static str {
+        match self {
+            Self::IconicState => "iconic-state",
+            Self::FullOcclusion => "full-occlusion",
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct NativeWindowVisibilityTransitionObservation {
+    mechanism: NativeWindowVisibilityTransitionMechanism,
     minimized_observations: u32,
     restored_observations: u32,
     restored_client: ProcessBoundNativeClientAreaObservation,
@@ -158,6 +188,21 @@ impl NativeClientPixelCapture {
         &self.rgba
     }
 
+    pub(crate) fn cropped(&self, [x, y, width, height]: [u32; 4]) -> Option<Self> {
+        let right = x.checked_add(width)?;
+        let bottom = y.checked_add(height)?;
+        if width == 0 || height == 0 || right > self.width || bottom > self.height {
+            return None;
+        }
+        let mut rgba = Vec::with_capacity(width as usize * height as usize * 4);
+        for row in y..bottom {
+            let start = (row as usize * self.width as usize + x as usize) * 4;
+            rgba.extend_from_slice(&self.rgba[start..start + width as usize * 4]);
+        }
+        Self::new(self.process_id, width, height, rgba)
+            .map(|capture| capture.with_capture_count(self.capture_count))
+    }
+
     pub(crate) fn capture_count(&self) -> u32 {
         self.capture_count
     }
@@ -203,6 +248,40 @@ impl NativeClientPixelPoint {
     }
 }
 
+#[test]
+fn cropped_pixels_preserve_selected_rows_and_capture_provenance() {
+    let rgba: Vec<u8> = (0_u8..12)
+        .flat_map(|value| [value, value, value, 255])
+        .collect();
+    let capture = NativeClientPixelCapture::new(7, 4, 3, rgba)
+        .unwrap()
+        .with_capture_count(3);
+    let cropped = capture.cropped([1, 1, 2, 2]).unwrap();
+    assert_eq!(
+        (
+            cropped.process_id(),
+            cropped.width(),
+            cropped.height(),
+            cropped.capture_count()
+        ),
+        (7, 2, 2, 3)
+    );
+    let selected: Vec<_> = cropped
+        .rgba()
+        .chunks_exact(4)
+        .map(|pixel| pixel[0])
+        .collect();
+    assert_eq!(selected, [5, 6, 9, 10]);
+    for region in [
+        [0, 0, 0, 1],
+        [3, 0, 2, 1],
+        [0, 2, 1, 2],
+        [u32::MAX, 0, 2, 1],
+    ] {
+        assert!(capture.cropped(region).is_none());
+    }
+}
+
 impl NormalNativeCloseRequestObservation {
     pub(crate) fn one(process_id: u32) -> Self {
         Self {
@@ -221,12 +300,20 @@ impl NormalNativeCloseRequestObservation {
 }
 
 impl NativeWindowVisibilityTransitionObservation {
-    pub(crate) fn observed(restored_client: ProcessBoundNativeClientAreaObservation) -> Self {
+    pub(crate) fn observed(
+        mechanism: NativeWindowVisibilityTransitionMechanism,
+        restored_client: ProcessBoundNativeClientAreaObservation,
+    ) -> Self {
         Self {
+            mechanism,
             minimized_observations: 1,
             restored_observations: 1,
             restored_client,
         }
+    }
+
+    pub(crate) const fn mechanism(self) -> NativeWindowVisibilityTransitionMechanism {
+        self.mechanism
     }
 
     pub(crate) const fn minimized_observations(self) -> u32 {

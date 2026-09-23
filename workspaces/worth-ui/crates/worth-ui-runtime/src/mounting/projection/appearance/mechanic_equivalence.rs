@@ -73,6 +73,18 @@ pub(super) fn same_physical_output(
                 && left.motion_target() == right.motion_target()
                 && left.opacity() == right.opacity()
         }
+        (
+            UiMountedAppearanceMechanic::ScrollChrome(left),
+            UiMountedAppearanceMechanic::ScrollChrome(right),
+        ) => {
+            left.identity() == right.identity()
+                && left.semantic_surface() == right.semantic_surface()
+                && left.rect() == right.rect()
+                && left.clip() == right.clip()
+                && left.background() == right.background()
+                && left.radii() == right.radii()
+                && left.opacity() == right.opacity()
+        }
         _ => false,
     }
 }

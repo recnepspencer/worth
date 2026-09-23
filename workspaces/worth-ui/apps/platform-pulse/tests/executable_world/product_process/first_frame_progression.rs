@@ -3,15 +3,19 @@ use std::time::{Duration, Instant};
 use worth_ui_platform_pulse::observation_contract::PlatformPulseLifecycleObservationEnvelope;
 
 use crate::adjudication::{
-    adjudicate_first_frame, CausalFirstFrameObservationSet, ExecutableFirstFrameEvidence,
+    adjudicate_first_frame, adjudicate_source_signal_first_frame, CausalFirstFrameObservationSet,
+    ExecutableFirstFrameEvidence, ExecutableFirstFrameFailure,
 };
 use crate::external_observation::{begin_stable_process_liveness, PlatformPulseLifecycleStream};
+use crate::external_observation::{
+    NativeClientPixelCapture, ProcessBoundNativeClientAreaObservation,
+};
 use crate::failure_teardown::{
     teardown_native_bound_world, teardown_unbound_world, PulseExecutableWorldFailure,
     PulseExecutableWorldFailureReport, UnboundFailureWorldResources,
 };
 use crate::native_platform::{
-    NativePlatformContract, WindowsNativePlatform, WindowsProcessBoundNativeClientArea,
+    CertifiedNativePlatform, CertifiedProcessBoundNativeClientArea, NativePlatformContract,
 };
 
 use super::{
@@ -19,14 +23,16 @@ use super::{
     Published, PulseExecutableWorld,
 };
 
-struct BoundFirstFrameWorld {
-    process_started: PlatformPulseLifecycleObservationEnvelope,
-    pending_issued: PlatformPulseLifecycleObservationEnvelope,
-    first_frame: PlatformPulseLifecycleObservationEnvelope,
-    pending_published: PlatformPulseLifecycleObservationEnvelope,
-    platform: WindowsNativePlatform,
-    native_client: WindowsProcessBoundNativeClientArea,
-    launch_to_first_publication: Duration,
+/// The launch after its causal first publication, bound to its native window
+/// but not yet adjudicated against pixels.
+pub(super) struct BoundFirstFrameWorld {
+    pub(super) process_started: PlatformPulseLifecycleObservationEnvelope,
+    pub(super) pending_issued: PlatformPulseLifecycleObservationEnvelope,
+    pub(super) first_frame: PlatformPulseLifecycleObservationEnvelope,
+    pub(super) pending_published: PlatformPulseLifecycleObservationEnvelope,
+    pub(super) platform: CertifiedNativePlatform,
+    pub(super) native_client: CertifiedProcessBoundNativeClientArea,
+    pub(super) launch_to_first_publication: Duration,
 }
 
 impl PulseExecutableWorld<AwaitingFirstFrame> {
@@ -51,7 +57,12 @@ impl PulseExecutableWorld<AwaitingFirstFrame> {
                     ))
                 }
             };
-        let evidence = match adjudicate_bound_first_frame(&mut process, &bound, deadline) {
+        let evidence = match adjudicate_bound_first_frame(
+            &mut process,
+            &bound,
+            deadline,
+            adjudicate_source_signal_first_frame,
+        ) {
             Ok(evidence) => evidence,
             Err(primary) => {
                 return Err(teardown_native_bound_world(
@@ -80,7 +91,7 @@ impl PulseExecutableWorld<AwaitingFirstFrame> {
     }
 }
 
-fn bind_first_frame_world(
+pub(super) fn bind_first_frame_world(
     process: &mut LivePlatformPulseProcess,
     lifecycle: &mut PlatformPulseLifecycleStream,
     launch_started: Instant,
@@ -100,7 +111,7 @@ fn bind_first_frame_world(
         .map_err(PulseExecutableWorldFailure::Lifecycle)?;
     let launch_to_first_publication = launch_started.elapsed();
     let platform =
-        WindowsNativePlatform::certified().map_err(PulseExecutableWorldFailure::Native)?;
+        CertifiedNativePlatform::certified().map_err(PulseExecutableWorldFailure::Native)?;
     let native_client = platform
         .bind_process_client_area(process.id(), deadline)
         .map_err(PulseExecutableWorldFailure::Native)?;
@@ -115,11 +126,17 @@ fn bind_first_frame_world(
     })
 }
 
-fn adjudicate_bound_first_frame(
+/// Poll the bound client area until `oracle` accepts a capture, then adjudicate
+/// the whole first frame with that same capture and oracle.
+pub(super) fn adjudicate_bound_first_frame<Verdict>(
     process: &mut LivePlatformPulseProcess,
     bound: &BoundFirstFrameWorld,
     deadline: Instant,
-) -> Result<ExecutableFirstFrameEvidence, PulseExecutableWorldFailure> {
+    oracle: impl Fn(
+        &NativeClientPixelCapture,
+        ProcessBoundNativeClientAreaObservation,
+    ) -> Result<Verdict, ExecutableFirstFrameFailure>,
+) -> Result<ExecutableFirstFrameEvidence<Verdict>, PulseExecutableWorldFailure> {
     let liveness =
         begin_stable_process_liveness(process).map_err(PulseExecutableWorldFailure::Liveness)?;
     let client_area = bound
@@ -131,20 +148,12 @@ fn adjudicate_bound_first_frame(
             .platform
             .capture_client_area(&bound.native_client)
             .map_err(PulseExecutableWorldFailure::Native)?;
-        if crate::adjudication::adjudicate_native_color(
-            &pixels,
-            crate::adjudication::ExpectedNativeColor::Blue,
-        )
-        .is_ok()
-        {
-            break pixels;
-        }
+        let rejected = match oracle(&pixels, client_area) {
+            Ok(_) => break pixels,
+            Err(rejected) => rejected,
+        };
         if Instant::now() >= deadline {
-            return Err(PulseExecutableWorldFailure::Native(
-                crate::native_platform::NativePlatformFailure::ClientPixelDeadline(
-                    "first-frame-visible",
-                ),
-            ));
+            return Err(PulseExecutableWorldFailure::FirstFrame(rejected));
         }
         if process
             .observed_exit()
@@ -169,6 +178,6 @@ fn adjudicate_bound_first_frame(
         bound.first_frame.clone(),
         bound.pending_published.clone(),
     );
-    adjudicate_first_frame(causal.join_native(client_area, liveness, pixels))
+    adjudicate_first_frame(causal.join_native(client_area, liveness, pixels), oracle)
         .map_err(PulseExecutableWorldFailure::FirstFrame)
 }

@@ -27,17 +27,35 @@ class WorthUiTestLaneTests(TestCase):
         self.assertIn("--all-targets", platform)
         self.assertIn("--all-features", platform)
 
-    def test_compile_only_platform_lane_builds_the_exact_pulse_courtroom(self) -> None:
-        command = lane_runner.commands_for("compile-only-platform")[0]
+    def test_native_platform_lane_is_the_courtroom_owner_s_plan(self) -> None:
+        commands = lane_runner.commands_for("native-platform")
 
-        self.assertIn("check", command)
-        self.assertEqual(
-            command[command.index("--target") + 1], "x86_64-unknown-linux-gnu"
-        )
-        self.assertIn("worth-ui-platform-pulse", command)
-        self.assertIn("executable-world", command)
-        self.assertIn("executable_world", command)
-        self.assertNotIn("--workspace", command)
+        self.assertEqual(commands, lane_runner.native_platform_lane.plan().commands)
+        for command in commands:
+            self.assertIn("worth-ui-platform-pulse", command)
+            self.assertIn("executable_world", command)
+            self.assertNotIn("--workspace", command)
+
+    def test_report_carries_lane_evidence_when_given(self) -> None:
+        outcome = {"argv": ["x"], "command": "x", "duration_seconds": 0.5, "exit_code": 0, "error": None}
+        with TemporaryDirectory() as temporary:
+            with (
+                patch.dict(os.environ, {"WORTH_UI_LANE_REPORT_DIR": temporary}),
+                patch.object(lane_runner, "compiler_cache_stats", return_value=None),
+            ):
+                lane_runner.write_report(
+                    "native-platform", [outcome], evidence={"mode": "execute", "worlds": 8}
+                )
+                lane_runner.write_report("fast", [outcome])
+            native = json.loads(
+                (lane_runner.Path(temporary) / "native-platform.json").read_text(encoding="utf-8")
+            )
+            fast = json.loads(
+                (lane_runner.Path(temporary) / "fast.json").read_text(encoding="utf-8")
+            )
+
+        self.assertEqual(native["evidence"], {"mode": "execute", "worlds": 8})
+        self.assertNotIn("evidence", fast)
 
     def test_filesystem_contract_reuses_the_application_contract_target(self) -> None:
         command = lane_runner.commands_for("filesystem-contract")[0]

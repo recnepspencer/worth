@@ -7,6 +7,7 @@ mod capacity;
 mod census;
 mod cleanup;
 mod color;
+mod content_revision;
 mod demand;
 mod demand_admission;
 mod entry;
@@ -65,6 +66,7 @@ mod recovery_identity_tests;
 pub use capacity::UiNativeTextAtlasQualifiedCapacity;
 pub use census::UiNativeTextAtlasCensus;
 pub(crate) use census::{UiNativeTextAtlasPhysicalPosture, UiNativeTextAtlasResourceClass};
+pub(crate) use content_revision::UiNativeTextAtlasContentRevision;
 pub(crate) use demand::UiNativeTextAtlasDemand;
 pub(crate) use image_observation::UiNativeTextAtlasImageObservation;
 pub(crate) use in_flight::UiNativeTextAtlasInFlight;
@@ -79,7 +81,7 @@ pub(crate) use recovery::UiNativeTextAtlasGeneration;
 pub use recovery::{UiNativeTextAtlasDenial, UiNativeTextAtlasRecovery};
 pub(crate) use settlement::UiNativeTextAtlasCommitOutcome;
 #[cfg(test)]
-pub(crate) use test_device_tests::qualified_test_device;
+pub(crate) use test_device_tests::{qualified_test_adapter, qualified_test_device};
 pub(crate) use transaction::{
     UiNativeTextAtlasExternalOutcome, UiNativeTextAtlasPinRequest, UiNativeTextAtlasPinTransition,
     UiNativeTextAtlasTransactionPlan,

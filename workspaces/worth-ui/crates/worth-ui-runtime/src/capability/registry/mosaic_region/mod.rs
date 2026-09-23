@@ -8,9 +8,14 @@ mod seam_registration;
 pub use descriptor::{
     MosaicChildRule, MosaicClippingPosture, MosaicFocusScopeKind, MosaicHitTestPosture,
     MosaicRegionKindDescriptor, MosaicRegionPersistence, MosaicRegionRole, MosaicScrollOwnership,
-    MosaicSizingBehavior,
+    MosaicSizingBehavior, UiScrollAxisSupport, UiScrollChromeContract,
+    UiScrollChromeContractDenial, UiScrollLineExtent, UiScrollLineExtentDenial,
+    UI_SCROLL_LINE_EXTENT_MAXIMUM_LOGICAL_POINTS,
 };
-pub use frozen_mosaic_region_capabilities::FrozenMosaicRegionCapabilities;
+pub(crate) use frozen_mosaic_region_capabilities::UiAuthoredScrollRegionClauses;
+pub use frozen_mosaic_region_capabilities::{
+    FrozenMosaicRegionCapabilities, UiAuthoredScrollRegionCause, UiAuthoredScrollRegionDenial,
+};
 pub(crate) use mosaic_region_registry::MosaicRegionRegistry;
 pub(crate) use registration::MosaicRegionAcceptedRegistrationProof;
 pub use seam_paint::{

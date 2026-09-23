@@ -45,12 +45,14 @@ pub(crate) use inspection::foreign_evidence_refs_for_obligation_record;
 
 pub use crate::capability::AppearanceRoleRegistrationDenial;
 pub use entry::{
-    CapabilityRegistrationBuilder, UiAppearanceInspectionGenerationSuccessionDenial,
-    UiChangeProfileInstalled, UiChangeProfileMissing, UiFocusHostPlacementReconciliationDenial,
+    CapabilityRegistrationBuilder, UiAcceptedScrollSettlementDenial,
+    UiAppearanceInspectionGenerationSuccessionDenial, UiChangeProfileInstalled,
+    UiChangeProfileMissing, UiFocusHostPlacementReconciliationDenial,
     UiFocusHostPlacementReconciliationOutcome, UiFocusHostPlacementReconciliationReceipt,
     UiFocusHostPlacementSettlementDenial, UiFocusHostPlacementShutdownReport,
     UiFocusPlacementExecutionDenial, UiFocusPlacementReconciliationExecutionDenial,
-    UiPortalDismissalPublicationReceipt, UiSemanticFocusParticipantObservation,
+    UiPortalDismissalPublicationReceipt, UiScrollSettleDisposition, UiScrollSettleRefusal,
+    UiScrollWriteBackRefusal, UiSemanticFocusParticipantObservation,
     UiSemanticFocusPhysicalPlacementOutcome, UiSemanticFocusPublicationCause,
     UiSemanticFocusPublicationOutcome, UiSemanticFocusPublicationReceipt, WorthUi,
     WorthUiActiveApplicationGenerationIdentity, WorthUiActiveApplicationSession,

@@ -30,10 +30,7 @@ pub(crate) struct WorthUiNativeMechanicsAdapter {
 
 impl WorthUiHostMechanicsAdapter for WorthUiNativeMechanicsAdapter {
     fn mechanical_host_contract(&self) -> WorthUiHostContract {
-        debug_assert_eq!(
-            self.profile,
-            crate::UiNativePlatformProfileIdentity::WORTH_UI_WINDOWS_DX12_V2
-        );
+        debug_assert_eq!(self.profile, crate::native_profile::ACTIVE_PROFILE.identity);
         WorthUiHostContract::native()
     }
 

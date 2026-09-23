@@ -82,6 +82,18 @@ impl UiScrollProgrammaticRevealRequest {
 }
 
 impl super::UiScrollRuntimeState {
+    /// Place the chain so the requested interval is inside the viewport.
+    ///
+    /// A reveal is direct authority over the accepted offset, the same as a
+    /// thumb placed on a track: it says where the content is, not where it is
+    /// heading. So a settle already travelling toward a wheel target is an
+    /// intention this request has just overruled, and every owner the route
+    /// moved retires its target rather than resume dragging the content off
+    /// what the reveal put on screen.
+    ///
+    /// The retirement happens after the route, because the route is the
+    /// fallible half: a refused reveal moves nothing and must therefore leave
+    /// the settle it would have replaced exactly as it found it.
     pub(crate) fn reveal(
         &mut self,
         request: UiScrollProgrammaticRevealRequest,
@@ -100,11 +112,15 @@ impl super::UiScrollRuntimeState {
             desired.inline_subpixels() - current.inline_subpixels(),
             desired.block_subpixels() - current.block_subpixels(),
         );
-        self.route(super::UiScrollDeltaRequest::new(
+        let receipt = self.route(super::UiScrollDeltaRequest::new(
             request.chain,
             delta,
             super::UiScrollDeltaCause::ProgrammaticReveal,
-        )?)
+        )?)?;
+        for transition in receipt.transitions() {
+            self.retire_transition(transition.owner());
+        }
+        Ok(receipt)
     }
 }
 
@@ -136,7 +152,7 @@ fn desired_offset(
     } else {
         current.block_subpixels()
     };
-    bounds.clamp(super::UiScrollOffset::new(inline.max(0), block.max(0)).unwrap())
+    bounds.clamp_subpixels(inline, block)
 }
 
 fn aligned_axis(

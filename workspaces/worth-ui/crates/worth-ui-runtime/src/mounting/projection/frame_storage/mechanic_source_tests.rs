@@ -23,6 +23,7 @@ use crate::mounting::projection::semantic_text::{
 
 mod frame_affinity;
 mod hit_locality;
+mod hit_offscreen;
 mod phase4_locality;
 mod phase4_portal_children;
 mod semantic_fixture;

@@ -81,6 +81,8 @@ fn ordered_portal_and_backdrop_rows_damage_extent_without_creating_input() {
         presentation,
         nodes: vec![node.clone()],
         backdrops: vec![backdrop],
+        scroll_chrome: Vec::new(),
+        chrome_owner: None,
         overlay: UiMountedAppearanceOverlayInput {
             semantic_surface: surface,
             presentation,

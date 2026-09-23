@@ -26,6 +26,13 @@ pub(crate) enum WindowsInputEnvironmentDenial {
         requested: (i32, i32),
         observed: (i32, i32),
     },
+    /// The cursor would not stay on the control: something outside the harness
+    /// holds this desktop's one physical pointer.
+    CursorHeldAgainstHarness {
+        requested: (i32, i32),
+        observed: (i32, i32),
+        attempts: u32,
+    },
     PointerTargetMismatch {
         target_window: usize,
         hit_window: usize,
@@ -62,6 +69,15 @@ impl fmt::Display for WindowsInputEnvironmentDenial {
             } => write!(
                 formatter,
                 "cursor actuation was not observed: requested=({}, {}); observed=({}, {})",
+                requested.0, requested.1, observed.0, observed.1
+            ),
+            Self::CursorHeldAgainstHarness {
+                requested,
+                observed,
+                attempts,
+            } => write!(
+                formatter,
+                "the cursor would not stay on ({}, {}) across {attempts} attempts; it sat at ({}, {}). Another hand or window holds this desktop's pointer",
                 requested.0, requested.1, observed.0, observed.1
             ),
             Self::PointerTargetMismatch {

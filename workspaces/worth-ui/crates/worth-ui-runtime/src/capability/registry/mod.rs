@@ -114,11 +114,13 @@ pub use mosaic_region::{
     MosaicExteriorCornerPosture, MosaicFocusScopeKind, MosaicHitTestPosture,
     MosaicRegionKindDescriptor, MosaicRegionPersistence, MosaicRegionRole, MosaicScrollOwnership,
     MosaicSeamPaintContract, MosaicSeamPaintContractDenial, MosaicSeamPaintOwner, MosaicSharedEdge,
-    MosaicSizingBehavior,
+    MosaicSizingBehavior, UiAuthoredScrollRegionCause, UiAuthoredScrollRegionDenial,
+    UiScrollAxisSupport, UiScrollChromeContract, UiScrollChromeContractDenial, UiScrollLineExtent,
+    UiScrollLineExtentDenial, UI_SCROLL_LINE_EXTENT_MAXIMUM_LOGICAL_POINTS,
 };
 pub(crate) use mosaic_region::{
     MosaicRegionAcceptedRegistrationProof, MosaicRegionRegistry,
-    MosaicSeamPaintAcceptedRegistrationProof,
+    MosaicSeamPaintAcceptedRegistrationProof, UiAuthoredScrollRegionClauses,
 };
 pub use mosaic_sizing::{
     FrozenMosaicSizingCapabilities, MeasurementConstraint, MeasurementValue,

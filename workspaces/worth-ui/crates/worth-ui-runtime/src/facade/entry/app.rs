@@ -32,6 +32,8 @@ use std::rc::Rc;
 
 #[path = "app_presentation_async.rs"]
 mod presentation_async;
+#[path = "app_required_appearance_roles.rs"]
+mod required_appearance_roles;
 
 /// Runtime facade entrypoint for building Worth UI applications.
 pub struct WorthUi {

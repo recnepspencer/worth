@@ -30,7 +30,7 @@ pub(super) fn project(
     Ok(Some(UiPortalChildGeometry { bounds, clip }))
 }
 
-fn translate(
+pub(super) fn translate(
     occurrence: UiMountedCanonicalBox,
     portal: UiMountedPortalOverlayMechanic,
     source_anchor: UiMountedCanonicalBox,

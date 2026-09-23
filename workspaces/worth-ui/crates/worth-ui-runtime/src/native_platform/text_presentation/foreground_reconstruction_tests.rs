@@ -6,6 +6,62 @@ use worth_ui_host_native::{
 };
 
 #[test]
+fn clipped_foreground_retains_offscreen_images_without_losing_visible_paint() {
+    let world = CoverageWorld::with_paint(
+        "W\tW\tW",
+        UiMountedInstanceIdentity::mint_unbound().unwrap(),
+        0.0,
+        [5.0, 0.0, 70.0, 48.0],
+        None,
+        &[(UiSemanticTextSlot::Value, 0.0)],
+        ([0, 255, 0, 128], 20_000),
+    );
+    let text = world.fragment.text_candidates()[0].clone();
+    let identity = UiMountedPaintCommandIdentity::semantic_text(&text);
+    let commands = [UiMountedPaintCommand::SemanticText {
+        identity,
+        mechanic: text,
+    }];
+    let order = [UiMountedPaintOrderIdentity::for_command(identity)];
+    let mut atlas = UiNativeTextForegroundAtlasModel::new();
+    world.with_native(world.attempt, |view| {
+        let candidate = atlas
+            .rasterize_with_simulated_submission(
+                &world.fragment,
+                view,
+                &world.foreground,
+                [400, 48],
+            )
+            .unwrap();
+        assert_eq!(candidate.cost().image_commands, 3);
+        let operations = atlas
+            .foreground_reconstruction_commands(&commands, &order, view, [400, 48], &candidate)
+            .expect("full admitted images and visible foreground share exact correspondence");
+        let glyphs = operations
+            .iter()
+            .filter_map(|operation| match operation {
+                Operation::Glyph {
+                    bounds,
+                    vertex_color,
+                    ..
+                } => Some((bounds, vertex_color)),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(
+            glyphs.len(),
+            2,
+            "only two of three images intersect the clip"
+        );
+        for (bounds, color) in glyphs {
+            assert!(bounds[0] >= 5.0 && bounds[0] + bounds[2] <= 75.0);
+            assert_eq!(color[..3], [0.0, 1.0, 0.0]);
+            assert!((color[3] - (128.0 / 255.0) * (20_000.0 / 65_535.0)).abs() < 0.000001);
+        }
+    });
+}
+
+#[test]
 fn reconstruction_keeps_adopted_and_token_ranges_distinct_at_fractional_dpi() {
     let world = CoverageWorld::with_physical_geometry(
         "WW",

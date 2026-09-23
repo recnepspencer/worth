@@ -1,7 +1,7 @@
 use super::spatial_index::UiMountedSpatialTree;
 use super::UiPresentedHitTestRow;
 use crate::mounting::UiHitTestSpatialWork;
-use crate::runtime::motion::UiMotionTargetIdentity;
+use crate::runtime::motion::{UiMotionTargetIdentity, UiMotionTargetScope};
 use crate::runtime::persistent_index::{
     UiPersistentIndexMutationWork, UiPersistentOrdMap, UiPersistentOrdSet,
 };
@@ -9,6 +9,7 @@ use worth_ui_host_contract::{UiMountedInstanceIdentity, UiSurfaceBindingGenerati
 
 mod changes;
 mod query;
+mod scroll_succession;
 pub(crate) use changes::UiPresentedHitChanges;
 #[cfg(test)]
 mod changes_tests;
@@ -34,6 +35,7 @@ pub(in crate::mounting) struct UiPresentedHitIndex {
 struct Record {
     base: UiPresentedHitTestRow,
     effective: Option<UiPresentedHitTestRow>,
+    scroll_translation: [f32; 2],
 }
 
 // Completed boxes contain no NaN components.
@@ -104,6 +106,7 @@ impl UiPresentedHitIndex {
                     Record {
                         base,
                         effective: Some(base),
+                        scroll_translation: [0.0; 2],
                     },
                 ),
             );
@@ -132,7 +135,11 @@ impl UiPresentedHitIndex {
             }
             let (row, probes) = self.rows.get_with_probes(&target.mounted_instance());
             work.map_key_probes += probes;
-            if !target.is_portal_contents()
+            // Only an ordinary target displaces the owning instance's own
+            // hit row. A contents-group target moves the members it names --
+            // Portal content or scrolled content -- and leaves the owner's
+            // stationary surface where it is.
+            if target.scope() == UiMotionTargetScope::Ordinary
                 && row.is_some_and(|row| {
                     row.base.portal_motion_target().is_none() && !row.base.owns_presented_portal()
                 })
@@ -149,6 +156,7 @@ impl UiPresentedHitIndex {
             }
             work.motion_rows_projected += 1;
             let (effective, tracks) = record.base.with_current_motion_work(sampler, presentation);
+            let effective = effective.map(|row| row.scroll_translated(record.scroll_translation));
             work.motion_tracks_considered += tracks;
             if effective == record.effective {
                 continue;
@@ -160,6 +168,60 @@ impl UiPresentedHitIndex {
                     instance,
                     Record {
                         effective,
+                        ..record
+                    },
+                ),
+            );
+        }
+        work
+    }
+
+    /// Displace the presented hit rows of the occurrences a settled scroll
+    /// pose moved, by exactly the distance it moved them.
+    ///
+    /// Scroll-group samples move descendant paint, not the owner's own row.
+    /// Their accepted pose supplies the same unsnapped displacement to hits;
+    /// ordinary component/Portal Motion remains a separate projection.
+    pub(in crate::mounting) fn apply_scroll_translations(
+        &mut self,
+        binding: UiSurfaceBindingGeneration,
+        translations: &[(UiMountedInstanceIdentity, [f32; 2])],
+    ) -> UiHitTestSpatialWork {
+        let mut work = UiHitTestSpatialWork::default();
+        for (instance, translation) in translations {
+            let (record, probes) = self.rows.get_with_probes(instance);
+            work.map_key_probes += probes;
+            let Some(record) = record.copied() else {
+                continue;
+            };
+            if record.base.mounted().binding() != binding {
+                continue;
+            }
+            // A row accepted Motion has hidden is not somewhere a pointer can
+            // land, so a scroll pose has no hit row of its own to move.
+            let Some(current) = record.effective else {
+                continue;
+            };
+            let effective = Some(current.scroll_translated(*translation));
+            // A pose that lands a row exactly where it already was displaced
+            // nothing, and is not counted. The count answers how much of the
+            // index this pose actually moved, so it has to be taken after the
+            // question is settled rather than before it is asked.
+            if effective == record.effective {
+                continue;
+            }
+            work.scroll_rows_displaced += 1;
+            self.update_partition(record.base, record.effective, effective, 0, &mut work);
+            record_map(
+                &mut work,
+                self.rows.insert_with_work(
+                    *instance,
+                    Record {
+                        effective,
+                        scroll_translation: [
+                            record.scroll_translation[0] + translation[0],
+                            record.scroll_translation[1] + translation[1],
+                        ],
                         ..record
                     },
                 ),

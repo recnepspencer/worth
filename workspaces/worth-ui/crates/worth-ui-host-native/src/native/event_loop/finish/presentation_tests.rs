@@ -41,8 +41,8 @@ fn completion_requires_physical_evidence_and_matches_only_current_component_attr
             cost(),
             2,
             None,
-            Box::new([]),
-            Box::new([]),
+            std::sync::Arc::from([]),
+            std::sync::Arc::from([]),
         );
         let completed = completion_frame(Some(&backdrop), None).unwrap();
         assert_eq!(completed, backdrop);
@@ -58,8 +58,8 @@ fn completion_requires_physical_evidence_and_matches_only_current_component_attr
         Default::default(),
         0,
         None,
-        Box::new([]),
-        Box::new([]),
+        std::sync::Arc::from([]),
+        std::sync::Arc::from([]),
     );
     assert_eq!(completion_frame(Some(&unchanged), None), Ok(unchanged));
 }
@@ -85,8 +85,8 @@ fn component_frame() -> UiNativeRetainedFrameObservation {
         port_crossings: 2,
         production_cost: Default::default(),
         cost: cost(),
-        alpha_glyphs: Box::new([]),
-        intrinsic_glyphs: Box::new([]),
+        alpha_glyphs: std::sync::Arc::from([]),
+        intrinsic_glyphs: std::sync::Arc::from([]),
     });
     UiNativeRetainedFrameObservation::observed(
         7,
@@ -97,8 +97,8 @@ fn component_frame() -> UiNativeRetainedFrameObservation {
         cost(),
         2,
         Some(observation),
-        Box::new([]),
-        Box::new([]),
+        std::sync::Arc::from([]),
+        std::sync::Arc::from([]),
     )
 }
 
@@ -129,8 +129,8 @@ fn current_frame_survives_history_eviction_and_closes_with_its_owner() {
             Default::default(),
             0,
             None,
-            Box::new([]),
-            Box::new([]),
+            std::sync::Arc::from([]),
+            std::sync::Arc::from([]),
         ));
     }
     assert!(state.observation_history_overflowed);
@@ -166,8 +166,8 @@ fn lost_current_affinity_cannot_reuse_history_as_completion_evidence() {
         cost(),
         2,
         None,
-        Box::new([]),
-        Box::new([]),
+        std::sync::Arc::from([]),
+        std::sync::Arc::from([]),
     );
     let binding = frame.binding_generation();
     state.record_retained_frame_observation(frame.clone());

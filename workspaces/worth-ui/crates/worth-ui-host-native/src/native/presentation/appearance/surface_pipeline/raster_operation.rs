@@ -43,7 +43,18 @@ impl UiNativeSurfaceRasterOperation {
                 .map(|rect| [rect[0], rect[1], rect[0] + rect[2], rect[1] + rect[3]])
             };
             let allocation = transform_box(self.storage[0..4].try_into().expect("four edges"))?;
-            let clip = transform_box(self.storage[4..8].try_into().expect("four edges"))?;
+            let clip = match sample.clip() {
+                Some(clip) => {
+                    let scale = basis.scale_factor();
+                    [
+                        clip.x() * scale,
+                        clip.y() * scale,
+                        (clip.x() + clip.width()) * scale,
+                        (clip.y() + clip.height()) * scale,
+                    ]
+                }
+                None => transform_box(self.storage[4..8].try_into().expect("four edges"))?,
+            };
             let source = transform.source();
             let sampled = transform.sampled();
             let scale = (sampled.width() / source.width()).min(sampled.height() / source.height());
@@ -56,7 +67,8 @@ impl UiNativeSurfaceRasterOperation {
                 self.storage[27] *= scale;
             }
             let omission_count = self.storage[24] as usize;
-            for row in self.storage[28..].chunks_exact_mut(4).take(omission_count) {
+            let (rows, _) = self.storage[28..].as_chunks_mut::<4>();
+            for row in rows.iter_mut().take(omission_count) {
                 let axis_scale = if row[0] == 0.0 || row[0] == 2.0 {
                     sampled.width() / source.width()
                 } else {

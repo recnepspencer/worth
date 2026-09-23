@@ -3,6 +3,7 @@ name = "worth-ui-host-contract"
 edition.workspace = true
 version.workspace = true
 license.workspace = true
+rust-version.workspace = true
 autotests = false
 
 [lib]

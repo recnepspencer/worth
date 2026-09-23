@@ -10,6 +10,16 @@
 [build]
 rustflags = [
     "-C", "overflow-checks=on",
+    # WORTH UI selects its Linux windowing system at compile time. The arms and
+    # their exhaustiveness guard are nested under cfg(target_os = "linux"), so
+    # carrying this on every target is inert off Linux. It lives in [build]
+    # rather than a [target.*] block because those REPLACE [build].rustflags
+    # rather than merging, which would silently drop overflow-checks.
+    "--cfg", "worth_ui_windowing=\"wayland\"",
+    # The adapter class the selected profile admits. "software" exists only for
+    # the X11 certification lane, whose X server (Xvfb) has no DRI3 and so
+    # offers hardware adapters no surface formats; products build "hardware".
+    "--cfg", "worth_ui_adapter=\"hardware\"",
 ]
 
 # Trace output verbosity (force = false → your override wins):

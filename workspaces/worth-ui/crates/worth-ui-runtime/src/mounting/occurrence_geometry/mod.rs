@@ -75,6 +75,7 @@ pub(crate) struct UiMountedMosaicSeamPaintInput {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum UiMountedOccurrenceGeometryDenial {
     PresentationInFlight,
+    UnpublishedScrollEffect,
     StateRevisionExhausted,
     MissingSurfaceBinding,
     EmptyBatch,
@@ -99,6 +100,9 @@ pub enum UiMountedOccurrenceGeometryDenial {
     MosaicBindingUnavailable,
     DuplicateRegionOccurrence,
     StaleLayoutBasis,
+    /// The surface is bound at a scale that names no device pixel grid, so
+    /// nothing presented on it could be placed on one.
+    UnusableDeviceScale,
 }
 
 impl UiMountedOccurrenceGeometry {

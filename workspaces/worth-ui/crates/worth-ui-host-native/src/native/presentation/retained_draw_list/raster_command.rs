@@ -87,7 +87,8 @@ impl UiNativeRetainedDrawList {
         basis: UiNativeRasterBasis,
     ) -> Result<Vec<UiNativeRasterOperation>, Denial> {
         use crate::native::presentation::appearance::{
-            UiNativeBackdropPipeline, UiNativeOutlinePipeline, UiNativeSurfacePipeline,
+            UiNativeBackdropPipeline, UiNativeOutlinePipeline, UiNativeScrollChromePipeline,
+            UiNativeSurfacePipeline,
         };
         let scale = self
             .staged_appearance
@@ -150,6 +151,16 @@ impl UiNativeRetainedDrawList {
                         ),
                     })
             }
+            UiNativeAppearanceCommand::ScrollChrome(mechanic) => {
+                let chrome = UiNativeScrollChromePipeline::prepare(&mechanic, scale)
+                    .map_err(|_| Denial::CommandMismatch)?;
+                surface_operation(
+                    UiNativeSurfacePipeline::prepare_scroll_chrome(&chrome),
+                    self.sample_override(UiMountedPaintCommandIdentity::scroll_chrome(
+                        mechanic.identity(),
+                    )),
+                )?
+            }
             UiNativeAppearanceCommand::TextForeground(_)
             | UiNativeAppearanceCommand::OverlayOrder(_)
             | UiNativeAppearanceCommand::PointerAffordance(_) => None,
@@ -181,7 +192,9 @@ impl UiNativeRetainedDrawList {
         let mut selected = None;
         for sample in samples {
             if selected.is_some_and(|current: UiMountedPresentationSampleChange| {
-                current.transform() != sample.transform() || current.opacity() != sample.opacity()
+                current.transform() != sample.transform()
+                    || current.opacity() != sample.opacity()
+                    || current.clip() != sample.clip()
             }) {
                 return Err(Denial::CommandMismatch);
             }

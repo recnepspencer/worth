@@ -242,7 +242,7 @@ fn assert_missing_order_denied_before_host(
             None,
             worth_ui_host_contract::UiPresentationDeadline::at_tick(u64::MAX),
             10,
-            |_, _, _| Ok(Vec::new()),
+            |_, _, _| Ok(Default::default()),
         )
         .into_parts();
     let crate::mounting::UiMountedFrameOutcome::AdmissionDenied(rejection) = outcome else {

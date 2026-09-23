@@ -1,26 +1,48 @@
-#[cfg(target_os = "windows")]
+#[cfg(worth_ui_certified_executable)]
 use std::fmt;
-#[cfg(target_os = "windows")]
+#[cfg(worth_ui_certified_executable)]
 use std::time::Instant;
 
-#[cfg(target_os = "windows")]
-use super::windows::WindowsInputEnvironmentDenial;
-#[cfg(target_os = "windows")]
+#[cfg(worth_ui_certified_executable)]
+use super::NativeInputEnvironmentDenial;
+#[cfg(worth_ui_certified_executable)]
 use crate::external_observation::{
     NativeClientPixelCapture, NativeClientPixelPoint, NativeInputDeliveryObservation,
     NativeInputProbeKind, NativeWindowVisibilityTransitionObservation,
     NormalNativeCloseRequestObservation, ProcessBoundNativeClientAreaObservation,
 };
 
+/// The doctrine posture (milestone-3.10.3 §D5) this build holds. Each variant
+/// exists only in the builds where it is the truth, so no build can construct
+/// a posture it does not hold.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum NativePlatformPosture {
+    /// The native courtroom executes here against a real observer.
+    #[cfg(worth_ui_certified_executable)]
     CertifiedExecutable,
-    #[cfg(not(target_os = "windows"))]
+    /// The product runs on this target but no observer lane executes yet.
+    #[cfg(all(not(worth_ui_certified_executable), worth_ui_product_executable))]
+    NotYetCertifiedExecutable,
+    /// Every scenario compiles and none executes.
+    #[cfg(not(worth_ui_product_executable))]
     CompileOnly,
 }
 
+impl NativePlatformPosture {
+    pub(crate) fn name(self) -> &'static str {
+        match self {
+            #[cfg(worth_ui_certified_executable)]
+            Self::CertifiedExecutable => "certified_executable",
+            #[cfg(all(not(worth_ui_certified_executable), worth_ui_product_executable))]
+            Self::NotYetCertifiedExecutable => "not_yet_certified_executable",
+            #[cfg(not(worth_ui_product_executable))]
+            Self::CompileOnly => "compile_only",
+        }
+    }
+}
+
 #[derive(Debug)]
-#[cfg(target_os = "windows")]
+#[cfg(worth_ui_certified_executable)]
 pub(crate) enum NativePlatformFailure {
     DpiAwareness(String),
     EnvironmentQualification(String),
@@ -45,7 +67,7 @@ pub(crate) enum NativePlatformFailure {
         client: crate::external_observation::NativeClientAreaBounds,
     },
     NormalClose(String),
-    InputEnvironment(WindowsInputEnvironmentDenial),
+    InputEnvironment(NativeInputEnvironmentDenial),
     InputDelivery(String),
     InputDeliveryIndeterminate {
         kind: NativeInputProbeKind,
@@ -55,7 +77,7 @@ pub(crate) enum NativePlatformFailure {
     ProcessWindowResidue(usize),
 }
 
-#[cfg(target_os = "windows")]
+#[cfg(worth_ui_certified_executable)]
 impl fmt::Display for NativePlatformFailure {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -134,9 +156,73 @@ impl fmt::Display for NativePlatformFailure {
     }
 }
 
-#[cfg(target_os = "windows")]
+/// Whether the product's presentation surface succeeds itself between window
+/// creation and the first presented frame without the product asking for a
+/// change. A succession registers the successor retained target while the
+/// predecessor is still live (peak two) and requires one reconstruction of
+/// every binding registered at that moment, so the census a lane expects
+/// follows from this declaration rather than from a vendor's measurement.
+///
+/// The Windows lane records one (`_docs/worth-ui/milestone-3.14.1-evidence/
+/// p2-world-01.json` peaks `retained_targets` at 2 with a single frame); the
+/// X11 lane maps the window at its final basis and records none (Xvfb, 144
+/// dpi, 2026-09-22).
+#[cfg(worth_ui_certified_executable)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum CreationSurfaceSuccession {
+    None,
+    Once,
+}
+
+#[cfg(worth_ui_certified_executable)]
+impl CreationSurfaceSuccession {
+    /// Peak live retained targets: a successor is registered while its
+    /// predecessor is still live, so one succession peaks at two.
+    pub(crate) const fn peak_retained_targets(self) -> u64 {
+        match self {
+            Self::None => 1,
+            Self::Once => 2,
+        }
+    }
+
+    /// Reconstruction requirements a one-binding world accrues: one per
+    /// succession, none when the surface is final at creation.
+    pub(crate) const fn reconstruction_requirements(self) -> u64 {
+        match self {
+            Self::None => 0,
+            Self::Once => 1,
+        }
+    }
+}
+
+#[cfg(worth_ui_certified_executable)]
+#[test]
+fn a_creation_time_succession_costs_one_successor_target_and_one_reconstruction() {
+    let none = CreationSurfaceSuccession::None;
+    let once = CreationSurfaceSuccession::Once;
+    assert_eq!(
+        (
+            none.peak_retained_targets(),
+            none.reconstruction_requirements()
+        ),
+        (1, 0)
+    );
+    assert_eq!(
+        (
+            once.peak_retained_targets(),
+            once.reconstruction_requirements()
+        ),
+        (2, 1)
+    );
+}
+
+#[cfg(worth_ui_certified_executable)]
 pub(crate) trait NativePlatformContract: sealed::Sealed {
     type BoundClientArea;
+
+    /// The platform's creation-time surface succession, declared once by the
+    /// observer that knows the windowing system.
+    const CREATION_SURFACE_SUCCESSION: CreationSurfaceSuccession;
 
     fn bind_process_client_area(
         &self,
@@ -153,6 +239,25 @@ pub(crate) trait NativePlatformContract: sealed::Sealed {
         &self,
         bound: &Self::BoundClientArea,
     ) -> Result<NativeClientPixelCapture, NativePlatformFailure>;
+
+    /// The bound client area held where its pixels can be read.
+    ///
+    /// Dropping it returns the window to where the desktop had it.
+    type ExposedClientArea<'bound>
+    where
+        Self: 'bound;
+
+    /// Raise the bound client area and wait for the desktop to compose it.
+    ///
+    /// Raising a window and waiting for a composition costs tens of
+    /// milliseconds -- the same order as the intervals a motion criterion
+    /// measures. It is a precondition of reading the window's pixels at all,
+    /// not part of any interval measured through them, so a timing probe
+    /// exposes the area once and samples inside that exposure.
+    fn expose_client_area<'bound>(
+        &self,
+        bound: &'bound Self::BoundClientArea,
+    ) -> Result<Self::ExposedClientArea<'bound>, NativePlatformFailure>;
 
     fn resize_bound_client_area(
         &self,
@@ -190,6 +295,20 @@ pub(crate) trait NativePlatformContract: sealed::Sealed {
         bound: &Self::BoundClientArea,
     ) -> Result<(), NativePlatformFailure>;
 
+    fn deliver_wheel_notches(
+        &self,
+        bound: &Self::BoundClientArea,
+        point: NativeClientPixelPoint,
+        notches: i32,
+    ) -> Result<Instant, NativePlatformFailure>;
+
+    fn deliver_pointer_drag(
+        &self,
+        bound: &Self::BoundClientArea,
+        from: NativeClientPixelPoint,
+        to: NativeClientPixelPoint,
+    ) -> Result<(), NativePlatformFailure>;
+
     fn move_cursor(&self, screen_point: (i32, i32)) -> Result<(), NativePlatformFailure>;
 
     fn request_normal_close(
@@ -200,7 +319,7 @@ pub(crate) trait NativePlatformContract: sealed::Sealed {
     fn verify_process_window_released(&self, process_id: u32) -> Result<(), NativePlatformFailure>;
 }
 
-#[cfg(target_os = "windows")]
+#[cfg(worth_ui_certified_executable)]
 pub(crate) mod sealed {
     pub trait Sealed {}
 }

@@ -127,6 +127,8 @@ fn node_input_for(
             presentation,
             nodes: vec![node],
             backdrops: Vec::new(),
+            scroll_chrome: Vec::new(),
+            chrome_owner: None,
             overlay,
         },
         NodeIds {

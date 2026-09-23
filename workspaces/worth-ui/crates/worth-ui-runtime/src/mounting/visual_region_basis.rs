@@ -26,6 +26,8 @@ pub(crate) struct UiMountedVisualRegionBasis {
         >,
     >,
     appearance_paint: std::sync::Arc<[super::UiMountedAppearancePaintBasis]>,
+    indexed_motion_reserved_bytes: Option<usize>,
+    direct_scroll_reserved_bytes: Option<usize>,
     binding: Option<worth_ui_host_contract::UiSurfaceBindingGeneration>,
     receipts: Option<super::UiMountedNodeReceiptBasis>,
     #[cfg(test)]
@@ -69,6 +71,8 @@ impl UiMountedVisualRegionBasis {
             portal_children: Default::default(),
             text_clips: Default::default(),
             appearance_paint: std::sync::Arc::from([]),
+            indexed_motion_reserved_bytes: Some(0),
+            direct_scroll_reserved_bytes: Some(0),
             binding: None,
             receipts: None,
             #[cfg(test)]
@@ -90,6 +94,8 @@ impl UiMountedVisualRegionBasis {
             portal_children: Default::default(),
             text_clips: Default::default(),
             appearance_paint: std::sync::Arc::from([]),
+            indexed_motion_reserved_bytes: Some(0),
+            direct_scroll_reserved_bytes: Some(0),
             binding: None,
             receipts: None,
             materialized: Some(UiMaterializedVisualRegionBasis {
@@ -113,6 +119,8 @@ impl UiMountedVisualRegionBasis {
             portal_children: std::rc::Rc::clone(&self.portal_children),
             text_clips: std::rc::Rc::clone(&self.text_clips),
             appearance_paint: std::sync::Arc::clone(&self.appearance_paint),
+            indexed_motion_reserved_bytes: self.indexed_motion_reserved_bytes,
+            direct_scroll_reserved_bytes: self.direct_scroll_reserved_bytes,
             binding: Some(binding),
             receipts: Some(receipts),
             #[cfg(test)]
@@ -236,7 +244,23 @@ impl UiMountedVisualRegionBasis {
             .semantic_text
             .len()
             .checked_add(self.portal_overlays.len())?;
-        super::presentation::work_producer::motion_acceptance_reserved_bytes(commands)
+        super::presentation::work_producer::motion_acceptance_reserved_bytes(commands)?
+            .checked_add(self.indexed_motion_reserved_bytes?)?
+            .checked_add(self.direct_scroll_reserved_bytes?)
+    }
+
+    pub(in crate::mounting) fn with_indexed_motion_reservation(
+        mut self,
+        bytes: Option<usize>,
+    ) -> Self {
+        self.indexed_motion_reserved_bytes = bytes;
+        self
+    }
+
+    pub(in crate::mounting) fn with_direct_scroll_reservation(mut self, count: usize) -> Self {
+        self.direct_scroll_reserved_bytes =
+            crate::runtime::scroll::UiPreparedScrollDirectSuccession::reserved_bytes(count);
+        self
     }
 
     pub(crate) fn retained_structural_bytes(&self) -> Option<usize> {

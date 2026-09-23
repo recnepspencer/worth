@@ -84,7 +84,7 @@ fn qualified_dx12_pipeline_applies_alpha_foreground_and_preserves_intrinsic_colo
         mip_level_count: 1,
         sample_count: 1,
         dimension: wgpu::TextureDimension::D2,
-        format: wgpu::TextureFormat::Rgba8UnormSrgb,
+        format: crate::native::graphics::qualified_target_format(),
         usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
         view_formats: &[],
     });
@@ -196,6 +196,7 @@ fn command(
                 line_index: 0,
                 visual_run_index: 0,
                 clip_bounds: clip,
+                intrinsic_clip_bounds: clip,
                 layer_semantic_order: 0,
             },
         ),

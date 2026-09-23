@@ -14,7 +14,6 @@ impl UiNativeRasterBasis {
         }
     }
 
-    #[cfg(any(test, feature = "certification-support"))]
     pub(super) const fn new(extent: [u32; 2], scale_factor: f32) -> Self {
         Self {
             extent,

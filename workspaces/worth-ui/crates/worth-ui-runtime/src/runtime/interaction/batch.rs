@@ -14,6 +14,8 @@ pub struct UiInteractionBatchReceipt {
     pub(super) ignored_reports: usize,
     pub(super) state: UiInteractionStateSnapshot,
     pub(super) scroll_observations: Box<[crate::runtime::scroll::UiHostScrollObservationOutcome]>,
+    pub(super) scroll_chrome_interactions:
+        Box<[crate::facade::entry::UiScrollChromeIngressOutcome]>,
     pub(super) command_routes: Box<[crate::runtime::UiCommandRoutingOutcome]>,
     pub(super) focus_publications: Box<
         [Result<
@@ -108,6 +110,22 @@ impl UiInteractionBatchReceipt {
         &self,
     ) -> &[crate::runtime::scroll::UiHostScrollObservationOutcome] {
         &self.scroll_observations
+    }
+
+    pub(crate) fn retain_scroll_chrome_interactions(
+        &mut self,
+        interactions: Vec<crate::facade::entry::UiScrollChromeIngressOutcome>,
+    ) {
+        self.scroll_chrome_interactions = interactions.into_boxed_slice();
+    }
+
+    /// What scroll chrome answered for in this batch: the presses it claimed,
+    /// the drags it placed and the releases that ended them.
+    #[cfg(any(test, feature = "certification-support"))]
+    pub(crate) fn scroll_chrome_interactions(
+        &self,
+    ) -> &[crate::facade::entry::UiScrollChromeIngressOutcome] {
+        &self.scroll_chrome_interactions
     }
 
     pub(crate) fn retain_command_routes(

@@ -169,7 +169,7 @@ fn assert_complete_reconstructed_mechanics(
         mechanics.len(),
         "cold reconstruction must not duplicate a retained mechanic identity"
     );
-    let counts = mechanics.iter().fold([0usize; 6], |mut counts, mechanic| {
+    let counts = mechanics.iter().fold([0usize; 7], |mut counts, mechanic| {
         counts[match mechanic {
             UiMountedAppearanceMechanic::Surface(_) => 0,
             UiMountedAppearanceMechanic::Outline(_) => 1,
@@ -177,12 +177,13 @@ fn assert_complete_reconstructed_mechanics(
             UiMountedAppearanceMechanic::PortalSurface(_) => 3,
             UiMountedAppearanceMechanic::Backdrop(_) => 4,
             UiMountedAppearanceMechanic::Pointer(_) => 5,
+            UiMountedAppearanceMechanic::ScrollChrome(_) => 6,
         }] += 1;
         counts
     });
     assert_eq!(
         counts,
-        [3, 3, 3, 1, 2, 0],
+        [3, 3, 3, 1, 2, 0, 0],
         "the authored surviving world reconstructs mounted mechanics without stale rebound pointer evidence"
     );
     let surviving_portal_owner = world.instances[1];

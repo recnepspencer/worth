@@ -1,10 +1,13 @@
 pub(crate) mod allocation;
 mod anchor;
+pub(crate) mod chrome;
+mod gesture_latch;
 mod host_observation;
 mod identity;
 mod inspection;
 mod model;
 mod ownership_chain;
+mod presentation_snapping;
 mod programmatic_reveal;
 mod proposal;
 mod receipt;
@@ -12,13 +15,20 @@ mod request;
 mod routing;
 #[cfg(feature = "certification-support")]
 mod scale_certification;
+mod settle_proposal;
+mod settle_stop;
+mod settle_transition;
 mod shared_owner_reconciliation;
 mod state;
+pub(crate) mod transition;
 
 pub(crate) use anchor::{
     UiScrollAnchor, UiScrollAnchorIdentity, UiScrollAnchorPolicy,
     UiScrollAnchorReconciliationOutcome, UiScrollAnchorReconciliationReceipt,
     UiScrollRebindRequest,
+};
+pub(crate) use gesture_latch::{
+    latching_chain_index, UiScrollGestureLatch, UiScrollGestureLatchLifetime,
 };
 pub(crate) use host_observation::{
     UiHostScrollObservationDenial, UiHostScrollObservationOutcome, UiScrollBoundsResolutionDenial,
@@ -31,6 +41,9 @@ pub(crate) use model::{UiScrollAxes, UiScrollBounds, UiScrollDelta, UiScrollOffs
 pub(crate) use ownership_chain::{
     UiResolvedScrollOwnershipChain, UiScrollOwnershipResolutionDenial,
 };
+pub(crate) use presentation_snapping::{
+    snap_to_device_grid, UiScrollPresentationDeviceScale, UiScrollPresentationSnappingDenial,
+};
 pub(crate) use programmatic_reveal::{
     UiScrollProgrammaticRevealRequest, UiScrollRevealInterval, UiScrollRevealTarget,
     UiScrollViewportExtent,
@@ -42,10 +55,20 @@ pub(crate) use receipt::{
 pub(crate) use request::{UiScrollChainEntry, UiScrollDeltaCause, UiScrollDeltaRequest};
 #[cfg(feature = "certification-support")]
 pub(crate) use scale_certification::scroll_scale_evidence;
+pub(in crate::runtime) use settle_proposal::UiStagedScrollSettleProposal;
+pub use settle_stop::UiScrollSettleStop;
+pub(crate) use settle_transition::{
+    UiPreparedScrollSettleTransition, UiScrollSettleTransitionDenial,
+};
 pub(crate) use shared_owner_reconciliation::UiSharedScrollOwnerReconciliation;
+pub(crate) use state::UiPreparedScrollDirectSuccession;
 pub(crate) use state::UiScrollRuntimeState;
 
+#[cfg(test)]
+mod gesture_latch_tests;
 #[cfg(test)]
 mod state_rebind_tests;
 #[cfg(test)]
 mod state_tests;
+#[cfg(test)]
+mod state_transition_tests;

@@ -138,6 +138,7 @@ impl UiMountedAppearanceFrameState {
                 self.restore_entry(entry);
                 continue;
             }
+            input.attach_owned_scroll_chrome(geometry);
             let predecessor_receipt = entry.sidecar.current_node_receipt();
             let work = match entry.sidecar.reconstruct(input) {
                 Ok(work) => work,

@@ -12,6 +12,13 @@ use owner_state::{UiActiveOverlayOwnerUpdate, UiActiveOverlayRetentionCandidate}
 
 pub(in crate::facade::entry) struct UiActiveOverlayAppearancePreparation {
     surfaces: Box<[UiActiveOverlaySurfacePreparation]>,
+    /// Scroll chrome derived alongside the overlays, so one closure resolves
+    /// every non-node paint against the attempt's theme binding.
+    scroll_chrome: Vec<super::scroll_chrome_appearance::UiActiveScrollChromeSurfacePreparation>,
+    scroll_motion:
+        Vec<crate::mounting::presentation::work_producer::UiMountedScrollMotionGroupInput>,
+    scroll_geometry_reservations:
+        std::collections::BTreeMap<worth_ui_host_contract::UiSemanticSurfaceIdentity, usize>,
 }
 
 struct UiActiveOverlaySurfacePreparation {
@@ -29,6 +36,8 @@ struct UiActiveOverlaySurfacePreparation {
 
 #[path = "overlay_appearance/preparation.rs"]
 mod preparation;
+#[path = "overlay_appearance/scroll_motion.rs"]
+mod scroll_motion;
 
 impl UiActiveOverlayAppearancePreparation {
     pub(in crate::facade::entry) fn lower(
@@ -44,7 +53,7 @@ impl UiActiveOverlayAppearancePreparation {
         capabilities: &crate::capability::CapabilitySnapshot,
         appearance: Option<&crate::runtime::appearance::UiAppearanceOwnerSnapshot>,
         prepared_binding: Option<&crate::runtime::appearance::UiActiveThemeBinding>,
-    ) -> Result<Vec<crate::mounting::UiMountedAppearanceSurfaceOverlayInput>, ()> {
+    ) -> Result<crate::mounting::UiMountedAppearanceDerivedInput, ()> {
         self.lower_with_themes(
             attempt,
             requested_surfaces,
@@ -60,7 +69,68 @@ impl UiActiveOverlayAppearancePreparation {
         )
     }
 
+    /// Everything this attempt paints that no node authored: the overlays
+    /// the portal and backdrop world composed, and the scroll chrome the
+    /// accepted pose derived. Both resolve against the same theme binding.
     pub(in crate::facade::entry) fn lower_with_themes(
+        &self,
+        attempt: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
+        requested_surfaces: &[worth_ui_host_contract::UiSemanticSurfaceIdentity],
+        owners: &mut UiActiveOverlayCompositionOwners,
+        generation: &crate::facade::prepared_application_authority::
+            WorthUiPreparedApplicationGenerationIdentity,
+        portal: Option<&crate::runtime::portal::UiPortalRuntimeState>,
+        motion: Option<&crate::runtime::motion::UiMotionRuntimeState>,
+        presentation: &crate::runtime::presentation_state::UiApplicationPresentationState,
+        capabilities: &crate::capability::CapabilitySnapshot,
+        appearance: Option<&crate::runtime::appearance::UiAppearanceOwnerSnapshot>,
+        themes: Option<
+            &crate::runtime::presentation_state::UiPreparedAppearanceGenerationSuccession,
+        >,
+        prepared_binding: Option<&crate::runtime::appearance::UiActiveThemeBinding>,
+    ) -> Result<crate::mounting::UiMountedAppearanceDerivedInput, ()> {
+        let overlays = self.lower_overlays(
+            attempt,
+            requested_surfaces,
+            owners,
+            generation,
+            portal,
+            motion,
+            presentation,
+            capabilities,
+            appearance,
+            themes,
+            prepared_binding,
+        )?;
+        let scroll_chrome = super::scroll_chrome_appearance::lower_scroll_chrome_appearance(
+            &self.scroll_chrome,
+            requested_surfaces,
+            presentation,
+            capabilities,
+            appearance,
+            themes,
+            prepared_binding,
+        )
+        .map_err(|_| ())?;
+        Ok(crate::mounting::UiMountedAppearanceDerivedInput {
+            scroll_geometry_reservations: self
+                .scroll_geometry_reservations
+                .iter()
+                .filter(|(surface, _)| requested_surfaces.contains(surface))
+                .map(|(surface, bytes)| (*surface, *bytes))
+                .collect(),
+            overlays,
+            scroll_chrome,
+            scroll_motion: self
+                .scroll_motion
+                .iter()
+                .filter(|group| requested_surfaces.contains(&group.target.semantic_surface()))
+                .cloned()
+                .collect(),
+        })
+    }
+
+    fn lower_overlays(
         &self,
         attempt: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
         requested_surfaces: &[worth_ui_host_contract::UiSemanticSurfaceIdentity],

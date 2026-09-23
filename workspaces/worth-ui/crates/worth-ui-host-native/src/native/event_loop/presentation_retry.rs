@@ -57,20 +57,19 @@ impl<Client: super::UiNativeEventLoopClient> super::UiNativeEventLoopApplication
         let retry_wake = self.shared.borrow().lifecycle.presentation_retry_wake();
         match retry_wake {
             Some(crate::native::UiNativePresentationRetryWake::Timeout(_)) => return,
-            Some(crate::native::UiNativePresentationRetryWake::Visibility) => {
+            Some(crate::native::UiNativePresentationRetryWake::Visibility)
                 if !self
                     .shared
                     .borrow_mut()
                     .lifecycle
-                    .consume_presentation_visibility()
-                {
-                    return self.fail(
-                        event_loop,
-                        super::UiNativeEventLoopRunDenial::ApplicationDriver,
-                    );
-                }
+                    .consume_presentation_visibility() =>
+            {
+                return self.fail(
+                    event_loop,
+                    super::UiNativeEventLoopRunDenial::ApplicationDriver,
+                );
             }
-            None => {}
+            Some(crate::native::UiNativePresentationRetryWake::Visibility) | None => {}
         }
         self.commit_readiness(event_loop);
     }

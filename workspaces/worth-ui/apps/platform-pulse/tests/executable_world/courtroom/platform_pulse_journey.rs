@@ -178,7 +178,7 @@ fn launch_initial(
             panic!("causal first publication plus independent native pixels: {failure}")
         });
     let evidence = published.evidence();
-    assert_eq!(evidence.sequence_quad(), (1, 1, 3, 1));
+    assert_eq!(evidence.sequence_quad(), (1, 2, 3, 4));
     assert_eq!(
         evidence.pending_projection().projection_identity(),
         "platform.pulse.status"

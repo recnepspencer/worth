@@ -15,9 +15,6 @@ impl WorthUiActiveApplicationSession {
         &mut self,
         reachability: worth_ui_host_native::UiNativeInputReachability,
     ) -> UiNativeObservationIngressSettlement {
-        if self.motion.is_installed() {
-            self.complete_motion_sample_presentation();
-        }
         let drain = match self.host_session.drain_observations() {
             Ok(drain) => drain,
             Err(denial) => {
@@ -31,6 +28,12 @@ impl WorthUiActiveApplicationSession {
             .map(|batch| self.admit_host_interaction_batch(batch))
             .collect::<Vec<_>>()
             .into_boxed_slice();
+        // Reports retain their event-time epoch. Admit them while that epoch
+        // is still current; a pending thumb press then waits for this physical
+        // completion rather than being silently invalidated by it.
+        if self.motion.is_installed() {
+            self.complete_motion_sample_presentation();
+        }
         UiNativeObservationIngressSettlement::from_outcomes(outcomes, reachability)
     }
 
@@ -51,15 +54,52 @@ impl WorthUiActiveApplicationSession {
                     .is_some_and(|portal| portal.topmost_presentation().is_some())
                     .then(|| portal_escape_dismissal(batch.reports(), core.presentation()))
                     .flatten();
+                let observation_tick = batch
+                    .reports()
+                    .iter()
+                    .filter_map(|report| {
+                        if let worth_ui_host_contract::UiHostObservationPayload::Tick { tick } =
+                            report.report().payload()
+                        {
+                            Some(*tick)
+                        } else {
+                            None
+                        }
+                    })
+                    .max();
+                // Chrome answers first. A scrollbar is not a mounted node, so
+                // a press on one would otherwise fall through to whatever node
+                // is drawn beneath it; and while a thumb drag holds the
+                // pointer, the moves and the release belong to the thumb.
+                // Reports chrome does not claim reach ordinary routing
+                // unchanged.
+                let (scroll_chrome, chrome_claimed) = if self.scroll.is_installed() {
+                    self.observe_scroll_chrome_pointer_reports(batch.reports(), core.presentation())
+                        .into_parts()
+                } else {
+                    (Vec::new(), Vec::new())
+                };
                 let mut scroll_targeting_work = Default::default();
                 let scroll_observations = if self.scroll.is_installed() {
                     batch
                         .reports()
                         .iter()
                         .filter_map(|report| {
+                            // A host that stamps the batch with a Tick names the
+                            // frame tick outright; otherwise a report observed on
+                            // the host monotonic clock carries its own input tick,
+                            // the clock every Motion frame is later sampled on.
+                            let input_tick = observation_tick.or_else(|| {
+                                match report.report().time_basis() {
+                                    worth_ui_host_contract::UiHostObservationTimeBasis::HostMonotonicMillis(millis) => Some(millis),
+                                    worth_ui_host_contract::UiHostObservationTimeBasis::HostWallClockMicros(_)
+                                    | worth_ui_host_contract::UiHostObservationTimeBasis::PresentationRelativeTick(_) => None,
+                                }
+                            });
                             self.observe_scroll_payload(
                                 report.report().payload(),
                                 &mut scroll_targeting_work,
+                                input_tick,
                             )
                         })
                         .collect()
@@ -89,23 +129,29 @@ impl WorthUiActiveApplicationSession {
                             .flatten()
                     })
                     .collect();
-                let motion_tick = batch
-                    .reports()
-                    .iter()
-                    .filter_map(|report| {
-                        if let worth_ui_host_contract::UiHostObservationPayload::Tick { tick } =
-                            report.report().payload()
-                        {
-                            Some(*tick)
-                        } else {
-                            None
+                // A window that has stopped being the reader's leaves nothing
+                // in flight. Every settle ends where its last accepted sample
+                // put the content, and the wheel gesture gives its owner back,
+                // so the first notch after the reader comes back is theirs to
+                // aim rather than the tail of one they walked away from.
+                if batch.reports().iter().any(|report| {
+                    matches!(
+                        report.report().payload(),
+                        worth_ui_host_contract::UiHostObservationPayload::WindowFocus {
+                            focused: false,
+                            ..
                         }
-                    })
-                    .max();
+                    )
+                }) {
+                    self.settle_scroll_after_attention_loss();
+                }
                 let generation = self.active_generation_identity();
-                let mut receipt = self.interaction.ingest(batch, &self.mounted, &generation);
+                let mut receipt =
+                    self.interaction
+                        .ingest(batch, &self.mounted, &generation, &chrome_claimed);
                 receipt.record_targeting_work(scroll_targeting_work);
                 receipt.retain_scroll_observations(scroll_observations);
+                receipt.retain_scroll_chrome_interactions(scroll_chrome);
                 receipt.retain_command_routes(command_routes);
                 receipt.retain_focus_publications(focus_publications);
                 if let Some(dismissal) = portal_escape {
@@ -113,12 +159,16 @@ impl WorthUiActiveApplicationSession {
                 }
                 self.intent_evidence
                     .retain_transitions(receipt.transitions());
-                if let Some(tick) = motion_tick.filter(|_| {
+                if let Some(tick) = observation_tick.filter(|_| {
                     self.motion.is_installed() && self.mounted.has_active_motion_samples()
                 }) {
                     if let Ok(prepared) = self.prepare_motion_tick(tick, core.presentation()) {
                         self.present_prepared_motion_tick(prepared, core.presentation());
                     }
+                } else if self.awaits_scroll_settle_retry() {
+                    // A settle deferred while a presentation was in flight is
+                    // owed this frame even though no Motion tick asked for one.
+                    self.settle_accepted_scroll_sample(core.presentation());
                 }
                 self.host_exchange
                     .retire_delivered_observation_batch(receipt.canonical_core());

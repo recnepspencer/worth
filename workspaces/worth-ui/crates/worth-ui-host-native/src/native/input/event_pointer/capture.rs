@@ -9,7 +9,10 @@ pub(super) fn observe_exit(
     if !state.admit_input(UiNativeInputObservationEventFamily::Pointer) {
         return state.rejection_disposition();
     }
-    if state.pointer.end_capture().is_err() {
+    // Leaving the client is not capture loss during a held drag. Preserve its
+    // epoch so outside motion and release reach the same runtime capture.
+    // Focus loss and session teardown still cancel held capture explicitly.
+    if !state.pointer.has_pressed_buttons() && state.pointer.end_capture().is_err() {
         state.record_terminal_stop(UiNativeInputObservationStop::PointerCaptureEpochExhausted);
         return UiNativeInputObservationDisposition::Stopped;
     }

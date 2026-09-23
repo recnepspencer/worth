@@ -25,7 +25,8 @@ pub use service::{
     WorthUiCommandShortcutStrokeSpec, WorthUiFocusDeclaration, WorthUiFocusScope,
     WorthUiMotionDeclaration, WorthUiPortalDeclaration, WorthUiPortalDismissalSet,
     WorthUiPortalLayer, WorthUiReducedMotionPolicy, WorthUiScrollAnchorPolicy,
-    WorthUiScrollDeclaration, WorthUiSelectionDeclaration, WorthUiSelectionMode,
+    WorthUiScrollChromeAxes, WorthUiScrollChromeDeclaration, WorthUiScrollDeclaration,
+    WorthUiScrollWheelPolicy, WorthUiSelectionDeclaration, WorthUiSelectionMode,
     WorthUiServiceDeclarationMeaning, WorthUiServiceDeclarationParseError, WorthUiServiceFamily,
 };
 pub use ui_dsl_lowering_receipt::UiDslLoweringReceipt;

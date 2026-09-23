@@ -95,6 +95,23 @@ pub(super) enum CandidateOrigin {
 }
 
 impl UiPreparedFrameCandidates {
+    pub(in crate::mounting) fn indexed_motion_reserved_bytes(&self) -> Option<usize> {
+        self.surfaces.iter().try_fold(0usize, |bytes, surface| {
+            bytes.checked_add(surface.state.indexed_motion_reserved_bytes()?)
+        })
+    }
+
+    pub(in crate::mounting) fn bind_scroll_motion_groups(
+        &mut self,
+        frame: &crate::mounting::UiPreparedMountedFrame,
+        derived: &crate::mounting::UiMountedAppearanceDerivedInput,
+    ) -> Result<(), ()> {
+        for surface in &mut self.surfaces {
+            surface.state.bind_scroll_motion_groups(frame, derived)?;
+        }
+        Ok(())
+    }
+
     pub(in crate::mounting) fn bind_appearance_sample_targets(
         &mut self,
         frame: &crate::mounting::UiPreparedMountedFrame,

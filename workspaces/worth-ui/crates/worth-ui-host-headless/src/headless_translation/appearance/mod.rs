@@ -4,6 +4,7 @@ mod backdrop;
 mod outline;
 mod overlay_order;
 mod pointer_affordance;
+mod scroll_chrome;
 mod surface;
 mod text_foreground;
 mod work;
@@ -98,6 +99,9 @@ fn validate_mechanic(
         }
         UiMountedAppearanceMechanic::Backdrop(mechanic) => {
             mechanic.semantic_surface() == semantic_surface && backdrop::validate(mechanic)
+        }
+        UiMountedAppearanceMechanic::ScrollChrome(mechanic) => {
+            mechanic.semantic_surface() == semantic_surface && scroll_chrome::validate(mechanic)
         }
     }
 }

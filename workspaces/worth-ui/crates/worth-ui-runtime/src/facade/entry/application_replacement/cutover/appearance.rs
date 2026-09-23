@@ -8,19 +8,7 @@ pub(super) fn prepare_successor_theme(
     super::super::super::UiPreparedAppearanceGenerationSuccession,
     WorthUiApplicationCutoverDenial,
 > {
-    let candidate_index = pending.next_app.prepared_authority().consumed_fact_index();
-    let mut required_roles = candidate_index
-        .appearance_required_role_identities()
-        .into_vec();
-    required_roles.extend(
-        pending
-            .next_app
-            .prepared_authority()
-            .authored_overlay_material()
-            .backdrop_appearance_role_identities(),
-    );
-    required_roles.sort();
-    required_roles.dedup();
+    let required_roles = pending.next_app.required_appearance_role_identities();
     let bindings = session
         .presentation
         .appearance_theme_state()

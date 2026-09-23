@@ -115,7 +115,9 @@ fn valid_utf16_name(value: &[u8]) -> bool {
     let mut visible = false;
     for character in std::char::decode_utf16(
         value
-            .chunks_exact(2)
+            .as_chunks::<2>()
+            .0
+            .iter()
             .map(|pair| u16::from_be_bytes([pair[0], pair[1]])),
     ) {
         let Ok(character) = character else {

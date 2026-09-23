@@ -9,6 +9,7 @@ use crate::{
 mod appearance_clip;
 mod foreground;
 mod frame_affinity;
+mod portal_presentation;
 mod table;
 mod validation;
 
@@ -96,6 +97,7 @@ pub struct UiMountedSemanticTextMechanic {
     allocation_basis: super::UiMountedAllocationBasis,
     bounds: super::UiMountedCanonicalBox,
     clip_bounds: super::UiMountedCanonicalBox,
+    intrinsic_clip_bounds: super::UiMountedCanonicalBox,
     origin_x: f32,
     origin_y: f32,
     text: Arc<str>,
@@ -244,6 +246,7 @@ impl UiMountedSemanticTextMechanic {
             allocation_basis: input.allocation_basis,
             bounds: input.bounds,
             clip_bounds: input.clip_bounds,
+            intrinsic_clip_bounds: input.clip_bounds,
             origin_x: input.origin_x,
             origin_y: input.origin_y,
             text: input.text,
@@ -299,6 +302,10 @@ impl UiMountedSemanticTextMechanic {
     pub const fn clip_bounds(&self) -> super::UiMountedCanonicalBox {
         self.clip_bounds
     }
+    /// The row-owned clip before ancestor viewport clipping.
+    pub const fn intrinsic_clip_bounds(&self) -> super::UiMountedCanonicalBox {
+        self.intrinsic_clip_bounds
+    }
     pub fn origin_x(&self) -> f32 {
         self.origin_x
     }
@@ -352,44 +359,6 @@ impl UiMountedSemanticTextMechanic {
     }
     pub const fn semantic_digest(&self) -> u64 {
         self.semantic_digest
-    }
-
-    #[doc(hidden)]
-    pub fn presented_within_portal(
-        &self,
-        portal: super::UiMountedPortalOverlayMechanic,
-        source_anchor: super::UiMountedCanonicalBox,
-    ) -> Result<Option<Self>, UiMountedSemanticTextCompletionDenial> {
-        let Some(geometry) = super::portal_child_geometry::project(
-            self.bounds,
-            self.clip_bounds,
-            portal,
-            source_anchor,
-        )
-        .map_err(|_| UiMountedSemanticTextCompletionDenial::NonAreaGeometry)?
-        else {
-            return Ok(None);
-        };
-        let bounds = geometry.bounds;
-        let mut presented = self.clone();
-        presented.bounds = bounds;
-        presented.clip_bounds = geometry.clip;
-        presented.origin_x = self.origin_x + portal.paint_bounds().x() - source_anchor.x();
-        presented.origin_y = self.origin_y + portal.paint_bounds().y() - source_anchor.y();
-        presented.layer_semantic_order = portal
-            .layer_semantic_order()
-            .saturating_add(1 + self.layer_semantic_order.min(1_024));
-        let max_x = bounds.x() + bounds.width();
-        let max_y = bounds.y() + bounds.height();
-        if presented.origin_x < bounds.x()
-            || presented.origin_x > max_x
-            || presented.origin_y < bounds.y()
-            || presented.origin_y > max_y
-        {
-            return Err(UiMountedSemanticTextCompletionDenial::InvalidTextOrigin);
-        }
-        presented.semantic_digest = validation::semantic_digest_mechanic(&presented);
-        Ok(Some(presented))
     }
 }
 

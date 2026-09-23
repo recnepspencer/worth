@@ -7,6 +7,7 @@ use std::time::Duration;
 use notify::Watcher;
 use serde::Deserialize;
 use worth_ui::facade::query_binding::WorthUiScalarProjectionSourceRecord;
+use worth_ui_platform_pulse::bears_on_watched_file;
 
 const VALUE_FILE: &str = "platform-pulse-value.json";
 const WORKER_SETTLE_INTERVAL: Duration = Duration::from_millis(100);
@@ -142,8 +143,10 @@ fn run_watch(
 ) -> Result<(), PlatformPulseExternalValueWatchDenial> {
     let target = root.join(VALUE_FILE);
     let (notification_sender, notification_receiver) = mpsc::channel();
-    let mut watcher = notify::recommended_watcher(move |event| {
-        let _ = notification_sender.send(event);
+    let mut watcher = notify::recommended_watcher(move |event: notify::Result<notify::Event>| {
+        if bears_on_watched_file(&event, VALUE_FILE) {
+            let _ = notification_sender.send(event);
+        }
     })
     .map_err(|error| PlatformPulseExternalValueWatchDenial::Watcher(error.to_string()))?;
     watcher

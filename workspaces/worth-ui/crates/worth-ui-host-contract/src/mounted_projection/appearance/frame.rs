@@ -117,6 +117,9 @@ impl UiMountedAppearanceFrame {
             UiMountedAppearanceMechanic::Backdrop(mechanic) => {
                 mechanic.semantic_surface() != semantic_surface
             }
+            UiMountedAppearanceMechanic::ScrollChrome(mechanic) => {
+                mechanic.semantic_surface() != semantic_surface
+            }
             _ => false,
         }) {
             return Err(UiMountedAppearanceFrameDenial::MechanicSurfaceMismatch);

@@ -13,7 +13,7 @@ const CLASSES: [&str; 7] = [
 ];
 
 #[test]
-#[ignore = "requires the serialized Windows 11 DX12 desktop"]
+#[ignore = "requires the serialized certified native desktop (Windows 11 DX12 or Xvfb X11)"]
 fn every_derived_state_reconstructs_in_a_fresh_product_world() {
     let portfolio_deadline = Instant::now() + Duration::from_secs(510);
     for class in CLASSES {

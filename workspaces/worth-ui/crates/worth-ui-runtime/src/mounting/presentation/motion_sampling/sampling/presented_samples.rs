@@ -1,4 +1,5 @@
 use super::{same_surface_binding, UiMountedMotionSampler};
+use crate::runtime::motion::UiMotionTargetScope;
 
 impl UiMountedMotionSampler {
     pub(in crate::mounting) fn current_sample_for_with_work(
@@ -12,7 +13,11 @@ impl UiMountedMotionSampler {
         let mut considered = 0;
         let mut matches = self.tracks.values().filter_map(|state| {
             considered += 1;
-            if !state.presented || state.track.target().is_portal_contents() {
+            // A contents-group target names a group placed inside the
+            // instance, not the instance itself, so it can never answer a
+            // lookup keyed by mounted instance. Portal content and Scroll
+            // content are both resolved by target.
+            if !state.presented || state.track.target().scope() != UiMotionTargetScope::Ordinary {
                 return None;
             }
             let sample = state.current?;

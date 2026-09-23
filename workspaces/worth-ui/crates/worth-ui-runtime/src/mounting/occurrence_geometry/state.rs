@@ -10,11 +10,19 @@ use super::region::complete_regions;
 
 use super::{UiMountedOccurrenceGeometryDenial, UiMountedSurfaceGeometryBatch};
 
+#[path = "state/presented_grid.rs"]
+mod presented_grid;
 #[path = "state/projection.rs"]
 mod projection;
 #[path = "state/resolution.rs"]
 mod resolution;
+mod retirement;
 mod scroll;
+#[path = "state/scroll_anchor.rs"]
+mod scroll_anchor;
+mod scroll_index;
+#[path = "state/scroll_presentation.rs"]
+mod scroll_presentation;
 mod succession;
 
 use resolution::{
@@ -39,10 +47,15 @@ struct UiMountedOccurrenceGeometryRow {
 #[derive(Clone, Debug, PartialEq)]
 struct UiMountedSurfaceGeometry {
     binding: UiSurfaceBindingGeneration,
+    /// The grid this surface's pixels land on, kept beside the boxes rather
+    /// than asked for at each read, so presentation can place a scrolled box
+    /// without reaching back into identity for the binding that placed it.
+    device_scale: crate::runtime::scroll::UiScrollPresentationDeviceScale,
     layout_revision: super::UiMountedLayoutRevision,
     viewport: UiMountedCanonicalBox,
     occurrences: BTreeMap<UiMountedInstanceIdentity, UiMountedOccurrenceGeometryRow>,
     children: BTreeMap<UiMountedInstanceIdentity, Vec<UiMountedInstanceIdentity>>,
+    scroll_index: std::sync::Arc<scroll_index::UiScrollGeometryIndex>,
     scroll_poses: BTreeMap<UiMountedInstanceIdentity, crate::runtime::scroll::UiScrollOffset>,
     generation: Option<
         crate::facade::prepared_application_authority::WorthUiPreparedApplicationGenerationIdentity,
@@ -74,11 +87,15 @@ impl UiMountedOccurrenceGeometryState {
         if !identity.validates_layout_basis(batch.basis()) {
             return Err(UiMountedOccurrenceGeometryDenial::StaleLayoutBasis);
         }
-        let binding = identity
+        let surface_binding = identity
             .projection_surface(batch.surface())
             .ok_or(UiMountedOccurrenceGeometryDenial::MissingSurfaceBinding)?
-            .0
-            .binding_generation();
+            .0;
+        let binding = surface_binding.binding_generation();
+        let device_scale = crate::runtime::scroll::UiScrollPresentationDeviceScale::admit(
+            surface_binding.profile().device_scale_milli(),
+        )
+        .map_err(|_| UiMountedOccurrenceGeometryDenial::UnusableDeviceScale)?;
         if batch.occurrences().is_empty() {
             return Err(UiMountedOccurrenceGeometryDenial::EmptyBatch);
         }
@@ -231,14 +248,17 @@ impl UiMountedOccurrenceGeometryState {
             batch.surface(),
             UiMountedSurfaceGeometry {
                 binding,
+                device_scale,
                 layout_revision: batch.layout_revision(),
                 viewport: batch.viewport(),
                 occurrences: rows,
                 children,
+                scroll_index: Default::default(),
                 scroll_poses: BTreeMap::new(),
                 generation: Some(batch.basis.generation),
                 regions,
-            },
+            }
+            .index_scroll_geometry(),
         );
         Ok((
             changed.into_boxed_slice(),
@@ -294,41 +314,6 @@ impl UiMountedOccurrenceGeometryState {
                 .collect::<Vec<_>>()
                 .into_boxed_slice(),
         )
-    }
-
-    pub(crate) fn retire_instance(
-        &mut self,
-        instance: UiMountedInstanceIdentity,
-    ) -> Box<[UiMountedInstanceIdentity]> {
-        let mut affected = BTreeSet::new();
-        for surface in self.surfaces.values_mut() {
-            let mut pending = vec![instance];
-            while let Some(candidate) = pending.pop() {
-                let Some(row) = surface.occurrences.remove(&candidate) else {
-                    continue;
-                };
-                affected.insert(candidate);
-                surface.scroll_poses.remove(&candidate);
-                if let Some(parent) = row
-                    .parent
-                    .and_then(|parent| surface.children.get_mut(&parent))
-                {
-                    parent.retain(|child| *child != candidate);
-                }
-                if let Some(descendants) = surface.children.remove(&candidate) {
-                    pending.extend(descendants);
-                }
-            }
-            surface.regions.retain(|_, rows| {
-                rows.retain(|(owner, _, _)| surface.occurrences.contains_key(owner));
-                !rows.is_empty()
-            });
-        }
-        affected.into_iter().collect::<Vec<_>>().into_boxed_slice()
-    }
-
-    pub(crate) fn retire_surface(&mut self, surface: UiSemanticSurfaceIdentity) {
-        self.surfaces.remove(&surface);
     }
 
     pub(crate) fn rebind_surface(

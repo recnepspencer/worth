@@ -55,6 +55,27 @@ pub(super) const COLORS: &[(&str, [u8; 4])] = &[
     ("theme.platform_pulse.action_hover", [49, 68, 108, 255]),
     ("theme.platform_pulse.modal_scrim", [32, 30, 40, 70]),
     ("theme.platform_pulse.unused_accent", [0, 0, 0, 255]),
+    // Scroll chrome. The track stays subtle at rest and firms up while the
+    // pointer is over the gutter or holding the thumb; the thumb carries the
+    // three distinct resting, hovered and dragged tones the chrome needs.
+    ("theme.platform_pulse.scroll_track", [240, 241, 245, 255]),
+    (
+        "theme.platform_pulse.scroll_track_hover",
+        [232, 234, 240, 255],
+    ),
+    (
+        "theme.platform_pulse.scroll_track_drag",
+        [224, 227, 235, 255],
+    ),
+    ("theme.platform_pulse.scroll_thumb", [176, 181, 196, 255]),
+    (
+        "theme.platform_pulse.scroll_thumb_hover",
+        [146, 152, 172, 255],
+    ),
+    (
+        "theme.platform_pulse.scroll_thumb_drag",
+        [112, 119, 142, 255],
+    ),
 ];
 
 pub(super) fn theme_bundle() -> FrozenAppearanceThemeCapabilities {
@@ -138,6 +159,12 @@ pub(super) fn theme_bundle() -> FrozenAppearanceThemeCapabilities {
                 "theme.platform_pulse.inset_fill" => Some([31, 43, 66, 255]),
                 "theme.platform_pulse.search_fill" => Some([31, 43, 66, 255]),
                 "theme.platform_pulse.grid" => Some([46, 57, 77, 255]),
+                "theme.platform_pulse.scroll_track" => Some([28, 39, 62, 255]),
+                "theme.platform_pulse.scroll_track_hover" => Some([34, 46, 72, 255]),
+                "theme.platform_pulse.scroll_track_drag" => Some([40, 54, 84, 255]),
+                "theme.platform_pulse.scroll_thumb" => Some([72, 87, 117, 255]),
+                "theme.platform_pulse.scroll_thumb_hover" => Some([96, 113, 148, 255]),
+                "theme.platform_pulse.scroll_thumb_drag" => Some([128, 146, 184, 255]),
                 _ => None,
             };
             (

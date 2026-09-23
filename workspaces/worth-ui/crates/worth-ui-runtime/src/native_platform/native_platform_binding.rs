@@ -8,8 +8,7 @@ pub(crate) struct UiNativePlatformBindingGrant {
 impl UiNativePlatformBindingGrant {
     pub(super) const fn issue(preparation_identity: u64) -> Self {
         Self {
-            profile:
-                worth_ui_host_native::UiNativePlatformProfileIdentity::WORTH_UI_WINDOWS_DX12_V2,
+            profile: worth_ui_host_native::WORTH_UI_NATIVE_PROFILE_IDENTITY,
             preparation_identity,
         }
     }

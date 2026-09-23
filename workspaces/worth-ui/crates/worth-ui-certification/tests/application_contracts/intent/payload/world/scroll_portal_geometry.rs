@@ -73,8 +73,13 @@ pub(super) fn complete(
     assert_eq!(regions.len(), 1);
     assert_eq!(regions[0].owner(), owner);
     assert_eq!(regions[0].region_kind(), super::SCROLL_REGION);
+    // Half the owner's height, so the content that owner carries does not fit
+    // the region showing it and the reader has thirty-six points of block
+    // travel. A region given a box the size of its owner is a region with
+    // nothing to scroll, and the reveal this world proves needs a predecessor
+    // offset a scroll could reach.
     let region = regions[0].geometry(rectangle(
-        [0.0, 0.0, 128.0, 72.0],
+        [0.0, 0.0, 128.0, 36.0],
         UiMountedCoordinateSpace::GraphNodeLocal,
     ));
     let mut layout = session.begin_mounted_layout();

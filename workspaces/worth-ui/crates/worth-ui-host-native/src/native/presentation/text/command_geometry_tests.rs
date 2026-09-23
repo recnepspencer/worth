@@ -79,6 +79,14 @@ fn run(source: UiGlyphRasterSource, origin: [i64; 2], phase: [i16; 2]) -> UiGlyp
         0,
         None,
     );
+    let clip = UiMountedCanonicalBox::canonicalize(UiMountedCanonicalBoxInput {
+        x: -4.0,
+        y: -4.0,
+        width: 36.0,
+        height: 36.0,
+        coordinate_space: UiMountedCoordinateSpace::HostSurface,
+    })
+    .unwrap();
     UiGlyphRunView::from_text_mechanics(UiGlyphRunViewInput {
         mechanic,
         layout: UiQualifiedTextLayoutIdentity::from_text_mechanics([3; 32]),
@@ -90,14 +98,8 @@ fn run(source: UiGlyphRasterSource, origin: [i64; 2], phase: [i16; 2]) -> UiGlyp
         origin_y_millipoints: origin[1],
         line_index: 0,
         visual_run_index: 0,
-        clip_bounds: UiMountedCanonicalBox::canonicalize(UiMountedCanonicalBoxInput {
-            x: -4.0,
-            y: -4.0,
-            width: 36.0,
-            height: 36.0,
-            coordinate_space: UiMountedCoordinateSpace::HostSurface,
-        })
-        .unwrap(),
+        clip_bounds: clip,
+        intrinsic_clip_bounds: clip,
         layer_semantic_order: 7,
     })
 }

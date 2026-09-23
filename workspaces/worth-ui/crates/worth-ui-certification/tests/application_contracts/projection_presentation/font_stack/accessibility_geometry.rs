@@ -6,7 +6,7 @@ use worth_ui_host_contract::{
 use worth_ui_host_headless::UiHeadlessTextAccessibilityGeometry;
 
 const EXPECTED_RECORD_DIGEST: &str =
-    "986cdcae25428aa624a73c2b549ace5d6f5f9292cbf4684f0510ae5fefc574a3";
+    "3b2286509caaad182fac1f6d6ae2c55a215bc3fdb26f9388ed153416077aa414";
 
 pub(super) fn assert_exact_multiline_bidi_records(
     geometry: &UiHeadlessTextAccessibilityGeometry<'_>,
@@ -30,6 +30,7 @@ pub(super) fn assert_exact_multiline_bidi_records(
         [0, 0, 0, 1, 1, 1]
     );
     assert_eq!(geometry.carets().len(), 26);
+    assert_runs_tile_their_lines(geometry);
 
     let observed = record_digest(geometry.lines(), geometry.visual_runs(), geometry.carets());
     assert_eq!(hex(observed), EXPECTED_RECORD_DIGEST);
@@ -55,6 +56,31 @@ pub(super) fn assert_exact_multiline_bidi_records(
         observed,
         "logical-order or affinity-corrupted carets must be rejected"
     );
+}
+
+/// Every line is covered by its own runs with nothing left over. A hard break
+/// paints nothing, but it is part of the line it ends and an authored span may
+/// style it, so the run that ends the line reaches it; a byte of a line that no
+/// run carries is a byte an assistive reader cannot name.
+fn assert_runs_tile_their_lines(geometry: &UiHeadlessTextAccessibilityGeometry<'_>) {
+    for (index, line) in geometry.lines().iter().enumerate() {
+        let range = line.visual_run_range();
+        let mut spans = geometry.visual_runs()[range.start as usize..range.end as usize]
+            .iter()
+            .map(|run| (run.original_range().start(), run.original_range().end()))
+            .collect::<Vec<_>>();
+        spans.sort_unstable();
+        let mut covered = line.original_range().start();
+        for (start, end) in spans {
+            assert_eq!(start, covered, "line {index} leaves a gap between its runs");
+            covered = end;
+        }
+        assert_eq!(
+            covered,
+            line.original_range().end(),
+            "line {index} spans further than its runs carry"
+        );
+    }
 }
 
 fn record_digest(

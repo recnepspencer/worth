@@ -7,6 +7,11 @@ pub use pointer::{
 };
 pub use stop::{UiPointerGestureStop, UiPointerGestureStopReason};
 
+pub(crate) use pointer::{
+    UiScrollChromeLatch, UiScrollChromeLatchDenial, UiScrollChromeLatchState,
+    UiScrollChromePendingCapture,
+};
+
 #[allow(
     unused_imports,
     reason = "milestone 3.16 Gate 0 exposes the sealed pressed appearance contract internally"

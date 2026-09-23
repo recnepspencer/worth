@@ -1,13 +1,33 @@
-use std::fs::{File, OpenOptions};
-use std::io::ErrorKind;
-use std::os::windows::fs::OpenOptionsExt;
+//! One product process per native desktop. Two courtroom runners on the same
+//! desktop would each observe the other's window; the lease types that
+//! contention as an environment denial before any product effect. The
+//! cross-process mechanism is the platform's own kernel-arbitrated exclusive
+//! hold (share mode on Windows, `flock` on Linux), released by the kernel
+//! when the owner dies: `windows.rs`, `linux.rs` and `unqualified.rs` each
+//! expose `lease_path`, `attempt` and `release`, the last because the order
+//! of close and unlink differs per kernel.
+use std::fmt;
+use std::fs::File;
 use std::path::PathBuf;
 use std::sync::{Mutex, MutexGuard, OnceLock};
 use std::thread;
 use std::time::{Duration, Instant};
 
+#[cfg(target_os = "linux")]
+mod linux;
+#[cfg(not(any(target_os = "windows", target_os = "linux")))]
+mod unqualified;
+#[cfg(target_os = "windows")]
+mod windows;
+
+#[cfg(target_os = "linux")]
+use linux as platform;
+#[cfg(not(any(target_os = "windows", target_os = "linux")))]
+use unqualified as platform;
+#[cfg(target_os = "windows")]
+use windows as platform;
+
 const ACQUISITION_POLL_INTERVAL: Duration = Duration::from_millis(10);
-const LEASE_FILE: &str = "worth-ui-native-desktop-v1.lock";
 static IN_PROCESS_NATIVE_DESKTOP: OnceLock<Mutex<()>> = OnceLock::new();
 
 pub(super) struct NativeDesktopCourtroomLease {
@@ -20,6 +40,23 @@ pub(super) struct NativeDesktopLease {
     owner_process_id: u32,
 }
 
+/// One attempt to take the lease at a path, in the vocabulary every platform
+/// shares: the acquire loop polls only `Contended`.
+#[derive(Debug)]
+enum LeaseAttempt {
+    Owned(File),
+    /// A live process holds the lease.
+    Contended,
+    /// The attempt failed for a reason polling cannot cure.
+    Failed(std::io::Error),
+}
+
+#[derive(Debug)]
+pub(crate) enum NativeDesktopLeaseFailure {
+    Deadline,
+    Attempt(std::io::Error),
+}
+
 impl NativeDesktopCourtroomLease {
     pub(super) fn acquire() -> Self {
         let courtroom = IN_PROCESS_NATIVE_DESKTOP.get_or_init(|| Mutex::new(()));
@@ -30,30 +67,25 @@ impl NativeDesktopCourtroomLease {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(super) struct NativeDesktopLeaseDeadline;
-
 impl NativeDesktopLease {
-    pub(super) fn acquire(deadline: Instant) -> Result<Self, NativeDesktopLeaseDeadline> {
-        let path = std::env::temp_dir().join(LEASE_FILE);
+    pub(super) fn acquire(deadline: Instant) -> Result<Self, NativeDesktopLeaseFailure> {
+        let path = platform::lease_path();
         loop {
-            match open_exclusive(&path) {
-                Ok(file) => {
+            match platform::attempt(&path) {
+                LeaseAttempt::Owned(file) => {
                     return Ok(Self {
                         file: Some(file),
                         path,
                         owner_process_id: std::process::id(),
                     });
                 }
-                Err(error)
-                    if matches!(
-                        error.kind(),
-                        ErrorKind::PermissionDenied | ErrorKind::WouldBlock
-                    ) && Instant::now() < deadline =>
-                {
+                LeaseAttempt::Contended if Instant::now() < deadline => {
                     thread::sleep(ACQUISITION_POLL_INTERVAL);
                 }
-                Err(_) => return Err(NativeDesktopLeaseDeadline),
+                LeaseAttempt::Contended => return Err(NativeDesktopLeaseFailure::Deadline),
+                LeaseAttempt::Failed(error) => {
+                    return Err(NativeDesktopLeaseFailure::Attempt(error));
+                }
             }
         }
     }
@@ -65,33 +97,37 @@ impl NativeDesktopLease {
 
 impl Drop for NativeDesktopLease {
     fn drop(&mut self) {
-        drop(self.file.take());
-        let _ = std::fs::remove_file(&self.path);
+        if let Some(file) = self.file.take() {
+            platform::release(file, &self.path);
+        }
     }
 }
 
-fn open_exclusive(path: &PathBuf) -> std::io::Result<File> {
-    OpenOptions::new()
-        .read(true)
-        .write(true)
-        .create(true)
-        .truncate(false)
-        .share_mode(0)
-        .open(path)
+impl fmt::Display for NativeDesktopLeaseFailure {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Deadline => formatter.write_str("deadline elapsed while another owner held it"),
+            Self::Attempt(error) => write!(formatter, "attempt failed: {error}"),
+        }
+    }
 }
 
-#[cfg(test)]
+#[cfg(all(test, worth_ui_product_executable))]
 mod tests {
     use std::time::{Duration, Instant};
 
-    use super::{NativeDesktopCourtroomLease, NativeDesktopLease};
+    use super::{NativeDesktopCourtroomLease, NativeDesktopLease, NativeDesktopLeaseFailure};
 
     #[test]
     fn exclusive_desktop_lease_rejects_a_concurrent_owner() {
         const CHILD_MARKER: &str = "WORTH_UI_DESKTOP_LEASE_CHILD";
         if std::env::var_os(CHILD_MARKER).is_some() {
+            let failure = NativeDesktopLease::acquire(Instant::now() + Duration::from_millis(20))
+                .err()
+                .expect("a live owner blocks the contender");
             assert!(
-                NativeDesktopLease::acquire(Instant::now() + Duration::from_millis(20)).is_err()
+                matches!(failure, NativeDesktopLeaseFailure::Deadline),
+                "contention must be the deadline, not an unrelated io failure: {failure}"
             );
             return;
         }

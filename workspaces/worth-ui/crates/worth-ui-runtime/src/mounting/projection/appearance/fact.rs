@@ -4,8 +4,9 @@ use worth_ui_host_contract::{
     UiMountedAppearanceFrame, UiMountedAppearanceMechanic, UiMountedAppearanceMechanicIdentity,
     UiMountedAppearanceOpacity, UiMountedBackdropAppearanceAttribution, UiMountedBackdropIdentity,
     UiMountedInstanceIdentity, UiMountedNodeAppearanceAttribution, UiMountedNodeReceiptIdentity,
-    UiMountedPresentationAttemptIdentity, UiMountedSurfacePaint, UiMountedTextPaintSpanIdentity,
-    UiOverlayPlacementReceipt, UiSemanticSurfaceIdentity,
+    UiMountedPresentationAttemptIdentity, UiMountedScrollChromeAppearanceAttribution,
+    UiMountedSurfacePaint, UiMountedTextPaintSpanIdentity, UiOverlayPlacementReceipt,
+    UiSemanticSurfaceIdentity,
 };
 
 #[derive(Clone, Debug, PartialEq)]
@@ -91,6 +92,10 @@ pub(crate) struct UiMountedAppearanceLoweringInput {
     pub(super) presentation: UiMountedPresentationAttemptIdentity,
     pub(super) nodes: Vec<UiMountedAppearanceNodeInput>,
     pub(super) backdrops: Vec<UiMountedAppearanceBackdropInput>,
+    pub(super) scroll_chrome: Vec<super::scroll_chrome::UiMountedAppearanceScrollChromeInput>,
+    /// The Scroll region occurrence this input is the whole fragment of when
+    /// that occurrence paints nothing of its own: only the chrome it owns.
+    pub(super) chrome_owner: Option<worth_ui_host_contract::UiMountedInstanceIdentity>,
     pub(super) overlay: UiMountedAppearanceOverlayInput,
 }
 
@@ -104,6 +109,11 @@ pub(super) enum UiMountedAppearanceDamageShape {
     },
     Backdrop {
         extent: UiAppearanceBackdropExtent,
+        clip: UiAppearanceClip,
+    },
+    /// Chrome damages only the part of its rectangle the region shows.
+    ScrollChrome {
+        rect: UiAppearanceAllocationBounds,
         clip: UiAppearanceClip,
     },
 }
@@ -147,6 +157,7 @@ pub(in crate::mounting::projection) struct UiMountedAppearanceFact {
     node_receipt: Option<UiMountedNodeReceiptIdentity>,
     projection: Option<UiMountedNodeAppearanceAttribution>,
     backdrop_attribution: Option<UiMountedBackdropAppearanceAttribution>,
+    scroll_chrome_attribution: Option<UiMountedScrollChromeAppearanceAttribution>,
     semantic_digest: u64,
     mechanic: UiMountedAppearanceMechanic,
     damage: UiMountedAppearanceDamageShape,
@@ -169,6 +180,7 @@ impl UiMountedAppearanceFact {
                 projection.revision(),
             )?),
             backdrop_attribution: None,
+            scroll_chrome_attribution: None,
             semantic_digest: self.semantic_digest,
             mechanic: self
                 .mechanic
@@ -192,6 +204,7 @@ impl UiMountedAppearanceFact {
             node_receipt: Some(node_receipt),
             projection: Some(projection),
             backdrop_attribution: None,
+            scroll_chrome_attribution: None,
             semantic_digest,
             mechanic,
             damage,
@@ -213,9 +226,35 @@ impl UiMountedAppearanceFact {
             node_receipt: None,
             projection: None,
             backdrop_attribution: Some(attribution),
+            scroll_chrome_attribution: None,
             semantic_digest,
             mechanic,
             damage: UiMountedAppearanceDamageShape::Backdrop { extent, clip },
+        }
+    }
+
+    /// Chrome is keyed by the occurrence that reserved its gutter, not by a
+    /// node receipt: it borrows the occurrence's fragment without borrowing its
+    /// publication authority.
+    pub(super) fn scroll_chrome(
+        semantic_surface: UiSemanticSurfaceIdentity,
+        attribution: UiMountedScrollChromeAppearanceAttribution,
+        semantic_digest: u64,
+        mechanic: UiMountedAppearanceMechanic,
+        rect: UiAppearanceAllocationBounds,
+        clip: UiAppearanceClip,
+    ) -> Self {
+        let identity = mechanic.identity();
+        Self {
+            identity,
+            semantic_surface,
+            node_receipt: None,
+            projection: None,
+            backdrop_attribution: None,
+            scroll_chrome_attribution: Some(attribution),
+            semantic_digest,
+            mechanic,
+            damage: UiMountedAppearanceDamageShape::ScrollChrome { rect, clip },
         }
     }
 
@@ -273,6 +312,21 @@ impl UiMountedAppearanceFact {
                     attribution.overlay_revision(),
                     attribution.identity(),
                     attribution.revision(),
+                )
+            })
+            && self.scroll_chrome_attribution.map(|attribution| {
+                (
+                    attribution.semantic_surface(),
+                    attribution.owner_instance(),
+                    attribution.role_digest(),
+                    attribution.appearance_digest(),
+                )
+            }) == other.scroll_chrome_attribution.map(|attribution| {
+                (
+                    attribution.semantic_surface(),
+                    attribution.owner_instance(),
+                    attribution.role_digest(),
+                    attribution.appearance_digest(),
                 )
             })
             && self.semantic_digest == other.semantic_digest

@@ -110,18 +110,23 @@ pub(crate) use projection::UiMountedAppearanceClipDenial;
 pub(crate) use projection::UiMountedAppearanceProjectionSelection;
 pub(crate) use projection::UiMountedFocusScope;
 pub(crate) use projection::{
+    lower_scroll_chrome, UiMountedScrollChromeNode, UiScrollChromeLoweringDenial,
+    UiScrollChromeLoweringInput,
+};
+pub(crate) use projection::{
     prepare_projection, UiIntentPostureCommit, UiIntentPostureObservation, UiIntentPostureTable,
     UiMountedPresentationDeltaSource, UiMountedPreviewProjectionInput, UiMountedProjectionInput,
     UiPreparedMountedProjection,
 };
 pub(crate) use projection::{
-    UiMountedAppearanceFrameState, UiMountedAppearanceStateMutationDenial,
-    UiMountedProjectionFrameOwner,
+    UiMountedAppearanceDerivedInput, UiMountedAppearanceGeometryInput,
+    UiMountedAppearanceLoweringDenial, UiMountedAppearanceLoweringInput,
+    UiMountedAppearanceNodeInputContext, UiMountedAppearanceScrollChromeInput,
+    UiMountedAppearanceSurfaceOverlayInput, UiMountedAppearanceTextSpanInput,
 };
 pub(crate) use projection::{
-    UiMountedAppearanceGeometryInput, UiMountedAppearanceLoweringDenial,
-    UiMountedAppearanceLoweringInput, UiMountedAppearanceNodeInputContext,
-    UiMountedAppearanceSurfaceOverlayInput, UiMountedAppearanceTextSpanInput,
+    UiMountedAppearanceFrameState, UiMountedAppearanceStateMutationDenial,
+    UiMountedProjectionFrameOwner,
 };
 pub use projection::{UiMountedAppearanceSelectionCostReport, UiMountedPointerAffordanceWork};
 pub use projection::{

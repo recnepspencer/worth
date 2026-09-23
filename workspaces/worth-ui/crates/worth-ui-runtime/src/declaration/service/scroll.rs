@@ -26,6 +26,7 @@ pub struct UiScrollPolicy {
     bubble_remainder: bool,
     anchor: UiScrollAnchorBehavior,
     reveal_alignment: UiScrollRevealAlignment,
+    wheel: super::UiScrollWheelBehavior,
 }
 
 impl UiScrollPolicy {
@@ -34,6 +35,7 @@ impl UiScrollPolicy {
             bubble_remainder: true,
             anchor: UiScrollAnchorBehavior::RebaseStableAnchor,
             reveal_alignment: UiScrollRevealAlignment::Nearest,
+            wheel: super::UiScrollWheelBehavior::immediate(),
         }
     }
 
@@ -52,6 +54,11 @@ impl UiScrollPolicy {
         self
     }
 
+    pub const fn with_wheel_behavior(mut self, behavior: super::UiScrollWheelBehavior) -> Self {
+        self.wheel = behavior;
+        self
+    }
+
     pub const fn bubbles_remainder(self) -> bool {
         self.bubble_remainder
     }
@@ -64,9 +71,14 @@ impl UiScrollPolicy {
         self.reveal_alignment
     }
 
+    pub const fn wheel_behavior(self) -> super::UiScrollWheelBehavior {
+        self.wheel
+    }
+
     pub(crate) const fn digest_basis(self) -> u64 {
         self.bubble_remainder as u64
             | (self.anchor as u64) << 8
             | (self.reveal_alignment as u64) << 16
+            | self.wheel.digest_basis() << 24
     }
 }

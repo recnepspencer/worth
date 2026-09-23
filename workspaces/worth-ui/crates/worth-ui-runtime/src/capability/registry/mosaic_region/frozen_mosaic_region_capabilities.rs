@@ -2,6 +2,12 @@ use crate::capability::MosaicRegionKindId;
 
 use super::{MosaicRegionAcceptedRegistrationProof, MosaicRegionKindDescriptor};
 
+#[path = "authored_scroll_succession.rs"]
+mod authored_scroll_succession;
+
+pub(crate) use authored_scroll_succession::UiAuthoredScrollRegionClauses;
+pub use authored_scroll_succession::{UiAuthoredScrollRegionCause, UiAuthoredScrollRegionDenial};
+
 /// Canonical frozen mosaic region kind capability index.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct FrozenMosaicRegionCapabilities {
@@ -47,6 +53,20 @@ impl FrozenMosaicRegionCapabilities {
 
     pub fn descriptors(&self) -> &[MosaicRegionKindDescriptor] {
         &self.descriptors
+    }
+
+    /// The appearance roles every region's declared scroll chrome paints with.
+    ///
+    /// A theme has to admit these alongside the roles nodes consume: a frame
+    /// that derives chrome resolves its track and thumb against the same
+    /// binding, and a role the binding never admitted refuses the frame.
+    pub fn scroll_chrome_role_identities(
+        &self,
+    ) -> impl Iterator<Item = worth_ui_dsl::UiAppearanceRoleIdentity> + '_ {
+        self.descriptors
+            .iter()
+            .filter_map(MosaicRegionKindDescriptor::scroll_chrome)
+            .flat_map(|chrome| [chrome.track_role(), chrome.thumb_role()])
     }
 
     pub fn seam_paint(&self) -> Option<&super::MosaicSeamPaintContract> {
@@ -181,7 +201,29 @@ fn fold_mosaic_region_descriptor(accumulator: u64, descriptor: &MosaicRegionKind
             .hit_test()
             .map(|hit_test| hit_test.digest_basis()),
     );
-    fold_optional_str(with_hit_test, descriptor.label())
+    let with_chrome = fold_scroll_chrome(with_hit_test, descriptor.scroll_chrome());
+    let with_line_extent = match descriptor.scroll_line_extent() {
+        Some(extent) => fold_bytes(
+            fold_bytes(with_chrome, b"scroll_line_extent"),
+            &extent.logical_points_value().to_be_bytes(),
+        ),
+        None => fold_bytes(with_chrome, b"no_scroll_line_extent"),
+    };
+    fold_optional_str(with_line_extent, descriptor.label())
+}
+
+/// Fold a region's declared scroll chrome, which paints two named parts over
+/// the axes the region shows bars for.
+fn fold_scroll_chrome(accumulator: u64, chrome: Option<&super::UiScrollChromeContract>) -> u64 {
+    let Some(contract) = chrome else {
+        return fold_bytes(accumulator, b"no_scroll_chrome");
+    };
+    let with_axes = fold_bytes(
+        fold_bytes(accumulator, b"scroll_chrome"),
+        &[contract.axes() as u8],
+    );
+    let with_track = fold_list_item(with_axes, contract.track_role().as_str());
+    fold_list_item(with_track, contract.thumb_role().as_str())
 }
 
 fn fold_list_item(accumulator: u64, value: &str) -> u64 {
@@ -206,7 +248,42 @@ fn fold_bytes(mut accumulator: u64, bytes: &[u8]) -> u64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::capability::registry::mosaic_region::descriptor::{
+        UiScrollAxisSupport, UiScrollChromeContract,
+    };
     use crate::capability::{MosaicRegionRole, MosaicSeamPaintContract};
+
+    #[test]
+    fn scroll_chrome_role_identities_name_every_declared_track_and_thumb() {
+        let role = |name: &str| worth_ui_dsl::UiAppearanceRoleIdentity::new(name).unwrap();
+        let plain = MosaicRegionKindDescriptor::new(
+            MosaicRegionKindId::new("region.plain").unwrap(),
+            MosaicRegionRole::primary(),
+        );
+        let scrolled = MosaicRegionKindDescriptor::new(
+            MosaicRegionKindId::new("region.scrolled").unwrap(),
+            MosaicRegionRole::primary(),
+        )
+        .with_scroll_chrome(
+            UiScrollChromeContract::new(
+                UiScrollAxisSupport::Block,
+                role("chrome.track"),
+                role("chrome.thumb"),
+            )
+            .unwrap(),
+        );
+        let capabilities = FrozenMosaicRegionCapabilities {
+            descriptors: vec![plain, scrolled],
+            seam_paint: None,
+        };
+
+        assert_eq!(
+            capabilities
+                .scroll_chrome_role_identities()
+                .collect::<Vec<_>>(),
+            vec![role("chrome.track"), role("chrome.thumb")]
+        );
+    }
 
     #[test]
     fn seam_digest_changes_without_changing_region_kind_digest() {

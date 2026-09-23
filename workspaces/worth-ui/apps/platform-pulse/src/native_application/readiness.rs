@@ -276,6 +276,24 @@ impl worth_ui_native_platform::UiNativeApplicationRuntime for PlatformPulseAppli
         Ok((self.take_runtime_shell(), directive))
     }
 
+    fn native_motion_settlement_ready(
+        &mut self,
+        application: worth_ui::facade::app::WorthUiNativeApplicationShell,
+    ) -> Result<
+        (
+            worth_ui::facade::app::WorthUiNativeApplicationShell,
+            worth_ui_native_platform::UiNativeApplicationRuntimeDirective,
+        ),
+        worth_ui_native_platform::UiNativeApplicationRuntimeProgressStopped,
+    > {
+        self.shell = Some(application);
+        if self.startup_ready {
+            self.present();
+        }
+        let directive = self.native_runtime_directive();
+        Ok((self.take_runtime_shell(), directive))
+    }
+
     fn native_viewport_ready(
         &mut self,
         application: worth_ui::facade::app::WorthUiNativeApplicationShell,

@@ -13,6 +13,7 @@ struct UiMountedFramePublicationReceiptInner {
     generation:
         crate::facade::prepared_application_authority::WorthUiPreparedApplicationGenerationIdentity,
     bindings: Box<[UiSurfaceBindingGeneration]>,
+    direct_scroll: Box<[crate::runtime::scroll::UiPreparedScrollDirectSuccession]>,
     surfaces: std::cell::RefCell<Box<[super::UiMountedSurfacePresentationReceipt]>>,
     cost: std::cell::Cell<super::UiMountCostReport>,
 }
@@ -69,6 +70,11 @@ impl UiMountedFrameReconciliationCandidate {
                 predecessor,
                 generation: current.generation().clone(),
                 bindings: bindings.into_boxed_slice(),
+                direct_scroll: admission
+                    .frame()
+                    .direct_scroll()
+                    .to_vec()
+                    .into_boxed_slice(),
                 surfaces: std::cell::RefCell::new(Box::default()),
                 cost: std::cell::Cell::new(admission.frame().cost_report()),
             }),
@@ -135,6 +141,11 @@ impl UiMountedFramePublicationCandidate {
                 predecessor,
                 generation: admission.frame().generation().clone(),
                 bindings: bindings.into_boxed_slice(),
+                direct_scroll: admission
+                    .frame()
+                    .direct_scroll()
+                    .to_vec()
+                    .into_boxed_slice(),
                 surfaces: std::cell::RefCell::new(Box::default()),
                 cost: std::cell::Cell::new(admission.frame().cost_report()),
             }),
@@ -170,6 +181,12 @@ impl UiMountedFramePublicationCandidate {
 }
 
 impl UiMountedFramePublicationReceipt {
+    pub(crate) fn direct_scroll(
+        &self,
+    ) -> &[crate::runtime::scroll::UiPreparedScrollDirectSuccession] {
+        &self.inner.direct_scroll
+    }
+
     pub fn attempt(&self) -> worth_ui_host_contract::UiMountedPresentationAttemptIdentity {
         self.inner.attempt
     }

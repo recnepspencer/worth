@@ -72,10 +72,10 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
         presentation_failure: Option<UiNativeEventLoopRunDenial>,
         graphics: Option<&crate::native::UiNativeGraphicsObservation>,
     ) -> Option<UiNativeEventLoopRunDenial> {
-        if !cleanup_complete {
-            return Some(UiNativeEventLoopRunDenial::IncompleteCleanup);
-        }
         self.failure
+            .or_else(|| {
+                (!cleanup_complete).then_some(UiNativeEventLoopRunDenial::IncompleteCleanup)
+            })
             .or(presentation_failure)
             .or_else(|| {
                 graphics

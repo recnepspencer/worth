@@ -1,5 +1,5 @@
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(crate) enum UiScrollOwnershipResolutionDenial {
+pub enum UiScrollOwnershipResolutionDenial {
     OwnershipNotIndexed,
     UnknownGraphNode,
     ForeignPlan,

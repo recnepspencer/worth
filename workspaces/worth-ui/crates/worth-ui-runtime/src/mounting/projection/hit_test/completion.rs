@@ -1,6 +1,6 @@
 use worth_ui_host_contract::{
-    UiMountedAllocationProjection, UiMountedHitTestCompletionInput, UiMountedHitTestMechanic,
-    UiMountedParticipationStatus, UiSurfaceBindingGeneration,
+    UiMountedAllocationProjection, UiMountedGeometryPosture, UiMountedHitTestCompletionInput,
+    UiMountedHitTestMechanic, UiMountedParticipationStatus, UiSurfaceBindingGeneration,
 };
 
 use super::super::frame_storage::UiMountedSemanticProjection;
@@ -56,6 +56,15 @@ pub(in crate::mounting::projection) fn complete_hit_test(
         .receipt_for(mounted_instance)
         .ok_or(UiMountedProjectionDenial::HitTestNodeReceiptMismatch)?;
     let clip_bounds = complete_clip_bounds(bounds, seed.clip())?;
+    // Scrolling carries admitted regions past the viewport origin, and an inset
+    // clip can consume a small one entirely. Neither can ever be hit, and the
+    // posture the geometry already carries says so, so the frame omits the row
+    // instead of failing: only malformed geometry is a denial.
+    if bounds.posture() != UiMountedGeometryPosture::Area
+        || clip_bounds.posture() != UiMountedGeometryPosture::Area
+    {
+        return Ok(None);
+    }
     UiMountedHitTestMechanic::complete_from_runtime_mounting(UiMountedHitTestCompletionInput {
         frame,
         surface: surface.surface,

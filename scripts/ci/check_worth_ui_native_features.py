@@ -18,11 +18,22 @@ MODES = (
 )
 EXPECTED_FEATURES = {
     LINUX_TARGET: {
-        ("wgpu", "29.0.4"): {"dx12", "parking_lot", "std", "wgsl"},
+        ("wgpu", "29.0.4"): {"parking_lot", "std", "vulkan", "wgsl"},
         ("winit", "0.30.13"): {
+            "ahash",
             "bytemuck",
+            "memmap2",
             "percent-encoding",
             "rwh_06",
+            "sctk",
+            "sctk-adwaita",
+            "wayland",
+            "wayland-backend",
+            "wayland-client",
+            "wayland-csd-adwaita",
+            "wayland-dlopen",
+            "wayland-protocols",
+            "wayland-protocols-plasma",
             "x11",
             "x11-dl",
             "x11rb",

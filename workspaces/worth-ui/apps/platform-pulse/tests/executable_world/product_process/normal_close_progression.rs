@@ -12,7 +12,7 @@ use crate::failure_teardown::{
 };
 use crate::installation::{IsolatedPulseInstallation, PulseInstallationCleanupEvidence};
 use crate::native_platform::{
-    NativePlatformContract, WindowsNativePlatform, WindowsProcessBoundNativeClientArea,
+    CertifiedNativePlatform, CertifiedProcessBoundNativeClientArea, NativePlatformContract,
 };
 
 use super::{
@@ -23,8 +23,8 @@ struct PublishedNormalCloseWorld {
     installation: IsolatedPulseInstallation,
     process: LivePlatformPulseProcess,
     lifecycle: PlatformPulseLifecycleStream,
-    platform: WindowsNativePlatform,
-    native_client: WindowsProcessBoundNativeClientArea,
+    platform: CertifiedNativePlatform,
+    native_client: CertifiedProcessBoundNativeClientArea,
 }
 
 struct NormalCloseObservationSet {

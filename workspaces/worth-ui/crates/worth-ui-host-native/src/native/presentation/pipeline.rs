@@ -1,6 +1,7 @@
 use crate::native::UiNativePresentationAccess;
-use wgpu::util::DeviceExt;
 
+#[path = "pipeline/operation_bindings.rs"]
+mod operation_bindings;
 #[path = "pipeline/shaders.rs"]
 mod shaders;
 use shaders::{
@@ -44,14 +45,14 @@ pub(crate) fn presentation_pipelines(device: &wgpu::Device) -> UiNativePresentat
     let blended = pipeline_with_blend(
         device,
         &shader,
-        wgpu::TextureFormat::Rgba8UnormSrgb,
+        crate::native::graphics::qualified_target_format(),
         Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
         &buffers,
     );
     let replacing = pipeline_with_blend(
         device,
         &shader,
-        wgpu::TextureFormat::Rgba8UnormSrgb,
+        crate::native::graphics::qualified_target_format(),
         Some(wgpu::BlendState::REPLACE),
         &buffers,
     );
@@ -62,7 +63,7 @@ pub(crate) fn presentation_pipelines(device: &wgpu::Device) -> UiNativePresentat
     let surface = pipeline_with_blend(
         device,
         &surface_shader,
-        wgpu::TextureFormat::Rgba8UnormSrgb,
+        crate::native::graphics::qualified_target_format(),
         Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
         &buffers,
     );
@@ -82,14 +83,14 @@ pub(crate) fn presentation_pipelines(device: &wgpu::Device) -> UiNativePresentat
     let alpha = pipeline_with_blend(
         device,
         &alpha_shader,
-        wgpu::TextureFormat::Rgba8UnormSrgb,
+        crate::native::graphics::qualified_target_format(),
         Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
         &glyph_buffers,
     );
     let color = pipeline_with_blend(
         device,
         &color_shader,
-        wgpu::TextureFormat::Rgba8UnormSrgb,
+        crate::native::graphics::qualified_target_format(),
         Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
         &glyph_buffers,
     );
@@ -108,7 +109,7 @@ pub(crate) fn presentation_pipelines(device: &wgpu::Device) -> UiNativePresentat
     let transfer = transfer_pipeline(
         device,
         &transfer_shader,
-        wgpu::TextureFormat::Bgra8UnormSrgb,
+        crate::native::graphics::qualified_surface_format(),
     );
     UiNativePresentationPipelines {
         filled: blended,
@@ -166,61 +167,7 @@ pub(super) fn draw_presentation_operations(
     pipelines: &UiNativePresentationPipelines,
     clear_target: bool,
 ) {
-    let surface_bind_groups = operations
-        .iter()
-        .map(|operation| match operation {
-            super::UiNativeRasterOperation::Surface(surface) => {
-                let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                    label: Some("worth-ui-analytic-surface-data"),
-                    contents: &surface.storage_bytes(),
-                    usage: wgpu::BufferUsages::STORAGE,
-                });
-                let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-                    label: Some("worth-ui-analytic-surface-bind-group"),
-                    layout: &pipelines.surface.get_bind_group_layout(0),
-                    entries: &[wgpu::BindGroupEntry {
-                        binding: 0,
-                        resource: buffer.as_entire_binding(),
-                    }],
-                });
-                Some((buffer, bind_group))
-            }
-            _ => None,
-        })
-        .collect::<Vec<_>>();
-    let glyph_bind_groups = operations
-        .iter()
-        .map(|operation| match operation {
-            super::UiNativeRasterOperation::Glyph(command) => {
-                let pages = atlas.expect("admitted glyph command retains native atlas pages");
-                let (view, _) = pages
-                    .page_view(command.atlas_kind, command.atlas_page)
-                    .expect("admitted glyph command retains its exact atlas page");
-                let pipeline = if super::text::source_is_intrinsic_color(*command) {
-                    &pipelines.color
-                } else {
-                    &pipelines.alpha
-                };
-                Some(device.create_bind_group(&wgpu::BindGroupDescriptor {
-                    label: Some("worth-ui-glyph-atlas-bind-group"),
-                    layout: &pipeline.get_bind_group_layout(0),
-                    entries: &[
-                        wgpu::BindGroupEntry {
-                            binding: 0,
-                            resource: wgpu::BindingResource::TextureView(&view),
-                        },
-                        wgpu::BindGroupEntry {
-                            binding: 1,
-                            resource: wgpu::BindingResource::Sampler(&pipelines.sampler),
-                        },
-                    ],
-                }))
-            }
-            super::UiNativeRasterOperation::Clear(_)
-            | super::UiNativeRasterOperation::FilledRect { .. }
-            | super::UiNativeRasterOperation::Surface(_) => None,
-        })
-        .collect::<Vec<_>>();
+    let bindings = operation_bindings::prepare(device, operations, atlas, pipelines);
     let attachments = [Some(wgpu::RenderPassColorAttachment {
         view: target,
         depth_slice: None,
@@ -265,10 +212,9 @@ pub(super) fn draw_presentation_operations(
                 pass.set_pipeline(&pipelines.surface);
                 pass.set_bind_group(
                     0,
-                    &surface_bind_groups[operation_index]
-                        .as_ref()
-                        .expect("surface operation retains one bind group")
-                        .1,
+                    bindings
+                        .surface(operation_index)
+                        .expect("surface operation retains one bind group"),
                     &[],
                 );
                 let start = u32::try_from(raster_index * 6)
@@ -286,8 +232,8 @@ pub(super) fn draw_presentation_operations(
                 });
                 pass.set_bind_group(
                     0,
-                    glyph_bind_groups[operation_index]
-                        .as_ref()
+                    bindings
+                        .glyph(operation_index)
                         .expect("glyph operation retains one bind group"),
                     &[],
                 );

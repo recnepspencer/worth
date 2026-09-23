@@ -1,7 +1,8 @@
 use super::{UiMountedSemanticTextCompletionDenial, UiMountedSemanticTextMechanic};
 
 impl UiMountedSemanticTextMechanic {
-    /// Narrows retained text coverage to the runtime-completed ancestor clip.
+    /// Narrows visible coverage without retiring the qualified row. Empty
+    /// coverage remains retained so a Scroll sample can reveal it later.
     /// This changes neither qualification nor span paint ownership.
     #[doc(hidden)]
     pub fn clipped_to_appearance_ancestor(
@@ -14,15 +15,12 @@ impl UiMountedSemanticTextMechanic {
             .min((f64::from(ancestor.x()) + f64::from(ancestor.width())) as f32 / 1_000.0);
         let bottom = (self.clip_bounds.y() + self.clip_bounds.height())
             .min((f64::from(ancestor.y()) + f64::from(ancestor.height())) as f32 / 1_000.0);
-        if right <= x || bottom <= y {
-            return Ok(None);
-        }
         self.clip_bounds =
             crate::UiMountedCanonicalBox::canonicalize(crate::UiMountedCanonicalBoxInput {
                 x,
                 y,
-                width: right - x,
-                height: bottom - y,
+                width: (right - x).max(0.0),
+                height: (bottom - y).max(0.0),
                 coordinate_space: self.clip_bounds.coordinate_space(),
             })
             .map_err(|_| UiMountedSemanticTextCompletionDenial::NonAreaGeometry)?;

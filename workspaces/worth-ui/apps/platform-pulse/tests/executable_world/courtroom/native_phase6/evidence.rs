@@ -20,7 +20,7 @@ pub(super) fn assert_phase6_evidence(
 }
 
 fn assert_presentation_identity(evidence: &serde_json::Value, capture: &NativeClientPixelCapture) {
-    assert_eq!(evidence["schema"], "worth-ui-native-phase6-evidence-v1");
+    assert_eq!(evidence["schema"], "worth-ui-native-phase6-evidence-v2");
     assert_eq!(
         evidence["presentation"]["client_physical_size"],
         serde_json::json!([capture.width(), capture.height()])
@@ -35,6 +35,10 @@ fn assert_runtime_settlement(evidence: &serde_json::Value, input: &serde_json::V
         .as_u64()
         .expect("the retained report includes a batch count");
     assert!(retained_batches > 0);
+    let coalesced = input["coalesced_motion_batches"]
+        .as_u64()
+        .expect("the retained report counts pointer motions folded into a predecessor");
+    assert!(coalesced <= retained_batches);
     let ingress = evidence["runtime_ingress"]
         .as_object()
         .expect("phase 6 evidence includes runtime ingress settlement");
@@ -44,7 +48,7 @@ fn assert_runtime_settlement(evidence: &serde_json::Value, input: &serde_json::V
     assert_eq!(ingress["drain_denied"], 0);
     assert!(ingress["typed_disposition_count"]
         .as_u64()
-        .is_some_and(|count| count >= retained_batches));
+        .is_some_and(|count| count + coalesced >= retained_batches));
 }
 
 fn assert_terminal_cleanup(evidence: &serde_json::Value) {
@@ -59,14 +63,31 @@ fn assert_terminal_cleanup(evidence: &serde_json::Value) {
 fn assert_scroll_continuity(input: &serde_json::Value) {
     let vertical = input["last_vertical_scroll"]
         .as_object()
-        .expect("the real Windows vertical wheel reaches host-native translation");
+        .expect("the platform's real vertical wheel reaches host-native translation");
     let horizontal = input["last_horizontal_scroll"]
         .as_object()
         .expect("the real Windows horizontal wheel reaches host-native translation");
+    // One notch carries the platform's own line count, in thousandths of a line,
+    // read here from the same documented setting store by the courtroom's own hand.
+    let lines = i64::from(
+        crate::adjudication::platform_wheel_lines_per_notch()
+            .expect("the platform wheel-lines setting is a count or absent"),
+    );
     assert_eq!(vertical["x_subpixels"], 0);
-    assert_eq!(vertical["y_subpixels"], 40_000);
-    assert_eq!(horizontal["x_subpixels"], -40_000);
+    assert_eq!(vertical["y_subpixels"], lines * 1_000);
+    assert_eq!(vertical["lines_per_notch"], lines);
+    assert_eq!(horizontal["x_subpixels"], -lines * 1_000);
     assert_eq!(horizontal["y_subpixels"], 0);
+    assert_eq!(horizontal["lines_per_notch"], lines);
+    for basis in [
+        &vertical["line_count_basis"],
+        &horizontal["line_count_basis"],
+    ] {
+        assert!(
+            basis == "PlatformReported" || basis == "DefaultedAfterMissing",
+            "the host relays the platform count or the documented default: {basis}"
+        );
+    }
     let vertical_sequence = vertical["sequence"]
         .as_u64()
         .expect("vertical scroll has a retained sequence");

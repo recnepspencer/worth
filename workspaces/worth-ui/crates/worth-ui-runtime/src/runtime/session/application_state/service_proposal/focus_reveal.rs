@@ -11,6 +11,7 @@ pub(crate) enum UiFocusRevealStagingDenial {
     Ownership(crate::runtime::scroll::UiScrollOwnershipResolutionDenial),
     Bounds(crate::runtime::scroll::UiScrollBoundsResolutionDenial),
     GeometryOutOfRange,
+    UnpublishedScrollGeometry,
     Route(crate::runtime::scroll::UiScrollRouteDenial),
 }
 
@@ -30,6 +31,11 @@ impl super::super::WorthUiApplicationSessionState {
             .map_err(UiFocusRevealStagingDenial::Ownership)?;
         if chain.owners().is_empty() {
             return Ok(None);
+        }
+        if scroll.has_pending_direct(target.semantic_surface_identity())
+            || scroll.has_unpresented_layout(target.semantic_surface_identity())
+        {
+            return Err(UiFocusRevealStagingDenial::UnpublishedScrollGeometry);
         }
         let Some(publication) = mounted.current_publication() else {
             return Ok(None);

@@ -46,6 +46,24 @@ pub(crate) enum UiMotionTerminalCause {
     SnappedToTarget,
     ReboundAway,
     ApplicationShutdown,
+    /// A pointer took direct control of the thing this track was moving -- a
+    /// scrollbar thumb grabbed mid-settle -- so the track ends where its last
+    /// accepted sample left the content, and the pointer places it from there.
+    DisplacedByDirectControl,
+    /// The occurrence this track was moving was unmounted. Content that is no
+    /// longer mounted cannot finish arriving anywhere, so the track ends at the
+    /// last sample the reader actually saw rather than at a target belonging to
+    /// something that is gone.
+    SubjectUnmounted,
+    /// The window stopped being the reader's. A settle is the tail of a gesture
+    /// somebody is watching; once nobody is, it ends where it had got to rather
+    /// than finishing on its own and moving content behind the reader's back.
+    AttentionLost,
+    /// What this track was moving has nowhere left to go: its content emptied,
+    /// or shrank to fit its viewport, so the offset it was settling toward
+    /// stopped existing. The track ends rather than go on re-applying a
+    /// translation the extent no longer admits.
+    NowhereLeftToSettle,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -122,6 +140,18 @@ impl UiDerivedMotionServiceProposal {
 }
 
 impl UiCommittedMotionTrack {
+    pub(super) fn with_presented_extent(
+        mut self,
+        request: super::UiMotionTransitionRequest,
+    ) -> Self {
+        assert_eq!(self.target(), request.successor().target());
+        self.request = request;
+        self.retarget = Some(super::retarget::resolve(
+            request.declaration().interruption(),
+        ));
+        self
+    }
+
     pub(super) const fn new(
         derived: &UiDerivedMotionServiceProposal,
         retarget: Option<super::UiMotionRetargetDisposition>,
@@ -272,14 +302,18 @@ impl UiMotionCommitReceipt {
         };
         let request = super::UiMotionTransitionRequest::from_family_transition(
             target,
-            identity,
-            identity + 1,
-            presentation,
-            geometry(predecessor_geometry),
-            predecessor_visible,
-            presentation,
-            geometry(successor_geometry),
-            successor_visible,
+            super::UiMotionTransitionEndpoint::new(
+                identity,
+                presentation,
+                geometry(predecessor_geometry),
+                predecessor_visible,
+            ),
+            super::UiMotionTransitionEndpoint::new(
+                identity + 1,
+                presentation,
+                geometry(successor_geometry),
+                successor_visible,
+            ),
             declaration,
         )
         .expect("sampling test transition has an advancing revision and stable binding");

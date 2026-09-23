@@ -1,5 +1,5 @@
 use worth_ui::facade::{
-    app::WorthUi,
+    app::{WorthUi, WorthUiApplicationPreparationDenial, WorthUiApplicationPreparationPhase},
     declaration::{
         CommandDescriptor, CommandId, MosaicChildRule, MosaicClippingPosture, MosaicFocusScopeKind,
         MosaicHitTestPosture, MosaicRegionKindDescriptor, MosaicRegionKindId,
@@ -16,7 +16,8 @@ use worth_ui::facade::{
     service::{
         UiCommandKeyCode, UiCommandModifierSet, UiCommandRoutingPolicy, UiCommandShortcutSequence,
         UiCommandShortcutStroke, UiFocusPolicy, UiMotionPolicy, UiPortalPolicy, UiScrollPolicy,
-        UiSelectionPolicy,
+        UiScrollWheelBehavior, UiScrollWheelBehaviorDenial, UiSelectionPolicy,
+        UiServicePolicyNormalizationDenial, UI_SCROLL_WHEEL_SETTLE_TICK_CEILING,
     },
 };
 use worth_ui_runtime::certification_support::WorthUiRuntimeServiceInstallationCertificationExt;
@@ -207,6 +208,90 @@ fn shortcut_macro_produces_the_constructor_owned_typed_value() {
 
     let sequence = worth_ui::shortcut!((Primary + K), (Primary + C));
     assert_eq!(sequence.len(), 2);
+}
+
+/// A smooth wheel is a settle the Motion owner walks, so Motion must be there.
+///
+/// This app installs the Scroll owner and nothing else. A settle horizon
+/// declared here names a walker that was never installed, so installation says
+/// so before any session exists rather than dropping the horizon on the floor.
+#[test]
+fn a_smooth_wheel_without_the_motion_owner_is_denied_before_any_session_exists() {
+    let smooth = UiScrollPolicy::nested_region().with_wheel_behavior(
+        UiScrollWheelBehavior::smooth(120).expect("120 ticks is an admitted settle horizon"),
+    );
+    let denial = WorthUi::app()
+        .with_change_profile(UiChangeProfile::platform_pulse())
+        .with_scroll_policy_defaults(smooth)
+        .register_mosaic_region_kind(scroll_region(MosaicScrollOwnership::viewport_owned()))
+        .freeze();
+    let Err(denial) = denial else {
+        panic!("a settle horizon without the Motion owner has no walker");
+    };
+
+    assert_eq!(
+        denial,
+        WorthUiApplicationPreparationDenial::ServicePolicyNormalization(
+            UiServicePolicyNormalizationDenial::SmoothWheelWithoutMotionOwner { settle_ticks: 120 }
+        )
+    );
+    assert_eq!(
+        denial.phase(),
+        WorthUiApplicationPreparationPhase::ServicePolicyNormalization
+    );
+}
+
+/// With Motion installed the same horizon reaches the normalized plan intact.
+#[test]
+fn a_smooth_wheel_survives_normalization_when_the_motion_owner_is_installed() {
+    let smooth = UiScrollPolicy::nested_region().with_wheel_behavior(
+        UiScrollWheelBehavior::smooth(120).expect("120 ticks is an admitted settle horizon"),
+    );
+    let app = WorthUi::app()
+        .with_change_profile(UiChangeProfile::platform_pulse())
+        .with_scroll_policy_defaults(smooth)
+        .register_runtime_service_intent_definition(
+            UiIntentDefinition::<CommandIntent>::runtime_service(
+                UiIntentRuntimeServiceDestination::OpenPortal,
+            ),
+        )
+        .expect("portal runtime service registers")
+        .freeze()
+        .expect("a settle horizon is admitted beside the Motion owner");
+    let plan = app.service_policy_plan();
+
+    assert!(plan.motion().is_some());
+    assert_eq!(
+        plan.scroll()
+            .map(UiScrollPolicy::wheel_behavior)
+            .and_then(UiScrollWheelBehavior::settle_ticks),
+        Some(120)
+    );
+    let session = launch_headless(app);
+    assert!(session
+        .inspect_runtime_service_installation_for_certification()
+        .motion());
+    drop(session.shutdown());
+}
+
+/// A settle horizon is a positive, bounded number of ticks or it is no settle.
+#[test]
+fn a_settle_horizon_is_refused_outside_its_named_bounds() {
+    assert_eq!(
+        UiScrollWheelBehavior::smooth(0),
+        Err(UiScrollWheelBehaviorDenial::SettleHorizonIsZero)
+    );
+    assert_eq!(
+        UiScrollWheelBehavior::smooth(UI_SCROLL_WHEEL_SETTLE_TICK_CEILING + 1),
+        Err(UiScrollWheelBehaviorDenial::SettleHorizonExceedsCeiling)
+    );
+    assert_eq!(
+        UiScrollPolicy::nested_region()
+            .wheel_behavior()
+            .settle_ticks(),
+        None,
+        "a region that declares no wheel behavior moves on the observation"
+    );
 }
 
 fn launch_headless(

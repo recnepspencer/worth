@@ -70,7 +70,7 @@ impl UiVisualPixelArtifact {
                 UiVisualPixelCaptureSource::NativePresentation
             }
             crate::UiVisualPixelRedaction::OpaqueBlack => {
-                for pixel in input.bytes.chunks_exact_mut(4) {
+                for pixel in input.bytes.as_chunks_mut::<4>().0 {
                     pixel.copy_from_slice(&[0, 0, 0, u8::MAX]);
                 }
                 UiVisualPixelCaptureSource::RedactedNativePresentation

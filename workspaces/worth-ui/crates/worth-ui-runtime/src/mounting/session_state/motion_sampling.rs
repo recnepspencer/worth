@@ -178,6 +178,10 @@ impl WorthUiMountedSessionState {
                     .samples()
                     .iter()
                     .map(|sample| sample.target())
+                    .filter(|target| {
+                        target.scope()
+                            != crate::runtime::motion::UiMotionTargetScope::ScrollContents
+                    })
                     .collect::<Vec<_>>();
                 let hit_work = self
                     .retention

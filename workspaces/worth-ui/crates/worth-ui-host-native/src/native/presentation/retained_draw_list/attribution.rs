@@ -59,7 +59,10 @@ impl UiNativeRetainedDrawList {
                         mounted_instance: outline.node_receipt().mounted_instance(),
                         node_receipt: outline.node_receipt(),
                     }),
-                    UiNativeAppearanceCommand::Backdrop(_)
+                    // Chrome is not an authored node: it attributes no pixel to
+                    // a mounted instance's own paint.
+                    UiNativeAppearanceCommand::ScrollChrome(_)
+                    | UiNativeAppearanceCommand::Backdrop(_)
                     | UiNativeAppearanceCommand::TextForeground(_)
                     | UiNativeAppearanceCommand::OverlayOrder(_)
                     | UiNativeAppearanceCommand::PointerAffordance(_) => None,

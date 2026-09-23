@@ -97,6 +97,11 @@ pub(crate) use transaction_state::{
 };
 pub(crate) use unchanged::present_unchanged_appearance;
 
+/// How long a control may wait on the GPU before calling it a failure.
+///
+/// Presentation itself never waits: a frame's readback settles on a later turn
+/// rather than blocking the event loop on the device.
+#[cfg(test)]
 pub(crate) const GPU_WAIT_DEADLINE: std::time::Duration = std::time::Duration::from_millis(5_000);
 
 pub(crate) enum UiNativePresentationFailure {
@@ -255,11 +260,11 @@ pub(crate) fn observation_for_retained(
     port_crossings: u8,
 ) -> (
     Option<UiNativePresentationObservation>,
-    Box<[super::UiNativeGlyphObservation]>,
-    Box<[super::UiNativeGlyphObservation]>,
+    std::sync::Arc<[super::UiNativeGlyphObservation]>,
+    std::sync::Arc<[super::UiNativeGlyphObservation]>,
 ) {
-    let intrinsic = glyph_observation::intrinsic(retained, atlas, graphics.extent());
-    let alpha = glyph_observation::alpha(retained, atlas, graphics.extent());
+    let glyphs = glyph_observation::observe(retained, atlas, graphics.extent());
+    let (intrinsic, alpha) = (glyphs.intrinsic, glyphs.alpha);
     let observation = retained
         .top_paint_attribution()
         .map(|(ordinal, attribution)| {
@@ -286,8 +291,8 @@ fn observation_for_attribution(
     pixels: [[u8; 4]; 2],
     cost: UiHostPresentationCostReport,
     port_crossings: u8,
-    intrinsic_glyphs: Box<[super::UiNativeGlyphObservation]>,
-    alpha_glyphs: Box<[super::UiNativeGlyphObservation]>,
+    intrinsic_glyphs: std::sync::Arc<[super::UiNativeGlyphObservation]>,
+    alpha_glyphs: std::sync::Arc<[super::UiNativeGlyphObservation]>,
 ) -> UiNativePresentationObservation {
     let [retained_baseline_rgba8, retained_center_rgba8] = pixels;
     let bounds = attribution.bounds;

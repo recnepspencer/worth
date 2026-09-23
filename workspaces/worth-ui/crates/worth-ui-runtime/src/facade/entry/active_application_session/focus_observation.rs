@@ -34,6 +34,14 @@ impl super::WorthUiActiveApplicationSession {
         else {
             return false;
         };
+        if self.scroll.as_ref().is_some_and(|scroll| {
+            scroll.has_pending_direct(surface) || scroll.has_unpresented_layout(surface)
+        }) {
+            publications.push(Err(
+                super::super::UiFocusPlacementExecutionDenial::UnpublishedScrollGeometry,
+            ));
+            return true;
+        }
         if let UiHostFocusNavigation::Traverse(direction) = navigation {
             let transition = {
                 let Some(focus) = self.focus.as_mut() else {

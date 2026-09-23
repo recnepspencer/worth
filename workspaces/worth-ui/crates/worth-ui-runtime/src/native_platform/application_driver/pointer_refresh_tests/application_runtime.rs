@@ -34,6 +34,19 @@ impl UiNativeApplicationRuntime for PointerApplicationRuntime {
         unreachable!("this runtime has no readiness owners")
     }
 
+    fn native_motion_settlement_ready(
+        &mut self,
+        application: WorthUiNativeApplicationShell,
+    ) -> Result<
+        (
+            WorthUiNativeApplicationShell,
+            UiNativeApplicationRuntimeDirective,
+        ),
+        UiNativeApplicationRuntimeProgressStopped,
+    > {
+        Ok((application, UiNativeApplicationRuntimeDirective::Continue))
+    }
+
     fn native_pointer_affordance_ready(
         &mut self,
         mut application: WorthUiNativeApplicationShell,

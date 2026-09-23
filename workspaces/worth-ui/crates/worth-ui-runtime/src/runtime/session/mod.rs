@@ -3,7 +3,7 @@ mod intent_resource_census;
 pub(crate) mod service_proposal;
 pub(crate) use application_state::{
     UiIndeterminatePortalProposalTransaction, UiPortalProposalPreparationDenial,
-    UiStagedPortalProposalTransaction,
+    UiScrollSettlePublicationDenial, UiStagedPortalProposalTransaction,
 };
 
 pub(crate) use application_state::{

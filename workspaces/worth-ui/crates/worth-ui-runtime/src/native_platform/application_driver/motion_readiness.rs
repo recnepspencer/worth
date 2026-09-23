@@ -1,7 +1,13 @@
 use std::sync::{Arc, Condvar, Mutex};
 use std::time::{Duration, Instant};
 
-const MOTION_FRAME_INTERVAL: Duration = Duration::from_millis(16);
+/// Requested delay before offering the next Motion tick.
+///
+/// This leaves nominal headroom within the qualified 60 Hz display interval.
+/// It is not a deadline guarantee: timer rounding, scheduling, preparation,
+/// host submission and compositor presentation can all delay visible progress.
+/// Only the native active-scroll traces qualify end-to-end cadence.
+const MOTION_WAKE_PERIOD: Duration = Duration::from_millis(8);
 
 pub(super) struct UiNativeMotionReadinessLane {
     schedule: Arc<(Mutex<UiNativeMotionReadinessSchedule>, Condvar)>,
@@ -42,7 +48,7 @@ impl UiNativeMotionReadinessLane {
     }
 
     pub(super) fn arm_next_frame(&self) {
-        self.arm_at(Instant::now() + MOTION_FRAME_INTERVAL);
+        self.arm_at(Instant::now() + MOTION_WAKE_PERIOD);
     }
 
     fn arm_at(&self, deadline: Instant) {
@@ -148,6 +154,18 @@ fn state_lock(
 mod tests {
     use super::*;
     use std::sync::mpsc;
+
+    /// One 60 Hz display interval, the milestone's qualification display.
+    const QUALIFICATION_DISPLAY_INTERVAL: Duration = Duration::from_micros(16_667);
+
+    /// Check the requested delay only; this cannot prove delivered cadence.
+    #[test]
+    fn the_requested_wake_period_is_at_most_half_a_qualification_frame() {
+        assert!(MOTION_WAKE_PERIOD < QUALIFICATION_DISPLAY_INTERVAL);
+        assert!(MOTION_WAKE_PERIOD
+            .checked_mul(2)
+            .is_some_and(|two_wakes| two_wakes <= QUALIFICATION_DISPLAY_INTERVAL));
+    }
 
     #[test]
     fn arms_coalesce_to_one_signal_and_shutdown_joins_the_worker() {
