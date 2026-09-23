@@ -10,7 +10,7 @@ use crate::domain_computation::execution_runtime::product_world::WorthQueryRelat
 mod index_installation;
 #[cfg(test)]
 mod test_inspection;
-use index_installation::register_primary_graph_indexes;
+use index_installation::{register_primary_graph_indexes, IndexInstallationPosture};
 
 /// Execution-owned primary logical graph for one installed application schema.
 ///
@@ -40,8 +40,14 @@ impl WorthQueryPrimaryGraph {
         layout: WorthQueryPrimaryGraphLayout,
         runtime: RelationalRuntime,
     ) -> Self {
-        Self::install(runtime_authority, binding_identity, layout, runtime, false)
-            .expect("ordinary primary-graph index registration is infallible")
+        Self::install(
+            runtime_authority,
+            binding_identity,
+            layout,
+            runtime,
+            IndexInstallationPosture::Register,
+        )
+        .expect("ordinary primary-graph index registration is infallible")
     }
 
     pub(super) fn from_recovered_runtime(
@@ -50,7 +56,13 @@ impl WorthQueryPrimaryGraph {
         layout: WorthQueryPrimaryGraphLayout,
         runtime: RelationalRuntime,
     ) -> Result<Self, String> {
-        Self::install(runtime_authority, binding_identity, layout, runtime, true)
+        Self::install(
+            runtime_authority,
+            binding_identity,
+            layout,
+            runtime,
+            IndexInstallationPosture::RequireRecovered,
+        )
     }
 
     fn install(
@@ -58,10 +70,10 @@ impl WorthQueryPrimaryGraph {
         binding_identity: ApplicationSchemaBindingIdentity,
         mut layout: WorthQueryPrimaryGraphLayout,
         runtime: RelationalRuntime,
-        recovered: bool,
+        index_posture: IndexInstallationPosture,
     ) -> Result<Self, String> {
         let relational_runtime_instance_id = runtime.main_branch_identity().runtime_instance_id();
-        register_primary_graph_indexes(&mut layout, &runtime, recovered)?;
+        register_primary_graph_indexes(&mut layout, &runtime, index_posture)?;
         let source_owner = WorthQueryRelationalSourceOwner::new(runtime, "primary")
             .expect("the installed primary graph role is canonical");
         Ok(Self {

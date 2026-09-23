@@ -96,7 +96,7 @@ where
         primary_graph_authority: graph.primary_graph_authority,
         result_buffers: Default::default(),
         source_meanings: crate::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceMeaningRegistry::new(
-            runtime_authority.as_u64(),
+            runtime_authority,
         ),
         basis_leases: Default::default(),
         next_external_dispatch_attempt: std::sync::atomic::AtomicU64::new(1),

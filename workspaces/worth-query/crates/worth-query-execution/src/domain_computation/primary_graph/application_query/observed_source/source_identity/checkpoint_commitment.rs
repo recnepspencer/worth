@@ -1,10 +1,10 @@
 use sha2::{Digest, Sha256};
 
-/// Derives the portable identity only when immutable source meaning is first interned.
+/// Derives the portable commitment to one immutable observed-source footprint.
 pub(super) fn checkpoint_source_identity(
     query: &[u8; 32],
     parameters: &[u8; 32],
-    footprint: &super::application_query::observed_source::WorthQueryObservedSourceFootprint,
+    footprint: &super::super::WorthQueryObservedSourceFootprint,
 ) -> [u8; 32] {
     let mut digest = Sha256::new();
     digest.update(b"worth-query:checkpoint-observed-source:v1");
@@ -16,7 +16,7 @@ pub(super) fn checkpoint_source_identity(
 
 fn append_footprint(
     digest: &mut Sha256,
-    footprint: &super::application_query::observed_source::WorthQueryObservedSourceFootprint,
+    footprint: &super::super::WorthQueryObservedSourceFootprint,
 ) {
     entity(digest, footprint.root);
     digest.update([u8::from(footprint.complete)]);
@@ -92,7 +92,9 @@ mod tests {
         let root = EntityId::new(PartitionId::main(), 1, 1);
         let first_selection = product_selection();
         let second_selection = product_selection();
-        let registry = WorthQueryObservedSourceMeaningRegistry::new(21);
+        let registry = WorthQueryObservedSourceMeaningRegistry::new(
+            crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity::mint_for_test(),
+        );
         let first = epoch(&registry, root, footprint(root, true), &first_selection);
         let second = epoch(&registry, root, footprint(root, true), &second_selection);
 
@@ -100,10 +102,10 @@ mod tests {
             first.checkpoint_occurrence(),
             second.checkpoint_occurrence()
         );
-        assert_eq!(first.checkpoint_identity(), second.checkpoint_identity(),);
+        assert_eq!(first.checkpoint_identity(), second.checkpoint_identity());
 
         let changed = epoch(&registry, root, footprint(root, false), &first_selection);
-        assert_ne!(first.checkpoint_identity(), changed.checkpoint_identity(),);
+        assert_ne!(first.checkpoint_identity(), changed.checkpoint_identity());
 
         let mut changed_selection = footprint(root, true);
         changed_selection.root_selection = Some(std::sync::Arc::new(

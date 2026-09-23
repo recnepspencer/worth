@@ -5,16 +5,22 @@ use worth_relational::facade::runtime::RelationalRuntime;
 
 use super::super::schema_layout::WorthQueryPrimaryGraphLayout;
 
+#[derive(Clone, Copy)]
+pub(super) enum IndexInstallationPosture {
+    Register,
+    RequireRecovered,
+}
+
 pub(super) fn register_primary_graph_indexes(
     layout: &mut WorthQueryPrimaryGraphLayout,
     runtime: &RelationalRuntime,
-    recovered: bool,
+    posture: IndexInstallationPosture,
 ) -> Result<(), String> {
     let mut indexes_by_locator = BTreeMap::new();
     for (binding, binding_layout) in layout.principal_bindings_mut() {
         let installed = install_index(
-            &runtime,
-            recovered,
+            runtime,
+            posture,
             DerivedIndexDefinition {
                 index_id: worth_relational::facade::indexes::DerivedIndexId(0),
                 name: format!("application-principal.{binding}"),
@@ -32,8 +38,8 @@ pub(super) fn register_primary_graph_indexes(
             *index_id
         } else {
             let installed = install_index(
-                &runtime,
-                recovered,
+                runtime,
+                posture,
                 DerivedIndexDefinition {
                     index_id: worth_relational::facade::indexes::DerivedIndexId(0),
                     name: format!("application-entity.{entity}.{aspect}.{field}"),
@@ -49,15 +55,15 @@ pub(super) fn register_primary_graph_indexes(
         field_layout.equality_index_id = Some(index_id);
     }
     layout.register_continuation_orderings(|definition| {
-        install_index(runtime, recovered, definition).map(|installed| installed.index_id)
+        install_index(runtime, posture, definition).map(|installed| installed.index_id)
     })?;
     layout.register_capability_grant_joins(|definition| {
-        install_index(runtime, recovered, definition).map(|installed| installed.index_id)
+        install_index(runtime, posture, definition).map(|installed| installed.index_id)
     })?;
     let provider_idempotency = layout.provider_idempotency_mut();
     let installed = install_index(
-        &runtime,
-        recovered,
+        runtime,
+        posture,
         DerivedIndexDefinition {
             index_id: worth_relational::facade::indexes::DerivedIndexId(0),
             name: "worth-query-provider.idempotency-key".to_owned(),
@@ -70,8 +76,8 @@ pub(super) fn register_primary_graph_indexes(
     provider_idempotency.key_index_id = installed.index_id;
     let aftermath_causality = layout.provider_aftermath_causality_mut();
     let installed = install_index(
-        &runtime,
-        recovered,
+        runtime,
+        posture,
         DerivedIndexDefinition {
             index_id: worth_relational::facade::indexes::DerivedIndexId(0),
             name: "worth-query-provider.aftermath-causality-key".to_owned(),
@@ -83,26 +89,26 @@ pub(super) fn register_primary_graph_indexes(
     )?;
     aftermath_causality.key_index_id = installed.index_id;
     super::super::workflow::schema::register_indexes(layout.workflow_mut(), |definition| {
-        install_index(runtime, recovered, definition)
+        install_index(runtime, posture, definition)
     })?;
     Ok(())
 }
 
 fn install_index(
     runtime: &RelationalRuntime,
-    recovered: bool,
+    posture: IndexInstallationPosture,
     definition: DerivedIndexDefinition,
 ) -> Result<DerivedIndexDefinition, String> {
-    if !recovered {
-        return Ok(runtime.index_authority().register(definition));
+    match posture {
+        IndexInstallationPosture::Register => Ok(runtime.index_authority().register(definition)),
+        IndexInstallationPosture::RequireRecovered => runtime
+            .index_access()
+            .matching_definition(&definition)
+            .ok_or_else(|| {
+                format!(
+                    "recovered runtime omitted Query index definition '{}'",
+                    definition.name
+                )
+            }),
     }
-    runtime
-        .index_access()
-        .matching_definition(&definition)
-        .ok_or_else(|| {
-            format!(
-                "recovered runtime omitted Query index definition '{}'",
-                definition.name
-            )
-        })
 }
