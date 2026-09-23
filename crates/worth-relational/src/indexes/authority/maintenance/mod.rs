@@ -114,6 +114,7 @@ impl IndexAuthority<'_> {
         let root = after.selected_root().expect("validated exact root");
         let schema_version = root.schema_authority().schema_version();
         let mut prepared = Vec::new();
+        let mut pending_fields = Vec::new();
         let mut reused = Vec::new();
         let mut cold_changes = None;
         let mut patch_changes = None;
@@ -157,7 +158,7 @@ impl IndexAuthority<'_> {
                                 == Some(generation.source_commit_id)
                         })
                 });
-            let (mut entries, changes, old) = if let Some(prior) = prior {
+            let (entries, changes, old) = if let Some(prior) = prior {
                 if patch_changes.is_none() {
                     patch_changes = Some(changes::ChangedRecords::patch(root, work)?);
                 }
@@ -176,9 +177,44 @@ impl IndexAuthority<'_> {
                     None,
                 )
             };
-            update_entries(&definition, &mut entries, changes, old, after, work)?;
-            prepared.push((index_id, entries));
+            match (&definition.kind, entries) {
+                (
+                    DerivedIndexKind::EntityField { field_locator },
+                    DerivedIndexEntries::EntityField(entries),
+                ) => pending_fields.push(field::PendingField::Entity {
+                    index_id,
+                    locator: field_locator.clone(),
+                    entries,
+                    patch: old.is_some(),
+                }),
+                (
+                    DerivedIndexKind::RelationField { field_locator },
+                    DerivedIndexEntries::RelationField(entries),
+                ) => pending_fields.push(field::PendingField::Relation {
+                    index_id,
+                    locator: field_locator.clone(),
+                    entries,
+                    patch: old.is_some(),
+                }),
+                (_, mut entries) => {
+                    update_entries(&definition, &mut entries, changes, old, after, work)?;
+                    prepared.push((index_id, entries));
+                }
+            }
         }
+        field::refresh(
+            &mut pending_fields,
+            patch_changes.as_ref(),
+            cold_changes.as_ref(),
+            before,
+            after,
+            work,
+        )?;
+        prepared.extend(
+            pending_fields
+                .into_iter()
+                .map(field::PendingField::into_prepared),
+        );
         let publication = IndexGenerationPublicationBasis::new(
             request,
             request.branch_id.clone(),
@@ -217,14 +253,6 @@ fn update_entries(
     work: &mut MaintenanceWork,
 ) -> Result<(), DerivedIndexMaintenanceDenialKind> {
     match (&definition.kind, entries) {
-        (
-            DerivedIndexKind::EntityField { field_locator },
-            DerivedIndexEntries::EntityField(entries),
-        ) => field::entities(entries, field_locator, changes, before, after, work),
-        (
-            DerivedIndexKind::RelationField { field_locator },
-            DerivedIndexEntries::RelationField(entries),
-        ) => field::relations(entries, field_locator, changes, before, after, work),
         (
             DerivedIndexKind::RelatedEntityOrdering {
                 relation_kind,

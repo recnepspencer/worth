@@ -57,6 +57,7 @@ fn patch_local_field_maintenance_matches_independent_rebuild_and_preserves_prior
         .unwrap();
     assert_eq!(refreshed.work.cold_record_slots, 0);
     assert_eq!(refreshed.work.patch_records, 1);
+    assert_eq!(refreshed.work.record_reads, 2);
     assert_eq!(refreshed.work.entry_edits, 2);
     let rebuilt = runtime
         .index_authority()
