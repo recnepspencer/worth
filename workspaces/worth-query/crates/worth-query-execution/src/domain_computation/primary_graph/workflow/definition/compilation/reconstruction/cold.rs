@@ -14,6 +14,7 @@ use crate::domain_computation::primary_graph::workflow::{
     schema::WorthQueryWorkflowLayout,
 };
 use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
+use worth_relational::facade::identity::{EntityId, KindId};
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn reconstruct_cold_definition(
@@ -71,10 +72,27 @@ pub(super) fn reconstruct_cold_definition(
             "published workflow definition node inventory is invalid",
         ));
     }
-    let compiled_nodes = nodes
-        .iter()
-        .map(|node| node::compile_node(runtime, snapshot, layout, *node, &mut facts))
-        .collect::<Result<Vec<_>, _>>()?;
+    // Member fields and endpoints are read during this budgeted cold pass.
+    // Their publication is immutable at the native commit boundary, so only
+    // the header and complete inventory revisions need start-admission facts.
+    let mut member_facts = Vec::new();
+    let mut compiled_nodes = Vec::with_capacity(nodes.len());
+    for node in &nodes {
+        compiled_nodes.push(node::compile_node(
+            runtime,
+            snapshot,
+            layout,
+            *node,
+            &mut member_facts,
+        )?);
+        ensure_discarded_member_facts_are_protected(
+            &member_facts,
+            *node,
+            layout.node.entity_kind,
+            &[],
+        )?;
+        member_facts.clear();
+    }
     let node_membership: HashSet<_> = nodes.iter().copied().collect();
     let connections = adjacency(
         runtime,
@@ -90,19 +108,27 @@ pub(super) fn reconstruct_cold_definition(
             "published workflow definition connection inventory is invalid",
         ));
     }
-    let compiled_connections = connections
-        .iter()
-        .map(|connection| {
-            connection::compile_connection(
-                runtime,
-                snapshot,
-                layout,
-                *connection,
-                &node_membership,
-                &mut facts,
-            )
-        })
-        .collect::<Result<Vec<_>, _>>()?;
+    let mut compiled_connections = Vec::with_capacity(connections.len());
+    for connection in &connections {
+        compiled_connections.push(connection::compile_connection(
+            runtime,
+            snapshot,
+            layout,
+            *connection,
+            &node_membership,
+            &mut member_facts,
+        )?);
+        ensure_discarded_member_facts_are_protected(
+            &member_facts,
+            *connection,
+            layout.connection.entity_kind,
+            &[
+                layout.connection_source_relation,
+                layout.connection_target_relation,
+            ],
+        )?;
+        member_facts.clear();
+    }
     Ok((
         ColdCompiledWorkflowDefinition {
             lineage,
@@ -118,4 +144,34 @@ pub(super) fn reconstruct_cold_definition(
 
 const fn inventory_work_limit(maximum_records: usize) -> usize {
     maximum_records.saturating_mul(2).saturating_add(1)
+}
+
+fn ensure_discarded_member_facts_are_protected(
+    facts: &[WorthQueryApplicationObservedFact],
+    member: EntityId,
+    entity_kind: KindId,
+    endpoint_relations: &[KindId],
+) -> Result<(), WorthQueryApplicationAttemptDenial> {
+    let protected = facts.iter().all(|fact| match fact {
+        WorthQueryApplicationObservedFact::Entity { entity_id, kind }
+        | WorthQueryApplicationObservedFact::Field {
+            entity_id, kind, ..
+        }
+        | WorthQueryApplicationObservedFact::AbsentField {
+            entity_id, kind, ..
+        } => *entity_id == member && *kind == entity_kind,
+        WorthQueryApplicationObservedFact::Adjacency {
+            relation_kind,
+            anchor,
+            ..
+        } => *anchor == member && endpoint_relations.contains(relation_kind),
+        _ => false,
+    });
+    if protected {
+        Ok(())
+    } else {
+        Err(denial(
+            "workflow cold compilation observed a mutable member dependency",
+        ))
+    }
 }

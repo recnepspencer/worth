@@ -3,7 +3,7 @@
 use worth_query_host::facade::{
     application_entry::{
         WorkflowDefinitionExpectedPredecessor, WorkflowDefinitionPublicationOutcome,
-        WorthQueryApplicationRequestExt,
+        WorkflowInstanceStartOutcome, WorthQueryApplicationRequestExt,
     },
     declaration::application_program::{
         ApplicationWorkflowComponentLimits, ApplicationWorkflowControlOutcome,
@@ -18,8 +18,9 @@ use super::bounded_dimension_model::{
     host::publish_on_first_program_for_geometry_scale,
     operator_identity::authenticate_operator,
     workflow::{
-        retain_workflow_with_resources, ReviewedGeometryWorkflow, WorkflowDefinitionAuthoringInput,
-        WorkflowDefinitionAuthoringIntent, WorkflowDefinitionAuthoringOperation,
+        retain_workflow_with_resources, start_instance, ReviewedGeometryWorkflow,
+        WorkflowDefinitionAuthoringInput, WorkflowDefinitionAuthoringIntent,
+        WorkflowDefinitionAuthoringOperation,
     },
 };
 
@@ -32,13 +33,15 @@ const COMPONENTS: ApplicationWorkflowComponentLimits =
     };
 
 fn sparse_definition(
+    nodes: u16,
 ) -> worth_query_host::facade::declaration::application_program::AuthoredWorkflowDefinition<
     ReviewedGeometryWorkflow,
 > {
+    let connections = nodes - 1;
     let limits = ApplicationWorkflowDefinitionLimits::new(
-        NODES,
-        CONNECTIONS,
-        CONNECTIONS,
+        nodes,
+        connections,
+        connections,
         COMPONENTS,
         16 * 1024 * 1024,
     )
@@ -48,8 +51,8 @@ fn sparse_definition(
         limits,
     )
     .expect("geometry definition identity");
-    let mut operations = Vec::with_capacity(usize::from(CONNECTIONS));
-    for index in 0..CONNECTIONS {
+    let mut operations = Vec::with_capacity(usize::from(connections));
+    for index in 0..connections {
         operations.push(
             builder
                 .operation::<WorkflowDefinitionAuthoringOperation>(
@@ -98,7 +101,7 @@ fn public_ten_thousand_node_definition_publishes() {
         .capture_certification_cost_scope(application.current_world())
         .expect("geometry branch remains measurable");
     let started_at = std::time::Instant::now();
-    let authored = sparse_definition();
+    let authored = sparse_definition(NODES);
     let authored_ms = started_at.elapsed().as_millis();
     let draft = runtime
         .request(&principal, &scope)
@@ -132,8 +135,88 @@ fn public_ten_thousand_node_definition_publishes() {
         sharing.publication_touched_region_count,
         sharing.publication_reused_region_count,
     );
-    match publication {
-        WorkflowDefinitionPublicationOutcome::Published(_) => {}
-        other => panic!("the 10k definition must publish: {other:?}"),
-    }
+    let WorkflowDefinitionPublicationOutcome::Published(published) = publication else {
+        panic!("the 10k definition must publish: {publication:?}");
+    };
+    let compilation = runtime.workflow_compilation_reuse_counters();
+    let cold_started_at = std::time::Instant::now();
+    assert!(matches!(
+        start_instance(&application, published.definition().clone(), 918_402)
+            .expect("the 10k cold start must fit its own operation budget"),
+        WorkflowInstanceStartOutcome::Started(_)
+    ));
+    let cold = runtime.workflow_compilation_reuse_counters();
+    assert_eq!(cold.cold_misses(), compilation.cold_misses() + 1);
+    println!(
+        "geometry cold start elapsed_ms={}",
+        cold_started_at.elapsed().as_millis()
+    );
+    assert!(matches!(
+        start_instance(&application, published.definition().clone(), 918_403)
+            .expect("the 10k warm start must reuse compiled meaning"),
+        WorkflowInstanceStartOutcome::Started(_)
+    ));
+    let warm = runtime.workflow_compilation_reuse_counters();
+    assert_eq!(warm.warm_hits(), cold.warm_hits() + 1);
+    assert_eq!(warm.cold_misses(), cold.cold_misses());
+}
+
+#[test]
+fn cold_compilation_of_large_definition_uses_bounded_start_facts() {
+    const NODES: u16 = 512;
+    const CONNECTIONS: u16 = NODES - 1;
+    let resources = WorthQueryApplicationWorkflowResourceCeiling::new(
+        NODES,
+        CONNECTIONS,
+        CONNECTIONS,
+        COMPONENTS,
+        16 * 1024 * 1024,
+        2,
+        u32::from(NODES),
+        256 * 1024,
+    )
+    .expect("finite workflow resources");
+    let application =
+        retain_workflow_with_resources(publish_on_first_program_for_geometry_scale(), resources);
+    let runtime = application.runtime();
+    let cancellation = worth_query_host::facade::admission::authenticated_principal::WorthQueryCancellationSource::new();
+    let scope =
+        worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope::new(
+            std::time::Instant::now() + std::time::Duration::from_secs(300),
+            cancellation.token(),
+        );
+    let principal = authenticate_operator(runtime.installed_schema(), &scope);
+    let publication = runtime
+        .request(&principal, &scope)
+        .mutate(WorkflowDefinitionAuthoringIntent {
+            input: WorkflowDefinitionAuthoringInput {
+                identity: PART_IDENTITY.to_owned(),
+                dimension: 8,
+            },
+        })
+        .workflow(&application, sparse_definition(NODES))
+        .expect("large definition validates")
+        .publish(WorkflowDefinitionExpectedPredecessor::Absent)
+        .idempotency(&918_401)
+        .execute()
+        .expect("large definition publishes");
+    let WorkflowDefinitionPublicationOutcome::Published(published) = publication else {
+        panic!("expected publication, got {publication:?}");
+    };
+    let before = runtime.workflow_compilation_reuse_counters();
+    assert!(matches!(
+        start_instance(&application, published.definition().clone(), 918_402)
+            .expect("cold start must fit its admission budget"),
+        WorkflowInstanceStartOutcome::Started(_)
+    ));
+    let cold = runtime.workflow_compilation_reuse_counters();
+    assert_eq!(cold.cold_misses(), before.cold_misses() + 1);
+    assert!(matches!(
+        start_instance(&application, published.definition().clone(), 918_403)
+            .expect("warm start must reuse compiled meaning"),
+        WorkflowInstanceStartOutcome::Started(_)
+    ));
+    let warm = runtime.workflow_compilation_reuse_counters();
+    assert_eq!(warm.warm_hits(), cold.warm_hits() + 1);
+    assert_eq!(warm.cold_misses(), cold.cold_misses());
 }
