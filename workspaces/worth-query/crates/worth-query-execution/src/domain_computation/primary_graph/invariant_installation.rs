@@ -3,6 +3,7 @@ use std::marker::PhantomData;
 
 mod program_activation_work_reserve;
 mod schema_resolver;
+mod workflow_publication;
 pub use schema_resolver::WorthQueryApplicationInvariantSchemaResolver;
 
 use worth_query_declaration::facade::application_schema::{
@@ -207,6 +208,7 @@ where
             }
             lowered.push(registration);
         }
+        lowered.push(workflow_publication::registration(layout.workflow())?);
         Ok(lowered)
     }
 }

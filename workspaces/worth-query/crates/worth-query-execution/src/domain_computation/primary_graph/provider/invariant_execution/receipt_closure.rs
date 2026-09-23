@@ -40,11 +40,22 @@ pub(super) fn validate_receipt_closure(
         .iter()
         .map(|receipt| receipt_fact(receipt, evidence))
         .collect::<Vec<_>>();
-    let requirements = requirements
+    let mut requirements = requirements
         .iter()
         .filter_map(|requirement| requirement.application_invariant())
         .map(requirement_fact)
         .collect::<Vec<_>>();
+    let (rule_id, major, minor, maximum_work) =
+        crate::domain_computation::primary_graph::workflow::schema::publication_immutability_receipt_contract();
+    requirements.push(RequirementFact {
+        key: (
+            rule_id,
+            major,
+            minor,
+            InvariantExecutionPoint::CommitBoundary,
+        ),
+        maximum_work,
+    });
     close(&receipts, &requirements, semantic_work)
 }
 

@@ -2,21 +2,24 @@
 
 use worth_foundational::facade::AspectIdentity;
 use worth_relational::facade::identity::KindId;
-use worth_relational::facade::indexes::{DerivedIndexDefinition, DerivedIndexId, DerivedIndexKind};
-use worth_relational::facade::runtime::RelationalRuntime;
 use worth_relational::facade::schema::{RelationalSchemaRegistry, SchemaId, SchemaVersionId};
 
 mod approval;
 mod assessment;
 mod evidence_dependency;
+mod indexes;
 mod layout;
 mod proposal;
 mod proposal_coverage;
+mod publication_immutability;
 mod relations;
 mod transition;
 pub(in crate::domain_computation::primary_graph) mod version;
 
+pub(in crate::domain_computation::primary_graph) use indexes::register_indexes;
 pub(in crate::domain_computation::primary_graph) use layout::*;
+pub(in crate::domain_computation::primary_graph) use publication_immutability::publication_immutability_receipt_contract;
+pub(in crate::domain_computation::primary_graph) use publication_immutability::publication_immutability_registration;
 
 use approval::lower_approval;
 use evidence_dependency::lower_evidence_dependency;
@@ -355,45 +358,4 @@ pub(in crate::domain_computation::primary_graph) fn lower_workflow(
     ))
 }
 
-pub(in crate::domain_computation::primary_graph) fn register_indexes(
-    runtime: &RelationalRuntime,
-    layout: &mut WorthQueryWorkflowLayout,
-) {
-    let installed = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "worth-query-workflow.lineage-identity".to_owned(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: layout.lineage.identity.clone(),
-        },
-        branch_scoped: true,
-    });
-    layout.lineage.identity_index_id = installed.index_id;
-    let installed = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "worth-query-workflow.definition-content-identity".to_owned(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: layout.definition.content_identity.clone(),
-        },
-        branch_scoped: true,
-    });
-    layout.definition.content_identity_index_id = installed.index_id;
-    let installed = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "worth-query-workflow.instance-identity".to_owned(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: layout.instance.identity.clone(),
-        },
-        branch_scoped: true,
-    });
-    layout.instance.identity_index_id = installed.index_id;
-    let installed = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "worth-query-workflow.proposal-identity".to_owned(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: layout.proposal.identity.clone(),
-        },
-        branch_scoped: true,
-    });
-    layout.proposal.identity_index_id = installed.index_id;
-}
 use assessment::lower_assessment_evidence;

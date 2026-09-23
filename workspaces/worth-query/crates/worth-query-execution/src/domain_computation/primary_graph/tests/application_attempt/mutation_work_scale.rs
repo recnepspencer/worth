@@ -73,7 +73,9 @@ fn mutation_work_is_invariant_to_unrelated_graph_population() {
     );
     assert_eq!(
         baseline.invariant_work_units(),
-        baseline.proposed_fact_count() as u64
+        // The always-installed publication custody receipt costs one fixed
+        // unit even when this account mutation does not touch a workflow.
+        baseline.proposed_fact_count() as u64 + 1
     );
     assert_eq!(baseline.relational_invariant_execution_count(), 3);
     assert!(baseline.relational_invariant_result_count() > 0);
