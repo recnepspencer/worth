@@ -50,6 +50,11 @@ Store mutation contract.
 | `PhysicalCheckpointDeadline::after_milliseconds(...)` | Build a nonzero checkpoint deadline without importing Signal. |
 | `PhysicalCheckpointSubmission::start(...)` | Admit or join one managed fuzzy-checkpoint attempt. |
 | `PhysicalCheckpointHandle::{progress,poll,request_cancellation,wait,dispose}` | Observe checkpoint progress or explicitly abandon observation. |
+| `PhysicalRecordSubmission::rewrite_selected_inline_segment(...)` | Prepare a record-preserving rewrite of the selected tail segment. |
+| `PhysicalRecordSubmission::rewrite_selected_inline_pages(...)` | Prepare a rewrite of an exact live page span into a compact destination generation. |
+| `PhysicalRecordSubmission::{plan_inline_artifact_rewrites,rewrite_planned_inline_artifact}` | Plan a bounded set of inline artifacts, then prepare one planned rewrite. |
+| `PhysicalRecordSubmission::rewrite_selected_extent_record(...)` | Prepare a copy-on-write rewrite of one extent record (at most 256 KiB) into extent generation g+1. |
+| `ServingPhysicalRuntime::retire_displaced_segment()` | Durably retire one displaced inline or extent generation that no live reader protects. |
 | `ServingPhysicalRuntime::close_plan()` | Drain checkpoints and mutations, dispose Signal, close residency, and release media in order. |
 
 ## Core Mental Model
@@ -309,6 +314,57 @@ after that boundary may the Store evaluate reclamation. The completed outcome
 reports the retained tail, binding compaction, and WAL reclamation observation;
 none of those descriptive values exposes delete or recycle authority.
 
+## Record-Preserving Rewrite And Retained Storage
+
+A rewrite is an ordinary managed mutation. It keeps record identities and bytes
+and writes canonical rewrite redo before candidate data. Preparation records
+the current root generation from the root owner's snapshot. The build takes a
+fresh snapshot and refuses when the generation moved, and the single pending
+publication admission below keeps another publication from changing the pages
+it copies. It does not hold a reader protection registration. Before the first
+WAL byte, the publication owner admits:
+
+- **Pending publication.** One root-changing publication may be pending. A
+  WAL-durable predecessor ends a later attempt as `ScopeConflict` without a
+  second reservation, and a published predecessor ends a prepared rewrite as
+  `SourceChanged`.
+- **Retained-storage growth.** The WAL group, candidate pages and root metadata
+  are charged against hard byte and obligation ceilings. Progress headroom
+  inside those ceilings is reserved for one checkpoint or cleanup cycle. The
+  byte ceiling is widened by the declared retained WAL tail, because each
+  sealed WAL group stays charged until its segment is reclaimed. The Store
+  default is an 8 MiB byte ceiling and 4,096 obligations, with 64 KiB and 8
+  obligations withheld as headroom. Growth may therefore use 8 MiB − 64 KiB
+  plus the checkpoint policy's retained WAL tail limit, and 4,088 obligations.
+  Only the tail term follows caller checkpoint policy. A request that does not fit ends as
+  `RetentionPressure` with no effect.
+
+A span rewrite publishes a compact destination generation starting at frame 0.
+The source generation stays readable while the current root or any protected
+root still reaches it. A completed rewrite whose displaced source has not yet
+been retired is a successful publication, not a partial one.
+
+An extent rewrite (`ExtentRewrite` mutation family) keeps the record identity,
+extent identity and bytes and writes the payload as extent generation g+1 with
+a new manifest. It changes neither the record count nor the inline tail. Its
+redo names the extent id as both placements and digests the full payload, so
+recovery can prove or rebuild the successor from the verified source.
+Generation g stays readable until retired.
+
+`retire_displaced_segment()` is the only deletion path for displaced data, and
+it retires a displaced extent generation's data and manifest together. It
+denies `Protected` while a live reader holds the source and `Unresolved` while
+an earlier publication is still unsettled. Otherwise it claims the generation,
+makes the retirement intent WAL-durable, checkpoints the successor root, then
+deletes and synchronizes the namespace. The growth charge is released only after
+namespace durability. Each stage names its failure (`WalWrite`, `WalSync`,
+`Checkpoint`, `Delete` and so on). The intent survives WAL rotation and
+checkpoint until the completion record is durable. Reopen charges retained WAL
+bytes plus the overhead of the newest publications whose frames remain, so a
+fresh process cannot recover growth it has not reclaimed. Displaced extent
+generations are recharged by walking only the routing blocks each same-count
+maintenance root wrote.
+
 ## Backend Profiles And Admission
 
 The ordinary platform-durable policy currently admits exactly:
@@ -380,17 +436,25 @@ retry with fresh idempotency material merely to make the alert disappear.
 - Cancelling by dropping a handle.
 - Merging group-member identities because the group shares a barrier.
 - Deleting WAL because checkpoint bytes exist.
+- Deleting a displaced segment outside `retire_displaced_segment()`, or
+  treating an absent file as completed retirement.
+- Retrying `RetentionPressure` without checkpointing or retiring first.
 - Using a raw backend profile or Foundational receipt as durability authority.
 - Feeding evidence projections back into Store progression.
 - Treating dirty or written-back memory as platform durable.
 
-## Current Limits And C.8 Handoff
+## Current Limits And Recovery Handoff
 
-C.7 establishes ordinary physical mutation fate and namespace-durable
-checkpoint publication. It does not perform fresh-process source precedence,
-redo, root selection, or indeterminate-operation reconciliation.
+This owner establishes ordinary physical mutation fate, record-preserving
+rewrite, retirement and namespace-durable checkpoint publication. It does not
+perform fresh-process source precedence, redo, root selection, or
+indeterminate-operation reconciliation; recovery owns those.
 
-C.8 will independently reopen sealed persisted facts: current and previous root
+Rewrite and retirement are caller-invoked. No Store producer schedules
+compaction automatically, and the retained-storage profile is not a public
+configuration surface.
+
+C.8 independently reopens sealed persisted facts: current and previous root
 bases, the latest namespace-durable checkpoint and covered LSN range, the
 contiguous WAL tail, retained terminal and every unresolved idempotency binding,
 persisted barrier evidence, and classified partial residue. Static
@@ -398,7 +462,7 @@ configuration, backend profile, and Recovery-scoped allocation are freshly
 admitted in the new process and must match those facts. The C.7
 in-memory closeout handoff describes that contract for orderly closeout and
 certification; it is not serialized or accepted by fresh-process recovery. C.8
-will not receive the live runtime, buffer pool, Signal graph, scheduler queues,
+does not receive the live runtime, buffer pool, Signal graph, scheduler queues,
 decoded artifact graph, or ordinary execution authority.
 
 The normative C.8 architecture, public outcome model, source precedence,

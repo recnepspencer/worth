@@ -19,6 +19,7 @@ use crate::physical_runtime::{
 };
 
 mod candidate_cleanup;
+mod candidate_verification;
 mod effect_progression;
 mod failure_outcome;
 

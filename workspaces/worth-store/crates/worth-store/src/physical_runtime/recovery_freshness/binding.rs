@@ -8,8 +8,7 @@ use worth_store_physical_integrity::VerifiedCheckpointStream;
 use worth_store_wal::WalLsnRange;
 
 use crate::physical_runtime::durability::{
-    unresolved_retirements, PersistedPhysicalMutationAttemptBinding,
-    PhysicalBindingDecodingContext,
+    PersistedPhysicalMutationAttemptBinding, PhysicalBindingDecodingContext,
 };
 use crate::physical_runtime::{
     PhysicalDurabilityPolicyIdentity, PhysicalIdempotencyPolicy, PhysicalMutationIdentity,
@@ -22,6 +21,7 @@ mod evidence;
 mod failure;
 #[cfg(test)]
 mod merge_tests;
+mod retirement_obligation;
 mod wal_frame_input;
 mod wal_payload;
 
@@ -30,6 +30,8 @@ pub use checkpoint_basis::{
 };
 pub use failure::StoreRecoveryBindingSampleFailure;
 use failure::{empty_failure, sample_failure};
+use retirement_obligation::retirement_obligations;
+pub use retirement_obligation::{StoreRecoveryRetiredArtifact, StoreRecoveryRetirementObligation};
 pub(super) use wal_frame_input::sample_binding;
 use wal_frame_input::RecoveryWalFrameInput;
 use wal_payload::ClassifiedWalPayload;
@@ -43,15 +45,6 @@ pub struct StoreRecoveryBindingFreshnessSample {
     operations: Box<[StoreRecoveryOperationEvidence]>,
     wal_members: Box<[StoreRecoveryWalMember]>,
     retirements: Box<[StoreRecoveryRetirementObligation]>,
-}
-
-/// An unresolved `store.physical.retirement.v1` intent reconstructed from WAL.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct StoreRecoveryRetirementObligation {
-    source_root: u64,
-    segment_id: u64,
-    generation: u64,
-    bytes: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -105,7 +98,18 @@ pub enum StoreRecoveryBindingSampleDenial {
     RedoByteLimit,
 }
 
+/// Which WAL members the checkpoint already covers are sampled.
+///
+/// Planning redoes only the tail after the checkpoint cutoff; cleanup proves the
+/// covered members it is about to delete are terminal.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(in crate::physical_runtime::recovery_freshness) enum CheckpointCoveredMembers {
+    Skip,
+    Sample,
+}
+
 fn sample_binding_from_frames<'frame, Frame: RecoveryWalFrameInput + 'frame>(
+    covered: CheckpointCoveredMembers,
     freshness: &super::PhysicalRecoveryFreshnessAuthority,
     checkpoint_basis: Option<&StoreRecoveryCheckpointBindingBasis>,
     media: &AdmittedRecoveryFilesystemMedia,
@@ -148,9 +152,8 @@ fn sample_binding_from_frames<'frame, Frame: RecoveryWalFrameInput + 'frame>(
     let mut retirement_records = Vec::new();
     let mut redo_bytes = 0_u64;
     for frame in wal_frames {
-        let classified = wal_payload::classify_wal_payload(frame.recovery_payload()).map_err(
-            |denial| sample_failure(denial, &operations, wal_members.len(), redo_bytes),
-        )?;
+        let classified = wal_payload::classify_wal_payload(frame.recovery_payload())
+            .map_err(|denial| sample_failure(denial, &operations, wal_members.len(), redo_bytes))?;
         let ClassifiedWalPayload::Member {
             binding: binding_bytes,
             redo: canonical_redo,
@@ -161,7 +164,9 @@ fn sample_binding_from_frames<'frame, Frame: RecoveryWalFrameInput + 'frame>(
             }
             continue;
         };
-        if frame.recovery_lsn_range().end_exclusive().get() <= wal_cutoff {
+        if covered == CheckpointCoveredMembers::Skip
+            && frame.recovery_lsn_range().end_exclusive().get() <= wal_cutoff
+        {
             continue;
         }
         redo_bytes = redo_bytes
@@ -278,52 +283,11 @@ fn sample_binding_from_frames<'frame, Frame: RecoveryWalFrameInput + 'frame>(
     })
 }
 
-#[cfg(test)]
-mod retirement_obligation_tests {
-    use crate::physical_runtime::durability::{
-        RetirementRecord, RETIREMENT_COMPLETION, RETIREMENT_INTENT,
-    };
-
-    use super::retirement_obligations;
-
-    #[test]
-    fn completion_removes_the_reconstructed_obligation() {
-        let intent = RetirementRecord {
-            action: RETIREMENT_INTENT,
-            source_root: 3,
-            segment_id: 1,
-            generation: 7,
-            bytes: 32,
-        };
-        let completion = RetirementRecord {
-            action: RETIREMENT_COMPLETION,
-            ..intent
-        };
-        assert_eq!(retirement_obligations(vec![intent]).len(), 1);
-        assert!(retirement_obligations(vec![intent, completion]).is_empty());
-    }
-}
-
 fn checkpoint_evidence(
     record: crate::physical_runtime::durability::DecodedPhysicalMutationBindingRecord,
     selected_generation: u64,
 ) -> StoreRecoveryOperationEvidence {
     evidence::checkpoint_evidence(record, selected_generation)
-}
-
-fn retirement_obligations(
-    records: Vec<crate::physical_runtime::durability::RetirementRecord>,
-) -> Box<[StoreRecoveryRetirementObligation]> {
-    unresolved_retirements(records)
-        .into_iter()
-        .map(|record| StoreRecoveryRetirementObligation {
-            source_root: record.source_root,
-            segment_id: record.segment_id,
-            generation: record.generation,
-            bytes: record.bytes,
-        })
-        .collect::<Vec<_>>()
-        .into_boxed_slice()
 }
 
 fn merge_evidence(

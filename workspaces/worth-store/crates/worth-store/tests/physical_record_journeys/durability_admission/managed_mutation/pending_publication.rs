@@ -1,5 +1,6 @@
 use worth_store::physical_runtime::{
-    PhysicalMutationIndeterminateStage, PhysicalMutationOutcome, PhysicalMutationProvenNoEffectCause,
+    PhysicalMutationIndeterminateStage, PhysicalMutationOutcome,
+    PhysicalMutationProvenNoEffectCause,
 };
 use worth_store_physical_backend::MediaOperationRole;
 
@@ -50,7 +51,10 @@ fn indeterminate_wal_append_with_no_effects_keeps_the_publication_hold() {
             assert_eq!(fate.completed_effect_count(), 0);
         }
         PhysicalMutationOutcome::ProvenNoEffect(fate) => {
-            panic!("unstarted WAL append must stay indeterminate: {:?}", fate.cause())
+            panic!(
+                "unstarted WAL append must stay indeterminate: {:?}",
+                fate.cause()
+            )
         }
         PhysicalMutationOutcome::Completed(_) => {
             panic!("unstarted WAL append must not complete")
@@ -65,7 +69,10 @@ fn indeterminate_wal_append_with_no_effects_keeps_the_publication_hold() {
     );
     match prepare(&serving, placement, [22; 32], b"blocked-by-indeterminate").execute() {
         PhysicalMutationOutcome::ProvenNoEffect(fate) => {
-            assert_eq!(fate.cause(), PhysicalMutationProvenNoEffectCause::ScopeConflict);
+            assert_eq!(
+                fate.cause(),
+                PhysicalMutationProvenNoEffectCause::ScopeConflict
+            );
         }
         PhysicalMutationOutcome::Completed(_) => {
             panic!("an indeterminate publication must block the next root change")

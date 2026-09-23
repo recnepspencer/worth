@@ -2,7 +2,8 @@ use worth_store::physical_runtime::PhysicalOperationAllocationScope as Scope;
 
 use super::{configuration::FIXTURE_FRAME_BYTES, PhysicalResidencyStoreWorld};
 
-const INLINE_RECORD_WORKING_SET_FRAMES: u64 = 2;
+// Materialization, encoded candidate, and recovery projection frames.
+const INLINE_RECORD_WORKING_SET_FRAMES: u64 = 3;
 const ROUTING_WORKING_SET_FRAMES: u64 = 64 * 3 + 4;
 const ONE_INLINE_RECORD_PUBLICATION_BYTES: u64 =
     (INLINE_RECORD_WORKING_SET_FRAMES + ROUTING_WORKING_SET_FRAMES) * FIXTURE_FRAME_BYTES;

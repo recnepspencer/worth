@@ -264,6 +264,22 @@ impl RootProtectionRegistry {
         protected
     }
 
+    /// True when a live reader holds any root at or below generation.
+    ///
+    /// A displaced extent generation is readable from every root between the
+    /// one that placed it and the rewrite's source root. No index names that
+    /// span, so the scan is counted and bounded by the retained-root limit.
+    pub(in crate::physical_runtime) fn protects_root_at_or_below(&self, generation: u64) -> bool {
+        let mut state = self
+            .state
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        state.index_probes = state.index_probes.saturating_add(1);
+        let (visited, protected) = state.roots.any_key(|root| *root <= generation);
+        state.examined_entries = state.examined_entries.saturating_add(visited);
+        protected
+    }
+
     /// True when a live reader still names this inline segment as its tail.
     ///
     /// The lookup is the tail index. It does not walk protected roots or the
@@ -333,6 +349,12 @@ mod counted {
         pub(super) fn contains(&self, key: &K) -> (u64, bool) {
             let (visited, value) = self.consult(key);
             (visited, value.is_some())
+        }
+
+        /// Charges every stored key as visited, whether or not the scan stops early.
+        pub(super) fn any_key(&self, matches: impl Fn(&K) -> bool) -> (u64, bool) {
+            let visited = self.entries.len() as u64;
+            (visited, self.entries.keys().any(matches))
         }
 
         pub(super) fn len(&self) -> usize {

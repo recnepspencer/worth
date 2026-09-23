@@ -97,6 +97,26 @@ impl PhysicalRecordSubmission {
         director.prepare_selected_segment_rewrite(placement, request, 1)
     }
 
+    /// Rewrites one current extent-backed record into its next extent
+    /// generation, preserving record identity and payload bytes.
+    pub fn rewrite_selected_extent_record(
+        &self,
+        placement: AdmittedRecordPlacementPolicy,
+        request: PhysicalMutationRequest,
+        record: super::super::super::PhysicalRecordId,
+    ) -> PhysicalMutationPreparationOutcome {
+        let director = match self.director.upgrade() {
+            Some(director) => director,
+            None => {
+                return TransitionOutcome::stale(
+                    PhysicalMutationPreparationStale::PublicationAuthorityReleased,
+                )
+                .into()
+            }
+        };
+        director.prepare_extent_record_rewrite(placement, request, record.persisted())
+    }
+
     pub fn rewrite_selected_inline_pages(
         &self,
         placement: AdmittedRecordPlacementPolicy,

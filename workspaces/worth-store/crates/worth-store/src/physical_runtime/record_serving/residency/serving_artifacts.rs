@@ -60,11 +60,20 @@ impl<'media> ServingRecordArtifacts<'media> {
         self.tree.file_exists(artifact)
     }
 
-    pub(in crate::physical_runtime::record_serving) fn file_length(
+    /// Bytes a displaced generation still occupies, or `None` once retirement
+    /// removed every file it owned.
+    pub(in crate::physical_runtime::record_serving) fn retained_bytes(
         &self,
-        artifact: RecordArtifactFile,
-    ) -> Result<u64, ArtifactTreeFailure> {
-        self.tree.file_length(artifact)
+        artifact: crate::physical_runtime::durability::RetiredArtifact,
+    ) -> Result<Option<u64>, ArtifactTreeFailure> {
+        let mut retained = None;
+        for file in artifact.files() {
+            if self.tree.file_exists(file)? {
+                let bytes = self.tree.file_length(file)?;
+                retained = Some(retained.unwrap_or(0_u64).saturating_add(bytes));
+            }
+        }
+        Ok(retained)
     }
 
     pub(in crate::physical_runtime::record_serving) fn load_exact(

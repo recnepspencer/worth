@@ -1,16 +1,19 @@
-use worth_store_physical_format::{
-    DurablePhysicalRootManifest, PhysicalSegmentId, RecordArtifactFile,
-};
+use worth_store_physical_format::{DurablePhysicalRootManifest, PhysicalSegmentId};
 
 use super::super::access::manifest_routing::{
     ManifestDiscoveryCounterSnapshot, ManifestLookupFailure,
 };
 use super::super::access::segment_membership::SegmentMembershipReader;
 use super::super::residency::serving_artifacts::ServingRecordArtifacts;
-use super::bootstrap::{
-    backend_before_effect, BootstrapTransitionFailure, DisplacedSegmentCharge,
-    RecordBootstrapDenial,
-};
+use super::bootstrap::{backend_before_effect, BootstrapTransitionFailure, RecordBootstrapDenial};
+use crate::physical_runtime::durability::{DisplacedArtifact, RetiredArtifact};
+
+/// A same-count rewrite step that advanced the tail segment generation.
+struct SegmentDisplacement {
+    source_root: u64,
+    segment_id: u64,
+    generation: u64,
+}
 
 /// Rewrite steps in the publication chain whose source segment file remains
 /// although the current root reads no frame from it.
@@ -26,20 +29,27 @@ pub(super) fn retained_displaced_segments(
     artifacts: &ServingRecordArtifacts,
     membership: &SegmentMembershipReader<'_>,
     allocation: &worth_store_buffer_pool::OperationAllocationGrant,
-) -> Result<Vec<DisplacedSegmentCharge>, BootstrapTransitionFailure> {
+) -> Result<Vec<DisplacedArtifact>, BootstrapTransitionFailure> {
     let mut displaced = Vec::new();
     let mut before = prior.first();
     for root in prior.iter().skip(1).chain(std::iter::once(current)) {
         if let Some(older) = before {
             if let Some(charge) = rewrite_displacement(older, root) {
-                let present = artifacts
-                    .file_exists(RecordArtifactFile::Segment {
-                        segment: charge.segment_id,
-                        generation: charge.generation,
-                    })
+                let artifact = RetiredArtifact::Segment {
+                    segment: charge.segment_id,
+                    generation: charge.generation,
+                };
+                let retained = artifacts
+                    .retained_bytes(artifact)
                     .map_err(backend_before_effect)?;
-                if present && unread_by_current_root(membership, allocation, &charge)? {
-                    displaced.push(charge);
+                if let Some(bytes) = retained {
+                    if unread_by_current_root(membership, allocation, &charge)? {
+                        displaced.push(DisplacedArtifact {
+                            source_root: charge.source_root,
+                            artifact,
+                            bytes,
+                        });
+                    }
                 }
             }
         }
@@ -51,7 +61,7 @@ pub(super) fn retained_displaced_segments(
 fn rewrite_displacement(
     before: &DurablePhysicalRootManifest,
     after: &DurablePhysicalRootManifest,
-) -> Option<DisplacedSegmentCharge> {
+) -> Option<SegmentDisplacement> {
     if !after.requires_maintenance_protocol() || before.record_count() != after.record_count() {
         return None;
     }
@@ -62,7 +72,7 @@ fn rewrite_displacement(
     {
         return None;
     }
-    Some(DisplacedSegmentCharge {
+    Some(SegmentDisplacement {
         source_root: before.generation(),
         segment_id: before_segment.segment_id().get(),
         generation: before_segment.generation().get(),
@@ -73,7 +83,7 @@ fn rewrite_displacement(
 fn unread_by_current_root(
     membership: &SegmentMembershipReader<'_>,
     allocation: &worth_store_buffer_pool::OperationAllocationGrant,
-    charge: &DisplacedSegmentCharge,
+    charge: &SegmentDisplacement,
 ) -> Result<bool, BootstrapTransitionFailure> {
     let segment =
         PhysicalSegmentId::from_raw(charge.segment_id).map_err(|_| current_root_damaged())?;
@@ -86,7 +96,7 @@ fn unread_by_current_root(
         .all(|entry| entry.data_generation() != charge.generation))
 }
 
-fn membership_failure(failure: ManifestLookupFailure) -> BootstrapTransitionFailure {
+pub(super) fn membership_failure(failure: ManifestLookupFailure) -> BootstrapTransitionFailure {
     match failure {
         ManifestLookupFailure::Backend(failure) => backend_before_effect(failure),
         ManifestLookupFailure::Residency(denial) => {

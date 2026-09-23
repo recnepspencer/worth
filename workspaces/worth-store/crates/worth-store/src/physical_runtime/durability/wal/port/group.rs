@@ -184,7 +184,12 @@ impl PhysicalWalAppendPort {
                     PhysicalMutationIdempotencyGroupSealDenial::AlreadyGroupSealed
                 ) {
                     drop(charged);
-                    return self.growth_denied(reserved);
+                    return PhysicalWalGroupAppendOutcome::AdmissionRejected(
+                        RejectedPhysicalDurabilityGroup::before_effect(
+                            self.release_before_effect(reserved),
+                            denial.admission_denial(),
+                        ),
+                    );
                 }
             }
         }
@@ -203,6 +208,16 @@ impl PhysicalWalAppendPort {
         &self,
         reserved: ReservedPhysicalWalGroupMembers,
     ) -> PhysicalWalGroupAppendOutcome {
+        PhysicalWalGroupAppendOutcome::NotAdmitted {
+            members: self.release_before_effect(reserved),
+            cause: PhysicalWalGroupAppendFailureCause::PublicationGrowth,
+        }
+    }
+
+    fn release_before_effect(
+        &self,
+        reserved: ReservedPhysicalWalGroupMembers,
+    ) -> NonEmpty<PreparedPhysicalMutation> {
         let prepared = reserved
             .release_after_no_effect()
             .into_vec()
@@ -210,10 +225,7 @@ impl PhysicalWalAppendPort {
             .map(|member| member.into_parts().0)
             .collect();
         self.owner.release_group_before_effect();
-        PhysicalWalGroupAppendOutcome::NotAdmitted {
-            members: nonempty(prepared),
-            cause: PhysicalWalGroupAppendFailureCause::PublicationGrowth,
-        }
+        nonempty(prepared)
     }
 
     fn append_reserved_group(

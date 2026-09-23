@@ -596,12 +596,20 @@ the unit classification without embedding evidence in the denial enum.
 - Stable: readers protect one captured physical root; `RecordReadSession`
   retains that registration and at most one current frame. There is no owning
   whole-record convenience or direct pool-control API.
+- Stable: a live protection blocks retirement of any generation its root still
+  reads, so a displaced segment stays readable, even when cold, until the last
+  protecting reader and session release. `retire_displaced_segment()` then
+  reports `Protected` rather than deleting it.
 - Stable for physical adapters: exact Recovery, Scrub, Maintenance,
   Verification, and Blob allocations borrow the Store runtime and grant only
   bounded temporary-byte ownership.
 - Certification-only: direct speculative controls and fault-driving probes.
 - Not provided here: WAL/checkpoint ordering, crash reconstruction, integrity
   admission, semantic stable reads, QoS policy, or blob protocol.
+
+The Rust examples in this guide compile as
+`crates/worth-store/tests/physical_runtime_authority/bounded_physical_record_access_examples.rs`
+in the runtime-authority UI suite.
 
 ## Related Docs
 

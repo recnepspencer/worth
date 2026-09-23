@@ -162,6 +162,7 @@ impl PhysicalCheckpointCaptureOwner {
         Ok(PhysicalCheckpointIdentity::new(self.store, sequence))
     }
 
+    #[cfg(feature = "certification-test-authority")]
     pub(in crate::physical_runtime) fn certification_checkpoint_under_pressure(
         &self,
         foreground_pressure_events: u64,
@@ -191,6 +192,7 @@ impl PhysicalCheckpointCaptureOwner {
         self.work.fail_next_admission_after_noting_head();
     }
 
+    #[cfg(feature = "certification-test-authority")]
     pub(in crate::physical_runtime) fn certification_reclamation_under_pressure(
         &self,
         foreground_pressure_events: u64,

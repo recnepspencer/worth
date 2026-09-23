@@ -219,12 +219,7 @@ pub fn restamp_inline_page_generation(
         return Err(InlinePageDenial::InvalidPageIdentity);
     }
     let mut bytes = page.to_vec();
-    reseal_durable_frame(
-        &mut bytes,
-        DurableFrameKind::InlinePage,
-        format,
-        generation,
-    );
+    reseal_durable_frame(&mut bytes, DurableFrameKind::InlinePage, format, generation);
     Ok(bytes)
 }
 

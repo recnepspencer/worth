@@ -24,21 +24,6 @@ impl StoreRecoveryBindingFreshnessSample {
     }
 }
 
-impl StoreRecoveryRetirementObligation {
-    pub const fn source_root(&self) -> u64 {
-        self.source_root
-    }
-    pub const fn segment_id(&self) -> u64 {
-        self.segment_id
-    }
-    pub const fn generation(&self) -> u64 {
-        self.generation
-    }
-    pub const fn bytes(&self) -> u64 {
-        self.bytes
-    }
-}
-
 impl StoreRecoveryOperationEvidence {
     pub const fn idempotency_identity(&self) -> [u8; 32] {
         self.idempotency_identity

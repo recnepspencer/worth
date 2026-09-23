@@ -1,3 +1,7 @@
+use super::{
+    executor::admitted_write,
+    fixture::{foreground_saturation_fixture, serving_from_initialization_with_work_profile},
+};
 use tempfile::tempdir;
 use worth_store::physical_runtime::{
     PhysicalExecutorCommand, PhysicalStoreCloseOutcome, RecordSchedulerReservationDenial,
@@ -5,10 +9,6 @@ use worth_store::physical_runtime::{
 use worth_store_io_scheduler::foreground_reservation::{
     BandwidthToken, DirtyPageBudget, ForegroundLaneDeclaration, ForegroundLatencyEnvelope,
     ForegroundResourceBudget, QueueSlot, WorkerPermit, WriteBackWindow,
-};
-use super::{
-    executor::admitted_write,
-    fixture::{foreground_saturation_fixture, serving_from_initialization_with_work_profile},
 };
 
 fn page_write_lane() -> ForegroundLaneDeclaration {
@@ -38,8 +38,8 @@ fn yielded_checkpoint_and_reclamation_heads_block_foreground_until_admit_or_canc
         b"write-02".as_slice(),
         b"write-03".as_slice(),
     ]) {
-        let command = PhysicalExecutorCommand::exact_write(admitted_write(&serving, request), bytes)
-            .unwrap();
+        let command =
+            PhysicalExecutorCommand::exact_write(admitted_write(&serving, request), bytes).unwrap();
         serving.execute_physical_work(command).unwrap();
     }
 
@@ -63,9 +63,11 @@ fn yielded_checkpoint_and_reclamation_heads_block_foreground_until_admit_or_canc
         .reserve_physical_scheduler_foreground(page_write_lane())
         .expect("an admitted reclamation quantum releases the owed turn");
 
-    let command =
-        PhysicalExecutorCommand::exact_write(admitted_write(&serving, fourth), b"write-04".as_slice())
-            .unwrap();
+    let command = PhysicalExecutorCommand::exact_write(
+        admitted_write(&serving, fourth),
+        b"write-04".as_slice(),
+    )
+    .unwrap();
     serving.execute_physical_work(command).unwrap();
     assert!(matches!(
         serving.close_plan().execute(),

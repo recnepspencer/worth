@@ -21,7 +21,7 @@ use crate::physical_runtime::record_serving::{
     PreparedPhysicalRootProjection, RecordAppendDenial, RecordAppendError,
 };
 use crate::physical_runtime::{
-    durability::{PreparedPhysicalDataFrame, PreparedPhysicalDataPlan},
+    durability::{PreparedPhysicalDataFrame, PreparedPhysicalDataPlan, RetiredArtifact},
     CertifiedPriorPageBasis, PhysicalDataFrameIdentity, PreparedPhysicalMutation,
 };
 
@@ -203,15 +203,23 @@ impl RecordPublicationDirector {
         )
         .ok_or_else(damaged)?;
         self.root_owner
-            .hold_rewrite_candidate(segment.segment.generation().get(), source_bytes)
-            .map_err(|()| RecordAppendError::Denied(RecordAppendDenial::PhysicalPressure))?;
+            .hold_rewrite_candidate(
+                RecordArtifactFile::Segment {
+                    segment: segment.segment.segment_id().get(),
+                    generation: segment.segment.generation().get(),
+                },
+                source_bytes,
+            )
+            .map_err(|()| RecordAppendError::Denied(RecordAppendDenial::RetentionPressure))?;
         // The prefix before the span stays live in the source file unless the
         // span covered every frame the root still reads from it.
         if displaces_source {
-            self.root_owner.note_displaced_segment(
+            self.root_owner.note_displaced(
                 current_root.generation(),
-                segment.segment.segment_id().get(),
-                page_entry.data_generation(),
+                RetiredArtifact::Segment {
+                    segment: segment.segment.segment_id().get(),
+                    generation: page_entry.data_generation(),
+                },
                 u64::from(page_entry.data_page_count()) * page_bytes,
             );
         }

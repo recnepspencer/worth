@@ -56,18 +56,6 @@ impl<'media> IntegrityAdmittedRootManifest<'media> {
         self.manifest()
     }
 
-    pub(crate) fn project_for_recovery(
-        &self,
-        counters: &mut RecoveryIntegrityIngressCounters,
-    ) -> (DurablePhysicalRootManifest, PhysicalRecordFormatDeclaration) {
-        counters.record_owner_projection();
-        self.manifest()
-    }
-
-    pub(crate) fn scope(&self) -> worth_store_physical_integrity::PhysicalArtifactScope {
-        self.source.scope()
-    }
-
     pub(crate) fn bind_checkpoint_base(
         &self,
         selected: &worth_store_recovery_physics::SelectedPhysicalRoot,

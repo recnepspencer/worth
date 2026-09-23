@@ -17,6 +17,9 @@ propagation adapter, and `StablePhysicalReadExecution`. Its
 completion. The lower `PhysicalReadPlanCompletionReceipt` alone proves no
 byte access and cannot be promoted to a byte-read receipt.
 
+Read-protection disposition adapters are compiled only for unit tests until a
+C.11 owner consumes them; no resident owner issues dispositions yet.
+
 See [_docs/worth-store/bounded-physical-record-access.md](../../../../_docs/worth-store/bounded-physical-record-access.md)
 for admission limits, borrowed-byte lifetime, shutdown, and adapter boundaries.
 
@@ -39,6 +42,24 @@ Managed fuzzy checkpoints are submitted through
 exact contiguous retained WAL tail, idempotency-binding compaction, and lawful
 WAL reclamation observation. Checkpoint existence alone grants no deletion
 authority.
+
+## Rewrite, Retirement And Scheduled Maintenance
+
+Record-preserving rewrites are ordinary managed mutations prepared through
+`PhysicalRecordSubmission` (`rewrite_selected_inline_segment`,
+`rewrite_selected_inline_pages` and planned inline-artifact rewrites). The sole
+publication owner admits pending publication and retained-storage growth before
+the first WAL byte; refusals are the typed no-effect causes `ScopeConflict`,
+`SourceChanged` and `RetentionPressure`.
+`ServingPhysicalRuntime::retire_displaced_segment()` is the only deletion path
+for displaced data, and it returns `PhysicalRetirementDenial` when a live
+reader, a pending publication or an unfinished stage blocks it.
+
+Every physical effect lowers exhaustively into exact conflict keys, and only
+the instance executor performs scheduled maintenance effects; the repository
+boundary checker enforces both. Store schedules checkpoint, scrub and WAL
+reclamation as background work through the one I/O scheduler. It has no
+automatic compaction producer: rewrite and retirement are caller-invoked.
 
 See [_docs/worth-store/physical-durability-and-checkpoints.md](../../../../_docs/worth-store/physical-durability-and-checkpoints.md)
 for the caller and operator contract.

@@ -22,6 +22,10 @@ fn persist(multiple: u64, require_reclaim: bool) {
     let parent = tempfile::tempdir().unwrap();
     let root = parent.path().join("store");
     let serving = initialize(&root);
+    // The canonical policy's 8 MiB hard ceiling, with progress headroom withheld
+    // inside it; the product default also covers the declared WAL tail.
+    let ceiling = 8 * 1024 * 1024;
+    serving.certification_limit_candidate_growth_bytes(ceiling - 64 * 1024);
     let policy = placement();
     let resident = 64 * 1024;
     let target = multiple * resident;
@@ -30,7 +34,6 @@ fn persist(multiple: u64, require_reclaim: bool) {
     let mut payload = 0_u64;
     let mut ordinal = 1_u64;
     let mut reclaims = 0_u64;
-    let ceiling = 8 * 1024 * 1024;
     while payload < target {
         if append_copies(&serving, policy, ordinal, &record, copies).is_none() {
             let charged = serving.certification_charged_growth_bytes();

@@ -380,6 +380,13 @@ impl PhysicalDurabilityGroupBasis {
 }
 
 impl RejectedPhysicalDurabilityGroup {
+    pub(in crate::physical_runtime) fn before_effect(
+        members: NonEmpty<PreparedPhysicalMutation>,
+        cause: PhysicalDurabilityGroupAdmissionDenial,
+    ) -> Self {
+        rejected(members, cause)
+    }
+
     pub const fn cause(&self) -> PhysicalDurabilityGroupAdmissionDenial {
         self.cause
     }

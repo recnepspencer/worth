@@ -94,7 +94,6 @@ fn read_free_space_header(
     let source = required_source(
         discovery.read_free_space_manifest(root.generation(), byte_limit),
         None,
-        artifact,
     )?;
     crate::integrity_ingress::projection::free_space_header(
         &source,
@@ -139,7 +138,6 @@ fn read_segment_pages(
                 byte_limit,
             ),
             None,
-            artifact,
         )?;
         let tree =
             PhysicalTreeIdentity::new(root.tree_identity()).ok_or_else(|| invalid(artifact))?;
@@ -213,7 +211,6 @@ fn read_free_entries(
                 byte_limit,
             ),
             None,
-            artifact,
         )?;
         let tree =
             PhysicalTreeIdentity::new(header.tree_identity()).ok_or_else(|| invalid(artifact))?;

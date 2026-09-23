@@ -147,11 +147,12 @@ fn overlapping_writes_conflict_before_the_second_effect() {
         policy_receipt(requested_budget),
     ) {
         Err(PhysicalSchedulerDenial::EffectConflict) => {}
-        Err(denial) => panic!("an overlapping write must be refused before its effect, got {denial:?}"),
+        Err(denial) => {
+            panic!("an overlapping write must be refused before its effect, got {denial:?}")
+        }
         Ok(_) => panic!("an overlapping write must be refused before its effect"),
     }
-    let command =
-        PhysicalExecutorCommand::exact_write(first, b"overlap!".as_slice()).unwrap();
+    let command = PhysicalExecutorCommand::exact_write(first, b"overlap!".as_slice()).unwrap();
     serving.execute_physical_work(command).unwrap();
     assert_eq!(
         serving

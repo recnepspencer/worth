@@ -148,16 +148,20 @@ pub(super) fn start_selected_segment_rewrite(
         TransitionOutcome::Success(PhysicalMutationPreparationSuccess::Indeterminate(_)) => {
             Err("ordinary C8 segment rewrite preparation was indeterminate".to_owned())
         }
-        TransitionOutcome::Denied(denial) => {
-            Err(format!("ordinary C8 segment rewrite was denied: {denial:?}"))
+        TransitionOutcome::Denied(denial) => Err(format!(
+            "ordinary C8 segment rewrite was denied: {denial:?}"
+        )),
+        TransitionOutcome::Deferred(deferred) => Err(format!(
+            "ordinary C8 segment rewrite was deferred: {deferred:?}"
+        )),
+        TransitionOutcome::Stale(_) => {
+            Err("ordinary C8 segment rewrite authority was stale".to_owned())
         }
-        TransitionOutcome::Deferred(deferred) => {
-            Err(format!("ordinary C8 segment rewrite was deferred: {deferred:?}"))
-        }
-        TransitionOutcome::Stale(_) => Err("ordinary C8 segment rewrite authority was stale".to_owned()),
         TransitionOutcome::RebindRequired(_) => {
             Err("ordinary C8 segment rewrite required a rebind".to_owned())
         }
-        TransitionOutcome::Failed(_) => Err("ordinary C8 segment rewrite preparation failed".to_owned()),
+        TransitionOutcome::Failed(_) => {
+            Err("ordinary C8 segment rewrite preparation failed".to_owned())
+        }
     }
 }

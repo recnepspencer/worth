@@ -35,6 +35,7 @@ impl PhysicalWalReclamationOwner {
         }
     }
 
+    #[cfg(feature = "certification-test-authority")]
     pub(in crate::physical_runtime) fn certification_under_pressure(
         &self,
         checkpoint: worth_store_physical_format::PhysicalCheckpointIdentity,
@@ -174,6 +175,7 @@ impl PhysicalWalReclamationFoundation {
     }
 }
 
+#[cfg(feature = "certification-test-authority")]
 fn certification_scope(
     checkpoint: worth_store_physical_format::PhysicalCheckpointIdentity,
 ) -> Option<crate::physical_runtime::work::PhysicalWalReclamationScope> {

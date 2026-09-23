@@ -249,6 +249,7 @@ impl PhysicalSchedulerAdmissionOwner {
         self.dispatch.release_ready_background();
     }
 
+    #[cfg(feature = "certification-test-authority")]
     pub(in crate::physical_runtime) fn note_wal_reclamation_background_head(&self) {
         self.heads.note(
             background_head::BackgroundHeadKind::Reclamation,
@@ -256,6 +257,7 @@ impl PhysicalSchedulerAdmissionOwner {
         );
     }
 
+    #[cfg(feature = "certification-test-authority")]
     pub(in crate::physical_runtime) fn note_checkpoint_background_head(&self) {
         self.heads.note(
             background_head::BackgroundHeadKind::Checkpoint,

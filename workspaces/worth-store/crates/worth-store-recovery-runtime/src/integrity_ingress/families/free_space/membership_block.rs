@@ -1,6 +1,5 @@
 use worth_store_physical_format::{
-    FreeSpaceBlockReference, FreeSpaceMembershipBlockScopeIdentity,
-    PhysicalRecordFormatDeclaration, RecordFreeSpaceManifestEntry,
+    FreeSpaceBlockReference, FreeSpaceMembershipBlockScopeIdentity, RecordFreeSpaceManifestEntry,
 };
 use worth_store_physical_integrity::IntegrityValidatedFreeSpaceMembershipBlock;
 
@@ -10,14 +9,11 @@ use super::super::super::{
 };
 
 pub(crate) struct IntegrityAdmittedFreeSpaceMembershipBlock<'media> {
-    source: ObservedRecoverySource<'media>,
     validated: IntegrityValidatedFreeSpaceMembershipBlock<'media>,
 }
 
 pub(crate) struct FreeSpaceMembershipBlockProjection<'view> {
     pub identity: FreeSpaceMembershipBlockScopeIdentity,
-    pub reference: FreeSpaceBlockReference,
-    pub record_format: PhysicalRecordFormatDeclaration,
     pub generation: u64,
     pub block_identity: u64,
     pub level: u16,
@@ -33,7 +29,7 @@ impl<'media> IntegrityAdmittedFreeSpaceMembershipBlock<'media> {
         require_observed_recovery_source(&source, validated.scope(), |input| {
             validated.matches_input(input)
         })?;
-        Ok(Self { source, validated })
+        Ok(Self { validated })
     }
 
     pub(crate) fn project<'view>(
@@ -43,18 +39,12 @@ impl<'media> IntegrityAdmittedFreeSpaceMembershipBlock<'media> {
         counters.record_owner_projection();
         FreeSpaceMembershipBlockProjection {
             identity: self.validated.identity(),
-            reference: self.validated.reference(),
-            record_format: self.validated.record_format(),
             generation: self.validated.generation(),
             block_identity: self.validated.block_identity(),
             level: self.validated.level(),
             entries: self.validated.entries(),
             children: self.validated.children(),
         }
-    }
-
-    pub(crate) fn scope(&self) -> worth_store_physical_integrity::PhysicalArtifactScope {
-        self.source.scope()
     }
 }
 

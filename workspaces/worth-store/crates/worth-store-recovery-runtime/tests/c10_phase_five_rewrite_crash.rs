@@ -1,24 +1,26 @@
 #[allow(dead_code)]
+mod c10_crash_evidence;
+#[allow(dead_code)]
 mod c10_phase_five_read;
 #[allow(dead_code)]
 mod phase_three_support;
 
+use c10_crash_evidence::{
+    directory_snapshot, ordinary_limits, prepare_rewrite, segment_snapshot, wal_contains_rewrite,
+};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::thread;
 use std::time::{Duration, Instant};
 
-use phase_three_support::{limit_declaration, recovery_request_with_limits};
+use phase_three_support::recovery_request_with_limits;
 use worth_proof::TransitionOutcome;
 use worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint;
 use worth_store::physical_runtime::{
     PhysicalCheckpointDeadline, PhysicalCheckpointIdempotencyKey, PhysicalCheckpointOutcome,
-    PhysicalCheckpointRequest, PhysicalMutationDeadline, PhysicalMutationIdempotencyMaterial,
-    PhysicalMutationPreparationSuccess, PhysicalMutationRequest,
+    PhysicalCheckpointRequest,
 };
-use worth_store_recovery_runtime::{
-    PhysicalRecoveryLimits, PhysicalRecoveryOutcome, WorthStoreRecovery,
-};
+use worth_store_recovery_runtime::{PhysicalRecoveryOutcome, WorthStoreRecovery};
 use worth_store_test_support::harness::physical_residency::{
     canonical_physical_mutation_acknowledgment, PhysicalResidencyStoreWorld,
 };
@@ -52,7 +54,8 @@ fn killed_wal_durable_rewrite_publishes_one_generation() {
     let (parent, root) = kill_child("after-wal");
     assert!(wal_contains_rewrite(&root));
     let killed = segment_snapshot(&root);
-    let (first_retirements, first_payload, first_generation) = release_after_read(parent.path(), &root);
+    let (first_retirements, first_payload, first_generation) =
+        release_after_read(parent.path(), &root);
     let published = segment_snapshot(&root);
     let (second_retirements, second_payload, second_generation) =
         release_after_read(parent.path(), &root);
@@ -106,7 +109,10 @@ fn killed_rewrite_after_namespace_durability_is_not_repeated() {
     assert_eq!(killed, published);
     assert_eq!(roots, published_roots);
     assert_eq!(published, segment_snapshot(&root));
-    assert_eq!(published_roots, directory_snapshot(&root, "families/records/roots"));
+    assert_eq!(
+        published_roots,
+        directory_snapshot(&root, "families/records/roots")
+    );
     drop(parent);
 }
 
@@ -166,22 +172,16 @@ fn c10_rewrite_child_parks_at_checkpoint() {
         world.root().to_string_lossy().as_bytes(),
     )
     .unwrap();
-    let record = canonical_physical_mutation_acknowledgment(
-        &world,
-        [0x81; 32],
-        b"phase5-rewrite-source",
-    )
-    .persisted_records()[0];
+    let record =
+        canonical_physical_mutation_acknowledgment(&world, [0x81; 32], b"phase5-rewrite-source")
+            .persisted_records()[0];
     c10_phase_five_read::store_identity(&marker, record);
     checkpoint_source(&world);
     let gate = world
         .serving()
         .certification_pause_physical_mutation_at(rewrite_checkpoint(&checkpoint));
     let rewrite = prepare_rewrite(&world, [0x82; 32]).start();
-    assert!(
-        gate.await_arrival(),
-        "rewrite did not reach {checkpoint}"
-    );
+    assert!(gate.await_arrival(), "rewrite did not reach {checkpoint}");
     std::mem::forget(rewrite);
     std::mem::forget(gate);
     std::fs::write(marker.join("reached"), b"1").unwrap();
@@ -214,31 +214,6 @@ fn checkpoint_source(world: &PhysicalResidencyStoreWorld) {
     match handle.wait() {
         PhysicalCheckpointOutcome::Completed(_) => {}
         _ => panic!("source checkpoint must complete"),
-    }
-}
-
-fn prepare_rewrite(
-    world: &PhysicalResidencyStoreWorld,
-    material: [u8; 32],
-) -> worth_store::physical_runtime::PreparedPhysicalMutation {
-    let submission = world.serving().record_submission();
-    let key = submission
-        .issue_idempotency_key(PhysicalMutationIdempotencyMaterial::new(material))
-        .unwrap();
-    match submission
-        .rewrite_selected_inline_segment(
-            world.placement(),
-            PhysicalMutationRequest::platform_durable(
-                key,
-                PhysicalMutationDeadline::after_milliseconds(1_000).unwrap(),
-            ),
-        )
-        .into_raw()
-    {
-        TransitionOutcome::Success(PhysicalMutationPreparationSuccess::Prepared(prepared)) => {
-            prepared
-        }
-        _ => panic!("rewrite preparation must succeed"),
     }
 }
 
@@ -283,10 +258,7 @@ fn kill_child(checkpoint: &str) -> (tempfile::TempDir, PathBuf) {
     (parent, root)
 }
 
-fn release_after_read(
-    marker: &Path,
-    root: &Path,
-) -> (Vec<(u64, u64, u64, u64)>, Vec<u8>, u64) {
+fn release_after_read(marker: &Path, root: &Path) -> (Vec<(u64, u64, u64, u64)>, Vec<u8>, u64) {
     let handoff = recover(root);
     let facts = (
         retirements(&handoff),
@@ -298,7 +270,8 @@ fn release_after_read(
 }
 
 fn recover(root: &Path) -> worth_store_recovery_runtime::RecoveredPhysicalRuntimeHandoff {
-    let outcome = WorthStoreRecovery::recover(recovery_request_with_limits(root, ordinary_limits()));
+    let outcome =
+        WorthStoreRecovery::recover(recovery_request_with_limits(root, ordinary_limits()));
     let PhysicalRecoveryOutcome::Recovered(handoff) = outcome else {
         panic!("killed rewrite must recover");
     };
@@ -315,8 +288,11 @@ fn retirements(
         .map(|retirement| {
             (
                 retirement.source_root(),
-                retirement.segment_id(),
-                retirement.generation(),
+                retirement
+                    .artifact()
+                    .segment()
+                    .expect("an inline rewrite retires a segment generation"),
+                retirement.artifact().generation(),
                 retirement.bytes(),
             )
         })
@@ -328,69 +304,5 @@ fn source_payload(
     root: &Path,
     handoff: &worth_store_recovery_runtime::RecoveredPhysicalRuntimeHandoff,
 ) -> Vec<u8> {
-    c10_phase_five_read::selected_payload(
-        root,
-        handoff,
-        c10_phase_five_read::load_identity(marker),
-    )
-}
-
-fn ordinary_limits() -> PhysicalRecoveryLimits {
-    let mut declaration = limit_declaration(2, 8, 2 * 1024 * 1024);
-    declaration.manifest_entries = 4_096;
-    declaration.wal_bytes = 2 * 1024 * 1024;
-    declaration.redo_targets = 4_096;
-    declaration.redo_bytes = 4 * 1024 * 1024;
-    declaration.distinct_pages_and_extents = 4_096;
-    declaration.operation_bindings = 4_096;
-    declaration.staging_bytes = 32 * 1024 * 1024;
-    declaration.recovery_memory_bytes = 32 * 1024 * 1024;
-    declaration.dirty_frames = 4_096;
-    declaration.publication_effects = 64;
-    declaration.observation_bytes = 32 * 1024 * 1024;
-    PhysicalRecoveryLimits::admit(declaration).unwrap()
-}
-
-fn segment_snapshot(root: &Path) -> Vec<(String, u64)> {
-    directory_snapshot(root, "families/records/segments")
-}
-
-fn directory_snapshot(root: &Path, relative: &str) -> Vec<(String, u64)> {
-    let directory = root.join(relative);
-    let mut files = Vec::new();
-    if let Ok(entries) = std::fs::read_dir(directory) {
-        for entry in entries.flatten() {
-            let bytes = std::fs::read(entry.path()).unwrap_or_default();
-            let mut checksum = 0u64;
-            for byte in bytes {
-                checksum = checksum.wrapping_mul(16777619).wrapping_add(u64::from(byte));
-            }
-            files.push((entry.file_name().to_string_lossy().into_owned(), checksum));
-        }
-    }
-    files.sort();
-    files
-}
-
-fn wal_contains_rewrite(root: &Path) -> bool {
-    let domain = worth_store_physical_format::REWRITE_REDO_DOMAIN;
-    let mut stack = vec![root.join("families").join("wal")];
-    while let Some(directory) = stack.pop() {
-        let Ok(entries) = std::fs::read_dir(directory) else {
-            continue;
-        };
-        for entry in entries.flatten() {
-            let path = entry.path();
-            if path.is_dir() {
-                stack.push(path);
-                continue;
-            }
-            if let Ok(bytes) = std::fs::read(&path) {
-                if bytes.windows(domain.len()).any(|window| window == domain) {
-                    return true;
-                }
-            }
-        }
-    }
-    false
+    c10_phase_five_read::selected_payload(root, handoff, c10_phase_five_read::load_identity(marker))
 }

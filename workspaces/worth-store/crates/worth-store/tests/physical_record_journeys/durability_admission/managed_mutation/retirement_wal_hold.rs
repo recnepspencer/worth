@@ -6,10 +6,11 @@ use worth_signal::facade::TemporalDuration;
 use worth_store::physical_runtime::{
     PhysicalCheckpointDeadline, PhysicalCheckpointIdempotencyKey, PhysicalCheckpointOutcome,
     PhysicalCheckpointRequest, PhysicalRecordInitialization, PhysicalRecordOpen,
-    PhysicalRetirementDenial, PhysicalWalPolicy,
-    ServingPhysicalRuntime, WalSegmentByteLimit, WalSegmentInventoryLimit,
+    PhysicalRetirementDenial, PhysicalWalPolicy, ServingPhysicalRuntime, WalSegmentByteLimit,
+    WalSegmentInventoryLimit,
 };
 
+use super::super::independent_wal_oracle::file_retirement_payloads;
 use super::selected_segment_rewrite::prepare_rewrite;
 use super::*;
 
@@ -36,7 +37,10 @@ fn unresolved_retirement_survives_wal_rotation_and_checkpoint() {
             break;
         }
     }
-    assert!(rotated, "a later append must leave the retirement intent off the active tail");
+    assert!(
+        rotated,
+        "a later append must leave the retirement intent off the active tail"
+    );
     let holders = retirement_wal_files(&root);
     assert!(!holders.is_empty());
     checkpoint(&serving);
@@ -80,18 +84,18 @@ fn open_initialized(root: &Path, wal: PhysicalWalPolicy) -> ServingPhysicalRunti
     let (format, placement, access) = configuration();
     let media = crate::media(root);
     let durability = crate::durability_with_wal_policy(&media, wal);
-    crate::success(media.initialize_record_store(PhysicalRecordInitialization::new(
-        format, placement, access, durability,
-    )))
+    crate::success(
+        media.initialize_record_store(PhysicalRecordInitialization::new(
+            format, placement, access, durability,
+        )),
+    )
 }
 
 fn open_existing(root: &Path, wal: PhysicalWalPolicy) -> ServingPhysicalRuntime {
     let (format, _, access) = configuration();
     let media = crate::media(root);
     let durability = crate::durability_with_wal_policy(&media, wal);
-    crate::success(
-        media.open_record_store(PhysicalRecordOpen::new(format, access, durability)),
-    )
+    crate::success(media.open_record_store(PhysicalRecordOpen::new(format, access, durability)))
 }
 
 fn checkpoint(serving: &ServingPhysicalRuntime) {
@@ -129,7 +133,8 @@ fn retirement_wal_files(root: &Path) -> Vec<String> {
 fn wal_names(root: &Path) -> Vec<String> {
     let mut names = Vec::new();
     collect_files(&root.join("families").join("wal"), &mut names);
-    names.sort();
+    // Segment ordinals are decimal, so shorter names sort first.
+    names.sort_by(|left, right| left.len().cmp(&right.len()).then_with(|| left.cmp(right)));
     names
 }
 
@@ -148,9 +153,5 @@ fn collect_files(path: &Path, names: &mut Vec<String>) {
 }
 
 fn file_contains_retirement(path: &str) -> bool {
-    std::fs::read(path).is_ok_and(|bytes| {
-        bytes
-            .windows(b"store.physical.retirement.v1".len())
-            .any(|window| window == b"store.physical.retirement.v1")
-    })
+    !file_retirement_payloads(Path::new(path)).is_empty()
 }

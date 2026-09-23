@@ -1,5 +1,7 @@
 use super::basis::ExecutedIsolationBasis;
-use crate::{ExecutedIsolationEvidenceDenial, PhysicalIsolationCounterSnapshot};
+#[cfg(any(test, feature = "certification-authority"))]
+use crate::ExecutedIsolationEvidenceDenial;
+use crate::PhysicalIsolationCounterSnapshot;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExecutedIsolationEvidence {

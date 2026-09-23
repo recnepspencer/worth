@@ -142,7 +142,7 @@ fn checkpoint_record_binds_a_borrowed_range_of_the_c4_observation() {
     else {
         panic!("checkpoint binding admission routed to the wrong family")
     };
-    assert_eq!(binding.scope(), binding_scope);
+    assert_eq!(binding.source().scope(), binding_scope);
     assert_eq!(
         (
             binding_counters.admitted,

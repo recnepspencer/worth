@@ -1,4 +1,3 @@
-use std::path::Path;
 use std::thread;
 
 use worth_store::physical_runtime::{
@@ -6,6 +5,8 @@ use worth_store::physical_runtime::{
     PhysicalRetirementDenial, RecordByteLimit, SegmentPageCount,
 };
 
+use super::super::independent_wal_oracle::produced_retirement_payloads;
+use super::published_segments::segment_names;
 use super::selected_segment_rewrite::prepare_rewrite;
 use super::*;
 
@@ -21,9 +22,10 @@ fn another_segments_generation_does_not_drop_an_unresolved_retirement() {
         .manifest_capacity(ManifestEntryCapacity::new(64).unwrap())
         .admit(format)
         .unwrap();
-    let serving = crate::success(initialize_record_store!(crate::media(&root), |durability| {
-        PhysicalRecordInitialization::new(format, placement, access, durability)
-    }));
+    let serving = crate::success(initialize_record_store!(
+        crate::media(&root),
+        |durability| PhysicalRecordInitialization::new(format, placement, access, durability)
+    ));
     let payload = vec![0x41_u8; 12_000];
     completed(prepare(&serving, placement, [11; 32], &payload).execute());
     completed(prepare_rewrite(&serving, placement, [12; 32]).execute());
@@ -48,10 +50,17 @@ fn another_segments_generation_does_not_drop_an_unresolved_retirement() {
     assert_eq!(segment_names(&root), retained);
     let held = serving.certification_charged_growth_bytes();
     serving.retire_displaced_segment().unwrap();
-    assert!(segment_names(&root).iter().any(|name| name == other_generation));
-    assert_eq!(held - serving.certification_charged_growth_bytes(), page_bytes);
+    assert!(segment_names(&root)
+        .iter()
+        .any(|name| name == other_generation));
+    assert_eq!(
+        held - serving.certification_charged_growth_bytes(),
+        page_bytes
+    );
     serving.retire_displaced_segment().unwrap();
-    assert!(segment_names(&root).iter().all(|name| name != other_generation));
+    assert!(segment_names(&root)
+        .iter()
+        .all(|name| name != other_generation));
     assert_eq!(
         serving.retire_displaced_segment(),
         Err(PhysicalRetirementDenial::Absent)
@@ -80,11 +89,13 @@ fn a_second_caller_cannot_resurrect_a_completed_retirement() {
             serving.retire_displaced_segment(),
             Err(PhysicalRetirementDenial::Waiting)
         );
-        assert!(!wal_contains_retirement(&root));
+        assert!(produced_retirement_payloads(&root).is_empty());
         serving.certification_release_retirement_intent();
         owner.join().unwrap().unwrap();
     });
-    assert!(before.iter().any(|name| !segment_names(&root).contains(name)));
+    assert!(before
+        .iter()
+        .any(|name| !segment_names(&root).contains(name)));
     assert_eq!(
         charged - serving.certification_charged_growth_bytes(),
         page_bytes
@@ -101,36 +112,4 @@ fn a_second_caller_cannot_resurrect_a_completed_retirement() {
     let serving = crate::serving_from_open(&root);
     assert_eq!(serving.certification_charged_growth_bytes(), reopened);
     serving.close();
-}
-
-fn wal_contains_retirement(root: &Path) -> bool {
-    fn contains(path: &Path, needle: &[u8]) -> bool {
-        let Ok(entries) = std::fs::read_dir(path) else {
-            return false;
-        };
-        entries.flatten().any(|entry| {
-            let path = entry.path();
-            if path.is_dir() {
-                return contains(&path, needle);
-            }
-            std::fs::read(&path)
-                .ok()
-                .is_some_and(|bytes| bytes.windows(needle.len()).any(|window| window == needle))
-        })
-    }
-    contains(
-        &root.join("families").join("wal"),
-        b"store.physical.retirement.v1",
-    )
-}
-
-fn segment_names(root: &Path) -> Vec<String> {
-    let mut names = std::fs::read_dir(root.join("families").join("records").join("segments"))
-        .unwrap()
-        .flatten()
-        .map(|entry| entry.file_name().to_string_lossy().into_owned())
-        .filter(|name| name.ends_with(".pages"))
-        .collect::<Vec<_>>();
-    names.sort();
-    names
 }

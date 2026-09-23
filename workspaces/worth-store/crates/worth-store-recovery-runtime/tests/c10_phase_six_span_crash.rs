@@ -1,14 +1,17 @@
 #[allow(dead_code)]
+mod c10_crash_evidence;
+#[allow(dead_code)]
 mod c10_phase_five_read;
 #[allow(dead_code)]
 mod phase_three_support;
 
+use c10_crash_evidence::{ordinary_limits, segment_snapshot, wal_contains_rewrite};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::thread;
 use std::time::{Duration, Instant};
 
-use phase_three_support::{limit_declaration, recovery_request_with_limits};
+use phase_three_support::recovery_request_with_limits;
 use worth_proof::TransitionOutcome;
 use worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint;
 use worth_store::physical_runtime::{
@@ -17,9 +20,7 @@ use worth_store::physical_runtime::{
     PhysicalMutationPreparationSuccess, PhysicalMutationRequest,
 };
 use worth_store_physical_format::PersistedRecordIdentity;
-use worth_store_recovery_runtime::{
-    PhysicalRecoveryLimits, PhysicalRecoveryOutcome, WorthStoreRecovery,
-};
+use worth_store_recovery_runtime::{PhysicalRecoveryOutcome, WorthStoreRecovery};
 use worth_store_test_support::harness::physical_residency::{
     canonical_physical_batch_acknowledgment, PhysicalResidencyStoreWorld,
 };
@@ -266,62 +267,4 @@ fn load_identities(marker: &Path) -> Vec<PersistedRecordIdentity> {
             PersistedRecordIdentity::new(epoch, ordinal).unwrap()
         })
         .collect()
-}
-
-fn ordinary_limits() -> PhysicalRecoveryLimits {
-    let mut declaration = limit_declaration(2, 8, 2 * 1024 * 1024);
-    declaration.manifest_entries = 4_096;
-    declaration.wal_bytes = 2 * 1024 * 1024;
-    declaration.redo_targets = 4_096;
-    declaration.redo_bytes = 4 * 1024 * 1024;
-    declaration.distinct_pages_and_extents = 4_096;
-    declaration.operation_bindings = 4_096;
-    declaration.staging_bytes = 32 * 1024 * 1024;
-    declaration.recovery_memory_bytes = 32 * 1024 * 1024;
-    declaration.dirty_frames = 4_096;
-    declaration.publication_effects = 64;
-    declaration.observation_bytes = 32 * 1024 * 1024;
-    PhysicalRecoveryLimits::admit(declaration).unwrap()
-}
-
-fn segment_snapshot(root: &Path) -> Vec<(String, u64)> {
-    let mut files = Vec::new();
-    let directory = root.join("families/records/segments");
-    if let Ok(entries) = std::fs::read_dir(directory) {
-        for entry in entries.flatten() {
-            let bytes = std::fs::read(entry.path()).unwrap_or_default();
-            let mut checksum = 0_u64;
-            for byte in bytes {
-                checksum = checksum
-                    .wrapping_mul(16_777_619)
-                    .wrapping_add(u64::from(byte));
-            }
-            files.push((entry.file_name().to_string_lossy().into_owned(), checksum));
-        }
-    }
-    files.sort();
-    files
-}
-
-fn wal_contains_rewrite(root: &Path) -> bool {
-    let domain = worth_store_physical_format::REWRITE_REDO_DOMAIN;
-    let mut stack = vec![root.join("families").join("wal")];
-    while let Some(directory) = stack.pop() {
-        let Ok(entries) = std::fs::read_dir(directory) else {
-            continue;
-        };
-        for entry in entries.flatten() {
-            let path = entry.path();
-            if path.is_dir() {
-                stack.push(path);
-                continue;
-            }
-            if let Ok(bytes) = std::fs::read(&path) {
-                if bytes.windows(domain.len()).any(|window| window == domain) {
-                    return true;
-                }
-            }
-        }
-    }
-    false
 }

@@ -278,14 +278,18 @@ impl PhysicalRootPublicationWorkPort {
                 return Err(PhysicalRootPublicationWorkFailure::SubmissionDenied(denial))
             }
             TransitionOutcome::Deferred(deferred) => {
-                return Err(PhysicalRootPublicationWorkFailure::SubmissionDeferred(deferred))
+                return Err(PhysicalRootPublicationWorkFailure::SubmissionDeferred(
+                    deferred,
+                ))
             }
             TransitionOutcome::Stale(stale) => {
                 return Err(PhysicalRootPublicationWorkFailure::SubmissionStale(stale))
             }
             TransitionOutcome::RebindRequired(rebind) => match rebind {},
             TransitionOutcome::Failed(failure) => {
-                return Err(PhysicalRootPublicationWorkFailure::SubmissionFailed(failure))
+                return Err(PhysicalRootPublicationWorkFailure::SubmissionFailed(
+                    failure,
+                ))
             }
         };
         let admitted = PhysicalWorkAdmission::admit(
@@ -328,7 +332,8 @@ impl PhysicalRootPublicationWorkPort {
         &self,
         artifact: RecordArtifactFile,
     ) -> Result<bool, PhysicalRootPublicationWorkFailure> {
-        let work = self.admit_record_work(artifact, PhysicalPublicationEffect::RemoveArtifact, 1)?;
+        let work =
+            self.admit_record_work(artifact, PhysicalPublicationEffect::RemoveArtifact, 1)?;
         Ok(PhysicalExecutorCommand::publication_effect(
             work,
             PhysicalPublicationEffect::RemoveArtifact,

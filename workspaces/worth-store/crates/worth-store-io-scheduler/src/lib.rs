@@ -62,7 +62,8 @@ pub use queue_execution::{
     execute_ready_queue_plan, group_ready_queue_pair, lower_background_queue_lease,
     lower_buffer_pool_read_queue_declaration, lower_buffer_pool_writeback_queue_declaration,
     lower_physical_foreground_work, lower_wal_queue_declaration, AdmittedQueueExecutionPlan,
-    ExecutedQueueEvidence, PhysicalForegroundWorkDeclaration, QueueBackpressureCause,
+    BackgroundDispatchAttempt, ExecutedQueueEvidence, ForegroundDispatchTurn, OwedBackgroundTurn,
+    PhysicalDispatchSelection, PhysicalForegroundWorkDeclaration, QueueBackpressureCause,
     QueueDurabilityClass, QueueExecutedPlan, QueueExecutionAdmissionDenial,
     QueueExecutionAdmissionRequest, QueueExecutionBackpressured, QueueExecutionCounterSnapshot,
     QueueExecutionDenied, QueueExecutionOutcome, QueueExecutionPlanBinding,
@@ -71,7 +72,6 @@ pub use queue_execution::{
     QueueGroupingOutcome, QueueGroupingRejected, QueueLocalityIdentity, QueueLocalityRange,
     QueueLocalityRelation, QueuePolicyAdmissionReceipt, QueueReadAheadBasis, QueueRecoveryOrdering,
     QueueWorkClass, QueueWorkDeclaration, QueueWriteBackBasis, QueueWritebackPolicy,
-    BackgroundDispatchAttempt, ForegroundDispatchTurn, OwedBackgroundTurn, PhysicalDispatchSelection,
 };
 pub use resource_envelope::{IoQueueResourceEnvelope, IoQueueResourceEnvelopeDenial};
 pub use resource_units::{

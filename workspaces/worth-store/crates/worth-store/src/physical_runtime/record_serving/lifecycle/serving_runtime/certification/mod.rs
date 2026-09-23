@@ -38,10 +38,7 @@ impl ServingPhysicalRuntime {
         self.parts.publication.pending_publication_count()
     }
 
-    /// Limits usable candidate growth so rewrite admission can be denied one-over.
-    ///
-    /// `usable_growth_bytes` is the allowance after progress headroom. Headroom stays
-    /// at the store default (64 KiB) so one-byte-over claims remain honest.
+    /// Retained-storage bytes currently charged against the growth ceiling.
     pub fn certification_charged_growth_bytes(&self) -> u64 {
         self.parts.publication.charged_growth_bytes()
     }
@@ -69,9 +66,7 @@ impl ServingPhysicalRuntime {
 
     /// Holds the retirement owner after the claim and before the intent append.
     pub fn certification_pause_before_retirement_intent(&self) {
-        self.parts
-            .publication
-            .arm_retirement_intent_gate();
+        self.parts.publication.arm_retirement_intent_gate();
     }
 
     pub fn certification_retirement_intent_arrived(&self) -> bool {
@@ -124,6 +119,10 @@ impl ServingPhysicalRuntime {
             .certification_public_segment_removal_rejected()
     }
 
+    /// Limits usable candidate growth so rewrite admission can be denied one-over.
+    ///
+    /// `usable_growth_bytes` is the allowance after progress headroom. Headroom stays
+    /// at the store default (64 KiB) so one-byte-over claims remain honest.
     pub fn certification_limit_candidate_growth_bytes(&self, usable_growth_bytes: u64) {
         self.parts
             .publication
@@ -246,7 +245,9 @@ impl ServingPhysicalRuntime {
 
     /// Drive one reclamation attempt through the production work port.
     pub fn certification_reclamation_work_yields_for_foreground_pressure(&self) -> bool {
-        self.parts.checkpoint.certification_reclamation_under_pressure(1)
+        self.parts
+            .checkpoint
+            .certification_reclamation_under_pressure(1)
     }
 
     /// A quiet foreground admits the reclamation quantum through the work port.
@@ -264,9 +265,7 @@ impl ServingPhysicalRuntime {
     }
 
     pub fn certification_fail_next_checkpoint_admission(&self) {
-        self.parts
-            .checkpoint
-            .certification_fail_next_admission();
+        self.parts.checkpoint.certification_fail_next_admission();
     }
 
     pub fn certification_foreground_is_blocked_by_background(&self) -> bool {
@@ -283,10 +282,9 @@ impl ServingPhysicalRuntime {
                 .with_worker_permits(WorkerPermit::new(1).expect("one worker is nonzero")),
         );
         matches!(
-            self.parts.scheduler_admission.reserve_record_lane(
-                lane,
-                self.parts.record_work.scheduler_security(),
-            ),
+            self.parts
+                .scheduler_admission
+                .reserve_record_lane(lane, self.parts.record_work.scheduler_security(),),
             Err(crate::physical_runtime::RecordSchedulerReservationDenial::OwedBackgroundTurn)
         )
     }
@@ -358,9 +356,7 @@ impl ServingPhysicalRuntime {
     }
 
     pub fn certification_fail_next_wal_member_before_effect(&self) {
-        self.parts
-            .publication
-            .fail_next_wal_member_before_effect();
+        self.parts.publication.fail_next_wal_member_before_effect();
     }
 
     pub fn certification_reject_next_candidate_retention_before_effect(&self) {

@@ -1,13 +1,10 @@
 use worth_store::physical_runtime::ObservedRecoveryArtifact;
 use worth_store_physical_integrity::{
-    CurrentRootSelectorIntegrityValidation, PhysicalArtifactScope,
-    PreviousRootSelectorIntegrityValidation, RootManifestIntegrityValidation,
-    RootRoutingBlockIntegrityValidation,
+    PhysicalArtifactScope, RootManifestIntegrityValidation, RootRoutingBlockIntegrityValidation,
 };
 
 use super::super::admitted_artifact::IntegrityAdmittedRecoveryArtifact;
 use super::super::families::root::{
-    IntegrityAdmittedCurrentRootSelector, IntegrityAdmittedPreviousRootSelector,
     IntegrityAdmittedRootManifest, IntegrityAdmittedRootRoutingBlock,
 };
 use super::super::{ObservedRecoverySource, RecoveryIntegrityIngressCounters};
@@ -40,18 +37,6 @@ macro_rules! root_source_binding {
 }
 
 impl<'media> IntegrityAdmittedRecoveryArtifact<'media> {
-    root_source_binding!(
-        bind_current_selector,
-        CurrentRootSelectorIntegrityValidation,
-        IntegrityAdmittedCurrentRootSelector<'media>,
-        CurrentSelector
-    );
-    root_source_binding!(
-        bind_previous_selector,
-        PreviousRootSelectorIntegrityValidation,
-        IntegrityAdmittedPreviousRootSelector<'media>,
-        PreviousSelector
-    );
     root_source_binding!(
         bind_root_manifest,
         RootManifestIntegrityValidation,

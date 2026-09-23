@@ -44,10 +44,7 @@ pub(super) fn keep_unresolved(
     pending: PendingPublicationLease,
     terminal: PhysicalMutationTerminalFact,
 ) -> PhysicalMutationTerminalFact {
-    let unresolved = matches!(
-        &terminal,
-        PhysicalMutationTerminalFact::Indeterminate(_)
-    );
+    let unresolved = matches!(&terminal, PhysicalMutationTerminalFact::Indeterminate(_));
     if unresolved {
         growth.retain_unresolved();
         pending.retain_unresolved();

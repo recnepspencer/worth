@@ -171,7 +171,10 @@ impl PhysicalRewriteRedo {
         encoded
     }
 
-    pub fn decode(bytes: &[u8], maximum_candidate_bytes: u64) -> Result<Self, PhysicalRewriteRedoDenial> {
+    pub fn decode(
+        bytes: &[u8],
+        maximum_candidate_bytes: u64,
+    ) -> Result<Self, PhysicalRewriteRedoDenial> {
         let mut cursor = bytes;
         let domain = take_field(&mut cursor)?;
         if domain != REWRITE_REDO_DOMAIN {
@@ -224,7 +227,8 @@ fn write_field(target: &mut Vec<u8>, bytes: &[u8]) {
 }
 
 fn take_field<'a>(cursor: &mut &'a [u8]) -> Result<&'a [u8], PhysicalRewriteRedoDenial> {
-    let length = usize::try_from(take_u64(cursor)?).map_err(|_| PhysicalRewriteRedoDenial::Truncated)?;
+    let length =
+        usize::try_from(take_u64(cursor)?).map_err(|_| PhysicalRewriteRedoDenial::Truncated)?;
     if cursor.len() < length {
         return Err(PhysicalRewriteRedoDenial::Truncated);
     }
@@ -257,20 +261,7 @@ mod tests {
 
     fn sample() -> PhysicalRewriteRedo {
         PhysicalRewriteRedo::new(
-            [1; 32],
-            [2; 32],
-            4,
-            7,
-            128,
-            32,
-            [9; 32],
-            8,
-            256,
-            11,
-            [3; 32],
-            128,
-            256,
-            5,
+            [1; 32], [2; 32], 4, 7, 128, 32, [9; 32], 8, 256, 11, [3; 32], 128, 256, 5,
         )
         .unwrap()
     }
@@ -278,10 +269,12 @@ mod tests {
     #[test]
     fn a_rewrite_payload_round_trips_without_becoming_canonical_redo() {
         let encoded = sample().encode();
-        assert!(encoded.windows(REWRITE_REDO_DOMAIN.len()).any(|window| window == REWRITE_REDO_DOMAIN));
-        assert!(!encoded.windows(b"store.physical.wal.canonical-redo.v3".len()).any(|window| {
-            window == b"store.physical.wal.canonical-redo.v3"
-        }));
+        assert!(encoded
+            .windows(REWRITE_REDO_DOMAIN.len())
+            .any(|window| window == REWRITE_REDO_DOMAIN));
+        assert!(!encoded
+            .windows(b"store.physical.wal.canonical-redo.v3".len())
+            .any(|window| { window == b"store.physical.wal.canonical-redo.v3" }));
         assert_eq!(PhysicalRewriteRedo::decode(&encoded, 32).unwrap(), sample());
         assert_eq!(
             PhysicalRewriteRedo::decode(&encoded, 31),

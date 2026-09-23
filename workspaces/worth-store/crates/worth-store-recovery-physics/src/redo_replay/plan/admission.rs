@@ -167,8 +167,10 @@ impl AdmittedPhysicalRedoMembers {
 }
 
 fn rewrite_payload(member: &PhysicalRedoMemberInput) -> Result<bool, PhysicalRedoPlanningDenial> {
-    match worth_store_physical_format::PhysicalRewriteRedo::decode(member.canonical_redo(), u64::MAX)
-    {
+    match worth_store_physical_format::PhysicalRewriteRedo::decode(
+        member.canonical_redo(),
+        u64::MAX,
+    ) {
         Ok(_) => Ok(true),
         Err(worth_store_physical_format::PhysicalRewriteRedoDenial::WrongDomain) => Ok(false),
         Err(_) => Err(PhysicalRedoPlanningDenial::MalformedMember),
@@ -184,8 +186,10 @@ fn admitted_rewrite(
         .end_exclusive()
         .get()
         .saturating_sub(member.lsn_range().start().get());
-    match worth_store_physical_format::PhysicalRewriteRedo::decode(member.canonical_redo(), u64::MAX)
-    {
+    match worth_store_physical_format::PhysicalRewriteRedo::decode(
+        member.canonical_redo(),
+        u64::MAX,
+    ) {
         Ok(rewrite) => {
             if span != 1 {
                 return Err(PhysicalRedoPlanningDenial::LsnRangeMismatch);

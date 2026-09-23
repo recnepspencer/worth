@@ -58,24 +58,40 @@ fn take_field<'payload>(
 
 #[cfg(test)]
 mod tests {
-    use crate::physical_runtime::durability::{encode_retirement, RETIREMENT_INTENT};
+    use crate::physical_runtime::durability::{encode_retirement, RetiredArtifact};
 
     use super::{classify_wal_payload, ClassifiedWalPayload, StoreRecoveryBindingSampleDenial};
 
     #[test]
     fn a_retirement_frame_is_not_a_mutation_member() {
-        let payload = encode_retirement(RETIREMENT_INTENT, 4, 1, 2, 16);
+        let payload = encode_retirement(
+            RetiredArtifact::Segment {
+                segment: 1,
+                generation: 2,
+            },
+            false,
+            4,
+            16,
+        );
         let ClassifiedWalPayload::Retirement(record) = classify_wal_payload(&payload).unwrap()
         else {
             panic!("retirement intent must stay out of redo admission");
         };
-        assert_eq!(record.generation, 2);
+        assert_eq!(record.artifact.generation(), 2);
         assert_eq!(record.bytes, 16);
     }
 
     #[test]
     fn a_truncated_retirement_frame_is_rejected() {
-        let mut payload = encode_retirement(RETIREMENT_INTENT, 4, 1, 2, 16);
+        let mut payload = encode_retirement(
+            RetiredArtifact::Segment {
+                segment: 1,
+                generation: 2,
+            },
+            false,
+            4,
+            16,
+        );
         payload.pop();
         assert!(matches!(
             classify_wal_payload(&payload),

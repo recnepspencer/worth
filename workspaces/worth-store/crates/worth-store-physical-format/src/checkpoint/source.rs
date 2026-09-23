@@ -79,8 +79,7 @@ impl PhysicalCheckpointSource {
     pub fn decode_stream_header_record(
         record: &[u8],
     ) -> Result<Self, CheckpointStreamDecodeDenial> {
-        let maintenance =
-            record.get(8) == Some(&super::record::MAINTENANCE_CHECKPOINT_SCHEMA);
+        let maintenance = record.get(8) == Some(&super::record::MAINTENANCE_CHECKPOINT_SCHEMA);
         let payload =
             super::record::decode_record(record, super::record::HEADER_KIND, HEADER_PAYLOAD_BYTES)?;
         let source = decode_header(payload)?;

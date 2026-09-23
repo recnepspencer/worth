@@ -30,9 +30,8 @@ pub use redo_replay::{
     PhysicalRedoDecisionKind, PhysicalRedoDecisionPrior, PhysicalRedoDecisionView,
     PhysicalRedoExtentCoordinate, PhysicalRedoGroupBinding, PhysicalRedoMemberInput,
     PhysicalRedoPlanCounters, PhysicalRedoPlanningDenial, PhysicalRedoProjection,
-    PhysicalRewriteAdmission,
-    PhysicalRedoRecord, PhysicalRedoTarget, PhysicalRedoTargetIdentity, RecoveryPageObservation,
-    RecoveryPageSource,
+    PhysicalRedoRecord, PhysicalRedoTarget, PhysicalRedoTargetIdentity, PhysicalRewriteAdmission,
+    RecoveryPageObservation, RecoveryPageSource,
 };
 pub use source_precedence::{
     admit_physical_page_facts, admit_physical_wal_tail, classify_admitted_wal_segment,

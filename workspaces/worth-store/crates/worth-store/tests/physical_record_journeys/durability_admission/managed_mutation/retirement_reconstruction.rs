@@ -2,14 +2,18 @@ use std::path::Path;
 use std::thread;
 
 use worth_store::physical_runtime::{
-    certification::CertificationReadRootCaptureStage, ManifestEntryCapacity, PhysicalRecordInitialization,
-    PhysicalRecordPlacementPolicy, PhysicalRetirementDenial, RecordByteLimit, RecordReadLimits,
-    SegmentPageCount,
+    certification::CertificationReadRootCaptureStage, ManifestEntryCapacity,
+    PhysicalRecordInitialization, PhysicalRecordPlacementPolicy, PhysicalRetirementDenial,
+    RecordByteLimit, RecordReadLimits, SegmentPageCount,
 };
 use worth_store_physical_format::{
     PhysicalCheckpointSource, CHECKPOINT_STREAM_HEADER_RECORD_BYTES,
 };
 
+use super::super::independent_wal_oracle::{
+    produced_retirement_payloads, IndependentRetirementAction,
+};
+use super::published_segments::segment_names;
 use super::selected_segment_rewrite::prepare_rewrite;
 use super::*;
 
@@ -26,7 +30,9 @@ fn reopened_store_keeps_cleanup_until_retirement_completion() {
     serving.certification_stop_after_retirement_delete();
     assert!(serving.retire_displaced_segment().is_err());
     assert!(
-        before.iter().any(|name| !segment_names(&root).contains(name)),
+        before
+            .iter()
+            .any(|name| !segment_names(&root).contains(name)),
         "the seam stops after unlink"
     );
     serving.close();
@@ -64,12 +70,17 @@ fn retirement_intent_survives_reopen_before_delete() {
         Err(PhysicalRetirementDenial::Delete)
     );
     assert_eq!(segment_names(&root), before);
-    assert!(wal_contains_retirement(&root));
+    assert_eq!(
+        retirement_actions(&root),
+        [IndependentRetirementAction::Intent]
+    );
     serving.close();
     let serving = crate::serving_from_open(&root);
     assert!(serving.records().is_ok());
     serving.retire_displaced_segment().unwrap();
-    assert!(before.iter().any(|name| !segment_names(&root).contains(name)));
+    assert!(before
+        .iter()
+        .any(|name| !segment_names(&root).contains(name)));
     serving.close();
 }
 
@@ -88,10 +99,12 @@ fn retirement_waits_for_the_scheduler_before_any_wal_byte() {
         Err(PhysicalRetirementDenial::Waiting)
     );
     assert_eq!(segment_names(&root), before);
-    assert!(!wal_contains_retirement(&root));
+    assert!(produced_retirement_payloads(&root).is_empty());
     serving.certification_release_owed_background_turn();
     serving.retire_displaced_segment().unwrap();
-    assert!(before.iter().any(|name| !segment_names(&root).contains(name)));
+    assert!(before
+        .iter()
+        .any(|name| !segment_names(&root).contains(name)));
     serving.close();
 }
 
@@ -111,7 +124,9 @@ fn retirement_namespace_sync_follows_unlink_before_completion() {
         Err(PhysicalRetirementDenial::Delete)
     );
     assert!(
-        before.iter().any(|name| !segment_names(&root).contains(name)),
+        before
+            .iter()
+            .any(|name| !segment_names(&root).contains(name)),
         "unlink happened and the segment directory sync did not complete"
     );
     serving.close();
@@ -119,7 +134,10 @@ fn retirement_namespace_sync_follows_unlink_before_completion() {
     assert!(serving.records().is_ok());
     let held = serving.certification_charged_growth_bytes();
     serving.retire_displaced_segment().unwrap();
-    assert_eq!(held - serving.certification_charged_growth_bytes(), page_bytes);
+    assert_eq!(
+        held - serving.certification_charged_growth_bytes(),
+        page_bytes
+    );
     serving.close();
     let serving = crate::serving_from_open(&root);
     assert_eq!(
@@ -167,14 +185,14 @@ fn shared_generation_pages_stay_readable_after_a_tail_rewrite() {
         .manifest_capacity(ManifestEntryCapacity::new(64).unwrap())
         .admit(format)
         .unwrap();
-    let serving = crate::success(initialize_record_store!(crate::media(&root), |durability| {
-        PhysicalRecordInitialization::new(format, placement, access, durability)
-    }));
+    let serving = crate::success(initialize_record_store!(
+        crate::media(&root),
+        |durability| PhysicalRecordInitialization::new(format, placement, access, durability)
+    ));
     let first = vec![0x31_u8; 7_500];
     let second = vec![0x32_u8; 7_500];
-    let appended = completed(
-        prepare_records(&serving, placement, [71; 32], &[&first, &second]).execute(),
-    );
+    let appended =
+        completed(prepare_records(&serving, placement, [71; 32], &[&first, &second]).execute());
     let ids: Vec<_> = appended.into_acknowledgment().record_ids().collect();
     completed(prepare_rewrite(&serving, placement, [72; 32]).execute());
     let before = segment_names(&root);
@@ -253,7 +271,9 @@ fn observed_source_stays_protected_when_rewrite_waits_on_capture() {
         assert_eq!(segment_names(&root), before);
         drop(reader);
         serving.retire_displaced_segment().unwrap();
-        assert!(before.iter().any(|name| !segment_names(&root).contains(name)));
+        assert!(before
+            .iter()
+            .any(|name| !segment_names(&root).contains(name)));
     });
     serving.close();
 }
@@ -273,10 +293,15 @@ fn retirement_barrier_waits_after_the_frame_is_written() {
         Err(PhysicalRetirementDenial::Waiting)
     );
     assert_eq!(segment_names(&root), before);
-    assert!(wal_contains_retirement(&root));
+    assert_eq!(
+        retirement_actions(&root),
+        [IndependentRetirementAction::Intent]
+    );
     serving.certification_release_owed_background_turn();
     serving.retire_displaced_segment().unwrap();
-    assert!(before.iter().any(|name| !segment_names(&root).contains(name)));
+    assert!(before
+        .iter()
+        .any(|name| !segment_names(&root).contains(name)));
     serving.close();
 }
 
@@ -293,7 +318,9 @@ fn retirement_deletes_only_after_a_checkpoint_of_the_successor_root() {
     drop(current);
     let before = segment_names(&root);
     serving.retire_displaced_segment().unwrap();
-    assert!(before.iter().any(|name| !segment_names(&root).contains(name)));
+    assert!(before
+        .iter()
+        .any(|name| !segment_names(&root).contains(name)));
     assert_eq!(
         checkpoint_root_generation(&root),
         current_generation,
@@ -330,34 +357,9 @@ fn checkpoint_root_generation(root: &Path) -> u64 {
         .generation()
 }
 
-fn wal_contains_retirement(root: &Path) -> bool {
-    fn contains(path: &Path, needle: &[u8]) -> bool {
-        let Ok(entries) = std::fs::read_dir(path) else {
-            return false;
-        };
-        entries.flatten().any(|entry| {
-            let path = entry.path();
-            if path.is_dir() {
-                return contains(&path, needle);
-            }
-            std::fs::read(&path)
-                .ok()
-                .is_some_and(|bytes| bytes.windows(needle.len()).any(|window| window == needle))
-        })
-    }
-    contains(
-        &root.join("families").join("wal"),
-        b"store.physical.retirement.v1",
-    )
-}
-
-fn segment_names(root: &Path) -> Vec<String> {
-    let mut names = std::fs::read_dir(root.join("families").join("records").join("segments"))
-        .unwrap()
-        .flatten()
-        .map(|entry| entry.file_name().to_string_lossy().into_owned())
-        .filter(|name| name.ends_with(".pages"))
-        .collect::<Vec<_>>();
-    names.sort();
-    names
+fn retirement_actions(root: &Path) -> Vec<IndependentRetirementAction> {
+    produced_retirement_payloads(root)
+        .iter()
+        .map(|record| record.action)
+        .collect()
 }

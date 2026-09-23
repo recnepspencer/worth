@@ -52,7 +52,7 @@ physical-compaction-fixtures = [
     "worth-store-wal/certification-authority",
 ]
 layout-fixtures = [
-    "physical-isolation-fixtures",
+    "physical-compaction-fixtures",
     "dep:worth-store-layout-indexes",
     "dep:worth-store-lsm-authority",
 ]

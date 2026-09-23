@@ -63,12 +63,6 @@ impl MediaOwnedPhysicalRuntime {
         self.core.runtime_identity()
     }
 
-    pub(in crate::physical_runtime) fn lifecycle_generation(
-        &self,
-    ) -> crate::physical_runtime::LifecycleGeneration {
-        self.core.lifecycle_generation()
-    }
-
     pub(in crate::physical_runtime) fn lifecycle_state(
         &self,
     ) -> std::sync::Arc<crate::physical_runtime::lifecycle::LifecycleState> {

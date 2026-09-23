@@ -1,10 +1,11 @@
 use worth_signal::facade::{ClockAdvanceRequest, ClockDomain, ClockTick, TemporalDuration};
 use worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint;
 use worth_store::physical_runtime::{
-    PhysicalMutationCancellationOutcome, PhysicalMutationDeadline, PhysicalMutationIdempotencyMaterial,
-    PhysicalMutationIndeterminateStage, PhysicalMutationOutcome, PhysicalMutationPreparationSuccess,
-    PhysicalMutationProvenNoEffectCause, PhysicalMutationRequest, RecordAppendBatch, RecordByteLimit,
-    RecordReadLimits,
+    PhysicalMutationCancellationOutcome, PhysicalMutationDeadline,
+    PhysicalMutationIdempotencyMaterial, PhysicalMutationIndeterminateStage,
+    PhysicalMutationOutcome, PhysicalMutationPreparationSuccess,
+    PhysicalMutationProvenNoEffectCause, PhysicalMutationRequest, RecordAppendBatch,
+    RecordByteLimit, RecordReadLimits,
 };
 
 use super::super::super::{configuration, serving_from_initialization, serving_from_open};
@@ -16,7 +17,8 @@ fn cancellation_timeout_abandonment_close_and_reopen_settle_once() {
     let root = parent.path().join("store");
     let serving = serving_from_initialization(&root);
     let (_, placement, _) = configuration();
-    let durable = completed(prepare(&serving, placement, [0xA1; 32], b"together-durable").execute());
+    let durable =
+        completed(prepare(&serving, placement, [0xA1; 32], b"together-durable").execute());
     let identity = durable.persisted_records()[0];
     let record = durable.into_acknowledgment().record_ids().next().unwrap();
 
@@ -51,8 +53,7 @@ fn cancellation_timeout_abandonment_close_and_reopen_settle_once() {
             ClockTick::new(7),
         ))
         .unwrap();
-    match prepare_with_deadline(&serving, placement, [0xA3; 32], b"together-timeout", 7).execute()
-    {
+    match prepare_with_deadline(&serving, placement, [0xA3; 32], b"together-timeout", 7).execute() {
         PhysicalMutationOutcome::ProvenNoEffect(fate) => assert_eq!(
             fate.cause(),
             PhysicalMutationProvenNoEffectCause::DeadlineElapsedBeforeGroupSeal
@@ -121,7 +122,10 @@ fn cancellation_timeout_abandonment_close_and_reopen_settle_once() {
     ));
     match stale.wait() {
         PhysicalMutationOutcome::Indeterminate(fate) => {
-            assert_eq!(fate.stage(), PhysicalMutationIndeterminateStage::RuntimeUnavailable);
+            assert_eq!(
+                fate.stage(),
+                PhysicalMutationIndeterminateStage::RuntimeUnavailable
+            );
         }
         PhysicalMutationOutcome::Completed(_) | PhysicalMutationOutcome::ProvenNoEffect(_) => {
             panic!("a completion after close must stay stale")
@@ -133,7 +137,10 @@ fn cancellation_timeout_abandonment_close_and_reopen_settle_once() {
         observer.acquisition_snapshot().is_err(),
         "the abandoned observer must not observe the fresh incarnation"
     );
-    assert_eq!(read_record(&serving, record, b"together-durable"), b"together-durable");
+    assert_eq!(
+        read_record(&serving, record, b"together-durable"),
+        b"together-durable"
+    );
     let rewritten = execute_rewrite(&serving, placement, [0xA7; 32]);
     assert!(rewritten.persisted_records().contains(&identity));
     let generation = serving
@@ -153,7 +160,10 @@ fn cancellation_timeout_abandonment_close_and_reopen_settle_once() {
         generation,
         "retrying the published rewrite must not publish another root"
     );
-    assert_eq!(read_record(&serving, record, b"together-durable"), b"together-durable");
+    assert_eq!(
+        read_record(&serving, record, b"together-durable"),
+        b"together-durable"
+    );
     serving.close();
 }
 
@@ -174,7 +184,9 @@ fn prepare_with_deadline(
             placement,
             PhysicalMutationRequest::platform_durable(
                 key,
-                PhysicalMutationDeadline::at(TemporalDuration::temporal_duration(deadline_tick).unwrap()),
+                PhysicalMutationDeadline::at(
+                    TemporalDuration::temporal_duration(deadline_tick).unwrap(),
+                ),
             ),
         )
         .into_raw()

@@ -28,7 +28,9 @@ impl RecordPublicationDirector {
         {
             return Ok(prepared);
         }
-        let planned = if prepared.selected_segment_rewrite() {
+        let planned = if let Some(source) = prepared.extent_rewrite_source() {
+            self.build_extent_record_rewrite(&prepared, source)
+        } else if prepared.selected_segment_rewrite() {
             self.build_selected_segment_rewrite(&prepared)
         } else {
             self.build_durable_data_plan(&prepared)
@@ -119,12 +121,10 @@ impl RecordPublicationDirector {
                 .expect("an admitted nonempty append has nonzero planning bytes"),
             prepared.manifest_capacity_transition(),
         )?;
-        for (generation, growth_bytes) in data.retained_growth() {
+        for (artifact, growth_bytes) in data.retained_growth() {
             self.root_owner
-                .hold_rewrite_candidate(generation, growth_bytes)
-                .map_err(|()| {
-                    RecordAppendError::Denied(RecordAppendDenial::PhysicalPressure)
-                })?;
+                .hold_rewrite_candidate(artifact, growth_bytes)
+                .map_err(|()| RecordAppendError::Denied(RecordAppendDenial::RetentionPressure))?;
         }
         Ok((data, root))
     }

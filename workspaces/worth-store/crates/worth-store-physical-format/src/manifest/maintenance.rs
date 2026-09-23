@@ -34,7 +34,8 @@ impl DurablePhysicalRootManifest {
 mod tests {
     use super::DurablePhysicalRootManifest;
     use crate::{
-        FreeSpaceBlockReference, FreeSpaceKey, PhysicalRecordFormatDeclaration, RecordAllocationClass,
+        FreeSpaceBlockReference, FreeSpaceKey, PhysicalRecordFormatDeclaration,
+        RecordAllocationClass,
     };
 
     fn manifest(maintenance: bool) -> DurablePhysicalRootManifest {

@@ -1,8 +1,6 @@
 use sha2::{Digest, Sha256};
 use worth_store::physical_runtime::ObservedRecoveryArtifact;
-use worth_store_physical_format::{
-    PageGenerationCell, PhysicalPageLsn, PhysicalRecordFormatDeclaration,
-};
+use worth_store_physical_format::PhysicalPageLsn;
 use worth_store_physical_integrity::{
     validate_inline_page, IntegrityValidatedPageFrame, PhysicalArtifactScope,
 };
@@ -18,10 +16,6 @@ pub(crate) struct IntegrityAdmittedPageFrame<'media> {
 }
 
 pub(crate) struct PageFrameProjection {
-    pub record_format: PhysicalRecordFormatDeclaration,
-    pub page_identity: PageGenerationCell,
-    pub slot_count: u16,
-    pub free_bytes: u32,
     pub page_lsn: PhysicalPageLsn,
     pub encoded_digest: [u8; 32],
 }
@@ -78,17 +72,9 @@ impl<'media> IntegrityAdmittedPageFrame<'media> {
             .input()
             .expect("an admitted page retains its exact C.4 observation");
         PageFrameProjection {
-            record_format: self.validated.record_format(),
-            page_identity: self.validated.page_identity(),
-            slot_count: self.validated.slot_count(),
-            free_bytes: self.validated.free_bytes(),
             page_lsn: self.validated.page_lsn(),
             encoded_digest: Sha256::digest(input.bytes()).into(),
         }
-    }
-
-    pub(crate) fn scope(&self) -> worth_store_physical_integrity::PhysicalArtifactScope {
-        self.source.scope()
     }
 }
 

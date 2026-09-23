@@ -1,26 +1,33 @@
+#[cfg(test)]
 use worth_store_buffer_pool::PhysicalFrameLease;
+#[cfg(test)]
 use worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily;
+#[cfg(test)]
 use worth_store_physical_format::RecordArtifactFile;
+#[cfg(test)]
 use worth_store_physical_integrity::{
     validate_current_root_selector, validate_previous_root_selector, validate_root_manifest,
-    CurrentRootSelectorIntegrityValidation, PhysicalArtifactScope, PhysicalByteRange,
-    PhysicalDamageLocalization, PhysicalIntegrityRejection,
+    CurrentRootSelectorIntegrityValidation, PhysicalByteRange, PhysicalIntegrityRejection,
     PreviousRootSelectorIntegrityValidation, RootManifestIntegrityValidation,
     UntrustedPhysicalArtifact,
 };
+use worth_store_physical_integrity::{PhysicalArtifactScope, PhysicalDamageLocalization};
 
+#[cfg(test)]
 use super::classification::{
     project_damaged_authority, project_intact_authority, project_rejection_without_owner_truth,
     OwnerDispositionProjectionDenial, PhysicalArtifactDisposition,
 };
 
 /// Internal owner role joined only while validating one exact C.6 source.
+#[cfg(test)]
 pub(super) struct StoreAuthoritativeArtifactOwnerTruth {
     scope: PhysicalArtifactScope,
 }
 
+#[cfg(test)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(in crate::physical_runtime) enum StoreOwnerDispositionAdapterDenial {
+pub(super) enum StoreOwnerDispositionAdapterDenial {
     SourceScopeSubstitution,
     Projection(OwnerDispositionProjectionDenial),
 }
@@ -36,7 +43,8 @@ pub struct DamagedPhysicalAuthorityObservation {
 }
 
 /// Validate and project the inherited Phase 3 current-selector owner source.
-pub(in crate::physical_runtime) fn project_resident_current_root_selector_authority(
+#[cfg(test)]
+pub(super) fn project_resident_current_root_selector_authority(
     source: &PhysicalFrameLease,
     scope: PhysicalArtifactScope,
 ) -> Result<PhysicalArtifactDisposition, StoreOwnerDispositionAdapterDenial> {
@@ -59,7 +67,8 @@ pub(in crate::physical_runtime) fn project_resident_current_root_selector_author
 }
 
 /// Validate and project the inherited Phase 3 previous-selector owner source.
-pub(in crate::physical_runtime) fn project_resident_previous_root_selector_authority(
+#[cfg(test)]
+pub(super) fn project_resident_previous_root_selector_authority(
     source: &PhysicalFrameLease,
     scope: PhysicalArtifactScope,
 ) -> Result<PhysicalArtifactDisposition, StoreOwnerDispositionAdapterDenial> {
@@ -82,7 +91,8 @@ pub(in crate::physical_runtime) fn project_resident_previous_root_selector_autho
 }
 
 /// Validate and project the inherited Phase 3 root-manifest owner source.
-pub(in crate::physical_runtime) fn project_resident_root_manifest_authority(
+#[cfg(test)]
+pub(super) fn project_resident_root_manifest_authority(
     source: &PhysicalFrameLease,
     scope: PhysicalArtifactScope,
 ) -> Result<PhysicalArtifactDisposition, StoreOwnerDispositionAdapterDenial> {
@@ -107,6 +117,7 @@ pub(in crate::physical_runtime) fn project_resident_root_manifest_authority(
     .map_err(StoreOwnerDispositionAdapterDenial::Projection)
 }
 
+#[cfg(test)]
 fn bind_resident_source(
     source: &PhysicalFrameLease,
     scope: PhysicalArtifactScope,
@@ -128,6 +139,7 @@ fn bind_resident_source(
     Ok(StoreAuthoritativeArtifactOwnerTruth { scope })
 }
 
+#[cfg(test)]
 fn project_authoritative_rejection(
     owner_truth: StoreAuthoritativeArtifactOwnerTruth,
     rejection: PhysicalIntegrityRejection,
@@ -139,6 +151,7 @@ fn project_authoritative_rejection(
     }
 }
 
+#[cfg(test)]
 impl StoreAuthoritativeArtifactOwnerTruth {
     pub(super) const fn scope(&self) -> PhysicalArtifactScope {
         self.scope
@@ -146,6 +159,7 @@ impl StoreAuthoritativeArtifactOwnerTruth {
 }
 
 impl IntactPhysicalAuthorityObservation {
+    #[cfg(test)]
     pub(super) const fn new(scope: PhysicalArtifactScope) -> Self {
         Self { scope }
     }
@@ -156,6 +170,7 @@ impl IntactPhysicalAuthorityObservation {
 }
 
 impl DamagedPhysicalAuthorityObservation {
+    #[cfg(test)]
     pub(super) const fn new(localization: PhysicalDamageLocalization) -> Self {
         Self { localization }
     }

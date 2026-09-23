@@ -210,7 +210,9 @@ impl PhysicalWorkScheduler {
     ) -> Result<ResourceAdmittedPhysicalWork, PhysicalSchedulerDenial> {
         let footprint = super::effect_footprint::lower_effect_footprint(demand.intent());
         let effect_lease = effects.admit(footprint).map_err(|denial| match denial {
-            super::PhysicalEffectAdmissionDenial::Conflict => PhysicalSchedulerDenial::EffectConflict,
+            super::PhysicalEffectAdmissionDenial::Conflict => {
+                PhysicalSchedulerDenial::EffectConflict
+            }
             super::PhysicalEffectAdmissionDenial::SlotsExhausted => {
                 PhysicalSchedulerDenial::EffectSlotsExhausted
             }

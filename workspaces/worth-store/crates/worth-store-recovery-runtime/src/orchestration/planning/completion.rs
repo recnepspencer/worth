@@ -1,13 +1,13 @@
 #[path = "completion/execution_basis.rs"]
 mod execution_basis;
-#[path = "completion/rewrite_materialization.rs"]
-mod rewrite_materialization;
 #[path = "completion/plan_cost.rs"]
 mod plan_cost;
 #[path = "completion/planned_recovery.rs"]
 mod planned_recovery;
 #[path = "completion/publication_effects.rs"]
 mod publication_effects;
+#[path = "completion/rewrite_materialization.rs"]
+mod rewrite_materialization;
 
 use crate::progression::PlannedPhysicalRecovery;
 

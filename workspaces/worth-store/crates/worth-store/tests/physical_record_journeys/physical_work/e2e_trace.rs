@@ -27,7 +27,8 @@ fn joined_pressure_trace_covers_disjoint_io_blocking_scheduler_exhaustion_and_ef
         [first_read_request, second_read_request],
         [first_write_request, second_write_request],
     ) = disjoint_io_pressure_fixture();
-    let capacity = PhysicalWorkCapacity::new(5, 1, 5, 1024 * 1024, 5 * 1024 * 1024)
+    // Five works plus the queue slot withheld for checkpoint or retirement.
+    let capacity = PhysicalWorkCapacity::new(6, 1, 5, 1024 * 1024, 5 * 1024 * 1024)
         .unwrap()
         .with_terminal_evidence_capacity(8)
         .unwrap();

@@ -133,6 +133,31 @@ Checksum-call counts are explicitly unavailable (`null`) rather than inferred
 from frame counts. The comparator preserves an indeterminate `observed_range`
 when the runtime observed only a prefix.
 
+## Integrity during maintenance
+
+Scrub runs as scheduled `BackgroundScrub` work in the one Store scheduler, beside
+checkpoints and foreground work. It stays observation. A damaged window never
+grants rewrite, retirement, deletion or repair authority, and a source that
+changes during inspection is reported as indeterminate, not damaged.
+
+A record-preserving rewrite reads its source through ordinary integrity
+admission. A damaged source frame is refused before owner entry and the rewrite
+ends with no effect, so maintenance cannot copy damaged bytes or treat damage as
+deletable. The candidate is encoded from the admitted source and redo-described
+before its data write. After the write settles, every candidate frame is read
+back from media, bypassing residency, and compared with its WAL-bound bytes
+before any root can name it. A short or differing read ends the dispatch as
+indeterminate with `CandidateReadBackMismatch`; no root is published and reopen
+fails closed on the unsettled redo. Media damage after publication is found by
+integrity admission on the next read or scrub. Retirement deletes only a
+displaced generation that the publication owner has claimed.
+
+Rewrite and retirement WAL payloads have canonical golden vectors, and the
+record journeys decode them with an independent test oracle. The offline
+observer inventories and checksums maintenance artifacts like any other family
+but does not interpret those payloads. Neither inspection grants repair or
+reclaim authority.
+
 ## Independent offline observation
 
 Close or isolate the Store first. The independent executable does not import

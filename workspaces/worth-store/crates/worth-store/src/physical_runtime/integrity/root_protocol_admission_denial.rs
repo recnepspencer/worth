@@ -1,10 +1,10 @@
+#[cfg(feature = "recovery-runtime-owner")]
 use worth_store_physical_format::{
     store_namespace::StableStoreIdentity, PhysicalRecordFormatDeclaration, RecordArtifactFile,
 };
-use worth_store_physical_integrity::{
-    PhysicalBlastRadius, PhysicalDamageCause, PhysicalDamageLocalization,
-    PhysicalIntegrityRejection,
-};
+#[cfg(feature = "recovery-runtime-owner")]
+use worth_store_physical_integrity::{PhysicalBlastRadius, PhysicalDamageCause};
+use worth_store_physical_integrity::{PhysicalDamageLocalization, PhysicalIntegrityRejection};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RootProtocolAdmissionDenial {
@@ -20,6 +20,7 @@ pub enum RootProtocolAdmissionDenial {
 }
 
 impl RootProtocolAdmissionDenial {
+    #[cfg(feature = "recovery-runtime-owner")]
     pub(in crate::physical_runtime) fn fixed_selector_absent(
         store: StableStoreIdentity,
         format: PhysicalRecordFormatDeclaration,
@@ -52,6 +53,7 @@ impl RootProtocolAdmissionDenial {
         ))
     }
 
+    #[cfg(feature = "recovery-runtime-owner")]
     pub(in crate::physical_runtime) fn addressed_root_absent(
         store: StableStoreIdentity,
         format: PhysicalRecordFormatDeclaration,
@@ -83,7 +85,7 @@ impl RootProtocolAdmissionDenial {
 
     /// Classifies duplication only after a route owner has independently
     /// observed both conflicting fixed namespace entries.
-    #[cfg(feature = "recovery-runtime-owner")]
+    #[cfg(all(test, feature = "recovery-runtime-owner"))]
     pub(in crate::physical_runtime) fn conflicting_fixed_selector_duplication_from_join(
         scope: worth_store_physical_integrity::PhysicalArtifactScope,
     ) -> Self {
@@ -110,17 +112,14 @@ impl RootProtocolAdmissionDenial {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "recovery-runtime-owner"))]
 mod tests {
-    #[cfg(feature = "recovery-runtime-owner")]
     use worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily;
     use worth_store_physical_format::store_namespace::{
         ProposedStoreIdentity, StoreNamespaceIdentityRecord, StoreNamespaceVersion,
     };
     use worth_store_physical_format::PhysicalRecordFormatDeclaration;
-    #[cfg(feature = "recovery-runtime-owner")]
     use worth_store_physical_format::RecordArtifactFile;
-    #[cfg(feature = "recovery-runtime-owner")]
     use worth_store_physical_integrity::PhysicalFormatField;
     use worth_store_physical_integrity::{
         PhysicalBlastRadius, PhysicalByteRange, PhysicalDamageCause,
@@ -128,7 +127,6 @@ mod tests {
 
     use super::RootProtocolAdmissionDenial;
 
-    #[cfg(feature = "recovery-runtime-owner")]
     #[test]
     fn fixed_slot_absence_retains_family_and_reachable_blast_radius() {
         let denial = RootProtocolAdmissionDenial::fixed_selector_absent(
@@ -179,7 +177,6 @@ mod tests {
         );
     }
 
-    #[cfg(feature = "recovery-runtime-owner")]
     #[test]
     fn duplication_join_localization_retains_exact_fixed_slot() {
         let range =

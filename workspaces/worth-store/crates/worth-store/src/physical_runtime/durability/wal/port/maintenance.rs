@@ -5,11 +5,11 @@ use worth_store_physical_backend::ArtifactTreeFile;
 
 use super::PhysicalWalAppendPort;
 use crate::physical_runtime::{
-    instance::RecordSchedulerReservationDenial, PhysicalExecutorCommand, PhysicalMutationWorkRequest,
-    PhysicalSchedulerDemand, PhysicalSchedulerDenial, PhysicalWalAppendFailureCause,
-    PhysicalWalAppendScope, PhysicalWalBarrierScope, PhysicalWalFrameWriteDisposition,
-    PhysicalWorkAdmission, PhysicalWorkReadiness, PhysicalWorkScheduler,
-    PhysicalWorkSettlementEvidence,
+    instance::RecordSchedulerReservationDenial, PhysicalExecutorCommand,
+    PhysicalMutationWorkRequest, PhysicalSchedulerDemand, PhysicalSchedulerDenial,
+    PhysicalWalAppendFailureCause, PhysicalWalAppendScope, PhysicalWalBarrierScope,
+    PhysicalWalFrameWriteDisposition, PhysicalWorkAdmission, PhysicalWorkReadiness,
+    PhysicalWorkScheduler, PhysicalWorkSettlementEvidence,
 };
 
 pub(in crate::physical_runtime) enum ScheduledMaintenanceDenial {
@@ -38,7 +38,9 @@ impl PhysicalWalAppendPort {
         }
         let (artifact, segment, generation, offset, bytes) = self
             .plan_maintenance_frame(payload)
-            .map_err(|()| ScheduledMaintenanceDenial::NotStarted(PhysicalWalAppendFailureCause::RuntimeReleased))?;
+            .map_err(|()| {
+            ScheduledMaintenanceDenial::NotStarted(PhysicalWalAppendFailureCause::RuntimeReleased)
+        })?;
         let disposition = if offset == 0 {
             PhysicalWalFrameWriteDisposition::CreateSegment
         } else {
@@ -96,11 +98,11 @@ impl PhysicalWalAppendPort {
             Ok(()) => self
                 .finish_maintenance_frame()
                 .map_err(|()| ScheduledMaintenanceDenial::Finish),
-            Err(MaintenanceBarrierDenial::Waiting(denial)) => Err(
-                ScheduledMaintenanceDenial::NotStarted(PhysicalWalAppendFailureCause::Scheduler(
-                    denial,
-                )),
-            ),
+            Err(MaintenanceBarrierDenial::Waiting(denial)) => {
+                Err(ScheduledMaintenanceDenial::NotStarted(
+                    PhysicalWalAppendFailureCause::Scheduler(denial),
+                ))
+            }
             Err(MaintenanceBarrierDenial::Failed) => {
                 self.abort_maintenance_frame();
                 Err(ScheduledMaintenanceDenial::Sync)
@@ -174,7 +176,9 @@ pub(super) fn prepare_wal_frame_command(
                 PhysicalWalAppendFailureCause::SchedulerReservationDenied(denial)
             }
             RecordSchedulerReservationDenial::OwedBackgroundTurn => {
-                PhysicalWalAppendFailureCause::Scheduler(PhysicalSchedulerDenial::OwedBackgroundTurn)
+                PhysicalWalAppendFailureCause::Scheduler(
+                    PhysicalSchedulerDenial::OwedBackgroundTurn,
+                )
             }
         })?;
     let demand = PhysicalSchedulerDemand::foreground(ready, reservation, None)
@@ -266,7 +270,11 @@ fn prepare_wal_barrier_command(
         &runtime.health,
     )
     .map_err(|_| MaintenanceBarrierDenial::Failed)?;
-    let ready = match runtime.signal.request(admitted).map_err(|_| MaintenanceBarrierDenial::Failed)? {
+    let ready = match runtime
+        .signal
+        .request(admitted)
+        .map_err(|_| MaintenanceBarrierDenial::Failed)?
+    {
         PhysicalWorkReadiness::Ready(ready) => ready,
         PhysicalWorkReadiness::Blocked(_) => return Err(MaintenanceBarrierDenial::Failed),
     };
@@ -324,11 +332,16 @@ fn prepare_wal_barrier_command(
         .map_err(|_| MaintenanceBarrierDenial::Failed)
 }
 
-fn maintenance_barrier_identity(label: &[u8], interval: (u64, u64, u64, u64, u64, u64)) -> [u8; 32] {
+fn maintenance_barrier_identity(
+    label: &[u8],
+    interval: (u64, u64, u64, u64, u64, u64),
+) -> [u8; 32] {
     let mut digest = Sha256::new();
     digest.update(b"store.physical.maintenance-barrier.v1");
     digest.update(label);
-    for value in [interval.0, interval.1, interval.2, interval.3, interval.4, interval.5] {
+    for value in [
+        interval.0, interval.1, interval.2, interval.3, interval.4, interval.5,
+    ] {
         digest.update(value.to_le_bytes());
     }
     digest.finalize().into()

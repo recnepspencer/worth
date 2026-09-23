@@ -164,7 +164,8 @@ fn published_image(
         return false;
     };
     let bytes = members[claim.member].projection.frames()[image.frame_index].bytes();
-    let Ok(format) = worth_store_physical_format::PhysicalRecordFormatDeclaration::builder().admit()
+    let Ok(format) =
+        worth_store_physical_format::PhysicalRecordFormatDeclaration::builder().admit()
     else {
         return false;
     };

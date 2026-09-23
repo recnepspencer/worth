@@ -17,6 +17,9 @@ use crate::physical_runtime::{
     PhysicalCheckpointStartOutcome, PhysicalCheckpointStartStale,
 };
 
+#[cfg(feature = "certification-test-authority")]
+mod certification;
+
 pub(in crate::physical_runtime) struct PhysicalCheckpointRuntimeOwner {
     capture: PhysicalCheckpointCaptureOwner,
     work_runtime: Weak<crate::physical_runtime::instance::PhysicalStoreWorkRuntime>,
@@ -93,25 +96,6 @@ impl PhysicalCheckpointRuntimeOwner {
         step: super::PhysicalCheckpointStep,
     ) -> super::PhysicalCheckpointPauseGate {
         self.yieldpoints.install(step)
-    }
-
-    pub(in crate::physical_runtime) fn certification_checkpoint_under_pressure(
-        &self,
-        foreground_pressure_events: u64,
-    ) -> bool {
-        self.capture
-            .certification_checkpoint_under_pressure(foreground_pressure_events)
-    }
-
-    #[cfg(feature = "certification-test-authority")]
-    pub(in crate::physical_runtime) fn certification_fail_next_admission(&self) { self.capture.fail_next_admission(); }
-
-    pub(in crate::physical_runtime) fn certification_reclamation_under_pressure(
-        &self,
-        foreground_pressure_events: u64,
-    ) -> bool {
-        self.capture
-            .certification_reclamation_under_pressure(foreground_pressure_events)
     }
 
     pub(in crate::physical_runtime) fn submission(

@@ -108,13 +108,14 @@ fn admit_foreground_read(
         })?;
     let policy =
         crate::physical_runtime::record_serving::admit_record_queue_policy(demand.queue_work());
-    PhysicalWorkScheduler::admit(coordination.scheduler.effects(), demand, &backend, policy).map_err(|denial| {
-        after_cancel(
-            coordination,
-            consumer,
-            PhysicalRecoveryCleanupAdmissionDenialKind::Scheduler(denial),
-        )
-    })
+    PhysicalWorkScheduler::admit(coordination.scheduler.effects(), demand, &backend, policy)
+        .map_err(|denial| {
+            after_cancel(
+                coordination,
+                consumer,
+                PhysicalRecoveryCleanupAdmissionDenialKind::Scheduler(denial),
+            )
+        })
 }
 
 fn submit_removal(
@@ -195,11 +196,11 @@ fn admit_background_removal(
                 coordination,
                 consumer,
                 PhysicalRecoveryCleanupAdmissionDenialKind::BackgroundPacing(other),
-            ))
+            ));
         }
     };
-    let demand =
-        PhysicalSchedulerDemand::wal_reclamation_background(ready, lease, capacity).map_err(|denial| {
+    let demand = PhysicalSchedulerDemand::wal_reclamation_background(ready, lease, capacity)
+        .map_err(|denial| {
             after_cancel(
                 coordination,
                 consumer,
@@ -214,13 +215,14 @@ fn admit_background_removal(
                 PhysicalRecoveryCleanupAdmissionDenialKind::PreEffect(denial),
             )
         })?;
-    PhysicalWorkScheduler::admit(coordination.scheduler.effects(), demand, &backend, policy).map_err(|denial| {
-        after_cancel(
-            coordination,
-            consumer,
-            PhysicalRecoveryCleanupAdmissionDenialKind::Scheduler(denial),
-        )
-    })
+    PhysicalWorkScheduler::admit(coordination.scheduler.effects(), demand, &backend, policy)
+        .map_err(|denial| {
+            after_cancel(
+                coordination,
+                consumer,
+                PhysicalRecoveryCleanupAdmissionDenialKind::Scheduler(denial),
+            )
+        })
 }
 
 fn ready(

@@ -101,23 +101,32 @@ impl PreparedPhysicalDataPlan {
         })
     }
 
-    pub(in crate::physical_runtime) fn with_rewrite(mut self, rewrite: PhysicalRewriteRedo) -> Self {
+    pub(in crate::physical_runtime) fn with_rewrite(
+        mut self,
+        rewrite: PhysicalRewriteRedo,
+    ) -> Self {
         self.rewrite = Some(rewrite);
         self
     }
 
     /// New artifact bytes this plan will retain, one charge per artifact generation.
-    pub(in crate::physical_runtime) fn retained_growth(&self) -> Vec<(u64, u64)> {
-        let mut charges = std::collections::BTreeMap::<u64, u64>::new();
+    pub(in crate::physical_runtime) fn retained_growth(
+        &self,
+    ) -> Vec<(worth_store_physical_format::RecordArtifactFile, u64)> {
+        let mut charges = std::collections::BTreeMap::<
+            worth_store_physical_format::RecordArtifactFile,
+            u64,
+        >::new();
         for frame in &self.frames {
-            let generation = match frame.target.coordinate().artifact() {
-                worth_store_physical_format::RecordArtifactFile::Segment { generation, .. }
-                | worth_store_physical_format::RecordArtifactFile::Extent { generation, .. } => {
-                    generation
-                }
-                _ => continue,
-            };
-            let entry = charges.entry(generation).or_insert(0);
+            let artifact = frame.target.coordinate().artifact();
+            if !matches!(
+                artifact,
+                worth_store_physical_format::RecordArtifactFile::Segment { .. }
+                    | worth_store_physical_format::RecordArtifactFile::Extent { .. }
+            ) {
+                continue;
+            }
+            let entry = charges.entry(artifact).or_insert(0);
             *entry = entry.saturating_add(u64::from(frame.target.coordinate().length()));
         }
         charges.into_iter().collect()

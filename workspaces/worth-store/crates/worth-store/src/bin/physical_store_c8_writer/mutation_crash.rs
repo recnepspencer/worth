@@ -75,9 +75,9 @@ impl MutationCrashWorkload {
     fn payload_length(&self, writer: &InitializedWriter) -> usize {
         match self {
             Self::ExtentWriteback => configuration::dirty_checkpoint_payload_length(writer.format),
-            Self::InlineRecord
-            | Self::SelectedSegmentRewrite
-            | Self::MultiPageSegmentRewrite => INLINE_RECORD_PAYLOAD_BYTES,
+            Self::InlineRecord | Self::SelectedSegmentRewrite | Self::MultiPageSegmentRewrite => {
+                INLINE_RECORD_PAYLOAD_BYTES
+            }
             Self::CapacityTransition => INLINE_RECORD_PAYLOAD_BYTES,
         }
     }
@@ -94,10 +94,16 @@ pub(super) fn hold_for_process_death(
 ) -> Result<(), String> {
     let seed = invocation.stage.perturbation_seed;
     let material = dirty_material(seed);
-    if matches!(crash.workload, MutationCrashWorkload::SelectedSegmentRewrite) {
+    if matches!(
+        crash.workload,
+        MutationCrashWorkload::SelectedSegmentRewrite
+    ) {
         finish_source_append(writer, material, INLINE_RECORD_PAYLOAD_BYTES)?;
     }
-    if matches!(crash.workload, MutationCrashWorkload::MultiPageSegmentRewrite) {
+    if matches!(
+        crash.workload,
+        MutationCrashWorkload::MultiPageSegmentRewrite
+    ) {
         finish_two_page_source(writer, material)?;
     }
     let gate = writer.serving.pause_physical_mutation_at(crash.checkpoint);
@@ -146,17 +152,12 @@ pub(super) fn hold_for_process_death(
     markers::park_forever()
 }
 
-fn finish_two_page_source(
-    writer: &InitializedWriter,
-    material: [u8; 32],
-) -> Result<(), String> {
+fn finish_two_page_source(writer: &InitializedWriter, material: [u8; 32]) -> Result<(), String> {
     // Two records of this size exceed the 90% inline page fill, so one
     // mutation publishes the second record on the next page.
     const SPANNED_PAGE_PAYLOAD_BYTES: usize = 7_500;
-    let first = super::mutation_material::dirty_checkpoint_payload(
-        material,
-        SPANNED_PAGE_PAYLOAD_BYTES,
-    );
+    let first =
+        super::mutation_material::dirty_checkpoint_payload(material, SPANNED_PAGE_PAYLOAD_BYTES);
     let mut second_material = material;
     second_material[1] ^= 0x5A;
     let second = super::mutation_material::dirty_checkpoint_payload(

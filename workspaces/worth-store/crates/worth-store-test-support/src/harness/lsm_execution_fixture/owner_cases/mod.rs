@@ -1,5 +1,6 @@
 mod membership;
 mod open;
+mod published_replacement;
 mod world;
 
 use worth_store_lsm_authority::LsmMembershipOwnerCaseObservation;

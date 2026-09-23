@@ -111,7 +111,7 @@ fn canonical_journal_alias_storm_does_not_repeat_reads_checksums_or_stream_vecto
                 "--max-symlinks",
                 "0",
                 "--max-elapsed-ms",
-                "10000",
+                crate::support::FIXTURE_ELAPSED_ARGUMENT,
                 "--max-report-bytes",
                 "65536",
             ])

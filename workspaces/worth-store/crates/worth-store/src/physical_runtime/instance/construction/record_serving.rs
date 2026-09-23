@@ -135,7 +135,7 @@ impl PhysicalRecordServingAssembly {
                 access: self.state.access,
                 current_root: self.state.current_root,
                 previous_root: self.state.previous_root,
-                displaced_segments: self.state.displaced_segments,
+                displaced_artifacts: self.state.displaced_artifacts,
                 unresolved_retirements: durability.unresolved_retirements.clone(),
                 publication_overheads: self.state.publication_overheads,
                 free_space: self.state.free_space,

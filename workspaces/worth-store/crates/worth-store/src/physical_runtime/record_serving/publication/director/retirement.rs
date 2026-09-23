@@ -20,13 +20,12 @@ impl RetirementIntentGate {
 
 use super::RecordPublicationDirector;
 use crate::physical_runtime::durability::{
-    encode_retirement, PhysicalRootPublicationWorkFailure, ScheduledMaintenanceDenial,
-    RETIREMENT_COMPLETION, RETIREMENT_INTENT,
+    encode_retirement, DisplacedArtifact, PhysicalRootPublicationWorkFailure, RetiredArtifact,
+    ScheduledMaintenanceDenial,
 };
 use crate::physical_runtime::{
     PhysicalPublicationEffect, PhysicalRetirementDenial, PhysicalSchedulerDenial,
-    PhysicalWalAppendFailureCause, PhysicalWorkEffectFate,
-    PhysicalWorkSettlementEvidence,
+    PhysicalWalAppendFailureCause, PhysicalWorkEffectFate, PhysicalWorkSettlementEvidence,
 };
 
 impl RecordPublicationDirector {
@@ -44,46 +43,37 @@ impl RecordPublicationDirector {
 
     pub(in crate::physical_runtime) fn commit_retirement_intent(
         &self,
-    ) -> Result<Option<crate::physical_runtime::durability::DisplacedSegment>, PhysicalRetirementDenial>
-    {
+    ) -> Result<Option<DisplacedArtifact>, PhysicalRetirementDenial> {
         let Some(displaced) = self.root_owner.claim_retirement()? else {
             return Ok(None);
         };
         #[cfg(feature = "certification-test-authority")]
         self.wait_retirement_intent_gate();
         let intent = encode_retirement(
-            RETIREMENT_INTENT,
+            displaced.artifact,
+            false,
             displaced.source_root,
-            displaced.segment_id,
-            displaced.generation,
             displaced.bytes,
         );
         if let Err(denial) = self.append_retirement(&intent) {
             if denial != PhysicalRetirementDenial::Waiting {
-                self.root_owner
-                    .revert_displaced_claim(displaced.segment_id, displaced.generation);
+                self.root_owner.revert_displaced_claim(displaced.artifact);
             }
             return Err(denial);
         }
         Ok(Some(displaced))
     }
 
-    pub(in crate::physical_runtime) fn revert_retirement_claim(
-        &self,
-        segment_id: u64,
-        generation: u64,
-    ) {
-        self.root_owner
-            .revert_displaced_claim(segment_id, generation);
+    pub(in crate::physical_runtime) fn revert_retirement_claim(&self, artifact: RetiredArtifact) {
+        self.root_owner.revert_displaced_claim(artifact);
     }
 
     pub(in crate::physical_runtime) fn finish_retirement(
         &self,
-        displaced: crate::physical_runtime::durability::DisplacedSegment,
+        displaced: DisplacedArtifact,
     ) -> Result<(), PhysicalRetirementDenial> {
         if let Some(denial) = self.root_owner.blocked_retirement(&displaced) {
-            self.root_owner
-                .revert_displaced_claim(displaced.segment_id, displaced.generation);
+            self.root_owner.revert_displaced_claim(displaced.artifact);
             return Err(denial);
         }
         #[cfg(feature = "certification-test-authority")]
@@ -93,7 +83,7 @@ impl RecordPublicationDirector {
         {
             return Err(PhysicalRetirementDenial::Delete);
         }
-        self.delete_displaced_segment(displaced.segment_id, displaced.generation)?;
+        self.delete_displaced(displaced.artifact)?;
         #[cfg(feature = "certification-test-authority")]
         if self
             .stop_after_retirement_delete
@@ -102,15 +92,13 @@ impl RecordPublicationDirector {
             return Err(PhysicalRetirementDenial::Delete);
         }
         let completion = encode_retirement(
-            RETIREMENT_COMPLETION,
+            displaced.artifact,
+            true,
             displaced.source_root,
-            displaced.segment_id,
-            displaced.generation,
             displaced.bytes,
         );
         self.append_retirement(&completion)?;
-        self.root_owner
-            .complete_displaced(displaced.segment_id, displaced.generation);
+        self.root_owner.complete_displaced(displaced.artifact);
         Ok(())
     }
 
@@ -196,31 +184,30 @@ impl RecordPublicationDirector {
             Err(ScheduledMaintenanceDenial::NotStarted(cause)) if scheduler_waiting(&cause) => {
                 Err(PhysicalRetirementDenial::Waiting)
             }
-            Err(ScheduledMaintenanceDenial::NotStarted(_)) => Err(PhysicalRetirementDenial::WalPlan),
+            Err(ScheduledMaintenanceDenial::NotStarted(_)) => {
+                Err(PhysicalRetirementDenial::WalPlan)
+            }
             Err(ScheduledMaintenanceDenial::Write) => Err(PhysicalRetirementDenial::WalWrite),
             Err(ScheduledMaintenanceDenial::Sync) => Err(PhysicalRetirementDenial::WalSync),
             Err(ScheduledMaintenanceDenial::Finish) => Err(PhysicalRetirementDenial::WalFinish),
         }
     }
 
-    fn delete_displaced_segment(
-        &self,
-        segment_id: u64,
-        generation: u64,
-    ) -> Result<(), PhysicalRetirementDenial> {
-        let artifact = RecordArtifactFile::Segment {
-            segment: segment_id,
-            generation,
-        };
+    /// Deletes every file of the claimed generation, then synchronizes the
+    /// record family once. A crash between files leaves the durable intent,
+    /// and resumption treats an already-absent file as removed.
+    fn delete_displaced(&self, artifact: RetiredArtifact) -> Result<(), PhysicalRetirementDenial> {
         let permit = self
             .root_owner
-            .removal_permit(segment_id, generation)
+            .removal_permit(artifact)
             .ok_or(PhysicalRetirementDenial::Delete)?;
-        self.execute_record_effect(
-            artifact,
-            PhysicalPublicationEffect::RemoveArtifact,
-            Some(permit),
-        )?;
+        for file in artifact.files() {
+            self.execute_record_effect(
+                file,
+                PhysicalPublicationEffect::RemoveArtifact,
+                Some(permit),
+            )?;
+        }
         #[cfg(feature = "certification-test-authority")]
         self.pause_retirement_kill(2);
         self.execute_record_effect(

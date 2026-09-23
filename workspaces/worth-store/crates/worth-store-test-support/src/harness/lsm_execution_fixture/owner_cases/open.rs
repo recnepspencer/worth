@@ -4,6 +4,7 @@ use worth_store_lsm_authority::{
 use worth_store_wal::{BlobWalRecordKind, WalArtifactInventory, WalFrameArtifactObservation};
 
 use super::super::begin_durability_fixture;
+use super::published_replacement::published_replacement;
 use super::world;
 
 pub(super) fn observe() -> Vec<LsmMembershipOwnerCaseObservation> {
@@ -15,6 +16,7 @@ pub(super) fn observe() -> Vec<LsmMembershipOwnerCaseObservation> {
         membership_ambiguous(),
         membership_stale(),
         manifest_membership_mismatch(),
+        replacement_output_mismatch(),
         persisted_membership_artifact_invalid(),
         io(),
     ]
@@ -61,20 +63,25 @@ fn membership_ambiguous() -> LsmMembershipOwnerCaseObservation {
     open(&anchor)
 }
 
+/// The activation survives while every input record it retired is gone.
 fn membership_stale() -> LsmMembershipOwnerCaseObservation {
-    let world = world::complete_membership();
+    let world = published_replacement();
     let store = inventory_for(&world.anchor);
-    std::fs::remove_file(&world.record_paths[0]).unwrap();
+    std::fs::remove_file(&world.segment_path).unwrap();
     reopen(store)
 }
 
+/// The activation names a complete selection, but the tombstone input is gone.
 fn manifest_membership_mismatch() -> LsmMembershipOwnerCaseObservation {
-    let world = world::complete_membership();
-    let artifact = std::fs::OpenOptions::new()
-        .write(true)
-        .open(&world.record_paths[2])
-        .unwrap();
-    artifact.set_len(world.record_frame_offsets[2]).unwrap();
+    let world = published_replacement();
+    world.truncate_segment_at(world.record_frame_offsets[2]);
+    open(&world.anchor)
+}
+
+/// Every input survives, but the output frame the activation names is gone.
+fn replacement_output_mismatch() -> LsmMembershipOwnerCaseObservation {
+    let world = published_replacement();
+    world.truncate_segment_at(world.output_frame_offset);
     open(&world.anchor)
 }
 

@@ -122,12 +122,13 @@ impl ServingPhysicalRuntime {
         )
     }
 
-    /// Retires one segment generation displaced by a published rewrite.
+    /// Retires one segment or extent generation displaced by a published rewrite.
     ///
-    /// A live reader of the source root blocks the claim. Intent is durable in
-    /// the WAL, then a checkpoint preserves that obligation, and only then is
-    /// the file deleted. The retained-byte charge is released after namespace
-    /// synchronization and completion.
+    /// A live reader that can still reach the generation blocks the claim.
+    /// Intent is durable in the WAL, then a checkpoint preserves that
+    /// obligation, and only then are the generation's files deleted. The
+    /// retained-byte charge is released after namespace synchronization and
+    /// completion.
     pub fn retire_displaced_segment(
         &self,
     ) -> Result<(), crate::physical_runtime::PhysicalRetirementDenial> {
@@ -137,19 +138,19 @@ impl ServingPhysicalRuntime {
         let Some(displaced) = self.parts.publication.commit_retirement_intent()? else {
             return Ok(());
         };
-        let captured = match self.checkpoint_displaced_retirement(displaced.generation) {
+        let captured = match self.checkpoint_displaced_retirement(displaced.artifact) {
             Ok(captured) => captured,
             Err(denial) => {
                 self.parts
                     .publication
-                    .revert_retirement_claim(displaced.segment_id, displaced.generation);
+                    .revert_retirement_claim(displaced.artifact);
                 return Err(denial);
             }
         };
         if captured <= displaced.source_root {
             self.parts
                 .publication
-                .revert_retirement_claim(displaced.segment_id, displaced.generation);
+                .revert_retirement_claim(displaced.artifact);
             return Err(crate::physical_runtime::PhysicalRetirementDenial::Retained);
         }
         #[cfg(feature = "certification-test-authority")]
@@ -159,17 +160,21 @@ impl ServingPhysicalRuntime {
 
     fn checkpoint_displaced_retirement(
         &self,
-        generation: u64,
+        artifact: crate::physical_runtime::durability::RetiredArtifact,
     ) -> Result<u64, crate::physical_runtime::PhysicalRetirementDenial> {
         use worth_proof::TransitionOutcome;
 
         use crate::physical_runtime::{
-            PhysicalCheckpointDeadline, PhysicalCheckpointIdempotencyKey, PhysicalCheckpointOutcome,
-            PhysicalCheckpointRequest, PhysicalRetirementDenial,
+            PhysicalCheckpointDeadline, PhysicalCheckpointIdempotencyKey,
+            PhysicalCheckpointOutcome, PhysicalCheckpointRequest, PhysicalRetirementDenial,
         };
 
+        // The key names the exact retired generation, so two retirements that
+        // share a generation number never replay each other's checkpoint.
         let mut key = [0u8; 32];
-        key[..8].copy_from_slice(&generation.to_le_bytes());
+        key[..8].copy_from_slice(&artifact.generation().to_le_bytes());
+        key[8..16].copy_from_slice(&artifact.id().to_le_bytes());
+        key[16] = artifact.action_code(false);
         let request = PhysicalCheckpointRequest::fuzzy(
             PhysicalCheckpointIdempotencyKey::new(key),
             PhysicalCheckpointDeadline::after_milliseconds(30_000)

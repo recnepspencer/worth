@@ -15,20 +15,14 @@ pub(in crate::physical_runtime) struct PhysicalRecordBootstrapOwner {
     pub(in crate::physical_runtime::record_serving) observed_staging_residue: bool,
 }
 
-/// A rewrite source that still occupies growth until retirement removes it.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(in crate::physical_runtime) struct DisplacedSegmentCharge {
-    pub(in crate::physical_runtime) source_root: u64,
-    pub(in crate::physical_runtime) segment_id: u64,
-    pub(in crate::physical_runtime) generation: u64,
-}
-
 pub(in crate::physical_runtime) struct RecordServingState {
     pub(in crate::physical_runtime) format: AdmittedPhysicalRecordFormat,
     pub(in crate::physical_runtime) access: AdmittedRecordAccessPolicy,
     pub(in crate::physical_runtime) current_root: DurablePhysicalRootManifest,
     pub(in crate::physical_runtime) previous_root: Option<DurablePhysicalRootManifest>,
-    pub(in crate::physical_runtime) displaced_segments: Vec<DisplacedSegmentCharge>,
+    /// Rewrite sources that still occupy growth until retirement removes them.
+    pub(in crate::physical_runtime) displaced_artifacts:
+        Vec<crate::physical_runtime::durability::DisplacedArtifact>,
     pub(in crate::physical_runtime) publication_overheads: Vec<u64>,
     pub(in crate::physical_runtime) publication_residue: RecordPublicationResidueObservation,
     pub(in crate::physical_runtime) free_space: DurableFreeSpaceManifestHeader,

@@ -1,9 +1,6 @@
 use sha2::{Digest, Sha256};
 use worth_store::physical_runtime::ObservedRecoveryArtifact;
-use worth_store_physical_format::{
-    ExtentChunkCoordinate, PersistedRecordIdentity, PhysicalPageLsn,
-    PhysicalRecordFormatDeclaration, RecordExtentGenerationCell,
-};
+use worth_store_physical_format::PhysicalPageLsn;
 use worth_store_physical_integrity::{
     validate_extent_chunk_membership, IntegrityValidatedExtentChunkFrame, PhysicalArtifactScope,
 };
@@ -19,13 +16,6 @@ pub(crate) struct IntegrityAdmittedExtentChunkFrame<'media> {
 }
 
 pub(crate) struct ExtentChunkProjection {
-    pub coordinate: ExtentChunkCoordinate,
-    pub record: PersistedRecordIdentity,
-    pub extent_cell: RecordExtentGenerationCell,
-    pub record_format: PhysicalRecordFormatDeclaration,
-    pub logical_bytes: u64,
-    pub logical_offset: u64,
-    pub ordinal: u32,
     pub page_lsn: PhysicalPageLsn,
     pub encoded_digest: [u8; 32],
 }
@@ -77,20 +67,9 @@ impl<'media> IntegrityAdmittedExtentChunkFrame<'media> {
             .input()
             .expect("an admitted extent chunk retains its exact C.4 observation");
         ExtentChunkProjection {
-            coordinate: self.validated.coordinate(),
-            record: self.validated.record(),
-            extent_cell: self.validated.extent_cell(),
-            record_format: self.validated.record_format(),
-            logical_bytes: self.validated.logical_bytes(),
-            logical_offset: self.validated.logical_offset(),
-            ordinal: self.validated.ordinal(),
             page_lsn: self.validated.page_lsn(),
             encoded_digest: Sha256::digest(input.bytes()).into(),
         }
-    }
-
-    pub(crate) fn scope(&self) -> worth_store_physical_integrity::PhysicalArtifactScope {
-        self.source.scope()
     }
 }
 

@@ -52,8 +52,8 @@ fn execute_write(
     request: worth_store::physical_runtime::PhysicalMutationWorkRequest,
     bytes: &[u8],
 ) {
-    let command = PhysicalExecutorCommand::exact_write(admitted_write(serving, request), bytes)
-        .unwrap();
+    let command =
+        PhysicalExecutorCommand::exact_write(admitted_write(serving, request), bytes).unwrap();
     serving.execute_physical_work(command).unwrap();
 }
 
@@ -176,7 +176,9 @@ fn whole_catalog_write_conflicts_before_a_second_effect() {
         policy_receipt(requested_budget),
     ) {
         Err(PhysicalSchedulerDenial::EffectConflict) => {}
-        Err(denial) => panic!("a whole-catalog write must conflict with a live range, got {denial:?}"),
+        Err(denial) => {
+            panic!("a whole-catalog write must conflict with a live range, got {denial:?}")
+        }
         Ok(_) => panic!("a whole-catalog write must conflict with a live range"),
     }
     serving

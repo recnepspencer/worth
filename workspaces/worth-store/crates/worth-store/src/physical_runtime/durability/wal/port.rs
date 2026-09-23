@@ -1,7 +1,6 @@
-use std::sync::{
-    atomic::{AtomicBool, Ordering},
-    Arc, OnceLock, Weak,
-};
+#[cfg(feature = "certification-test-authority")]
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, OnceLock, Weak};
 
 use worth_signal::facade::{AsyncNodeAdmissionClass, AsyncNodeConditionBlockClass};
 use worth_store_io_scheduler::QueueExecutionOutcome;

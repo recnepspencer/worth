@@ -1,3 +1,4 @@
+#[allow(dead_code)]
 mod phase_three_support;
 
 use std::num::NonZeroU64;
@@ -36,7 +37,8 @@ fn production_discovery_projects_all_five_checkpoint_families_without_raw_decode
     assert_eq!(selected.compaction_generation(), Some(1));
     assert_eq!(selected.root_generation(), 1);
     let observations = selected.integrity_observations().to_vec();
-    assert_eq!(observations.len(), 7);
+    // Seven checkpoint records plus the source-root manifest they bind.
+    assert_eq!(observations.len(), 8);
     let worth_store_recovery_runtime::PhysicalRecoveryOutcome::Refused(refusal) =
         selected.cancel_before_reconstruction()
     else {

@@ -1,5 +1,7 @@
 pub(super) mod admission_outcome;
 pub(super) mod bootstrap;
+mod current_free_space;
+mod displaced_extents;
 mod displaced_segments;
 pub(super) mod format_admission;
 pub(super) mod initialization;

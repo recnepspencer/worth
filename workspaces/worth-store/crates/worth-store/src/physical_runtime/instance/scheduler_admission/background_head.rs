@@ -62,9 +62,10 @@ impl RetainedBackgroundHeads {
         // A retained head already owns the owed turn. Another foreground
         // selection turn would block this producer's own retry.
         if owner.heads.is_retained(kind) {
-            return owner.foreground.reserve(lane, &owner.fsync, security).map_err(
-                super::RecordSchedulerReservationDenial::Admission,
-            );
+            return owner
+                .foreground
+                .reserve(lane, &owner.fsync, security)
+                .map_err(super::RecordSchedulerReservationDenial::Admission);
         }
         owner.reserve_selected_foreground(lane, &owner.fsync, security)
     }

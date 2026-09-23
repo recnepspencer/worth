@@ -27,9 +27,12 @@ pub(in crate::physical_runtime) struct PhysicalCurrentRootOwner {
     read_protection: std::sync::Arc<crate::physical_runtime::stability::RootProtectionRegistry>,
     state: Mutex<PhysicalCurrentRootState>,
     transition: PhysicalRootPublicationTransitionOwner,
-    publication: std::sync::Arc<crate::physical_runtime::durability::retention::PhysicalPublicationAdmission>,
-    rewrite_growth: Mutex<Vec<crate::physical_runtime::durability::retention::CandidateGrowthLease>>,
-    displaced: Mutex<Option<crate::physical_runtime::durability::retention::DisplacedSegment>>,
+    publication: std::sync::Arc<
+        crate::physical_runtime::durability::retention::PhysicalPublicationAdmission,
+    >,
+    rewrite_growth:
+        Mutex<Vec<crate::physical_runtime::durability::retention::CandidateGrowthLease>>,
+    displaced: Mutex<Option<crate::physical_runtime::durability::retention::DisplacedArtifact>>,
 }
 
 pub(super) struct PhysicalCurrentRootState {
@@ -99,6 +102,7 @@ impl PhysicalCurrentRootOwner {
         }
     }
 
+    #[cfg(feature = "certification-test-authority")]
     pub(in crate::physical_runtime) fn charged_growth_bytes(&self) -> u64 {
         self.publication.charged_growth_bytes()
     }
@@ -107,18 +111,16 @@ impl PhysicalCurrentRootOwner {
         self.publication.reconstruct_retained_bytes(bytes);
     }
 
-    pub(in crate::physical_runtime) fn restore_displaced_segment(
+    pub(in crate::physical_runtime) fn restore_displaced(
         &self,
         source_root: u64,
-        segment_id: u64,
-        generation: u64,
+        artifact: crate::physical_runtime::durability::RetiredArtifact,
         bytes: u64,
     ) {
         self.publication.retain_displaced(
-            crate::physical_runtime::durability::retention::DisplacedSegment {
+            crate::physical_runtime::durability::retention::DisplacedArtifact {
                 source_root,
-                segment_id,
-                generation,
+                artifact,
                 bytes,
             },
         );
@@ -141,18 +143,19 @@ impl PhysicalCurrentRootOwner {
         self.publication.register_exclusive_pending(identity)
     }
 
+    #[cfg(feature = "certification-test-authority")]
     pub(in crate::physical_runtime) fn pending_publication_count(&self) -> usize {
         self.publication.pending_len()
     }
 
     pub(in crate::physical_runtime) fn hold_rewrite_candidate(
         &self,
-        generation: u64,
+        artifact: RecordArtifactFile,
         bytes: u64,
     ) -> Result<(), ()> {
         let lease = self
             .publication
-            .reserve_candidate(generation, bytes)
+            .reserve_candidate(artifact, bytes)
             .map_err(|_| ())?;
         self.rewrite_growth
             .lock()

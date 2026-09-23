@@ -19,10 +19,6 @@ impl<'media> IntegrityAdmittedCheckpointBindingCompaction<'media> {
         Ok(Self { source, validated })
     }
 
-    pub(crate) fn scope(&self) -> worth_store_physical_integrity::PhysicalArtifactScope {
-        self.source.scope()
-    }
-
     pub(in crate::integrity_ingress) const fn source(&self) -> &ObservedRecoverySource<'media> {
         &self.source
     }

@@ -18,10 +18,12 @@ mod artifact_scope;
 mod certification_submission;
 mod durable_data;
 mod durable_preparation;
+mod extent_record_rewrite;
 mod group_wal_planning;
 mod lifecycle;
 mod managed_mutation;
 mod pre_seal_cancellation;
+mod record_append_fingerprint;
 mod retirement;
 mod rewrite_anchor;
 mod rewrite_pages;
@@ -105,8 +107,8 @@ pub(in crate::physical_runtime) struct RecordPublicationFoundation {
     pub(in crate::physical_runtime) access: AdmittedRecordAccessPolicy,
     pub(in crate::physical_runtime) current_root: DurablePhysicalRootManifest,
     pub(in crate::physical_runtime) previous_root: Option<DurablePhysicalRootManifest>,
-    pub(in crate::physical_runtime) displaced_segments:
-        Vec<crate::physical_runtime::record_serving::admission::bootstrap::DisplacedSegmentCharge>,
+    pub(in crate::physical_runtime) displaced_artifacts:
+        Vec<crate::physical_runtime::durability::DisplacedArtifact>,
     pub(in crate::physical_runtime) unresolved_retirements:
         Vec<crate::physical_runtime::durability::RetirementRecord>,
     pub(in crate::physical_runtime) publication_overheads: Vec<u64>,
@@ -131,14 +133,23 @@ impl RecordPublicationDirector {
         foundation: RecordPublicationFoundation,
     ) -> Arc<Self> {
         let writeback = mutation.frame_writeback_port(foundation.frame_ports.clone());
-        let page_bytes = u64::from(foundation.format.declaration().page_size().bytes());
-        let displaced = foundation.displaced_segments.clone();
+        let displaced = foundation.displaced_artifacts.clone();
         let root_owner = crate::physical_runtime::durability::PhysicalCurrentRootOwner::new(
             runtime,
             foundation.current_root.clone(),
             foundation.previous_root,
             foundation.free_space.clone(),
             foundation.read_protection,
+        );
+        let retained_wal_tail = foundation
+            .durability
+            .checkpoint_policy()
+            .retained_wal_tail_limit()
+            .get()
+            .get();
+        root_owner.install_retention_profile(
+            crate::physical_runtime::durability::PhysicalRetentionProfile::store_default()
+                .covering_retained_wal_tail(retained_wal_tail),
         );
         // Live segment and extent files are reachable payload, not excess
         // obsolete bytes. Reopen charges unreclaimed WAL, the overhead of each
@@ -152,26 +163,17 @@ impl RecordPublicationDirector {
             .fold(0_u64, |total, bytes| total.saturating_add(*bytes));
         retained = retained.saturating_add(foundation.wal.observation().reopened_bytes());
         root_owner.reconstruct_retained_bytes(retained);
-        for segment in &displaced {
-            root_owner.restore_displaced_segment(
-                segment.source_root,
-                segment.segment_id,
-                segment.generation,
-                page_bytes,
-            );
+        for charge in &displaced {
+            root_owner.restore_displaced(charge.source_root, charge.artifact, charge.bytes);
         }
         for record in foundation.unresolved_retirements {
-            if displaced.iter().any(|segment| {
-                segment.segment_id == record.segment_id && segment.generation == record.generation
-            }) {
+            if displaced
+                .iter()
+                .any(|charge| charge.artifact == record.artifact)
+            {
                 continue;
             }
-            root_owner.restore_displaced_segment(
-                record.source_root,
-                record.segment_id,
-                record.generation,
-                record.bytes,
-            );
+            root_owner.restore_displaced(record.source_root, record.artifact, record.bytes);
         }
         foundation
             .wal
@@ -280,6 +282,7 @@ impl RecordPublicationDirector {
         }
     }
 
+    #[cfg(feature = "certification-test-authority")]
     pub(in crate::physical_runtime) fn charged_growth_bytes(&self) -> u64 {
         self.root_owner.charged_growth_bytes()
     }
@@ -305,22 +308,20 @@ impl RecordPublicationDirector {
     pub(in crate::physical_runtime) fn certification_public_segment_removal_rejected(
         &self,
     ) -> bool {
-        let Some(displaced) = self.root_owner.next_displaced_segment() else {
+        let Some(displaced) = self.root_owner.next_displaced() else {
             return false;
         };
-        let artifact = worth_store_physical_format::RecordArtifactFile::Segment {
-            segment: displaced.segment_id,
-            generation: displaced.generation,
-        };
         self.root_work
-            .certification_public_removal_rejected(artifact)
+            .certification_public_removal_rejected(displaced.artifact.files()[0])
             .unwrap_or(false)
     }
 
+    #[cfg(feature = "certification-test-authority")]
     pub(in crate::physical_runtime) fn pending_publication_count(&self) -> usize {
         self.root_owner.pending_publication_count()
     }
 
+    #[cfg(feature = "certification-test-authority")]
     pub(in crate::physical_runtime) fn limit_candidate_growth_bytes(
         &self,
         usable_growth_bytes: u64,

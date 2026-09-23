@@ -39,9 +39,10 @@ fn fresh_recovery_applies_a_wal_durable_segment_rewrite() {
         report.denial_cause()
     );
     let after = segment_files(&world.writer.root);
-    let published = after.difference(&before).next().expect(
-        "recovery must publish the rewritten segment generation",
-    );
+    let published = after
+        .difference(&before)
+        .next()
+        .expect("recovery must publish the rewritten segment generation");
     let page = fs::read(
         world
             .writer
@@ -73,12 +74,8 @@ fn fresh_recovery_applies_a_multi_page_source_rewrite() {
     .expect("production writer must leave a killed multi-page rewrite");
     let before = segment_files(&root);
     let report_path = parent.path().join("rewrite-multi-page-runtime-report.bin");
-    let (_process_id, output) = run_recovery_with_profile(
-        &root,
-        &report_path,
-        parent.path(),
-        "c8-phase2-admission-v1",
-    );
+    let (_process_id, output) =
+        run_recovery_with_profile(&root, &report_path, parent.path(), "c8-phase2-admission-v1");
     assert_child_succeeded("rewrite-multi-page", &output);
     let report = RecoveryReportEnvelope::decode(&fs::read(&report_path).expect("report bytes"))
         .expect("report decode");
@@ -88,9 +85,11 @@ fn fresh_recovery_applies_a_multi_page_source_rewrite() {
         "multi-page rewrite recovery denial: {:?}",
         report.denial_cause()
     );
-    let published = segment_files(&root).difference(&before).next().expect(
-        "recovery must publish the rewritten segment generation",
-    ).clone();
+    let published = segment_files(&root)
+        .difference(&before)
+        .next()
+        .expect("recovery must publish the rewritten segment generation")
+        .clone();
     let page = fs::read(
         root.join("families")
             .join("records")
@@ -129,13 +128,17 @@ fn wal_rewrite(root: &Path) -> Option<worth_store_physical_format::PhysicalRewri
             let Ok(bytes) = fs::read(&path) else {
                 continue;
             };
-            let Some(index) = bytes.windows(domain.len()).position(|window| window == domain) else {
+            let Some(index) = bytes
+                .windows(domain.len())
+                .position(|window| window == domain)
+            else {
                 continue;
             };
             let start = index.checked_sub(8)?;
             let end = start + 8 + domain.len() + 216;
             let encoded = bytes.get(start..end)?;
-            if let Ok(redo) = worth_store_physical_format::PhysicalRewriteRedo::decode(encoded, u64::MAX)
+            if let Ok(redo) =
+                worth_store_physical_format::PhysicalRewriteRedo::decode(encoded, u64::MAX)
             {
                 return Some(redo);
             }

@@ -11,28 +11,18 @@ use crate::{admit_physical_redo_members, PhysicalRedoAdmissionLimits};
 
 fn rewrite(length: u32) -> PhysicalRewriteRedo {
     PhysicalRewriteRedo::new(
-        [4; 32],
-        [5; 32],
-        3,
-        7,
-        64,
-        length,
-        [9; 32],
-        8,
-        128,
-        11,
-        [3; 32],
-        64,
-        128,
-        4,
+        [4; 32], [5; 32], 3, 7, 64, length, [9; 32], 8, 128, 11, [3; 32], 64, 128, 4,
     )
     .unwrap()
 }
 
 fn member(start: u64, bytes: &[u8]) -> PhysicalRedoMemberInput {
     PhysicalRedoMemberInput::new(
-        WalLsnRange::new(LogSequenceNumber::new(start), LogSequenceNumber::new(start + 1))
-            .unwrap(),
+        WalLsnRange::new(
+            LogSequenceNumber::new(start),
+            LogSequenceNumber::new(start + 1),
+        )
+        .unwrap(),
         [start as u8; 32],
         RecoveryOperationFate::Indeterminate,
         bytes,

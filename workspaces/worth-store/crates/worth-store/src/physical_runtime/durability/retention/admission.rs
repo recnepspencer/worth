@@ -1,7 +1,9 @@
 use std::collections::{BTreeMap, HashMap};
 use std::sync::{Mutex, Weak};
 
-use super::PhysicalRetentionProfile;
+use worth_store_physical_format::RecordArtifactFile;
+
+use super::{PhysicalRetentionProfile, RetiredArtifact};
 use crate::physical_runtime::PhysicalMutationIdentity;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -22,8 +24,8 @@ struct AdmissionState {
     profile: PhysicalRetentionProfile,
     charged_bytes: u64,
     pending: HashMap<PhysicalMutationIdentity, u32>,
-    generations: BTreeMap<u64, (u64, u32)>,
-    garbage: BTreeMap<(u64, u64), RetainedGarbage>,
+    generations: BTreeMap<RecordArtifactFile, (u64, u32)>,
+    garbage: BTreeMap<RetiredArtifact, RetainedGarbage>,
     sealed_publications: Vec<(u64, u64, u64)>,
 }
 
@@ -35,17 +37,16 @@ struct RetainedGarbage {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(in crate::physical_runtime) struct DisplacedSegment {
+pub(in crate::physical_runtime) struct DisplacedArtifact {
     pub(in crate::physical_runtime) source_root: u64,
-    pub(in crate::physical_runtime) segment_id: u64,
-    pub(in crate::physical_runtime) generation: u64,
+    pub(in crate::physical_runtime) artifact: RetiredArtifact,
     pub(in crate::physical_runtime) bytes: u64,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(in crate::physical_runtime) enum GarbageClaim {
-    Claimed(DisplacedSegment),
-    AlreadyClaimed(DisplacedSegment),
+    Claimed(DisplacedArtifact),
+    AlreadyClaimed(DisplacedArtifact),
     Completed,
     Absent,
 }
@@ -61,7 +62,7 @@ pub(in crate::physical_runtime) struct PendingPublicationLease {
 
 pub(in crate::physical_runtime) struct CandidateGrowthLease {
     admission: Weak<PhysicalPublicationAdmission>,
-    generation: u64,
+    artifact: RecordArtifactFile,
 }
 
 impl PhysicalPublicationAdmission {
@@ -127,7 +128,7 @@ impl PhysicalPublicationAdmission {
 
     pub(in crate::physical_runtime) fn reserve_candidate(
         self: &std::sync::Arc<Self>,
-        generation: u64,
+        artifact: RecordArtifactFile,
         bytes: u64,
     ) -> Result<CandidateGrowthLease, PhysicalRetentionGrowthDenial> {
         let mut state = self.lock();
@@ -139,12 +140,12 @@ impl PhysicalPublicationAdmission {
                 remaining_entries: state.remaining_entries(),
             });
         }
-        if let Some((_, holders)) = state.generations.get_mut(&generation) {
+        if let Some((_, holders)) = state.generations.get_mut(&artifact) {
             *holders = holders.saturating_add(1);
             drop(state);
             return Ok(CandidateGrowthLease {
                 admission: std::sync::Arc::downgrade(self),
-                generation,
+                artifact,
             });
         }
         let remaining = state.remaining_bytes();
@@ -157,11 +158,11 @@ impl PhysicalPublicationAdmission {
             });
         }
         state.charged_bytes = state.charged_bytes.saturating_add(bytes);
-        state.generations.insert(generation, (bytes, 1));
+        state.generations.insert(artifact, (bytes, 1));
         drop(state);
         Ok(CandidateGrowthLease {
             admission: std::sync::Arc::downgrade(self),
-            generation,
+            artifact,
         })
     }
 
@@ -169,18 +170,15 @@ impl PhysicalPublicationAdmission {
         self.lock().pending.len()
     }
 
-    /// Keeps the generation's byte charge after its in-flight lease ends.
-    ///
-    /// Publication success converts a candidate into retained growth. The lease
-    /// Drop becomes a no-op once the holder entry is removed here.
-    /// Restores a sealed byte charge from published page identities.
-    ///
-    /// Reopen has no in-flight leases. The charge is the pages already named by
-    /// the free-space frontier, so a new generation still reserves on top.
+    #[cfg(any(test, feature = "certification-test-authority"))]
     pub(in crate::physical_runtime) fn charged_growth_bytes(&self) -> u64 {
         self.lock().charged_bytes
     }
 
+    /// Restores a sealed byte charge from published page identities.
+    ///
+    /// Reopen has no in-flight leases. The charge is the pages already named by
+    /// the free-space frontier, so a new generation still reserves on top.
     pub(in crate::physical_runtime) fn reconstruct_retained_bytes(&self, bytes: u64) {
         if bytes == 0 {
             return;
@@ -189,9 +187,13 @@ impl PhysicalPublicationAdmission {
         state.charged_bytes = state.charged_bytes.saturating_add(bytes);
     }
 
-    pub(in crate::physical_runtime) fn seal_candidate_charge(&self, generation: u64) {
+    /// Keeps the artifact generation's byte charge after its in-flight lease ends.
+    ///
+    /// An unsettled publication keeps its candidate charged. The lease Drop
+    /// becomes a no-op once the holder entry is removed here.
+    pub(in crate::physical_runtime) fn seal_candidate_charge(&self, artifact: RecordArtifactFile) {
         let mut state = self.lock();
-        state.generations.remove(&generation);
+        state.generations.remove(&artifact);
     }
 
     pub(in crate::physical_runtime) fn replace_profile(&self, profile: PhysicalRetentionProfile) {
@@ -199,19 +201,19 @@ impl PhysicalPublicationAdmission {
         state.profile = profile;
     }
 
+    #[cfg(test)]
     pub(in crate::physical_runtime) fn remaining_growth_bytes(&self) -> u64 {
         self.lock().remaining_bytes()
     }
 
-    pub(in crate::physical_runtime) fn retain_displaced(&self, displaced: DisplacedSegment) {
+    pub(in crate::physical_runtime) fn retain_displaced(&self, displaced: DisplacedArtifact) {
         let mut state = self.lock();
-        let key = (displaced.segment_id, displaced.generation);
-        if state.garbage.contains_key(&key) {
+        if state.garbage.contains_key(&displaced.artifact) {
             return;
         }
         state.charged_bytes = state.charged_bytes.saturating_add(displaced.bytes);
         state.garbage.insert(
-            key,
+            displaced.artifact,
             RetainedGarbage {
                 bytes: displaced.bytes,
                 source_root: displaced.source_root,
@@ -221,37 +223,31 @@ impl PhysicalPublicationAdmission {
         );
     }
 
-    pub(in crate::physical_runtime) fn next_displaced(&self) -> Option<DisplacedSegment> {
+    pub(in crate::physical_runtime) fn next_displaced(&self) -> Option<DisplacedArtifact> {
         let state = self.lock();
-        state
-            .garbage
-            .iter()
-            .find_map(|((segment_id, generation), garbage)| {
-                (!garbage.completed).then_some(DisplacedSegment {
-                    source_root: garbage.source_root,
-                    segment_id: *segment_id,
-                    generation: *generation,
-                    bytes: garbage.bytes,
-                })
+        state.garbage.iter().find_map(|(artifact, garbage)| {
+            (!garbage.completed).then_some(DisplacedArtifact {
+                source_root: garbage.source_root,
+                artifact: *artifact,
+                bytes: garbage.bytes,
             })
+        })
     }
 
     pub(in crate::physical_runtime) fn claim_displaced(
         &self,
-        segment_id: u64,
-        generation: u64,
+        artifact: RetiredArtifact,
     ) -> GarbageClaim {
         let mut state = self.lock();
-        let Some(garbage) = state.garbage.get_mut(&(segment_id, generation)) else {
+        let Some(garbage) = state.garbage.get_mut(&artifact) else {
             return GarbageClaim::Absent;
         };
         if garbage.completed {
             return GarbageClaim::Completed;
         }
-        let displaced = DisplacedSegment {
+        let displaced = DisplacedArtifact {
             source_root: garbage.source_root,
-            segment_id,
-            generation,
+            artifact,
             bytes: garbage.bytes,
         };
         if garbage.claimed {
@@ -263,32 +259,26 @@ impl PhysicalPublicationAdmission {
 
     pub(in crate::physical_runtime) fn removal_permit(
         &self,
-        segment_id: u64,
-        generation: u64,
+        artifact: RetiredArtifact,
     ) -> Option<super::RetirementRemovalPermit> {
         let state = self.lock();
-        let garbage = state.garbage.get(&(segment_id, generation))?;
-        (garbage.claimed && !garbage.completed).then_some(super::RetirementRemovalPermit::issued(
-            segment_id, generation,
-        ))
+        let garbage = state.garbage.get(&artifact)?;
+        (garbage.claimed && !garbage.completed)
+            .then_some(super::RetirementRemovalPermit::issued(artifact))
     }
 
-    pub(in crate::physical_runtime) fn revert_displaced_claim(
-        &self,
-        segment_id: u64,
-        generation: u64,
-    ) {
+    pub(in crate::physical_runtime) fn revert_displaced_claim(&self, artifact: RetiredArtifact) {
         let mut state = self.lock();
-        if let Some(garbage) = state.garbage.get_mut(&(segment_id, generation)) {
+        if let Some(garbage) = state.garbage.get_mut(&artifact) {
             if !garbage.completed {
                 garbage.claimed = false;
             }
         }
     }
 
-    pub(in crate::physical_runtime) fn complete_displaced(&self, segment_id: u64, generation: u64) {
+    pub(in crate::physical_runtime) fn complete_displaced(&self, artifact: RetiredArtifact) {
         let mut state = self.lock();
-        let Some(garbage) = state.garbage.get_mut(&(segment_id, generation)) else {
+        let Some(garbage) = state.garbage.get_mut(&artifact) else {
             return;
         };
         if garbage.completed {
@@ -322,8 +312,8 @@ impl AdmissionState {
 }
 
 impl CandidateGrowthLease {
-    pub(in crate::physical_runtime) const fn generation(&self) -> u64 {
-        self.generation
+    pub(in crate::physical_runtime) const fn artifact(&self) -> RecordArtifactFile {
+        self.artifact
     }
 }
 
@@ -359,13 +349,13 @@ impl Drop for CandidateGrowthLease {
             return;
         };
         let mut state = admission.lock();
-        let Some((bytes, holders)) = state.generations.get_mut(&self.generation) else {
+        let Some((bytes, holders)) = state.generations.get_mut(&self.artifact) else {
             return;
         };
         *holders = holders.saturating_sub(1);
         if *holders == 0 {
             let bytes = *bytes;
-            state.generations.remove(&self.generation);
+            state.generations.remove(&self.artifact);
             state.charged_bytes = state.charged_bytes.saturating_sub(bytes);
         }
     }

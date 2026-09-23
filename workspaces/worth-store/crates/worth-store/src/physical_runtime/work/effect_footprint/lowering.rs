@@ -66,7 +66,9 @@ pub(super) fn lower_scope(
         keys.push(range_or_allocator(
             coordinate.artifact(),
             coordinate.offset(),
-            coordinate.offset().saturating_add(u64::from(coordinate.length())),
+            coordinate
+                .offset()
+                .saturating_add(u64::from(coordinate.length())),
             access,
         ));
     }
@@ -148,7 +150,10 @@ fn lower_checkpoint(action: PhysicalCheckpointWorkAction) -> PhysicalEffectKey {
 fn lower_root(action: PhysicalRootPublicationWorkAction) -> Vec<PhysicalEffectKey> {
     match action {
         PhysicalRootPublicationWorkAction::SynchronizeParentNamespace => {
-            vec![PhysicalEffectKey::Namespace, PhysicalEffectKey::RootPublication]
+            vec![
+                PhysicalEffectKey::Namespace,
+                PhysicalEffectKey::RootPublication,
+            ]
         }
         PhysicalRootPublicationWorkAction::ReplaceBootstrapCatalog => vec![
             PhysicalEffectKey::WholeArtifact {
@@ -186,10 +191,12 @@ fn range_or_allocator(
 
 fn allocator_key(artifact: RecordArtifactFile) -> Option<PhysicalEffectKey> {
     match artifact {
-        RecordArtifactFile::FreeSpaceManifest { generation } => Some(PhysicalEffectKey::Allocator {
-            generation,
-            block: None,
-        }),
+        RecordArtifactFile::FreeSpaceManifest { generation } => {
+            Some(PhysicalEffectKey::Allocator {
+                generation,
+                block: None,
+            })
+        }
         RecordArtifactFile::FreeSpaceMembershipBlock { generation, block } => {
             Some(PhysicalEffectKey::Allocator {
                 generation,

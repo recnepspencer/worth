@@ -1,4 +1,4 @@
-use worth_store_physical_format::DurableInlineRecordPlacement;
+use worth_store_physical_format::{DurableExtentRecordPlacement, DurableInlineRecordPlacement};
 
 use crate::physical_runtime::{
     durability::{AdmittedPhysicalMutation, PreparedPhysicalDataPlan},
@@ -23,6 +23,13 @@ pub struct PhysicalMutationResourceShape {
     prepared_payload_bytes: u64,
 }
 
+/// The exact current placement a record-preserving rewrite was prepared from.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(in crate::physical_runtime) enum PreparedRewriteAnchor {
+    Inline(DurableInlineRecordPlacement),
+    Extent(DurableExtentRecordPlacement),
+}
+
 pub struct PreparedPhysicalMutation {
     admission: AdmittedPhysicalMutation,
     data: PreparedPhysicalMutationData,
@@ -37,7 +44,7 @@ pub struct PreparedPhysicalMutation {
     selected_segment_rewrite: bool,
     rewrite_pages: u32,
     source_root_generation: u64,
-    rewrite_anchor: Option<DurableInlineRecordPlacement>,
+    rewrite_anchor: Option<PreparedRewriteAnchor>,
 }
 
 pub(in crate::physical_runtime) struct PreparedPhysicalMutationContext {
@@ -53,7 +60,7 @@ pub(in crate::physical_runtime) struct PreparedPhysicalMutationContext {
     pub(in crate::physical_runtime) selected_segment_rewrite: bool,
     pub(in crate::physical_runtime) rewrite_pages: u32,
     pub(in crate::physical_runtime) source_root_generation: u64,
-    pub(in crate::physical_runtime) rewrite_anchor: Option<DurableInlineRecordPlacement>,
+    pub(in crate::physical_runtime) rewrite_anchor: Option<PreparedRewriteAnchor>,
 }
 
 pub(in crate::physical_runtime) struct PlannedPhysicalMutationParts {
@@ -138,14 +145,42 @@ impl PreparedPhysicalMutation {
         self.selected_segment_rewrite = true;
         self.rewrite_pages = pages;
         self.source_root_generation = source_root_generation;
-        self.rewrite_anchor = anchor;
+        self.rewrite_anchor = match anchor {
+            Some(anchor) => Some(PreparedRewriteAnchor::Inline(anchor)),
+            None => None,
+        };
+        self
+    }
+
+    /// Marks a copy-on-write of one current extent generation.
+    pub(in crate::physical_runtime::record_serving) fn mark_extent_record_rewrite(
+        mut self,
+        source_root_generation: u64,
+        source: DurableExtentRecordPlacement,
+    ) -> Self {
+        self.selected_segment_rewrite = true;
+        self.rewrite_pages = 1;
+        self.source_root_generation = source_root_generation;
+        self.rewrite_anchor = Some(PreparedRewriteAnchor::Extent(source));
         self
     }
 
     pub(in crate::physical_runtime) const fn rewrite_anchor(
         &self,
     ) -> Option<DurableInlineRecordPlacement> {
-        self.rewrite_anchor
+        match self.rewrite_anchor {
+            Some(PreparedRewriteAnchor::Inline(anchor)) => Some(anchor),
+            _ => None,
+        }
+    }
+
+    pub(in crate::physical_runtime) const fn extent_rewrite_source(
+        &self,
+    ) -> Option<DurableExtentRecordPlacement> {
+        match self.rewrite_anchor {
+            Some(PreparedRewriteAnchor::Extent(source)) => Some(source),
+            _ => None,
+        }
     }
 
     pub(in crate::physical_runtime) const fn rewrite_pages(&self) -> u32 {

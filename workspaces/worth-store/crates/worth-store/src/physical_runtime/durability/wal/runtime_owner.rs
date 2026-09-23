@@ -26,7 +26,7 @@ struct PlannedMaintenanceFrame {
     segment: worth_store_wal::WalSegmentId,
     generation: worth_store_wal::WalSegmentGeneration,
     lsn_range: worth_store_wal::WalLsnRange,
-    retirement: Option<(u8, u64, u64)>,
+    retirement: Option<(crate::physical_runtime::durability::RetiredArtifact, bool)>,
 }
 
 pub(super) struct PhysicalWalRuntimeState {
@@ -49,7 +49,11 @@ pub(super) struct PhysicalWalRuntimeState {
     pub(super) segments: PhysicalWalSegmentInventory,
     maintenance: Option<PlannedMaintenanceFrame>,
     awaiting_barrier: bool,
-    pub(super) unresolved_retirement_spans: Vec<(u64, u64, u64, u64)>,
+    pub(super) unresolved_retirement_spans: Vec<(
+        crate::physical_runtime::durability::RetiredArtifact,
+        u64,
+        u64,
+    )>,
 }
 
 pub(super) enum PhysicalWalMemberCompletionDenial {
@@ -131,7 +135,7 @@ impl PhysicalWalRuntimeOwner {
         let generation = state.frontier.generation().get();
         state.in_flight = true;
         let retirement = super::super::retention::decode_retirement(payload)
-            .map(|record| (record.action, record.segment_id, record.generation));
+            .map(|record| (record.artifact, record.completion));
         state.maintenance = Some(PlannedMaintenanceFrame {
             bytes: bytes.clone(),
             frontier: planned.resulting_frontier(),

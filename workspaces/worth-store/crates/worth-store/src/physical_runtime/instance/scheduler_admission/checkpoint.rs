@@ -24,7 +24,7 @@ impl PhysicalSchedulerAdmissionOwner {
             worth_store_io_scheduler::foreground_reservation::PhysicalInstanceForegroundCapacityLease,
         ),
         PhysicalCheckpointSchedulerAdmissionDenial,
-    > {
+    >{
         let preservation = worth_store_io_scheduler::foreground_reservation::
             ForegroundLaneDeclaration::filesystem_admitted_wal_barrier()
             .expect("filesystem-admitted checkpoint preservation is a Store-owned lane")
@@ -35,29 +35,30 @@ impl PhysicalSchedulerAdmissionOwner {
             .with_budget(super::capacity::foreground_quantum_budget(bytes));
         let kind = super::background_head::BackgroundHeadKind::Checkpoint;
         let already_retained = self.heads.is_retained(kind);
-        let preservation = match super::background_head::RetainedBackgroundHeads::reserve_preservation(
-            self,
-            kind,
-            preservation,
-            security,
-        ) {
-            Ok(reservation) => reservation,
-            Err(denial) => {
-                if super::capacity::reservation_shortage_retains_background_head(&denial) {
-                    self.heads.note(kind, &self.dispatch);
-                } else if already_retained {
-                    self.heads.cancel(kind, &self.dispatch);
+        let preservation =
+            match super::background_head::RetainedBackgroundHeads::reserve_preservation(
+                self,
+                kind,
+                preservation,
+                security,
+            ) {
+                Ok(reservation) => reservation,
+                Err(denial) => {
+                    if super::capacity::reservation_shortage_retains_background_head(&denial) {
+                        self.heads.note(kind, &self.dispatch);
+                    } else if already_retained {
+                        self.heads.cancel(kind, &self.dispatch);
+                    }
+                    return Err(match denial {
+                        super::RecordSchedulerReservationDenial::Admission(cause) => {
+                            PhysicalCheckpointSchedulerAdmissionDenial::Foreground(cause)
+                        }
+                        super::RecordSchedulerReservationDenial::OwedBackgroundTurn => {
+                            PhysicalCheckpointSchedulerAdmissionDenial::OwedBackgroundTurn
+                        }
+                    });
                 }
-                return Err(match denial {
-                    super::RecordSchedulerReservationDenial::Admission(cause) => {
-                        PhysicalCheckpointSchedulerAdmissionDenial::Foreground(cause)
-                    }
-                    super::RecordSchedulerReservationDenial::OwedBackgroundTurn => {
-                        PhysicalCheckpointSchedulerAdmissionDenial::OwedBackgroundTurn
-                    }
-                });
-            }
-        };
+            };
         let (foreground_receipt, foreground_capacity) = preservation.into_parts();
         self.heads.note(kind, &self.dispatch);
 
@@ -91,7 +92,9 @@ impl PhysicalSchedulerAdmissionOwner {
                 ) {
                     self.heads.cancel(kind, &self.dispatch);
                 }
-                return Err(PhysicalCheckpointSchedulerAdmissionDenial::Background(denial));
+                return Err(PhysicalCheckpointSchedulerAdmissionDenial::Background(
+                    denial,
+                ));
             }
         };
         let pacing = worth_store_io_scheduler::admit_background_pacing(

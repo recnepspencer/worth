@@ -44,7 +44,9 @@ impl PoolInner {
         requested: u64,
     ) -> Result<u64, PhysicalResidencyDenial> {
         let scope_current = state.accounting.operation_scope_bytes(scope);
-        let scope_limit = self.limits.usable_bytes(scope, self.limits.scope_bytes(scope));
+        let scope_limit = self
+            .limits
+            .usable_bytes(scope, self.limits.scope_bytes(scope));
         let scope_next = scope_current.saturating_add(requested);
         if scope_next > scope_limit {
             return Err(self.pressure(

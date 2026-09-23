@@ -60,7 +60,11 @@ pub(crate) struct CheckpointBindingCompactionDecoder {
 
 impl CheckpointStreamEncoder {
     pub fn begin(source: PhysicalCheckpointSource) -> (Self, Vec<u8>) {
-        let header = encode_record_schema(checkpoint_schema(&source), HEADER_KIND, &encode_header(source));
+        let header = encode_record_schema(
+            checkpoint_schema(&source),
+            HEADER_KIND,
+            &encode_header(source),
+        );
         let encoded_bytes = header.len() as u64;
         (
             Self {
@@ -121,7 +125,11 @@ impl CheckpointBindingCompactionEncoder {
         if payload.len() > MAX_CHECKPOINT_BINDING_RECORD_BYTES {
             return Err(CheckpointStreamDecodeDenial::BindingRecordTooLarge);
         }
-        let record = encode_record_schema(checkpoint_schema(&self.source), BINDING_RECORD_KIND, payload);
+        let record = encode_record_schema(
+            checkpoint_schema(&self.source),
+            BINDING_RECORD_KIND,
+            payload,
+        );
         self.binding_records.include(&record)?;
         Ok(record)
     }
@@ -140,7 +148,11 @@ impl CheckpointBindingCompactionEncoder {
             binding_record_bytes: bindings.encoded_bytes(),
             binding_records_digest: bindings.digest(),
         };
-        let record = encode_record_schema(checkpoint_schema(&self.source), FOOTER_KIND, &encode_footer(footer));
+        let record = encode_record_schema(
+            checkpoint_schema(&self.source),
+            FOOTER_KIND,
+            &encode_footer(footer),
+        );
         (footer, record)
     }
 }

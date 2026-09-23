@@ -16,7 +16,7 @@ pub struct StablePhysicalReadExecutionCounters {
 }
 
 impl StablePhysicalReadExecutionCounters {
-    #[cfg(any(test, feature = "certification-test-authority"))]
+    #[cfg(feature = "certification-test-authority")]
     pub(crate) const fn for_certification_test(guarded_bytes: u64) -> Self {
         Self {
             guard_admissions: 1,

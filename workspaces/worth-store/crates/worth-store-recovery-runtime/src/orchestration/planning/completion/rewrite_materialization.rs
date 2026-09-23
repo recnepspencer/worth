@@ -17,6 +17,8 @@ use worth_store_recovery_physics::{
 use super::super::context::PlanningContext;
 use super::super::resolved_basis::ResolvedPlanningBasis;
 
+#[path = "rewrite_extent.rs"]
+mod rewrite_extent;
 #[path = "rewrite_span.rs"]
 mod rewrite_span;
 
@@ -119,6 +121,9 @@ fn prove_published_rewrite(
     admission: PhysicalRewriteAdmission,
 ) -> Result<(), ()> {
     let rewrite = admission.redo();
+    if let Some(placement) = rewrite_extent::selected_source(selection, rewrite) {
+        return rewrite_extent::prove(discovery, format, byte_limit, rewrite, placement);
+    }
     let page_bytes = format.page_size().bytes();
     if rewrite.destination_offset() != 0
         || rewrite.destination_length() != page_bytes
@@ -206,6 +211,11 @@ fn project_rewrite(
     admission: PhysicalRewriteAdmission,
 ) -> Result<PhysicalRedoProjection, ()> {
     let rewrite = admission.redo();
+    if let Some(extent) = rewrite_extent::selected_source(selection, rewrite) {
+        return rewrite_extent::project(
+            discovery, selection, format, byte_limit, admission, extent,
+        );
+    }
     let page_bytes = format.page_size().bytes();
     let selected_generation = selection.root().selected().selector().root_generation();
     if rewrite.destination_offset() != 0

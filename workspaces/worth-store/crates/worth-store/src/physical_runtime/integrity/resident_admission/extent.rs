@@ -20,8 +20,7 @@ pub(in crate::physical_runtime) struct IntegrityAdmittedResidentExtentChunk<'fra
     source: ResidentIntegrityRecordBinding<'frame>,
 }
 
-pub(in crate::physical_runtime) struct IntegrityAdmittedResidentExtentManifestView<'frame> {
-    lease: &'frame PhysicalFrameLease,
+pub(in crate::physical_runtime) struct IntegrityAdmittedResidentExtentManifestView {
     scope: PhysicalArtifactScope,
 }
 
@@ -116,10 +115,10 @@ impl<'frame> IntegrityAdmittedResidentExtentManifest<'frame> {
     pub(in crate::physical_runtime) fn with_owner_decoder<T>(
         self,
         context: ResidentAdmissionContext<'_>,
-        decoder: impl for<'view> FnOnce(IntegrityAdmittedResidentExtentManifestView<'view>) -> T,
+        decoder: impl FnOnce(IntegrityAdmittedResidentExtentManifestView) -> T,
     ) -> Result<T, ResidentIntegrityAdmissionDenial> {
-        context.with_owner_decoder(self.source, |lease, scope| {
-            decoder(IntegrityAdmittedResidentExtentManifestView { lease, scope })
+        context.with_owner_decoder(self.source, |_, scope| {
+            decoder(IntegrityAdmittedResidentExtentManifestView { scope })
         })
     }
 }
@@ -136,7 +135,7 @@ impl<'frame> IntegrityAdmittedResidentExtentChunk<'frame> {
     }
 }
 
-impl IntegrityAdmittedResidentExtentManifestView<'_> {
+impl IntegrityAdmittedResidentExtentManifestView {
     pub(in crate::physical_runtime) fn project_manifest(
         &self,
     ) -> Option<worth_store_physical_format::DurableExtentManifest> {
@@ -159,10 +158,6 @@ impl IntegrityAdmittedResidentExtentManifestView<'_> {
             maximum_frame_bytes,
             chunk_count,
         )
-    }
-
-    pub(in crate::physical_runtime) const fn scope(&self) -> PhysicalArtifactScope {
-        self.scope
     }
 }
 
@@ -197,24 +192,10 @@ impl IntegrityAdmittedResidentExtentChunkView<'_> {
             + worth_store_physical_format::EXTENT_CHUNK_METADATA_BYTES;
         Ok(ResidentExtentChunkProjection {
             payload: payload_start..self.lease.len(),
-            page_lsn: admitted_page_lsn(self.lease)
-                .ok_or(ExtentChunkProjectionDenial::LogicalLengthMismatch)?,
         })
-    }
-
-    pub(in crate::physical_runtime) const fn scope(&self) -> PhysicalArtifactScope {
-        self.scope
     }
 }
 
 pub(in crate::physical_runtime) struct ResidentExtentChunkProjection {
     pub(in crate::physical_runtime) payload: std::ops::Range<usize>,
-    pub(in crate::physical_runtime) page_lsn: worth_store_physical_format::PhysicalPageLsn,
-}
-
-fn admitted_page_lsn(bytes: &[u8]) -> Option<worth_store_physical_format::PhysicalPageLsn> {
-    let encoded = bytes.get(36..44)?;
-    Some(worth_store_physical_format::PhysicalPageLsn::new(
-        u64::from_le_bytes(encoded.try_into().ok()?),
-    ))
 }

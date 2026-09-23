@@ -1,12 +1,17 @@
 #[allow(dead_code)]
+mod c10_crash_evidence;
+#[allow(dead_code)]
 mod phase_three_support;
 
+use c10_crash_evidence::{
+    ordinary_limits, prepare_rewrite, segment_snapshot, wal_contains_rewrite,
+};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::thread;
 use std::time::{Duration, Instant};
 
-use phase_three_support::{limit_declaration, recovery_request_with_limits};
+use phase_three_support::recovery_request_with_limits;
 use worth_proof::TransitionOutcome;
 use worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint;
 use worth_store::physical_runtime::{
@@ -14,9 +19,7 @@ use worth_store::physical_runtime::{
     PhysicalMutationPreparationSuccess, PhysicalMutationProvenNoEffectCause,
     PhysicalMutationRequest,
 };
-use worth_store_recovery_runtime::{
-    PhysicalRecoveryLimits, PhysicalRecoveryOutcome, WorthStoreRecovery,
-};
+use worth_store_recovery_runtime::{PhysicalRecoveryOutcome, WorthStoreRecovery};
 use worth_store_test_support::harness::physical_residency::{
     canonical_physical_mutation_acknowledgment, PhysicalResidencyStoreWorld,
 };
@@ -75,7 +78,10 @@ fn killed_rewrite_behind_a_durable_append_leaves_no_rewrite_effect() {
     let published = segment_snapshot(&root);
     let second = recovered_retirements(&root);
     assert_eq!(first, second);
-    assert!(first.is_empty(), "the blocked rewrite must not retire a generation");
+    assert!(
+        first.is_empty(),
+        "the blocked rewrite must not retire a generation"
+    );
     assert_ne!(
         killed, published,
         "recovery must publish the append that was already WAL-durable"
@@ -95,7 +101,11 @@ fn c10_retirement_child_parks_at_seam() {
     let seam = std::env::var(CHILD_SEAM).expect("phase 5 seam");
     let world =
         PhysicalResidencyStoreWorld::initialize_for_recovery("c10-phase5-retirement-kill").unwrap();
-    std::fs::write(marker.join("root-path.txt"), world.root().to_string_lossy().as_bytes()).unwrap();
+    std::fs::write(
+        marker.join("root-path.txt"),
+        world.root().to_string_lossy().as_bytes(),
+    )
+    .unwrap();
     canonical_physical_mutation_acknowledgment(&world, [0x71; 32], b"phase5-retirement-source");
     if seam != "competing-append" {
         publish_rewrite(&world);
@@ -158,7 +168,10 @@ fn park_behind_durable_append(world: &PhysicalResidencyStoreWorld) {
     assert!(gate.await_arrival(), "append did not reach WAL durability");
     match prepare_rewrite(world, [0x74; 32]).execute() {
         PhysicalMutationOutcome::ProvenNoEffect(fate) => {
-            assert_eq!(fate.cause(), PhysicalMutationProvenNoEffectCause::ScopeConflict);
+            assert_eq!(
+                fate.cause(),
+                PhysicalMutationProvenNoEffectCause::ScopeConflict
+            );
         }
         PhysicalMutationOutcome::Completed(_) => panic!("rewrite passed a pending append"),
         PhysicalMutationOutcome::Indeterminate(fate) => {
@@ -212,31 +225,6 @@ fn prepare_append(
     }
 }
 
-fn prepare_rewrite(
-    world: &PhysicalResidencyStoreWorld,
-    material: [u8; 32],
-) -> worth_store::physical_runtime::PreparedPhysicalMutation {
-    let submission = world.serving().record_submission();
-    let key = submission
-        .issue_idempotency_key(PhysicalMutationIdempotencyMaterial::new(material))
-        .unwrap();
-    match submission
-        .rewrite_selected_inline_segment(
-            world.placement(),
-            PhysicalMutationRequest::platform_durable(
-                key,
-                PhysicalMutationDeadline::after_milliseconds(1_000).unwrap(),
-            ),
-        )
-        .into_raw()
-    {
-        TransitionOutcome::Success(PhysicalMutationPreparationSuccess::Prepared(prepared)) => {
-            prepared
-        }
-        _ => panic!("rewrite preparation must succeed"),
-    }
-}
-
 fn kill_and_recover(seam: &str) -> Vec<(u64, u64, u64, u64)> {
     let (parent, root) = kill_child(seam);
     let first = recovered_retirements(&root);
@@ -287,46 +275,6 @@ fn kill_child(seam: &str) -> (tempfile::TempDir, PathBuf) {
     (parent, root)
 }
 
-fn segment_snapshot(root: &Path) -> Vec<(String, u64)> {
-    let directory = root.join("families").join("records").join("segments");
-    let mut files = Vec::new();
-    if let Ok(entries) = std::fs::read_dir(directory) {
-        for entry in entries.flatten() {
-            let bytes = std::fs::read(entry.path()).unwrap_or_default();
-            let mut checksum = 0u64;
-            for byte in bytes {
-                checksum = checksum.wrapping_mul(16777619).wrapping_add(u64::from(byte));
-            }
-            files.push((entry.file_name().to_string_lossy().into_owned(), checksum));
-        }
-    }
-    files.sort();
-    files
-}
-
-fn wal_contains_rewrite(root: &Path) -> bool {
-    let domain = worth_store_physical_format::REWRITE_REDO_DOMAIN;
-    let mut stack = vec![root.join("families").join("wal")];
-    while let Some(directory) = stack.pop() {
-        let Ok(entries) = std::fs::read_dir(directory) else {
-            continue;
-        };
-        for entry in entries.flatten() {
-            let path = entry.path();
-            if path.is_dir() {
-                stack.push(path);
-                continue;
-            }
-            if let Ok(bytes) = std::fs::read(&path) {
-                if bytes.windows(domain.len()).any(|window| window == domain) {
-                    return true;
-                }
-            }
-        }
-    }
-    false
-}
-
 fn publish_rewrite(world: &PhysicalResidencyStoreWorld) {
     let submission = world.serving().record_submission();
     let key = submission
@@ -364,7 +312,8 @@ fn publish_rewrite(world: &PhysicalResidencyStoreWorld) {
 }
 
 fn recovered_retirements(root: &Path) -> Vec<(u64, u64, u64, u64)> {
-    let outcome = WorthStoreRecovery::recover(recovery_request_with_limits(root, ordinary_limits()));
+    let outcome =
+        WorthStoreRecovery::recover(recovery_request_with_limits(root, ordinary_limits()));
     let PhysicalRecoveryOutcome::Recovered(handoff) = outcome else {
         panic!("killed retirement must recover: {outcome:?}")
     };
@@ -375,26 +324,13 @@ fn recovered_retirements(root: &Path) -> Vec<(u64, u64, u64, u64)> {
         .map(|retirement| {
             (
                 retirement.source_root(),
-                retirement.segment_id(),
-                retirement.generation(),
+                retirement
+                    .artifact()
+                    .segment()
+                    .expect("an inline rewrite retires a segment generation"),
+                retirement.artifact().generation(),
                 retirement.bytes(),
             )
         })
         .collect()
-}
-
-fn ordinary_limits() -> PhysicalRecoveryLimits {
-    let mut declaration = limit_declaration(2, 8, 2 * 1024 * 1024);
-    declaration.manifest_entries = 4_096;
-    declaration.wal_bytes = 2 * 1024 * 1024;
-    declaration.redo_targets = 4_096;
-    declaration.redo_bytes = 4 * 1024 * 1024;
-    declaration.distinct_pages_and_extents = 4_096;
-    declaration.operation_bindings = 4_096;
-    declaration.staging_bytes = 32 * 1024 * 1024;
-    declaration.recovery_memory_bytes = 32 * 1024 * 1024;
-    declaration.dirty_frames = 4_096;
-    declaration.publication_effects = 64;
-    declaration.observation_bytes = 32 * 1024 * 1024;
-    PhysicalRecoveryLimits::admit(declaration).unwrap()
 }

@@ -1,3 +1,4 @@
+#[cfg(any(test, feature = "certification-authority"))]
 use crate::ExecutedIsolationEvidenceDenial;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -27,6 +28,7 @@ pub enum ExecutedIsolationCounterKind {
 }
 
 impl PhysicalIsolationCounterSnapshot {
+    #[cfg(any(test, feature = "certification-authority"))]
     #[allow(clippy::too_many_arguments)]
     pub(crate) const fn from_store_executed_counts(
         outcome_count: u64,

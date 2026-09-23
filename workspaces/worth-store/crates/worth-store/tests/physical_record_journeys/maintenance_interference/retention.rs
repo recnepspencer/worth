@@ -34,9 +34,7 @@ fn pinned_reader_rejects_one_over_growth_then_retries_after_reclaim() {
         assert!(published < 80, "growth never denied a later append");
         match attempt(&serving, policy, published, b"fill") {
             Attempt::Published(_) => {}
-            Attempt::NoEffect(
-                PhysicalMutationProvenNoEffectCause::AdmissionDeniedBeforeGroupSeal,
-            ) => {
+            Attempt::NoEffect(PhysicalMutationProvenNoEffectCause::RetentionPressure) => {
                 break;
             }
             Attempt::NoEffect(cause) => panic!("one-over growth denied as {cause:?}"),
@@ -48,7 +46,7 @@ fn pinned_reader_rejects_one_over_growth_then_retries_after_reclaim() {
     let charged = serving.certification_charged_growth_bytes();
     assert!(charged <= GROWTH, "charged {charged} exceeded {GROWTH}");
     match attempt(&serving, policy, published + 1, b"still-over") {
-        Attempt::NoEffect(PhysicalMutationProvenNoEffectCause::AdmissionDeniedBeforeGroupSeal) => {}
+        Attempt::NoEffect(PhysicalMutationProvenNoEffectCause::RetentionPressure) => {}
         other => panic!("the same ceiling must deny again: {other:?}"),
     }
     assert_eq!(

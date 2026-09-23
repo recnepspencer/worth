@@ -58,6 +58,18 @@ fn expected_actions() -> BTreeSet<CompactionVisibilityAction> {
         },
         CompactionVisibilityAction::LsmMembership {
             operation: Open,
+            outcome: ModeledOutcome::Denied(LsmMembershipDenial::MembershipStale),
+        },
+        CompactionVisibilityAction::LsmMembership {
+            operation: Open,
+            outcome: ModeledOutcome::Denied(LsmMembershipDenial::ManifestMembershipMismatch),
+        },
+        CompactionVisibilityAction::LsmMembership {
+            operation: Open,
+            outcome: ModeledOutcome::Denied(LsmMembershipDenial::ReplacementOutputMismatch),
+        },
+        CompactionVisibilityAction::LsmMembership {
+            operation: Open,
             outcome: ModeledOutcome::Denied(
                 LsmMembershipDenial::PersistedMembershipArtifactInvalid,
             ),
@@ -101,6 +113,10 @@ fn expected_actions() -> BTreeSet<CompactionVisibilityAction> {
         CompactionVisibilityAction::LsmMembership {
             operation: SelectCompaction,
             outcome: ModeledOutcome::Denied(LsmMembershipDenial::TombstoneRecordRequired),
+        },
+        CompactionVisibilityAction::LsmMembership {
+            operation: SelectCompaction,
+            outcome: ModeledOutcome::Denied(LsmMembershipDenial::ReplacementOutputMismatch),
         },
         CompactionVisibilityAction::LsmMaintenance {
             operation: AdmitRunPublication,

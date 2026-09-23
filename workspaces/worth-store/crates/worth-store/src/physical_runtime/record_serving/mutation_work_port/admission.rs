@@ -131,7 +131,7 @@ impl CanonicalRecordMutationPort {
             &backend,
             policy,
         )
-            .map_err(|failure| CanonicalRecordMutationFailure::scheduler(identity, failure))
+        .map_err(|failure| CanonicalRecordMutationFailure::scheduler(identity, failure))
     }
 
     fn prepared(

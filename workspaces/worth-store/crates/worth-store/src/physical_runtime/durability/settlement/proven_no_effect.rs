@@ -14,6 +14,10 @@ pub enum PhysicalMutationProvenNoEffectCause {
     ScopeConflict,
     /// A published predecessor advanced the root after this rewrite was planned.
     SourceChanged,
+    /// Retained-storage growth or obligation entries would exceed the hard
+    /// allowance left after progress headroom; checkpoint and retirement can
+    /// release it before an unchanged retry.
+    RetentionPressure,
 }
 
 impl PhysicalMutationProvenNoEffectCause {
@@ -25,6 +29,7 @@ impl PhysicalMutationProvenNoEffectCause {
             Self::AdmissionDeniedBeforeGroupSeal => 4,
             Self::ScopeConflict => 5,
             Self::SourceChanged => 6,
+            Self::RetentionPressure => 7,
         }
     }
 
@@ -36,6 +41,7 @@ impl PhysicalMutationProvenNoEffectCause {
             4 => Some(Self::AdmissionDeniedBeforeGroupSeal),
             5 => Some(Self::ScopeConflict),
             6 => Some(Self::SourceChanged),
+            7 => Some(Self::RetentionPressure),
             _ => None,
         }
     }

@@ -23,6 +23,7 @@ pub struct PhysicalMutationRequestFingerprint {
 pub(in crate::physical_runtime) enum PhysicalMutationOperationFamily {
     RecordAppend,
     SegmentRewrite,
+    ExtentRewrite,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -175,6 +176,7 @@ const fn operation_code(family: PhysicalMutationOperationFamily) -> u8 {
     match family {
         PhysicalMutationOperationFamily::RecordAppend => 1,
         PhysicalMutationOperationFamily::SegmentRewrite => 2,
+        PhysicalMutationOperationFamily::ExtentRewrite => 3,
     }
 }
 

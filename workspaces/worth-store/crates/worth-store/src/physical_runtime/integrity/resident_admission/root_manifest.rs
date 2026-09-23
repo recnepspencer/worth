@@ -19,6 +19,7 @@ pub(in crate::physical_runtime) struct IntegrityAdmittedResidentRootManifest<'fr
     projection: Option<AdmittedRootManifestProjection>,
 }
 
+#[cfg(test)]
 pub(in crate::physical_runtime) fn admit_resident_root_manifest<'frame>(
     lease: &'frame PhysicalFrameLease,
     scope: PhysicalArtifactScope,
@@ -51,6 +52,7 @@ pub(in crate::physical_runtime) fn admit_resident_root_manifest<'frame>(
     }
 }
 
+#[cfg(test)]
 pub(in crate::physical_runtime) struct IntegrityAdmittedResidentRootManifestView<'frame> {
     lease: &'frame PhysicalFrameLease,
     scope: PhysicalArtifactScope,
@@ -154,6 +156,7 @@ impl<'frame> BoundResidentRootManifestSource<'frame> {
 }
 
 impl<'frame> IntegrityAdmittedResidentRootManifest<'frame> {
+    #[cfg(test)]
     pub(in crate::physical_runtime) fn with_owner_decoder<T>(
         self,
         current_lifecycle: std::sync::Arc<crate::physical_runtime::lifecycle::LifecycleState>,
@@ -183,6 +186,7 @@ impl<'frame> IntegrityAdmittedResidentRootManifest<'frame> {
     }
 }
 
+#[cfg(test)]
 impl IntegrityAdmittedResidentRootManifestView<'_> {
     pub(in crate::physical_runtime) fn bytes(&self) -> &[u8] {
         self.lease

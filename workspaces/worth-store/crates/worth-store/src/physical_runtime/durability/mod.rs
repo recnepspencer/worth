@@ -13,13 +13,12 @@ pub(in crate::physical_runtime) use retention::PendingPublicationLease;
 pub(in crate::physical_runtime) use retention::PhysicalPublicationAdmissionDenial;
 pub(in crate::physical_runtime) use retention::PhysicalRetentionProfile;
 pub use retention::PhysicalRetirementDenial;
-pub(in crate::physical_runtime) use retention::{
-    encode_retirement, unresolved_retirement_holds, unresolved_retirements, DisplacedSegment,
-    RetirementRecord,
-    RetirementRemovalPermit, RETIREMENT_COMPLETION, RETIREMENT_INTENT,
-};
 #[cfg(feature = "recovery-runtime-owner")]
 pub(in crate::physical_runtime) use retention::{decode_retirement, payload_is_retirement};
+pub(in crate::physical_runtime) use retention::{
+    encode_retirement, unresolved_retirement_holds, unresolved_retirements, DisplacedArtifact,
+    RetiredArtifact, RetirementRecord, RetirementRemovalPermit,
+};
 mod settlement;
 mod wal;
 
@@ -197,9 +196,8 @@ pub use settlement::{
 };
 pub(in crate::physical_runtime) use wal::{
     reopen_wal_inventory, CompletionBoundPhysicalWalAppendSettlement, PhysicalWalAppendPort,
-    ScheduledMaintenanceDenial,
     PhysicalWalBindingReopenCutoff, PhysicalWalReclamationFoundation, PhysicalWalReclamationOwner,
-    PhysicalWalRuntimeOwner, ReservedPhysicalWalGroupMembers,
+    PhysicalWalRuntimeOwner, ReservedPhysicalWalGroupMembers, ScheduledMaintenanceDenial,
 };
 pub use wal::{
     CanonicalRedoRecords, IndeterminatePhysicalWalGroupAppend, PhysicalWalAppendDeclaration,

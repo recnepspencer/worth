@@ -3,8 +3,9 @@ use std::fs;
 use worth_proof::TransitionOutcome;
 use worth_signal::facade::TemporalDuration;
 use worth_store::physical_runtime::{
-    PhysicalCheckpointCaptureFailureKind, PhysicalCheckpointDeadline, PhysicalCheckpointIdempotencyKey,
-    PhysicalCheckpointOutcome, PhysicalCheckpointProvenNoEffectCause, PhysicalCheckpointRequest,
+    PhysicalCheckpointCaptureFailureKind, PhysicalCheckpointDeadline,
+    PhysicalCheckpointIdempotencyKey, PhysicalCheckpointOutcome,
+    PhysicalCheckpointProvenNoEffectCause, PhysicalCheckpointRequest,
 };
 use worth_store_physical_format::{
     DurablePhysicalRootManifest, PhysicalCheckpointSource, CHECKPOINT_STREAM_HEADER_RECORD_BYTES,
@@ -37,9 +38,11 @@ fn a_rewrite_publishes_maintenance_protocol_metadata() {
     let checkpoint = fs::read(root.join("families/checkpoint.current")).unwrap();
     let header = &checkpoint[..CHECKPOINT_STREAM_HEADER_RECORD_BYTES];
     assert!(PhysicalCheckpointSource::decode_c9_legacy_stream_header_record(header).is_err());
-    assert!(PhysicalCheckpointSource::decode_stream_header_record(header)
-        .unwrap()
-        .requires_maintenance_protocol());
+    assert!(
+        PhysicalCheckpointSource::decode_stream_header_record(header)
+            .unwrap()
+            .requires_maintenance_protocol()
+    );
 
     drop(serving);
     let reopened = crate::serving_from_open(&root);

@@ -82,12 +82,15 @@ impl RecordAllocationFrontier {
         Some(value)
     }
 
+    #[cfg(test)]
     pub(in crate::physical_runtime::record_serving) const fn next_segment(&self) -> u64 {
         self.next_segment
     }
+    #[cfg(test)]
     pub(in crate::physical_runtime::record_serving) const fn next_page(&self) -> u64 {
         self.next_page
     }
+    #[cfg(test)]
     pub(in crate::physical_runtime::record_serving) const fn next_extent(&self) -> u64 {
         self.next_extent
     }

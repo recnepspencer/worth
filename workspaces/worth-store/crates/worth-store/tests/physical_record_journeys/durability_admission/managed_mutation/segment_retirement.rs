@@ -1,11 +1,13 @@
-use std::path::Path;
-
 use worth_store::physical_runtime::{
     ManifestEntryCapacity, PhysicalMutationOutcome, PhysicalRecordPlacementPolicy,
     PhysicalRetirementDenial, SegmentPageCount,
 };
 use worth_store_physical_backend::MediaOperationRole;
 
+use super::super::independent_wal_oracle::{
+    produced_retirement_payloads, IndependentRetirementAction,
+};
+use super::published_segments::{segment_identity, segment_names};
 use super::selected_segment_rewrite::prepare_rewrite;
 use super::*;
 
@@ -33,7 +35,7 @@ fn retirement_waits_for_the_source_reader_then_restores_growth() {
         PhysicalMutationOutcome::ProvenNoEffect(fate) => {
             assert_eq!(
                 fate.cause(),
-                PhysicalMutationProvenNoEffectCause::AdmissionDeniedBeforeGroupSeal
+                PhysicalMutationProvenNoEffectCause::RetentionPressure
             );
         }
         PhysicalMutationOutcome::Completed(_) | PhysicalMutationOutcome::Indeterminate(_) => {
@@ -56,10 +58,28 @@ fn retirement_waits_for_the_source_reader_then_restores_growth() {
     drop(successor_reader);
     let after = segment_names(&root);
     assert_eq!(after.len(), before.len() - 1);
-    assert!(directory_contains(
-        &root.join("families").join("wal"),
-        RETIREMENT_DOMAIN
-    ));
+    let retired = before
+        .iter()
+        .find(|name| !after.contains(name))
+        .map(|name| segment_identity(name))
+        .unwrap();
+    let records = produced_retirement_payloads(&root);
+    assert_eq!(
+        records
+            .iter()
+            .map(|record| (record.action, record.artifact_id, record.generation))
+            .collect::<Vec<_>>(),
+        [
+            (IndependentRetirementAction::Intent, retired.0, retired.1),
+            (
+                IndependentRetirementAction::Completion,
+                retired.0,
+                retired.1
+            ),
+        ],
+        "the WAL must carry exactly one intent and one completion for the retired generation"
+    );
+    assert!(records.iter().all(|record| record.bytes == page_bytes));
     completed(prepare_rewrite(&serving, placement, [54; 32]).execute());
     assert!(
         serving
@@ -351,37 +371,4 @@ fn reopened_store_keeps_the_published_extent_charge() {
         "reopen must keep the published extent bytes charged"
     );
     serving.close();
-}
-
-const RETIREMENT_DOMAIN: &[u8] = b"store.physical.retirement.v1";
-
-fn segment_names(root: &Path) -> Vec<String> {
-    let mut names = std::fs::read_dir(root.join("families").join("records").join("segments"))
-        .unwrap()
-        .flatten()
-        .map(|entry| entry.file_name().to_string_lossy().into_owned())
-        .filter(|name| name.ends_with(".pages"))
-        .collect::<Vec<_>>();
-    names.sort();
-    names
-}
-
-fn directory_contains(root: &Path, needle: &[u8]) -> bool {
-    let Ok(entries) = std::fs::read_dir(root) else {
-        return false;
-    };
-    for entry in entries.flatten() {
-        let path = entry.path();
-        if path.is_dir() {
-            if directory_contains(&path, needle) {
-                return true;
-            }
-        } else if std::fs::read(&path)
-            .ok()
-            .is_some_and(|bytes| bytes.windows(needle.len()).any(|window| window == needle))
-        {
-            return true;
-        }
-    }
-    false
 }

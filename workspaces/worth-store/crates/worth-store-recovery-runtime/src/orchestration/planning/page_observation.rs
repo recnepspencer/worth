@@ -3,7 +3,6 @@ use std::collections::BTreeMap;
 use worth_store::physical_runtime::AdmittedRecoveryFilesystemMedia;
 use worth_store_physical_format::{
     CurrentPhysicalRecordPlacement, DurablePhysicalRootManifest, PhysicalRecordFormatDeclaration,
-    RecordArtifactFile,
 };
 use worth_store_recovery_physics::{
     PhysicalRedoTarget, PhysicalRedoTargetIdentity, RecoveryPageObservation,
@@ -221,7 +220,6 @@ pub(super) fn required_source(
         worth_store::physical_runtime::RecoveryDiscoveryFailure,
     >,
     target: Option<PhysicalRedoTargetIdentity>,
-    artifact: RecordArtifactFile,
 ) -> Result<worth_store::physical_runtime::ObservedRecoveryArtifact, PageObservationFailure> {
     match result {
         Ok(observed) => Ok(observed),

@@ -109,14 +109,7 @@ impl PhysicalExecutorCommand {
             .scope()
             .artifact_target()
             .ok_or(PhysicalExecutorCommandDenial::ArtifactCommandRequiresArtifactScope)?;
-        let worth_store_physical_format::RecordArtifactFile::Segment {
-            segment,
-            generation,
-        } = artifact
-        else {
-            return Err(PhysicalExecutorCommandDenial::RetirementRemovalRequiresClaim);
-        };
-        if segment != permit.segment_id() || generation != permit.generation() {
+        if !permit.admits(artifact) {
             return Err(PhysicalExecutorCommandDenial::RetirementRemovalRequiresClaim);
         }
         Ok(Self::PublicationEffect(

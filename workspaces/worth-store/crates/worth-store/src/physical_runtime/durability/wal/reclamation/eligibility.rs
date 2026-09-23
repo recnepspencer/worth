@@ -95,14 +95,18 @@ fn covers_retained(
 
 fn reclaimable_before_retirement<'a>(
     candidates: &'a [super::super::inventory::PhysicalWalSegmentInventoryEntry],
-    holds: &[(u64, u64, u64, u64)],
+    holds: &[(
+        crate::physical_runtime::durability::RetiredArtifact,
+        u64,
+        u64,
+    )],
 ) -> &'a [super::super::inventory::PhysicalWalSegmentInventoryEntry] {
     let Some(index) = candidates.iter().position(|entry| {
         let start = entry.lsn_range().start().get();
         let end = entry.lsn_range().end_exclusive().get();
         holds
             .iter()
-            .any(|(_, _, hold_start, hold_end)| start < *hold_end && *hold_start < end)
+            .any(|(_, hold_start, hold_end)| start < *hold_end && *hold_start < end)
     }) else {
         return candidates;
     };

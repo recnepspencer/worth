@@ -1,12 +1,12 @@
+use super::super::independent_wal_oracle::produced_rewrite_payloads;
+use super::*;
 use worth_signal::facade::TemporalDuration;
 use worth_store::physical_runtime::{
     PhysicalMutationDeadline, PhysicalMutationIdempotencyMaterial, PhysicalMutationOutcome,
-    PhysicalMutationPreparationSuccess, PhysicalMutationProvenNoEffectCause, PhysicalMutationRequest,
-    RecordByteLimit, RecordReadLimits,
+    PhysicalMutationPreparationSuccess, PhysicalMutationProvenNoEffectCause,
+    PhysicalMutationRequest, RecordByteLimit, RecordReadLimits,
 };
 use worth_store_physical_backend::MediaOperationRole;
-use super::super::independent_wal_oracle::produced_rewrite_payloads;
-use super::*;
 
 #[test]
 fn selected_segment_rewrite_preserves_record_bytes_and_writes_rewrite_redo() {
@@ -51,7 +51,10 @@ fn selected_segment_rewrite_preserves_record_bytes_and_writes_rewrite_redo() {
     let rewrites = produced_rewrite_payloads(&root);
     assert_eq!(rewrites.len(), 1);
     assert_eq!(rewrites[0].source_length, rewrites[0].destination_length);
-    assert_eq!(u64::from(rewrites[0].source_length), rewrites[0].candidate_bytes);
+    assert_eq!(
+        u64::from(rewrites[0].source_length),
+        rewrites[0].candidate_bytes
+    );
     assert!(rewrites[0].resulting_root_generation > rewrites[0].source_root_generation);
     serving.close();
 }
@@ -81,7 +84,7 @@ fn reopened_store_keeps_the_published_page_charge() {
         PhysicalMutationOutcome::ProvenNoEffect(fate) => {
             assert_eq!(
                 fate.cause(),
-                PhysicalMutationProvenNoEffectCause::AdmissionDeniedBeforeGroupSeal
+                PhysicalMutationProvenNoEffectCause::RetentionPressure
             );
         }
         PhysicalMutationOutcome::Completed(_) => {
@@ -91,74 +94,6 @@ fn reopened_store_keeps_the_published_page_charge() {
             panic!("reopen growth denial must prove no effect before WAL effects")
         }
     }
-    assert_eq!(
-        serving
-            .media_counters()
-            .attempts_for(MediaOperationRole::PositionedWrite),
-        writes
-    );
-    serving.close();
-}
-
-#[test]
-fn append_is_denied_one_byte_over_usable_growth() {
-    let parent = tempfile::tempdir().unwrap();
-    let serving = serving_from_initialization(&parent.path().join("store"));
-    let (format, placement, _) = configuration();
-    let page_bytes = u64::from(format.declaration().page_size().bytes());
-    serving.certification_limit_candidate_growth_bytes(page_bytes.saturating_sub(1));
-    let writes = serving
-        .media_counters()
-        .attempts_for(MediaOperationRole::PositionedWrite);
-    match prepare(&serving, placement, [41; 32], b"growth-append").execute() {
-        PhysicalMutationOutcome::ProvenNoEffect(fate) => {
-            assert_eq!(
-                fate.cause(),
-                PhysicalMutationProvenNoEffectCause::AdmissionDeniedBeforeGroupSeal
-            );
-        }
-        PhysicalMutationOutcome::Completed(_) => {
-            panic!("one-byte-over growth must deny the append before WAL effects")
-        }
-        PhysicalMutationOutcome::Indeterminate(_) => {
-            panic!("one-byte-over growth must prove no effect before WAL effects")
-        }
-    }
-    assert_eq!(serving.certification_pending_publication_count(), 0);
-    assert_eq!(
-        serving
-            .media_counters()
-            .attempts_for(MediaOperationRole::PositionedWrite),
-        writes
-    );
-    serving.close();
-}
-
-#[test]
-fn append_is_denied_when_usable_growth_is_only_the_data_page() {
-    let parent = tempfile::tempdir().unwrap();
-    let serving = serving_from_initialization(&parent.path().join("store"));
-    let (format, placement, _) = configuration();
-    let page_bytes = u64::from(format.declaration().page_size().bytes());
-    serving.certification_limit_candidate_growth_bytes(page_bytes);
-    let writes = serving
-        .media_counters()
-        .attempts_for(MediaOperationRole::PositionedWrite);
-    match prepare(&serving, placement, [46; 32], b"wal-root-growth").execute() {
-        PhysicalMutationOutcome::ProvenNoEffect(fate) => {
-            assert_eq!(
-                fate.cause(),
-                PhysicalMutationProvenNoEffectCause::AdmissionDeniedBeforeGroupSeal
-            );
-        }
-        PhysicalMutationOutcome::Completed(_) => {
-            panic!("WAL and root metadata must deny an append that only budgeted its data page")
-        }
-        PhysicalMutationOutcome::Indeterminate(_) => {
-            panic!("WAL and root metadata must prove no effect before WAL effects")
-        }
-    }
-    assert_eq!(serving.certification_pending_publication_count(), 0);
     assert_eq!(
         serving
             .media_counters()
@@ -206,8 +141,9 @@ fn a_completed_rewrite_retries_as_the_same_request() {
         .rewrite_selected_inline_segment(placement, retry)
         .into_raw()
     {
-        worth_proof::TransitionOutcome::Success(PhysicalMutationPreparationSuccess::Completed(_)) => {
-        }
+        worth_proof::TransitionOutcome::Success(PhysicalMutationPreparationSuccess::Completed(
+            _,
+        )) => {}
         worth_proof::TransitionOutcome::Denied(_) => {
             panic!("the same rewrite request must return its completed fate")
         }
@@ -231,41 +167,6 @@ fn a_completed_rewrite_retries_as_the_same_request() {
 }
 
 #[test]
-fn selected_segment_rewrite_is_denied_one_byte_over_usable_growth() {
-    let parent = tempfile::tempdir().unwrap();
-    let serving = serving_from_initialization(&parent.path().join("store"));
-    let (format, placement, _) = configuration();
-    let page_bytes = u64::from(format.declaration().page_size().bytes());
-    completed(prepare(&serving, placement, [39; 32], b"growth-source").execute());
-    serving.certification_limit_candidate_growth_bytes(page_bytes.saturating_sub(1));
-    let writes = serving
-        .media_counters()
-        .attempts_for(MediaOperationRole::PositionedWrite);
-    match prepare_rewrite(&serving, placement, [40; 32]).execute() {
-        PhysicalMutationOutcome::ProvenNoEffect(fate) => {
-            assert_eq!(
-                fate.cause(),
-                PhysicalMutationProvenNoEffectCause::AdmissionDeniedBeforeGroupSeal
-            );
-        }
-        PhysicalMutationOutcome::Completed(_) => {
-            panic!("one-byte-over growth must deny the rewrite before WAL effects")
-        }
-        PhysicalMutationOutcome::Indeterminate(_) => {
-            panic!("one-byte-over growth must prove no effect before WAL effects")
-        }
-    }
-    assert_eq!(serving.certification_pending_publication_count(), 0);
-    assert_eq!(
-        serving
-            .media_counters()
-            .attempts_for(MediaOperationRole::PositionedWrite),
-        writes
-    );
-    serving.close();
-}
-
-#[test]
 fn a_published_predecessor_invalidates_a_prepared_rewrite() {
     let parent = tempfile::tempdir().unwrap();
     let serving = serving_from_initialization(&parent.path().join("store"));
@@ -278,7 +179,10 @@ fn a_published_predecessor_invalidates_a_prepared_rewrite() {
         .attempts_for(MediaOperationRole::PositionedWrite);
     match rewrite.execute() {
         PhysicalMutationOutcome::ProvenNoEffect(fate) => {
-            assert_eq!(fate.cause(), PhysicalMutationProvenNoEffectCause::SourceChanged);
+            assert_eq!(
+                fate.cause(),
+                PhysicalMutationProvenNoEffectCause::SourceChanged
+            );
         }
         PhysicalMutationOutcome::Completed(_) => {
             panic!("a stale rewrite must not publish")
@@ -314,7 +218,10 @@ fn a_wal_durable_append_blocks_rewrite_without_a_second_reservation() {
         .attempts_for(MediaOperationRole::PositionedWrite);
     match prepare_rewrite(&serving, placement, [38; 32]).execute() {
         PhysicalMutationOutcome::ProvenNoEffect(fate) => {
-            assert_eq!(fate.cause(), PhysicalMutationProvenNoEffectCause::ScopeConflict);
+            assert_eq!(
+                fate.cause(),
+                PhysicalMutationProvenNoEffectCause::ScopeConflict
+            );
         }
         PhysicalMutationOutcome::Completed(_) => panic!("rewrite must not pass a pending append"),
         PhysicalMutationOutcome::Indeterminate(_) => {
@@ -377,7 +284,7 @@ pub(super) fn prepare_rewrite(
     }
 }
 
-fn completed(
+pub(super) fn completed(
     outcome: PhysicalMutationOutcome,
 ) -> worth_store::physical_runtime::CompletedPhysicalMutation {
     match outcome {
@@ -390,4 +297,3 @@ fn completed(
         }
     }
 }
-

@@ -49,6 +49,11 @@ impl WalDurablePhysicalMutation {
         self.appended.reserved().data().frames()
     }
 
+    /// Whether this mutation's data plan carries record-preserving rewrite redo.
+    pub(in crate::physical_runtime) const fn carries_rewrite(&self) -> bool {
+        self.appended.reserved().data().rewrite().is_some()
+    }
+
     pub(in crate::physical_runtime) const fn root_projection(
         &self,
     ) -> &crate::physical_runtime::PreparedPhysicalRootProjection {

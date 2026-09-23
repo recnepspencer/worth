@@ -1,3 +1,5 @@
+use sha2::Digest;
+
 use crate::{RecordArtifactFile, RecordFrameCoordinate};
 
 use super::super::{
@@ -33,9 +35,11 @@ fn maintenance_checkpoint_is_a_distinct_envelope() {
     let (_, header) = CheckpointStreamEncoder::begin(source);
     assert_eq!(header[8], 2);
     assert!(PhysicalCheckpointSource::decode_c9_legacy_stream_header_record(&header).is_err());
-    assert!(PhysicalCheckpointSource::decode_stream_header_record(&header)
-        .unwrap()
-        .requires_maintenance_protocol());
+    assert!(
+        PhysicalCheckpointSource::decode_stream_header_record(&header)
+            .unwrap()
+            .requires_maintenance_protocol()
+    );
 }
 
 #[test]
@@ -130,6 +134,15 @@ fn whole_stream_inspection_binds_the_raw_compaction_cutover_to_its_checkpoint() 
     assert_eq!(
         cutover.wal_cutoff_lsn_exclusive(),
         source.wal().covered_end_lsn_exclusive()
+    );
+    assert_eq!(verified.footer().binding_record_count(), 1);
+    assert_eq!(verified.footer().identity(), source.identity());
+    assert_eq!(verified.encoded_bytes(), artifact.len() as u64);
+    let digest: [u8; 32] = sha2::Sha256::digest(&artifact).into();
+    assert_eq!(verified.encoded_digest(), digest);
+    assert_eq!(
+        verified.binding_records(),
+        [Box::<[u8]>::from(&b"binding"[..])]
     );
     assert!(inspect_checkpoint_stream(&artifact, 0, 0).is_err());
 }

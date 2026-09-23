@@ -14,10 +14,7 @@ use super::durable_preparation::{
     canonical_request_failure, map_record_denial, PhysicalMutationPreparationAdmission,
 };
 use super::RecordPublicationDirector;
-use crate::physical_runtime::durability::{
-    PhysicalMutationFingerprintInput, PhysicalMutationOperationFamily,
-    PhysicalMutationPayloadDigest, PhysicalMutationRequestScope, PhysicalMutationSecurityBasis,
-};
+use crate::physical_runtime::durability::{PhysicalMutationOperationFamily, RetiredArtifact};
 use crate::physical_runtime::record_serving::planning::batch_placement::append_operation_allocation_bytes;
 use crate::physical_runtime::record_serving::planning::inline_plan_failure::admitted_generation;
 use crate::physical_runtime::record_serving::planning::inline_segment_plan::WorkingSegment;
@@ -26,7 +23,6 @@ use crate::physical_runtime::record_serving::planning::published_segment_reuse::
 };
 use crate::physical_runtime::record_serving::planning::published_tail_page::load_published_tail_page;
 use crate::physical_runtime::record_serving::publication::append_observation::PublicationObservation;
-use crate::physical_runtime::record_serving::publication::record_append_scope_identity;
 use crate::physical_runtime::record_serving::residency::serving_artifacts::ServingRecordArtifacts;
 use crate::physical_runtime::record_serving::{
     PreparedPhysicalRootProjection, RecordAppendBatch, RecordAppendDenial, RecordAppendError,
@@ -34,9 +30,8 @@ use crate::physical_runtime::record_serving::{
 use crate::physical_runtime::{
     durability::{PreparedPhysicalDataFrame, PreparedPhysicalDataPlan},
     CertifiedPriorPageBasis, PhysicalDataFrameIdentity, PhysicalMutationPreparationOutcome,
-    PhysicalMutationPreparationSuccess, PhysicalMutationRequest,
-    PhysicalMutationRequestFingerprint, PhysicalMutationResourceShape, PreparedPhysicalMutation,
-    PreparedPhysicalMutationContext,
+    PhysicalMutationPreparationSuccess, PhysicalMutationRequest, PhysicalMutationResourceShape,
+    PreparedPhysicalMutation, PreparedPhysicalMutationContext,
 };
 
 impl RecordPublicationDirector {
@@ -293,14 +288,22 @@ impl RecordPublicationDirector {
         )
         .ok_or_else(damaged)?;
         self.root_owner
-            .hold_rewrite_candidate(segment.segment.generation().get(), page_bytes)
-            .map_err(|()| RecordAppendError::Denied(RecordAppendDenial::PhysicalPressure))?;
+            .hold_rewrite_candidate(
+                RecordArtifactFile::Segment {
+                    segment: segment.segment.segment_id().get(),
+                    generation: segment.segment.generation().get(),
+                },
+                page_bytes,
+            )
+            .map_err(|()| RecordAppendError::Denied(RecordAppendDenial::RetentionPressure))?;
         // Live frames besides the tail keep the source file reachable.
         if displaces_source {
-            self.root_owner.note_displaced_segment(
+            self.root_owner.note_displaced(
                 current_root.generation(),
-                segment.segment.segment_id().get(),
-                page_entry.data_generation(),
+                RetiredArtifact::Segment {
+                    segment: segment.segment.segment_id().get(),
+                    generation: page_entry.data_generation(),
+                },
                 u64::from(page_entry.data_page_count()) * page_bytes,
             );
         }
@@ -339,31 +342,6 @@ impl RecordPublicationDirector {
         };
         Ok((data, root))
     }
-
-    pub(super) fn derive_record_append_fingerprint(
-        &self,
-        placement: crate::physical_runtime::AdmittedRecordPlacementPolicy,
-        manifest_capacity_transition: crate::physical_runtime::PhysicalManifestCapacityTransition,
-        payload_digest: [u8; 32],
-        durability_request: crate::physical_runtime::durability::PhysicalMutationDurabilityRequest,
-        family: PhysicalMutationOperationFamily,
-    ) -> Result<PhysicalMutationRequestFingerprint, ()> {
-        let scope =
-            record_append_scope_identity(self.format, placement, manifest_capacity_transition);
-        let security = [PhysicalMutationSecurityBasis::from_admitted_security(
-            self.security_basis,
-        )];
-        PhysicalMutationRequestFingerprint::derive(PhysicalMutationFingerprintInput {
-            store: self.durability.store_identity(),
-            durability_policy: self.durability.policy_identity(),
-            scope: PhysicalMutationRequestScope::record_append(scope),
-            payload: PhysicalMutationPayloadDigest::from_validated_payload(payload_digest),
-            durability_request,
-            operation_family: family,
-            security_bases: &security,
-        })
-        .map_err(|_| ())
-    }
 }
 
 pub(super) fn admitted_terminal(
@@ -385,12 +363,14 @@ pub(super) fn admitted_terminal(
         }
     }
 }
-fn record_identity_bytes(record: PersistedRecordIdentity) -> [u8; 32] {
+
+pub(super) fn record_identity_bytes(record: PersistedRecordIdentity) -> [u8; 32] {
     let mut bytes = [0; 32];
     bytes[..16].copy_from_slice(&record.allocation_epoch());
     bytes[16..24].copy_from_slice(&record.ordinal().to_le_bytes());
     bytes
 }
-fn damaged() -> RecordAppendError {
+
+pub(super) fn damaged() -> RecordAppendError {
     RecordAppendError::Denied(RecordAppendDenial::PublishedLayoutDamaged)
 }
