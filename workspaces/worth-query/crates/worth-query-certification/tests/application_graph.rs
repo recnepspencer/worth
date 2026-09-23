@@ -15,6 +15,8 @@ mod workflow_assessment;
 mod workflow_compilation;
 #[path = "application_graph/workflow_condition.rs"]
 mod workflow_condition;
+#[path = "application_graph/workflow_geometry_scale.rs"]
+mod workflow_geometry_scale;
 #[path = "application_graph/workflow_history_scale.rs"]
 mod workflow_history_scale;
 #[path = "application_graph/workflow_ordinary.rs"]

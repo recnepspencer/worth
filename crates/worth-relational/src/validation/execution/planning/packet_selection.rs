@@ -10,6 +10,7 @@ pub(super) fn eligible_registrations<'runtime, 'state>(
 where
     'runtime: 'state,
 {
+    let touched_kinds = std::cell::OnceCell::new();
     let native = runtime
         .config
         .schema
@@ -37,6 +38,23 @@ where
             let work = crate::validation::custom_rule::CustomInvariantWorkMeter::new(
                 registration.maximum_work_units(),
             );
+            let access = registration.access_contract();
+            let has_declared_applicability = !access.affected_entity_kinds.is_empty()
+                || !access.affected_relation_kinds.is_empty();
+            if has_declared_applicability
+                && touched_kinds
+                    .get_or_init(|| {
+                        super::custom_applicability::CandidateTouchedKinds::from_request(request)
+                    })
+                    .as_ref()
+                    .is_some_and(|kinds| !kinds.may_affect(access))
+            {
+                return InvariantPacketRegistration::CustomNotApplicable {
+                    registration: registration.clone(),
+                    prepared_scope: crate::validation::data::PreparedCustomInvariantScope::empty(),
+                    work,
+                };
+            }
             let prepared_scope = crate::validation::data::PreparedCustomInvariantScope::capture(
                 request.observation(),
                 request.version_id(),
@@ -53,9 +71,6 @@ where
                 work.clone(),
                 std::sync::Arc::new(registration.access_contract().clone()),
             );
-            let access = registration.access_contract();
-            let has_declared_applicability = !access.affected_entity_kinds.is_empty()
-                || !access.affected_relation_kinds.is_empty();
             if request.merged_plan().is_some()
                 && has_declared_applicability
                 && !planner.has_applicable_touches()

@@ -16,6 +16,22 @@ pub(crate) struct PreparedCustomInvariantScope {
 }
 
 impl PreparedCustomInvariantScope {
+    pub(crate) fn empty() -> Self {
+        Self {
+            touched: Arc::new(TouchedStructuralSet::new(
+                Arc::from([]),
+                Arc::from([]),
+                Arc::from([]),
+                Arc::from([]),
+                Arc::from([]),
+                Arc::from([]),
+                Arc::from([]),
+                Arc::from([]),
+                Arc::from([]),
+            )),
+        }
+    }
+
     pub(crate) fn capture(
         observation: &InvariantObservation<'_>,
         version_id: VersionId,

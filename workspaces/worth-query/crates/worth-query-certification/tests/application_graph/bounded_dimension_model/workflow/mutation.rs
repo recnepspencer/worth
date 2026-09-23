@@ -85,8 +85,8 @@ impl ApplicationMutationBinding<BoundedDimensionSchema> for WorkflowDefinitionAu
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
     const CANDIDATES: ApplicationCandidateRequirements =
         ApplicationCandidateRequirements::fixed_shape(
-            ApplicationCandidateCardinalityCeiling::fixed(64, 0, 128, 2, 512, 0),
-            ApplicationCandidateResourceCeiling::bounded(2 * 1024 * 1024, 1_048_576),
+            ApplicationCandidateCardinalityCeiling::fixed(65_536, 0, 65_536, 2, 65_536, 0),
+            ApplicationCandidateResourceCeiling::bounded(128 * 1024 * 1024, 20_000_000),
         );
 
     fn idempotency_key_identity(key: &u64) -> [u8; 32] {
@@ -180,7 +180,10 @@ impl OperationHandler<BoundedDimensionSchema, WorkflowDefinitionAuthoringBinding
         _: &WorkflowDefinitionAuthoringInput,
         _: &WorthQueryInvariantMutationTarget<BoundedDimensionSchema, Part>,
     ) -> ApplicationCandidateRequirements {
-        WorkflowDefinitionAuthoringBinding::CANDIDATES
+        ApplicationCandidateRequirements::fixed_shape(
+            ApplicationCandidateCardinalityCeiling::fixed(64, 0, 128, 2, 512, 0),
+            ApplicationCandidateResourceCeiling::bounded(2 * 1024 * 1024, 1_048_576),
+        )
     }
 
     fn build_candidate(

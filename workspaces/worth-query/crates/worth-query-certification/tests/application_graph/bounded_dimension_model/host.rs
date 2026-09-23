@@ -11,7 +11,8 @@ use worth_query_host::facade::application_contribution::{
 use worth_query_host::facade::application_installation::{
     in_memory_rostered_program, WorthQueryApplicationProgramRoster,
     WorthQueryInMemoryApplicationDenial, WorthQueryInMemoryApplicationLimits,
-    WorthQueryProgramApplicationRuntime, WorthQueryWorkflowApplicationRuntime,
+    WorthQueryInMemoryApplicationProfile, WorthQueryProgramApplicationRuntime,
+    WorthQueryWorkflowApplicationRuntime,
 };
 use worth_query_host::facade::declaration::application_program::{
     ApplicationProgramDefinition, ApplicationProgramOutputsShape, ValidatedApplicationProgram,
@@ -108,6 +109,31 @@ pub fn publish_on_first_program() -> BoundedDimensionRuntime<DimensionProgramP0>
 
 pub fn publish_on_first_program_for_history_scale() -> BoundedDimensionRuntime<DimensionProgramP0> {
     publish_on_first_program_with_limits(history_limits(16_384, 64 * 1024 * 1024, 32_768))
+}
+
+/// Scheduled 10k publication lane: 200k candidate items, 128 MiB candidate
+/// bytes, 20M candidate work, 200k operation width, and GeometryKernel's
+/// 65,536-record patch ceiling. Ordinary fixture actions retain their smaller
+/// handler-level candidate requirements.
+pub fn publish_on_first_program_for_geometry_scale() -> BoundedDimensionRuntime<DimensionProgramP0>
+{
+    publish_on_first_program_with_limits(
+        WorthQueryInMemoryApplicationLimits::new(
+            world_resources(1_024, 256 * 1024 * 1024, 2_048),
+            runtime::WorthQueryApplicationCandidateResourceProfile::bounded(
+                200_000,
+                128 * 1024 * 1024,
+                20_000_000,
+            )
+            .expect("finite geometry candidate resources")
+            .with_maximum_operation_width(200_000)
+            .expect("finite geometry publication width"),
+            runtime::WorthQueryApplicationQueryResourceProfile::bounded(5_120, 2_048, 200_000, 128)
+                .expect("finite geometry query resources"),
+            primary_graph::SignalConditionalEvaluationBudget::development(),
+        )
+        .with_profile(WorthQueryInMemoryApplicationProfile::GeometryKernel),
+    )
 }
 
 fn publish_on_first_program_with_limits(
@@ -287,12 +313,14 @@ fn history_limits(
     metadata_bytes: u64,
     pins: u64,
 ) -> WorthQueryInMemoryApplicationLimits {
+    // Installation admits the binding's maximum publication shape even though
+    // the ordinary Part handler requests its narrow candidate at execution.
     WorthQueryInMemoryApplicationLimits::new(
         world_resources(commits, metadata_bytes, pins),
         runtime::WorthQueryApplicationCandidateResourceProfile::bounded(
-            4_096,
-            2 * 1024 * 1024,
-            1_048_576,
+            200_000,
+            128 * 1024 * 1024,
+            20_000_000,
         )
         .expect("valid candidate limits"),
         runtime::WorthQueryApplicationQueryResourceProfile::bounded(5_120, 2_048, usize::MAX, 128)
