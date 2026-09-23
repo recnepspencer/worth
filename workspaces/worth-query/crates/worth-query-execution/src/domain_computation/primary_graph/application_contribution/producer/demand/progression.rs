@@ -320,6 +320,7 @@ where
         let refreshed = self.admit_output_demand_with_source::<Family>(
             source,
             observed_source,
+            None,
             profile_kind,
             demand.currentness_work_limit.get(),
             demand.maximum_retained_bytes,

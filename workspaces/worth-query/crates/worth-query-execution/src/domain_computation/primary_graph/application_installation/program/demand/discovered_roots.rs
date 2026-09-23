@@ -177,6 +177,7 @@ where
         self.runtime
             .admit_recovered_output_demand::<Family<Schema, Root>>(
                 source,
+                None,
                 maximum_work,
                 maximum_retained_bytes,
                 source_receipt,

@@ -194,6 +194,7 @@ where
             .recover_program_root_output::<Root>(
                 &worth_query_execution::publication_boundary::program_publication_access(),
                 source_result,
+                current,
                 maximum_work,
                 maximum_retained_bytes,
                 source_receipt,

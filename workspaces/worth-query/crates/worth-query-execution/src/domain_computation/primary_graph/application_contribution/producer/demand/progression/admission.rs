@@ -37,6 +37,7 @@ where
         self.admit_output_demand_with_source::<Family>(
             source,
             observed_source,
+            None,
             profile_kind,
             maximum_work,
             maximum_retained_bytes,
@@ -70,6 +71,7 @@ where
         self.admit_output_demand_with_source::<Family>(
             source,
             observed_source,
+            None,
             profile_kind,
             maximum_work,
             maximum_retained_bytes,
@@ -87,6 +89,12 @@ where
             FamilySourceQuery<Schema, Family>,
             FamilySourceValue<Schema, Family>,
         >,
+        current_result: Option<
+            crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource<
+                FamilySourceQuery<Schema, Family>,
+                FamilySourceValue<Schema, Family>,
+            >,
+        >,
         maximum_work: usize,
         maximum_retained_bytes: usize,
         source_receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
@@ -100,10 +108,41 @@ where
                 "recovered output source query did not return one owner-paired occurrence",
             )
         })?;
+        let current_observed_source = current_result
+            .map(|current| {
+                current.into_single_source().map(|(_, observed)| observed).ok_or_else(|| {
+                    denial(
+                        WorthQueryOutputDemandDenialKind::ForeignSource,
+                        "current recovered output source query did not return one owner-paired occurrence",
+                    )
+                })
+            })
+            .transpose()?;
+        if let Some(current) = current_observed_source.as_ref() {
+            let retained_epoch = observed_source.output_source_epoch().ok_or_else(|| {
+                denial(
+                    WorthQueryOutputDemandDenialKind::ForeignSource,
+                    Family::IDENTITY,
+                )
+            })?;
+            let current_epoch = current.output_source_epoch().ok_or_else(|| {
+                denial(
+                    WorthQueryOutputDemandDenialKind::ForeignSource,
+                    Family::IDENTITY,
+                )
+            })?;
+            if !retained_epoch.same_semantic_source(&current_epoch) {
+                return Err(denial(
+                    WorthQueryOutputDemandDenialKind::ForeignSource,
+                    "current recovered output source differs from retained source",
+                ));
+            }
+        }
         let profile_kind = Family::profile_kind(&source);
         self.admit_output_demand_with_source::<Family>(
             source,
             observed_source,
+            current_observed_source.as_ref(),
             profile_kind,
             maximum_work,
             maximum_retained_bytes,
@@ -142,6 +181,7 @@ where
         self.admit_output_demand_with_source::<Family>(
             source,
             observed_source,
+            None,
             profile_kind,
             maximum_work,
             maximum_retained_bytes,
@@ -156,6 +196,7 @@ where
         &self,
         source: FamilySourceValue<Schema, Family>,
         observed_source: WorthQueryObservedSource<FamilySourceQuery<Schema, Family>>,
+        selection_source: Option<&WorthQueryObservedSource<FamilySourceQuery<Schema, Family>>>,
         profile_kind: &'static str,
         maximum_work: usize,
         maximum_retained_bytes: usize,
@@ -179,8 +220,11 @@ where
                     super::super::WorthQueryOutputDemandRecoveryPosture::Retryable,
                 )
             })?;
-        let selected =
-            self.select_output_producer::<Family>(&observed_source, profile_kind, maximum_work)?;
+        let selected = self.select_output_producer::<Family>(
+            selection_source.unwrap_or(&observed_source),
+            profile_kind,
+            maximum_work,
+        )?;
         let entry = self
             .installed_producers
             .entries
