@@ -1518,6 +1518,15 @@ be represented as branch or global semantic authority.
 
 ## C.11: Layout, Index, And Native Blob Adoption
 
+Engineering specification:
+[Layout, index, and native blob adoption](physical-reconstruction-c11-layout-index-and-native-blob-adoption.md).
+It fixes blob chunks, chunk-tree nodes, generation publications and index nodes
+as C.5 physical records under the one publication owner, the dependency
+inversion of the S.7/S.8 mechanism crates, the artifact-family registry, the
+proof-consuming reclaim protocol, the crash-seam matrix, and the phase plan
+that reaches a native blob above the residency window before any registry,
+dedupe, LSM or reclaim machinery exists.
+
 ### Goal
 
 Move B-tree/LSM access paths, rebuildable indexes, chunk trees, blob streaming,
@@ -1747,7 +1756,7 @@ implementation:
 - `physical-reconstruction-c8-fresh-process-recovery-and-reopen.md`
 - `physical-reconstruction-c9-integrity-and-offline-truth.md`
 - `physical-reconstruction-c10-isolation-and-io-coordination.md`
-- `physical-reconstruction-c11-layout-index-blob-adoption.md`
+- `physical-reconstruction-c11-layout-index-and-native-blob-adoption.md`
 - `physical-reconstruction-c12-formal-owner-rebinding.md`
 - `physical-reconstruction-c13-platform-integration-and-s10-entry.md`
 
