@@ -5438,8 +5438,19 @@ delivery, with existing readmission, Bridge/Signal and World authority. No autho
 request authority, second validator, graph truth or scheduler ships.
 
 The first endpoint authors and runs proposal -> required assessments -> approval ->
-real application. Later phases finish complete control flow, A/B definition
-coexistence, branch/fork and program migration, then kernel resource/public closure.
+real application. Phase 1 remains unchanged. Phase 2 establishes geometry-scale
+execution and the common typed authoring/publication/start/run surface: bounded
+validation and compilation, exact reusable semantic plans, incremental instance
+progress and local dependency checks. Phase 3 adds complete control flow, coverage
+and outbound custody; Phase 4 adds A/B coexistence, branch/fork and program migration;
+Phase 5 closes lifecycle and public integration. Existing unfinished work carries
+forward into those phases without reopening predecessor completion.
+The real proprietary consumer proves local geometry edits under growing unrelated
+model/history populations; valid 100/1k/10k workflow graphs qualify independently.
+Warm progression cannot scan the whole definition or replay history. Infrastructure
+choice follows authority and cost; no particular traversal/index representation is
+mandated. The common API preserves advanced controls and typed waits/recovery without
+client polling, manual receipt routing or stringified denials.
 Required inventory survives supplier removal, approvals bind exact proposal/source/
 evidence, duplicate wakes cannot duplicate effects, and status records cannot
 substitute for performed publication.

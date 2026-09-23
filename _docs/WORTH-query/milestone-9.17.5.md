@@ -521,7 +521,7 @@ and recovery, not duplicated execution when records combine. These are preserved
 handoff constraints, not claims that this milestone certifies future merge behavior.
 
 
-[9.18](./milestone-9.18.md) follows 9.17.6. Correction selects source interpretation
+[9.18](./milestone-9.18.md) follows 9.17.7, after 9.17.6. Correction selects source interpretation
 and target program separately, preserving current authority and exact recovery.
 Neither historical meaning nor a program archive authorizes old operations on the
 target. Supported program revisions can remain current on different branches.

@@ -657,6 +657,7 @@ dependencies = [
 name = "worth-query-execution"
 version = "0.1.0"
 dependencies = [
+ "im",
  "sha2",
  "worth-foundational",
  "worth-proof",
@@ -742,6 +743,7 @@ dependencies = [
  "arc-swap",
  "crossbeam-queue",
  "dashmap",
+ "im",
  "rayon",
  "rmp-serde",
  "serde",
