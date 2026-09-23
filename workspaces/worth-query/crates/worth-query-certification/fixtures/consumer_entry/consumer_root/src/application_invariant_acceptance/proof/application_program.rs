@@ -214,14 +214,14 @@ pub(super) fn lifecycle_proofs(
     lifecycle::branch_close_wakes_live_required_output(foreign);
     readiness_recovery::readiness_failure_recovers_exact_pending_output(foreign);
     readiness_recovery::ready_read_capacity_preserves_completion(foreign);
-    readiness_recovery::already_committed_replace_and_preserve_revalidate(foreign);
+    readiness_recovery::already_committed_replace_reuses_readiness(foreign);
     readiness_recovery::complete_dependency_aba_advances_the_live_demand(foreign);
     readiness_recovery::published_outputs_hold_no_hidden_read_lease(foreign);
     readiness_recovery::readiness_snapshot_pressure_keeps_published_output_recoverable(foreign);
     readiness_recovery::preserved_noop_output_completes_readiness_without_a_signal_successor(
         foreign,
     );
-    readiness_recovery::program_demand_closes_and_rejects_a_foreign_request(foreign);
+    readiness_recovery::program_demand_rejects_a_foreign_request_and_releases_on_drop(foreign);
     readiness_recovery::denied_program_producer_releases_the_shared_claim(foreign);
 }
 

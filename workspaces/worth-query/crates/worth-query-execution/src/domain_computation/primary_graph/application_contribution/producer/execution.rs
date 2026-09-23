@@ -260,8 +260,7 @@ where
             request_scope,
         )
         .map_err(|error| failed(Binding::IDENTITY, error))?;
-    let source_partition_identity = observed_source.partition_identity();
-    let source_identity = runtime
+    let bound_source = runtime
         .bind_application_source_expectation::<Operation<Schema, Binding>, _>(
             &mut admission,
             observed_source,
@@ -313,13 +312,12 @@ where
                 format!("{}: {identity_denial:?}", Binding::IDENTITY),
             )
         })?;
-    let idempotency = WorthQueryApplicationIdempotencyBinding::new(
-        key_identity,
-        Operation::<Schema, Binding>::input_identity(&input),
-    )
-    .bind_source(Some(&source_identity))
-    .bind_source_partition(&source_partition_identity)
-    .bind_producer_dependency(&dependency_identity);
+    let idempotency = bound_source
+        .bind_idempotency(WorthQueryApplicationIdempotencyBinding::new(
+            key_identity,
+            Operation::<Schema, Binding>::input_identity(&input),
+        ))
+        .bind_producer_dependency(&dependency_identity);
     let program = program
         .with_output_demand_observation()
         .with_producer_required_invariants(Binding::REQUIRED_INVARIANTS);

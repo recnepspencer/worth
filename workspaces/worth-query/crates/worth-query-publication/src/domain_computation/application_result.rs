@@ -83,6 +83,20 @@ impl<Query, QueryResult> WorthQueryPublishedApplicationResult<Query, QueryResult
         self.source.observed_sources()
     }
 
+    pub fn result_set_observation(
+        &self,
+    ) -> Option<&worth_query_execution::facade::primary_graph::WorthQueryObservedResultSet<Query>>
+    {
+        self.source.result_set_observation()
+    }
+
+    pub fn into_result_set_observation(
+        self,
+    ) -> Option<worth_query_execution::facade::primary_graph::WorthQueryObservedResultSet<Query>>
+    {
+        self.source.into_result_set_observation()
+    }
+
     pub fn into_rows(self) -> Vec<QueryResult> {
         self.source.into_rows()
     }

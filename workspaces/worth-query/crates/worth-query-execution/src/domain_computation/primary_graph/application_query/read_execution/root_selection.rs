@@ -13,6 +13,8 @@ use crate::domain_computation::primary_graph::application_query::WorthQueryAdmit
 mod evidence;
 mod path_union;
 
+use evidence::RootPathSourceBuilder;
+
 pub(super) struct BoundedRootSelection {
     pub(super) candidates: Vec<EntityId>,
     pub(super) selected_predicate_source:
@@ -23,6 +25,8 @@ pub(super) struct BoundedRootSelection {
             std::sync::Arc<super::super::observed_source::WorthQueryObservedRootSelection>,
         >,
     >,
+    pub(super) result_set_source:
+        Option<std::sync::Arc<super::super::observed_source::WorthQueryObservedRootSelection>>,
     pub(super) examined_candidates: usize,
     pub(super) predicate_work_units: usize,
     pub(super) work_units: usize,
@@ -155,6 +159,7 @@ pub(super) fn select_bounded_roots<
         Scope,
     >,
     result_buffer: &mut super::super::resource_lifecycle::WorthQueryApplicationResultBufferReservation,
+    capture_result_set: bool,
 ) -> Result<BoundedRootSelection, WorthQueryApplicationReadExecutionDenial> {
     let contract = plan.query.read_family_binding().planning_contract();
     if !contract.root_paths().is_empty() {
@@ -164,21 +169,39 @@ pub(super) fn select_bounded_roots<
             plan,
             contract.root_paths(),
             result_buffer,
+            capture_result_set,
         );
     }
     match contract.predicates() {
-        [] => Ok(BoundedRootSelection {
-            candidates: vec![plan.scope.entity_id()],
-            selected_predicate_source: None,
-            root_path_source: None,
-            examined_candidates: 1,
-            predicate_work_units: 1,
-            work_units: 1,
-            predicate_index_generation: None,
-            adjacency_lists_read: 0,
-            relation_records_examined: 0,
-        }),
-        [predicate] => select_indexed_root(runtime, graph, plan, predicate),
+        [] => {
+            let result_set_source = if capture_result_set {
+                let mut source = RootPathSourceBuilder::default();
+                source.observe_entity(plan.scope.entity_id());
+                Some(source.finish(result_buffer)?)
+            } else {
+                None
+            };
+            Ok(BoundedRootSelection {
+                candidates: vec![plan.scope.entity_id()],
+                selected_predicate_source: None,
+                root_path_source: None,
+                result_set_source,
+                examined_candidates: 1,
+                predicate_work_units: 1,
+                work_units: 1,
+                predicate_index_generation: None,
+                adjacency_lists_read: 0,
+                relation_records_examined: 0,
+            })
+        }
+        [predicate] => select_indexed_root(
+            runtime,
+            graph,
+            plan,
+            predicate,
+            result_buffer,
+            capture_result_set,
+        ),
         _ => Err(read_execution_denial(
             WorthQueryApplicationReadExecutionDenialKind::PredicateIndexUnavailable,
             plan.query.name(),
@@ -208,6 +231,8 @@ fn select_indexed_root<
         Scope,
     >,
     predicate: &worth_query_installation::facade::WorthQueryInstalledGraphPredicate,
+    result_buffer: &mut super::super::resource_lifecycle::WorthQueryApplicationResultBufferReservation,
+    capture_result_set: bool,
 ) -> Result<BoundedRootSelection, WorthQueryApplicationReadExecutionDenial> {
     let (entity, aspect, field) = predicate.field();
     let computation = plan
@@ -285,45 +310,43 @@ fn select_indexed_root<
             field,
         ));
     }
-    let selected_predicate_source = scoped
-        .map(|entity_id| {
-            let contract_revision = graph
-                .aspect_contract(entity, predicate.aspect_key())
-                .ok_or_else(|| {
-                    read_execution_denial(
-                        WorthQueryApplicationReadExecutionDenialKind::ProjectionUnavailable,
-                        field,
-                    )
-                })?
-                .revision();
-            let native_revision = runtime
-                .read_truth()
-                .project_snapshot(plan.basis.snapshot_handle())
-                .and_then(|view| view.entity_aspect_version(entity_id, predicate.aspect_key()))
-                .ok_or_else(|| {
-                    read_execution_denial(
-                        WorthQueryApplicationReadExecutionDenialKind::ProjectionUnavailable,
-                        field,
-                    )
-                })?;
-            Ok(
-                super::super::observed_source::WorthQueryObservedAspectRevision {
-                    entity: entity_id,
-                    entity_name: entity.to_owned(),
-                    aspect: predicate.aspect_key().clone(),
-                    contract_revision,
-                    native_revision,
-                },
+    let projection = runtime
+        .read_truth()
+        .project_snapshot(plan.basis.snapshot_handle())
+        .ok_or_else(|| {
+            read_execution_denial(
+                WorthQueryApplicationReadExecutionDenialKind::ProjectionUnavailable,
+                field,
             )
-        })
+        })?;
+    let mut work = RootSelectionWork::new(plan.controls.maximum_work().get());
+    work.charge_predicate(lookup.examined_entry_count(), 0, field)?;
+    let mut set_source = RootPathSourceBuilder::default();
+    let selected_predicate_source = if capture_result_set || scoped.is_some() {
+        set_source.observe_entity(plan.scope.entity_id());
+        let observed = set_source.observe_guard_aspects(
+            &projection,
+            graph,
+            plan.scope.entity_id(),
+            entity,
+            predicate.aspect_key(),
+            &mut work,
+        )?;
+        scoped.map(|_| observed)
+    } else {
+        None
+    };
+    let result_set_source = capture_result_set
+        .then(|| set_source.finish(result_buffer))
         .transpose()?;
     Ok(BoundedRootSelection {
         candidates: scoped.into_iter().collect(),
         selected_predicate_source,
         root_path_source: None,
+        result_set_source,
         examined_candidates: lookup.examined_entry_count(),
-        predicate_work_units: lookup.examined_entry_count(),
-        work_units: lookup.examined_entry_count(),
+        predicate_work_units: work.predicate_work_units,
+        work_units: work.work_units,
         predicate_index_generation: Some(lookup.generation_id()),
         adjacency_lists_read: 0,
         relation_records_examined: 0,

@@ -1,4 +1,6 @@
-use worth_query_consumer_values::{PlanarAdjustment, PlanarOperation, PlanarVertex};
+use std::num::NonZeroUsize;
+
+use worth_query_consumer_values::{PlanarOperation, PlanarVertex};
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationPerformedMutationOutcome, WorthQueryApplicationProgramOutputProgress,
     WorthQueryApplicationRequestExt, WorthQueryOutputDemandControls,
@@ -237,7 +239,6 @@ pub(super) fn changed_root_cannot_adopt_stale_prepared_source(
         panic!("the source publication must be fresh")
     };
     let source_receipt = performed.receipt().clone();
-    drop(performed);
     let changed_source = request
         .query(PlanarRead {
             body_key: "anchor-b".to_owned(),
@@ -253,7 +254,7 @@ pub(super) fn changed_root_cannot_adopt_stale_prepared_source(
         })
         .expect_source(changed_source)
         .idempotency(&10_019)
-        .execute_performed(&world.application)
+        .execute_performed::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(&world.application)
         .expect("a distinct program source action changes the same occurrence");
     let WorthQueryApplicationPerformedMutationOutcome::Performed(changed) = changed else {
         panic!("the distinct source action must publish a fresh revision")
@@ -284,6 +285,7 @@ pub(super) fn changed_root_cannot_adopt_stale_prepared_source(
         denial.kind(),
         worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind::Superseded
     );
+    drop(performed);
     assert_eq!(
         world
             .application
@@ -293,7 +295,7 @@ pub(super) fn changed_root_cannot_adopt_stale_prepared_source(
     );
     drop(
         request
-            .recover_required_outputs::<crate::ConsumerProgram>(
+            .recover_required_outputs::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
                 &world.application,
                 &changed_receipt,
                 PlanarOutputDemand::new("anchor-b"),

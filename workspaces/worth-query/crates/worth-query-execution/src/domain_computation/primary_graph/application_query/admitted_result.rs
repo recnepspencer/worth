@@ -78,6 +78,7 @@ impl WorthQueryApplicationQueryRequestAffinity {
 pub struct WorthQueryAdmittedDisclosedApplicationResult<Query, QueryResult> {
     rows: Vec<QueryResult>,
     observed_sources: Vec<super::WorthQueryObservedSource<Query>>,
+    result_set_observation: Option<super::WorthQueryObservedResultSet<Query>>,
     request_affinity: Option<WorthQueryApplicationQueryRequestAffinity>,
     receipt: WorthQueryApplicationQueryAccessReceipt,
 }
@@ -88,6 +89,7 @@ pub struct WorthQueryAdmittedDisclosedApplicationResult<Query, QueryResult> {
 /// descriptive source receipt cannot stand in for a fresh disclosed read.
 pub struct WorthQueryApplicationOutputDemandDisclosure<Query> {
     observed_sources: Vec<super::WorthQueryObservedSource<Query>>,
+    result_set_observation: Option<super::WorthQueryObservedResultSet<Query>>,
     request_affinity: Option<WorthQueryApplicationQueryRequestAffinity>,
     receipt: WorthQueryApplicationQueryAccessReceipt,
 }
@@ -108,6 +110,7 @@ impl<Query, QueryResult> WorthQueryAdmittedDisclosedApplicationResult<Query, Que
         Self {
             rows,
             observed_sources: Vec::new(),
+            result_set_observation: None,
             request_affinity: None,
             receipt,
         }
@@ -116,12 +119,14 @@ impl<Query, QueryResult> WorthQueryAdmittedDisclosedApplicationResult<Query, Que
     pub(super) fn new_with_sources(
         rows: Vec<QueryResult>,
         observed_sources: Vec<super::WorthQueryObservedSource<Query>>,
+        result_set_observation: super::WorthQueryObservedResultSet<Query>,
         request_affinity: WorthQueryApplicationQueryRequestAffinity,
         receipt: WorthQueryApplicationQueryAccessReceipt,
     ) -> Self {
         Self {
             rows,
             observed_sources,
+            result_set_observation: Some(result_set_observation),
             request_affinity: Some(request_affinity),
             receipt,
         }
@@ -129,6 +134,10 @@ impl<Query, QueryResult> WorthQueryAdmittedDisclosedApplicationResult<Query, Que
 
     pub fn rows(&self) -> &[QueryResult] {
         &self.rows
+    }
+
+    pub fn result_set_observation(&self) -> Option<&super::WorthQueryObservedResultSet<Query>> {
+        self.result_set_observation.as_ref()
     }
 
     pub const fn receipt(&self) -> &WorthQueryApplicationQueryAccessReceipt {
@@ -147,6 +156,7 @@ impl<Query, QueryResult> WorthQueryAdmittedDisclosedApplicationResult<Query, Que
             self.rows,
             WorthQueryApplicationOutputDemandDisclosure {
                 observed_sources: self.observed_sources,
+                result_set_observation: self.result_set_observation,
                 request_affinity: self.request_affinity,
                 receipt: self.receipt,
             },
@@ -168,6 +178,14 @@ impl<Query, QueryResult> WorthQueryApplicationOutputDemandSource<Query, QueryRes
 
     pub fn observed_sources(&self) -> &[super::WorthQueryObservedSource<Query>] {
         self.disclosure.observed_sources()
+    }
+
+    pub fn result_set_observation(&self) -> Option<&super::WorthQueryObservedResultSet<Query>> {
+        self.disclosure.result_set_observation.as_ref()
+    }
+
+    pub fn into_result_set_observation(self) -> Option<super::WorthQueryObservedResultSet<Query>> {
+        self.disclosure.result_set_observation
     }
 
     pub(in crate::domain_computation::primary_graph) fn into_single_source(

@@ -51,28 +51,24 @@ where
     >(
         &self,
         presented: &WorthQueryPresentedProgram<'_>,
-        source_binding: std::any::TypeId,
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
     ) -> WorthQueryApplicationCommitOutcome
     where
         Input: Clone + Send + Sync + 'static,
     {
-        if let Err(outcome) =
-            self.require_occurrence_owns_output_source(presented, source_binding, &program)
-        {
+        if let Err(outcome) = self.require_occurrence_owns_output_source(presented, &program) {
             return outcome;
         }
         self.compare_and_commit_application_with_output_observation(program, idempotency, true)
     }
 
     /// Requires that the program presented for this output source is the one
-    /// active on the attempt's own occurrence, and that the occurrence's
-    /// program acts through the mutation binding producing the source.
+    /// active on the attempt's own occurrence. The program runtime already
+    /// checked its typed root and source-binding inventory before entering here.
     fn require_occurrence_owns_output_source<Operation, Input, Scope>(
         &self,
         presented: &WorthQueryPresentedProgram<'_>,
-        source_binding: std::any::TypeId,
         program: &WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
     ) -> Result<(), WorthQueryApplicationCommitOutcome> {
         let Some(support) = self.program_support.as_ref() else {
@@ -88,14 +84,6 @@ where
                     presented.identity(),
                     occurrence.entry().identity(),
                 ),
-            ));
-        }
-        if !occurrence
-            .entry()
-            .acts_through_mutation_binding(source_binding)
-        {
-            return Err(WorthQueryApplicationCommitOutcome::Denied(
-                WorthQueryApplicationCommitDenial::application_program_required(),
             ));
         }
         Ok(())

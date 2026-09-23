@@ -56,6 +56,10 @@ pub(super) struct WorthQueryOutputProgress {
 
 impl WorthQueryOutputProgress {
     pub(super) fn new(checkpoint: WorthQueryOutputCheckpoint) -> Self {
+        let _ = checkpoint
+            .receipt()
+            .committed_product_publication()
+            .take_output_demand_observation();
         Self {
             receipt: checkpoint.receipt().clone(),
             checkpoint: Some(checkpoint),

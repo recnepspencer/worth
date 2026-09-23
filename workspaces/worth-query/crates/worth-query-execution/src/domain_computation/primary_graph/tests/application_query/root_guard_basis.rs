@@ -14,7 +14,8 @@ use worth_relational::facade::transactions::{
 use super::current_controls;
 use crate::domain_computation::primary_graph::{
     tests::fixture::{
-        installed_authorization_world, AccountIdentity, AccountStatus, CrossRootQuery,
+        installed_authorization_world, status_parameter, AccountIdentity, AccountStatus,
+        CrossRootQuery,
     },
     WorthQueryApplicationObservedFact, WorthQueryApplicationQueryAccessContext,
     WorthQueryApplicationQueryBasisPosture, WorthQueryPrincipalResolutionMode,
@@ -87,6 +88,9 @@ fn root_path_guard_reads_its_pinned_truth_version() {
 
     assert_eq!(pinned_result.rows().len(), 2);
     assert!(current_result.rows().is_empty());
+    let empty_selection = current_result.result_set_observation().selection_for_test();
+    assert_eq!(empty_selection.aspects.len(), 1);
+    assert_eq!(empty_selection.entities, [account.entity_id()]);
     let selection = pinned_result.observed_sources()[0]
         .footprint_for_test()
         .root_selection
@@ -115,6 +119,118 @@ fn root_path_guard_reads_its_pinned_truth_version() {
     assert_eq!(
         pinned_result.receipt().basis_posture(),
         WorthQueryApplicationQueryBasisPosture::SelectedProduct
+    );
+    let absent_guard = &empty_selection.aspects[0];
+    let absent_fact = WorthQueryApplicationObservedFact::SourceAspectRevision {
+        entity_id: absent_guard.entity,
+        aspect: absent_guard.aspect.clone(),
+        native_revision: absent_guard.native_revision,
+    };
+    change_account_status(&world, account.entity_id(), "open");
+    let reopened = world.selected_product();
+    assert!(
+        !graph.integration_handle().with_runtime(|runtime| {
+            absent_fact
+                .source_currentness_in(runtime, reopened.application_basis().snapshot_handle(), 1)
+                .unwrap()
+                .0
+        }),
+        "a matching guard edit must stale an empty result-set observation"
+    );
+    let reopened_result = world
+        .application
+        .execute_application_query_one_shot(
+            reopened
+                .admit_application_query(
+                    &query,
+                    &access,
+                    ApplicationQueryParameterSet::new(),
+                    current_controls(&request),
+                )
+                .unwrap(),
+        )
+        .unwrap();
+    assert_eq!(reopened_result.rows().len(), 2);
+    assert_ne!(
+        current_result
+            .result_set_observation()
+            .idempotency_identity(),
+        reopened_result
+            .result_set_observation()
+            .idempotency_identity()
+    );
+}
+
+#[test]
+fn empty_indexed_root_set_stales_when_its_scoped_guard_becomes_a_match() {
+    let world = installed_authorization_world(true);
+    let request = super::super::fixture::live_scope();
+    let external = world.authenticate("alice", Duration::from_secs(60), &request);
+    let principal = world
+        .selected_product()
+        .resolve_authenticated_principal(
+            &world.binding,
+            &external,
+            &request,
+            WorthQueryPrincipalResolutionMode::Ordinary,
+        )
+        .unwrap();
+    let account = world
+        .selected_product()
+        .resolve_entity(
+            AccountIdentity::reference(),
+            "account-1".to_string(),
+            &request,
+            WorthQueryPrincipalResolutionMode::Ordinary,
+        )
+        .unwrap();
+    let query = super::installed_query(&world);
+    let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
+    let parameters = || {
+        ApplicationQueryParameterSet::new()
+            .bind(status_parameter(), "closed".to_string())
+            .unwrap()
+    };
+    let initial = world.selected_product();
+    let empty = world
+        .application
+        .execute_application_query_one_shot(
+            initial
+                .admit_application_query(&query, &access, parameters(), current_controls(&request))
+                .unwrap(),
+        )
+        .unwrap();
+    assert!(empty.rows().is_empty());
+    assert!(empty.observed_sources().is_empty());
+    let selection = empty.result_set_observation().selection_for_test();
+    assert_eq!(selection.aspects.len(), 1);
+    let guard = &selection.aspects[0];
+    assert_eq!(guard.entity, account.entity_id());
+    let fact = WorthQueryApplicationObservedFact::SourceAspectRevision {
+        entity_id: guard.entity,
+        aspect: guard.aspect.clone(),
+        native_revision: guard.native_revision,
+    };
+    change_account_status(&world, account.entity_id(), "closed");
+    let current = world.selected_product();
+    let graph = world.application.runtime.primary_graph().unwrap();
+    assert!(!graph.integration_handle().with_runtime(|runtime| {
+        fact.source_currentness_in(runtime, current.application_basis().snapshot_handle(), 1)
+            .unwrap()
+            .0
+    }));
+    let matching = world
+        .application
+        .execute_application_query_one_shot(
+            current
+                .admit_application_query(&query, &access, parameters(), current_controls(&request))
+                .unwrap(),
+        )
+        .unwrap();
+    assert_eq!(matching.rows().len(), 1);
+    assert_ne!(
+        empty.result_set_observation().idempotency_identity(),
+        matching.result_set_observation().idempotency_identity()
     );
 }
 

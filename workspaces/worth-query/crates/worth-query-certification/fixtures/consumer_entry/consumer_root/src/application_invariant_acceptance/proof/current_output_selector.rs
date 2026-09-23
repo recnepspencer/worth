@@ -99,7 +99,7 @@ pub(super) fn producer_qualified_missing_and_stale(
 
 fn publish_initial(request: &Request<'_>, application: &ProgramApplication, scope_key: &str) {
     let mut output = request
-        .start_program_outputs(
+        .start_program_outputs::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
             application,
             PlanarOutputDemand::new(scope_key),
             WorthQueryOutputDemandControls::new(

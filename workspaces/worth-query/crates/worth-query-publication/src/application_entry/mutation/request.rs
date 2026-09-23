@@ -15,6 +15,11 @@ pub struct WorthQueryMutationSourceUnprepared;
 #[doc(hidden)]
 pub struct WorthQueryMutationSourcePrepared;
 
+pub(super) enum WorthQueryMutationExpectedSource<Query> {
+    Row(worth_query_execution::facade::primary_graph::WorthQueryObservedSource<Query>),
+    ResultSet(worth_query_execution::facade::primary_graph::WorthQueryObservedResultSet<Query>),
+}
+
 pub struct WorthQueryApplicationMutationRequest<
     'application,
     'principal,
@@ -38,7 +43,7 @@ where
         <<Intent::Binding as ApplicationMutationBinding<Schema>>::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope,
     >,
     pub(super) source: Option<
-        worth_query_execution::facade::primary_graph::WorthQueryObservedSource<
+        WorthQueryMutationExpectedSource<
             <<Intent::Binding as ApplicationMutationBinding<Schema>>::SourceExpectation as ApplicationMutationSourceExpectation<Schema>>::Query,
         >,
     >,
@@ -114,7 +119,32 @@ where
             branch: self.branch,
             intent: self.intent,
             preconditions: self.preconditions,
-            source: Some(source),
+            source: Some(WorthQueryMutationExpectedSource::Row(source)),
+            source_preparation: std::marker::PhantomData,
+        }
+    }
+
+    pub fn expect_result_set(
+        self,
+        source: worth_query_execution::facade::primary_graph::WorthQueryObservedResultSet<
+            <<Intent::Binding as ApplicationMutationBinding<Schema>>::SourceExpectation as ApplicationMutationSourceExpectation<Schema>>::Query,
+        >,
+    ) -> WorthQueryApplicationMutationRequest<
+        'application,
+        'principal,
+        'scope,
+        Schema,
+        Intent,
+        WorthQueryMutationSourcePrepared,
+    > {
+        WorthQueryApplicationMutationRequest {
+            application: self.application,
+            principal: self.principal,
+            scope: self.scope,
+            branch: self.branch,
+            intent: self.intent,
+            preconditions: self.preconditions,
+            source: Some(WorthQueryMutationExpectedSource::ResultSet(source)),
             source_preparation: std::marker::PhantomData,
         }
     }

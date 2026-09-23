@@ -13,7 +13,25 @@ use super::resource_lifecycle::WorthQueryApplicationBasisSelectionIdentity;
 
 mod fact_conversion;
 mod footprint_accounting;
+mod result_set;
 mod root_selection;
+pub use result_set::WorthQueryObservedResultSet;
+
+pub struct WorthQueryBoundSourceExpectation {
+    identity: [u8; 32],
+    partition_identity: [u8; 32],
+}
+
+impl WorthQueryBoundSourceExpectation {
+    pub fn bind_idempotency(
+        self,
+        idempotency: crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding,
+    ) -> crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding {
+        idempotency
+            .bind_source(Some(&self.identity))
+            .bind_source_partition(&self.partition_identity)
+    }
+}
 pub(super) mod source_identity;
 pub(in crate::domain_computation::primary_graph) use root_selection::WorthQueryObservedRootSelection;
 pub(in crate::domain_computation::primary_graph) use source_identity::WorthQueryObservedSourceEpoch;
@@ -155,13 +173,10 @@ impl<Query> Clone for WorthQueryObservedSource<Query> {
 
 impl<Query> WorthQueryObservedSource<Query> {
     pub(in crate::domain_computation) fn partition_identity(&self) -> [u8; 32] {
-        use sha2::Digest;
-
-        let mut digest = sha2::Sha256::new();
-        digest.update(b"worth-query:observed-source-partition:v1");
-        digest.update(self.query_identity.as_bytes());
-        digest.update(self.parameter_binding_identity.bytes());
-        digest.finalize().into()
+        source_identity::derive_partition_identity(
+            self.query_identity.as_bytes(),
+            self.parameter_binding_identity.bytes(),
+        )
     }
 
     pub(in crate::domain_computation::primary_graph) fn selected_product_commit(
@@ -245,7 +260,54 @@ where
         source: WorthQueryObservedSource<
             <Binding::SourceExpectation as worth_query_declaration::facade::application_operation::ApplicationMutationSourceExpectation<Schema>>::Query,
         >,
-    ) -> Result<[u8; 32], WorthQuerySourceExpectationDenial>
+    ) -> Result<WorthQueryBoundSourceExpectation, WorthQuerySourceExpectationDenial>
+    where
+        Binding: worth_query_declaration::facade::application_operation::ApplicationMutationBinding<
+            Schema,
+        >,
+    {
+        let identity = source.idempotency_identity();
+        self.bind_checked_source_expectation::<Binding, Scope>(admission, source, identity)
+    }
+
+    pub fn bind_application_result_set_expectation<Binding, Scope>(
+        &self,
+        admission: &mut crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<
+            Schema,
+            Binding::Operation,
+            Binding::Input,
+            Scope,
+        >,
+        result_set: WorthQueryObservedResultSet<
+            <Binding::SourceExpectation as worth_query_declaration::facade::application_operation::ApplicationMutationSourceExpectation<Schema>>::Query,
+        >,
+    ) -> Result<WorthQueryBoundSourceExpectation, WorthQuerySourceExpectationDenial>
+    where
+        Binding: worth_query_declaration::facade::application_operation::ApplicationMutationBinding<
+            Schema,
+        >,
+    {
+        let identity = result_set.idempotency_identity();
+        self.bind_checked_source_expectation::<Binding, Scope>(
+            admission,
+            result_set.source,
+            identity,
+        )
+    }
+
+    fn bind_checked_source_expectation<Binding, Scope>(
+        &self,
+        admission: &mut crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<
+            Schema,
+            Binding::Operation,
+            Binding::Input,
+            Scope,
+        >,
+        source: WorthQueryObservedSource<
+            <Binding::SourceExpectation as worth_query_declaration::facade::application_operation::ApplicationMutationSourceExpectation<Schema>>::Query,
+        >,
+        identity: [u8; 32],
+    ) -> Result<WorthQueryBoundSourceExpectation, WorthQuerySourceExpectationDenial>
     where
         Binding: worth_query_declaration::facade::application_operation::ApplicationMutationBinding<
             Schema,
@@ -287,7 +349,6 @@ where
                     Binding::IDENTITY,
                 )
             })?;
-        let idempotency_identity = source.idempotency_identity();
         let partition_identity = source.partition_identity();
         let facts = source.validate_and_into_facts(
             self.runtime.authority_identity().as_u64(),
@@ -301,6 +362,9 @@ where
         )?;
         admission.bind_source_partition(partition_identity);
         admission.bind_source_facts(facts);
-        Ok(idempotency_identity)
+        Ok(WorthQueryBoundSourceExpectation {
+            identity,
+            partition_identity,
+        })
     }
 }

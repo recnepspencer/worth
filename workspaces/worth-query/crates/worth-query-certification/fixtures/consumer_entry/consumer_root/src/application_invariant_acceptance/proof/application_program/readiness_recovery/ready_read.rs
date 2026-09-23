@@ -14,6 +14,18 @@ pub(crate) fn ready_read_capacity_preserves_completion(
     ))
     .expect("the application authenticates its principal");
     let request = world.application.request(&principal, &scope);
+    let mut program = request
+        .start_program_outputs::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
+            &world.application,
+            PlanarOutputDemand::new("anchor-a"),
+            controls(),
+        )
+        .expect("the declared program starts its output");
+    assert!(matches!(
+        program.settle(&request).expect("the program output settles"),
+        WorthQueryApplicationProgramOutputProgress::Settled(_)
+    ));
+    drop(program);
     let mut demand = request
         .demand(PlanarOutputDemand::new("anchor-a"))
         .controls(controls())

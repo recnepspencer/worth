@@ -55,7 +55,7 @@ impl<Schema, Operation, Input, Scope>
                 field.entity(),
             )
         })?;
-        let mut matches = self.read_set.facts.iter().filter_map(|fact| match fact {
+        let matches = self.read_set.facts.iter().filter_map(|fact| match fact {
             super::super::WorthQueryApplicationObservedFact::Field {
                 entity_id,
                 kind,
@@ -69,13 +69,16 @@ impl<Schema, Operation, Input, Scope>
             }
             _ => None,
         });
-        let Some(entity_id) = matches.next() else {
+        // A source proof and the decision read may observe the same entity;
+        // only distinct matching entities make this effect target ambiguous.
+        let mut entities = matches.collect::<std::collections::BTreeSet<_>>();
+        let Some(entity_id) = entities.pop_first() else {
             return Err(denial(
                 WorthQueryApplicationAttemptDenialKind::ForeignEffectTarget,
                 field.entity(),
             ));
         };
-        if matches.next().is_some() {
+        if !entities.is_empty() {
             return Err(denial(
                 WorthQueryApplicationAttemptDenialKind::ForeignEffectTarget,
                 field.entity(),

@@ -51,6 +51,14 @@ impl<RootQuery> WorthQueryApplicationProgramOutputSettlement<RootQuery> {
         self.root.observation()
     }
 
+    pub fn root_readiness_delivery(
+        &self,
+    ) -> Option<
+        &worth_query_execution::facade::primary_graph::WorthQueryOutputReadinessDeliveryEvidence,
+    > {
+        self.root.readiness_delivery()
+    }
+
     pub fn observation(&self) -> &crate::application_entry::WorthQueryApplicationReadObservation {
         self.outputs
             .iter()

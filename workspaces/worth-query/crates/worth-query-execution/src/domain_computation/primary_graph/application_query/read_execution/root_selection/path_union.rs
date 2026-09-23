@@ -37,6 +37,7 @@ pub(super) fn select_root_path_union<
     >,
     paths: &[WorthQueryInstalledRootPath],
     result_buffer: &mut crate::domain_computation::primary_graph::application_query::resource_lifecycle::WorthQueryApplicationResultBufferReservation,
+    capture_result_set: bool,
 ) -> Result<BoundedRootSelection, WorthQueryApplicationReadExecutionDenial> {
     let projection = runtime
         .read_truth()
@@ -44,13 +45,37 @@ pub(super) fn select_root_path_union<
         .ok_or_else(|| traversal_denial(plan.query.name()))?;
     let mut roots = BTreeMap::new();
     let mut work = RootSelectionWork::new(plan.controls.maximum_work().get());
+    let mut set_source = capture_result_set.then(RootPathSourceBuilder::default);
+    if let Some(source) = &mut set_source {
+        source.observe_entity(plan.scope.entity_id());
+    }
     for path in paths {
-        let terminal = traverse_path(runtime, &projection, graph, plan, path, &mut work)?;
+        let terminal = traverse_path(
+            runtime,
+            &projection,
+            graph,
+            plan,
+            path,
+            &mut work,
+            &mut set_source,
+        )?;
         for (root, source) in terminal {
             roots.entry(root).or_insert(source);
         }
     }
+    if let Some(set_source) = &mut set_source {
+        for source in roots.values() {
+            for entity in source.entities() {
+                if set_source.observe_entity(entity) {
+                    work.charge_source_copy(1, plan.query.name())?;
+                }
+            }
+        }
+    }
     let candidates = roots.keys().copied().collect();
+    let result_set_source = set_source
+        .map(|source| source.finish(result_buffer))
+        .transpose()?;
     let root_path_source = (!roots.is_empty())
         .then(|| {
             roots
@@ -63,6 +88,7 @@ pub(super) fn select_root_path_union<
         candidates,
         selected_predicate_source: None,
         root_path_source,
+        result_set_source,
         examined_candidates: work.predicate_records_examined,
         predicate_work_units: work.predicate_work_units,
         work_units: work.work_units,
@@ -88,6 +114,7 @@ fn traverse_path<Schema, Query, Parameters, QueryResult, Principal, PrincipalIde
     >,
     path: &WorthQueryInstalledRootPath,
     work: &mut RootSelectionWork,
+    set_source: &mut Option<RootPathSourceBuilder>,
 ) -> Result<BTreeMap<EntityId, RootPathSourceBuilder>, WorthQueryApplicationReadExecutionDenial> {
     let mut seed = RootPathSourceBuilder::default();
     seed.observe_entity(plan.scope.entity_id());
@@ -101,6 +128,7 @@ fn traverse_path<Schema, Query, Parameters, QueryResult, Principal, PrincipalIde
         0,
         &mut frontier,
         work,
+        set_source,
     )?;
     for (step_index, step) in path.steps().iter().enumerate() {
         if frontier.is_empty() {
@@ -123,7 +151,7 @@ fn traverse_path<Schema, Query, Parameters, QueryResult, Principal, PrincipalIde
             }
         };
         for (&anchor, source) in &mut frontier {
-            source.observe_adjacencies(
+            let observed = source.observe_adjacencies(
                 projection,
                 anchor,
                 layout.kind,
@@ -131,6 +159,11 @@ fn traverse_path<Schema, Query, Parameters, QueryResult, Principal, PrincipalIde
                 step.relation(),
                 work,
             )?;
+            if let Some(set_source) = set_source {
+                if set_source.record_adjacency(observed) {
+                    work.charge_source_copy(1, step.relation())?;
+                }
+            }
         }
         let read = match step.direction() {
             ApplicationQueryRootPathDirection::Forward => runtime
@@ -184,6 +217,7 @@ fn traverse_path<Schema, Query, Parameters, QueryResult, Principal, PrincipalIde
             step_index.saturating_add(1),
             &mut frontier,
             work,
+            set_source,
         )?;
     }
     Ok(frontier)
@@ -207,6 +241,7 @@ fn apply_guards<Schema, Query, Parameters, QueryResult, Principal, PrincipalIden
     after_step: usize,
     frontier: &mut BTreeMap<EntityId, RootPathSourceBuilder>,
     work: &mut RootSelectionWork,
+    set_source: &mut Option<RootPathSourceBuilder>,
 ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
     for guard in path
         .guards()
@@ -239,7 +274,7 @@ fn apply_guards<Schema, Query, Parameters, QueryResult, Principal, PrincipalIden
             return Err(traversal_denial(guard.field().as_str()));
         }
         for (&entity, source) in &mut *frontier {
-            source.observe_guard_aspects(
+            let observed = source.observe_guard_aspects(
                 projection,
                 graph,
                 entity,
@@ -247,6 +282,11 @@ fn apply_guards<Schema, Query, Parameters, QueryResult, Principal, PrincipalIden
                 guard.aspect(),
                 work,
             )?;
+            if let Some(set_source) = &mut *set_source {
+                if set_source.record_aspect(observed) {
+                    work.charge_source_copy(1, guard.field().as_str())?;
+                }
+            }
         }
         let candidates = frontier.keys().copied().collect::<BTreeSet<_>>();
         let read = read_governed_root_guard(

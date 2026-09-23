@@ -45,7 +45,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn read_live
             plan.query.name(),
         )
     })?;
-    let selection = select_bounded_roots(runtime, graph, plan, &mut result_buffer)?;
+    let selection = select_bounded_roots(runtime, graph, plan, &mut result_buffer, false)?;
     super::validate_cardinality_and_limit(
         contract.cardinality(),
         selection.candidates.len(),
@@ -109,12 +109,14 @@ pub(in crate::domain_computation::primary_graph::application_query) fn read_live
         tree.rows.capacity(),
         &tree.source_footprints,
         tree.source_footprints.capacity(),
+        selection.result_set_source.as_deref(),
         plan.query.name(),
     )?;
     Ok(RawLiveKernelOutcome {
         raw: RawOneShotRows {
             rows: tree.rows,
             source_footprints: tree.source_footprints,
+            result_set_source: selection.result_set_source,
             examined_candidates: selection
                 .examined_candidates
                 .saturating_add(target_lookup_work),

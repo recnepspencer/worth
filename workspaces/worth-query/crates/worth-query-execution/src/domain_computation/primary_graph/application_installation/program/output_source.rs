@@ -51,6 +51,14 @@ where
         Source: WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
         Source::Input: Clone + Send + Sync + 'static,
     {
+        if !self.contains_output_root::<Root>() {
+            return Ok((
+                crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome::Denied(
+                    crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::application_program_required(),
+                ),
+                None,
+            ));
+        }
         self.compare_and_commit_output_source::<Source>(
             program,
             idempotency,
@@ -80,6 +88,14 @@ where
             WorthQueryApplicationDiscoveredOutputConnection<Schema, Source = Source>,
         Source::Input: Clone + Send + Sync + 'static,
     {
+        if !self.contains_output_root::<Root>() {
+            return Ok((
+                crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome::Denied(
+                    crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::application_program_required(),
+                ),
+                None,
+            ));
+        }
         self.compare_and_commit_output_source::<Source>(
             program,
             idempotency,
@@ -146,6 +162,14 @@ where
         >,
         Source::Input: Clone + Send + Sync + 'static,
     {
+        if !self.requires_output_source(std::any::TypeId::of::<Source>()) {
+            return Ok((
+                crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome::Denied(
+                    crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::application_program_required(),
+                ),
+                None,
+            ));
+        }
         let Some(presented) = self.presented_program() else {
             return Ok((
                 crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome::Denied(
@@ -162,7 +186,6 @@ where
             .runtime
             .compare_and_commit_application_for_required_output_source(
                 &presented,
-                std::any::TypeId::of::<Source>(),
                 program,
                 idempotency,
             ) {

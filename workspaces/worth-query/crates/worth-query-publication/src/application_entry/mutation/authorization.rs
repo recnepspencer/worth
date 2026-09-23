@@ -10,13 +10,16 @@ use worth_query_execution::facade::primary_graph::{
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{
-    WorthQueryApplicationMutationRequest, WorthQueryApplicationMutationRequestWithIdempotency,
+    request::WorthQueryMutationExpectedSource, WorthQueryApplicationMutationRequest,
+    WorthQueryApplicationMutationRequestWithIdempotency,
 };
 use crate::application_entry::WorthQueryApplicationRequestMutationDenial;
 
 #[path = "authorization/authorized.rs"]
 mod authorized;
 use authorized::AuthorizedMutation;
+mod capability;
+pub(in crate::application_entry) use capability::prepare_capability_selected;
 
 type IntentBinding<Schema, Intent> = <Intent as ApplicationMutationIntent<Schema>>::Binding;
 type IntentPrincipal<Schema, Intent> =
@@ -223,19 +226,26 @@ where
     let expected_source = <<IntentBinding<Schema, Intent> as ApplicationMutationBinding<
         Schema,
     >>::SourceExpectation as ApplicationMutationSourceExpectation<Schema>>::QUERY_IDENTIFIER;
-    let mut source_identity = None;
+    let mut bound_source = None;
     match (expected_source, request.request.source.take()) {
         (Some(_expected), Some(source)) => {
-            source_identity = Some(
-                request
+            bound_source = Some(match source {
+                WorthQueryMutationExpectedSource::Row(source) => request
                     .request
                     .application
                     .bind_application_source_expectation::<IntentBinding<Schema, Intent>, _>(
                         &mut admission,
                         source,
-                    )
-                    .map_err(WorthQueryApplicationRequestMutationDenial::SourceExpectation)?,
-            );
+                    ),
+                WorthQueryMutationExpectedSource::ResultSet(source) => request
+                    .request
+                    .application
+                    .bind_application_result_set_expectation::<IntentBinding<Schema, Intent>, _>(
+                        &mut admission,
+                        source,
+                    ),
+            }
+            .map_err(WorthQueryApplicationRequestMutationDenial::SourceExpectation)?);
         }
         (Some(expected), None) => {
             return Err(WorthQueryApplicationRequestMutationDenial::SourceExpectation(
@@ -248,8 +258,11 @@ where
     let idempotency = WorthQueryApplicationIdempotencyBinding::new(
         IntentBinding::<Schema, Intent>::idempotency_key_identity(request.key),
         IntentBinding::<Schema, Intent>::input_identity(request.request.intent.input()),
-    )
-    .bind_source(source_identity.as_ref());
+    );
+    let idempotency = match bound_source {
+        Some(source) => source.bind_idempotency(idempotency),
+        None => idempotency,
+    };
     let idempotency = request.workflow_transition_identity.map_or(idempotency, |identity| {
         worth_query_execution::facade::workflow_advance::WorthQueryWorkflowAdvanceAdapter::bind_operation_idempotency_raw(
             idempotency,
@@ -301,94 +314,4 @@ where
         .select()
         .map_err(WorthQueryApplicationRequestMutationDenial::ProductSelection)?;
     prepare_capability_selected(request, &selected)
-}
-
-pub(in crate::application_entry) fn prepare_capability_selected<Schema, Intent, SourcePreparation>(
-    request: &mut WorthQueryApplicationMutationRequestWithIdempotency<
-        '_,
-        '_,
-        '_,
-        '_,
-        Schema,
-        Intent,
-        SourcePreparation,
-    >,
-    selected: &WorthQuerySelectedProductOperation<'_, Schema>,
-) -> Result<PreparedMutation<Schema, IntentBinding<Schema, Intent>>, WorthQueryApplicationRequestMutationDenial>
-where
-    Schema: ApplicationSchema,
-    Intent: ApplicationMutationIntent<Schema> + Clone,
-    IntentBinding<Schema, Intent>: ApplicationCapabilityMutationBinding<Schema>,
-    <IntentBinding<Schema, Intent> as ApplicationMutationBinding<Schema>>::ScopeBinding:
-        ApplicationMutationScopeResolution<
-            Schema,
-            <IntentBinding<Schema, Intent> as ApplicationMutationBinding<Schema>>::PrincipalIdentity,
-        >,
-    <IntentBinding<Schema, Intent> as ApplicationMutationBinding<Schema>>::Input:
-        Clone
-        +
-        worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest<
-            Schema,
-            <IntentBinding<Schema, Intent> as ApplicationCapabilityMutationBinding<
-                Schema,
-            >>::Capability,
-            Scope = MutationScope<Schema, IntentBinding<Schema, Intent>>,
-        >,
-{
-    use worth_query_declaration::facade::application_capability::ApplicationCapabilityRef;
-
-    let binding = request
-        .request
-        .application
-        .installed_schema()
-        .installed_mutation_binding::<IntentBinding<Schema, Intent>>()
-        .map_err(WorthQueryApplicationRequestMutationDenial::BindingInstallation)?;
-    let principal = selected
-        .resolve_authenticated_principal(
-            binding.principal_binding(),
-            request.request.principal,
-            request.request.scope,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .map_err(WorthQueryApplicationRequestMutationDenial::PrincipalResolution)?;
-    let capability =
-        request
-            .request
-            .application
-            .installed_schema()
-            .capability(
-                ApplicationCapabilityRef::<
-                    Schema,
-                    <IntentBinding<Schema, Intent> as ApplicationCapabilityMutationBinding<
-                        Schema,
-                    >>::Capability,
-                >::from_declaration(),
-                request.request.intent.operation(),
-            )
-            .map_err(WorthQueryApplicationRequestMutationDenial::CapabilityInstallation)?;
-    let access = selected
-        .admit_capability_access(
-            &principal,
-            &capability,
-            request.request.intent.input().clone(),
-            request.request.scope,
-        )
-        .map_err(WorthQueryApplicationRequestMutationDenial::Authorization)?;
-    let principal_identity = principal.principal_identity().clone();
-    let admission = request
-        .request
-        .application
-        .authorize_capability_operation(
-            access,
-            binding.operation(),
-            std::mem::take(&mut request.request.preconditions),
-        )
-        .map_err(WorthQueryApplicationRequestMutationDenial::Authorization)?;
-    prepare_authorized(
-        request,
-        AuthorizedMutation {
-            principal_identity,
-            admission,
-        },
-    )
 }

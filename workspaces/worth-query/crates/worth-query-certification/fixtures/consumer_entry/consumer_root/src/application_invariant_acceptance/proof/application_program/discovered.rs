@@ -10,7 +10,8 @@ use worth_query_host::facade::application_entry::{
     WorthQueryDiscoveredProgramOutputProgress, WorthQueryOutputDemandControls,
 };
 use worth_query_topology_entry::{
-    PlanarMutation, PlanarOutputDemand, PlanarOutputRead, PlanarRead, PlanarSourceAdjustment,
+    PlanarEdit, PlanarMutation, PlanarOutputDemand, PlanarOutputRead, PlanarRead,
+    PlanarSourceAdjustment,
 };
 
 use super::super::super::{authentication, installation, seed::length};

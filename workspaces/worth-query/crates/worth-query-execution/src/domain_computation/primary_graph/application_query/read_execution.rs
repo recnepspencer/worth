@@ -26,6 +26,8 @@ use worth_relational::facade::indexes::{DerivedIndexGenerationId, RelatedEntityO
 pub(super) struct RawOneShotRows {
     pub(super) rows: WorthQueryApplicationDisclosedProjectionTree,
     pub(super) source_footprints: Vec<super::observed_source::WorthQueryObservedSourceFootprint>,
+    pub(super) result_set_source:
+        Option<std::sync::Arc<super::observed_source::WorthQueryObservedRootSelection>>,
     pub(super) examined_candidates: usize,
     pub(super) predicate_work_units: usize,
     pub(super) predicate_index_generation:
@@ -78,7 +80,7 @@ pub(super) fn read_bounded_root_rows<
     mut result_buffer: WorthQueryApplicationResultBufferReservation,
 ) -> Result<RawNonLiveKernelOutcome, WorthQueryApplicationReadExecutionDenial> {
     let contract = plan.query.read_family_binding().planning_contract();
-    let selection = select_bounded_roots(runtime, graph, plan, &mut result_buffer)?;
+    let selection = select_bounded_roots(runtime, graph, plan, &mut result_buffer, true)?;
     validate_cardinality_and_limit(contract.cardinality(), selection.candidates.len(), plan)?;
     let tree = materialize_result_tree(
         runtime,
@@ -110,12 +112,14 @@ pub(super) fn read_bounded_root_rows<
         tree.rows.capacity(),
         &tree.source_footprints,
         tree.source_footprints.capacity(),
+        selection.result_set_source.as_deref(),
         plan.query.name(),
     )?;
     Ok(RawNonLiveKernelOutcome {
         raw: RawOneShotRows {
             rows: tree.rows,
             source_footprints: tree.source_footprints,
+            result_set_source: selection.result_set_source,
             examined_candidates: selection.examined_candidates,
             predicate_work_units: selection
                 .predicate_work_units
@@ -179,7 +183,7 @@ pub(super) fn read_continuation_page<
             plan.query.name(),
         )
     })?;
-    let selection = select_bounded_roots(runtime, graph, plan, &mut result_buffer)?;
+    let selection = select_bounded_roots(runtime, graph, plan, &mut result_buffer, false)?;
     validate_cardinality_and_limit(contract.cardinality(), selection.candidates.len(), plan)?;
     let tree = materialize_result_tree(
         runtime,
@@ -227,12 +231,14 @@ pub(super) fn read_continuation_page<
         tree.rows.capacity(),
         &tree.source_footprints,
         tree.source_footprints.capacity(),
+        selection.result_set_source.as_deref(),
         plan.query.name(),
     )?;
     Ok(RawNonLiveKernelOutcome {
         raw: RawOneShotRows {
             rows: tree.rows,
             source_footprints: tree.source_footprints,
+            result_set_source: selection.result_set_source,
             examined_candidates: selection.examined_candidates,
             predicate_work_units: selection
                 .predicate_work_units
@@ -265,6 +271,7 @@ fn verify_result_tree_accounting(
     row_capacity: usize,
     source_footprints: &[super::observed_source::WorthQueryObservedSourceFootprint],
     source_footprint_capacity: usize,
+    result_set_source: Option<&super::observed_source::WorthQueryObservedRootSelection>,
     subject: &str,
 ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
     let retained_bytes = rows
@@ -293,6 +300,8 @@ fn verify_result_tree_accounting(
                     .map_or(0, |source| source.retained_bytes()),
             )
         });
+    let retained_bytes = retained_bytes
+        .saturating_add(result_set_source.map_or(0, |source| source.retained_bytes()));
     reservation.verify_retained(retained_bytes).map_err(|()| {
         read_execution_denial(
             WorthQueryApplicationReadExecutionDenialKind::ResultBufferLimitExceeded,

@@ -94,8 +94,50 @@ pub(in crate::domain_computation::primary_graph) fn derive_source_identity(
     footprint: &WorthQueryObservedSourceFootprint,
     selection: &WorthQueryApplicationBasisSelectionIdentity,
 ) -> [u8; 32] {
+    derive_observation_identity(
+        b"worth-query:observed-source:v4",
+        query,
+        parameters,
+        footprint,
+        selection,
+    )
+}
+
+pub(in crate::domain_computation) fn derive_partition_identity(
+    query: &[u8; 32],
+    parameters: &[u8; 32],
+) -> [u8; 32] {
     let mut digest = Sha256::new();
-    digest.update(b"worth-query:observed-source:v4");
+    digest.update(b"worth-query:observed-source-partition:v1");
+    digest.update(query);
+    digest.update(parameters);
+    digest.finalize().into()
+}
+
+pub(in crate::domain_computation::primary_graph) fn derive_result_set_identity(
+    query: &[u8; 32],
+    parameters: &[u8; 32],
+    footprint: &WorthQueryObservedSourceFootprint,
+    selection: &WorthQueryApplicationBasisSelectionIdentity,
+) -> [u8; 32] {
+    derive_observation_identity(
+        b"worth-query:observed-result-set:v1",
+        query,
+        parameters,
+        footprint,
+        selection,
+    )
+}
+
+fn derive_observation_identity(
+    domain: &[u8],
+    query: &[u8; 32],
+    parameters: &[u8; 32],
+    footprint: &WorthQueryObservedSourceFootprint,
+    selection: &WorthQueryApplicationBasisSelectionIdentity,
+) -> [u8; 32] {
+    let mut digest = Sha256::new();
+    digest.update(domain);
     digest.update(query);
     digest.update(parameters);
     match selection {

@@ -16,6 +16,18 @@ pub(crate) fn complete_dependency_aba_advances_the_live_demand(
     ))
     .expect("the application authenticates its principal");
     let request = world.application.request(&principal, &scope);
+    let mut initial_program = request
+        .start_program_outputs::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
+            &world.application,
+            PlanarOutputDemand::new("anchor-a"),
+            controls(),
+        )
+        .expect("the program owns the first A publication");
+    assert!(matches!(
+        initial_program.settle(&request).unwrap(),
+        WorthQueryApplicationProgramOutputProgress::Settled(_)
+    ));
+    drop(initial_program);
     let mut demand = request
         .demand(PlanarOutputDemand::new("anchor-a"))
         .controls(controls())
@@ -64,17 +76,17 @@ pub(crate) fn complete_dependency_aba_advances_the_live_demand(
         .execute()
         .expect("the direct source remains readable");
     let changed = request
-        .mutate(PlanarMutation {
+        .mutate(PlanarEdit(PlanarMutation {
             scope_key: "anchor-a".to_owned(),
             operation: PlanarOperation::PublishDerivedOutput(PlanarDerivedOutput {
                 body_key: "anchor-a".to_owned(),
                 value: length(7),
             }),
             validator_work: 4_096,
-        })
+        }))
         .expect_source(source.observed_sources()[0].clone())
         .idempotency(&10_052)
-        .execute()
+        .execute_in_program(&world.application)
         .expect("the producer dependency advances to B");
     let b_commit = changed
         .receipt()
@@ -82,6 +94,19 @@ pub(crate) fn complete_dependency_aba_advances_the_live_demand(
         .committed_product_publication()
         .composite_commit()
         .clone();
+
+    let mut restored_program = request
+        .start_program_outputs::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
+            &world.application,
+            PlanarOutputDemand::new("anchor-a"),
+            controls(),
+        )
+        .expect("the program owns the restored A publication");
+    assert!(matches!(
+        restored_program.settle(&request).unwrap(),
+        WorthQueryApplicationProgramOutputProgress::Settled(_)
+    ));
+    drop(restored_program);
 
     let second_a = settle!("A after B");
     let second_a_commit = second_a

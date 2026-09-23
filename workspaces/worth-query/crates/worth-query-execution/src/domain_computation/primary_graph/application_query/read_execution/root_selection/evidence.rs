@@ -24,8 +24,42 @@ pub(super) struct RootPathSourceBuilder {
 }
 
 impl RootPathSourceBuilder {
-    pub(super) fn observe_entity(&mut self, entity: EntityId) {
-        self.entities.insert(entity);
+    pub(super) fn observe_entity(&mut self, entity: EntityId) -> bool {
+        self.entities.insert(entity)
+    }
+
+    pub(super) fn record_aspect(&mut self, aspect: WorthQueryObservedAspectRevision) -> bool {
+        if let std::collections::btree_map::Entry::Vacant(entry) =
+            self.aspects.entry((aspect.entity, aspect.aspect.clone()))
+        {
+            entry.insert(aspect);
+            true
+        } else {
+            false
+        }
+    }
+
+    pub(super) fn record_adjacency(
+        &mut self,
+        adjacency: WorthQueryObservedAdjacencyRevision,
+    ) -> bool {
+        let direction = match adjacency.direction {
+            RelationalAdjacencyDirection::Outgoing => 0,
+            RelationalAdjacencyDirection::Incoming => 1,
+        };
+        if let std::collections::btree_map::Entry::Vacant(entry) =
+            self.adjacencies
+                .entry((adjacency.anchor, adjacency.relation_kind, direction))
+        {
+            entry.insert(adjacency);
+            true
+        } else {
+            false
+        }
+    }
+
+    pub(super) fn entities(&self) -> impl Iterator<Item = EntityId> + '_ {
+        self.entities.iter().copied()
     }
 
     pub(super) fn copy_cost(&self) -> usize {
@@ -40,7 +74,7 @@ impl RootPathSourceBuilder {
         entity_name: &str,
         aspect: &AspectKey,
         work: &mut RootSelectionWork,
-    ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
+    ) -> Result<WorthQueryObservedAspectRevision, WorthQueryApplicationReadExecutionDenial> {
         let contract_revision = graph
             .aspect_contract(entity_name, aspect)
             .ok_or_else(|| source_denial(entity_name))?
@@ -61,7 +95,7 @@ impl RootPathSourceBuilder {
                 },
             );
         }
-        Ok(())
+        Ok(self.aspects[&(entity, aspect.clone())].clone())
     }
 
     pub(super) fn observe_adjacencies(
@@ -72,7 +106,7 @@ impl RootPathSourceBuilder {
         direction: RelationalAdjacencyDirection,
         subject: &str,
         work: &mut RootSelectionWork,
-    ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
+    ) -> Result<WorthQueryObservedAdjacencyRevision, WorthQueryApplicationReadExecutionDenial> {
         let direction_key = match direction {
             RelationalAdjacencyDirection::Outgoing => 0,
             RelationalAdjacencyDirection::Incoming => 1,
@@ -97,7 +131,7 @@ impl RootPathSourceBuilder {
                 },
             );
         }
-        Ok(())
+        Ok(self.adjacencies[&(anchor, relation_kind, direction_key)].clone())
     }
 
     pub(super) fn finish(

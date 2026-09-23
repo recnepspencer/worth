@@ -24,9 +24,15 @@ use worth_query_topology_entry::{
 use crate::ConsumerSchema;
 pub(crate) mod correspondence;
 pub(crate) mod external_input;
+mod features;
 mod omitted_program_binding;
 mod roots;
+mod validation_denials;
 pub(crate) use omitted_program_binding::validated_omitted_program_binding;
+pub(crate) use validation_denials::{
+    duplicate_feature_is_denied, missing_required_input_is_denied,
+    undeclared_input_is_denied, unexported_cross_instance_is_denied,
+};
 pub use roots::{
     ConsumerDiscoveredProgramRoot, ConsumerProgramRoot, ConsumerRequiredSharedRoot,
     ConsumerSecondaryProgramRoot, ConsumerTruncatedProgramRoot, ConsumerUndeclaredProgramRoot,
@@ -274,76 +280,6 @@ type PlanarSummaryConnection = ApplicationConnectionRef<
     PlanarFinalToSummaryConnection,
 >;
 
-fn consumer_feature_specs() -> Vec<ApplicationFeatureSpec> {
-    vec![
-        ApplicationFeatureSpec::root::<ConsumerSchema, PlanarSourceFeature>()
-            .provides::<PlanarBodyOutput>()
-            .repeated_optional_member_with_external_input::<
-                PlanarEditBinding<ConsumerSchema>,
-                correspondence::OptionalAdjustmentCorrespondence,
-                external_input::NeutralExternalProvider,
-            >()
-            .mutation::<PriorCycleAdjustmentBinding<ConsumerSchema>>()
-            .mutation::<VertexReplacementBinding<ConsumerSchema>>()
-            .finish(),
-        ApplicationFeatureSpec::root::<ConsumerSchema, PlanarOutputFeature>()
-            .provides::<PlanarDerivedBodyOutput>()
-            .conditional_operation::<MutatePlanar>()
-            .finish(),
-        ApplicationFeatureSpec::root::<ConsumerSchema, PlanarFinalOutputFeature>()
-            .provides::<PlanarFinalBodyOutput>()
-            .conditional_operation::<PublishFinalPlanarOutput>()
-            .finish(),
-        ApplicationFeatureSpec::root::<ConsumerSchema, PlanarAlternateFinalOutputFeature>()
-            .provides::<PlanarAlternateFinalBodyOutput>()
-            .conditional_operation::<PublishAlternatePlanarOutput>()
-            .finish(),
-        ApplicationFeatureSpec::root::<ConsumerSchema, PlanarSummaryFeature>().finish(),
-        ApplicationFeatureSpec::root::<ConsumerSchema, PlanarAlternateSummaryFeature>().finish(),
-        ApplicationFeatureSpec::root::<ConsumerSchema, ParameterFeature>().finish(),
-        ApplicationFeatureSpec::at::<ConsumerSchema, SecondaryPlanarRoot, PlanarSourceFeature>()
-            .provides::<PlanarBodyOutput>()
-            .finish(),
-        ApplicationFeatureSpec::at::<ConsumerSchema, SecondaryPlanarRoot, PlanarOutputFeature>()
-            .provides::<PlanarDerivedBodyOutput>()
-            .finish(),
-        ApplicationFeatureSpec::at::<ConsumerSchema, DiscoveredPlanarRoot, PlanarSourceFeature>()
-            .provides::<PlanarBodyOutput>()
-            .finish(),
-        ApplicationFeatureSpec::at::<ConsumerSchema, DiscoveredPlanarRoot, PlanarOutputFeature>()
-            .provides::<PlanarDerivedBodyOutput>()
-            .finish(),
-        ApplicationFeatureSpec::at::<
-            ConsumerSchema,
-            DiscoveredPlanarRoot,
-            PlanarFinalOutputFeature,
-        >()
-        .provides::<PlanarFinalBodyOutput>()
-        .finish(),
-        ApplicationFeatureSpec::at::<
-            ConsumerSchema,
-            RequiredSharedPlanarRoot,
-            PlanarSourceFeature,
-        >()
-        .provides::<PlanarBodyOutput>()
-        .finish(),
-        ApplicationFeatureSpec::at::<
-            ConsumerSchema,
-            RequiredSharedPlanarRoot,
-            PlanarOutputFeature,
-        >()
-        .provides::<PlanarDerivedBodyOutput>()
-        .finish(),
-        ApplicationFeatureSpec::at::<
-            ConsumerSchema,
-            RequiredSharedPlanarRoot,
-            PlanarFinalOutputFeature,
-        >()
-        .provides::<PlanarFinalBodyOutput>()
-        .finish(),
-    ]
-}
-
 impl ApplicationProgramDefinition<ConsumerSchema> for ConsumerProgram {
     type Contributions = <ConsumerSchema as worth_query_decl::facade::application_schema::ApplicationSchemaComposition>::Contributions;
     type Outputs = ApplicationProgramOutputs<(
@@ -358,7 +294,7 @@ impl ApplicationProgramDefinition<ConsumerSchema> for ConsumerProgram {
         ApplicationProgramIdentity::new("worth.query.certification.consumer-program.v2");
 
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        consumer_feature_specs()
+        features::consumer_feature_specs()
     }
 }
 
@@ -370,7 +306,7 @@ impl ApplicationProgramDefinition<ConsumerSchema> for OmittedInstalledRuleProgra
         ApplicationProgramIdentity::new("worth.query.certification.omitted-installed-rule.v1");
 
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        consumer_feature_specs()
+        features::consumer_feature_specs()
     }
 }
 
@@ -382,7 +318,7 @@ impl ApplicationProgramDefinition<ConsumerSchema> for RequiredSourceAsActionProg
         ApplicationProgramIdentity::new("worth.query.certification.source-action-overlap.v1");
 
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        let mut specs = consumer_feature_specs();
+        let mut specs = features::consumer_feature_specs();
         let source = specs
             .iter()
             .position(|spec| {

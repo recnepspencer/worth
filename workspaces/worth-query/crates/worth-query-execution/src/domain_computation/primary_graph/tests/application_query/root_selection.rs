@@ -18,6 +18,9 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrincipalResolutionMode,
 };
 
+#[path = "root_selection/result_set.rs"]
+mod result_set;
+
 #[test]
 fn root_path_guard_literal_changes_canonical_query_identity() {
     let open = cross_root_definition("open").into_erased();

@@ -260,7 +260,7 @@ pub use application_query::{
     WorthQueryApplicationLiveUpdate, WorthQueryApplicationOmission,
     WorthQueryApplicationOneShotDenial, WorthQueryApplicationOneShotDenialKind,
     WorthQueryApplicationOneShotResult, WorthQueryApplicationProjection,
-    WorthQueryObservedSource,
+    WorthQueryBoundSourceExpectation, WorthQueryObservedResultSet, WorthQueryObservedSource,
     WorthQuerySourceExpectationDenial, WorthQuerySourceExpectationDenialKind,
     WorthQueryApplicationProjectionDenial,
     WorthQueryApplicationProjectionDenialKind, WorthQueryApplicationProjectionRow,
