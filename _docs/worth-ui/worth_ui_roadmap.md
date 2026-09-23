@@ -2376,7 +2376,8 @@ Detailed spec: [milestone-3.16.2.md](./milestone-3.16.2.md)
 Build on 3.16.1 with continuous native border-drag presentation and declared
 Mosaic allocation for the complete dashboard. Coalesce obsolete extent work,
 preserve exact viewport/owner succession, and verify text, scrollbars, overlays,
-recovery, and timing during the drag. Milestone 4 retains docking, persisted
+recovery, and timing during the drag with a qualified 60 Hz trace on a supported
+desktop OS. Milestone 4 retains docking, persisted
 workspace layouts, and multi-window breadth; it consumes this responsive core.
 
 ### Milestone 3.17: DSL Expressions, Conditions, and Semantic Evaluation

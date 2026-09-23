@@ -23,7 +23,7 @@ held. Move width and height independently, then diagonally and rapidly reverse.
 Cross the responsive breakpoint in both directions, from 1536x1024 through
 1120x800 to 800x600 and back. Observe several intermediate accepted extents and
 external client captures before release; repeated programmatic resize calls prove
-only their narrower path, not Windows interactive resize-loop behavior.
+only their narrower path, not interactive border-drag behavior.
 
 Run one readable dashboard journey with scrolled lists and a focused control;
 open a modal/popover for a separate resize segment. Verify stationary chrome,
@@ -101,7 +101,7 @@ observations are also coalescing barriers: consume them in order against their
 lawful observed and accepted presentation bases before replacing pending size
 evidence. A barrier does not require presenting an unaccepted extent merely to
 route input. Later size evidence cannot relabel or invalidate that input. Rendering
-must progress within the Windows interactive sizing loop; normal idle callbacks
+must progress while the native border drag is held; normal idle callbacks
 alone are insufficient. Keep callbacks bounded and preserve the existing host
 thread-affinity and physical completion contracts.
 
@@ -202,21 +202,27 @@ and shutdown in focused cases. Admission denial must not partially update owners
 Use the existing compile-fail target only if the actual readiness boundary changes;
 keep one incomplete-frame denial and its valid counterpart, not a phase matrix.
 
-Use the 3.16.1 recorded Windows 60 Hz release qualification environment. Perform
-three 10-second active edge drags across the stated sizes, including reversal and
-breakpoint crossings. Require p95 native size-event-to-first-matching-frame <=50 ms,
-p95 accepted visible-frame gap <=25 ms, p99 <=50 ms, no unexplained active gap
->100 ms, and final exact extent publication <=100 ms after release. Measure
-intermediate extents at submission time against the latest consumed observation;
-legitimate coalesced samples are not required to render. Capture real presented
-frames before release, not only application callbacks. Report raw timing intervals,
+Qualify on a 60 Hz display on a supported desktop OS. Retain three timestamped
+10-second active edge-drag traces across the stated sizes, including reversal
+and breakpoint crossings. Each trace correlates native size observations,
+consumed extents, frame submission and acceptance, and independently captured
+visible client pixels on a common monotonic time basis. The capture mechanism
+may differ by OS, but callback logs, offscreen renders, and captures taken only
+after release cannot substitute for presented frames observed during the drag.
+Require p95 consumed size-event-to-first-matching-frame <=50 ms, p95 accepted
+visible-frame gap <=25 ms, p99 <=50 ms, no unexplained active gap >100 ms, and
+final exact extent publication <=100 ms after release. Measure intermediate
+extents at submission time against the latest consumed observation; legitimate
+coalesced samples are not required to render. Report raw timing intervals,
+OS/window system, capture and clock-correlation method, measured display refresh,
 hardware/DPI, layout/text work, target allocations, and peak retained resources.
 Do not exclude slow breakpoint frames or claim 120 Hz performance from this run.
 
 During resize, work may scale with affected layout dependencies and physically
-changed visible commands. It must not scan unrelated windows or mounted regions,
-recompile source, or reshape unchanged-width text. Pending work/resources remain
-bounded independently of raw resize-event count; reclamation respects GPU completion.
+changed visible commands. It must not scan unrelated native surfaces or
+mounted regions, recompile source, or reshape unchanged-width text. Pending
+work/resources remain bounded independently of raw resize-event count;
+reclamation respects GPU completion.
 After settling, no duplicate frame loop or residual resize wake remains.
 
 Reuse valid scrolling, rounded-border/seam, text, theme, overlay, locality, and
