@@ -108,7 +108,7 @@ pub(super) fn relational_schema_basis(
         })
 }
 
-pub(super) fn register_entity(
+pub(in crate::domain_computation::primary_graph) fn register_entity(
     registry: RelationalSchemaRegistry,
     schema_id: &SchemaId,
     schema_version_id: SchemaVersionId,
@@ -127,7 +127,7 @@ pub(super) fn register_entity(
         .map_err(relational_schema_denial)
 }
 
-pub(super) fn register_relation(
+pub(in crate::domain_computation::primary_graph) fn register_relation(
     registry: RelationalSchemaRegistry,
     schema_id: &SchemaId,
     schema_version_id: SchemaVersionId,

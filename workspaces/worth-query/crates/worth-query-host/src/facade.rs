@@ -11,6 +11,7 @@ pub use worth_query_declaration::{
     worth_query_field, worth_query_operation, worth_query_operation_emits,
     worth_query_operation_reads, worth_query_operation_writes, worth_query_portable_type,
     worth_query_principal_binding, worth_query_relation, worth_query_structured_value_binding,
+    worth_query_workflow,
 };
 pub use worth_query_execution::facade::application_contribution;
 pub use worth_query_execution::facade::application_discovery;

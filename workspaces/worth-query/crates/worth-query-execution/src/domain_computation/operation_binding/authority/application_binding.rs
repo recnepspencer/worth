@@ -37,6 +37,7 @@ pub(crate) struct WorthQueryApplicationOperationBindingInput<'a> {
         &'a worth_query_installation::facade::ApplicationSchemaBindingIdentity,
     pub(crate) snapshot: &'a worth_relational::facade::snapshots::SnapshotHandle,
     pub(crate) product: &'a crate::basis::WorthQueryProductBranchLease,
+    pub(crate) platform_mutation: bool,
 }
 
 impl WorthQueryExecutionBoundOperationAuthority {
@@ -66,7 +67,10 @@ impl WorthQueryExecutionBoundOperationAuthority {
                 .canonical_identity()
                 .into(),
             provider_plan_declarations: Arc::new(
-                WorthQueryProviderPlanDeclarations::from_application_contracts(input.contracts),
+                WorthQueryProviderPlanDeclarations::from_application_contracts(
+                    input.contracts,
+                    input.platform_mutation,
+                ),
             ),
             commit_posture,
             direct_resource_topology: topology,

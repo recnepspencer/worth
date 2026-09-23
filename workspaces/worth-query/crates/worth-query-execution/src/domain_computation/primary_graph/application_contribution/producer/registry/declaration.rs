@@ -30,6 +30,7 @@ impl DeclaredProducerBinding {
                 <Binding::OutputFamily as WorthQueryProducerOutputFamily<Schema>>::Source::IDENTITY
                     .to_owned(),
             output_family: Binding::OutputFamily::IDENTITY.to_owned(),
+            output_family_type: TypeId::of::<Binding::OutputFamily>(),
             output_roles: <Binding::Operation as ApplicationMutationBinding<Schema>>::Output::ROLES
                 .iter()
                 .map(|role| role.name().to_owned())
@@ -74,6 +75,7 @@ impl DeclaredProducerBinding {
         self.identity == expected.identity
             && self.source_selector == expected.source_selector
             && self.output_family == expected.output_family
+            && self.output_family_type == expected.output_family_type
             && self.output_roles == expected.output_roles
             && self.output_role_descriptors == expected.output_role_descriptors
             && self.output_role_families == expected.output_role_families

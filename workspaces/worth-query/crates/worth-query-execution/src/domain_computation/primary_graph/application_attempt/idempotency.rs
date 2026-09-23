@@ -1,5 +1,12 @@
 use crate::domain_computation::authorization::WorthQueryOperationScopeBinding;
 
+#[cfg(test)]
+mod tests;
+mod workflow_definition;
+mod workflow_instance;
+mod workflow_proposal_context;
+mod workflow_transition;
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 struct WorthQueryIdempotencyEntityIdentity {
     partition: u32,
@@ -31,6 +38,12 @@ pub struct WorthQueryApplicationIdempotencyBinding {
     governed_input_identity: Option<[u8; 32]>,
     governed_proposal_identity: Option<[u8; 32]>,
     conditional_definition_identity: Option<[u8; 32]>,
+    workflow_definition_identity: Option<[u8; 32]>,
+    workflow_instance_identity: Option<[u8; 32]>,
+    workflow_proposal_context_identity: Option<[u8; 32]>,
+    workflow_transition_identity: Option<[u8; 32]>,
+    workflow_support_identity: Option<[u8; 32]>,
+    workflow_approval_identity: Option<[u8; 32]>,
 }
 
 impl WorthQueryApplicationIdempotencyBinding {
@@ -47,6 +60,12 @@ impl WorthQueryApplicationIdempotencyBinding {
             governed_input_identity: None,
             governed_proposal_identity: None,
             conditional_definition_identity: None,
+            workflow_definition_identity: None,
+            workflow_instance_identity: None,
+            workflow_proposal_context_identity: None,
+            workflow_transition_identity: None,
+            workflow_support_identity: None,
+            workflow_approval_identity: None,
         }
     }
 
@@ -93,6 +112,21 @@ impl WorthQueryApplicationIdempotencyBinding {
             "conditional-definition",
             self.conditional_definition_identity,
         );
+        workflow_definition::append_identity_slot(&mut encoded, self.workflow_definition_identity);
+        workflow_instance::append_identity_slot(&mut encoded, self.workflow_instance_identity);
+        workflow_proposal_context::append_identity_slot(
+            &mut encoded,
+            self.workflow_proposal_context_identity,
+        );
+        workflow_transition::append_identity_slot(&mut encoded, self.workflow_transition_identity);
+        workflow_transition::append_support_identity_slot(
+            &mut encoded,
+            self.workflow_support_identity,
+        );
+        workflow_transition::append_approval_identity_slot(
+            &mut encoded,
+            self.workflow_approval_identity,
+        );
         encoded
     }
 
@@ -136,6 +170,12 @@ impl WorthQueryApplicationIdempotencyBinding {
             governed_input_identity: self.governed_input_identity,
             governed_proposal_identity: self.governed_proposal_identity,
             conditional_definition_identity: self.conditional_definition_identity,
+            workflow_definition_identity: self.workflow_definition_identity,
+            workflow_instance_identity: self.workflow_instance_identity,
+            workflow_proposal_context_identity: self.workflow_proposal_context_identity,
+            workflow_transition_identity: self.workflow_transition_identity,
+            workflow_support_identity: self.workflow_support_identity,
+            workflow_approval_identity: self.workflow_approval_identity,
         }
     }
 
@@ -173,6 +213,12 @@ impl WorthQueryApplicationIdempotencyBinding {
             governed_input_identity: self.governed_input_identity,
             governed_proposal_identity: self.governed_proposal_identity,
             conditional_definition_identity: self.conditional_definition_identity,
+            workflow_definition_identity: self.workflow_definition_identity,
+            workflow_instance_identity: self.workflow_instance_identity,
+            workflow_proposal_context_identity: self.workflow_proposal_context_identity,
+            workflow_transition_identity: self.workflow_transition_identity,
+            workflow_support_identity: self.workflow_support_identity,
+            workflow_approval_identity: self.workflow_approval_identity,
         }
     }
 
@@ -195,6 +241,12 @@ impl WorthQueryApplicationIdempotencyBinding {
             governed_input_identity: self.governed_input_identity,
             governed_proposal_identity: self.governed_proposal_identity,
             conditional_definition_identity: self.conditional_definition_identity,
+            workflow_definition_identity: self.workflow_definition_identity,
+            workflow_instance_identity: self.workflow_instance_identity,
+            workflow_proposal_context_identity: self.workflow_proposal_context_identity,
+            workflow_transition_identity: self.workflow_transition_identity,
+            workflow_support_identity: self.workflow_support_identity,
+            workflow_approval_identity: self.workflow_approval_identity,
         }
     }
 
@@ -217,6 +269,12 @@ impl WorthQueryApplicationIdempotencyBinding {
             },
             governed_proposal_identity: self.governed_proposal_identity,
             conditional_definition_identity: self.conditional_definition_identity,
+            workflow_definition_identity: self.workflow_definition_identity,
+            workflow_instance_identity: self.workflow_instance_identity,
+            workflow_proposal_context_identity: self.workflow_proposal_context_identity,
+            workflow_transition_identity: self.workflow_transition_identity,
+            workflow_support_identity: self.workflow_support_identity,
+            workflow_approval_identity: self.workflow_approval_identity,
         }
     }
 
@@ -239,6 +297,12 @@ impl WorthQueryApplicationIdempotencyBinding {
                 None => None,
             },
             conditional_definition_identity: self.conditional_definition_identity,
+            workflow_definition_identity: self.workflow_definition_identity,
+            workflow_instance_identity: self.workflow_instance_identity,
+            workflow_proposal_context_identity: self.workflow_proposal_context_identity,
+            workflow_transition_identity: self.workflow_transition_identity,
+            workflow_support_identity: self.workflow_support_identity,
+            workflow_approval_identity: self.workflow_approval_identity,
         }
     }
 
@@ -261,6 +325,12 @@ impl WorthQueryApplicationIdempotencyBinding {
                 Some(identity) => Some(*identity),
                 None => None,
             },
+            workflow_definition_identity: self.workflow_definition_identity,
+            workflow_instance_identity: self.workflow_instance_identity,
+            workflow_proposal_context_identity: self.workflow_proposal_context_identity,
+            workflow_transition_identity: self.workflow_transition_identity,
+            workflow_support_identity: self.workflow_support_identity,
+            workflow_approval_identity: self.workflow_approval_identity,
         }
     }
 }
@@ -307,111 +377,5 @@ fn append_bytes(encoded: &mut String, bytes: &[u8]) {
     for byte in bytes {
         encoded.push(HEX[usize::from(byte >> 4)] as char);
         encoded.push(HEX[usize::from(byte & 0x0f)] as char);
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::{
-        WorthQueryApplicationIdempotencyBinding, WorthQueryIdempotencyEntityIdentity,
-        WorthQueryIdempotencyScopeIdentity,
-    };
-
-    #[test]
-    fn governed_proposal_is_a_private_part_of_idempotency_intent() {
-        let baseline = WorthQueryApplicationIdempotencyBinding::new([1; 32], [2; 32]);
-        let first = baseline.bind_governed_proposal(Some(&[3; 32]));
-        let retry = baseline.bind_governed_proposal(Some(&[3; 32]));
-        let drift = baseline.bind_governed_proposal(Some(&[4; 32]));
-
-        assert_eq!(first.key_text(), retry.key_text());
-        assert_eq!(first.intent_text(), retry.intent_text());
-        assert_eq!(first.key_text(), drift.key_text());
-        assert_ne!(first.intent_text(), drift.intent_text());
-    }
-
-    #[test]
-    fn governed_input_is_a_private_part_of_idempotency_intent() {
-        let baseline = WorthQueryApplicationIdempotencyBinding::new([1; 32], [2; 32]);
-        let first = baseline.bind_governed_input(Some(&[3; 32]));
-        let retry = baseline.bind_governed_input(Some(&[3; 32]));
-        let drift = baseline.bind_governed_input(Some(&[4; 32]));
-
-        assert_eq!(first.key_text(), retry.key_text());
-        assert_eq!(first.intent_text(), retry.intent_text());
-        assert_eq!(first.key_text(), drift.key_text());
-        assert_ne!(first.intent_text(), drift.intent_text());
-    }
-
-    #[test]
-    fn private_identity_slots_cannot_alias_each_other() {
-        let baseline = WorthQueryApplicationIdempotencyBinding::new([1; 32], [2; 32]);
-        let identity = [3; 32];
-        let precondition = baseline.bind_preconditions(Some(&identity)).intent_text();
-        let input = baseline.bind_governed_input(Some(&identity)).intent_text();
-        let proposal = baseline
-            .bind_governed_proposal(Some(&identity))
-            .intent_text();
-
-        assert_ne!(precondition, input);
-        assert_ne!(precondition, proposal);
-        assert_ne!(input, proposal);
-    }
-
-    #[test]
-    fn every_private_identity_survives_combined_composition() {
-        let baseline = WorthQueryApplicationIdempotencyBinding::new([1; 32], [2; 32]);
-        let combined = baseline
-            .bind_operation(&[3; 32])
-            .bind_preconditions(Some(&[4; 32]))
-            .bind_governed_input(Some(&[5; 32]))
-            .bind_governed_proposal(Some(&[6; 32]));
-
-        for drift in [
-            baseline
-                .bind_operation(&[7; 32])
-                .bind_preconditions(Some(&[4; 32]))
-                .bind_governed_input(Some(&[5; 32]))
-                .bind_governed_proposal(Some(&[6; 32])),
-            combined.bind_preconditions(Some(&[7; 32])),
-            combined.bind_governed_input(Some(&[7; 32])),
-            combined.bind_governed_proposal(Some(&[7; 32])),
-        ] {
-            assert_ne!(combined.intent_text(), drift.intent_text());
-        }
-    }
-
-    #[test]
-    fn admitted_principal_and_scope_are_distinct_idempotency_components() {
-        let baseline = WorthQueryApplicationIdempotencyBinding::new([1; 32], [2; 32]);
-        let mut first = baseline;
-        first.operation_scope_identity = Some(scope_identity(10, 20));
-        let mut principal_drift = baseline;
-        principal_drift.operation_scope_identity = Some(scope_identity(11, 20));
-        let mut scope_drift = baseline;
-        scope_drift.operation_scope_identity = Some(scope_identity(10, 21));
-
-        assert_ne!(first.intent_text(), principal_drift.intent_text());
-        assert_ne!(first.intent_text(), scope_drift.intent_text());
-    }
-
-    fn scope_identity(principal_slot: u64, scope_slot: u64) -> WorthQueryIdempotencyScopeIdentity {
-        WorthQueryIdempotencyScopeIdentity {
-            runtime_authority: 3,
-            binding_runtime: 4,
-            binding_generation: 5,
-            package_identity: [6; 32],
-            schema_identity: [7; 32],
-            principal: WorthQueryIdempotencyEntityIdentity {
-                partition: 8,
-                local_slot: principal_slot,
-                generation: 9,
-            },
-            scope: WorthQueryIdempotencyEntityIdentity {
-                partition: 8,
-                local_slot: scope_slot,
-                generation: 9,
-            },
-        }
     }
 }

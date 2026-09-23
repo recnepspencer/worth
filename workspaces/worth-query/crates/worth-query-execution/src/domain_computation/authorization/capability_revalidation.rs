@@ -242,7 +242,7 @@ where
         observed: super::capability_observation::WorthQueryObservedCapabilityDecision,
     ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
         let grant = authorization.grant();
-        let fact = observed.into_decision_for_grant(grant).map_err(|()| {
+        let (fact, expiry) = observed.into_refresh_for_grant(grant).map_err(|()| {
             denial(
                 WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
                 refresh.installed.contract().name(),
@@ -254,6 +254,7 @@ where
                 refresh.installed.capability_authority_identity().as_ref(),
                 grant,
                 refresh.sample.clone(),
+                expiry,
                 fact,
             )
             .map_err(|()| {

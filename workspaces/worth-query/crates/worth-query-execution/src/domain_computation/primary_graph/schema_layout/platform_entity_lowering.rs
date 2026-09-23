@@ -9,6 +9,7 @@ use worth_query_installation::facade::WorthQueryInstalledApplicationSchemaContra
 use worth_relational::facade::identity::KindId;
 use worth_relational::facade::schema::{RelationalSchemaRegistry, SchemaId, SchemaVersionId};
 
+use super::platform_identity_allocator::allocate_platform_aspect_identities;
 use super::program_activation::{lower_program_activation, WorthQueryProgramActivationLayout};
 use super::provider_aftermath_causality::{
     lower_provider_aftermath_causality, WorthQueryAftermathCausalityLayout,
@@ -17,9 +18,11 @@ use super::provider_dispatch_outbox::lower_provider_dispatch_outbox;
 use super::provider_idempotency::{
     lower_provider_idempotency, WorthQueryProviderIdempotencyLayout,
 };
-use super::provider_identity_allocator::allocate_provider_aspect_identities;
 use super::{kind_space_exhausted, WorthQueryPrimaryGraphInstallationDenial};
 use crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxLayout;
+use crate::domain_computation::primary_graph::workflow::schema::{
+    lower_workflow, WorthQueryWorkflowLayout,
+};
 
 /// Every platform-owned record layout one lowered application graph carries.
 pub(super) struct WorthQueryPlatformEntityLayouts {
@@ -27,6 +30,7 @@ pub(super) struct WorthQueryPlatformEntityLayouts {
     pub(super) provider_dispatch_outbox: WorthQueryDispatchOutboxLayout,
     pub(super) provider_aftermath_causality: WorthQueryAftermathCausalityLayout,
     pub(super) program_activation: WorthQueryProgramActivationLayout,
+    pub(super) workflow: WorthQueryWorkflowLayout,
 }
 
 pub(super) fn lower_platform_entities(
@@ -39,7 +43,7 @@ pub(super) fn lower_platform_entities(
     (RelationalSchemaRegistry, WorthQueryPlatformEntityLayouts),
     WorthQueryPrimaryGraphInstallationDenial,
 > {
-    let identities = allocate_provider_aspect_identities(native_contracts)?;
+    let identities = allocate_platform_aspect_identities(native_contracts)?;
     let (registry, provider_idempotency) = lower_provider_idempotency(
         registry,
         schema_id,
@@ -71,6 +75,25 @@ pub(super) fn lower_platform_entities(
         program_activation_kind,
         identities[3],
     )?;
+    let workflow_kind = next_kind(program_activation_kind)?;
+    let (registry, workflow) = lower_workflow(
+        registry,
+        schema_id,
+        schema_version_id,
+        workflow_kind,
+        [
+            identities[4],
+            identities[5],
+            identities[6],
+            identities[7],
+            identities[8],
+            identities[9],
+            identities[10],
+            identities[11],
+            identities[12],
+            identities[13],
+        ],
+    )?;
     Ok((
         registry,
         WorthQueryPlatformEntityLayouts {
@@ -78,6 +101,7 @@ pub(super) fn lower_platform_entities(
             provider_dispatch_outbox,
             provider_aftermath_causality,
             program_activation,
+            workflow,
         },
     ))
 }

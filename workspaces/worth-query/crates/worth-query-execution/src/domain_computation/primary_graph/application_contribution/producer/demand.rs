@@ -252,6 +252,7 @@ where
     {
         let mut matching = self.entries.values().filter(|entry| {
             entry.declaration.output_family == Family::IDENTITY
+                && entry.declaration.output_family_type == std::any::TypeId::of::<Family>()
                 && entry.declaration.applicability.contains(&applicability)
         });
         let selected = matching.next().ok_or_else(|| {

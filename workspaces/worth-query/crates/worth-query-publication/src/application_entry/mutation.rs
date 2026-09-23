@@ -1,4 +1,4 @@
-mod authorization;
+pub(in crate::application_entry) mod authorization;
 mod authorization_assessment;
 mod discovered;
 mod execution;

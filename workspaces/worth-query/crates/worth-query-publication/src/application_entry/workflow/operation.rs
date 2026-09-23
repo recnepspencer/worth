@@ -1,0 +1,172 @@
+use worth_query_declaration::facade::{
+    application_operation::{ApplicationMutationBinding, ApplicationMutationIntent},
+    application_program::{ApplicationProgramDefinition, ApplicationWorkflowSpec},
+    application_schema::{ApplicationOperationMarkerIdentity, ApplicationStructuredValueBinding},
+};
+use worth_query_execution::facade::{
+    application_installation::WorthQueryWorkflowApplicationRuntime,
+    workflow_advance::{
+        PreparedWorkflowAdvance, RequiredWorkflowOperation, WorkflowProgressOutcome,
+        WorthQueryWorkflowAdvanceAdapter,
+    },
+};
+use worth_query_installation::facade::ApplicationSchema;
+
+use super::progress::WorthQueryWorkflowAdvanceRequest;
+use crate::application_entry::mutation::WorthQueryApplicationMutationRequestWithIdempotency;
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WorthQueryWorkflowOperationBindingDenial {
+    RuntimeMismatch,
+    RequirementMismatch,
+}
+
+#[derive(Debug)]
+pub enum WorthQueryWorkflowOperationAcceptanceDenial {
+    NotAwaitingOperation,
+    RequirementMismatch,
+    Replay(
+        worth_query_execution::facade::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial,
+    ),
+    Attempt(worth_query_execution::facade::primary_graph::WorthQueryApplicationAttemptDenial),
+}
+
+impl std::fmt::Display for WorthQueryWorkflowOperationAcceptanceDenial {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::NotAwaitingOperation => formatter.write_str("workflow is not awaiting operation"),
+            Self::RequirementMismatch => {
+                formatter.write_str("operation receipt does not match the workflow requirement")
+            }
+            Self::Replay(denial) => denial.fmt(formatter),
+            Self::Attempt(denial) => denial.fmt(formatter),
+        }
+    }
+}
+
+impl std::error::Error for WorthQueryWorkflowOperationAcceptanceDenial {}
+
+impl<'application, 'principal, 'scope, 'key, Schema, Intent, SourcePreparation>
+    WorthQueryApplicationMutationRequestWithIdempotency<
+        'application,
+        'principal,
+        'scope,
+        'key,
+        Schema,
+        Intent,
+        SourcePreparation,
+    >
+where
+    Schema: ApplicationSchema,
+    Intent: ApplicationMutationIntent<Schema>,
+{
+    pub fn for_workflow_operation<Spec, Program>(
+        self,
+        workflow: &WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>,
+        required: &RequiredWorkflowOperation,
+    ) -> Result<Self, WorthQueryWorkflowOperationBindingDenial>
+    where
+        Spec: ApplicationWorkflowSpec<Schema = Schema>,
+        Program: ApplicationProgramDefinition<Schema>,
+    {
+        if !std::ptr::eq(
+            self.application_runtime(),
+            workflow.program_runtime().runtime(),
+        ) {
+            return Err(WorthQueryWorkflowOperationBindingDenial::RuntimeMismatch);
+        }
+        if required.operation()
+            != <<Intent as ApplicationMutationIntent<Schema>>::Binding as ApplicationMutationBinding<Schema>>::Operation::IDENTIFIER
+            || required.input_type()
+                != <<Intent as ApplicationMutationIntent<Schema>>::Binding as ApplicationMutationBinding<Schema>>::InputBinding::IDENTITY.as_str()
+            || required.input_identity() != &self.input_identity()
+        {
+            return Err(WorthQueryWorkflowOperationBindingDenial::RequirementMismatch);
+        }
+        Ok(self.bind_workflow_transition(*required.transition_identity_bytes()))
+    }
+}
+
+impl<'application, 'principal, 'scope, Schema, Spec, Program, Operation, Input, Scope>
+    WorthQueryWorkflowAdvanceRequest<
+        'application,
+        'principal,
+        'scope,
+        Schema,
+        Spec,
+        Program,
+        Operation,
+        Input,
+        Scope,
+    >
+where
+    Schema: ApplicationSchema,
+    Spec: ApplicationWorkflowSpec<Schema = Schema>,
+    Program: ApplicationProgramDefinition<Schema>,
+    Operation: 'static,
+    Input: Clone + Send + Sync + 'static,
+{
+    pub fn accept_operation<Binding>(
+        self,
+        required: &RequiredWorkflowOperation,
+        receipt: &worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
+    ) -> Result<WorkflowProgressOutcome, WorthQueryWorkflowOperationAcceptanceDenial>
+    where
+        Binding: ApplicationMutationBinding<Schema>,
+    {
+        if required.operation() != Binding::Operation::IDENTIFIER
+            || required.input_type() != Binding::InputBinding::IDENTITY.as_str()
+        {
+            return Err(WorthQueryWorkflowOperationAcceptanceDenial::RequirementMismatch);
+        }
+        if let Some(replayed) = WorthQueryWorkflowAdvanceAdapter::resolve_operation_replay::<
+            Schema,
+            Operation,
+            Input,
+            Scope,
+            Binding,
+        >(
+            self.application,
+            &self.prepared,
+            required,
+            receipt,
+            self.idempotency,
+        )
+        .map_err(WorthQueryWorkflowOperationAcceptanceDenial::Replay)?
+        {
+            return Ok(replayed);
+        }
+        let prepared = match self.prepared {
+            PreparedWorkflowAdvance::AwaitingOperation(prepared) => prepared,
+            PreparedWorkflowAdvance::Transition { .. }
+            | PreparedWorkflowAdvance::AwaitingAssessment(_)
+            | PreparedWorkflowAdvance::AwaitingCondition(_)
+            | PreparedWorkflowAdvance::AwaitingEvidence { .. }
+            | PreparedWorkflowAdvance::AwaitingApproval { .. }
+            | PreparedWorkflowAdvance::ReplayOnly { .. } => {
+                return Err(WorthQueryWorkflowOperationAcceptanceDenial::NotAwaitingOperation)
+            }
+        };
+        if !same_requirement(prepared.required(), required) {
+            return Err(WorthQueryWorkflowOperationAcceptanceDenial::RequirementMismatch);
+        }
+        WorthQueryWorkflowAdvanceAdapter::compare_and_commit_operation::<
+            Schema,
+            Operation,
+            Input,
+            Scope,
+            Binding,
+        >(self.application, prepared, receipt, self.idempotency)
+        .map_err(WorthQueryWorkflowOperationAcceptanceDenial::Attempt)
+    }
+}
+
+fn same_requirement(left: &RequiredWorkflowOperation, right: &RequiredWorkflowOperation) -> bool {
+    left.instance() == right.instance()
+        && left.node_path() == right.node_path()
+        && left.transition_identity() == right.transition_identity()
+        && left.occurrence() == right.occurrence()
+        && left.operation() == right.operation()
+        && left.input_type() == right.input_type()
+        && left.input_identity() == right.input_identity()
+}

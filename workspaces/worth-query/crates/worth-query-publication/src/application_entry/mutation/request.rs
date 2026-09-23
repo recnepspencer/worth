@@ -66,6 +66,7 @@ pub struct WorthQueryApplicationMutationRequestWithIdempotency<
         SourcePreparation,
     >,
     pub(super) key: &'key <Intent::Binding as ApplicationMutationBinding<Schema>>::IdempotencyKey,
+    pub(super) workflow_transition_identity: Option<[u8; 32]>,
 }
 
 impl<'application, 'principal, 'scope, Schema, Intent>
@@ -158,6 +159,18 @@ where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
 {
+    pub(in crate::application_entry) const fn application_runtime(
+        &self,
+    ) -> &'application WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+        self.application
+    }
+
+    pub(in crate::application_entry) const fn product_branch(
+        &self,
+    ) -> worth_query_execution::facade::product::WorthQueryProductBranch {
+        self.branch
+    }
+
     pub fn preconditions(
         mut self,
         preconditions: TypedMutationPreconditions<
@@ -182,6 +195,61 @@ where
         Intent,
         SourcePreparation,
     > {
-        WorthQueryApplicationMutationRequestWithIdempotency { request: self, key }
+        WorthQueryApplicationMutationRequestWithIdempotency {
+            request: self,
+            key,
+            workflow_transition_identity: None,
+        }
+    }
+}
+
+impl<'application, 'principal, 'scope, 'key, Schema, Intent, SourcePreparation>
+    WorthQueryApplicationMutationRequestWithIdempotency<
+        'application,
+        'principal,
+        'scope,
+        'key,
+        Schema,
+        Intent,
+        SourcePreparation,
+    >
+where
+    Schema: ApplicationSchema,
+    Intent: ApplicationMutationIntent<Schema>,
+{
+    pub(in crate::application_entry) fn bind_workflow_transition(
+        mut self,
+        identity: [u8; 32],
+    ) -> Self {
+        self.workflow_transition_identity = Some(identity);
+        self
+    }
+
+    pub(in crate::application_entry) fn input_identity(&self) -> [u8; 32] {
+        Intent::Binding::input_identity(self.request.intent.input())
+    }
+
+    pub(in crate::application_entry) const fn application_runtime(
+        &self,
+    ) -> &'application WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+        self.request.application_runtime()
+    }
+
+    pub(in crate::application_entry) const fn product_branch(
+        &self,
+    ) -> worth_query_execution::facade::product::WorthQueryProductBranch {
+        self.request.product_branch()
+    }
+
+    pub(in crate::application_entry) const fn authenticated_principal(
+        &self,
+    ) -> &'principal WorthQueryAuthenticatedExternalPrincipal<Schema> {
+        self.request.principal
+    }
+
+    pub(in crate::application_entry) const fn request_scope(
+        &self,
+    ) -> &'scope WorthQueryRequestScope {
+        self.request.scope
     }
 }

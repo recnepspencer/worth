@@ -31,6 +31,7 @@ pub use application_contribution::{
     WorthQueryProducerApplicability, WorthQueryProducerDemandResources,
     WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
     WorthQueryProducerOutputFamily, WorthQuerySelectedApplicationProducer,
+    WorthQueryWorkflowAssessmentOutputFamily, WorthQueryWorkflowAssessmentPosture,
 };
 pub use application_output_demand::{
     WorthQueryOutputDemandNotifications, WorthQueryOutputDemandSettlement,
@@ -132,6 +133,7 @@ mod root;
 mod schema_layout;
 mod settlement_repair;
 mod typed_bootstrap;
+mod workflow;
 
 #[cfg(test)]
 pub(in crate::domain_computation) mod tests;
@@ -208,6 +210,28 @@ pub use application_attempt::{
     WorthQueryMutationPreconditionComparisonEvidence, WorthQueryObservedApplicationRelation,
     WorthQueryOrdinaryApplicationRead, WorthQueryProjectedApplicationMutation,
     WorthQueryRequestedElevation, WorthQueryReviewedElevation,
+    PerformedWorkflowDefinitionPublication, PreparedWorkflowDefinitionPublication,
+    PublishedWorkflowDefinitionRef, WorkflowDefinitionExpectedPredecessor,
+    WorkflowDefinitionPublicationOutcome,
+    PerformedWorkflowInstanceStart, PreparedWorkflowInstanceStart,
+    PublishedWorkflowInstanceRef, WorkflowInstanceBindingDenial,
+    WorkflowInstancePreparationDenial, WorkflowInstanceStartOutcome,
+    WorthQueryWorkflowInstanceStartAdapter,
+    PerformedWorkflowProposal, PreparedWorkflowProposal, PublishedWorkflowProposalRef,
+    WorkflowProposalBindingDenial, WorkflowProposalOutcome, WorkflowProposalPreparationDenial,
+    WorthQueryWorkflowProposalAdapter,
+    PerformedWorkflowApproval, PerformedWorkflowAssessmentEvidence, PerformedWorkflowTransition,
+    PreparedWorkflowAdvance, PreparedWorkflowAssessment, PreparedWorkflowOperation,
+    RequiredWorkflowApproval, RequiredWorkflowAssessment, RequiredWorkflowCondition,
+    RequiredWorkflowOperation,
+    RequiredWorkflowEvidence, WorkflowApprovalDecision,
+    WorkflowProgressOutcome,
+    WorkflowTransitionBindingDenial, WorkflowTransitionPreparationDenial,
+    WorthQueryWorkflowAdvanceAdapter,
+};
+pub use workflow::{
+    WorkflowDefinitionBindingDenial, WorkflowDefinitionPreparationDenial,
+    WorthQueryWorkflowDefinitionPublicationAdapter,
 };
 pub use crate::domain_computation::WorthQueryCustomInvariantDenial;
 pub use application_entry::mutation::{

@@ -20,6 +20,18 @@ use crate::domain_computation::primary_graph::WorthQueryBoundMutationPreconditio
 use super::WorthQueryOperationAdmissionIdentity;
 use std::time::Instant;
 
+pub(in crate::domain_computation) struct WorthQueryWorkflowApprovalAuthority {
+    pub principal: worth_relational::facade::identity::EntityId,
+    pub grant: worth_relational::facade::identity::EntityId,
+    pub decision_identity: [u8; 32],
+    pub action: worth_foundational::facade::AspectValue,
+    pub purpose: worth_foundational::facade::AspectValue,
+    pub timeline:
+        worth_query_declaration::facade::application_capability::ApplicationCapabilityValidityTimeline,
+    pub sampled_value: worth_foundational::facade::AspectValue,
+    pub expiry: worth_foundational::facade::AspectValue,
+}
+
 impl<Schema, Operation, Input, Scope>
     WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>
 {
@@ -130,6 +142,13 @@ impl<Schema, Operation, Input, Scope>
             .map(WorthQueryRetainedCapabilityAuthorization::capability_authority_identity)
     }
 
+    pub(in crate::domain_computation) fn installed_capability_identity(&self) -> Option<[u8; 32]> {
+        self.authorization
+            .as_ref()?
+            .capability_authorization()
+            .map(WorthQueryRetainedCapabilityAuthorization::installed_capability_identity)
+    }
+
     pub fn capability_time_timeline(
         &self,
     ) -> Option<
@@ -146,6 +165,22 @@ impl<Schema, Operation, Input, Scope>
             .as_ref()?
             .capability_authorization()
             .map(WorthQueryRetainedCapabilityAuthorization::sampled_value)
+    }
+
+    pub(in crate::domain_computation) fn workflow_approval_authority(
+        &self,
+    ) -> Option<WorthQueryWorkflowApprovalAuthority> {
+        let authorization = self.authorization.as_ref()?.capability_authorization()?;
+        Some(WorthQueryWorkflowApprovalAuthority {
+            principal: authorization.request().principal(),
+            grant: authorization.grant(),
+            decision_identity: authorization.decision_identity(),
+            action: authorization.request().action().clone(),
+            purpose: authorization.request().purpose().clone(),
+            timeline: authorization.timeline(),
+            sampled_value: authorization.sampled_value().clone(),
+            expiry: authorization.expiry().clone(),
+        })
     }
 
     pub fn relational_counters(&self) -> RelationalAuthorizationObservationCounters {

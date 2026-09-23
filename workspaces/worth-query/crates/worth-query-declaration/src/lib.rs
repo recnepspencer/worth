@@ -40,6 +40,8 @@ mod application_capability;
 mod application_operation;
 mod application_program;
 #[macro_use]
+mod workflow_macro;
+#[macro_use]
 mod feature_spec_macro;
 mod application_query;
 #[macro_use]

@@ -1,5 +1,6 @@
 mod advance;
 mod types;
+mod workflow;
 
 use worth_query_declaration::facade::application_program::{
     ApplicationConnectionShape, ApplicationOutputGraphShape, ApplicationProgramDefinition,

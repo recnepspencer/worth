@@ -14,9 +14,12 @@ use crate::domain_computation::authorization::WorthQueryRuntimeTimeSample;
 mod bridge_observation;
 mod decision_denial;
 mod elevation;
+mod expiry;
 mod grant_selection;
 mod path_preparation;
 mod projection_validation;
+mod upper_bound;
+pub(super) use upper_bound::observe_upper_bound_policy;
 
 pub(super) struct WorthQueryObservedCapabilityDecision {
     decision: WorthQueryAuthorizationDecisionFact,
@@ -24,6 +27,7 @@ pub(super) struct WorthQueryObservedCapabilityDecision {
     capability_authority_identity: std::sync::Arc<str>,
     request: WorthQueryRetainedCapabilityRequest,
     sample: WorthQueryRuntimeTimeSample,
+    expiry: worth_foundational::facade::AspectValue,
 }
 
 pub(super) struct WorthQueryObservedCapabilitySeed {
@@ -32,6 +36,7 @@ pub(super) struct WorthQueryObservedCapabilitySeed {
     capability_authority_identity: std::sync::Arc<str>,
     request: WorthQueryRetainedCapabilityRequest,
     sample: WorthQueryRuntimeTimeSample,
+    expiry: worth_foundational::facade::AspectValue,
 }
 
 pub(in crate::domain_computation::authorization) struct WorthQueryAuthorizationDecisionPermit(());
@@ -56,6 +61,7 @@ impl WorthQueryObservedCapabilityDecision {
         capability_authority_identity: std::sync::Arc<str>,
         request: WorthQueryRetainedCapabilityRequest,
         sample: WorthQueryRuntimeTimeSample,
+        expiry: worth_foundational::facade::AspectValue,
     ) -> Self {
         Self {
             decision,
@@ -63,6 +69,7 @@ impl WorthQueryObservedCapabilityDecision {
             capability_authority_identity,
             request,
             sample,
+            expiry,
         }
     }
 
@@ -71,6 +78,21 @@ impl WorthQueryObservedCapabilityDecision {
     }
     pub(super) const fn decision(&self) -> &WorthQueryAuthorizationDecisionFact {
         &self.decision
+    }
+
+    pub(super) fn into_refresh_for_grant(
+        self,
+        expected: worth_relational::facade::identity::EntityId,
+    ) -> Result<
+        (
+            WorthQueryAuthorizationDecisionFact,
+            worth_foundational::facade::AspectValue,
+        ),
+        (),
+    > {
+        (self.grant == expected)
+            .then_some((self.decision, self.expiry))
+            .ok_or(())
     }
 
     pub(super) fn into_decision_for_grant(
@@ -87,6 +109,7 @@ impl WorthQueryObservedCapabilityDecision {
             capability_authority_identity: self.capability_authority_identity,
             request: self.request,
             sample: self.sample,
+            expiry: self.expiry,
         }
     }
 
@@ -102,6 +125,7 @@ impl WorthQueryObservedCapabilityDecision {
             self.grant,
             self.request,
             self.sample,
+            self.expiry,
         )
     }
 }
@@ -121,6 +145,7 @@ impl WorthQueryObservedCapabilitySeed {
                 self.capability_authority_identity,
                 self.request,
                 self.sample,
+                self.expiry,
             )
         })
     }
@@ -143,7 +168,7 @@ pub(super) fn observe_capability_policy(
         installed.paths().len(),
         installed.elevation().is_some(),
     )?;
-    let (exact_grant, preparatory_relational_work) = resolve_exact_grant(
+    let (exact_grant, mut preparatory_relational_work) = resolve_exact_grant(
         relational,
         snapshot.clone(),
         installed,
@@ -153,7 +178,7 @@ pub(super) fn observe_capability_policy(
     )?;
     let paths =
         path_preparation::prepare_exact_policy_paths(installed, request, sample, exact_grant)?;
-    let evidence = observe_exact_policy(relational, snapshot, installed, request, paths)?;
+    let evidence = observe_exact_policy(relational, snapshot.clone(), installed, request, paths)?;
     let bridge_evidence = evaluate_exact_policy(bridge, installed, request, &evidence)?;
     let grant = extract_exact_grant(installed, &evidence)?;
     if exact_grant != grant {
@@ -162,6 +187,8 @@ pub(super) fn observe_capability_policy(
             installed.contract().name(),
         ));
     }
+    let expiry = expiry::observe_grant_expiry(relational, &snapshot, installed, grant)?;
+    expiry::add_observation_work(&mut preparatory_relational_work);
     Ok(WorthQueryObservedCapabilityDecision {
         decision: WorthQueryAuthorizationDecisionFact::from_capability_observation(
             WorthQueryAuthorizationDecisionPermit::new(),
@@ -176,103 +203,8 @@ pub(super) fn observe_capability_policy(
         ),
         request: request.clone(),
         sample: sample.clone(),
+        expiry,
     })
-}
-
-pub(super) fn observe_upper_bound_policy(
-    _permit: super::delegation_admission::WorthQueryCapabilityObservationPermit,
-    session_identity: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
-    relational: &worth_relational::facade::runtime::RelationalRuntime,
-    snapshot: worth_relational::facade::snapshots::SnapshotHandle,
-    bridge: &BridgeAuthorizationRuntime,
-    installed: &WorthQueryInstalledCapabilityPlan,
-    request: &WorthQueryRetainedCapabilityRequest,
-    sample: &WorthQueryRuntimeTimeSample,
-    exact_grant: worth_relational::facade::identity::EntityId,
-) -> Result<WorthQueryObservedCapabilityDecision, WorthQueryOperationAuthorizationDenial> {
-    let upper_bound = installed
-        .upper_bound()
-        .as_ref()
-        .ok_or_else(|| invalid_policy(installed.contract().name()))?;
-    projection_validation::validate_projection_shape(
-        installed,
-        request,
-        upper_bound.path_count,
-        false,
-    )?;
-    let paths = path_preparation::prepare_upper_bound_policy_paths(
-        installed,
-        request,
-        sample,
-        exact_grant,
-    )?;
-    let evidence = observe_exact_policy(relational, snapshot, installed, request, paths)?;
-    let dependency_identity = *evidence.observation_identity().bytes();
-    let observation = bridge_observation::lower_upper_bound_observation(
-        installed,
-        request,
-        &evidence,
-        dependency_identity,
-    )?;
-    let bridge_evidence =
-        evaluate_upper_bound_policy(bridge, installed, upper_bound, &evidence, observation)?;
-    let observed_grant = extract_exact_grant(installed, &evidence)?;
-    if observed_grant != exact_grant {
-        return Err(WorthQueryOperationAuthorizationDenial::new(
-            WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
-            installed.contract().name(),
-        ));
-    }
-    Ok(WorthQueryObservedCapabilityDecision::new(
-        WorthQueryAuthorizationDecisionFact::from_capability_observation(
-            WorthQueryAuthorizationDecisionPermit::new(),
-            session_identity,
-            evidence,
-            bridge_evidence,
-        ),
-        observed_grant,
-        std::sync::Arc::clone(installed.capability_authority_identity()),
-        request.clone(),
-        sample.clone(),
-    ))
-}
-
-fn evaluate_upper_bound_policy(
-    bridge: &BridgeAuthorizationRuntime,
-    installed: &WorthQueryInstalledCapabilityPlan,
-    upper_bound: &super::capability_registry::WorthQueryCapabilityUpperBoundBindings,
-    evidence: &worth_relational::facade::authorization::RelationalAuthorizationObservationEvidence,
-    observation: worth_runtime_bridge::facade::BridgeAuthorizationObservation,
-) -> Result<
-    worth_runtime_bridge::facade::BridgeAuthorizationDecisionEvidence,
-    WorthQueryOperationAuthorizationDenial,
-> {
-    let bridge_evidence = bridge.evaluate(observation).map_err(|_| {
-        WorthQueryOperationAuthorizationDenial::new(
-            WorthQueryOperationAuthorizationDenialKind::BridgeEvaluationRejected,
-            installed.contract().name(),
-        )
-    })?;
-    if bridge_evidence.dependency_identity() != evidence.observation_identity().bytes()
-        || !bridge.retains(&bridge_evidence)
-    {
-        return Err(WorthQueryOperationAuthorizationDenial::new(
-            WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
-            installed.contract().name(),
-        ));
-    }
-    if !bridge_evidence.is_allowed() {
-        let causes = decision_denial::decision_denial_causes(
-            &upper_bound.decision_rules,
-            &bridge_evidence,
-            None,
-        )?;
-        return Err(WorthQueryOperationAuthorizationDenial::from_ordered_causes(
-            causes,
-            installed.contract().name(),
-        ));
-    }
-    Ok(bridge_evidence)
 }
 
 fn resolve_exact_grant(

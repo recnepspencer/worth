@@ -14,6 +14,7 @@ use super::relations::{
     InstitutionAccount, JournalReversal, PaymentApproval, PaymentBusiness, PaymentDestination,
     PaymentInitiator, PaymentSource, PersonalOwner,
 };
+use super::workflow::ApprovedPaymentSettlementEffect;
 use super::BankSchema;
 
 pub(super) fn install_account_creation_program(
@@ -173,6 +174,10 @@ pub(super) fn install_payment_program(
         .operation_write(
             ApprovePaymentOperation::reference(),
             PaymentStatusField::reference(),
+        )
+        .operation_emit(
+            ApprovePaymentOperation::reference(),
+            ApprovedPaymentSettlementEffect::reference(),
         )
         .money_movement_program(ApprovePaymentOperation::reference())
         .operation_write(

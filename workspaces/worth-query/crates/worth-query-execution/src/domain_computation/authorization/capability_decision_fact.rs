@@ -19,6 +19,7 @@ pub(in crate::domain_computation) struct WorthQueryRetainedCapabilityAuthorizati
     grant: worth_relational::facade::identity::EntityId,
     request: WorthQueryRetainedCapabilityRequest,
     sample: WorthQueryRuntimeTimeSample,
+    expiry: worth_foundational::facade::AspectValue,
     supporting: Option<WorthQueryRetainedCapabilitySupport>,
 }
 
@@ -31,6 +32,7 @@ impl WorthQueryRetainedCapabilityAuthorization {
         grant: worth_relational::facade::identity::EntityId,
         request: WorthQueryRetainedCapabilityRequest,
         sample: WorthQueryRuntimeTimeSample,
+        expiry: worth_foundational::facade::AspectValue,
     ) -> Self {
         Self {
             principal,
@@ -39,6 +41,7 @@ impl WorthQueryRetainedCapabilityAuthorization {
             grant,
             request,
             sample,
+            expiry,
             supporting: None,
         }
     }
@@ -148,6 +151,10 @@ impl WorthQueryRetainedCapabilityAuthorization {
         self.sample.value()
     }
 
+    pub(super) const fn expiry(&self) -> &worth_foundational::facade::AspectValue {
+        &self.expiry
+    }
+
     pub(super) fn bridge_is_retained(
         &self,
         bridge: &worth_runtime_bridge::facade::BridgeAuthorizationRuntime,
@@ -164,6 +171,7 @@ impl WorthQueryRetainedCapabilityAuthorization {
         capability_authority_identity: &str,
         grant: worth_relational::facade::identity::EntityId,
         sample: WorthQueryRuntimeTimeSample,
+        expiry: worth_foundational::facade::AspectValue,
         decision: WorthQueryAuthorizationDecisionFact,
     ) -> Result<(), ()> {
         if self.capability_authority_identity.as_ref() != capability_authority_identity
@@ -174,6 +182,7 @@ impl WorthQueryRetainedCapabilityAuthorization {
             return Err(());
         }
         self.sample = sample;
+        self.expiry = expiry;
         self.decision = decision;
         Ok(())
     }
@@ -184,13 +193,20 @@ impl WorthQueryRetainedCapabilityAuthorization {
         capability_authority_identity: &str,
         grant: worth_relational::facade::identity::EntityId,
         sample: WorthQueryRuntimeTimeSample,
+        expiry: worth_foundational::facade::AspectValue,
         decision: WorthQueryAuthorizationDecisionFact,
     ) -> Result<(), ()> {
         if decision.session_identity() != session {
             return Err(());
         }
         let principal = self.principal.retained_for_session(session);
-        self.replace_current_decision(capability_authority_identity, grant, sample, decision)?;
+        self.replace_current_decision(
+            capability_authority_identity,
+            grant,
+            sample,
+            expiry,
+            decision,
+        )?;
         self.principal = principal;
         Ok(())
     }

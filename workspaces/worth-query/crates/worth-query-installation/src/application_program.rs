@@ -8,6 +8,7 @@ mod evaluated_requirement;
 mod external_input;
 mod scoped_action;
 mod support;
+mod workflow;
 
 #[cfg(test)]
 mod program_support_fixture;
@@ -33,6 +34,7 @@ pub use support::{
     WorthQueryProgramSupportRetirementDenial, WorthQueryProgramSupportRetirementInventory,
     WorthQueryProgramSupportRoster,
 };
+pub use workflow::*;
 
 use worth_query_declaration::facade::application_program::{
     ApplicationActionDeclaration, ApplicationConnectionDeclaration, ApplicationFeatureDeclaration,

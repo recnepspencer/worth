@@ -20,8 +20,10 @@ use super::{BoundedDimensionSchema, Part, PartDimensionField, PartFacts, PartIde
 pub struct PartQueryParameters;
 pub struct PartIdentitySlot;
 pub struct PartDimensionSlot;
+pub struct PartConditionDimensionSlot;
 worth_query_portable_type!(PartIdentitySlot => "worth.query.certification.bounded-dimension.identity-slot.v1");
 worth_query_portable_type!(PartDimensionSlot => "worth.query.certification.bounded-dimension.dimension-slot.v1");
+worth_query_portable_type!(PartConditionDimensionSlot => "worth.query.certification.bounded-dimension.condition-dimension-slot.v1");
 
 /// One part as an ordinary read reports it.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -37,6 +39,9 @@ worth_query_structured_value_binding!(pub PartQueryParametersBinding for PartQue
 worth_query_structured_value_binding!(pub PartDimensionRowBinding for PartDimensionRow {
     identity: "worth.query.certification.bounded-dimension.row.v1"
 });
+worth_query_structured_value_binding!(pub PartDimensionConditionBinding for bool {
+    identity: "worth.query.certification.bounded-dimension.condition.v1"
+});
 worth_query_application_query!(
     pub PartDimensionQuery for BoundedDimensionSchema,
     identity "PartDimensionQuery",
@@ -44,6 +49,14 @@ worth_query_application_query!(
     result PartDimensionRowBinding,
     scope Part => "Part",
     name "part_dimension_query"
+);
+worth_query_application_query!(
+    pub PartDimensionConditionQuery for BoundedDimensionSchema,
+    identity "PartDimensionConditionQuery",
+    parameters PartQueryParametersBinding,
+    result PartDimensionConditionBinding,
+    scope Part => "Part",
+    name "part_dimension_condition_query"
 );
 
 pub fn part_dimension_query_definition() -> ApplicationQueryDefinition<
@@ -77,6 +90,36 @@ pub fn part_dimension_query_definition() -> ApplicationQueryDefinition<
         .expect("the part dimension query is canonical")
 }
 
+pub fn part_dimension_condition_query_definition() -> ApplicationQueryDefinition<
+    BoundedDimensionSchema,
+    PartDimensionConditionQuery,
+    PartQueryParameters,
+    bool,
+    Part,
+> {
+    let shape = ApplicationQueryResultShapeBuilder::<
+        BoundedDimensionSchema,
+        PartDimensionConditionQuery,
+        Part,
+        bool,
+        PartDimensionConditionBinding,
+    >::new(Part::reference())
+    .field(condition_dimension_result())
+    .build();
+    ApplicationQueryDefinitionBuilder::declare(PartDimensionConditionQuery::reference())
+        .root(Part::reference())
+        .scope(Part::reference())
+        .result_shape(shape)
+        .cardinality(ApplicationQueryCardinality::ExactlyOne)
+        .dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(0, 0, 3))
+        .disclosure(ApplicationQueryDisclosureContract::public())
+        .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
+        .lanes(ApplicationQueryLaneEligibility::one_shot())
+        .public()
+        .build()
+        .expect("the part condition query is canonical")
+}
+
 type ResultField<Slot, Field, Value, Write> = ApplicationQueryResultFieldRef<
     PartDimensionQuery,
     Slot,
@@ -104,6 +147,21 @@ pub(super) fn dimension_result() -> ResultField<
     PartDimensionField,
     u64,
     declaration::application_schema::ReadWrite,
+> {
+    ApplicationQueryResultFieldRef::new("dimension", PartDimensionField::reference())
+}
+
+pub(super) fn condition_dimension_result() -> ApplicationQueryResultFieldRef<
+    PartDimensionConditionQuery,
+    PartConditionDimensionSlot,
+    BoundedDimensionSchema,
+    Part,
+    PartFacts,
+    PartDimensionField,
+    u64,
+    declaration::application_schema::ReadWrite,
+    declaration::application_schema::EqualityPredicate,
+    declaration::application_schema::NoApplicationUnit,
 > {
     ApplicationQueryResultFieldRef::new("dimension", PartDimensionField::reference())
 }

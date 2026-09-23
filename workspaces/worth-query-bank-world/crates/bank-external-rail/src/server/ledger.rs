@@ -6,7 +6,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Mutex;
 
 use crate::protocol::correlation::RailCorrelation;
-use crate::protocol::notice::EstateDeathNotice;
+use crate::protocol::notice::{EstateDeathNotice, RailDomainEffect};
 use crate::protocol::payload::RailEffectPayload;
 use crate::protocol::response::LedgerStatus;
 
@@ -24,7 +24,7 @@ pub enum RailAdmission {
 /// consequence even when many connections race on the same key.
 pub struct RailReservation {
     correlation: RailCorrelation,
-    notice: EstateDeathNotice,
+    effect: RailDomainEffect,
 }
 
 impl RailReservation {
@@ -32,15 +32,15 @@ impl RailReservation {
         &self.correlation
     }
 
-    pub const fn notice(&self) -> EstateDeathNotice {
-        self.notice
+    pub fn effect(&self) -> &RailDomainEffect {
+        &self.effect
     }
 }
 
 struct RailRecord {
     status: LedgerStatus,
     request_fingerprint: RailRequestFingerprint,
-    notice: EstateDeathNotice,
+    effect: RailDomainEffect,
 }
 
 /// Exact immutable request meaning bound to one idempotency correlation.
@@ -77,7 +77,7 @@ impl Ledger {
         &self,
         correlation: &RailCorrelation,
         payload: &RailEffectPayload,
-        notice: EstateDeathNotice,
+        effect: RailDomainEffect,
         reserve_new: bool,
     ) -> RailAdmission {
         let request_fingerprint = RailRequestFingerprint::from_payload(payload);
@@ -85,7 +85,7 @@ impl Ledger {
         match records.entry(correlation.clone()) {
             Entry::Occupied(entry) => {
                 let record = entry.get();
-                if record.request_fingerprint != request_fingerprint || record.notice != notice {
+                if record.request_fingerprint != request_fingerprint || record.effect != effect {
                     RailAdmission::MeaningDrift
                 } else {
                     RailAdmission::Replay(record.status)
@@ -96,12 +96,12 @@ impl Ledger {
                 entry.insert(RailRecord {
                     status: LedgerStatus::Acknowledged,
                     request_fingerprint,
-                    notice,
+                    effect: effect.clone(),
                 });
                 self.admissions.fetch_add(1, Ordering::SeqCst);
                 RailAdmission::Reserved(RailReservation {
                     correlation: correlation.clone(),
-                    notice,
+                    effect,
                 })
             }
         }
@@ -112,7 +112,7 @@ impl Ledger {
         let record = records
             .get_mut(reservation.correlation())
             .expect("a completion reservation names an admitted record");
-        assert_eq!(record.notice, reservation.notice());
+        assert_eq!(&record.effect, reservation.effect());
         assert_eq!(record.status, LedgerStatus::Acknowledged);
         record.status = LedgerStatus::Completed;
     }
@@ -125,7 +125,12 @@ impl Ledger {
     }
 
     pub fn notice_of(&self, correlation: &RailCorrelation) -> Option<EstateDeathNotice> {
-        self.lock().get(correlation).map(|record| record.notice)
+        self.lock()
+            .get(correlation)
+            .and_then(|record| match record.effect {
+                RailDomainEffect::EstateDeathNotice(notice) => Some(notice),
+                RailDomainEffect::ApprovedPaymentSettlement(_) => None,
+            })
     }
 
     pub fn admission_count(&self) -> u64 {

@@ -117,6 +117,29 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
+        self.resolve_admitted_application_idempotencies(admission, [binding])
+            .map(|mut reads| {
+                reads
+                    .pop()
+                    .expect("one requested idempotency binding yields one read")
+            })
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn resolve_admitted_application_idempotencies<
+        Operation,
+        Input,
+        Scope,
+    >(
+        &self,
+        admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+        bindings: impl IntoIterator<Item = WorthQueryApplicationIdempotencyBinding>,
+    ) -> Result<
+        Vec<WorthQueryAdmittedIdempotencyRead>,
+        WorthQueryApplicationIdempotencyResolutionDenial,
+    >
+    where
+        Input: Clone + Send + Sync + 'static,
+    {
         admission
             .validate_current_authority()
             .map_err(WorthQueryApplicationIdempotencyResolutionDenial::from_authorization)?;
@@ -126,13 +149,18 @@ where
         ) {
             return Err(WorthQueryApplicationIdempotencyResolutionDenial::foreign_admission());
         }
-        let read_for = binding;
-        let binding = binding
-            .bind_operation(admission.operation_authority_identity_bytes())
-            .bind_operation_scope(admission.operation_scope_binding())
-            .bind_preconditions(admission.mutation_preconditions().identity())
-            .bind_governed_input(admission.governed_input_identity())
-            .bind_governed_proposal(admission.governed_proposal_identity());
+        let bindings = bindings
+            .into_iter()
+            .map(|read_for| {
+                let binding = read_for
+                    .bind_operation(admission.operation_authority_identity_bytes())
+                    .bind_operation_scope(admission.operation_scope_binding())
+                    .bind_preconditions(admission.mutation_preconditions().identity())
+                    .bind_governed_input(admission.governed_input_identity())
+                    .bind_governed_proposal(admission.governed_proposal_identity());
+                (read_for, binding)
+            })
+            .collect::<Vec<_>>();
         let product = admission
             .graph_work()
             .mutation_product()
@@ -145,51 +173,62 @@ where
         let proof = self
             .authorize_idempotency_inspection(admission, &coordination)
             .map_err(WorthQueryApplicationIdempotencyResolutionDenial::from_authorization)?;
-        let resolution = proof
+        let resolutions = proof
             .govern((), |()| {
-                self.primary_provider
-                    .resolve_idempotency_binding_at_product(binding, &product)
+                bindings
+                    .iter()
+                    .map(|(_, binding)| {
+                        self.primary_provider
+                            .resolve_idempotency_binding_at_product(*binding, &product)
+                    })
+                    .collect::<Vec<_>>()
             })
             .map_err(|(_, denial)| {
                 WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(denial)
             })?;
-        match resolution {
-            Ok(WorthQueryProviderIdempotencyResolution::Absent) => {
-                Ok(WorthQueryAdmittedIdempotencyRead::mint(
-                    read_for,
-                    WorthQueryApplicationIdempotencyResolution::Unseen,
-                ))
-            }
-            Ok(WorthQueryProviderIdempotencyResolution::Equivalent(receipt)) => {
-                let projection =
-                    WorthQueryCommittedReceiptProjection::resolve(receipt).map_err(|_| {
-                        WorthQueryApplicationIdempotencyResolutionDenial::provider_unavailable()
-                    })?;
-                let receipt = WorthQueryApplicationCommitReceipt::from_idempotency_read(
-                    WorthQueryIdempotencyReadCommitReceiptPermit::mint(),
-                    projection,
-                    recover_equivalent_commit_evidence(admission.mutation_preconditions()),
-                    admission.canonical_work(),
-                    WorthQueryApplicationCommitAuthorityBinding::from_admission(admission, binding),
-                );
-                Ok(WorthQueryAdmittedIdempotencyRead::mint(
-                    read_for,
-                    WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt),
-                ))
-            }
-            Ok(WorthQueryProviderIdempotencyResolution::Drift) => {
-                Ok(WorthQueryAdmittedIdempotencyRead::mint(
-                    read_for,
-                    WorthQueryApplicationIdempotencyResolution::IntentDrift,
-                ))
-            }
-            Ok(WorthQueryProviderIdempotencyResolution::Unpublished) => {
-                Err(WorthQueryApplicationIdempotencyResolutionDenial::provider_unavailable())
-            }
-            Err(denial) => {
-                Err(WorthQueryApplicationIdempotencyResolutionDenial::from_provider(denial))
-            }
-        }
+        bindings
+            .into_iter()
+            .zip(resolutions)
+            .map(|((read_for, binding), resolution)| match resolution {
+                Ok(WorthQueryProviderIdempotencyResolution::Absent) => {
+                    Ok(WorthQueryAdmittedIdempotencyRead::mint(
+                        read_for,
+                        WorthQueryApplicationIdempotencyResolution::Unseen,
+                    ))
+                }
+                Ok(WorthQueryProviderIdempotencyResolution::Equivalent(receipt)) => {
+                    let projection = WorthQueryCommittedReceiptProjection::resolve(receipt)
+                        .map_err(|_| {
+                            WorthQueryApplicationIdempotencyResolutionDenial::provider_unavailable()
+                        })?;
+                    let receipt = WorthQueryApplicationCommitReceipt::from_idempotency_read(
+                        WorthQueryIdempotencyReadCommitReceiptPermit::mint(),
+                        projection,
+                        recover_equivalent_commit_evidence(admission.mutation_preconditions()),
+                        admission.canonical_work(),
+                        WorthQueryApplicationCommitAuthorityBinding::from_admission(
+                            admission, binding,
+                        ),
+                    );
+                    Ok(WorthQueryAdmittedIdempotencyRead::mint(
+                        read_for,
+                        WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt),
+                    ))
+                }
+                Ok(WorthQueryProviderIdempotencyResolution::Drift) => {
+                    Ok(WorthQueryAdmittedIdempotencyRead::mint(
+                        read_for,
+                        WorthQueryApplicationIdempotencyResolution::IntentDrift,
+                    ))
+                }
+                Ok(WorthQueryProviderIdempotencyResolution::Unpublished) => {
+                    Err(WorthQueryApplicationIdempotencyResolutionDenial::provider_unavailable())
+                }
+                Err(denial) => {
+                    Err(WorthQueryApplicationIdempotencyResolutionDenial::from_provider(denial))
+                }
+            })
+            .collect()
     }
 }
 

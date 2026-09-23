@@ -3,9 +3,10 @@ use bank_domain::proposals::{
     BankInvariantApprovedProposal, BankProposalDenial, BankProposalEngine, BankProposedEffect,
 };
 use bank_domain::schema::{
-    Approval, ApprovalPrincipal, ApprovePayment, ApprovePaymentMutationBinding, BankSchema,
-    PaymentApproval, PaymentDecisionResult, PaymentIdentityField, PaymentIntent,
-    PaymentStatusField, PrincipalIdentityField, RejectPayment, RejectPaymentMutationBinding,
+    Approval, ApprovalPrincipal, ApprovePayment, ApprovePaymentMutationBinding,
+    ApprovedPaymentSettlementEffect, ApprovedPaymentSettlementRequest, BankSchema, PaymentApproval,
+    PaymentDecisionResult, PaymentIdentityField, PaymentIntent, PaymentStatusField,
+    PrincipalIdentityField, RejectPayment, RejectPaymentMutationBinding,
     PAYMENT_DECISION_OUTPUT_PAYMENT,
 };
 use worth_query_host::facade::declaration::application_operation::{
@@ -65,14 +66,14 @@ impl OperationHandler<BankSchema, ApprovePaymentMutationBinding> for ApprovePaym
 
     fn build_candidate(
         &self,
-        _: &ApprovePayment,
+        input: &ApprovePayment,
         decision: BankInvariantApprovedProposal,
         candidate: &mut CandidateWriter<'_, BankSchema, ApprovePaymentMutationBinding>,
     ) -> HandlerResult<PaymentDecisionResult, BankProposalDenial> {
         if let Err(interruption) = candidate.checkpoint() {
             return interrupted(interruption);
         }
-        match author_approval_candidate(&decision, candidate) {
+        match author_approval_candidate(input, &decision, candidate) {
             Ok(result) => HandlerResult::Completed(result),
             Err(error) => HandlerResult::ExecutionDenied(error),
         }
@@ -134,12 +135,25 @@ impl OperationHandler<BankSchema, RejectPaymentMutationBinding> for RejectPaymen
 }
 
 fn author_approval_candidate(
+    input: &ApprovePayment,
     proposal: &BankInvariantApprovedProposal,
     candidate: &mut CandidateWriter<'_, BankSchema, ApprovePaymentMutationBinding>,
 ) -> Result<PaymentDecisionResult, HandlerExecutionDenial> {
     let (journal, payment) = exact_approved_payment(proposal.effects())?;
     author_journal(candidate, journal, proposal.proposed_snapshot())?;
     let payment_entity = author_payment_decision(candidate, payment)?;
+    candidate
+        .emit_external(
+            ApprovedPaymentSettlementEffect::reference(),
+            ApprovedPaymentSettlementRequest::new(
+                payment.id(),
+                payment.source(),
+                payment.destination(),
+                input.approver,
+                payment.amount().minor_units(),
+            ),
+        )
+        .map_err(HandlerExecutionDenial::new)?;
     candidate
         .preserve_output(
             WorthQueryApplicationOutputRole::<

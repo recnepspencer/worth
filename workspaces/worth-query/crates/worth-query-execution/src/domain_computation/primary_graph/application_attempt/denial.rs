@@ -42,6 +42,21 @@ pub enum WorthQueryApplicationAttemptDenialKind {
     ElevationApprovalProgramMismatch,
     ElevationCloseProgramMismatch,
     MandatoryReviewProgramMismatch,
+    WorkflowDefinitionAffinityMismatch,
+    WorkflowDefinitionAuthorityMismatch,
+    WorkflowDefinitionIntentIdentityUnavailable,
+    WorkflowLineageUnavailable,
+    WorkflowDefinitionCompilationUnavailable,
+    WorkflowInstanceAffinityMismatch,
+    WorkflowInstanceAuthorityMismatch,
+    WorkflowInstanceIntentIdentityUnavailable,
+    WorkflowInstanceCapacityUnavailable,
+    WorkflowTransitionAffinityMismatch,
+    WorkflowTransitionAuthorityMismatch,
+    WorkflowTransitionAlreadySettled,
+    WorkflowTransitionNodeUnsupported,
+    WorkflowTransitionIdentityUnavailable,
+    WorkflowAssessmentEvidenceMismatch,
 }
 
 #[derive(Debug)]
@@ -51,7 +66,7 @@ pub struct WorthQueryApplicationAttemptDenial {
 }
 
 impl WorthQueryApplicationAttemptDenial {
-    pub(super) fn new(
+    pub(in crate::domain_computation::primary_graph) fn new(
         kind: WorthQueryApplicationAttemptDenialKind,
         subject: impl Into<String>,
     ) -> Self {

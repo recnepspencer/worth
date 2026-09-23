@@ -79,6 +79,7 @@ fn producer(
         identity: identity.to_owned(),
         source_selector: source.to_owned(),
         output_family: "family".to_owned(),
+        output_family_type: TypeId::of::<()>(),
         output_roles: vec!["output".to_owned()],
         output_role_descriptors: Vec::new(),
         output_role_families: Vec::new(),

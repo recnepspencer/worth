@@ -222,6 +222,8 @@ where
                             self,
                             &receipt,
                             &completion.readiness,
+                            &demand.selected.identity,
+                            Family::IDENTITY,
                         );
                         match settlement {
                             Ok(settlement) => Ok(WorthQueryOutputDemandAdvance::Settled(settlement)),
@@ -242,6 +244,7 @@ where
                         crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandSettlement::from_restoration(
                             self,
                             &restored,
+                            Family::IDENTITY,
                         )
                         .map(WorthQueryOutputDemandAdvance::Settled)
                     }

@@ -30,7 +30,10 @@ impl<'a> CompletionOwners<'a> {
 
     fn complete(self, reservation: RailReservation) {
         self.completed_effects
-            .apply_once(reservation.correlation().clone(), reservation.notice())
+            .apply_once(
+                reservation.correlation().clone(),
+                reservation.effect().clone(),
+            )
             .expect("a unique rail reservation applies its physical effect exactly once");
         self.ledger.record_completed(&reservation);
     }

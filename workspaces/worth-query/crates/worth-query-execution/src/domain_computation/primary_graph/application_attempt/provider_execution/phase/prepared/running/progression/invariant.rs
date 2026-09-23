@@ -20,9 +20,14 @@ pub(super) fn progress_invariant_candidate<'run>(
         .lower_provisional_program(&fresh, steps)
     {
         Ok(lowered) => lowered,
-        Err(_) => {
+        Err(failure) => {
             let _ = staged.abort();
-            return Err(progression_denied(DenialStage::EffectLowering));
+            return Err(WorthQueryProviderProgressionOutcome::Denied(
+                crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenial::provider_rejected_with_detail(
+                    DenialStage::EffectLowering,
+                    failure.detail().to_owned(),
+                ),
+            ));
         }
     };
     let inspection = staged
@@ -48,6 +53,7 @@ pub(super) fn progress_invariant_candidate<'run>(
                     crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenial::custom_invariant_denied(
                         DenialStage::InvariantExecution,
                         custom_invariant,
+                        failure.detail().to_owned(),
                     ),
                 ));
             }

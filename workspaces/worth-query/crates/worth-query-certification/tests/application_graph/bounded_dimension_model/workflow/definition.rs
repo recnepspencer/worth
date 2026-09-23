@@ -1,0 +1,305 @@
+use worth_query_host::facade::{
+    application_entry::{
+        PublishedWorkflowDefinitionRef, PublishedWorkflowProposalRef, RequiredWorkflowApproval,
+        WorkflowApprovalDecision, WorkflowDefinitionExpectedPredecessor,
+        WorkflowDefinitionPublicationOutcome, WorkflowInstanceStartOutcome,
+        WorkflowProgressOutcome, WorkflowProposalOutcome, WorthQueryApplicationRequestExt,
+        WorthQueryWorkflowAdvancePreparationDenial,
+        WorthQueryWorkflowDefinitionPublicationPreparationDenial,
+        WorthQueryWorkflowInstanceStartPreparationDenial,
+        WorthQueryWorkflowProposalPreparationDenial,
+    },
+    declaration::application_program::{
+        ApplicationWorkflowControlOutcome, ApplicationWorkflowDefinitionBuilder,
+        ApplicationWorkflowDefinitionLimits, ValidatedWorkflowDefinition,
+    },
+};
+use worth_query_installation::facade::WorthQueryInstalledWorkflowDefinitionContract;
+
+use super::super::{
+    dimension_entry::PART_IDENTITY,
+    host::BoundedDimensionWorkflowRuntime,
+    operator_identity::{authenticate_operator, request_scope},
+    programs::DimensionProgramP0,
+    schema::{
+        BoundedDimensionSchema, PartDimensionConditionQuery, PartDimensionQuery, SetPartDimension,
+    },
+};
+use super::{
+    ReviewedGeometryWorkflow, WorkflowAdvanceInput, WorkflowAdvanceIntent,
+    WorkflowApprovalCapability, WorkflowApprovalIntent, WorkflowDefinitionAuthoringInput,
+    WorkflowDefinitionAuthoringIntent, WorkflowDefinitionAuthoringOperation,
+    WorkflowInstanceStartInput, WorkflowInstanceStartIntent,
+};
+
+#[path = "definition/instance.rs"]
+mod instance;
+pub use instance::{
+    advance_instance, approve_instance, propose_authoring_instance, propose_instance,
+    propose_instance_on_branch, start_instance,
+};
+
+pub fn reviewed_geometry_definition(
+    completion_identity: &str,
+) -> ValidatedWorkflowDefinition<ReviewedGeometryWorkflow> {
+    reviewed_geometry_definition_with_join_policy(
+        completion_identity,
+        worth_query_host::facade::declaration::application_program::ApplicationWorkflowEvidenceJoinPolicy::AllRequiredPassing,
+    )
+}
+
+pub fn reviewed_geometry_definition_with_join_policy(
+    completion_identity: &str,
+    join_policy: worth_query_host::facade::declaration::application_program::ApplicationWorkflowEvidenceJoinPolicy,
+) -> ValidatedWorkflowDefinition<ReviewedGeometryWorkflow> {
+    let mut builder = ApplicationWorkflowDefinitionBuilder::<ReviewedGeometryWorkflow>::new(
+        "reviewed-geometry",
+        definition_limits(),
+    )
+    .expect("the workflow identity is valid");
+    let propose = builder
+        .operation::<WorkflowDefinitionAuthoringOperation>("propose", false)
+        .expect("the proposal node is valid");
+    let structural = builder
+        .assessment::<PartDimensionQuery>("checks/structural")
+        .expect("the structural assessment node is valid");
+    let manufacturability = builder
+        .assessment::<PartDimensionQuery>("checks/manufacturability")
+        .expect("the manufacturability assessment node is valid");
+    let evidence = builder
+        .evidence_join("checks/evidence", join_policy)
+        .expect("the evidence node is valid");
+    let approval = builder
+        .approval::<WorkflowApprovalCapability>("approval")
+        .expect("the approval node is valid");
+    let apply = builder
+        .operation::<SetPartDimension>("apply", true)
+        .expect("the guarded operation node is valid");
+    let completed = builder
+        .terminal(completion_identity)
+        .expect("the completion node is valid");
+    let rejected = builder
+        .terminal("rejected")
+        .expect("the rejection node is valid");
+    builder
+        .start(&propose)
+        .control(
+            &propose,
+            ApplicationWorkflowControlOutcome::Completed,
+            &structural,
+        )
+        .control(
+            &structural,
+            ApplicationWorkflowControlOutcome::Completed,
+            &manufacturability,
+        )
+        .control(
+            &manufacturability,
+            ApplicationWorkflowControlOutcome::Completed,
+            &evidence,
+        )
+        .control(
+            &evidence,
+            ApplicationWorkflowControlOutcome::EvidenceSatisfied,
+            &approval,
+        )
+        .control(
+            &evidence,
+            ApplicationWorkflowControlOutcome::EvidenceFailed,
+            &rejected,
+        )
+        .control(
+            &approval,
+            ApplicationWorkflowControlOutcome::Approved,
+            &apply,
+        )
+        .control(
+            &approval,
+            ApplicationWorkflowControlOutcome::Rejected,
+            &rejected,
+        )
+        .control(
+            &apply,
+            ApplicationWorkflowControlOutcome::Completed,
+            &completed,
+        )
+        .proposal_for_assessment(&propose, &structural)
+        .proposal_for_assessment(&propose, &manufacturability)
+        .assessment_evidence(&structural, &evidence)
+        .assessment_evidence(&manufacturability, &evidence)
+        .proposal_for_approval(&propose, &approval)
+        .joined_evidence(&evidence, &approval)
+        .approval_authority(&approval, &apply)
+        .operation_input(&propose, &apply);
+    builder
+        .finish()
+        .expect("the authored definition is complete")
+        .validate()
+        .expect("the reviewed-geometry definition is valid")
+}
+
+pub fn terminal_definition(
+    terminal_identity: &str,
+) -> ValidatedWorkflowDefinition<ReviewedGeometryWorkflow> {
+    let mut builder = ApplicationWorkflowDefinitionBuilder::<ReviewedGeometryWorkflow>::new(
+        "reviewed-geometry-terminal",
+        definition_limits(),
+    )
+    .expect("the terminal workflow identity is valid");
+    let terminal = builder
+        .terminal(terminal_identity)
+        .expect("the terminal start node is valid");
+    builder.start(&terminal);
+    builder
+        .finish()
+        .expect("the terminal definition is complete")
+        .validate()
+        .expect("the terminal definition is valid")
+}
+
+pub fn proposal_terminal_definition() -> ValidatedWorkflowDefinition<ReviewedGeometryWorkflow> {
+    let mut builder = ApplicationWorkflowDefinitionBuilder::<ReviewedGeometryWorkflow>::new(
+        "proposal-terminal",
+        definition_limits(),
+    )
+    .expect("the proposal-terminal workflow identity is valid");
+    let proposal = builder
+        .operation::<WorkflowDefinitionAuthoringOperation>("proposal", false)
+        .expect("the proposal node is valid");
+    let terminal = builder
+        .terminal("completed")
+        .expect("the terminal node is valid");
+    builder.start(&proposal).control(
+        &proposal,
+        ApplicationWorkflowControlOutcome::Completed,
+        &terminal,
+    );
+    builder
+        .finish()
+        .expect("the proposal-terminal definition is complete")
+        .validate()
+        .expect("the proposal-terminal definition is valid")
+}
+
+pub fn condition_terminal_definition() -> ValidatedWorkflowDefinition<ReviewedGeometryWorkflow> {
+    let mut builder = ApplicationWorkflowDefinitionBuilder::<ReviewedGeometryWorkflow>::new(
+        "condition-terminal",
+        definition_limits(),
+    )
+    .expect("the condition workflow identity is valid");
+    let proposal = builder
+        .operation::<WorkflowDefinitionAuthoringOperation>("proposal", false)
+        .expect("the proposal node is valid");
+    let condition = builder
+        .condition::<PartDimensionConditionQuery>("positive-dimension")
+        .expect("the condition node is valid");
+    let satisfied = builder
+        .terminal("satisfied")
+        .expect("the satisfied terminal is valid");
+    let unsatisfied = builder
+        .terminal("unsatisfied")
+        .expect("the unsatisfied terminal is valid");
+    builder
+        .start(&proposal)
+        .control(
+            &proposal,
+            ApplicationWorkflowControlOutcome::Completed,
+            &condition,
+        )
+        .control(
+            &condition,
+            ApplicationWorkflowControlOutcome::ConditionSatisfied,
+            &satisfied,
+        )
+        .control(
+            &condition,
+            ApplicationWorkflowControlOutcome::ConditionUnsatisfied,
+            &unsatisfied,
+        )
+        .condition_subject(&proposal, &condition);
+    builder
+        .finish()
+        .expect("the condition definition is complete")
+        .validate()
+        .expect("the condition definition is valid")
+}
+
+pub fn repeated_proposal_definition() -> ValidatedWorkflowDefinition<ReviewedGeometryWorkflow> {
+    let mut builder = ApplicationWorkflowDefinitionBuilder::<ReviewedGeometryWorkflow>::new(
+        "repeated-proposal",
+        definition_limits(),
+    )
+    .expect("the repeated-proposal workflow identity is valid");
+    let first = builder
+        .operation::<WorkflowDefinitionAuthoringOperation>("proposal/first", false)
+        .expect("the first proposal node is valid");
+    let second = builder
+        .operation::<WorkflowDefinitionAuthoringOperation>("proposal/second", false)
+        .expect("the second proposal node is valid");
+    let terminal = builder
+        .terminal("completed")
+        .expect("the terminal node is valid");
+    builder
+        .start(&first)
+        .control(
+            &first,
+            ApplicationWorkflowControlOutcome::Completed,
+            &second,
+        )
+        .control(
+            &second,
+            ApplicationWorkflowControlOutcome::Completed,
+            &terminal,
+        );
+    builder
+        .finish()
+        .expect("the repeated-proposal definition is complete")
+        .validate()
+        .expect("the repeated-proposal definition is valid")
+}
+
+pub fn bind_definition(
+    application: &BoundedDimensionWorkflowRuntime,
+    definition: ValidatedWorkflowDefinition<ReviewedGeometryWorkflow>,
+) -> WorthQueryInstalledWorkflowDefinitionContract<
+    BoundedDimensionSchema,
+    ReviewedGeometryWorkflow,
+    DimensionProgramP0,
+> {
+    application
+        .workflow_spec()
+        .bind_definition(definition)
+        .expect("the workflow definition binds to installed vocabulary")
+}
+
+pub fn publish_definition(
+    application: &BoundedDimensionWorkflowRuntime,
+    definition: ValidatedWorkflowDefinition<ReviewedGeometryWorkflow>,
+    expected_predecessor: WorkflowDefinitionExpectedPredecessor,
+    idempotency: u64,
+) -> Result<
+    WorkflowDefinitionPublicationOutcome,
+    WorthQueryWorkflowDefinitionPublicationPreparationDenial,
+> {
+    let contract = bind_definition(application, definition);
+    let runtime = application.runtime();
+    let scope = request_scope();
+    let principal = authenticate_operator(runtime.installed_schema(), &scope);
+    runtime
+        .request(&principal, &scope)
+        .mutate(WorkflowDefinitionAuthoringIntent {
+            input: WorkflowDefinitionAuthoringInput {
+                identity: PART_IDENTITY.to_owned(),
+                dimension: 8,
+            },
+        })
+        .without_source()
+        .idempotency(&idempotency)
+        .prepare_workflow_publication(contract, expected_predecessor)
+        .map(|request| request.execute())
+}
+
+pub(super) fn definition_limits() -> ApplicationWorkflowDefinitionLimits {
+    ApplicationWorkflowDefinitionLimits::new(32, 64, 4, 4, 64 * 1024)
+        .expect("the workflow definition limits are nonzero")
+}

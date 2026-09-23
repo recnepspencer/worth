@@ -272,7 +272,11 @@ where
         self.compare_and_commit_application_inner(program, idempotency)
     }
 
-    pub(super) fn compare_and_commit_application_inner<Operation, Input, Scope>(
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn compare_and_commit_application_inner<
+        Operation,
+        Input,
+        Scope,
+    >(
         &self,
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,

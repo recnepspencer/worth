@@ -5,3 +5,15 @@
 mod adoption;
 #[path = "application_graph/bounded_dimension_model.rs"]
 mod bounded_dimension_model;
+#[path = "application_graph/workflow.rs"]
+mod workflow;
+#[path = "application_graph/workflow_approval.rs"]
+mod workflow_approval;
+#[path = "application_graph/workflow_assessment.rs"]
+mod workflow_assessment;
+#[path = "application_graph/workflow_condition.rs"]
+mod workflow_condition;
+#[path = "application_graph/workflow_proposal.rs"]
+mod workflow_proposal;
+#[path = "application_graph/workflow_retry.rs"]
+mod workflow_retry;

@@ -11,7 +11,7 @@ pub struct WorthQueryApplicationOutputDemandSettlement<Query> {
 }
 
 impl<Query> WorthQueryApplicationOutputDemandSettlement<Query> {
-    pub(super) fn new(
+    pub(in crate::application_entry) fn new(
         retained: Arc<WorthQueryOutputDemandSettlement>,
         source: WorthQueryObservedSource<Query>,
     ) -> Self {
@@ -33,6 +33,10 @@ impl<Query> WorthQueryApplicationOutputDemandSettlement<Query> {
     ) -> &worth_query_execution::facade::primary_graph::WorthQueryApplicationOutputCorrespondence
     {
         self.retained.output_correspondence()
+    }
+
+    pub(in crate::application_entry) fn retained(&self) -> &WorthQueryOutputDemandSettlement {
+        self.retained.as_ref()
     }
 
     pub const fn observed_source(&self) -> &WorthQueryObservedSource<Query> {

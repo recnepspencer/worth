@@ -8,8 +8,9 @@ history governed by [Milestone 9.17](./milestone-9.17.md) and completed through
 [Milestone 9.17.3](./milestone-9.17.3.md), using the application contract established
 by [9.17.4 graph authoring](./milestone-9.17.4.md),
 [9.17.5 branch program evolution](./milestone-9.17.5.md), and
-[9.17.6 dynamic workflows](./milestone-9.17.6.md). Their validated contracts
-preserve scoped rules, exact selected interpretation and admitted workflow custody.
+[9.17.6 dynamic workflows](./milestone-9.17.6.md), plus
+[9.17.7 inbound effect completion](./milestone-9.17.7.md). Their validated contracts
+preserve scoped rules, exact interpretation, workflow and inbound-effect custody.
 Undo and redo select exact committed occurrences and publish newly admitted composite commits
 on an exact product branch. They never erase history, move a hidden stack
 cursor, replay old authority, reinterpret a receipt as permission, or assume
@@ -43,7 +44,8 @@ carriage and public branch/history authority. Milestone 9.17.4 then supplies
 entry-owned bindings, fresh request execution, installed domain handlers, and
 the retained-history/recovery experience this milestone extends. 9.17.5 adds exact
 branch-local program adoption and 9.17.6 adds dynamic definition/instance lifecycle.
-All three close before this milestone; correction does not finish their migrations. Correction
+9.17.7 adds inbound occurrences under external-effect completion authority. All four
+close before this milestone; correction does not finish their migrations. Correction
 must use that same application entry, not restore caller-owned phase plumbing
 or the provisional API.
 

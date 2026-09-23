@@ -148,6 +148,7 @@ fn declared(binding_type: TypeId) -> DeclaredProducerBinding {
         identity: "producer".into(),
         source_selector: "source".into(),
         output_family: "family".into(),
+        output_family_type: TypeId::of::<()>(),
         output_roles: vec!["output".into()],
         output_role_descriptors: Vec::new(),
         output_role_families: Vec::new(),

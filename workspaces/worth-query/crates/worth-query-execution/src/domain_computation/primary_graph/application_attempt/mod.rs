@@ -37,6 +37,11 @@ mod read_scope;
 mod read_set;
 mod retained_commit;
 pub(super) mod snapshot_lease;
+mod workflow_definition_program;
+mod workflow_instance_observation;
+mod workflow_instance_program;
+mod workflow_proposal_program;
+mod workflow_transition_program;
 pub(in crate::domain_computation) use snapshot_lease::{
     WorthQueryApplicationSnapshotLease, WorthQueryApplicationSnapshotLeaseDenial,
 };
@@ -66,7 +71,8 @@ pub(in crate::domain_computation::primary_graph) use compare_and_commit::{
 pub use delegation_activation_program::WorthQueryDelegationActivationProgram;
 pub use denial::{WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind};
 pub(in crate::domain_computation::primary_graph) use effect_program::{
-    WorthQueryAdmittedApplicationEmissionBatch, WorthQueryApplicationEmission,
+    WorthQueryAdmittedApplicationEmissionBatch, WorthQueryApplicationCreationPartition,
+    WorthQueryApplicationEmission, WorthQueryApplicationRealizedEffect,
     WorthQueryCandidateValidatorWorkAdmission, WorthQueryCheckpointOutputRole,
 };
 pub use effect_program::{
@@ -98,7 +104,7 @@ pub(super) use elevation_request_program::validate_elevation_request_program;
 pub use elevation_request_program::WorthQueryElevationRequestProgram;
 pub(in crate::domain_computation) use fact::WorthQueryApplicationObservedFact;
 pub(in crate::domain_computation::primary_graph) use fact::{
-    WorthQueryApplicationAdjacencyDirection, WorthQueryApplicationFactKey,
+    observe_adjacency, WorthQueryApplicationAdjacencyDirection, WorthQueryApplicationFactKey,
     WorthQuerySourceCurrentnessFailure,
 };
 pub use idempotency::WorthQueryApplicationIdempotencyBinding;
@@ -132,3 +138,26 @@ pub use read_set::{
     WorthQueryObservedApplicationRelation,
 };
 pub use retained_commit::WorthQueryApplicationRetainedCommitOutcome;
+pub use workflow_definition_program::{
+    PerformedWorkflowDefinitionPublication, PreparedWorkflowDefinitionPublication,
+    PublishedWorkflowDefinitionRef, WorkflowDefinitionExpectedPredecessor,
+    WorkflowDefinitionPublicationOutcome,
+};
+pub use workflow_instance_program::{
+    PerformedWorkflowInstanceStart, PreparedWorkflowInstanceStart, PublishedWorkflowInstanceRef,
+    WorkflowInstanceBindingDenial, WorkflowInstancePreparationDenial, WorkflowInstanceStartOutcome,
+    WorthQueryWorkflowInstanceStartAdapter,
+};
+pub use workflow_proposal_program::{
+    PerformedWorkflowProposal, PreparedWorkflowProposal, PublishedWorkflowProposalRef,
+    WorkflowProposalBindingDenial, WorkflowProposalOutcome, WorkflowProposalPreparationDenial,
+    WorthQueryWorkflowProposalAdapter,
+};
+pub use workflow_transition_program::{
+    PerformedWorkflowApproval, PerformedWorkflowAssessmentEvidence, PerformedWorkflowTransition,
+    PreparedWorkflowAdvance, PreparedWorkflowAssessment, PreparedWorkflowOperation,
+    RequiredWorkflowApproval, RequiredWorkflowAssessment, RequiredWorkflowCondition,
+    RequiredWorkflowEvidence, RequiredWorkflowOperation, WorkflowApprovalDecision,
+    WorkflowProgressOutcome, WorkflowTransitionBindingDenial, WorkflowTransitionPreparationDenial,
+    WorthQueryWorkflowAdvanceAdapter,
+};

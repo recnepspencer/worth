@@ -147,6 +147,9 @@ impl WorthQueryPrimaryGraph {
             },
         )?;
         aftermath_causality.key_index_id = installed.index_id;
+        super::workflow::schema::register_indexes(layout.workflow_mut(), |definition| {
+            install_index(&runtime, recovered, definition)
+        })?;
         let source_owner = WorthQueryRelationalSourceOwner::new(runtime, "primary")
             .expect("the installed primary graph role is canonical");
         Ok(Self {
@@ -216,6 +219,12 @@ impl WorthQueryPrimaryGraph {
             ))
             .chain(std::iter::once(
                 self.layout.provider_aftermath_causality().key_index_id,
+            ))
+            .chain(std::iter::once(
+                self.layout.workflow().lineage.identity_index_id,
+            ))
+            .chain(std::iter::once(
+                self.layout.workflow().definition.content_identity_index_id,
             ))
             .collect::<BTreeSet<_>>()
             .into_iter()

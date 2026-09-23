@@ -17,21 +17,22 @@ mod capability_grant_join;
 mod continuation_ordering;
 mod installation_primitives;
 mod platform_entity_lowering;
+mod platform_identity_allocator;
 mod principal_binding;
 mod program_activation;
 mod provider_aftermath_causality;
 mod provider_dispatch_outbox;
 mod provider_idempotency;
-mod provider_identity_allocator;
 mod registry_lowering;
 
+use super::workflow::schema::WorthQueryWorkflowLayout;
 use crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxLayout;
 use application_layout_lowering::{field_capability_keys, lower_fields, lower_relation_layouts};
 use capability_grant_join::{lower_capability_grant_joins, WorthQueryCapabilityGrantJoinLayout};
 use continuation_ordering::{
     lower_continuation_orderings, WorthQueryPrimaryContinuationOrderingLayout,
 };
-pub(super) use installation_primitives::{
+pub(in crate::domain_computation::primary_graph) use installation_primitives::{
     contract_space_exhausted, invalid_member, kind_space_exhausted, planned_field_locator,
     relational_schema_denial, required_kind, valid_aspect_key, valid_field_key,
 };
@@ -42,8 +43,11 @@ pub(in crate::domain_computation::primary_graph) use program_activation::WorthQu
 pub(super) use provider_aftermath_causality::WorthQueryAftermathCausalityLayout;
 pub(super) use provider_idempotency::WorthQueryProviderIdempotencyLayout;
 use registry_lowering::{
-    lower_application_contract_bindings, lower_kind_ids, next_provider_kind_id, register_entity,
-    register_relation, relational_schema_basis,
+    lower_application_contract_bindings, lower_kind_ids, next_provider_kind_id,
+    relational_schema_basis,
+};
+pub(in crate::domain_computation::primary_graph) use registry_lowering::{
+    register_entity, register_relation,
 };
 
 #[derive(Debug)]
@@ -63,6 +67,7 @@ pub(in crate::domain_computation) struct WorthQueryPrimaryGraphLayout {
     provider_dispatch_outbox: WorthQueryDispatchOutboxLayout,
     provider_aftermath_causality: WorthQueryAftermathCausalityLayout,
     program_activation: WorthQueryProgramActivationLayout,
+    workflow: WorthQueryWorkflowLayout,
 }
 
 #[derive(Clone, Debug)]
@@ -178,6 +183,7 @@ impl WorthQueryPrimaryGraphLayout {
                 provider_dispatch_outbox: platform_entities.provider_dispatch_outbox,
                 provider_aftermath_causality: platform_entities.provider_aftermath_causality,
                 program_activation: platform_entities.program_activation,
+                workflow: platform_entities.workflow,
             },
             registry,
         ))
@@ -363,5 +369,15 @@ impl WorthQueryPrimaryGraphLayout {
         &self,
     ) -> &WorthQueryProgramActivationLayout {
         &self.program_activation
+    }
+
+    pub(in crate::domain_computation::primary_graph) const fn workflow(
+        &self,
+    ) -> &WorthQueryWorkflowLayout {
+        &self.workflow
+    }
+
+    pub(super) fn workflow_mut(&mut self) -> &mut WorthQueryWorkflowLayout {
+        &mut self.workflow
     }
 }
