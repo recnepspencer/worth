@@ -342,6 +342,12 @@ impl<'access, 'runtime> RelationIntegrityScopeAccumulator<'access, 'runtime> {
 
     fn finish(mut self) -> Option<PreparedRelationIntegrityScopes> {
         for scope in self.scopes.values_mut() {
+            scope.deleted_entities.extend(
+                scope
+                    .minimum_touched_entities
+                    .intersection(&self.deleted_entities)
+                    .copied(),
+            );
             let planned_edges = std::mem::take(&mut scope.planned_edges);
             for edge in planned_edges {
                 scope.increment_counts(edge.source.clone(), edge.target.clone());
