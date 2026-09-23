@@ -72,6 +72,56 @@ where
         )
     }
 
+    pub fn advance_selected_program_output_demand<Family>(
+        &self,
+        _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+        demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
+        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+        request_scope: &WorthQueryRequestScope,
+        delivery_branch: crate::basis::WorthQueryProductBranch,
+        disclosure: crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource<
+            FamilySourceQuery<Schema, Family>,
+            FamilySourceValue<Schema, Family>,
+        >,
+        identity: worth_query_declaration::facade::application_program::ApplicationProgramIdentity,
+        revision: worth_query_declaration::facade::application_program::ApplicationProgramRevision,
+    ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>
+    where
+        Family: WorthQueryProducerOutputFamily<Schema>,
+        FamilySourceValue<Schema, Family>: 'static,
+        FamilySourceQuery<Schema, Family>: 'static,
+    {
+        let selected = self
+            .on_branch(delivery_branch.clone())
+            .select()
+            .map_err(|denial| {
+                WorthQueryOutputDemandDenial::product_selection(
+                    denial,
+                    "selected-program output occurrence could not be selected",
+                )
+            })?;
+        let active = selected.inspect_selected_program().map_err(|_| {
+            denial(
+                WorthQueryOutputDemandDenialKind::PublicationStale,
+                "selected-program output activation is unavailable",
+            )
+        })?;
+        if active.revision() != &revision {
+            return Err(denial(
+                WorthQueryOutputDemandDenialKind::PublicationStale,
+                format!("selected-program output revision {revision} is not active"),
+            ));
+        }
+        self.advance_output_demand_with_commit_authority(
+            demand,
+            principal,
+            request_scope,
+            delivery_branch,
+            disclosure,
+            WorthQueryProducerCommitAuthority::SelectedProgram { identity, revision },
+        )
+    }
+
     fn advance_output_demand_with_commit_authority<Family>(
         &self,
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,

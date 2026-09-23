@@ -325,9 +325,14 @@ where
         WorthQueryProducerCommitAuthority::Ordinary => {
             runtime.compare_and_commit_application(program, idempotency)
         }
-        WorthQueryProducerCommitAuthority::ProgramOutput => {
-            runtime.compare_and_commit_application_for_program_output_producer(program, idempotency)
-        }
+        WorthQueryProducerCommitAuthority::ProgramOutput => runtime
+            .compare_and_commit_application_for_program_output_producer(program, idempotency, None),
+        WorthQueryProducerCommitAuthority::SelectedProgram { identity, revision } => runtime
+            .compare_and_commit_application_for_program_output_producer(
+                program,
+                idempotency,
+                Some((&identity, &revision)),
+            ),
     };
     match outcome {
         WorthQueryApplicationCommitOutcome::Committed(receipt)

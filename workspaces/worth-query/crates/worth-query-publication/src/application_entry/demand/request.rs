@@ -36,6 +36,7 @@ pub enum WorthQueryApplicationOutputDemandDenial {
     Demand(worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenial),
     MissingSource,
     FreshRequestMismatch,
+    ProgramOutputUndeclared,
     Superseded,
     Closed,
 }

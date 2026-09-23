@@ -4,6 +4,7 @@ mod workflow;
 
 use worth_query_declaration::facade::application_program::{
     ApplicationConnectionShape, ApplicationOutputGraphShape, ApplicationProgramDefinition,
+    ApplicationProgramIdentity, ApplicationProgramRevision,
 };
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryBinding, ApplicationQueryIntent, ApplicationQueryScopeResolution,
@@ -40,6 +41,7 @@ where
     admitted: WorthQueryAdmittedOutputDemand<Schema, Family<Schema, Demand>>,
     demand: Demand,
     controls: WorthQueryOutputDemandControls,
+    selected_program: Option<(ApplicationProgramIdentity, ApplicationProgramRevision)>,
     closed: bool,
 }
 
@@ -66,6 +68,75 @@ where
     > {
         let source_result = self.query_source()?;
         self.start_ordinary(source_result.into_output_demand_source())
+    }
+
+    /// Explicitly binds a direct producer demand to the program selected by this host.
+    /// The exact revision is checked again at the producer's commit boundary.
+    pub fn start_in_program<Program, Root>(
+        self,
+        program: &WorthQueryProgramApplicationRuntime<Schema, Program>,
+    ) -> Result<
+        WorthQueryApplicationOutputDemandHandle<'application, Schema, Demand>,
+        WorthQueryApplicationOutputDemandDenial,
+    >
+    where
+        Program: ApplicationProgramDefinition<Schema>,
+        Root: ApplicationOutputGraphShape<Schema>
+            + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
+        RootConnection<Schema, Root>:
+            WorthQueryApplicationRequiredOutputConnection<Schema, Demand = Demand>,
+    {
+        if !std::ptr::eq(self.application, program.runtime()) {
+            return Err(WorthQueryApplicationOutputDemandDenial::FreshRequestMismatch);
+        }
+        if !program.contains_output_root::<Root>() {
+            return Err(WorthQueryApplicationOutputDemandDenial::ProgramOutputUndeclared);
+        }
+        self.start_with_program_selection(program)
+    }
+
+    /// Advanced direct demand for one output connection declared by the selected program.
+    pub fn start_dependent_in_program<Program, Connection>(
+        self,
+        program: &WorthQueryProgramApplicationRuntime<Schema, Program>,
+    ) -> Result<
+        WorthQueryApplicationOutputDemandHandle<'application, Schema, Demand>,
+        WorthQueryApplicationOutputDemandDenial,
+    >
+    where
+        Program: ApplicationProgramDefinition<Schema>,
+        Connection: ApplicationConnectionShape<Schema>,
+        ConnectionBinding<Schema, Connection>:
+            WorthQueryApplicationDependentOutputConnection<Schema, Demand = Demand>,
+    {
+        if !std::ptr::eq(self.application, program.runtime()) {
+            return Err(WorthQueryApplicationOutputDemandDenial::FreshRequestMismatch);
+        }
+        if !program.contains_output_connection::<Connection>(
+            &worth_query_execution::publication_boundary::program_publication_access(),
+        ) {
+            return Err(WorthQueryApplicationOutputDemandDenial::ProgramOutputUndeclared);
+        }
+        self.start_with_program_selection(program)
+    }
+
+    fn start_with_program_selection<Program>(
+        self,
+        program: &WorthQueryProgramApplicationRuntime<Schema, Program>,
+    ) -> Result<
+        WorthQueryApplicationOutputDemandHandle<'application, Schema, Demand>,
+        WorthQueryApplicationOutputDemandDenial,
+    >
+    where
+        Program: ApplicationProgramDefinition<Schema>,
+    {
+        let selection = (
+            program.installed_program().identity().clone(),
+            program.installed_program().revision().clone(),
+        );
+        let mut handle = self.start()?;
+        handle.selected_program = Some(selection);
+        Ok(handle)
     }
 
     pub(in crate::application_entry) fn start_for_program<Program, Root>(
@@ -367,6 +438,7 @@ where
                     std::num::NonZeroUsize::new(1).unwrap(),
                 )
             }),
+            selected_program: None,
             closed: false,
         }
     }

@@ -97,6 +97,10 @@ where
         &self,
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
+        selected_program: Option<(
+            &worth_query_declaration::facade::application_program::ApplicationProgramIdentity,
+            &worth_query_declaration::facade::application_program::ApplicationProgramRevision,
+        )>,
     ) -> WorthQueryApplicationCommitOutcome
     where
         Operation: 'static,
@@ -110,7 +114,7 @@ where
                 WorthQueryApplicationCommitDenial::application_program_required(),
             );
         }
-        if let Err(outcome) = self.require_occurrence_acts_through(&program) {
+        if let Err(outcome) = self.require_occurrence_acts_through(&program, selected_program) {
             return outcome;
         }
         self.compare_and_commit_application_with_output_observation(program, idempotency, true)
@@ -121,6 +125,10 @@ where
     fn require_occurrence_acts_through<Operation, Input, Scope>(
         &self,
         program: &WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
+        selected_program: Option<(
+            &worth_query_declaration::facade::application_program::ApplicationProgramIdentity,
+            &worth_query_declaration::facade::application_program::ApplicationProgramRevision,
+        )>,
     ) -> Result<(), WorthQueryApplicationCommitOutcome>
     where
         Operation: 'static,
@@ -132,6 +140,20 @@ where
         };
         let occurrence = resolve_occurrence_program(support, program)
             .map_err(WorthQueryApplicationCommitOutcome::Denied)?;
+        if let Some((identity, revision)) = selected_program {
+            if occurrence.entry().identity() != identity
+                || occurrence.entry().revision() != revision
+            {
+                return Err(WorthQueryApplicationCommitOutcome::Denied(
+                    WorthQueryApplicationCommitDenial::program_revision_not_active_on_occurrence(
+                        identity,
+                        revision,
+                        occurrence.entry().identity(),
+                        occurrence.entry().revision(),
+                    ),
+                ));
+            }
+        }
         if !occurrence
             .entry()
             .acts_through_operation(std::any::TypeId::of::<Operation>())
@@ -210,7 +232,7 @@ where
                 WorthQueryApplicationCommitDenial::application_program_required(),
             );
         }
-        if let Err(outcome) = self.require_occurrence_acts_through(&program) {
+        if let Err(outcome) = self.require_occurrence_acts_through(&program, None) {
             return outcome;
         }
         self.compare_and_commit_application_with_output_observation(program, idempotency, false)

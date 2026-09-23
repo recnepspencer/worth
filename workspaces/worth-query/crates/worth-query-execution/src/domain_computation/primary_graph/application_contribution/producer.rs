@@ -16,10 +16,14 @@ pub use demand::{
 mod execution;
 use execution::{InstalledProducerExecutor, TypedInstalledProducer};
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub(in crate::domain_computation::primary_graph) enum WorthQueryProducerCommitAuthority {
     Ordinary,
     ProgramOutput,
+    SelectedProgram {
+        identity: worth_query_declaration::facade::application_program::ApplicationProgramIdentity,
+        revision: worth_query_declaration::facade::application_program::ApplicationProgramRevision,
+    },
 }
 mod readiness;
 pub(in crate::domain_computation::primary_graph) use readiness::{
