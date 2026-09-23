@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashMap};
+use im::{HashMap, OrdMap};
 
 use serde::{Deserialize, Serialize};
 
@@ -8,7 +8,7 @@ use super::{InternedString, Symbol, SymbolTableSnapshot};
 pub struct StringInterner {
     next_symbol: u32,
     by_value: HashMap<String, Symbol>,
-    by_symbol: BTreeMap<Symbol, String>,
+    by_symbol: OrdMap<Symbol, String>,
 }
 
 impl Default for StringInterner {
@@ -16,7 +16,7 @@ impl Default for StringInterner {
         Self {
             next_symbol: 1,
             by_value: HashMap::new(),
-            by_symbol: BTreeMap::new(),
+            by_symbol: OrdMap::new(),
         }
     }
 }
@@ -63,8 +63,8 @@ impl StringInterner {
     }
 
     pub fn restore_snapshot(&mut self, snapshot: SymbolTableSnapshot) {
-        self.by_value.clear();
-        self.by_symbol.clear();
+        self.by_value = HashMap::new();
+        self.by_symbol = OrdMap::new();
         self.next_symbol = 1;
         for (symbol, value) in snapshot.entries {
             self.by_value.insert(value.clone(), symbol);
@@ -78,6 +78,15 @@ impl StringInterner {
 mod tests {
     use super::StringInterner;
     use crate::symbols::data::Symbol;
+    use serde::{Deserialize, Serialize};
+    use std::collections::{BTreeMap, HashMap};
+
+    #[derive(Serialize, Deserialize)]
+    struct LegacyStringInterner {
+        next_symbol: u32,
+        by_value: HashMap<String, Symbol>,
+        by_symbol: BTreeMap<Symbol, String>,
+    }
 
     #[test]
     fn snapshot_entries_are_ordered_by_string_value() {
@@ -123,5 +132,79 @@ mod tests {
         assert_eq!(restored.resolve(beta), Some("beta".into()));
         assert_eq!(restored.resolve(alpha), Some("alpha".into()));
         assert_eq!(restored.resolve(Symbol(9999)), None);
+    }
+
+    #[test]
+    fn detached_clone_shares_prior_meaning_without_publishing_new_symbols() {
+        let mut owner = StringInterner::default();
+        let original = owner.intern("original");
+        let mut detached = owner.clone();
+        let candidate = detached.intern("candidate");
+
+        assert_eq!(owner.resolve(original), Some("original"));
+        assert_eq!(owner.symbol("candidate"), None);
+        assert_eq!(detached.resolve(candidate), Some("candidate"));
+        assert_eq!(detached.symbol("original"), Some(original));
+    }
+
+    #[test]
+    fn persistent_maps_read_and_write_the_prior_symbol_wire_shape() {
+        let mut interner = StringInterner::default();
+        let alpha = interner.intern("alpha");
+        let beta = interner.intern("beta");
+        let bytes = rmp_serde::to_vec_named(&interner).expect("serialize persistent maps");
+        let legacy: LegacyStringInterner =
+            rmp_serde::from_slice(&bytes).expect("legacy reader accepts symbol mapping");
+        assert_eq!(legacy.by_value.get("alpha"), Some(&alpha));
+        assert_eq!(
+            legacy.by_symbol.get(&beta).map(String::as_str),
+            Some("beta")
+        );
+
+        let legacy_bytes = rmp_serde::to_vec_named(&legacy).expect("serialize legacy maps");
+        let restored: StringInterner =
+            rmp_serde::from_slice(&legacy_bytes).expect("persistent reader accepts prior mapping");
+        assert_eq!(restored, interner);
+    }
+
+    #[cfg(feature = "allocation-probes")]
+    #[test]
+    fn detached_clone_allocation_is_flat_in_prior_symbol_population() {
+        let output = std::process::Command::new(std::env::current_exe().unwrap())
+            .arg("isolated_detached_clone_allocation_probe")
+            .arg("--test-threads=1")
+            .env("WORTH_SYMBOL_CLONE_ALLOCATION_PROBE", "1")
+            .output()
+            .expect("isolated symbol allocation probe starts");
+        assert!(
+            output.status.success(),
+            "{}\n{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+
+    #[cfg(feature = "allocation-probes")]
+    #[test]
+    fn isolated_detached_clone_allocation_probe() {
+        if std::env::var_os("WORTH_SYMBOL_CLONE_ALLOCATION_PROBE").is_none() {
+            return;
+        }
+        let measured = |count: usize| {
+            let mut interner = StringInterner::default();
+            for index in 0..count {
+                interner.intern(&format!("key-{index:05}"));
+            }
+            let last = format!("key-{:05}", count - 1);
+            let region = stats_alloc::Region::new(&stats_alloc::INSTRUMENTED_SYSTEM);
+            let detached = interner.clone();
+            let stats = region.change();
+            assert_eq!(detached.symbol(&last), interner.symbol(&last));
+            stats
+        };
+        let small = measured(100);
+        let large = measured(10_000);
+        assert_eq!(small.allocations, large.allocations);
+        assert_eq!(small.bytes_allocated, large.bytes_allocated);
     }
 }

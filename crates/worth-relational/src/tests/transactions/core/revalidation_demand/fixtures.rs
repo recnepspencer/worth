@@ -49,6 +49,7 @@ impl CustomInvariantRule for StrictnessRule {
                     read_relation_kinds: Vec::new(),
                     affected_entity_kinds: vec![KindId(1)],
                     affected_relation_kinds: Vec::new(),
+                    include_relation_endpoint_entity_touches: true,
                 },
                 execution_point: InvariantExecutionPoint::CommitBoundary,
                 groups: InvariantGroupSet::of(InvariantGroup::RelationIntegrity),

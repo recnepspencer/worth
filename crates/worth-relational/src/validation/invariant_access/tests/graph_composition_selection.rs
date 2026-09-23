@@ -247,6 +247,7 @@ impl CustomInvariantRule for SelectionRule {
                         read_relation_kinds: Vec::new(),
                         affected_entity_kinds: vec![kind],
                         affected_relation_kinds: Vec::new(),
+                        include_relation_endpoint_entity_touches: true,
                     },
                 ),
                 execution_point: self.execution_point,

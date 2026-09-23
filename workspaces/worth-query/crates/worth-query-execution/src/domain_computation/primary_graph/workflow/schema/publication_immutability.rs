@@ -24,7 +24,7 @@ struct WorkflowPublicationImmutability {
 }
 
 const RULE_ID: &str = "worth-query.workflow.publication-immutability";
-const RULE_VERSION: CustomInvariantSemanticVersion = CustomInvariantSemanticVersion::new(1, 0);
+const RULE_VERSION: CustomInvariantSemanticVersion = CustomInvariantSemanticVersion::new(1, 1);
 const MAXIMUM_WORK_UNITS: u64 = 2_000_000;
 
 pub(in crate::domain_computation::primary_graph) const fn publication_immutability_receipt_contract(
@@ -75,6 +75,9 @@ impl CustomInvariantRule for WorkflowPublicationImmutability {
                     read_relation_kinds: self.relation_kinds.to_vec(),
                     affected_entity_kinds: self.entity_kinds.to_vec(),
                     affected_relation_kinds: self.relation_kinds.to_vec(),
+                    // History links may share a member endpoint without
+                    // changing that member or a protected relation kind.
+                    include_relation_endpoint_entity_touches: false,
                 },
             },
         }

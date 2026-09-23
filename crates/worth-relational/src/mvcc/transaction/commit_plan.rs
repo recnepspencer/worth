@@ -83,8 +83,10 @@ impl crate::mvcc::BranchBoundRelationalTransaction {
                 intent,
             )?;
         }
+        let validation_micros = validation_started.elapsed().as_micros() as u64;
         let sort_started = Instant::now();
         intents.sort_by_key(canonical_intent_key);
+        let sort_micros = sort_started.elapsed().as_micros() as u64;
         let conflict_started = Instant::now();
         detect_conflicting_updates(&intents)?;
         Ok((
@@ -93,8 +95,8 @@ impl crate::mvcc::BranchBoundRelationalTransaction {
                 merged_intents: intents,
             },
             MergedPlanPreparationTiming {
-                validation_micros: validation_started.elapsed().as_micros() as u64,
-                sort_micros: sort_started.elapsed().as_micros() as u64,
+                validation_micros,
+                sort_micros,
                 conflict_detection_micros: conflict_started.elapsed().as_micros() as u64,
             },
         ))

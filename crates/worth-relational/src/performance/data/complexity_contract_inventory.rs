@@ -88,10 +88,13 @@ pub const COMPLEXITY_CONTRACTS: &[ComplexityContract] = &[
     ComplexityContract {
         id: "runtime.relation_identity_validation",
         function_path: "authority/intent_merge/relation_validation/relation_creation_admission.rs::validate_relation_creation_intent",
-        declared_time_complexity: "O(out_degree(source) + same_batch_relation_creates)",
-        budget_summary: "Duplicate relation identity checks must avoid full partition relation scans by using adjacency-local candidates and deterministic same-batch keys.",
+        declared_time_complexity: "O(target_count + min(out_degree(source), sum(in_degree(existing_targets))) + same_batch_relation_creates)",
+        budget_summary: "Duplicate relation identity checks scan the smaller current endpoint neighborhood, skip newly created targets, and use deterministic same-batch keys.",
         status: ComplexityStatus::Verified,
-        proof_tests: &["tests::complexity::contracts::complexity_budget_relation_identity_validation_avoids_partition_scan"],
+        proof_tests: &[
+            "tests::complexity::contracts::complexity_budget_relation_identity_validation_avoids_partition_scan",
+            "authority::intent_merge::relation_validation::relation_identity_scan::tests::relation_identity_admission_scans_the_smaller_endpoint_and_skips_new_targets",
+        ],
     },
     ComplexityContract {
         id: "runtime.unique_entity_invariant_lookup",

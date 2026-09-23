@@ -25,6 +25,7 @@ fn direct_entities_exclude_neighbors_admitted_for_structural_traversal() {
         read_relation_kinds: vec![KindId(2)],
         affected_entity_kinds: vec![KindId(1)],
         affected_relation_kinds: vec![KindId(2)],
+        include_relation_endpoint_entity_touches: true,
     };
     let prepared_scope =
         prepared_scope_with_access(&runtime, &observation, Some(&merged_plan), &access);
@@ -307,6 +308,7 @@ fn test_scope_planner<'a>(
             read_relation_kinds: vec![KindId(2)],
             affected_entity_kinds: vec![KindId(1)],
             affected_relation_kinds: vec![KindId(2)],
+            include_relation_endpoint_entity_touches: true,
         }),
     )
 }
@@ -386,5 +388,6 @@ fn test_access_contract() -> crate::validation::data::CustomInvariantAccessContr
         read_relation_kinds: vec![KindId(2)],
         affected_entity_kinds: vec![KindId(1)],
         affected_relation_kinds: vec![KindId(2)],
+        include_relation_endpoint_entity_touches: true,
     }
 }

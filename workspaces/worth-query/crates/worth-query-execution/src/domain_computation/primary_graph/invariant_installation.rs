@@ -227,6 +227,7 @@ fn lower_access_contract(
         read_relation_kinds: Vec::new(),
         affected_entity_kinds: Vec::new(),
         affected_relation_kinds: Vec::new(),
+        include_relation_endpoint_entity_touches: true,
     };
     if reads_program_activation {
         contract

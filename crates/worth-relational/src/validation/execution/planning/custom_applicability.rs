@@ -13,6 +13,7 @@ use crate::validation::engine::InvariantExecutionRequest;
 
 pub(super) struct CandidateTouchedKinds {
     entities: BTreeSet<KindId>,
+    relation_endpoints: BTreeSet<KindId>,
     relations: BTreeSet<KindId>,
 }
 
@@ -38,6 +39,7 @@ impl CandidateTouchedKinds {
         });
         let mut kinds = Self {
             entities: BTreeSet::new(),
+            relation_endpoints: BTreeSet::new(),
             relations: BTreeSet::new(),
         };
         for partition in partitions {
@@ -84,6 +86,11 @@ impl CandidateTouchedKinds {
             .affected_entity_kinds
             .iter()
             .any(|kind| self.entities.contains(kind))
+            || (access.include_relation_endpoint_entity_touches
+                && access
+                    .affected_entity_kinds
+                    .iter()
+                    .any(|kind| self.relation_endpoints.contains(kind)))
             || access
                 .affected_relation_kinds
                 .iter()
@@ -139,8 +146,25 @@ impl CandidateTouchedKinds {
         before: Option<&InvariantStateView<'_>>,
     ) -> Option<()> {
         self.relations.insert(kind);
-        self.entity(source, proposed, before)?;
-        self.entity(target, proposed, before)
+        self.relation_endpoint(source, proposed, before)?;
+        self.relation_endpoint(target, proposed, before)
+    }
+
+    fn relation_endpoint(
+        &mut self,
+        id: EntityId,
+        proposed: &InvariantStateView<'_>,
+        before: Option<&InvariantStateView<'_>>,
+    ) -> Option<()> {
+        let current = proposed.entity_metadata(id);
+        let previous = before.and_then(|view| view.entity_metadata(id));
+        if current.is_none() && previous.is_none() {
+            return None;
+        }
+        for metadata in [current, previous].into_iter().flatten() {
+            self.relation_endpoints.insert(metadata.kind_id);
+        }
+        Some(())
     }
 
     fn reference(
@@ -150,9 +174,9 @@ impl CandidateTouchedKinds {
         before: Option<&InvariantStateView<'_>>,
     ) -> Option<()> {
         match reference {
-            EntityReference::Existing(id) => self.entity(*id, proposed, before),
+            EntityReference::Existing(id) => self.relation_endpoint(*id, proposed, before),
             EntityReference::Created(created) => {
-                self.entities.insert(created.kind_id);
+                self.relation_endpoints.insert(created.kind_id);
                 Some(())
             }
         }

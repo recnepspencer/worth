@@ -74,6 +74,64 @@ fn entity_delete_defers_cascade_applicability_to_the_ordinary_planner() {
     assert!(touched(&runtime, &plan).is_none());
 }
 
+#[test]
+fn endpoint_touch_policy_preserves_default_and_allows_explicit_opt_out() {
+    let runtime = runtime();
+    let source = create_entity(&runtime, KindId(2), "source");
+    let target = create_entity(&runtime, KindId(1), "target");
+    let plan = plan(
+        4,
+        MutationIntent::Create(CreateIntent::Relation(RelationSpec {
+            partition_id: PartitionId::main(),
+            kind_id: KindId(4),
+            client_key: ClientKey::raw("unrelated-edge"),
+            source: EntityReference::Existing(source),
+            target: EntityReference::Existing(target),
+            fields: Default::default(),
+        })),
+    );
+    let kinds = touched(&runtime, &plan).expect("create has a complete footprint");
+    let mut access = crate::validation::data::CustomInvariantAccessContract {
+        read_entity_kinds: vec![KindId(2)],
+        read_relation_kinds: Vec::new(),
+        affected_entity_kinds: vec![KindId(2)],
+        affected_relation_kinds: Vec::new(),
+        include_relation_endpoint_entity_touches: true,
+    };
+    assert!(kinds.may_affect(&access));
+    access.include_relation_endpoint_entity_touches = false;
+    assert!(!kinds.may_affect(&access));
+    access.read_relation_kinds.push(KindId(4));
+    assert!(!kinds.may_affect(&access));
+    access.read_relation_kinds.clear();
+    access.affected_relation_kinds.push(KindId(4));
+    assert!(kinds.may_affect(&access));
+}
+
+#[test]
+fn direct_entity_creation_still_admits_entity_rule() {
+    let runtime = runtime();
+    let plan = plan(
+        5,
+        MutationIntent::Create(CreateIntent::Entity(EntitySpec {
+            partition_id: PartitionId::main(),
+            kind_id: KindId(2),
+            client_key: ClientKey::raw("direct"),
+            fields: Default::default(),
+        })),
+    );
+    let kinds = touched(&runtime, &plan).expect("create has a complete footprint");
+    assert!(
+        kinds.may_affect(&crate::validation::data::CustomInvariantAccessContract {
+            read_entity_kinds: vec![KindId(2)],
+            read_relation_kinds: Vec::new(),
+            affected_entity_kinds: vec![KindId(2)],
+            affected_relation_kinds: Vec::new(),
+            include_relation_endpoint_entity_touches: false,
+        })
+    );
+}
+
 fn touched(runtime: &RelationalRuntime, plan: &MergedCommitPlan) -> Option<CandidateTouchedKinds> {
     let request = InvariantExecutionRequest::from_profile_with_contract(
         InvariantRequestProfile::CommitBoundary,

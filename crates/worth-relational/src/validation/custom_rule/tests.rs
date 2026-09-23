@@ -78,6 +78,7 @@ fn unrelated_shared_endpoint_does_not_expand_its_existing_adjacency() {
         read_relation_kinds: vec![KindId(2)],
         affected_entity_kinds: vec![KindId(3)],
         affected_relation_kinds: vec![KindId(2)],
+        include_relation_endpoint_entity_touches: true,
     };
     let observation = InvariantObservation::committed(runtime.storage_access().current_edition());
     let prepared = prepared_scope_with_access(&runtime, &observation, Some(&merged_plan), &access);
