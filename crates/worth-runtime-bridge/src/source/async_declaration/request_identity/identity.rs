@@ -209,6 +209,12 @@ impl AdmittedBridgeAsyncRequestIdentity {
         self.bridge_runtime_key
     }
 
+    pub(crate) fn lifecycle_observation_custody(
+        &self,
+    ) -> Option<super::BridgeSignalRuntimeCustody> {
+        self.runtime_custody.clone()
+    }
+
     pub(crate) fn retain_runtime(mut self, custody: super::BridgeSignalRuntimeCustody) -> Self {
         assert_eq!(custody.key(), self.bridge_runtime_key);
         self.runtime_custody = Some(custody);

@@ -4,7 +4,7 @@ use worth_signal::facade::{
     ResourceInFlightStatus, ResourceQueuePressureObservation, ResourceRequestHandle,
 };
 
-use crate::source::with_async_request_signal_runtime;
+use crate::source::{with_async_request_signal_runtime, BridgeSignalRuntimeCustody};
 
 use super::reservation::{
     BridgeExecutionBasisReservationKey, BridgeExecutionBasisReservationRegistry,
@@ -17,6 +17,8 @@ pub struct BridgeExecutionBasisLifecycleObserver {
     request: ResourceRequestHandle,
     reservations: Arc<BridgeExecutionBasisReservationRegistry>,
     reservation: BridgeExecutionBasisReservationKey,
+    // Keep a Bridge-owned runtime alive through the observer's last field drop.
+    _runtime_custody: Option<BridgeSignalRuntimeCustody>,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -59,6 +61,7 @@ impl BridgeBoundExecutionBasis {
             request: self.request.request_handle(),
             reservations,
             reservation,
+            _runtime_custody: self.request.lifecycle_observation_custody(),
         }
     }
 }

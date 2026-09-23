@@ -1,5 +1,28 @@
 use super::*;
+use crate::facade::BridgeExecutionBasisLifecycleSignalStatus;
 use crate::source::runtime_storage_for_test;
+
+#[test]
+fn terminal_observer_retains_its_request_runtime_and_releases_it_on_drop() {
+    let installed = runtime(BridgeRuntimePolicy::development());
+    let lane = installed.fork_managed_request_lane();
+    let key = lane.signal_runtime_key;
+    let basis = admit(&lane);
+    let observer = basis.lifecycle_observer();
+    drop(lane);
+
+    basis
+        .finalize(BridgeExecutionBasisTerminalDisposition::Completed)
+        .unwrap();
+    assert_eq!(
+        observer.observe().unwrap().signal_status(),
+        Some(BridgeExecutionBasisLifecycleSignalStatus::Fulfilled)
+    );
+    assert_eq!(runtime_storage_for_test(key), (true, true, false, true));
+
+    drop(observer);
+    assert_eq!(runtime_storage_for_test(key), (false, false, false, false));
+}
 
 #[test]
 fn managed_request_runtime_lives_until_its_last_request_holder() {
