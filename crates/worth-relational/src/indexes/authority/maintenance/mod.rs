@@ -185,6 +185,7 @@ impl IndexAuthority<'_> {
                     index_id,
                     locator: field_locator.clone(),
                     entries,
+                    edits: Default::default(),
                     patch: old.is_some(),
                 }),
                 (
@@ -194,6 +195,7 @@ impl IndexAuthority<'_> {
                     index_id,
                     locator: field_locator.clone(),
                     entries,
+                    edits: Default::default(),
                     patch: old.is_some(),
                 }),
                 (_, mut entries) => {

@@ -3,6 +3,12 @@ use crate::indexes::data::{
     DerivedIndexEntryMap, DerivedIndexMaintenanceDenialKind as Denial, DerivedIndexRows,
 };
 use std::cmp::Ordering;
+use std::collections::BTreeMap;
+
+pub(super) struct PendingEdit<R> {
+    pub(super) row: R,
+    pub(super) insert: bool,
+}
 
 pub(super) fn edit<K: Ord + Clone, R: Clone>(
     entries: &mut DerivedIndexEntryMap<K, R>,
@@ -36,6 +42,46 @@ pub(super) fn edit<K: Ord + Clone, R: Clone>(
     Ok(())
 }
 
+pub(super) fn grouped<K: Ord + Clone, R: Clone>(
+    entries: &mut DerivedIndexEntryMap<K, R>,
+    edits: BTreeMap<K, Vec<PendingEdit<R>>>,
+    compare: impl Fn(&R, &R) -> Ordering,
+    work: &mut MaintenanceWork,
+) -> Result<(), Denial> {
+    for (key, operations) in edits {
+        let mut rows = entries.get(&key).cloned().unwrap_or_default();
+        let mut map_reserved = false;
+        for operation in operations {
+            let mut comparisons = 0;
+            let found = rows.binary_search_by(|candidate| {
+                comparisons += 1;
+                compare(candidate, &operation.row)
+            });
+            work.charge(comparisons)?;
+            work.counts.seek_comparisons += comparisons;
+            let position = match (operation.insert, found) {
+                (true, Err(position)) | (false, Ok(position)) => position,
+                _ => return Err(Denial::PriorEntryMismatch),
+            };
+            if !map_reserved {
+                reserve_map_path(entries.len(), work)?;
+                map_reserved = true;
+            }
+            reserve_row_path(rows.len(), work)?;
+            if operation.insert {
+                rows.insert(position, operation.row);
+            } else {
+                rows.remove(position);
+            }
+            work.counts.entry_edits += 1;
+        }
+        if map_reserved {
+            entries.replace(key, rows);
+        }
+    }
+    Ok(())
+}
+
 fn reserve_paths<R>(
     keys: usize,
     rows: &DerivedIndexRows<R>,
@@ -44,18 +90,34 @@ fn reserve_paths<R>(
     // im 15.1 uses 64-way B-tree and RRB nodes. Charge up to four 64-handle
     // paths for seek, split/rebalance, and publication. A binary-height charge
     // made routine multi-row commits exhaust the budget despite path sharing.
-    let height = |mut n: usize| {
-        let mut levels = 1;
-        while n > 64 {
-            n = n.div_ceil(32);
-            levels += 1;
-        }
-        levels
-    };
-    let units = 256 * (height(keys) + height(rows.len()));
+    let units = 256 * (path_height(keys) + path_height(rows.len()));
     work.charge(units)?;
     work.counts.path_copy_units_reserved += units;
     Ok(())
+}
+
+fn reserve_map_path(keys: usize, work: &mut MaintenanceWork) -> Result<(), Denial> {
+    reserve_handle_path(keys, work)
+}
+
+fn reserve_row_path(rows: usize, work: &mut MaintenanceWork) -> Result<(), Denial> {
+    reserve_handle_path(rows, work)
+}
+
+fn reserve_handle_path(size: usize, work: &mut MaintenanceWork) -> Result<(), Denial> {
+    let units = 256 * path_height(size);
+    work.charge(units)?;
+    work.counts.path_copy_units_reserved += units;
+    Ok(())
+}
+
+fn path_height(mut size: usize) -> usize {
+    let mut levels = 1;
+    while size > 64 {
+        size = size.div_ceil(32);
+        levels += 1;
+    }
+    levels
 }
 
 #[cfg(test)]
@@ -101,5 +163,57 @@ mod tests {
         assert!(work.counts.work_units < 10_000);
         assert_eq!(retained_bucket.get(&1).unwrap().len(), 10_000);
         assert_eq!(large_bucket.get(&1).unwrap().len(), 10_001);
+    }
+
+    #[test]
+    fn grouped_edits_replace_one_shared_key_path_and_preserve_prior_rows() {
+        let mut entries = DerivedIndexEntryMap::from(BTreeMap::from([(1_u64, vec![1_u64, 3])]));
+        let retained = entries.clone();
+        let mut sequential = entries.clone();
+        let budget = DerivedIndexMaintenanceBudget {
+            maximum_work_units: 10_000,
+            maximum_cold_record_slots: 0,
+            maximum_derived_rows: 0,
+        };
+        let mut grouped_work = MaintenanceWork::new(budget);
+        let mut sequential_work = MaintenanceWork::new(budget);
+        let operations = [(2, true), (4, true), (1, false)];
+        let mut edits = BTreeMap::new();
+        for (row, insert) in operations {
+            grouped_work.charge(1).unwrap();
+            edits
+                .entry(1)
+                .or_insert_with(Vec::new)
+                .push(PendingEdit { row, insert });
+            edit(
+                &mut sequential,
+                1,
+                row,
+                insert,
+                Ord::cmp,
+                &mut sequential_work,
+            )
+            .unwrap();
+        }
+        grouped(&mut entries, edits, Ord::cmp, &mut grouped_work).unwrap();
+        assert_eq!(entries, sequential);
+        assert_eq!(
+            retained
+                .get(&1)
+                .unwrap()
+                .iter()
+                .copied()
+                .collect::<Vec<_>>(),
+            vec![1, 3]
+        );
+        assert_eq!(grouped_work.counts.entry_edits, 3);
+        assert_eq!(
+            grouped_work.counts.seek_comparisons,
+            sequential_work.counts.seek_comparisons
+        );
+        assert!(
+            grouped_work.counts.path_copy_units_reserved
+                < sequential_work.counts.path_copy_units_reserved
+        );
     }
 }

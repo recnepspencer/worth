@@ -1,4 +1,9 @@
-use super::{changes::ChangedRecords, entry_edits::edit, reads, work::MaintenanceWork};
+use super::{
+    changes::ChangedRecords,
+    entry_edits::{grouped, PendingEdit},
+    reads,
+    work::MaintenanceWork,
+};
 use crate::identity::data::{EntityId, RelationId};
 use crate::indexes::data::{
     DerivedIndexEntries, DerivedIndexEntryMap, DerivedIndexId,
@@ -12,6 +17,7 @@ use crate::storage::data::{AuthoritativeFieldComparisonKey, EntityReadRecord, Re
 use crate::visibility::materialization::read_records::{
     entity_query_locus_comparison_key, relation_query_locus_comparison_key,
 };
+use std::collections::BTreeMap;
 use worth_foundational::facade::AspectFieldLocator;
 
 pub(super) enum PendingField {
@@ -19,12 +25,14 @@ pub(super) enum PendingField {
         index_id: DerivedIndexId,
         locator: AspectFieldLocator,
         entries: DerivedIndexEntryMap<AuthoritativeFieldComparisonKey, EntityId>,
+        edits: BTreeMap<AuthoritativeFieldComparisonKey, Vec<PendingEdit<EntityId>>>,
         patch: bool,
     },
     Relation {
         index_id: DerivedIndexId,
         locator: AspectFieldLocator,
         entries: DerivedIndexEntryMap<AuthoritativeFieldComparisonKey, RelationId>,
+        edits: BTreeMap<AuthoritativeFieldComparisonKey, Vec<PendingEdit<RelationId>>>,
         patch: bool,
     },
 }
@@ -55,6 +63,16 @@ pub(super) fn refresh(
         refresh_entities(pending, patch, &changes.entities, old, after, work)?;
         refresh_relations(pending, patch, &changes.relations, old, after, work)?;
     }
+    for field in pending {
+        match field {
+            PendingField::Entity { entries, edits, .. } => {
+                grouped(entries, std::mem::take(edits), Ord::cmp, work)?;
+            }
+            PendingField::Relation { entries, edits, .. } => {
+                grouped(entries, std::mem::take(edits), Ord::cmp, work)?;
+            }
+        }
+    }
     Ok(())
 }
 
@@ -78,7 +96,7 @@ fn refresh_entities(
         for field in pending.iter_mut() {
             let PendingField::Entity {
                 locator,
-                entries,
+                edits,
                 patch: lane,
                 ..
             } = field
@@ -94,10 +112,10 @@ fn refresh_entities(
                 continue;
             }
             if let Some((key, record_id)) = old_key {
-                edit(entries, key, record_id, false, Ord::cmp, work)?;
+                queue(edits, key, record_id, false, work)?;
             }
             if let Some((key, record_id)) = new_key {
-                edit(entries, key, record_id, true, Ord::cmp, work)?;
+                queue(edits, key, record_id, true, work)?;
             }
         }
     }
@@ -124,7 +142,7 @@ fn refresh_relations(
         for field in pending.iter_mut() {
             let PendingField::Relation {
                 locator,
-                entries,
+                edits,
                 patch: lane,
                 ..
             } = field
@@ -140,13 +158,28 @@ fn refresh_relations(
                 continue;
             }
             if let Some((key, record_id)) = old_key {
-                edit(entries, key, record_id, false, Ord::cmp, work)?;
+                queue(edits, key, record_id, false, work)?;
             }
             if let Some((key, record_id)) = new_key {
-                edit(entries, key, record_id, true, Ord::cmp, work)?;
+                queue(edits, key, record_id, true, work)?;
             }
         }
     }
+    Ok(())
+}
+
+fn queue<R>(
+    edits: &mut BTreeMap<AuthoritativeFieldComparisonKey, Vec<PendingEdit<R>>>,
+    key: AuthoritativeFieldComparisonKey,
+    row: R,
+    insert: bool,
+    work: &mut MaintenanceWork,
+) -> Result<(), Denial> {
+    work.charge(1)?;
+    edits
+        .entry(key)
+        .or_default()
+        .push(PendingEdit { row, insert });
     Ok(())
 }
 
