@@ -1,3 +1,5 @@
+use worth_store_physical_format::DurableInlineRecordPlacement;
+
 use crate::physical_runtime::{
     durability::{AdmittedPhysicalMutation, PreparedPhysicalDataPlan},
     AdmittedRecordPlacementPolicy, PhysicalGroupQueueAdmissionTick, PhysicalMutationDeadline,
@@ -33,7 +35,9 @@ pub struct PreparedPhysicalMutation {
     resources: PhysicalMutationResourceShape,
     start: crate::physical_runtime::PhysicalMutationStartPort,
     selected_segment_rewrite: bool,
+    rewrite_pages: u32,
     source_root_generation: u64,
+    rewrite_anchor: Option<DurableInlineRecordPlacement>,
 }
 
 pub(in crate::physical_runtime) struct PreparedPhysicalMutationContext {
@@ -46,6 +50,10 @@ pub(in crate::physical_runtime) struct PreparedPhysicalMutationContext {
     pub(in crate::physical_runtime) durability_policy_basis: PhysicalWorkSemanticBasis,
     pub(in crate::physical_runtime) resources: PhysicalMutationResourceShape,
     pub(in crate::physical_runtime) start: crate::physical_runtime::PhysicalMutationStartPort,
+    pub(in crate::physical_runtime) selected_segment_rewrite: bool,
+    pub(in crate::physical_runtime) rewrite_pages: u32,
+    pub(in crate::physical_runtime) source_root_generation: u64,
+    pub(in crate::physical_runtime) rewrite_anchor: Option<DurableInlineRecordPlacement>,
 }
 
 pub(in crate::physical_runtime) struct PlannedPhysicalMutationParts {
@@ -114,18 +122,34 @@ impl PreparedPhysicalMutation {
             durability_policy_basis: context.durability_policy_basis,
             resources: context.resources,
             start: context.start,
-            selected_segment_rewrite: false,
-            source_root_generation: 0,
+            selected_segment_rewrite: context.selected_segment_rewrite,
+            rewrite_pages: context.rewrite_pages,
+            source_root_generation: context.source_root_generation,
+            rewrite_anchor: context.rewrite_anchor,
         }
     }
 
     pub(in crate::physical_runtime::record_serving) fn mark_selected_segment_rewrite(
         mut self,
         source_root_generation: u64,
+        pages: u32,
+        anchor: Option<DurableInlineRecordPlacement>,
     ) -> Self {
         self.selected_segment_rewrite = true;
+        self.rewrite_pages = pages;
         self.source_root_generation = source_root_generation;
+        self.rewrite_anchor = anchor;
         self
+    }
+
+    pub(in crate::physical_runtime) const fn rewrite_anchor(
+        &self,
+    ) -> Option<DurableInlineRecordPlacement> {
+        self.rewrite_anchor
+    }
+
+    pub(in crate::physical_runtime) const fn rewrite_pages(&self) -> u32 {
+        self.rewrite_pages
     }
 
     pub(in crate::physical_runtime) const fn selected_segment_rewrite(&self) -> bool {
@@ -256,6 +280,10 @@ impl PreparedPhysicalMutation {
                 durability_policy_basis: self.durability_policy_basis,
                 resources: self.resources,
                 start: self.start,
+                selected_segment_rewrite: self.selected_segment_rewrite,
+                rewrite_pages: self.rewrite_pages,
+                source_root_generation: self.source_root_generation,
+                rewrite_anchor: self.rewrite_anchor,
             },
         }
     }
@@ -278,8 +306,10 @@ impl PreparedPhysicalMutation {
             durability_policy_basis: parts.context.durability_policy_basis,
             resources: parts.context.resources,
             start: parts.context.start,
-            selected_segment_rewrite: false,
-            source_root_generation: 0,
+            selected_segment_rewrite: parts.context.selected_segment_rewrite,
+            rewrite_pages: parts.context.rewrite_pages,
+            source_root_generation: parts.context.source_root_generation,
+            rewrite_anchor: parts.context.rewrite_anchor,
         }
     }
 }

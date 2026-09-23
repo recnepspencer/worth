@@ -11,8 +11,8 @@ impl PhysicalPublicationAdmission {
     /// Charges bytes that are not keyed by an artifact generation.
     ///
     /// WAL frames and root-publication metadata are new retained bytes on every
-    /// publication. A generation map would collide with data-frame generations
-    /// and would hide the second charge.
+    /// publication. The charge stays until the WAL segment that carried the frames
+    /// is reclaimed.
     pub(in crate::physical_runtime) fn reserve_retained_bytes(
         self: &Arc<Self>,
         bytes: u64,
@@ -56,5 +56,42 @@ impl Drop for RetainedByteLease {
         };
         let mut state = admission.lock();
         state.charged_bytes = state.charged_bytes.saturating_sub(self.bytes);
+    }
+}
+
+impl PhysicalPublicationAdmission {
+    pub(in crate::physical_runtime) fn note_sealed_publication(
+        &self,
+        segment: u64,
+        generation: u64,
+        bytes: u64,
+    ) {
+        if bytes == 0 {
+            return;
+        }
+        self.lock()
+            .sealed_publications
+            .push((segment, generation, bytes));
+    }
+
+    /// Drops the publication charge once the WAL segment that carried it is gone.
+    pub(in crate::physical_runtime) fn release_sealed_publication(
+        &self,
+        segment: u64,
+        generation: u64,
+    ) {
+        let mut state = self.lock();
+        let mut released = 0_u64;
+        state
+            .sealed_publications
+            .retain(|(sealed_segment, sealed_generation, bytes)| {
+                if *sealed_segment == segment && *sealed_generation == generation {
+                    released = released.saturating_add(*bytes);
+                    false
+                } else {
+                    true
+                }
+            });
+        state.charged_bytes = state.charged_bytes.saturating_sub(released);
     }
 }

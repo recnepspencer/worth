@@ -89,16 +89,12 @@ impl PreparedPhysicalRootProjection {
 
     /// Bytes every publication retains beside its data frames.
     ///
-    /// Fixed root, free-space header, selector, and catalog bytes are included,
-    /// plus payload manifests already planned. Record, segment, and free-space
-    /// routing are charged as full trees of full-capacity blocks.
+    /// Fixed root, free-space header, selector, and catalog bytes are included.
+    /// Record, segment, and free-space routing are charged as full trees of
+    /// full-capacity blocks. Payload manifests are not added again: the WAL
+    /// frame already carries them, and reopen can price only what it reads.
     pub(in crate::physical_runtime) fn retained_publication_metadata_bytes(&self) -> u64 {
-        let manifests = self.payload_manifests.iter().fold(0_u64, |total, (_, bytes)| {
-            total.saturating_add(bytes.len() as u64)
-        });
-        manifests
-            .saturating_add(canonical_publication_metadata_bytes())
-            .saturating_add(self.routing_publication_bound())
+        canonical_publication_metadata_bytes().saturating_add(self.routing_publication_bound())
     }
 
     fn routing_publication_bound(&self) -> u64 {
@@ -197,9 +193,19 @@ fn routing_tree_shape(entries: u64, capacity: u64) -> (u64, u64) {
     (leaves, branches)
 }
 
-fn tree_bytes(leaves: u64, branches: u64, capacity: u64, leaf_entry: u64, branch_entry: u64) -> u64 {
+fn tree_bytes(
+    leaves: u64,
+    branches: u64,
+    capacity: u64,
+    leaf_entry: u64,
+    branch_entry: u64,
+) -> u64 {
     let header = worth_store_physical_format::DURABLE_FRAME_HEADER_BYTES as u64;
-    let block = |entry: u64| header.saturating_add(40).saturating_add(capacity.saturating_mul(entry));
+    let block = |entry: u64| {
+        header
+            .saturating_add(40)
+            .saturating_add(capacity.saturating_mul(entry))
+    };
     leaves
         .saturating_mul(block(leaf_entry))
         .saturating_add(branches.saturating_mul(block(branch_entry)))

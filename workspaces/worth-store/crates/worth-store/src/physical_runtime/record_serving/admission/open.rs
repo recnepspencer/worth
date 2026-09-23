@@ -156,31 +156,32 @@ pub(in crate::physical_runtime::record_serving) fn load_current_root(
     let artifacts = ServingRecordArtifacts::new(media, loader);
     let prior_roots = publication_roots(&admission, &current_root, previous_root.as_ref())?;
     let displaced_segments = if current_root.requires_maintenance_protocol() {
+        let membership =
+            super::super::access::segment_membership::SegmentMembershipReader::with_loader(
+                media,
+                loader,
+                bootstrap.format,
+                bootstrap.access,
+                &current_root,
+                std::sync::Arc::clone(&admission.lifecycle),
+                resident_integrity_counters,
+            );
         super::displaced_segments::retained_displaced_segments(
             &prior_roots,
             &current_root,
             &artifacts,
-            u64::from(admission.expected_format.page_size().bytes()),
+            &membership,
+            allocation,
         )?
     } else {
         Vec::new()
     };
-    let mut charged_roots = prior_roots.clone();
-    charged_roots.push(current_root.clone());
-    let retained_publication_overhead =
-        super::publication_charge::retained_publication_overhead(&charged_roots);
+    let publication_overheads = super::publication_charge::publication_overheads(
+        &[prior_roots.as_slice(), std::slice::from_ref(&current_root)].concat(),
+    );
     let free_space = load_free_space_manifest(&admission, &current_root)?;
-    let retained_inline_bytes = super::inline_charge::retained_inline_bytes(
-        &artifacts,
-        free_space.next_segment(),
-        current_root.generation(),
-    )?;
-    let retained_extent_bytes = super::extent_charge::retained_extent_bytes(
-        &artifacts,
-        free_space.next_extent(),
-    )?;
     let publication_residue = observe_publication_residue(
-        &ServingRecordArtifacts::new(media, loader),
+        &artifacts,
         &current_root,
         &free_space,
         bootstrap.observed_staging_residue,
@@ -192,9 +193,7 @@ pub(in crate::physical_runtime::record_serving) fn load_current_root(
         current_root,
         previous_root,
         displaced_segments,
-        retained_extent_bytes,
-        retained_inline_bytes,
-        retained_publication_overhead,
+        publication_overheads,
         publication_residue,
         free_space,
         root_protocol_counters: counters.snapshot(),

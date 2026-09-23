@@ -9,23 +9,22 @@ use worth_store_physical_format::{
     RecordSegmentPageManifestEntry, SegmentPageKey,
 };
 
+use super::super::durable_preparation::CanonicalPayloadMaterializationObservation;
 use super::durable_preparation::{
     canonical_request_failure, map_record_denial, PhysicalMutationPreparationAdmission,
 };
-use super::super::durable_preparation::CanonicalPayloadMaterializationObservation;
 use super::RecordPublicationDirector;
 use crate::physical_runtime::durability::{
-    PhysicalMutationFingerprintInput, PhysicalMutationOperationFamily, PhysicalMutationPayloadDigest,
-    PhysicalMutationRequestScope, PhysicalMutationSecurityBasis,
+    PhysicalMutationFingerprintInput, PhysicalMutationOperationFamily,
+    PhysicalMutationPayloadDigest, PhysicalMutationRequestScope, PhysicalMutationSecurityBasis,
 };
 use crate::physical_runtime::record_serving::planning::batch_placement::append_operation_allocation_bytes;
 use crate::physical_runtime::record_serving::planning::inline_plan_failure::admitted_generation;
 use crate::physical_runtime::record_serving::planning::inline_segment_plan::WorkingSegment;
 use crate::physical_runtime::record_serving::planning::published_segment_reuse::{
-    load_reusable_segment, ReusableSegmentContext,
+    load_published_segment, ReusableSegmentContext,
 };
 use crate::physical_runtime::record_serving::planning::published_tail_page::load_published_tail_page;
-use crate::physical_runtime::record_serving::planning::reusable_inline_tail::last_inline_placement;
 use crate::physical_runtime::record_serving::publication::append_observation::PublicationObservation;
 use crate::physical_runtime::record_serving::publication::record_append_scope_identity;
 use crate::physical_runtime::record_serving::residency::serving_artifacts::ServingRecordArtifacts;
@@ -33,10 +32,11 @@ use crate::physical_runtime::record_serving::{
     PreparedPhysicalRootProjection, RecordAppendBatch, RecordAppendDenial, RecordAppendError,
 };
 use crate::physical_runtime::{
-    durability::{PreparedPhysicalDataFrame, PreparedPhysicalDataPlan}, CertifiedPriorPageBasis,
-    PhysicalDataFrameIdentity, PhysicalMutationPreparationOutcome, PhysicalMutationPreparationSuccess,
-    PhysicalMutationRequest, PhysicalMutationRequestFingerprint, PhysicalMutationResourceShape,
-    PreparedPhysicalMutation, PreparedPhysicalMutationContext,
+    durability::{PreparedPhysicalDataFrame, PreparedPhysicalDataPlan},
+    CertifiedPriorPageBasis, PhysicalDataFrameIdentity, PhysicalMutationPreparationOutcome,
+    PhysicalMutationPreparationSuccess, PhysicalMutationRequest,
+    PhysicalMutationRequestFingerprint, PhysicalMutationResourceShape, PreparedPhysicalMutation,
+    PreparedPhysicalMutationContext,
 };
 
 impl RecordPublicationDirector {
@@ -52,9 +52,16 @@ impl RecordPublicationDirector {
         &self,
         placement: crate::physical_runtime::AdmittedRecordPlacementPolicy,
         request: PhysicalMutationRequest,
+        pages: u32,
     ) -> PhysicalMutationPreparationOutcome {
         if let Err(outcome) = self.require_preparation_health() {
             return outcome;
+        }
+        if pages == 0
+            || u64::from(pages) * u64::from(self.format.declaration().page_size().bytes())
+                > 256 * 1024
+        {
+            return map_record_denial(RecordAppendDenial::PhysicalPressure);
         }
         if !placement.admits(self.format) {
             return map_record_denial(RecordAppendDenial::PlacementFormatMismatch);
@@ -63,7 +70,12 @@ impl RecordPublicationDirector {
         let Some(record) = root.last_inline_record() else {
             return map_record_denial(RecordAppendDenial::PublishedLayoutDamaged);
         };
-        let digest = rewrite_basis_digest(record);
+        let span_start = match self.selected_rewrite_span_start(placement, pages) {
+            Ok(start) => start,
+            Err(RecordAppendError::Denied(denial)) => return map_record_denial(denial),
+            Err(_) => return map_record_denial(RecordAppendDenial::PublishedLayoutDamaged),
+        };
+        let digest = super::rewrite_span_selection::rewrite_basis_digest(record, pages, span_start);
         let group_queue_admission = match self.group_queue_admission_tick() {
             Ok(tick) => tick,
             Err(outcome) => return outcome,
@@ -96,13 +108,17 @@ impl RecordPublicationDirector {
                     group_queue_admission,
                     signal_profile: self.signal_profile,
                     durability_policy_basis: self.durability_policy_basis.clone(),
-                    resources: PhysicalMutationResourceShape::prepared(1, page_bytes),
+                    resources: PhysicalMutationResourceShape::prepared(1, page_bytes * u64::from(pages)),
                     start: crate::physical_runtime::PhysicalMutationRuntimeOwner::start_port(
                         &self.mutations,
                     ),
+                    selected_segment_rewrite: false,
+                    rewrite_pages: 0,
+                    source_root_generation: 0,
+                    rewrite_anchor: None,
                 },
             )
-            .mark_selected_segment_rewrite(root.generation()),
+            .mark_selected_segment_rewrite(root.generation(), pages, None),
         ))
         .into()
     }
@@ -110,13 +126,10 @@ impl RecordPublicationDirector {
     pub(super) fn build_selected_segment_rewrite(
         &self,
         prepared: &PreparedPhysicalMutation,
-    ) -> Result<
-        (
-            PreparedPhysicalDataPlan,
-            PreparedPhysicalRootProjection,
-        ),
-        RecordAppendError,
-    > {
+    ) -> Result<(PreparedPhysicalDataPlan, PreparedPhysicalRootProjection), RecordAppendError> {
+        if prepared.rewrite_pages() != 1 {
+            return self.build_rewrite_page_span(prepared);
+        }
         let runtime = self.runtime.upgrade().ok_or(RecordAppendError::Denied(
             RecordAppendDenial::PublicationAuthorityReleased,
         ))?;
@@ -124,11 +137,9 @@ impl RecordPublicationDirector {
         let bytes = append_operation_allocation_bytes(self.format, prepared.placement(), &batch);
         let allocation = self
             .residency
-            .begin_foreground_write_operation(
-                NonZeroU64::new(bytes).ok_or(RecordAppendError::Denied(
-                    RecordAppendDenial::PublishedLayoutDamaged,
-                ))?,
-            )
+            .begin_foreground_write_operation(NonZeroU64::new(bytes).ok_or(
+                RecordAppendError::Denied(RecordAppendDenial::PublishedLayoutDamaged),
+            )?)
             .map_err(|denial| {
                 RecordAppendError::Denied(RecordAppendDenial::from_residency(denial))
             })?;
@@ -138,18 +149,8 @@ impl RecordPublicationDirector {
                 RecordAppendDenial::PublishedLayoutDamaged,
             ));
         }
-        let last = last_inline_placement(
-            &allocation,
-            self.residency.clone(),
-            self.format,
-            self.access,
-            &current_root,
-            prepared.placement(),
-        )?
-        .ok_or(RecordAppendError::Denied(
-            RecordAppendDenial::PublishedLayoutDamaged,
-        ))?;
-        let (segment, _) = load_reusable_segment(
+        let last = super::rewrite_anchor::resolve(self, prepared, &allocation, &current_root)?;
+        let (segment, _) = load_published_segment(
             ReusableSegmentContext {
                 allocation: &allocation,
                 residency: self.residency.clone(),
@@ -174,11 +175,23 @@ impl RecordPublicationDirector {
             last,
             &segment,
         )?;
-        let page_entry = segment.last_published_page.ok_or(RecordAppendError::Denied(
-            RecordAppendDenial::PublishedLayoutDamaged,
-        ))?;
+        let page_entry = segment
+            .last_published_page
+            .ok_or(RecordAppendError::Denied(
+                RecordAppendDenial::PublishedLayoutDamaged,
+            ))?;
         let page_bytes = u64::from(self.format.declaration().page_size().bytes());
         let page_len = u32::try_from(page_bytes).map_err(|_| damaged())?;
+        let tail_frame = page_entry.frame_index();
+        let displaces_source = self
+            .rewrite_source_liveness(
+                &allocation,
+                &current_root,
+                segment.segment.segment_id(),
+                page_entry.data_generation(),
+                tail_frame..tail_frame.checked_add(1).ok_or_else(damaged)?,
+            )?
+            .displaces_source()?;
         let source_offset = u64::from(page_entry.frame_index()).saturating_mul(page_bytes);
         let page_generation = admitted_generation(loaded.geometry.generation().checked_add(1))?;
         let authority = PhysicalGenerationAuthority::for_canonical_physical_format();
@@ -244,13 +257,8 @@ impl RecordPublicationDirector {
             logical_bytes = logical_bytes.saturating_add(u64::from(descriptor.payload_bytes));
         }
         let tail = records.last().copied().ok_or_else(damaged)?;
-        let entry = RecordSegmentPageManifestEntry::new(
-            candidate_page,
-            segment.segment,
-            1,
-            0,
-        )
-        .ok_or_else(damaged)?;
+        let entry = RecordSegmentPageManifestEntry::new(candidate_page, segment.segment, 1, 0)
+            .ok_or_else(damaged)?;
         let working = WorkingSegment {
             segment: segment.segment,
             page_capacity: segment.page_capacity,
@@ -260,9 +268,13 @@ impl RecordPublicationDirector {
         };
         let mut segment_updates = BTreeMap::new();
         segment_updates.insert(SegmentPageKey::from(entry), entry);
-        let resulting_root = current_root.generation().checked_add(1).ok_or(
-            RecordAppendError::Denied(RecordAppendDenial::RootGenerationExhausted),
-        )?;
+        let resulting_root =
+            current_root
+                .generation()
+                .checked_add(1)
+                .ok_or(RecordAppendError::Denied(
+                    RecordAppendDenial::RootGenerationExhausted,
+                ))?;
         let rewrite = PhysicalRewriteRedo::new(
             prepared.request_fingerprint().bytes(),
             [0; 32],
@@ -282,17 +294,14 @@ impl RecordPublicationDirector {
         .ok_or_else(damaged)?;
         self.root_owner
             .hold_rewrite_candidate(segment.segment.generation().get(), page_bytes)
-            .map_err(|()| {
-                RecordAppendError::Denied(RecordAppendDenial::PhysicalPressure)
-            })?;
-        // Other pages in this generation stay reachable. Deleting the file
-        // would remove them with the rewritten tail.
-        if page_entry.data_page_count() == 1 {
+            .map_err(|()| RecordAppendError::Denied(RecordAppendDenial::PhysicalPressure))?;
+        // Live frames besides the tail keep the source file reachable.
+        if displaces_source {
             self.root_owner.note_displaced_segment(
                 current_root.generation(),
                 segment.segment.segment_id().get(),
                 page_entry.data_generation(),
-                page_bytes,
+                u64::from(page_entry.data_page_count()) * page_bytes,
             );
         }
         let data = PreparedPhysicalDataPlan::new(vec![frame], 1)
@@ -357,7 +366,7 @@ impl RecordPublicationDirector {
     }
 }
 
-fn admitted_terminal(
+pub(super) fn admitted_terminal(
     admitted: PhysicalMutationPreparationAdmission,
 ) -> PhysicalMutationPreparationOutcome {
     match admitted {
@@ -375,13 +384,6 @@ fn admitted_terminal(
                 .into()
         }
     }
-}
-fn rewrite_basis_digest(record: PersistedRecordIdentity) -> [u8; 32] {
-    let mut digest = Sha256::new();
-    digest.update(b"store.physical.rewrite-basis.v1");
-    digest.update(record.allocation_epoch());
-    digest.update(record.ordinal().to_le_bytes());
-    digest.finalize().into()
 }
 fn record_identity_bytes(record: PersistedRecordIdentity) -> [u8; 32] {
     let mut bytes = [0; 32];

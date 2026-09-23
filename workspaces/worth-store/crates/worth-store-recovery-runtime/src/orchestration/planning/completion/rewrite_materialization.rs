@@ -2,14 +2,13 @@ use sha2::{Digest, Sha256};
 use worth_store::physical_runtime::BoundedRecoveryFilesystemDiscovery;
 use worth_store_physical_format::{
     decode_data_frame_page_lsn, encode_data_frame_page_lsn, inspect_inline_page,
-    inspect_inline_page_records, restamp_inline_page_generation,
-    CurrentPhysicalRecordPlacement,
+    inspect_inline_page_records, restamp_inline_page_generation, CurrentPhysicalRecordPlacement,
     DurableFrameKind, DurableInlineRecordPlacement, PersistedInlineSegmentAllocation,
     PersistedPhysicalDataFrameSubject, PersistedPhysicalRecoveryFrame,
-    PersistedPhysicalRecoveryProjection, PersistedPhysicalRecoveryRootState, PersistedRecordIdentity,
-    PhysicalGeneration, PhysicalGenerationAuthority, PhysicalPageId, PhysicalPageLsn,
-    PhysicalRecordFormatDeclaration, PhysicalSegmentId, RecordArtifactFile, RecordFrameCoordinate,
-    RecordSegmentPageManifestEntry,
+    PersistedPhysicalRecoveryProjection, PersistedPhysicalRecoveryRootState,
+    PersistedRecordIdentity, PhysicalGeneration, PhysicalGenerationAuthority, PhysicalPageId,
+    PhysicalPageLsn, PhysicalRecordFormatDeclaration, PhysicalSegmentId, RecordArtifactFile,
+    RecordFrameCoordinate, RecordSegmentPageManifestEntry,
 };
 use worth_store_recovery_physics::{
     PhysicalRedoProjection, PhysicalRewriteAdmission, RecoveryOperationFate,
@@ -17,6 +16,9 @@ use worth_store_recovery_physics::{
 
 use super::super::context::PlanningContext;
 use super::super::resolved_basis::ResolvedPlanningBasis;
+
+#[path = "rewrite_span.rs"]
+mod rewrite_span;
 
 pub(super) fn install(
     mut context: PlanningContext,
@@ -117,9 +119,12 @@ fn prove_published_rewrite(
     admission: PhysicalRewriteAdmission,
 ) -> Result<(), ()> {
     let rewrite = admission.redo();
-    if rewrite.destination_offset() != 0 || rewrite.destination_length() != format.page_size().bytes()
+    let page_bytes = format.page_size().bytes();
+    if rewrite.destination_offset() != 0
+        || rewrite.destination_length() != page_bytes
+        || rewrite.source_length() != page_bytes
     {
-        return Err(());
+        return rewrite_span::prove(discovery, selection, format, byte_limit, admission);
     }
     let record = decode_record(rewrite.record_identity())?;
     let inline = selection
@@ -153,12 +158,9 @@ fn prove_published_rewrite(
     if source_digest != rewrite.source_digest() {
         return Err(());
     }
-    let mut expected = restamp_inline_page_generation(
-        format,
-        &source_page,
-        rewrite.destination_placement(),
-    )
-    .map_err(|_| ())?;
+    let mut expected =
+        restamp_inline_page_generation(format, &source_page, rewrite.destination_placement())
+            .map_err(|_| ())?;
     encode_data_frame_page_lsn(
         &mut expected,
         DurableFrameKind::InlinePage,
@@ -183,7 +185,8 @@ fn prove_published_rewrite(
     if geometry.page_cell() != inline.page_cell() {
         return Err(());
     }
-    let page_lsn = decode_data_frame_page_lsn(&page, DurableFrameKind::InlinePage).map_err(|_| ())?;
+    let page_lsn =
+        decode_data_frame_page_lsn(&page, DurableFrameKind::InlinePage).map_err(|_| ())?;
     if page_lsn.get() != rewrite.page_lsn() {
         return Err(());
     }
@@ -203,11 +206,16 @@ fn project_rewrite(
     admission: PhysicalRewriteAdmission,
 ) -> Result<PhysicalRedoProjection, ()> {
     let rewrite = admission.redo();
+    let page_bytes = format.page_size().bytes();
     let selected_generation = selection.root().selected().selector().root_generation();
+    if rewrite.destination_offset() != 0
+        || rewrite.destination_length() != page_bytes
+        || rewrite.source_length() != page_bytes
+    {
+        return rewrite_span::project(discovery, selection, source, format, byte_limit, admission);
+    }
     if rewrite.source_root_generation() != selected_generation
         || rewrite.resulting_root_generation() != selected_generation.saturating_add(1)
-        || rewrite.destination_offset() != 0
-        || rewrite.source_length() != format.page_size().bytes()
     {
         return Err(());
     }
@@ -260,12 +268,9 @@ fn project_rewrite(
     if digest != rewrite.source_digest() {
         return Err(());
     }
-    let mut restamped = restamp_inline_page_generation(
-        format,
-        &page,
-        rewrite.destination_placement(),
-    )
-    .map_err(|_| ())?;
+    let mut restamped =
+        restamp_inline_page_generation(format, &page, rewrite.destination_placement())
+            .map_err(|_| ())?;
     encode_data_frame_page_lsn(
         &mut restamped,
         DurableFrameKind::InlinePage,
@@ -275,9 +280,11 @@ fn project_rewrite(
     let authority = PhysicalGenerationAuthority::for_canonical_physical_format();
     let segment_id = PhysicalSegmentId::from_raw(inline.segment().get()).map_err(|_| ())?;
     let page_id = PhysicalPageId::from_raw(inline.page().get()).map_err(|_| ())?;
-    let destination_page = authority.page_cell(segment_id, page_id).with_page_generation(
-        PhysicalGeneration::from_raw(rewrite.destination_placement()).map_err(|_| ())?,
-    );
+    let destination_page = authority
+        .page_cell(segment_id, page_id)
+        .with_page_generation(
+            PhysicalGeneration::from_raw(rewrite.destination_placement()).map_err(|_| ())?,
+        );
     let destination_segment = authority.segment_cell(segment_id).with_segment_generation(
         PhysicalGeneration::from_raw(rewrite.destination_generation()).map_err(|_| ())?,
     );
@@ -321,8 +328,10 @@ fn project_rewrite(
         return Err(());
     }
     let capacity = inline.segment_page_capacity();
-    let allocation = PersistedInlineSegmentAllocation::new(destination_segment, capacity, 1).ok_or(())?;
-    let update = RecordSegmentPageManifestEntry::new(destination_page, destination_segment, 1, 0).ok_or(())?;
+    let allocation =
+        PersistedInlineSegmentAllocation::new(destination_segment, capacity, 1).ok_or(())?;
+    let update = RecordSegmentPageManifestEntry::new(destination_page, destination_segment, 1, 0)
+        .ok_or(())?;
     let root_state = PersistedPhysicalRecoveryRootState::new(
         rewrite.candidate_bytes(),
         1,

@@ -63,6 +63,13 @@ pub fn admit_physical_instance_foreground_reservation(
             ForegroundReservationAdmissionDenial::CertificationOnlyEnvelopeCannotExecute,
         ));
     }
+    if envelope.claims_unprovided_service_time() {
+        return Err(PhysicalInstanceForegroundAdmissionDenial::Foreground(
+            ForegroundReservationAdmissionDenial::UnsupportedServiceTimeEnvelope {
+                kind: envelope.kind(),
+            },
+        ));
+    }
     require_declared_resource_budget(lane.requested_budget())
         .map_err(PhysicalInstanceForegroundAdmissionDenial::Foreground)?;
     require_lane_resource_contract(lane.lane(), lane.requested_budget())

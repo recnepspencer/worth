@@ -3,6 +3,7 @@ use std::sync::{Arc, Mutex};
 use worth_store_physical_backend::{ArtifactTreeFile, QualifiedFilesystemMedia};
 use worth_store_wal::{LogSequenceNumber, WalAppendFrontier};
 
+use crate::physical_runtime::durability::retention::PhysicalPublicationAdmission;
 use crate::physical_runtime::record_serving::PreparedPhysicalMutation;
 use crate::physical_runtime::{PhysicalSignalProfileIdentity, RuntimeIdentity};
 
@@ -16,6 +17,7 @@ use super::{
 pub(in crate::physical_runtime) struct PhysicalWalRuntimeOwner {
     pub(super) shared: Arc<Mutex<PhysicalWalRuntimeState>>,
     pub(super) preparation: Arc<PhysicalWalPreparationAdmission>,
+    pub(super) publication: Arc<Mutex<Option<Arc<PhysicalPublicationAdmission>>>>,
 }
 
 struct PlannedMaintenanceFrame {
@@ -41,6 +43,7 @@ pub(super) struct PhysicalWalRuntimeState {
     pub(super) reclaimed_segments: u64,
     pub(super) reclaimed_bytes: u64,
     pub(super) reopened_frames: u64,
+    pub(super) reopened_publications: u64,
     pub(super) reopened_bytes: u64,
     pub(super) reopen_peak_buffer_bytes: u64,
     pub(super) segments: PhysicalWalSegmentInventory,
@@ -77,6 +80,7 @@ impl PhysicalWalRuntimeOwner {
                 reclaimed_segments: 0,
                 reclaimed_bytes: 0,
                 reopened_frames: inventory.frame_count,
+                reopened_publications: inventory.publication_frames,
                 reopened_bytes: inventory.byte_count,
                 reopen_peak_buffer_bytes: inventory.peak_buffer_bytes,
                 segments: inventory.segments,
@@ -89,6 +93,7 @@ impl PhysicalWalRuntimeOwner {
                 runtime,
                 signal_profile,
             )),
+            publication: Arc::new(Mutex::new(None)),
         }
     }
 
@@ -103,9 +108,10 @@ impl PhysicalWalRuntimeOwner {
         if state.sealed || state.in_flight {
             return Err(());
         }
-        let start = state.frontier.last_lsn_end().unwrap_or(LogSequenceNumber::new(
-            LogSequenceNumber::GENESIS.get() + 1,
-        ));
+        let start = state
+            .frontier
+            .last_lsn_end()
+            .unwrap_or(LogSequenceNumber::new(LogSequenceNumber::GENESIS.get() + 1));
         let end = LogSequenceNumber::new(start.get().checked_add(1).ok_or(())?);
         let range = worth_store_wal::WalLsnRange::new(start, end).map_err(|_| ())?;
         let planned = worth_store_wal::plan_wal_frame_append(
@@ -175,7 +181,9 @@ impl PhysicalWalRuntimeOwner {
             .awaiting_barrier
     }
 
-    pub(in crate::physical_runtime) fn planned_maintenance_artifact(&self) -> Option<ArtifactTreeFile> {
+    pub(in crate::physical_runtime) fn planned_maintenance_artifact(
+        &self,
+    ) -> Option<ArtifactTreeFile> {
         let state = self
             .shared
             .lock()
@@ -203,7 +211,8 @@ impl PhysicalWalRuntimeOwner {
             .unwrap_or_else(|poisoned| poisoned.into_inner());
         state.awaiting_barrier = false;
         let planned = state.maintenance.take().ok_or(())?;
-        let identity = worth_store_wal::WalSegmentArtifactIdentity::new(planned.segment, planned.generation);
+        let identity =
+            worth_store_wal::WalSegmentArtifactIdentity::new(planned.segment, planned.generation);
         if state
             .segments
             .record_completed_append(identity, planned.lsn_range, planned.bytes.len() as u64)
@@ -215,11 +224,18 @@ impl PhysicalWalRuntimeOwner {
         }
         state.frontier = planned.frontier;
         state.appended_frames = state.appended_frames.saturating_add(1);
-        state.appended_bytes = state.appended_bytes.saturating_add(planned.bytes.len() as u64);
+        state.appended_bytes = state
+            .appended_bytes
+            .saturating_add(planned.bytes.len() as u64);
         state.in_flight = false;
         let start = planned.lsn_range.start().get();
         let end = planned.lsn_range.end_exclusive().get();
-        super::super::retention::note_retirement_hold(&mut state.unresolved_retirement_spans, planned.retirement, start, end);
+        super::super::retention::note_retirement_hold(
+            &mut state.unresolved_retirement_spans,
+            planned.retirement,
+            start,
+            end,
+        );
         if state.record_durable_barrier(start, end) {
             Ok(())
         } else {
@@ -321,6 +337,14 @@ impl PhysicalWalRuntimeOwner {
         state.sealed = true;
     }
 
+    /// Publications whose WAL frames survived reopen and so remain charged.
+    pub(in crate::physical_runtime) fn reopened_publications(&self) -> u64 {
+        self.shared
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .reopened_publications
+    }
+
     pub(in crate::physical_runtime) fn observation(&self) -> super::PhysicalWalObservation {
         let state = self
             .shared
@@ -343,53 +367,10 @@ impl PhysicalWalRuntimeOwner {
             state.sealed,
         )
     }
-
-    pub(in crate::physical_runtime) fn recovery_tail(
-        &self,
-    ) -> crate::physical_runtime::PhysicalRecoveryWalTail {
-        let state = self
-            .shared
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
-        crate::physical_runtime::PhysicalRecoveryWalTail::from_inventory(
-            state.durable_lsn_end,
-            state.segments.entries(),
-            state.sealed,
-        )
-    }
 }
 
-impl PhysicalWalRuntimeState {
-    fn record_durable_barrier(&mut self, lsn_start: u64, lsn_end_exclusive: u64) -> bool {
-        let expected_start = self
-            .durable_lsn_end
-            .or_else(|| self.segments.first_lsn_start())
-            .map(LogSequenceNumber::get);
-        let appended_end = self.frontier.last_lsn_end().map(LogSequenceNumber::get);
-        if self.sealed
-            || expected_start != Some(lsn_start)
-            || appended_end.is_none_or(|end| end < lsn_end_exclusive)
-            || lsn_start >= lsn_end_exclusive
-        {
-            self.sealed = true;
-            return false;
-        }
-        self.durable_lsn_end = Some(LogSequenceNumber::new(lsn_end_exclusive));
-        true
-    }
-
-    fn checkpoint_source_range(
-        &self,
-    ) -> Option<worth_store_physical_format::CheckpointWalSourceRange> {
-        if self.sealed {
-            return None;
-        }
-        let begin = self.segments.first_lsn_start()?.get();
-        let end = self.durable_lsn_end?.get();
-        worth_store_physical_format::CheckpointWalSourceRange::new(begin, end)
-    }
-}
-
+#[path = "runtime_owner/durable_barrier.rs"]
+mod durable_barrier;
 #[path = "runtime_owner/retirement_hold.rs"]
 mod retirement_hold;
 

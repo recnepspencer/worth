@@ -36,6 +36,8 @@ pub(in crate::physical_runtime) struct ReopenedPhysicalWalInventory {
     pub(super) active_artifact: ArtifactTreeFile,
     pub(super) segment_count: u32,
     pub(super) frame_count: u64,
+    /// Mutation frames still retained; each one's publication stays charged.
+    pub(super) publication_frames: u64,
     pub(super) byte_count: u64,
     pub(super) peak_buffer_bytes: u64,
     pub(super) requires_inspection: bool,

@@ -44,6 +44,7 @@ pub(super) fn profile_identity(
         capacity.semantic_bytes_per_work(),
         capacity.total_semantic_bytes(),
         capacity.terminal_evidence(),
+        capacity.dispatch_permits(),
     ] {
         digest.update((value as u128).to_le_bytes());
     }

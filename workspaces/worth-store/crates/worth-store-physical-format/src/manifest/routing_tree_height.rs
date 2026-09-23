@@ -1,4 +1,4 @@
-pub(super) fn required_tree_level(entry_count: u64, capacity: u16) -> Option<u16> {
+pub fn required_tree_level(entry_count: u64, capacity: u16) -> Option<u16> {
     if entry_count == 0 || capacity < 2 {
         return None;
     }

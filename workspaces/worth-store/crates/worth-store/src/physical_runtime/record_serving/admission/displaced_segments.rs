@@ -1,18 +1,31 @@
-use worth_store_physical_format::{DurablePhysicalRootManifest, RecordArtifactFile};
+use worth_store_physical_format::{
+    DurablePhysicalRootManifest, PhysicalSegmentId, RecordArtifactFile,
+};
 
+use super::super::access::manifest_routing::{
+    ManifestDiscoveryCounterSnapshot, ManifestLookupFailure,
+};
+use super::super::access::segment_membership::SegmentMembershipReader;
 use super::super::residency::serving_artifacts::ServingRecordArtifacts;
-use super::bootstrap::{backend_before_effect, BootstrapTransitionFailure, DisplacedSegmentCharge};
+use super::bootstrap::{
+    backend_before_effect, BootstrapTransitionFailure, DisplacedSegmentCharge,
+    RecordBootstrapDenial,
+};
 
-/// Rewrite steps in the publication chain whose source segment file remains.
+/// Rewrite steps in the publication chain whose source segment file remains
+/// although the current root reads no frame from it.
 ///
 /// An append changes the record count, so its predecessor stays out of this
 /// charge. A rewrite keeps the count and advances the same segment generation.
+/// A span rewrite can leave live frames before the span in its source file,
+/// so only the current membership decides whether the source is displaced.
 /// Retirement removes the source file; the charge ends with the file.
 pub(super) fn retained_displaced_segments(
     prior: &[DurablePhysicalRootManifest],
     current: &DurablePhysicalRootManifest,
     artifacts: &ServingRecordArtifacts,
-    page_bytes: u64,
+    membership: &SegmentMembershipReader<'_>,
+    allocation: &worth_store_buffer_pool::OperationAllocationGrant,
 ) -> Result<Vec<DisplacedSegmentCharge>, BootstrapTransitionFailure> {
     let mut displaced = Vec::new();
     let mut before = prior.first();
@@ -25,7 +38,7 @@ pub(super) fn retained_displaced_segments(
                         generation: charge.generation,
                     })
                     .map_err(backend_before_effect)?;
-                if present && wholly_obsolete(artifacts, &charge, page_bytes)? {
+                if present && unread_by_current_root(membership, allocation, &charge)? {
                     displaced.push(charge);
                 }
             }
@@ -56,19 +69,35 @@ fn rewrite_displacement(
     })
 }
 
-/// A rewrite replaces one tail page. Only a one-page generation is then
-/// wholly unreachable. A longer file still holds the current root's earlier
-/// pages, so missing or larger length blocks deletion.
-fn wholly_obsolete(
-    artifacts: &ServingRecordArtifacts,
+/// Reads only the membership blocks holding the charged segment.
+fn unread_by_current_root(
+    membership: &SegmentMembershipReader<'_>,
+    allocation: &worth_store_buffer_pool::OperationAllocationGrant,
     charge: &DisplacedSegmentCharge,
-    page_bytes: u64,
 ) -> Result<bool, BootstrapTransitionFailure> {
-    let length = artifacts
-        .file_length(RecordArtifactFile::Segment {
-            segment: charge.segment_id,
-            generation: charge.generation,
-        })
-        .map_err(backend_before_effect)?;
-    Ok(length == page_bytes)
+    let segment =
+        PhysicalSegmentId::from_raw(charge.segment_id).map_err(|_| current_root_damaged())?;
+    let mut discovery = ManifestDiscoveryCounterSnapshot::default();
+    let entries = membership
+        .segment_entries(allocation, segment, &mut discovery)
+        .map_err(membership_failure)?;
+    Ok(entries
+        .iter()
+        .all(|entry| entry.data_generation() != charge.generation))
+}
+
+fn membership_failure(failure: ManifestLookupFailure) -> BootstrapTransitionFailure {
+    match failure {
+        ManifestLookupFailure::Backend(failure) => backend_before_effect(failure),
+        ManifestLookupFailure::Residency(denial) => {
+            BootstrapTransitionFailure::Denied(RecordBootstrapDenial::from_residency(denial))
+        }
+        ManifestLookupFailure::Frame(_)
+        | ManifestLookupFailure::ResidentAdmission(_)
+        | ManifestLookupFailure::Damaged => current_root_damaged(),
+    }
+}
+
+fn current_root_damaged() -> BootstrapTransitionFailure {
+    BootstrapTransitionFailure::Denied(RecordBootstrapDenial::CurrentRootDamaged)
 }

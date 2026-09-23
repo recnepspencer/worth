@@ -94,7 +94,58 @@ impl PhysicalRecordSubmission {
                 .into()
             }
         };
-        director.prepare_selected_segment_rewrite(placement, request)
+        director.prepare_selected_segment_rewrite(placement, request, 1)
+    }
+
+    pub fn rewrite_selected_inline_pages(
+        &self,
+        placement: AdmittedRecordPlacementPolicy,
+        request: PhysicalMutationRequest,
+        pages: u32,
+    ) -> PhysicalMutationPreparationOutcome {
+        let director = match self.director.upgrade() {
+            Some(director) => director,
+            None => {
+                return TransitionOutcome::stale(
+                    PhysicalMutationPreparationStale::PublicationAuthorityReleased,
+                )
+                .into()
+            }
+        };
+        director.prepare_selected_segment_rewrite(placement, request, pages)
+    }
+
+    /// Names `count` current inline segment files and partitions them into
+    /// separately atomic rewrites before any of those rewrites is admitted.
+    pub fn plan_inline_artifact_rewrites(
+        &self,
+        count: u32,
+    ) -> Result<
+        Vec<super::artifact_scope::PlannedInlineRewriteArtifact>,
+        super::artifact_scope::InlineArtifactRewritePlanDenial,
+    > {
+        let director = self.director.upgrade().ok_or(
+            super::artifact_scope::InlineArtifactRewritePlanDenial::PublicationAuthorityReleased,
+        )?;
+        director.plan_inline_artifact_rewrites(count)
+    }
+
+    pub fn rewrite_planned_inline_artifact(
+        &self,
+        placement: AdmittedRecordPlacementPolicy,
+        request: PhysicalMutationRequest,
+        artifact: super::artifact_scope::PlannedInlineRewriteArtifact,
+    ) -> PhysicalMutationPreparationOutcome {
+        let director = match self.director.upgrade() {
+            Some(director) => director,
+            None => {
+                return TransitionOutcome::stale(
+                    PhysicalMutationPreparationStale::PublicationAuthorityReleased,
+                )
+                .into()
+            }
+        };
+        director.prepare_planned_inline_artifact(placement, request, artifact)
     }
 
     pub(in crate::physical_runtime) fn cancel_prepared_before_group_seal(

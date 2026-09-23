@@ -19,7 +19,9 @@ pub(in crate::physical_runtime) use completion_projection::PreparedRecordComplet
 pub(in crate::physical_runtime::record_serving) use data_image::ExistingDataFrameImage;
 #[cfg(feature = "certification-test-authority")]
 pub use director::CertificationPhysicalRecordSubmission;
-pub use director::PhysicalRecordSubmission;
+pub use director::{
+    InlineArtifactRewritePlanDenial, PhysicalRecordSubmission, PlannedInlineRewriteArtifact,
+};
 pub(in crate::physical_runtime) use director::{
     RecordPublicationDirector, RecordPublicationFoundation,
 };

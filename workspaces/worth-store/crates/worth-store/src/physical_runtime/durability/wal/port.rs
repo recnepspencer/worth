@@ -12,15 +12,12 @@ use crate::physical_runtime::durability::PhysicalDurabilityGroupingRuntimeAuthor
 use crate::physical_runtime::durability::PhysicalMutationIdempotencyRuntimeAuthority;
 use crate::physical_runtime::work::PhysicalWorkAdmissionAuthority;
 use crate::physical_runtime::{
-    instance::{
-        PhysicalSchedulerAdmissionOwner, PhysicalStoreWorkRuntime,
-    },
+    instance::{PhysicalSchedulerAdmissionOwner, PhysicalStoreWorkRuntime},
     record_serving::RecordWorkAdmission,
     PhysicalDurabilityObservation, PhysicalExecutorCommand, PhysicalExecutorCommandDenial,
     PhysicalSchedulerDenial, PhysicalWalAppendScope, PhysicalWalAppendSettlement,
     PhysicalWorkExecution, PhysicalWorkPreEffectDenial, PhysicalWorkSettlementEvidence,
-    WalAppendedPhysicalMutation,
-    WalBarrierMember, WalRangeReservedPhysicalMutation,
+    WalAppendedPhysicalMutation, WalBarrierMember, WalRangeReservedPhysicalMutation,
 };
 
 mod group;
@@ -72,7 +69,9 @@ pub(in crate::physical_runtime) struct PhysicalWalAppendPort {
     grouping: PhysicalDurabilityGroupingRuntimeAuthority,
     idempotency: PhysicalMutationIdempotencyRuntimeAuthority,
     durability: PhysicalDurabilityObservation,
-    publication: Arc<OnceLock<Arc<crate::physical_runtime::durability::retention::PhysicalPublicationAdmission>>>,
+    publication: Arc<
+        OnceLock<Arc<crate::physical_runtime::durability::retention::PhysicalPublicationAdmission>>,
+    >,
     #[cfg(feature = "certification-test-authority")]
     fail_next_member_before_effect: Arc<AtomicBool>,
     #[cfg(feature = "certification-test-authority")]
@@ -123,9 +122,12 @@ impl PhysicalWalAppendPort {
 
     pub(in crate::physical_runtime) fn bind_publication_admission(
         &self,
-        admission: Arc<crate::physical_runtime::durability::retention::PhysicalPublicationAdmission>,
+        admission: Arc<
+            crate::physical_runtime::durability::retention::PhysicalPublicationAdmission,
+        >,
     ) {
-        let _ = self.publication.set(admission);
+        let _ = self.publication.set(Arc::clone(&admission));
+        self.owner.bind_publication_retention(admission);
     }
 
     pub(super) fn append_group_member(
@@ -146,10 +148,23 @@ impl PhysicalWalAppendPort {
         self.owner.observation()
     }
 
+    pub(in crate::physical_runtime) fn reopened_publications(&self) -> u64 {
+        self.owner.reopened_publications()
+    }
+
     pub(in crate::physical_runtime) fn plan_maintenance_frame(
         &self,
         payload: &[u8],
-    ) -> Result<(worth_store_physical_backend::ArtifactTreeFile, u64, u64, u64, Vec<u8>), ()> {
+    ) -> Result<
+        (
+            worth_store_physical_backend::ArtifactTreeFile,
+            u64,
+            u64,
+            u64,
+            Vec<u8>,
+        ),
+        (),
+    > {
         self.owner.plan_maintenance_frame(payload)
     }
 

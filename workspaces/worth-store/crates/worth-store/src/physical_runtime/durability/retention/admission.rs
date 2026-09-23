@@ -24,6 +24,7 @@ struct AdmissionState {
     pending: HashMap<PhysicalMutationIdentity, u32>,
     generations: BTreeMap<u64, (u64, u32)>,
     garbage: BTreeMap<(u64, u64), RetainedGarbage>,
+    sealed_publications: Vec<(u64, u64, u64)>,
 }
 
 struct RetainedGarbage {
@@ -72,6 +73,7 @@ impl PhysicalPublicationAdmission {
                 pending: HashMap::new(),
                 generations: BTreeMap::new(),
                 garbage: BTreeMap::new(),
+                sealed_publications: Vec::new(),
             }),
         }
     }
@@ -207,6 +209,7 @@ impl PhysicalPublicationAdmission {
         if state.garbage.contains_key(&key) {
             return;
         }
+        state.charged_bytes = state.charged_bytes.saturating_add(displaced.bytes);
         state.garbage.insert(
             key,
             RetainedGarbage {
@@ -220,14 +223,17 @@ impl PhysicalPublicationAdmission {
 
     pub(in crate::physical_runtime) fn next_displaced(&self) -> Option<DisplacedSegment> {
         let state = self.lock();
-        state.garbage.iter().find_map(|((segment_id, generation), garbage)| {
-            (!garbage.completed).then_some(DisplacedSegment {
-                source_root: garbage.source_root,
-                segment_id: *segment_id,
-                generation: *generation,
-                bytes: garbage.bytes,
+        state
+            .garbage
+            .iter()
+            .find_map(|((segment_id, generation), garbage)| {
+                (!garbage.completed).then_some(DisplacedSegment {
+                    source_root: garbage.source_root,
+                    segment_id: *segment_id,
+                    generation: *generation,
+                    bytes: garbage.bytes,
+                })
             })
-        })
     }
 
     pub(in crate::physical_runtime) fn claim_displaced(
@@ -262,11 +268,16 @@ impl PhysicalPublicationAdmission {
     ) -> Option<super::RetirementRemovalPermit> {
         let state = self.lock();
         let garbage = state.garbage.get(&(segment_id, generation))?;
-        (garbage.claimed && !garbage.completed)
-            .then_some(super::RetirementRemovalPermit::issued(segment_id, generation))
+        (garbage.claimed && !garbage.completed).then_some(super::RetirementRemovalPermit::issued(
+            segment_id, generation,
+        ))
     }
 
-    pub(in crate::physical_runtime) fn revert_displaced_claim(&self, segment_id: u64, generation: u64) {
+    pub(in crate::physical_runtime) fn revert_displaced_claim(
+        &self,
+        segment_id: u64,
+        generation: u64,
+    ) {
         let mut state = self.lock();
         if let Some(garbage) = state.garbage.get_mut(&(segment_id, generation)) {
             if !garbage.completed {
@@ -364,30 +375,8 @@ impl Drop for CandidateGrowthLease {
 mod retained_bytes;
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn growth_cannot_consume_progress_headroom() {
-        let profile = PhysicalRetentionProfile::new(100, 4, 40, 1).unwrap();
-        let admission = std::sync::Arc::new(PhysicalPublicationAdmission::new(profile));
-        let first = admission.reserve_candidate(1, 60).unwrap();
-        let Err(denied) = admission.reserve_candidate(2, 1) else {
-            panic!("a second generation cannot consume progress headroom");
-        };
-        assert_eq!(denied.remaining_bytes, 0);
-        assert_eq!(denied.requested_bytes, 1);
-        drop(first);
-        let shared = admission.reserve_candidate(7, 60).unwrap();
-        let again = admission.reserve_candidate(7, 60).unwrap();
-        assert_eq!(admission.lock().charged_bytes, 60);
-        drop(shared);
-        assert_eq!(admission.lock().charged_bytes, 60);
-        drop(again);
-        assert_eq!(admission.lock().charged_bytes, 0);
-        assert!(admission.reserve_candidate(3, 61).is_err());
-    }
-}
+#[path = "admission_tests.rs"]
+mod tests;
 
 #[cfg(test)]
 #[path = "admission_unresolved.rs"]

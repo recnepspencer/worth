@@ -13,7 +13,7 @@ mod segment_inventory;
 #[path = "independent_wal_oracle/target_claim.rs"]
 mod target_claim;
 
-pub(super) use rewrite_redo::produced_rewrite_payloads;
+pub(crate) use rewrite_redo::produced_rewrite_payloads;
 pub(super) use segment_inventory::inspect_wal_inventory;
 pub(super) use target_claim::{independent_target_claim, IndependentRedoTargetClaim};
 

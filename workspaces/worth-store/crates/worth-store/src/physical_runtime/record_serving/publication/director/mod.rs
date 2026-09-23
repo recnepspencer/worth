@@ -13,6 +13,7 @@ use super::super::{
     RecordPublicationResidueObservation,
 };
 
+mod artifact_scope;
 #[cfg(feature = "certification-test-authority")]
 mod certification_submission;
 mod durable_data;
@@ -21,14 +22,19 @@ mod group_wal_planning;
 mod lifecycle;
 mod managed_mutation;
 mod pre_seal_cancellation;
+mod retirement;
+mod rewrite_anchor;
+mod rewrite_pages;
+mod rewrite_source_liveness;
+mod rewrite_span_selection;
 mod root_candidate_execution;
 mod root_preparation;
-mod retirement;
 mod root_progression;
 mod selected_segment_rewrite;
 mod submission;
 mod wal_data_planning;
 
+pub use artifact_scope::{InlineArtifactRewritePlanDenial, PlannedInlineRewriteArtifact};
 #[cfg(feature = "certification-test-authority")]
 pub use certification_submission::CertificationPhysicalRecordSubmission;
 pub use submission::PhysicalRecordSubmission;
@@ -103,9 +109,7 @@ pub(in crate::physical_runtime) struct RecordPublicationFoundation {
         Vec<crate::physical_runtime::record_serving::admission::bootstrap::DisplacedSegmentCharge>,
     pub(in crate::physical_runtime) unresolved_retirements:
         Vec<crate::physical_runtime::durability::RetirementRecord>,
-    pub(in crate::physical_runtime) retained_extent_bytes: u64,
-    pub(in crate::physical_runtime) retained_inline_bytes: u64,
-    pub(in crate::physical_runtime) retained_publication_overhead: u64,
+    pub(in crate::physical_runtime) publication_overheads: Vec<u64>,
     pub(in crate::physical_runtime) free_space: DurableFreeSpaceManifestHeader,
     pub(in crate::physical_runtime) allocation_frontier: RecordAllocationFrontier,
     pub(in crate::physical_runtime) residue: RecordPublicationResidueObservation,
@@ -136,10 +140,17 @@ impl RecordPublicationDirector {
             foundation.free_space.clone(),
             foundation.read_protection,
         );
-        let mut retained = foundation.retained_inline_bytes;
-        retained = retained.saturating_add(foundation.retained_publication_overhead);
+        // Live segment and extent files are reachable payload, not excess
+        // obsolete bytes. Reopen charges unreclaimed WAL, the overhead of each
+        // publication whose WAL frame remains, and displaced generations.
+        let publications = foundation.wal.reopened_publications();
+        let mut retained = foundation
+            .publication_overheads
+            .iter()
+            .rev()
+            .take(usize::try_from(publications).unwrap_or(usize::MAX))
+            .fold(0_u64, |total, bytes| total.saturating_add(*bytes));
         retained = retained.saturating_add(foundation.wal.observation().reopened_bytes());
-        retained = retained.saturating_add(foundation.retained_extent_bytes);
         root_owner.reconstruct_retained_bytes(retained);
         for segment in &displaced {
             root_owner.restore_displaced_segment(
@@ -161,7 +172,6 @@ impl RecordPublicationDirector {
                 record.generation,
                 record.bytes,
             );
-            root_owner.reconstruct_retained_bytes(record.bytes);
         }
         foundation
             .wal
@@ -292,7 +302,9 @@ impl RecordPublicationDirector {
     }
 
     #[cfg(feature = "certification-test-authority")]
-    pub(in crate::physical_runtime) fn certification_public_segment_removal_rejected(&self) -> bool {
+    pub(in crate::physical_runtime) fn certification_public_segment_removal_rejected(
+        &self,
+    ) -> bool {
         let Some(displaced) = self.root_owner.next_displaced_segment() else {
             return false;
         };
@@ -309,7 +321,10 @@ impl RecordPublicationDirector {
         self.root_owner.pending_publication_count()
     }
 
-    pub(in crate::physical_runtime) fn limit_candidate_growth_bytes(&self, usable_growth_bytes: u64) {
+    pub(in crate::physical_runtime) fn limit_candidate_growth_bytes(
+        &self,
+        usable_growth_bytes: u64,
+    ) {
         let headroom_bytes = 64 * 1024;
         let profile = crate::physical_runtime::durability::PhysicalRetentionProfile::new(
             usable_growth_bytes

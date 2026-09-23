@@ -39,19 +39,19 @@ pub(in crate::physical_runtime::durability) fn plan_reclamation(
         .first()
         .expect("a retained WAL tail is nonempty");
     let entries = state.segments.entries();
+    let allow_extension = tail.segments().len() == 1;
     let retained_index = entries
         .iter()
-        .position(|entry| {
-            entry.identity() == first_retained.artifact()
-                && entry.lsn_range() == first_retained.observed_lsn_range()
-                && entry.byte_count() == first_retained.physical_bytes()
-        })
+        .position(|entry| covers_retained(entry, first_retained, allow_extension))
         .ok_or(PhysicalWalReclamationEligibilityDenial::RetainedTailMismatch)?;
     require_retained_suffix(entries, retained_index, tail.segments())?;
     if retained_index == 0 {
         return Ok(PhysicalWalReclamationPlan::NotRequired { checkpoint });
     }
-    let candidates = reclaimable_before_retirement(&entries[..retained_index], &state.unresolved_retirement_spans);
+    let candidates = reclaimable_before_retirement(
+        &entries[..retained_index],
+        &state.unresolved_retirement_spans,
+    );
     if candidates.is_empty() {
         return Ok(PhysicalWalReclamationPlan::NotRequired { checkpoint });
     }
@@ -74,6 +74,25 @@ pub(in crate::physical_runtime::durability) fn plan_reclamation(
     ))
 }
 
+fn covers_retained(
+    entry: &super::super::inventory::PhysicalWalSegmentInventoryEntry,
+    retained: &crate::physical_runtime::RetainedWalSegment,
+    allow_extension: bool,
+) -> bool {
+    if entry.identity() != retained.artifact()
+        || entry.lsn_range().start() != retained.observed_lsn_range().start()
+    {
+        return false;
+    }
+    if allow_extension {
+        entry.lsn_range().end_exclusive() >= retained.observed_lsn_range().end_exclusive()
+            && entry.byte_count() >= retained.physical_bytes()
+    } else {
+        entry.lsn_range() == retained.observed_lsn_range()
+            && entry.byte_count() == retained.physical_bytes()
+    }
+}
+
 fn reclaimable_before_retirement<'a>(
     candidates: &'a [super::super::inventory::PhysicalWalSegmentInventoryEntry],
     holds: &[(u64, u64, u64, u64)],
@@ -81,9 +100,9 @@ fn reclaimable_before_retirement<'a>(
     let Some(index) = candidates.iter().position(|entry| {
         let start = entry.lsn_range().start().get();
         let end = entry.lsn_range().end_exclusive().get();
-        holds.iter().any(|(_, _, hold_start, hold_end)| {
-            start < *hold_end && *hold_start < end
-        })
+        holds
+            .iter()
+            .any(|(_, _, hold_start, hold_end)| start < *hold_end && *hold_start < end)
     }) else {
         return candidates;
     };
@@ -101,11 +120,14 @@ fn require_retained_suffix(
     let available = inventory
         .get(start..end)
         .ok_or(PhysicalWalReclamationEligibilityDenial::LiveInventoryMismatch)?;
-    let matches = available.iter().zip(retained).all(|(entry, retained)| {
-        entry.identity() == retained.artifact()
-            && entry.lsn_range() == retained.observed_lsn_range()
-            && entry.byte_count() == retained.physical_bytes()
-    });
+    let matches =
+        available
+            .iter()
+            .zip(retained)
+            .enumerate()
+            .all(|(index, (entry, retained_segment))| {
+                covers_retained(entry, retained_segment, index + 1 == retained.len())
+            });
     matches
         .then_some(())
         .ok_or(PhysicalWalReclamationEligibilityDenial::LiveInventoryMismatch)

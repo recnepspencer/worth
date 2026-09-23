@@ -183,6 +183,11 @@ impl ReservedPhysicalWalGroupMembers {
         })
     }
 
+    pub(super) fn publication_segment(&self) -> (u64, u64) {
+        let frontier = self.resulting_frontier();
+        (frontier.segment().get(), frontier.generation().get())
+    }
+
     fn resulting_frontier(&self) -> WalAppendFrontier {
         self.0
             .as_slice()

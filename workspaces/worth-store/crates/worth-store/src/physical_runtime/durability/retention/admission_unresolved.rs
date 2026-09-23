@@ -4,10 +4,13 @@ use worth_store_physical_format::store_namespace::{
     ProposedStoreIdentity, StoreNamespaceIdentityRecord, StoreNamespaceVersion,
 };
 
-use super::{PhysicalPublicationAdmission, PhysicalPublicationAdmissionDenial, PhysicalRetentionProfile};
+use super::{
+    DisplacedSegment, PhysicalPublicationAdmission, PhysicalPublicationAdmissionDenial,
+    PhysicalRetentionProfile,
+};
 use crate::physical_runtime::{
-    LifecycleGeneration, PhysicalMutationIdentity, PhysicalOperationIdentity, PhysicalWorkGeneration,
-    PhysicalWorkIdentity, RuntimeIdentity,
+    LifecycleGeneration, PhysicalMutationIdentity, PhysicalOperationIdentity,
+    PhysicalWorkGeneration, PhysicalWorkIdentity, RuntimeIdentity,
 };
 
 fn identity(operation: u64) -> PhysicalMutationIdentity {
@@ -44,6 +47,22 @@ fn retained_publication_blocks_the_next_root_change() {
             panic!("the blocker is the pending publication, not growth")
         }
     }
+}
+
+#[test]
+fn obsolete_displacement_occupies_growth_until_reclaim() {
+    let profile = PhysicalRetentionProfile::new(100, 4, 40, 1).unwrap();
+    let admission = std::sync::Arc::new(PhysicalPublicationAdmission::new(profile));
+    admission.retain_displaced(DisplacedSegment {
+        source_root: 1,
+        segment_id: 4,
+        generation: 1,
+        bytes: 60,
+    });
+    assert_eq!(admission.remaining_growth_bytes(), 0);
+    admission.complete_displaced(4, 1);
+    assert_eq!(admission.charged_growth_bytes(), 0);
+    assert!(admission.reserve_candidate(3, 60).is_ok());
 }
 
 #[test]

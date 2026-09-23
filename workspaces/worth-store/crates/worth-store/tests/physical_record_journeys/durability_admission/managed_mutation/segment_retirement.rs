@@ -16,11 +16,16 @@ fn retirement_waits_for_the_source_reader_then_restores_growth() {
     let serving = serving_from_initialization(&root);
     let (format, placement, _) = configuration();
     let page_bytes = u64::from(format.declaration().page_size().bytes());
-    serving.certification_limit_candidate_growth_bytes(page_bytes.saturating_mul(6));
     completed(prepare(&serving, placement, [51; 32], b"retirement-source").execute());
     let first_reader = serving.records().unwrap();
     let second_reader = serving.records().unwrap();
+    let appended = serving.certification_charged_growth_bytes();
     completed(prepare_rewrite(&serving, placement, [52; 32]).execute());
+    let charged = serving.certification_charged_growth_bytes();
+    // Another rewrite costs what this one did. Half a page short of that
+    // denies it while the displaced page is held, and fits once retired.
+    let rewrite_cost = charged - appended;
+    serving.certification_limit_candidate_growth_bytes(charged + rewrite_cost - page_bytes / 2);
     let successor_reader = serving.records().unwrap();
     let before = segment_names(&root);
     assert!(before.len() >= 2);
@@ -51,7 +56,10 @@ fn retirement_waits_for_the_source_reader_then_restores_growth() {
     drop(successor_reader);
     let after = segment_names(&root);
     assert_eq!(after.len(), before.len() - 1);
-    assert!(directory_contains(&root.join("families").join("wal"), RETIREMENT_DOMAIN));
+    assert!(directory_contains(
+        &root.join("families").join("wal"),
+        RETIREMENT_DOMAIN
+    ));
     completed(prepare_rewrite(&serving, placement, [54; 32]).execute());
     assert!(
         serving
@@ -235,19 +243,24 @@ fn reopened_store_keeps_every_segment_from_one_batch() {
         .admit(format)
         .unwrap();
     let payload = vec![9_u8; 7_500];
-    completed(prepare_records(
-        &serving,
-        placement,
-        [75; 32],
-        &[&payload, &payload, &payload],
-    )
-    .execute());
+    completed(
+        prepare_records(
+            &serving,
+            placement,
+            [75; 32],
+            &[&payload, &payload, &payload],
+        )
+        .execute(),
+    );
     let segments = std::fs::read_dir(root.join("families/records/segments"))
         .unwrap()
         .flatten()
         .filter(|entry| entry.path().extension().and_then(|ext| ext.to_str()) == Some("pages"))
         .count();
-    assert_eq!(segments, 3, "one page per segment must publish three segments");
+    assert_eq!(
+        segments, 3,
+        "one page per segment must publish three segments"
+    );
     let charged = serving.certification_charged_growth_bytes();
     serving.close();
     let serving = crate::serving_from_open(&root);
@@ -299,14 +312,18 @@ fn reopened_store_keeps_an_extent_published_after_a_reserved_gap() {
     let published = vec![7_u8; 8_192];
     completed(prepare(&serving, placement, [74; 32], &published).execute());
     let charged = serving.certification_charged_growth_bytes();
-    let skipped = root.join(
-        "families/records/extents/extent-0000000000000001-0000000000000001.data",
+    let skipped =
+        root.join("families/records/extents/extent-0000000000000001-0000000000000001.data");
+    let published_extent =
+        root.join("families/records/extents/extent-0000000000000002-0000000000000001.data");
+    assert!(
+        !skipped.exists(),
+        "the denied reservation must not publish extent 1"
     );
-    let published_extent = root.join(
-        "families/records/extents/extent-0000000000000002-0000000000000001.data",
+    assert!(
+        published_extent.is_file(),
+        "the later append must publish extent 2"
     );
-    assert!(!skipped.exists(), "the denied reservation must not publish extent 1");
-    assert!(published_extent.is_file(), "the later append must publish extent 2");
     serving.close();
     let serving = crate::serving_from_open(&root);
     assert_eq!(serving.certification_charged_growth_bytes(), charged);
@@ -319,12 +336,12 @@ fn reopened_store_keeps_the_published_extent_charge() {
     let root = parent.path().join("store");
     let serving = serving_from_initialization(&root);
     let (format, placement, _) = configuration();
-    let payload = vec![7_u8; usize::try_from(format.declaration().page_size().bytes() / 2).unwrap()];
+    let payload =
+        vec![7_u8; usize::try_from(format.declaration().page_size().bytes() / 2).unwrap()];
     completed(prepare(&serving, placement, [70; 32], &payload).execute());
     let charged = serving.certification_charged_growth_bytes();
-    let extent = root.join(
-        "families/records/extents/extent-0000000000000001-0000000000000001.data",
-    );
+    let extent =
+        root.join("families/records/extents/extent-0000000000000001-0000000000000001.data");
     assert!(extent.is_file(), "the payload must publish an extent");
     serving.close();
     let serving = crate::serving_from_open(&root);

@@ -1,7 +1,4 @@
-use std::{
-    collections::HashMap,
-    sync::{Arc, Mutex},
-};
+use std::sync::{Arc, Mutex};
 
 use worth_store_physical_format::{DurablePhysicalRootManifest, RootPublicationCell};
 
@@ -25,11 +22,13 @@ struct Registrations {
     revoked: bool,
     slots: Vec<RegistrationSlot>,
     free: Option<usize>,
-    roots: HashMap<u64, ProtectedRoot>,
+    roots: CountedMap<u64, ProtectedRoot>,
+    inline_tails: CountedMap<(u64, u64), u32>,
     live: u32,
     acquisitions: u64,
     releases: u64,
     index_probes: u64,
+    examined_entries: u64,
 }
 
 struct RegistrationSlot {
@@ -62,10 +61,9 @@ impl RootProtectionRegistry {
                 next_free: (index + 1 < capacity).then_some(index + 1),
             });
         }
-        let mut roots = HashMap::new();
-        roots
-            .try_reserve(policy.roots().get().min(policy.acquisitions().get()) as usize)
-            .map_err(|_| PhysicalReadProtectionDenial::MetadataUnavailable)?;
+        let root_bound = policy.roots().get().min(policy.acquisitions().get()) as usize;
+        let roots = CountedMap::with_capacity(root_bound)?;
+        let inline_tails = CountedMap::with_capacity(root_bound)?;
         Ok(Self {
             runtime,
             lifecycle,
@@ -75,10 +73,12 @@ impl RootProtectionRegistry {
                 slots,
                 free: Some(0),
                 roots,
+                inline_tails,
                 live: 0,
                 acquisitions: 0,
                 releases: 0,
                 index_probes: 0,
+                examined_entries: 0,
             }),
         })
     }
@@ -101,24 +101,31 @@ impl RootProtectionRegistry {
             .ok_or(PhysicalReadProtectionDenial::ProtectionLimit)?;
         let key = root.root_cell();
         state.index_probes = state.index_probes.saturating_add(1);
-        if !state.roots.contains_key(&root.generation())
-            && state.roots.len() >= self.policy.roots().get() as usize
-        {
+        let (visited, present) = state.roots.contains(&root.generation());
+        state.examined_entries = state.examined_entries.saturating_add(visited);
+        let fresh = !present;
+        if fresh && state.roots.len() >= self.policy.roots().get() as usize {
             return Err(PhysicalReadProtectionDenial::RetainedRootLimit);
         }
         state.index_probes = state.index_probes.saturating_add(1);
-        let protected = state
-            .roots
-            .entry(root.generation())
-            .or_insert_with(|| ProtectedRoot {
-                manifest: root.clone(),
-                acquisitions: 0,
-            });
-        assert_eq!(
-            &protected.manifest, root,
-            "one root cell cannot name competing root contents"
-        );
-        protected.acquisitions += 1;
+        let tail = fresh.then(|| inline_tail(root)).flatten();
+        {
+            let protected = state
+                .roots
+                .entry(root.generation())
+                .or_insert_with(|| ProtectedRoot {
+                    manifest: root.clone(),
+                    acquisitions: 0,
+                });
+            assert_eq!(
+                &protected.manifest, root,
+                "one root cell cannot name competing root contents"
+            );
+            protected.acquisitions += 1;
+        }
+        if let Some(tail) = tail {
+            *state.inline_tails.entry(tail).or_insert(0) += 1;
+        }
         state.free = state.slots[slot].next_free;
         state.slots[slot] = RegistrationSlot {
             root: Some(key),
@@ -167,14 +174,30 @@ impl RootProtectionRegistry {
             return;
         }
         state.index_probes = state.index_probes.saturating_add(1);
-        let protected = state
-            .roots
-            .get_mut(&root.generation().get())
-            .expect("live registration has indexed root");
-        protected.acquisitions -= 1;
-        if protected.acquisitions == 0 {
+        let generation = root.generation().get();
+        let exhausted = {
+            let protected = state
+                .roots
+                .get_mut(&generation)
+                .expect("live registration has indexed root");
+            protected.acquisitions -= 1;
+            (protected.acquisitions == 0).then(|| inline_tail(&protected.manifest))
+        };
+        if let Some(tail) = exhausted {
             state.index_probes = state.index_probes.saturating_add(1);
-            state.roots.remove(&root.generation().get());
+            if let Some(tail) = tail {
+                let (visited, count) = state.inline_tails.consult(&tail);
+                let count = count.copied();
+                state.examined_entries = state.examined_entries.saturating_add(visited);
+                let remaining =
+                    count.expect("protected tail stays indexed while its root is live") - 1;
+                if remaining == 0 {
+                    state.inline_tails.remove(&tail);
+                } else {
+                    state.inline_tails.insert(tail, remaining);
+                }
+            }
+            state.roots.remove(&generation);
         }
         state.slots[slot] = RegistrationSlot {
             root: None,
@@ -224,6 +247,7 @@ impl RootProtectionRegistry {
             state.acquisitions,
             state.releases,
             state.index_probes,
+            state.examined_entries,
             state.revoked
                 || self.lifecycle.snapshot().phase != ObservedLifecyclePhase::RecordServing,
         )
@@ -235,13 +259,15 @@ impl RootProtectionRegistry {
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
         state.index_probes = state.index_probes.saturating_add(1);
-        state.roots.contains_key(&generation)
+        let (visited, protected) = state.roots.contains(&generation);
+        state.examined_entries = state.examined_entries.saturating_add(visited);
+        protected
     }
 
     /// True when a live reader still names this inline segment as its tail.
     ///
-    /// The registry is the bounded protected-root index. Retirement uses it
-    /// instead of walking the published graph.
+    /// The lookup is the tail index. It does not walk protected roots or the
+    /// published graph.
     pub(in crate::physical_runtime) fn protects_inline_segment(
         &self,
         segment_id: u64,
@@ -252,25 +278,83 @@ impl RootProtectionRegistry {
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
         state.index_probes = state.index_probes.saturating_add(1);
-        state.roots.values().any(|root| {
-            root.manifest.last_inline_segment().is_some_and(|cell| {
-                cell.segment_id().get() == segment_id && cell.generation().get() == generation
-            })
-        })
+        let (visited, count) = state.inline_tails.consult(&(segment_id, generation));
+        let protected = count.is_some_and(|roots| *roots > 0);
+        state.examined_entries = state.examined_entries.saturating_add(visited);
+        protected
     }
 
     pub(super) fn root_acquisitions(&self, binding: PhysicalProtectedRootObservation) -> u32 {
         if binding.runtime() != self.runtime {
             return 0;
         }
-        let state = self
+        let mut state = self
             .state
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
-        state
-            .roots
-            .get(&binding.root().generation().get())
+        let (visited, root) = state.roots.consult(&binding.root().generation().get());
+        let acquisitions = root
             .filter(|root| root.manifest.root_cell() == binding.root())
-            .map_or(0, |root| root.acquisitions)
+            .map_or(0, |root| root.acquisitions);
+        state.examined_entries = state.examined_entries.saturating_add(visited);
+        acquisitions
     }
 }
+
+fn inline_tail(root: &DurablePhysicalRootManifest) -> Option<(u64, u64)> {
+    root.last_inline_segment()
+        .map(|cell| (cell.segment_id().get(), cell.generation().get()))
+}
+
+mod counted {
+    use std::collections::HashMap;
+
+    use super::PhysicalReadProtectionDenial;
+
+    /// Map whose reads count each consulted key. The stored entries are private,
+    /// so a caller cannot walk every key without a counting scan.
+    pub(super) struct CountedMap<K, V> {
+        entries: HashMap<K, V>,
+    }
+
+    impl<K: Eq + std::hash::Hash, V> CountedMap<K, V> {
+        pub(super) fn with_capacity(capacity: usize) -> Result<Self, PhysicalReadProtectionDenial> {
+            let mut entries = HashMap::new();
+            entries
+                .try_reserve(capacity)
+                .map_err(|_| PhysicalReadProtectionDenial::MetadataUnavailable)?;
+            Ok(Self { entries })
+        }
+
+        pub(super) fn consult<'a>(&'a self, key: &K) -> (u64, Option<&'a V>) {
+            (1, self.entries.get(key))
+        }
+
+        pub(super) fn contains(&self, key: &K) -> (u64, bool) {
+            let (visited, value) = self.consult(key);
+            (visited, value.is_some())
+        }
+
+        pub(super) fn len(&self) -> usize {
+            self.entries.len()
+        }
+
+        pub(super) fn entry(&mut self, key: K) -> std::collections::hash_map::Entry<'_, K, V> {
+            self.entries.entry(key)
+        }
+
+        pub(super) fn get_mut(&mut self, key: &K) -> Option<&mut V> {
+            self.entries.get_mut(key)
+        }
+
+        pub(super) fn insert(&mut self, key: K, value: V) -> Option<V> {
+            self.entries.insert(key, value)
+        }
+
+        pub(super) fn remove(&mut self, key: &K) -> Option<V> {
+            self.entries.remove(key)
+        }
+    }
+}
+
+use counted::CountedMap;

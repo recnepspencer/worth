@@ -154,6 +154,21 @@ impl ServingPhysicalRuntime {
             .reserve_record_lane(lane, self.parts.record_work.scheduler_security())
     }
 
+    pub fn reserve_physical_scheduler_background(
+        &self,
+        lane: worth_store_io_scheduler::foreground_reservation::ForegroundLaneDeclaration,
+    ) -> Result<
+        (
+            worth_store_io_scheduler::foreground_reservation::PhysicalInstanceForegroundReservation,
+            worth_store_io_scheduler::IoSchedulerBackendCapabilityAdmission,
+        ),
+        crate::physical_runtime::RecordSchedulerReservationDenial,
+    > {
+        self.parts
+            .scheduler_admission
+            .reserve_background_dispatch(lane, self.parts.record_work.scheduler_security())
+    }
+
     pub fn physical_scheduler_capacity(
         &self,
     ) -> worth_store_io_scheduler::foreground_reservation::PhysicalInstanceForegroundCapacitySnapshot

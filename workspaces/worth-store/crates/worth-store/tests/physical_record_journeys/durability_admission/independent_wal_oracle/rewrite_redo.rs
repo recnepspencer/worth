@@ -8,9 +8,9 @@ const CANONICAL_DOMAIN: &[u8] = b"store.physical.wal.canonical-redo.v3";
 const BODY_BYTES: usize = 216;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(in super::super) struct IndependentRewriteRedo {
+pub(crate) struct IndependentRewriteRedo {
     pub(in super::super) source_root_generation: u64,
-    pub(in super::super) source_length: u32,
+    pub(crate) source_length: u32,
     pub(in super::super) destination_length: u32,
     pub(in super::super) candidate_bytes: u64,
     pub(in super::super) resulting_root_generation: u64,
@@ -69,7 +69,7 @@ pub(in super::super) fn inspect_rewrite_redo(
     })
 }
 
-pub(in super::super) fn produced_rewrite_payloads(root: &Path) -> Vec<IndependentRewriteRedo> {
+pub(crate) fn produced_rewrite_payloads(root: &Path) -> Vec<IndependentRewriteRedo> {
     let mut found = Vec::new();
     collect(root, &mut found);
     found
@@ -175,7 +175,9 @@ mod tests {
             Err(BindingInspectionDenial::Truncated)
         );
 
-        let mut unknown = (b"store.physical.unknown.v9".len() as u64).to_le_bytes().to_vec();
+        let mut unknown = (b"store.physical.unknown.v9".len() as u64)
+            .to_le_bytes()
+            .to_vec();
         unknown.extend_from_slice(b"store.physical.unknown.v9");
         unknown.extend_from_slice(&[0; BODY_BYTES]);
         assert_eq!(

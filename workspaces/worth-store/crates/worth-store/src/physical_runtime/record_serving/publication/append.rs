@@ -27,6 +27,9 @@ pub enum RecordAppendDenial {
     PlacementFormatMismatch,
     ManifestCapacityMigrationRequired,
     PublishedLayoutDamaged,
+    /// A selected rewrite span reaches a frame the current root does not read
+    /// from the tail generation, so the span has no live source to rewrite.
+    RewriteSpanNotLive,
     PhysicalPressure,
     ResidencyUnavailable(super::super::PhysicalRecordResidencyFailure),
 }

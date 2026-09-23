@@ -59,6 +59,7 @@ pub(in crate::physical_runtime) fn reopen_wal_inventory(
         Vec::with_capacity(segments.len());
     let mut total_frames = 0u64;
     let mut total_bytes = 0u64;
+    let mut publication_frames = 0u64;
     let mut peak_buffer_bytes = 0u64;
     let mut active_lsn_end = None;
     let mut members = Vec::new();
@@ -117,7 +118,8 @@ pub(in crate::physical_runtime) fn reopen_wal_inventory(
         }
         for frame in verified.frames().iter().copied() {
             if super::super::super::retention::payload_is_retirement(frame.payload()) {
-                let Some(record) = super::super::super::retention::decode_retirement(frame.payload())
+                let Some(record) =
+                    super::super::super::retention::decode_retirement(frame.payload())
                 else {
                     return Err(PhysicalWalOpenFailure::MemberPayloadRejected);
                 };
@@ -136,6 +138,7 @@ pub(in crate::physical_runtime) fn reopen_wal_inventory(
                 }
                 continue;
             }
+            publication_frames = publication_frames.saturating_add(1);
             if let Some(member) = ReopenedPhysicalWalMember::decode_retained_frame(cutoff, frame)
                 .map_err(|_denial| PhysicalWalOpenFailure::MemberPayloadRejected)?
             {
@@ -202,6 +205,7 @@ pub(in crate::physical_runtime) fn reopen_wal_inventory(
         active_artifact,
         segment_count,
         frame_count: total_frames,
+        publication_frames,
         byte_count: total_bytes,
         peak_buffer_bytes,
         requires_inspection,
@@ -267,6 +271,7 @@ fn empty_inventory(
         ),
         segment_count: 0,
         frame_count: 0,
+        publication_frames: 0,
         byte_count: 0,
         peak_buffer_bytes: 0,
         requires_inspection: false,

@@ -13,13 +13,14 @@ impl PhysicalCurrentRootOwner {
         *self
             .displaced
             .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner()) =
-            Some(crate::physical_runtime::durability::retention::DisplacedSegment {
+            .unwrap_or_else(|poisoned| poisoned.into_inner()) = Some(
+            crate::physical_runtime::durability::retention::DisplacedSegment {
                 source_root,
                 segment_id,
                 generation,
                 bytes,
-            });
+            },
+        );
     }
 
     pub(in crate::physical_runtime) fn release_rewrite_candidate(&self) {
@@ -34,15 +35,6 @@ impl PhysicalCurrentRootOwner {
     }
 
     pub(in crate::physical_runtime) fn commit_rewrite_candidate(&self) {
-        let leases = std::mem::take(
-            &mut *self
-                .rewrite_growth
-                .lock()
-                .unwrap_or_else(|poisoned| poisoned.into_inner()),
-        );
-        for lease in leases {
-            self.publication.seal_candidate_charge(lease.generation());
-        }
         if let Some(displaced) = self
             .displaced
             .lock()
@@ -51,6 +43,15 @@ impl PhysicalCurrentRootOwner {
         {
             self.publication.retain_displaced(displaced);
         }
+        // The published generation is live payload. Dropping the lease releases
+        // it from the excess-obsolete budget. The displaced source, if any, was
+        // charged above and stays until reclaim.
+        drop(std::mem::take(
+            &mut *self
+                .rewrite_growth
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner()),
+        ));
     }
 
     /// Keeps a reserved candidate charged when publication did not settle.
@@ -106,7 +107,11 @@ impl PhysicalCurrentRootOwner {
         retirement_blocked(self, &state, displaced)
     }
 
-    pub(in crate::physical_runtime) fn revert_displaced_claim(&self, segment_id: u64, generation: u64) {
+    pub(in crate::physical_runtime) fn revert_displaced_claim(
+        &self,
+        segment_id: u64,
+        generation: u64,
+    ) {
         self.publication
             .revert_displaced_claim(segment_id, generation);
     }

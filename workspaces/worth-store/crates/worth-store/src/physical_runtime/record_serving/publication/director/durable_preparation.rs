@@ -10,13 +10,13 @@ use crate::physical_runtime::{
     record_serving::{
         planning::batch_placement::preflight_placement,
         publication::{
-            prepare_canonical_payload,
-            CanonicalPayloadPreparationError, CanonicalRecordAppendPayload,
-            PhysicalMutationPreparationDeferred, PhysicalMutationPreparationDenial,
-            PhysicalMutationPreparationFailure, PhysicalMutationPreparationOutcome,
-            PhysicalMutationPreparationRebindRequired, PhysicalMutationPreparationStale,
-            PhysicalMutationPreparationSuccess, PhysicalMutationResourceShape,
-            PreparedPhysicalMutation, PreparedPhysicalMutationContext,
+            prepare_canonical_payload, CanonicalPayloadPreparationError,
+            CanonicalRecordAppendPayload, PhysicalMutationPreparationDeferred,
+            PhysicalMutationPreparationDenial, PhysicalMutationPreparationFailure,
+            PhysicalMutationPreparationOutcome, PhysicalMutationPreparationRebindRequired,
+            PhysicalMutationPreparationStale, PhysicalMutationPreparationSuccess,
+            PhysicalMutationResourceShape, PreparedPhysicalMutation,
+            PreparedPhysicalMutationContext,
         },
         AdmittedRecordPlacementPolicy, RecordAppendBatch, RecordAppendDenial, RecordAppendError,
     },
@@ -111,6 +111,10 @@ impl RecordPublicationDirector {
                     start: crate::physical_runtime::PhysicalMutationRuntimeOwner::start_port(
                         &self.mutations,
                     ),
+                    selected_segment_rewrite: false,
+                    rewrite_pages: 0,
+                    source_root_generation: 0,
+                    rewrite_anchor: None,
                 },
             ),
         ))
