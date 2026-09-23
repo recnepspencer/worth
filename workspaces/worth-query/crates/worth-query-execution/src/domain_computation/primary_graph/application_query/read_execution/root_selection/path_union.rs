@@ -45,6 +45,7 @@ pub(super) fn select_root_path_union<
     }
     Ok(BoundedRootSelection {
         candidates: roots.into_iter().collect(),
+        selected_predicate_source: None,
         examined_candidates: work.predicate_records_examined,
         predicate_work_units: work.predicate_work_units,
         work_units: work.work_units,

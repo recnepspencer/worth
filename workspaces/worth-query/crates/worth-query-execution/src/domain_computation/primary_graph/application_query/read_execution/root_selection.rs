@@ -14,6 +14,8 @@ mod path_union;
 
 pub(super) struct BoundedRootSelection {
     pub(super) candidates: Vec<EntityId>,
+    pub(super) selected_predicate_source:
+        Option<super::super::observed_source::WorthQueryObservedAspectRevision>,
     pub(super) examined_candidates: usize,
     pub(super) predicate_work_units: usize,
     pub(super) work_units: usize,
@@ -124,6 +126,7 @@ pub(super) fn select_bounded_roots<
     match contract.predicates() {
         [] => Ok(BoundedRootSelection {
             candidates: vec![plan.scope.entity_id()],
+            selected_predicate_source: None,
             examined_candidates: 1,
             predicate_work_units: 1,
             work_units: 1,
@@ -238,8 +241,41 @@ fn select_indexed_root<
             field,
         ));
     }
+    let selected_predicate_source = scoped
+        .map(|entity_id| {
+            let contract_revision = graph
+                .aspect_contract(entity, predicate.aspect_key())
+                .ok_or_else(|| {
+                    read_execution_denial(
+                        WorthQueryApplicationReadExecutionDenialKind::ProjectionUnavailable,
+                        field,
+                    )
+                })?
+                .revision();
+            let native_revision = runtime
+                .read_truth()
+                .project_snapshot(plan.basis.snapshot_handle())
+                .and_then(|view| view.entity_aspect_version(entity_id, predicate.aspect_key()))
+                .ok_or_else(|| {
+                    read_execution_denial(
+                        WorthQueryApplicationReadExecutionDenialKind::ProjectionUnavailable,
+                        field,
+                    )
+                })?;
+            Ok(
+                super::super::observed_source::WorthQueryObservedAspectRevision {
+                    entity: entity_id,
+                    entity_name: entity.to_owned(),
+                    aspect: predicate.aspect_key().clone(),
+                    contract_revision,
+                    native_revision,
+                },
+            )
+        })
+        .transpose()?;
     Ok(BoundedRootSelection {
         candidates: scoped.into_iter().collect(),
+        selected_predicate_source,
         examined_candidates: lookup.examined_entry_count(),
         predicate_work_units: lookup.examined_entry_count(),
         work_units: lookup.examined_entry_count(),

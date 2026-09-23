@@ -87,6 +87,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn read_live
         &plan.governance,
         &plan.parameters,
         &selection.candidates,
+        selection.selected_predicate_source.as_ref(),
         plan.controls
             .maximum_work()
             .get()

@@ -21,6 +21,7 @@ pub(super) fn collect_source_footprints(
     contract: &WorthQueryInstalledGraphReadContract,
     governance: &WorthQueryApplicationQueryGovernance,
     roots: &[WorthQueryApplicationProjectionNode],
+    selected_predicate_source: Option<&WorthQueryObservedAspectRevision>,
     work: &mut ResultTreeWork,
     result_buffer: &mut WorthQueryApplicationResultBufferReservation,
 ) -> Result<Vec<WorthQueryObservedSourceFootprint>, WorthQueryApplicationReadExecutionDenial> {
@@ -37,7 +38,9 @@ pub(super) fn collect_source_footprints(
             )?,
             aspects: allocate_claimed_result_vector(
                 result_buffer,
-                counts.fields,
+                counts
+                    .fields
+                    .saturating_add(usize::from(selected_predicate_source.is_some())),
                 root.result_path(),
             )?,
             adjacencies: allocate_claimed_result_vector(
@@ -56,6 +59,31 @@ pub(super) fn collect_source_footprints(
             result_buffer,
             &mut footprint,
         )?;
+        if let Some(source) = selected_predicate_source {
+            if source.entity != root.entity_id() {
+                return Err(projection_denial(root.result_path()));
+            }
+            match footprint.aspects.iter().find(|observed| {
+                observed.entity == source.entity && observed.aspect == source.aspect
+            }) {
+                Some(observed) if observed != source => {
+                    return Err(projection_denial(root.result_path()));
+                }
+                Some(_) => {}
+                None => {
+                    result_buffer
+                        .claim(
+                            source
+                                .entity_name
+                                .len()
+                                .saturating_add(source.aspect.as_str().len()),
+                        )
+                        .map_err(|()| super::result_buffer_denial(root.result_path()))?;
+                    footprint.aspects.push(source.clone());
+                    work.charge_source_observation(1, root.result_path())?;
+                }
+            }
+        }
         let released_bytes = normalize_source_footprint(&mut footprint);
         result_buffer.release_temporary(released_bytes);
         footprints.push(footprint);

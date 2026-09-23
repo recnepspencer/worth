@@ -68,7 +68,14 @@ fn filters_siblings_before_child_projection() {
     assert!(result.receipt().work().predicate_work_units() >= 5);
     let source = result.observed_sources()[0].footprint_for_test();
     assert_eq!(source.entities.len(), 3);
-    assert_eq!(source.aspects.len(), 2);
+    assert_eq!(source.aspects.len(), 3);
+    assert!(
+        source.aspects.iter().any(|aspect| {
+            aspect.entity == account.entity_id()
+                && aspect.aspect.as_str() == AccountStatus::reference().aspect()
+        }),
+        "the root predicate is a source dependency even when its field is not projected"
+    );
     assert_eq!(source.adjacencies.len(), 1);
     assert_eq!(source.adjacencies[0].endpoints.len(), 2);
 }

@@ -84,6 +84,7 @@ pub(super) fn materialize_result_tree(
     governance: &crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationQueryGovernance,
     parameters: &WorthQueryAdmittedApplicationQueryParameters,
     root_ids: &[EntityId],
+    selected_predicate_source: Option<&crate::domain_computation::primary_graph::application_query::observed_source::WorthQueryObservedAspectRevision>,
     maximum_work: usize,
     collection_selection: ResultTreeCollectionSelection,
     result_buffer: &mut WorthQueryApplicationResultBufferReservation,
@@ -116,6 +117,7 @@ pub(super) fn materialize_result_tree(
         contract,
         governance,
         &rows,
+        selected_predicate_source,
         &mut work,
         result_buffer,
     )?;

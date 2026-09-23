@@ -88,6 +88,7 @@ pub(super) fn read_bounded_root_rows<
         &plan.governance,
         &plan.parameters,
         &selection.candidates,
+        selection.selected_predicate_source.as_ref(),
         plan.controls
             .maximum_work()
             .get()
@@ -187,6 +188,7 @@ pub(super) fn read_continuation_page<
         &plan.governance,
         &plan.parameters,
         &selection.candidates,
+        selection.selected_predicate_source.as_ref(),
         plan.controls
             .maximum_work()
             .get()
