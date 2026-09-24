@@ -17,7 +17,6 @@ use crate::durability::data::{
 use crate::durability::log::local_store::{
     append_segment_entry, checkpoint_file_path, current_segment_ids, ensure_loaded_store,
     persist_store_manifest, segment_file_path, segment_requires_recovery_readmission,
-    DurableCheckpointFile,
 };
 use crate::durability::log::native_file_codec::write_checkpoint_file;
 
@@ -322,12 +321,7 @@ impl<'runtime> DurabilityAuthority<'runtime> {
                 + 1,
         );
         let path = checkpoint_file_path(&store.layout, checkpoint_id);
-        write_checkpoint_file(
-            &path,
-            &DurableCheckpointFile {
-                checkpoint: checkpoint.clone(),
-            },
-        )?;
+        write_checkpoint_file(&path, checkpoint)?;
         let manifest = DurableCheckpointManifest {
             checkpoint_id,
             path,

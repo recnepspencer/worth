@@ -1,13 +1,106 @@
+use serde::ser::{SerializeSeq, SerializeStruct};
 use serde::{Deserialize, Serialize};
 
 use crate::durability::data::{DurabilityError, DurableCheckpoint, RecoveryFailureClass};
+use crate::history::data::PositionedCanonicalCommit;
 
 use super::local_store::DurableCheckpointFile;
-use super::persisted_canonical_commit::PersistedCanonicalCommit;
+use super::persisted_canonical_commit::{PersistedCanonicalCommit, PersistedCheckpointCommitRef};
+
+#[cfg(test)]
+#[path = "persisted_checkpoint_tests.rs"]
+mod tests;
 
 #[derive(Serialize, Deserialize)]
 pub(super) struct PersistedDurableCheckpointFile {
     checkpoint: PersistedDurableCheckpoint,
+}
+
+/// Borrowed checkpoint-file encoder. Only the output byte vector is large;
+/// the checkpoint image and its canonical envelopes stay in one owner.
+pub(super) struct PersistedDurableCheckpointFileRef<'a> {
+    checkpoint: &'a DurableCheckpoint,
+}
+
+struct PersistedDurableCheckpointRef<'a>(&'a DurableCheckpoint);
+
+struct CheckpointEnvelopeRefs<'a>(&'a [PositionedCanonicalCommit]);
+
+impl<'a> PersistedDurableCheckpointFileRef<'a> {
+    pub(super) fn new(checkpoint: &'a DurableCheckpoint) -> Self {
+        Self { checkpoint }
+    }
+}
+
+impl Serialize for PersistedDurableCheckpointFileRef<'_> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut fields = serializer.serialize_struct("PersistedDurableCheckpointFile", 1)?;
+        fields.serialize_field(
+            "checkpoint",
+            &PersistedDurableCheckpointRef(self.checkpoint),
+        )?;
+        fields.end()
+    }
+}
+
+impl Serialize for PersistedDurableCheckpointRef<'_> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let checkpoint = self.0;
+        let mut fields = serializer.serialize_struct("PersistedDurableCheckpoint", 18)?;
+        fields.serialize_field("coverage", &checkpoint.coverage)?;
+        fields.serialize_field("branch_cells", &checkpoint.branch_cells)?;
+        fields.serialize_field("branch_roots", &checkpoint.branch_roots)?;
+        fields.serialize_field(
+            "branch_root_schema_images",
+            &checkpoint.branch_root_schema_images,
+        )?;
+        fields.serialize_field("record_identity", &checkpoint.record_identity)?;
+        fields.serialize_field(
+            "record_generation_high_water",
+            &checkpoint.record_generation_high_water,
+        )?;
+        fields.serialize_field("reusable_record_slots", &checkpoint.reusable_record_slots)?;
+        fields.serialize_field("record_slot_frontiers", &checkpoint.record_slot_frontiers)?;
+        fields.serialize_field("envelopes", &CheckpointEnvelopeRefs(&checkpoint.envelopes))?;
+        fields.serialize_field("partition_images", &checkpoint.partition_images)?;
+        fields.serialize_field("aspect_contracts", &checkpoint.aspect_contracts)?;
+        fields.serialize_field("lineage", &checkpoint.lineage)?;
+        fields.serialize_field("index_definitions", &checkpoint.index_definitions)?;
+        fields.serialize_field(
+            "derived_index_artifacts",
+            &checkpoint.derived_index_artifacts,
+        )?;
+        fields.serialize_field(
+            "derived_index_checkpoint",
+            &checkpoint.derived_index_checkpoint,
+        )?;
+        fields.serialize_field(
+            "derived_index_checkpoint_format",
+            &checkpoint.derived_index_checkpoint_format,
+        )?;
+        fields.serialize_field("symbol_table", &checkpoint.symbol_table)?;
+        fields.serialize_field("runtime_name", &checkpoint.runtime_name)?;
+        fields.end()
+    }
+}
+
+impl Serialize for CheckpointEnvelopeRefs<'_> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut sequence = serializer.serialize_seq(Some(self.0.len()))?;
+        for envelope in self.0 {
+            sequence.serialize_element(&PersistedCheckpointCommitRef::from_positioned(envelope))?;
+        }
+        sequence.end()
+    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -44,36 +137,7 @@ struct PersistedDurableCheckpoint {
 }
 
 impl PersistedDurableCheckpointFile {
-    pub(super) fn from_current(file: &DurableCheckpointFile) -> Self {
-        let checkpoint = &file.checkpoint;
-        Self {
-            checkpoint: PersistedDurableCheckpoint {
-                coverage: checkpoint.coverage.clone(),
-                branch_cells: checkpoint.branch_cells.clone(),
-                branch_roots: checkpoint.branch_roots.clone(),
-                branch_root_schema_images: checkpoint.branch_root_schema_images.clone(),
-                record_identity: checkpoint.record_identity.clone(),
-                record_generation_high_water: checkpoint.record_generation_high_water.clone(),
-                reusable_record_slots: checkpoint.reusable_record_slots.clone(),
-                record_slot_frontiers: checkpoint.record_slot_frontiers.clone(),
-                envelopes: checkpoint
-                    .envelopes
-                    .iter()
-                    .map(PersistedCanonicalCommit::from_checkpoint_positioned)
-                    .collect(),
-                partition_images: checkpoint.partition_images.clone(),
-                aspect_contracts: checkpoint.aspect_contracts.clone(),
-                lineage: checkpoint.lineage.clone(),
-                index_definitions: checkpoint.index_definitions.clone(),
-                derived_index_artifacts: checkpoint.derived_index_artifacts.clone(),
-                derived_index_checkpoint: checkpoint.derived_index_checkpoint.clone(),
-                derived_index_checkpoint_format: checkpoint.derived_index_checkpoint_format,
-                symbol_table: checkpoint.symbol_table.clone(),
-                runtime_name: checkpoint.runtime_name.clone(),
-            },
-        }
-    }
-
+    #[cfg(test)]
     pub(super) fn from_checkpoint(checkpoint: DurableCheckpoint) -> Self {
         let DurableCheckpoint {
             coverage,

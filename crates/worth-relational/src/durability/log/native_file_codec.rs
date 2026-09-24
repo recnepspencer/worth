@@ -6,7 +6,9 @@ use serde::{Deserialize, Serialize};
 use crate::durability::data::{DurabilityError, RecoveryFailureClass};
 
 use super::local_store::{DurableCheckpointFile, DurableSegmentFile, DurableStoreManifestFile};
-use super::persisted_checkpoint::PersistedDurableCheckpointFile;
+use super::persisted_checkpoint::{
+    PersistedDurableCheckpointFile, PersistedDurableCheckpointFileRef,
+};
 
 pub(crate) fn read_store_manifest_file(
     path: &Path,
@@ -38,22 +40,20 @@ pub(crate) fn read_checkpoint_file(path: &Path) -> Result<DurableCheckpointFile,
 
 pub(crate) fn write_checkpoint_file(
     path: &Path,
-    file: &DurableCheckpointFile,
+    checkpoint: &crate::durability::data::DurableCheckpoint,
 ) -> Result<(), DurabilityError> {
-    write_native_file(path, &PersistedDurableCheckpointFile::from_current(file))
+    write_native_file(path, &PersistedDurableCheckpointFileRef::new(checkpoint))
 }
 
 pub(crate) fn encode_checkpoint(
     checkpoint: crate::durability::data::DurableCheckpoint,
 ) -> Result<Vec<u8>, DurabilityError> {
-    rmp_serde::to_vec_named(&PersistedDurableCheckpointFile::from_checkpoint(checkpoint)).map_err(
-        |error| {
-            DurabilityError::new(
-                RecoveryFailureClass::DurableIoFailure,
-                format!("failed to encode native checkpoint: {error}"),
-            )
-        },
-    )
+    rmp_serde::to_vec_named(&PersistedDurableCheckpointFileRef::new(&checkpoint)).map_err(|error| {
+        DurabilityError::new(
+            RecoveryFailureClass::DurableIoFailure,
+            format!("failed to encode native checkpoint: {error}"),
+        )
+    })
 }
 
 pub(crate) fn decode_checkpoint(bytes: &[u8]) -> Result<DurableCheckpointFile, DurabilityError> {
