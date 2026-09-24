@@ -16,6 +16,93 @@ mounted layout completion are the integration path, not proof of continuous
 resize. Neither a scaled screenshot nor correct geometry only after release closes
 this milestone. Measure callback/layout/GPU costs before choosing private optimizations.
 
+## Requirements 1-4: presentation truth is compiler-enforced
+
+Resize multiplies the moments at which the host, Motion, Scroll, hit testing,
+and the cursor can disagree about what is on screen. Native Pulse defects found
+after 3.16.1 had that shape and compiled cleanly. A Scroll settle could not see
+an in-flight retarget's presented frame because presence was a boolean beside
+its geometry. A Scroll group rebuilt before its settle counted the published-to-
+accepted gap twice because both offsets were bare `[f64; 2]`. Those defects are
+fixed; these requirements make their class uncompilable instead of reviewable.
+
+Requirements 1-4 complete before delivery step 1 and are taken to completion,
+not piloted. They cover every owner that produces or consumes presented truth:
+runtime presentation, Motion, Scroll, occurrence and viewport geometry,
+interaction, hit testing, Portal anchoring, pointer affordance, the host
+contract, native and headless hosts, certification support, and Pulse. They
+realize arch laws 9, 10, and 16. Each converted surface replaces its raw form;
+no alias, wrapper, compatibility lane, or untyped path survives beside it.
+
+**1. Geometry carries its truth status.** Published, accepted (sampled and
+admitted for presentation), and displayed (host-confirmed) offsets,
+translations, extents, and rectangles are distinct sealed types. They differ in
+truth status, so law 10 forbids phantom tags on one shared array. Arithmetic is
+defined only within one status. A translation names its source and destination
+status. Crossing statuses requires a named conversion that consumes the owner
+evidence proving the relation: an acceptance, a settle receipt, or requirement
+3's presentation witness. A value captured at bind or prepare time carries the
+basis it was captured against, so combining it with a value on another basis
+does not compile. Raw coordinate arrays and scalar pairs remain only at
+declared serialization, platform-event, and GPU-upload edges.
+
+**2. Lifecycle truth is a sum type without defaults.** A flag or option that
+qualifies other state becomes an enum whose variants own their data. For
+example, a Motion track is `Unpresented { .. }` or `OnScreen { geometry, .. }`.
+The same applies to Scroll settles, hover and cursor targets, prepared and
+accepted presentations, pending extents, and retiring resources. These types
+have no `Default`, no boolean-plus-optional pairs, and no constructor that picks
+a variant silently. Every construction and fork site names its variant, so a
+new variant or field breaks each site until it is propagated (law 9). Review
+converts or explicitly justifies every `bool` and `Option` field in the covered
+owners that qualifies another field.
+
+**3. Only the host can say a frame is on screen.** A presented-frame witness
+(name illustrative) is minted only by host physical-completion acknowledgement
+for one surface, generation, and presentation basis. Its constructor is sealed
+against every other crate. Scripted and headless hosts mint it through the same
+boundary; certification gets no shortcut. Everything that commits displayed
+truth consumes the witness:
+
+- Motion commit, Scroll settle and offset write-back, and next-sample damage;
+- hit testing, pointer affordance, and cursor selection;
+- focus and Portal anchor retention, and predecessor resource retirement.
+
+Values derived from a witness are scoped to its surface and generation. Using
+one against a later generation requires that owner's rebase. Placement follows
+the AGENTS.md three-question rule and is recorded before design.
+
+**4. Owner changes record themselves.** In-flight work lands against state that
+may have changed after it was prepared, and each such change is reconciled at
+landing. This covers owner installs, retirements and rebinds during a Motion
+tick, newer pending extents, and host presentation-lifecycle transitions. That
+state changes only through an owner edit handle that records the change as part
+of the mutation; its fields are private and no mutation bypasses the record.
+Landing consumes the record with an exhaustive match, so a new change kind does
+not compile until it is reconciled. This replaces every hand-called
+change-tracking path, such as `note_owner_change` and `rebound_since_prepare`.
+
+**Enforcement and acceptance.**
+
+- Boundary-check forbids three things in the covered modules: raw coordinate
+  representations outside declared edges, construction of requirement 1 and 3
+  types outside their owners, and `Default` on requirement 2 state. Clippy
+  `disallowed_types` and `disallowed_methods` cover what boundary-check cannot.
+- Compile-fail cases prove one forbidden move for each requirement, each with a
+  valid counterpart:
+  - adding values across statuses;
+  - claiming `OnScreen`, or minting a witness, outside the host;
+  - mutating reconciled state without the edit handle.
+- A deterministic interleaving model test mixes prepare, owner edit, rebind,
+  retarget, commit, pre-effect rejection, and resize. After every step it
+  asserts that displayed Motion, Scroll, hit-test, and cursor geometry equal the
+  latest witness's geometry. Debug builds assert the same invariant at every
+  commit.
+- The two post-3.16.1 Scroll regressions keep their focused tests, and both
+  must fail when their conversion is reverted.
+- Closure requires total conversion across the covered owners. A remaining raw
+  lane is a material review finding.
+
 ## Decisive production proof
 
 Drive the existing native Pulse through actual OS border dragging with the button
@@ -237,5 +324,6 @@ Implementation updates the same three continuing guides named in 3.16.1:
 `docs/runtime-subsystems.md` for allocation/owner succession, and
 `docs/native-host-platform.md` for live resize, DPI, lifecycle, and timing contracts.
 Reviewers must explicitly check skipped preparation, stale latest-extent clearing,
-and state/pixel mismatches. Closure requires the full responsive demo, live-drag
-evidence, recovery, bounded resources, and no material unresolved review finding.
+and state/pixel mismatches. Closure requires requirements 1-4 fully converted, the full responsive
+demo, live-drag evidence, recovery, bounded resources, and no material
+unresolved review finding.

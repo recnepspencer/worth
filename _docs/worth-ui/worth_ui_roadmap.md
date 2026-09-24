@@ -2373,7 +2373,10 @@ accepted-frame progress. Wall-clock pacing remains diagnostic, not a 3.16.1 gate
 
 Detailed spec: [milestone-3.16.2.md](./milestone-3.16.2.md)
 
-Build on 3.16.1 with continuous native border-drag presentation and declared
+First make presentation truth compiler-enforced across every presenting owner:
+status-typed geometry, variant-owned lifecycle state, host-minted presented-frame
+witnesses, and self-recording owner changes. Then build on 3.16.1 with continuous
+native border-drag presentation and declared
 Mosaic allocation for the complete dashboard. Coalesce obsolete extent work,
 preserve exact viewport/owner succession, and verify text, scrollbars, overlays,
 recovery, and timing during the drag with a qualified 60 Hz trace on a supported
