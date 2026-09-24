@@ -3,13 +3,10 @@ use crate::validation::data::CustomInvariantScopePlanner;
 use crate::validation::engine::InvariantExecutionRequest;
 use crate::validation::engine::InvariantRuntimeView;
 
-pub(super) fn eligible_registrations<'runtime, 'state>(
-    runtime: &'runtime InvariantRuntimeView,
+pub(super) fn eligible_registrations<'state>(
+    runtime: &InvariantRuntimeView<'state>,
     request: &'state InvariantExecutionRequest<'state>,
-) -> Vec<InvariantPacketRegistration>
-where
-    'runtime: 'state,
-{
+) -> Vec<InvariantPacketRegistration> {
     let touched_kinds = std::cell::OnceCell::new();
     let native = runtime
         .config

@@ -128,6 +128,8 @@ complexity_operations!(
     custom_invariant_candidate_adjacency_count_reads,
     custom_invariant_candidate_adjacency_relation_ids,
     custom_invariant_candidate_reuse_hits,
+    custom_invariant_candidate_entity_aspect_reads,
+    custom_invariant_candidate_relation_aspect_reads,
     relation_integrity_contracts_evaluated,
     relation_endpoint_kind_checks,
     relation_cardinality_checks,

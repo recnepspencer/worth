@@ -5,6 +5,7 @@ use crate::identity::data::KindId;
 use crate::identity::data::{EntityId, RelationId, VersionId};
 use crate::validation::engine::state_view::{VisibleEntityMetadata, VisibleRelationMetadata};
 use crate::validation::engine::{InvariantExecutionRequest, InvariantRuntimeView};
+use worth_foundational::facade::AuthoritativeRecordAspectState;
 
 /// A request-local observation basis. No entry can outlive its engine execution.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -14,29 +15,39 @@ pub(crate) enum CandidateInputBasis {
     Committed,
 }
 
-pub(crate) struct SharedCandidateInputs {
-    pub(super) entries: Mutex<CandidateInputEntries>,
+pub(crate) struct SharedCandidateInputs<'state> {
+    pub(super) entries: Mutex<CandidateInputEntries<'state>>,
     pub(super) sharing_enabled: bool,
 }
 
 #[derive(Default)]
-pub(super) struct CandidateInputEntries {
+pub(super) struct CandidateInputEntries<'state> {
     pub(super) entities:
         BTreeMap<(CandidateInputBasis, VersionId, EntityId), Option<VisibleEntityMetadata>>,
     pub(super) relations:
         BTreeMap<(CandidateInputBasis, VersionId, RelationId), Option<VisibleRelationMetadata>>,
+    pub(super) entity_aspects: BTreeMap<
+        (CandidateInputBasis, VersionId, EntityId),
+        Option<&'state AuthoritativeRecordAspectState>,
+    >,
+    pub(super) relation_aspects: BTreeMap<
+        (CandidateInputBasis, VersionId, RelationId),
+        Option<&'state AuthoritativeRecordAspectState>,
+    >,
     pub(super) adjacency:
         BTreeMap<(CandidateInputBasis, VersionId, EntityId, bool), std::sync::Arc<[RelationId]>>,
     pub(super) adjacency_counts: BTreeMap<(CandidateInputBasis, VersionId, EntityId, bool), usize>,
     pub(super) entity_reads: usize,
     pub(super) relation_reads: usize,
+    pub(super) entity_aspect_reads: usize,
+    pub(super) relation_aspect_reads: usize,
     pub(super) adjacency_gathers: usize,
     pub(super) adjacency_count_reads: usize,
     pub(super) adjacency_relation_ids: usize,
     pub(super) reuse_hits: usize,
 }
 
-impl SharedCandidateInputs {
+impl<'state> SharedCandidateInputs<'state> {
     /// Installation declares the overlap. Runtime reads only fill exact entries
     /// demanded by the participating rules on this observation.
     pub(crate) fn from_installed(
@@ -97,6 +108,14 @@ impl SharedCandidateInputs {
             entries.reuse_hits,
         )
     }
+
+    pub(crate) fn aspect_counters(&self) -> (usize, usize) {
+        let entries = self
+            .entries
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        (entries.entity_aspect_reads, entries.relation_aspect_reads)
+    }
 }
 
 #[cfg(test)]
@@ -146,5 +165,24 @@ mod tests {
             .is_none());
         assert_eq!(reads, 3);
         assert_eq!(inputs.counters().0, 3);
+
+        assert!(inputs
+            .entity_aspect(CandidateInputBasis::Enforcement, VersionId(1), id, || None)
+            .is_none());
+        assert!(inputs
+            .entity_aspect(
+                CandidateInputBasis::Enforcement,
+                VersionId(1),
+                id,
+                || panic!("absent field state was reread")
+            )
+            .is_none());
+        assert!(inputs
+            .entity_aspect(CandidateInputBasis::Enforcement, VersionId(2), id, || None)
+            .is_none());
+        assert!(inputs
+            .entity_aspect(CandidateInputBasis::BeforeImage, VersionId(1), id, || None)
+            .is_none());
+        assert_eq!(inputs.aspect_counters().0, 3);
     }
 }

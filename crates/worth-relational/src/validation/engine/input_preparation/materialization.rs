@@ -1,9 +1,64 @@
 use crate::identity::data::{EntityId, RelationId, VersionId};
 use crate::validation::engine::state_view::{VisibleEntityMetadata, VisibleRelationMetadata};
+use worth_foundational::facade::AuthoritativeRecordAspectState;
 
 use super::plan::{CandidateInputBasis, SharedCandidateInputs};
 
-impl SharedCandidateInputs {
+impl<'state> SharedCandidateInputs<'state> {
+    pub(crate) fn entity_aspect(
+        &self,
+        basis: CandidateInputBasis,
+        version: VersionId,
+        id: EntityId,
+        read: impl FnOnce() -> Option<&'state AuthoritativeRecordAspectState>,
+    ) -> Option<&'state AuthoritativeRecordAspectState> {
+        let mut entries = self
+            .entries
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if !self.sharing_enabled {
+            entries.entity_aspect_reads += 1;
+            return read();
+        }
+        let key = (basis, version, id);
+        if let Some(value) = entries.entity_aspects.get(&key) {
+            let value = *value;
+            entries.reuse_hits += 1;
+            return value;
+        }
+        let value = read();
+        entries.entity_aspect_reads += 1;
+        entries.entity_aspects.insert(key, value);
+        value
+    }
+
+    pub(crate) fn relation_aspect(
+        &self,
+        basis: CandidateInputBasis,
+        version: VersionId,
+        id: RelationId,
+        read: impl FnOnce() -> Option<&'state AuthoritativeRecordAspectState>,
+    ) -> Option<&'state AuthoritativeRecordAspectState> {
+        let mut entries = self
+            .entries
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if !self.sharing_enabled {
+            entries.relation_aspect_reads += 1;
+            return read();
+        }
+        let key = (basis, version, id);
+        if let Some(value) = entries.relation_aspects.get(&key) {
+            let value = *value;
+            entries.reuse_hits += 1;
+            return value;
+        }
+        let value = read();
+        entries.relation_aspect_reads += 1;
+        entries.relation_aspects.insert(key, value);
+        value
+    }
+
     pub(crate) fn adjacency_count(
         &self,
         basis: CandidateInputBasis,

@@ -21,13 +21,10 @@ use crate::validation::engine::InvariantRuntimeView;
 use super::packet_scope::packet_partition_scope;
 use super::packet_selection::eligible_registrations;
 
-pub(crate) fn plan_invariant_execution<'runtime, 'state>(
-    runtime: &'runtime InvariantRuntimeView,
+pub(crate) fn plan_invariant_execution<'state>(
+    runtime: &InvariantRuntimeView<'state>,
     request: &'state InvariantExecutionRequest<'state>,
-) -> PreparedInvariantExecution<'state>
-where
-    'runtime: 'state,
-{
+) -> PreparedInvariantExecution<'state> {
     let registrations = eligible_registrations(runtime, request);
     let context = Arc::new(planning_context(runtime, request));
     let partition_scope = packet_partition_scope(request.merged_plan());

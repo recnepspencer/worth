@@ -16,7 +16,7 @@ pub(crate) struct InvariantRuntimeView<'a> {
     pub(crate) schema_contract_runtime: std::sync::Arc<SchemaContractRuntimeSubsystem>,
     instrumentation: &'a RuntimeInstrumentation,
     shared_candidate_inputs:
-        Option<std::sync::Arc<super::input_preparation::SharedCandidateInputs>>,
+        Option<std::sync::Arc<super::input_preparation::SharedCandidateInputs<'a>>>,
     #[cfg(test)]
     current_version_id: crate::identity::data::VersionId,
     entity_count: usize,
@@ -63,20 +63,32 @@ impl<'a> InvariantRuntimeView<'a> {
         crate::performance::PerformanceAccess::from_instrumentation(self.instrumentation)
     }
 
-    pub(crate) fn with_candidate_input_plan(
+    pub(crate) fn with_candidate_input_plan<'state>(
         &self,
-        request: &super::InvariantExecutionRequest<'_>,
-    ) -> Self {
-        let mut view = self.clone();
-        view.shared_candidate_inputs =
-            super::input_preparation::SharedCandidateInputs::from_installed(self, request)
-                .map(std::sync::Arc::new);
-        view
+        request: &super::InvariantExecutionRequest<'state>,
+    ) -> InvariantRuntimeView<'state>
+    where
+        'a: 'state,
+    {
+        InvariantRuntimeView {
+            config: std::sync::Arc::clone(&self.config),
+            schema_contract_runtime: std::sync::Arc::clone(&self.schema_contract_runtime),
+            instrumentation: self.instrumentation,
+            shared_candidate_inputs:
+                super::input_preparation::SharedCandidateInputs::from_installed(self, request)
+                    .map(std::sync::Arc::new),
+            #[cfg(test)]
+            current_version_id: self.current_version_id,
+            entity_count: self.entity_count,
+            relation_count: self.relation_count,
+            version_depth: self.version_depth,
+            snapshot_pressure: self.snapshot_pressure,
+        }
     }
 
     pub(crate) fn shared_candidate_inputs(
         &self,
-    ) -> Option<std::sync::Arc<super::input_preparation::SharedCandidateInputs>> {
+    ) -> Option<std::sync::Arc<super::input_preparation::SharedCandidateInputs<'a>>> {
         self.shared_candidate_inputs.clone()
     }
 

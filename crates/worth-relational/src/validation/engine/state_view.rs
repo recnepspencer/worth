@@ -1,9 +1,8 @@
-use worth_foundational::facade::AuthoritativeRecordAspectState;
-
 use crate::storage::overlay::PartitionAccess;
 use crate::storage::substrate::EntityArena;
 use crate::storage::substrate::HistoricalMetadata;
 
+mod aspect_state;
 mod structural_adjacency;
 
 #[derive(Clone)]
@@ -11,7 +10,7 @@ pub(crate) struct InvariantStateView<'state> {
     state: &'state dyn PartitionAccess,
     version_id: crate::identity::data::VersionId,
     candidate_inputs: Option<(
-        std::sync::Arc<super::input_preparation::SharedCandidateInputs>,
+        std::sync::Arc<super::input_preparation::SharedCandidateInputs<'state>>,
         super::input_preparation::CandidateInputBasis,
     )>,
 }
@@ -30,7 +29,7 @@ impl<'state> InvariantStateView<'state> {
 
     pub(crate) fn with_candidate_inputs(
         mut self,
-        inputs: Option<std::sync::Arc<super::input_preparation::SharedCandidateInputs>>,
+        inputs: Option<std::sync::Arc<super::input_preparation::SharedCandidateInputs<'state>>>,
         basis: super::input_preparation::CandidateInputBasis,
     ) -> Self {
         self.candidate_inputs = inputs.map(|inputs| (inputs, basis));
@@ -40,7 +39,7 @@ impl<'state> InvariantStateView<'state> {
     pub(crate) fn candidate_inputs(
         &self,
     ) -> Option<&(
-        std::sync::Arc<super::input_preparation::SharedCandidateInputs>,
+        std::sync::Arc<super::input_preparation::SharedCandidateInputs<'state>>,
         super::input_preparation::CandidateInputBasis,
     )> {
         self.candidate_inputs.as_ref()
@@ -90,48 +89,6 @@ impl<'state> InvariantStateView<'state> {
         } else {
             None
         }
-    }
-
-    pub(crate) fn entity_aspect_state(
-        &self,
-        entity_id: crate::identity::data::EntityId,
-    ) -> Option<&'state AuthoritativeRecordAspectState> {
-        let slot = entity_id.slot_index();
-        let partition = self.entity_partition_for_slot(entity_id.partition_id, slot)?;
-        if partition
-            .entity_arena
-            .get(&entity_id)
-            .map(|slot_view| slot_view.generation())
-            != Some(entity_id.generation_value())
-        {
-            return None;
-        }
-        partition
-            .entity_arena
-            .metadata_history_at(slot)
-            .and_then(|history| self.visible_entity_metadata(history))
-            .and_then(|metadata| metadata.authoritative_aspect_state.as_ref())
-    }
-
-    pub(crate) fn relation_aspect_state(
-        &self,
-        relation_id: crate::identity::data::RelationId,
-    ) -> Option<&'state AuthoritativeRecordAspectState> {
-        let slot = relation_id.slot_index();
-        let partition = self.relation_partition_for_slot(relation_id.partition_id, slot)?;
-        if partition
-            .relation_arena
-            .get(&relation_id)
-            .map(|slot_view| slot_view.generation())
-            != Some(relation_id.generation_value())
-        {
-            return None;
-        }
-        partition
-            .relation_arena
-            .metadata_history_at(slot)
-            .and_then(|history| self.visible_relation_metadata(history))
-            .and_then(|metadata| metadata.authoritative_aspect_state.as_ref())
     }
 
     pub(crate) fn entity_metadata(
@@ -317,12 +274,12 @@ impl<'state> InvariantStateView<'state> {
         }
     }
 
-    fn visible_entity_metadata(
+    fn visible_entity_metadata<'history>(
         &self,
-        history: &'state crate::storage::substrate::SharedColumn<
+        history: &'history crate::storage::substrate::SharedColumn<
             crate::storage::substrate::VersionedEntityMetadata,
         >,
-    ) -> Option<&'state crate::storage::substrate::VersionedEntityMetadata> {
+    ) -> Option<&'history crate::storage::substrate::VersionedEntityMetadata> {
         let end = history.partition_point(|entry| entry.effective_at() <= self.version_id);
         (0..end).rev().map(|index| &history[index]).find(|entry| {
             entry.effective_at() <= self.version_id
@@ -332,12 +289,12 @@ impl<'state> InvariantStateView<'state> {
         })
     }
 
-    fn visible_relation_metadata(
+    fn visible_relation_metadata<'history>(
         &self,
-        history: &'state crate::storage::substrate::SharedColumn<
+        history: &'history crate::storage::substrate::SharedColumn<
             crate::storage::substrate::VersionedRelationMetadata,
         >,
-    ) -> Option<&'state crate::storage::substrate::VersionedRelationMetadata> {
+    ) -> Option<&'history crate::storage::substrate::VersionedRelationMetadata> {
         let end = history.partition_point(|entry| entry.effective_at() <= self.version_id);
         (0..end).rev().map(|index| &history[index]).find(|entry| {
             entry.effective_at() <= self.version_id

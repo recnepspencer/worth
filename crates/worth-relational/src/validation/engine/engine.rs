@@ -76,6 +76,10 @@ impl<'runtime> InvariantEngine<'runtime> {
                     adjacency_ids,
                     hits,
                 );
+            let (entity_aspects, relation_aspects) = inputs.aspect_counters();
+            runtime
+                .performance_access()
+                .count_custom_invariant_candidate_aspect_reads(entity_aspects, relation_aspects);
         }
         if !reducer_conflicts.is_empty() {
             self.runtime

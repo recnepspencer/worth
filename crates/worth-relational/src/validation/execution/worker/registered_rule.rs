@@ -19,9 +19,9 @@ pub(super) struct RegisteredInvariantEvaluation {
     pub(super) verdicts: Vec<InvariantVerdict>,
 }
 
-pub(super) fn evaluate_registered_rule(
-    runtime: &InvariantRuntimeView,
-    packet: &InvariantWorkPacket<'_>,
+pub(super) fn evaluate_registered_rule<'state>(
+    runtime: &InvariantRuntimeView<'state>,
+    packet: &InvariantWorkPacket<'state>,
 ) -> RegisteredInvariantEvaluation {
     match &packet.registration {
         crate::authority::commit::preparation::packets::invariant::InvariantPacketRegistration::Native(
@@ -63,9 +63,9 @@ pub(super) fn evaluate_registered_rule(
     }
 }
 
-fn evaluate_native_registration(
-    runtime: &InvariantRuntimeView,
-    packet: &InvariantWorkPacket<'_>,
+fn evaluate_native_registration<'state>(
+    runtime: &InvariantRuntimeView<'state>,
+    packet: &InvariantWorkPacket<'state>,
     registration: &crate::validation::data::InvariantRegistration,
 ) -> RegisteredInvariantEvaluation {
     let context = InvariantExecutionContext::new(
@@ -99,9 +99,9 @@ fn evaluate_native_registration(
     }
 }
 
-fn evaluate_custom_registration(
-    runtime: &InvariantRuntimeView,
-    packet: &InvariantWorkPacket<'_>,
+fn evaluate_custom_registration<'state>(
+    runtime: &InvariantRuntimeView<'state>,
+    packet: &InvariantWorkPacket<'state>,
     registration: &crate::validation::data::CustomInvariantRegistration,
     prepared_execution: &std::sync::Arc<
         dyn crate::validation::data::PreparedCustomInvariantExecution,

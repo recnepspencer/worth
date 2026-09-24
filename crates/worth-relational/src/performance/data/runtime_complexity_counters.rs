@@ -228,4 +228,8 @@ pub struct RuntimeComplexityCounters {
     pub custom_invariant_candidate_adjacency_relation_ids: usize,
     #[serde(default)]
     pub custom_invariant_candidate_reuse_hits: usize,
+    #[serde(default)]
+    pub custom_invariant_candidate_entity_aspect_reads: usize,
+    #[serde(default)]
+    pub custom_invariant_candidate_relation_aspect_reads: usize,
 }

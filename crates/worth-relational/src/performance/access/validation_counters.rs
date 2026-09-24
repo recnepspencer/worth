@@ -62,6 +62,17 @@ impl PerformanceAccess<'_> {
         });
     }
 
+    pub(crate) fn count_custom_invariant_candidate_aspect_reads(
+        &self,
+        entity_reads: usize,
+        relation_reads: usize,
+    ) {
+        self.runtime.services.instrumentation.count(|counters| {
+            counters.custom_invariant_candidate_entity_aspect_reads += entity_reads;
+            counters.custom_invariant_candidate_relation_aspect_reads += relation_reads;
+        });
+    }
+
     pub(crate) fn count_relation_integrity_contracts_evaluated(&self, count: usize) {
         self.runtime
             .services

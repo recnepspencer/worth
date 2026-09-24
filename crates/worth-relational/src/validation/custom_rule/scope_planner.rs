@@ -33,8 +33,8 @@ impl PreparedCustomInvariantScope {
     }
 
     #[cfg(test)]
-    pub(crate) fn capture(
-        observation: &InvariantObservation<'_>,
+    pub(crate) fn capture<'state>(
+        observation: &'state InvariantObservation<'state>,
         version_id: VersionId,
         merged_plan: Option<&MergedCommitPlan>,
         access: &crate::validation::data::CustomInvariantAccessContract,
@@ -43,13 +43,15 @@ impl PreparedCustomInvariantScope {
         Self::capture_with_shared_inputs(observation, version_id, merged_plan, access, work, None)
     }
 
-    pub(crate) fn capture_with_shared_inputs(
-        observation: &InvariantObservation<'_>,
+    pub(crate) fn capture_with_shared_inputs<'state>(
+        observation: &'state InvariantObservation<'state>,
         version_id: VersionId,
         merged_plan: Option<&MergedCommitPlan>,
         access: &crate::validation::data::CustomInvariantAccessContract,
         work: &super::CustomInvariantWorkMeter,
-        inputs: Option<Arc<crate::validation::engine::input_preparation::SharedCandidateInputs>>,
+        inputs: Option<
+            Arc<crate::validation::engine::input_preparation::SharedCandidateInputs<'state>>,
+        >,
     ) -> Self {
         use crate::validation::engine::input_preparation::CandidateInputBasis;
         let state_view = InvariantStateView::new(
