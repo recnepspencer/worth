@@ -1,4 +1,5 @@
 use super::WorthUiMountedSessionState;
+use crate::mounting::presentation::motion_sampling::UiPreparedMotionWork;
 
 pub(crate) enum UiMountedMotionSampleSettlement {
     Committed(crate::mounting::presentation::motion_sampling::UiPresentationMotionSamplingReceipt),
@@ -29,14 +30,10 @@ impl WorthUiMountedSessionState {
     ) {
         publication.with_surface_presentations(|surfaces| {
             for surface in surfaces {
+                debug_assert_eq!(surface.displayed_basis().frame(), publication.frame());
                 self.motion_sampling.rebind_published_presentation(
                     surface.semantic_surface(),
-                    worth_ui_host_contract::UiHostObservationPresentationBasis::new(
-                        surface.host_surface(),
-                        publication.frame(),
-                        surface.binding(),
-                        surface.epoch(),
-                    ),
+                    surface.displayed_basis().basis(),
                 );
             }
         });
@@ -97,11 +94,12 @@ impl WorthUiMountedSessionState {
     pub(crate) fn prepare_motion_tick(
         &mut self,
         tick: u64,
-        presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
+        displayed: crate::mounting::presentation::UiDisplayedSurfaceBasis,
     ) -> Result<
         crate::mounting::presentation::motion_sampling::UiPreparedMotionSampling,
         crate::mounting::presentation::motion_sampling::UiPresentationMotionSamplingDenial,
     > {
+        let presentation = displayed.basis();
         if self
             .presentation
             .binding_requires_reconstruction(presentation.binding())
@@ -115,17 +113,20 @@ impl WorthUiMountedSessionState {
         &mut self,
         host: &crate::facade::WorthUiHostSessionAuthority,
         prepared: crate::mounting::presentation::motion_sampling::UiPreparedMotionSampling,
-        presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
+        displayed: crate::mounting::presentation::UiDisplayedSurfaceBasis,
     ) -> UiMountedMotionSampleSettlement {
-        if prepared.receipt().samples().is_empty() {
-            let receipt = self.motion_sampling.commit_prepared(prepared);
-            self.last_motion_sampling_cost = Some(receipt.cost());
-            return UiMountedMotionSampleSettlement::Committed(receipt);
-        }
+        let prepared = match prepared.into_work() {
+            UiPreparedMotionWork::Unsampled(unsampled) => {
+                let receipt = self.motion_sampling.commit_prepared(unsampled);
+                self.last_motion_sampling_cost = Some(receipt.cost());
+                return UiMountedMotionSampleSettlement::Committed(receipt);
+            }
+            UiPreparedMotionWork::NeedsPresentation(prepared) => prepared,
+        };
         let capability_report = host.capability_report().clone();
         let outcome = self.presentation.present_motion_sample(
             prepared,
-            presentation,
+            displayed.basis(),
             host.effect_port(),
             super::publication::mounted_host_authority(host, &capability_report),
         );
@@ -149,29 +150,32 @@ impl WorthUiMountedSessionState {
         use crate::mounting::UiMotionSamplePresentationOutcome as Outcome;
 
         match outcome {
-            Outcome::Presented {
-                prepared,
-                presentation,
-            } => {
-                let Ok(prepared) = prepared.with_presented_basis(presentation) else {
+            Outcome::Presented { prepared, witness } => {
+                let displayed = witness.displayed_basis();
+                let presentation = displayed.basis();
+                let Some(prepared) = prepared.into_presented(&witness) else {
                     self.presentation
                         .mark_motion_sample_indeterminate(presentation.binding());
                     return UiMountedMotionSampleSettlement::PresentationIndeterminate;
                 };
                 let hit_predecessor = self.retention.hit_evidence(presentation.frame());
-                let Ok(presented_surface) = self
-                    .retention
-                    .update_current_presentation_epoch(presentation)
+                let Ok(presented_surface) =
+                    self.retention.update_current_presentation_epoch(&witness)
                 else {
                     self.presentation
                         .mark_motion_sample_indeterminate(presentation.binding());
                     return UiMountedMotionSampleSettlement::PresentationIndeterminate;
                 };
+                debug_assert_eq!(
+                    presented_surface,
+                    witness.requirement().semantic_surface(),
+                    "retention records the surface the witness proved"
+                );
                 let mut receipt = self.motion_sampling.commit_prepared(prepared);
                 receipt.record_presented_surface(
                     crate::mounting::presentation::motion_sampling::UiPresentationMotionPresentedSurface::new(
                         presented_surface,
-                        presentation,
+                        displayed,
                     ),
                 );
                 let targets = receipt
@@ -243,7 +247,10 @@ impl WorthUiMountedSessionState {
         }
         let current = self
             .current_surface_for_binding(admitted.binding())
-            .and_then(|surface| self.current_presentation_for_surface(surface))
+            .and_then(|surface| {
+                self.current_presentation_for_surface(surface)
+                    .map(|displayed| displayed.basis())
+            })
             .filter(|current| {
                 current.host_surface() == admitted.host_surface()
                     && current.epoch() > admitted.epoch()

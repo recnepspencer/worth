@@ -304,6 +304,7 @@ fn presentation(
         .unwrap()
         .presentation_for_surface(surface)
         .unwrap()
+        .basis()
 }
 
 fn admit(

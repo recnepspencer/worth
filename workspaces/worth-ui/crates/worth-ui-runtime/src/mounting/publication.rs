@@ -213,20 +213,13 @@ impl UiMountedFramePublicationReceipt {
     pub(crate) fn presentation_for_surface(
         &self,
         semantic_surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
-    ) -> Option<worth_ui_host_contract::UiHostObservationPresentationBasis> {
+    ) -> Option<super::presentation::UiDisplayedSurfaceBasis> {
         self.inner
             .surfaces
             .borrow()
             .iter()
             .find(|surface| surface.semantic_surface() == semantic_surface)
-            .map(|surface| {
-                worth_ui_host_contract::UiHostObservationPresentationBasis::new(
-                    surface.host_surface(),
-                    self.frame(),
-                    surface.binding(),
-                    surface.epoch(),
-                )
-            })
+            .map(super::UiMountedSurfacePresentationReceipt::displayed_basis)
     }
 
     pub(crate) fn with_surface_presentations(

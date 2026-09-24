@@ -27,7 +27,7 @@ fn a_track_installed_while_a_tick_is_in_flight_survives_its_commit() {
     let (prepared, displaced) = terminal_tick_in_flight(&world, &mut sampler);
 
     sampler.install(world.receipt(2, 50.0, None)).unwrap();
-    let receipt = sampler.commit_prepared(prepared);
+    let receipt = sampler.commit_prepared(prepared.presented_for_certification());
 
     assert!(
         receipt.terminals().is_empty(),
@@ -45,7 +45,7 @@ fn a_track_rebound_away_while_a_tick_is_in_flight_stays_retired() {
     let (prepared, rebound) = terminal_tick_in_flight(&world, &mut sampler);
 
     assert!(sampler.retire_rebound_track(rebound));
-    let receipt = sampler.commit_prepared(prepared);
+    let receipt = sampler.commit_prepared(prepared.presented_for_certification());
 
     assert!(receipt.terminals().is_empty());
     assert!(!sampler.contains_track(rebound));
@@ -116,7 +116,7 @@ fn a_retarget_installed_while_a_tick_is_in_flight_departs_from_the_frame_it_pres
     sampler
         .install(settle(&world, 2, -60.0, -120.0, Some(retarget)))
         .unwrap();
-    sampler.commit_prepared(prepared);
+    sampler.commit_prepared(prepared.presented_for_certification());
     let next = sampled_y(&commit_tick(&mut sampler, 160, world.presentation));
 
     assert!(
@@ -154,7 +154,7 @@ fn a_publication_rebind_while_a_tick_is_in_flight_keeps_the_sample_it_presents()
         worth_ui_host_contract::UiHostPresentationEpoch::issued_by_host(2),
     );
     sampler.rebind_published_presentation(world.target.semantic_surface(), rebound);
-    let landed = sampler.commit_prepared(prepared);
+    let landed = sampler.commit_prepared(prepared.presented_for_certification());
 
     assert_eq!(
         sampled_y(&landed),
@@ -209,7 +209,7 @@ fn a_scroll_retarget_landing_with_a_tick_in_flight_is_on_screen_where_that_tick_
             Some(retarget),
         ))
         .unwrap();
-    sampler.commit_prepared(prepared);
+    sampler.commit_prepared(prepared.presented_for_certification());
 
     assert_eq!(
         sampler.accepted_scroll_group_translation(target),
@@ -228,4 +228,59 @@ fn a_scroll_retarget_landing_with_a_tick_in_flight_is_on_screen_where_that_tick_
         left, presented,
         "the next sample damages where the content was"
     );
+}
+
+#[test]
+fn a_prepared_tick_lands_only_on_the_surface_generation_it_was_prepared_for() {
+    use crate::mounting::presentation::presented_surface_witness_for_certification as witness;
+    use worth_ui_host_contract::{
+        UiHostObservationPresentationBasis as Basis, UiHostPresentationEpoch,
+        UiHostSurfaceIdentity, UiMountedFrameIdentity, UiSurfaceBindingGeneration,
+    };
+    let world = World::new();
+    let at = world.presentation;
+    let mut sampler = UiMountedMotionSampler::default();
+    sampler.install(world.receipt(1, 0.0, None)).unwrap();
+    let detached = || sampler.clone().prepare_tick(40, at).unwrap();
+    for other in [
+        Basis::new(
+            UiHostSurfaceIdentity::mint_unbound().unwrap(),
+            at.frame(),
+            at.binding(),
+            at.epoch(),
+        ),
+        Basis::new(
+            at.host_surface(),
+            UiMountedFrameIdentity::mint_unbound().unwrap(),
+            at.binding(),
+            at.epoch(),
+        ),
+        Basis::new(
+            at.host_surface(),
+            at.frame(),
+            UiSurfaceBindingGeneration::mint_unbound().unwrap(),
+            at.epoch(),
+        ),
+    ] {
+        assert!(
+            detached().into_presented(&witness(other)).is_none(),
+            "a witness for another surface generation cannot land this tick"
+        );
+    }
+    let sampled = sampler.prepare_tick(40, at).unwrap();
+    assert!(!sampled.receipt().samples().is_empty());
+    let UiPreparedMotionWork::NeedsPresentation(sampled) = sampled.into_work() else {
+        panic!("a tick with samples needs a presented witness");
+    };
+    let later = Basis::new(
+        at.host_surface(),
+        at.frame(),
+        at.binding(),
+        UiHostPresentationEpoch::issued_by_host(9),
+    );
+    let presented = sampled
+        .into_presented(&witness(later))
+        .expect("the host showed this frame at a later epoch");
+    let receipt = sampler.commit_prepared(presented);
+    assert_eq!(receipt.samples()[0].presentation_basis(), later);
 }

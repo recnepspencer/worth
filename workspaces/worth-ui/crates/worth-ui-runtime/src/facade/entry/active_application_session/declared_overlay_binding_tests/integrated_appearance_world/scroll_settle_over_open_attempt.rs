@@ -10,12 +10,12 @@
 //! never paid would look, to a reader, exactly like one that was refused.
 
 use super::super::super::UiScrollSettleDisposition;
-use super::scroll_pose_authority::{block, ScrollWorld};
+use super::scroll_pose_authority::block;
 use super::scroll_settle_commit::{
     one_notch_up, pending_transitions, smooth_world, LINE_EXTENT_POINTS, ONE_NOTCH, SETTLE_TICKS,
 };
+use super::scroll_settle_frame::settle_frame;
 use crate::runtime::scroll::UiHostScrollObservationOutcome;
-use worth_ui_host_contract::UiHostObservationPresentationBasis;
 
 const ATTEMPT_TICK: u64 = 2;
 const NOTCH_TICK: u64 = 5;
@@ -23,33 +23,6 @@ const NOTCH_TICK: u64 = 5;
 /// frame samples the rest pose, so the horizon costs one frame more than it
 /// declares.
 const ARRIVAL: u64 = SETTLE_TICKS as u64 + 1;
-
-fn presentation(scroll: &ScrollWorld) -> UiHostObservationPresentationBasis {
-    scroll
-        .world
-        .session
-        .mounted
-        .current_presentation_for_surface(scroll.surface())
-        .expect("the first surface is published")
-}
-
-/// One Motion frame the way the native shell runs it.
-fn settle_frame(scroll: &mut ScrollWorld, tick: u64) -> UiScrollSettleDisposition {
-    let basis = presentation(scroll);
-    let prepared = scroll
-        .world
-        .session
-        .prepare_motion_tick(tick, basis)
-        .expect("an armed settle prepares its tick");
-    if !prepared.receipt().samples().is_empty() {
-        scroll.world.host.push_native_display_presented();
-    }
-    scroll
-        .world
-        .session
-        .present_prepared_motion_tick(prepared, basis);
-    scroll.world.session.settle_accepted_scroll_sample(basis)
-}
 
 /// The reader turned the wheel while the host had not finished the frame it
 /// was given. The settle goes into that frame, and the session records no

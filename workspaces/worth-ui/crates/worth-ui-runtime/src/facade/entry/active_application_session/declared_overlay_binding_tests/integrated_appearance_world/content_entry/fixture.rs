@@ -255,7 +255,8 @@ impl TextWorld {
                         self.session
                             .mounted
                             .current_presentation_for_surface(self.surfaces[*index])
-                            .unwrap(),
+                            .unwrap()
+                            .basis(),
                         receipt.attempt(),
                         self.session
                             .mounted

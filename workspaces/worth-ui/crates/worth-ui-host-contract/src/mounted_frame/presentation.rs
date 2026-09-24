@@ -14,14 +14,6 @@ pub struct UiMountedCompletedEffects {
     families: Box<[UiMountedEffectFamily]>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct UiMountedSurfacePresentationCompletion {
-    mode: crate::UiHostSurfacePresentationMode,
-    epoch: crate::UiHostPresentationEpoch,
-    effects: UiMountedCompletedEffects,
-    cost: super::presentation_cost::UiHostPresentationCostReport,
-}
-
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum UiHostSurfacePresentationDenial {
     AdapterDeclined,
@@ -82,7 +74,7 @@ pub struct UiMountedFrameConsumptionInput<'frame> {
 
 pub struct UiHostPresentationCompletionToken {
     identity: u64,
-    authority: Rc<()>,
+    work: completion::UiMountedIssuedSurfaceWork,
     progress_class: UiHostPresentationProgressClass,
 }
 
@@ -223,6 +215,28 @@ impl<'frame> UiMountedFrameConsumptionView<'frame> {
         self.presentation_work.affinity().content()
     }
 
+    /// Acknowledge that this view's work physically completed on its surface.
+    pub fn acknowledge_presented(
+        &self,
+        mode: crate::UiHostSurfacePresentationMode,
+        epoch: crate::UiHostPresentationEpoch,
+        effects: UiMountedCompletedEffects,
+        cost: super::presentation_cost::UiHostPresentationCostReport,
+    ) -> UiMountedSurfacePresentationCompletion {
+        self.issued_work()
+            .acknowledge_presented(mode, epoch, effects, cost)
+    }
+
+    fn issued_work(&self) -> completion::UiMountedIssuedSurfaceWork {
+        completion::UiMountedIssuedSurfaceWork::new(
+            Rc::clone(&self.authority),
+            self.attempt,
+            self.requirement,
+            self.frame(),
+            self.content_generation(),
+        )
+    }
+
     pub fn issue_completion_token(&self) -> UiHostPresentationCompletionToken {
         self.issue_completion_token_for(UiHostPresentationProgressClass::PhysicalSurface)
     }
@@ -243,7 +257,7 @@ impl<'frame> UiMountedFrameConsumptionView<'frame> {
             .expect("presentation completion token identity exhausted");
         UiHostPresentationCompletionToken {
             identity,
-            authority: Rc::clone(&self.authority),
+            work: self.issued_work(),
             progress_class,
         }
     }
@@ -252,7 +266,18 @@ impl<'frame> UiMountedFrameConsumptionView<'frame> {
 impl UiHostPresentationCompletionToken {
     #[doc(hidden)]
     pub fn issued_by_runtime(&self, seal: &Rc<()>) -> bool {
-        Rc::ptr_eq(&self.authority, seal)
+        self.work.issued_by_runtime(seal)
+    }
+
+    /// Acknowledge that the work this token was issued for physically completed.
+    pub fn acknowledge_presented(
+        self,
+        mode: crate::UiHostSurfacePresentationMode,
+        epoch: crate::UiHostPresentationEpoch,
+        effects: UiMountedCompletedEffects,
+        cost: super::presentation_cost::UiHostPresentationCostReport,
+    ) -> UiMountedSurfacePresentationCompletion {
+        self.work.acknowledge_presented(mode, epoch, effects, cost)
     }
 
     pub fn diagnostic_value(&self) -> u64 {
@@ -311,48 +336,6 @@ impl UiMountedCompletedEffects {
     }
 }
 
-impl UiMountedSurfacePresentationCompletion {
-    pub fn new(
-        mode: crate::UiHostSurfacePresentationMode,
-        epoch: crate::UiHostPresentationEpoch,
-        effects: UiMountedCompletedEffects,
-        cost: super::presentation_cost::UiHostPresentationCostReport,
-    ) -> Self {
-        Self {
-            mode,
-            epoch,
-            effects,
-            cost,
-        }
-    }
-
-    pub fn mode(&self) -> crate::UiHostSurfacePresentationMode {
-        self.mode
-    }
-
-    pub fn epoch(&self) -> crate::UiHostPresentationEpoch {
-        self.epoch
-    }
-
-    pub fn effects(&self) -> &UiMountedCompletedEffects {
-        &self.effects
-    }
-
-    pub fn cost(&self) -> super::presentation_cost::UiHostPresentationCostReport {
-        self.cost
-    }
-
-    pub fn into_parts(
-        self,
-    ) -> (
-        crate::UiHostPresentationEpoch,
-        UiMountedCompletedEffects,
-        super::presentation_cost::UiHostPresentationCostReport,
-    ) {
-        (self.epoch, self.effects, self.cost)
-    }
-}
-
 impl UiMountedSurfacePresentationSupersession {
     pub fn observed(cost: super::presentation_cost::UiHostPresentationCostReport) -> Self {
         Self { cost }
@@ -378,8 +361,12 @@ impl UiPresentationDeadline {
 }
 use std::rc::Rc;
 use std::sync::atomic::{AtomicU64, Ordering};
+#[path = "presentation/completion.rs"]
+mod completion;
 #[path = "presentation/text_raster_work.rs"]
 mod text_raster_work;
+
+pub use completion::UiMountedSurfacePresentationCompletion;
 
 pub use text_raster_work::{
     UiMountedTextDemandValidationCost, UiMountedTextDemandValidationDenial,

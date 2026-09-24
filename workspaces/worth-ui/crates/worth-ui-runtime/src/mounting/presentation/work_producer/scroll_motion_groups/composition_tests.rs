@@ -1,5 +1,6 @@
 //! Producer-unit proof of physical composition, not authored topology admission.
 use super::*;
+use crate::mounting::presentation::presented_surface_witness_for_certification;
 use crate::mounting::presentation::work_producer_tests::world::{
     rect_spec, MountedPresentationWorld,
 };
@@ -128,8 +129,13 @@ fn nested_scroll_samples_compose_once_and_keep_a_settled_ancestor() {
     let (_, acceptance) = state
         .prepare_motion_sample(rest.receipt(), presentation, &lease)
         .unwrap();
-    acceptance.accept(&state, presentation).unwrap();
-    sampler.commit_prepared(rest);
+    acceptance
+        .accept(
+            &state,
+            &presented_surface_witness_for_certification(presentation),
+        )
+        .unwrap();
+    sampler.commit_prepared(rest.presented_for_certification());
     let moving = sampler.prepare_tick(121, presentation).unwrap();
     let (work, rejected) = state
         .prepare_motion_sample(moving.receipt(), presentation, &lease)
@@ -161,8 +167,13 @@ fn nested_scroll_samples_compose_once_and_keep_a_settled_ancestor() {
     let (_, accepted) = state
         .prepare_motion_sample(moving.receipt(), presentation, &lease)
         .unwrap();
-    accepted.accept(&state, presentation).unwrap();
-    sampler.commit_prepared(moving);
+    accepted
+        .accept(
+            &state,
+            &presented_surface_witness_for_certification(presentation),
+        )
+        .unwrap();
+    sampler.commit_prepared(moving.presented_for_certification());
 
     sampler
         .install(install(83, inner_target, 15.0, 12.0, 80.0))
@@ -171,8 +182,13 @@ fn nested_scroll_samples_compose_once_and_keep_a_settled_ancestor() {
     let (_, accepted) = state
         .prepare_motion_sample(rest.receipt(), presentation, &lease)
         .unwrap();
-    accepted.accept(&state, presentation).unwrap();
-    sampler.commit_prepared(rest);
+    accepted
+        .accept(
+            &state,
+            &presented_surface_witness_for_certification(presentation),
+        )
+        .unwrap();
+    sampler.commit_prepared(rest.presented_for_certification());
     let next = sampler.prepare_tick(320, presentation).unwrap();
     assert_eq!(
         next.receipt().samples().len(),
@@ -266,8 +282,13 @@ fn a_group_rebuilt_before_its_accepted_sample_settles_moves_from_where_the_host_
                 panic!("physical sample");
             };
             let change = sample.changes()[0];
-            acceptance.accept(state, presentation).unwrap();
-            sampler.commit_prepared(prepared);
+            acceptance
+                .accept(
+                    state,
+                    &presented_surface_witness_for_certification(presentation),
+                )
+                .unwrap();
+            sampler.commit_prepared(prepared.presented_for_certification());
             change
         };
     sampler.install(install(81, 0.0, -40.0)).unwrap();

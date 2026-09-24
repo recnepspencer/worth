@@ -75,7 +75,7 @@ pub(crate) fn motion_scale_evidence() -> UiMotionScaleEvidence {
     let prepared = sampler
         .prepare_tick(1, presentation)
         .expect("active motion tick prepares");
-    let sampled = sampler.commit_prepared(prepared);
+    let sampled = sampler.commit_prepared(prepared.presented_for_certification());
     let tracks_considered = sampled.cost().tracks_considered();
 
     // Drive every track past its declared duration so the same populated sampler
@@ -88,7 +88,7 @@ pub(crate) fn motion_scale_evidence() -> UiMotionScaleEvidence {
             presentation,
         )
         .expect("completing motion tick prepares");
-    let completed = sampler.commit_prepared(completing);
+    let completed = sampler.commit_prepared(completing.presented_for_certification());
     let completed_terminals = completed.terminals().len() as u64;
     let inactive_tick = sampler
         .prepare_tick(
@@ -97,7 +97,7 @@ pub(crate) fn motion_scale_evidence() -> UiMotionScaleEvidence {
         )
         .expect("retained inactive tick is valid");
     let inactive_work = sampler
-        .commit_prepared(inactive_tick)
+        .commit_prepared(inactive_tick.presented_for_certification())
         .cost()
         .tracks_considered();
     let retained_inactive_tracks = sampler.certification_observation().1 as u64;

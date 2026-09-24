@@ -13,16 +13,30 @@ impl WorthUiMountedSessionState {
             .current_presented_hit_row(presentation, instance, work)
     }
 
+    /// What a host acknowledgement last proved on screen for `surface`, while
+    /// that surface still owns the binding it was presented on.
     pub(crate) fn current_presentation_for_surface(
         &self,
         surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
-    ) -> Option<worth_ui_host_contract::UiHostObservationPresentationBasis> {
-        let presentation = self.retention.current_presentation_for_surface(surface)?;
+    ) -> Option<crate::mounting::presentation::UiDisplayedSurfaceBasis> {
+        let displayed = self.retention.current_presentation_for_surface(surface)?;
         (self
-            .current_semantic_surface_for_presentation(presentation)
+            .current_semantic_surface_for_presentation(displayed.basis())
             .ok()
             == Some(surface))
-        .then_some(presentation)
+        .then_some(displayed)
+    }
+
+    /// The displayed record for the surface a host report names. A report only
+    /// selects the surface binding and host surface; what is on screen there
+    /// is what the runtime admitted, never the reported epoch.
+    pub(crate) fn current_displayed_presentation(
+        &self,
+        reported: worth_ui_host_contract::UiHostObservationPresentationBasis,
+    ) -> Option<crate::mounting::presentation::UiDisplayedSurfaceBasis> {
+        let surface = self.current_surface_for_binding(reported.binding())?;
+        self.current_presentation_for_surface(surface)
+            .filter(|displayed| displayed.basis().host_surface() == reported.host_surface())
     }
 
     /// Retention admits the latest physical epoch of this surface; mounted
@@ -173,6 +187,7 @@ impl WorthUiMountedSessionState {
             .admit_current_mounted_incarnation_affinity(incarnation)?;
         let presentation = self
             .current_presentation_for_surface(input.surface)
+            .map(|displayed| displayed.basis())
             .ok_or(crate::mounting::UiCurrentHitTargetAffinityDenial::PresentationNotCurrent)?;
         if self
             .retention

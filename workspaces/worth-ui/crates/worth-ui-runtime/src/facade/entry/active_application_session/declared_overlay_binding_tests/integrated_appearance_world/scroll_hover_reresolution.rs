@@ -20,9 +20,8 @@ use super::scroll_settle_commit::{one_notch_up, smooth_scroll, ONE_NOTCH, SETTLE
 use super::World;
 use crate::runtime::scroll::UiHostScrollObservationOutcome;
 use worth_ui_host_contract::{
-    UiHostObservationPresentationBasis, UiHostPointerIdentity, UiHostScrollDeltaPhase,
-    UiHostScrollDeltaPrecision, UiHostSurfacePosition, UiMountedInstanceIdentity,
-    UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
+    UiHostPointerIdentity, UiHostScrollDeltaPhase, UiHostScrollDeltaPrecision,
+    UiHostSurfacePosition, UiMountedInstanceIdentity, UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
 };
 
 /// Where the pointer rests: inside the first component and five points below
@@ -43,19 +42,10 @@ fn wheel_travel() -> i64 {
     -TRAVEL_POINTS * UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT
 }
 
-fn presentation(scroll: &ScrollWorld) -> UiHostObservationPresentationBasis {
-    scroll
-        .world
-        .session
-        .mounted
-        .current_presentation_for_surface(scroll.surface())
-        .expect("the first surface is published")
-}
-
 /// Put one pointer at the resting point and leave it there. Every later
 /// assertion reads the same pointer without the host reporting it again.
 fn rest_pointer_on_the_component(scroll: &mut ScrollWorld, sequence: u64) {
-    let basis = presentation(scroll);
+    let basis = scroll.presentation();
     let batch = super::stationary_motion::inputs::pointer_batch(
         scroll.world.session.host_session.identity().as_u64(),
         basis,
@@ -90,20 +80,7 @@ fn hovered(scroll: &ScrollWorld) -> Option<UiMountedInstanceIdentity> {
 
 /// One Motion frame the way the native shell runs it.
 fn settle_frame(scroll: &mut ScrollWorld, tick: u64) {
-    let basis = presentation(scroll);
-    let prepared = scroll
-        .world
-        .session
-        .prepare_motion_tick(tick, basis)
-        .expect("an armed settle prepares its tick");
-    if !prepared.receipt().samples().is_empty() {
-        scroll.world.host.push_native_display_presented();
-    }
-    scroll
-        .world
-        .session
-        .present_prepared_motion_tick(prepared, basis);
-    scroll.world.session.settle_accepted_scroll_sample(basis);
+    super::scroll_settle_frame::settle_frame(scroll, tick);
 }
 
 /// A wheel that places its whole delta at once moves the content and the rows

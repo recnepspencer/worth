@@ -14,7 +14,7 @@ fn queued_pointer_keeps_event_provenance_but_admits_hover_on_the_current_frame()
     // The fixed allocation places (150,55) in A on both presentations.
     let queued = pointer_batch(
         world.session.host_session.identity().as_u64(),
-        observed,
+        observed.basis(),
         1,
         [150_000, 55_000],
     );
@@ -28,13 +28,13 @@ fn queued_pointer_keeps_event_provenance_but_admits_hover_on_the_current_frame()
     assert_ne!(observed.frame(), current.frame());
     let event_target = crate::runtime::interaction::targeting::resolve_presented_target(
         &world.session.mounted,
-        observed,
+        observed.basis(),
         UiHostSurfacePosition::viewport_logical(150_000, 55_000),
         &mut Default::default(),
     )
     .unwrap();
     assert_eq!(event_target.mounted_instance(), world.instances[0]);
-    assert_eq!(event_target.presentation(), observed);
+    assert_eq!(event_target.presentation(), observed.basis());
     world.host.enqueue_observation_for_next_drain(queued);
     let outcomes = world
         .session
@@ -57,7 +57,7 @@ fn queued_pointer_keeps_event_provenance_but_admits_hover_on_the_current_frame()
         .find(|row| row.pointer() == UiHostPointerIdentity::new(1))
         .unwrap();
     assert_eq!(posture.target(), Some(world.instances[0]));
-    assert_eq!(posture.presentation(), current);
+    assert_eq!(posture.presentation(), current.basis());
     assert_ne!(
         posture.presented_target().unwrap().node_receipt(),
         event_target.node_receipt()
@@ -103,7 +103,7 @@ fn admitted_pointer_targets_the_painted_occurrence_on_each_surface() {
             .unwrap();
         let batch = pointer_batch(
             world.session.host_session.identity().as_u64(),
-            presentation,
+            presentation.basis(),
             sequence,
             point,
         );
@@ -124,10 +124,10 @@ fn admitted_pointer_targets_the_painted_occurrence_on_each_surface() {
             .find(|row| row.pointer() == UiHostPointerIdentity::new(sequence))
             .unwrap();
         assert_eq!(posture.target(), Some(world.instances[instance]));
-        assert_eq!(posture.presentation(), presentation);
+        assert_eq!(posture.presentation(), presentation.basis());
         let target = posture.presented_target().unwrap();
         assert_eq!(target.binding(), presentation.binding());
-        assert_eq!(target.presentation(), presentation);
+        assert_eq!(target.presentation(), presentation.basis());
         let actual = target.geometry().bounds();
         assert_eq!(
             actual.coordinate_space(),
@@ -182,7 +182,7 @@ fn admitted_pointer_targets_the_painted_occurrence_on_each_surface() {
         .unwrap();
     let ingress = world.session.admit_host_interaction_batch(pointer_batch(
         world.session.host_session.identity().as_u64(),
-        presentation,
+        presentation.basis(),
         5,
         [700_000, 500_000],
     ));

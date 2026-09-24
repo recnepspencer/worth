@@ -83,7 +83,9 @@ pub(in crate::facade::entry) fn settle_presented_scroll_extent(
         let Some(track) = motion.committed_track(target) else {
             continue;
         };
-        let Some(presentation) = publication.presentation_for_surface(owner.semantic_surface())
+        let Some(presentation) = publication
+            .presentation_for_surface(owner.semantic_surface())
+            .map(|displayed| displayed.basis())
         else {
             continue;
         };

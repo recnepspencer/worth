@@ -17,6 +17,8 @@ mod content_recovery;
 mod entrance_publication;
 #[path = "integrated_appearance_world/focus_modality.rs"]
 mod focus_modality;
+#[path = "integrated_appearance_world/foreign_acknowledgement.rs"]
+mod foreign_acknowledgement;
 #[path = "integrated_appearance_world/geometry.rs"]
 mod geometry;
 #[path = "integrated_appearance_world/hostile_protocol.rs"]

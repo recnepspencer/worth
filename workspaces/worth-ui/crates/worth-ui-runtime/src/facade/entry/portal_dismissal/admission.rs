@@ -72,6 +72,7 @@ impl WorthUiActiveApplicationSession {
                     .map_err(|_| Stop::StalePresentation)?;
                 self.mounted
                     .current_presentation_for_surface(surface)
+                    .map(|displayed| displayed.basis())
                     .ok_or(Stop::StalePresentation)?
             }
             None => admitted,

@@ -1,8 +1,8 @@
 use worth_ui_host_contract::{
     UiHostPresentationCostInput, UiHostPresentationCostReport, UiHostSurfaceCancellationOutcome,
     UiHostSurfacePresentationMode, UiMountedCompletedEffects, UiMountedEffectFamily,
-    UiMountedSurfacePresentationCompletion,
 };
+use worth_ui_runtime::certification_support::ScriptedPresentationAcknowledgement;
 use worth_ui_runtime::certification_support::ScriptedSurfaceCompletion;
 use worth_ui_test_support::{
     UiPortalDismissalCertificationOutcome, UiPortalExitTerminalCertificationOutcome,
@@ -57,7 +57,7 @@ fn shutdown_cancels_in_flight_terminal_portal_proposal_without_motion_owner_leak
     }
     host.push_in_flight(
         vec![ScriptedSurfaceCompletion::Presented(
-            UiMountedSurfacePresentationCompletion::new(
+            ScriptedPresentationAcknowledgement::new(
                 UiHostSurfacePresentationMode::RecordOnly,
                 worth_ui_host_contract::UiHostPresentationEpoch::issued_by_host(7),
                 UiMountedCompletedEffects::new(vec![UiMountedEffectFamily::RecordedProjection]),

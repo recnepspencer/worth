@@ -9,6 +9,7 @@ mod application_builder;
 mod application_graph;
 mod application_replacement;
 mod builder_host;
+mod empty_projection;
 mod focus_observation;
 mod framework_turn_execution;
 mod identity_overlay_projection;
@@ -120,6 +121,9 @@ pub use presentation_async_installation::{
 };
 pub use presentation_mechanics::initial_presentation_mechanics_for_certification;
 
+pub use empty_projection::{
+    empty_projection_at_for_certification, empty_projection_for_certification,
+};
 pub use rebind_identity_lifecycle::{
     identity_lifecycle_decision_for_certification, UiIdentityLifecyclePresence,
     UiRebindPlanningBasisMutation, UiResolvedIdentityLifecycleCertificationExt,
@@ -129,7 +133,8 @@ pub use runtime_launch::launch_empty_runtime_for_certification;
 #[cfg(feature = "certification-support")]
 pub use runtime_service_scale::{runtime_service_scale_evidence, UiRuntimeServiceScaleEvidence};
 pub use scripted_presentation_host::{
-    presented_completion, recorded_effects, scripted_presentation_epoch, ScriptedPresentationHost,
+    presented_completion, recorded_effects, scripted_presentation_epoch,
+    ScriptedPresentationAcknowledgement, ScriptedPresentationHost, ScriptedPresentationOutcome,
     ScriptedSurfaceCompletion,
 };
 pub use scroll_chrome_observation::{
@@ -140,7 +145,7 @@ pub use scroll_observation::{
     WorthUiScrollObservationCertificationExt,
 };
 pub use semantic_text_projection::{
-    empty_projection_for_certification, semantic_text_projection_for_certification,
+    semantic_text_projection_for_certification,
     semantic_text_projection_for_certification_with_capability,
     semantic_text_projection_for_certification_with_text,
     UiSemanticTextProjectionCertificationMutation,

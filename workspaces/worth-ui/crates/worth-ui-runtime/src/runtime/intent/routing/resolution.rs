@@ -87,6 +87,7 @@ fn current_mounted_input_target(
     let affinity = targeting::admit_continued_intent_execution_affinity(observed, mounted)?;
     let presentation = mounted
         .current_presentation_for_surface(observed.surface())
+        .map(|displayed| displayed.basis())
         .ok_or(Denial::PresentationTruthUnavailable)?;
     let current = targeting::refresh_pointer_target(
         mounted,

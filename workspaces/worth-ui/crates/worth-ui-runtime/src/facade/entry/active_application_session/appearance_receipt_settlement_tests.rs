@@ -1,5 +1,8 @@
 use super::role_support::{radius_role, radius_value_from, update_radius_at_revision};
 use super::MountedAppearanceFixture;
+use crate::certification_support::{
+    ScriptedPresentationAcknowledgement, ScriptedPresentationOutcome,
+};
 
 #[test]
 fn published_appearance_attempt_settles_only_after_host_publication() {
@@ -117,9 +120,9 @@ fn in_flight_appearance_attempt_waits_and_keeps_newer_invalidation() {
 fn indeterminate_appearance_attempt_preserves_unsettled_invalidation() {
     let mut fixture = settled_fixture();
     update_radius_at_revision(&mut fixture.session, [3; 4], 2);
-    fixture.host.push_presentation(
-        worth_ui_host_contract::UiHostSurfacePresentationOutcome::PresentationIndeterminate,
-    );
+    fixture
+        .host
+        .push_presentation(ScriptedPresentationOutcome::PresentationIndeterminate);
 
     assert!(matches!(
         execute(&mut fixture, 3),
@@ -224,7 +227,7 @@ fn execute(
 
 fn native_completion() -> crate::certification_support::ScriptedSurfaceCompletion {
     crate::certification_support::ScriptedSurfaceCompletion::Presented(
-        worth_ui_host_contract::UiMountedSurfacePresentationCompletion::new(
+        ScriptedPresentationAcknowledgement::new(
             crate::facade::mounted::UiHostSurfacePresentationMode::NativeDisplay,
             crate::certification_support::scripted_presentation_epoch(),
             worth_ui_host_contract::UiMountedCompletedEffects::new(Vec::new()),

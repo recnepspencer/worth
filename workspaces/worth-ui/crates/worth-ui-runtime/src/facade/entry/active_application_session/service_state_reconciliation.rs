@@ -250,8 +250,9 @@ impl WorthUiActiveApplicationSession {
         target: &crate::mounting::UiMountedIdentityBasis,
     ) -> Option<crate::runtime::scroll::UiScrollAnchor> {
         let publication = self.mounted.current_publication()?;
-        let presentation =
-            publication.presentation_for_surface(target.semantic_surface_identity())?;
+        let presentation = publication
+            .presentation_for_surface(target.semantic_surface_identity())
+            .map(|displayed| displayed.basis())?;
         let hit_test = self.mounted.interaction_hit_test_basis(presentation).ok()?;
         let row = hit_test
             .rows()

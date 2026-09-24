@@ -135,7 +135,7 @@ impl WorthUiMountedSessionState {
             .filter(|view| {
                 self.retention
                     .current_presentation_for_surface(view.semantic_surface_identity())
-                    .is_some_and(|presentation| presentation.binding() == binding)
+                    .is_some_and(|displayed| displayed.basis().binding() == binding)
             })
             .map(crate::mounting::binding_requirement);
         let required_by_current = current_requirement.is_some();
@@ -360,13 +360,13 @@ impl WorthUiMountedSessionState {
             .current_mounted_identity_basis(instance)
             .ok_or(UiMountedIdentityDenial::UnknownMountedInstance)?
             .semantic_surface_identity();
-        let presentation = self
+        let displayed = self
             .retention
             .current_presentation_for_surface(surface)
             .ok_or(UiMountedIdentityDenial::NodeReceiptNotCurrent)?;
         let retained = self
             .retention
-            .current_node_receipt(presentation, instance)
+            .current_node_receipt(displayed.basis(), instance)
             .map_err(|_| UiMountedIdentityDenial::NodeReceiptNotCurrent)?;
         (retained == receipt)
             .then_some(())

@@ -6,6 +6,7 @@ use worth_ui::facade::{
     rebind::{UiRebindExecutionPolicy, UiRebindExecutionRequest},
 };
 use worth_ui_host_headless::UiHeadlessRecorderCapacity;
+use worth_ui_runtime::certification_support::ScriptedPresentationAcknowledgement;
 use worth_ui_test_support::{
     WorthUiMotionPresentationCertificationExt, WorthUiMountedPublicationCertificationExt,
 };
@@ -63,7 +64,7 @@ fn in_flight_sample_commits_only_after_host_completion() {
     use worth_ui_runtime::facade::mounted::{
         UiHostPresentationCostInput, UiHostPresentationCostReport,
         UiHostSurfaceCancellationOutcome, UiHostSurfacePresentationMode, UiMountedCompletedEffects,
-        UiMountedEffectFamily, UiMountedSurfacePresentationCompletion,
+        UiMountedEffectFamily,
     };
 
     let host = scripted_motion_host();
@@ -71,7 +72,7 @@ fn in_flight_sample_commits_only_after_host_completion() {
     host.push_presented();
     host.push_in_flight(
         vec![ScriptedSurfaceCompletion::Presented(
-            UiMountedSurfacePresentationCompletion::new(
+            ScriptedPresentationAcknowledgement::new(
                 UiHostSurfacePresentationMode::RecordOnly,
                 UiHostPresentationEpoch::issued_by_host(2),
                 UiMountedCompletedEffects::new(vec![UiMountedEffectFamily::RecordedProjection]),
@@ -122,7 +123,7 @@ fn indeterminate_sample_suspends_readiness_hit_testing_and_sampling_until_recons
     host.push_presented();
     host.push_presented();
     host.push_presentation(
-        worth_ui_runtime::facade::mounted::UiHostSurfacePresentationOutcome::
+        worth_ui_runtime::certification_support::ScriptedPresentationOutcome::
             PresentationIndeterminate,
     );
     let mut world = launch_scripted_motion_world(host.clone());

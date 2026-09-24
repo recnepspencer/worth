@@ -265,7 +265,8 @@ pub(super) fn open_portal(
         session
             .mounted
             .current_presentation_for_surface(surface)
-            .unwrap(),
+            .unwrap()
+            .basis(),
     );
     let request = crate::runtime::portal::UiPortalServiceRequest::open(
         portal,

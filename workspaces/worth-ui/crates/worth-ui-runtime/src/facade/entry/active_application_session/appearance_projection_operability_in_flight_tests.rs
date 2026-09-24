@@ -1,4 +1,5 @@
 use super::*;
+use crate::certification_support::ScriptedPresentationAcknowledgement;
 
 #[test]
 fn changed_operability_supersedes_in_flight_pixels_before_mounted_commit() {
@@ -25,7 +26,7 @@ fn changed_operability_supersedes_in_flight_pixels_before_mounted_commit() {
     host.push_in_flight(
         vec![
             crate::certification_support::ScriptedSurfaceCompletion::Presented(
-                UiMountedSurfacePresentationCompletion::new(
+                ScriptedPresentationAcknowledgement::new(
                     crate::facade::mounted::UiHostSurfacePresentationMode::NativeDisplay,
                     crate::certification_support::scripted_presentation_epoch(),
                     UiMountedCompletedEffects::new(Vec::new()),
@@ -115,7 +116,7 @@ fn detached_posture_completion_retains_recovery_when_stale_pixels_may_have_effec
     host.push_in_flight(
         vec![
             crate::certification_support::ScriptedSurfaceCompletion::Presented(
-                UiMountedSurfacePresentationCompletion::new(
+                ScriptedPresentationAcknowledgement::new(
                     crate::facade::mounted::UiHostSurfacePresentationMode::NativeDisplay,
                     crate::certification_support::scripted_presentation_epoch(),
                     UiMountedCompletedEffects::new(Vec::new()),
@@ -193,7 +194,7 @@ fn withheld_operability_keeps_the_published_affordance_of_the_same_target() {
     host.push_in_flight(
         vec![
             crate::certification_support::ScriptedSurfaceCompletion::Presented(
-                UiMountedSurfacePresentationCompletion::new(
+                ScriptedPresentationAcknowledgement::new(
                     crate::facade::mounted::UiHostSurfacePresentationMode::NativeDisplay,
                     crate::certification_support::scripted_presentation_epoch(),
                     UiMountedCompletedEffects::new(Vec::new()),

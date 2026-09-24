@@ -5,11 +5,14 @@ use super::scroll_settle_commit::{one_notch_up, pending_transitions, smooth_scro
 use super::scroll_settle_frame::settle_scripted_frame;
 use super::World;
 use crate::certification_support::ScriptedSurfaceCompletion;
+use crate::certification_support::{
+    ScriptedPresentationAcknowledgement, ScriptedPresentationOutcome,
+};
 use crate::runtime::scroll::UiHostScrollObservationOutcome;
 use worth_ui_host_contract::*;
 
-fn no_paint_completion(epoch: u64) -> UiMountedSurfacePresentationCompletion {
-    UiMountedSurfacePresentationCompletion::new(
+fn no_paint_completion(epoch: u64) -> ScriptedPresentationAcknowledgement {
+    ScriptedPresentationAcknowledgement::new(
         UiHostSurfacePresentationMode::NativeDisplay,
         UiHostPresentationEpoch::issued_by_host(epoch),
         UiMountedCompletedEffects::new(Vec::new()),
@@ -70,9 +73,9 @@ fn an_empty_smooth_group_rejects_waits_and_settles_through_no_paint_host_accepta
     scroll
         .world
         .host
-        .push_presentation(UiHostSurfacePresentationOutcome::Presented(
-            no_paint_completion(7),
-        ));
+        .push_presentation(ScriptedPresentationOutcome::Presented(no_paint_completion(
+            7,
+        )));
     settle_scripted_frame(&mut scroll, 7);
     assert_eq!(scroll.world.host.presentation_calls(), calls + 2);
     assert_ne!(
@@ -81,7 +84,6 @@ fn an_empty_smooth_group_rejects_waits_and_settles_through_no_paint_host_accepta
         "retry acceptance replaces physical evidence"
     );
     let before = (scroll.accepted_offset(), scroll.displayed_offset());
-    let basis = scroll.presentation();
     scroll.world.host.push_in_flight(
         vec![
             ScriptedSurfaceCompletion::Pending,
@@ -110,7 +112,7 @@ fn an_empty_smooth_group_rejects_waits_and_settles_through_no_paint_host_accepta
         before
     );
     scroll.world.session.complete_motion_sample_presentation();
-    scroll.world.session.settle_accepted_scroll_sample(basis);
+    scroll.world.session.settle_owed_scroll_samples();
     assert!(!scroll
         .world
         .session
@@ -127,9 +129,9 @@ fn an_empty_smooth_group_rejects_waits_and_settles_through_no_paint_host_accepta
         scroll
             .world
             .host
-            .push_presentation(UiHostSurfacePresentationOutcome::Presented(
-                no_paint_completion(tick),
-            ));
+            .push_presentation(ScriptedPresentationOutcome::Presented(no_paint_completion(
+                tick,
+            )));
         settle_scripted_frame(&mut scroll, tick);
     }
     assert_eq!(scroll.accepted_offset(), block(10));

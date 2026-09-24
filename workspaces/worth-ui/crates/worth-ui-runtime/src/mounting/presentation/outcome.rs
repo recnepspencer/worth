@@ -29,9 +29,7 @@ pub struct UiMountedPresentationWitness {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct UiMountedSurfacePresentationReceipt {
     semantic_surface: UiSemanticSurfaceIdentity,
-    host_surface: UiHostSurfaceIdentity,
-    binding: UiSurfaceBindingGeneration,
-    epoch: UiHostPresentationEpoch,
+    displayed: super::UiDisplayedSurfaceBasis,
     effects: UiMountedCompletedEffects,
     adapter_cost: worth_ui_host_contract::UiHostPresentationCostReport,
 }
@@ -168,24 +166,24 @@ impl UiMountedPresentationWitness {
 }
 
 impl UiMountedSurfacePresentationReceipt {
-    pub(super) fn new(
-        requirement: worth_ui_host_contract::UiMountedSurfaceBindingRequirement,
-        epoch: UiHostPresentationEpoch,
-        effects: UiMountedCompletedEffects,
-        adapter_cost: worth_ui_host_contract::UiHostPresentationCostReport,
-    ) -> Self {
+    pub(super) fn new(witness: super::UiPresentedSurfaceWitness) -> Self {
+        let semantic_surface = witness.requirement().semantic_surface();
+        let displayed = witness.displayed_basis();
+        let (_, effects, adapter_cost) = witness.into_completion().into_parts();
         Self {
-            semantic_surface: requirement.semantic_surface(),
-            host_surface: requirement.host_surface(),
-            binding: requirement.binding(),
-            epoch,
+            semantic_surface,
+            displayed,
             effects,
             adapter_cost,
         }
     }
 
     pub fn binding(&self) -> UiSurfaceBindingGeneration {
-        self.binding
+        self.displayed.binding()
+    }
+
+    pub(crate) fn displayed_basis(&self) -> super::UiDisplayedSurfaceBasis {
+        self.displayed
     }
 
     pub fn semantic_surface(&self) -> UiSemanticSurfaceIdentity {
@@ -193,11 +191,11 @@ impl UiMountedSurfacePresentationReceipt {
     }
 
     pub fn host_surface(&self) -> UiHostSurfaceIdentity {
-        self.host_surface
+        self.displayed.basis().host_surface()
     }
 
     pub fn epoch(&self) -> UiHostPresentationEpoch {
-        self.epoch
+        self.displayed.basis().epoch()
     }
 
     pub fn effects(&self) -> &UiMountedCompletedEffects {

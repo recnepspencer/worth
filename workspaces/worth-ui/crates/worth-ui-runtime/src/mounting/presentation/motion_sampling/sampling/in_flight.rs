@@ -6,7 +6,10 @@ use super::super::interruption::{
     resolve, UiPresentationInterruptedSample, UiPresentationMotionInstallation,
 };
 use super::super::track_sampling::UiPresentationTrackState;
-use super::{UiMountedMotionSampler, UiPreparedMotionSampling, UiPresentationMotionSamplingDenial};
+use super::{
+    UiMountedMotionSampler, UiPreparedMotionSampling, UiPresentationMotionSamplingDenial,
+    UiPresentedMotionSampling,
+};
 use crate::runtime::motion::{UiMotionTargetIdentity, UiMotionTrackIdentity};
 
 impl UiMountedMotionSampler {
@@ -24,7 +27,11 @@ impl UiMountedMotionSampler {
         self.rebound_since_prepare.clear();
         let mut successor = self.clone();
         match successor.sample_tick(tick, presentation) {
-            Ok(receipt) => Ok(UiPreparedMotionSampling { successor, receipt }),
+            Ok(receipt) => Ok(UiPreparedMotionSampling {
+                successor,
+                receipt,
+                prepared_at: presentation,
+            }),
             Err(denial) => self.deny(denial),
         }
     }
@@ -43,9 +50,9 @@ impl UiMountedMotionSampler {
     /// frame before the one on screen as presented.
     pub(crate) fn commit_prepared(
         &mut self,
-        prepared: UiPreparedMotionSampling,
+        prepared: UiPresentedMotionSampling,
     ) -> super::super::UiPresentationMotionSamplingReceipt {
-        let UiPreparedMotionSampling {
+        let UiPresentedMotionSampling {
             mut successor,
             mut receipt,
         } = prepared;

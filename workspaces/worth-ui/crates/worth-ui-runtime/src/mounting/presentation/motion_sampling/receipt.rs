@@ -52,18 +52,22 @@ pub(crate) struct UiPresentationMotionSamplingReceipt {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct UiPresentationMotionPresentedSurface {
     semantic_surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
-    presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
+    displayed: crate::mounting::presentation::UiDisplayedSurfaceBasis,
 }
 
 impl UiPresentationMotionPresentedSurface {
     pub(in crate::mounting) const fn new(
         semantic_surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
-        presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
+        displayed: crate::mounting::presentation::UiDisplayedSurfaceBasis,
     ) -> Self {
         Self {
             semantic_surface,
-            presentation,
+            displayed,
         }
+    }
+
+    pub(crate) const fn displayed(self) -> crate::mounting::presentation::UiDisplayedSurfaceBasis {
+        self.displayed
     }
 
     pub(crate) const fn semantic_surface(
@@ -75,7 +79,7 @@ impl UiPresentationMotionPresentedSurface {
     pub(crate) const fn presentation(
         self,
     ) -> worth_ui_host_contract::UiHostObservationPresentationBasis {
-        self.presentation
+        self.displayed.basis()
     }
 }
 

@@ -72,6 +72,38 @@ Values derived from a witness are scoped to its surface and generation. Using
 one against a later generation requires that owner's rebase. Placement follows
 the AGENTS.md three-question rule and is recorded before design.
 
+*Placement record.* The three questions place each type as follows:
+
+- **Host acknowledgement: `UiMountedSurfacePresentationCompletion` in
+  `worth-ui-host-contract`.** It reports a physical fact and grants no
+  permission, so it does not belong in `worth-proof`. It carries the runtime's
+  live presentation-lease seal and the exact issued attempt, requirement, and
+  frame. An attempt is minted per issuance, so those three name one piece of
+  issued work and its content. That means it cannot exist without a live table,
+  so it is not foundational vocabulary. It lives in the UI runtime's own host
+  boundary, which already owns the issued view and token it is minted from. It
+  has no constructor: it exists only as the acknowledgement of a view or token.
+  A view built outside the runtime carries a seal no live lease issued, so
+  admission refuses whatever it acknowledges; forged work opens no doors.
+- **Witness and displayed basis: `UiPresentedSurfaceWitness` and
+  `UiDisplayedSurfaceBasis` in `worth-ui-runtime` mounting presentation.** Both
+  are `pub(crate)`. Admission needs the live lease and the issued work, so they
+  belong to the owning runtime.
+- **Displayed truth.** Only an admitted witness produces a displayed basis. Every
+  writer of displayed truth consumes the witness: Motion commit and acceptance,
+  retention epochs, receipts, and the Scroll settle. The Scroll settle takes the
+  surface a witness committed, never a displayed basis; a settle it defers keeps
+  that surface, one owed settle per semantic surface, and is paid there while
+  the host still shows its generation, or released when it does not. A Motion
+  tick pays what is owed: every surface's settle when it commits no pixels, and
+  every other surface's once its own committed settle lands. Readers read the retained record that the witness
+  wrote. A basis a host reports on an observation only selects which record to
+  read.
+- **Scripted, headless, and certification hosts.** They acknowledge the view or
+  token they were issued. Certification witnesses run the same issue,
+  acknowledge, and admit path. Evidence that measures the Motion sampler alone,
+  with no session under test, admits through an isolated session of its own.
+
 **4. Owner changes record themselves.** In-flight work lands against state that
 may have changed after it was prepared, and each such change is reconciled at
 landing. This covers owner installs, retirements and rebinds during a Motion

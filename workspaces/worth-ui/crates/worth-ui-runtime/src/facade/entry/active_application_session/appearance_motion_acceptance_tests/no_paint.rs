@@ -1,5 +1,8 @@
 //! Scripted effect boundary: no-paint completion may accept raw Motion only at zero physical cost.
 use super::*;
+use crate::certification_support::{
+    ScriptedPresentationAcknowledgement, ScriptedPresentationOutcome,
+};
 
 #[test]
 fn pending_no_paint_motion_accepts_only_after_zero_cost_completion() {
@@ -10,7 +13,7 @@ fn pending_no_paint_motion_accepts_only_after_zero_cost_completion() {
         .unwrap();
     let target =
         UiMotionTargetIdentity::from_mounted_owner(surface, command.mounted_instance(), 819);
-    install(&mut session, target, original, 819, false, None);
+    install(&mut session, target, original.basis(), 819, false, None);
     present(&mut session, &host, surface, 1, 2);
     let original = session
         .mounted
@@ -18,7 +21,7 @@ fn pending_no_paint_motion_accepts_only_after_zero_cost_completion() {
         .unwrap();
     let previous = session
         .mounted
-        .accepted_motion_for_command(original, command)
+        .accepted_motion_for_command(original.basis(), command)
         .unwrap()
         .unwrap();
     let prepared = session.mounted.prepare_motion_tick(56, original).unwrap();
@@ -39,7 +42,7 @@ fn pending_no_paint_motion_accepts_only_after_zero_cost_completion() {
     assert_eq!(
         session
             .mounted
-            .accepted_motion_for_command(original, command)
+            .accepted_motion_for_command(original.basis(), command)
             .unwrap(),
         Some(previous)
     );
@@ -52,7 +55,7 @@ fn pending_no_paint_motion_accepts_only_after_zero_cost_completion() {
     assert_eq!(
         session
             .mounted
-            .accepted_motion_for_command(original, command)
+            .accepted_motion_for_command(original.basis(), command)
             .unwrap(),
         Some(previous)
     );
@@ -68,20 +71,20 @@ fn pending_no_paint_motion_accepts_only_after_zero_cost_completion() {
         .unwrap();
     let accepted = session
         .mounted
-        .accepted_motion_for_command(current, command)
+        .accepted_motion_for_command(current.basis(), command)
         .unwrap()
         .unwrap();
     assert_eq!(accepted.opacity_units(), 8_192);
-    assert_eq!(accepted.presentation_basis(), current);
+    assert_eq!(accepted.presentation_basis(), current.basis());
     assert_ne!(current, original);
     assert!(session
         .mounted
-        .accepted_motion_for_command(original, command)
+        .accepted_motion_for_command(original.basis(), command)
         .is_err());
 
     // A port cannot omit NativePaint while reporting physical submission.
-    host.push_presentation(UiHostSurfacePresentationOutcome::Presented(
-        UiMountedSurfacePresentationCompletion::new(
+    host.push_presentation(ScriptedPresentationOutcome::Presented(
+        ScriptedPresentationAcknowledgement::new(
             UiHostSurfacePresentationMode::NativeDisplay,
             UiHostPresentationEpoch::issued_by_host(4),
             UiMountedCompletedEffects::new(vec![]),
@@ -101,7 +104,7 @@ fn pending_no_paint_motion_accepts_only_after_zero_cost_completion() {
     assert!(
         session
             .mounted
-            .accepted_motion_for_command(current, command)
+            .accepted_motion_for_command(current.basis(), command)
             .is_err(),
         "inconsistent physical truth cannot authorize composition"
     );

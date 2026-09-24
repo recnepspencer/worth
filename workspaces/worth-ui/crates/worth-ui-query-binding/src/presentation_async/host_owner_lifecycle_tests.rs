@@ -1,6 +1,5 @@
 use super::tests::{
-    basis_for_lineage, installed_owner, mechanic, native_paint_completion, presentation_sequence,
-    raster_key,
+    basis_for_lineage, installed_owner, mechanic, presentation_sequence, raster_key,
 };
 use super::*;
 use crate::presentation_async::WorthUiPresentationPinBasis;
@@ -32,9 +31,7 @@ fn newer_pending_attempt_supersedes_the_exact_prior_query_live_view() {
         owner.observation(&successor).unwrap().posture(),
         WorthUiPresentationAsyncPosture::Pending
     );
-    let successor_terminal = owner
-        .admit_presented(&successor, &native_paint_completion(2))
-        .unwrap();
+    let successor_terminal = owner.admit_presented(&successor).unwrap();
     assert_eq!(
         successor_terminal.observation().posture(),
         WorthUiPresentationAsyncPosture::Current
@@ -48,9 +45,7 @@ fn successor_can_complete_before_the_exact_superseded_physical_predecessor() {
     let prior = owner.admit_pending(sequence.baseline).unwrap();
     let successor = owner.admit_pending(sequence.successor).unwrap();
 
-    let successor_terminal = owner
-        .admit_presented(&successor, &native_paint_completion(3))
-        .unwrap();
+    let successor_terminal = owner.admit_presented(&successor).unwrap();
     assert_eq!(
         successor_terminal.observation().posture(),
         WorthUiPresentationAsyncPosture::Current
@@ -95,9 +90,7 @@ fn complete_successor_retains_shared_pin_without_readding_it() {
         Box::new([]),
     );
     let baseline = owner.admit_pending(baseline).unwrap();
-    owner
-        .admit_presented(&baseline, &native_paint_completion(10))
-        .unwrap();
+    owner.admit_presented(&baseline).unwrap();
 
     let retained_frame = worth_ui_host_contract::UiMountedFrameIdentity::mint_unbound().unwrap();
     let retained = basis_for_lineage(
@@ -116,9 +109,7 @@ fn complete_successor_retains_shared_pin_without_readding_it() {
     assert!(retained.pin_additions().is_empty());
     assert_eq!(retained.binding_pins(), [pin]);
     let retained = owner.admit_pending(retained).unwrap();
-    owner
-        .admit_presented(&retained, &native_paint_completion(11))
-        .unwrap();
+    owner.admit_presented(&retained).unwrap();
 
     let released = basis_for_lineage(
         semantic_surface,
@@ -141,13 +132,9 @@ fn current_successor_supersedes_and_closes_the_prior_query_resource() {
     let mut owner = installed_owner();
     let sequence = presentation_sequence();
     let prior = owner.admit_pending(sequence.baseline).unwrap();
-    owner
-        .admit_presented(&prior, &native_paint_completion(20))
-        .unwrap();
+    owner.admit_presented(&prior).unwrap();
     let successor = owner.admit_pending(sequence.successor).unwrap();
-    let successor = owner
-        .admit_presented(&successor, &native_paint_completion(21))
-        .unwrap();
+    let successor = owner.admit_presented(&successor).unwrap();
 
     assert_eq!(
         successor.predecessor_observation().unwrap().posture(),
@@ -182,9 +169,7 @@ fn rejected_superseding_attempt_can_retry_from_the_exact_superseded_baseline() {
     owner.reject_before_effects(&displaced).unwrap();
 
     let retried = owner.admit_pending(sequence.successor).unwrap();
-    let completed = owner
-        .admit_presented(&retried, &native_paint_completion(12))
-        .unwrap();
+    let completed = owner.admit_presented(&retried).unwrap();
     assert_eq!(
         completed.observation().posture(),
         WorthUiPresentationAsyncPosture::Current

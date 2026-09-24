@@ -39,7 +39,7 @@ fn portal_opening_publication_contains_its_first_motion_sample() {
     let opened_hit = world
         .session
         .mounted
-        .interaction_hit_test_basis(opened_basis)
+        .interaction_hit_test_basis(opened_basis.basis())
         .unwrap();
     let opened_content = *opened_hit
         .rows()
@@ -61,7 +61,7 @@ fn portal_opening_publication_contains_its_first_motion_sample() {
         let accepted = world
             .session
             .mounted
-            .accepted_motion_for_command(basis, sample.command())
+            .accepted_motion_for_command(basis.basis(), sample.command())
             .unwrap()
             .expect("ordinary publication retains the exact command's accepted entrance");
         assert_eq!(accepted.opacity_units(), 0);
@@ -73,7 +73,7 @@ fn portal_opening_publication_contains_its_first_motion_sample() {
     let hit = world
         .session
         .mounted
-        .interaction_hit_test_basis(basis)
+        .interaction_hit_test_basis(basis.basis())
         .unwrap();
     let content = hit
         .rows()

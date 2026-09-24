@@ -7,7 +7,7 @@
 //! rather than an offset that quietly stopped following the pixels.
 
 /// What one frame's accepted Scroll samples did to the displayed pose.
-#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum UiScrollSettleDisposition {
     /// Every accepted sample this frame reached the displayed pose and the
     /// owner's offset.
@@ -21,8 +21,10 @@ pub enum UiScrollSettleDisposition {
     /// Some part of the settlement was refused. Whatever resolved was still
     /// applied; the refusal names the first sample that was not.
     Refused(UiScrollSettleRefusal),
+    /// The settle was owed to a surface generation the host no longer shows.
+    /// Nothing moved; the next committed tick settles the new generation.
+    Superseded,
     /// No Scroll content group has an accepted sample to settle.
-    #[default]
     Idle,
 }
 

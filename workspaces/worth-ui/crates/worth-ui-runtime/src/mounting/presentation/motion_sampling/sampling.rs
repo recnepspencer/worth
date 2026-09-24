@@ -41,6 +41,24 @@ pub(crate) struct UiMountedMotionSampler {
 pub(crate) struct UiPreparedMotionSampling {
     successor: UiMountedMotionSampler,
     receipt: super::UiPresentationMotionSamplingReceipt,
+    prepared_at: worth_ui_host_contract::UiHostObservationPresentationBasis,
+}
+
+/// A prepared tick that may land: a host acknowledgement proved its samples
+/// on the surface generation they were sampled for, or it sampled nothing.
+/// [`UiMountedMotionSampler::commit_prepared`] accepts nothing else.
+#[must_use = "presented motion samples must be committed"]
+pub(crate) struct UiPresentedMotionSampling {
+    successor: UiMountedMotionSampler,
+    receipt: super::UiPresentationMotionSamplingReceipt,
+}
+
+/// What a prepared tick still needs before it may land.
+pub(crate) enum UiPreparedMotionWork {
+    /// The tick sampled nothing, so there is nothing for a host to present.
+    Unsampled(UiPresentedMotionSampling),
+    /// The tick's samples land only through a host acknowledgement.
+    NeedsPresentation(UiPreparedMotionSampling),
 }
 
 impl UiPreparedMotionSampling {
@@ -48,17 +66,51 @@ impl UiPreparedMotionSampling {
         &self.receipt
     }
 
-    pub(crate) fn with_presented_basis(
+    /// Lands the samples at the displayed basis `witness` proved. A witness for
+    /// another host surface, binding, or frame proves nothing about this tick.
+    pub(crate) fn into_presented(
         mut self,
-        presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
-    ) -> Result<Self, super::UiPresentationGeometrySamplingDenial> {
+        witness: &crate::mounting::presentation::UiPresentedSurfaceWitness,
+    ) -> Option<UiPresentedMotionSampling> {
+        let presentation = witness.displayed_basis().basis();
+        if presentation.host_surface() != self.prepared_at.host_surface()
+            || presentation.binding() != self.prepared_at.binding()
+            || presentation.frame() != self.prepared_at.frame()
+        {
+            return None;
+        }
         for sample in self.receipt.samples.iter_mut() {
-            *sample = sample.with_presentation_basis(presentation)?;
+            *sample = sample.with_presentation_basis(presentation).ok()?;
             if let Some(state) = self.successor.tracks.get_mut(&sample.target()) {
                 state.current = Some(*sample);
             }
         }
-        Ok(self)
+        Some(UiPresentedMotionSampling {
+            successor: self.successor,
+            receipt: self.receipt,
+        })
+    }
+
+    /// A tick that sampled nothing has nothing for a host to present.
+    pub(crate) fn into_work(self) -> UiPreparedMotionWork {
+        if !self.receipt.samples().is_empty() {
+            return UiPreparedMotionWork::NeedsPresentation(self);
+        }
+        UiPreparedMotionWork::Unsampled(UiPresentedMotionSampling {
+            successor: self.successor,
+            receipt: self.receipt,
+        })
+    }
+
+    /// Presents this tick at the basis it was prepared against, through the
+    /// runtime's own issue, acknowledgement, and admission boundary.
+    #[cfg(any(test, feature = "certification-support"))]
+    pub(crate) fn presented_for_certification(self) -> UiPresentedMotionSampling {
+        let witness = crate::mounting::presentation::presented_surface_witness_for_certification(
+            self.prepared_at,
+        );
+        self.into_presented(&witness)
+            .expect("a witness at the prepared basis presents the tick")
     }
 }
 

@@ -26,9 +26,7 @@ fn late_older_physical_completion_cannot_regress_a_superseded_baseline() {
     assert!(owner.current.is_empty());
     owner.reject_before_effects(&c).unwrap();
     let retry = owner.admit_pending(c_basis).unwrap();
-    owner
-        .admit_presented(&retry, &native_paint_completion(3))
-        .unwrap();
+    owner.admit_presented(&retry).unwrap();
     owner.close_terminal_resources().unwrap();
     assert!(owner.retained.is_empty());
 }
@@ -46,9 +44,7 @@ fn superseded_physical_baseline_survives_successor_atlas_rejection() {
     );
     owner.reject_before_effects(&b).unwrap();
     let retry = owner.admit_pending(sequence.successor).unwrap();
-    let completion = owner
-        .admit_presented(&retry, &native_paint_completion(2))
-        .unwrap();
+    let completion = owner.admit_presented(&retry).unwrap();
     assert_eq!(
         completion.observation().posture(),
         WorthUiPresentationAsyncPosture::Current
@@ -65,9 +61,7 @@ fn late_superseded_physical_completion_does_not_replace_current_baseline() {
     let a = owner.admit_pending(sequence.baseline).unwrap();
     let b_basis = sequence.successor;
     let b = owner.admit_pending(b_basis.clone()).unwrap();
-    owner
-        .admit_presented(&b, &native_paint_completion(2))
-        .unwrap();
+    owner.admit_presented(&b).unwrap();
     let accepted_nonce = owner.retained.values().next().unwrap().0;
     owner.admit_superseded_physical(&a).unwrap();
     assert_eq!(owner.retained.values().next().unwrap().0, accepted_nonce);

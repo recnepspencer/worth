@@ -1,3 +1,4 @@
+use worth_ui_runtime::certification_support::ScriptedPresentationOutcome;
 use worth_ui_runtime::facade::mounted::{
     UiHostPresentationReconciliation, UiHostSurfacePresentationMode, UiMountedFrameOutcome,
     UiMountedFrameRequest, UiMountedFrameReuse, UiMountedIdentityDenial,
@@ -32,9 +33,7 @@ fn published_predecessor_survives_indeterminacy_and_requires_exact_re_presentati
         0,
     ));
 
-    host.push_presentation(
-        worth_ui_host_contract::UiHostSurfacePresentationOutcome::PresentationIndeterminate,
-    );
+    host.push_presentation(ScriptedPresentationOutcome::PresentationIndeterminate);
     let failed_candidate = prepared_frame(&mut session);
     assert!(matches!(
         session.present_prepared_mounted_frame(
@@ -136,9 +135,7 @@ fn multi_surface_reconciliation_re_presents_one_complete_current_frame() {
     ));
 
     host.push_presented();
-    host.push_presentation(
-        worth_ui_host_contract::UiHostSurfacePresentationOutcome::PresentationIndeterminate,
-    );
+    host.push_presentation(ScriptedPresentationOutcome::PresentationIndeterminate);
     let failed = prepared_frame(&mut session);
     assert!(matches!(
         session.present_prepared_mounted_frame(failed, UiPresentationDeadline::at_tick(10), 1),
@@ -193,9 +190,7 @@ fn incomplete_duplicate_and_cross_surface_reconciliation_sets_deny_before_effect
     ));
 
     host.push_presented();
-    host.push_presentation(
-        worth_ui_host_contract::UiHostSurfacePresentationOutcome::PresentationIndeterminate,
-    );
+    host.push_presentation(ScriptedPresentationOutcome::PresentationIndeterminate);
     let failed = prepared_frame(&mut session);
     assert!(matches!(
         session.present_prepared_mounted_frame(failed, UiPresentationDeadline::at_tick(10), 1),
@@ -301,9 +296,7 @@ fn verified_candidate_only_deregistration_closes_its_blocked_generation() {
     let candidate_instance = session.mount_instance(node, candidate_surface).unwrap();
 
     host.push_presented();
-    host.push_presentation(
-        worth_ui_host_contract::UiHostSurfacePresentationOutcome::PresentationIndeterminate,
-    );
+    host.push_presentation(ScriptedPresentationOutcome::PresentationIndeterminate);
     let failed = prepared_frame(&mut session);
     assert!(matches!(
         session.present_prepared_mounted_frame(failed, UiPresentationDeadline::at_tick(10), 1),

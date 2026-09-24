@@ -121,7 +121,24 @@ impl ScriptedPresentationHost {
                 .pop_front()
                 .expect("script names every surface outcome");
             let outcome = match start {
-                ScriptedPresentationStart::Outcome(outcome) => outcome,
+                ScriptedPresentationStart::Outcome(outcome) => match outcome {
+                    ScriptedPresentationOutcome::RejectedBeforeEffects(denial) => {
+                        UiHostSurfacePresentationOutcome::RejectedBeforeEffects(denial)
+                    }
+                    ScriptedPresentationOutcome::Presented(acknowledgement) => {
+                        UiHostSurfacePresentationOutcome::Presented(
+                            acknowledgement.acknowledge_view(request),
+                        )
+                    }
+                    ScriptedPresentationOutcome::PresentedFromForeignView(acknowledgement) => {
+                        UiHostSurfacePresentationOutcome::Presented(
+                            acknowledgement.acknowledge_foreign_view(request),
+                        )
+                    }
+                    ScriptedPresentationOutcome::PresentationIndeterminate => {
+                        UiHostSurfacePresentationOutcome::PresentationIndeterminate
+                    }
+                },
                 ScriptedPresentationStart::InFlight {
                     completions,
                     cancellation,

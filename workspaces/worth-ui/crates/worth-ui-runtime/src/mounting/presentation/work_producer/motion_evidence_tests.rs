@@ -8,6 +8,7 @@ mod target_scope;
 mod text_ambiguity;
 
 use super::*;
+use crate::mounting::presentation::presented_surface_witness_for_certification;
 use crate::mounting::presentation::work_producer::command_bundle::UiMountedPresentationCommandBundle;
 use crate::mounting::presentation::work_producer_tests::world::{
     rect_spec, MountedPresentationWorld,
@@ -102,8 +103,13 @@ fn exact_command_slots_share_only_unchanged_overrides_and_accept_atomically() {
         UiMountedPresentationCommandBundle::from_commands(&commands),
     );
     older_candidate.inherit_unchanged_motion(&current, &[world.first_instance]);
-    acceptance.accept(&current, presentation).unwrap();
-    sampler.commit_prepared(tick);
+    acceptance
+        .accept(
+            &current,
+            &presented_surface_witness_for_certification(presentation),
+        )
+        .unwrap();
+    sampler.commit_prepared(tick.presented_for_certification());
     for command in &commands {
         assert_eq!(
             older_candidate.motion_for_command(command.identity()),
@@ -215,7 +221,10 @@ fn exact_command_slots_share_only_unchanged_overrides_and_accept_atomically() {
         .flatten()
         .unwrap();
     assert!(matches!(
-        late.accept(&current, presentation),
+        late.accept(
+            &current,
+            &presented_surface_witness_for_certification(presentation)
+        ),
         Err(UiCommandMotionAcceptanceDenial::CommandReplaced)
     ));
     assert_eq!(current.motion_for_command(text_command.identity()).flatten(), Some(previous_text),

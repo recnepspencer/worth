@@ -5,10 +5,8 @@ use worth_ui::facade::{
     },
     rebind::{UiRebindExecutionPolicy, UiRebindExecutionRequest},
 };
-use worth_ui_runtime::{
-    certification_support::ScriptedPresentationHost,
-    facade::mounted::UiHostSurfacePresentationOutcome,
-};
+use worth_ui_runtime::certification_support::ScriptedPresentationHost;
+use worth_ui_runtime::certification_support::ScriptedPresentationOutcome;
 use worth_ui_test_support::{
     UiPortalDismissalCertificationOutcome, WorthUiFocusRuntimeCertificationExt,
     WorthUiPortalRuntimeCertificationExt, WorthUiServiceProposalCertificationExt,
@@ -24,7 +22,7 @@ use crate::intent::{
 fn dropping_indeterminate_intent_consequence_releases_exact_service_proposals() {
     let host = indeterminate_host();
     host.push_presented();
-    host.push_presentation(UiHostSurfacePresentationOutcome::PresentationIndeterminate);
+    host.push_presentation(ScriptedPresentationOutcome::PresentationIndeterminate);
     let (application, facts) = build_open_portal_application_with_host(host);
     let mut world = AdmissionWorld::launch_application_on_declared_surface(
         application,
@@ -78,7 +76,7 @@ fn dropping_indeterminate_portal_dismissal_releases_exact_service_proposals() {
     let host = indeterminate_host();
     host.push_presented();
     host.push_presented();
-    host.push_presentation(UiHostSurfacePresentationOutcome::PresentationIndeterminate);
+    host.push_presentation(ScriptedPresentationOutcome::PresentationIndeterminate);
     let (application, facts) = build_open_portal_application_with_host(host);
     let mut world = AdmissionWorld::launch_application_on_declared_surface(
         application,

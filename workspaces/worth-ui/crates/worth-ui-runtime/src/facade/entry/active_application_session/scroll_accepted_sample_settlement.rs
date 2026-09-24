@@ -11,17 +11,8 @@
 use super::scroll_settle_disposition::{
     UiAcceptedScrollSettlementDenial, UiScrollSettleDisposition, UiScrollSettleRefusal,
 };
+use crate::mounting::presentation::motion_sampling::UiPresentationMotionPresentedSurface;
 use crate::runtime::motion::{UiMotionTargetIdentity, UiMotionTargetScope};
-
-/// Whether a frame's accepted Scroll samples are still owed to the displayed
-/// pose. A deferral outlives the frame that made it: the accepted sample stays
-/// true, so the next frame reapplies it rather than losing it.
-#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub(in crate::facade::entry) enum UiScrollSettleRetry {
-    #[default]
-    Settled,
-    AwaitingNextFrame,
-}
 
 /// One accepted Scroll sample resolved against the owner it belongs to: where
 /// it puts the displayed content, and which owner's semantic offset has to
@@ -38,12 +29,13 @@ pub(in crate::facade::entry) struct UiAcceptedScrollSettlement {
 
 impl super::super::WorthUiActiveApplicationSession {
     /// Apply the accepted offset of every retained Scroll content group to the
-    /// displayed pose, and record what happened where a reader can find it.
+    /// surface a presentation witness committed, and record what happened
+    /// where a reader can find it.
     pub(in crate::facade::entry) fn settle_accepted_scroll_sample(
         &mut self,
-        presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
+        presented: UiPresentationMotionPresentedSurface,
     ) -> UiScrollSettleDisposition {
-        let disposition = self.settle_accepted_scroll_sample_inner(presentation);
+        let disposition = self.settle_accepted_scroll_sample_inner(presented);
         self.last_scroll_settle_disposition = disposition;
         if matches!(
             disposition,
@@ -56,23 +48,23 @@ impl super::super::WorthUiActiveApplicationSession {
 
     fn settle_accepted_scroll_sample_inner(
         &mut self,
-        presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
+        presented: UiPresentationMotionPresentedSurface,
     ) -> UiScrollSettleDisposition {
         let Some(surface) = self
             .mounted
-            .current_surface_for_binding(presentation.binding())
+            .current_surface_for_binding(presented.displayed().binding())
         else {
             return UiScrollSettleDisposition::Idle;
         };
         let accepted = self.mounted.accepted_scroll_group_translations();
         if accepted.is_empty() {
-            self.scroll_settle_retry = UiScrollSettleRetry::Settled;
+            self.owed_scroll_settles.paid(presented.semantic_surface());
             return UiScrollSettleDisposition::Idle;
         }
         if self.scroll.as_ref().is_some_and(|scroll| {
             scroll.has_pending_direct(surface) || scroll.has_unpresented_layout(surface)
         }) {
-            self.scroll_settle_retry = UiScrollSettleRetry::AwaitingNextFrame;
+            self.owed_scroll_settles.owe(presented);
             return UiScrollSettleDisposition::DeferredPendingGeometry;
         }
         let mut settlements = Vec::with_capacity(accepted.len());
@@ -87,7 +79,7 @@ impl super::super::WorthUiActiveApplicationSession {
             }
         }
         if settlements.is_empty() {
-            self.scroll_settle_retry = UiScrollSettleRetry::Settled;
+            self.owed_scroll_settles.paid(presented.semantic_surface());
             return refusal.map_or(UiScrollSettleDisposition::Idle, |refusal| {
                 UiScrollSettleDisposition::Refused(refusal)
             });
@@ -108,7 +100,7 @@ impl super::super::WorthUiActiveApplicationSession {
                     self.interaction
                         .observe_presented_hit_transition(transition, &self.mounted);
                 }
-                self.scroll_settle_retry = UiScrollSettleRetry::Settled;
+                self.owed_scroll_settles.paid(presented.semantic_surface());
                 if let Err(write_back) = self.write_back_accepted_scroll_offsets(&settlements) {
                     refusal.get_or_insert(UiScrollSettleRefusal::WriteBack(write_back));
                 }
@@ -119,22 +111,14 @@ impl super::super::WorthUiActiveApplicationSession {
             Err(crate::mounting::UiMountedOccurrenceGeometryDenial::PresentationInFlight) => {
                 // The accepted sample is still true, so the settle is owed, not
                 // lost. Re-arming keeps frames coming until it is paid.
-                self.scroll_settle_retry = UiScrollSettleRetry::AwaitingNextFrame;
+                self.owed_scroll_settles.owe(presented);
                 UiScrollSettleDisposition::DeferredPresentationInFlight
             }
             Err(denial) => {
-                self.scroll_settle_retry = UiScrollSettleRetry::Settled;
+                self.owed_scroll_settles.paid(presented.semantic_surface());
                 UiScrollSettleDisposition::Refused(UiScrollSettleRefusal::Geometry(denial))
             }
         }
-    }
-
-    /// Whether a deferred accepted-sample settlement is still owed a frame.
-    pub(in crate::facade::entry) const fn awaits_scroll_settle_retry(&self) -> bool {
-        matches!(
-            self.scroll_settle_retry,
-            UiScrollSettleRetry::AwaitingNextFrame
-        )
     }
 
     /// The displayed pose one accepted sample asks for: the owning region

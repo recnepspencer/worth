@@ -1,5 +1,6 @@
 //! Rendering completion and wake delivery are scripted. Native input retention,
 //! the driver's drain gate, mounted publication and runtime admission are real.
+use crate::certification_support::ScriptedPresentationAcknowledgement;
 use crate::certification_support::{ScriptedPresentationHost, ScriptedSurfaceCompletion};
 use crate::mounting::UiMountedFrameOutcome;
 use winit::{
@@ -37,7 +38,7 @@ fn delayed_frame_scroll_burst_does_not_disable_fresh_input_after_completion() {
     host.push_in_flight(
         vec![
             ScriptedSurfaceCompletion::Pending,
-            ScriptedSurfaceCompletion::Presented(UiMountedSurfacePresentationCompletion::new(
+            ScriptedSurfaceCompletion::Presented(ScriptedPresentationAcknowledgement::new(
                 UiHostSurfacePresentationMode::NativeDisplay,
                 UiHostPresentationEpoch::issued_by_host(2),
                 UiMountedCompletedEffects::new(Vec::new()),

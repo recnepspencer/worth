@@ -1,5 +1,6 @@
 //! Vary only host completion timing; input goes through the real host drain.
 use super::{authored, session::World, stationary_motion::inputs::pointer_batch};
+use crate::certification_support::ScriptedPresentationAcknowledgement;
 use crate::certification_support::ScriptedSurfaceCompletion;
 use crate::facade::entry::portal_dismissal::UiPortalDismissalPublicationOutcome as Outcome;
 use crate::facade::entry::WorthUiAdmittedPortalDismissal;
@@ -47,11 +48,11 @@ fn delayed_dismissal_completion_reopens_input_and_frame_gates() {
         .current_presentation_for_surface(surface)
         .unwrap();
     let outside = UiHostSurfacePosition::viewport_logical(790_000, 590_000);
-    let dismissal = drain_outside_press(&mut world, basis, outside, 1);
+    let dismissal = drain_outside_press(&mut world, basis.basis(), outside, 1);
     world.host.push_in_flight(
         vec![
             ScriptedSurfaceCompletion::Pending,
-            ScriptedSurfaceCompletion::Presented(UiMountedSurfacePresentationCompletion::new(
+            ScriptedSurfaceCompletion::Presented(ScriptedPresentationAcknowledgement::new(
                 UiHostSurfacePresentationMode::NativeDisplay,
                 UiHostPresentationEpoch::issued_by_host(32),
                 UiMountedCompletedEffects::new(vec![UiMountedEffectFamily::NativePaint]),
@@ -72,7 +73,7 @@ fn delayed_dismissal_completion_reopens_input_and_frame_gates() {
     assert!(!world.session.mounted.observation_basis_admission_ready());
     world.host.enqueue_observation_for_next_drain(pointer_batch(
         world.session.host_session.identity().as_u64(),
-        basis,
+        basis.basis(),
         2,
         UiHostPointerIdentity::new(1),
         outside,
@@ -139,7 +140,7 @@ fn exercise_completion_order(input_before_completion: bool) {
     world.host.push_in_flight(
         vec![
             ScriptedSurfaceCompletion::Pending,
-            ScriptedSurfaceCompletion::Presented(UiMountedSurfacePresentationCompletion::new(
+            ScriptedSurfaceCompletion::Presented(ScriptedPresentationAcknowledgement::new(
                 UiHostSurfacePresentationMode::NativeDisplay,
                 UiHostPresentationEpoch::issued_by_host(31),
                 UiMountedCompletedEffects::new(vec![UiMountedEffectFamily::NativePaint]),
@@ -172,7 +173,7 @@ fn exercise_completion_order(input_before_completion: bool) {
         world.session.mounted.observation_basis_admission_ready(),
         "the native input gate must permit this drain while a motion sample is pending"
     );
-    let dismissal = drain_outside_press(&mut world, input_basis, outside, 1);
+    let dismissal = drain_outside_press(&mut world, input_basis.basis(), outside, 1);
     // The production drain admits input first, then consumes the completion.
     assert!(!world.session.mounted.motion_sample_presentation_pending());
     let current = world
@@ -181,7 +182,7 @@ fn exercise_completion_order(input_before_completion: bool) {
         .current_presentation_for_surface(surface)
         .unwrap();
     assert_eq!(current.frame(), observed.frame());
-    assert_ne!(current.epoch(), observed.epoch());
+    assert_ne!(current.basis().epoch(), observed.basis().epoch());
     assert_eq!(world.host.pending_observation_batch_count(), 0);
 
     for _ in world.surfaces {
@@ -207,7 +208,7 @@ fn exercise_completion_order(input_before_completion: bool) {
     if !published {
         world.host.enqueue_observation_for_next_drain(pointer_batch(
             world.session.host_session.identity().as_u64(),
-            current,
+            current.basis(),
             2,
             UiHostPointerIdentity::new(1),
             outside,
@@ -219,7 +220,7 @@ fn exercise_completion_order(input_before_completion: bool) {
             .drain_and_admit_host_observation_batches(Default::default());
         assert_eq!(released.drain_denial(), None);
         assert_eq!(released.counts(), (1, 0, 0, 0));
-        let fresh = drain_outside_press(&mut world, current, outside, 3);
+        let fresh = drain_outside_press(&mut world, current.basis(), outside, 3);
         assert!(
             matches!(
                 world.session.publish_admitted_portal_dismissal(fresh, 103),

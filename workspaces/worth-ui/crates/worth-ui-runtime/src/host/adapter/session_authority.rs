@@ -42,6 +42,13 @@ impl UiHostAdapterSessionAuthority {
         self.presentation_lease_gate.admits_token(token)
     }
 
+    pub(crate) fn issued_mounted_completion(
+        &self,
+        completion: &worth_ui_host_contract::UiMountedSurfacePresentationCompletion,
+    ) -> bool {
+        self.presentation_lease_gate.admits_completion(completion)
+    }
+
     pub fn admits_visual_capture(
         &self,
         request: worth_ui_host_contract::UiHostVisualCaptureRequest,

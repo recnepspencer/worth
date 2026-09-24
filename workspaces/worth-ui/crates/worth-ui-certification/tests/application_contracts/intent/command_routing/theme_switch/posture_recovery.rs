@@ -1,7 +1,8 @@
 use super::*;
 use worth_ui::facade::app::WorthUiNativeManagedRebindProgress;
-use worth_ui_host_contract::{UiHostSurfaceCancellationOutcome, UiHostSurfacePresentationOutcome};
+use worth_ui_host_contract::UiHostSurfaceCancellationOutcome;
 use worth_ui_host_native::{UiNativePhysicalProgressClass, UiNativePhysicalProgressGrant};
+use worth_ui_runtime::certification_support::ScriptedPresentationOutcome;
 use worth_ui_runtime::certification_support::ScriptedSurfaceCompletion;
 
 #[test]
@@ -41,7 +42,7 @@ fn indeterminate_posture_recovers_predecessor_before_a_fresh_publication_or_shut
                 UiHostSurfaceCancellationOutcome::EffectsMayHaveBegun,
             );
         } else {
-            host.push_presentation(UiHostSurfacePresentationOutcome::PresentationIndeterminate);
+            host.push_presentation(ScriptedPresentationOutcome::PresentationIndeterminate);
         }
         assert!(matches!(
             shell.begin_managed_native_intent_posture_publication(prepared.into_posture(), 21),

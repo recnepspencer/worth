@@ -66,7 +66,7 @@ impl World {
             .unwrap();
         let row = *session
             .mounted
-            .interaction_hit_test_basis(presentation)
+            .interaction_hit_test_basis(presentation.basis())
             .unwrap()
             .rows()
             .iter()
@@ -92,7 +92,7 @@ impl World {
         let [x, y, width, height] = super::geometry::BOXES[index];
         let target = crate::runtime::interaction::targeting::resolve_presented_target(
             &session.mounted,
-            presentation,
+            presentation.basis(),
             UiHostSurfacePosition::viewport_logical(
                 ((x + width / 2.0) * 1_000.0) as i64,
                 ((y + height / 2.0) * 1_000.0) as i64,
@@ -168,7 +168,7 @@ impl World {
             .application
             .begin_portal_service_proposal_for_certification(
                 transition,
-                presentation,
+                presentation.basis(),
                 generation,
                 Some(binding),
                 session.motion.as_mut().unwrap(),

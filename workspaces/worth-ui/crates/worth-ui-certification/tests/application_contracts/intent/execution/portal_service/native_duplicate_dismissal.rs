@@ -16,9 +16,9 @@ use worth_ui::facade::{
         UiHostProtocolContract, UiHostProtocolNegotiation,
     },
 };
+use worth_ui_runtime::certification_support::ScriptedPresentationOutcome;
 use worth_ui_runtime::facade::mounted::{
-    UiHostSurfacePresentationOutcome, UiMountedFrameOutcome, UiMountedInspectionReceipt,
-    UiMountedInspectionRequest,
+    UiMountedFrameOutcome, UiMountedInspectionReceipt, UiMountedInspectionRequest,
 };
 
 use super::super::{execution_deadline, execution_reading};
@@ -143,7 +143,7 @@ pub(crate) fn run_native_runtime_service_scenario() -> NativeRuntimeServiceEvide
 
     let first = escape_dismissal(&mut shell, definition, open_presentation, 5);
     let duplicate = escape_dismissal(&mut shell, definition, open_presentation, 7);
-    host.push_presentation(UiHostSurfacePresentationOutcome::PresentationIndeterminate);
+    host.push_presentation(ScriptedPresentationOutcome::PresentationIndeterminate);
     assert!(matches!(
         shell.begin_managed_portal_dismissal(first, 50),
         WorthUiNativeManagedPortalDismissalOutcome::Pending

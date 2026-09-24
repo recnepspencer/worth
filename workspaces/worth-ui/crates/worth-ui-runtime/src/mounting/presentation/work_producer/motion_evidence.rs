@@ -92,8 +92,10 @@ impl UiMountedPresentationState {
                 change: *change,
             })
             .collect();
+        // The entrance sample was rebound to the publication's receipt, which
+        // only an admitted presentation witness produces.
         UiPreparedCommandMotionAcceptance::new(updates)
-            .accept(self, sample.presentation_basis())?;
+            .accept_at(self, sample.presentation_basis())?;
         self.entrance_acceptance = None;
         Ok(true)
     }
@@ -130,6 +132,14 @@ impl UiPreparedCommandMotionAcceptance {
     }
 
     pub(in crate::mounting::presentation) fn accept(
+        self,
+        current: &UiMountedPresentationState,
+        witness: &crate::mounting::presentation::UiPresentedSurfaceWitness,
+    ) -> Result<(), UiCommandMotionAcceptanceDenial> {
+        self.accept_at(current, witness.displayed_basis().basis())
+    }
+
+    fn accept_at(
         mut self,
         current: &UiMountedPresentationState,
         presentation: UiHostObservationPresentationBasis,

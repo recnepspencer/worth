@@ -8,9 +8,11 @@ use worth_ui::facade::{
     },
     observation_report::UiHostObservationPresentationBasis,
 };
+use worth_ui_runtime::certification_support::{
+    ScriptedPresentationAcknowledgement, ScriptedPresentationOutcome,
+};
 use worth_ui_runtime::facade::mounted::{
-    UiHostSurfacePresentationOutcome, UiMountedFrameOutcome, UiMountedInspectionReceipt,
-    UiMountedInspectionRequest,
+    UiMountedFrameOutcome, UiMountedInspectionReceipt, UiMountedInspectionRequest,
 };
 
 use super::super::{execution_deadline, execution_reading};
@@ -91,7 +93,7 @@ fn native_indeterminate_portal_publication_reconstructs_and_settles_the_predeces
     let predecessor_focus = shell.inspect_focus_runtime_for_certification();
     let predecessor_proposals = shell.inspect_service_proposals_for_certification();
     assert!(predecessor_proposals.is_zero());
-    host.push_presentation(UiHostSurfacePresentationOutcome::PresentationIndeterminate);
+    host.push_presentation(ScriptedPresentationOutcome::PresentationIndeterminate);
     match shell
         .begin_managed_native_intent_consequence_publication(handle, 40)
         .expect("the managed consequence belongs to this native session")
@@ -202,7 +204,7 @@ fn queued_escape_is_retained_while_portal_open_publication_is_in_flight() {
     host.push_in_flight(
         vec![
             worth_ui_runtime::certification_support::ScriptedSurfaceCompletion::Presented(
-                worth_ui_host_contract::UiMountedSurfacePresentationCompletion::new(
+                ScriptedPresentationAcknowledgement::new(
                     worth_ui_host_contract::UiHostSurfacePresentationMode::NativeDisplay,
                     worth_ui_runtime::certification_support::scripted_presentation_epoch(),
                     worth_ui_host_contract::UiMountedCompletedEffects::new(vec![

@@ -83,7 +83,11 @@ pub(super) fn present<'work>(
                 if bases.len() == 1 && !bases[0].pin_additions().is_empty() {
                     admit_all_raster_misses(text_raster_work);
                 }
-                (presented_outcome(), bases, Vec::new().into_boxed_slice())
+                (
+                    presented_outcome(&view),
+                    bases,
+                    Vec::new().into_boxed_slice(),
+                )
             },
         )
         .expect("mounted text transaction is prepared")
@@ -123,15 +127,13 @@ impl UiGlyphRasterBatchSink for AcceptingRasterSink {
     }
 }
 
-fn presented_outcome() -> UiHostSurfacePresentationOutcome {
-    UiHostSurfacePresentationOutcome::Presented(
-        worth_ui_host_contract::UiMountedSurfacePresentationCompletion::new(
-            UiHostSurfacePresentationMode::NativeDisplay,
-            UiHostPresentationEpoch::issued_by_host(1),
-            UiMountedCompletedEffects::new(Vec::new()),
-            UiHostPresentationCostReport::default(),
-        ),
-    )
+fn presented_outcome(view: &UiMountedFrameConsumptionView<'_>) -> UiHostSurfacePresentationOutcome {
+    UiHostSurfacePresentationOutcome::Presented(view.acknowledge_presented(
+        UiHostSurfacePresentationMode::NativeDisplay,
+        UiHostPresentationEpoch::issued_by_host(1),
+        UiMountedCompletedEffects::new(Vec::new()),
+        UiHostPresentationCostReport::default(),
+    ))
 }
 
 fn consumption_view<'work>(

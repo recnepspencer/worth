@@ -154,7 +154,7 @@ pub(super) fn hover(world: &mut World, index: usize, sequence: u64) {
     let batch = UiHostObservationBatch::new(UiHostObservationBatchInput {
         protocol,
         host_session: world.session.host_session.identity().as_u64(),
-        presentation,
+        presentation: presentation.basis(),
         sequences: UiHostObservationSequenceRange::new(sequence, sequence),
         loss: UiHostObservationLoss::Complete,
         reports: vec![report],

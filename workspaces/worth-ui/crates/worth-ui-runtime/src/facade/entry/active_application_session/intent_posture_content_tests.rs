@@ -1,4 +1,5 @@
 use super::{fixture, prepare};
+use crate::certification_support::ScriptedPresentationOutcome;
 
 #[test]
 fn intent_posture_projects_text_only_for_components_with_text_authority() {
@@ -70,7 +71,7 @@ fn intent_posture_projects_text_only_for_components_with_text_authority() {
             .as_ref()
             .map(|owners| owners.turn());
         let predecessor_frame = session.mounted.current_publication().unwrap().frame();
-        host.push_presentation(worth_ui_host_contract::UiHostSurfacePresentationOutcome::RejectedBeforeEffects(
+        host.push_presentation(ScriptedPresentationOutcome::RejectedBeforeEffects(
             worth_ui_host_contract::UiHostSurfacePresentationDenial::TextAtlasPresentationDeferred,
         ));
         let outcome = session.publish_native_intent_posture(

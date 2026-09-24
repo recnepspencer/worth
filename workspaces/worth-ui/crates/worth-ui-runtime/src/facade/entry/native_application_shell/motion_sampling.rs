@@ -43,7 +43,7 @@ impl WorthUiNativeApplicationShell {
             }
             // The physical frame may have completed without Scroll accepting
             // its geometry yet. Reconcile that debt before retrying the grab.
-            self.settle_accepted_scroll_samples();
+            self.session.settle_owed_scroll_samples();
             self.session.finish_pending_scroll_chrome_capture();
             if self
                 .session
@@ -61,7 +61,7 @@ impl WorthUiNativeApplicationShell {
             // A settle deferred by a presentation attempt is still owed its
             // frame. The accepted sample outlives the track that produced it,
             // so the retry runs here even after sampling has gone quiet.
-            self.settle_accepted_scroll_samples();
+            self.session.settle_owed_scroll_samples();
             return Ok(self.native_motion_tick_disposition());
         }
         if self.session.mounted.motion_sample_presentation_pending() {
@@ -83,15 +83,6 @@ impl WorthUiNativeApplicationShell {
         self.session
             .present_prepared_motion_tick(prepared, presentation);
         Ok(self.native_motion_tick_disposition())
-    }
-
-    /// Apply whatever accepted Scroll samples are outstanding, if the surface
-    /// still has a published presentation to apply them against.
-    fn settle_accepted_scroll_samples(&mut self) {
-        let Some(presentation) = self.current_motion_presentation() else {
-            return;
-        };
-        self.session.settle_accepted_scroll_sample(presentation);
     }
 
     pub(crate) fn native_motion_sampling_active(&self) -> bool {
@@ -219,11 +210,10 @@ impl WorthUiNativeApplicationShell {
 
     fn current_motion_presentation(
         &self,
-    ) -> Option<worth_ui_host_contract::UiHostObservationPresentationBasis> {
+    ) -> Option<crate::mounting::presentation::UiDisplayedSurfaceBasis> {
         self.session
             .mounted
-            .current_publication()?
-            .presentation_for_surface(self.surface)
+            .current_presentation_for_surface(self.surface)
     }
 
     fn native_motion_tick_disposition(&self) -> UiNativeMotionTickDisposition {

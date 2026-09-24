@@ -21,25 +21,17 @@ use super::scroll_pose_authority::{block, ScrollWorld};
 use super::scroll_settle_commit::{
     one_notch_up, pending_transitions, smooth_world, LINE_EXTENT_POINTS, ONE_NOTCH, SETTLE_TICKS,
 };
+use crate::mounting::presentation::motion_sampling::UiPresentationMotionSamplingDenial;
 use crate::mounting::UiMountedOccurrenceGeometryDenial;
 use crate::runtime::scroll::{UiHostScrollObservationOutcome, UiScrollDeltaCause, UiScrollOffset};
-use worth_ui_host_contract::UiHostObservationPresentationBasis;
 
 const NOTCH_TICK: u64 = 5;
 /// Frames from a notch to the tick its settle arrives on.
 const ARRIVAL: u64 = SETTLE_TICKS as u64 + 1;
 
-fn presentation(scroll: &ScrollWorld) -> UiHostObservationPresentationBasis {
-    scroll
-        .world
-        .session
-        .mounted
-        .current_presentation_for_surface(scroll.surface())
-        .expect("the first surface is published")
-}
-
-/// One Motion frame the way the native shell runs it: prepare the tick,
-/// present it, then settle the accepted Scroll sample.
+/// One Motion frame the way the native shell runs it: prepare the tick and
+/// present it. A commit settles the accepted Scroll sample on the surface its
+/// witness proved; a frame that committed no pixels still pays an owed settle.
 pub(super) fn settle_frame(scroll: &mut ScrollWorld, tick: u64) -> UiScrollSettleDisposition {
     settle_with_completion(scroll, tick, true)
 }
@@ -56,27 +48,47 @@ fn settle_with_completion(
     tick: u64,
     present: bool,
 ) -> UiScrollSettleDisposition {
-    let basis = presentation(scroll);
-    let prepared = scroll
+    motion_frame(scroll, tick, present).expect("an armed settle prepares its tick")
+}
+
+/// One Motion frame the way the native shell runs it: prepare the tick against
+/// the displayed presentation, script the host's acknowledgement when `present`
+/// and the tick moves something, and present it. The tick answers the settle it
+/// ran: the one its witness committed, or whatever a deferral still owes. `Err`
+/// is a tick the sampler refused to prepare.
+pub(super) fn motion_frame(
+    scroll: &mut ScrollWorld,
+    tick: u64,
+    present: bool,
+) -> Result<UiScrollSettleDisposition, UiPresentationMotionSamplingDenial> {
+    let displayed = scroll
         .world
         .session
-        .prepare_motion_tick(tick, basis)
-        .expect("an armed settle prepares its tick");
+        .mounted
+        .current_displayed_presentation(scroll.presentation())
+        .expect("the retained record displays this basis");
+    let prepared = scroll.world.session.prepare_motion_tick(tick, displayed)?;
     if present && !prepared.receipt().samples().is_empty() {
         scroll.world.host.push_native_display_presented();
     }
-    scroll
+    Ok(scroll
         .world
         .session
-        .present_prepared_motion_tick(prepared, basis);
-    scroll.world.session.settle_accepted_scroll_sample(basis)
+        .present_prepared_motion_tick(prepared, displayed))
 }
 
 /// The frame the interaction lane runs when a settle is owed and no Motion
 /// tick asked for one.
+/// One Motion frame for a settle that may already have ended: a tick the
+/// sampler refuses to prepare still pays any settle a deferral owes, as the
+/// shell does once sampling has gone quiet.
+pub(super) fn quiet_frame(scroll: &mut ScrollWorld, tick: u64) -> UiScrollSettleDisposition {
+    motion_frame(scroll, tick, true)
+        .unwrap_or_else(|_| scroll.world.session.settle_owed_scroll_samples())
+}
+
 pub(super) fn owed_frame(scroll: &mut ScrollWorld) -> UiScrollSettleDisposition {
-    let basis = presentation(scroll);
-    scroll.world.session.settle_accepted_scroll_sample(basis)
+    scroll.world.session.settle_owed_scroll_samples()
 }
 
 fn staged_target(scroll: &ScrollWorld) -> Option<UiScrollOffset> {
@@ -168,30 +180,91 @@ fn a_settle_frame_refused_mid_presentation_is_owed_and_paid_by_the_next() {
         "two frames into the settle the content has moved"
     );
 
-    // The host holds the next presentation open. The owed frame cannot apply
-    // the accepted sample; it says so, keeps the sample, and moves nothing.
+    // The host holds an ordinary presentation open when the next Motion
+    // frame commits. Its settle cannot move the geometry that attempt is
+    // presenting: it says so, keeps the sample, and moves nothing.
     let pending = scroll.hold_presentation_open(NOTCH_TICK + 3);
     assert_eq!(
-        owed_frame(&mut scroll),
+        settle_frame(&mut scroll, NOTCH_TICK + 3),
         UiScrollSettleDisposition::DeferredPresentationInFlight
     );
     assert!(scroll.world.session.awaits_scroll_settle_retry());
     assert_eq!(scroll.accepted_offset(), before);
     assert_eq!(scroll.displayed_offset(), Some(before));
 
-    // Once the host completes, the same accepted sample is applied: the
-    // deferral cost the settle a frame, not its offset.
+    // Once the host completes, the committed sample is applied on the surface
+    // its witness proved: the deferral cost the settle a frame, not its
+    // offset.
     scroll.complete(pending, NOTCH_TICK + 4);
     assert_eq!(owed_frame(&mut scroll), UiScrollSettleDisposition::Applied);
     assert!(!scroll.world.session.awaits_scroll_settle_retry());
-    assert_eq!(scroll.accepted_offset(), before);
-    assert_eq!(scroll.displayed_offset(), Some(before));
+    let paid = scroll.accepted_offset();
+    assert!(
+        paid.block_subpixels() > before.block_subpixels(),
+        "the owed settle lands the sample the in-flight frame committed"
+    );
+    assert_eq!(scroll.displayed_offset(), Some(paid));
 
     // And the settle still arrives on its own clock.
-    applied_frames(&mut scroll, NOTCH_TICK, 5, ARRIVAL);
+    applied_frames(&mut scroll, NOTCH_TICK, 4, ARRIVAL);
     assert_eq!(
         scroll.accepted_offset(),
         block(i64::from(LINE_EXTENT_POINTS))
+    );
+    let _ = scroll.world.session.shutdown();
+}
+
+/// A settle owed to one surface generation is never paid on another. Once the
+/// host has rebound the surface, the geometry the witness proved is gone, so
+/// the owed settle is released rather than landed on the new generation.
+#[test]
+fn a_settle_owed_to_a_rebound_generation_is_released_not_paid() {
+    let mut scroll = smooth_world(true);
+    notch(&mut scroll, NOTCH_TICK);
+    applied_frames(&mut scroll, NOTCH_TICK, 1, 2);
+    let pending = scroll.hold_presentation_open(NOTCH_TICK + 3);
+    assert_eq!(
+        settle_frame(&mut scroll, NOTCH_TICK + 3),
+        UiScrollSettleDisposition::DeferredPresentationInFlight
+    );
+    scroll.complete(pending, NOTCH_TICK + 4);
+    let binding = scroll.presentation().binding();
+    scroll
+        .world
+        .session
+        .rebind_host_surface_with_interaction_receipt(
+            binding,
+            worth_ui_host_contract::UiHostSurfacePresentationMode::NativeDisplay,
+            crate::mounting::UiSurfaceBindingProfile::new(
+                1_000,
+                crate::mounting::UiSurfaceBindingCoordinatePosture::LogicalPoints,
+                2,
+            )
+            .expect("a second binding profile"),
+        )
+        .expect("a presented surface rebinds");
+    let accepted = scroll.accepted_offset();
+    let displayed = scroll.displayed_offset();
+
+    assert_eq!(
+        owed_frame(&mut scroll),
+        UiScrollSettleDisposition::Superseded
+    );
+    assert_eq!(
+        scroll.accepted_offset(),
+        accepted,
+        "a released settle moves nothing"
+    );
+    assert_eq!(scroll.displayed_offset(), displayed);
+    assert!(!scroll.world.session.awaits_scroll_settle_retry());
+    assert_eq!(
+        scroll.world.session.last_scroll_settle_disposition(),
+        UiScrollSettleDisposition::Superseded
+    );
+    assert_eq!(
+        owed_frame(&mut scroll),
+        UiScrollSettleDisposition::Idle,
+        "a released settle is not owed again"
     );
     let _ = scroll.world.session.shutdown();
 }
@@ -219,11 +292,20 @@ fn a_second_notch_inside_the_horizon_retargets_from_the_first_target() {
         "one settle carries both notches"
     );
 
-    applied_frames(&mut scroll, second, 1, ARRIVAL);
+    // The retarget continues from the accepted sample of the first notch's
+    // rest frame, so the retargeted curve lands on the tick the first settle
+    // would have arrived at.
+    let arrived = NOTCH_TICK + ARRIVAL - second;
+    applied_frames(&mut scroll, second, 1, arrived);
     assert_eq!(
         scroll.accepted_offset(),
         block(2 * i64::from(LINE_EXTENT_POINTS)),
         "the retargeted settle arrives at the accumulated target"
+    );
+    assert_eq!(
+        settle_frame(&mut scroll, second + arrived + 1),
+        UiScrollSettleDisposition::Idle,
+        "a frame past the arrival presents nothing, so it has nothing to settle"
     );
     let _ = scroll.world.session.shutdown();
 }

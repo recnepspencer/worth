@@ -187,13 +187,19 @@ impl WorthUiActiveApplicationSession {
                 if let Some(tick) = observation_tick.filter(|_| {
                     self.motion.is_installed() && self.mounted.has_active_motion_samples()
                 }) {
-                    if let Ok(prepared) = self.prepare_motion_tick(tick, core.presentation()) {
-                        self.present_prepared_motion_tick(prepared, core.presentation());
+                    let displayed = self
+                        .mounted
+                        .current_displayed_presentation(core.presentation());
+                    if let Some(displayed) = displayed {
+                        if let Ok(prepared) = self.prepare_motion_tick(tick, displayed) {
+                            self.present_prepared_motion_tick(prepared, displayed);
+                        }
                     }
                 } else if self.awaits_scroll_settle_retry() {
                     // A settle deferred while a presentation was in flight is
                     // owed this frame even though no Motion tick asked for one.
-                    self.settle_accepted_scroll_sample(core.presentation());
+                    // It settles on the surface its witness committed.
+                    self.settle_owed_scroll_samples();
                 }
                 self.host_exchange
                     .retire_delivered_observation_batch(receipt.canonical_core());

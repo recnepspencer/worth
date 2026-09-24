@@ -67,13 +67,10 @@ impl UiMountedFrameRetentionCoordinator {
     pub(in crate::mounting) fn current_presentation_for_surface(
         &self,
         surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
-    ) -> Option<worth_ui_host_contract::UiHostObservationPresentationBasis> {
+    ) -> Option<crate::mounting::presentation::UiDisplayedSurfaceBasis> {
         let authority = self.authority.borrow();
         let current = authority.surface_evidence(surface)?;
-        let presentation = current
-            .current_presentations()
-            .find_map(|(candidate, basis)| (candidate == surface).then_some(basis));
-        presentation
+        current.displayed_for_surface(surface)
     }
 
     pub(in crate::mounting) fn current_semantic_surface_for_presentation(

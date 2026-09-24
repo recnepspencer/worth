@@ -28,30 +28,9 @@ use worth_ui_host_contract::*;
 
 const NOTCH_TICK: u64 = 5;
 
-fn presentation(scroll: &ScrollWorld) -> UiHostObservationPresentationBasis {
-    scroll
-        .world
-        .session
-        .mounted
-        .current_presentation_for_surface(scroll.surface())
-        .expect("the first surface is published")
-}
-
-/// One Motion frame the way the native shell runs it, for a settle that may
-/// already have ended: a tick a refused sampler cannot answer prepares
-/// nothing, and there is nothing left for it to move.
+/// One Motion frame the way the native shell runs it.
 fn frame(scroll: &mut ScrollWorld, tick: u64) -> UiScrollSettleDisposition {
-    let basis = presentation(scroll);
-    if let Ok(prepared) = scroll.world.session.prepare_motion_tick(tick, basis) {
-        if !prepared.receipt().samples().is_empty() {
-            scroll.world.host.push_native_display_presented();
-        }
-        scroll
-            .world
-            .session
-            .present_prepared_motion_tick(prepared, basis);
-    }
-    scroll.world.session.settle_accepted_scroll_sample(basis)
+    super::scroll_settle_frame::quiet_frame(scroll, tick)
 }
 
 /// A World with one notch published and two frames of it paid, so the content
@@ -143,7 +122,7 @@ fn unmounting_the_occurrence_ends_the_settle_it_was_carrying() {
 #[test]
 fn rebinding_the_surface_ends_the_settle_that_was_crossing_it() {
     let mut scroll = world_mid_settle();
-    let binding = presentation(&scroll).binding();
+    let binding = scroll.presentation().binding();
     scroll
         .world
         .session
@@ -229,7 +208,7 @@ fn collapsing_the_extent_ends_the_settle_that_had_nowhere_left_to_arrive() {
 const FOCUS_REPORT_SEQUENCE: u64 = 1;
 
 fn unfocus(scroll: &mut ScrollWorld) {
-    let presentation = presentation(scroll);
+    let presentation = scroll.presentation();
     let UiHostProtocolNegotiation::Compatible(protocol) =
         UiHostProtocolContract::current().negotiate()
     else {

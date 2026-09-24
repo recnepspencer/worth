@@ -1,5 +1,6 @@
 //! Input cannot capture an older pose after accepting an async Scroll sample.
 use super::*;
+use crate::certification_support::ScriptedPresentationAcknowledgement;
 use crate::certification_support::ScriptedSurfaceCompletion;
 use crate::facade::entry::active_application_session::scroll_chrome_ingress::UiScrollChromeIngressOutcome;
 use crate::facade::entry::active_application_session::scroll_chrome_interaction::UiScrollChromeInteractionDenial;
@@ -10,7 +11,7 @@ fn pending_sample() -> ScrollWorld {
 }
 
 pub(super) fn presented_sample() -> ScriptedSurfaceCompletion {
-    ScriptedSurfaceCompletion::Presented(UiMountedSurfacePresentationCompletion::new(
+    ScriptedSurfaceCompletion::Presented(ScriptedPresentationAcknowledgement::new(
         UiHostSurfacePresentationMode::NativeDisplay,
         UiHostPresentationEpoch::issued_by_host(100),
         UiMountedCompletedEffects::new(vec![UiMountedEffectFamily::NativePaint]),
@@ -181,7 +182,7 @@ fn old_epoch_press_waits_for_pending_physical_sample_then_grabs_accepted_thumb()
         .session
         .mounted
         .current_presentation_for_surface(scroll.surface())
-        .is_some_and(|current| current.epoch() > original.epoch()));
+        .is_some_and(|current| current.basis().epoch() > original.epoch()));
     let thumb = block_chrome(&scroll).1;
     let latch = scroll
         .world
@@ -280,17 +281,17 @@ fn capture_cannot_retire_an_accepted_sample_before_its_pose_is_reconciled() {
     let grabbed = centre(block_chrome(&scroll).1);
     // Exercise the partial handoff directly: the mounted owner accepted pixels,
     // but the session has not yet reconciled its Scroll owner/geometry.
-    let settlement = scroll
+    let Some(crate::mounting::UiMountedMotionSampleSettlement::Committed(sampling)) = scroll
         .world
         .session
         .mounted
-        .complete_motion_sample_presentation(&scroll.world.session.host_session);
-    assert!(matches!(
-        settlement,
-        Some(crate::mounting::UiMountedMotionSampleSettlement::Committed(
-            _
-        ))
-    ));
+        .complete_motion_sample_presentation(&scroll.world.session.host_session)
+    else {
+        panic!("the in-flight sample commits")
+    };
+    let presented = sampling
+        .presented_surface()
+        .expect("a committed sample names the surface its witness proved");
     let surface = scroll.surface();
     let presentation = scroll.presentation();
     let outcome = scroll.world.session.press_scroll_chrome(
@@ -312,9 +313,11 @@ fn capture_cannot_retire_an_accepted_sample_before_its_pose_is_reconciled() {
         .is_none());
     assert_eq!(pending_transitions(&scroll), 1);
     assert!(scroll.world.session.mounted.has_active_motion_samples());
-    let basis = scroll.presentation();
     assert_eq!(
-        scroll.world.session.settle_accepted_scroll_sample(basis),
+        scroll
+            .world
+            .session
+            .settle_accepted_scroll_sample(presented),
         UiScrollSettleDisposition::Applied
     );
     assert!(matches!(

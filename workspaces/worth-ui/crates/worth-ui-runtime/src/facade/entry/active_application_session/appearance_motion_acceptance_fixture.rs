@@ -1,5 +1,8 @@
 use super::super::fixture as appearance;
 use super::*;
+use crate::certification_support::{
+    ScriptedPresentationAcknowledgement, ScriptedPresentationOutcome,
+};
 use crate::runtime::motion::{UiMotionDeclaration, UiMotionTransitionRequest};
 
 pub(super) fn mounted() -> (
@@ -85,7 +88,7 @@ pub(super) fn present(
         .current_presentation_for_surface(surface)
         .unwrap();
     let prepared = session.mounted.prepare_motion_tick(tick, basis).unwrap();
-    host.push_presentation(UiHostSurfacePresentationOutcome::Presented(completion(
+    host.push_presentation(ScriptedPresentationOutcome::Presented(completion(
         epoch, true,
     )));
     assert!(
@@ -118,8 +121,8 @@ pub(super) fn refresh_appearance(
     appearance::publish(session, host, frame, now);
 }
 
-pub(super) fn completion(epoch: u64, paint: bool) -> UiMountedSurfacePresentationCompletion {
-    UiMountedSurfacePresentationCompletion::new(
+pub(super) fn completion(epoch: u64, paint: bool) -> ScriptedPresentationAcknowledgement {
+    ScriptedPresentationAcknowledgement::new(
         UiHostSurfacePresentationMode::NativeDisplay,
         UiHostPresentationEpoch::issued_by_host(epoch),
         UiMountedCompletedEffects::new(if paint {

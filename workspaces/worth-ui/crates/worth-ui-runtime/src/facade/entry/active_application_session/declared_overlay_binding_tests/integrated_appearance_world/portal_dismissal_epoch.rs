@@ -1,4 +1,7 @@
 use super::{authored, session::World};
+use crate::certification_support::{
+    ScriptedPresentationAcknowledgement, ScriptedPresentationOutcome,
+};
 use worth_ui_host_contract::*;
 
 #[test]
@@ -24,8 +27,8 @@ fn raw_old_epoch_cannot_classify_inside_or_outside_after_motion_advance() {
     let sample = world.session.prepare_motion_tick(1, observed).unwrap();
     world
         .host
-        .push_presentation(UiHostSurfacePresentationOutcome::Presented(
-            UiMountedSurfacePresentationCompletion::new(
+        .push_presentation(ScriptedPresentationOutcome::Presented(
+            ScriptedPresentationAcknowledgement::new(
                 UiHostSurfacePresentationMode::NativeDisplay,
                 UiHostPresentationEpoch::issued_by_host(31),
                 UiMountedCompletedEffects::new(vec![UiMountedEffectFamily::NativePaint]),
@@ -40,7 +43,7 @@ fn raw_old_epoch_cannot_classify_inside_or_outside_after_motion_advance() {
         .unwrap();
     assert_eq!(current.frame(), observed.frame());
     assert_eq!(current.binding(), observed.binding());
-    assert_ne!(current.epoch(), observed.epoch());
+    assert_ne!(current.basis().epoch(), observed.basis().epoch());
 
     let bounds = world
         .session
@@ -57,7 +60,7 @@ fn raw_old_epoch_cannot_classify_inside_or_outside_after_motion_advance() {
     };
     let interaction = |point| {
         crate::facade::interaction::UiDismissInteraction::outside_press(
-            observed,
+            observed.basis(),
             UiHostObservationSequence::new(100),
             UiHostObservationTimeBasis::PresentationRelativeTick(100),
             point,
@@ -120,8 +123,8 @@ fn portal_entrance_dismissal_uses_the_accepted_displaced_body() {
     let sample = world.session.prepare_motion_tick(1, observed).unwrap();
     world
         .host
-        .push_presentation(UiHostSurfacePresentationOutcome::Presented(
-            UiMountedSurfacePresentationCompletion::new(
+        .push_presentation(ScriptedPresentationOutcome::Presented(
+            ScriptedPresentationAcknowledgement::new(
                 UiHostSurfacePresentationMode::NativeDisplay,
                 UiHostPresentationEpoch::issued_by_host(31),
                 UiMountedCompletedEffects::new(vec![UiMountedEffectFamily::NativePaint]),
@@ -136,7 +139,7 @@ fn portal_entrance_dismissal_uses_the_accepted_displaced_body() {
         .unwrap();
     let interaction = |y: f32, sequence| {
         crate::facade::interaction::UiDismissInteraction::outside_press(
-            current,
+            current.basis(),
             UiHostObservationSequence::new(sequence),
             UiHostObservationTimeBasis::PresentationRelativeTick(sequence),
             UiHostSurfacePosition::viewport_logical(
@@ -158,8 +161,8 @@ fn portal_entrance_dismissal_uses_the_accepted_displaced_body() {
     for _ in world.surfaces {
         world
             .host
-            .push_presentation(UiHostSurfacePresentationOutcome::Presented(
-                UiMountedSurfacePresentationCompletion::new(
+            .push_presentation(ScriptedPresentationOutcome::Presented(
+                ScriptedPresentationAcknowledgement::new(
                     UiHostSurfacePresentationMode::NativeDisplay,
                     UiHostPresentationEpoch::issued_by_host(32),
                     UiMountedCompletedEffects::new(vec![UiMountedEffectFamily::NativePaint]),

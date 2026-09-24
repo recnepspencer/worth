@@ -1,4 +1,5 @@
 use super::{session::World, *};
+use crate::certification_support::ScriptedPresentationAcknowledgement;
 use crate::certification_support::ScriptedSurfaceCompletion;
 
 #[test]
@@ -45,7 +46,7 @@ fn accepted_motion_reports_hit_index_work_without_pointer_records_through_delaye
     world.host.push_in_flight(
         vec![
             ScriptedSurfaceCompletion::Pending,
-            ScriptedSurfaceCompletion::Presented(UiMountedSurfacePresentationCompletion::new(
+            ScriptedSurfaceCompletion::Presented(ScriptedPresentationAcknowledgement::new(
                 UiHostSurfacePresentationMode::NativeDisplay,
                 UiHostPresentationEpoch::issued_by_host(33),
                 UiMountedCompletedEffects::new(vec![UiMountedEffectFamily::NativePaint]),

@@ -171,7 +171,8 @@ fn presented_hit_row(
 ) -> Option<crate::mounting::UiPresentedHitTestRow> {
     let presentation = mounted
         .current_publication()?
-        .presentation_for_surface(surface)?;
+        .presentation_for_surface(surface)
+        .map(|displayed| displayed.basis())?;
     mounted
         .interaction_hit_test_basis(presentation)
         .ok()?

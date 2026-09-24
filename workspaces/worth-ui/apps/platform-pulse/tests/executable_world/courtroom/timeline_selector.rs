@@ -156,7 +156,7 @@ fn open_timeline_selector(
     activate_timeline_selector(platform, client, lifecycle, closed, deadline);
     loop {
         let open = await_capture(platform, client, deadline);
-        let changed = changed_menu_pixels(&closed, &open);
+        let changed = changed_menu_pixels(closed, &open);
         if changed >= 24 {
             break;
         }
@@ -176,7 +176,7 @@ fn activate_timeline_selector(
     deadline: Instant,
 ) {
     let selector = NativeClientPixelPoint::interior(
-        &closed,
+        closed,
         995 * closed.width() / 1536,
         300 * closed.height() / 1024,
         1,

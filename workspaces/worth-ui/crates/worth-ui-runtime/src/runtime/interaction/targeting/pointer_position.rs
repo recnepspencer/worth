@@ -30,6 +30,7 @@ impl UiPresentedPointerPosition {
             .ok_or(UiInteractionTargetingDenial::BindingNoLongerCurrent)?;
         let current = mounted
             .current_presentation_for_surface(surface)
+            .map(|displayed| displayed.basis())
             .ok_or(UiInteractionTargetingDenial::PresentationTruthUnavailable)?;
         if current.binding() != observed.binding()
             || current.host_surface() != observed.host_surface()

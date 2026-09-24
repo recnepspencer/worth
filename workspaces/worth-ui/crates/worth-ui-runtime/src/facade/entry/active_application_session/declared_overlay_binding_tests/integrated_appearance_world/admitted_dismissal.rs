@@ -1,5 +1,8 @@
 //! Real input admission preserves event-time meaning, not raw coordinates.
 use super::{authored, input_completion_order::drain_outside_press, session::World};
+use crate::certification_support::{
+    ScriptedPresentationAcknowledgement, ScriptedPresentationOutcome,
+};
 use crate::facade::entry::portal_dismissal::{
     UiPortalDismissalPublicationOutcome as Outcome, UiPortalDismissalPublicationStop as Stop,
 };
@@ -26,8 +29,8 @@ fn advance_motion(world: &mut World, tick: u64, epoch: u64) {
     let sample = world.session.prepare_motion_tick(tick, basis).unwrap();
     world
         .host
-        .push_presentation(UiHostSurfacePresentationOutcome::Presented(
-            UiMountedSurfacePresentationCompletion::new(
+        .push_presentation(ScriptedPresentationOutcome::Presented(
+            ScriptedPresentationAcknowledgement::new(
                 UiHostSurfacePresentationMode::NativeDisplay,
                 UiHostPresentationEpoch::issued_by_host(epoch),
                 UiMountedCompletedEffects::new(vec![UiMountedEffectFamily::NativePaint]),
@@ -41,6 +44,7 @@ fn advance_motion(world: &mut World, tick: u64, epoch: u64) {
             .mounted
             .current_presentation_for_surface(world.surfaces[0])
             .unwrap()
+            .basis()
             .epoch(),
         UiHostPresentationEpoch::issued_by_host(epoch)
     );
@@ -71,7 +75,7 @@ fn inside_decision_cannot_turn_into_outside_when_accepted_geometry_moves() {
         ((body.x() + body.width() / 2.0) * 1_000.0) as i64,
         ((body.y() + body.height() + 4.0) * 1_000.0) as i64,
     );
-    let admitted = drain_outside_press(&mut world, basis, point, 1);
+    let admitted = drain_outside_press(&mut world, basis.basis(), point, 1);
     advance_motion(&mut world, 10_000, 32);
     let revision = world.session.portal.as_ref().unwrap().revision();
     assert!(matches!(
@@ -87,7 +91,7 @@ fn inside_decision_cannot_turn_into_outside_when_accepted_geometry_moves() {
         .current_presentation_for_surface(world.surfaces[0])
         .unwrap();
     let fresh = crate::facade::interaction::UiDismissInteraction::outside_press(
-        current,
+        current.basis(),
         UiHostObservationSequence::new(2),
         UiHostObservationTimeBasis::PresentationRelativeTick(10_002),
         point,
@@ -119,7 +123,7 @@ fn admitted_dismissal_cannot_retarget_a_new_topmost_modal() {
         .unwrap();
     let admitted = drain_outside_press(
         &mut world,
-        basis,
+        basis.basis(),
         UiHostSurfacePosition::viewport_logical(790_000, 590_000),
         1,
     );
@@ -168,7 +172,7 @@ fn admitted_dismissal_is_bound_to_its_application_generation() {
         .unwrap();
     let admitted = drain_outside_press(
         &mut origin,
-        basis,
+        basis.basis(),
         UiHostSurfacePosition::viewport_logical(790_000, 590_000),
         1,
     );

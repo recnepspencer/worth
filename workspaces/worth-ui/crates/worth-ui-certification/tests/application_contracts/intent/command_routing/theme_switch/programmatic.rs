@@ -1,7 +1,6 @@
 use super::*;
-use worth_ui_host_contract::{
-    UiHostSurfacePresentationDenial, UiHostSurfacePresentationOutcome, UiMountedRgba8,
-};
+use worth_ui_host_contract::{UiHostSurfacePresentationDenial, UiMountedRgba8};
+use worth_ui_runtime::certification_support::ScriptedPresentationOutcome;
 
 #[test]
 fn programmatic_theme_first_publication_rejection_retry_and_switch_back() {
@@ -42,7 +41,7 @@ fn programmatic_theme_first_publication_rejection_retry_and_switch_back() {
         calls,
         "observing the request must not publish an unrelated posture frame"
     );
-    host.push_presentation(UiHostSurfacePresentationOutcome::RejectedBeforeEffects(
+    host.push_presentation(ScriptedPresentationOutcome::RejectedBeforeEffects(
         UiHostSurfacePresentationDenial::TextAtlasPresentationDeferred,
     ));
     {

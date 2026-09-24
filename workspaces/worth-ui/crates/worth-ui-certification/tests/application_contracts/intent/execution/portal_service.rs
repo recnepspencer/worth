@@ -174,7 +174,7 @@ fn indeterminate_portal_publication_retains_both_family_successors_until_shutdow
     );
     host.push_presented();
     host.push_presentation(
-        worth_ui_runtime::facade::mounted::UiHostSurfacePresentationOutcome::
+        worth_ui_runtime::certification_support::ScriptedPresentationOutcome::
             PresentationIndeterminate,
     );
     let (application, facts) = build_open_portal_application_with_host(host);

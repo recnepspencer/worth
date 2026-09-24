@@ -7,6 +7,7 @@ pub(crate) mod motion_sampling;
 mod opacity_composition;
 mod outcome;
 mod preflight;
+mod presented_surface;
 mod reconciliation;
 mod shutdown;
 mod state;
@@ -38,6 +39,9 @@ pub use outcome::{
     UiMountedSupersededFrame, UiMountedSurfacePresentationReceipt,
     UiMountedSurfacePresentationRejection, UiPresentationIndeterminateReport,
 };
+#[cfg(any(test, feature = "certification-support"))]
+pub(crate) use presented_surface::presented_surface_witness_for_certification;
+pub(crate) use presented_surface::{UiDisplayedSurfaceBasis, UiPresentedSurfaceWitness};
 pub use reconciliation::{UiHostPresentationReconciliation, UiMountedSurfaceReconciliationBinding};
 pub(super) use shutdown::{UiMountedPresentationQueryShutdown, UiMountedPresentationTextShutdown};
 pub use shutdown::{

@@ -20,7 +20,6 @@ use super::scroll_settle_commit::{
 };
 use crate::mounting::presentation::motion_sampling::UiPresentationReducedMotionPosture;
 use crate::runtime::scroll::UiHostScrollObservationOutcome;
-use worth_ui_host_contract::UiHostObservationPresentationBasis;
 
 const NOTCH_TICK: u64 = 5;
 
@@ -29,30 +28,9 @@ fn notch_target() -> crate::runtime::scroll::UiScrollOffset {
     block(i64::from(LINE_EXTENT_POINTS))
 }
 
-fn presentation(scroll: &ScrollWorld) -> UiHostObservationPresentationBasis {
-    scroll
-        .world
-        .session
-        .mounted
-        .current_presentation_for_surface(scroll.surface())
-        .expect("the first surface is published")
-}
-
-/// One Motion frame the way the native shell runs it. A posture that has
-/// already ended every track leaves nothing to prepare, so a tick nobody is
-/// waiting for is allowed to prepare nothing.
+/// One Motion frame the way the native shell runs it.
 fn frame(scroll: &mut ScrollWorld, tick: u64) -> UiScrollSettleDisposition {
-    let basis = presentation(scroll);
-    if let Ok(prepared) = scroll.world.session.prepare_motion_tick(tick, basis) {
-        if !prepared.receipt().samples().is_empty() {
-            scroll.world.host.push_native_display_presented();
-        }
-        scroll
-            .world
-            .session
-            .present_prepared_motion_tick(prepared, basis);
-    }
-    scroll.world.session.settle_accepted_scroll_sample(basis)
+    super::scroll_settle_frame::quiet_frame(scroll, tick)
 }
 
 /// A smooth-wheel World under `posture`, holding one published notch with

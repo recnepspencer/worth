@@ -20,7 +20,7 @@ pub(crate) fn install_sampling_track(shell: &mut WorthUiNativeApplicationShell) 
         .install_motion_commit(UiMotionCommitReceipt::for_sampling_test_transition(
             701,
             target,
-            basis,
+            basis.basis(),
             Some([0.0, 0.0, 100.0, 100.0]),
             true,
             Some([0.0, 0.0, 100.0, 100.0]),

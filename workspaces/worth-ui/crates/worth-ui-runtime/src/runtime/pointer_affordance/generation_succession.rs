@@ -66,13 +66,21 @@ impl UiPreparedPointerAffordanceGenerationSuccession {
         });
         let bindings = surfaces
             .iter()
-            .map(|surface| (*surface, mounted.current_presentation_for_surface(*surface)))
+            .map(|surface| {
+                (
+                    *surface,
+                    mounted
+                        .current_presentation_for_surface(*surface)
+                        .map(|displayed| displayed.basis()),
+                )
+            })
             .collect();
         let changed_surfaces = surfaces
             .into_iter()
             .filter(|surface| {
                 mounted
                     .current_presentation_for_surface(*surface)
+                    .map(|displayed| displayed.basis())
                     .is_some_and(|current| {
                         mounted.pointer_presentation_pending(
                             *surface,
@@ -115,7 +123,10 @@ impl UiPreparedPointerAffordanceGenerationSuccession {
     ) -> Result<(), UiPointerAffordanceGenerationSuccessionDenial> {
         if generation != &self.predecessor
             || self.bindings.iter().any(|(surface, presentation)| {
-                mounted.current_presentation_for_surface(*surface) != *presentation
+                mounted
+                    .current_presentation_for_surface(*surface)
+                    .map(|displayed| displayed.basis())
+                    != *presentation
             })
         {
             return Err(UiPointerAffordanceGenerationSuccessionDenial::StalePredecessor);

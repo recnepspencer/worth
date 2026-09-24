@@ -1,5 +1,8 @@
 //! An admitted click can wait for Motion without becoming invalid raw input.
 use super::*;
+use crate::certification_support::{
+    ScriptedPresentationAcknowledgement, ScriptedPresentationOutcome,
+};
 
 #[test]
 fn admitted_activation_survives_motion_epoch_but_raw_old_epoch_stays_invalid() {
@@ -23,7 +26,7 @@ fn admitted_activation_survives_motion_epoch_but_raw_old_epoch_stays_invalid() {
         .unwrap();
     let hit = session
         .mounted
-        .interaction_hit_test_basis(observed)
+        .interaction_hit_test_basis(observed.basis())
         .unwrap();
     assert_eq!(hit.rows().len(), 1);
     let row = hit.rows()[0];
@@ -40,7 +43,7 @@ fn admitted_activation_survives_motion_epoch_but_raw_old_epoch_stays_invalid() {
     ] {
         let batch = super::super::pointer_tests::pointer_batch(
             session.host_session.identity().as_u64(),
-            observed,
+            observed.basis(),
             sequence,
             UiHostPointerIdentity::new(1),
             position,
@@ -69,7 +72,7 @@ fn admitted_activation_survives_motion_epoch_but_raw_old_epoch_stays_invalid() {
     let committed = UiMotionCommitReceipt::for_sampling_test_transition(
         821,
         target,
-        observed,
+        observed.basis(),
         geometry,
         true,
         geometry,
@@ -79,8 +82,8 @@ fn admitted_activation_survives_motion_epoch_but_raw_old_epoch_stays_invalid() {
     );
     session.mounted.install_motion_commit(committed).unwrap();
     let prepared = session.mounted.prepare_motion_tick(1, observed).unwrap();
-    host.push_presentation(UiHostSurfacePresentationOutcome::Presented(
-        UiMountedSurfacePresentationCompletion::new(
+    host.push_presentation(ScriptedPresentationOutcome::Presented(
+        ScriptedPresentationAcknowledgement::new(
             UiHostSurfacePresentationMode::NativeDisplay,
             UiHostPresentationEpoch::issued_by_host(2),
             UiMountedCompletedEffects::new(vec![UiMountedEffectFamily::NativePaint]),
@@ -107,9 +110,11 @@ fn admitted_activation_survives_motion_epoch_but_raw_old_epoch_stays_invalid() {
         .current_presentation_for_surface(surface)
         .unwrap();
     assert_eq!(current.frame(), observed.frame());
-    assert!(current.epoch() > observed.epoch());
+    assert!(current.basis().epoch() > observed.basis().epoch());
     assert_eq!(
-        session.mounted.classify_interaction_presentation(observed),
+        session
+            .mounted
+            .classify_interaction_presentation(observed.basis()),
         Err(crate::mounting::UiPresentedFrameBasisDenial::PresentationEpochMismatch),
         "raw observations must still be checked against exact presented pixels",
     );

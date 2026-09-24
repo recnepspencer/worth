@@ -33,7 +33,7 @@ pub(crate) fn complete_pending(
         }
         crate::native::presentation::UiNativePendingPresentationCompletion::Presented(
             observation,
-        ) => complete_presented(state, pending, *observation),
+        ) => complete_presented(state, pending, *observation, token),
         crate::native::presentation::UiNativePendingPresentationCompletion::Superseded(
             observation,
         ) => complete_superseded(state, pending, *observation),
@@ -94,6 +94,7 @@ fn complete_presented(
     state: &mut UiNativeHostState,
     mut pending: crate::native::presentation::UiNativePendingPresentation,
     observation: crate::native::presentation::UiNativePresentationPortObservation,
+    token: worth_ui_host_contract::UiHostPresentationCompletionToken,
 ) -> worth_ui_host_contract::UiHostSurfaceInFlightCompletion {
     let completion_identity = pending
         .completion_identity()
@@ -106,6 +107,7 @@ fn complete_presented(
             pending.physical_basis(),
             completion_identity,
             observation,
+            token,
         )
     });
     pending.release(&mut state.resources);

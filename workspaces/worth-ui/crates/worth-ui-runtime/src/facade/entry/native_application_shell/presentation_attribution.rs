@@ -25,7 +25,8 @@ impl WorthUiNativeApplicationShell {
         let current = self
             .session
             .mounted
-            .current_presentation_for_surface(attribution.surface)?;
+            .current_presentation_for_surface(attribution.surface)
+            .map(|displayed| displayed.basis())?;
         if !retained.matches_runtime_attribution_basis(publication.attempt(), current) {
             return None;
         }

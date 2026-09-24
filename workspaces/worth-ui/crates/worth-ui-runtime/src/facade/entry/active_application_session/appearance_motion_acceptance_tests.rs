@@ -21,7 +21,7 @@ fn appearance_refresh_composes_the_exact_physically_accepted_command_sample() {
         .unwrap();
     let target =
         UiMotionTargetIdentity::from_mounted_owner(surface, command.mounted_instance(), 801);
-    install(&mut session, target, original, 801, false, None);
+    install(&mut session, target, original.basis(), 801, false, None);
     present(&mut session, &host, surface, 1, 2);
     present(&mut session, &host, surface, 56, 3);
     let current = session
@@ -31,7 +31,7 @@ fn appearance_refresh_composes_the_exact_physically_accepted_command_sample() {
     assert_eq!(
         session
             .mounted
-            .accepted_motion_for_command(current, command)
+            .accepted_motion_for_command(current.basis(), command)
             .unwrap()
             .unwrap()
             .opacity_units(),
@@ -77,11 +77,11 @@ fn geometry_free_motion_evidence_requires_acceptance_and_survives_retarget_and_r
         .unwrap();
     let target =
         UiMotionTargetIdentity::from_mounted_owner(surface, command.mounted_instance(), 811);
-    install(&mut session, target, original, 811, false, None);
+    install(&mut session, target, original.basis(), 811, false, None);
     assert_eq!(
         session
             .mounted
-            .accepted_motion_for_command(original, command)
+            .accepted_motion_for_command(original.basis(), command)
             .unwrap(),
         None
     );
@@ -97,7 +97,7 @@ fn geometry_free_motion_evidence_requires_acceptance_and_survives_retarget_and_r
     assert_eq!(
         session
             .mounted
-            .accepted_motion_for_command(original, command)
+            .accepted_motion_for_command(original.basis(), command)
             .unwrap(),
         None
     );
@@ -108,14 +108,14 @@ fn geometry_free_motion_evidence_requires_acceptance_and_survives_retarget_and_r
         .unwrap();
     let first = session
         .mounted
-        .accepted_motion_for_command(accepted, command)
+        .accepted_motion_for_command(accepted.basis(), command)
         .unwrap()
         .unwrap();
     assert_eq!(first.opacity_units(), 65_535);
-    assert_eq!(first.presentation_basis(), accepted);
+    assert_eq!(first.presentation_basis(), accepted.basis());
     assert!(session
         .mounted
-        .accepted_motion_for_command(original, command)
+        .accepted_motion_for_command(original.basis(), command)
         .is_err());
 
     host.push_in_flight(
@@ -136,7 +136,7 @@ fn geometry_free_motion_evidence_requires_acceptance_and_survives_retarget_and_r
     assert_eq!(
         session
             .mounted
-            .accepted_motion_for_command(accepted, command)
+            .accepted_motion_for_command(accepted.basis(), command)
             .unwrap(),
         Some(first)
     );
@@ -149,7 +149,7 @@ fn geometry_free_motion_evidence_requires_acceptance_and_survives_retarget_and_r
     assert_eq!(
         session
             .mounted
-            .accepted_motion_for_command(accepted, command)
+            .accepted_motion_for_command(accepted.basis(), command)
             .unwrap(),
         Some(first)
     );
@@ -165,16 +165,16 @@ fn geometry_free_motion_evidence_requires_acceptance_and_survives_retarget_and_r
         .unwrap();
     let middle = session
         .mounted
-        .accepted_motion_for_command(current, command)
+        .accepted_motion_for_command(current.basis(), command)
         .unwrap()
         .unwrap();
     assert_eq!(middle.opacity_units(), 8_192);
     assert_eq!(middle.tick(), 56);
-    assert_eq!(middle.presentation_basis(), current);
+    assert_eq!(middle.presentation_basis(), current.basis());
     install(
         &mut session,
         target,
-        current,
+        current.basis(),
         812,
         true,
         Some(
@@ -187,7 +187,7 @@ fn geometry_free_motion_evidence_requires_acceptance_and_survives_retarget_and_r
     assert_eq!(
         session
             .mounted
-            .accepted_motion_for_command(current, command)
+            .accepted_motion_for_command(current.basis(), command)
             .unwrap(),
         Some(middle)
     );
@@ -201,7 +201,7 @@ fn geometry_free_motion_evidence_requires_acceptance_and_survives_retarget_and_r
     assert_eq!(
         session
             .mounted
-            .accepted_motion_for_command(current, command)
+            .accepted_motion_for_command(current.basis(), command)
             .unwrap()
             .unwrap()
             .opacity_units(),
@@ -214,7 +214,7 @@ fn geometry_free_motion_evidence_requires_acceptance_and_survives_retarget_and_r
         .unwrap();
     let terminal = session
         .mounted
-        .accepted_motion_for_command(current, command)
+        .accepted_motion_for_command(current.basis(), command)
         .unwrap()
         .unwrap();
     assert_eq!(terminal.opacity_units(), 65_535);
@@ -225,7 +225,7 @@ fn geometry_free_motion_evidence_requires_acceptance_and_survives_retarget_and_r
     assert_eq!(
         session
             .mounted
-            .accepted_motion_for_command(current, command)
+            .accepted_motion_for_command(current.basis(), command)
             .unwrap(),
         Some(terminal)
     );
@@ -250,7 +250,7 @@ fn appearance_candidate_keeps_later_accepted_motion_on_unchanged_commands() {
         .unwrap();
     let target =
         UiMotionTargetIdentity::from_mounted_owner(surface, command.mounted_instance(), 821);
-    install(&mut session, target, original, 821, false, None);
+    install(&mut session, target, original.basis(), 821, false, None);
     let graph = session
         .graph()
         .node_identities()
@@ -306,7 +306,7 @@ fn appearance_candidate_keeps_later_accepted_motion_on_unchanged_commands() {
         .unwrap();
     let sample = session
         .mounted
-        .accepted_motion_for_command(accepted, command)
+        .accepted_motion_for_command(accepted.basis(), command)
         .unwrap()
         .unwrap();
     let completed = session.complete_mounted_presentation(pending, 2);
@@ -331,18 +331,18 @@ fn appearance_candidate_keeps_later_accepted_motion_on_unchanged_commands() {
     assert_eq!(
         session
             .mounted
-            .accepted_motion_for_command(current, command)
+            .accepted_motion_for_command(current.basis(), command)
             .unwrap(),
         Some(sample)
     );
     assert_eq!(
         sample.presentation_basis(),
-        accepted,
+        accepted.basis(),
         "receipt preserves its actual acceptance epoch"
     );
     assert!(session
         .mounted
-        .accepted_motion_for_command(accepted, command)
+        .accepted_motion_for_command(accepted.basis(), command)
         .is_err());
     let _ = session.shutdown();
 }

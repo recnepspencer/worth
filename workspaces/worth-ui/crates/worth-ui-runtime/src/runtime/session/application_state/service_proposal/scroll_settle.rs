@@ -26,6 +26,7 @@ impl WorthUiApplicationSessionState {
     {
         let presentation = mounted
             .presentation_for_surface(transition.semantic_surface())
+            .map(|displayed| displayed.basis())
             .ok_or(UiScrollSettlePublicationDenial::UnpublishedSurface)?;
         let request = crate::runtime::session::service_proposal::UiServiceRequestBasis::<
             crate::runtime::session::service_proposal::UiScrollSettleServiceRequestAuthority,

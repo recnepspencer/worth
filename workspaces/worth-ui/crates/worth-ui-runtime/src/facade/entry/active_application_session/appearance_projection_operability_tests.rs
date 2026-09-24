@@ -281,7 +281,7 @@ fn activation_route(
         .unwrap();
     let hit = session
         .mounted
-        .interaction_hit_test_basis(presentation)
+        .interaction_hit_test_basis(presentation.basis())
         .unwrap();
     assert_eq!(hit.rows().len(), 1);
     let row = hit.rows()[0];
@@ -301,7 +301,7 @@ fn activation_route(
     {
         let batch = super::pointer_tests::pointer_batch(
             session.host_session.identity().as_u64(),
-            presentation,
+            presentation.basis(),
             sequence + offset as u64,
             UiHostPointerIdentity::new(1),
             position,

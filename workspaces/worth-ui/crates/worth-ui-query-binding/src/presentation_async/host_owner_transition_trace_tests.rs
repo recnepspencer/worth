@@ -1,4 +1,4 @@
-use super::tests::{basis, installed_owner, native_paint_completion};
+use super::tests::{basis, installed_owner};
 use super::*;
 
 #[test]
@@ -21,13 +21,11 @@ fn duplicate_trace_requires_a_second_owner_certified_completion_submission() {
     let mut owner = installed_owner();
     let pending = owner.admit_pending(basis(92)).unwrap();
 
-    owner
-        .admit_presented(&pending, &native_paint_completion(1))
-        .unwrap();
+    owner.admit_presented(&pending).unwrap();
     assert_eq!(owner.transition_trace.len(), 2);
 
     assert!(matches!(
-        owner.admit_presented(&pending, &native_paint_completion(1)),
+        owner.admit_presented(&pending),
         Err(WorthUiPresentationSettlementDenial::InvalidPendingReceipt)
     ));
     assert_eq!(owner.transition_trace.len(), 3);

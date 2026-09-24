@@ -244,7 +244,7 @@ fn commit_at(
     world: &World,
 ) -> UiPresentationMotionSamplingReceipt {
     let prepared = sampler.prepare_tick(tick, world.presentation).unwrap();
-    sampler.commit_prepared(prepared)
+    sampler.commit_prepared(prepared.presented_for_certification())
 }
 
 fn retarget_from_current_sample() -> crate::runtime::motion::UiMotionRetargetDisposition {

@@ -1,4 +1,5 @@
 use super::*;
+use crate::mounting::presentation::presented_surface_witness_for_certification;
 
 #[test]
 fn exact_physical_change_survives_acceptance_and_reconstruction_without_semantic_rederivation() {
@@ -68,7 +69,12 @@ fn exact_physical_change_survives_acceptance_and_reconstruction_without_semantic
         None,
         "dropping rejected host work changes no physical evidence"
     );
-    prepare().accept(&current, presentation).unwrap();
+    prepare()
+        .accept(
+            &current,
+            &presented_surface_witness_for_certification(presentation),
+        )
+        .unwrap();
     assert_eq!(current.motion_for_command(identity), Some(Some(sample)));
     assert_eq!(current.accepted_motion_change(identity), Some(change));
     assert_eq!(
@@ -94,7 +100,10 @@ fn exact_physical_change_survives_acceptance_and_reconstruction_without_semantic
         current.prepare_command_motion_update_with_change(identity, sample, invalid_change)
     ]);
     assert!(matches!(
-        invalid.accept(&current, presentation),
+        invalid.accept(
+            &current,
+            &presented_surface_witness_for_certification(presentation)
+        ),
         Err(UiCommandMotionAcceptanceDenial::SampleBasis)
     ));
     assert_eq!(current.accepted_motion_change(identity), Some(change));

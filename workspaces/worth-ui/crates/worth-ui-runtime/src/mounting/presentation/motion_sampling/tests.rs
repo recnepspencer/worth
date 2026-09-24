@@ -15,7 +15,7 @@ fn commit_tick(
     presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
 ) -> UiPresentationMotionSamplingReceipt {
     let prepared = sampler.prepare_tick(tick, presentation).unwrap();
-    sampler.commit_prepared(prepared)
+    sampler.commit_prepared(prepared.presented_for_certification())
 }
 
 #[test]

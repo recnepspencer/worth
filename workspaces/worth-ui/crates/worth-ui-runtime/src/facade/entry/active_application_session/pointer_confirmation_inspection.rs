@@ -17,7 +17,7 @@ pub(super) fn assert_confirmation(
     let position = super::target_position(session, surface, super::TargetRoute::Confirmation);
     let target = crate::runtime::interaction::targeting::resolve_presented_target(
         &session.mounted,
-        presentation,
+        presentation.basis(),
         position,
         &mut Default::default(),
     )

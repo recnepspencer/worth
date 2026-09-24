@@ -1,6 +1,5 @@
 use worth_ui_host_contract::{
     UiHostSurfacePresentationMode, UiHostSurfacePresentationOutcome, UiMountedFrameConsumptionView,
-    UiMountedSurfacePresentationCompletion,
 };
 
 pub(super) fn completed(
@@ -16,13 +15,12 @@ pub(super) fn completed(
     else {
         return super::failure::malformed();
     };
-    let outcome =
-        UiHostSurfacePresentationOutcome::Presented(UiMountedSurfacePresentationCompletion::new(
-            UiHostSurfacePresentationMode::NativeDisplay,
-            epoch,
-            effects.completion(),
-            cost,
-        ));
+    let outcome = UiHostSurfacePresentationOutcome::Presented(view.acknowledge_presented(
+        UiHostSurfacePresentationMode::NativeDisplay,
+        epoch,
+        effects.completion(),
+        cost,
+    ));
     let _input_settlement = state.lifecycle.record_completed_presentation(
         view.protocol(),
         view.host_session_identity(),

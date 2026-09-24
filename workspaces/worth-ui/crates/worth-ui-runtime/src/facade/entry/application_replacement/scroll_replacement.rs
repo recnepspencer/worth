@@ -201,7 +201,9 @@ fn published_anchor(
     instance: worth_ui_host_contract::UiMountedInstanceIdentity,
     basis: &crate::mounting::UiMountedIdentityBasis,
 ) -> Option<crate::runtime::scroll::UiScrollAnchor> {
-    let presentation = publication.presentation_for_surface(basis.semantic_surface_identity())?;
+    let presentation = publication
+        .presentation_for_surface(basis.semantic_surface_identity())
+        .map(|displayed| displayed.basis())?;
     let hit_test = mounted.interaction_hit_test_basis(presentation).ok()?;
     let row = hit_test
         .rows()

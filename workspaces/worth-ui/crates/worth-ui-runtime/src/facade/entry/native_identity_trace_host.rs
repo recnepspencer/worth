@@ -12,9 +12,8 @@ use worth_ui_host_contract::{
     UiHostPresentationEpoch, UiHostSurfacePresentationDenial, UiHostSurfacePresentationMode,
     UiHostSurfacePresentationOutcome, UiHostSurfaceRegistrationDenial,
     UiHostSurfaceRegistrationRequest, UiMountedCompletedEffects, UiMountedEffectFamily,
-    UiMountedFrameConsumptionView, UiMountedSurfacePresentationCompletion,
-    UiViewportExtentObservation, WorthUiHostCapability, WorthUiHostCapabilityReport,
-    WorthUiHostContract, WorthUiMeasurementHostAdapter,
+    UiMountedFrameConsumptionView, UiViewportExtentObservation, WorthUiHostCapability,
+    WorthUiHostCapabilityReport, WorthUiHostContract, WorthUiMeasurementHostAdapter,
 };
 
 type NativeSurfaceRegistrations =
@@ -121,7 +120,7 @@ impl WorthUiOperationalHostAdapter for NativeIdentityTraceHost {
         }
         self.presentation_calls
             .set(self.presentation_calls.get() + 1);
-        UiHostSurfacePresentationOutcome::Presented(UiMountedSurfacePresentationCompletion::new(
+        UiHostSurfacePresentationOutcome::Presented(view.acknowledge_presented(
             UiHostSurfacePresentationMode::NativeDisplay,
             UiHostPresentationEpoch::issued_by_host(view.attempt().diagnostic_value()),
             UiMountedCompletedEffects::new(performed_effects(view)),

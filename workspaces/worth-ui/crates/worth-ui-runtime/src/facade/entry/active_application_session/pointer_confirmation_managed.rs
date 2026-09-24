@@ -1,3 +1,4 @@
+use crate::certification_support::ScriptedPresentationAcknowledgement;
 use worth_ui_host_contract::*;
 
 pub(super) fn journey(
@@ -22,7 +23,7 @@ pub(super) fn journey(
     host.push_in_flight(
         vec![
             crate::certification_support::ScriptedSurfaceCompletion::Presented(
-                UiMountedSurfacePresentationCompletion::new(
+                ScriptedPresentationAcknowledgement::new(
                     UiHostSurfacePresentationMode::NativeDisplay,
                     crate::certification_support::scripted_presentation_epoch(),
                     UiMountedCompletedEffects::new(Vec::new()),

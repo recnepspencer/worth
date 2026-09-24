@@ -259,37 +259,33 @@ impl WorthUiOperationalHostAdapter for ScriptedPresentationHost {
             .completions
             .get_mut(&identity)
             .and_then(VecDeque::pop_front);
-        if !matches!(completion, Some(ScriptedSurfaceCompletion::Pending)) {
-            self.settle_native_input_presentation(
-                identity,
-                match &completion {
-                    Some(ScriptedSurfaceCompletion::Presented(completion)) => Some(completion),
-                    _ => None,
-                },
-            );
-        }
-        match completion {
+        let outcome = match completion {
             Some(ScriptedSurfaceCompletion::Pending) => {
-                UiHostSurfaceInFlightCompletion::Pending(token)
+                return UiHostSurfaceInFlightCompletion::Pending(token);
             }
             Some(ScriptedSurfaceCompletion::RejectedBeforeEffects(denial)) => {
-                clear_token_state(&mut state, identity);
                 UiHostSurfaceInFlightCompletion::RejectedBeforeEffects(denial)
             }
-            Some(ScriptedSurfaceCompletion::Presented(completion)) => {
-                state.accepted_text.accept_pending(identity);
-                clear_token_state(&mut state, identity);
-                UiHostSurfaceInFlightCompletion::Presented(completion)
+            Some(ScriptedSurfaceCompletion::Presented(acknowledgement)) => {
+                UiHostSurfaceInFlightCompletion::Presented(acknowledgement.acknowledge_token(token))
             }
             Some(ScriptedSurfaceCompletion::Superseded(observation)) => {
-                clear_token_state(&mut state, identity);
                 UiHostSurfaceInFlightCompletion::Superseded(observation)
             }
             Some(ScriptedSurfaceCompletion::PresentationIndeterminate) | None => {
-                clear_token_state(&mut state, identity);
                 UiHostSurfaceInFlightCompletion::PresentationIndeterminate
             }
+        };
+        let presented = match &outcome {
+            UiHostSurfaceInFlightCompletion::Presented(completion) => Some(completion),
+            _ => None,
+        };
+        self.settle_native_input_presentation(identity, presented);
+        if presented.is_some() {
+            state.accepted_text.accept_pending(identity);
         }
+        clear_token_state(&mut state, identity);
+        outcome
     }
 
     fn cancel_mounted_surface(

@@ -17,12 +17,12 @@ impl UiRetainedPresentedFrame {
         let binding = presentation.binding();
         let retained = self
             .presentation_bindings
-            .binary_search_by_key(&binding, |entry| entry.binding)
+            .binary_search_by_key(&binding, |entry| entry.displayed.binding())
             .ok()
             .map(|index| &self.presentation_bindings[index])
             .ok_or(UiPresentedFrameBasisDenial::BindingNotPresented)?;
         retained.require_host(presentation)?;
-        if presentation.epoch() > retained.epoch {
+        if presentation.epoch() > retained.displayed.basis().epoch() {
             return Err(UiPresentedFrameBasisDenial::PresentationEpochMismatch);
         }
         Ok(self

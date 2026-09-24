@@ -185,7 +185,7 @@ fn nested_reconstruction_retains_physical_authority_until_in_flight_settlement()
     ));
     host.push_in_flight(
         vec![ScriptedSurfaceCompletion::Presented(
-            worth_ui_host_contract::UiMountedSurfacePresentationCompletion::new(
+            crate::certification_support::ScriptedPresentationAcknowledgement::new(
                 UiHostSurfacePresentationMode::NativeDisplay,
                 crate::certification_support::scripted_presentation_epoch(),
                 UiMountedCompletedEffects::new(vec![UiMountedEffectFamily::NativePaint]),
@@ -389,6 +389,6 @@ fn retryable_program() -> (
 #[cfg(feature = "certification-support")]
 fn rejected(
     denial: worth_ui_host_contract::UiHostSurfacePresentationDenial,
-) -> crate::facade::mounted::UiHostSurfacePresentationOutcome {
-    crate::facade::mounted::UiHostSurfacePresentationOutcome::RejectedBeforeEffects(denial)
+) -> crate::certification_support::ScriptedPresentationOutcome {
+    crate::certification_support::ScriptedPresentationOutcome::RejectedBeforeEffects(denial)
 }

@@ -2,9 +2,9 @@ use worth_ui::facade::app::{
     WorthUiMountedApplicationReplacementOutcome, WorthUiMountedReplacementPreparationOutcome,
 };
 use worth_ui_runtime::certification_support::presented_completion;
+use worth_ui_runtime::certification_support::ScriptedPresentationOutcome;
 use worth_ui_runtime::facade::mounted::{
-    UiHostSurfaceCancellationOutcome, UiHostSurfacePresentationOutcome, UiMountedFrameRequest,
-    UiPresentationDeadline,
+    UiHostSurfaceCancellationOutcome, UiMountedFrameRequest, UiPresentationDeadline,
 };
 use worth_ui_test_support::WorthUiPortalRuntimeCertificationExt;
 
@@ -105,7 +105,7 @@ fn replacement_keeps_portal_authority_through_host_indeterminate_disposal() {
             panic!("the removed owner changes application meaning")
         }
     };
-    host.push_presentation(UiHostSurfacePresentationOutcome::PresentationIndeterminate);
+    host.push_presentation(ScriptedPresentationOutcome::PresentationIndeterminate);
     match replacement.present(UiPresentationDeadline::at_tick(60), 2) {
         WorthUiMountedApplicationReplacementOutcome::PresentationIndeterminate(recovery) => {
             drop(recovery);

@@ -306,7 +306,7 @@ fn target_position(
         .unwrap();
     let hit = session
         .mounted
-        .interaction_hit_test_basis(presentation)
+        .interaction_hit_test_basis(presentation.basis())
         .unwrap();
     let row = hit
         .rows()
@@ -363,7 +363,7 @@ fn ingress(
         .unwrap();
     let batch = super::super::pointer_tests::pointer_batch(
         session.host_session.identity().as_u64(),
-        presentation,
+        presentation.basis(),
         sequence,
         UiHostPointerIdentity::new(1),
         position,

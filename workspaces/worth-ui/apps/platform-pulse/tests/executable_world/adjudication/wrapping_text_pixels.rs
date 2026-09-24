@@ -33,7 +33,7 @@ pub(crate) fn adjudicate_dashboard_status_badge(
                     observed.abs_diff(expected) <= dashboard::CHANNEL_TOLERANCE
                 });
             if ink {
-                if x < 1398 || x > 1470 || y < 784 || y > 801 {
+                if !(1398..=1470).contains(&x) || !(784..=801).contains(&y) {
                     edge_ink += 1;
                 } else {
                     interior_ink += 1;

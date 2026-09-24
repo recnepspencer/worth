@@ -13,7 +13,7 @@ fn pending_motion_denies_semantic_mount_without_changing_accepted_truth() {
         .unwrap();
     let target =
         UiMotionTargetIdentity::from_mounted_owner(surface, command.mounted_instance(), 841);
-    install(&mut session, target, original, 841, false, None);
+    install(&mut session, target, original.basis(), 841, false, None);
     host.push_in_flight(
         vec![ScriptedSurfaceCompletion::Presented(completion(2, true))],
         UiHostSurfaceCancellationOutcome::CancelledBeforeEffects,
@@ -44,7 +44,7 @@ fn pending_motion_denies_semantic_mount_without_changing_accepted_truth() {
     assert_eq!(
         session
             .mounted
-            .accepted_motion_for_command(original, command)
+            .accepted_motion_for_command(original.basis(), command)
             .unwrap(),
         None
     );
@@ -62,14 +62,14 @@ fn pending_motion_denies_semantic_mount_without_changing_accepted_truth() {
     assert_ne!(current, original);
     let accepted = session
         .mounted
-        .accepted_motion_for_command(current, command)
+        .accepted_motion_for_command(current.basis(), command)
         .unwrap()
         .unwrap();
-    assert_eq!(accepted.presentation_basis(), current);
+    assert_eq!(accepted.presentation_basis(), current.basis());
     assert_eq!(accepted.opacity_units(), 65_535);
     assert!(session
         .mounted
-        .accepted_motion_for_command(original, command)
+        .accepted_motion_for_command(original.basis(), command)
         .is_err());
     session.mount_instance(node, surface).unwrap();
     assert_eq!(
