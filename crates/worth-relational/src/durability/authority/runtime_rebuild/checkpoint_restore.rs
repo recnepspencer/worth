@@ -47,7 +47,7 @@ fn prepare_checkpoint_state(
     let record_identity = prepare_record_identity(checkpoint)?;
     let branch_root_images = restore_branch_root_images(restored, checkpoint)?;
     let partitions = prepare_partitions(restored, checkpoint)?;
-    let history = prepare_history(restored, checkpoint, &branch_root_images, &symbols)?;
+    let history = prepare_history(restored, checkpoint, branch_root_images, &symbols)?;
     Ok(PreparedCheckpointState {
         symbols,
         record_identity,
@@ -101,7 +101,7 @@ fn prepare_partitions(
 fn prepare_history(
     restored: &mut RelationalRuntime,
     checkpoint: &DurableCheckpoint,
-    branch_roots: &branch_root_images::RestoredBranchRootImages,
+    mut branch_roots: branch_root_images::RestoredBranchRootImages,
     symbols: &crate::symbols::data::StringInterner,
 ) -> Result<HistorySubsystem, DurabilityError> {
     let mut history = restored.history.detached_owner_snapshot();
@@ -152,7 +152,7 @@ fn prepare_history(
     history
         .restore_branch_cells(
             &checkpoint.branch_cells,
-            &branch_roots.partitions,
+            &mut branch_roots.partitions,
             &branch_roots.schema_authorities,
             &restored.config.schema.registry,
             symbols,

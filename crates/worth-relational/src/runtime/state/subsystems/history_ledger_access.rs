@@ -112,12 +112,6 @@ impl HistorySubsystem {
             .collect()
     }
 
-    pub(crate) fn recorded_commit_envelope_map(
-        &self,
-    ) -> std::collections::BTreeMap<CommitId, Arc<CanonicalCommitEnvelope>> {
-        self.ledger.read().commit_envelopes.clone()
-    }
-
     pub(crate) fn recorded_commit_envelope_count(&self) -> usize {
         self.ledger.read().commit_envelopes.len()
     }

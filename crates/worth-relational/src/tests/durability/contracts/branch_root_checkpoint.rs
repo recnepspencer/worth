@@ -54,6 +54,72 @@ fn checkpoint_recovery_rejects_root_artifact_without_commit_envelope() {
 }
 
 #[test]
+fn checkpoint_recovery_rejects_duplicate_commit_envelopes_before_root_readmission() {
+    let runtime = persisted_runtime_with_test_schema();
+    create_entity_outcome(&runtime, "duplicate-envelope-root");
+    runtime.durability_authority().checkpoint().unwrap();
+    let mut plan = runtime
+        .durability()
+        .recovery_plan(RecoveryVerificationMode::NormalRecoveryVerification);
+    let checkpoint = plan.checkpoint.as_mut().expect("selected checkpoint");
+    checkpoint.envelopes.push(checkpoint.envelopes[0].clone());
+
+    let mut recovered = persisted_runtime_with_test_schema();
+    let error = recovered.durability_recovery().recover(plan).unwrap_err();
+
+    assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
+    assert!(
+        error
+            .detail
+            .contains("reused by multiple canonical artifacts")
+            || error
+                .detail
+                .contains("duplicate checkpoint commit envelope"),
+        "{error:?}"
+    );
+    assert_eq!(recovered.history().immutable_commit_count(), 0);
+}
+
+#[test]
+fn checkpoint_recovery_readmits_shared_root_once_for_sibling_heads() {
+    let runtime = persisted_runtime_with_test_schema();
+    create_entity_outcome(&runtime, "shared-root-seed");
+    let sibling = create_branch_from_main(&runtime, "sibling");
+    runtime.durability_authority().checkpoint().unwrap();
+    let plan = runtime
+        .durability()
+        .recovery_plan(RecoveryVerificationMode::NormalRecoveryVerification);
+    assert_eq!(plan.checkpoint.as_ref().unwrap().branch_roots.len(), 1);
+
+    let mut recovered = persisted_runtime_with_test_schema();
+    recovered.durability_recovery().recover(plan).unwrap();
+
+    assert_eq!(
+        current_branch_entity_count(&recovered, &BranchId("main".to_owned())),
+        1
+    );
+    assert_eq!(current_branch_entity_count(&recovered, &sibling), 1);
+    let main = recovered
+        .branch_reference_state(&BranchId("main".to_owned()))
+        .unwrap();
+    let sibling = recovered.branch_reference_state(&sibling).unwrap();
+    assert_eq!(main.observation().target(), sibling.observation().target());
+    let main_root = recovered
+        .history
+        .branch_cell(&BranchId("main".to_owned()))
+        .unwrap()
+        .root()
+        .unwrap();
+    let sibling_root = recovered
+        .history
+        .branch_cell(sibling.branch_id())
+        .unwrap()
+        .root()
+        .unwrap();
+    assert!(std::sync::Arc::ptr_eq(&main_root, &sibling_root));
+}
+
+#[test]
 fn tail_recovery_resolves_the_checkpoint_target_root_not_the_fork_source_head() {
     let runtime = persisted_runtime_with_test_schema();
     create_entity_outcome(&runtime, "shared-seed");

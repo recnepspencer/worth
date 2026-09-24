@@ -22,6 +22,28 @@ pub(super) fn build_initial_regions(
     ),
     RelationalBranchRootCaptureDenial,
 > {
+    build_initial_regions_owned(
+        issuer,
+        root_id,
+        partitions
+            .iter()
+            .map(|(partition_id, partition)| (*partition_id, partition.clone())),
+        symbols,
+    )
+}
+
+pub(super) fn build_initial_regions_owned(
+    issuer: &RelationalBranchRootIdentityIssuer,
+    root_id: u64,
+    partitions: impl IntoIterator<Item = (PartitionId, PartitionState)>,
+    symbols: &crate::symbols::data::StringInterner,
+) -> Result<
+    (
+        Arc<RelationalPersistentRegionSet>,
+        RelationalBranchRootPublicationCost,
+    ),
+    RelationalBranchRootCaptureDenial,
+> {
     let mut regions = BTreeMap::new();
     let mut new_region_authoritative_bytes = 0_u64;
     let mut content_values_hashed = 0_u64;
@@ -29,7 +51,7 @@ pub(super) fn build_initial_regions(
         let region = Arc::new(RelationalRootRegion::new(
             root_id,
             issuer.issue_region_id()?,
-            partition.clone(),
+            partition,
             symbols,
             None,
         )?);
@@ -39,7 +61,7 @@ pub(super) fn build_initial_regions(
             .saturating_add(observation.authoritative_bytes)
             .saturating_add(observation.partition_state_bytes)
             .saturating_add(observation.root_region_bytes);
-        regions.insert(*partition_id, region);
+        regions.insert(partition_id, region);
     }
     let first_new_node_id = issuer.next_reachability_id();
     let regions = RelationalPersistentRegionSet::initial(root_id, regions, issuer)?;
