@@ -124,7 +124,7 @@ impl WorthQueryApplicationCheckpoint {
         }
     }
 
-    pub(super) fn decode(&self) -> Result<DecodedApplicationCheckpoint, String> {
+    pub(super) fn decode(self) -> Result<DecodedApplicationCheckpoint, String> {
         if self.bytes.len() < HEADER_BYTES || &self.bytes[..MAGIC.len()] != MAGIC {
             return Err("Query application checkpoint header is invalid".to_owned());
         }
@@ -147,7 +147,7 @@ impl WorthQueryApplicationCheckpoint {
             .map_err(|_| "checkpoint payload length exceeds this host".to_owned())?;
         let accepted_count = usize::try_from(cursor.next_u64()?)
             .map_err(|_| "checkpoint accepted-output count exceeds this host".to_owned())?;
-        let native = cursor.next_bytes(native_len)?;
+        cursor.next_bytes(native_len)?;
         let minimum = match version {
             3 => LEGACY_MINIMUM_ACCEPTED_OUTPUT_BYTES,
             4 => MINIMUM_ACCEPTED_OUTPUT_BYTES,
@@ -278,10 +278,16 @@ impl WorthQueryApplicationCheckpoint {
         if !cursor.is_empty() {
             return Err("Query application checkpoint payload length differs".to_owned());
         }
+        let native_end = HEADER_BYTES
+            .checked_add(native_len)
+            .ok_or_else(|| "checkpoint native payload length overflows".to_owned())?;
+        let native = worth_relational::facade::durability::RelationalNativeCheckpoint::from_untrusted_bytes_region(
+            self.bytes,
+            HEADER_BYTES..native_end,
+        )
+        .map_err(str::to_owned)?;
         Ok(DecodedApplicationCheckpoint {
-            native: worth_relational::facade::durability::RelationalNativeCheckpoint::from_untrusted_bytes(
-                native.to_vec().into_boxed_slice(),
-            ),
+            native,
             bootstrap_commit_id,
             accepted_outputs,
         })

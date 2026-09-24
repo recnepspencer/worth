@@ -42,6 +42,24 @@ fn accepted_output_count_is_bounded_before_allocation() {
 }
 
 #[test]
+fn decoded_native_payload_uses_the_verified_query_buffer() {
+    let mut body = Vec::new();
+    body.extend_from_slice(&FORMAT_VERSION.to_be_bytes());
+    body.extend_from_slice(&1_u64.to_be_bytes());
+    body.extend_from_slice(&3_u64.to_be_bytes());
+    body.extend_from_slice(&0_u64.to_be_bytes());
+    body.extend_from_slice(b"abc");
+    let checkpoint = checkpoint_from_body(body);
+    let expected = checkpoint
+        .bytes()
+        .as_ptr()
+        .wrapping_add(super::HEADER_BYTES);
+    let decoded = checkpoint.decode().expect("Query framing is valid");
+    assert_eq!(decoded.native.bytes(), b"abc");
+    assert_eq!(decoded.native.bytes().as_ptr(), expected);
+}
+
+#[test]
 fn producer_identity_length_and_utf8_are_guarded() {
     let mut zero = 0_u64.to_be_bytes().to_vec();
     zero.resize(super::MINIMUM_V5_ACCEPTED_OUTPUT_BYTES, 0);

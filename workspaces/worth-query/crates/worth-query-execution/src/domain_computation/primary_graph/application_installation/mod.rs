@@ -141,7 +141,6 @@ where
     }
     let relational_runtime = relational_builder.build();
     let decoded_checkpoint = checkpoint
-        .as_ref()
         .map(super::WorthQueryApplicationCheckpoint::decode)
         .transpose()
         .map_err(|detail| {
