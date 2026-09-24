@@ -30,6 +30,7 @@ fn ready_ordinary_output_survives_close_and_reopens_without_scheduling() {
         idempotency_key: [3; 32],
         resources: None,
         roles: Vec::new(),
+        producer_facts: None,
     };
     let completion = super::super::WorthQueryCompletedOutputDemand {
         authority: super::super::WorthQueryAcceptedOutputAuthority::Restored(
