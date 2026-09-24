@@ -138,12 +138,18 @@ where
     Second: Send,
 {
     std::thread::scope(|scope| {
-        let handles = chunk
-            .iter()
-            .map(|(_, member)| scope.spawn(move || read_pair(member)))
-            .collect::<Vec<_>>();
-        let mut completed = Vec::with_capacity(handles.len());
+        let mut handles = Vec::with_capacity(chunk.len());
         let mut denial = None;
+        for (_, member) in chunk {
+            match std::thread::Builder::new().spawn_scoped(scope, move || read_pair(member)) {
+                Ok(handle) => handles.push(handle),
+                Err(_) => {
+                    denial = Some(Denial::QueryExecutionDenied);
+                    break;
+                }
+            }
+        }
+        let mut completed = Vec::with_capacity(handles.len());
         for handle in handles {
             match handle.join() {
                 Ok(Ok(pair)) => completed.push(Some(pair)),
