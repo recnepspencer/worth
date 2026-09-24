@@ -174,6 +174,19 @@ fn index_preparation_stop(
     denial: worth_relational::facade::indexes::DerivedIndexMaintenanceDenial,
 ) -> crate::domain_computation::WorthQueryProviderSessionCommitStop {
     use worth_relational::facade::indexes::DerivedIndexMaintenanceDenialKind as Kind;
+    if let Kind::CandidateLifetimeExpired {
+        maximum_lifetime_millis,
+    } = &denial.kind
+    {
+        return crate::domain_computation::WorthQueryProviderSessionCommitStop::Deferred(
+            crate::domain_computation::WorthQueryProviderSessionCommitDeferred::new(
+                crate::domain_computation::WorthQueryProviderSessionCommitDeferredKind::CandidateLifetimeExpired {
+                    maximum_lifetime_millis: *maximum_lifetime_millis,
+                },
+                "prepared candidate expired before primary index admission",
+            ),
+        );
+    }
     let kind = match denial.kind {
         Kind::WorkBudgetExceeded => {
             crate::domain_computation::WorthQueryProviderSessionDenialKind::IndexMaintenanceBudgetExceeded
@@ -191,6 +204,34 @@ fn index_preparation_stop(
             crate::domain_computation::WorthQueryProviderSessionProtocolCounters::default(),
         ),
     )
+}
+
+#[cfg(test)]
+mod index_preparation_tests {
+    use super::*;
+
+    #[test]
+    fn expired_candidate_remains_a_typed_retryable_defer() {
+        let stop = index_preparation_stop(
+            worth_relational::facade::indexes::DerivedIndexMaintenanceDenial {
+                kind: worth_relational::facade::indexes::DerivedIndexMaintenanceDenialKind::CandidateLifetimeExpired {
+                    maximum_lifetime_millis: 17,
+                },
+                work: Default::default(),
+            },
+        );
+        let crate::domain_computation::WorthQueryProviderSessionCommitStop::Deferred(deferred) =
+            stop
+        else {
+            panic!("candidate expiry must remain retryable before World effect");
+        };
+        assert_eq!(
+            deferred.kind(),
+            crate::domain_computation::WorthQueryProviderSessionCommitDeferredKind::CandidateLifetimeExpired {
+                maximum_lifetime_millis: 17,
+            },
+        );
+    }
 }
 
 fn transaction_commit_stop(

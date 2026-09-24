@@ -41,6 +41,7 @@ pub enum DerivedIndexMaintenanceDenialKind {
     ColdReconstructionRequired,
     WorkBudgetExceeded,
     ForeignCandidate,
+    CandidateLifetimeExpired { maximum_lifetime_millis: u64 },
     CandidateUnavailable,
     CandidateIndexesAlreadyPrepared,
     GenerationIdentityExhausted,

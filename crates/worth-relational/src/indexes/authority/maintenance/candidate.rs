@@ -71,7 +71,9 @@ impl IndexAuthority<'_> {
             return Err(Denial::ForeignCandidate);
         }
         if candidate.lifetime_expired() {
-            return Err(Denial::CandidateUnavailable);
+            return Err(Denial::CandidateLifetimeExpired {
+                maximum_lifetime_millis: candidate.maximum_lifetime_millis,
+            });
         }
         if candidate.indexes_already_prepared() {
             return Err(Denial::CandidateIndexesAlreadyPrepared);
