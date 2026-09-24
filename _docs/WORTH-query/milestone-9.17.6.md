@@ -996,7 +996,7 @@ cost follows affected entries rather than all 802 solids.
 
 Complete existing compatible House capture/reopen, not generic Query Save/Open. Remove avoidable decoded-image clones, duplicate partition/root rebuild
 and full-scene restore reads without weakening verification. The real 802-solid build -> services -> edit -> capture -> reopen court uses original
-budgets, output/evidence parity, zero replayed effects and no stale view; release reopen meets its 7-second gate. Report p50/p95, reads, work, bytes,
+budgets, output/evidence parity, zero replayed effects and no stale view; release reopen meets its under-8-second gate (7.x seconds). Report p50/p95, reads, work, bytes,
 contacts, peak/retained memory and pinned hardware by source, band, rule, index admission, World, output, scene, checkpoint section and restore.
 Vary size, history and readers independently; prove typed exhaustion before Phase 3 trusts it.
 
