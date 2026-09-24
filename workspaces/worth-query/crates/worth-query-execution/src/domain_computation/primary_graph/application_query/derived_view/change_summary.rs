@@ -69,9 +69,6 @@ pub(in crate::domain_computation::primary_graph) fn changes_from_summary(
             }
         }
     }
-    if std::env::var_os("WORTH_SCENE_TRACE").is_some() && summary.records.len() == 64 {
-        eprintln!("managed 64-record changes: {changes:?}");
-    }
     Some(changes)
 }
 
