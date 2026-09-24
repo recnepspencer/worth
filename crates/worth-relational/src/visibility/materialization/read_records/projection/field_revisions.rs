@@ -10,8 +10,8 @@ use super::VisibilityProjectionView;
 
 impl VisibilityProjectionView<'_> {
     /// Native field status and revision at an exact immutable root. `None`
-    /// means unavailable, including a restored root whose checkpoint grammar
-    /// did not retain field revisions; it never means an absent field.
+    /// means unavailable provenance; it never means an absent field. Current
+    /// checkpoint images retain native revisions, including absent revisions.
     pub fn entity_field_revision(
         &self,
         entity: EntityId,

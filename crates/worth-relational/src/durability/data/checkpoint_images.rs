@@ -13,7 +13,7 @@ use crate::identity::data::{
 };
 use crate::indexes::data::{DerivedIndexArtifacts, DerivedIndexDefinition};
 use crate::lineage::data::LineageCheckpointArtifact;
-use crate::storage::data::RecordLifecycleState;
+use crate::storage::data::{RecordLifecycleState, RelationalFieldRevision};
 use crate::symbols::data::{Symbol, SymbolTableSnapshot};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -77,6 +77,8 @@ pub struct RecordArenaCheckpointImage<K: RecordArenaCheckpointKind> {
     pub created_at: Vec<VersionId>,
     pub retired_at: Vec<Option<VersionId>>,
     pub aspect_versions: Vec<BTreeMap<Symbol, u64>>,
+    #[serde(default)]
+    pub field_revisions: Vec<Option<BTreeMap<(Symbol, Symbol), RelationalFieldRevision>>>,
     pub extra: Vec<K::ExtraImage>,
     pub diagnostics_enrichment: Vec<BTreeMap<Symbol, String>>,
     pub branch_pins: Vec<u32>,
@@ -153,9 +155,9 @@ pub struct DurableBranchRootImage {
 }
 
 impl DurableBranchRootImage {
-    // Version 3 binds partition-content-v2 / branch-storage-content-v3.
+    // Version 4 binds native field-revision provenance into each arena image.
     // Earlier descriptors cannot be readmitted under the new commitment grammar.
-    pub(crate) const CURRENT_FORMAT_VERSION: u16 = 3;
+    pub(crate) const CURRENT_FORMAT_VERSION: u16 = 4;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

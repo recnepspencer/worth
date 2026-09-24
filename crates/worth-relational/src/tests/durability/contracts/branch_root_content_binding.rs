@@ -2,15 +2,15 @@ use super::*;
 use worth_foundational::FoundationalBranchTarget;
 
 #[test]
-fn checkpoint_rejects_previous_content_commitment_format_before_readmission() {
-    let mut plan = checkpoint_recovery_plan("previous-content-commitment-format");
+fn checkpoint_rejects_previous_branch_root_format_before_readmission() {
+    let mut plan = checkpoint_recovery_plan("previous-branch-root-format");
     let root = selected_root_image(&mut plan);
-    assert_eq!(root.format_version, 3);
-    root.format_version = 2;
+    assert_eq!(root.format_version, 4);
+    root.format_version = 3;
     recompute_partition_image_digest(root);
     assert_corrupt_recovery_leaves_no_recovered_state(
         plan,
-        "unsupported branch-root image version `2`",
+        "unsupported branch-root image version `3`",
     );
 }
 

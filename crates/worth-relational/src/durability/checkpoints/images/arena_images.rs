@@ -250,6 +250,7 @@ pub(super) fn arena_to_image<K: CheckpointArenaKind>(
         created_at: arena.created_at.into_vec(),
         retired_at: arena.retired_at.into_vec(),
         aspect_versions: arena.aspect_versions.into_vec(),
+        field_revisions: arena.field_revisions.into_vec(),
         extra,
         diagnostics_enrichment: arena.diagnostics_enrichment.into_vec(),
         branch_pins: arena.branch_pins.into_vec(),
@@ -285,6 +286,12 @@ pub(super) fn arena_from_image<K: CheckpointArenaKind>(
             "record arena slot directory length differs from its SoA columns",
         ));
     }
+    if image.field_revisions.len() != image.generations.len() {
+        return Err(DurabilityError::new(
+            RecoveryFailureClass::CorruptCheckpoint,
+            "record arena field revision length differs from its SoA columns",
+        ));
+    }
     let slots = crate::storage::substrate::RecordSlotDirectory::restore(slots)
         .map_err(|detail| DurabilityError::new(RecoveryFailureClass::CorruptCheckpoint, detail))?;
     let metadata_history = image
@@ -312,7 +319,6 @@ pub(super) fn arena_from_image<K: CheckpointArenaKind>(
             K::extra_from_image(extra, contracts)
         })
         .collect::<Result<Vec<_>, _>>()?;
-    let slot_count = image.generations.len();
     Ok(RecordArena {
         slots,
         partition_ids: vec![partition_id; image.generations.len()].into(),
@@ -324,10 +330,7 @@ pub(super) fn arena_from_image<K: CheckpointArenaKind>(
         retired_at: image.retired_at.into(),
         extra: extra.into(),
         aspect_versions: image.aspect_versions.into(),
-        // The current checkpoint grammar does not carry field revisions.
-        // Restored slots must deny field-local reuse until the versioned image
-        // contract is extended; an empty known map would be unsafe for ABA.
-        field_revisions: crate::storage::substrate::SharedColumn::with_default(slot_count, None),
+        field_revisions: image.field_revisions.into(),
         diagnostics_enrichment: image.diagnostics_enrichment.into(),
         branch_pins: image.branch_pins.into(),
         replay_pins: image.replay_pins.into(),
