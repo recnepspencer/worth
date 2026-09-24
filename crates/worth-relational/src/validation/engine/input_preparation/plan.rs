@@ -1,53 +1,100 @@
-use std::collections::{BTreeMap, BTreeSet};
-use std::sync::Mutex;
+use std::collections::BTreeSet;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::{Arc, OnceLock};
+
+use dashmap::DashMap;
 
 use crate::identity::data::KindId;
-use crate::identity::data::{EntityId, RelationId, VersionId};
+use crate::identity::data::{EntityId, PartitionId, RelationId, VersionId};
+use crate::performance::data::CandidateInputCounts;
 use crate::validation::engine::state_view::{VisibleEntityMetadata, VisibleRelationMetadata};
-use crate::validation::engine::{InvariantExecutionRequest, InvariantRuntimeView};
-use worth_foundational::facade::AuthoritativeRecordAspectState;
+use crate::validation::engine::{
+    InvariantExecutionRequest, InvariantObservation, InvariantRuntimeView,
+};
 
 /// A request-local observation basis. No entry can outlive its engine execution.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub(crate) enum CandidateInputBasis {
     Enforcement,
     BeforeImage,
     Committed,
 }
 
-pub(crate) struct SharedCandidateInputs<'state> {
-    pub(super) entries: Mutex<CandidateInputEntries<'state>>,
+pub(crate) struct SharedCandidateInputs {
+    pub(super) entries: CandidateInputEntries,
     pub(super) sharing_enabled: bool,
 }
 
-#[derive(Default)]
-pub(super) struct CandidateInputEntries<'state> {
-    pub(super) entities:
-        BTreeMap<(CandidateInputBasis, VersionId, EntityId), Option<VisibleEntityMetadata>>,
-    pub(super) relations:
-        BTreeMap<(CandidateInputBasis, VersionId, RelationId), Option<VisibleRelationMetadata>>,
-    pub(super) entity_aspects: BTreeMap<
-        (CandidateInputBasis, VersionId, EntityId),
-        Option<&'state AuthoritativeRecordAspectState>,
-    >,
-    pub(super) relation_aspects: BTreeMap<
-        (CandidateInputBasis, VersionId, RelationId),
-        Option<&'state AuthoritativeRecordAspectState>,
-    >,
-    pub(super) adjacency:
-        BTreeMap<(CandidateInputBasis, VersionId, EntityId, bool), std::sync::Arc<[RelationId]>>,
-    pub(super) adjacency_counts: BTreeMap<(CandidateInputBasis, VersionId, EntityId, bool), usize>,
-    pub(super) entity_reads: usize,
-    pub(super) relation_reads: usize,
-    pub(super) entity_aspect_reads: usize,
-    pub(super) relation_aspect_reads: usize,
-    pub(super) adjacency_gathers: usize,
-    pub(super) adjacency_count_reads: usize,
-    pub(super) adjacency_relation_ids: usize,
-    pub(super) reuse_hits: usize,
+impl CandidateInputBasis {
+    pub(crate) fn enforcement(observation: &InvariantObservation<'_>) -> Self {
+        if observation.enforcement_uses_committed_state() {
+            Self::Committed
+        } else {
+            Self::Enforcement
+        }
+    }
+
+    pub(crate) fn before_image(observation: &InvariantObservation<'_>) -> Self {
+        if observation.before_image_uses_committed_state() {
+            Self::Committed
+        } else {
+            Self::BeforeImage
+        }
+    }
 }
 
-impl<'state> SharedCandidateInputs<'state> {
+#[derive(Default)]
+pub(super) struct CandidateInputEntries {
+    pub(super) entities: DashMap<
+        (CandidateInputBasis, VersionId, EntityId),
+        Arc<OnceLock<Option<VisibleEntityMetadata>>>,
+    >,
+    pub(super) relations: DashMap<
+        (CandidateInputBasis, VersionId, RelationId),
+        Arc<OnceLock<Option<VisibleRelationMetadata>>>,
+    >,
+    pub(super) entity_aspects:
+        DashMap<(CandidateInputBasis, VersionId, EntityId), Arc<OnceLock<Option<usize>>>>,
+    pub(super) relation_aspects:
+        DashMap<(CandidateInputBasis, VersionId, RelationId), Arc<OnceLock<Option<usize>>>>,
+    pub(super) adjacency:
+        DashMap<(CandidateInputBasis, VersionId, EntityId, bool), Arc<OnceLock<Arc<[RelationId]>>>>,
+    pub(super) adjacency_counts:
+        DashMap<(CandidateInputBasis, VersionId, EntityId, bool), Arc<OnceLock<usize>>>,
+    pub(super) touched_entities:
+        DashMap<(CandidateInputBasis, VersionId), Arc<OnceLock<Vec<EntityId>>>>,
+    pub(super) touched_relations:
+        DashMap<(CandidateInputBasis, VersionId), Arc<OnceLock<Vec<RelationId>>>>,
+    pub(super) touched_partitions:
+        DashMap<(CandidateInputBasis, VersionId), Arc<OnceLock<Option<Arc<[PartitionId]>>>>>,
+    pub(super) touched_entity_slots:
+        DashMap<(CandidateInputBasis, VersionId, PartitionId), Arc<OnceLock<Option<Arc<[usize]>>>>>,
+    pub(super) touched_relation_slots:
+        DashMap<(CandidateInputBasis, VersionId, PartitionId), Arc<OnceLock<Option<Arc<[usize]>>>>>,
+    pub(super) entity_reads: AtomicUsize,
+    pub(super) relation_reads: AtomicUsize,
+    pub(super) entity_aspect_reads: AtomicUsize,
+    pub(super) relation_aspect_reads: AtomicUsize,
+    pub(super) adjacency_gathers: AtomicUsize,
+    pub(super) adjacency_count_reads: AtomicUsize,
+    pub(super) adjacency_relation_ids: AtomicUsize,
+    pub(super) touched_entity_gathers: AtomicUsize,
+    pub(super) touched_relation_gathers: AtomicUsize,
+    pub(super) touched_partition_gathers: AtomicUsize,
+    pub(super) touched_entity_slot_gathers: AtomicUsize,
+    pub(super) touched_relation_slot_gathers: AtomicUsize,
+    pub(super) reuse_hits: AtomicUsize,
+}
+
+impl SharedCandidateInputs {
+    #[cfg(test)]
+    pub(crate) fn sharing_for_test() -> Self {
+        Self {
+            entries: CandidateInputEntries::default(),
+            sharing_enabled: true,
+        }
+    }
+
     /// Installation declares the overlap. Runtime reads only fill exact entries
     /// demanded by the participating rules on this observation.
     pub(crate) fn from_installed(
@@ -69,52 +116,50 @@ impl<'state> SharedCandidateInputs<'state> {
             let rule_entities = access
                 .read_entity_kinds
                 .iter()
-                .chain(&access.affected_entity_kinds)
-                .copied()
-                .collect::<BTreeSet<_>>();
+                .chain(&access.affected_entity_kinds);
             let rule_relations = access
                 .read_relation_kinds
                 .iter()
-                .chain(&access.affected_relation_kinds)
-                .copied()
-                .collect::<BTreeSet<_>>();
-            if rule_entities.iter().any(|kind| entity_kinds.contains(kind))
+                .chain(&access.affected_relation_kinds);
+            if rule_entities
+                .clone()
+                .any(|kind| entity_kinds.contains(kind))
                 || rule_relations
-                    .iter()
+                    .clone()
                     .any(|kind| relation_kinds.contains(kind))
             {
                 sharing_enabled = true;
             }
-            entity_kinds.extend(rule_entities);
-            relation_kinds.extend(rule_relations);
+            entity_kinds.extend(rule_entities.copied());
+            relation_kinds.extend(rule_relations.copied());
         }
         (rule_count > 0).then(|| Self {
-            entries: Mutex::default(),
+            entries: CandidateInputEntries::default(),
             sharing_enabled,
         })
     }
 
-    pub(crate) fn counters(&self) -> (usize, usize, usize, usize, usize, usize) {
-        let entries = self
-            .entries
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        (
-            entries.entity_reads,
-            entries.relation_reads,
-            entries.adjacency_gathers,
-            entries.adjacency_count_reads,
-            entries.adjacency_relation_ids,
-            entries.reuse_hits,
-        )
-    }
-
-    pub(crate) fn aspect_counters(&self) -> (usize, usize) {
-        let entries = self
-            .entries
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        (entries.entity_aspect_reads, entries.relation_aspect_reads)
+    pub(crate) fn counters(&self) -> CandidateInputCounts {
+        let entries = &self.entries;
+        CandidateInputCounts {
+            entity_reads: entries.entity_reads.load(Ordering::Relaxed),
+            relation_reads: entries.relation_reads.load(Ordering::Relaxed),
+            entity_aspect_reads: entries.entity_aspect_reads.load(Ordering::Relaxed),
+            relation_aspect_reads: entries.relation_aspect_reads.load(Ordering::Relaxed),
+            adjacency_gathers: entries.adjacency_gathers.load(Ordering::Relaxed),
+            adjacency_count_reads: entries.adjacency_count_reads.load(Ordering::Relaxed),
+            adjacency_relation_ids: entries.adjacency_relation_ids.load(Ordering::Relaxed),
+            touched_entity_gathers: entries.touched_entity_gathers.load(Ordering::Relaxed),
+            touched_relation_gathers: entries.touched_relation_gathers.load(Ordering::Relaxed),
+            touched_partition_gathers: entries.touched_partition_gathers.load(Ordering::Relaxed),
+            touched_entity_slot_gathers: entries
+                .touched_entity_slot_gathers
+                .load(Ordering::Relaxed),
+            touched_relation_slot_gathers: entries
+                .touched_relation_slot_gathers
+                .load(Ordering::Relaxed),
+            reuse_hits: entries.reuse_hits.load(Ordering::Relaxed),
+        }
     }
 }
 
@@ -126,7 +171,7 @@ mod tests {
     #[test]
     fn absence_and_foreign_or_changed_basis_do_not_alias() {
         let inputs = SharedCandidateInputs {
-            entries: Mutex::default(),
+            entries: CandidateInputEntries::default(),
             sharing_enabled: true,
         };
         let id = EntityId::new(PartitionId::main(), 7, 1);
@@ -164,7 +209,7 @@ mod tests {
             })
             .is_none());
         assert_eq!(reads, 3);
-        assert_eq!(inputs.counters().0, 3);
+        assert_eq!(inputs.counters().entity_reads, 3);
 
         assert!(inputs
             .entity_aspect(CandidateInputBasis::Enforcement, VersionId(1), id, || None)
@@ -183,6 +228,6 @@ mod tests {
         assert!(inputs
             .entity_aspect(CandidateInputBasis::BeforeImage, VersionId(1), id, || None)
             .is_none());
-        assert_eq!(inputs.aspect_counters().0, 3);
+        assert_eq!(inputs.counters().entity_aspect_reads, 3);
     }
 }

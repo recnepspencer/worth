@@ -164,7 +164,8 @@ fn engine_executes_custom_packets_against_real_structural_surfaces() {
         counters.custom_invariant_candidate_adjacency_relation_ids,
         0
     );
-    assert!(counters.custom_invariant_candidate_reuse_hits > 0);
+    assert_eq!(counters.custom_invariant_candidate_entity_reads, 2);
+    assert_eq!(counters.custom_invariant_candidate_reuse_hits, 33);
     assert!(counters.custom_invariant_traversal_frontier_count >= 2);
 
     create_relation_of_kind(&runtime, KindId(2), source, target, "committed-edge");
@@ -184,13 +185,16 @@ fn engine_executes_custom_packets_against_real_structural_surfaces() {
         after_topology_change.results()[1].verdict,
         crate::validation::data::InvariantVerdict::Violation(_)
     ));
-    assert!(
-        runtime
-            .performance_access()
-            .counters()
-            .custom_invariant_candidate_adjacency_relation_ids
-            > 0
+    let changed_counters = runtime.performance_access().counters();
+    assert_eq!(
+        changed_counters.custom_invariant_candidate_relation_reads,
+        1
     );
+    assert_eq!(
+        changed_counters.custom_invariant_candidate_adjacency_relation_ids,
+        2
+    );
+    assert_eq!(changed_counters.custom_invariant_candidate_reuse_hits, 45);
 }
 
 #[test]

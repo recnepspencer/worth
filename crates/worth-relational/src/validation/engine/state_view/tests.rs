@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
+use std::sync::Arc;
 
 use worth_foundational::{
     admit_authoritative_record_aspect_state, aspects, validate_aspect_value, AspectContract,
@@ -79,14 +80,38 @@ fn sparse_speculative_overlay_reads_untouched_entity_truth_from_base_partition()
     assert_eq!(metadata.entity_id, untouched_entity);
 
     let guarded = NoWorldPartitionEnumeration { state: &overlay };
-    let guarded_view = InvariantStateView::new(&guarded, VersionId(1));
+    let inputs = Arc::new(
+        crate::validation::engine::input_preparation::SharedCandidateInputs::sharing_for_test(),
+    );
+    let guarded_view = InvariantStateView::new(&guarded, VersionId(1)).with_candidate_inputs(
+        Some(Arc::clone(&inputs)),
+        crate::validation::engine::input_preparation::CandidateInputBasis::Enforcement,
+    );
+    let mut charged_slots = 0;
     assert_eq!(
         guarded_view
-            .touched_visible_entity_ids_with_budget(|_| true)
+            .touched_visible_entity_ids_with_budget(|units| {
+                charged_slots += units;
+                true
+            })
             .unwrap()
             .len(),
         1
     );
+    assert_eq!(
+        guarded_view
+            .touched_visible_entity_ids_with_budget(|units| {
+                charged_slots += units;
+                true
+            })
+            .unwrap()
+            .len(),
+        1
+    );
+    assert_eq!(charged_slots, 2);
+    assert_eq!(inputs.counters().touched_entity_gathers, 1);
+    assert_eq!(inputs.counters().touched_partition_gathers, 1);
+    assert_eq!(inputs.counters().touched_entity_slot_gathers, 1);
 }
 
 struct NoWorldPartitionEnumeration<'a> {

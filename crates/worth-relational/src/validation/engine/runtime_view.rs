@@ -16,7 +16,7 @@ pub(crate) struct InvariantRuntimeView<'a> {
     pub(crate) schema_contract_runtime: std::sync::Arc<SchemaContractRuntimeSubsystem>,
     instrumentation: &'a RuntimeInstrumentation,
     shared_candidate_inputs:
-        Option<std::sync::Arc<super::input_preparation::SharedCandidateInputs<'a>>>,
+        Option<std::sync::Arc<super::input_preparation::SharedCandidateInputs>>,
     #[cfg(test)]
     current_version_id: crate::identity::data::VersionId,
     entity_count: usize,
@@ -88,7 +88,7 @@ impl<'a> InvariantRuntimeView<'a> {
 
     pub(crate) fn shared_candidate_inputs(
         &self,
-    ) -> Option<std::sync::Arc<super::input_preparation::SharedCandidateInputs<'a>>> {
+    ) -> Option<std::sync::Arc<super::input_preparation::SharedCandidateInputs>> {
         self.shared_candidate_inputs.clone()
     }
 

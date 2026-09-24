@@ -84,10 +84,12 @@ pub(super) fn eligible_registrations<'state>(
             let prepared_execution = registration
                 .executable()
                 .prepare_for_execution(runtime, &mut planner);
+            let retained_touched = planner.retained_touched();
             InvariantPacketRegistration::Custom {
                 registration: registration.clone(),
                 prepared_execution,
                 prepared_scope: prepared_scope.clone(),
+                retained_touched,
             }
         });
 

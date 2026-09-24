@@ -229,6 +229,7 @@ fn traversal_budget_is_session_wide() {
         runtime.current_version_id(),
         runtime.current_version_id(),
         &prepared_scope,
+        None,
         super::CustomInvariantWorkMeter::new(std::num::NonZeroU64::new(u64::MAX).unwrap()),
         std::sync::Arc::new(crate::validation::data::CustomInvariantAccessContract::default()),
     );

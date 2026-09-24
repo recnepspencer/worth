@@ -64,22 +64,9 @@ impl<'runtime> InvariantEngine<'runtime> {
         let (result, _, reducer_conflicts) =
             reduce_invariant_execution(&request, planned.strategy, proof_boundary, envelopes);
         if let Some(inputs) = runtime.shared_candidate_inputs() {
-            let (entities, relations, gathers, adjacency_count_reads, adjacency_ids, hits) =
-                inputs.counters();
             runtime
                 .performance_access()
-                .count_custom_invariant_candidate_inputs(
-                    entities,
-                    relations,
-                    gathers,
-                    adjacency_count_reads,
-                    adjacency_ids,
-                    hits,
-                );
-            let (entity_aspects, relation_aspects) = inputs.aspect_counters();
-            runtime
-                .performance_access()
-                .count_custom_invariant_candidate_aspect_reads(entity_aspects, relation_aspects);
+                .count_custom_invariant_candidate_inputs(inputs.counters());
         }
         if !reducer_conflicts.is_empty() {
             self.runtime

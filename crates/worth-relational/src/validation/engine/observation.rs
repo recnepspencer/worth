@@ -191,6 +191,17 @@ impl<'runtime> InvariantObservation<'runtime> {
         }
     }
 
+    pub(crate) fn enforcement_uses_committed_state(&self) -> bool {
+        match self {
+            Self::Committed(view) => view.enforcement.is_none(),
+            Self::Speculative(_) => true,
+        }
+    }
+
+    pub(crate) fn before_image_uses_committed_state(&self) -> bool {
+        matches!(self, Self::Committed(view) if view.enforcement.is_some())
+    }
+
     pub(crate) fn before_image_partition_access(&self) -> Option<&dyn PartitionAccess> {
         match self {
             Self::Committed(view) => view.before_image_partition_access(),

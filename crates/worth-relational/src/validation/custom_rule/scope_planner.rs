@@ -49,19 +49,20 @@ impl PreparedCustomInvariantScope {
         merged_plan: Option<&MergedCommitPlan>,
         access: &crate::validation::data::CustomInvariantAccessContract,
         work: &super::CustomInvariantWorkMeter,
-        inputs: Option<
-            Arc<crate::validation::engine::input_preparation::SharedCandidateInputs<'state>>,
-        >,
+        inputs: Option<Arc<crate::validation::engine::input_preparation::SharedCandidateInputs>>,
     ) -> Self {
         use crate::validation::engine::input_preparation::CandidateInputBasis;
         let state_view = InvariantStateView::new(
             observation.enforcement_partition_access(),
             observation.enforcement_version_id(version_id),
         )
-        .with_candidate_inputs(inputs.clone(), CandidateInputBasis::Enforcement);
+        .with_candidate_inputs(
+            inputs.clone(),
+            CandidateInputBasis::enforcement(observation),
+        );
         let before_image_view = observation.before_image_partition_access().map(|state| {
             InvariantStateView::new(state, observation.before_image_version_id(version_id))
-                .with_candidate_inputs(inputs, CandidateInputBasis::BeforeImage)
+                .with_candidate_inputs(inputs, CandidateInputBasis::before_image(observation))
         });
         Self {
             touched: Arc::new(collect_touched_structural_set(
@@ -245,7 +246,10 @@ impl<'runtime> CustomInvariantScopePlanner<'runtime> {
             observation.enforcement_partition_access(),
             observation.enforcement_version_id(version_id),
         )
-        .with_candidate_inputs(inputs.clone(), CandidateInputBasis::Enforcement);
+        .with_candidate_inputs(
+            inputs.clone(),
+            CandidateInputBasis::enforcement(observation),
+        );
         let committed_state_view =
             InvariantStateView::new(observation.committed_partition_access(), current_version_id)
                 .with_candidate_inputs(inputs, CandidateInputBasis::Committed);
@@ -298,6 +302,10 @@ impl<'runtime> CustomInvariantScopePlanner<'runtime> {
 
     pub fn touched(&self) -> &TouchedStructuralSet {
         &self.touched
+    }
+
+    pub(crate) fn retained_touched(&self) -> Arc<TouchedStructuralSet> {
+        Arc::clone(&self.touched)
     }
 
     pub(crate) fn has_applicable_touches(&self) -> bool {

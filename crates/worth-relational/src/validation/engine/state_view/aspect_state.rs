@@ -9,18 +9,22 @@ impl<'state> InvariantStateView<'state> {
         &self,
         entity_id: EntityId,
     ) -> Option<&'state AuthoritativeRecordAspectState> {
-        if let Some((inputs, basis)) = &self.candidate_inputs {
-            return inputs.entity_aspect(*basis, self.version_id, entity_id, || {
-                self.read_entity_aspect_state(entity_id)
-            });
-        }
-        self.read_entity_aspect_state(entity_id)
+        let locate = || self.locate_entity_aspect(entity_id);
+        let index = match &self.candidate_inputs {
+            Some((inputs, basis)) => {
+                inputs.entity_aspect(*basis, self.version_id, entity_id, locate)
+            }
+            None => locate(),
+        }?;
+        self.entity_partition_for_slot(entity_id.partition_id, entity_id.slot_index())?
+            .entity_arena
+            .metadata_history_at(entity_id.slot_index())?
+            .get(index)?
+            .authoritative_aspect_state
+            .as_ref()
     }
 
-    fn read_entity_aspect_state(
-        &self,
-        entity_id: EntityId,
-    ) -> Option<&'state AuthoritativeRecordAspectState> {
+    fn locate_entity_aspect(&self, entity_id: EntityId) -> Option<usize> {
         let slot = entity_id.slot_index();
         let partition = self.entity_partition_for_slot(entity_id.partition_id, slot)?;
         if partition
@@ -31,29 +35,32 @@ impl<'state> InvariantStateView<'state> {
         {
             return None;
         }
-        partition
-            .entity_arena
-            .metadata_history_at(slot)
-            .and_then(|history| self.visible_entity_metadata(history))
-            .and_then(|metadata| metadata.authoritative_aspect_state.as_ref())
+        let history = partition.entity_arena.metadata_history_at(slot)?;
+        let index = self.visible_metadata_index(history)?;
+        history[index].authoritative_aspect_state.as_ref()?;
+        Some(index)
     }
 
     pub(crate) fn relation_aspect_state(
         &self,
         relation_id: RelationId,
     ) -> Option<&'state AuthoritativeRecordAspectState> {
-        if let Some((inputs, basis)) = &self.candidate_inputs {
-            return inputs.relation_aspect(*basis, self.version_id, relation_id, || {
-                self.read_relation_aspect_state(relation_id)
-            });
-        }
-        self.read_relation_aspect_state(relation_id)
+        let locate = || self.locate_relation_aspect(relation_id);
+        let index = match &self.candidate_inputs {
+            Some((inputs, basis)) => {
+                inputs.relation_aspect(*basis, self.version_id, relation_id, locate)
+            }
+            None => locate(),
+        }?;
+        self.relation_partition_for_slot(relation_id.partition_id, relation_id.slot_index())?
+            .relation_arena
+            .metadata_history_at(relation_id.slot_index())?
+            .get(index)?
+            .authoritative_aspect_state
+            .as_ref()
     }
 
-    fn read_relation_aspect_state(
-        &self,
-        relation_id: RelationId,
-    ) -> Option<&'state AuthoritativeRecordAspectState> {
+    fn locate_relation_aspect(&self, relation_id: RelationId) -> Option<usize> {
         let slot = relation_id.slot_index();
         let partition = self.relation_partition_for_slot(relation_id.partition_id, slot)?;
         if partition
@@ -64,10 +71,9 @@ impl<'state> InvariantStateView<'state> {
         {
             return None;
         }
-        partition
-            .relation_arena
-            .metadata_history_at(slot)
-            .and_then(|history| self.visible_relation_metadata(history))
-            .and_then(|metadata| metadata.authoritative_aspect_state.as_ref())
+        let history = partition.relation_arena.metadata_history_at(slot)?;
+        let index = self.visible_metadata_index(history)?;
+        history[index].authoritative_aspect_state.as_ref()?;
+        Some(index)
     }
 }

@@ -45,31 +45,30 @@ impl PerformanceAccess<'_> {
 
     pub(crate) fn count_custom_invariant_candidate_inputs(
         &self,
-        entity_reads: usize,
-        relation_reads: usize,
-        adjacency_gathers: usize,
-        adjacency_count_reads: usize,
-        adjacency_relation_ids: usize,
-        reuse_hits: usize,
+        reads: crate::performance::data::CandidateInputCounts,
     ) {
         self.runtime.services.instrumentation.count(|counters| {
-            counters.custom_invariant_candidate_entity_reads += entity_reads;
-            counters.custom_invariant_candidate_relation_reads += relation_reads;
-            counters.custom_invariant_candidate_adjacency_gathers += adjacency_gathers;
-            counters.custom_invariant_candidate_adjacency_count_reads += adjacency_count_reads;
-            counters.custom_invariant_candidate_adjacency_relation_ids += adjacency_relation_ids;
-            counters.custom_invariant_candidate_reuse_hits += reuse_hits;
-        });
-    }
-
-    pub(crate) fn count_custom_invariant_candidate_aspect_reads(
-        &self,
-        entity_reads: usize,
-        relation_reads: usize,
-    ) {
-        self.runtime.services.instrumentation.count(|counters| {
-            counters.custom_invariant_candidate_entity_aspect_reads += entity_reads;
-            counters.custom_invariant_candidate_relation_aspect_reads += relation_reads;
+            counters.custom_invariant_candidate_entity_reads += reads.entity_reads;
+            counters.custom_invariant_candidate_relation_reads += reads.relation_reads;
+            counters.custom_invariant_candidate_entity_aspect_reads += reads.entity_aspect_reads;
+            counters.custom_invariant_candidate_relation_aspect_reads +=
+                reads.relation_aspect_reads;
+            counters.custom_invariant_candidate_adjacency_gathers += reads.adjacency_gathers;
+            counters.custom_invariant_candidate_adjacency_count_reads +=
+                reads.adjacency_count_reads;
+            counters.custom_invariant_candidate_adjacency_relation_ids +=
+                reads.adjacency_relation_ids;
+            counters.custom_invariant_candidate_touched_entity_gathers +=
+                reads.touched_entity_gathers;
+            counters.custom_invariant_candidate_touched_relation_gathers +=
+                reads.touched_relation_gathers;
+            counters.custom_invariant_candidate_touched_partition_gathers +=
+                reads.touched_partition_gathers;
+            counters.custom_invariant_candidate_touched_entity_slot_gathers +=
+                reads.touched_entity_slot_gathers;
+            counters.custom_invariant_candidate_touched_relation_slot_gathers +=
+                reads.touched_relation_slot_gathers;
+            counters.custom_invariant_candidate_reuse_hits += reads.reuse_hits;
         });
     }
 

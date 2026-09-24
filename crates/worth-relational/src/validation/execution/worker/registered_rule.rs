@@ -31,12 +31,14 @@ pub(super) fn evaluate_registered_rule<'state>(
             registration,
             prepared_execution,
             prepared_scope,
+            retained_touched,
         } => evaluate_custom_registration(
             runtime,
             packet,
             registration,
             prepared_execution,
             prepared_scope,
+            retained_touched,
         ),
         crate::authority::commit::preparation::packets::invariant::InvariantPacketRegistration::CustomNotApplicable {
             registration,
@@ -49,6 +51,7 @@ pub(super) fn evaluate_registered_rule<'state>(
                 packet.version_id,
                 packet.current_version_id,
                 prepared_scope,
+                None,
                 work.clone(),
                 std::sync::Arc::new(registration.access_contract().clone()),
             );
@@ -107,6 +110,7 @@ fn evaluate_custom_registration<'state>(
         dyn crate::validation::data::PreparedCustomInvariantExecution,
     >,
     prepared_scope: &crate::validation::data::PreparedCustomInvariantScope,
+    retained_touched: &std::sync::Arc<crate::validation::data::TouchedStructuralSet>,
 ) -> RegisteredInvariantEvaluation {
     let work = prepared_execution.work_meter();
     let context = CustomInvariantExecutionContext::new(
@@ -115,6 +119,7 @@ fn evaluate_custom_registration<'state>(
         packet.version_id,
         packet.current_version_id,
         prepared_scope,
+        Some(std::sync::Arc::clone(retained_touched)),
         work.clone(),
         std::sync::Arc::new(registration.access_contract().clone()),
     );

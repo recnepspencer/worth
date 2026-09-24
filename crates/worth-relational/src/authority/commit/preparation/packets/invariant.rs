@@ -18,6 +18,7 @@ pub(crate) enum InvariantPacketRegistration {
         registration: CustomInvariantRegistration,
         prepared_execution: Arc<dyn PreparedCustomInvariantExecution>,
         prepared_scope: crate::validation::data::PreparedCustomInvariantScope,
+        retained_touched: Arc<crate::validation::data::TouchedStructuralSet>,
     },
     CustomNotApplicable {
         registration: CustomInvariantRegistration,

@@ -1,6 +1,7 @@
 use crate::storage::overlay::PartitionAccess;
 use crate::storage::substrate::EntityArena;
 use crate::storage::substrate::HistoricalMetadata;
+use std::sync::Arc;
 
 mod aspect_state;
 mod structural_adjacency;
@@ -10,7 +11,7 @@ pub(crate) struct InvariantStateView<'state> {
     state: &'state dyn PartitionAccess,
     version_id: crate::identity::data::VersionId,
     candidate_inputs: Option<(
-        std::sync::Arc<super::input_preparation::SharedCandidateInputs<'state>>,
+        std::sync::Arc<super::input_preparation::SharedCandidateInputs>,
         super::input_preparation::CandidateInputBasis,
     )>,
 }
@@ -29,7 +30,7 @@ impl<'state> InvariantStateView<'state> {
 
     pub(crate) fn with_candidate_inputs(
         mut self,
-        inputs: Option<std::sync::Arc<super::input_preparation::SharedCandidateInputs<'state>>>,
+        inputs: Option<std::sync::Arc<super::input_preparation::SharedCandidateInputs>>,
         basis: super::input_preparation::CandidateInputBasis,
     ) -> Self {
         self.candidate_inputs = inputs.map(|inputs| (inputs, basis));
@@ -39,7 +40,7 @@ impl<'state> InvariantStateView<'state> {
     pub(crate) fn candidate_inputs(
         &self,
     ) -> Option<&(
-        std::sync::Arc<super::input_preparation::SharedCandidateInputs<'state>>,
+        std::sync::Arc<super::input_preparation::SharedCandidateInputs>,
         super::input_preparation::CandidateInputBasis,
     )> {
         self.candidate_inputs.as_ref()
@@ -53,42 +54,85 @@ impl<'state> InvariantStateView<'state> {
         self.version_id
     }
 
+    fn touched_partitions(&self) -> Option<Arc<[crate::identity::data::PartitionId]>> {
+        match &self.candidate_inputs {
+            Some((inputs, basis)) => inputs.touched_partitions(*basis, self.version_id, || {
+                self.state.touched_partition_ids()
+            }),
+            None => self.state.touched_partition_ids().map(Arc::from),
+        }
+    }
+
+    fn touched_entity_slots(
+        &self,
+        partition: crate::identity::data::PartitionId,
+    ) -> Option<Arc<[usize]>> {
+        match &self.candidate_inputs {
+            Some((inputs, basis)) => {
+                inputs.touched_entity_slots(*basis, self.version_id, partition, || {
+                    self.state.touched_entity_slots(partition)
+                })
+            }
+            None => self.state.touched_entity_slots(partition).map(Arc::from),
+        }
+    }
+
+    fn touched_relation_slots(
+        &self,
+        partition: crate::identity::data::PartitionId,
+    ) -> Option<Arc<[usize]>> {
+        match &self.candidate_inputs {
+            Some((inputs, basis)) => {
+                inputs.touched_relation_slots(*basis, self.version_id, partition, || {
+                    self.state.touched_relation_slots(partition)
+                })
+            }
+            None => self.state.touched_relation_slots(partition).map(Arc::from),
+        }
+    }
+
     pub(crate) fn touched_visible_entity_ids_with_budget(
         &self,
         mut charge: impl FnMut(usize) -> bool,
     ) -> Option<Vec<crate::identity::data::EntityId>> {
-        let mut ids = Vec::new();
-        let mut saw_any = false;
-        let partition_ids = self.state.touched_partition_ids()?;
-        for partition_id in partition_ids {
+        let mut sources = Vec::new();
+        let partition_ids = self.touched_partitions()?;
+        for partition_id in partition_ids.iter().copied() {
             let partition = self.state.get_partition(partition_id)?;
-            let Some(slots) = self.state.touched_entity_slots(partition_id) else {
+            let Some(slots) = self.touched_entity_slots(partition_id) else {
                 continue;
             };
             if !charge(slots.len()) {
                 return None;
             }
-            saw_any = true;
-            for slot in slots {
-                let Some(metadata) = partition
-                    .entity_arena
-                    .metadata_history_at(slot)
-                    .and_then(|history| self.visible_entity_metadata(history))
-                else {
-                    continue;
-                };
-                ids.push(crate::identity::data::EntityId::new(
-                    partition_id,
-                    slot as u64,
-                    metadata.generation,
-                ));
+            sources.push((partition_id, partition, slots));
+        }
+        (!sources.is_empty()).then(|| {
+            let gather = || {
+                let mut ids = Vec::new();
+                for (partition_id, partition, slots) in sources {
+                    for slot in slots.iter().copied() {
+                        let Some(metadata) = partition
+                            .entity_arena
+                            .metadata_history_at(slot)
+                            .and_then(|history| self.visible_entity_metadata(history))
+                        else {
+                            continue;
+                        };
+                        ids.push(crate::identity::data::EntityId::new(
+                            partition_id,
+                            slot as u64,
+                            metadata.generation,
+                        ));
+                    }
+                }
+                ids
+            };
+            match &self.candidate_inputs {
+                Some((inputs, basis)) => inputs.touched_entities(*basis, self.version_id, gather),
+                None => gather(),
             }
-        }
-        if saw_any {
-            Some(ids)
-        } else {
-            None
-        }
+        })
     }
 
     pub(crate) fn entity_metadata(
@@ -246,32 +290,40 @@ impl<'state> InvariantStateView<'state> {
         &self,
         mut charge: impl FnMut(usize) -> bool,
     ) -> Option<Vec<crate::identity::data::RelationId>> {
-        let mut ids = Vec::new();
-        let mut saw_any = false;
-        let partition_ids = self.state.touched_partition_ids()?;
-        for partition_id in partition_ids {
+        let mut sources = Vec::new();
+        let partition_ids = self.touched_partitions()?;
+        for partition_id in partition_ids.iter().copied() {
             let partition = self.state.get_partition(partition_id)?;
-            let Some(slots) = self.state.touched_relation_slots(partition_id) else {
+            let Some(slots) = self.touched_relation_slots(partition_id) else {
                 continue;
             };
             if !charge(slots.len()) {
                 return None;
             }
-            saw_any = true;
-            for slot in slots {
-                let Some(metadata) =
-                    self.relation_metadata_at(&partition.relation_arena, partition_id, slot)
-                else {
-                    continue;
-                };
-                ids.push(metadata.relation_id);
+            sources.push((partition_id, partition, slots));
+        }
+        (!sources.is_empty()).then(|| {
+            let gather = || {
+                let mut ids = Vec::new();
+                for (partition_id, partition, slots) in sources {
+                    for slot in slots.iter().copied() {
+                        let Some(metadata) = self.relation_metadata_at(
+                            &partition.relation_arena,
+                            partition_id,
+                            slot,
+                        ) else {
+                            continue;
+                        };
+                        ids.push(metadata.relation_id);
+                    }
+                }
+                ids
+            };
+            match &self.candidate_inputs {
+                Some((inputs, basis)) => inputs.touched_relations(*basis, self.version_id, gather),
+                None => gather(),
             }
-        }
-        if saw_any {
-            Some(ids)
-        } else {
-            None
-        }
+        })
     }
 
     fn visible_entity_metadata<'history>(
@@ -280,13 +332,8 @@ impl<'state> InvariantStateView<'state> {
             crate::storage::substrate::VersionedEntityMetadata,
         >,
     ) -> Option<&'history crate::storage::substrate::VersionedEntityMetadata> {
-        let end = history.partition_point(|entry| entry.effective_at() <= self.version_id);
-        (0..end).rev().map(|index| &history[index]).find(|entry| {
-            entry.effective_at() <= self.version_id
-                && entry
-                    .retired_at()
-                    .is_none_or(|retired| self.version_id < retired)
-        })
+        self.visible_metadata_index(history)
+            .map(|index| &history[index])
     }
 
     fn visible_relation_metadata<'history>(
@@ -295,8 +342,17 @@ impl<'state> InvariantStateView<'state> {
             crate::storage::substrate::VersionedRelationMetadata,
         >,
     ) -> Option<&'history crate::storage::substrate::VersionedRelationMetadata> {
+        self.visible_metadata_index(history)
+            .map(|index| &history[index])
+    }
+
+    fn visible_metadata_index<T: HistoricalMetadata + Clone>(
+        &self,
+        history: &crate::storage::substrate::SharedColumn<T>,
+    ) -> Option<usize> {
         let end = history.partition_point(|entry| entry.effective_at() <= self.version_id);
-        (0..end).rev().map(|index| &history[index]).find(|entry| {
+        (0..end).rev().find(|&index| {
+            let entry = &history[index];
             entry.effective_at() <= self.version_id
                 && entry
                     .retired_at()
