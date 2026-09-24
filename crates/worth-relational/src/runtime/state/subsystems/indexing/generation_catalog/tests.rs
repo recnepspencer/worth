@@ -95,6 +95,130 @@ fn reclamation_keeps_pinned_old_and_sibling_versions_and_cleans_bindings() {
     assert_eq!(catalog.all().len(), 3);
 }
 
+#[test]
+fn repeated_global_builds_at_one_live_basis_retain_only_selectable_generation() {
+    let mut catalog = GenerationCatalog::default();
+    for identity in 1..=128 {
+        catalog.publish(generation(identity, 1, 0, 7, 1, true));
+    }
+    let held_old_payload = catalog.generation(DerivedIndexGenerationId(1)).unwrap();
+    let branch = BranchId("branch-0".into());
+    let retained = crate::history::retention::RetainedIndexRoots {
+        live: BTreeSet::from([(branch.clone(), VersionId(7), SchemaVersionId(1))]),
+        latest_branches: BTreeSet::from([branch]),
+        ..Default::default()
+    };
+    let global = BTreeSet::from([DerivedIndexId(1)]);
+    assert_eq!(catalog.retained(&retained, &global).len(), 1);
+    assert_eq!(catalog.reclaim_except_versions(&retained, &global), 127);
+    assert_eq!(catalog.all().len(), 1);
+    assert_eq!(
+        id(catalog.exact(DerivedIndexId(1), None, VersionId(7), SchemaVersionId(1))),
+        Some(DerivedIndexGenerationId(128))
+    );
+    assert_eq!(
+        id(catalog.published_for_commit(DerivedIndexId(1), None, CommitId(107), VersionId(7))),
+        Some(DerivedIndexGenerationId(128))
+    );
+    assert_eq!(held_old_payload.generation_id, DerivedIndexGenerationId(1));
+    assert!(catalog.generation(DerivedIndexGenerationId(1)).is_none());
+}
+
+#[test]
+fn global_exact_reclamation_keeps_pinned_history_and_sibling_basis() {
+    let mut catalog = GenerationCatalog::default();
+    for value in [
+        generation(1, 1, 0, 3, 1, true),
+        generation(2, 1, 0, 3, 1, true),
+        generation(3, 1, 1, 4, 1, true),
+        generation(4, 1, 1, 4, 1, true),
+        generation(5, 1, 2, 5, 1, true),
+    ] {
+        catalog.publish(value);
+    }
+    let retained = crate::history::retention::RetainedIndexRoots {
+        retired: BTreeSet::from([(
+            BranchId("branch-0".into()),
+            VersionId(3),
+            SchemaVersionId(1),
+        )]),
+        historical_versions: BTreeSet::from([(VersionId(3), SchemaVersionId(1))]),
+        live: BTreeSet::from([
+            (
+                BranchId("branch-1".into()),
+                VersionId(4),
+                SchemaVersionId(1),
+            ),
+            (
+                BranchId("branch-2".into()),
+                VersionId(5),
+                SchemaVersionId(1),
+            ),
+        ]),
+        latest_branches: BTreeSet::from([BranchId("branch-1".into()), BranchId("branch-2".into())]),
+    };
+    let global = BTreeSet::from([DerivedIndexId(1)]);
+    assert_eq!(catalog.reclaim_except_versions(&retained, &global), 2);
+    for (version, selected) in [(3, 2), (4, 4), (5, 5)] {
+        assert_eq!(
+            id(catalog.exact(
+                DerivedIndexId(1),
+                None,
+                VersionId(version),
+                SchemaVersionId(1)
+            )),
+            Some(DerivedIndexGenerationId(selected))
+        );
+    }
+    assert_eq!(catalog.all().len(), 3);
+}
+
+#[test]
+fn failed_only_global_basis_retains_its_selected_typed_denial_candidate() {
+    let mut catalog = GenerationCatalog::default();
+    catalog.publish(generation(1, 1, 0, 7, 1, false));
+    catalog.publish(generation(2, 1, 0, 7, 1, false));
+    let retained = crate::history::retention::RetainedIndexRoots {
+        historical_versions: BTreeSet::from([(VersionId(7), SchemaVersionId(1))]),
+        ..Default::default()
+    };
+    let global = BTreeSet::from([DerivedIndexId(1)]);
+    assert_eq!(catalog.reclaim_except_versions(&retained, &global), 1);
+    assert_eq!(
+        id(catalog.candidate(DerivedIndexId(1), None, VersionId(7), SchemaVersionId(1))),
+        Some(DerivedIndexGenerationId(2))
+    );
+}
+
+#[test]
+fn failed_latest_does_not_displace_published_exact_at_retained_basis() {
+    let mut catalog = GenerationCatalog::default();
+    catalog.publish(generation(1, 1, 0, 7, 1, true));
+    catalog.publish(generation(2, 1, 0, 7, 1, true));
+    catalog.publish(generation(3, 1, 0, 7, 1, false));
+    let retained = crate::history::retention::RetainedIndexRoots {
+        live: BTreeSet::from([(
+            BranchId("branch-0".into()),
+            VersionId(7),
+            SchemaVersionId(1),
+        )]),
+        latest_branches: BTreeSet::from([BranchId("branch-0".into())]),
+        ..Default::default()
+    };
+    assert_eq!(
+        catalog.reclaim_except_versions(&retained, &BTreeSet::from([DerivedIndexId(1)])),
+        1
+    );
+    assert_eq!(
+        id(catalog.exact(DerivedIndexId(1), None, VersionId(7), SchemaVersionId(1))),
+        Some(DerivedIndexGenerationId(2))
+    );
+    assert_eq!(
+        id(catalog.latest(DerivedIndexId(1), None)),
+        Some(DerivedIndexGenerationId(3))
+    );
+}
+
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(64))]
     #[test]

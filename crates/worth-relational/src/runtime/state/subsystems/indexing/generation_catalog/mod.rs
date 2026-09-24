@@ -26,9 +26,9 @@ pub(super) struct GenerationCatalog {
 }
 
 impl GenerationCatalog {
-    /// Retain every exact root version, plus one current locator per index and
-    /// publishing branch for callers of latest_generation. Selection maps are
-    /// rebuilt from the surviving identities so no stale scope remains.
+    /// Retain selectable generations at exact root bases, plus one current
+    /// locator per index and publishing branch for latest-generation callers.
+    /// Selection maps are rebuilt so no stale scope remains.
     pub(super) fn reclaim_except_versions(
         &mut self,
         retained: &crate::history::retention::RetainedIndexRoots,
@@ -94,7 +94,7 @@ impl GenerationCatalog {
             .filter(|(id, generation)| {
                 let version = generation.applicability.version_id;
                 let schema = generation.applicability.schema_version;
-                let exact = if global_indexes.contains(&generation.index_id) {
+                let basis_retained = if global_indexes.contains(&generation.index_id) {
                     global_versions.contains(&(version, schema))
                 } else {
                     retained.historical_versions.contains(&(version, schema))
@@ -109,6 +109,18 @@ impl GenerationCatalog {
                             schema,
                         ))
                 };
+                let branch = (!global_indexes.contains(&generation.index_id))
+                    .then_some(&generation.applicability.branch_id);
+                let scope = self.scope(generation.index_id, branch);
+                let exact = basis_retained
+                    && (scope.and_then(|scope| scope.exact(version, schema)) == Some(**id)
+                        || scope.and_then(|scope| {
+                            scope.published_for_commit(generation.source_commit_id, version)
+                        }) == Some(**id)
+                        || (generation.status
+                            == crate::indexes::data::DerivedIndexPublicationStatus::BuildFailed
+                            && scope.and_then(|scope| scope.candidate(false, version, schema))
+                                == Some(**id)));
                 exact
                     || retained
                         .latest_branches

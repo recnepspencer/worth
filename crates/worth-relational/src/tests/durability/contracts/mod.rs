@@ -7,6 +7,7 @@ mod checkpoint_recovery;
 mod derived_index_checkpoint;
 mod descriptor_continuity;
 mod fork_provenance_checkpoint;
+mod global_generation_reclamation;
 mod legacy_segment_recovery;
 mod lineage_allocator_denials;
 mod lineage_artifact_recovery;
