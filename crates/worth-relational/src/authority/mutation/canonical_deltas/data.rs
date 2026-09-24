@@ -32,6 +32,14 @@ pub(crate) struct EvaluatedAspectBinding {
     pub(crate) changed: bool,
     pub(crate) aspect_shape: worth_foundational::AspectShape,
     pub(crate) evidence: CanonicalAspectDeltaEvidence,
+    /// Exact old/new field transitions when patch evidence replaces value evidence.
+    /// `None` retains the normal evidence projection; `Some([])` proves no field changed.
+    pub(crate) field_revision_changes: Option<
+        Vec<(
+            worth_foundational::facade::FieldKey,
+            crate::storage::data::RelationalFieldPresence,
+        )>,
+    >,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

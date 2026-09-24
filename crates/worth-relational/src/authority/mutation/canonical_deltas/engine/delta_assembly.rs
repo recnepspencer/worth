@@ -55,6 +55,7 @@ pub(super) fn evaluate_bindings(
             changed,
             aspect_shape: binding.aspect_shape(),
             evidence,
+            field_revision_changes: None,
         });
     }
     Ok(evaluated)

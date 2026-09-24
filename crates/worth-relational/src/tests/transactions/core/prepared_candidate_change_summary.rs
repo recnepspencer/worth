@@ -82,7 +82,7 @@ fn prepared_summary_reads_exact_whole_scalar_scope_without_publishing() {
 }
 
 #[test]
-fn unchanged_entity_update_has_empty_scope_but_advances_native_field_revision() {
+fn unchanged_entity_update_has_empty_scope_and_preserves_native_field_revision() {
     let runtime = runtime_with_test_schema();
     let entity = create_entity(&runtime, "summary-unchanged");
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
@@ -129,18 +129,11 @@ fn unchanged_entity_update_has_empty_scope_but_advances_native_field_revision() 
     );
     let before_fields = before.entity_arena.field_revisions_at(slot).unwrap();
     let after_fields = after.entity_arena.field_revisions_at(slot).unwrap();
-    assert_eq!(
-        before_fields.keys().collect::<Vec<_>>(),
-        after_fields.keys().collect::<Vec<_>>()
-    );
+    assert_eq!(before_fields, after_fields);
     assert_eq!(before_fields.len(), 1);
     assert_eq!(
         before_fields.values().next().unwrap().version(),
         summary.before_version
-    );
-    assert_eq!(
-        after_fields.values().next().unwrap().version(),
-        summary.after_version
     );
     runtime.discard_prepared_candidate(candidate).unwrap();
 }

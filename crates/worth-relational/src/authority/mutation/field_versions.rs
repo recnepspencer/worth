@@ -66,12 +66,29 @@ pub(super) fn write_field_versions_for_delta(
     }
 }
 
-fn changed_fields(
+pub(super) fn changed_fields(
     binding: &EvaluatedAspectBinding,
     structural: crate::publication::patch::data::RecordStructuralChange,
 ) -> Vec<(FieldKey, RelationalFieldPresence)> {
+    if let Some(changes) = &binding.field_revision_changes {
+        return changes.clone();
+    }
+    field_changes_for_evidence(
+        &binding.binding,
+        &binding.aspect_shape,
+        &binding.evidence,
+        structural,
+    )
+}
+
+pub(super) fn field_changes_for_evidence(
+    binding: &AspectBinding,
+    aspect_shape: &AspectShape,
+    evidence: &CanonicalAspectDeltaEvidence,
+    structural: crate::publication::patch::data::RecordStructuralChange,
+) -> Vec<(FieldKey, RelationalFieldPresence)> {
     use RelationalFieldPresence::{Absent, Present};
-    match (&binding.aspect_shape, &binding.evidence) {
+    match (aspect_shape, evidence) {
         (
             AspectShape::Struct(shape),
             CanonicalAspectDeltaEvidence::StructAspectValueTransition {
@@ -104,7 +121,7 @@ fn changed_fields(
                 new_value,
                 ..
             },
-        ) => bound_field(&binding.binding)
+        ) => bound_field(binding)
             .filter(|_| old_value != new_value || starts_new_record(structural))
             .map(|field| {
                 vec![(
@@ -116,7 +133,7 @@ fn changed_fields(
         (
             AspectShape::Scalar(_),
             CanonicalAspectDeltaEvidence::AuthoritativePatch { operation, .. },
-        ) => bound_field(&binding.binding)
+        ) => bound_field(binding)
             .map(|field| {
                 vec![(
                     field.clone(),

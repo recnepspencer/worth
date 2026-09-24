@@ -89,6 +89,7 @@ fn scalar_delta(aspect_key: AspectKey, value: &str) -> CanonicalRecordAspectDelt
                         FoundationalInternedString::from(value),
                     )),
                 },
+                field_revision_changes: None,
             },
             EvaluatedAspectBinding {
                 aspect_key: target_key.clone(),
@@ -108,6 +109,7 @@ fn scalar_delta(aspect_key: AspectKey, value: &str) -> CanonicalRecordAspectDelt
                     old: None,
                     new: None,
                 },
+                field_revision_changes: None,
             },
             EvaluatedAspectBinding {
                 aspect_key: lifecycle_key.clone(),
@@ -124,6 +126,7 @@ fn scalar_delta(aspect_key: AspectKey, value: &str) -> CanonicalRecordAspectDelt
                     locator: authoritative_value_locator(&lifecycle_key),
                     transition: LifecycleTransitionClass::NoTransition,
                 },
+                field_revision_changes: None,
             }
         ],
         contains_opaque_aspect: false,

@@ -61,6 +61,7 @@ fn authoritative_patch_evaluated_bindings(
                 changed: true,
                 aspect_shape: binding.aspect_shape(),
                 evidence,
+                field_revision_changes: None,
             });
         }
     }
