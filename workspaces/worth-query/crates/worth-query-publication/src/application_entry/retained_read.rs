@@ -44,7 +44,10 @@ impl WorthQueryApplicationReadObservation {
         &self,
         application: &'a worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     ) -> Result<
-        worth_query_execution::facade::primary_graph::WorthQuerySelectedProductOperation<'a, Schema>,
+        worth_query_execution::facade::primary_graph::WorthQuerySelectedProductOperation<
+            'a,
+            Schema,
+        >,
         worth_query_execution::facade::primary_graph::WorthQueryProductBranchAdmissionDenial,
     >
     where

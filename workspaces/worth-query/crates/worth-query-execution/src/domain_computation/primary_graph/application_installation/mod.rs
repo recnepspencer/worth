@@ -86,6 +86,9 @@ where
 {
     use WorthQueryInMemoryApplicationDenial as Denial;
 
+    let trace_restore = checkpoint.is_some() && std::env::var_os("WORTH_REOPEN_TRACE").is_some();
+    let restore_started = std::time::Instant::now();
+
     let package = WorthQueryPortableDomainPackage::new(WorthQueryPortableDomainIdentity::new(
         Schema::OWNER,
         Schema::MAJOR,
@@ -120,6 +123,12 @@ where
         Contributions,
     >(&installed, configuration, contracts)
     .map_err(Denial::Contributions)?;
+    if trace_restore {
+        eprintln!(
+            "query restore schema and contributions: {:?}",
+            restore_started.elapsed()
+        );
+    }
     let (mut invariants, handlers, producers, conditionals) =
         configured.into_parts().map_err(Denial::Contributions)?;
     let activation = super::program_occurrence::WorthQueryProgramActivationCell::unpublished();
@@ -150,6 +159,12 @@ where
                 detail,
             ))
         })?;
+    if trace_restore {
+        eprintln!(
+            "query restore checkpoint decode: {:?}",
+            restore_started.elapsed()
+        );
+    }
     let restoring = decoded_checkpoint.is_some();
     let mut graph = match decoded_checkpoint.as_ref() {
         Some(checkpoint) => authority.prepare_primary_graph_from_native_checkpoint_with_invariants(
@@ -169,6 +184,12 @@ where
         ),
     }
     .map_err(Denial::Graph)?;
+    if trace_restore {
+        eprintln!(
+            "query restore graph preparation: {:?}",
+            restore_started.elapsed()
+        );
+    }
     graph.mutation_handlers = handlers;
     if restoring {
         if let Some(support) = &admitted_program_support {
@@ -238,6 +259,12 @@ where
             (application, installed_conditionals)
         };
     application.installed_producers = producers;
+    if trace_restore {
+        eprintln!(
+            "query restore runtime publication: {:?}",
+            restore_started.elapsed()
+        );
+    }
     application.installed_conditionals = installed_conditionals;
     if let Some(support) = admitted_program_support {
         application
@@ -275,5 +302,11 @@ where
         })
         .transpose()?
         .unwrap_or_default();
+    if trace_restore {
+        eprintln!(
+            "query restore accepted outputs: {:?}",
+            restore_started.elapsed()
+        );
+    }
     Ok(application)
 }
