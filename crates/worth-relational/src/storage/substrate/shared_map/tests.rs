@@ -35,6 +35,28 @@ fn assert_balanced<K: Ord + Copy, V: Clone>(
 }
 
 #[test]
+fn cold_sorted_construction_matches_ordered_map_and_remains_mutable() {
+    for keys in [
+        vec![],
+        vec![0],
+        (0..255).collect(),
+        (0..255).map(|key| key * 17).collect(),
+    ] {
+        let values = keys
+            .into_iter()
+            .map(|key| (key, key + 1))
+            .collect::<Vec<_>>();
+        let expected = values.iter().copied().collect::<BTreeMap<_, _>>();
+        let mut map = SharedMap::from_sorted_unique(values);
+        assert!(map.iter().eq(expected.iter()));
+        assert_balanced(&map.root);
+        map.insert(10_000, 10_001);
+        assert_eq!(map.get(&10_000), Some(&10_001));
+        assert_balanced(&map.root);
+    }
+}
+
+#[test]
 fn removed_transient_nodes_still_count_as_copy_work() {
     let original: SharedMap<u64, u64> = [(1, 10), (2, 20)].into_iter().collect();
     let mut changed = original.clone();

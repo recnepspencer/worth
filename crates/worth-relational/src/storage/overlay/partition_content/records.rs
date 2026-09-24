@@ -27,6 +27,8 @@ impl RecordContentIndex {
         K::Meta: serde::Serialize,
     {
         let mut hashed_values = 0;
+        let mut cold_records = previous.is_none().then(Vec::new);
+        let mut cold_histories = previous.is_none().then(Vec::new);
         for slot in slots {
             let physical = arena
                 .physical_index(slot)
@@ -74,8 +76,24 @@ impl RecordContentIndex {
                 .unwrap()
                 .checked_add(history.allocation_bytes())
                 .unwrap();
-            self.histories.insert(slot as u64, history);
-            self.records.set(slot as u128, Some(digest));
+            if let Some(entries) = &mut cold_histories {
+                entries.push((slot as u64, history));
+            } else {
+                self.histories.insert(slot as u64, history);
+            }
+            if let Some(entries) = &mut cold_records {
+                entries.push((slot as u128, digest));
+            } else {
+                self.records.set(slot as u128, Some(digest));
+            }
+        }
+        if let Some(mut entries) = cold_records {
+            entries.sort_unstable_by_key(|(slot, _)| *slot);
+            self.records = DigestIndex::from_sorted_entries(&entries);
+        }
+        if let Some(mut entries) = cold_histories {
+            entries.sort_unstable_by_key(|(slot, _)| *slot);
+            self.histories = SharedMap::from_sorted_unique(entries);
         }
         for (word, value) in arena
             .live_bitset

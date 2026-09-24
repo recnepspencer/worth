@@ -12,6 +12,28 @@ pub(super) struct MapNode<K: Ord + Copy, V: Clone> {
 }
 
 impl<K: Ord + Copy, V: Clone> MapNode<K, V> {
+    pub(super) fn from_sorted_unique(
+        values: &mut impl Iterator<Item = (K, V)>,
+        len: usize,
+    ) -> Option<Arc<Self>> {
+        if len == 0 {
+            return None;
+        }
+        let left_len = len / 2;
+        let left = Self::from_sorted_unique(values, left_len);
+        let (key, value) = values.next().expect("sorted input length is exact");
+        let right = Self::from_sorted_unique(values, len - left_len - 1);
+        let height = 1 + height(&left).max(height(&right));
+        Some(Arc::new(Self {
+            key,
+            value: Arc::new(value),
+            left,
+            right,
+            len,
+            height,
+        }))
+    }
+
     fn detach<'a>(this: &'a mut Arc<Self>, copied_bytes: &mut u64) -> &'a mut Self {
         if !this.is_unique() {
             *copied_bytes = copied_bytes.saturating_add(std::mem::size_of::<Self>() as u64);

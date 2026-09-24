@@ -21,6 +21,15 @@ struct Node {
 }
 
 impl DigestIndex {
+    /// Cold reconstruction of the same key-shaped Patricia commitment without
+    /// copying an immutable path for every successive insertion.
+    pub(super) fn from_sorted_entries(entries: &[(u128, [u8; 32])]) -> Self {
+        debug_assert!(entries.windows(2).all(|pair| pair[0].0 < pair[1].0));
+        Self {
+            root: (!entries.is_empty()).then(|| build_sorted(entries)),
+        }
+    }
+
     pub(super) fn digest(&self) -> [u8; 32] {
         self.root
             .as_ref()
@@ -54,6 +63,32 @@ impl DigestIndex {
             walk(root, visitor);
         }
     }
+}
+
+fn build_sorted(entries: &[(u128, [u8; 32])]) -> Arc<Node> {
+    if let [(key, digest)] = entries {
+        return Arc::new(Node {
+            key: *key,
+            bit: 128,
+            digest: hash(1, &[&key.to_be_bytes(), digest]),
+            children: None,
+            nodes: 1,
+        });
+    }
+    let bit = (entries[0].0 ^ entries[entries.len() - 1].0).leading_zeros();
+    let split = entries.partition_point(|(key, _)| direction(*key, bit) == 0);
+    let mut parent = Node {
+        key: entries[0].0,
+        bit,
+        digest: [0; 32],
+        children: Some([
+            build_sorted(&entries[..split]),
+            build_sorted(&entries[split..]),
+        ]),
+        nodes: 0,
+    };
+    refresh(&mut parent);
+    Arc::new(parent)
 }
 
 fn insert(root: Option<Arc<Node>>, key: u128, digest: [u8; 32]) -> Arc<Node> {
