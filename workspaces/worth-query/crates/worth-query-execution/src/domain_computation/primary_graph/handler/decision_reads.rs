@@ -98,10 +98,9 @@ where
         Entity:
             ApplicationEntityMarkerIdentity<Schema> + OperationReads<Binding::Operation> + 'static,
     {
-        match self.prior_output_if_present(preserved)? {
-            Some(identity) => Ok(identity),
-            None => self.prior_output(created),
-        }
+        select_prior_preserved_or_created(self.prior_output_if_present(preserved), || {
+            self.prior_output(created)
+        })
     }
 
     /// Resolve the complete live inventory of one declared prior output family.
@@ -334,3 +333,16 @@ where
             .map_err(HandlerExecutionDenial::new)
     }
 }
+
+fn select_prior_preserved_or_created<Value, Error>(
+    preserved: Result<Option<Value>, Error>,
+    created: impl FnOnce() -> Result<Value, Error>,
+) -> Result<Value, Error> {
+    match preserved? {
+        Some(value) => Ok(value),
+        None => created(),
+    }
+}
+
+#[cfg(test)]
+mod prior_output_selection_tests;
