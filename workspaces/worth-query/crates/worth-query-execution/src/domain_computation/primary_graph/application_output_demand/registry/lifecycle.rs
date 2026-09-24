@@ -228,17 +228,27 @@ impl WorthQueryOutputDemandRegistry {
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         let remove = state.records.get_mut(&interest.key).is_some_and(|record| {
             record.interests = record.interests.saturating_sub(1);
+            // Keep a ready ordinary output for an equivalent later demand.
+            // Source supersession and occurrence retirement remove it; closing
+            // the handle releases only the caller's interest.
+            let ready = matches!(&record.state, DemandState::Output(output)
+                if matches!(output.checkpoint, Some(WorthQueryOutputCheckpoint::Ready(_))));
+            let stopped = matches!(record.state, DemandState::Failed(_))
+                || matches!(&record.state, DemandState::Output(output)
+                    if matches!(output.advancement, WorthQueryOutputAdvancement::Stopped { .. }));
             record.interests == 0
-                && (!record.required
-                    || matches!(record.state, DemandState::Failed(_))
-                    || matches!(&record.state, DemandState::Output(output)
-                        if matches!(output.advancement, WorthQueryOutputAdvancement::Stopped { .. })))
+                && ((!record.required && !ready) || stopped)
                 && record.performed_source.is_none()
                 && match &record.state {
                     DemandState::Scheduling | DemandState::Running => false,
                     DemandState::Output(output) => {
-                        matches!(output.advancement, WorthQueryOutputAdvancement::Stopped { .. })
-                            || matches!(output.checkpoint, Some(WorthQueryOutputCheckpoint::Ready(_)))
+                        matches!(
+                            output.advancement,
+                            WorthQueryOutputAdvancement::Stopped { .. }
+                        ) || matches!(
+                            output.checkpoint,
+                            Some(WorthQueryOutputCheckpoint::Ready(_))
+                        )
                     }
                     _ => true,
                 }
