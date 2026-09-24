@@ -32,16 +32,18 @@ fn immediate_and_retried_cleanup_emit_the_same_captured_shutdown_evidence() {
 fn queued_host_readiness_overlaps_real_application_driver_shutdown() {
     use crate::certification_support::{ScriptedPresentationHost, ScriptedSurfaceCompletion};
     use crate::facade::mounted::{UiHostSurfaceCancellationOutcome, UiMountedFrameOutcome};
-    use crate::runtime::tests::active_application_session_test_support::source_backed_component_app_with_host;
+    use crate::runtime::tests::active_application_session_test_support::source_backed_component_app_with_host_and_viewport_allocation;
 
     let host = ScriptedPresentationHost::native_display();
     host.push_in_flight(
         vec![ScriptedSurfaceCompletion::Pending],
         UiHostSurfaceCancellationOutcome::CancelledBeforeEffects,
     );
-    let mut shell = source_backed_component_app_with_host(host.clone())
+    let mut shell = source_backed_component_app_with_host_and_viewport_allocation(host.clone())
         .launch_native_surface()
         .expect("native certification shell should launch");
+    shell.observe_native_viewport_readiness([800, 600], 1_000, false);
+    super::super::program_progress::layout::complete_program_layout(&mut shell).unwrap();
     let Ok(UiMountedFrameOutcome::InFlight(in_flight)) = shell.present_frame(2, 0) else {
         panic!("scripted host must retain a real in-flight presentation")
     };

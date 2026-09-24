@@ -8,6 +8,7 @@ pub(crate) enum UiNativeObservationIngressSettlement {
 
 pub(crate) struct UiNativeObservationDrainReport {
     outcomes: Box<[UiHostInteractionIngressOutcome]>,
+    dismissals: Box<[super::WorthUiAdmittedPortalDismissal]>,
     reachability: worth_ui_host_native::UiNativeInputReachability,
     applied_batches: usize,
     duplicate_batches: usize,
@@ -46,8 +47,17 @@ impl UiNativeObservationIngressSettlement {
         outcomes: Box<[UiHostInteractionIngressOutcome]>,
         reachability: worth_ui_host_native::UiNativeInputReachability,
     ) -> Self {
+        Self::with_dismissals(outcomes, Box::new([]), reachability)
+    }
+
+    pub(crate) fn with_dismissals(
+        outcomes: Box<[UiHostInteractionIngressOutcome]>,
+        dismissals: Box<[super::WorthUiAdmittedPortalDismissal]>,
+        reachability: worth_ui_host_native::UiNativeInputReachability,
+    ) -> Self {
         let mut report = UiNativeObservationDrainReport {
             outcomes,
+            dismissals,
             reachability,
             applied_batches: 0,
             duplicate_batches: 0,
@@ -72,10 +82,23 @@ impl UiNativeObservationIngressSettlement {
         }
     }
 
+    #[cfg(test)]
     pub(crate) fn into_outcomes(self) -> Box<[UiHostInteractionIngressOutcome]> {
         match self {
             Self::Drained(report) => report.outcomes,
             Self::DrainDenied(_) => Box::new([]),
+        }
+    }
+
+    pub(crate) fn into_routing_parts(
+        self,
+    ) -> (
+        Box<[UiHostInteractionIngressOutcome]>,
+        Box<[super::WorthUiAdmittedPortalDismissal]>,
+    ) {
+        match self {
+            Self::Drained(report) => (report.outcomes, report.dismissals),
+            Self::DrainDenied(_) => (Box::new([]), Box::new([])),
         }
     }
 

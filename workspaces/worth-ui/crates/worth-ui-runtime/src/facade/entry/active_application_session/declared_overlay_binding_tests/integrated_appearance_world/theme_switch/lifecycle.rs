@@ -29,7 +29,7 @@ fn assert_accepted_motion(world: &mut World) {
             world
                 .session
                 .mounted
-                .accepted_motion_for_command(presentation, command.identity())
+                .accepted_motion_for_command(presentation.basis(), command.identity())
                 .unwrap()
                 .map(|sample| sample.opacity_units()),
             Some(57_343)

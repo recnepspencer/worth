@@ -17,7 +17,9 @@ impl super::UiMotionRuntimeState {
     ) -> Option<super::UiMotionCommitReceipt> {
         let target = request.successor().target();
         if target.scope() != super::UiMotionTargetScope::ScrollContents
-            || publication.presentation_for_surface(target.semantic_surface())
+            || publication
+                .presentation_for_surface(target.semantic_surface())
+                .map(|displayed| displayed.basis())
                 != Some(request.successor().presentation())
         {
             return None;

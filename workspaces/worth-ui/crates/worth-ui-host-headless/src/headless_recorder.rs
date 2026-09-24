@@ -8,9 +8,8 @@ use worth_ui_host_contract::{
     UiHostSurfacePresentationMode, UiHostSurfacePresentationOutcome,
     UiHostSurfaceRegistrationDenial, UiHostSurfaceRegistrationRequest, UiMountedCompletedEffects,
     UiMountedEffectFamily, UiMountedFrameConsumptionView, UiMountedPresentationProductionCost,
-    UiMountedSurfacePresentationCompletion, UiViewportExtentObservation,
-    WorthUiHostCapabilityReport, WorthUiHostContract, WorthUiHostMechanicsAdapter,
-    WorthUiMeasurementHostAdapter,
+    UiViewportExtentObservation, WorthUiHostCapabilityReport, WorthUiHostContract,
+    WorthUiHostMechanicsAdapter, WorthUiMeasurementHostAdapter,
 };
 
 use super::headless_measurement::UiHeadlessMeasurementEnvironment;
@@ -360,7 +359,7 @@ impl WorthUiHostMechanicsAdapter for WorthUiHeadlessRecorder {
         let mut retained = retained.expect("admitted work must retain current presentation state");
         retained.epoch = Some(epoch);
         state.retained_presentations.insert(binding, retained);
-        UiHostSurfacePresentationOutcome::Presented(UiMountedSurfacePresentationCompletion::new(
+        UiHostSurfacePresentationOutcome::Presented(view.acknowledge_presented(
             UiHostSurfacePresentationMode::RecordOnly,
             epoch,
             UiMountedCompletedEffects::new(vec![UiMountedEffectFamily::RecordedProjection]),

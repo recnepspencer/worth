@@ -20,7 +20,7 @@ pub(super) fn observe(
     if !state.admit_input(UiNativeInputObservationEventFamily::Scroll) {
         return Some(state.rejection_disposition());
     }
-    let Some(profile) = state.profile else {
+    let Some(profile) = state.profile.profile() else {
         return Some(state.terminal_disposition(UiNativeInputObservationStop::MissingEventProfile));
     };
     let (x_subpixels, y_subpixels, precision) =

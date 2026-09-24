@@ -10,7 +10,9 @@ const TOLERANCE: f64 = 2.0e-3;
 /// already moving. The successor curve is fully determined by the interrupted
 /// sample's position, that rate, the new endpoint and the settle horizon, so
 /// asserting every later sample against an independently written Hermite curve
-/// proves position *and* velocity continuity at once.
+/// proves position *and* velocity continuity at once. The curve's clock runs
+/// from the interrupted sample, which the screen already shows: the successor's
+/// first frame moves on from it rather than holding it for a frame.
 #[test]
 fn a_retarget_at_one_third_of_the_horizon_departs_at_the_interrupted_rate() {
     let world = World::new();
@@ -37,14 +39,13 @@ fn a_retarget_at_one_third_of_the_horizon_departs_at_the_interrupted_rate() {
         .install(world.settle(2, -60.0, -120.0, Some(retarget_from_current_sample())))
         .unwrap();
     assert_close(
-        f64::from(installed.sample().unwrap().geometry().unwrap().components()[1]),
+        f64::from(installed.sample().geometry().unwrap().components()[1]),
         interrupted,
         "the successor begins at the accepted sample's position",
     );
 
-    let start = interruption_tick + 1;
-    for offset in [0_u64, 1, 19, 59, 119, u64::from(SETTLE_TICKS)] {
-        let sampled = translation_y(&commit_at(&mut sampler, start + offset, &world));
+    for offset in [1_u64, 2, 20, 60, 119, u64::from(SETTLE_TICKS)] {
+        let sampled = translation_y(&commit_at(&mut sampler, interruption_tick + offset, &world));
         assert_close(
             sampled,
             hermite_position(
@@ -243,7 +244,7 @@ fn commit_at(
     world: &World,
 ) -> UiPresentationMotionSamplingReceipt {
     let prepared = sampler.prepare_tick(tick, world.presentation).unwrap();
-    sampler.commit_prepared(prepared)
+    sampler.commit_prepared(prepared.presented_for_certification())
 }
 
 fn retarget_from_current_sample() -> crate::runtime::motion::UiMotionRetargetDisposition {

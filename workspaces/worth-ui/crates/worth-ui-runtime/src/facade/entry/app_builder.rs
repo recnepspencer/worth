@@ -39,9 +39,16 @@ pub struct WorthUiApplicationBuilder<
     intent_application_facts: crate::declaration::UiIntentApplicationFactPlan,
     intent_execution_bindings: crate::runtime::intent_execution::UiIntentExecutionBindingPlan,
     service_policy_defaults: crate::declaration::UiServicePolicyDefaults,
-    font_collection: Option<std::sync::Arc<worth_ui_text::UiGlobalFontCollection>>,
+    font_collection: UiApplicationFontSource,
     change_profile: ChangeProfileState,
     intent_wiring: IntentWiringState,
+}
+
+/// Where the frozen application's font collection comes from. The qualified
+/// profile is admitted only at freeze, so an override never pays for it.
+enum UiApplicationFontSource {
+    QualifiedProfile,
+    Application(std::sync::Arc<worth_ui_text::UiGlobalFontCollection>),
 }
 
 pub struct UiChangeProfileMissing {
@@ -88,7 +95,7 @@ impl WorthUiApplicationBuilder<UiChangeProfileMissing, UiIntentWiringSatisfied> 
             intent_execution_bindings:
                 crate::runtime::intent_execution::UiIntentExecutionBindingPlan::new(),
             service_policy_defaults: Default::default(),
-            font_collection: None,
+            font_collection: UiApplicationFontSource::QualifiedProfile,
             change_profile: UiChangeProfileMissing { _sealed: () },
             intent_wiring: UiIntentWiringSatisfied { _sealed: () },
         }
@@ -222,7 +229,7 @@ impl<ChangeProfileState, IntentWiringState>
         mut self,
         collection: std::sync::Arc<worth_ui_text::UiGlobalFontCollection>,
     ) -> Self {
-        self.font_collection = Some(collection);
+        self.font_collection = UiApplicationFontSource::Application(collection);
         self
     }
 

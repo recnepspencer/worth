@@ -1,16 +1,19 @@
 mod hit_scroll_refresh;
+mod portal_overlay;
 
 use worth_ui_host_contract::{
-    UiHostPresentationEpoch, UiMountedFrameIdentity, UiMountedInstanceIdentity,
-    UiMountedNodeReceiptIdentity, UiSurfaceBindingGeneration,
+    UiMountedFrameIdentity, UiMountedInstanceIdentity, UiMountedNodeReceiptIdentity,
+    UiSurfaceBindingGeneration,
 };
 
+use crate::mounting::presentation::UiDisplayedSurfaceBasis;
+
+/// What a host acknowledgement proved on screen for one surface binding. It is
+/// only ever written from an admitted presentation witness.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 struct UiRetainedPresentationBinding {
     surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
-    binding: UiSurfaceBindingGeneration,
-    host_surface: worth_ui_host_contract::UiHostSurfaceIdentity,
-    epoch: UiHostPresentationEpoch,
+    displayed: UiDisplayedSurfaceBasis,
 }
 
 impl UiRetainedPresentationBinding {
@@ -18,8 +21,9 @@ impl UiRetainedPresentationBinding {
         &self,
         presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
     ) -> Result<(), UiPresentedFrameBasisDenial> {
-        if self.binding != presentation.binding()
-            || self.host_surface != presentation.host_surface()
+        let displayed = self.displayed.basis();
+        if displayed.binding() != presentation.binding()
+            || displayed.host_surface() != presentation.host_surface()
         {
             return Err(UiPresentedFrameBasisDenial::BindingNotPresented);
         }
@@ -28,10 +32,10 @@ impl UiRetainedPresentationBinding {
 
     fn update_epoch(
         &mut self,
-        presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
+        displayed: UiDisplayedSurfaceBasis,
     ) -> Result<(), UiPresentedFrameBasisDenial> {
-        self.require_host(presentation)?;
-        self.epoch = presentation.epoch();
+        self.require_host(displayed.basis())?;
+        self.displayed = displayed;
         Ok(())
     }
 }
@@ -98,6 +102,10 @@ impl UiRetainedPresentedFrame {
         Some(())
     }
 
+    pub(super) fn visual_regions(&self) -> super::super::UiMountedVisualRegionBasis {
+        self.visual_regions.clone()
+    }
+
     pub(super) fn hit_index(&self) -> crate::mounting::presented_hit_index::UiPresentedHitIndex {
         self.visual_regions.presented_hits.clone()
     }
@@ -111,6 +119,15 @@ impl UiRetainedPresentedFrame {
         self.current_presentations().collect()
     }
 
+    pub(super) fn displayed_for_surface(
+        &self,
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+    ) -> Option<UiDisplayedSurfaceBasis> {
+        self.presentation_bindings
+            .iter()
+            .find_map(|entry| (entry.surface == surface).then_some(entry.displayed))
+    }
+
     pub(super) fn current_presentations(
         &self,
     ) -> impl Iterator<
@@ -119,17 +136,9 @@ impl UiRetainedPresentedFrame {
             worth_ui_host_contract::UiHostObservationPresentationBasis,
         ),
     > + '_ {
-        self.presentation_bindings.iter().map(|entry| {
-            (
-                entry.surface,
-                worth_ui_host_contract::UiHostObservationPresentationBasis::new(
-                    entry.host_surface,
-                    self.frame,
-                    entry.binding,
-                    entry.epoch,
-                ),
-            )
-        })
+        self.presentation_bindings
+            .iter()
+            .map(|entry| (entry.surface, entry.displayed.basis()))
     }
 
     pub(super) fn receipts(&self) -> &super::super::UiMountedNodeReceiptBasis {
@@ -251,7 +260,11 @@ impl UiRetainedPresentedFrame {
             .presentation_bindings
             .iter()
             .copied()
-            .filter(|entry| self.bindings.binary_search(&entry.binding).is_ok())
+            .filter(|entry| {
+                self.bindings
+                    .binary_search(&entry.displayed.binding())
+                    .is_ok()
+            })
             .collect();
     }
 
@@ -265,9 +278,7 @@ impl UiRetainedPresentedFrame {
             .iter()
             .map(|surface| UiRetainedPresentationBinding {
                 surface: surface.semantic_surface(),
-                binding: surface.binding(),
-                host_surface: surface.host_surface(),
-                epoch: surface.epoch(),
+                displayed: surface.displayed_basis(),
             })
             .collect::<Vec<_>>();
         presentation_bindings.extend(self.presentation_bindings.iter().copied().filter(|old| {
@@ -275,23 +286,26 @@ impl UiRetainedPresentedFrame {
                 .surfaces()
                 .iter()
                 .any(|surface| surface.semantic_surface() == old.surface)
-                && self.bindings.binary_search(&old.binding).is_ok()
+                && self
+                    .bindings
+                    .binary_search(&old.displayed.binding())
+                    .is_ok()
         }));
-        presentation_bindings.sort_by_key(|entry| entry.binding);
+        presentation_bindings.sort_by_key(|entry| entry.displayed.binding());
         self.presentation_bindings = presentation_bindings.into_boxed_slice();
         self.presentation = Some(presentation);
     }
 
     pub(crate) fn update_presentation_epoch(
         &mut self,
-        presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
+        presentation: UiDisplayedSurfaceBasis,
     ) -> Result<(), UiPresentedFrameBasisDenial> {
         if presentation.frame() != self.frame {
             return Err(UiPresentedFrameBasisDenial::Unknown);
         }
         let index = self
             .presentation_bindings
-            .binary_search_by_key(&presentation.binding(), |entry| entry.binding)
+            .binary_search_by_key(&presentation.binding(), |entry| entry.displayed.binding())
             .map_err(|_| UiPresentedFrameBasisDenial::BindingNotPresented)?;
         self.presentation_bindings[index].update_epoch(presentation)
     }
@@ -321,12 +335,12 @@ impl UiRetainedPresentedFrame {
         }
         let retained_binding = self
             .presentation_bindings
-            .binary_search_by_key(&binding, |entry| entry.binding)
+            .binary_search_by_key(&binding, |entry| entry.displayed.binding())
             .ok()
             .map(|index| &self.presentation_bindings[index])
             .ok_or(UiPresentedFrameBasisDenial::BindingNotPresented)?;
         retained_binding.require_host(presentation)?;
-        if retained_binding.epoch != presentation.epoch() {
+        if retained_binding.displayed.basis().epoch() != presentation.epoch() {
             return Err(UiPresentedFrameBasisDenial::PresentationEpochMismatch);
         }
         match (mounted_instance, node_receipt) {
@@ -346,41 +360,4 @@ impl UiRetainedPresentedFrame {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn wrong_host_cannot_update_a_retained_binding_epoch() {
-        use worth_ui_host_contract::*;
-        let mut retained = UiRetainedPresentationBinding {
-            surface: UiSemanticSurfaceIdentity::mint_unbound().unwrap(),
-            binding: UiSurfaceBindingGeneration::mint_unbound().unwrap(),
-            host_surface: UiHostSurfaceIdentity::mint_unbound().unwrap(),
-            epoch: UiHostPresentationEpoch::issued_by_host(1),
-        };
-        let before = retained;
-        let frame = UiMountedFrameIdentity::mint_unbound().unwrap();
-        let wrong = UiHostObservationPresentationBasis::new(
-            UiHostSurfaceIdentity::mint_unbound().unwrap(),
-            frame,
-            retained.binding,
-            UiHostPresentationEpoch::issued_by_host(2),
-        );
-        assert_eq!(
-            retained.update_epoch(wrong),
-            Err(UiPresentedFrameBasisDenial::BindingNotPresented)
-        );
-        assert_eq!(retained, before);
-        let right = UiHostObservationPresentationBasis::new(
-            retained.host_surface,
-            frame,
-            retained.binding,
-            wrong.epoch(),
-        );
-        retained.update_epoch(right).unwrap();
-        assert_eq!(retained.epoch, right.epoch());
-        assert_eq!(
-            (retained.binding, retained.host_surface),
-            (before.binding, before.host_surface)
-        );
-    }
-}
+mod tests;

@@ -7,7 +7,7 @@ use crate::source_watch::{PlatformPulseSourceEvent, PlatformPulseSourceWatch};
 impl PlatformPulseApplicationRuntime {
     pub(super) fn poll_source(&mut self) {
         while source_poll_admitted(
-            self.terminal_error.is_some(),
+            self.terminal.is_stopped(),
             self.pending_managed_rebind.is_some(),
         ) {
             if !self

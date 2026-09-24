@@ -10,11 +10,11 @@ use worth_ui::facade::{
     rebind::{UiRebindExecutionPolicy, UiRebindExecutionRequest},
     source::{WorthUiSourceIngressExt, WorthUiSourceProvider, WorthUiWatcherEvent},
 };
+use worth_ui_runtime::certification_support::ScriptedPresentationOutcome;
 use worth_ui_runtime::certification_support::{presented_completion, ScriptedPresentationHost};
 use worth_ui_runtime::facade::execution::WorthUiFrameBoundary;
 use worth_ui_runtime::facade::mounted::{
-    UiHostSurfaceCancellationOutcome, UiHostSurfacePresentationOutcome, UiMountedFrameRequest,
-    UiPresentationDeadline,
+    UiHostSurfaceCancellationOutcome, UiMountedFrameRequest, UiPresentationDeadline,
 };
 use worth_ui_test_support::{
     WorthUiFrameworkTurnCertificationExt, WorthUiPortalRuntimeCertificationExt,
@@ -195,7 +195,7 @@ fn replacement_denies_in_flight_portal_exit_before_removing_portal_authority() {
 #[test]
 fn replacement_denies_indeterminate_portal_exit_before_removing_portal_authority() {
     let (mut world, candidate_facts, host, boundary) = world_with_retained_exit(|host| {
-        host.push_presentation(UiHostSurfacePresentationOutcome::PresentationIndeterminate);
+        host.push_presentation(ScriptedPresentationOutcome::PresentationIndeterminate);
     });
     settle_to_physical_pending(&mut world);
     assert_replacement_denied_with_pending(

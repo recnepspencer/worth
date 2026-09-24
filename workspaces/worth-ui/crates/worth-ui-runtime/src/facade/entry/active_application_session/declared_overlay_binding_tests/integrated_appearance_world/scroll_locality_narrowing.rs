@@ -221,15 +221,28 @@ fn accepted_samples_visit_only_indexed_content_and_its_owned_regions() {
         let prepared = scroll
             .world
             .session
-            .prepare_motion_tick(tick, basis)
+            .prepare_motion_tick(
+                tick,
+                scroll
+                    .world
+                    .session
+                    .mounted
+                    .current_displayed_presentation(basis)
+                    .expect("the retained record displays this basis"),
+            )
             .expect("armed settle prepares its tick");
         if !prepared.receipt().samples().is_empty() {
             scroll.world.host.push_native_display_presented();
         }
-        scroll
-            .world
-            .session
-            .present_prepared_motion_tick(prepared, basis);
+        scroll.world.session.present_prepared_motion_tick(
+            prepared,
+            scroll
+                .world
+                .session
+                .mounted
+                .current_displayed_presentation(basis)
+                .expect("the retained record displays this basis"),
+        );
         // Completion now reconciles accepted Scroll geometry before returning.
         // A second explicit settle would overwrite this frame's locality work
         // with the equal-pose (zero-work) retry.

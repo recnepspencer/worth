@@ -51,9 +51,8 @@ impl UiPointerPresenceOwner {
     > {
         self.admit_pointer(pointer, successor.kind)?;
         let prior = self.pointers.get(&pointer);
-        let prior_surface = prior.and_then(|record| record.surface);
-        let previous = prior.and_then(|record| record.target());
-        let previous_node_receipt = prior.and_then(|record| record.node_receipt());
+        let prior_surface = prior.map(|record| record.surface);
+        let previous_target = prior.and_then(|record| record.target);
         let record_changed = prior.is_none_or(|record| {
             record.surface != successor.surface
                 || record.target() != successor.target()
@@ -67,11 +66,9 @@ impl UiPointerPresenceOwner {
         });
         let current_is_primary = primary_pointer_admitted(successor.kind);
         let primary_changed = prior_was_primary
-            && (prior_surface != successor.surface || !current_is_primary)
+            && (prior_surface != Some(successor.surface) || !current_is_primary)
             || current_is_primary
-                && successor
-                    .surface
-                    .is_some_and(|surface| self.primary_by_surface.get(&surface) != Some(&pointer));
+                && self.primary_by_surface.get(&successor.surface) != Some(&pointer);
         let changed = record_changed || primary_changed;
         if changed {
             self.bump_revision();
@@ -82,10 +79,8 @@ impl UiPointerPresenceOwner {
             pointer,
             previous_surface: prior_surface,
             current_surface: successor.surface,
-            previous,
-            current: successor.target(),
-            previous_node_receipt,
-            current_node_receipt: successor.node_receipt(),
+            previous_target,
+            current_target: successor.target,
             owner_revision: self.revision,
             position: successor.position,
             presentation: successor.presentation,
@@ -119,8 +114,8 @@ impl UiPointerPresenceOwner {
             pointer,
             UiPointerPresenceRecord {
                 kind,
-                surface: Some(surface),
-                binding: Some(binding),
+                surface,
+                binding,
                 target: Some(
                     crate::runtime::interaction::targeting::interaction_target_view_for_test(
                         presentation,
@@ -149,8 +144,8 @@ impl UiPointerPresenceRecord {
     ) -> Self {
         Self {
             kind,
-            surface: Some(resolved.surface()),
-            binding: Some(resolved.presentation().binding()),
+            surface: resolved.surface(),
+            binding: resolved.presentation().binding(),
             target: resolved.target().map(|target| target.view()),
             sequence,
             position: resolved.position(),

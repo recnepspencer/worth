@@ -25,6 +25,8 @@ mod backdrop_motion;
 mod locality;
 #[path = "render_order_tests/portal_group.rs"]
 mod portal_group;
+#[path = "render_order_tests/portal_visibility.rs"]
+mod portal_visibility;
 #[path = "render_order_tests/sampled_locality.rs"]
 mod sampled_locality;
 #[path = "render_order_tests/scroll_sample.rs"]

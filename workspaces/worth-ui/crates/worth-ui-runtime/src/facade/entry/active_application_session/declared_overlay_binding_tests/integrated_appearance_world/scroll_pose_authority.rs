@@ -100,6 +100,7 @@ impl ScrollWorld {
             .mounted
             .current_presentation_for_surface(self.surface())
             .expect("the first surface is published")
+            .basis()
     }
 
     /// One wheel report over the first component. The host reports the

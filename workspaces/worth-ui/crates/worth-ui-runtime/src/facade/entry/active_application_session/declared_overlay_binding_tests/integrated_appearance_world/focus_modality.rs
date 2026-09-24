@@ -68,7 +68,7 @@ fn observe(world: &mut World, sequence: u64, focused: bool) {
     let batch = UiHostObservationBatch::new(UiHostObservationBatchInput {
         protocol,
         host_session: world.session.host_session.identity().as_u64(),
-        presentation,
+        presentation: presentation.basis(),
         sequences: UiHostObservationSequenceRange::new(sequence, sequence),
         loss: UiHostObservationLoss::Complete,
         reports: vec![UiHostObservationReport::new(

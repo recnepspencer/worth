@@ -78,6 +78,29 @@ impl UiPreparedMountedFrame {
         receipt
     }
 
+    /// The hit row this frame presents for `target` on `surface`: its
+    /// geometry once the host accepts it, before any Motion sample moves it.
+    pub(crate) fn prepared_hit_row(
+        &self,
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+        target: worth_ui_host_contract::UiMountedInstanceIdentity,
+    ) -> Option<crate::mounting::UiPresentedHitTestRow> {
+        let binding = self
+            .surfaces()
+            .iter()
+            .map(super::UiMountedSurfaceReceipt::requirement)
+            .find(|requirement| requirement.semantic_surface() == surface)?
+            .binding();
+        self.visual_region_basis()
+            .hit_test()
+            .into_vec()
+            .into_iter()
+            .find(|row| {
+                row.mechanic().binding() == binding && row.mechanic().mounted_instance() == target
+            })
+            .map(crate::mounting::UiPresentedHitTestRow::from_mounted)
+    }
+
     pub(in crate::mounting) fn bind_direct_scroll(
         &mut self,
         records: Box<[crate::runtime::scroll::UiPreparedScrollDirectSuccession]>,

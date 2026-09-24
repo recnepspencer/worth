@@ -265,7 +265,8 @@ pub(super) fn open_portal(
         session
             .mounted
             .current_presentation_for_surface(surface)
-            .unwrap(),
+            .unwrap()
+            .basis(),
     );
     let request = crate::runtime::portal::UiPortalServiceRequest::open(
         portal,
@@ -290,7 +291,8 @@ pub(super) fn open_portal(
     let binding = crate::runtime::portal::UiPortalOverlayBindingCommit::from_transition(
         &transition,
         Some(stage),
-    );
+    )
+    .expect("the test transition pairs its overlay binding stage");
     session
         .portal
         .as_mut()

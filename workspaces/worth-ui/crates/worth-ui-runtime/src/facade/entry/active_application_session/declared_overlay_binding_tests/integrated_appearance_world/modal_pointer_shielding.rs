@@ -16,7 +16,7 @@ fn accepted_sibling_modal_blocks_older_portal_content_and_queued_clicks() {
     let rows = world
         .session
         .mounted
-        .interaction_hit_test_basis(before)
+        .interaction_hit_test_basis(before.basis())
         .unwrap();
     let content = rows
         .rows()
@@ -28,7 +28,7 @@ fn accepted_sibling_modal_blocks_older_portal_content_and_queued_clicks() {
         ((bounds.x() + bounds.width() / 2.0) * 1_000.0) as i64,
         ((bounds.y() + bounds.height() / 2.0) * 1_000.0) as i64,
     );
-    assert!(click(&mut world, before, 1, position)
+    assert!(click(&mut world, before.basis(), 1, position)
         .iter()
         .flat_map(|receipt| receipt.transitions())
         .any(|event| matches!(
@@ -45,7 +45,7 @@ fn accepted_sibling_modal_blocks_older_portal_content_and_queued_clicks() {
         .unwrap();
     for (presentation, sequence) in [(current, 3), (before, 5)] {
         assert!(
-            !click(&mut world, presentation, sequence, position)
+            !click(&mut world, presentation.basis(), sequence, position)
                 .iter()
                 .flat_map(|receipt| receipt.transitions())
                 .any(|event| matches!(
@@ -70,7 +70,7 @@ fn accepted_modal_blocks_background_activation_but_keeps_content_and_dismiss_inp
         .current_presentation_for_surface(world.surfaces[0])
         .unwrap();
     let background = UiHostSurfacePosition::viewport_logical(410_000, 85_000);
-    let baseline = click(&mut world, before, 1, background);
+    let baseline = click(&mut world, before.basis(), 1, background);
     assert!(baseline
         .iter()
         .flat_map(|receipt| receipt.transitions())
@@ -85,7 +85,7 @@ fn accepted_modal_blocks_background_activation_but_keeps_content_and_dismiss_inp
         .mounted
         .current_presentation_for_surface(world.surfaces[0])
         .unwrap();
-    let blocked = click(&mut world, current, 3, background);
+    let blocked = click(&mut world, current.basis(), 3, background);
     assert!(!blocked
         .iter()
         .flat_map(|receipt| receipt.transitions())
@@ -103,7 +103,7 @@ fn accepted_modal_blocks_background_activation_but_keeps_content_and_dismiss_inp
         "outside dismissal remains an input even with no admitted target"
     );
 
-    let queued = click(&mut world, before, 5, background);
+    let queued = click(&mut world, before.basis(), 5, background);
     assert!(
         !queued
             .iter()
@@ -118,7 +118,7 @@ fn accepted_modal_blocks_background_activation_but_keeps_content_and_dismiss_inp
     let rows = world
         .session
         .mounted
-        .interaction_hit_test_basis(current)
+        .interaction_hit_test_basis(current.basis())
         .unwrap();
     let content = rows
         .rows()
@@ -130,7 +130,7 @@ fn accepted_modal_blocks_background_activation_but_keeps_content_and_dismiss_inp
         ((bounds.x() + bounds.width() / 2.0) * 1_000.0) as i64,
         ((bounds.y() + bounds.height() / 2.0) * 1_000.0) as i64,
     );
-    let admitted = click(&mut world, current, 7, inside);
+    let admitted = click(&mut world, current.basis(), 7, inside);
     assert!(admitted
         .iter()
         .flat_map(|receipt| receipt.transitions())

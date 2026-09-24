@@ -105,7 +105,7 @@ fn observe(
             surface: presentation.host_surface(),
             focused,
         },
-        presentation,
+        presentation.basis(),
     );
 }
 
@@ -127,7 +127,7 @@ fn traverse(
             modifiers: UiHostKeyboardModifiers::default(),
             transition: UiHostKeyTransition::Pressed { repeat: false },
         },
-        presentation,
+        presentation.basis(),
     );
     let scope = focus.default_scope_for_surface(surface).unwrap();
     focus

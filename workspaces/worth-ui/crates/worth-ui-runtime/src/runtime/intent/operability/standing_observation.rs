@@ -26,6 +26,18 @@ pub(crate) enum UiIntentStandingOperabilityUnavailable {
     ConfirmationTimeUnavailable,
 }
 
+impl UiIntentStandingOperabilityUnavailable {
+    /// Whether a publication still in flight withheld the observation. The
+    /// target's standing is unknown until that publication settles, which is
+    /// not the same as knowing it cannot be operated.
+    pub(crate) const fn is_withheld_by_publication(&self) -> bool {
+        matches!(
+            self,
+            Self::Target(super::super::payload::UiIntentPayloadStop::PublicationTransitionInFlight)
+        )
+    }
+}
+
 #[allow(
     clippy::too_many_arguments,
     reason = "read-only observation explicitly names the independent target and Intent owners"

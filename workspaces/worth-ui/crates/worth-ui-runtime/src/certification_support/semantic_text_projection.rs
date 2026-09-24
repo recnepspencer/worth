@@ -84,27 +84,6 @@ pub fn semantic_text_projection_for_certification_with_capability(
     )
 }
 
-pub fn empty_projection_for_certification() -> UiMountedProjectionView {
-    UiMountedProjectionView::new(UiMountedProjectionViewInput {
-        frame: UiMountedFrameIdentity::mint_unbound().expect("frame identity"),
-        surface: UiSemanticSurfaceIdentity::mint_unbound().expect("surface identity"),
-        binding: UiSurfaceBindingGeneration::mint_unbound().expect("binding generation"),
-        content_generation: UiMountedContentGeneration::mint_unbound().expect("content generation"),
-        nodes: Vec::new(),
-        clips: worth_ui_host_contract::UiMountedClipTable::produced(Vec::new()),
-        layers: worth_ui_host_contract::UiMountedLayerTable::produced(Vec::new()),
-        portal_overlays: worth_ui_host_contract::UiMountedPortalOverlayTable::empty(),
-        semantic_text: UiMountedSemanticTextTable::empty(),
-        hit_tests: worth_ui_host_contract::UiMountedHitTestTable::empty(),
-        paint_batches: UiMountedPaintBatchTable::new(Vec::new()),
-        spatial_batches: UiMountedSpatialBatchTable::new(Vec::new()),
-        realtime_batches: UiMountedRealtimeBatchTable::new(Vec::new()),
-        resources: UiMountedResourceTable::new(Vec::new()),
-        authored_paint_commands: Vec::new(),
-        authored_paint_order: Vec::new(),
-    })
-}
-
 fn semantic_text_projection(
     mutation: UiSemanticTextProjectionCertificationMutation,
     capability_generation: WorthUiHostCapabilityObservationGeneration,

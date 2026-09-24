@@ -194,6 +194,7 @@ impl UiAppearanceFrameProjection<'_> {
                 .then(|| {
                     self.mounted
                         .current_presentation_for_surface(mounted_context.semantic_surface)
+                        .map(|displayed| displayed.basis())
                 })
                 .flatten();
             let operability_route = if consumer

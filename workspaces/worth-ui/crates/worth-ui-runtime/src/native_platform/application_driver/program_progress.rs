@@ -14,6 +14,9 @@ mod physical_progress;
 mod pointer_refresh;
 #[path = "program_progress/presentation_outcome.rs"]
 mod presentation_outcome;
+#[cfg(feature = "certification-support")]
+#[path = "program_progress/runtime_qualification.rs"]
+mod runtime_qualification;
 #[path = "program_progress/superseding_pair.rs"]
 mod superseding_pair;
 #[path = "program_progress/theme_switch.rs"]
@@ -40,7 +43,7 @@ pub(super) struct UiNativeApplicationProgramProgress {
     surface_basis_generation: u64,
     surface_basis_barrier: Option<(usize, u64)>,
     #[cfg(feature = "certification-support")]
-    runtime_qualification: super::runtime_qualification::UiNativeRuntimeQualificationState,
+    runtime_qualification: runtime_qualification::UiNativeRuntimeQualificationState,
     pub(super) staged_superseding_successor: Option<UiNativeStagedSupersedingSuccessor>,
     pub(super) staged_superseding_predecessor: Option<crate::mounting::UiPreparedMountedFrame>,
     external_close_requested: bool,
@@ -98,9 +101,8 @@ pub(super) enum FrameProgress {
 impl UiNativeApplicationProgramProgress {
     pub(super) fn new(
         program: crate::facade::entry::UiNativeApplicationProgram,
-        #[cfg(feature = "certification-support")] runtime_qualification: Option<
-            super::super::runtime_qualification::UiNativeRuntimeQualificationPlan,
-        >,
+        #[cfg_attr(not(feature = "certification-support"), expect(unused_variables))]
+        qualification: crate::native_platform::profile::UiNativeDriverQualification,
     ) -> Self {
         Self {
             program,
@@ -117,10 +119,9 @@ impl UiNativeApplicationProgramProgress {
             surface_basis_generation: 0,
             surface_basis_barrier: None,
             #[cfg(feature = "certification-support")]
-            runtime_qualification:
-                super::runtime_qualification::UiNativeRuntimeQualificationState::new(
-                    runtime_qualification,
-                ),
+            runtime_qualification: runtime_qualification::UiNativeRuntimeQualificationState::new(
+                qualification.plan(),
+            ),
             staged_superseding_successor: None,
             staged_superseding_predecessor: None,
             external_close_requested: false,
@@ -128,9 +129,15 @@ impl UiNativeApplicationProgramProgress {
         }
     }
 
-    pub(super) fn observe_readiness(&mut self, generation: u64, surface_basis_generation: u64) {
+    pub(super) fn observe_readiness(
+        &mut self,
+        generation: u64,
+        surface_basis_generation: u64,
+    ) -> bool {
+        let surface_basis_successor = surface_basis_generation > self.surface_basis_generation;
         self.readiness_generation = self.readiness_generation.max(generation);
         self.surface_basis_generation = self.surface_basis_generation.max(surface_basis_generation);
+        surface_basis_successor
     }
 
     pub(super) fn should_close(&self) -> bool {

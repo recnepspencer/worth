@@ -129,7 +129,7 @@ fn indeterminate_world(
     let indeterminate = prepared(&mut session);
     let frame = indeterminate.canonical_core().frame();
     host.push_presentation(
-        worth_ui_runtime::facade::mounted::UiHostSurfacePresentationOutcome::PresentationIndeterminate,
+        worth_ui_runtime::certification_support::ScriptedPresentationOutcome::PresentationIndeterminate,
     );
     assert!(matches!(
         session.present_prepared_mounted_frame(

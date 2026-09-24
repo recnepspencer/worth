@@ -8,9 +8,11 @@ use worth_ui::facade::{
     },
     observation_report::UiHostObservationPresentationBasis,
 };
+use worth_ui_runtime::certification_support::{
+    ScriptedPresentationAcknowledgement, ScriptedPresentationOutcome,
+};
 use worth_ui_runtime::facade::mounted::{
-    UiHostSurfacePresentationOutcome, UiMountedFrameOutcome, UiMountedInspectionReceipt,
-    UiMountedInspectionRequest,
+    UiMountedFrameOutcome, UiMountedInspectionReceipt, UiMountedInspectionRequest,
 };
 
 use super::super::{execution_deadline, execution_reading};
@@ -91,7 +93,7 @@ fn native_indeterminate_portal_publication_reconstructs_and_settles_the_predeces
     let predecessor_focus = shell.inspect_focus_runtime_for_certification();
     let predecessor_proposals = shell.inspect_service_proposals_for_certification();
     assert!(predecessor_proposals.is_zero());
-    host.push_presentation(UiHostSurfacePresentationOutcome::PresentationIndeterminate);
+    host.push_presentation(ScriptedPresentationOutcome::PresentationIndeterminate);
     match shell
         .begin_managed_native_intent_consequence_publication(handle, 40)
         .expect("the managed consequence belongs to this native session")
@@ -114,7 +116,6 @@ fn native_indeterminate_portal_publication_reconstructs_and_settles_the_predeces
     let grant = worth_ui_host_native::UiNativePhysicalProgressGrant::from_certification(
         worth_ui_host_native::UiNativePhysicalProgressClass::PresentationRecovery,
         Some(correlation),
-        false,
     );
     let progress =
         worth_ui_runtime::native_platform::UiNativeApplicationPhysicalProgress::from_certification(
@@ -202,7 +203,7 @@ fn queued_escape_is_retained_while_portal_open_publication_is_in_flight() {
     host.push_in_flight(
         vec![
             worth_ui_runtime::certification_support::ScriptedSurfaceCompletion::Presented(
-                worth_ui_host_contract::UiMountedSurfacePresentationCompletion::new(
+                ScriptedPresentationAcknowledgement::new(
                     worth_ui_host_contract::UiHostSurfacePresentationMode::NativeDisplay,
                     worth_ui_runtime::certification_support::scripted_presentation_epoch(),
                     worth_ui_host_contract::UiMountedCompletedEffects::new(vec![
@@ -247,7 +248,6 @@ fn queued_escape_is_retained_while_portal_open_publication_is_in_flight() {
             worth_ui_host_native::UiNativePhysicalProgressGrant::from_certification(
                 worth_ui_host_native::UiNativePhysicalProgressClass::Presentation,
                 None,
-                false,
             ),
         );
     let progress = match shell.progress_managed_rebind(&progress).unwrap() {
@@ -261,8 +261,7 @@ fn queued_escape_is_retained_while_portal_open_publication_is_in_flight() {
             let text_progress = worth_ui_runtime::native_platform::UiNativeApplicationPhysicalProgress::from_certification(
                 worth_ui_host_native::UiNativePhysicalProgressGrant::from_certification(
                     worth_ui_host_native::UiNativePhysicalProgressClass::TextAtlas,
-                    None,
-                    false,
+                    None
                 ),
             );
             shell.progress_managed_rebind(&text_progress).unwrap()
@@ -291,14 +290,15 @@ fn queued_escape_is_retained_while_portal_open_publication_is_in_flight() {
         progress,
         WorthUiNativeManagedRebindProgress::IntentConsequencePublished(_)
     ));
-    let resumed =
+    let mut resumed =
         shell.admit_native_intent_observations(definition, escape, execution_deadline(66));
     assert!(
         resumed.interaction_stops().is_empty(),
         "retained Escape must remain admissible after the open settles"
     );
-    assert_eq!(resumed.dismissals().len(), 1);
-    match shell.begin_managed_portal_dismissal(resumed.dismissals()[0], 42) {
+    let [dismissal] = <[_; 1]>::try_from(resumed.take_dismissals().into_vec())
+        .unwrap_or_else(|_| panic!("retained Escape admits exactly one dismissal"));
+    match shell.begin_managed_portal_dismissal(dismissal, 42) {
         worth_ui::facade::app::WorthUiNativeManagedPortalDismissalOutcome::Published(_) => {}
         worth_ui::facade::app::WorthUiNativeManagedPortalDismissalOutcome::Ignored => {
             panic!("published open lost its retained Escape")

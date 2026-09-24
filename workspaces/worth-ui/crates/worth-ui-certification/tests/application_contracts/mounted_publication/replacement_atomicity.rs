@@ -169,7 +169,7 @@ fn indeterminate_replacement_preserves_predecessor_application_and_publication()
     let workspace = replacement_workspace("replacement-indeterminate");
     let replacement = prepared_replacement(&workspace, &mut session);
     host.push_presentation(
-        worth_ui_runtime::facade::mounted::UiHostSurfacePresentationOutcome::PresentationIndeterminate,
+        worth_ui_runtime::certification_support::ScriptedPresentationOutcome::PresentationIndeterminate,
     );
 
     let frame = match replacement.present(UiPresentationDeadline::at_tick(20), 1) {

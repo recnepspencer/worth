@@ -3,11 +3,10 @@ pub struct UiPointerPresenceTargetChangedFact {
     generation: crate::runtime::WorthUiActiveApplicationGenerationIdentity,
     pointer: worth_ui_host_contract::UiHostPointerIdentity,
     previous_surface: Option<worth_ui_host_contract::UiSemanticSurfaceIdentity>,
-    current_surface: Option<worth_ui_host_contract::UiSemanticSurfaceIdentity>,
-    previous: Option<worth_ui_host_contract::UiMountedInstanceIdentity>,
-    current: Option<worth_ui_host_contract::UiMountedInstanceIdentity>,
-    previous_node_receipt: Option<worth_ui_host_contract::UiMountedNodeReceiptIdentity>,
-    current_node_receipt: Option<worth_ui_host_contract::UiMountedNodeReceiptIdentity>,
+    current_surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+    /// An instance and its node receipt always travel together.
+    previous: Option<crate::runtime::interaction::UiPresentedInteractionTargetView>,
+    current: Option<crate::runtime::interaction::UiPresentedInteractionTargetView>,
     owner_revision: u64,
     position: worth_ui_host_contract::UiHostSurfacePosition,
     presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
@@ -22,10 +21,8 @@ impl UiPointerPresenceTargetChangedFact {
             pointer: transition.pointer(),
             previous_surface: transition.previous_surface(),
             current_surface: transition.current_surface(),
-            previous: transition.previous(),
-            current: transition.current(),
-            previous_node_receipt: transition.previous_node_receipt(),
-            current_node_receipt: transition.current_node_receipt(),
+            previous: transition.previous_target(),
+            current: transition.current_target(),
             owner_revision: transition.owner_revision(),
             position: transition.position(),
             presentation: transition.presentation(),
@@ -44,26 +41,24 @@ impl UiPointerPresenceTargetChangedFact {
     ) -> Option<worth_ui_host_contract::UiSemanticSurfaceIdentity> {
         self.previous_surface
     }
-    pub const fn current_surface(
-        &self,
-    ) -> Option<worth_ui_host_contract::UiSemanticSurfaceIdentity> {
+    pub const fn current_surface(&self) -> worth_ui_host_contract::UiSemanticSurfaceIdentity {
         self.current_surface
     }
-    pub const fn previous(&self) -> Option<worth_ui_host_contract::UiMountedInstanceIdentity> {
-        self.previous
+    pub fn previous(&self) -> Option<worth_ui_host_contract::UiMountedInstanceIdentity> {
+        self.previous.map(|target| target.mounted_instance())
     }
-    pub const fn current(&self) -> Option<worth_ui_host_contract::UiMountedInstanceIdentity> {
-        self.current
+    pub fn current(&self) -> Option<worth_ui_host_contract::UiMountedInstanceIdentity> {
+        self.current.map(|target| target.mounted_instance())
     }
-    pub const fn previous_node_receipt(
+    pub fn previous_node_receipt(
         &self,
     ) -> Option<worth_ui_host_contract::UiMountedNodeReceiptIdentity> {
-        self.previous_node_receipt
+        self.previous.map(|target| target.node_receipt())
     }
-    pub const fn current_node_receipt(
+    pub fn current_node_receipt(
         &self,
     ) -> Option<worth_ui_host_contract::UiMountedNodeReceiptIdentity> {
-        self.current_node_receipt
+        self.current.map(|target| target.node_receipt())
     }
     pub const fn owner_revision(&self) -> u64 {
         self.owner_revision

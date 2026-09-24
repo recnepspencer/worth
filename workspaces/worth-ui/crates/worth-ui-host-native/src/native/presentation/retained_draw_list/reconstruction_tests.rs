@@ -2,7 +2,8 @@ use worth_ui_host_contract::{
     UiMountedFrameIdentity, UiMountedLogicalDamage, UiMountedPaintCommandChange,
     UiMountedPresentationDelta, UiMountedPresentationDeltaInput, UiMountedPresentationOpacity,
     UiMountedPresentationReconstruction, UiMountedPresentationReconstructionInput,
-    UiMountedPresentationSampleChange, UiMountedRgba8,
+    UiMountedPresentationSample, UiMountedPresentationSampleChange,
+    UiMountedPresentationSampleInput, UiMountedRgba8,
 };
 
 use super::{command, DrawListWorld};
@@ -146,4 +147,87 @@ fn cold_reconstruction_installs_and_rasterizes_accepted_motion_override() {
             ..
         }
     )));
+}
+
+#[test]
+fn reconstructed_invisible_sample_can_advance_and_roll_back() {
+    let world = DrawListWorld::new();
+    let predecessor = UiMountedFrameIdentity::mint_unbound().unwrap();
+    let frame = UiMountedFrameIdentity::mint_unbound().unwrap();
+    let rect = world.rect(
+        frame,
+        world.first,
+        10.0,
+        UiMountedRgba8::new(30, 60, 90, 255),
+    );
+    let complete = world.initial(frame, [rect]);
+    let identity = command(rect).identity();
+    let invisible = UiMountedPresentationSampleChange::from_runtime_sampling(
+        identity,
+        None,
+        UiMountedPresentationOpacity::from_runtime_composition(0),
+    );
+    let reconstruction = UiMountedPresentationReconstruction::from_inert_mechanics(
+        UiMountedPresentationReconstructionInput {
+            predecessor,
+            successor: frame,
+            surface: world.surface,
+            binding: world.binding,
+            content: world.content,
+            baseline: world.requirement.baseline(),
+            projection: complete.projection().clone(),
+            commands: complete.commands().to_vec(),
+            sample_overrides: vec![invisible],
+            order: complete.order().to_vec(),
+            order_integrity: complete.order_integrity(),
+            damage: complete.damage().to_vec(),
+            production_cost: Default::default(),
+        },
+    );
+    let mut retained = UiNativeRetainedDrawList::reconstruction(&reconstruction, &[]).unwrap();
+    assert_eq!(
+        retained
+            .damage
+            .intersecting(rect.bounds())
+            .unwrap()
+            .stored_records,
+        0
+    );
+
+    let visible = UiMountedPresentationSampleChange::from_runtime_sampling(
+        identity,
+        None,
+        UiMountedPresentationOpacity::from_runtime_composition(32_768),
+    );
+    let next =
+        UiMountedPresentationSample::from_inert_mechanics(UiMountedPresentationSampleInput {
+            frame,
+            surface: world.surface,
+            binding: world.binding,
+            content: world.content,
+            baseline: world.requirement.baseline(),
+            changes: vec![visible],
+            damage: vec![UiMountedLogicalDamage::from_runtime_mounting(rect.bounds())],
+            production_cost: Default::default(),
+        })
+        .unwrap();
+    let (_, undo) = retained.stage_sample(&next).unwrap();
+    assert_eq!(
+        retained
+            .damage
+            .intersecting(rect.bounds())
+            .unwrap()
+            .stored_records,
+        1
+    );
+    retained.rollback_sample(undo).unwrap();
+    assert_eq!(
+        retained
+            .damage
+            .intersecting(rect.bounds())
+            .unwrap()
+            .stored_records,
+        0
+    );
+    assert_eq!(retained.sample_override(identity), Some(invisible));
 }

@@ -23,7 +23,7 @@ impl PlatformPulseApplicationRuntime {
             round = round.saturating_add(1);
             let execution_progress = self.advance_intent_execution();
             let product_progress = self.poll_intent_action_port();
-            if self.terminal_error.is_some()
+            if self.terminal.is_stopped()
                 || self.pending_managed_rebind.is_some()
                 || self.pending_frame_presentation.is_some()
             {

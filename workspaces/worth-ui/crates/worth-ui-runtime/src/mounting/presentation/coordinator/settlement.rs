@@ -99,6 +99,7 @@ impl UiMountedPresentationCoordinator {
         while let Some(pending_surface) = pending_iter.next() {
             let observation = {
                 let mut context = PendingCompletionContext::new(
+                    attempt,
                     &frame,
                     &mut progress,
                     &mut self.text,

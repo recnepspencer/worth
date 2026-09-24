@@ -92,6 +92,20 @@ pub trait UiNativeEventLoopClient {
     ) -> Result<UiNativeEventLoopDirective, UiNativeEventLoopClientDenial> {
         Ok(UiNativeEventLoopDirective::Close)
     }
+    /// Cancel input interactions after a drained prefix was followed by source
+    /// exhaustion. Refusal leaves input stopped; success explicitly rearms it.
+    fn native_input_retention_exhausted(
+        &mut self,
+        _grant: crate::UiNativeInputRecoveryGrant,
+    ) -> Result<
+        (
+            crate::UiNativeInputRecoveryAcknowledgement,
+            UiNativeEventLoopDirective,
+        ),
+        UiNativeEventLoopClientDenial,
+    > {
+        Err(UiNativeEventLoopClientDenial::Unsupported)
+    }
     fn presentation_attribution(
         &self,
         observed: &crate::native::UiNativeRetainedFrameObservation,
@@ -102,35 +116,25 @@ pub trait UiNativeEventLoopClient {
 #[must_use]
 pub struct UiNativePhysicalProgressGrant {
     class: UiNativePhysicalProgressClass,
-    presentation: Option<super::UiNativePhysicalPresentationCorrelation>,
-    originating_presentation: Option<super::UiNativePhysicalPresentationCorrelation>,
-    duplicate_presentation_observed: bool,
+    correlation: UiNativePhysicalProgressCorrelation,
+}
+
+/// How progress relates to a presentation: it is that presentation (observed
+/// once or as a duplicate), it was caused by one, or it is unattributed.
+#[derive(Clone, Copy)]
+pub(super) enum UiNativePhysicalProgressCorrelation {
+    Unattributed,
+    Presentation(super::UiNativePhysicalPresentationCorrelation),
+    DuplicatePresentation(super::UiNativePhysicalPresentationCorrelation),
+    Originating(super::UiNativePhysicalPresentationCorrelation),
 }
 
 impl UiNativePhysicalProgressGrant {
     pub(super) const fn issued(
         class: UiNativePhysicalProgressClass,
-        presentation: Option<super::UiNativePhysicalPresentationCorrelation>,
-        duplicate_presentation_observed: bool,
+        correlation: UiNativePhysicalProgressCorrelation,
     ) -> Self {
-        Self {
-            class,
-            presentation,
-            originating_presentation: None,
-            duplicate_presentation_observed,
-        }
-    }
-
-    pub(super) const fn issued_with_originating_presentation(
-        class: UiNativePhysicalProgressClass,
-        originating_presentation: super::UiNativePhysicalPresentationCorrelation,
-    ) -> Self {
-        Self {
-            class,
-            presentation: None,
-            originating_presentation: Some(originating_presentation),
-            duplicate_presentation_observed: false,
-        }
+        Self { class, correlation }
     }
 
     pub const fn class(&self) -> UiNativePhysicalProgressClass {
@@ -138,17 +142,32 @@ impl UiNativePhysicalProgressGrant {
     }
 
     pub const fn presentation(&self) -> Option<super::UiNativePhysicalPresentationCorrelation> {
-        self.presentation
+        match self.correlation {
+            UiNativePhysicalProgressCorrelation::Presentation(presentation)
+            | UiNativePhysicalProgressCorrelation::DuplicatePresentation(presentation) => {
+                Some(presentation)
+            }
+            UiNativePhysicalProgressCorrelation::Unattributed
+            | UiNativePhysicalProgressCorrelation::Originating(_) => None,
+        }
     }
 
     pub const fn originating_presentation(
         &self,
     ) -> Option<super::UiNativePhysicalPresentationCorrelation> {
-        self.originating_presentation
+        match self.correlation {
+            UiNativePhysicalProgressCorrelation::Originating(presentation) => Some(presentation),
+            UiNativePhysicalProgressCorrelation::Unattributed
+            | UiNativePhysicalProgressCorrelation::Presentation(_)
+            | UiNativePhysicalProgressCorrelation::DuplicatePresentation(_) => None,
+        }
     }
 
     pub const fn duplicate_presentation_observed(&self) -> bool {
-        self.duplicate_presentation_observed
+        matches!(
+            self.correlation,
+            UiNativePhysicalProgressCorrelation::DuplicatePresentation(_)
+        )
     }
 
     #[cfg(feature = "certification-support")]
@@ -156,9 +175,12 @@ impl UiNativePhysicalProgressGrant {
     pub const fn from_certification(
         class: UiNativePhysicalProgressClass,
         presentation: Option<super::UiNativePhysicalPresentationCorrelation>,
-        duplicate_presentation_observed: bool,
     ) -> Self {
-        Self::issued(class, presentation, duplicate_presentation_observed)
+        let correlation = match presentation {
+            Some(presentation) => UiNativePhysicalProgressCorrelation::Presentation(presentation),
+            None => UiNativePhysicalProgressCorrelation::Unattributed,
+        };
+        Self::issued(class, correlation)
     }
 }
 

@@ -73,6 +73,7 @@ struct UiMountedSurfaceGeometry {
 #[derive(Clone, Debug, Default, PartialEq)]
 pub(crate) struct UiMountedOccurrenceGeometryState {
     surfaces: BTreeMap<UiSemanticSurfaceIdentity, UiMountedSurfaceGeometry>,
+    reservations: scroll_index::UiScrollReservationMemo,
 }
 
 impl UiMountedOccurrenceGeometryState {
@@ -260,6 +261,9 @@ impl UiMountedOccurrenceGeometryState {
             }
             .index_scroll_geometry(),
         );
+        // Snapshot reservations where the geometry changes, so presenting it
+        // reads the snapshot instead of building one.
+        let _ = self.scroll_geometry_reservations();
         Ok((
             changed.into_boxed_slice(),
             exact_regions.len(),

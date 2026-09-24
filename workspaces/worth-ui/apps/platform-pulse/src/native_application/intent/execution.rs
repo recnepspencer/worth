@@ -39,7 +39,7 @@ impl PlatformPulseApplicationRuntime {
         self.drain_pending_intent_execution_transitions(&mut shell);
         let mut progress =
             pending_before.saturating_sub(self.pending_intent_execution_transitions.len());
-        if self.terminal_error.is_some() || self.pending_managed_rebind.is_some() {
+        if self.terminal.is_stopped() || self.pending_managed_rebind.is_some() {
             self.shell = Some(shell);
             return PlatformPulseIntentExecutionProgress::from_transitions(
                 progress,
@@ -102,7 +102,7 @@ impl PlatformPulseApplicationRuntime {
         &mut self,
         shell: &mut WorthUiNativeApplicationShell,
     ) {
-        while self.terminal_error.is_none() && self.pending_managed_rebind.is_none() {
+        while self.terminal.is_running() && self.pending_managed_rebind.is_none() {
             let Some(transition) = self.pending_intent_execution_transitions.pop_front() else {
                 return;
             };

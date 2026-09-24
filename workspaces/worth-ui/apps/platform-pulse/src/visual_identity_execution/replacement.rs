@@ -3,7 +3,7 @@ use worth_ui::facade::app::WorthUiNativeApplicationShell;
 
 use super::{
     capture_restart::PlatformPulseAwaitingCaptureBudget, replacement_frame_deadline,
-    PlatformPulseVisualExecutionDenial, PlatformPulseVisualIdentityExecution,
+    PlatformPulseVisualExecutionDenial, PlatformPulseVisualIdentityJourney,
     PlatformPulseVisualIdentityState,
 };
 
@@ -23,21 +23,18 @@ impl PlatformPulseReplacementPosture {
     }
 }
 
-impl PlatformPulseVisualIdentityExecution {
+impl PlatformPulseVisualIdentityJourney {
     pub(crate) fn prepare_source_rebind(
         &mut self,
         shell: &mut WorthUiNativeApplicationShell,
         tick: u64,
         now: Instant,
     ) -> Result<bool, PlatformPulseVisualExecutionDenial> {
-        if !self.enabled {
-            return Ok(true);
-        }
         if self.queued_rebind.is_some() {
             return Ok(false);
         }
-        match self.state.as_ref() {
-            Some(PlatformPulseVisualIdentityState::ComparisonReady(retained)) => {
+        match &self.state {
+            PlatformPulseVisualIdentityState::ComparisonReady(retained) => {
                 if super::frame_affinity::snapshot_matches_current_mounted_frame(
                     &retained.snapshot,
                     shell,
@@ -47,7 +44,7 @@ impl PlatformPulseVisualIdentityExecution {
                 self.refresh_after_presentation_replacement(shell, tick, now)?;
                 Ok(false)
             }
-            Some(PlatformPulseVisualIdentityState::Retired) => Ok(true),
+            PlatformPulseVisualIdentityState::Retired => Ok(true),
             _ => Ok(false),
         }
     }
@@ -58,14 +55,8 @@ impl PlatformPulseVisualIdentityExecution {
         _tick: u64,
         now: Instant,
     ) -> Result<(), PlatformPulseVisualExecutionDenial> {
-        if !self.enabled {
-            return Ok(());
-        }
         let deadline = replacement_frame_deadline(now)?;
-        let state = self
-            .state
-            .replace(PlatformPulseVisualIdentityState::Transitioning)
-            .ok_or(PlatformPulseVisualExecutionDenial::ReentrantTransition)?;
+        let state = self.begin_transition()?;
         let next = match state {
             PlatformPulseVisualIdentityState::Settling { .. } => {
                 PlatformPulseVisualIdentityState::AwaitingCapture {
@@ -118,7 +109,7 @@ impl PlatformPulseVisualIdentityExecution {
             // neither extends the host deadline nor waits for a Portal to close.
             state => state,
         };
-        self.state = Some(next);
+        self.state = next;
         self.schedule_current_wake();
         Ok(())
     }

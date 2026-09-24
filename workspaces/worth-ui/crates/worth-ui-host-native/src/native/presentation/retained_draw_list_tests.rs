@@ -1,23 +1,27 @@
 use worth_ui_host_contract::{
-    UiHostObservationPresentationBasis, UiHostPresentationEpoch, UiHostSurfaceIdentity,
-    UiHostSurfacePresentationMode, UiMountedAllocationBasis, UiMountedCanonicalBox,
-    UiMountedCanonicalBoxInput, UiMountedClipTable, UiMountedContentGeneration,
-    UiMountedCoordinateSpace, UiMountedFrameIdentity, UiMountedHitTestProjection,
-    UiMountedHitTestTable, UiMountedInstanceIdentity, UiMountedLayerTable, UiMountedLogicalDamage,
-    UiMountedMechanicalRole, UiMountedNodeProjectionView, UiMountedNodeProjectionViewInput,
-    UiMountedNodeReceiptIssuer, UiMountedOmissionReason, UiMountedPaintBatchTable,
-    UiMountedPaintCommand, UiMountedPaintCommandChange, UiMountedPaintOrderEdit,
-    UiMountedPaintOrderIdentity, UiMountedPaintOrderIntegrity, UiMountedPaintProjection,
-    UiMountedParticipation, UiMountedParticipationFact, UiMountedParticipationInput,
-    UiMountedParticipationStatus, UiMountedPortalInputShielding,
-    UiMountedPortalOverlayCompletionInput, UiMountedPortalOverlayLifecyclePosture,
-    UiMountedPortalOverlayMechanic, UiMountedPortalOverlayReference, UiMountedPortalOverlayTable,
-    UiMountedPresentationDelta, UiMountedPresentationDeltaInput, UiMountedPresentationInitial,
+    UiHostObservationPresentationBasis, UiHostPresentationEpoch, UiHostProtocolContract,
+    UiHostProtocolNegotiation, UiHostSurfaceIdentity, UiHostSurfacePresentationMode,
+    UiMountedAllocationBasis, UiMountedCanonicalBox, UiMountedCanonicalBoxInput,
+    UiMountedClipTable, UiMountedContentGeneration, UiMountedCoordinateSpace,
+    UiMountedFrameConsumptionInput, UiMountedFrameConsumptionView, UiMountedFrameIdentity,
+    UiMountedHitTestProjection, UiMountedHitTestTable, UiMountedInstanceIdentity,
+    UiMountedLayerTable, UiMountedLogicalDamage, UiMountedMechanicalRole,
+    UiMountedNodeProjectionView, UiMountedNodeProjectionViewInput, UiMountedNodeReceiptIssuer,
+    UiMountedOmissionReason, UiMountedPaintBatchTable, UiMountedPaintCommand,
+    UiMountedPaintCommandChange, UiMountedPaintOrderEdit, UiMountedPaintOrderIdentity,
+    UiMountedPaintOrderIntegrity, UiMountedPaintProjection, UiMountedParticipation,
+    UiMountedParticipationFact, UiMountedParticipationInput, UiMountedParticipationStatus,
+    UiMountedPortalInputShielding, UiMountedPortalOverlayCompletionInput,
+    UiMountedPortalOverlayLifecyclePosture, UiMountedPortalOverlayMechanic,
+    UiMountedPortalOverlayReference, UiMountedPortalOverlayTable,
+    UiMountedPresentationAttemptIdentity, UiMountedPresentationDelta,
+    UiMountedPresentationDeltaInput, UiMountedPresentationInitial,
     UiMountedPresentationInitialInput, UiMountedPresentationUnchanged,
-    UiMountedPresentationUnchangedInput, UiMountedProjectionView, UiMountedProjectionViewInput,
-    UiMountedRealtimeBatchTable, UiMountedResourceTable, UiMountedRgba8,
-    UiMountedSemanticTextTable, UiMountedSpatialBatchTable, UiMountedSurfaceBindingRequirement,
-    UiMountedTransformProjection, UiSemanticSurfaceIdentity, UiSurfaceBindingGeneration,
+    UiMountedPresentationUnchangedInput, UiMountedPresentationWorkView, UiMountedProjectionView,
+    UiMountedProjectionViewInput, UiMountedRealtimeBatchTable, UiMountedResourceTable,
+    UiMountedRgba8, UiMountedSemanticTextTable, UiMountedSpatialBatchTable,
+    UiMountedSurfaceBindingRequirement, UiMountedTransformProjection, UiPresentationDeadline,
+    UiSemanticSurfaceIdentity, UiSurfaceBindingGeneration,
     WorthUiHostCapabilityObservationGeneration,
 };
 
@@ -181,7 +185,7 @@ impl DrawListWorld {
         .unwrap()
     }
 
-    pub(in crate::native::presentation) fn initial<const N: usize>(
+    pub(in crate::native) fn initial<const N: usize>(
         &self,
         frame: UiMountedFrameIdentity,
         rows: [UiMountedPortalOverlayMechanic; N],
@@ -210,6 +214,32 @@ impl DrawListWorld {
                 .map(|row| UiMountedLogicalDamage::from_runtime_mounting(row.bounds()))
                 .collect(),
             production_cost: Default::default(),
+        })
+    }
+
+    /// Runtime-issued work for this world's surface, as a host consumes it.
+    pub(in crate::native) fn consumption_view<'work>(
+        &self,
+        initial: &'work UiMountedPresentationInitial,
+    ) -> UiMountedFrameConsumptionView<'work> {
+        let UiHostProtocolNegotiation::Compatible(protocol) =
+            UiHostProtocolContract::current().negotiate()
+        else {
+            panic!("current protocol must negotiate");
+        };
+        UiMountedFrameConsumptionView::from_inert_mechanics(UiMountedFrameConsumptionInput {
+            authority: std::rc::Rc::new(()),
+            host_session_identity: 1,
+            protocol,
+            capability_generation: self.requirement.capability_generation(),
+            capability_profile_digest: self.requirement.capability_profile_digest(),
+            attempt: UiMountedPresentationAttemptIdentity::mint_unbound().unwrap(),
+            deadline: UiPresentationDeadline::at_tick(20),
+            requirement: self.requirement,
+            presentation_work: UiMountedPresentationWorkView::Initial(initial),
+            appearance_work: None,
+            qualified_text: &(),
+            text_raster_work: None,
         })
     }
 

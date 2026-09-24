@@ -12,9 +12,9 @@ fn repeated_same_basis_requests_have_distinct_graph_carried_sequence_scopes() {
         worth_ui_host_contract::UiGlyphRasterPinTransitionView::from_text_mechanics(&[], &[]);
     let basis = UiNativePhysicalPresentationBasis::test_with_host_session(7);
     let first = owner.admit_atlas_planning(basis, &[], pins).unwrap();
-    let first_performed = owner.worker.as_ref().unwrap().last_performed().unwrap();
+    let first_performed = owner.runtime.worker().unwrap().last_performed().unwrap();
     let second = owner.admit_atlas_planning(basis, &[], pins).unwrap();
-    let second_performed = owner.worker.as_ref().unwrap().last_performed().unwrap();
+    let second_performed = owner.runtime.worker().unwrap().last_performed().unwrap();
 
     assert_eq!(first.basis_digest(), second.basis_digest());
     assert_ne!(first.sequence(), second.sequence());
@@ -57,7 +57,7 @@ fn performed_scope_observation_convicts_a_deleted_demand_axis() {
     owner
         .admit_atlas_planning(UiNativePhysicalPresentationBasis::test(), &[], pins)
         .unwrap();
-    let performed = owner.worker.as_ref().unwrap().last_performed().unwrap();
+    let performed = owner.runtime.worker().unwrap().last_performed().unwrap();
     let reads = owner.declarations().resources
         [UiNativePhysicalSignalOperation::AtlasUpload.index()]
     .reads();
@@ -87,8 +87,8 @@ fn a_route_entry_without_graph_carried_currentness_cannot_begin_work() {
         .token_for(owner.runtime_identity, work)
         .expect("the routing mirror still contains the request");
     assert!(owner
-        .worker
-        .as_mut()
+        .runtime
+        .worker_mut()
         .unwrap()
         .graph
         .remove_current(work, token.handle()));

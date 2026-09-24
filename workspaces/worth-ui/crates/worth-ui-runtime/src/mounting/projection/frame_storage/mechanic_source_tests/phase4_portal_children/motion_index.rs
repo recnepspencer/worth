@@ -78,7 +78,7 @@ fn presented_index_portal_motion_selects_only_children_and_keeps_trigger_station
             ))
             .unwrap();
         let prepared = sampler.prepare_tick(1, presentation).unwrap();
-        sampler.commit_prepared(prepared);
+        sampler.commit_prepared(prepared.presented_for_certification());
         let work = index.apply_motion(&sampler, presentation, &[target]);
         assert_eq!(work.motion_members_visited, 1);
         assert_eq!(work.motion_rows_projected, 1);
@@ -94,7 +94,7 @@ fn presented_index_portal_motion_selects_only_children_and_keeps_trigger_station
         assert!(has(&index, binding, [40.0, 30.0], owner));
         assert!(!has(&index, binding, [40.0, 1030.0], owner));
         let prepared = sampler.prepare_tick(500, presentation).unwrap();
-        sampler.commit_prepared(prepared);
+        sampler.commit_prepared(prepared.presented_for_certification());
         index.apply_motion(&sampler, presentation, &[target]);
         assert!(has(&index, binding, [40.0, 80.0], child));
         assert!(!has(&index, binding, [40.0, 1080.0], child));

@@ -35,7 +35,6 @@ pub(super) use normalization::{
     finish_normalized_managed_rebind, normalize_managed_outcome, retain_normalized_managed_rebind,
     ManagedRebindNormalization,
 };
-pub(super) use portal_dismissal::UiRetainedPortalDismissalRequest;
 pub use portal_dismissal::{
     WorthUiNativeManagedPortalDismissalOutcome, WorthUiNativePortalDismissalStop,
 };

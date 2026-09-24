@@ -44,14 +44,14 @@ fn visible_neighbor_survives_predecessor_eviction_and_rejected_publication() {
             world
                 .session
                 .mounted
-                .current_semantic_surface_for_presentation(neighbor),
+                .current_semantic_surface_for_presentation(neighbor.basis()),
             Ok(world.surfaces[1])
         );
         let mut work = UiHitTestSpatialWork::default();
         let row = world
             .session
             .mounted
-            .current_presented_hit_row(neighbor, world.instances[3], &mut work)
+            .current_presented_hit_row(neighbor.basis(), world.instances[3], &mut work)
             .unwrap();
         assert_eq!(row.mounted_instance(), world.instances[3]);
         assert!(
@@ -77,7 +77,7 @@ fn visible_neighbor_survives_predecessor_eviction_and_rejected_publication() {
                         binding: neighbor.binding(),
                         mounted_instance: world.instances[3],
                     },
-                    neighbor,
+                    neighbor.basis(),
                 )
                 .is_ok(),
             "retained physical geometry must still resolve a live mounted incarnation"
@@ -87,7 +87,7 @@ fn visible_neighbor_survives_predecessor_eviction_and_rejected_publication() {
         world
             .session
             .mounted
-            .classify_interaction_presentation(obsolete),
+            .classify_interaction_presentation(obsolete.basis()),
         Err(UiPresentedFrameBasisDenial::Expired),
         "the small budget must actually evict superseded evidence"
     );
@@ -136,13 +136,13 @@ fn visible_neighbor_survives_predecessor_eviction_and_rejected_publication() {
     assert!(world
         .session
         .mounted
-        .current_semantic_surface_for_presentation(neighbor)
+        .current_semantic_surface_for_presentation(neighbor.basis())
         .is_err());
     assert_eq!(
         world
             .session
             .mounted
-            .classify_interaction_presentation(neighbor),
+            .classify_interaction_presentation(neighbor.basis()),
         Err(UiPresentedFrameBasisDenial::Expired),
         "repainting the last dependent surface releases its old evidence for eviction"
     );

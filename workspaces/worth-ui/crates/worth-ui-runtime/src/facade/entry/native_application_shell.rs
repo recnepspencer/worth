@@ -13,6 +13,8 @@ mod certification;
 #[path = "native_application_shell/component_presence.rs"]
 mod component_presence;
 pub(crate) use component_presence::UiNativeComponentPresenceProgress;
+#[path = "native_application_shell/input_recovery.rs"]
+mod input_recovery;
 #[path = "native_application_shell/launch.rs"]
 mod launch;
 #[path = "native_application_shell/motion_sampling.rs"]
@@ -61,8 +63,7 @@ pub struct WorthUiNativeApplicationShell {
         Option<worth_ui_host_native::UiNativeClientDerivedStateReconstructionObservation>,
     pub(super) pending_managed_rebind:
         Option<super::native_managed_rebind::WorthUiNativePendingManagedRebind>,
-    pub(super) retained_portal_dismissal:
-        Option<super::native_managed_rebind::UiRetainedPortalDismissalRequest>,
+    pub(super) retained_portal_dismissal: Option<super::WorthUiAdmittedPortalDismissal>,
     pending_component_presence: Option<component_presence::UiNativePendingComponentPresence>,
     pub(super) managed_rebind_completion_tick: u64,
     reduced_motion_posture: WorthUiNativeReducedMotionPosture,
@@ -81,6 +82,11 @@ pub enum WorthUiNativeApplicationShellLaunchDenial {
 }
 
 impl WorthUiNativeApplicationShell {
+    /// A new framework turn cannot prepare while the mounted presentation lease is active.
+    pub fn native_frame_boundary_available(&self) -> bool {
+        !self.session.mounted.has_active_presentation_attempt()
+    }
+
     pub(crate) fn native_observation_admission_ready(&self) -> bool {
         self.pending_managed_rebind.is_none()
             && self.session.mounted.observation_basis_admission_ready()

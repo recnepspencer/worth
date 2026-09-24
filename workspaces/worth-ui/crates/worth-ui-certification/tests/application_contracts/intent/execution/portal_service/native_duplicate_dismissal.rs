@@ -16,9 +16,9 @@ use worth_ui::facade::{
         UiHostProtocolContract, UiHostProtocolNegotiation,
     },
 };
+use worth_ui_runtime::certification_support::ScriptedPresentationOutcome;
 use worth_ui_runtime::facade::mounted::{
-    UiHostSurfacePresentationOutcome, UiMountedFrameOutcome, UiMountedInspectionReceipt,
-    UiMountedInspectionRequest,
+    UiMountedFrameOutcome, UiMountedInspectionReceipt, UiMountedInspectionRequest,
 };
 
 use super::super::{execution_deadline, execution_reading};
@@ -143,7 +143,7 @@ pub(crate) fn run_native_runtime_service_scenario() -> NativeRuntimeServiceEvide
 
     let first = escape_dismissal(&mut shell, definition, open_presentation, 5);
     let duplicate = escape_dismissal(&mut shell, definition, open_presentation, 7);
-    host.push_presentation(UiHostSurfacePresentationOutcome::PresentationIndeterminate);
+    host.push_presentation(ScriptedPresentationOutcome::PresentationIndeterminate);
     assert!(matches!(
         shell.begin_managed_portal_dismissal(first, 50),
         WorthUiNativeManagedPortalDismissalOutcome::Pending
@@ -167,7 +167,6 @@ pub(crate) fn run_native_runtime_service_scenario() -> NativeRuntimeServiceEvide
     let grant = worth_ui_host_native::UiNativePhysicalProgressGrant::from_certification(
         worth_ui_host_native::UiNativePhysicalProgressClass::PresentationRecovery,
         Some(correlation),
-        false,
     );
     let progress =
         worth_ui_runtime::native_platform::UiNativeApplicationPhysicalProgress::from_certification(
@@ -260,8 +259,8 @@ pub(super) fn escape_dismissal(
     definition: UiIntentDefinition<PrimaryIntent, UiRuntimeServiceDefinitionDestination>,
     presentation: UiHostObservationPresentationBasis,
     sequence: u64,
-) -> worth_ui::facade::interaction::UiDismissInteraction {
-    let ingress = shell.admit_native_intent_observations(
+) -> worth_ui::facade::app::WorthUiAdmittedPortalDismissal {
+    let mut ingress = shell.admit_native_intent_observations(
         definition,
         escape_drain(
             shell.host_session_identity().as_u64(),
@@ -289,8 +288,9 @@ pub(super) fn escape_dismissal(
             })
             .collect::<Vec<_>>()
     );
-    assert_eq!(ingress.dismissals().len(), 1);
-    ingress.dismissals()[0]
+    let [dismissal] = <[_; 1]>::try_from(ingress.take_dismissals().into_vec())
+        .unwrap_or_else(|_| panic!("Escape admits exactly one dismissal"));
+    dismissal
 }
 
 pub(super) fn escape_drain(

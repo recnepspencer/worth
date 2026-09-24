@@ -33,7 +33,7 @@ pub(crate) fn complete_pending(
         }
         crate::native::presentation::UiNativePendingPresentationCompletion::Presented(
             observation,
-        ) => complete_presented(state, pending, *observation),
+        ) => complete_presented(state, pending, *observation, token),
         crate::native::presentation::UiNativePendingPresentationCompletion::Superseded(
             observation,
         ) => complete_superseded(state, pending, *observation),
@@ -94,6 +94,7 @@ fn complete_presented(
     state: &mut UiNativeHostState,
     mut pending: crate::native::presentation::UiNativePendingPresentation,
     observation: crate::native::presentation::UiNativePresentationPortObservation,
+    token: worth_ui_host_contract::UiHostPresentationCompletionToken,
 ) -> worth_ui_host_contract::UiHostSurfaceInFlightCompletion {
     let completion_identity = pending
         .completion_identity()
@@ -106,6 +107,7 @@ fn complete_presented(
             pending.physical_basis(),
             completion_identity,
             observation,
+            token,
         )
     });
     pending.release(&mut state.resources);
@@ -138,10 +140,23 @@ pub(crate) fn stop_pending(
         pending.physical_basis().binding(),
         pending.completion_identity(),
     );
-    let recovery = state
-        .physical_signal
-        .cancel_presentation_to_recovery(pending.physical_work())
-        .expect("retained pending presentation owns its physical Signal request");
+    // Effects may have begun, so the client awaits this presentation's
+    // physical recovery before it reconstructs. While the external work is
+    // active its Signal request moves to recovery. Once that work has
+    // settled the request is spent and only the completion waits to be
+    // collected; the recovery is then admitted afresh over the finished work.
+    let recovery = if pending.has_active_external() {
+        state
+            .physical_signal
+            .cancel_presentation_to_recovery(pending.physical_work())
+            .expect("active pending presentation owns its physical Signal request")
+    } else {
+        pending.await_settled_recovery();
+        state
+            .physical_signal
+            .cancel_settled_presentation_to_recovery(pending.physical_work())
+            .expect("settled pending presentation admits its recovery")
+    };
     if let Some(settlement) = pending.take_settlement() {
         settlement.abandon(
             state,
@@ -151,10 +166,6 @@ pub(crate) fn stop_pending(
     }
     pending.consume_completion_identity();
     assert!(pending.refresh_physical_token(recovery));
-    if pending.has_active_external() {
-        state.pending_presentations.insert(index, pending);
-    } else {
-        pending.release(&mut state.resources);
-    }
+    state.pending_presentations.insert(index, pending);
     worth_ui_host_contract::UiHostSurfaceCancellationOutcome::EffectsMayHaveBegun
 }

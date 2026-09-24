@@ -148,7 +148,7 @@ impl PlatformPulseApplicationRuntime {
                     return;
                 }
             }
-            if self.terminal_error.is_some() {
+            if self.terminal.is_stopped() {
                 return;
             }
         }

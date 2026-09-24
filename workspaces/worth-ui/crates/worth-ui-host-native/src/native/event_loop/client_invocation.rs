@@ -2,7 +2,7 @@
 //!
 //! A client returns only a [`UiNativeEventLoopClientDenial`]: it has no way
 //! to say *which* callback refused, because it has no way to know. The loop
-//! does know, so the loop attaches the name here. Keeping all nine pairings
+//! does know, so the loop attaches the name here. Keeping all callback pairings
 //! in one file is what makes the correspondence auditable at a glance, and
 //! `pairing_names_the_invoked_callback` below is what makes it falsifiable.
 
@@ -77,6 +77,17 @@ pub(super) trait UiNativeEventLoopClientInvocation: UiNativeEventLoopClient {
 
     fn invoke_external_close_requested(&mut self) -> Refused<UiNativeEventLoopDirective> {
         refusing(Callback::ExternalCloseRequested)(self.external_close_requested())
+    }
+    fn invoke_native_input_retention_exhausted(
+        &mut self,
+        grant: crate::UiNativeInputRecoveryGrant,
+    ) -> Refused<(
+        crate::UiNativeInputRecoveryAcknowledgement,
+        UiNativeEventLoopDirective,
+    )> {
+        refusing(Callback::NativeInputRetentionExhausted)(
+            self.native_input_retention_exhausted(grant),
+        )
     }
 }
 

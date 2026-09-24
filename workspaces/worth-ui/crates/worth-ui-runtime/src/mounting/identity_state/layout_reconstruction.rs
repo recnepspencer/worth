@@ -9,17 +9,15 @@ impl UiMountedIdentityState {
     pub(crate) fn require_current_layout_reconstruction(
         &mut self,
     ) -> Result<usize, crate::mounting::UiMountedProjectionDenial> {
-        let current = self.current_projection.as_ref().ok_or(
+        let current = self.frame.projection_mut().ok_or(
             crate::mounting::UiMountedProjectionDenial::MissingSemanticTextReconstructionSource,
         )?;
         let mut successor = current.projection().clone();
         let lost = successor.require_qualified_layout_reconstruction()?;
-        self.current_projection = Some(std::rc::Rc::new(
-            crate::mounting::UiMountedProjectionFrameOwner::new(
-                std::rc::Rc::new(successor),
-                current.appearance().clone(),
-                current.pointer.clone(),
-            ),
+        *current = std::rc::Rc::new(crate::mounting::UiMountedProjectionFrameOwner::new(
+            std::rc::Rc::new(successor),
+            current.appearance().clone(),
+            current.pointer.clone(),
         ));
         Ok(lost)
     }
@@ -27,24 +25,19 @@ impl UiMountedIdentityState {
     pub(crate) fn reconstruct_current_layouts(
         &mut self,
     ) -> Result<usize, crate::mounting::UiMountedProjectionDenial> {
-        if !self.current_projection.as_ref().is_some_and(|owner| {
+        let Some(current) = self.frame.projection_mut().filter(|owner| {
             owner
                 .projection()
                 .qualified_layout_reconstruction_required()
-        }) {
+        }) else {
             return Ok(0);
-        }
-        let current = self.current_projection.as_ref().ok_or(
-            crate::mounting::UiMountedProjectionDenial::MissingSemanticTextReconstructionSource,
-        )?;
+        };
         let mut successor = current.projection().clone();
         let reconstructed = successor.reconstruct_qualified_layouts()?;
-        self.current_projection = Some(std::rc::Rc::new(
-            crate::mounting::UiMountedProjectionFrameOwner::new(
-                std::rc::Rc::new(successor),
-                current.appearance().clone(),
-                current.pointer.clone(),
-            ),
+        *current = std::rc::Rc::new(crate::mounting::UiMountedProjectionFrameOwner::new(
+            std::rc::Rc::new(successor),
+            current.appearance().clone(),
+            current.pointer.clone(),
         ));
         Ok(reconstructed)
     }

@@ -1,5 +1,6 @@
 //! Logical allocation emptiness cannot deny an admitted command's Motion sample.
 use super::*;
+use crate::mounting::presentation::presented_surface_witness_for_certification;
 
 #[test]
 fn opacity_sample_is_issued_for_text_with_only_overhanging_visible_coverage() {
@@ -101,7 +102,12 @@ fn opacity_sample_is_issued_for_text_with_only_overhanging_visible_coverage() {
             previous,
             "preparation does not accept Motion"
         );
-        acceptance.accept(&current, presentation).unwrap();
+        acceptance
+            .accept(
+                &current,
+                &presented_surface_witness_for_certification(presentation),
+            )
+            .unwrap();
         assert_eq!(
             current
                 .motion_for_command(id)
@@ -110,7 +116,7 @@ fn opacity_sample_is_issued_for_text_with_only_overhanging_visible_coverage() {
                 .opacity_units(),
             units
         );
-        sampler.commit_prepared(prepared);
+        sampler.commit_prepared(prepared.presented_for_certification());
     }
 }
 

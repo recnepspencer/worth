@@ -73,6 +73,18 @@ fn declared_selection_portal_rejects_atomically_then_commits_selection_and_focus
         .session
         .current_projection_option(&projection, &row)
         .expect("the current selection row maps to one exact option");
+    // The wheel offset commits when the frame carrying it is accepted, and
+    // activation targets that frame.
+    assert!(matches!(
+        world.interaction.scroll([20, 20], -1_000_000_000),
+        UiHostInteractionIngressOutcome::Applied(_)
+    ));
+    let frame = world
+        .interaction
+        .session
+        .prepare_application_presentation_frame(UiMountedFrameRequest::all_bound_surfaces())
+        .expect("the direct wheel frame prepares over the current geometry");
+    world.interaction.publish_prepared_successor(frame);
     let UiSemanticInteraction::Activate(activation) = super::activation(&mut world, [20, 20])
     else {
         panic!("the current selection portal target activates")
@@ -90,10 +102,6 @@ fn declared_selection_portal_rejects_atomically_then_commits_selection_and_focus
         ((target_geometry.bounds().y() - target_geometry.clip_bounds().y()) * scale)
             .round()
             .max(0.0) as i64;
-    assert!(matches!(
-        world.interaction.scroll([20, 20], -1_000_000_000),
-        UiHostInteractionIngressOutcome::Applied(_)
-    ));
     let scrolled = world
         .interaction
         .session

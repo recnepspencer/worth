@@ -49,6 +49,7 @@ pub enum UiPortalDismissalCertificationOutcome {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum UiPortalDismissalCertificationStop {
     StalePresentation,
+    InteractionCancelled,
     IdentityExhausted,
     Transition,
     Proposal,
@@ -128,6 +129,7 @@ fn map_stop(
     use crate::facade::entry::portal_dismissal::UiPortalDismissalPublicationStop as Stop;
     match stop {
         Stop::IdentityExhausted => UiPortalDismissalCertificationStop::IdentityExhausted,
+        Stop::InteractionCancelled => UiPortalDismissalCertificationStop::InteractionCancelled,
         Stop::StalePresentation => UiPortalDismissalCertificationStop::StalePresentation,
         Stop::Transition => UiPortalDismissalCertificationStop::Transition,
         Stop::Proposal => UiPortalDismissalCertificationStop::Proposal,

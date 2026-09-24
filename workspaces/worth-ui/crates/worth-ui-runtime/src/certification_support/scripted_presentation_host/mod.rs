@@ -9,21 +9,25 @@ use crate::facade::mounted::{
 use worth_ui_host_contract::WorthUiHostCapabilityReport;
 
 mod accepted_text;
+mod acknowledgement;
 mod adapter;
 mod measurement_adapter;
+mod native_input;
 mod paint_observations;
 mod visual_capture_script;
 
+pub use acknowledgement::{ScriptedPresentationAcknowledgement, ScriptedPresentationOutcome};
 use visual_capture_script::ScriptedVisualCapture;
 
 #[derive(Clone, Default)]
 pub struct ScriptedPresentationHost {
     state: Arc<Mutex<ScriptedPresentationState>>,
     observation_retention: Arc<worth_ui_host_contract::UiHostObservationRetention>,
+    native_input: Option<Arc<Mutex<native_input::ScriptedPresentationNativeInput>>>,
 }
 
 enum ScriptedPresentationStart {
-    Outcome(UiHostSurfacePresentationOutcome),
+    Outcome(ScriptedPresentationOutcome),
     InFlight {
         completions: VecDeque<ScriptedSurfaceCompletion>,
         cancellation: UiHostSurfaceCancellationOutcome,
@@ -33,7 +37,7 @@ enum ScriptedPresentationStart {
 pub enum ScriptedSurfaceCompletion {
     Pending,
     RejectedBeforeEffects(worth_ui_host_contract::UiHostSurfacePresentationDenial),
-    Presented(worth_ui_host_contract::UiMountedSurfacePresentationCompletion),
+    Presented(ScriptedPresentationAcknowledgement),
     Superseded(worth_ui_host_contract::UiMountedSurfacePresentationSupersession),
     PresentationIndeterminate,
 }
@@ -157,14 +161,12 @@ fn scripted_presentation_cost() -> worth_ui_host_contract::UiHostPresentationCos
 }
 
 pub fn presented_completion() -> ScriptedSurfaceCompletion {
-    ScriptedSurfaceCompletion::Presented(
-        worth_ui_host_contract::UiMountedSurfacePresentationCompletion::new(
-            UiHostSurfacePresentationMode::RecordOnly,
-            scripted_presentation_epoch(),
-            recorded_effects(),
-            scripted_presentation_cost(),
-        ),
-    )
+    ScriptedSurfaceCompletion::Presented(ScriptedPresentationAcknowledgement::new(
+        UiHostSurfacePresentationMode::RecordOnly,
+        scripted_presentation_epoch(),
+        recorded_effects(),
+        scripted_presentation_cost(),
+    ))
 }
 
 impl ScriptedPresentationHost {
@@ -191,8 +193,8 @@ impl ScriptedPresentationHost {
     }
 
     pub fn push_presented(&self) {
-        self.push_presentation(UiHostSurfacePresentationOutcome::Presented(
-            worth_ui_host_contract::UiMountedSurfacePresentationCompletion::new(
+        self.push_presentation(ScriptedPresentationOutcome::Presented(
+            ScriptedPresentationAcknowledgement::new(
                 UiHostSurfacePresentationMode::RecordOnly,
                 scripted_presentation_epoch(),
                 recorded_effects(),
@@ -202,8 +204,8 @@ impl ScriptedPresentationHost {
     }
 
     pub fn push_native_display_presented(&self) {
-        self.push_presentation(UiHostSurfacePresentationOutcome::Presented(
-            worth_ui_host_contract::UiMountedSurfacePresentationCompletion::new(
+        self.push_presentation(ScriptedPresentationOutcome::Presented(
+            ScriptedPresentationAcknowledgement::new(
                 UiHostSurfacePresentationMode::NativeDisplay,
                 scripted_presentation_epoch(),
                 UiMountedCompletedEffects::new(vec![UiMountedEffectFamily::NativePaint]),
@@ -213,8 +215,8 @@ impl ScriptedPresentationHost {
     }
 
     pub fn push_native_display_settled_without_effects(&self) {
-        self.push_presentation(UiHostSurfacePresentationOutcome::Presented(
-            worth_ui_host_contract::UiMountedSurfacePresentationCompletion::new(
+        self.push_presentation(ScriptedPresentationOutcome::Presented(
+            ScriptedPresentationAcknowledgement::new(
                 UiHostSurfacePresentationMode::NativeDisplay,
                 scripted_presentation_epoch(),
                 UiMountedCompletedEffects::new(Vec::new()),
@@ -224,12 +226,12 @@ impl ScriptedPresentationHost {
     }
 
     pub fn push_rejected(&self) {
-        self.push_presentation(UiHostSurfacePresentationOutcome::RejectedBeforeEffects(
+        self.push_presentation(ScriptedPresentationOutcome::RejectedBeforeEffects(
             worth_ui_host_contract::UiHostSurfacePresentationDenial::AdapterDeclined,
         ));
     }
 
-    pub fn push_presentation(&self, outcome: UiHostSurfacePresentationOutcome) {
+    pub fn push_presentation(&self, outcome: ScriptedPresentationOutcome) {
         self.state
             .lock()
             .unwrap()

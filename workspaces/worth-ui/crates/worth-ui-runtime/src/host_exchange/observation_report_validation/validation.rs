@@ -41,6 +41,25 @@ impl UiHostObservationReportValidation {
         let admitted = UiStructurallyAdmittedObservationBatch::admit(batch, context.protocol)?;
         let core = admitted.core();
         let covered = UiSequenceCoveredObservationBatch::prove(admitted)?;
+        // A denial loses this batch's reports and leaves the cursor where it
+        // was. The host never resends it, so a denial of this session's next
+        // batch lets the host continue after it rather than strand every later
+        // batch behind a gap. A foreign or unproven batch records nothing.
+        let next_in_sequence = self.validate_sequence_progression(core.sequences()).is_ok();
+        let own_session = core.host_session() == context.host_session;
+        let outcome = self.admit_covered_batch(core, covered, context);
+        if outcome.is_err() && next_in_sequence && own_session {
+            self.pass_denied_sequence(core.sequences().last());
+        }
+        outcome
+    }
+
+    fn admit_covered_batch(
+        &mut self,
+        core: worth_ui_host_contract::UiHostObservationCanonicalCore,
+        covered: UiSequenceCoveredObservationBatch,
+        context: UiHostObservationValidationContext<'_>,
+    ) -> Result<UiHostObservationReportOutcome, UiHostObservationReportDenial> {
         let integrity = covered.integrity();
         if self.is_rejected(core.frame()) {
             return Err(UiHostObservationReportDenial::RejectedFrame);
@@ -54,7 +73,7 @@ impl UiHostObservationReportValidation {
         if self.is_indeterminate(core.frame(), core.binding()) {
             return self.quarantine(core, integrity);
         }
-        super::progression::validate_sequence_progression(self.last_sequence, core.sequences())?;
+        self.validate_sequence_progression(core.sequences())?;
         let basis = UiBasisAdmittedObservationBatch::admit(
             covered,
             context.mounted.retention(),
@@ -93,7 +112,7 @@ impl UiHostObservationReportValidation {
                 integrity,
             });
         self.quarantine_bytes = required_bytes;
-        self.last_sequence = Some(core.sequences().last());
+        self.advance_sequence(core.sequences().last());
         Ok(UiHostObservationReportOutcome::Quarantined(quarantined))
     }
 }

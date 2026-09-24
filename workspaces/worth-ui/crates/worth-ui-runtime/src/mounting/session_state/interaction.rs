@@ -1,27 +1,6 @@
 use super::WorthUiMountedSessionState;
 
 impl WorthUiMountedSessionState {
-    /// Admits one accepted publication step on an unchanged physical surface.
-    /// A retained epoch alone does not authorize skipping later publications.
-    pub(crate) fn direct_successor_presentation(
-        &self,
-        predecessor: worth_ui_host_contract::UiHostObservationPresentationBasis,
-        successor: worth_ui_host_contract::UiHostObservationPresentationBasis,
-    ) -> Option<worth_ui_host_contract::UiHostObservationPresentationBasis> {
-        if self.current_publication()?.predecessor() != Some(predecessor.frame())
-            || predecessor.frame() == successor.frame()
-            || predecessor.binding() != successor.binding()
-            || predecessor.host_surface() != successor.host_surface()
-            || self.classify_interaction_presentation(predecessor).ok()?
-                != crate::mounting::UiPresentedFrameBasisRelation::Retained
-        {
-            return None;
-        }
-        self.current_semantic_surface_for_presentation(successor)
-            .ok()?;
-        Some(successor)
-    }
-
     pub(crate) fn current_presented_hit_row(
         &self,
         presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
@@ -34,16 +13,30 @@ impl WorthUiMountedSessionState {
             .current_presented_hit_row(presentation, instance, work)
     }
 
+    /// What a host acknowledgement last proved on screen for `surface`, while
+    /// that surface still owns the binding it was presented on.
     pub(crate) fn current_presentation_for_surface(
         &self,
         surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
-    ) -> Option<worth_ui_host_contract::UiHostObservationPresentationBasis> {
-        let presentation = self.retention.current_presentation_for_surface(surface)?;
+    ) -> Option<crate::mounting::presentation::UiDisplayedSurfaceBasis> {
+        let displayed = self.retention.current_presentation_for_surface(surface)?;
         (self
-            .current_semantic_surface_for_presentation(presentation)
+            .current_semantic_surface_for_presentation(displayed.basis())
             .ok()
             == Some(surface))
-        .then_some(presentation)
+        .then_some(displayed)
+    }
+
+    /// The displayed record for the surface a host report names. A report only
+    /// selects the surface binding and host surface; what is on screen there
+    /// is what the runtime admitted, never the reported epoch.
+    pub(crate) fn current_displayed_presentation(
+        &self,
+        reported: worth_ui_host_contract::UiHostObservationPresentationBasis,
+    ) -> Option<crate::mounting::presentation::UiDisplayedSurfaceBasis> {
+        let surface = self.current_surface_for_binding(reported.binding())?;
+        self.current_presentation_for_surface(surface)
+            .filter(|displayed| displayed.basis().host_surface() == reported.host_surface())
     }
 
     /// Retention admits the latest physical epoch of this surface; mounted
@@ -82,36 +75,6 @@ impl WorthUiMountedSessionState {
             return Err(crate::mounting::UiPresentedFrameBasisDenial::PresentationTruthUnavailable);
         }
         self.retention.classify(presentation, None, None)
-    }
-
-    /// The interaction runtime already admitted this event against its exact
-    /// host epoch. A later presentation-only update of the same mounted frame
-    /// may make that epoch historical before a service consumes the event.
-    pub(crate) fn classify_admitted_interaction_presentation(
-        &self,
-        presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
-    ) -> Result<
-        crate::mounting::UiPresentedFrameBasisRelation,
-        crate::mounting::UiPresentedFrameBasisDenial,
-    > {
-        match self.classify_interaction_presentation(presentation) {
-            Ok(relation) => Ok(relation),
-            Err(crate::mounting::UiPresentedFrameBasisDenial::PresentationEpochMismatch) => {
-                let surface = self
-                    .current_surface_for_binding(presentation.binding())
-                    .ok_or(crate::mounting::UiPresentedFrameBasisDenial::BindingNotPresented)?;
-                let current = self.current_presentation_for_surface(surface).ok_or(
-                    crate::mounting::UiPresentedFrameBasisDenial::PresentationTruthUnavailable,
-                )?;
-                (current.frame() == presentation.frame()
-                    && current.binding() == presentation.binding()
-                    && current.host_surface() == presentation.host_surface()
-                    && presentation.epoch() < current.epoch())
-                .then_some(crate::mounting::UiPresentedFrameBasisRelation::Retained)
-                .ok_or(crate::mounting::UiPresentedFrameBasisDenial::PresentationEpochMismatch)
-            }
-            Err(denial) => Err(denial),
-        }
     }
 
     pub(crate) fn interaction_hit_test_candidates(
@@ -224,6 +187,7 @@ impl WorthUiMountedSessionState {
             .admit_current_mounted_incarnation_affinity(incarnation)?;
         let presentation = self
             .current_presentation_for_surface(input.surface)
+            .map(|displayed| displayed.basis())
             .ok_or(crate::mounting::UiCurrentHitTargetAffinityDenial::PresentationNotCurrent)?;
         if self
             .retention

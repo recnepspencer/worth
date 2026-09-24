@@ -22,10 +22,52 @@ pub(crate) struct UiNativeReadyOwner {
 struct ReadinessSlot {
     owner_generation: u64,
     next_work_generation: u64,
-    work: Option<UiNativeReadyWork>,
-    pending_generation: Option<u64>,
-    pending: bool,
-    level_only: bool,
+    readiness: SlotReadiness,
+}
+
+/// A committed owner signals the latest work it committed; a level owner
+/// signals only that it is ready, and each queued signal names its generation.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum SlotReadiness {
+    Committed(CommittedReadiness),
+    Level(LevelReadiness),
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum CommittedReadiness {
+    Empty,
+    Committed(UiNativeReadyWork),
+    Signaled(UiNativeReadyWork),
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum LevelReadiness {
+    Idle,
+    Signaled { generation: u64 },
+}
+
+impl ReadinessSlot {
+    const fn signaled(&self) -> bool {
+        matches!(
+            self.readiness,
+            SlotReadiness::Committed(CommittedReadiness::Signaled(_))
+                | SlotReadiness::Level(LevelReadiness::Signaled { .. })
+        )
+    }
+
+    fn committed_mut(&mut self) -> Result<&mut CommittedReadiness, ()> {
+        match &mut self.readiness {
+            SlotReadiness::Committed(committed) => Ok(committed),
+            SlotReadiness::Level(_) => Err(()),
+        }
+    }
+
+    fn level_mut(&mut self) -> Result<&mut LevelReadiness, ()> {
+        match &mut self.readiness {
+            SlotReadiness::Level(level) => Ok(level),
+            SlotReadiness::Committed(_) => Err(()),
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -121,14 +163,14 @@ impl UiNativeReadinessRegistry {
     }
 
     pub(crate) fn register(&self) -> Result<UiNativeReadyOwner, ()> {
-        self.register_slot(false)
+        self.register_slot(SlotReadiness::Committed(CommittedReadiness::Empty))
     }
 
     pub(crate) fn register_level(&self) -> Result<UiNativeReadyOwner, ()> {
-        self.register_slot(true)
+        self.register_slot(SlotReadiness::Level(LevelReadiness::Idle))
     }
 
-    fn register_slot(&self, level_only: bool) -> Result<UiNativeReadyOwner, ()> {
+    fn register_slot(&self, readiness: SlotReadiness) -> Result<UiNativeReadyOwner, ()> {
         let mut state = self.lock()?;
         let slot = state.slots.iter().position(Option::is_none).ok_or(())?;
         let generation = state.next_generation;
@@ -136,10 +178,7 @@ impl UiNativeReadinessRegistry {
         state.slots[slot] = Some(ReadinessSlot {
             owner_generation: generation,
             next_work_generation: 1,
-            work: None,
-            pending_generation: None,
-            pending: false,
-            level_only,
+            readiness,
         });
         Ok(UiNativeReadyOwner { slot, generation })
     }
@@ -152,65 +191,63 @@ impl UiNativeReadinessRegistry {
     ) -> Result<u64, ()> {
         let mut state = self.lock()?;
         let slot = state.slot_mut(owner)?;
-        if slot.level_only {
-            return Err(());
-        }
+        slot.committed_mut()?;
         let generation = slot.next_work_generation;
         slot.next_work_generation = generation.checked_add(1).ok_or(())?;
-        slot.work = Some(UiNativeReadyWork {
+        let work = UiNativeReadyWork {
             generation,
             scale_factor_milli,
             client_physical_size,
-        });
+        };
+        let committed = slot.committed_mut()?;
+        *committed = match committed {
+            CommittedReadiness::Signaled(_) => CommittedReadiness::Signaled(work),
+            CommittedReadiness::Empty | CommittedReadiness::Committed(_) => {
+                CommittedReadiness::Committed(work)
+            }
+        };
         Ok(generation)
     }
 
     pub(crate) fn signal(&self, owner: UiNativeReadyOwner) -> Result<bool, ()> {
         let mut state = self.lock()?;
-        let slot = state.slot_mut(owner)?;
-        if slot.level_only || slot.work.is_none() {
-            return Err(());
+        let committed = state.slot_mut(owner)?.committed_mut()?;
+        match *committed {
+            CommittedReadiness::Empty => Err(()),
+            CommittedReadiness::Committed(work) => {
+                *committed = CommittedReadiness::Signaled(work);
+                Ok(true)
+            }
+            CommittedReadiness::Signaled(_) => Ok(false),
         }
-        let queued = !slot.pending;
-        slot.pending = true;
-        Ok(queued)
     }
 
     pub(crate) fn signal_level(&self, owner: UiNativeReadyOwner) -> Result<bool, ()> {
         let mut state = self.lock()?;
         let slot = state.slot_mut(owner)?;
-        if !slot.level_only {
-            return Err(());
+        if matches!(slot.level_mut()?, LevelReadiness::Signaled { .. }) {
+            return Ok(false);
         }
-        let queued = !slot.pending;
-        if queued {
-            let generation = slot.next_work_generation;
-            slot.next_work_generation = generation.checked_add(1).ok_or(())?;
-            slot.pending_generation = Some(generation);
-        }
-        slot.pending = true;
-        Ok(queued)
+        let generation = slot.next_work_generation;
+        slot.next_work_generation = generation.checked_add(1).ok_or(())?;
+        *slot.level_mut()? = LevelReadiness::Signaled { generation };
+        Ok(true)
     }
 
     pub(super) fn cancel_level_signal(&self, owner: UiNativeReadyOwner) -> Result<(), ()> {
         let mut state = self.lock()?;
-        let slot = state.slot_mut(owner)?;
-        if !slot.level_only {
-            return Err(());
-        }
-        slot.pending = false;
-        slot.pending_generation = None;
+        *state.slot_mut(owner)?.level_mut()? = LevelReadiness::Idle;
         Ok(())
     }
 
     pub(crate) fn take(&self, owner: UiNativeReadyOwner) -> Result<UiNativeReadyWork, ()> {
         let mut state = self.lock()?;
-        let slot = state.slot_mut(owner)?;
-        if slot.level_only || !slot.pending {
+        let committed = state.slot_mut(owner)?.committed_mut()?;
+        let CommittedReadiness::Signaled(work) = *committed else {
             return Err(());
-        }
-        slot.pending = false;
-        slot.work.take().ok_or(())
+        };
+        *committed = CommittedReadiness::Empty;
+        Ok(work)
     }
 
     pub(crate) fn take_level(
@@ -218,12 +255,11 @@ impl UiNativeReadinessRegistry {
         owner: UiNativeReadyOwner,
     ) -> Result<UiNativeLevelReadinessGrant, ()> {
         let mut state = self.lock()?;
-        let slot = state.slot_mut(owner)?;
-        if !slot.level_only || !slot.pending {
+        let level = state.slot_mut(owner)?.level_mut()?;
+        let LevelReadiness::Signaled { generation } = *level else {
             return Err(());
-        }
-        let generation = slot.pending_generation.take().ok_or(())?;
-        slot.pending = false;
+        };
+        *level = LevelReadiness::Idle;
         Ok(UiNativeLevelReadinessGrant { generation })
     }
 
@@ -243,7 +279,7 @@ impl UiNativeReadinessRegistry {
                     .slots
                     .iter()
                     .flatten()
-                    .filter(|slot| slot.pending)
+                    .filter(|slot| slot.signaled())
                     .count()
             })
             .unwrap_or_default()
@@ -264,7 +300,7 @@ impl UiNativeReadinessRegistry {
             .slots
             .iter()
             .flatten()
-            .filter(|slot| slot.pending)
+            .filter(|slot| slot.signaled())
             .count();
         let exact_owner_set = registered_owners == expected.len()
             && expected.iter().all(|owner| {

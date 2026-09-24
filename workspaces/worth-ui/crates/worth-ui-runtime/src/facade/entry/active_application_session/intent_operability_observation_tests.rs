@@ -1,3 +1,6 @@
+use crate::certification_support::{
+    ScriptedPresentationAcknowledgement, ScriptedPresentationOutcome,
+};
 use crate::runtime::intent::{UiIntentInoperableCause, UiIntentStandingOperabilityUnavailable};
 use worth_ui_host_contract::*;
 
@@ -235,21 +238,36 @@ fn advance_motion_epoch(
             None,
         ))
         .unwrap();
-    host.push_presentation(UiHostSurfacePresentationOutcome::Presented(
-        UiMountedSurfacePresentationCompletion::new(
+    host.push_presentation(ScriptedPresentationOutcome::Presented(
+        ScriptedPresentationAcknowledgement::new(
             UiHostSurfacePresentationMode::NativeDisplay,
             UiHostPresentationEpoch::issued_by_host(2),
             UiMountedCompletedEffects::new(vec![UiMountedEffectFamily::NativePaint]),
             UiHostPresentationCostReport::default(),
         ),
     ));
-    let tick = session.prepare_motion_tick(1, presentation).unwrap();
-    session.present_prepared_motion_tick(tick, presentation);
+    let tick = session
+        .prepare_motion_tick(
+            1,
+            session
+                .mounted
+                .current_displayed_presentation(presentation)
+                .expect("the retained record displays this basis"),
+        )
+        .unwrap();
+    session.present_prepared_motion_tick(
+        tick,
+        session
+            .mounted
+            .current_displayed_presentation(presentation)
+            .expect("the retained record displays this basis"),
+    );
     assert_eq!(
         session
             .mounted
             .current_presentation_for_surface(target.surface())
             .unwrap()
+            .basis()
             .epoch(),
         UiHostPresentationEpoch::issued_by_host(2)
     );
@@ -265,7 +283,7 @@ fn target_at_center(
         .unwrap();
     let hit = session
         .mounted
-        .interaction_hit_test_basis(presentation)
+        .interaction_hit_test_basis(presentation.basis())
         .unwrap();
     assert_eq!(hit.rows().len(), 1);
     let bounds = hit.rows()[0].bounds();
@@ -275,7 +293,7 @@ fn target_at_center(
     );
     crate::runtime::interaction::targeting::resolve_presented_target(
         &session.mounted,
-        presentation,
+        presentation.basis(),
         position,
         &mut Default::default(),
     )

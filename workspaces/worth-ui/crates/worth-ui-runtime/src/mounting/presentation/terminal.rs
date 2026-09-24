@@ -1,6 +1,6 @@
 use worth_ui_host_contract::{
     UiHostSurfacePresentationDenial, UiMountedPresentationAttemptIdentity,
-    UiMountedSurfacePresentationCompletion, UiSurfaceBindingGeneration,
+    UiSurfaceBindingGeneration,
 };
 
 use super::outcome::{
@@ -140,21 +140,6 @@ pub(super) fn frame_rejections(
             UiMountedSurfacePresentationRejection::new(surface.requirement().binding(), denial)
         })
         .collect()
-}
-
-pub(super) fn completion_satisfies(
-    surface: &super::super::UiMountedSurfaceReceipt,
-    expected_effects: &[worth_ui_host_contract::UiMountedEffectFamily],
-    completion: &UiMountedSurfacePresentationCompletion,
-) -> bool {
-    if completion.mode() != surface.requirement().presentation_mode() {
-        return false;
-    }
-    completion_effects_satisfy(
-        expected_effects,
-        completion.effects().families(),
-        completion.cost(),
-    )
 }
 
 pub(super) fn completion_effects_satisfy(

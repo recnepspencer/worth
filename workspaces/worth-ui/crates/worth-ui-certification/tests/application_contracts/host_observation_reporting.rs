@@ -276,7 +276,7 @@ fn assert_indeterminate_quarantine() {
     let frame = prepared(&mut world.session);
     let frame_identity = frame.canonical_core().frame();
     world.host.push_presentation(
-        worth_ui_runtime::facade::mounted::UiHostSurfacePresentationOutcome::PresentationIndeterminate,
+        worth_ui_runtime::certification_support::ScriptedPresentationOutcome::PresentationIndeterminate,
     );
     assert!(matches!(
         world.session.present_prepared_mounted_frame(

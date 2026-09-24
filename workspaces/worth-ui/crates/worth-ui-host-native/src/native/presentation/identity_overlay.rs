@@ -3,13 +3,30 @@ use worth_ui_host_contract::{
     UiMountedIdentityOverlayMechanic, UiMountedPresentationDelta, UiMountedProjectionView,
 };
 
-#[derive(Clone, Copy, Default, PartialEq)]
-pub(super) struct UiNativeRetainedIdentityOverlay {
-    target: Option<worth_ui_host_contract::UiMountedInstanceIdentity>,
-    mechanic: Option<UiMountedIdentityOverlayMechanic>,
+#[derive(Clone, Copy, PartialEq)]
+pub(super) enum UiNativeRetainedIdentityOverlay {
+    Absent,
+    Retained {
+        target: worth_ui_host_contract::UiMountedInstanceIdentity,
+        mechanic: UiMountedIdentityOverlayMechanic,
+    },
 }
 
 impl UiNativeRetainedIdentityOverlay {
+    const fn target(self) -> Option<worth_ui_host_contract::UiMountedInstanceIdentity> {
+        match self {
+            Self::Retained { target, .. } => Some(target),
+            Self::Absent => None,
+        }
+    }
+
+    const fn mechanic(self) -> Option<UiMountedIdentityOverlayMechanic> {
+        match self {
+            Self::Retained { mechanic, .. } => Some(mechanic),
+            Self::Absent => None,
+        }
+    }
+
     pub(super) fn prepare(
         projection: &UiMountedProjectionView,
     ) -> Result<Self, UiHostSurfacePresentationDenial> {
@@ -25,7 +42,7 @@ impl UiNativeRetainedIdentityOverlay {
             return Err(malformed());
         }
         let Some((node, mechanic)) = mechanics.first() else {
-            return Ok(Self::default());
+            return Ok(Self::Absent);
         };
         validate(
             projection.frame(),
@@ -34,9 +51,9 @@ impl UiNativeRetainedIdentityOverlay {
             node.mounted_instance(),
             *mechanic,
         )?;
-        Ok(Self {
-            target: Some(node.mounted_instance()),
-            mechanic: Some(*mechanic),
+        Ok(Self::Retained {
+            target: node.mounted_instance(),
+            mechanic: *mechanic,
         })
     }
 
@@ -51,7 +68,7 @@ impl UiNativeRetainedIdentityOverlay {
                 .iter()
                 .any(|change| change.mounted_instance() == target)
         };
-        let retained = self.target.filter(|target| !touched(*target));
+        let retained = self.target().filter(|target| !touched(*target));
         let mut replacement = None;
         for change in delta.nodes() {
             let worth_ui_host_contract::UiMountedPresentationNodeChange::Upsert(state) = change
@@ -71,7 +88,7 @@ impl UiNativeRetainedIdentityOverlay {
         }
         let Some((state, mechanic)) = replacement else {
             if retained.is_none() {
-                *self = Self::default();
+                *self = Self::Absent;
             }
             return Ok(*self != predecessor);
         };
@@ -82,22 +99,22 @@ impl UiNativeRetainedIdentityOverlay {
             state.mounted_instance(),
             mechanic,
         )?;
-        *self = Self {
-            target: Some(state.mounted_instance()),
-            mechanic: Some(mechanic),
+        *self = Self::Retained {
+            target: state.mounted_instance(),
+            mechanic,
         };
         Ok(*self != predecessor)
     }
 
     pub(super) const fn is_active(self) -> bool {
-        self.mechanic.is_some()
+        matches!(self, Self::Retained { .. })
     }
 
     pub(super) fn raster_operations(
         self,
         basis: super::raster::UiNativeRasterBasis,
     ) -> Result<Vec<super::UiNativeRasterOperation>, UiHostSurfacePresentationDenial> {
-        let Some(mechanic) = self.mechanic else {
+        let Self::Retained { mechanic, .. } = self else {
             return Ok(Vec::new());
         };
         validate_coordinate_basis(mechanic, basis)?;
@@ -134,7 +151,7 @@ impl UiNativeRetainedIdentityOverlay {
         if predecessor == successor {
             return Ok(Vec::new());
         }
-        [predecessor.mechanic, successor.mechanic]
+        [predecessor.mechanic(), successor.mechanic()]
             .into_iter()
             .flatten()
             .map(logical_damage)

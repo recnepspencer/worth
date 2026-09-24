@@ -17,8 +17,8 @@ impl UiPointerPresenceOwner {
             .pointers
             .iter()
             .filter(|(_, record)| {
-                record.surface == Some(surface)
-                    && record.binding == Some(trigger.presentation().binding())
+                record.surface == surface
+                    && record.binding == trigger.presentation().binding()
                     && trigger.affects_position(record.position, record.target())
             })
             .map(|(pointer, record)| {
@@ -73,7 +73,7 @@ impl UiPointerPresenceOwner {
         let mut updates = Vec::new();
         for (pointer, record) in &self.pointers {
             let Some((_, presentation)) = presentations.iter().find(|(surface, presentation)| {
-                record.surface == Some(*surface) && record.binding == Some(presentation.binding())
+                record.surface == *surface && record.binding == presentation.binding()
             }) else {
                 report.unmatched += 1;
                 continue;

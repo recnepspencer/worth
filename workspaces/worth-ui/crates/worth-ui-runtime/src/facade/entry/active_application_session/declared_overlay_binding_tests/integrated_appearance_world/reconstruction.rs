@@ -21,7 +21,7 @@ fn distinct_reconstruction_retains_queued_event_basis_and_sequence() {
         .unwrap();
     let queued = super::pointer_geometry::pointer_batch(
         world.session.host_session.identity().as_u64(),
-        predecessor,
+        predecessor.basis(),
         1,
         [44_000, 54_000],
     );
@@ -49,7 +49,7 @@ fn distinct_reconstruction_retains_queued_event_basis_and_sequence() {
     );
     let next = super::pointer_geometry::pointer_batch(
         world.session.host_session.identity().as_u64(),
-        successor,
+        successor.basis(),
         2,
         [44_000, 54_000],
     );

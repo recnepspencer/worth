@@ -11,8 +11,33 @@ pub struct UiNativePlatformProfile {
     window: UiNativeWindowSpec,
     #[cfg(feature = "certification-support")]
     qualification: Option<worth_ui_host_native::UiNativeQualificationPlan>,
+    driver_qualification: UiNativeDriverQualification,
+}
+
+/// The derived-state loss a certification profile asks the driver to inject.
+///
+/// Ordinary builds carry no plan, so the driver and its progression keep one
+/// shape whatever features are enabled; only the progress owner reads it.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) struct UiNativeDriverQualification {
     #[cfg(feature = "certification-support")]
-    runtime_qualification: Option<super::runtime_qualification::UiNativeRuntimeQualificationPlan>,
+    plan: Option<super::runtime_qualification::UiNativeRuntimeQualificationPlan>,
+}
+
+impl UiNativeDriverQualification {
+    pub(crate) const fn ordinary() -> Self {
+        Self {
+            #[cfg(feature = "certification-support")]
+            plan: None,
+        }
+    }
+
+    #[cfg(feature = "certification-support")]
+    pub(crate) const fn plan(
+        self,
+    ) -> Option<super::runtime_qualification::UiNativeRuntimeQualificationPlan> {
+        self.plan
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -50,8 +75,7 @@ impl UiNativePlatformProfile {
             window,
             #[cfg(feature = "certification-support")]
             qualification: None,
-            #[cfg(feature = "certification-support")]
-            runtime_qualification: None,
+            driver_qualification: UiNativeDriverQualification::ordinary(),
         }
     }
 
@@ -69,7 +93,7 @@ impl UiNativePlatformProfile {
         mut self,
         plan: super::runtime_qualification::UiNativeRuntimeQualificationPlan,
     ) -> Self {
-        self.runtime_qualification = Some(plan);
+        self.driver_qualification = UiNativeDriverQualification { plan: Some(plan) };
         self
     }
 
@@ -87,11 +111,8 @@ impl UiNativePlatformProfile {
         worth_ui_host_native::WorthUiPreparedNativeHost::prepare_qualified()
     }
 
-    #[cfg(feature = "certification-support")]
-    pub(crate) const fn driver_runtime_qualification(
-        &self,
-    ) -> Option<super::runtime_qualification::UiNativeRuntimeQualificationPlan> {
-        self.runtime_qualification
+    pub(crate) const fn driver_qualification(&self) -> UiNativeDriverQualification {
+        self.driver_qualification
     }
 
     pub(crate) fn validate(&self) -> Result<(), UiNativePlatformPreparationDenial> {

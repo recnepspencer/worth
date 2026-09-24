@@ -1,5 +1,6 @@
 use worth_ui::facade::source::WorthUiFilesystemSourceProvider;
 use worth_ui_certification::scenario::filesystem_application_lifecycle::FilesystemApplicationLifecycleScenario;
+use worth_ui_runtime::certification_support::ScriptedPresentationOutcome;
 use worth_ui_runtime::certification_support::WorthUiPresentationAsyncInstallationCertificationExt;
 use worth_ui_runtime::facade::mounted::{UiHostSurfaceCancellationOutcome, UiMountedFrameOutcome};
 
@@ -32,9 +33,7 @@ fn native_partial_effect_cancellation_advances_query_to_recovery_required() {
 fn direct_host_indeterminacy_advances_query_to_recovery_required() {
     let host = ScriptedPresentationHost::native_display();
     let mut shell = native_semantic_shell(host.clone(), "direct-query-indeterminate");
-    host.push_presentation(
-        worth_ui_host_contract::UiHostSurfacePresentationOutcome::PresentationIndeterminate,
-    );
+    host.push_presentation(ScriptedPresentationOutcome::PresentationIndeterminate);
     crate::mounted_geometry_fixture::install_native_occurrence_geometry(&mut shell);
     assert!(matches!(
         shell

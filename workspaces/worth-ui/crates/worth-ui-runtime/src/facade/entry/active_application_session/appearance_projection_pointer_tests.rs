@@ -24,7 +24,10 @@ fn pointer_owner_state_reaches_unpublished_appearance_on_observation_close() {
         .unwrap()
         .presentation_for_surface(surface)
         .unwrap();
-    let hit_test = session.mounted.interaction_hit_test_basis(initial).unwrap();
+    let hit_test = session
+        .mounted
+        .interaction_hit_test_basis(initial.basis())
+        .unwrap();
     let identity = session.inspect_mounted_identity();
     let instance = identity
         .mounted_instances()
@@ -45,10 +48,10 @@ fn pointer_owner_state_reaches_unpublished_appearance_on_observation_close() {
     assert_eq!(
         session
             .mounted
-            .current_presented_incarnation_receipt(captured_incarnation, initial),
+            .current_presented_incarnation_receipt(captured_incarnation, initial.basis()),
         Ok(row.node_receipt()),
     );
-    let inside = inside_position(&session, initial, instance);
+    let inside = inside_position(&session, initial.basis(), instance);
     let outside = UiHostSurfacePosition::viewport_logical(-1_000, -1_000);
     for (sequence, position, button, held, expected_red, expected_pressed, pointer_output) in [
         (1, inside, None, false, 20, None, Some(true)),
@@ -97,7 +100,7 @@ fn pointer_owner_state_reaches_unpublished_appearance_on_observation_close() {
             .unwrap();
         let batch = pointer_batch(
             session.host_session.identity().as_u64(),
-            presentation,
+            presentation.basis(),
             sequence,
             UiHostPointerIdentity::new(1),
             position,
@@ -108,7 +111,7 @@ fn pointer_owner_state_reaches_unpublished_appearance_on_observation_close() {
             assert_eq!(
                 session
                     .mounted
-                    .current_presented_incarnation_receipt(captured_incarnation, initial),
+                    .current_presented_incarnation_receipt(captured_incarnation, initial.basis()),
                 Err(crate::mounting::UiCurrentHitTargetAffinityDenial::PresentationNotCurrent),
             );
         }
@@ -124,7 +127,7 @@ fn pointer_owner_state_reaches_unpublished_appearance_on_observation_close() {
             expected_pressed
         );
         if let Some(posture) = pressed.postures().first() {
-            assert_eq!(posture.presentation(), presentation);
+            assert_eq!(posture.presentation(), presentation.basis());
             assert_eq!(posture.target(), instance);
             assert_eq!(posture.press_sequence().value(), 2);
         }

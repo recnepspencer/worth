@@ -5,13 +5,15 @@ use worth_ui_platform_pulse::observation_contract::{
     PlatformPulseSemanticFocusCause,
 };
 
-use crate::external_observation::{
-    NativeClientPixelCapture, NativeClientPixelPoint, NativeKeyboardCommand,
-};
+use crate::external_observation::{NativeClientPixelPoint, NativeKeyboardCommand};
 use crate::installation::{CanonicalPlatformPulse, IsolatedPulseInstallation};
 use crate::native_platform::{CertifiedNativePlatform, NativePlatformContract};
 use crate::product_process::{CargoBuiltPlatformPulse, SuccessfulPlatformPulseExit};
 use crate::source_delta::{QueryStatusV1, QueryStatusV2};
+
+#[path = "query_application_launch_pixels.rs"]
+mod pixels;
+use pixels::{changed_region_pixels, changed_status_pixels};
 
 #[test]
 fn authored_query_revisions_reach_the_real_pulse_process() {
@@ -241,6 +243,7 @@ fn authored_query_revisions_reach_the_real_pulse_process() {
         .deliver_pointer_activation(&client, review_target)
         .expect("open the review modal through the current product target");
     let mut review_presented = false;
+    let mut review_focus = None;
     while !review_presented {
         let envelope = launch
             .lifecycle
@@ -249,6 +252,9 @@ fn authored_query_revisions_reach_the_real_pulse_process() {
         match envelope.outcome() {
             PlatformPulseLifecycleObservation::SemanticFocusPublished(focus) => {
                 review_presented = focus.cause() == PlatformPulseSemanticFocusCause::PortalInitial;
+                if review_presented {
+                    review_focus = Some(format!("{focus:?}"));
+                }
             }
             PlatformPulseLifecycleObservation::TerminalFailure(failure) => {
                 panic!("product failed while opening review: {failure:?}")
@@ -256,9 +262,56 @@ fn authored_query_revisions_reach_the_real_pulse_process() {
             _ => {}
         }
     }
-    let modal = platform
-        .capture_client_area(&client)
-        .expect("capture presented review modal");
+    let visible_modal = loop {
+        let capture = platform
+            .capture_client_area(&client)
+            .expect("capture presented review modal");
+        if changed_region_pixels(&signals_closed, &capture, [500, 250, 550, 520]) >= 24 {
+            break capture;
+        }
+        if Instant::now() >= deadline {
+            let mut later = Vec::new();
+            for _ in 0..16 {
+                let Ok(envelope) = launch
+                    .lifecycle
+                    .next(Instant::now() + Duration::from_millis(10))
+                else {
+                    break;
+                };
+                later.push(format!("{:?}", envelope.outcome()));
+            }
+            panic!(
+                "review modal did not reach native pixels; focus={review_focus:?}; capture={}x{}; changed={}; full_changed={}; later={later:?}; trace={:?}",
+                capture.width(),
+                capture.height(),
+                changed_region_pixels(&signals_closed, &capture, [500, 250, 550, 520]),
+                changed_region_pixels(&signals_closed, &capture, [0, 0, 1536, 1024]),
+                launch.lifecycle.failure_snapshot()
+            );
+        }
+        std::thread::sleep(Duration::from_millis(10));
+    };
+    let mut previous = visible_modal;
+    let mut stable_captures = 0;
+    let modal = loop {
+        std::thread::sleep(Duration::from_millis(30));
+        let capture = platform
+            .capture_client_area(&client)
+            .expect("capture stable review action");
+        stable_captures = if changed_region_pixels(&previous, &capture, [780, 625, 245, 125]) < 12 {
+            stable_captures + 1
+        } else {
+            0
+        };
+        if stable_captures == 3 {
+            break capture;
+        }
+        assert!(
+            Instant::now() < deadline,
+            "review action pixels did not settle"
+        );
+        previous = capture;
+    };
     let approve_target = NativeClientPixelPoint::interior(
         &modal,
         892 * modal.width() / 1536,
@@ -271,11 +324,21 @@ fn authored_query_revisions_reach_the_real_pulse_process() {
         .expect("approve the review through the native modal target");
     let mut action_issued = false;
     let mut action_published = false;
+    let mut action_observations = Vec::new();
     while !action_issued || !action_published {
-        let envelope = launch
-            .lifecycle
-            .next(deadline)
-            .expect("action Query lifecycle event");
+        let envelope = launch.lifecycle.next(deadline).unwrap_or_else(|denial| {
+            let after = platform.capture_client_area(&client).ok();
+            panic!(
+                "action Query lifecycle event: {denial:?}; recent={:?}; modal_changed={:?}; trace={:?}",
+                action_observations,
+                after.as_ref().map(|after| changed_region_pixels(&modal, after, [500, 250, 550, 520])),
+                launch.lifecycle.failure_snapshot()
+            )
+        });
+        action_observations.push(format!("{:?}", envelope.outcome()));
+        if action_observations.len() > 12 {
+            action_observations.remove(0);
+        }
         match envelope.outcome() {
             PlatformPulseLifecycleObservation::QueryProjectionIssued(projection) => {
                 assert_eq!(projection.native_value(), Some("Deployed"));
@@ -320,34 +383,4 @@ fn authored_query_revisions_reach_the_real_pulse_process() {
     installation
         .close()
         .expect("release the isolated source installation");
-}
-
-fn changed_status_pixels(
-    before: &NativeClientPixelCapture,
-    after: &NativeClientPixelCapture,
-) -> usize {
-    changed_region_pixels(before, after, [1392, 779, 85, 27])
-}
-
-fn changed_region_pixels(
-    before: &NativeClientPixelCapture,
-    after: &NativeClientPixelCapture,
-    region: [u32; 4],
-) -> usize {
-    assert_eq!(
-        [before.width(), before.height()],
-        [after.width(), after.height()]
-    );
-    let [x, y, width, height] = region;
-    let left = x * before.width() / 1536;
-    let top = y * before.height() / 1024;
-    let right = (x + width) * before.width() / 1536;
-    let bottom = (y + height) * before.height() / 1024;
-    (top..bottom)
-        .flat_map(|row| (left..right).map(move |column| (row, column)))
-        .filter(|(row, column)| {
-            let index = ((*row * before.width() + *column) * 4) as usize;
-            before.rgba()[index..index + 3] != after.rgba()[index..index + 3]
-        })
-        .count()
 }

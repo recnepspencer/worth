@@ -1,6 +1,5 @@
-use crate::facade::mounted::{
-    UiHostSurfacePresentationDenial, UiHostSurfacePresentationOutcome, UiMountedFrameOutcome,
-};
+use crate::certification_support::ScriptedPresentationOutcome;
+use crate::facade::mounted::{UiHostSurfacePresentationDenial, UiMountedFrameOutcome};
 #[cfg(feature = "certification-support")]
 use crate::inspection::mounted_frame::{UiMountedInspectionReceipt, UiMountedInspectionRequest};
 
@@ -25,7 +24,7 @@ fn host_required_reconstruction_recovers_through_current_mounted_authority() {
             UiMountedFrameOutcome::Published(_)
         ));
 
-        host.push_presentation(UiHostSurfacePresentationOutcome::RejectedBeforeEffects(
+        host.push_presentation(ScriptedPresentationOutcome::RejectedBeforeEffects(
             if atlas_first {
                 UiHostSurfacePresentationDenial::TextAtlasPresentationDeferred
             } else {
@@ -41,7 +40,7 @@ fn host_required_reconstruction_recovers_through_current_mounted_authority() {
         ));
 
         if atlas_first {
-            host.push_presentation(UiHostSurfacePresentationOutcome::RejectedBeforeEffects(
+            host.push_presentation(ScriptedPresentationOutcome::RejectedBeforeEffects(
                 UiHostSurfacePresentationDenial::ReconstructionRequired,
             ));
         }
@@ -69,7 +68,7 @@ fn non_reconstruction_rejection_is_returned_without_an_extra_host_attempt() {
         .expect("native certification shell launches");
     crate::facade::entry::native_application_identity_trace_test_support::
         install_bound_surface_geometry(&mut shell);
-    host.push_presentation(UiHostSurfacePresentationOutcome::RejectedBeforeEffects(
+    host.push_presentation(ScriptedPresentationOutcome::RejectedBeforeEffects(
         UiHostSurfacePresentationDenial::ExternalTimeout,
     ));
     let rejected = shell
@@ -112,7 +111,7 @@ fn atlas_ready_resumes_the_rejected_frame_without_rebinding() {
                 UiHostSurfaceCancellationOutcome::CancelledBeforeEffects,
             );
         } else {
-            host.push_presentation(UiHostSurfacePresentationOutcome::RejectedBeforeEffects(
+            host.push_presentation(ScriptedPresentationOutcome::RejectedBeforeEffects(
                 UiHostSurfacePresentationDenial::TextAtlasPresentationDeferred,
             ));
         }
@@ -212,7 +211,6 @@ fn indeterminate_recovery_waits_for_the_exact_physical_correlation() {
     let unrelated = worth_ui_host_native::UiNativePhysicalProgressGrant::from_certification(
         worth_ui_host_native::UiNativePhysicalProgressClass::TextAtlas,
         None,
-        false,
     );
     let unrelated =
         crate::native_platform::UiNativeApplicationPhysicalProgress::from_host(unrelated);
@@ -232,7 +230,6 @@ fn indeterminate_recovery_waits_for_the_exact_physical_correlation() {
     let exact = worth_ui_host_native::UiNativePhysicalProgressGrant::from_certification(
         worth_ui_host_native::UiNativePhysicalProgressClass::PresentationRecovery,
         Some(exact),
-        false,
     );
     let exact = crate::native_platform::UiNativeApplicationPhysicalProgress::from_host(exact);
     let recovered = shell.progress_indeterminate_presentation_recovery(indeterminate, &exact, 8, 7);
@@ -296,7 +293,6 @@ fn indeterminate_recovery_reconciles_an_uncertain_surface_deregistration() {
     let exact = worth_ui_host_native::UiNativePhysicalProgressGrant::from_certification(
         worth_ui_host_native::UiNativePhysicalProgressClass::PresentationRecovery,
         Some(exact),
-        false,
     );
     let exact = crate::native_platform::UiNativeApplicationPhysicalProgress::from_host(exact);
 

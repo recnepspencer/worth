@@ -70,14 +70,31 @@ impl UiSampledAppearanceCoverage {
 
 impl UiNativeRetainedDrawList {
     pub(super) fn reconstruct_sampled_appearance_coverage(&mut self) -> Result<(), Denial> {
-        let mut coverage = UiSampledAppearanceCoverage::new();
+        let mut sampled = Vec::new();
         for (identity, change) in &self.sample_overrides {
             if identity.is_appearance_sample() {
-                coverage.replace(
+                sampled.push((
                     *identity,
                     self.sampled_target_bounds(*identity, Some(*change))?,
-                )?;
+                ));
             }
+        }
+        // The index grows by insertion, so the rebuilt tree takes the shape of
+        // its insertion order. Inserting in reading order keeps neighbours
+        // together; the override map's hash order would scatter them and make
+        // lookup cost vary between otherwise identical reconstructions.
+        sampled.sort_by(|(_, left), (_, right)| {
+            let key = |bounds: &Option<UiMountedCanonicalBox>| {
+                bounds.map(|bounds| (bounds.y(), bounds.x()))
+            };
+            match (key(left), key(right)) {
+                (Some((ly, lx)), Some((ry, rx))) => ly.total_cmp(&ry).then(lx.total_cmp(&rx)),
+                (left, right) => left.is_some().cmp(&right.is_some()),
+            }
+        });
+        let mut coverage = UiSampledAppearanceCoverage::new();
+        for (identity, bounds) in sampled {
+            coverage.replace(identity, bounds)?;
         }
         self.sampled_appearance = coverage;
         Ok(())

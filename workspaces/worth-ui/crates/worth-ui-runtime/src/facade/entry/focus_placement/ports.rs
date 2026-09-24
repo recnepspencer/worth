@@ -44,6 +44,7 @@ impl UiFocusPlacementPorts<'_> {
         let presentation = self
             .mounted
             .current_presentation_for_surface(current.scope().semantic_surface())
+            .map(|displayed| displayed.basis())
             .ok_or(UiFocusPlacementExecutionDenial::SurfaceUnavailable)?;
         self.inspect_target(
             target,

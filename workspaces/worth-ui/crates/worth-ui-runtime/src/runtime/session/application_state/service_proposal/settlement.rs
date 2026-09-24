@@ -163,6 +163,7 @@ impl super::WorthUiApplicationSessionState {
         let motion_presentation = motion_owner.as_ref().map(|_| {
             mounted
                 .presentation_for_surface(transition.request().semantic_surface())
+                .map(|displayed| displayed.basis())
                 .expect("published portal surface retains its exact host presentation basis")
         });
         let motion_commit = motion_owner.map(|motion| {

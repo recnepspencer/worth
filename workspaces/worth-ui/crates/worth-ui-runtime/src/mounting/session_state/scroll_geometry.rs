@@ -1,8 +1,11 @@
 impl super::WorthUiMountedSessionState {
     pub(crate) fn scroll_geometry_reservations(
         &self,
-    ) -> Option<std::collections::BTreeMap<worth_ui_host_contract::UiSemanticSurfaceIdentity, usize>>
-    {
+    ) -> Option<
+        std::rc::Rc<
+            std::collections::BTreeMap<worth_ui_host_contract::UiSemanticSurfaceIdentity, usize>,
+        >,
+    > {
         self.occurrence_geometry.scroll_geometry_reservations()
     }
 
@@ -16,7 +19,9 @@ impl super::WorthUiMountedSessionState {
     )> {
         // This lookup admits the exact retained physical epoch and live binding,
         // not merely a frame number supplied by a candidate geometry caller.
-        let presentation = self.current_presentation_for_surface(target.semantic_surface())?;
+        let presentation = self
+            .current_presentation_for_surface(target.semantic_surface())
+            .map(|displayed| displayed.basis())?;
         self.presentation
             .retained_scroll_chrome_geometry(presentation, target)
     }

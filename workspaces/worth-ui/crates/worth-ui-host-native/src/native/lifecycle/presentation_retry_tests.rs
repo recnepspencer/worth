@@ -194,8 +194,13 @@ fn rejected(denial: UiHostSurfacePresentationDenial) -> UiHostSurfacePresentatio
 }
 
 fn presented() -> UiHostSurfacePresentationOutcome {
+    let world = crate::native::presentation::DrawListWorld::new();
+    let initial = world.initial(
+        worth_ui_host_contract::UiMountedFrameIdentity::mint_unbound().unwrap(),
+        [],
+    );
     UiHostSurfacePresentationOutcome::Presented(
-        worth_ui_host_contract::UiMountedSurfacePresentationCompletion::new(
+        world.consumption_view(&initial).acknowledge_presented(
             worth_ui_host_contract::UiHostSurfacePresentationMode::NativeDisplay,
             worth_ui_host_contract::UiHostPresentationEpoch::issued_by_host(1),
             worth_ui_host_contract::UiMountedCompletedEffects::new(vec![

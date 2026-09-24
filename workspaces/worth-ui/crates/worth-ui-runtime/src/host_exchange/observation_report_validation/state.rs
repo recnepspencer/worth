@@ -44,6 +44,9 @@ pub(super) struct UiHostObservationBatchFingerprint {
 pub struct UiHostObservationReportValidation {
     pub(super) capacity: UiHostObservationCapacity,
     pub(super) last_sequence: Option<UiHostObservationSequence>,
+    /// The end of this session's batch denied at the next position, if the
+    /// host has not continued since.
+    pub(super) denied_sequence: Option<UiHostObservationSequence>,
     pub(super) partitions: BTreeMap<UiSurfaceBindingGeneration, UiHostObservationPartition>,
     pub(super) global_reports: usize,
     pub(super) global_bytes: usize,
@@ -72,6 +75,7 @@ impl UiHostObservationReportValidation {
         Self {
             capacity,
             last_sequence: None,
+            denied_sequence: None,
             partitions: BTreeMap::new(),
             global_reports: 0,
             global_bytes: 0,
@@ -153,6 +157,7 @@ impl UiHostObservationReportValidation {
     pub(crate) fn shutdown(&mut self) {
         self.shutdown = true;
         self.last_sequence = None;
+        self.denied_sequence = None;
         self.partitions.clear();
         self.observation_bases.clear();
         self.quarantine.clear();

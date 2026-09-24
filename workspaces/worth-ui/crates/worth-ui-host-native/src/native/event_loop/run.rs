@@ -59,6 +59,7 @@ impl WorthUiNativeEventLoop {
             configuration: self.window,
             client: Some(client),
             first_frame_presented: false,
+            pending_close: false,
             readiness,
             readiness_owner,
             physical_readiness_owner,

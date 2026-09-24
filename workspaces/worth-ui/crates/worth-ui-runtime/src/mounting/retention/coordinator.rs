@@ -86,9 +86,11 @@ impl UiMountedFrameRetentionCoordinator {
     /// the advance is accepted, so owners rebind to exactly that surface.
     pub(crate) fn update_current_presentation_epoch(
         &mut self,
-        presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
+        witness: &crate::mounting::presentation::UiPresentedSurfaceWitness,
     ) -> Result<worth_ui_host_contract::UiSemanticSurfaceIdentity, UiPresentedFrameBasisDenial>
     {
+        let displayed = witness.displayed_basis();
+        let presentation = displayed.basis();
         let mut authority = self.authority.borrow_mut();
         let mut evidence = authority
             .evidence_rc(presentation.frame())
@@ -102,7 +104,7 @@ impl UiMountedFrameRetentionCoordinator {
             })
             .ok_or(UiPresentedFrameBasisDenial::BindingNotPresented)?;
         let surface = authority.surface_for_current_presentation(previous)?;
-        Rc::make_mut(&mut evidence).update_presentation_epoch(presentation)?;
+        Rc::make_mut(&mut evidence).update_presentation_epoch(displayed)?;
         authority.replace_evidence(evidence);
         Ok(surface)
     }
@@ -140,6 +142,27 @@ impl UiMountedFrameRetentionCoordinator {
             .visual_region_basis(presentation.binding())
             .hit_test();
         Ok(UiPresentedHitTestBasis::new(presentation, relation, rows))
+    }
+
+    pub(crate) fn presented_portal_overlay(
+        &self,
+        presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
+        target: crate::runtime::motion::UiMotionTargetIdentity,
+    ) -> Result<
+        Option<worth_ui_host_contract::UiMountedPortalOverlayMechanic>,
+        UiPresentedFrameBasisDenial,
+    > {
+        match self.authority.borrow().frame(presentation.frame()) {
+            UiMountedRetainedFrameLookup::Found { evidence, .. } => {
+                evidence.presented_portal_overlay(presentation, target)
+            }
+            UiMountedRetainedFrameLookup::Expired { .. } => {
+                Err(UiPresentedFrameBasisDenial::Expired)
+            }
+            UiMountedRetainedFrameLookup::Unknown { .. } => {
+                Err(UiPresentedFrameBasisDenial::Unknown)
+            }
+        }
     }
 
     pub(crate) fn current_projection_input(

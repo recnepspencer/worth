@@ -17,10 +17,10 @@ impl UiMountedMotionSampler {
             // instance, not the instance itself, so it can never answer a
             // lookup keyed by mounted instance. Portal content and Scroll
             // content are both resolved by target.
-            if !state.presented || state.track.target().scope() != UiMotionTargetScope::Ordinary {
+            if state.track.target().scope() != UiMotionTargetScope::Ordinary {
                 return None;
             }
-            let sample = state.current?;
+            let sample = state.on_screen()?;
             (sample.target().mounted_instance() == mounted_instance
                 && same_surface_binding(sample.geometry()?.presentation_basis(), presentation))
             .then_some(sample)
@@ -30,16 +30,29 @@ impl UiMountedMotionSampler {
         (sample.filter(|_| unique), considered)
     }
 
+    /// Whether a sample of `target` reached the screen after `presentation`,
+    /// so a reader acting on that presentation saw the target elsewhere.
+    pub(crate) fn target_presented_after(
+        &self,
+        target: crate::runtime::motion::UiMotionTargetIdentity,
+        presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
+    ) -> bool {
+        self.tracks
+            .get(&target)
+            .and_then(|state| state.on_screen())
+            .and_then(|sample| sample.geometry())
+            .is_some_and(|geometry| {
+                let shown = geometry.presentation_basis();
+                !same_surface_binding(shown, presentation) || shown.epoch() > presentation.epoch()
+            })
+    }
+
     pub(crate) fn current_sample_for_target(
         &self,
         target: crate::runtime::motion::UiMotionTargetIdentity,
         presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
     ) -> Option<super::super::UiPresentationMotionSampleReceipt> {
-        let state = self.tracks.get(&target)?;
-        if !state.presented {
-            return None;
-        }
-        let sample = state.current?;
+        let sample = self.tracks.get(&target)?.on_screen()?;
         same_surface_binding(sample.geometry()?.presentation_basis(), presentation)
             .then_some(sample)
     }

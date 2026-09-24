@@ -71,7 +71,7 @@ pub(super) fn press_target(world: &mut World, sequence: u64) {
         .unwrap();
     let batch = super::stationary_motion::inputs::pointer_batch(
         world.session.host_session.identity().as_u64(),
-        presentation,
+        presentation.basis(),
         sequence,
         UiHostPointerIdentity::new(7),
         target_position(),
@@ -101,7 +101,7 @@ pub(super) fn release_target(world: &mut World, sequence: u64, activation_expect
         .unwrap();
     let batch = super::stationary_motion::inputs::pointer_batch(
         world.session.host_session.identity().as_u64(),
-        presentation,
+        presentation.basis(),
         sequence,
         UiHostPointerIdentity::new(7),
         target_position(),
@@ -172,7 +172,7 @@ fn assert_capture(
                 binding: current.binding(),
                 mounted_instance: world.instances[1],
             },
-            current,
+            current.basis(),
         )
         .unwrap();
     let pressed = world.session.interaction.pressed_appearance_snapshot();
@@ -182,7 +182,7 @@ fn assert_capture(
         .find(|posture| posture.pointer() == UiHostPointerIdentity::new(7))
         .unwrap();
     assert_eq!(posture.target(), world.instances[1]);
-    assert_eq!(posture.presentation(), current);
+    assert_eq!(posture.presentation(), current.basis());
     assert_eq!(posture.node_receipt(), receipt);
     assert_eq!(posture.class(), expected);
 }

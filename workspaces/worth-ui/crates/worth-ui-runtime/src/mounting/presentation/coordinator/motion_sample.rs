@@ -7,6 +7,7 @@ use worth_ui_host_contract::{
 use super::super::consumption_view::{
     UiMountedHostPresentationAuthority, UiRuntimeMountedFrameConsumptionInput,
 };
+use super::super::presented_surface::{UiIssuedSurfacePresentation, UiPresentedSurfaceWitness};
 use super::UiMountedPresentationCoordinator;
 use crate::facade::UiHostEffectPort;
 
@@ -25,7 +26,7 @@ pub(super) struct UiPendingMotionSamplePresentation {
 pub(crate) enum UiMotionSamplePresentationOutcome {
     Presented {
         prepared: super::super::motion_sampling::UiPreparedMotionSampling,
-        presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
+        witness: super::super::UiPresentedSurfaceWitness,
     },
     RejectedBeforeEffects,
     InFlight,
@@ -120,6 +121,7 @@ impl UiMountedPresentationCoordinator {
             .adapter()
             .present_mounted_surface(host.authority(), &view);
         self.settle_initial_motion_sample(
+            host.authority(),
             prepared,
             attempt,
             requirement,
@@ -139,7 +141,7 @@ impl UiMountedPresentationCoordinator {
         let completion = host
             .adapter()
             .complete_mounted_surface(host.authority(), token);
-        Some(self.settle_pending_motion_sample(pending, completion))
+        Some(self.settle_pending_motion_sample(host.authority(), pending, completion))
     }
 
     pub(crate) fn cancel_motion_sample(
@@ -168,6 +170,7 @@ impl UiMountedPresentationCoordinator {
 
     fn settle_initial_motion_sample(
         &mut self,
+        authority: &crate::host::adapter::UiHostAdapterSessionAuthority,
         prepared: super::super::motion_sampling::UiPreparedMotionSampling,
         attempt: UiMountedPresentationAttemptIdentity,
         requirement: UiMountedSurfaceBindingRequirement,
@@ -185,10 +188,14 @@ impl UiMountedPresentationCoordinator {
                 self.active.borrow_mut().remove(&attempt);
                 let settled = settle_presented(
                     prepared,
-                    requirement,
-                    presentation,
-                    &expected_effects,
                     completion,
+                    authority,
+                    UiIssuedSurfacePresentation {
+                        attempt,
+                        requirement,
+                        frame: presentation.frame(),
+                        expected_effects: &expected_effects,
+                    },
                 );
                 self.accept_motion_evidence(settled, acceptance, requirement.binding())
             }
@@ -214,6 +221,7 @@ impl UiMountedPresentationCoordinator {
 
     fn settle_pending_motion_sample(
         &mut self,
+        authority: &crate::host::adapter::UiHostAdapterSessionAuthority,
         mut pending: UiPendingMotionSamplePresentation,
         completion: UiHostSurfaceInFlightCompletion,
     ) -> UiMotionSamplePresentationOutcome {
@@ -231,10 +239,14 @@ impl UiMountedPresentationCoordinator {
                 self.active.borrow_mut().remove(&pending.attempt);
                 let settled = settle_presented(
                     pending.prepared,
-                    pending.requirement,
-                    pending.presentation,
-                    &pending.expected_effects,
                     completion,
+                    authority,
+                    UiIssuedSurfacePresentation {
+                        attempt: pending.attempt,
+                        requirement: pending.requirement,
+                        frame: pending.presentation.frame(),
+                        expected_effects: &pending.expected_effects,
+                    },
                 );
                 self.accept_motion_evidence(
                     settled,
@@ -265,27 +277,12 @@ impl UiMountedPresentationCoordinator {
 
 fn settle_presented(
     prepared: super::super::motion_sampling::UiPreparedMotionSampling,
-    requirement: UiMountedSurfaceBindingRequirement,
-    presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
-    expected_effects: &[worth_ui_host_contract::UiMountedEffectFamily],
     completion: worth_ui_host_contract::UiMountedSurfacePresentationCompletion,
+    authority: &crate::host::adapter::UiHostAdapterSessionAuthority,
+    issued: UiIssuedSurfacePresentation<'_>,
 ) -> UiMotionSamplePresentationOutcome {
-    if completion.mode() != requirement.presentation_mode()
-        || !super::super::terminal::completion_effects_satisfy(
-            expected_effects,
-            completion.effects().families(),
-            completion.cost(),
-        )
-    {
-        return UiMotionSamplePresentationOutcome::PresentationIndeterminate;
-    }
-    UiMotionSamplePresentationOutcome::Presented {
-        prepared,
-        presentation: worth_ui_host_contract::UiHostObservationPresentationBasis::new(
-            requirement.host_surface(),
-            presentation.frame(),
-            requirement.binding(),
-            completion.epoch(),
-        ),
+    match UiPresentedSurfaceWitness::admit(completion, authority, issued) {
+        Ok(witness) => UiMotionSamplePresentationOutcome::Presented { prepared, witness },
+        Err(_) => UiMotionSamplePresentationOutcome::PresentationIndeterminate,
     }
 }

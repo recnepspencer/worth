@@ -105,6 +105,8 @@ mod scroll_pose_application;
 mod scroll_region_declaration;
 #[path = "active_application_session/scroll_settle_disposition.rs"]
 mod scroll_settle_disposition;
+#[path = "active_application_session/scroll_settle_retry.rs"]
+mod scroll_settle_retry;
 #[path = "active_application_session/scroll_settlement_lifecycle.rs"]
 mod scroll_settlement_lifecycle;
 #[path = "active_application_session/scroll_target_resolution.rs"]
@@ -186,7 +188,7 @@ pub struct WorthUiActiveApplicationSession {
     pub(super) visual_captures: crate::inspection::visual_snapshot::UiVisualCaptureRegistry,
     pub(super) visual_overlays: crate::inspection::visual_snapshot::UiVisualOverlayRegistry,
     pub(super) rebind: crate::runtime::rebind::UiRebindRuntimeState,
-    pub(super) scroll_settle_retry: scroll_accepted_sample_settlement::UiScrollSettleRetry,
+    pub(super) owed_scroll_settles: scroll_settle_retry::UiOwedScrollSettles,
     pub(super) last_scroll_settle_stop: Option<crate::runtime::scroll::UiScrollSettleStop>,
     pub(super) last_scroll_settle_disposition: UiScrollSettleDisposition,
 }

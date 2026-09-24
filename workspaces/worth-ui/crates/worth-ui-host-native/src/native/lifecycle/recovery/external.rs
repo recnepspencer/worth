@@ -10,10 +10,9 @@ pub(crate) fn prepare_external_recovery(
     if !prepare_graphics(state, preparation) {
         return false;
     }
-    let Some(device) = state.device.as_ref() else {
-        return false;
-    };
-    let Some(surface) = state.presentation_surface.as_ref() else {
+    let Some(crate::native::UiNativePresentationOwners { device, surface }) =
+        state.presentation_owners.as_ref()
+    else {
         return false;
     };
     state.lifecycle.commit_physical_recovery(
@@ -64,10 +63,9 @@ fn prepare_graphics(
     else {
         return false;
     };
-    let Some(device) = state.device.as_mut() else {
-        return false;
-    };
-    let Some(surface) = state.presentation_surface.as_mut() else {
+    let Some(crate::native::UiNativePresentationOwners { device, surface }) =
+        state.presentation_owners.as_mut()
+    else {
         return false;
     };
     if recovery == crate::native::UiNativeGraphicsRecovery::DeviceLost

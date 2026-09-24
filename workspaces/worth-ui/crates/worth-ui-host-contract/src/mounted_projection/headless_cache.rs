@@ -12,8 +12,14 @@ pub struct UiHeadlessMountedResourceHandle(u64);
 
 #[derive(Debug, Default)]
 pub struct WorthUiHeadlessMountedResourceCache {
-    binding: Option<crate::UiSurfaceBindingGeneration>,
+    bound: Option<BoundResources>,
     next_handle: u64,
+}
+
+/// Resource handles are only meaningful for the binding they were issued under.
+#[derive(Debug)]
+struct BoundResources {
+    binding: crate::UiSurfaceBindingGeneration,
     by_content: BTreeMap<u64, UiHeadlessMountedResourceHandle>,
 }
 
@@ -22,19 +28,30 @@ impl WorthUiHeadlessMountedResourceCache {
         &mut self,
         view: &super::UiMountedProjectionView,
     ) -> Result<(), WorthUiMountedResourceCacheDenial> {
-        self.require_binding(view.binding());
+        let binding = view.binding();
+        if self
+            .bound
+            .as_ref()
+            .is_some_and(|bound| bound.binding != binding)
+        {
+            self.bound = None;
+        }
+        let bound = self.bound.get_or_insert_with(|| BoundResources {
+            binding,
+            by_content: BTreeMap::new(),
+        });
         for resource in view.resources().entries() {
-            if self.by_content.contains_key(&resource.content_identity()) {
+            if bound.by_content.contains_key(&resource.content_identity()) {
                 continue;
             }
-            if self.by_content.len() >= NATIVE_RESOURCE_LIMIT {
+            if bound.by_content.len() >= NATIVE_RESOURCE_LIMIT {
                 return Err(WorthUiMountedResourceCacheDenial::CapacityExceeded);
             }
             self.next_handle = self
                 .next_handle
                 .checked_add(1)
                 .ok_or(WorthUiMountedResourceCacheDenial::CapacityExceeded)?;
-            self.by_content.insert(
+            bound.by_content.insert(
                 resource.content_identity(),
                 UiHeadlessMountedResourceHandle(self.next_handle),
             );
@@ -43,18 +60,12 @@ impl WorthUiHeadlessMountedResourceCache {
     }
 
     pub fn handle_for(&self, content_identity: u64) -> Option<UiHeadlessMountedResourceHandle> {
-        self.by_content.get(&content_identity).copied()
+        self.bound
+            .as_ref()
+            .and_then(|bound| bound.by_content.get(&content_identity).copied())
     }
 
     pub fn binding(&self) -> Option<crate::UiSurfaceBindingGeneration> {
-        self.binding
-    }
-
-    fn require_binding(&mut self, binding: crate::UiSurfaceBindingGeneration) {
-        if self.binding == Some(binding) {
-            return;
-        }
-        self.binding = Some(binding);
-        self.by_content.clear();
+        self.bound.as_ref().map(|bound| bound.binding)
     }
 }

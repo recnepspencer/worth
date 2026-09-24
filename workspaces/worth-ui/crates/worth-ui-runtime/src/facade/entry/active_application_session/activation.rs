@@ -188,8 +188,7 @@ impl WorthUiActiveApplicationSession {
             ),
             command_routing,
             ime_composing: false,
-            scroll_settle_retry:
-                super::scroll_accepted_sample_settlement::UiScrollSettleRetry::Settled,
+            owed_scroll_settles: super::scroll_settle_retry::UiOwedScrollSettles::none(),
             last_scroll_settle_stop: None,
             last_scroll_settle_disposition: super::UiScrollSettleDisposition::Idle,
             portal_exit_retention: super::portal_exit_retention::UiPortalExitRetentionCoordinator::new(),

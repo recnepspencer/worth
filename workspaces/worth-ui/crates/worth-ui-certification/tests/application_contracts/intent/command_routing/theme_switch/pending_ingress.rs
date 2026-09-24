@@ -2,7 +2,8 @@ use super::*;
 use worth_ui::facade::app::{
     WorthUiNativeInteractionIngressStop, WorthUiNativeManagedRebindProgress,
 };
-use worth_ui_host_contract::{UiHostSurfacePresentationDenial, UiHostSurfacePresentationOutcome};
+use worth_ui_host_contract::UiHostSurfacePresentationDenial;
+use worth_ui_runtime::certification_support::ScriptedPresentationOutcome;
 
 #[test]
 fn pending_posture_retains_native_input_until_physical_retry_settles() {
@@ -36,7 +37,7 @@ fn pending_posture_retains_native_input_until_physical_retry_settles() {
     let WorthUiNativeIntentTransition::AttemptPrepared(prepared) = transitions.remove(0) else {
         panic!("shortcut must admit the real command");
     };
-    host.push_presentation(UiHostSurfacePresentationOutcome::RejectedBeforeEffects(
+    host.push_presentation(ScriptedPresentationOutcome::RejectedBeforeEffects(
         UiHostSurfacePresentationDenial::TextAtlasPresentationDeferred,
     ));
     assert!(matches!(
@@ -91,7 +92,6 @@ fn pending_posture_retains_native_input_until_physical_retry_settles() {
             worth_ui_host_native::UiNativePhysicalProgressGrant::from_certification(
                 worth_ui_host_native::UiNativePhysicalProgressClass::TextAtlas,
                 None,
-                false,
             ),
         );
     let receipt = match shell.progress_managed_rebind(&progress).unwrap() {

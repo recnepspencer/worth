@@ -12,11 +12,11 @@ impl UiNativeInputObservationState {
             self.record_stop(UiNativeInputObservationStop::NoPresentationBasis);
             return false;
         }
-        if self.profile.is_none() {
+        if self.profile.profile().is_none() {
             self.record_stop(UiNativeInputObservationStop::MissingEventProfile);
             return false;
         }
-        if self.profile_requires_completion {
+        if self.profile.awaits_completion() {
             self.record_stop(UiNativeInputObservationStop::StalePresentationAffinity);
             return false;
         }

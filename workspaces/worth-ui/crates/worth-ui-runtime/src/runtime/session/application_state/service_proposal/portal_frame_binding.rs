@@ -79,6 +79,7 @@ impl WorthUiApplicationSessionState {
                 };
                 match self.stage_focus_reveal(
                     preparation.scroll.requirement(),
+                    frame,
                     mounted,
                     scroll_state,
                     surface_incarnation,

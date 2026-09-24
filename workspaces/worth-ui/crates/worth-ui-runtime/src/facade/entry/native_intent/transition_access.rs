@@ -25,8 +25,8 @@ impl WorthUiNativeIntentIngress {
         self.transitions
     }
 
-    pub fn dismissals(&self) -> &[crate::facade::interaction::UiDismissInteraction] {
-        &self.dismissals
+    pub fn take_dismissals(&mut self) -> Box<[super::super::WorthUiAdmittedPortalDismissal]> {
+        std::mem::replace(&mut self.dismissals, Box::new([]))
     }
 
     pub const fn duplicate_batches(&self) -> usize {

@@ -1,3 +1,6 @@
+use worth_ui_runtime::certification_support::{
+    ScriptedPresentationAcknowledgement, ScriptedPresentationOutcome,
+};
 use worth_ui_test_support::WorthUiMountedIdentityCertificationExt;
 use worth_ui_test_support::WorthUiMountedPublicationCertificationExt;
 
@@ -198,29 +201,27 @@ fn adapter_overreported_effects_cannot_publish_as_exact_completion() {
     let host = ScriptedPresentationHost::default();
     let (mut session, _) = mounted_session(host.clone(), "presentation-extra-effect", 1);
     let frame = prepared(&mut session);
-    host.push_presentation(
-        worth_ui_host_contract::UiHostSurfacePresentationOutcome::Presented(
-            worth_ui_host_contract::UiMountedSurfacePresentationCompletion::new(
-                UiHostSurfacePresentationMode::RecordOnly,
-                worth_ui_host_contract::UiHostPresentationEpoch::issued_by_host(1),
-                worth_ui_host_contract::UiMountedCompletedEffects::new(vec![
-                    worth_ui_host_contract::UiMountedEffectFamily::RecordedProjection,
-                    worth_ui_host_contract::UiMountedEffectFamily::NativePaint,
-                ]),
-                worth_ui_host_contract::UiHostPresentationCostReport::from_adapter(
-                    worth_ui_host_contract::UiHostPresentationCostInput {
-                        presented_surfaces: 1,
-                        translated_rows: 0,
-                        translated_bytes: 0,
-                        native_resource_cache_hits: 0,
-                        native_resource_cache_misses: 0,
-                        asynchronous_handoffs: 0,
-                        ..Default::default()
-                    },
-                ),
+    host.push_presentation(ScriptedPresentationOutcome::Presented(
+        ScriptedPresentationAcknowledgement::new(
+            UiHostSurfacePresentationMode::RecordOnly,
+            worth_ui_host_contract::UiHostPresentationEpoch::issued_by_host(1),
+            worth_ui_host_contract::UiMountedCompletedEffects::new(vec![
+                worth_ui_host_contract::UiMountedEffectFamily::RecordedProjection,
+                worth_ui_host_contract::UiMountedEffectFamily::NativePaint,
+            ]),
+            worth_ui_host_contract::UiHostPresentationCostReport::from_adapter(
+                worth_ui_host_contract::UiHostPresentationCostInput {
+                    presented_surfaces: 1,
+                    translated_rows: 0,
+                    translated_bytes: 0,
+                    native_resource_cache_hits: 0,
+                    native_resource_cache_misses: 0,
+                    asynchronous_handoffs: 0,
+                    ..Default::default()
+                },
             ),
         ),
-    );
+    ));
 
     let model = ModelPresentation::start(&[ModelSurfaceStart::EffectStateUnknown]);
     let outcome =

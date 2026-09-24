@@ -48,6 +48,14 @@ impl UiMountedPresentationLeaseGate {
             .is_some_and(|active| token.issued_by_runtime(&active))
     }
 
+    pub(crate) fn admits_completion(
+        &self,
+        completion: &worth_ui_host_contract::UiMountedSurfacePresentationCompletion,
+    ) -> bool {
+        self.active_seal()
+            .is_some_and(|active| completion.issued_by_runtime(&active))
+    }
+
     fn active_seal(&self) -> Option<Rc<()>> {
         self.active.borrow().as_ref().and_then(Weak::upgrade)
     }

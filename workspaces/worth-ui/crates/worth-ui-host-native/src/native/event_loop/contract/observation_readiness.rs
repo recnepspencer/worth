@@ -122,6 +122,22 @@ impl UiNativeInputReachability {
 }
 
 impl UiNativeObservationReadinessGrant {
+    #[cfg(feature = "certification-support")]
+    #[doc(hidden)]
+    pub const fn from_certification(generation: u64) -> Self {
+        Self::issued(
+            generation,
+            UiNativeInputReachability {
+                event_count: 0,
+                pointer_button_events: 0,
+                keyboard_events: 0,
+                text_events: 0,
+                ime_preedit_events: 0,
+                ime_commit_events: 0,
+                ime_cancel_events: 0,
+            },
+        )
+    }
     pub(in crate::native::event_loop) const fn issued(
         generation: u64,
         reachability: UiNativeInputReachability,

@@ -114,7 +114,7 @@ impl UiMountedAppearanceFrameState {
         {
             next.entry(input.owner_instance()).or_default().push(*input);
         }
-        let reconstruct = self.reconstruction_nodes.is_some();
+        let reconstruct = self.reconstruction.is_some();
         let owners = self
             .scroll_chrome
             .by_owner

@@ -1,5 +1,6 @@
 //! Producer-unit proof of physical composition, not authored topology admission.
 use super::*;
+use crate::mounting::presentation::presented_surface_witness_for_certification;
 use crate::mounting::presentation::work_producer_tests::world::{
     rect_spec, MountedPresentationWorld,
 };
@@ -64,13 +65,14 @@ fn nested_scroll_samples_compose_once_and_keep_a_settled_ancestor() {
             commands: Arc::from([UiMountedScrollMotionCommand {
                 identity: command,
                 clips: clips.clone(),
-                base_translation: [0.0; 2],
+                base_translation: None,
             }]),
             thumbs: Arc::from([]),
+            displayed: [0.0; 2],
             accepted: Default::default(),
         }
     };
-    state.scroll_motion_groups.groups = Arc::new(BTreeMap::from([
+    state.scroll_motion_groups.groups = std::rc::Rc::new(BTreeMap::from([
         (
             outer_target,
             group(
@@ -127,8 +129,13 @@ fn nested_scroll_samples_compose_once_and_keep_a_settled_ancestor() {
     let (_, acceptance) = state
         .prepare_motion_sample(rest.receipt(), presentation, &lease)
         .unwrap();
-    acceptance.accept(&state, presentation).unwrap();
-    sampler.commit_prepared(rest);
+    acceptance
+        .accept(
+            &state,
+            &presented_surface_witness_for_certification(presentation),
+        )
+        .unwrap();
+    sampler.commit_prepared(rest.presented_for_certification());
     let moving = sampler.prepare_tick(121, presentation).unwrap();
     let (work, rejected) = state
         .prepare_motion_sample(moving.receipt(), presentation, &lease)
@@ -160,8 +167,13 @@ fn nested_scroll_samples_compose_once_and_keep_a_settled_ancestor() {
     let (_, accepted) = state
         .prepare_motion_sample(moving.receipt(), presentation, &lease)
         .unwrap();
-    accepted.accept(&state, presentation).unwrap();
-    sampler.commit_prepared(moving);
+    accepted
+        .accept(
+            &state,
+            &presented_surface_witness_for_certification(presentation),
+        )
+        .unwrap();
+    sampler.commit_prepared(moving.presented_for_certification());
 
     sampler
         .install(install(83, inner_target, 15.0, 12.0, 80.0))
@@ -170,8 +182,13 @@ fn nested_scroll_samples_compose_once_and_keep_a_settled_ancestor() {
     let (_, accepted) = state
         .prepare_motion_sample(rest.receipt(), presentation, &lease)
         .unwrap();
-    accepted.accept(&state, presentation).unwrap();
-    sampler.commit_prepared(rest);
+    accepted
+        .accept(
+            &state,
+            &presented_surface_witness_for_certification(presentation),
+        )
+        .unwrap();
+    sampler.commit_prepared(rest.presented_for_certification());
     let next = sampler.prepare_tick(320, presentation).unwrap();
     assert_eq!(
         next.receipt().samples().len(),
@@ -186,6 +203,105 @@ fn nested_scroll_samples_compose_once_and_keep_a_settled_ancestor() {
     };
     assert_translation(work.changes()[0], -18.0);
     assert_eq!(work.changes()[0].clip(), Some(rect(10.0, 40.0)));
+}
+
+#[test]
+fn a_group_rebuilt_before_its_accepted_sample_settles_moves_from_where_the_host_shows_it() {
+    let world = MountedPresentationWorld::new();
+    let frame = UiMountedFrameIdentity::mint_unbound().unwrap();
+    let projection = world.projection(frame, [rect_spec(world.first_instance, 0.0)]);
+    let command = projection.authored_paint_commands()[0].identity();
+    let mut state =
+        UiMountedPresentationState::from_projection(&projection, world.requirement, None);
+    let owner = UiMountedInstanceIdentity::mint_unbound().unwrap();
+    let target = UiMotionTargetIdentity::from_scroll_region_owner(
+        world.requirement.semantic_surface(),
+        owner,
+        81,
+    );
+    let clips: Arc<[_]> = Arc::from([UiMountedScrollMotionClip {
+        bounds: rect(0.0, 100.0),
+        owner: Some(owner),
+    }]);
+    // The publication still names the origin: the accepted sample has not
+    // settled into the semantic offset when the group is bound again.
+    let bind = |state: &UiMountedPresentationState| UiMountedScrollMotionGroup {
+        input: UiMountedScrollMotionGroupInput {
+            target,
+            owner,
+            content: rect(0.0, 200.0),
+            viewport: rect(0.0, 100.0),
+            offset: UiScrollOffset::origin(),
+            scale: UiScrollPresentationDeviceScale::admit(1000).unwrap(),
+            chrome: None,
+            members: Arc::from([UiMountedScrollMotionMember {
+                instance: world.first_instance,
+                clips: clips.clone(),
+            }]),
+        },
+        commands: Arc::from([UiMountedScrollMotionCommand {
+            identity: command,
+            clips: clips.clone(),
+            base_translation: state.accepted_base_translation(command),
+        }]),
+        thumbs: Arc::from([]),
+        displayed: state.displayed_scroll_offset(target, UiScrollOffset::origin()),
+        accepted: Default::default(),
+    };
+    state.scroll_motion_groups.groups = std::rc::Rc::new(BTreeMap::from([(target, bind(&state))]));
+    state.scroll_motion_groups.memberships =
+        Arc::new(HashMap::from([(command, Arc::from([target]))]));
+    let presentation = UiHostObservationPresentationBasis::new(
+        world.requirement.host_surface(),
+        frame,
+        world.requirement.binding(),
+        UiHostPresentationEpoch::issued_by_host(1),
+    );
+    let mut sampler = UiMountedMotionSampler::default();
+    let install = |identity, from, to| {
+        UiMotionCommitReceipt::for_sampling_test_transition(
+            identity,
+            target,
+            presentation,
+            Some([0.0, from, 100.0, 200.0]),
+            true,
+            Some([0.0, to, 100.0, 200.0]),
+            true,
+            UiMotionDeclaration::scroll_settle(120),
+            None,
+        )
+    };
+    let lease = UiMountedPresentationLeaseGate::default().claim().unwrap();
+    let present =
+        |state: &UiMountedPresentationState, sampler: &mut UiMountedMotionSampler, tick| {
+            let prepared = sampler.prepare_tick(tick, presentation).unwrap();
+            let (work, acceptance) = state
+                .prepare_motion_sample(prepared.receipt(), presentation, &lease)
+                .unwrap();
+            let UiMountedPresentationWorkView::Sample(sample) = work.view() else {
+                panic!("physical sample");
+            };
+            let change = sample.changes()[0];
+            acceptance
+                .accept(
+                    state,
+                    &presented_surface_witness_for_certification(presentation),
+                )
+                .unwrap();
+            sampler.commit_prepared(prepared.presented_for_certification());
+            change
+        };
+    sampler.install(install(81, 0.0, -40.0)).unwrap();
+    present(&state, &mut sampler, 1);
+    assert_translation(present(&state, &mut sampler, 121), -40.0);
+
+    let rebound = bind(&state);
+    assert_eq!(rebound.commands[0].base_translation, Some([0.0, -40.0]));
+    assert_eq!(rebound.displayed, [0.0, 40.0]);
+    state.scroll_motion_groups.groups = std::rc::Rc::new(BTreeMap::from([(target, rebound)]));
+    sampler.install(install(82, -40.0, -60.0)).unwrap();
+    assert_translation(present(&state, &mut sampler, 200), -40.0);
+    assert_translation(present(&state, &mut sampler, 320), -60.0);
 }
 
 fn rect(y: f32, height: f32) -> UiMountedCanonicalBox {

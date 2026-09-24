@@ -2,6 +2,8 @@ use super::*;
 
 #[path = "tests/damage.rs"]
 mod damage;
+#[path = "tests/in_flight_commit.rs"]
+mod in_flight_commit;
 #[path = "tests/opacity.rs"]
 mod opacity;
 #[path = "tests/presented_index.rs"]
@@ -13,7 +15,7 @@ fn commit_tick(
     presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
 ) -> UiPresentationMotionSamplingReceipt {
     let prepared = sampler.prepare_tick(tick, presentation).unwrap();
-    sampler.commit_prepared(prepared)
+    sampler.commit_prepared(prepared.presented_for_certification())
 }
 
 #[test]
@@ -57,10 +59,7 @@ fn retargeting_continues_from_the_current_presentation_sample() {
         ),
     );
     let installed = current_sampler.install(current).unwrap();
-    assert_eq!(
-        installed.sample().unwrap().geometry().unwrap().components(),
-        mid
-    );
+    assert_eq!(installed.sample().geometry().unwrap().components(), mid);
 }
 
 #[test]

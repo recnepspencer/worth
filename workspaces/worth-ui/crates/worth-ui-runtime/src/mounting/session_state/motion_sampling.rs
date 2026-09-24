@@ -1,4 +1,5 @@
 use super::WorthUiMountedSessionState;
+use crate::mounting::presentation::motion_sampling::UiPreparedMotionWork;
 
 pub(crate) enum UiMountedMotionSampleSettlement {
     Committed(crate::mounting::presentation::motion_sampling::UiPresentationMotionSamplingReceipt),
@@ -29,14 +30,10 @@ impl WorthUiMountedSessionState {
     ) {
         publication.with_surface_presentations(|surfaces| {
             for surface in surfaces {
+                debug_assert_eq!(surface.displayed_basis().frame(), publication.frame());
                 self.motion_sampling.rebind_published_presentation(
                     surface.semantic_surface(),
-                    worth_ui_host_contract::UiHostObservationPresentationBasis::new(
-                        surface.host_surface(),
-                        publication.frame(),
-                        surface.binding(),
-                        surface.epoch(),
-                    ),
+                    surface.displayed_basis().basis(),
                 );
             }
         });
@@ -65,10 +62,9 @@ impl WorthUiMountedSessionState {
         crate::mounting::presentation::motion_sampling::UiPresentationMotionSamplingDenial,
     > {
         let installation = self.motion_sampling.install(receipt)?;
-        if let Some(sample) = installation.sample() {
-            if self.presentation.accept_published_entrance(sample)? {
-                self.motion_sampling.accept_published_entrance(sample);
-            }
+        let sample = installation.sample();
+        if self.presentation.accept_published_entrance(sample)? {
+            self.motion_sampling.accept_published_entrance(sample);
         }
         Ok(installation)
     }
@@ -97,11 +93,12 @@ impl WorthUiMountedSessionState {
     pub(crate) fn prepare_motion_tick(
         &mut self,
         tick: u64,
-        presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
+        displayed: crate::mounting::presentation::UiDisplayedSurfaceBasis,
     ) -> Result<
         crate::mounting::presentation::motion_sampling::UiPreparedMotionSampling,
         crate::mounting::presentation::motion_sampling::UiPresentationMotionSamplingDenial,
     > {
+        let presentation = displayed.basis();
         if self
             .presentation
             .binding_requires_reconstruction(presentation.binding())
@@ -115,17 +112,20 @@ impl WorthUiMountedSessionState {
         &mut self,
         host: &crate::facade::WorthUiHostSessionAuthority,
         prepared: crate::mounting::presentation::motion_sampling::UiPreparedMotionSampling,
-        presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
+        displayed: crate::mounting::presentation::UiDisplayedSurfaceBasis,
     ) -> UiMountedMotionSampleSettlement {
-        if prepared.receipt().samples().is_empty() {
-            let receipt = self.motion_sampling.commit_prepared(prepared);
-            self.last_motion_sampling_cost = Some(receipt.cost());
-            return UiMountedMotionSampleSettlement::Committed(receipt);
-        }
+        let prepared = match prepared.into_work() {
+            UiPreparedMotionWork::Unsampled(unsampled) => {
+                let receipt = self.motion_sampling.commit_prepared(unsampled);
+                self.last_motion_sampling_cost = Some(receipt.cost());
+                return UiMountedMotionSampleSettlement::Committed(receipt);
+            }
+            UiPreparedMotionWork::NeedsPresentation(prepared) => prepared,
+        };
         let capability_report = host.capability_report().clone();
         let outcome = self.presentation.present_motion_sample(
             prepared,
-            presentation,
+            displayed.basis(),
             host.effect_port(),
             super::publication::mounted_host_authority(host, &capability_report),
         );
@@ -149,29 +149,32 @@ impl WorthUiMountedSessionState {
         use crate::mounting::UiMotionSamplePresentationOutcome as Outcome;
 
         match outcome {
-            Outcome::Presented {
-                prepared,
-                presentation,
-            } => {
-                let Ok(prepared) = prepared.with_presented_basis(presentation) else {
+            Outcome::Presented { prepared, witness } => {
+                let displayed = witness.displayed_basis();
+                let presentation = displayed.basis();
+                let Some(prepared) = prepared.into_presented(&witness) else {
                     self.presentation
                         .mark_motion_sample_indeterminate(presentation.binding());
                     return UiMountedMotionSampleSettlement::PresentationIndeterminate;
                 };
                 let hit_predecessor = self.retention.hit_evidence(presentation.frame());
-                let Ok(presented_surface) = self
-                    .retention
-                    .update_current_presentation_epoch(presentation)
+                let Ok(presented_surface) =
+                    self.retention.update_current_presentation_epoch(&witness)
                 else {
                     self.presentation
                         .mark_motion_sample_indeterminate(presentation.binding());
                     return UiMountedMotionSampleSettlement::PresentationIndeterminate;
                 };
+                debug_assert_eq!(
+                    presented_surface,
+                    witness.requirement().semantic_surface(),
+                    "retention records the surface the witness proved"
+                );
                 let mut receipt = self.motion_sampling.commit_prepared(prepared);
                 receipt.record_presented_surface(
                     crate::mounting::presentation::motion_sampling::UiPresentationMotionPresentedSurface::new(
                         presented_surface,
-                        presentation,
+                        displayed,
                     ),
                 );
                 let targets = receipt
@@ -212,6 +215,62 @@ impl WorthUiMountedSessionState {
             && self.motion_sampling.has_active_tracks()
     }
 
+    /// The presentation at which a press on `admitted` may be classified
+    /// against one Portal. A later publication on the same physical surface
+    /// can supersede `admitted` while the host still holds the press, and the
+    /// press still names what the reader saw. It is read at the current
+    /// presentation only when that Portal looked the same in both: the
+    /// admitted frame showed the same overlay geometry, and no Motion sample
+    /// of the Portal reached the screen after the press. Otherwise what the
+    /// reader saw is unknown and the press stays stale.
+    pub(crate) fn portal_dismissal_presentation(
+        &self,
+        admitted: worth_ui_host_contract::UiHostObservationPresentationBasis,
+        target: crate::runtime::motion::UiMotionTargetIdentity,
+    ) -> Result<
+        worth_ui_host_contract::UiHostObservationPresentationBasis,
+        crate::mounting::UiPresentedFrameBasisDenial,
+    > {
+        use crate::mounting::UiPresentedFrameBasisDenial as Denial;
+        if self
+            .current_semantic_surface_for_presentation(admitted)
+            .is_ok()
+        {
+            return Ok(admitted);
+        }
+        if self
+            .presentation
+            .binding_requires_reconstruction(admitted.binding())
+        {
+            return Err(Denial::PresentationTruthUnavailable);
+        }
+        let current = self
+            .current_surface_for_binding(admitted.binding())
+            .and_then(|surface| {
+                self.current_presentation_for_surface(surface)
+                    .map(|displayed| displayed.basis())
+            })
+            .filter(|current| {
+                current.host_surface() == admitted.host_surface()
+                    && current.epoch() > admitted.epoch()
+            })
+            .ok_or(Denial::Expired)?;
+        let seen = self.retention.presented_portal_overlay(admitted, target)?;
+        let shown = self.retention.presented_portal_overlay(current, target)?;
+        let unchanged = match (seen, shown) {
+            (Some(seen), Some(shown)) => same_portal_geometry(seen, shown),
+            _ => false,
+        };
+        if !unchanged
+            || self
+                .motion_sampling
+                .target_presented_after(target, admitted)
+        {
+            return Err(Denial::Expired);
+        }
+        Ok(current)
+    }
+
     pub(crate) fn committed_motion_geometry_for_target(
         &self,
         target: crate::runtime::motion::UiMotionTargetIdentity,
@@ -226,19 +285,10 @@ impl WorthUiMountedSessionState {
         {
             return Err(crate::mounting::UiPresentedFrameBasisDenial::PresentationTruthUnavailable);
         }
-        let relation = self.classify_admitted_interaction_presentation(presentation)?;
-        let row_presentation =
-            if relation == crate::mounting::UiPresentedFrameBasisRelation::Retained {
-                self.current_surface_for_binding(presentation.binding())
-                    .and_then(|surface| self.current_presentation_for_surface(surface))
-                    .filter(|current| current.frame() == presentation.frame())
-                    .unwrap_or(presentation)
-            } else {
-                presentation
-            };
+        self.current_semantic_surface_for_presentation(presentation)?;
         let coordinate_space = self
             .retention
-            .interaction_hit_test_basis(row_presentation)?
+            .interaction_hit_test_basis(presentation)?
             .rows()
             .iter()
             .find(|row| row.mounted_instance() == target.mounted_instance())
@@ -300,4 +350,20 @@ impl WorthUiMountedSessionState {
     ) {
         self.motion_sampling.certification_observation()
     }
+}
+
+/// Everything a Portal dismissal reads from a presented overlay. Frame and
+/// receipt identities differ across publications that leave it in place.
+fn same_portal_geometry(
+    seen: worth_ui_host_contract::UiMountedPortalOverlayMechanic,
+    shown: worth_ui_host_contract::UiMountedPortalOverlayMechanic,
+) -> bool {
+    seen.surface() == shown.surface()
+        && seen.owner() == shown.owner()
+        && seen.portal_identity() == shown.portal_identity()
+        && seen.anchor_bounds() == shown.anchor_bounds()
+        && seen.bounds() == shown.bounds()
+        && seen.clip_bounds() == shown.clip_bounds()
+        && seen.lifecycle() == shown.lifecycle()
+        && seen.shielding() == shown.shielding()
 }

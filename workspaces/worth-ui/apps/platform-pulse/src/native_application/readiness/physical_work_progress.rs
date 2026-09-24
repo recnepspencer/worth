@@ -15,7 +15,7 @@ impl PlatformPulseApplicationRuntime {
         self.shell = Some(application);
 
         if self.progress_pending_frame_presentation(&progress) {
-            if self.terminal_error.is_none() && self.pending_frame_presentation.is_none() {
+            if self.terminal.is_running() && self.pending_frame_presentation.is_none() {
                 self.advance_native_product_turn();
             }
             let directive = self.native_runtime_directive();
@@ -90,7 +90,7 @@ impl PlatformPulseApplicationRuntime {
                         false
                     }
                 };
-                if continue_retained_dismissal && self.terminal_error.is_none() {
+                if continue_retained_dismissal && self.terminal.is_running() {
                     self.continue_retained_portal_dismissal(&mut shell);
                 }
                 self.advance_pending_native_publications(&mut shell);
@@ -116,7 +116,7 @@ impl PlatformPulseApplicationRuntime {
                         false
                     }
                 };
-                if continue_retained_dismissal && self.terminal_error.is_none() {
+                if continue_retained_dismissal && self.terminal.is_running() {
                     self.continue_retained_portal_dismissal(&mut shell);
                 }
                 self.advance_pending_native_publications(&mut shell);
@@ -153,6 +153,7 @@ impl PlatformPulseApplicationRuntime {
                     );
                 } else {
                     self.advance_visual_identity();
+                    self.advance_native_product_turn();
                 }
             }
             Ok(worth_ui::facade::app::WorthUiNativeManagedRebindProgress::AwaitingProgress) => {

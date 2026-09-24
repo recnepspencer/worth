@@ -25,17 +25,14 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
         let replacement = {
             let mut state = self.shared.borrow_mut();
             let UiNativeHostState {
-                device,
-                presentation_surface,
+                presentation_owners,
                 resources,
                 window,
                 ..
             } = &mut *state;
-            device
-                .as_ref()
-                .zip(presentation_surface.as_mut())
-                .zip(window.as_ref())
-                .map_or(Err(()), |((device, surface), window)| {
+            presentation_owners.as_mut().zip(window.as_ref()).map_or(
+                Err(()),
+                |(crate::native::UiNativePresentationOwners { device, surface }, window)| {
                     let current_scale = surface.state().scale_factor();
                     let current_extent = surface.state().extent();
                     let (scale, extent) =
@@ -44,7 +41,8 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
                     crate::native::lifecycle::rebind_surface_scale(
                         device, surface, scale, extent, resources,
                     )
-                })
+                },
+            )
         };
         if replacement != Ok(true) {
             self.fail(event_loop, UiNativeEventLoopRunDenial::GraphicsPreparation);

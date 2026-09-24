@@ -1,4 +1,7 @@
 use super::*;
+use crate::certification_support::{
+    ScriptedPresentationAcknowledgement, ScriptedPresentationOutcome,
+};
 use crate::runtime::motion::{UiMotionCommitReceipt, UiMotionDeclaration, UiMotionTargetIdentity};
 
 #[test]
@@ -63,7 +66,7 @@ fn focus_keyboard_and_placement_follow_current_motion_epoch_and_surface() {
         .install_motion_commit(UiMotionCommitReceipt::for_sampling_test_transition(
             701,
             target,
-            original,
+            original.basis(),
             Some([0.0, 0.0, 100.0, 100.0]),
             true,
             Some([0.0, 0.0, 100.0, 100.0]),
@@ -72,8 +75,8 @@ fn focus_keyboard_and_placement_follow_current_motion_epoch_and_surface() {
             None,
         ))
         .unwrap();
-    host.push_presentation(UiHostSurfacePresentationOutcome::Presented(
-        UiMountedSurfacePresentationCompletion::new(
+    host.push_presentation(ScriptedPresentationOutcome::Presented(
+        ScriptedPresentationAcknowledgement::new(
             UiHostSurfacePresentationMode::NativeDisplay,
             UiHostPresentationEpoch::issued_by_host(2),
             UiMountedCompletedEffects::new(vec![UiMountedEffectFamily::NativePaint]),
@@ -86,7 +89,7 @@ fn focus_keyboard_and_placement_follow_current_motion_epoch_and_surface() {
         .mounted
         .current_presentation_for_surface(surface)
         .unwrap();
-    assert_ne!(current.epoch(), original.epoch());
+    assert_ne!(current.basis().epoch(), original.basis().epoch());
     assert_eq!(
         publication.presentation_for_surface(surface),
         Some(original)
@@ -98,7 +101,7 @@ fn focus_keyboard_and_placement_follow_current_motion_epoch_and_surface() {
 
     applied(
         &mut session,
-        current,
+        current.basis(),
         1,
         UiHostObservationPayload::WindowFocus {
             surface: current.host_surface(),
@@ -108,14 +111,14 @@ fn focus_keyboard_and_placement_follow_current_motion_epoch_and_surface() {
     let before = session.focus.as_ref().unwrap().appearance_posture();
     use crate::facade::observation_report::UiHostObservationReportDenial as Denial;
     for (sequence, invalid, expected) in [
-        (2, original, Denial::PresentationEpochMismatch),
+        (2, original.basis(), Denial::PresentationEpochMismatch),
         (
             2,
             UiHostObservationPresentationBasis::new(
                 other.host_surface(),
                 current.frame(),
                 current.binding(),
-                current.epoch(),
+                current.basis().epoch(),
             ),
             Denial::BindingNotPresented,
         ),
@@ -129,7 +132,7 @@ fn focus_keyboard_and_placement_follow_current_motion_epoch_and_surface() {
         assert_eq!(session.focus.as_ref().unwrap().appearance_posture(), before);
         assert!(host.last_focus_placement().is_none());
     }
-    applied(&mut session, current, 2, keyboard());
+    applied(&mut session, current.basis(), 2, keyboard());
     let first = session
         .focus
         .as_ref()
@@ -141,14 +144,14 @@ fn focus_keyboard_and_placement_follow_current_motion_epoch_and_surface() {
     let placement = host
         .last_focus_placement()
         .expect("real host placement must occur");
-    assert_eq!(placement.presentation(), current);
+    assert_eq!(placement.presentation(), current.basis());
     assert_eq!(placement.target(), first.mounted_target());
     fixture::close_source(&mut session, &role, "focus-motion-current-close");
     drop(project(&mut session, &[(first.mounted_instance(), 30)]));
 
     // A valid event on a second surface must select that surface's scope,
     // even though the single semantic focus owner previously named the first.
-    applied(&mut session, other, 3, keyboard());
+    applied(&mut session, other.basis(), 3, keyboard());
     let second = session
         .focus
         .as_ref()
@@ -158,7 +161,7 @@ fn focus_keyboard_and_placement_follow_current_motion_epoch_and_surface() {
     assert_eq!(second.scope().semantic_surface(), neighbor);
     assert_eq!(second.mounted_instance(), unrelated);
     let placement = host.last_focus_placement().unwrap();
-    assert_eq!(placement.presentation(), other);
+    assert_eq!(placement.presentation(), other.basis());
     assert_eq!(placement.target(), second.mounted_target());
     fixture::close_source(&mut session, &role, "focus-motion-other-close");
     drop(project(

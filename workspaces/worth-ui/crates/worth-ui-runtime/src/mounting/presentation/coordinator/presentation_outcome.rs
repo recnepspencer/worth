@@ -6,7 +6,8 @@ use worth_ui_host_contract::{
 use super::super::outcome::{
     UiMountedSurfacePresentationReceipt, UiMountedSurfacePresentationRejection,
 };
-use super::super::terminal::{completion_satisfies, UiIndeterminatePresentationEvidence};
+use super::super::presented_surface::{UiIssuedSurfacePresentation, UiPresentedSurfaceWitness};
+use super::super::terminal::UiIndeterminatePresentationEvidence;
 use super::presentation_attempt::{UiMountedPresentationProgress, UiMountedPresentationStart};
 
 pub(super) fn record(
@@ -166,35 +167,41 @@ impl PresentationOutcomeSettlement<'_, '_, '_> {
             crate::native_platform::text_presentation::UiMountedTextForegroundReuseUpdate,
         >,
     ) -> Result<(), UiIndeterminatePresentationEvidence> {
-        if !completion_satisfies(self.surface, self.expected_effects, &completion) {
-            let uncertainty =
-                super::surface_uncertainty::PresentationSurfaceUncertainty::effects_indeterminate(
-                    self.surface.requirement().binding(),
-                    Some(completion.cost()),
-                    semantic_receipts,
-                    self.presentation_async.as_deref_mut(),
-                    false,
-                );
-            return Err(self.terminalize(uncertainty));
-        }
+        let witness = match UiPresentedSurfaceWitness::admit(
+            completion,
+            self.start.host.authority(),
+            UiIssuedSurfacePresentation {
+                attempt: self.start.attempt,
+                requirement: self.surface.requirement(),
+                frame: self.start.frame.canonical_core().frame(),
+                expected_effects: self.expected_effects,
+            },
+        ) {
+            Ok(witness) => witness,
+            Err(refused) => {
+                let uncertainty =
+                    super::surface_uncertainty::PresentationSurfaceUncertainty::effects_indeterminate(
+                        self.surface.requirement().binding(),
+                        Some(refused.cost()),
+                        semantic_receipts,
+                        self.presentation_async.as_deref_mut(),
+                        false,
+                    );
+                return Err(self.terminalize(uncertainty));
+            }
+        };
         let posture = super::presented_semantic_settlement::settle(
             self.surface.requirement().binding(),
-            completion.cost(),
+            witness.cost(),
             semantic_receipts,
             self.presentation_async.as_deref_mut(),
         )
         .map_err(|uncertainty| self.terminalize(uncertainty))?;
         self.progress.superseded |=
             posture == super::presented_semantic_settlement::PresentedSemanticPosture::Superseded;
-        let (epoch, effects, adapter_cost) = completion.into_parts();
         self.progress
             .completed
-            .push(UiMountedSurfacePresentationReceipt::new(
-                self.surface.requirement(),
-                epoch,
-                effects,
-                adapter_cost,
-            ));
+            .push(UiMountedSurfacePresentationReceipt::new(witness));
         if posture == super::presented_semantic_settlement::PresentedSemanticPosture::Current {
             if let Some(update) = text_reuse {
                 self.text.commit_foreground_reuse(update);

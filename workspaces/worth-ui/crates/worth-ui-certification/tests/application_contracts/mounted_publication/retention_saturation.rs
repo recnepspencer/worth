@@ -4,12 +4,13 @@ use worth_ui::facade::observation_report::{
     UiHostObservationCapacityInput, UiHostObservationFamily, UiHostObservationLoss,
     UiHostObservationPayload, UiHostObservationReportDenial, UiHostObservationReportOutcome,
 };
+use worth_ui_runtime::certification_support::ScriptedPresentationOutcome;
 use worth_ui_runtime::facade::mounted::{
-    UiHostSurfaceCancellationOutcome, UiHostSurfacePresentationMode,
-    UiHostSurfacePresentationOutcome, UiMountedFrameOutcome, UiMountedFrameRetentionBudget,
-    UiMountedFrameRetentionBudgetInput, UiMountedInspectionOmission, UiMountedInspectionReceipt,
-    UiMountedInspectionRequest, UiMountedInstanceIdentity, UiMountedRetentionClass,
-    UiMountedRetentionClassBudget, UiPresentationDeadline, UiSurfaceBindingGeneration,
+    UiHostSurfaceCancellationOutcome, UiHostSurfacePresentationMode, UiMountedFrameOutcome,
+    UiMountedFrameRetentionBudget, UiMountedFrameRetentionBudgetInput, UiMountedInspectionOmission,
+    UiMountedInspectionReceipt, UiMountedInspectionRequest, UiMountedInstanceIdentity,
+    UiMountedRetentionClass, UiMountedRetentionClassBudget, UiPresentationDeadline,
+    UiSurfaceBindingGeneration,
 };
 use worth_ui_test_support::WorthUiMountedIdentityCertificationExt;
 use worth_ui_test_support::WorthUiMountedPublicationCertificationExt;
@@ -182,7 +183,7 @@ fn fill_quarantine_capacity(
     let indeterminate_frame = candidate.canonical_core().frame();
     world
         .host
-        .push_presentation(UiHostSurfacePresentationOutcome::PresentationIndeterminate);
+        .push_presentation(ScriptedPresentationOutcome::PresentationIndeterminate);
     assert!(matches!(
         world.session.present_prepared_mounted_frame(
             candidate,

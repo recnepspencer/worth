@@ -1,6 +1,7 @@
 use worth_ui::facade::observation_report::WorthUiHostObservationSessionExt;
 use worth_ui::facade::observation_report::{UiHostObservationLoss, UiHostObservationReportOutcome};
 use worth_ui_host_headless::WorthUiHeadlessBaselineUnavailableHost;
+use worth_ui_runtime::certification_support::ScriptedPresentationOutcome;
 use worth_ui_runtime::facade::mounted::{
     UiHostSurfacePresentationMode, UiMountedFrameOutcome, UiMountedIdentityDenial,
     UiMountedPresentationAdmissionDenial, UiPresentationDeadline,
@@ -214,9 +215,7 @@ fn native_recovery_cannot_erase_same_binding_presentation_uncertainty() {
     let surface =
         world.session.inspect_mounted_identity().surface_bindings()[0].semantic_surface_identity();
 
-    host.push_presentation(
-        worth_ui_host_contract::UiHostSurfacePresentationOutcome::PresentationIndeterminate,
-    );
+    host.push_presentation(ScriptedPresentationOutcome::PresentationIndeterminate);
     let uncertain_frame = prepared(&mut world.session);
     assert!(matches!(
         world.session.present_prepared_mounted_frame(

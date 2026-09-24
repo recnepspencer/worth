@@ -12,7 +12,7 @@ pub(super) fn observe(
     if !state.admit_input(UiNativeInputObservationEventFamily::Pointer) {
         return state.rejection_disposition();
     }
-    let Some(profile) = state.profile else {
+    let Some(profile) = state.profile.profile() else {
         return state.terminal_disposition(UiNativeInputObservationStop::MissingEventProfile);
     };
     let position = match pointer::logical_position(physical_position, profile.scale_factor) {

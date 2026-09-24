@@ -78,6 +78,7 @@ pub(super) fn presentation(
         .unwrap()
         .presentation_for_surface(surface)
         .unwrap()
+        .basis()
 }
 
 pub(super) fn admit(

@@ -1,6 +1,7 @@
 use super::scenario::{
     admit_scroll, mixed_extent_sibling_scroll_visual_source, publish_predecessor,
-    publish_with_hit_coordinate, reduced_sibling_scroll_visual_source, with_surface_scroll_mosaic,
+    publish_scrolled_frame, publish_with_hit_coordinate, reduced_sibling_scroll_visual_source,
+    with_surface_scroll_mosaic,
 };
 use worth_ui::facade::app::{
     WorthUiMountedApplicationReplacementOutcome, WorthUiMountedReplacementPreparationOutcome,
@@ -102,6 +103,8 @@ fn shared_surface_scroll_owner_survives_anchor_sibling_removal_and_replacement()
             ..
         }
     ));
+    // A direct wheel offset commits when its frame is accepted.
+    publish_scrolled_frame(&mut session, binding, current.instance);
     let before = session.inspect_scroll_runtime_for_certification();
     assert_eq!(before.owner_geometry().len(), 1);
     assert_eq!(before.owner_geometry()[0].block_offset_subpixels(), 1_000);

@@ -20,7 +20,14 @@ pub(super) enum PlatformPulsePendingFramePresentation {
 
 impl PlatformPulseApplicationRuntime {
     pub(super) fn present(&mut self) {
-        if self.pending_frame_presentation.is_some() || self.pending_managed_rebind.is_some() {
+        self.present_for_surface_basis(false);
+    }
+
+    pub(super) fn present_for_surface_basis(&mut self, surface_basis_successor: bool) {
+        if self.external_close_requested
+            || self.pending_frame_presentation.is_some()
+            || self.pending_managed_rebind.is_some()
+        {
             return;
         }
         let Some(shell) = self.shell.as_mut() else {
@@ -31,10 +38,13 @@ impl PlatformPulseApplicationRuntime {
         }
         let first_frame = self.initial_source.is_some();
         let viewport_successor = shell.native_viewport_presentation_pending();
+        let reconstruction_required = surface_basis_successor;
         if !first_frame
+            && !reconstruction_required
             && !viewport_successor
             && !shell.native_pointer_presentation_pending()
             && !shell.native_application_presentation_pending()
+            && !shell.native_presentation_reconstruction_pending()
         {
             return;
         }
@@ -56,17 +66,32 @@ impl PlatformPulseApplicationRuntime {
             .as_mut()
             .expect("frame preparation retains the runtime shell");
         self.presentation_tick = self.presentation_tick.saturating_add(1);
-        let outcome = match shell.present_frame(deadline, now) {
-            Ok(outcome) => outcome,
-            Err(denial) => {
-                let detail = frame_execution_diagnostic::stop_label(&denial);
-                let observation = self.publisher.frame_execution_failure(&denial);
-                drop(denial);
-                self.fail(
-                    PlatformPulseTerminalError::FrameExecution(detail),
-                    observation,
-                );
-                return;
+        let outcome = if reconstruction_required && !first_frame {
+            match shell.reconstruct_native_surface_successor(deadline, now) {
+                Ok(outcome) => outcome,
+                Err(denial) => {
+                    self.fail(
+                        PlatformPulseTerminalError::FrameExecution(format!(
+                            "native-surface-successor:{denial:?}"
+                        )),
+                        Ok(()),
+                    );
+                    return;
+                }
+            }
+        } else {
+            match shell.present_frame(deadline, now) {
+                Ok(outcome) => outcome,
+                Err(denial) => {
+                    let detail = frame_execution_diagnostic::stop_label(&denial);
+                    let observation = self.publisher.frame_execution_failure(&denial);
+                    drop(denial);
+                    self.fail(
+                        PlatformPulseTerminalError::FrameExecution(detail),
+                        observation,
+                    );
+                    return;
+                }
             }
         };
         self.presentation_tick = self.presentation_tick.saturating_add(1);

@@ -27,6 +27,13 @@ impl WorthUiOperationalHostAdapter for ScriptedPresentationHost {
         &self,
         authority: &UiHostAdapterSessionAuthority,
     ) -> Result<(), worth_ui_host_contract::UiHostObservationSessionRegistrationDenial> {
+        if let Some(input) = &self.native_input {
+            return input
+                .lock()
+                .unwrap()
+                .protocol
+                .register_session(authority.host_session_identity());
+        }
         self.observation_retention
             .register_session(authority.host_session_identity())
     }
@@ -38,6 +45,13 @@ impl WorthUiOperationalHostAdapter for ScriptedPresentationHost {
         worth_ui_host_contract::UiHostObservationDrain,
         worth_ui_host_contract::UiHostObservationDrainDenial,
     > {
+        if let Some(input) = &self.native_input {
+            return Ok(input
+                .lock()
+                .unwrap()
+                .protocol
+                .drain(authority.host_session_identity()));
+        }
         Ok(self
             .observation_retention
             .drain(authority.host_session_identity()))
@@ -52,6 +66,13 @@ impl WorthUiOperationalHostAdapter for ScriptedPresentationHost {
             return false;
         }
         self.state.lock().unwrap().input_recipient = Some(binding);
+        if let Some(input) = &self.native_input {
+            return input
+                .lock()
+                .unwrap()
+                .protocol
+                .install_input_recipient(binding);
+        }
         true
     }
 
@@ -68,6 +89,13 @@ impl WorthUiOperationalHostAdapter for ScriptedPresentationHost {
             return false;
         }
         state.input_recipient = None;
+        if let Some(input) = &self.native_input {
+            return input
+                .lock()
+                .unwrap()
+                .protocol
+                .clear_input_recipient(binding);
+        }
         true
     }
 
@@ -231,28 +259,33 @@ impl WorthUiOperationalHostAdapter for ScriptedPresentationHost {
             .completions
             .get_mut(&identity)
             .and_then(VecDeque::pop_front);
-        match completion {
+        let outcome = match completion {
             Some(ScriptedSurfaceCompletion::Pending) => {
-                UiHostSurfaceInFlightCompletion::Pending(token)
+                return UiHostSurfaceInFlightCompletion::Pending(token);
             }
             Some(ScriptedSurfaceCompletion::RejectedBeforeEffects(denial)) => {
-                clear_token_state(&mut state, identity);
                 UiHostSurfaceInFlightCompletion::RejectedBeforeEffects(denial)
             }
-            Some(ScriptedSurfaceCompletion::Presented(completion)) => {
-                state.accepted_text.accept_pending(identity);
-                clear_token_state(&mut state, identity);
-                UiHostSurfaceInFlightCompletion::Presented(completion)
+            Some(ScriptedSurfaceCompletion::Presented(acknowledgement)) => {
+                UiHostSurfaceInFlightCompletion::Presented(acknowledgement.acknowledge_token(token))
             }
             Some(ScriptedSurfaceCompletion::Superseded(observation)) => {
-                clear_token_state(&mut state, identity);
                 UiHostSurfaceInFlightCompletion::Superseded(observation)
             }
             Some(ScriptedSurfaceCompletion::PresentationIndeterminate) | None => {
-                clear_token_state(&mut state, identity);
                 UiHostSurfaceInFlightCompletion::PresentationIndeterminate
             }
+        };
+        let presented = match &outcome {
+            UiHostSurfaceInFlightCompletion::Presented(completion) => Some(completion),
+            _ => None,
+        };
+        self.settle_native_input_presentation(identity, presented);
+        if presented.is_some() {
+            state.accepted_text.accept_pending(identity);
         }
+        clear_token_state(&mut state, identity);
+        outcome
     }
 
     fn cancel_mounted_surface(
@@ -267,6 +300,7 @@ impl WorthUiOperationalHostAdapter for ScriptedPresentationHost {
         let identity = token.diagnostic_value();
         let mut state = self.state.lock().unwrap();
         state.cancellation_calls.push(identity);
+        self.settle_native_input_presentation(identity, None);
         state.accepted_text.discard_pending(identity);
         state.completions.remove(&identity);
         state.token_sessions.remove(&identity);
@@ -297,6 +331,13 @@ impl WorthUiOperationalHostAdapter for ScriptedPresentationHost {
         }
         self.observation_retention
             .release_session(authority.host_session_identity());
+        if let Some(input) = &self.native_input {
+            let mut input = input.lock().unwrap();
+            input
+                .protocol
+                .release_session(authority.host_session_identity());
+            input.pending.clear();
+        }
         UiHostSessionReleaseOutcome::Released(UiHostSessionReleaseReceipt::released(
             authority.host_session_identity(),
             before - state.registrations.len(),

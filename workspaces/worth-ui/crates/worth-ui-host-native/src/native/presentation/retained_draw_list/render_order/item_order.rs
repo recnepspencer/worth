@@ -9,6 +9,13 @@ impl UiNativeRetainedDrawList {
         identity: UiMountedPaintCommandIdentity,
     ) -> Result<Option<(RenderOrderKey, UiNativeRetainedRenderItem)>, Denial> {
         let command = self.command(identity).ok_or(Denial::CommandMismatch)?;
+        let portal_group = match command {
+            UiMountedPaintCommand::PortalOverlay { mechanic, .. } => Some(mechanic.owner()),
+            UiMountedPaintCommand::SemanticText { mechanic, .. } => mechanic.portal_group(),
+        };
+        if portal_group.is_some_and(|portal| !super::portal_is_issued(overlay, portal)) {
+            return Ok(None);
+        }
         let replaced = match command {
             UiMountedPaintCommand::PortalOverlay { mechanic, .. } => appearance
                 .key_for_identity(&UiNativeAppearanceCommandIdentity::PortalSurface(
@@ -58,6 +65,15 @@ impl UiNativeRetainedDrawList {
         key: UiNativeAppearanceCommandKey,
     ) -> Result<Option<(RenderOrderKey, UiNativeRetainedRenderItem)>, Denial> {
         let command = appearance.command(key).ok_or(Denial::CommandMismatch)?;
+        let portal_group = match command {
+            UiNativeAppearanceCommand::Surface(mechanic) => mechanic.portal_group(),
+            UiNativeAppearanceCommand::Outline(mechanic) => mechanic.portal_group(),
+            UiNativeAppearanceCommand::PortalSurface(mechanic) => Some(mechanic.portal_instance()),
+            _ => None,
+        };
+        if portal_group.is_some_and(|portal| !super::portal_is_issued(overlay, portal)) {
+            return Ok(None);
+        }
         let order = match command {
             UiNativeAppearanceCommand::Surface(mechanic) => appearance_surface_order(
                 self,

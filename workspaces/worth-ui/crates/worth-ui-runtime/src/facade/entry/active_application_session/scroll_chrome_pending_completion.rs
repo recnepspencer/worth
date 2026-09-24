@@ -28,8 +28,9 @@ impl super::WorthUiActiveApplicationSession {
         let surface = pending.owner().semantic_surface();
         if self
             .mounted
-            .classify_admitted_interaction_presentation(pending.presentation())
-            .is_err()
+            .current_presentation_for_surface(surface)
+            .filter(|current| current.host_surface() == pending.presentation().host_surface())
+            .is_none()
             || self.mounted.current_surface_for_binding(pending.binding()) != Some(surface)
         {
             self.interaction.scroll_chrome_latch_mut().take_pending();

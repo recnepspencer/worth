@@ -1,10 +1,11 @@
 use super::*;
 use worth_ui::facade::app::WorthUiNativeManagedRebindProgress;
-use worth_ui_host_contract::{
-    UiHostSurfaceCancellationOutcome, UiHostSurfacePresentationOutcome, UiMountedRgba8,
-};
+use worth_ui_host_contract::{UiHostSurfaceCancellationOutcome, UiMountedRgba8};
 use worth_ui_host_native::{UiNativePhysicalProgressClass, UiNativePhysicalProgressGrant};
 use worth_ui_runtime::certification_support::ScriptedSurfaceCompletion;
+use worth_ui_runtime::certification_support::{
+    ScriptedPresentationAcknowledgement, ScriptedPresentationOutcome,
+};
 
 #[test]
 fn managed_theme_indeterminacy_retains_recovery_then_allows_a_fresh_successor() {
@@ -43,7 +44,7 @@ fn managed_theme_indeterminacy_retains_recovery_then_allows_a_fresh_successor() 
                 UiHostSurfaceCancellationOutcome::EffectsMayHaveBegun,
             );
         } else {
-            host.push_presentation(UiHostSurfacePresentationOutcome::PresentationIndeterminate);
+            host.push_presentation(ScriptedPresentationOutcome::PresentationIndeterminate);
         }
         assert!(matches!(
             shell
@@ -58,7 +59,7 @@ fn managed_theme_indeterminacy_retains_recovery_then_allows_a_fresh_successor() 
         let correlation = host.last_presentation_correlation().unwrap();
         let progress = |class, correlation| {
             worth_ui_native_platform::UiNativeApplicationPhysicalProgress::from_certification(
-                UiNativePhysicalProgressGrant::from_certification(class, correlation, false),
+                UiNativePhysicalProgressGrant::from_certification(class, correlation),
             )
         };
         if delayed {
@@ -185,7 +186,7 @@ fn managed_rebind_recovery_survives_interrupted_reconstruction_and_shutdown() {
         let request = shell
             .prepare_programmatic_theme_switch(surface, blue.binding_generation(), capability)
             .unwrap();
-        host.push_presentation(UiHostSurfacePresentationOutcome::PresentationIndeterminate);
+        host.push_presentation(ScriptedPresentationOutcome::PresentationIndeterminate);
         assert!(matches!(
             shell
                 .begin_managed_theme_switch(
@@ -200,11 +201,11 @@ fn managed_rebind_recovery_survives_interrupted_reconstruction_and_shutdown() {
         match obstacle {
             RecoveryObstacle::Rejection => host.push_rejected(),
             RecoveryObstacle::Indeterminate => {
-                host.push_presentation(UiHostSurfacePresentationOutcome::PresentationIndeterminate)
+                host.push_presentation(ScriptedPresentationOutcome::PresentationIndeterminate)
             }
             RecoveryObstacle::InFlight | RecoveryObstacle::Shutdown => host.push_in_flight(
                 vec![ScriptedSurfaceCompletion::Presented(
-                    UiMountedSurfacePresentationCompletion::new(
+                    ScriptedPresentationAcknowledgement::new(
                         UiHostSurfacePresentationMode::NativeDisplay,
                         worth_ui_runtime::certification_support::scripted_presentation_epoch(),
                         UiMountedCompletedEffects::new(vec![UiMountedEffectFamily::NativePaint]),
@@ -216,7 +217,7 @@ fn managed_rebind_recovery_survives_interrupted_reconstruction_and_shutdown() {
         }
         let progress = |class, correlation| {
             worth_ui_native_platform::UiNativeApplicationPhysicalProgress::from_certification(
-                UiNativePhysicalProgressGrant::from_certification(class, correlation, false),
+                UiNativePhysicalProgressGrant::from_certification(class, correlation),
             )
         };
         let outcome = shell

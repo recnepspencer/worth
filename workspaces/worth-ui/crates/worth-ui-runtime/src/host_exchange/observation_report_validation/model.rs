@@ -58,6 +58,7 @@ pub struct UiQuarantinedHostObservationBatch {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum UiHostObservationReportDenial {
+    HostInputRetentionExhausted,
     Shutdown,
     ForeignProtocol,
     ForeignHostSession,

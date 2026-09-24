@@ -94,7 +94,7 @@ impl TextWorld {
                     assert_eq!(accepted.frame(), receipt.frame());
                     assert_eq!(accepted.binding(), replacement);
                     self.accepted[index] = Some((
-                        accepted,
+                        accepted.basis(),
                         receipt.attempt(),
                         self.session
                             .mounted

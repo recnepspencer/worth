@@ -7,12 +7,15 @@ use worth_ui_host_contract::{
 pub struct UiPointerPresenceTargetTransition {
     pub(super) generation: crate::runtime::WorthUiActiveApplicationGenerationIdentity,
     pub(super) pointer: UiHostPointerIdentity,
+    /// The surface the pointer was on, or `None` for a pointer first seen now.
     pub(super) previous_surface: Option<UiSemanticSurfaceIdentity>,
-    pub(super) current_surface: Option<UiSemanticSurfaceIdentity>,
-    pub(super) previous: Option<UiMountedInstanceIdentity>,
-    pub(super) current: Option<UiMountedInstanceIdentity>,
-    pub(super) previous_node_receipt: Option<worth_ui_host_contract::UiMountedNodeReceiptIdentity>,
-    pub(super) current_node_receipt: Option<worth_ui_host_contract::UiMountedNodeReceiptIdentity>,
+    pub(super) current_surface: UiSemanticSurfaceIdentity,
+    /// What the pointer was over; an instance and its node receipt come
+    /// together from one presented target, never one without the other.
+    pub(super) previous_target:
+        Option<crate::runtime::interaction::UiPresentedInteractionTargetView>,
+    pub(super) current_target:
+        Option<crate::runtime::interaction::UiPresentedInteractionTargetView>,
     pub(super) owner_revision: u64,
     pub(super) position: UiHostSurfacePosition,
     pub(super) presentation: UiHostObservationPresentationBasis,
@@ -28,24 +31,34 @@ impl UiPointerPresenceTargetTransition {
     pub const fn previous_surface(&self) -> Option<UiSemanticSurfaceIdentity> {
         self.previous_surface
     }
-    pub const fn current_surface(&self) -> Option<UiSemanticSurfaceIdentity> {
+    pub const fn current_surface(&self) -> UiSemanticSurfaceIdentity {
         self.current_surface
     }
-    pub const fn previous(&self) -> Option<UiMountedInstanceIdentity> {
-        self.previous
+    pub const fn previous_target(
+        &self,
+    ) -> Option<crate::runtime::interaction::UiPresentedInteractionTargetView> {
+        self.previous_target
     }
-    pub const fn current(&self) -> Option<UiMountedInstanceIdentity> {
-        self.current
+    pub const fn current_target(
+        &self,
+    ) -> Option<crate::runtime::interaction::UiPresentedInteractionTargetView> {
+        self.current_target
     }
-    pub const fn previous_node_receipt(
+    pub fn previous(&self) -> Option<UiMountedInstanceIdentity> {
+        self.previous_target.map(|target| target.mounted_instance())
+    }
+    pub fn current(&self) -> Option<UiMountedInstanceIdentity> {
+        self.current_target.map(|target| target.mounted_instance())
+    }
+    pub fn previous_node_receipt(
         &self,
     ) -> Option<worth_ui_host_contract::UiMountedNodeReceiptIdentity> {
-        self.previous_node_receipt
+        self.previous_target.map(|target| target.node_receipt())
     }
-    pub const fn current_node_receipt(
+    pub fn current_node_receipt(
         &self,
     ) -> Option<worth_ui_host_contract::UiMountedNodeReceiptIdentity> {
-        self.current_node_receipt
+        self.current_target.map(|target| target.node_receipt())
     }
     pub const fn owner_revision(&self) -> u64 {
         self.owner_revision

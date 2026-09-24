@@ -1,5 +1,29 @@
 use std::fmt;
 
+use crate::lifecycle_observation_publication::PlatformPulseObservationPublicationDenial;
+
+/// Pulse runs until one error stops it; only a stopped Pulse has an error,
+/// terminal evidence whose publication may itself have been denied, and a
+/// report that is written once.
+pub(super) enum PlatformPulseTerminalPosture {
+    Running,
+    Stopped {
+        error: PlatformPulseTerminalError,
+        observation: Option<PlatformPulseObservationPublicationDenial>,
+        reported: bool,
+    },
+}
+
+impl PlatformPulseTerminalPosture {
+    pub(super) const fn is_running(&self) -> bool {
+        matches!(self, Self::Running)
+    }
+
+    pub(super) const fn is_stopped(&self) -> bool {
+        !self.is_running()
+    }
+}
+
 pub(super) enum PlatformPulseTerminalError {
     FocusPlacement(worth_ui::facade::app::UiFocusPlacementExecutionDenial),
     ThemePreference(crate::theme_preference::PlatformPulseThemePreferenceDenial),

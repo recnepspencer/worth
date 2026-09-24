@@ -1,10 +1,12 @@
 use super::*;
 use worth_ui::facade::app::WorthUiNativeManagedRebindProgress;
 use worth_ui_host_contract::{
-    UiHostSurfaceCancellationOutcome, UiHostSurfacePresentationDenial,
-    UiHostSurfacePresentationOutcome, UiMountedRgba8,
+    UiHostSurfaceCancellationOutcome, UiHostSurfacePresentationDenial, UiMountedRgba8,
 };
 use worth_ui_runtime::certification_support::ScriptedSurfaceCompletion;
+use worth_ui_runtime::certification_support::{
+    ScriptedPresentationAcknowledgement, ScriptedPresentationOutcome,
+};
 use worth_ui_runtime::facade::mounted::UiMountWorkClass;
 
 #[test]
@@ -49,7 +51,7 @@ fn theme_reconstruction_publishes_successor_without_an_intermediate_predecessor(
                 UiHostSurfaceCancellationOutcome::CancelledBeforeEffects,
             );
         } else {
-            host.push_presentation(UiHostSurfacePresentationOutcome::RejectedBeforeEffects(
+            host.push_presentation(ScriptedPresentationOutcome::RejectedBeforeEffects(
                 UiHostSurfacePresentationDenial::ReconstructionRequired,
             ));
         }
@@ -74,7 +76,6 @@ fn theme_reconstruction_publishes_successor_without_an_intermediate_predecessor(
                     worth_ui_host_native::UiNativePhysicalProgressGrant::from_certification(
                         worth_ui_host_native::UiNativePhysicalProgressClass::Presentation,
                         host.last_presentation_correlation(),
-                        false,
                     ),
                 );
             shell.progress_managed_rebind(&progress).unwrap()
@@ -164,7 +165,7 @@ fn reconstructed_theme_preserves_predecessor_through_settlement_retry_and_shutdo
                 UiHostSurfacePresentationDenial::AdapterDeclined,
             )
         } else {
-            ScriptedSurfaceCompletion::Presented(UiMountedSurfacePresentationCompletion::new(
+            ScriptedSurfaceCompletion::Presented(ScriptedPresentationAcknowledgement::new(
                 UiHostSurfacePresentationMode::NativeDisplay,
                 worth_ui_runtime::certification_support::scripted_presentation_epoch(),
                 UiMountedCompletedEffects::new(vec![UiMountedEffectFamily::NativePaint]),
@@ -266,7 +267,6 @@ fn physical_progress(
         worth_ui_host_native::UiNativePhysicalProgressGrant::from_certification(
             worth_ui_host_native::UiNativePhysicalProgressClass::Presentation,
             host.last_presentation_correlation(),
-            false,
         ),
     )
 }

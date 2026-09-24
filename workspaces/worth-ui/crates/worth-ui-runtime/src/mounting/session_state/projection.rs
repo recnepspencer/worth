@@ -286,10 +286,15 @@ impl WorthUiMountedSessionState {
         let Some(snapshot) = snapshot else {
             return Ok(());
         };
-        let mut admitted = Vec::new();
+        let predecessor = self.identity.pointer_predecessor();
+        let mut admitted_count = 0;
+        let mut already_admitted = true;
         for projection in snapshot.active_projections() {
             if self.pointer_projection_is_current(snapshot, projection) {
-                admitted.push(projection.surface());
+                admitted_count += 1;
+                already_admitted &= predecessor.is_some_and(|state| {
+                    state.has_admitted_observation(projection.surface(), snapshot)
+                });
             } else if request.includes_surface(projection.surface()) {
                 return Err(match projection.target() {
                     Some(target) => crate::mounting::UiMountedFramePreparationDenial::PointerSnapshotTargetUnavailable(target),
@@ -297,6 +302,18 @@ impl WorthUiMountedSessionState {
                 });
             }
         }
+        // Reuse re-admits the observation the owner already holds; rebuilding
+        // an identical admission would put allocation on the unchanged path.
+        if already_admitted
+            && predecessor.map_or(0, |state| state.admitted_surface_count()) == admitted_count
+        {
+            return Ok(());
+        }
+        let admitted = snapshot
+            .active_projections()
+            .filter(|projection| self.pointer_projection_is_current(snapshot, projection))
+            .map(|projection| projection.surface())
+            .collect::<Vec<_>>();
         self.identity
             .retain_pointer_observation_admission(snapshot.observation_identity(), &admitted);
         Ok(())

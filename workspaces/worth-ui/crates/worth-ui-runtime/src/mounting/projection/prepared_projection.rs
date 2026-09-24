@@ -191,7 +191,10 @@ impl UiPreparedMountedProjection {
         let mut owner = UiMountedProjectionFrameOwner::new(
             std::rc::Rc::new(frame),
             appearance,
-            state.pointer_predecessor().cloned().unwrap_or_default(),
+            state
+                .pointer_predecessor()
+                .cloned()
+                .unwrap_or_else(super::UiMountedPointerAffordanceState::empty),
         );
         if let Some(batch) = self.appearance_invalidation {
             owner.set_appearance_invalidation_batch(batch);

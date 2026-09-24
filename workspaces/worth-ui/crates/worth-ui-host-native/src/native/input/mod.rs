@@ -20,6 +20,7 @@ pub use certification::{
     UiNativeInputObservationContract, UiNativeInputObservationContractDisposition,
 };
 pub(crate) use observation::{UiNativeInputObservationDisposition, UiNativeInputObservationState};
+pub use observation::{UiNativeInputRecoveryAcknowledgement, UiNativeInputRecoveryGrant};
 pub(crate) use pointer::UiNativePointerPositionWitness;
 pub use report::{
     UiNativeInputObservationEventFamily, UiNativeInputObservationReport,

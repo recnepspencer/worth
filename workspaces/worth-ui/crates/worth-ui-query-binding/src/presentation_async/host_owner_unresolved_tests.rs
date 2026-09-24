@@ -1,6 +1,4 @@
-use super::tests::{
-    basis, basis_for_lineage, installed_owner, native_paint_completion, presentation_sequence,
-};
+use super::tests::{basis, basis_for_lineage, installed_owner, presentation_sequence};
 use super::*;
 
 #[test]
@@ -66,9 +64,7 @@ fn reconstruction_requirement_allows_a_fresh_successor_to_replace_unresolved() {
     );
     assert_eq!(owner.unresolved.len(), 1);
     assert!(owner.superseded_pending.is_empty());
-    let completed = owner
-        .admit_presented(&successor, &native_paint_completion(2))
-        .unwrap();
+    let completed = owner.admit_presented(&successor).unwrap();
     assert_eq!(
         completed.observation().posture(),
         WorthUiPresentationAsyncPosture::Current
@@ -98,9 +94,7 @@ fn reconstruction_can_retry_after_a_pre_effect_atlas_deferral() {
     let retry = owner
         .admit_pending(reconstruction_basis(&sequence.baseline, None))
         .unwrap();
-    let completed = owner
-        .admit_presented(&retry, &native_paint_completion(3))
-        .unwrap();
+    let completed = owner.admit_presented(&retry).unwrap();
 
     assert_eq!(
         completed.observation().posture(),

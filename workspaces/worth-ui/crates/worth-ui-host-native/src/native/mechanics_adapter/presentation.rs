@@ -110,13 +110,9 @@ fn perform_reconstruction(
         None
     };
     let defer_initial_observation = defer_presentation_initial_observation(state);
-    let Some(device) = state.device.as_ref() else {
-        if let Some(recovery) = recovery {
-            state.lifecycle.restore_recovery(recovery);
-        }
-        return adapter_declined();
-    };
-    let Some(surface) = state.presentation_surface.as_ref() else {
+    let Some(crate::native::UiNativePresentationOwners { device, surface }) =
+        state.presentation_owners.as_ref()
+    else {
         if let Some(recovery) = recovery {
             state.lifecycle.restore_recovery(recovery);
         }
@@ -197,10 +193,9 @@ fn perform_initial(
         return malformed();
     }
     let defer_initial_observation = defer_presentation_initial_observation(state);
-    let Some(device) = state.device.as_ref() else {
-        return adapter_declined();
-    };
-    let Some(surface) = state.presentation_surface.as_ref() else {
+    let Some(crate::native::UiNativePresentationOwners { device, surface }) =
+        state.presentation_owners.as_ref()
+    else {
         return adapter_declined();
     };
     let mut graphics = crate::native::UiNativePresentationAccess::new(device, surface);
@@ -238,13 +233,16 @@ fn perform_delta(
         return require_owner_reconstruction(state, key);
     }
     let result = present_delta_work(state, view, key);
-    let (cost, painted, observed_pixels, port_crossings, effects) = match result {
+    let (cost, paint, port_crossings, effects) = match result {
         Ok(presented) => presented.into_parts(),
         Err(failure) => return settle_presentation_failure(state, view, failure),
     };
     state.lifecycle.resolve_recovery(key);
     state.lifecycle.record_presented();
-    let pixels = observed_pixels.unwrap_or_else(|| retained_frame::latest_pixels(state));
+    let painted = paint.painted();
+    let pixels = paint
+        .pixels()
+        .unwrap_or_else(|| retained_frame::latest_pixels(state));
     retained_frame::record_retained_frame(
         state,
         view,
@@ -264,10 +262,9 @@ fn present_delta_work(
     key: u64,
 ) -> Result<crate::native::presentation::UiNativeDeltaPresentation, UiNativePresentationFailure> {
     let defer_initial_observation = defer_presentation_initial_observation(state);
-    let Some(device) = state.device.as_ref() else {
-        return Err(before_effects_declined());
-    };
-    let Some(surface) = state.presentation_surface.as_ref() else {
+    let Some(crate::native::UiNativePresentationOwners { device, surface }) =
+        state.presentation_owners.as_ref()
+    else {
         return Err(before_effects_declined());
     };
     let mut graphics = crate::native::UiNativePresentationAccess::new(device, surface);

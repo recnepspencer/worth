@@ -4,17 +4,12 @@ use winit::event_loop::ActiveEventLoop;
 
 impl<Client: super::UiNativeEventLoopClient> super::UiNativeEventLoopApplication<Client> {
     pub(super) fn commit_readiness(&mut self, event_loop: &ActiveEventLoop) {
-        let basis = self
-            .shared
-            .borrow()
-            .presentation_surface
-            .as_ref()
-            .map(|surface| {
-                (
-                    (surface.state().scale_factor() * 1_000.0).round() as u32,
-                    surface.state().extent(),
-                )
-            });
+        let basis = self.shared.borrow().presentation_surface().map(|surface| {
+            (
+                (surface.state().scale_factor() * 1_000.0).round() as u32,
+                surface.state().extent(),
+            )
+        });
         let Some((scale_factor_milli, client_physical_size)) = basis else {
             return self.fail(
                 event_loop,

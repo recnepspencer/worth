@@ -1,4 +1,5 @@
 use super::session::World;
+use crate::certification_support::ScriptedPresentationAcknowledgement;
 use crate::facade::entry::portal_dismissal::{
     UiPortalDismissalPublicationOutcome as Outcome, UiPortalDismissalPublicationStop as Stop,
 };
@@ -207,7 +208,7 @@ fn indeterminate_exit_does_not_claim_a_sibling_presentation_completion() {
     let sibling = sibling_world.prepare_surface(sibling_world.surfaces[1]);
     sibling_world.host.push_in_flight(
         vec![ScriptedSurfaceCompletion::Presented(
-            worth_ui_host_contract::UiMountedSurfacePresentationCompletion::new(
+            ScriptedPresentationAcknowledgement::new(
                 worth_ui_host_contract::UiHostSurfacePresentationMode::NativeDisplay,
                 worth_ui_host_contract::UiHostPresentationEpoch::issued_by_host(1000),
                 worth_ui_host_contract::UiMountedCompletedEffects::new(Vec::new()),

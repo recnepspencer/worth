@@ -4,11 +4,11 @@ use crate::presentation_async::{
     WorthUiPresentationPinBasis, WorthUiPresentationRequestBasisInput,
 };
 
-#[path = "host_owner_tests/completion.rs"]
-mod completion;
 #[path = "host_owner_tests/superseded_retry.rs"]
 mod superseded_retry;
-pub(super) use completion::native_paint_completion;
+
+/// The payload a native host reports for one presented surface.
+const PRESENTED_PAYLOAD_BYTE_LEN: u64 = 64;
 
 #[test]
 fn host_owner_reuses_one_presealed_source_across_successive_presentations() {
@@ -22,15 +22,11 @@ fn host_owner_reuses_one_presealed_source_across_successive_presentations() {
 
     let baseline = owner.admit_pending(sequence.baseline).unwrap();
     assert_eq!(baseline.observation().signal_graph_instance(), graph);
-    owner
-        .admit_presented(&baseline, &native_paint_completion(1))
-        .unwrap();
+    owner.admit_presented(&baseline).unwrap();
 
     let successor = owner.admit_pending(sequence.successor).unwrap();
     assert_eq!(successor.observation().signal_graph_instance(), graph);
-    let presented = owner
-        .admit_presented(&successor, &native_paint_completion(2))
-        .unwrap();
+    let presented = owner.admit_presented(&successor).unwrap();
     assert_eq!(
         presented.observation().posture(),
         WorthUiPresentationAsyncPosture::Current
@@ -120,14 +116,14 @@ impl InstalledTestOwner {
         self.owner.admit_pending(correspondence)
     }
 
+    /// A native host presented the pending work; settlement sizes its payload.
     pub(super) fn admit_presented(
         &mut self,
         receipt: &WorthUiPresentationPendingReceipt,
-        completion: &worth_ui_host_contract::UiMountedSurfacePresentationCompletion,
     ) -> Result<WorthUiPresentationPresentedReceipt, WorthUiPresentationSettlementDenial> {
         let completion = self
             .correspondence
-            .certify_presented(receipt, std::mem::size_of_val(completion) as u64);
+            .certify_presented(receipt, PRESENTED_PAYLOAD_BYTE_LEN);
         self.owner.admit_presented(receipt, completion)
     }
 

@@ -22,6 +22,7 @@ mod appearance_receipt_basis;
 mod appearance_succession;
 mod focus_participation;
 mod frame_lifecycle;
+mod frame_state;
 mod graph_replacement;
 mod instance_lifecycle;
 mod interaction_affinity;
@@ -73,20 +74,7 @@ pub(crate) struct UiMountedIdentityState {
     visible_order: crate::runtime::persistent_index::UiPersistentOrder<UiMountedInstanceIdentity>,
     mounted_instance_membership:
         crate::runtime::persistent_index::UiPersistentOrdSet<UiMountedInstanceIdentity>,
-    current_frame: Option<UiMountedFrameIdentity>,
-    current_receipt_basis: Option<super::UiMountedNodeReceiptBasis>,
-    current_projection: Option<std::rc::Rc<super::UiMountedProjectionFrameOwner>>,
-    // Identity progression revokes current projection authority while the next
-    // projection still needs accepted semantic inputs and physical predecessors.
-    unprojected_semantic_predecessor: Option<super::projection::UiMountedSemanticProjection>,
-    unprojected_appearance_predecessor: Option<super::projection::UiMountedAppearanceFrameState>,
-    unprojected_pointer_predecessor: Option<super::projection::UiMountedPointerAffordanceState>,
-    current_manifest: Option<worth_ui_host_contract::UiMountedFrameManifest>,
-    current_core: Option<worth_ui_host_contract::UiMountedFrameCanonicalCore>,
-    current_publication: Option<super::UiMountedFramePublicationReceipt>,
-    current_trace_source:
-        Option<crate::facade::prepared_application_authority::WorthUiPreparedVisualTraceSource>,
-    current_reuse_contract: Option<super::UiMountedFrameReuseContract>,
+    frame: frame_state::UiMountedFrameState,
     pending_projection_changes: super::UiMountedProjectionChanges,
     peak_qualified_layouts: usize,
     semantic_revision: u64,
@@ -114,17 +102,7 @@ impl UiMountedIdentityState {
             by_graph: BTreeMap::new(),
             visible_order: Default::default(),
             mounted_instance_membership: Default::default(),
-            current_frame: None,
-            current_receipt_basis: None,
-            current_projection: None,
-            unprojected_semantic_predecessor: None,
-            unprojected_appearance_predecessor: None,
-            unprojected_pointer_predecessor: None,
-            current_manifest: None,
-            current_core: None,
-            current_publication: None,
-            current_trace_source: None,
-            current_reuse_contract: None,
+            frame: frame_state::UiMountedFrameState::vacant(),
             pending_projection_changes: Default::default(),
             peak_qualified_layouts: 0,
             semantic_revision,
@@ -226,13 +204,11 @@ impl UiMountedIdentityState {
     }
 
     pub(crate) fn current_projection(&self) -> Option<&super::UiMountedProjectionFrame> {
-        self.current_projection
-            .as_ref()
-            .map(|owner| owner.projection())
+        self.frame.projection().map(|owner| owner.projection())
     }
 
     pub(crate) fn current_projection_owner(&self) -> Option<&super::UiMountedProjectionFrameOwner> {
-        self.current_projection.as_deref()
+        self.frame.projection()
     }
 
     pub(in crate::mounting) fn retain_pointer_observation_admission(
@@ -240,7 +216,7 @@ impl UiMountedIdentityState {
         observation: crate::runtime::pointer_affordance::UiPointerAffordanceObservationIdentity,
         surfaces: &[UiSemanticSurfaceIdentity],
     ) {
-        if let Some(owner) = &mut self.current_projection {
+        if let Some(owner) = self.frame.projection_mut() {
             std::rc::Rc::make_mut(owner)
                 .pointer
                 .retain_observation_admission(observation, surfaces);
@@ -250,33 +226,25 @@ impl UiMountedIdentityState {
     pub(in crate::mounting) fn appearance_predecessor(
         &self,
     ) -> Option<&super::projection::UiMountedAppearanceFrameState> {
-        match self.current_projection_owner() {
-            Some(owner) => Some(owner.appearance()),
-            None => self.unprojected_appearance_predecessor.as_ref(),
-        }
+        self.frame.appearance_predecessor()
     }
 
     pub(in crate::mounting) fn semantic_predecessor(
         &self,
     ) -> Option<&super::projection::UiMountedSemanticProjection> {
-        match self.current_projection_owner() {
-            Some(owner) => Some(owner.projection().semantic_projection()),
-            None => self.unprojected_semantic_predecessor.as_ref(),
-        }
+        self.frame.semantic_predecessor()
     }
 
     pub(in crate::mounting) fn pointer_predecessor(
         &self,
     ) -> Option<&super::projection::UiMountedPointerAffordanceState> {
-        self.current_projection_owner()
-            .map(|owner| &owner.pointer)
-            .or(self.unprojected_pointer_predecessor.as_ref())
+        self.frame.pointer_predecessor()
     }
 
     pub(crate) fn current_allocation_truth_revision(&self) -> Option<u64> {
-        self.current_core
-            .as_ref()
-            .map(|core| core.allocation_truth_revision())
+        self.frame
+            .published()
+            .map(|published| published.core.allocation_truth_revision())
     }
 
     pub(crate) fn projection_instance(

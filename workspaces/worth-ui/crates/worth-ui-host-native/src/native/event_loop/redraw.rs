@@ -8,15 +8,8 @@ use super::{
 
 impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
     pub(super) fn redraw(&mut self, event_loop: &ActiveEventLoop) {
-        let physical = physical_progression::progress_ready_physical_work(
-            &mut self.readiness,
-            self.physical_readiness_owner,
-            &self.shared,
-        );
-        if let Some(grant) = physical.application_progress_grant() {
-            if self.progress_physical_client(event_loop, grant) {
-                return;
-            }
+        if self.progress_ready_physical_client(event_loop) {
+            return;
         }
         self.request_physical_signal_redraw();
         let Ok(work) = self.readiness.take(self.readiness_owner) else {
@@ -27,8 +20,7 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
         let surface_basis_generation = self
             .shared
             .borrow()
-            .presentation_surface
-            .as_ref()
+            .presentation_surface()
             .map(|surface| surface.basis_generation())
             .unwrap_or(0);
         let readiness = UiNativeReadinessGrant::issued(
@@ -47,6 +39,19 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
             return;
         }
         self.first_frame_presented = true;
+    }
+
+    /// Hands the client the physical work that is ready, if any, and
+    /// reports whether the client's directive ended this turn.
+    pub(super) fn progress_ready_physical_client(&mut self, event_loop: &ActiveEventLoop) -> bool {
+        let physical = physical_progression::progress_ready_physical_work(
+            &mut self.readiness,
+            self.physical_readiness_owner,
+            &self.shared,
+        );
+        physical
+            .application_progress_grant()
+            .is_some_and(|grant| self.progress_physical_client(event_loop, grant))
     }
 
     fn progress_physical_client(

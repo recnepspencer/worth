@@ -30,10 +30,9 @@ fn present_appearance_only(
     key: u64,
 ) -> UiHostSurfacePresentationOutcome {
     let defer_initial_observation = super::defer_presentation_initial_observation(state);
-    let Some(device) = state.device.as_ref() else {
-        return super::adapter_declined();
-    };
-    let Some(surface) = state.presentation_surface.as_ref() else {
+    let Some(crate::native::UiNativePresentationOwners { device, surface }) =
+        state.presentation_owners.as_ref()
+    else {
         return super::adapter_declined();
     };
     let mut graphics = crate::native::UiNativePresentationAccess::new(device, surface);
@@ -54,13 +53,14 @@ fn present_appearance_only(
         defer_initial_observation,
         &mut state.lifecycle,
     );
-    let (cost, painted, observed_pixels, port_crossings, effects) = match result {
+    let (cost, paint, port_crossings, effects) = match result {
         Ok(presented) => presented.into_parts(),
         Err(failure) => return super::settle_presentation_failure(state, view, failure),
     };
     state.lifecycle.resolve_recovery(key);
     state.lifecycle.record_presented();
-    let pixels = observed_pixels.unwrap_or_else(|| latest_pixels(state));
+    let painted = paint.painted();
+    let pixels = paint.pixels().unwrap_or_else(|| latest_pixels(state));
     record_retained_frame(
         state,
         view,

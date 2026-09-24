@@ -1,4 +1,5 @@
 use super::*;
+use crate::mounting::presentation::presented_surface_witness_for_certification;
 
 #[test]
 fn selective_text_replacement_denies_ambiguous_node_surface_motion() {
@@ -50,7 +51,12 @@ fn selective_text_replacement_denies_ambiguous_node_surface_motion() {
     let (_, acceptance) = accepted
         .prepare_motion_sample(tick.receipt(), presentation, &lease)
         .unwrap();
-    acceptance.accept(&accepted, presentation).unwrap();
+    acceptance
+        .accept(
+            &accepted,
+            &presented_surface_witness_for_certification(presentation),
+        )
+        .unwrap();
     let retained_opacity = accepted
         .motion_for_command(first.identity())
         .flatten()

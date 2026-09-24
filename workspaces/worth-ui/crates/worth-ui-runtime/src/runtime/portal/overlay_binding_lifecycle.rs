@@ -51,14 +51,25 @@ pub(crate) struct UiPortalOverlayBindingStage {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct UiPortalOverlayBindingCommit {
-    stage: Option<UiPortalOverlayBindingStage>,
     portal: UiPortalIdentity,
     runtime_surface: UiSemanticSurfaceIdentity,
-    declared_portal: Option<UiPortalDeclarationId>,
-    opens: bool,
-    idempotent: bool,
-    posture: UiPortalLifecyclePosture,
-    closed_descendants: Box<[UiPortalIdentity]>,
+    effect: UiPortalOverlayBindingEffect,
+}
+
+/// What a published Portal transition does to its overlay binding. Only an
+/// open carries the binding it admitted; only a close retires anything.
+#[derive(Clone, Debug, Eq, PartialEq)]
+enum UiPortalOverlayBindingEffect {
+    Opens {
+        /// The declared binding this open admitted, when it declared one.
+        stage: Option<UiPortalOverlayBindingStage>,
+        declared_portal: Option<UiPortalDeclarationId>,
+        idempotent: bool,
+    },
+    Closes {
+        posture: UiPortalLifecyclePosture,
+        closed_descendants: Box<[UiPortalIdentity]>,
+    },
 }
 
 pub(crate) struct UiPortalOverlayBindingLifecycle {
@@ -203,35 +214,44 @@ impl UiPortalOverlayBindingLifecycle {
         commit: UiPortalOverlayBindingCommit,
     ) -> Result<(), UiPortalOverlayBindingLifecycleDenial> {
         self.require_generation(generation)?;
-        if let Some(stage) = commit.stage.as_ref() {
-            if stage.generation() != &self.generation
-                || !commit.opens
-                || commit.declared_portal != Some(stage.declaration())
-                || commit.portal != stage.portal
-                || commit.runtime_surface != stage.runtime_surface
-                || self.surface_bindings.get(&stage.surface_declaration)
-                    != Some(&stage.runtime_surface)
-            {
-                return Err(UiPortalOverlayBindingLifecycleDenial::TransitionMismatch);
+        match commit.effect {
+            UiPortalOverlayBindingEffect::Opens {
+                stage: Some(stage),
+                declared_portal,
+                idempotent,
+            } => {
+                if stage.generation() != &self.generation
+                    || declared_portal != Some(stage.declaration())
+                    || commit.portal != stage.portal
+                    || commit.runtime_surface != stage.runtime_surface
+                    || self.surface_bindings.get(&stage.surface_declaration)
+                        != Some(&stage.runtime_surface)
+                {
+                    return Err(UiPortalOverlayBindingLifecycleDenial::TransitionMismatch);
+                }
+                let owner = self
+                    .owners
+                    .get_mut(&stage.runtime_surface)
+                    .ok_or(UiPortalOverlayBindingLifecycleDenial::DeclaredSurfaceUnbound)?;
+                if !idempotent && !stage.already_bound {
+                    owner
+                        .bind(stage.declaration, stage.portal)
+                        .map_err(UiPortalOverlayBindingLifecycleDenial::Owner)?;
+                } else if owner.binding_for_portal(stage.portal) != Some(stage.declaration) {
+                    return Err(UiPortalOverlayBindingLifecycleDenial::RetiredBinding);
+                }
             }
-            let owner = self
-                .owners
-                .get_mut(&stage.runtime_surface)
-                .ok_or(UiPortalOverlayBindingLifecycleDenial::DeclaredSurfaceUnbound)?;
-            if !commit.idempotent && !stage.already_bound {
-                owner
-                    .bind(stage.declaration, stage.portal)
-                    .map_err(UiPortalOverlayBindingLifecycleDenial::Owner)?;
-            } else if owner.binding_for_portal(stage.portal) != Some(stage.declaration) {
-                return Err(UiPortalOverlayBindingLifecycleDenial::RetiredBinding);
-            }
-        }
-        if !commit.opens {
-            for descendant in commit.closed_descendants.iter().copied() {
-                self.retire_portal(descendant);
-            }
-            if commit.posture == UiPortalLifecyclePosture::Closed {
-                self.retire_portal(commit.portal);
+            UiPortalOverlayBindingEffect::Opens { stage: None, .. } => {}
+            UiPortalOverlayBindingEffect::Closes {
+                posture,
+                closed_descendants,
+            } => {
+                for descendant in closed_descendants.iter().copied() {
+                    self.retire_portal(descendant);
+                }
+                if posture == UiPortalLifecyclePosture::Closed {
+                    self.retire_portal(commit.portal);
+                }
             }
         }
         Ok(())
@@ -315,23 +335,34 @@ impl UiPortalOverlayBindingCommit {
     pub(crate) fn from_transition(
         transition: &UiPreparedPortalServiceTransition,
         stage: Option<UiPortalOverlayBindingStage>,
-    ) -> Self {
+    ) -> Result<Self, UiPortalOverlayBindingLifecycleDenial> {
         let request = transition.request();
-        Self {
-            stage,
+        let effect = if transition.opens_portal() {
+            UiPortalOverlayBindingEffect::Opens {
+                stage,
+                declared_portal: request.declared_portal(),
+                idempotent: transition.is_idempotent(),
+            }
+        } else {
+            // Only `admit_open` stages a binding, so a close never carries one.
+            if stage.is_some() {
+                return Err(UiPortalOverlayBindingLifecycleDenial::TransitionMismatch);
+            }
+            UiPortalOverlayBindingEffect::Closes {
+                posture: transition.staged_posture(),
+                closed_descendants: transition.closed_descendants().to_vec().into_boxed_slice(),
+            }
+        };
+        Ok(Self {
             portal: transition.portal(),
             runtime_surface: request.semantic_surface(),
-            declared_portal: request.declared_portal(),
-            opens: transition.opens_portal(),
-            idempotent: transition.is_idempotent(),
-            posture: transition.staged_posture(),
-            closed_descendants: transition.closed_descendants().to_vec().into_boxed_slice(),
-        }
+            effect,
+        })
     }
 
     pub(crate) fn with_retained_exit(mut self, retained: bool) -> Self {
-        if !self.opens {
-            self.posture = if retained {
+        if let UiPortalOverlayBindingEffect::Closes { posture, .. } = &mut self.effect {
+            *posture = if retained {
                 UiPortalLifecyclePosture::Closing
             } else {
                 UiPortalLifecyclePosture::Closed

@@ -63,7 +63,7 @@ fn indeterminate_rebind_retains_recovery_authority_until_shutdown_disposal() {
     let predecessor = world.session.generation_identity().clone();
     let publication = world.session.current_mounted_publication().cloned();
     world.host.push_presentation(
-        worth_ui_runtime::facade::mounted::UiHostSurfacePresentationOutcome::
+        worth_ui_runtime::certification_support::ScriptedPresentationOutcome::
             PresentationIndeterminate,
     );
     let prepared = world.prepare_changed();
@@ -263,7 +263,7 @@ fn repeated_uncertainty_returns_fresh_recovery_authority() {
     let mut reconciliation = indeterminate_reconciliation(&mut world);
     let request = rebound_request(&mut reconciliation);
     host.push_presentation(
-        worth_ui_runtime::facade::mounted::UiHostSurfacePresentationOutcome::
+        worth_ui_runtime::certification_support::ScriptedPresentationOutcome::
             PresentationIndeterminate,
     );
     let recovery = match reconciliation.present_current(request, 2) {
@@ -278,7 +278,7 @@ fn repeated_uncertainty_returns_fresh_recovery_authority() {
 
 fn indeterminate_reconciliation(world: &mut RebindExecutionWorld) -> UiRebindReconciliation<'_> {
     world.host.push_presentation(
-        worth_ui_runtime::facade::mounted::UiHostSurfacePresentationOutcome::
+        worth_ui_runtime::certification_support::ScriptedPresentationOutcome::
             PresentationIndeterminate,
     );
     let prepared = world.prepare_changed();

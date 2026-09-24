@@ -325,7 +325,9 @@ pub(super) fn reject_stale_duplicate_and_foreign_bases(
         current.host_surface(),
         current.frame(),
         current.binding(),
-        UiHostPresentationEpoch::issued_by_host(current.epoch().diagnostic_value().wrapping_add(1)),
+        UiHostPresentationEpoch::issued_by_host(
+            current.basis().epoch().diagnostic_value().wrapping_add(1),
+        ),
     );
     let frame = world.session.current_mounted_publication().unwrap().frame();
     let appearance = world
@@ -347,7 +349,7 @@ pub(super) fn reject_stale_duplicate_and_foreign_bases(
     assert_eq!(
         world
             .session
-            .validate_host_observation_batch(batch(session + 1, current)),
+            .validate_host_observation_batch(batch(session + 1, current.basis())),
         UiHostObservationReportOutcome::Denied(UiHostObservationReportDenial::ForeignHostSession)
     );
     assert_eq!(
@@ -358,7 +360,7 @@ pub(super) fn reject_stale_duplicate_and_foreign_bases(
             UiHostObservationReportDenial::PresentationEpochMismatch
         )
     );
-    let current_batch = batch(session, current);
+    let current_batch = batch(session, current.basis());
     assert!(matches!(
         world
             .session

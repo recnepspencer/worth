@@ -43,7 +43,11 @@ use worth_ui_host_contract::{
 pub(super) struct UiMountedScrollMotionCommand {
     pub(super) identity: UiMountedPaintCommandIdentity,
     pub(super) clips: Arc<[UiMountedScrollMotionClip]>,
-    pub(super) base_translation: [f32; 2],
+    /// The translation the host last accepted for this command. It shows each
+    /// of the command's groups at that group's displayed offset, so samples
+    /// move it from there. A command the host has only seen published has
+    /// none and stands at its groups' published offsets.
+    pub(super) base_translation: Option<[f32; 2]>,
 }
 
 #[derive(Clone)]
@@ -51,6 +55,12 @@ pub(super) struct UiMountedScrollMotionGroup {
     pub(super) input: UiMountedScrollMotionGroupInput,
     pub(super) commands: Arc<[UiMountedScrollMotionCommand]>,
     pub(super) thumbs: Arc<[UiMountedScrollChromeIdentity]>,
+    /// Where the host showed this group when it was bound, which is where
+    /// every accepted base translation bound with it shows the group: at the
+    /// offset of its last accepted sample, carried across rebuilds. The
+    /// published offset follows only once that sample settles, and a frame
+    /// published before then must not move accepted commands by the gap.
+    pub(super) displayed: [f64; 2],
     pub(super) accepted: std::rc::Rc<
         std::cell::Cell<Option<super::super::motion_sampling::UiPresentationMotionSampleReceipt>>,
     >,
@@ -67,9 +77,9 @@ pub(super) struct UiMountedScrollChromeSampleTarget {
 #[derive(Clone, Default)]
 pub(super) struct UiMountedScrollMotionGroups {
     pub(super) geometry_index_reserved_bytes: usize,
-    pub(super) groups: Arc<BTreeMap<UiMotionTargetIdentity, UiMountedScrollMotionGroup>>,
+    pub(super) groups: std::rc::Rc<BTreeMap<UiMotionTargetIdentity, UiMountedScrollMotionGroup>>,
     pub(super) chrome:
-        Arc<BTreeMap<UiMountedScrollChromeIdentity, UiMountedScrollChromeSampleTarget>>,
+        std::rc::Rc<BTreeMap<UiMountedScrollChromeIdentity, UiMountedScrollChromeSampleTarget>>,
     pub(super) memberships:
         Arc<HashMap<UiMountedPaintCommandIdentity, Arc<[UiMotionTargetIdentity]>>>,
     pub(super) owners: Arc<BTreeMap<UiMountedInstanceIdentity, UiMotionTargetIdentity>>,
@@ -94,6 +104,32 @@ impl UiMountedScrollMotionGroups {
 }
 
 impl UiMountedPresentationState {
+    /// The translation the host holds for `identity`, kept as the base a
+    /// rebuilt group moves it from.
+    fn accepted_base_translation(
+        &self,
+        identity: UiMountedPaintCommandIdentity,
+    ) -> Option<[f32; 2]> {
+        let transform = self.accepted_motion_change(identity)?.transform()?;
+        Some([
+            transform.sampled().x() - transform.source().x(),
+            transform.sampled().y() - transform.source().y(),
+        ])
+    }
+
+    /// Where the host shows the group `target` now; a group this frame
+    /// introduces stands at its `published` offset.
+    fn displayed_scroll_offset(
+        &self,
+        target: UiMotionTargetIdentity,
+        published: UiScrollOffset,
+    ) -> [f64; 2] {
+        self.scroll_motion_groups.groups.get(&target).map_or_else(
+            || sampling::published_offset(published),
+            UiMountedScrollMotionGroup::displayed_offset,
+        )
+    }
+
     /// Bind only the candidate frame's exact membership. Committing the frame
     /// commits this index; rejecting it leaves the predecessor index intact.
     pub(in crate::mounting::presentation) fn bind_scroll_motion_groups(
@@ -180,20 +216,10 @@ impl UiMountedPresentationState {
                     ));
                 }
                 for identity in identities {
-                    let base_translation = self
-                        .accepted_motion_change(identity)
-                        .and_then(|change| change.transform())
-                        .map(|transform| {
-                            [
-                                transform.sampled().x() - transform.source().x(),
-                                transform.sampled().y() - transform.source().y(),
-                            ]
-                        })
-                        .unwrap_or([0.0; 2]);
                     commands.push(UiMountedScrollMotionCommand {
                         identity,
                         clips: clips.clone(),
-                        base_translation,
+                        base_translation: self.accepted_base_translation(identity),
                     });
                 }
             }
@@ -215,7 +241,7 @@ impl UiMountedPresentationState {
                         bounds: target.clip,
                         owner: Some(input.owner),
                     }]),
-                    base_translation: [0.0; 2],
+                    base_translation: None,
                 });
             }
             let accepted = owners
@@ -229,12 +255,14 @@ impl UiMountedPresentationState {
                         .push(input.target);
                 }
             }
+            let displayed = self.displayed_scroll_offset(input.target, input.offset);
             groups.insert(
                 input.target,
                 UiMountedScrollMotionGroup {
                     input: input.clone(),
                     commands: commands.into(),
                     thumbs,
+                    displayed,
                     accepted: accepted.1.clone(),
                 },
             );
@@ -245,8 +273,8 @@ impl UiMountedPresentationState {
                 .get(&self.requirement.semantic_surface())
                 .copied()
                 .unwrap_or(0),
-            groups: Arc::new(groups),
-            chrome: Arc::new(chrome),
+            groups: std::rc::Rc::new(groups),
+            chrome: std::rc::Rc::new(chrome),
             memberships: Arc::new(
                 memberships
                     .into_iter()

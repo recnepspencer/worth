@@ -46,7 +46,7 @@ pub(super) fn reject_retry_at_nonterminal_sample(
             world
                 .session
                 .mounted
-                .accepted_motion_for_command(current, command.identity())
+                .accepted_motion_for_command(current.basis(), command.identity())
                 .unwrap()
                 .map(|sample| (command.identity(), sample.opacity_units()))
         })
@@ -207,7 +207,7 @@ pub(super) fn reject_retry_at_nonterminal_sample(
             world
                 .session
                 .mounted
-                .accepted_motion_for_command(presentation, command)
+                .accepted_motion_for_command(presentation.basis(), command)
                 .unwrap()
                 .map(|sample| sample.opacity_units()),
             Some(expected_opacity),

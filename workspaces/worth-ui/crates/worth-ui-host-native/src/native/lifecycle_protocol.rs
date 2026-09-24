@@ -15,6 +15,7 @@ use super::{
     UiNativeInputObservationState, UiNativePointerPositionWitness,
 };
 
+mod input_recovery;
 mod phase;
 mod presentation;
 mod transition;

@@ -11,8 +11,8 @@ pub use worth_ui_runtime::facade::entry::{
     UiNativeReplacementLayoutInput, UiPortalDismissalPublicationReceipt,
     UiSemanticFocusParticipantObservation, UiSemanticFocusPhysicalPlacementOutcome,
     UiSemanticFocusPublicationCause, UiSemanticFocusPublicationOutcome,
-    UiSemanticFocusPublicationReceipt, WorthUiApplicationCutoverRetry,
-    WorthUiApplicationPublicationObservation,
+    UiSemanticFocusPublicationReceipt, WorthUiAdmittedPortalDismissal,
+    WorthUiApplicationCutoverRetry, WorthUiApplicationPublicationObservation,
 };
 pub use worth_ui_runtime::facade::lifecycle::{
     WorthUiApplicationPreparationDenial, WorthUiApplicationPreparationPhase,

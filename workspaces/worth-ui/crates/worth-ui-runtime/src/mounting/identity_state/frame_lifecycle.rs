@@ -38,11 +38,11 @@ impl UiMountedIdentityState {
     }
 
     pub(in crate::mounting) fn has_published_frame(&self) -> bool {
-        self.current_publication.is_some()
+        self.frame.published().is_some()
     }
 
     pub(in crate::mounting) fn current_frame_identity(&self) -> Option<UiMountedFrameIdentity> {
-        self.current_frame
+        self.frame.frame()
     }
 
     pub(crate) fn advance_frame(
@@ -78,18 +78,7 @@ impl UiMountedIdentityState {
         &mut self,
         candidate: UiMountedIdentityFrameCandidate,
     ) {
-        let frame = candidate.frame();
-        self.current_frame = Some(frame);
-        self.current_receipt_basis = Some(candidate.receipt_basis);
-        self.unprojected_semantic_predecessor = self.semantic_predecessor().cloned();
-        self.unprojected_appearance_predecessor = self.appearance_predecessor().cloned();
-        self.unprojected_pointer_predecessor = self.pointer_predecessor().cloned();
-        self.current_projection = None;
-        self.current_manifest = None;
-        self.current_core = None;
-        self.current_publication = None;
-        self.current_trace_source = None;
-        self.current_reuse_contract = None;
+        self.frame.advance_unpublished(candidate.receipt_basis);
     }
 
     pub(crate) fn publish_presented_frame(
@@ -97,26 +86,7 @@ impl UiMountedIdentityState {
         frame: UiPreparedMountedFrame,
         receipt: UiMountedFramePublicationReceipt,
     ) {
-        let trace_source = frame.identity_trace_basis().authored_source().clone();
-        let (candidate, manifest, core, reuse_contract) = frame.into_publication_parts();
-        self.current_manifest = Some(manifest);
-        self.current_core = Some(core);
-        let (owner, identity_candidate, projection_changes) = candidate.into_parts();
-        self.peak_qualified_layouts = self
-            .peak_qualified_layouts
-            .max(owner.projection().qualified_layout_count());
-        let frame = identity_candidate.frame();
-        let committed = self.commit_projection_changes(&projection_changes);
-        debug_assert!(committed);
-        self.current_frame = Some(frame);
-        self.current_receipt_basis = Some(identity_candidate.receipt_basis);
-        self.current_projection = Some(std::rc::Rc::new(owner));
-        self.unprojected_semantic_predecessor = None;
-        self.unprojected_appearance_predecessor = None;
-        self.unprojected_pointer_predecessor = None;
-        self.current_publication = Some(receipt);
-        self.current_trace_source = Some(trace_source);
-        self.current_reuse_contract = Some(reuse_contract);
+        self.publish_prepared_frame(frame, receipt);
     }
 
     pub(crate) fn publish_reconciled_frame(
@@ -125,44 +95,52 @@ impl UiMountedIdentityState {
         receipt: UiMountedFramePublicationReceipt,
     ) {
         debug_assert_eq!(
-            self.current_frame,
+            self.frame.frame(),
             frame.presentation_delta_source().predecessor()
         );
+        self.publish_prepared_frame(frame, receipt);
+    }
+
+    fn publish_prepared_frame(
+        &mut self,
+        frame: UiPreparedMountedFrame,
+        publication: UiMountedFramePublicationReceipt,
+    ) {
         let trace_source = frame.identity_trace_basis().authored_source().clone();
         let (candidate, manifest, core, reuse_contract) = frame.into_publication_parts();
-        self.current_manifest = Some(manifest);
-        self.current_core = Some(core);
         let (owner, identity_candidate, projection_changes) = candidate.into_parts();
         self.peak_qualified_layouts = self
             .peak_qualified_layouts
             .max(owner.projection().qualified_layout_count());
-        let frame = identity_candidate.frame();
         let committed = self.commit_projection_changes(&projection_changes);
         debug_assert!(committed);
-        self.current_frame = Some(frame);
-        self.current_receipt_basis = Some(identity_candidate.receipt_basis);
-        self.current_projection = Some(std::rc::Rc::new(owner));
-        self.unprojected_semantic_predecessor = None;
-        self.unprojected_appearance_predecessor = None;
-        self.unprojected_pointer_predecessor = None;
-        self.current_publication = Some(receipt);
-        self.current_trace_source = Some(trace_source);
-        self.current_reuse_contract = Some(reuse_contract);
+        self.frame
+            .publish(super::frame_state::UiPublishedMountedFrame {
+                receipts: identity_candidate.receipt_basis,
+                projection: std::rc::Rc::new(owner),
+                manifest,
+                core,
+                publication,
+                trace_source,
+                reuse_contract,
+            });
     }
 
     pub(crate) fn publication_receipt(&self) -> Option<&UiMountedFramePublicationReceipt> {
-        self.current_publication.as_ref()
+        self.frame
+            .published()
+            .map(|published| &published.publication)
     }
 
     pub(crate) fn classify_reuse(
         &self,
         contract: UiMountedFrameReuseContract,
     ) -> super::super::UiMountedFrameReuse {
-        match (&self.current_reuse_contract, &self.current_publication) {
-            (Some(current), Some(publication)) if current == &contract => {
+        match self.frame.published() {
+            Some(published) if published.reuse_contract == contract => {
                 super::super::UiMountedFrameReuse::Exact(UiMountedFrameReuseWitness::mint(
                     contract,
-                    publication.clone(),
+                    published.publication.clone(),
                 ))
             }
             _ => super::super::UiMountedFrameReuse::ComparisonRequired(contract),
@@ -198,7 +176,7 @@ impl UiMountedIdentityState {
         &self,
         frame: UiMountedFrameIdentity,
     ) -> Result<(), UiMountedIdentityDenial> {
-        (self.current_frame == Some(frame))
+        (self.frame.frame() == Some(frame))
             .then_some(())
             .ok_or(UiMountedIdentityDenial::FrameNotCurrent)
     }
@@ -209,8 +187,8 @@ impl UiMountedIdentityState {
         receipt: UiMountedNodeReceiptIdentity,
     ) -> Result<(), UiMountedIdentityDenial> {
         let current = self
-            .current_receipt_basis
-            .as_ref()
+            .frame
+            .receipts()
             .and_then(|basis| basis.receipt_for(instance))
             .ok_or(UiMountedIdentityDenial::NodeReceiptNotCurrent)?;
         (current == receipt)
@@ -230,8 +208,8 @@ impl UiMountedIdentityState {
             .collect();
         let surface_bindings = self.bindings.values().map(|record| record.view).collect();
         let frame_receipts = self
-            .current_receipt_basis
-            .as_ref()
+            .frame
+            .receipts()
             .into_iter()
             .flat_map(|basis| {
                 let frame = basis.frame();
@@ -243,7 +221,7 @@ impl UiMountedIdentityState {
         UiMountedIdentityView::new(
             mounted_instances,
             surface_bindings,
-            self.current_frame,
+            self.frame.frame(),
             frame_receipts,
         )
     }

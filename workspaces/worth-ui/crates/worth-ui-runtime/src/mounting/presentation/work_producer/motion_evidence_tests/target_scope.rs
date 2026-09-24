@@ -1,4 +1,5 @@
 use super::*;
+use crate::mounting::presentation::presented_surface_witness_for_certification;
 
 #[test]
 fn ordinary_motion_cannot_overwrite_portal_paint_for_the_same_owner() {
@@ -50,7 +51,7 @@ fn ordinary_motion_cannot_overwrite_portal_paint_for_the_same_owner() {
             ))
             .unwrap();
         let initial = sampler.prepare_tick(1, presentation).unwrap();
-        sampler.commit_prepared(initial);
+        sampler.commit_prepared(initial.presented_for_certification());
         let tick = sampler.prepare_tick(200, presentation).unwrap();
         let before_portal = current.motion_for_command(portal_command.identity());
         let before_text = current.motion_for_command(text_command.identity());
@@ -63,7 +64,12 @@ fn ordinary_motion_cannot_overwrite_portal_paint_for_the_same_owner() {
         assert_eq!(sample.changes().len(), 1);
         assert_eq!(sample.changes()[0].command(), expected);
         assert_eq!(sample.changes()[0].opacity().units(), 0);
-        acceptance.accept(&current, presentation).unwrap();
+        acceptance
+            .accept(
+                &current,
+                &presented_surface_witness_for_certification(presentation),
+            )
+            .unwrap();
         if target == ordinary {
             assert_eq!(
                 current.motion_for_command(portal_command.identity()),

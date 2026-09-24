@@ -5,6 +5,9 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::rc::Rc;
 use worth_ui_host_contract::*;
 
+mod fragment;
+use fragment::lower_fragment;
+
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct UiMountedPointerAffordanceWork {
     pub(crate) observations_examined: usize,
@@ -21,6 +24,16 @@ struct RetainedPointer {
     reconstruction: bool,
 }
 
+/// What the next lowering is asked to publish.
+#[derive(Clone)]
+enum UiStagedPointerOutput {
+    /// Nothing staged: lowering republishes the retained rows.
+    Unstaged,
+    /// An empty owner staged nothing to publish and nothing to admit.
+    Empty,
+    Staged(StagedPointers),
+}
+
 #[derive(Clone)]
 struct StagedPointers {
     rows: Rc<[UiMountedPointerAffordanceMechanic]>,
@@ -31,37 +44,43 @@ struct StagedPointers {
 
 /// Independent pointer output rows, with at most one row per bound surface.
 /// Candidate copies share their predecessor until aggregate output admission.
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub(crate) struct UiMountedPointerAffordanceState {
     rows: Rc<BTreeMap<UiSemanticSurfaceIdentity, RetainedPointer>>,
     admitted: Rc<BTreeMap<UiSemanticSurfaceIdentity, UiPointerAffordanceObservationIdentity>>,
-    staged: Option<StagedPointers>,
-    staged_empty: bool,
+    staged: UiStagedPointerOutput,
     work: UiMountedPointerAffordanceWork,
 }
 
 impl UiMountedPointerAffordanceState {
-    pub(in crate::mounting::projection) fn settle_without_output(&self) -> Option<Self> {
-        if self.staged_empty {
-            if !self.rows.is_empty() || !self.admitted.is_empty() {
-                return None;
-            }
-            let mut next = self.clone();
-            next.staged_empty = false;
-            next.work.surfaces_changed = 0;
-            return Some(next);
+    /// An owner with no predecessor: nothing retained, admitted or staged.
+    pub(in crate::mounting) fn empty() -> Self {
+        Self {
+            rows: Rc::default(),
+            admitted: Rc::default(),
+            staged: UiStagedPointerOutput::Unstaged,
+            work: UiMountedPointerAffordanceWork::default(),
         }
-        let staged = self.staged.as_ref()?;
-        if !self.rows.is_empty()
-            || !self.admitted.is_empty()
-            || !staged.rows.is_empty()
-            || staged.observation.is_some()
-            || !staged.admitted_surfaces.is_empty()
-        {
+    }
+
+    pub(in crate::mounting::projection) fn settle_without_output(&self) -> Option<Self> {
+        if !self.rows.is_empty() || !self.admitted.is_empty() {
             return None;
         }
+        match &self.staged {
+            UiStagedPointerOutput::Unstaged => return None,
+            UiStagedPointerOutput::Empty => {}
+            UiStagedPointerOutput::Staged(staged) => {
+                if !staged.rows.is_empty()
+                    || staged.observation.is_some()
+                    || !staged.admitted_surfaces.is_empty()
+                {
+                    return None;
+                }
+            }
+        }
         let mut next = self.clone();
-        next.staged = None;
+        next.staged = UiStagedPointerOutput::Unstaged;
         next.work.surfaces_changed = 0;
         Some(next)
     }
@@ -87,22 +106,26 @@ impl UiMountedPointerAffordanceState {
         match (self.rows.get(&surface), desired) {
             (None, None) => true,
             (Some(retained), Some(desired)) => {
-                let family = match desired.family() {
-                    crate::declaration::UiPointerAffordance::Default => {
-                        UiPointerAffordanceFamily::Default
-                    }
-                    crate::declaration::UiPointerAffordance::Activation => {
-                        UiPointerAffordanceFamily::Activation
-                    }
-                };
+                let same_target = Some(retained.mechanic.target()) == desired.target();
                 retained.binding == binding
                     && !retained.reconstruction
                     && retained.mechanic.pointer() == desired.pointer()
-                    && Some(retained.mechanic.target()) == desired.target()
-                    && retained.mechanic.family() == family
+                    && same_target
+                    && desired.decided_family() == Some(retained.mechanic.family())
             }
             _ => false,
         }
+    }
+
+    /// The affordance this owner holds for `target` on `surface`, if its row
+    /// names that target.
+    pub(in crate::mounting) fn published_family(
+        &self,
+        surface: UiSemanticSurfaceIdentity,
+        target: UiMountedInstanceIdentity,
+    ) -> Option<UiPointerAffordanceFamily> {
+        let row = self.rows.get(&surface)?;
+        (row.mechanic.target() == target).then(|| row.mechanic.family())
     }
 
     pub(in crate::mounting) fn stage(
@@ -119,18 +142,16 @@ impl UiMountedPointerAffordanceState {
             && observation.is_none()
             && admitted_surfaces.is_empty()
         {
-            self.staged = None;
-            self.staged_empty = true;
+            self.staged = UiStagedPointerOutput::Empty;
             self.work = work;
             return;
         }
-        self.staged = Some(StagedPointers {
+        self.staged = UiStagedPointerOutput::Staged(StagedPointers {
             rows: desired.into(),
             surfaces: Rc::new(surfaces.into_iter().collect()),
             observation: observation.map(UiPointerAffordanceSnapshot::observation_identity),
             admitted_surfaces: admitted_surfaces.into(),
         });
-        self.staged_empty = false;
         self.work = work;
     }
 
@@ -142,6 +163,10 @@ impl UiMountedPointerAffordanceState {
         self.admitted
             .get(&surface)
             .is_some_and(|admitted| *admitted == observation.observation_identity())
+    }
+
+    pub(in crate::mounting) fn admitted_surface_count(&self) -> usize {
+        self.admitted.len()
     }
 
     pub(in crate::mounting) fn retain_observation_admission(
@@ -172,7 +197,7 @@ impl UiMountedPointerAffordanceState {
         let mut next = self.clone();
         Rc::make_mut(&mut next.rows).remove(&surface);
         Rc::make_mut(&mut next.admitted).remove(&surface);
-        if let Some(staged) = next.staged.as_mut() {
+        if let UiStagedPointerOutput::Staged(staged) = &mut next.staged {
             staged.rows = staged
                 .rows
                 .iter()
@@ -202,13 +227,14 @@ impl UiMountedPointerAffordanceState {
         bindings: &BTreeMap<UiSemanticSurfaceIdentity, UiMountedSurfaceBindingRequirement>,
     ) -> Result<(Self, Vec<UiUnpublishedAppearanceFragment>), super::UiMountedAppearanceOutputDenial>
     {
-        let desired = if self.staged_empty {
-            Vec::new()
-        } else {
-            self.staged
-                .as_ref()
-                .map(|staged| staged.rows.to_vec())
-                .unwrap_or_else(|| self.rows.values().map(|row| row.mechanic).collect())
+        let staged = match &self.staged {
+            UiStagedPointerOutput::Staged(staged) => Some(staged),
+            UiStagedPointerOutput::Unstaged | UiStagedPointerOutput::Empty => None,
+        };
+        let desired = match &self.staged {
+            UiStagedPointerOutput::Unstaged => self.rows.values().map(|row| row.mechanic).collect(),
+            UiStagedPointerOutput::Empty => Vec::new(),
+            UiStagedPointerOutput::Staged(staged) => staged.rows.to_vec(),
         };
         let mut next = self.clone();
         let mut current = BTreeMap::new();
@@ -230,15 +256,11 @@ impl UiMountedPointerAffordanceState {
         let mut fragments = Vec::new();
         next.work.surfaces_changed = 0;
         for surface in surfaces {
-            if self
-                .staged
-                .as_ref()
-                .is_some_and(|staged| !staged.surfaces.contains(&surface))
-            {
+            if staged.is_some_and(|staged| !staged.surfaces.contains(&surface)) {
                 continue;
             }
             let Some(binding) = bindings.get(&surface).copied() else {
-                if self.staged.is_some() {
+                if staged.is_some() {
                     return Err(super::UiMountedAppearanceOutputDenial::Transport(
                         UiUnpublishedAppearanceFrameProjectionDenial::SurfaceBindingMismatch,
                     ));
@@ -283,7 +305,7 @@ impl UiMountedPointerAffordanceState {
                 }
             }
         }
-        if let Some(staged) = &self.staged {
+        if let Some(staged) = staged {
             if let Some(observation) = &staged.observation {
                 next.retain_observation_admission(observation.clone(), &staged.admitted_surfaces);
             } else {
@@ -292,102 +314,7 @@ impl UiMountedPointerAffordanceState {
                 }
             }
         }
-        next.staged = None;
-        next.staged_empty = false;
+        next.staged = UiStagedPointerOutput::Unstaged;
         Ok((next, fragments))
     }
-}
-
-fn lower_fragment(
-    frame: &super::UiMountedProjectionFrame,
-    presentation: UiMountedPresentationAttemptIdentity,
-    binding: UiMountedSurfaceBindingRequirement,
-    previous: Option<&RetainedPointer>,
-    successor: Option<UiMountedPointerAffordanceMechanic>,
-    reconstruction: bool,
-) -> Result<UiUnpublishedAppearanceFragment, super::UiMountedAppearanceOutputDenial> {
-    let denial = || super::UiMountedAppearanceOutputDenial::PointerLowering;
-    let old = previous.map(|row| UiMountedAppearanceMechanic::Pointer(row.mechanic));
-    let new = successor.map(UiMountedAppearanceMechanic::Pointer);
-    let mut changes = Vec::new();
-    match (&old, &new) {
-        (Some(old), Some(new)) if old.identity() == new.identity() => {
-            changes.push(
-                UiMountedAppearanceMechanicChange::replacement(old.identity(), new.clone())
-                    .ok_or_else(denial)?,
-            );
-        }
-        _ => {
-            if let Some(old) = &old {
-                changes.push(UiMountedAppearanceMechanicChange::Remove(old.identity()));
-            }
-            if let Some(new) = &new {
-                changes.push(UiMountedAppearanceMechanicChange::Insert(new.clone()));
-            }
-        }
-    }
-    let order = UiMountedOverlayOrderMechanic::complete_from_runtime_overlay_order(
-        binding.semantic_surface(),
-        presentation,
-        0,
-        0,
-        [],
-    )
-    .map_err(|_| denial())?;
-    let output = UiMountedAppearanceFrame::from_runtime_mounting(
-        frame.frame_identity(),
-        binding.semantic_surface(),
-        new,
-        order,
-    )
-    .map_err(|_| denial())?;
-    let manifest = previous
-        .map(|_| {
-            UiMountedAppearancePredecessorManifest::from_runtime_mounting(
-                old.iter().map(UiMountedAppearanceMechanic::identity),
-                [],
-            )
-            .ok_or_else(denial)
-        })
-        .transpose()?;
-    let posture = if previous.is_none() {
-        UiMountedAppearanceWorkPosture::Initial
-    } else if reconstruction {
-        UiMountedAppearanceWorkPosture::Reconstruction
-    } else {
-        UiMountedAppearanceWorkPosture::Delta
-    };
-    let predecessor = previous.map(|row| row.frame);
-    let work = UiMountedAppearanceWork::from_runtime_mounting(
-        posture,
-        predecessor,
-        manifest,
-        output,
-        changes,
-        [],
-        previous.is_none(),
-    )
-    .ok_or_else(denial)?;
-    let affinity = UiMountedPresentationAffinity::from_runtime_mounting(
-        predecessor,
-        frame.frame_identity(),
-        binding,
-        frame.content_generation(),
-        None,
-    );
-    let pointer = successor
-        .or(previous.map(|row| row.mechanic))
-        .ok_or_else(denial)?
-        .pointer();
-    UiUnpublishedAppearanceFragment::from_runtime_mounting(
-        UiUnpublishedAppearanceFragmentIdentity::SurfacePointer {
-            surface: binding.semantic_surface(),
-            pointer,
-        },
-        work,
-        [],
-        binding,
-        affinity,
-    )
-    .map_err(super::UiMountedAppearanceOutputDenial::Transport)
 }

@@ -3,46 +3,6 @@ use super::{WorthUiNativeManagedRebindProgress, WorthUiNativePendingManagedRebin
 #[path = "portal_dismissal_recovery.rs"]
 mod recovery;
 
-#[derive(Clone, Copy)]
-pub(in crate::facade::entry) struct UiRetainedPortalDismissalRequest {
-    cause: crate::facade::interaction::UiDismissInteractionCause,
-    sequence: worth_ui_host_contract::UiHostObservationSequence,
-    time_basis: worth_ui_host_contract::UiHostObservationTimeBasis,
-}
-
-impl UiRetainedPortalDismissalRequest {
-    fn retain(interaction: crate::facade::interaction::UiDismissInteraction) -> Self {
-        Self {
-            cause: interaction.cause(),
-            sequence: interaction.sequence(),
-            time_basis: interaction.time_basis(),
-        }
-    }
-
-    fn rebase(
-        self,
-        presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
-    ) -> crate::facade::interaction::UiDismissInteraction {
-        match self.cause {
-            crate::facade::interaction::UiDismissInteractionCause::Escape => {
-                crate::facade::interaction::UiDismissInteraction::escape(
-                    presentation,
-                    self.sequence,
-                    self.time_basis,
-                )
-            }
-            crate::facade::interaction::UiDismissInteractionCause::OutsidePress(position) => {
-                crate::facade::interaction::UiDismissInteraction::outside_press(
-                    presentation,
-                    self.sequence,
-                    self.time_basis,
-                    position,
-                )
-            }
-        }
-    }
-}
-
 pub enum WorthUiNativeManagedPortalDismissalOutcome {
     Ignored,
     Retained,
@@ -55,6 +15,8 @@ pub enum WorthUiNativeManagedPortalDismissalOutcome {
 pub enum WorthUiNativePortalDismissalStop {
     /// Input names a superseded presentation. No proposal or host work began.
     StalePresentation,
+    /// The admitted Portal target or application lifetime changed before publication.
+    InteractionCancelled,
     Busy,
     IdentityExhausted,
     Transition,
@@ -114,9 +76,15 @@ impl super::super::WorthUiNativeApplicationShell {
 
     pub fn begin_managed_portal_dismissal(
         &mut self,
-        interaction: crate::facade::interaction::UiDismissInteraction,
+        interaction: super::super::WorthUiAdmittedPortalDismissal,
         now_tick: u64,
     ) -> WorthUiNativeManagedPortalDismissalOutcome {
+        // The bounded slot never overwrites a previously admitted operation.
+        if self.retained_portal_dismissal.is_some() {
+            return WorthUiNativeManagedPortalDismissalOutcome::Stopped(
+                WorthUiNativePortalDismissalStop::InteractionCancelled,
+            );
+        }
         if matches!(
             &self.pending_managed_rebind,
             Some(
@@ -126,8 +94,7 @@ impl super::super::WorthUiNativeApplicationShell {
                     | WorthUiNativePendingManagedRebind::PortalDismissalReconstructionDeferred { .. }
             )
         ) {
-            self.retained_portal_dismissal =
-                Some(UiRetainedPortalDismissalRequest::retain(interaction));
+            self.retained_portal_dismissal = Some(interaction);
             return WorthUiNativeManagedPortalDismissalOutcome::Pending;
         }
         if self
@@ -135,8 +102,7 @@ impl super::super::WorthUiNativeApplicationShell {
             .as_ref()
             .is_some_and(WorthUiNativePendingManagedRebind::carries_portal_intent_consequence)
         {
-            self.retained_portal_dismissal =
-                Some(UiRetainedPortalDismissalRequest::retain(interaction));
+            self.retained_portal_dismissal = Some(interaction);
             return WorthUiNativeManagedPortalDismissalOutcome::Retained;
         }
         if self.pending_managed_rebind.is_some() {
@@ -145,30 +111,9 @@ impl super::super::WorthUiNativeApplicationShell {
             );
         }
         self.retained_portal_dismissal = None;
-        // Escape queued during a publication names the visible predecessor.
-        // Reuse the Portal-owned continuation only across a mounted-admitted
-        // direct successor. Outside presses keep their original geometry basis.
-        let interaction = if matches!(
-            interaction.cause(),
-            crate::facade::interaction::UiDismissInteractionCause::Escape
-        ) {
-            self.session
-                .portal
-                .as_ref()
-                .and_then(crate::runtime::portal::UiPortalRuntimeState::topmost_presentation)
-                .and_then(|current| {
-                    self.session
-                        .mounted
-                        .direct_successor_presentation(interaction.presentation(), current)
-                })
-                .map(|current| {
-                    UiRetainedPortalDismissalRequest::retain(interaction).rebase(current)
-                })
-                .unwrap_or(interaction)
-        } else {
-            interaction
-        };
-        let outcome = self.session.publish_portal_dismissal(interaction, now_tick);
+        let outcome = self
+            .session
+            .publish_admitted_portal_dismissal(interaction, now_tick);
         match normalize(outcome) {
             NormalizedPortalDismissal::Ignored => {
                 WorthUiNativeManagedPortalDismissalOutcome::Ignored
@@ -204,15 +149,7 @@ impl super::super::WorthUiNativeApplicationShell {
         let Some(retained) = self.retained_portal_dismissal.take() else {
             return WorthUiNativeManagedPortalDismissalOutcome::Ignored;
         };
-        let Some(presentation) = self
-            .session
-            .portal
-            .as_ref()
-            .and_then(crate::runtime::portal::UiPortalRuntimeState::topmost_presentation)
-        else {
-            return WorthUiNativeManagedPortalDismissalOutcome::Ignored;
-        };
-        self.begin_managed_portal_dismissal(retained.rebase(presentation), now_tick)
+        self.begin_managed_portal_dismissal(retained, now_tick)
     }
 }
 
@@ -267,6 +204,7 @@ fn map_stop(
     use super::super::portal_dismissal::UiPortalDismissalPublicationStop as Stop;
     match stop {
         Stop::IdentityExhausted => WorthUiNativePortalDismissalStop::IdentityExhausted,
+        Stop::InteractionCancelled => WorthUiNativePortalDismissalStop::InteractionCancelled,
         Stop::StalePresentation => WorthUiNativePortalDismissalStop::StalePresentation,
         Stop::Transition => WorthUiNativePortalDismissalStop::Transition,
         Stop::Proposal => WorthUiNativePortalDismissalStop::Proposal,

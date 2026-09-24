@@ -10,6 +10,7 @@ impl UiMountedMotionSampler {
         tick: u64,
     ) -> Result<(), super::super::UiPresentationGeometrySamplingDenial> {
         assert_eq!(target.scope(), UiMotionTargetScope::ScrollContents);
+        self.note_owner_change(target);
         let state = self
             .tracks
             .get_mut(&target)
@@ -32,11 +33,12 @@ impl UiMountedMotionSampler {
         if target.scope() != UiMotionTargetScope::ScrollContents {
             return None;
         }
-        let state = self.tracks.get(&target)?;
-        if !state.presented {
-            return None;
-        }
-        let components = state.current?.geometry()?.components();
+        let components = self
+            .tracks
+            .get(&target)?
+            .on_screen()?
+            .geometry()?
+            .components();
         Some([components[0], components[1]])
     }
 }
@@ -53,7 +55,7 @@ impl UiMountedMotionSampler {
         if target.scope() != UiMotionTargetScope::ScrollContents {
             return false;
         }
-        self.retired_since_prepare.insert(target);
+        self.note_owner_change(target);
         self.tracks.remove(&target).is_some()
     }
 }

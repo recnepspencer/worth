@@ -91,13 +91,13 @@ impl<'bound> WindowsHeldPointer<'bound> {
 
 impl Drop for WindowsHeldPointer<'_> {
     fn drop(&mut self) {
-        if self.held {
-            if !matches!(
+        if self.held
+            && !matches!(
                 winsafe::SendInput(&[button(co::MOUSEEVENTF::LEFTUP)]),
                 Ok(1)
-            ) {
-                eprintln!("failed to release native held-thumb probe during cleanup");
-            }
+            )
+        {
+            eprintln!("failed to release native held-thumb probe during cleanup");
         }
     }
 }

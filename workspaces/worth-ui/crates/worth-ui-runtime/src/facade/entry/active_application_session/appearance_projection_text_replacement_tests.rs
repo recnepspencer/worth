@@ -1,4 +1,7 @@
 use super::{fixture, prepare, set_text, text_contract};
+use crate::certification_support::{
+    ScriptedPresentationAcknowledgement, ScriptedPresentationOutcome,
+};
 use worth_ui_host_contract::*;
 
 #[path = "appearance_projection_text_succession_tests.rs"]
@@ -80,8 +83,8 @@ fn graph_replacement_publishes_pending_text_or_retires_it_only_after_acceptance(
         assert_host_text(&host, second, Some("AB"));
         let replacement = rejected.into_replacement();
         for _ in [surface, second] {
-            host.push_presentation(UiHostSurfacePresentationOutcome::Presented(
-                UiMountedSurfacePresentationCompletion::new(
+            host.push_presentation(ScriptedPresentationOutcome::Presented(
+                ScriptedPresentationAcknowledgement::new(
                     crate::facade::mounted::UiHostSurfacePresentationMode::NativeDisplay,
                     UiHostPresentationEpoch::issued_by_host(u64::MAX),
                     UiMountedCompletedEffects::new(vec![UiMountedEffectFamily::NativePaint]),

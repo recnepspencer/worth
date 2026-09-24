@@ -42,8 +42,7 @@ impl UiNativeHostState {
             LossClass::RetainedTarget => {
                 self.retained_draw_lists.len() == 1
                     && self.retained_draw_lists.contains_key(&binding)
-                    && self.device.is_some()
-                    && self.presentation_surface.is_some()
+                    && self.presentation_owners.is_some()
                     && self.resources.admits(1)
             }
             LossClass::PresentationAffinity => {
@@ -160,11 +159,11 @@ impl UiNativeHostState {
             .copied()
             .collect::<BTreeSet<_>>();
         affected.insert(binding);
-        let device = self.device.as_ref().expect("preflight retained device");
-        let surface = self
-            .presentation_surface
-            .as_mut()
-            .expect("preflight retained presentation surface");
+        let Some(crate::native::UiNativePresentationOwners { device, surface }) =
+            self.presentation_owners.as_mut()
+        else {
+            panic!("preflight retained presentation owners");
+        };
         crate::native::lifecycle::replace_retained_target_for_reconstruction(
             device,
             surface,

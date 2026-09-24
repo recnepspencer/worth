@@ -80,12 +80,14 @@ fn current_mounted_input_target(
 > {
     use crate::runtime::interaction::targeting;
     use targeting::UiInteractionTargetingDenial as Denial;
-    mounted
-        .classify_interaction_presentation(observed.presentation())
-        .map_err(targeting::map_presentation_denial)?;
+    // Semantic interaction has already resolved this target against the exact
+    // observed pixels. A queued application turn may follow a Motion-only
+    // epoch advance; preserve that admission while checking incarnation and
+    // current modal eligibility below, without hit-testing a new target.
     let affinity = targeting::admit_continued_intent_execution_affinity(observed, mounted)?;
     let presentation = mounted
         .current_presentation_for_surface(observed.surface())
+        .map(|displayed| displayed.basis())
         .ok_or(Denial::PresentationTruthUnavailable)?;
     let current = targeting::refresh_pointer_target(
         mounted,

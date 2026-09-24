@@ -280,20 +280,7 @@ fn a_smooth_burst_is_carried_by_one_settle_however_long_it_is() {
 
 /// One Motion frame the way the native shell runs it.
 fn frame(scroll: &mut ScrollWorld, tick: u64) -> UiScrollSettleDisposition {
-    let basis = scroll.presentation();
-    let prepared = scroll
-        .world
-        .session
-        .prepare_motion_tick(tick, basis)
-        .expect("a live settle prepares its tick");
-    if !prepared.receipt().samples().is_empty() {
-        scroll.world.host.push_native_display_presented();
-    }
-    scroll
-        .world
-        .session
-        .present_prepared_motion_tick(prepared, basis);
-    scroll.world.session.settle_accepted_scroll_sample(basis)
+    super::scroll_settle_frame::settle_frame(scroll, tick)
 }
 
 /// What a burst took while it was in flight it gives back when it lands. The

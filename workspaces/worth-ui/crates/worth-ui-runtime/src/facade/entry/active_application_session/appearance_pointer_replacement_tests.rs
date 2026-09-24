@@ -38,10 +38,10 @@ fn replacement_journey(reject_first: bool, retain_generation: bool) {
         .identity();
     let batch = pointer_batch(
         session.host_session.identity().as_u64(),
-        presentation,
+        presentation.basis(),
         1,
         UiHostPointerIdentity::new(1),
-        inside_position(&session, presentation, instance),
+        inside_position(&session, presentation.basis(), instance),
         Some(UiHostPointerButtonTransition::Pressed),
         true,
     );
@@ -135,6 +135,7 @@ fn replacement_journey(reject_first: bool, retain_generation: bool) {
                 .unwrap()
                 .presentation_for_surface(surface)
                 .unwrap()
+                .basis()
         );
         let release = pointer_batch(
             session.host_session.identity().as_u64(),

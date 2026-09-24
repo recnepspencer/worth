@@ -9,6 +9,7 @@ use crate::facade::UiHostEffectPort;
 mod presented;
 
 pub(super) struct PendingCompletionContext<'frame, 'state> {
+    attempt: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
     frame: &'frame super::super::super::UiPreparedMountedFrame,
     progress: &'state mut super::UiMountedPresentationProgress,
     text: &'state mut crate::native_platform::text_presentation::UiNativeMountedTextCoordinator,
@@ -18,6 +19,7 @@ pub(super) struct PendingCompletionContext<'frame, 'state> {
 
 impl<'frame, 'state> PendingCompletionContext<'frame, 'state> {
     pub(super) fn new(
+        attempt: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
         frame: &'frame super::super::super::UiPreparedMountedFrame,
         progress: &'state mut super::UiMountedPresentationProgress,
         text: &'state mut crate::native_platform::text_presentation::UiNativeMountedTextCoordinator,
@@ -26,6 +28,7 @@ impl<'frame, 'state> PendingCompletionContext<'frame, 'state> {
         >,
     ) -> Self {
         Self {
+            attempt,
             frame,
             progress,
             text,
@@ -100,6 +103,7 @@ pub(super) fn observe_pending_surface(
                 text_reuse,
             },
             completion,
+            host.authority(),
             context,
         ),
         UiHostSurfaceInFlightCompletion::Superseded(observation) => {

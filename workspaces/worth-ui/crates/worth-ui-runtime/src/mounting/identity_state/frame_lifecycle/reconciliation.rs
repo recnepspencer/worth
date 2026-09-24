@@ -40,36 +40,26 @@ impl UiMountedIdentityState {
             return Err(UiMountedIdentityDenial::ReconciliationBasisMismatch);
         }
         let replacement_views = self.resolve_reconciliation_bindings(replacements)?;
-        let current_core = self
-            .current_core
+        let published = self
+            .frame
+            .published()
             .ok_or(UiMountedIdentityDenial::NoPublishedMountedFrame)?;
+        let current_core = published.core;
         let admission = crate::mounting::UiPreparedMountedFrameAdmission {
             text_publication: None,
             text_publication_work: 0,
             candidate: self.reconciled_projection_candidate(&replacement_views)?,
-            generation: self
-                .current_publication
-                .as_ref()
-                .ok_or(UiMountedIdentityDenial::NoPublishedMountedFrame)?
-                .generation()
-                .clone(),
+            generation: published.publication.generation().clone(),
             manifest: self.reconciled_manifest(&replacement_views)?,
             graph_world: current_core.graph_world(),
             allocation_truth_revision: current_core.allocation_truth_revision(),
-            trace_source: self
-                .current_trace_source
-                .clone()
-                .ok_or(UiMountedIdentityDenial::NoPublishedMountedFrame)?,
-            reuse_contract: self
-                .current_reuse_contract
-                .as_ref()
-                .ok_or(UiMountedIdentityDenial::NoPublishedMountedFrame)?
-                .reconciled(
-                    self.binding_revision,
-                    protocol,
-                    capability_report.observation_generation(),
-                    capability_report.profile_identity_digest(),
-                ),
+            trace_source: published.trace_source.clone(),
+            reuse_contract: published.reuse_contract.reconciled(
+                self.binding_revision,
+                protocol,
+                capability_report.observation_generation(),
+                capability_report.profile_identity_digest(),
+            ),
         };
         crate::mounting::UiAssembledMountedFrame::admit(admission)
             .map_err(|_| UiMountedIdentityDenial::ReconciliationBasisMismatch)
@@ -102,17 +92,15 @@ impl UiMountedIdentityState {
         &self,
         replacement_views: &[UiReconciledBindingView],
     ) -> Result<crate::mounting::UiProjectedMountedFrameCandidate, UiMountedIdentityDenial> {
-        let current_owner = self
-            .current_projection
-            .as_ref()
+        let published = self
+            .frame
+            .published()
             .ok_or(UiMountedIdentityDenial::NoPublishedMountedFrame)?;
+        let current_owner = &*published.projection;
         let current_projection = current_owner.projection();
         let current_instances = current_projection.mounted_instances().collect::<Vec<_>>();
         let identity_candidate = super::super::UiMountedIdentityFrameCandidate {
-            receipt_basis: self
-                .current_receipt_basis
-                .clone()
-                .ok_or(UiMountedIdentityDenial::NoPublishedMountedFrame)?,
+            receipt_basis: published.receipts.clone(),
         };
         let reconciled_surfaces = replacement_views
             .iter()
@@ -138,7 +126,7 @@ impl UiMountedIdentityState {
             ),
             identity_candidate,
             projection_changes,
-            presentation_predecessor: self.current_frame,
+            presentation_predecessor: Some(published.receipts.frame()),
             presentation_changed_instances: current_instances.clone().into(),
             presentation_node_changed_instances: current_instances.into(),
         })
@@ -148,10 +136,11 @@ impl UiMountedIdentityState {
         &self,
         replacement_views: &[UiReconciledBindingView],
     ) -> Result<worth_ui_host_contract::UiMountedFrameManifest, UiMountedIdentityDenial> {
-        let current_manifest = self
-            .current_manifest
-            .as_ref()
-            .ok_or(UiMountedIdentityDenial::NoPublishedMountedFrame)?;
+        let current_manifest = &self
+            .frame
+            .published()
+            .ok_or(UiMountedIdentityDenial::NoPublishedMountedFrame)?
+            .manifest;
         let requirements = current_manifest
             .surfaces()
             .iter()

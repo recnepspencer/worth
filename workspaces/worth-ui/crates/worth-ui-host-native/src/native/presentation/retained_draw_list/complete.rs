@@ -87,7 +87,7 @@ impl UiNativeRetainedDrawList {
             source_glyph_runs,
             &[],
             super::super::retained_regions::UiNativeRetainedRegions::paint_only(source_commands),
-            super::super::identity_overlay::UiNativeRetainedIdentityOverlay::default(),
+            super::super::identity_overlay::UiNativeRetainedIdentityOverlay::Absent,
         )
     }
 
@@ -233,6 +233,24 @@ impl UiNativeRetainedDrawList {
             identity_overlay,
             last_paint_attribution: None,
         };
+        // Complete reconstruction starts from semantic command bounds, but the
+        // accepted frame may already contain sampled motion. Keep the derived
+        // damage index in the same state as the restored sample overrides so
+        // the next sample can replace (or remove) its previous coverage.
+        for sample in source_sample_overrides {
+            let identity = sample.command();
+            if identity.is_appearance_sample() {
+                continue;
+            }
+            let command = retained
+                .commands
+                .get(&identity)
+                .expect("complete sample membership was validated");
+            let semantic = visible_bounds(command);
+            let sampled =
+                super::sample_transaction::sampled_visible_bounds(command, Some(*sample))?;
+            super::mutation::update_damage(&mut retained.damage, identity, semantic, sampled)?;
+        }
         retained.retain_current_paint_attribution();
         Ok(retained)
     }

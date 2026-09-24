@@ -17,8 +17,9 @@ pub(in crate::facade::entry) struct UiActiveOverlayAppearancePreparation {
     scroll_chrome: Vec<super::scroll_chrome_appearance::UiActiveScrollChromeSurfacePreparation>,
     scroll_motion:
         Vec<crate::mounting::presentation::work_producer::UiMountedScrollMotionGroupInput>,
-    scroll_geometry_reservations:
+    scroll_geometry_reservations: std::rc::Rc<
         std::collections::BTreeMap<worth_ui_host_contract::UiSemanticSurfaceIdentity, usize>,
+    >,
 }
 
 struct UiActiveOverlaySurfacePreparation {
@@ -113,12 +114,7 @@ impl UiActiveOverlayAppearancePreparation {
         )
         .map_err(|_| ())?;
         Ok(crate::mounting::UiMountedAppearanceDerivedInput {
-            scroll_geometry_reservations: self
-                .scroll_geometry_reservations
-                .iter()
-                .filter(|(surface, _)| requested_surfaces.contains(surface))
-                .map(|(surface, bytes)| (*surface, *bytes))
-                .collect(),
+            scroll_geometry_reservations: std::rc::Rc::clone(&self.scroll_geometry_reservations),
             overlays,
             scroll_chrome,
             scroll_motion: self

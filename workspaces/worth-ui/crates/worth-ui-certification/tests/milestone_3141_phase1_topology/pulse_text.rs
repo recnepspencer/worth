@@ -24,7 +24,7 @@ fn every_checked_in_pulse_status_value_is_qualified_printable_basic_latin() {
         observed += 1;
     }
     assert_eq!(
-        observed, 2,
+        observed, 3,
         "every checked-in Pulse status sample is audited"
     );
 }

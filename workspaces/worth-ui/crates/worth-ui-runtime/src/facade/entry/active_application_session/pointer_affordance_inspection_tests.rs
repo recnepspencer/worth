@@ -1,3 +1,6 @@
+use crate::certification_support::{
+    ScriptedPresentationAcknowledgement, ScriptedPresentationOutcome,
+};
 use worth_ui_host_contract::*;
 use worth_ui_inspection::{
     UiPointerAffordanceInspectionDecision as Decision,
@@ -264,7 +267,7 @@ pub(super) fn current_target(
         .unwrap();
     let hit = session
         .mounted
-        .interaction_hit_test_basis(presentation)
+        .interaction_hit_test_basis(presentation.basis())
         .unwrap();
     let [row] = hit.rows() else {
         panic!("one mounted target")
@@ -276,7 +279,7 @@ pub(super) fn current_target(
     );
     crate::runtime::interaction::targeting::resolve_presented_target(
         &session.mounted,
-        presentation,
+        presentation.basis(),
         position,
         &mut Default::default(),
     )
@@ -292,8 +295,8 @@ fn publish(
 ) {
     for _ in 0..3 {
         if accept {
-            host.push_presentation(UiHostSurfacePresentationOutcome::Presented(
-                UiMountedSurfacePresentationCompletion::new(
+            host.push_presentation(ScriptedPresentationOutcome::Presented(
+                ScriptedPresentationAcknowledgement::new(
                     UiHostSurfacePresentationMode::NativeDisplay,
                     UiHostPresentationEpoch::issued_by_host(now),
                     // Cursor-only and unchanged surfaces have no raster paint.

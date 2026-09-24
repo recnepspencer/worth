@@ -61,7 +61,7 @@ impl UiMountedAppearanceFrameState {
                 .copied()
                 .unwrap_or(UiAppearanceInspectionDenial::MountLowering)
         };
-        let retained_keys = if self.reconstruction_nodes.is_some() {
+        let retained_keys = if self.reconstruction.is_some() {
             let (keys, work) = self.members.keys_for_reconstruction();
             self.selection.record_membership_work(work);
             keys
@@ -110,10 +110,14 @@ impl UiMountedAppearanceFrameState {
     ) -> Result<Vec<UiAppearanceInspectionRecord>, UiMountedAppearanceOutputDenial> {
         self.node_work.clear();
         self.overlay_work.clear();
-        if let Some(nodes) = self.reconstruction_nodes.take() {
+        if let Some(reconstruction) = self.reconstruction.take() {
             self.order = Default::default();
-            let complete = std::mem::take(&mut self.reconstruction_complete);
-            return self.lower_reconstruction(presentation, geometry, &nodes, complete);
+            return self.lower_reconstruction(
+                presentation,
+                geometry,
+                &reconstruction.nodes,
+                reconstruction.complete,
+            );
         }
         let mut records =
             self.lower_pending(presentation, geometry, AppearanceLoweringPosture::Delta)?;

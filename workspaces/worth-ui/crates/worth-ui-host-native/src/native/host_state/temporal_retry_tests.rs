@@ -74,6 +74,81 @@ fn temporal_retry_refreshes_the_exact_retained_presentation_attempt() {
     assert!(state.resources.current().is_zero());
 }
 
+#[test]
+fn timed_out_recovery_completes_the_retained_presentation_as_indeterminate() {
+    let settled = Rc::new(Cell::new(false));
+    let polls = Rc::new(Cell::new(0));
+    let mut state = UiNativeHostState::new();
+    let owners = reserve_presentation_owners(
+        &mut state.resources,
+        &mut state.physical_signal,
+        UiNativePhysicalPresentationBasis::test(),
+    )
+    .unwrap_or_else(|_| panic!("presentation owners"));
+    let Err(UiNativePresentationFailure::Pending(mut pending)) = settle_port_result(
+        &mut state.resources,
+        &mut state.physical_signal,
+        owners,
+        Err(UiNativePresentationPortFailure::ReadbackUnsettled(
+            Box::new(RetryablePresentationProbe {
+                settled: Rc::clone(&settled),
+                polls: Rc::clone(&polls),
+            }),
+        )),
+    ) else {
+        panic!("unsettled presentation must remain pending");
+    };
+    assert!(pending.bind_completion_identity(1, None));
+    state.pending_presentations.push(pending);
+
+    for _ in 0..80 {
+        if state
+            .physical_signal
+            .observation()
+            .counters
+            .recovery_schedules
+            != 0
+        {
+            break;
+        }
+        let due = state
+            .physical_signal
+            .next_due_tick()
+            .expect("pending request has a due transition");
+        state
+            .physical_signal
+            .advance_clock_to(due)
+            .expect("clock progression");
+        if state
+            .physical_signal
+            .observation()
+            .counters
+            .recovery_schedules
+            == 0
+            && state.physical_signal.observation().pending_wakes != 0
+        {
+            state.progress_one_physical_signal_ready();
+        }
+    }
+    assert_eq!(
+        state
+            .physical_signal
+            .observation()
+            .counters
+            .recovery_schedules,
+        1
+    );
+    settled.set(true);
+    assert!(state.progress_one_physical_signal_ready());
+    assert_eq!(state.physical_signal.observation().active_requests, 0);
+    assert_eq!(state.pending_presentations.len(), 1);
+    assert!(matches!(
+        state.pending_presentations[0].take_completion(),
+        crate::native::presentation::UiNativePendingPresentationCompletion::Indeterminate
+    ));
+    assert!(state.resources.current().is_zero());
+}
+
 struct RejectedPresentationProbe;
 
 impl UiNativePendingExternalObligation for RejectedPresentationProbe {

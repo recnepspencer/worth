@@ -32,7 +32,7 @@ impl PlatformPulseApplicationRuntime {
     }
 
     pub(super) fn poll_query(&mut self) {
-        while self.terminal_error.is_none() {
+        while self.terminal.is_running() {
             let Some(event) = self
                 .query_watch
                 .as_ref()

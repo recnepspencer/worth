@@ -3,6 +3,7 @@
 //! act while the host still owns the outcome.
 
 use super::session::World;
+use crate::certification_support::ScriptedPresentationAcknowledgement;
 use crate::certification_support::ScriptedSurfaceCompletion;
 use crate::mounting::{UiMountedFrameOutcome, UiPreparedMountedFrame};
 use worth_ui_host_contract::*;
@@ -89,7 +90,7 @@ impl World {
         );
         self.host.push_in_flight(
             vec![ScriptedSurfaceCompletion::Presented(
-                UiMountedSurfacePresentationCompletion::new(
+                ScriptedPresentationAcknowledgement::new(
                     UiHostSurfacePresentationMode::NativeDisplay,
                     UiHostPresentationEpoch::issued_by_host(now + 1_000),
                     UiMountedCompletedEffects::new(Vec::new()),

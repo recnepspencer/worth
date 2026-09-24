@@ -121,7 +121,7 @@ fn pending_and_uncertain_effects_never_publish_early() {
     let mut uncertain = RebindExecutionWorld::new("phase-312-effect-uncertain");
     let predecessor = uncertain.session.generation_identity().clone();
     uncertain.host.push_presentation(
-        worth_ui_runtime::facade::mounted::UiHostSurfacePresentationOutcome::
+        worth_ui_runtime::certification_support::ScriptedPresentationOutcome::
             PresentationIndeterminate,
     );
     let recovery = match uncertain.prepare_changed().execute(1) {

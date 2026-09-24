@@ -6,8 +6,8 @@ impl super::UiMountedIdentityState {
         surfaces: &[UiSemanticSurfaceIdentity],
     ) -> Option<crate::mounting::UiMountedFocusParticipationSnapshot> {
         Some(self.project_focus_participation(
-            self.current_projection.as_ref()?.projection(),
-            self.current_receipt_basis.as_ref()?,
+            self.frame.projection()?.projection(),
+            self.frame.receipts()?,
             surfaces,
         ))
     }

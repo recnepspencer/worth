@@ -25,8 +25,8 @@ pub(crate) struct UiPointerPresenceOwner {
 
 pub(super) struct UiPointerPresenceRecord {
     pub(super) kind: UiPrimaryPointerKind,
-    surface: Option<UiSemanticSurfaceIdentity>,
-    binding: Option<worth_ui_host_contract::UiSurfaceBindingGeneration>,
+    surface: UiSemanticSurfaceIdentity,
+    binding: worth_ui_host_contract::UiSurfaceBindingGeneration,
     pub(super) target: Option<crate::runtime::interaction::UiPresentedInteractionTargetView>,
     pub(super) sequence: UiHostObservationSequence,
     #[allow(
@@ -131,10 +131,10 @@ impl UiPointerPresenceOwner {
         &mut self,
         pointer: UiHostPointerIdentity,
         prior: Option<UiSemanticSurfaceIdentity>,
-        current: Option<UiSemanticSurfaceIdentity>,
+        current: UiSemanticSurfaceIdentity,
         kind: UiPrimaryPointerKind,
     ) {
-        if prior != current || !primary_pointer_admitted(kind) {
+        if prior != Some(current) || !primary_pointer_admitted(kind) {
             if let Some(prior) = prior {
                 if self.primary_by_surface.get(&prior) == Some(&pointer) {
                     self.primary_by_surface.remove(&prior);
@@ -142,9 +142,6 @@ impl UiPointerPresenceOwner {
             }
         }
         if primary_pointer_admitted(kind) {
-            let Some(current) = current else {
-                return;
-            };
             self.primary_by_surface.insert(current, pointer);
         }
     }
@@ -156,7 +153,7 @@ impl UiPointerPresenceOwner {
         let selected = self
             .pointers
             .iter()
-            .filter_map(|(pointer, record)| (record.binding == Some(binding)).then_some(*pointer))
+            .filter_map(|(pointer, record)| (record.binding == binding).then_some(*pointer))
             .collect::<Vec<_>>();
         let removed = selected
             .into_iter()
@@ -167,10 +164,8 @@ impl UiPointerPresenceOwner {
             })
             .collect::<Vec<_>>();
         for (pointer, surface) in &removed {
-            if let Some(surface) = surface {
-                if self.primary_by_surface.get(surface) == Some(pointer) {
-                    self.primary_by_surface.remove(surface);
-                }
+            if self.primary_by_surface.get(surface) == Some(pointer) {
+                self.primary_by_surface.remove(surface);
             }
         }
         if !removed.is_empty() {
@@ -213,10 +208,8 @@ impl UiPointerPresenceOwner {
         let Some(record) = self.pointers.remove(&pointer) else {
             return false;
         };
-        if let Some(surface) = record.surface {
-            if self.primary_by_surface.get(&surface) == Some(&pointer) {
-                self.primary_by_surface.remove(&surface);
-            }
+        if self.primary_by_surface.get(&record.surface) == Some(&pointer) {
+            self.primary_by_surface.remove(&record.surface);
         }
         self.bump_revision();
         true

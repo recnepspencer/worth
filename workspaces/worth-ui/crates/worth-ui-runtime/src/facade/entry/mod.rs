@@ -77,6 +77,8 @@ mod native_intent_execution;
 mod native_intent_posture;
 mod native_intent_terminal_posture;
 mod native_managed_rebind;
+#[cfg(test)]
+pub(crate) mod native_motion_test_support;
 mod native_observation_settlement;
 pub(crate) mod portal_dismissal;
 pub(crate) use native_observation_settlement::UiNativeObservationIngressSettlement;
@@ -237,7 +239,7 @@ pub use native_projection_rebind::{
 pub use native_source_rebind::{
     WorthUiNativeManagedSourceRebindOutcome, WorthUiNativeSourceRebindDenial,
 };
-pub use portal_dismissal::UiPortalDismissalPublicationReceipt;
+pub use portal_dismissal::{UiPortalDismissalPublicationReceipt, WorthUiAdmittedPortalDismissal};
 pub(crate) use rebind_execution::WorthUiPreparedEvidenceOnlyApplicationRebind;
 pub(crate) use rebind_recovery::WorthUiRebindRecoveryAuthority;
 pub use selection_interaction::UiCurrentProjectionOptionStop;

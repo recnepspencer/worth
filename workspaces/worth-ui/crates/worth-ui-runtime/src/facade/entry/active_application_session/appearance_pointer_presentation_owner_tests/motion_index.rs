@@ -53,24 +53,50 @@ fn presented_hit_index_changes_only_after_host_settlement_and_preserves_retired_
     session.mounted.install_motion_commit(receipt).unwrap();
     assert!(contains(&session, basis, point, row.mounted_instance()));
     host.push_rejected();
-    let prepared = session.mounted.prepare_motion_tick(1, basis).unwrap();
+    let prepared = session
+        .mounted
+        .prepare_motion_tick(
+            1,
+            session
+                .mounted
+                .current_displayed_presentation(basis)
+                .expect("the retained record displays this basis"),
+        )
+        .unwrap();
     assert!(matches!(
-        session
-            .mounted
-            .present_prepared_motion_tick(&session.host_session, prepared, basis),
+        session.mounted.present_prepared_motion_tick(
+            &session.host_session,
+            prepared,
+            session
+                .mounted
+                .current_displayed_presentation(basis)
+                .expect("the retained record displays this basis")
+        ),
         UiMountedMotionSampleSettlement::Discarded
     ));
     assert!(contains(&session, basis, point, row.mounted_instance()));
     host.push_native_display_presented();
-    let prepared = session.mounted.prepare_motion_tick(1, basis).unwrap();
-    let committed =
-        match session
+    let prepared = session
+        .mounted
+        .prepare_motion_tick(
+            1,
+            session
+                .mounted
+                .current_displayed_presentation(basis)
+                .expect("the retained record displays this basis"),
+        )
+        .unwrap();
+    let committed = match session.mounted.present_prepared_motion_tick(
+        &session.host_session,
+        prepared,
+        session
             .mounted
-            .present_prepared_motion_tick(&session.host_session, prepared, basis)
-        {
-            UiMountedMotionSampleSettlement::Committed(receipt) => receipt,
-            _ => panic!("scripted host must commit the sample"),
-        };
+            .current_displayed_presentation(basis)
+            .expect("the retained record displays this basis"),
+    ) {
+        UiMountedMotionSampleSettlement::Committed(receipt) => receipt,
+        _ => panic!("scripted host must commit the sample"),
+    };
     let sampled = committed.samples()[0]
         .geometry()
         .unwrap()
@@ -101,11 +127,25 @@ fn presented_hit_index_changes_only_after_host_settlement_and_preserves_retired_
     session.mounted.install_motion_commit(exit).unwrap();
     for tick in [2, 200] {
         host.push_native_display_presented();
-        let prepared = session.mounted.prepare_motion_tick(tick, sampled).unwrap();
+        let prepared = session
+            .mounted
+            .prepare_motion_tick(
+                tick,
+                session
+                    .mounted
+                    .current_displayed_presentation(sampled)
+                    .expect("the retained record displays this basis"),
+            )
+            .unwrap();
         assert!(matches!(
-            session
-                .mounted
-                .present_prepared_motion_tick(&session.host_session, prepared, sampled),
+            session.mounted.present_prepared_motion_tick(
+                &session.host_session,
+                prepared,
+                session
+                    .mounted
+                    .current_displayed_presentation(sampled)
+                    .expect("the retained record displays this basis")
+            ),
             UiMountedMotionSampleSettlement::Committed(_)
         ));
     }

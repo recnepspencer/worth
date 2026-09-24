@@ -1,4 +1,7 @@
 use super::World;
+use crate::certification_support::{
+    ScriptedPresentationAcknowledgement, ScriptedPresentationOutcome,
+};
 use crate::runtime::motion::{UiMotionCommitReceipt, UiMotionDeclaration, UiMotionTargetIdentity};
 use worth_ui_host_contract::*;
 #[path = "stationary_motion/inputs.rs"]
@@ -107,8 +110,22 @@ fn stationary_pointer_refreshes_through_motion_host_settlement_and_next_appearan
         ))
         .unwrap();
     host.push_rejected();
-    let prepared = session.prepare_motion_tick(1, current).unwrap();
-    session.present_prepared_motion_tick(prepared, current);
+    let prepared = session
+        .prepare_motion_tick(
+            1,
+            session
+                .mounted
+                .current_displayed_presentation(current)
+                .expect("the retained record displays this basis"),
+        )
+        .unwrap();
+    session.present_prepared_motion_tick(
+        prepared,
+        session
+            .mounted
+            .current_displayed_presentation(current)
+            .expect("the retained record displays this basis"),
+    );
     assert_eq!(
         host.pending_presentation_count(),
         0,
@@ -125,8 +142,22 @@ fn stationary_pointer_refreshes_through_motion_host_settlement_and_next_appearan
         old_report
     );
     host.push_native_display_presented();
-    let prepared = session.prepare_motion_tick(1, current).unwrap();
-    session.present_prepared_motion_tick(prepared, current);
+    let prepared = session
+        .prepare_motion_tick(
+            1,
+            session
+                .mounted
+                .current_displayed_presentation(current)
+                .expect("the retained record displays this basis"),
+        )
+        .unwrap();
+    session.present_prepared_motion_tick(
+        prepared,
+        session
+            .mounted
+            .current_displayed_presentation(current)
+            .expect("the retained record displays this basis"),
+    );
     assert_eq!(
         host.pending_presentation_count(),
         0,
@@ -298,18 +329,33 @@ fn commit_without_delivery(
     epoch: u64,
 ) -> crate::mounting::UiCommittedPresentedHitTransition {
     use worth_ui_host_contract::*;
-    host.push_presentation(UiHostSurfacePresentationOutcome::Presented(
-        UiMountedSurfacePresentationCompletion::new(
+    host.push_presentation(ScriptedPresentationOutcome::Presented(
+        ScriptedPresentationAcknowledgement::new(
             UiHostSurfacePresentationMode::NativeDisplay,
             UiHostPresentationEpoch::issued_by_host(epoch),
             UiMountedCompletedEffects::new(vec![UiMountedEffectFamily::NativePaint]),
             UiHostPresentationCostReport::default(),
         ),
     ));
-    let prepared = session.mounted.prepare_motion_tick(tick, basis).unwrap();
-    let crate::mounting::UiMountedMotionSampleSettlement::Committed(mut receipt) = session
+    let prepared = session
         .mounted
-        .present_prepared_motion_tick(&session.host_session, prepared, basis)
+        .prepare_motion_tick(
+            tick,
+            session
+                .mounted
+                .current_displayed_presentation(basis)
+                .expect("the retained record displays this basis"),
+        )
+        .unwrap();
+    let crate::mounting::UiMountedMotionSampleSettlement::Committed(mut receipt) =
+        session.mounted.present_prepared_motion_tick(
+            &session.host_session,
+            prepared,
+            session
+                .mounted
+                .current_displayed_presentation(basis)
+                .expect("the retained record displays this basis"),
+        )
     else {
         panic!("scripted accepted sample must commit");
     };

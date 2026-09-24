@@ -34,7 +34,7 @@ fn latch_for(
 fn a_captured_axis_suppresses_only_its_own_axis_of_its_own_region() {
     let dragged = owner(4);
     let other = owner(5);
-    let mut state = UiScrollChromeLatchState::default();
+    let mut state = UiScrollChromeLatchState::idle();
     state
         .latch(latch_for(dragged, UiScrollChromeAxis::Block, 1, 1))
         .expect("the first thumb press latches");
@@ -49,7 +49,7 @@ fn a_captured_axis_suppresses_only_its_own_axis_of_its_own_region() {
 #[test]
 fn a_released_drag_suppresses_nothing() {
     let dragged = owner(4);
-    let mut state = UiScrollChromeLatchState::default();
+    let mut state = UiScrollChromeLatchState::idle();
     state
         .latch(latch_for(dragged, UiScrollChromeAxis::Block, 1, 1))
         .expect("latched");
@@ -66,7 +66,7 @@ fn a_released_drag_suppresses_nothing() {
 /// that wandered off the track is still the drag that owns the thumb.
 #[test]
 fn dragging_outside_the_gutter_keeps_the_capture() {
-    let mut state = UiScrollChromeLatchState::default();
+    let mut state = UiScrollChromeLatchState::idle();
     state
         .latch(latch_for(owner(4), UiScrollChromeAxis::Block, 1, 1))
         .expect("latched");
@@ -86,7 +86,7 @@ fn dragging_outside_the_gutter_keeps_the_capture() {
 /// not hold the latch is refused rather than redirected.
 #[test]
 fn only_the_latching_pointer_under_its_own_capture_moves_the_thumb() {
-    let mut state = UiScrollChromeLatchState::default();
+    let mut state = UiScrollChromeLatchState::idle();
     state
         .latch(latch_for(owner(4), UiScrollChromeAxis::Block, 1, 1))
         .expect("latched");
@@ -116,7 +116,7 @@ fn only_the_latching_pointer_under_its_own_capture_moves_the_thumb() {
 #[test]
 fn a_cancellation_ends_the_drag() {
     let dragged = owner(4);
-    let mut state = UiScrollChromeLatchState::default();
+    let mut state = UiScrollChromeLatchState::idle();
     state
         .latch(latch_for(dragged, UiScrollChromeAxis::Block, 1, 1))
         .expect("latched");

@@ -62,6 +62,104 @@ impl UiNativeEventProfile {
     }
 }
 
+/// The event profile and how far its latest change has progressed. A changed
+/// profile first waits for the presentation that completes it, then for its
+/// viewport observation to be retained at the tick the change was seen.
+#[derive(Clone, Copy)]
+pub(super) enum UiNativeProfilePosture {
+    Unknown,
+    Current(UiNativeEventProfile),
+    AwaitingCompletion {
+        profile: UiNativeEventProfile,
+        transition_tick: u64,
+    },
+    ObservationPending {
+        profile: UiNativeEventProfile,
+        transition_tick: u64,
+    },
+}
+
+impl UiNativeProfilePosture {
+    pub(super) const fn profile(self) -> Option<UiNativeEventProfile> {
+        match self {
+            Self::Unknown => None,
+            Self::Current(profile)
+            | Self::AwaitingCompletion { profile, .. }
+            | Self::ObservationPending { profile, .. } => Some(profile),
+        }
+    }
+
+    pub(super) const fn awaits_completion(self) -> bool {
+        matches!(self, Self::AwaitingCompletion { .. })
+    }
+
+    /// Replaces the profile without changing how far its transition has
+    /// progressed.
+    pub(super) const fn with_profile(self, profile: UiNativeEventProfile) -> Self {
+        match self {
+            Self::Unknown | Self::Current(_) => Self::Current(profile),
+            Self::AwaitingCompletion {
+                transition_tick, ..
+            } => Self::AwaitingCompletion {
+                profile,
+                transition_tick,
+            },
+            Self::ObservationPending {
+                transition_tick, ..
+            } => Self::ObservationPending {
+                profile,
+                transition_tick,
+            },
+        }
+    }
+
+    /// Adopts an observed profile; a changed scale or size begins a new
+    /// transition at `tick`.
+    pub(super) fn observe(&mut self, profile: UiNativeEventProfile, tick: u64) {
+        let changed = self.profile().is_none_or(|previous| {
+            previous.scale_micros != profile.scale_micros
+                || previous.physical_size != profile.physical_size
+        });
+        *self = if changed {
+            Self::AwaitingCompletion {
+                profile,
+                transition_tick: tick,
+            }
+        } else {
+            self.with_profile(profile)
+        };
+    }
+
+    pub(super) fn complete(&mut self) {
+        if let Self::AwaitingCompletion {
+            profile,
+            transition_tick,
+        } = *self
+        {
+            *self = Self::ObservationPending {
+                profile,
+                transition_tick,
+            };
+        }
+    }
+
+    pub(super) const fn pending_observation(self) -> Option<(UiNativeEventProfile, u64)> {
+        match self {
+            Self::ObservationPending {
+                profile,
+                transition_tick,
+            } => Some((profile, transition_tick)),
+            Self::Unknown | Self::Current(_) | Self::AwaitingCompletion { .. } => None,
+        }
+    }
+
+    pub(super) fn observed(&mut self) {
+        if let Self::ObservationPending { profile, .. } = *self {
+            *self = Self::Current(profile);
+        }
+    }
+}
+
 pub(super) fn event_profile(
     scale_factor: f64,
     physical_size: [u32; 2],

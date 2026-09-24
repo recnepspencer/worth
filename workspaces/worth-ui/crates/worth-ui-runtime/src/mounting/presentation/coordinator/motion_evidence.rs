@@ -82,12 +82,12 @@ impl UiMountedPresentationCoordinator {
         binding: UiSurfaceBindingGeneration,
     ) -> UiMotionSamplePresentationOutcome {
         let failed = match &settled {
-            UiMotionSamplePresentationOutcome::Presented { presentation, .. } => {
+            UiMotionSamplePresentationOutcome::Presented { witness, .. } => {
                 self.reconstruction_bindings.contains(&binding)
                     || self
                         .presentation_states
                         .get(&binding)
-                        .is_none_or(|state| acceptance.accept(state, *presentation).is_err())
+                        .is_none_or(|state| acceptance.accept(state, witness).is_err())
             }
             UiMotionSamplePresentationOutcome::PresentationIndeterminate => true,
             _ => false,

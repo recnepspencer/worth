@@ -200,7 +200,7 @@ fn motion(
         .unwrap();
     let hit = session
         .mounted
-        .interaction_hit_test_basis(presentation)
+        .interaction_hit_test_basis(presentation.basis())
         .unwrap();
     assert_eq!(hit.rows().len(), 1);
     let bounds = hit.rows()[0].bounds();
@@ -221,7 +221,7 @@ fn motion(
     let batch = UiHostObservationBatch::new(UiHostObservationBatchInput {
         protocol,
         host_session: session.host_session.identity().as_u64(),
-        presentation,
+        presentation: presentation.basis(),
         sequences: UiHostObservationSequenceRange::new(sequence, sequence),
         loss: UiHostObservationLoss::Complete,
         reports: vec![UiHostObservationReport::new(

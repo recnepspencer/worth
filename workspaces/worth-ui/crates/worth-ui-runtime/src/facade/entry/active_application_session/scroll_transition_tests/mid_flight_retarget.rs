@@ -84,7 +84,9 @@ fn the_second_notch_retargets_the_live_track_rather_than_queueing() {
 /// The retarget leaves no seam. The successor opens exactly where the
 /// interrupted sample was, and every sample after it lies on the cubic Hermite
 /// that starts at that position *and* at the rate the outgoing curve was
-/// carrying -- a curve written here independently of the sampler.
+/// carrying -- a curve written here independently of the sampler. Its clock
+/// runs from the interrupted sample, which is already on screen, so the first
+/// frame after the notch moves on instead of showing that sample again.
 #[test]
 fn the_retarget_snaps_neither_position_nor_velocity() {
     let mut world = UiScrollSettleWorld::new(1_000.0);
@@ -126,9 +128,8 @@ fn the_retarget_snaps_neither_position_nor_velocity() {
         "the successor opens at the accepted sample, with no positional snap",
     );
 
-    let start = INTERRUPTION_TICK + 1;
-    for elapsed in [0_u64, 1, 19, 59, 119, u64::from(SETTLE_TICKS)] {
-        let sampled = world.commit(start + elapsed);
+    for elapsed in [1_u64, 2, 20, 60, 119, u64::from(SETTLE_TICKS)] {
+        let sampled = world.commit(INTERRUPTION_TICK + elapsed);
         assert_close(
             sampled,
             hermite_position(
@@ -155,8 +156,8 @@ fn the_retargeted_settle_arrives_at_the_accumulated_target() {
         world.commit(elapsed);
     }
     world.notch(1, INTERRUPTION_TICK);
-    for elapsed in 0..=u64::from(SETTLE_TICKS) {
-        world.commit(INTERRUPTION_TICK + 1 + elapsed);
+    for elapsed in 1..=u64::from(SETTLE_TICKS) {
+        world.commit(INTERRUPTION_TICK + elapsed);
     }
 
     assert_close(

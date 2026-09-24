@@ -32,16 +32,29 @@ mod text_atlas_lifecycle;
 #[cfg(test)]
 pub(crate) use text_atlas_lifecycle::UiNativeTextAtlasPhysicalProgress;
 
+/// The graphics device and the presentation surface bound to it are acquired
+/// together when the window resumes and released together at shutdown, so the
+/// host never holds one without the other.
+pub(crate) struct UiNativePresentationOwners {
+    pub(crate) device: UiNativeOwnedDevice,
+    pub(crate) surface: UiNativeOwnedPresentationSurface,
+}
+
+impl UiNativePresentationOwners {
+    pub(crate) fn access(&self) -> UiNativePresentationAccess<'_> {
+        UiNativePresentationAccess::new(&self.device, &self.surface)
+    }
+}
+
 pub(crate) struct UiNativeHostState {
     pub(crate) registrations: BTreeMap<u64, UiHostSurfaceRegistrationRequest>,
     pub(crate) registration_resources: BTreeMap<u64, UiNativeResourceOwner>,
     pub(crate) window: Option<UiNativeOwnedWindow>,
     pub(crate) accepted_cursor: Option<(
         worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
-        winit::window::CursorIcon,
+        worth_ui_host_contract::UiPointerAffordanceFamily,
     )>,
-    pub(crate) device: Option<UiNativeOwnedDevice>,
-    pub(crate) presentation_surface: Option<UiNativeOwnedPresentationSurface>,
+    pub(crate) presentation_owners: Option<UiNativePresentationOwners>,
     pub(crate) last_retained_frame: Option<UiNativeRetainedFrameObservation>,
     pub(crate) retained_frame_observations: Vec<UiNativeRetainedFrameObservation>,
     pub(crate) resources: UiNativeResourceRegistry,
@@ -107,11 +120,34 @@ pub enum UiNativePresentationEffectPhase {
 }
 
 impl UiNativeHostState {
+    pub(crate) fn external_effects_settled_for_close(&self) -> bool {
+        self.pending_presentations.is_empty()
+            && self
+                .text_atlas_gpu
+                .as_ref()
+                .is_none_or(|gpu| gpu.pending_count() == 0)
+            && self.text_atlas_in_flight.is_none()
+            && self.text_atlas_recovery.is_none()
+    }
+
     pub(crate) fn presentation_access(&self) -> Option<UiNativePresentationAccess<'_>> {
-        Some(UiNativePresentationAccess::new(
-            self.device.as_ref()?,
-            self.presentation_surface.as_ref()?,
-        ))
+        self.presentation_owners
+            .as_ref()
+            .map(UiNativePresentationOwners::access)
+    }
+
+    pub(crate) fn presentation_surface(&self) -> Option<&UiNativeOwnedPresentationSurface> {
+        self.presentation_owners
+            .as_ref()
+            .map(|owners| &owners.surface)
+    }
+
+    pub(crate) fn presentation_surface_mut(
+        &mut self,
+    ) -> Option<&mut UiNativeOwnedPresentationSurface> {
+        self.presentation_owners
+            .as_mut()
+            .map(|owners| &mut owners.surface)
     }
 
     pub(crate) fn new() -> Self {
@@ -120,8 +156,7 @@ impl UiNativeHostState {
             registration_resources: BTreeMap::new(),
             window: None,
             accepted_cursor: None,
-            device: None,
-            presentation_surface: None,
+            presentation_owners: None,
             last_retained_frame: None,
             retained_frame_observations: Vec::new(),
             resources: UiNativeResourceRegistry::new(),

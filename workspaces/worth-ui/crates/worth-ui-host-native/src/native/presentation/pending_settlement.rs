@@ -198,6 +198,7 @@ impl UiNativePendingSurfaceSettlement {
         basis: crate::native::physical_work_signal::UiNativePhysicalPresentationBasis,
         completion_identity: u64,
         observation: super::port::UiNativePresentationPortObservation,
+        token: worth_ui_host_contract::UiHostPresentationCompletionToken,
     ) -> Option<worth_ui_host_contract::UiMountedSurfacePresentationCompletion> {
         let kind = self.work_kind();
         let chrome = match &self {
@@ -291,7 +292,7 @@ impl UiNativePendingSurfaceSettlement {
         );
         crate::native::capture::record_completed_basis(state, basis, frame, epoch);
         state.lifecycle.record_presented();
-        let completion = worth_ui_host_contract::UiMountedSurfacePresentationCompletion::new(
+        let completion = token.acknowledge_presented(
             worth_ui_host_contract::UiHostSurfacePresentationMode::NativeDisplay,
             epoch,
             effects.completion(),

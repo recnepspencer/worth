@@ -118,6 +118,16 @@ impl UiMountedRetentionReservation {
         Ok(())
     }
 
+    /// The visual regions already retained for this reservation's frame.
+    pub(crate) fn retained_visual_regions(
+        &self,
+    ) -> Option<super::super::UiMountedVisualRegionBasis> {
+        self.successor
+            .current
+            .as_deref()
+            .map(super::UiRetainedPresentedFrame::visual_regions)
+    }
+
     pub(crate) fn refresh_visual_regions(
         &mut self,
         mut visual_regions: super::super::UiMountedVisualRegionBasis,

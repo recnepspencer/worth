@@ -1,8 +1,9 @@
 use worth_ui_certification::scenario::filesystem_application_lifecycle::FilesystemApplicationLifecycleScenario;
 use worth_ui_host_headless::WorthUiHeadlessRecorder;
 use worth_ui_runtime::facade::mounted::{
-    UiHostSurfacePresentationMode, UiMountedLaneParticipation, UiMountedPreviewProjection,
-    UiPresentationDeadline, UiRequiredLaneContributionStatus,
+    UiHostSurfacePresentationMode, UiMountedFrameOutcome, UiMountedFrameRequest,
+    UiMountedLaneParticipation, UiMountedPreviewProjection, UiPresentationDeadline,
+    UiRequiredLaneContributionStatus,
 };
 use worth_ui_runtime::facade::runtime_handoff::{
     UiAllocationReplanTransactionCommitDenial, UiAllocationReplanTransactionOutcome,
@@ -13,8 +14,11 @@ use worth_ui_runtime::facade::{
     WorthUiMountedPreviewDisposition, WorthUiMountedPreviewOutcome,
     WorthUiMountedPreviewPreparationDenial,
 };
-use worth_ui_test_support::WorthUiFrameworkTurnCertificationExt;
 use worth_ui_test_support::WorthUiMountedIdentityCertificationExt;
+use worth_ui_test_support::{
+    WorthUiActiveSessionCertificationExt, WorthUiFrameworkTurnCertificationExt,
+    WorthUiMountedPublicationCertificationExt,
+};
 
 use super::mounted_application_lifecycle::adapter_projection_world::{
     cell_status, preview_application_from_sources, preview_application_with_host, preview_target,
@@ -40,6 +44,15 @@ fn real_wui_preview_records_and_publishes_through_the_mounted_contract() {
     let instance = session.mount_instance(handle, surface).unwrap();
 
     crate::mounted_geometry_fixture::install_current_occurrence_geometry(&mut session);
+    // A preview paints over accepted layout, so the host shows it first.
+    let layout = session
+        .prepare_application_presentation_frame(UiMountedFrameRequest::all_bound_surfaces())
+        .expect("the installed layout prepares an ordinary frame");
+    assert!(matches!(
+        session.present_prepared_mounted_frame(layout, UiPresentationDeadline::at_tick(5), 0),
+        UiMountedFrameOutcome::Published(_)
+    ));
+    assert_eq!(recorder.drain_transcripts().len(), 1);
     let pending = submit_preview(&mut session, target, 320.0);
     let prepared = match pending.prepare(instance) {
         Ok(prepared) => prepared,

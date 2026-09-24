@@ -60,7 +60,7 @@ fn composed(
         let accepted = world
             .session
             .mounted
-            .accepted_motion_for_command(presentation, *command)
+            .accepted_motion_for_command(presentation.basis(), *command)
             .unwrap();
         assert_eq!(
             accepted.map(|sample| sample.opacity_units()),
@@ -93,7 +93,7 @@ fn composed(
         let accepted = world
             .session
             .mounted
-            .accepted_motion_for_command(presentation, command)
+            .accepted_motion_for_command(presentation.basis(), command)
             .unwrap();
         assert_eq!(
             accepted.map(|sample| sample.opacity_units()),

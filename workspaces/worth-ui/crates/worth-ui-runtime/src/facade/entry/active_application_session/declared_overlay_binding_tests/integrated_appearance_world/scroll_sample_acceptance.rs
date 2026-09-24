@@ -5,6 +5,7 @@ use super::scroll_pose_authority::ScrollWorld;
 use super::scroll_settle_commit::{one_notch_up, smooth_scroll, ONE_NOTCH};
 use super::scroll_settle_frame::{settle_frame, settle_scripted_frame};
 use super::World;
+use crate::certification_support::ScriptedPresentationAcknowledgement;
 use crate::runtime::scroll::UiHostScrollObservationOutcome;
 
 #[test]
@@ -86,11 +87,10 @@ fn in_flight_scroll_sample_moves_nothing_until_matching_physical_completion() {
     ));
     settle_frame(&mut scroll, 6);
     let before = scroll.accepted_offset();
-    let basis = scroll.presentation();
     scroll.world.host.push_in_flight(
         vec![
             ScriptedSurfaceCompletion::Pending,
-            ScriptedSurfaceCompletion::Presented(UiMountedSurfacePresentationCompletion::new(
+            ScriptedSurfaceCompletion::Presented(ScriptedPresentationAcknowledgement::new(
                 UiHostSurfacePresentationMode::NativeDisplay,
                 UiHostPresentationEpoch::issued_by_host(100),
                 UiMountedCompletedEffects::new(vec![UiMountedEffectFamily::NativePaint]),
@@ -115,7 +115,7 @@ fn in_flight_scroll_sample_moves_nothing_until_matching_physical_completion() {
         .motion_sample_presentation_pending());
     assert_eq!(scroll.accepted_offset(), before);
     scroll.world.session.complete_motion_sample_presentation();
-    scroll.world.session.settle_accepted_scroll_sample(basis);
+    scroll.world.session.settle_owed_scroll_samples();
     assert!(!scroll
         .world
         .session

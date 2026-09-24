@@ -136,6 +136,87 @@ fn presentation_cancellation_transitions_the_exact_physical_request_to_recovery(
     assert!(!external_dropped.get());
 }
 
+struct SettledProbe;
+
+impl UiNativePendingExternalObligation for SettledProbe {
+    fn poll_observation(
+        &mut self,
+        basis: crate::native::physical_work_signal::UiNativePhysicalSignalExternalBasis,
+        _device: Option<&wgpu::Device>,
+    ) -> crate::native::physical_work_signal::UiNativePhysicalSignalExternalObservation {
+        basis.observe(crate::native::physical_work_signal::UiNativePhysicalSignalStatus::Completed)
+    }
+}
+
+#[test]
+fn cancelling_a_physically_settled_presentation_still_confirms_its_recovery() {
+    let mut state = UiNativeHostState::new();
+    let owners = reserve_presentation_owners(
+        &mut state.resources,
+        &mut state.physical_signal,
+        crate::native::physical_work_signal::UiNativePhysicalPresentationBasis::test(),
+    )
+    .unwrap_or_else(|_| panic!("empty registry must reserve presentation owners"));
+    let pending = settle_port_result(
+        &mut state.resources,
+        &mut state.physical_signal,
+        owners,
+        Err(UiNativePresentationPortFailure::ReadbackUnsettled(
+            Box::new(SettledProbe),
+        )),
+    );
+    let Err(UiNativePresentationFailure::Pending(mut pending)) = pending else {
+        panic!("unsettled port work must remain pending");
+    };
+    let token = super::text_atlas_tests::inert_view().issue_completion_token();
+    assert!(pending.bind_completion_identity(token.diagnostic_value(), None));
+    state.pending_presentations.push(pending);
+    let due = state
+        .physical_signal
+        .next_due_tick()
+        .expect("pending presentation must retain one Signal-owned poll wake");
+    state
+        .physical_signal
+        .advance_clock_to(due)
+        .expect("the exact pending poll wake must become ready");
+    let identity = state.pending_presentations[0].physical_work();
+    assert!(state.progress_one_physical_signal_ready());
+    // The physical work settled and spent its Signal request; only the
+    // completion is left, waiting for the client to collect it.
+    assert_eq!(state.pending_presentations.len(), 1);
+    assert!(!state.pending_presentations[0].has_active_external());
+    assert_eq!(state.physical_signal.observation().active_requests, 0);
+
+    let outcome = super::pending_completion::stop_pending(&mut state, token);
+
+    assert_eq!(
+        outcome,
+        worth_ui_host_contract::UiHostSurfaceCancellationOutcome::EffectsMayHaveBegun
+    );
+    // Effects may have begun, so the client awaits a recovery confirmation
+    // for this attempt; the spent request is replaced by fresh recovery.
+    let observation = state.physical_signal.observation();
+    assert_eq!(observation.counters.cancellations, 1);
+    assert_eq!(observation.counters.recovery_schedules, 1);
+    assert_eq!(observation.active_requests, 1);
+    assert_eq!(state.pending_presentations.len(), 1);
+    assert!(state.pending_presentations[0]
+        .completion_identity()
+        .is_none());
+
+    // The admitted recovery is ready at once: the work it waits on is done.
+    assert_eq!(
+        state.progress_one_physical_signal_ready_outcome(),
+        crate::native::host_state::UiNativeHostPhysicalProgress::Presentation(
+            identity,
+            crate::native::host_state::UiNativePresentationPhysicalProgress::RecoveryCompleted,
+        )
+    );
+    assert!(state.pending_presentations.is_empty());
+    assert_eq!(state.physical_signal.observation().active_requests, 0);
+    assert!(state.resources.current().is_zero());
+}
+
 #[test]
 fn derived_state_loss_rejects_without_effects_until_owner_reconstruction_arrives() {
     let mut state = UiNativeHostState::new();

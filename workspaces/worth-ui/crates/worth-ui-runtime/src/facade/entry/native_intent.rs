@@ -14,7 +14,7 @@ use transition::{confirmation_stop_posture, stopped, NativePostureTarget};
 #[must_use]
 pub struct WorthUiNativeIntentIngress {
     transitions: Box<[WorthUiNativeIntentTransition]>,
-    dismissals: Box<[crate::facade::interaction::UiDismissInteraction]>,
+    dismissals: Box<[super::WorthUiAdmittedPortalDismissal]>,
     duplicate_batches: usize,
     interaction_stops: Box<[WorthUiNativeInteractionIngressStop]>,
 }
@@ -85,13 +85,21 @@ impl WorthUiNativeApplicationShell {
                 WorthUiNativeInteractionIngressStop::ManagedPublicationPending(drain),
             );
         }
-        let outcomes = drain
-            .into_batches()
-            .into_vec()
-            .into_iter()
-            .map(|batch| self.session.admit_host_interaction_batch(batch))
-            .collect::<Vec<_>>();
-        self.admit_native_intent_outcomes(definition, outcomes, deadline)
+        let mut outcomes = Vec::new();
+        let mut dismissals = Vec::new();
+        for batch in drain.into_batches() {
+            let (outcome, prepared) = self
+                .session
+                .admit_host_interaction_batch_with_dismissals(batch);
+            outcomes.push(outcome);
+            dismissals.extend(prepared);
+        }
+        self.admit_native_intent_outcomes(
+            definition,
+            outcomes.into_boxed_slice(),
+            dismissals.into_boxed_slice(),
+            deadline,
+        )
     }
 
     pub fn admit_native_intent_progress<I, D>(
@@ -109,17 +117,15 @@ impl WorthUiNativeApplicationShell {
                 WorthUiNativeInteractionIngressStop::ManagedObservationProgressPending(progress),
             );
         }
-        self.admit_native_intent_outcomes(
-            definition,
-            progress.into_settlement().into_outcomes().into_vec(),
-            deadline,
-        )
+        let (outcomes, dismissals) = progress.into_settlement().into_routing_parts();
+        self.admit_native_intent_outcomes(definition, outcomes, dismissals, deadline)
     }
 
     fn admit_native_intent_outcomes<I, D>(
         &mut self,
         definition: crate::facade::intent::UiIntentDefinition<I, D>,
-        outcomes: Vec<crate::facade::interaction::UiHostInteractionIngressOutcome>,
+        outcomes: Box<[crate::facade::interaction::UiHostInteractionIngressOutcome]>,
+        dismissals: Box<[super::WorthUiAdmittedPortalDismissal]>,
         deadline: crate::facade::intent::UiIntentExecutionDeadlineBasis,
     ) -> WorthUiNativeIntentIngress
     where
@@ -127,7 +133,6 @@ impl WorthUiNativeApplicationShell {
         D: crate::facade::intent::UiIntentDefinitionDestination,
     {
         let mut transitions = Vec::new();
-        let mut dismissals = Vec::new();
         let mut duplicate_batches = 0;
         let mut interaction_stops = Vec::new();
         for outcome in outcomes {
@@ -142,18 +147,15 @@ impl WorthUiNativeApplicationShell {
                         }
                     }
                     for transition in interaction_transitions {
-                        match transition {
-                            crate::facade::interaction::UiInteractionTransition::Semantic(
-                                interaction,
-                            ) => transitions.push(self.admit_native_semantic_intent(
+                        if let crate::facade::interaction::UiInteractionTransition::Semantic(
+                            interaction,
+                        ) = transition
+                        {
+                            transitions.push(self.admit_native_semantic_intent(
                                 definition,
                                 interaction,
                                 deadline,
-                            )),
-                            crate::facade::interaction::UiInteractionTransition::DismissRequested(
-                                dismissal,
-                            ) => dismissals.push(dismissal),
-                            _ => {}
+                            ));
                         }
                     }
                 }
@@ -170,7 +172,7 @@ impl WorthUiNativeApplicationShell {
         }
         WorthUiNativeIntentIngress {
             transitions: transitions.into_boxed_slice(),
-            dismissals: dismissals.into_boxed_slice(),
+            dismissals,
             duplicate_batches,
             interaction_stops: interaction_stops.into_boxed_slice(),
         }

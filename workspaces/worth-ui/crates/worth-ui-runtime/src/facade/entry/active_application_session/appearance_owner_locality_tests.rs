@@ -68,7 +68,7 @@ fn pointer_owner_invalidation_preserves_mounted_neighborhood_and_surface_scope()
         .unwrap();
     let hit = session
         .mounted
-        .interaction_hit_test_basis(presentation)
+        .interaction_hit_test_basis(presentation.basis())
         .unwrap();
     let row = hit
         .rows()
@@ -92,7 +92,7 @@ fn pointer_owner_invalidation_preserves_mounted_neighborhood_and_surface_scope()
     let peer_position = interior(*peer_row);
     let batch = super::pointer_batch(
         session.host_session.identity().as_u64(),
-        presentation,
+        presentation.basis(),
         1,
         UiHostPointerIdentity::new(1),
         inside,
@@ -118,7 +118,7 @@ fn pointer_owner_invalidation_preserves_mounted_neighborhood_and_surface_scope()
         .revision();
     let same_target = session.admit_host_interaction_batch(super::pointer_batch(
         session.host_session.identity().as_u64(),
-        presentation,
+        presentation.basis(),
         2,
         UiHostPointerIdentity::new(1),
         inside,
@@ -178,7 +178,7 @@ fn pointer_owner_invalidation_preserves_mounted_neighborhood_and_surface_scope()
         .unwrap();
     let ingress = session.admit_host_interaction_batch(super::pointer_batch(
         session.host_session.identity().as_u64(),
-        presentation,
+        presentation.basis(),
         5,
         UiHostPointerIdentity::new(1),
         inside,
@@ -302,7 +302,7 @@ fn admit_motion(
         .unwrap();
     let batch = super::pointer_batch(
         session.host_session.identity().as_u64(),
-        presentation,
+        presentation.basis(),
         sequence,
         UiHostPointerIdentity::new(pointer),
         position,

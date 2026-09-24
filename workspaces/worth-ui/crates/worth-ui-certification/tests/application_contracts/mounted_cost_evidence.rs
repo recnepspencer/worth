@@ -97,7 +97,7 @@ fn overlapping_semantic_and_binding_delta_counts_distinct_surface_pairs_once() {
     ));
 
     host.push_presentation(
-        worth_ui_runtime::facade::mounted::UiHostSurfacePresentationOutcome::PresentationIndeterminate,
+        worth_ui_runtime::certification_support::ScriptedPresentationOutcome::PresentationIndeterminate,
     );
     let uncertain = prepared(&mut session);
     assert!(matches!(

@@ -51,7 +51,7 @@ impl PlatformPulseApplicationRuntime {
             .shell
             .take()
             .map(WorthUiNativeApplicationShell::shutdown);
-        if self.terminal_error.is_some() {
+        if self.terminal.is_stopped() {
             return application;
         }
         let publication = match (

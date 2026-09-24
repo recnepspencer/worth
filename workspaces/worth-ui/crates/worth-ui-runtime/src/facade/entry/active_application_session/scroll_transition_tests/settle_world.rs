@@ -195,7 +195,6 @@ impl UiScrollSettleWorld {
             installed_y: self.displacement_from_rest(
                 installed
                     .sample()
-                    .expect("an installed settle reports its opening sample")
                     .geometry()
                     .expect("a settle samples geometry")
                     .components()[1],
@@ -276,7 +275,9 @@ impl UiScrollSettleWorld {
         &mut self,
         prepared: crate::mounting::presentation::motion_sampling::UiPreparedMotionSampling,
     ) -> crate::mounting::presentation::motion_sampling::UiPresentationMotionSamplingReceipt {
-        let receipt = self.sampler.commit_prepared(prepared);
+        let receipt = self
+            .sampler
+            .commit_prepared(prepared.presented_for_certification());
         for terminal in receipt.terminals().iter().copied() {
             self.motion
                 .terminalize(terminal.track(), terminal.cause())

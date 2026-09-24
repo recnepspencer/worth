@@ -4,6 +4,7 @@
 
 pub mod admission;
 mod app_inspection_closeout;
+pub mod appearance;
 pub mod application;
 pub mod declaration;
 pub mod entry;
@@ -60,8 +61,8 @@ pub use entry::{
     WorthUiActiveFrameworkTurnCompletion, WorthUiActiveFrameworkTurnExecution,
     WorthUiActiveInspectionReceipt, WorthUiActiveOrdinaryFrameCompletion,
     WorthUiActiveRealtimeFrameCompletion, WorthUiActiveVirtualizedDataFrameCompletion,
-    WorthUiAllocationCatalogActivationDenial, WorthUiApp, WorthUiApplicationBuilder,
-    WorthUiApplicationCutoverDenial, WorthUiApplicationCutoverReceipt,
+    WorthUiAdmittedPortalDismissal, WorthUiAllocationCatalogActivationDenial, WorthUiApp,
+    WorthUiApplicationBuilder, WorthUiApplicationCutoverDenial, WorthUiApplicationCutoverReceipt,
     WorthUiApplicationReplacementLoweringDenial, WorthUiApplicationReplacementOutcome,
     WorthUiApplicationReplacementPreparationDenial, WorthUiApplicationReplacementStagingDenial,
     WorthUiApplicationSemanticNoOpReceipt, WorthUiCandidateInspectionReceipt,
@@ -112,14 +113,3 @@ pub use host_session_authority::{
     WorthUiHostSessionIdentity, WorthUiHostSessionReleaseRecovery,
 };
 pub use lifecycle::{WorthUiRuntimeSupportInventory, RUNTIME_SUPPORT_INVENTORY};
-
-pub use crate::runtime::appearance::{
-    UiActiveThemeBinding, UiThemeCapabilityReceipt, UiThemeCapabilityReceiptDenial,
-    UiThemeResolutionDenial, UiThemeSwitchDenial, UiThemeSwitchOrigin,
-    UiThemeSwitchOriginAdmissionDenial, UiThemeSwitchOriginFamily, UiThemeSwitchOutcome,
-    UiThemeSwitchRequest, UiThemeSwitchSelectionDenial,
-};
-pub use entry::{
-    UiNativeThemeSwitchDenial, UiProgrammaticThemeSwitchPreparationDenial,
-    UiThemeSwitchPreparationDenial,
-};

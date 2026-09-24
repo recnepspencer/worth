@@ -8,7 +8,7 @@ impl PlatformPulseApplicationRuntime {
     pub(in crate::native_application) fn dismiss_open_portal(
         &mut self,
         shell: &mut WorthUiNativeApplicationShell,
-        dismissal: worth_ui::facade::interaction::UiDismissInteraction,
+        dismissal: worth_ui::facade::app::WorthUiAdmittedPortalDismissal,
     ) -> bool {
         self.presentation_tick = self.presentation_tick.saturating_add(1);
         let outcome = shell.begin_managed_portal_dismissal(dismissal, self.presentation_tick);
@@ -34,7 +34,8 @@ impl PlatformPulseApplicationRuntime {
             WorthUiNativeManagedPortalDismissalOutcome::Ignored => true,
             WorthUiNativeManagedPortalDismissalOutcome::Retained => true,
             WorthUiNativeManagedPortalDismissalOutcome::Stopped(
-                worth_ui::facade::app::WorthUiNativePortalDismissalStop::StalePresentation,
+                worth_ui::facade::app::WorthUiNativePortalDismissalStop::StalePresentation
+                | worth_ui::facade::app::WorthUiNativePortalDismissalStop::InteractionCancelled,
             ) => true,
             WorthUiNativeManagedPortalDismissalOutcome::Published(receipt) => {
                 self.settle_portal_dismissal(shell, receipt)

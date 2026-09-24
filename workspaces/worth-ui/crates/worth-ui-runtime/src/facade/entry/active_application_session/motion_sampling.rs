@@ -98,7 +98,7 @@ impl super::WorthUiActiveApplicationSession {
     pub(in crate::facade::entry) fn prepare_motion_tick(
         &mut self,
         tick: u64,
-        presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
+        presentation: crate::mounting::presentation::UiDisplayedSurfaceBasis,
     ) -> Result<
         crate::mounting::presentation::motion_sampling::UiPreparedMotionSampling,
         crate::mounting::presentation::motion_sampling::UiPresentationMotionSamplingDenial,
@@ -106,15 +106,19 @@ impl super::WorthUiActiveApplicationSession {
         self.mounted.prepare_motion_tick(tick, presentation)
     }
 
+    /// Present a prepared tick and answer the Scroll settle it ran: the one a
+    /// presentation witness committed pixels for, or, on a tick that committed
+    /// none, whatever settle a deferral still owes.
     pub(in crate::facade::entry) fn present_prepared_motion_tick(
         &mut self,
         prepared: crate::mounting::presentation::motion_sampling::UiPreparedMotionSampling,
-        presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
-    ) {
+        presentation: crate::mounting::presentation::UiDisplayedSurfaceBasis,
+    ) -> super::UiScrollSettleDisposition {
         let settlement =
             self.mounted
                 .present_prepared_motion_tick(&self.host_session, prepared, presentation);
-        self.settle_motion_sample_presentation(settlement);
+        self.settle_motion_sample_presentation(settlement)
+            .unwrap_or_else(|| self.settle_owed_scroll_samples())
     }
 
     pub(crate) fn complete_motion_sample_presentation(&mut self) {
@@ -130,7 +134,7 @@ impl super::WorthUiActiveApplicationSession {
     fn settle_motion_sample_presentation(
         &mut self,
         settlement: crate::mounting::UiMountedMotionSampleSettlement,
-    ) {
+    ) -> Option<super::UiScrollSettleDisposition> {
         match settlement {
             crate::mounting::UiMountedMotionSampleSettlement::Committed(mut sampling) => {
                 if let (Some(presented), Some(portal)) =
@@ -148,21 +152,24 @@ impl super::WorthUiActiveApplicationSession {
                 for terminal in sampling.terminals().iter().copied() {
                     self.settle_motion_terminal_request(terminal);
                 }
-                if let Some(presented) = sampling.presented_surface() {
-                    self.refresh_motion_appearance_owner_receipt_sources();
-                    // Every completion path, including an input drain, must make
-                    // Scroll geometry agree with these accepted pixels before a
-                    // pointer can derive a grab and retire the sample.
-                    self.settle_accepted_scroll_sample(presented.presentation());
-                }
+                let presented = sampling.presented_surface()?;
+                self.refresh_motion_appearance_owner_receipt_sources();
+                // Every completion path, including an input drain, must make
+                // Scroll geometry agree with these accepted pixels before a
+                // pointer can derive a grab and retire the sample.
+                let settled = self.settle_accepted_scroll_sample(presented);
+                self.settle_owed_scroll_samples_beside(presented.semantic_surface());
+                Some(settled)
             }
             crate::mounting::UiMountedMotionSampleSettlement::Discarded => {
                 self.finish_pending_scroll_chrome_capture();
+                None
             }
             crate::mounting::UiMountedMotionSampleSettlement::PresentationIndeterminate => {
                 self.interaction.scroll_chrome_latch_mut().take_pending();
+                None
             }
-            crate::mounting::UiMountedMotionSampleSettlement::Deferred => {}
+            crate::mounting::UiMountedMotionSampleSettlement::Deferred => None,
         }
     }
 
@@ -187,37 +194,35 @@ impl super::WorthUiActiveApplicationSession {
     ) -> crate::certification_support::UiMotionPresentationCertificationSnapshot {
         let (active, retained, last_tick, sample, sampling_denials, last_denial) =
             self.mounted.motion_sampling_observation_for_certification();
-        let presentation = sample.and_then(|sample| {
-            sample
-                .geometry()
-                .map(|geometry| geometry.presentation_basis())
-        });
+        let sample =
+            sample.map(
+                |sample| crate::certification_support::UiMotionSampleCertification {
+                    placement: sample
+                        .geometry()
+                        .map(|geometry| (geometry.components(), geometry.presentation_basis())),
+                    opacity_units: sample.opacity_units(),
+                    hit_test_visible: sample.hit_test_visible(),
+                },
+            );
+        let presentation = sample
+            .and_then(|sample| sample.placement)
+            .map(|(_, presentation)| presentation);
         crate::certification_support::UiMotionPresentationCertificationSnapshot::new(
             active,
             retained,
             last_tick,
-            self.motion.as_ref().map_or(0, |motion| motion.publication_count()),
-            sample.and_then(|sample| sample.geometry().map(|geometry| geometry.components())),
-            sample.map(|sample| sample.opacity_units()),
-            sample.map(|sample| sample.hit_test_visible()),
-            presentation,
+            self.motion
+                .as_ref()
+                .map_or(0, |motion| motion.publication_count()),
+            sample,
             self.mounted.has_active_motion_samples(),
             presentation.is_none_or(|presentation| {
-                self.mounted.interaction_hit_test_basis(presentation).is_ok()
+                self.mounted
+                    .interaction_hit_test_basis(presentation)
+                    .is_ok()
             }),
             sampling_denials,
-            matches!(
-                last_denial,
-                Some(
-                    crate::mounting::presentation::motion_sampling::UiPresentationMotionSamplingDenial::NonMonotonicTick
-                )
-            ),
-            matches!(
-                last_denial,
-                Some(
-                    crate::mounting::presentation::motion_sampling::UiPresentationMotionSamplingDenial::PresentationTruthUnavailable
-                )
-            ),
+            last_denial,
         )
     }
 }

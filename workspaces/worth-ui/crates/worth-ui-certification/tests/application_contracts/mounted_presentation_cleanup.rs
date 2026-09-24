@@ -1,3 +1,6 @@
+use worth_ui_runtime::certification_support::{
+    ScriptedPresentationAcknowledgement, ScriptedPresentationOutcome,
+};
 use worth_ui_runtime::facade::mounted::{
     UiHostSurfaceCancellationOutcome, UiHostSurfacePresentationMode, UiMountWorkClass,
     UiMountedFrameOutcome, UiPresentationDeadline,
@@ -20,9 +23,7 @@ fn start_time_indeterminacy_cancels_every_earlier_in_flight_surface() {
         vec![UiHostSurfaceInFlightCompletion::Pending],
         UiHostSurfaceCancellationOutcome::CancelledBeforeEffects,
     );
-    host.push_presentation(
-        worth_ui_host_contract::UiHostSurfacePresentationOutcome::PresentationIndeterminate,
-    );
+    host.push_presentation(ScriptedPresentationOutcome::PresentationIndeterminate);
     let frame = prepared(&mut session);
 
     let outcome =
@@ -78,19 +79,17 @@ fn indeterminate_cost_preserves_every_adapter_translation_already_performed() {
     let host = ScriptedPresentationHost::default();
     let (mut session, _) = mounted_session(host.clone(), "indeterminate-adapter-cost", 2);
     host.push_presentation(completion_with_cost(3, 30, true));
-    host.push_presentation(
-        worth_ui_host_contract::UiHostSurfacePresentationOutcome::Presented(
-            worth_ui_host_contract::UiMountedSurfacePresentationCompletion::new(
-                UiHostSurfacePresentationMode::RecordOnly,
-                worth_ui_host_contract::UiHostPresentationEpoch::issued_by_host(2),
-                worth_ui_host_contract::UiMountedCompletedEffects::new(vec![
-                    worth_ui_host_contract::UiMountedEffectFamily::RecordedProjection,
-                    worth_ui_host_contract::UiMountedEffectFamily::NativePaint,
-                ]),
-                adapter_cost(7, 70, false),
-            ),
+    host.push_presentation(ScriptedPresentationOutcome::Presented(
+        ScriptedPresentationAcknowledgement::new(
+            UiHostSurfacePresentationMode::RecordOnly,
+            worth_ui_host_contract::UiHostPresentationEpoch::issued_by_host(2),
+            worth_ui_host_contract::UiMountedCompletedEffects::new(vec![
+                worth_ui_host_contract::UiMountedEffectFamily::RecordedProjection,
+                worth_ui_host_contract::UiMountedEffectFamily::NativePaint,
+            ]),
+            adapter_cost(7, 70, false),
         ),
-    );
+    ));
 
     let frame = prepared(&mut session);
     let outcome =
@@ -114,19 +113,13 @@ fn indeterminate_cost_preserves_every_adapter_translation_already_performed() {
     ));
 }
 
-fn completion_with_cost(
-    rows: u64,
-    bytes: u64,
-    cache_hit: bool,
-) -> worth_ui_host_contract::UiHostSurfacePresentationOutcome {
-    worth_ui_host_contract::UiHostSurfacePresentationOutcome::Presented(
-        worth_ui_host_contract::UiMountedSurfacePresentationCompletion::new(
-            UiHostSurfacePresentationMode::RecordOnly,
-            worth_ui_host_contract::UiHostPresentationEpoch::issued_by_host(1),
-            crate::mounted_host_protocol::scripted_host::recorded_effects(),
-            adapter_cost(rows, bytes, cache_hit),
-        ),
-    )
+fn completion_with_cost(rows: u64, bytes: u64, cache_hit: bool) -> ScriptedPresentationOutcome {
+    ScriptedPresentationOutcome::Presented(ScriptedPresentationAcknowledgement::new(
+        UiHostSurfacePresentationMode::RecordOnly,
+        worth_ui_host_contract::UiHostPresentationEpoch::issued_by_host(1),
+        crate::mounted_host_protocol::scripted_host::recorded_effects(),
+        adapter_cost(rows, bytes, cache_hit),
+    ))
 }
 
 fn adapter_cost(

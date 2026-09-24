@@ -18,30 +18,34 @@ pub(super) enum UiNativePhysicalWakeProgress {
     PresentationRecoveryCompleted(super::UiNativePhysicalPresentationCorrelation),
 }
 
+use super::contract::UiNativePhysicalProgressCorrelation as Correlation;
+
 impl UiNativePhysicalWakeProgress {
     pub(super) const fn application_progress_grant(
         self,
     ) -> Option<super::UiNativePhysicalProgressGrant> {
         match self {
-            Self::TextAtlasProgressed { presentation } => Some(
-                super::UiNativePhysicalProgressGrant::issued_with_originating_presentation(
+            Self::TextAtlasProgressed { presentation } => {
+                Some(super::UiNativePhysicalProgressGrant::issued(
                     super::UiNativePhysicalProgressClass::TextAtlas,
-                    presentation,
-                ),
-            ),
+                    Correlation::Originating(presentation),
+                ))
+            }
             Self::PresentationProgressed {
                 presentation,
                 duplicate_observation,
             } => Some(super::UiNativePhysicalProgressGrant::issued(
                 super::UiNativePhysicalProgressClass::Presentation,
-                Some(presentation),
-                duplicate_observation,
+                if duplicate_observation {
+                    Correlation::DuplicatePresentation(presentation)
+                } else {
+                    Correlation::Presentation(presentation)
+                },
             )),
             Self::PresentationRecoveryCompleted(presentation) => {
                 Some(super::UiNativePhysicalProgressGrant::issued(
                     super::UiNativePhysicalProgressClass::PresentationRecovery,
-                    Some(presentation),
-                    false,
+                    Correlation::Presentation(presentation),
                 ))
             }
             Self::NoWake | Self::ConsumedWithoutReadyWork => None,

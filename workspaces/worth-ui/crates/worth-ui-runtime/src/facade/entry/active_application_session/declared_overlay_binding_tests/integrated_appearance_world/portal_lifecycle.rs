@@ -1,4 +1,7 @@
 use super::session::World;
+use crate::certification_support::{
+    ScriptedPresentationAcknowledgement, ScriptedPresentationOutcome,
+};
 use crate::runtime::portal::*;
 use worth_ui_host_contract::*;
 
@@ -21,8 +24,8 @@ impl World {
             assert_eq!(sample.opacity_units(), expected_opacity);
         }
         self.host
-            .push_presentation(UiHostSurfacePresentationOutcome::Presented(
-                UiMountedSurfacePresentationCompletion::new(
+            .push_presentation(ScriptedPresentationOutcome::Presented(
+                ScriptedPresentationAcknowledgement::new(
                     UiHostSurfacePresentationMode::NativeDisplay,
                     UiHostPresentationEpoch::issued_by_host(epoch),
                     UiMountedCompletedEffects::new(vec![UiMountedEffectFamily::NativePaint]),
@@ -141,8 +144,8 @@ impl World {
         assert_eq!(prepared.receipt().samples().len(), 1);
         assert_eq!(prepared.receipt().samples()[0].opacity_units(), 65_535);
         self.host
-            .push_presentation(UiHostSurfacePresentationOutcome::Presented(
-                UiMountedSurfacePresentationCompletion::new(
+            .push_presentation(ScriptedPresentationOutcome::Presented(
+                ScriptedPresentationAcknowledgement::new(
                     UiHostSurfacePresentationMode::NativeDisplay,
                     UiHostPresentationEpoch::issued_by_host(90),
                     UiMountedCompletedEffects::new(vec![UiMountedEffectFamily::NativePaint]),
@@ -161,8 +164,8 @@ impl World {
         assert_eq!(prepared.receipt().samples().len(), 1);
         assert_eq!(prepared.receipt().samples()[0].opacity_units(), 8_192);
         self.host
-            .push_presentation(UiHostSurfacePresentationOutcome::Presented(
-                UiMountedSurfacePresentationCompletion::new(
+            .push_presentation(ScriptedPresentationOutcome::Presented(
+                ScriptedPresentationAcknowledgement::new(
                     UiHostSurfacePresentationMode::NativeDisplay,
                     UiHostPresentationEpoch::issued_by_host(91),
                     UiMountedCompletedEffects::new(vec![UiMountedEffectFamily::NativePaint]),
@@ -189,8 +192,8 @@ impl World {
         assert_eq!(prepared.receipt().samples().len(), 1);
         assert_eq!(prepared.receipt().samples()[0].opacity_units(), 0);
         self.host
-            .push_presentation(UiHostSurfacePresentationOutcome::Presented(
-                UiMountedSurfacePresentationCompletion::new(
+            .push_presentation(ScriptedPresentationOutcome::Presented(
+                ScriptedPresentationAcknowledgement::new(
                     UiHostSurfacePresentationMode::NativeDisplay,
                     UiHostPresentationEpoch::issued_by_host(92),
                     UiMountedCompletedEffects::new(vec![UiMountedEffectFamily::NativePaint]),
@@ -204,7 +207,7 @@ impl World {
         // retry must preserve that removal posture, unlike initial dismissal.
         for _ in self.surfaces {
             self.host
-                .push_presentation(UiHostSurfacePresentationOutcome::RejectedBeforeEffects(
+                .push_presentation(ScriptedPresentationOutcome::RejectedBeforeEffects(
                     UiHostSurfacePresentationDenial::TextAtlasPresentationDeferred,
                 ));
         }
@@ -213,8 +216,8 @@ impl World {
             (94, Vec::new()),
         ] {
             self.host
-                .push_presentation(UiHostSurfacePresentationOutcome::Presented(
-                    UiMountedSurfacePresentationCompletion::new(
+                .push_presentation(ScriptedPresentationOutcome::Presented(
+                    ScriptedPresentationAcknowledgement::new(
                         UiHostSurfacePresentationMode::NativeDisplay,
                         UiHostPresentationEpoch::issued_by_host(epoch),
                         UiMountedCompletedEffects::new(effects),

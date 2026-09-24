@@ -24,5 +24,6 @@ pub(crate) use sampled_geometry::{
     UiPresentationGeometrySamplingDenial, UiPresentationSampledGeometry,
 };
 pub(crate) use sampling::{
-    UiMountedMotionSampler, UiPreparedMotionSampling, UiPresentationMotionSamplingDenial,
+    UiMountedMotionSampler, UiPreparedMotionSampling, UiPreparedMotionWork,
+    UiPresentationMotionSamplingDenial,
 };

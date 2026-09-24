@@ -1,4 +1,7 @@
 use super::{program_progress::UiNativePresentationSource, UiNativeApplicationDriver};
+use crate::certification_support::{
+    ScriptedPresentationAcknowledgement, ScriptedPresentationOutcome,
+};
 use crate::certification_support::{ScriptedPresentationHost, ScriptedSurfaceCompletion};
 use crate::facade::WorthUiNativeApplicationShell;
 use worth_ui_host_contract::*;
@@ -69,13 +72,12 @@ pub(crate) fn exercise_pointer_expiry(
         crate::facade::entry::UiNativeApplicationProgram::new([frame])
             .unwrap()
             .remain_open_until_external_close(),
-        #[cfg(feature = "certification-support")]
-        None,
+        crate::native_platform::profile::UiNativeDriverQualification::ordinary(),
     );
     if scenario == PointerExpiryPresentation::PendingProgram {
         enqueue_pending(&host);
     } else if scenario == PointerExpiryPresentation::RejectedProgram {
-        host.push_presentation(UiHostSurfacePresentationOutcome::RejectedBeforeEffects(
+        host.push_presentation(ScriptedPresentationOutcome::RejectedBeforeEffects(
             UiHostSurfacePresentationDenial::ExternalTimeout,
         ));
     } else {
@@ -105,7 +107,7 @@ pub(crate) fn exercise_pointer_expiry(
         if scenario == PointerExpiryPresentation::PendingRefresh {
             enqueue_pending(&host);
         } else {
-            host.push_presentation(UiHostSurfacePresentationOutcome::RejectedBeforeEffects(
+            host.push_presentation(ScriptedPresentationOutcome::RejectedBeforeEffects(
                 UiHostSurfacePresentationDenial::ExternalTimeout,
             ));
         }
@@ -232,7 +234,7 @@ pub(crate) fn exercise_pointer_expiry(
 fn enqueue_pending(host: &ScriptedPresentationHost) {
     host.push_in_flight(
         vec![ScriptedSurfaceCompletion::Presented(
-            UiMountedSurfacePresentationCompletion::new(
+            ScriptedPresentationAcknowledgement::new(
                 UiHostSurfacePresentationMode::NativeDisplay,
                 crate::certification_support::scripted_presentation_epoch(),
                 UiMountedCompletedEffects::new(Vec::new()),

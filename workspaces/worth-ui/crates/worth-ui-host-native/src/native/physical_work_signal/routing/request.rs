@@ -23,6 +23,7 @@ pub(crate) enum UiNativePhysicalSignalWork {
 pub(crate) struct UiNativePhysicalSignalRequest {
     work: UiNativePhysicalSignalWork,
     handle: ResourceRequestHandle,
+    owner_handle: ResourceRequestHandle,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -115,9 +116,58 @@ impl UiNativePhysicalSignalRoute {
         {
             return Err(UiNativePhysicalSignalRegistryError::AlreadyRegistered);
         }
-        self.requests
-            .push(UiNativePhysicalSignalRequest { work, handle });
+        self.requests.push(UiNativePhysicalSignalRequest {
+            work,
+            handle,
+            owner_handle: handle,
+        });
         Ok(())
+    }
+
+    pub(crate) fn owner_handle(
+        &self,
+        work: UiNativePhysicalSignalWork,
+    ) -> Option<ResourceRequestHandle> {
+        self.requests
+            .iter()
+            .find(|request| request.work == work)
+            .map(|request| request.owner_handle)
+    }
+
+    pub(crate) fn adopt_owner_handle(
+        &mut self,
+        work: UiNativePhysicalSignalWork,
+        owner_handle: ResourceRequestHandle,
+    ) -> bool {
+        let Some(request) = self
+            .requests
+            .iter_mut()
+            .find(|request| request.work == work)
+        else {
+            return false;
+        };
+        request.owner_handle = owner_handle;
+        true
+    }
+
+    pub(crate) fn acknowledge_owner_handle(
+        &mut self,
+        work: UiNativePhysicalSignalWork,
+        retained: ResourceRequestHandle,
+        current: ResourceRequestHandle,
+    ) -> bool {
+        let Some(request) = self
+            .requests
+            .iter_mut()
+            .find(|request| request.work == work)
+        else {
+            return false;
+        };
+        if request.owner_handle != retained || request.handle != current {
+            return false;
+        }
+        request.owner_handle = current;
+        true
     }
 
     pub(crate) fn token_for(

@@ -14,9 +14,25 @@ pub(super) struct UiNativeRetainedOrderSnapshot<Identity> {
 struct OriginalOrderEntry<Identity> {
     identity: Identity,
     weight: u32,
-    predecessor: Option<Identity>,
-    existed: bool,
-    rank: Option<usize>,
+    placement: OriginalOrderPlacement<Identity>,
+}
+
+/// Where an identity stood before the transaction, if it was ordered at all.
+enum OriginalOrderPlacement<Identity> {
+    Unordered,
+    Ranked {
+        rank: usize,
+        predecessor: Option<Identity>,
+    },
+}
+
+impl<Identity> OriginalOrderPlacement<Identity> {
+    const fn rank(&self) -> Option<usize> {
+        match self {
+            Self::Ranked { rank, .. } => Some(*rank),
+            Self::Unordered => None,
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -171,19 +187,22 @@ where
             if seen.insert(identity, ()).is_some() {
                 continue;
             }
-            let rank = self.index.rank(identity);
-            let predecessor = rank
-                .and_then(|value| value.checked_sub(1))
-                .and_then(|value| self.index.identity_at(value));
+            let placement = match self.index.rank(identity) {
+                Some(rank) => OriginalOrderPlacement::Ranked {
+                    rank,
+                    predecessor: rank
+                        .checked_sub(1)
+                        .and_then(|value| self.index.identity_at(value)),
+                },
+                None => OriginalOrderPlacement::Unordered,
+            };
             entries.push(OriginalOrderEntry {
                 identity,
                 weight: self.index.weight(identity).unwrap_or(0),
-                predecessor,
-                existed: rank.is_some(),
-                rank,
+                placement,
             });
         }
-        entries.sort_unstable_by_key(|entry| entry.rank);
+        entries.sort_unstable_by_key(|entry| entry.placement.rank());
         UiNativeRetainedOrderSnapshot { entries }
     }
 
@@ -196,8 +215,10 @@ where
                 self.remove(entry.identity)?;
             }
         }
-        for entry in snapshot.entries.into_iter().filter(|entry| entry.existed) {
-            self.insert_after_weighted(entry.identity, entry.predecessor, entry.weight)?;
+        for entry in snapshot.entries {
+            if let OriginalOrderPlacement::Ranked { predecessor, .. } = entry.placement {
+                self.insert_after_weighted(entry.identity, predecessor, entry.weight)?;
+            }
         }
         Ok(())
     }

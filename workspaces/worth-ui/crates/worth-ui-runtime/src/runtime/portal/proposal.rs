@@ -51,7 +51,10 @@ impl UiStagedPortalServiceProposal {
         self.overlay_binding_stage.as_ref()
     }
 
-    pub(crate) fn overlay_binding_commit(&self) -> super::UiPortalOverlayBindingCommit {
+    pub(crate) fn overlay_binding_commit(
+        &self,
+    ) -> Result<super::UiPortalOverlayBindingCommit, super::UiPortalOverlayBindingLifecycleDenial>
+    {
         super::UiPortalOverlayBindingCommit::from_transition(
             &self.transition,
             self.overlay_binding_stage.clone(),

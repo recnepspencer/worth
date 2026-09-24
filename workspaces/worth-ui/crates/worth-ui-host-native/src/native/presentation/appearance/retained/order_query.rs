@@ -105,30 +105,22 @@ impl UiNativeAppearanceRetained {
                     chrome.identity().part().paint_ordinal() as u8,
                     key.value(),
                 )),
-                UiNativeAppearanceCommand::PortalSurface(portal) => Some((
-                    1,
-                    *overlay_rank
-                        .as_ref()
-                        .ok_or(UiNativeAppearanceRetainedDenial::OverlayOrderMismatch)?
-                        .get(&UiOverlayParticipantIdentity::Portal(
+                UiNativeAppearanceCommand::PortalSurface(portal) => overlay_rank
+                    .as_ref()
+                    .and_then(|ranks| {
+                        ranks.get(&UiOverlayParticipantIdentity::Portal(
                             portal.portal_instance(),
                         ))
-                        .ok_or(UiNativeAppearanceRetainedDenial::OverlayOrderMismatch)?,
-                    0,
-                    key.value(),
-                )),
-                UiNativeAppearanceCommand::Backdrop(backdrop) => Some((
-                    1,
-                    *overlay_rank
-                        .as_ref()
-                        .ok_or(UiNativeAppearanceRetainedDenial::OverlayOrderMismatch)?
-                        .get(&UiOverlayParticipantIdentity::Backdrop(
+                    })
+                    .map(|rank| (1, *rank, 0, key.value())),
+                UiNativeAppearanceCommand::Backdrop(backdrop) => overlay_rank
+                    .as_ref()
+                    .and_then(|ranks| {
+                        ranks.get(&UiOverlayParticipantIdentity::Backdrop(
                             backdrop.identity().clone(),
                         ))
-                        .ok_or(UiNativeAppearanceRetainedDenial::OverlayOrderMismatch)?,
-                    0,
-                    key.value(),
-                )),
+                    })
+                    .map(|rank| (1, *rank, 0, key.value())),
                 UiNativeAppearanceCommand::OverlayOrder(_)
                 | UiNativeAppearanceCommand::PointerAffordance(_) => None,
             };

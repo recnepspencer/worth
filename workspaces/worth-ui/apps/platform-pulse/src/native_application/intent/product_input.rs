@@ -10,7 +10,7 @@ use super::super::{PlatformPulseApplicationRuntime, PlatformPulseTerminalError};
 
 impl PlatformPulseApplicationRuntime {
     pub(in crate::native_application) fn poll_intent_input(&mut self) {
-        while self.terminal_error.is_none() {
+        while self.terminal.is_running() {
             let event = self
                 .intent_watch
                 .as_mut()

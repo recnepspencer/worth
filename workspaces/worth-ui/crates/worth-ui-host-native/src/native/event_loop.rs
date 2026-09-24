@@ -21,6 +21,7 @@ mod failure;
 mod finish;
 mod finish_capture;
 mod finish_cleanup;
+mod input_recovery;
 mod native_input;
 mod observation_clock;
 mod physical_clock;
@@ -86,6 +87,7 @@ struct UiNativeEventLoopApplication<Client> {
     configuration: UiNativeWindowConfiguration,
     client: Option<Client>,
     first_frame_presented: bool,
+    pending_close: bool,
     readiness: super::UiNativeReadinessRegistry,
     readiness_owner: super::UiNativeReadyOwner,
     physical_readiness_owner: super::UiNativeReadyOwner,

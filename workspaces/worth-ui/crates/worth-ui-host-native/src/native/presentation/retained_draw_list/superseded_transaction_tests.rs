@@ -9,11 +9,7 @@ use crate::native::presentation::{
     reserve_presentation_owners, settle_port_result, UiNativePendingExternalObligation,
     UiNativePresentationEffects, UiNativePresentationFailure, UiNativePresentationPortFailure,
 };
-use worth_ui_host_contract::{
-    UiHostProtocolContract, UiHostProtocolNegotiation, UiMountedFrameConsumptionInput,
-    UiMountedFrameConsumptionView, UiMountedPresentationAttemptIdentity,
-    UiMountedPresentationInitial, UiMountedPresentationWorkView, UiPresentationDeadline,
-};
+use worth_ui_host_contract::UiMountedPresentationInitial;
 
 #[path = "superseded_transaction_tests/cursor.rs"]
 mod cursor;
@@ -240,26 +236,7 @@ fn physical_basis(
     world: &DrawListWorld,
     initial: &UiMountedPresentationInitial,
 ) -> UiNativePhysicalPresentationBasis {
-    let protocol = match UiHostProtocolContract::current().negotiate() {
-        UiHostProtocolNegotiation::Compatible(protocol) => protocol,
-        UiHostProtocolNegotiation::Incompatible(_) => panic!("current protocol must negotiate"),
-    };
-    let view =
-        UiMountedFrameConsumptionView::from_inert_mechanics(UiMountedFrameConsumptionInput {
-            authority: std::rc::Rc::new(()),
-            host_session_identity: 1,
-            protocol,
-            capability_generation: world.requirement.capability_generation(),
-            capability_profile_digest: world.requirement.capability_profile_digest(),
-            attempt: UiMountedPresentationAttemptIdentity::mint_unbound().unwrap(),
-            deadline: UiPresentationDeadline::at_tick(20),
-            requirement: world.requirement,
-            presentation_work: UiMountedPresentationWorkView::Initial(initial),
-            appearance_work: None,
-            qualified_text: &(),
-            text_raster_work: None,
-        });
-    UiNativePhysicalPresentationBasis::from_view(&view)
+    UiNativePhysicalPresentationBasis::from_view(&world.consumption_view(initial))
 }
 
 fn pending_delta(

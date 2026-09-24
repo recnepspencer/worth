@@ -98,14 +98,12 @@ impl UiAssembledMountedFrame {
                 if snapshot_is_current && !current_observation {
                     admitted_surfaces.push(projection.surface());
                 }
-                let family = match projection.family() {
-                    crate::declaration::UiPointerAffordance::Default => {
-                        worth_ui_host_contract::UiPointerAffordanceFamily::Default
-                    }
-                    crate::declaration::UiPointerAffordance::Activation => {
-                        worth_ui_host_contract::UiPointerAffordanceFamily::Activation
-                    }
-                };
+                let family = projection.resolved_family(
+                    self.candidate
+                        .owner
+                        .pointer
+                        .published_family(projection.surface(), instance),
+                );
                 desired.push(worth_ui_host_contract::UiMountedPointerAffordanceMechanic::complete_from_runtime_mounting(
                     projection.pointer(), projection.surface(), instance, family,
                 ));

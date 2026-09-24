@@ -7,6 +7,7 @@ use worth_ui::facade::{
         UiIntentDefinition, UiIntentExecutionAdvanceOutcome, UiIntentRuntimeServiceDestination,
     },
 };
+use worth_ui_runtime::certification_support::ScriptedPresentationAcknowledgement;
 use worth_ui_runtime::{
     facade::mounted::{UiHostSurfaceCancellationOutcome, UiMountedFrameOutcome},
     native_platform::{UiNativeApplicationPhysicalProgress, UiNativeComponentPresenceChange},
@@ -93,7 +94,7 @@ fn anchor_loss_defers_native_unmount_until_portal_dismissal_is_physically_commit
     host.push_in_flight(
         vec![
             worth_ui_runtime::certification_support::ScriptedSurfaceCompletion::Presented(
-                worth_ui_host_contract::UiMountedSurfacePresentationCompletion::new(
+                ScriptedPresentationAcknowledgement::new(
                     worth_ui_host_contract::UiHostSurfacePresentationMode::NativeDisplay,
                     worth_ui_runtime::certification_support::scripted_presentation_epoch(),
                     worth_ui_host_contract::UiMountedCompletedEffects::new(vec![
@@ -131,7 +132,6 @@ fn anchor_loss_defers_native_unmount_until_portal_dismissal_is_physically_commit
         worth_ui_host_native::UiNativePhysicalProgressGrant::from_certification(
             worth_ui_host_native::UiNativePhysicalProgressClass::Presentation,
             None,
-            false,
         ),
     );
     assert!(matches!(

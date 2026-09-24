@@ -1,8 +1,11 @@
 use super::{authored, session::World};
+use crate::certification_support::{
+    ScriptedPresentationAcknowledgement, ScriptedPresentationOutcome,
+};
 use worth_ui_host_contract::*;
 
 #[test]
-fn retained_inside_press_is_ignored_but_cannot_dismiss_after_same_frame_epoch_advance() {
+fn raw_old_epoch_cannot_classify_inside_or_outside_after_motion_advance() {
     use crate::facade::entry::portal_dismissal::{
         UiPortalDismissalPublicationOutcome as Outcome, UiPortalDismissalPublicationStop as Stop,
     };
@@ -24,8 +27,8 @@ fn retained_inside_press_is_ignored_but_cannot_dismiss_after_same_frame_epoch_ad
     let sample = world.session.prepare_motion_tick(1, observed).unwrap();
     world
         .host
-        .push_presentation(UiHostSurfacePresentationOutcome::Presented(
-            UiMountedSurfacePresentationCompletion::new(
+        .push_presentation(ScriptedPresentationOutcome::Presented(
+            ScriptedPresentationAcknowledgement::new(
                 UiHostSurfacePresentationMode::NativeDisplay,
                 UiHostPresentationEpoch::issued_by_host(31),
                 UiMountedCompletedEffects::new(vec![UiMountedEffectFamily::NativePaint]),
@@ -40,7 +43,7 @@ fn retained_inside_press_is_ignored_but_cannot_dismiss_after_same_frame_epoch_ad
         .unwrap();
     assert_eq!(current.frame(), observed.frame());
     assert_eq!(current.binding(), observed.binding());
-    assert_ne!(current.epoch(), observed.epoch());
+    assert_ne!(current.basis().epoch(), observed.basis().epoch());
 
     let bounds = world
         .session
@@ -57,7 +60,7 @@ fn retained_inside_press_is_ignored_but_cannot_dismiss_after_same_frame_epoch_ad
     };
     let interaction = |point| {
         crate::facade::interaction::UiDismissInteraction::outside_press(
-            observed,
+            observed.basis(),
             UiHostObservationSequence::new(100),
             UiHostObservationTimeBasis::PresentationRelativeTick(100),
             point,
@@ -65,20 +68,16 @@ fn retained_inside_press_is_ignored_but_cannot_dismiss_after_same_frame_epoch_ad
     };
     let revision = world.session.portal.as_ref().unwrap().revision();
 
-    match world.session.publish_portal_dismissal(
-        interaction(position(
-            bounds.x() + bounds.width() / 2.0,
-            bounds.y() + bounds.height() / 2.0,
-        )),
-        100,
-    ) {
-        Outcome::IgnoredInsideTopmostPortal => {}
-        Outcome::IgnoredNoMatchingPortal => panic!("inside press found no dismissible Portal"),
-        Outcome::Stopped(stop) => panic!("inside press stopped: {stop:?}"),
-        Outcome::Published(_) => panic!("inside press published a dismissal"),
-        Outcome::InFlight(_) => panic!("inside press started host work"),
-        Outcome::Indeterminate(_) => panic!("inside press started indeterminate host work"),
-    }
+    assert!(matches!(
+        world.session.publish_portal_dismissal(
+            interaction(position(
+                bounds.x() + bounds.width() / 2.0,
+                bounds.y() + bounds.height() / 2.0
+            )),
+            100,
+        ),
+        Outcome::Stopped(Stop::StalePresentation),
+    ));
     assert_eq!(world.session.portal.as_ref().unwrap().revision(), revision);
 
     assert!(matches!(
@@ -124,8 +123,8 @@ fn portal_entrance_dismissal_uses_the_accepted_displaced_body() {
     let sample = world.session.prepare_motion_tick(1, observed).unwrap();
     world
         .host
-        .push_presentation(UiHostSurfacePresentationOutcome::Presented(
-            UiMountedSurfacePresentationCompletion::new(
+        .push_presentation(ScriptedPresentationOutcome::Presented(
+            ScriptedPresentationAcknowledgement::new(
                 UiHostSurfacePresentationMode::NativeDisplay,
                 UiHostPresentationEpoch::issued_by_host(31),
                 UiMountedCompletedEffects::new(vec![UiMountedEffectFamily::NativePaint]),
@@ -140,7 +139,7 @@ fn portal_entrance_dismissal_uses_the_accepted_displaced_body() {
         .unwrap();
     let interaction = |y: f32, sequence| {
         crate::facade::interaction::UiDismissInteraction::outside_press(
-            current,
+            current.basis(),
             UiHostObservationSequence::new(sequence),
             UiHostObservationTimeBasis::PresentationRelativeTick(sequence),
             UiHostSurfacePosition::viewport_logical(
@@ -162,8 +161,8 @@ fn portal_entrance_dismissal_uses_the_accepted_displaced_body() {
     for _ in world.surfaces {
         world
             .host
-            .push_presentation(UiHostSurfacePresentationOutcome::Presented(
-                UiMountedSurfacePresentationCompletion::new(
+            .push_presentation(ScriptedPresentationOutcome::Presented(
+                ScriptedPresentationAcknowledgement::new(
                     UiHostSurfacePresentationMode::NativeDisplay,
                     UiHostPresentationEpoch::issued_by_host(32),
                     UiMountedCompletedEffects::new(vec![UiMountedEffectFamily::NativePaint]),

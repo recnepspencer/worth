@@ -1,4 +1,5 @@
 use super::*;
+use crate::certification_support::ScriptedPresentationOutcome;
 
 #[test]
 fn six_axis_authority_and_theme_recovery_complete_ap07_journey() {
@@ -89,7 +90,7 @@ fn six_axis_authority_and_theme_recovery_complete_ap07_journey() {
     let plan = super::switch_plan(&mut world, "theme.integrated.overlay", 7);
     world
         .host
-        .push_presentation(UiHostSurfacePresentationOutcome::PresentationIndeterminate);
+        .push_presentation(ScriptedPresentationOutcome::PresentationIndeterminate);
     let host = world.host.clone();
     super::lifecycle::recover_predecessor(
         UiThemeSwitchOutcome::from(

@@ -120,7 +120,7 @@ impl UiMountedIdentityState {
             .remove_with_work(&identity)
             .0;
         debug_assert!(removed);
-        if let Some(current) = self.current_receipt_basis.as_mut() {
+        if let Some(current) = self.frame.receipts_mut() {
             current.remove(identity);
         }
         self.pending_projection_changes

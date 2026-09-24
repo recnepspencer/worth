@@ -33,6 +33,7 @@ mod retained_regions;
 mod sample;
 #[cfg(feature = "certification-support")]
 mod sample_certification;
+mod settled_external_obligation;
 mod surface;
 pub(crate) mod surface_basis;
 mod surface_failure;
@@ -53,7 +54,7 @@ pub use appearance::{
     certify_mounted_surface_sample, UiNativeSurfaceSampleCertification,
     UiNativeSurfaceSampleCertificationDenial,
 };
-pub(crate) use completed_effects::UiNativePresentationEffects;
+pub(crate) use completed_effects::{UiNativePaintOutcome, UiNativePresentationEffects};
 pub(crate) use delta::{present_delta, UiNativeDeltaPresentation};
 pub(crate) use pending_settlement::{
     UiNativePendingDeltaSettlement, UiNativePendingSurfaceSettlement,
