@@ -16,6 +16,9 @@ use super::{
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
+mod temp_trace;
+use temp_trace::{PreparationPhase, PreparationProbe};
+
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema,
@@ -53,10 +56,14 @@ where
         ),
         WorthQueryApplicationQueryAdmissionDenial,
     > {
+        let mut probe = PreparationProbe::begin(query.name());
         validate_admission_request(controls.request_scope(), query.name())?;
         self.validate_installed_query(query)?;
+        probe.mark(PreparationPhase::Installed);
         self.validate_access_authority(query, access)?;
+        probe.mark(PreparationPhase::Access);
         validate_controls(query, &controls)?;
+        probe.mark(PreparationPhase::Controls);
         let parameters =
             admit_application_query_parameters(query, parameters).map_err(|denial| {
                 WorthQueryApplicationQueryAdmissionDenial::new(
@@ -64,6 +71,8 @@ where
                     denial.parameter(),
                 )
             })?;
+        probe.mark(PreparationPhase::Parameters);
+        probe.record();
         Ok((parameters, controls))
     }
 
