@@ -78,6 +78,8 @@ pub struct WorthQueryPrimaryGraphBootstrap<Schema> {
     pub(super) recovered_publication: Option<WorthQueryPrimaryGraphPublication>,
     recovered_relational_authority:
         Option<worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority>,
+    recovered_checkpoint_restore_work:
+        Option<worth_relational::facade::durability::CheckpointRestoreWork>,
     pub(super) mutation_handlers: super::handler::PendingMutationHandlerRegistry<Schema>,
     /// The initial program this installation activates, seeded before any
     /// ordinary bootstrap row so those rows are validated under its rules.
@@ -96,6 +98,12 @@ where
         &mut self,
     ) -> Option<worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority> {
         self.recovered_relational_authority.take()
+    }
+
+    pub(super) fn recovered_checkpoint_restore_work(
+        &self,
+    ) -> Option<worth_relational::facade::durability::CheckpointRestoreWork> {
+        self.recovered_checkpoint_restore_work
     }
 
     pub fn bind_principal<

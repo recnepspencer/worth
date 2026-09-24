@@ -205,6 +205,7 @@ pub(super) struct PublishedApplicationGraph<Bridge> {
     product_world_resources: crate::domain_computation::execution_runtime::product_world::WorthQueryProductWorldResources,
     recovered_relational_authority:
         Option<worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority>,
+    checkpoint_restore_work: Option<worth_relational::facade::durability::CheckpointRestoreWork>,
 }
 fn validate_application_schema<Schema>(
     runtime: &WorthQueryExecutionRuntime,
@@ -259,6 +260,7 @@ where
     let bridge_layout = std::sync::Arc::clone(&bootstrap.graph.layout);
     let product_world_resources = bootstrap.product_world_resources.clone();
     let recovered_relational_authority = bootstrap.take_recovered_relational_authority();
+    let checkpoint_restore_work = bootstrap.recovered_checkpoint_restore_work();
     let publication = bootstrap.publish(&mut runtime, &authority)?;
     let graph = runtime
         .retain_primary_graph_integration_handle()
@@ -313,6 +315,7 @@ where
         primary_graph_authority,
         product_world_resources,
         recovered_relational_authority,
+        checkpoint_restore_work,
     })
 }
 fn seal_application_graph(
@@ -337,5 +340,6 @@ fn seal_application_graph(
         primary_graph_authority: graph.primary_graph_authority,
         product_world_resources: graph.product_world_resources,
         recovered_relational_authority: graph.recovered_relational_authority,
+        checkpoint_restore_work: graph.checkpoint_restore_work,
     })
 }

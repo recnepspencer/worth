@@ -89,6 +89,7 @@ pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         WorthQueryInstalledApplicationSchema<Schema>,
     pub(super) application_readiness_schema_token: String,
     publication: WorthQueryPrimaryGraphPublication,
+    checkpoint_restore_work: Option<worth_relational::facade::durability::CheckpointRestoreWork>,
     pub(in crate::domain_computation) authorization: WorthQueryInstalledAuthorizationRegistry,
     pub(in crate::domain_computation) authorization_clock: Arc<WorthQueryRuntimeClock>,
     authentication_clock: WorthQueryAuthenticationClock,
@@ -211,6 +212,14 @@ where
 
     pub fn publication(&self) -> &WorthQueryPrimaryGraphPublication {
         &self.publication
+    }
+
+    /// Native checkpoint readmission work for this installation, if it was
+    /// restored. This is diagnostic only and grants no recovered authority.
+    pub fn checkpoint_restore_work(
+        &self,
+    ) -> Option<worth_relational::facade::durability::CheckpointRestoreWork> {
+        self.checkpoint_restore_work
     }
 
     /// Retains the opaque installation needed to bind Query maintenance to

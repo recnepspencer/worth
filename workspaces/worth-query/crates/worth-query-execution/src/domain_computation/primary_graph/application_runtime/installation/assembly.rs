@@ -84,6 +84,7 @@ where
         installed_schema,
         application_readiness_schema_token,
         publication: graph.publication,
+        checkpoint_restore_work: graph.checkpoint_restore_work,
         authorization,
         authorization_clock,
         authentication_clock: WorthQueryAuthenticationClock::system(),
