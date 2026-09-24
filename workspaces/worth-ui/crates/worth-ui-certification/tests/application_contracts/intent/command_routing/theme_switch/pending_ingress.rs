@@ -92,7 +92,6 @@ fn pending_posture_retains_native_input_until_physical_retry_settles() {
             worth_ui_host_native::UiNativePhysicalProgressGrant::from_certification(
                 worth_ui_host_native::UiNativePhysicalProgressClass::TextAtlas,
                 None,
-                false,
             ),
         );
     let receipt = match shell.progress_managed_rebind(&progress).unwrap() {

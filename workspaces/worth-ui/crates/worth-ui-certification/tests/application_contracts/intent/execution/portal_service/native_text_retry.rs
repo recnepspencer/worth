@@ -87,7 +87,6 @@ fn progressed_portal_consequence_retries_the_exact_text_frame_before_commit() {
             worth_ui_host_native::UiNativePhysicalProgressGrant::from_certification(
                 worth_ui_host_native::UiNativePhysicalProgressClass::Presentation,
                 None,
-                false,
             ),
         );
     let receipt = match shell.progress_managed_rebind(&progress).unwrap() {

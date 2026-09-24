@@ -70,7 +70,6 @@ pub(super) fn journey(
         worth_ui_host_native::UiNativePhysicalProgressGrant::from_certification(
             worth_ui_host_native::UiNativePhysicalProgressClass::Presentation,
             None,
-            false,
         ),
     );
     assert!(matches!(

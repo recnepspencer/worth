@@ -9,12 +9,11 @@ use worth_ui::facade::query_binding::{
 
 pub(crate) struct PlatformPulseQueryLifecycle {
     owner: WorthUiStatusSourceOwner,
-    initial: Option<UiProjectionObservation>,
     state: PlatformPulseQueryOwnerState,
 }
 
 enum PlatformPulseQueryOwnerState {
-    BeforeInitial,
+    BeforeInitial(UiProjectionObservation),
     AwaitingPublication(ExpectedPublication),
     Live,
     Indeterminate,
@@ -107,21 +106,21 @@ impl PlatformPulseQueryLifecycle {
     pub(crate) fn new(owner: WorthUiStatusSourceOwner, initial: UiProjectionObservation) -> Self {
         Self {
             owner,
-            initial: Some(initial),
-            state: PlatformPulseQueryOwnerState::BeforeInitial,
+            state: PlatformPulseQueryOwnerState::BeforeInitial(initial),
         }
     }
 
     pub(crate) fn issue_initial(
         &mut self,
     ) -> Result<UiProjectionObservation, PlatformPulseQueryLifecycleDenial> {
-        if !matches!(self.state, PlatformPulseQueryOwnerState::BeforeInitial) {
-            return Err(PlatformPulseQueryLifecycleDenial::InitialAlreadyIssued);
-        }
-        let initial = self
-            .initial
-            .take()
-            .ok_or(PlatformPulseQueryLifecycleDenial::InitialAlreadyIssued)?;
+        let initial = match std::mem::replace(&mut self.state, PlatformPulseQueryOwnerState::Closed)
+        {
+            PlatformPulseQueryOwnerState::BeforeInitial(initial) => initial,
+            state => {
+                self.state = state;
+                return Err(PlatformPulseQueryLifecycleDenial::InitialAlreadyIssued);
+            }
+        };
         self.retain_awaiting(&initial);
         Ok(initial)
     }

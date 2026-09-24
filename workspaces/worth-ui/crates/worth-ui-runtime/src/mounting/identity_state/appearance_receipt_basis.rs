@@ -59,19 +59,13 @@ impl UiMountedIdentityState {
         if current.basis.mount_incarnation() != incarnation {
             return Err(UiMountedAppearanceReceiptBasisDenial::CurrentIncarnationMismatch);
         }
-        let Some(publication) = self.current_publication.as_ref() else {
+        let Some(published) = self.frame.published() else {
             // advance_frame establishes candidate identities without presentation.
             return Ok(None);
         };
-        let receipts = self
-            .current_receipt_basis
-            .as_ref()
-            .ok_or(UiMountedAppearanceReceiptBasisDenial::MissingCurrentPublication)?;
-        if self.current_frame != Some(publication.frame())
-            || receipts.frame() != publication.frame()
-        {
+        if published.receipts.frame() != published.publication.frame() {
             return Err(UiMountedAppearanceReceiptBasisDenial::MissingCurrentPublication);
         }
-        Ok(receipts.receipt_for(instance))
+        Ok(published.receipts.receipt_for(instance))
     }
 }

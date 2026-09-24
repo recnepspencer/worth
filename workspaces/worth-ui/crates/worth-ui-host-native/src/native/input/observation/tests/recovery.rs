@@ -147,7 +147,7 @@ fn recovery_keeps_latest_modifiers_and_only_emits_completed_viewport() {
         assert_eq!(state.modifiers, UiHostKeyboardModifiers::default());
         if !completed {
             assert!(state.drain(HOST_SESSION).into_batches().is_empty());
-            assert!(state.profile_requires_completion);
+            assert!(state.profile.awaits_completion());
             assert!(state.record_completed_presentation(protocol(), HOST_SESSION, basis(2)));
         }
         let batches = state.drain(HOST_SESSION).into_batches();
@@ -167,6 +167,6 @@ fn recovery_keeps_latest_modifiers_and_only_emits_completed_viewport() {
             batches[0].reports()[0].sequence(),
             UiHostObservationSequence::new(17)
         );
-        assert!(!state.profile_requires_completion);
+        assert!(!state.profile.awaits_completion());
     }
 }

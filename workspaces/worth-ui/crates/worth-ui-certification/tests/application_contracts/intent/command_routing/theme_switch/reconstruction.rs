@@ -76,7 +76,6 @@ fn theme_reconstruction_publishes_successor_without_an_intermediate_predecessor(
                     worth_ui_host_native::UiNativePhysicalProgressGrant::from_certification(
                         worth_ui_host_native::UiNativePhysicalProgressClass::Presentation,
                         host.last_presentation_correlation(),
-                        false,
                     ),
                 );
             shell.progress_managed_rebind(&progress).unwrap()
@@ -268,7 +267,6 @@ fn physical_progress(
         worth_ui_host_native::UiNativePhysicalProgressGrant::from_certification(
             worth_ui_host_native::UiNativePhysicalProgressClass::Presentation,
             host.last_presentation_correlation(),
-            false,
         ),
     )
 }

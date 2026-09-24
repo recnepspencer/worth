@@ -116,7 +116,6 @@ fn native_indeterminate_portal_publication_reconstructs_and_settles_the_predeces
     let grant = worth_ui_host_native::UiNativePhysicalProgressGrant::from_certification(
         worth_ui_host_native::UiNativePhysicalProgressClass::PresentationRecovery,
         Some(correlation),
-        false,
     );
     let progress =
         worth_ui_runtime::native_platform::UiNativeApplicationPhysicalProgress::from_certification(
@@ -249,7 +248,6 @@ fn queued_escape_is_retained_while_portal_open_publication_is_in_flight() {
             worth_ui_host_native::UiNativePhysicalProgressGrant::from_certification(
                 worth_ui_host_native::UiNativePhysicalProgressClass::Presentation,
                 None,
-                false,
             ),
         );
     let progress = match shell.progress_managed_rebind(&progress).unwrap() {
@@ -263,8 +261,7 @@ fn queued_escape_is_retained_while_portal_open_publication_is_in_flight() {
             let text_progress = worth_ui_runtime::native_platform::UiNativeApplicationPhysicalProgress::from_certification(
                 worth_ui_host_native::UiNativePhysicalProgressGrant::from_certification(
                     worth_ui_host_native::UiNativePhysicalProgressClass::TextAtlas,
-                    None,
-                    false,
+                    None
                 ),
             );
             shell.progress_managed_rebind(&text_progress).unwrap()

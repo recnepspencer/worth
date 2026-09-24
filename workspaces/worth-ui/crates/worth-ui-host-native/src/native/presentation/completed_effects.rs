@@ -1,5 +1,26 @@
 use worth_ui_host_contract::{UiMountedCompletedEffects, UiMountedEffectFamily};
 
+/// Whether a presentation crossed the port and painted; only a painted
+/// presentation observed pixels.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum UiNativePaintOutcome {
+    Unpainted,
+    Painted { pixels: [[u8; 4]; 2] },
+}
+
+impl UiNativePaintOutcome {
+    pub(crate) const fn painted(self) -> bool {
+        matches!(self, Self::Painted { .. })
+    }
+
+    pub(crate) const fn pixels(self) -> Option<[[u8; 4]; 2]> {
+        match self {
+            Self::Painted { pixels } => Some(pixels),
+            Self::Unpainted => None,
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub(crate) struct UiNativePresentationEffects {
     native_paint: bool,

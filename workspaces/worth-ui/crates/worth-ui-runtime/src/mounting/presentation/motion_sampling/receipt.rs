@@ -85,7 +85,7 @@ impl UiPresentationMotionPresentedSurface {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct UiPresentationMotionInstallationReceipt {
-    sample: Option<UiPresentationMotionSampleReceipt>,
+    sample: UiPresentationMotionSampleReceipt,
     terminal: Option<UiPresentationMotionTerminalRequest>,
 }
 
@@ -347,13 +347,13 @@ impl UiPresentationMotionSamplingReceipt {
 
 impl UiPresentationMotionInstallationReceipt {
     pub(super) const fn new(
-        sample: Option<UiPresentationMotionSampleReceipt>,
+        sample: UiPresentationMotionSampleReceipt,
         terminal: Option<UiPresentationMotionTerminalRequest>,
     ) -> Self {
         Self { sample, terminal }
     }
 
-    pub(crate) const fn sample(self) -> Option<UiPresentationMotionSampleReceipt> {
+    pub(crate) const fn sample(self) -> UiPresentationMotionSampleReceipt {
         self.sample
     }
     pub(crate) const fn terminal(self) -> Option<UiPresentationMotionTerminalRequest> {

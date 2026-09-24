@@ -57,8 +57,8 @@ pub(crate) use graphics::QUALIFIED_DX12_PRESENTATION_SYSTEM;
 pub(crate) use graphics::{
     UiNativeDeviceGeneration, UiNativeGraphicsRecovery, UiNativeOwnedDevice,
 };
-pub(crate) use host_state::UiNativeHostState;
 pub use host_state::{UiNativeEffectPosture, UiNativePresentationEffectPhase};
+pub(crate) use host_state::{UiNativeHostState, UiNativePresentationOwners};
 pub(crate) use input::{
     UiNativeImeCompositionPosture, UiNativeInputObservationDisposition,
     UiNativeInputObservationState, UiNativePointerPositionWitness,

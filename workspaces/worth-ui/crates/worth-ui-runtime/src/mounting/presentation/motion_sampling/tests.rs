@@ -59,10 +59,7 @@ fn retargeting_continues_from_the_current_presentation_sample() {
         ),
     );
     let installed = current_sampler.install(current).unwrap();
-    assert_eq!(
-        installed.sample().unwrap().geometry().unwrap().components(),
-        mid
-    );
+    assert_eq!(installed.sample().geometry().unwrap().components(), mid);
 }
 
 #[test]

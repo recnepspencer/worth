@@ -59,7 +59,7 @@ fn managed_theme_indeterminacy_retains_recovery_then_allows_a_fresh_successor() 
         let correlation = host.last_presentation_correlation().unwrap();
         let progress = |class, correlation| {
             worth_ui_native_platform::UiNativeApplicationPhysicalProgress::from_certification(
-                UiNativePhysicalProgressGrant::from_certification(class, correlation, false),
+                UiNativePhysicalProgressGrant::from_certification(class, correlation),
             )
         };
         if delayed {
@@ -217,7 +217,7 @@ fn managed_rebind_recovery_survives_interrupted_reconstruction_and_shutdown() {
         }
         let progress = |class, correlation| {
             worth_ui_native_platform::UiNativeApplicationPhysicalProgress::from_certification(
-                UiNativePhysicalProgressGrant::from_certification(class, correlation, false),
+                UiNativePhysicalProgressGrant::from_certification(class, correlation),
             )
         };
         let outcome = shell

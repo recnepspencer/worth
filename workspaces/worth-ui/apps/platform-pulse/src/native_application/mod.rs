@@ -71,9 +71,7 @@ pub(crate) struct PlatformPulseApplicationRuntime {
     intent_evidence_index: intent::PlatformPulseIntentEvidenceIndex,
     native_input: input::PlatformPulseNativeInputIngress,
     publisher: PlatformPulseObservationPublisher,
-    terminal_error: Option<PlatformPulseTerminalError>,
-    observation_error: Option<PlatformPulseObservationPublicationDenial>,
-    terminal_reported: bool,
+    terminal: terminal_error::PlatformPulseTerminalPosture,
     visual_identity: PlatformPulseVisualIdentityExecution,
     intent_clock: intent::PlatformPulseIntentClock,
     presentation_tick: u64,
@@ -107,8 +105,16 @@ impl PlatformPulseApplicationRuntime {
         error: PlatformPulseTerminalError,
         observation: Result<(), PlatformPulseObservationPublicationDenial>,
     ) {
-        self.terminal_error = Some(error);
-        self.observation_error = observation.err();
+        // The first error stops Pulse; later failures are its consequences and
+        // must not replace it or reopen its report.
+        if self.terminal.is_stopped() {
+            return;
+        }
+        self.terminal = terminal_error::PlatformPulseTerminalPosture::Stopped {
+            error,
+            observation: observation.err(),
+            reported: false,
+        };
     }
 
     fn advance_visual_identity(&mut self) {
@@ -138,16 +144,19 @@ impl PlatformPulseApplicationRuntime {
     }
 
     pub(crate) fn report_terminal_error(&mut self) {
-        if self.terminal_reported {
+        let terminal_error::PlatformPulseTerminalPosture::Stopped {
+            error,
+            observation,
+            reported: reported @ false,
+        } = &mut self.terminal
+        else {
             return;
-        }
-        if let Some(error) = &self.terminal_error {
-            eprintln!("WORTH UI platform pulse stopped: {error}");
-        }
-        if let Some(error) = self.observation_error {
+        };
+        eprintln!("WORTH UI platform pulse stopped: {error}");
+        if let Some(error) = observation {
             eprintln!("WORTH UI platform pulse could not publish terminal evidence: {error:?}");
         }
-        self.terminal_reported = true;
+        *reported = true;
     }
 }
 

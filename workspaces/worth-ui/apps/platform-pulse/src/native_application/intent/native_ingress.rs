@@ -102,7 +102,7 @@ impl PlatformPulseApplicationRuntime {
         }
         for transition in ingress.into_transitions() {
             let Some(prepared) = self.prepare_ingress_intent_posture(transition) else {
-                if self.terminal_error.is_some() {
+                if self.terminal.is_stopped() {
                     break;
                 }
                 continue;
@@ -128,7 +128,7 @@ impl PlatformPulseApplicationRuntime {
             self.pending_native_publications
                 .push_front(PlatformPulsePendingNativePublication::Dismiss(dismissal));
         }
-        if self.terminal_error.is_none() {
+        if self.terminal.is_running() {
             self.advance_pending_native_publications(shell);
         }
     }

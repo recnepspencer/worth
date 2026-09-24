@@ -167,7 +167,6 @@ pub(crate) fn run_native_runtime_service_scenario() -> NativeRuntimeServiceEvide
     let grant = worth_ui_host_native::UiNativePhysicalProgressGrant::from_certification(
         worth_ui_host_native::UiNativePhysicalProgressClass::PresentationRecovery,
         Some(correlation),
-        false,
     );
     let progress =
         worth_ui_runtime::native_platform::UiNativeApplicationPhysicalProgress::from_certification(

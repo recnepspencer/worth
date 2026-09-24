@@ -84,7 +84,8 @@ fn prepared_authored_surface_binding_survives_allocation_and_exports_current_por
     let binding_commit = crate::runtime::portal::UiPortalOverlayBindingCommit::from_transition(
         &transition,
         Some(stage),
-    );
+    )
+    .expect("the test transition pairs its overlay binding stage");
     session
         .portal
         .as_mut()
@@ -126,7 +127,8 @@ fn prepared_authored_surface_binding_survives_allocation_and_exports_current_por
     let idempotent_commit = crate::runtime::portal::UiPortalOverlayBindingCommit::from_transition(
         &idempotent_transition,
         Some(idempotent_stage),
-    );
+    )
+    .expect("the test transition pairs its overlay binding stage");
     session
         .portal
         .as_mut()
@@ -237,7 +239,8 @@ fn retained_close_keeps_binding_until_terminal_portal_exit() {
     let open_commit = crate::runtime::portal::UiPortalOverlayBindingCommit::from_transition(
         &transition,
         Some(stage),
-    );
+    )
+    .expect("the test transition pairs its overlay binding stage");
     session
         .portal
         .as_mut()
@@ -260,6 +263,7 @@ fn retained_close_keeps_binding_until_terminal_portal_exit() {
     let transition = session.portal.as_ref().unwrap().prepare(close).unwrap();
     let binding_commit =
         crate::runtime::portal::UiPortalOverlayBindingCommit::from_transition(&transition, None)
+            .expect("the test transition pairs its overlay binding stage")
             .with_retained_exit(true);
     let (_, retention) = session
         .portal
@@ -294,6 +298,7 @@ fn retained_close_keeps_binding_until_terminal_portal_exit() {
         .unwrap();
     let terminal_commit =
         crate::runtime::portal::UiPortalOverlayBindingCommit::from_transition(&terminal, None)
+            .expect("the test transition pairs its overlay binding stage")
             .with_retained_exit(false);
     session
         .portal

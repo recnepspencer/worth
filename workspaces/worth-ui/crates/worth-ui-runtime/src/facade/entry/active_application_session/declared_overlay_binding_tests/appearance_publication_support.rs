@@ -291,7 +291,8 @@ pub(super) fn open_portal(
     let binding = crate::runtime::portal::UiPortalOverlayBindingCommit::from_transition(
         &transition,
         Some(stage),
-    );
+    )
+    .expect("the test transition pairs its overlay binding stage");
     session
         .portal
         .as_mut()

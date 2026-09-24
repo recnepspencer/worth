@@ -63,7 +63,7 @@ impl PlatformPulseApplicationRuntime {
             .is_some_and(|shell| shell.native_presentation_reconstruction_pending())
         {
             self.present();
-            if self.terminal_error.is_some()
+            if self.terminal.is_stopped()
                 || self.pending_frame_presentation.is_some()
                 || self
                     .shell
@@ -75,7 +75,7 @@ impl PlatformPulseApplicationRuntime {
         }
         let mut shell = self.take_runtime_shell();
         self.drain_native_observations(&mut shell);
-        if self.terminal_error.is_some()
+        if self.terminal.is_stopped()
             || self.pending_managed_rebind.is_some()
             || self.pending_frame_presentation.is_some()
             || !shell.native_frame_boundary_available()
@@ -85,7 +85,7 @@ impl PlatformPulseApplicationRuntime {
         }
         self.advance_pending_native_publications(&mut shell);
         self.shell = Some(shell);
-        if self.terminal_error.is_some()
+        if self.terminal.is_stopped()
             || self.pending_managed_rebind.is_some()
             || self.pending_frame_presentation.is_some()
         {
@@ -98,14 +98,14 @@ impl PlatformPulseApplicationRuntime {
             | intent::PlatformPulseIntentProductCycleOutcome::AwaitingExternal { .. } => {}
             intent::PlatformPulseIntentProductCycleOutcome::Interrupted { .. } => return,
         }
-        if self.terminal_error.is_some()
+        if self.terminal.is_stopped()
             || self.pending_managed_rebind.is_some()
             || self.pending_frame_presentation.is_some()
         {
             return;
         }
         self.poll_theme_preference();
-        if self.terminal_error.is_some() || self.pending_managed_rebind.is_some() {
+        if self.terminal.is_stopped() || self.pending_managed_rebind.is_some() {
             return;
         }
         self.poll_source();
@@ -117,7 +117,7 @@ impl PlatformPulseApplicationRuntime {
         self.advance_visual_identity();
         if product_turn_admitted_after_visual_readiness(
             self.startup_ready,
-            self.terminal_error.is_some(),
+            self.terminal.is_stopped(),
             self.pending_managed_rebind.is_some(),
             self.pending_frame_presentation.is_some(),
             self.visual_identity.retains_rebind_receipt(),
@@ -129,7 +129,7 @@ impl PlatformPulseApplicationRuntime {
     fn native_runtime_directive(
         &mut self,
     ) -> worth_ui_native_platform::UiNativeApplicationRuntimeDirective {
-        if self.terminal_error.is_some() {
+        if self.terminal.is_stopped() {
             self.report_terminal_error();
             worth_ui_native_platform::UiNativeApplicationRuntimeDirective::Close
         } else {
@@ -212,7 +212,7 @@ impl worth_ui_native_platform::UiNativeApplicationRuntime for PlatformPulseAppli
         }
         self.shell = Some(application);
         if owner_ordinal == 0 {
-            if self.terminal_error.is_none() {
+            if self.terminal.is_running() {
                 let copy = super::product_copy::install(
                     self.shell
                         .as_mut()
@@ -242,12 +242,12 @@ impl worth_ui_native_platform::UiNativeApplicationRuntime for PlatformPulseAppli
                             Ok(()),
                         ),
                     }
-                    if self.terminal_error.is_some() {
+                    if self.terminal.is_stopped() {
                         let directive = self.native_runtime_directive();
                         return Ok((self.take_runtime_shell(), directive));
                     }
                     self.publish_initial_projection();
-                    if self.terminal_error.is_none() {
+                    if self.terminal.is_running() {
                         self.startup_ready = true;
                     }
                     self.advance_visual_identity();

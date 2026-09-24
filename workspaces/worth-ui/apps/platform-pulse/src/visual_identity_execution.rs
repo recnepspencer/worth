@@ -8,6 +8,7 @@ use worth_ui::facade::inspection::{
 
 use crate::lifecycle_observation_publication::PlatformPulseObservationPublisher;
 
+mod activation;
 mod capture_restart;
 mod comparison;
 mod denial;
@@ -17,6 +18,7 @@ mod readiness;
 mod replacement;
 mod state_progression;
 
+pub(crate) use activation::PlatformPulseVisualIdentityExecution;
 use denial::PlatformPulseVisualCapturePhase;
 pub(crate) use denial::PlatformPulseVisualExecutionDenial;
 use state_progression::{
@@ -28,9 +30,10 @@ use state_progression::{
 const NATIVE_CAPTURE_POLL_INTERVAL: Duration = Duration::from_millis(1);
 const REPLACEMENT_FRAME_DEADLINE: Duration = Duration::from_secs(5);
 
-pub(crate) struct PlatformPulseVisualIdentityExecution {
-    state: Option<PlatformPulseVisualIdentityState>,
-    enabled: bool,
+/// The enabled visual identity journey. `Transitioning` stands in for the
+/// state while one transition owns it, so a reentrant transition is denied.
+pub(crate) struct PlatformPulseVisualIdentityJourney {
+    state: PlatformPulseVisualIdentityState,
     readiness: Option<readiness::PlatformPulseVisualReadiness>,
     queued_rebind: Option<worth_ui::facade::rebind::UiRebindReceipt>,
 }
@@ -90,34 +93,42 @@ struct PlatformPulseVisibleOverlay {
     replacement: replacement::PlatformPulseReplacementPosture,
 }
 
-impl PlatformPulseVisualIdentityExecution {
-    pub(crate) fn new() -> Self {
+impl PlatformPulseVisualIdentityJourney {
+    fn new() -> Self {
         Self {
-            state: Some(PlatformPulseVisualIdentityState::AwaitingFirstFrame),
-            enabled: std::env::var_os("WORTH_UI_VISUAL_IDENTITY_JOURNEY")
-                .is_some_and(|value| value == "1"),
+            state: PlatformPulseVisualIdentityState::AwaitingFirstFrame,
             readiness: None,
             queued_rebind: None,
         }
     }
 
-    pub(crate) fn install_readiness(
+    fn install_readiness(
         &mut self,
         signal: worth_ui_platform_pulse::PlatformPulseApplicationReadinessSignal,
     ) {
-        if self.enabled {
-            self.readiness = Some(readiness::PlatformPulseVisualReadiness::install(signal));
+        self.readiness = Some(readiness::PlatformPulseVisualReadiness::install(signal));
+    }
+
+    fn begin_transition(
+        &mut self,
+    ) -> Result<PlatformPulseVisualIdentityState, PlatformPulseVisualExecutionDenial> {
+        match std::mem::replace(
+            &mut self.state,
+            PlatformPulseVisualIdentityState::Transitioning,
+        ) {
+            PlatformPulseVisualIdentityState::Transitioning => {
+                Err(PlatformPulseVisualExecutionDenial::ReentrantTransition)
+            }
+            state => Ok(state),
         }
     }
 
     pub(crate) fn retains_rebind_receipt(&self) -> bool {
         self.queued_rebind.is_some()
             || matches!(
-                self.state.as_ref(),
-                Some(
-                    PlatformPulseVisualIdentityState::AwaitingComparison { .. }
-                        | PlatformPulseVisualIdentityState::Comparing(_)
-                )
+                &self.state,
+                PlatformPulseVisualIdentityState::AwaitingComparison { .. }
+                    | PlatformPulseVisualIdentityState::Comparing(_)
             )
     }
 
@@ -126,10 +137,7 @@ impl PlatformPulseVisualIdentityExecution {
         shell: &mut WorthUiNativeApplicationShell,
     ) -> Result<(), PlatformPulseVisualExecutionDenial> {
         self.queued_rebind.take();
-        let state = self
-            .state
-            .take()
-            .ok_or(PlatformPulseVisualExecutionDenial::ReentrantTransition)?;
+        let state = self.begin_transition()?;
         match state {
             PlatformPulseVisualIdentityState::ComparisonReady(retained)
             | PlatformPulseVisualIdentityState::AwaitingRefresh {
@@ -137,7 +145,7 @@ impl PlatformPulseVisualIdentityExecution {
                 ..
             } => {
                 shell.dispose_visual_snapshot(retained.snapshot);
-                self.state = Some(PlatformPulseVisualIdentityState::Retired);
+                self.state = PlatformPulseVisualIdentityState::Retired;
                 Ok(())
             }
             PlatformPulseVisualIdentityState::AwaitingFirstFrame
@@ -146,7 +154,7 @@ impl PlatformPulseVisualIdentityExecution {
             | PlatformPulseVisualIdentityState::Settling { .. }
             | PlatformPulseVisualIdentityState::Failed
             | PlatformPulseVisualIdentityState::Retired => {
-                self.state = Some(PlatformPulseVisualIdentityState::Retired);
+                self.state = PlatformPulseVisualIdentityState::Retired;
                 Ok(())
             }
             PlatformPulseVisualIdentityState::AwaitingComparison {
@@ -156,28 +164,28 @@ impl PlatformPulseVisualIdentityExecution {
             } => {
                 shell.dispose_visual_snapshot(predecessor.snapshot);
                 drop(rebind);
-                self.state = Some(PlatformPulseVisualIdentityState::Retired);
+                self.state = PlatformPulseVisualIdentityState::Retired;
                 Ok(())
             }
             PlatformPulseVisualIdentityState::Capturing(capture)
             | PlatformPulseVisualIdentityState::Rebasing(capture) => {
                 shell.cancel_visual_snapshot(capture.pending);
-                self.state = Some(PlatformPulseVisualIdentityState::Retired);
+                self.state = PlatformPulseVisualIdentityState::Retired;
                 Ok(())
             }
             PlatformPulseVisualIdentityState::Refreshing(refresh) => {
                 shell.cancel_visual_snapshot(refresh.capture.pending);
                 shell.dispose_visual_snapshot(refresh.predecessor.snapshot);
-                self.state = Some(PlatformPulseVisualIdentityState::Retired);
+                self.state = PlatformPulseVisualIdentityState::Retired;
                 Ok(())
             }
             PlatformPulseVisualIdentityState::Comparing(comparison) => {
                 comparison.cancel(shell);
-                self.state = Some(PlatformPulseVisualIdentityState::Retired);
+                self.state = PlatformPulseVisualIdentityState::Retired;
                 Ok(())
             }
             state => {
-                self.state = Some(state);
+                self.state = state;
                 Err(PlatformPulseVisualExecutionDenial::ShutdownNotQuiescent)
             }
         }
@@ -187,23 +195,16 @@ impl PlatformPulseVisualIdentityExecution {
         &mut self,
         now: Instant,
     ) -> Result<(), PlatformPulseVisualExecutionDenial> {
-        let state = self
-            .state
-            .take()
-            .ok_or(PlatformPulseVisualExecutionDenial::ReentrantTransition)?;
+        let state = self.begin_transition()?;
         if !matches!(state, PlatformPulseVisualIdentityState::AwaitingFirstFrame) {
-            self.state = Some(state);
+            self.state = state;
             return Err(PlatformPulseVisualExecutionDenial::InitialFrameAlreadyArmed);
-        }
-        if !self.enabled {
-            self.state = Some(PlatformPulseVisualIdentityState::Retired);
-            return Ok(());
         }
         let begin_at = now;
         let deadline = now
             .checked_add(REPLACEMENT_FRAME_DEADLINE)
             .ok_or(PlatformPulseVisualExecutionDenial::ClockOverflow)?;
-        self.state = Some(PlatformPulseVisualIdentityState::Settling { begin_at, deadline });
+        self.state = PlatformPulseVisualIdentityState::Settling { begin_at, deadline };
         self.schedule_wake(begin_at);
         Ok(())
     }
@@ -215,10 +216,7 @@ impl PlatformPulseVisualIdentityExecution {
         tick: &mut u64,
         now: Instant,
     ) -> Result<(), PlatformPulseVisualExecutionDenial> {
-        let state = self
-            .state
-            .replace(PlatformPulseVisualIdentityState::Transitioning)
-            .ok_or(PlatformPulseVisualExecutionDenial::ReentrantTransition)?;
+        let state = self.begin_transition()?;
         let next = match state {
             PlatformPulseVisualIdentityState::AwaitingCapture { budget } => {
                 advance_awaiting_capture(shell, *tick, now, budget)
@@ -248,23 +246,17 @@ impl PlatformPulseVisualIdentityExecution {
         _tick: u64,
         now: Instant,
     ) -> Result<(), PlatformPulseVisualExecutionDenial> {
-        if !self.enabled {
-            return Ok(());
-        }
         let deadline = replacement_frame_deadline(now)?;
-        let state = self
-            .state
-            .replace(PlatformPulseVisualIdentityState::Transitioning)
-            .ok_or(PlatformPulseVisualExecutionDenial::ReentrantTransition)?;
+        let state = self.begin_transition()?;
         let predecessor = match state {
             PlatformPulseVisualIdentityState::ComparisonReady(predecessor)
             | PlatformPulseVisualIdentityState::AwaitingRefresh { predecessor, .. } => predecessor,
             PlatformPulseVisualIdentityState::Retired
             | PlatformPulseVisualIdentityState::AwaitingRebase { .. } => {
                 drop(rebind);
-                self.state = Some(PlatformPulseVisualIdentityState::AwaitingRebase {
+                self.state = PlatformPulseVisualIdentityState::AwaitingRebase {
                     budget: capture_restart::PlatformPulseAwaitingCaptureBudget::fresh(deadline),
-                });
+                };
                 self.schedule_current_wake();
                 return Ok(());
             }
@@ -276,20 +268,20 @@ impl PlatformPulseVisualIdentityExecution {
             | PlatformPulseVisualIdentityState::Rebasing(_)
             | PlatformPulseVisualIdentityState::Refreshing(_)
             | PlatformPulseVisualIdentityState::Comparing(_)) => {
-                self.state = Some(state);
+                self.state = state;
                 self.queued_rebind = Some(rebind);
                 return Ok(());
             }
             state => {
-                self.state = Some(state);
+                self.state = state;
                 return Err(PlatformPulseVisualExecutionDenial::ReplacementBeforeOverlayClear);
             }
         };
-        self.state = Some(PlatformPulseVisualIdentityState::AwaitingComparison {
+        self.state = PlatformPulseVisualIdentityState::AwaitingComparison {
             predecessor,
             rebind,
             budget: capture_restart::PlatformPulseAwaitingCaptureBudget::fresh(deadline),
-        });
+        };
         self.schedule_current_wake();
         Ok(())
     }
@@ -301,11 +293,11 @@ impl PlatformPulseVisualIdentityExecution {
         now: Instant,
     ) -> Result<(), PlatformPulseVisualExecutionDenial> {
         if !matches!(
-            self.state.as_ref(),
-            Some(PlatformPulseVisualIdentityState::ComparisonReady(_))
-                | Some(PlatformPulseVisualIdentityState::AwaitingRefresh { .. })
-                | Some(PlatformPulseVisualIdentityState::Retired)
-                | Some(PlatformPulseVisualIdentityState::AwaitingRebase { .. })
+            &self.state,
+            PlatformPulseVisualIdentityState::ComparisonReady(_)
+                | PlatformPulseVisualIdentityState::AwaitingRefresh { .. }
+                | PlatformPulseVisualIdentityState::Retired
+                | PlatformPulseVisualIdentityState::AwaitingRebase { .. }
         ) {
             return Ok(());
         }
@@ -321,45 +313,44 @@ impl PlatformPulseVisualIdentityExecution {
     ) -> Result<(), PlatformPulseVisualExecutionDenial> {
         match next {
             Ok(next) => {
-                self.state = Some(next);
+                self.state = next;
                 self.schedule_current_wake();
                 Ok(())
             }
             Err(denial) => {
-                self.state = Some(PlatformPulseVisualIdentityState::Failed);
+                self.state = PlatformPulseVisualIdentityState::Failed;
                 Err(denial)
             }
         }
     }
 
     fn schedule_current_wake(&self) {
-        let deadline = match self.state.as_ref() {
-            Some(PlatformPulseVisualIdentityState::Settling { begin_at, .. }) => Some(*begin_at),
-            Some(PlatformPulseVisualIdentityState::Capturing(capture))
-            | Some(PlatformPulseVisualIdentityState::Rebasing(capture)) => Some(next_capture_wake(
+        let deadline = match &self.state {
+            PlatformPulseVisualIdentityState::Settling { begin_at, .. } => Some(*begin_at),
+            PlatformPulseVisualIdentityState::Capturing(capture)
+            | PlatformPulseVisualIdentityState::Rebasing(capture) => Some(next_capture_wake(
                 capture.deadline,
                 capture.replacement.is_pending(),
             )),
-            Some(PlatformPulseVisualIdentityState::AwaitingCapture { budget }) => {
+            PlatformPulseVisualIdentityState::AwaitingCapture { budget } => {
                 Some(next_frame_readiness_poll(budget.readiness_deadline()))
             }
-            Some(PlatformPulseVisualIdentityState::Refreshing(refresh)) => Some(next_capture_wake(
+            PlatformPulseVisualIdentityState::Refreshing(refresh) => Some(next_capture_wake(
                 refresh.capture.deadline,
                 refresh.capture.replacement.is_pending(),
             )),
-            Some(PlatformPulseVisualIdentityState::Comparing(comparison)) => Some(
-                next_capture_wake(comparison.deadline(), comparison.replacement_pending()),
-            ),
-            Some(PlatformPulseVisualIdentityState::AwaitingComparison { budget, .. }) => {
+            PlatformPulseVisualIdentityState::Comparing(comparison) => Some(next_capture_wake(
+                comparison.deadline(),
+                comparison.replacement_pending(),
+            )),
+            PlatformPulseVisualIdentityState::AwaitingComparison { budget, .. } => {
                 Some(next_frame_readiness_poll(budget.readiness_deadline()))
             }
-            Some(PlatformPulseVisualIdentityState::AwaitingRebase { budget })
-            | Some(PlatformPulseVisualIdentityState::AwaitingRefresh { budget, .. }) => {
+            PlatformPulseVisualIdentityState::AwaitingRebase { budget }
+            | PlatformPulseVisualIdentityState::AwaitingRefresh { budget, .. } => {
                 Some(next_frame_readiness_poll(budget.readiness_deadline()))
             }
-            Some(PlatformPulseVisualIdentityState::OverlayVisible(overlay)) => {
-                Some(overlay.clear_at)
-            }
+            PlatformPulseVisualIdentityState::OverlayVisible(overlay) => Some(overlay.clear_at),
             _ => None,
         };
         if let Some(deadline) = deadline {

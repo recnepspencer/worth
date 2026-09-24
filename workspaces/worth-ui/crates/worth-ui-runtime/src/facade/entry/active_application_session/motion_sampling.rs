@@ -194,37 +194,35 @@ impl super::WorthUiActiveApplicationSession {
     ) -> crate::certification_support::UiMotionPresentationCertificationSnapshot {
         let (active, retained, last_tick, sample, sampling_denials, last_denial) =
             self.mounted.motion_sampling_observation_for_certification();
-        let presentation = sample.and_then(|sample| {
-            sample
-                .geometry()
-                .map(|geometry| geometry.presentation_basis())
-        });
+        let sample =
+            sample.map(
+                |sample| crate::certification_support::UiMotionSampleCertification {
+                    placement: sample
+                        .geometry()
+                        .map(|geometry| (geometry.components(), geometry.presentation_basis())),
+                    opacity_units: sample.opacity_units(),
+                    hit_test_visible: sample.hit_test_visible(),
+                },
+            );
+        let presentation = sample
+            .and_then(|sample| sample.placement)
+            .map(|(_, presentation)| presentation);
         crate::certification_support::UiMotionPresentationCertificationSnapshot::new(
             active,
             retained,
             last_tick,
-            self.motion.as_ref().map_or(0, |motion| motion.publication_count()),
-            sample.and_then(|sample| sample.geometry().map(|geometry| geometry.components())),
-            sample.map(|sample| sample.opacity_units()),
-            sample.map(|sample| sample.hit_test_visible()),
-            presentation,
+            self.motion
+                .as_ref()
+                .map_or(0, |motion| motion.publication_count()),
+            sample,
             self.mounted.has_active_motion_samples(),
             presentation.is_none_or(|presentation| {
-                self.mounted.interaction_hit_test_basis(presentation).is_ok()
+                self.mounted
+                    .interaction_hit_test_basis(presentation)
+                    .is_ok()
             }),
             sampling_denials,
-            matches!(
-                last_denial,
-                Some(
-                    crate::mounting::presentation::motion_sampling::UiPresentationMotionSamplingDenial::NonMonotonicTick
-                )
-            ),
-            matches!(
-                last_denial,
-                Some(
-                    crate::mounting::presentation::motion_sampling::UiPresentationMotionSamplingDenial::PresentationTruthUnavailable
-                )
-            ),
+            last_denial,
         )
     }
 }

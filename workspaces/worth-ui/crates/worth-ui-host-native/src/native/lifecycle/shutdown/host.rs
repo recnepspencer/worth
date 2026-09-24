@@ -47,26 +47,17 @@ impl UiNativeShutdownPort for UiNativeHostShutdownPort<'_> {
                 .try_close(&mut self.state.resources)
                 .unwrap_or_else(|_| panic!("settled atlas pages must close"));
         }
-        match (
-            self.state.device.take(),
-            self.state.presentation_surface.take(),
-        ) {
-            (Some(device), Some(surface)) => {
-                if let Err(owners) = crate::native::lifecycle::close_platform_owners(
-                    device,
-                    surface,
-                    &mut self.state.resources,
-                ) {
-                    let (device, surface) = *owners;
-                    self.state.device = Some(device);
-                    self.state.presentation_surface = Some(surface);
-                    return false;
-                }
-            }
-            (None, None) => {}
-            (device, surface) => {
-                self.state.device = device;
-                self.state.presentation_surface = surface;
+        if let Some(crate::native::UiNativePresentationOwners { device, surface }) =
+            self.state.presentation_owners.take()
+        {
+            if let Err(owners) = crate::native::lifecycle::close_platform_owners(
+                device,
+                surface,
+                &mut self.state.resources,
+            ) {
+                let (device, surface) = *owners;
+                self.state.presentation_owners =
+                    Some(crate::native::UiNativePresentationOwners { device, surface });
                 return false;
             }
         }

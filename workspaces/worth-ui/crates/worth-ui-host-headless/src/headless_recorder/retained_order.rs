@@ -18,9 +18,25 @@ pub(super) struct UiHeadlessRetainedOrderSnapshot {
 
 struct OriginalOrderEntry {
     identity: UiMountedPaintOrderIdentity,
-    predecessor: Option<UiMountedPaintOrderIdentity>,
-    existed: bool,
-    rank: Option<usize>,
+    placement: OriginalOrderPlacement<UiMountedPaintOrderIdentity>,
+}
+
+/// Where an identity stood before the transaction, if it was ordered at all.
+enum OriginalOrderPlacement<Identity> {
+    Unordered,
+    Ranked {
+        rank: usize,
+        predecessor: Option<Identity>,
+    },
+}
+
+impl<Identity> OriginalOrderPlacement<Identity> {
+    const fn rank(&self) -> Option<usize> {
+        match self {
+            Self::Ranked { rank, .. } => Some(*rank),
+            Self::Unordered => None,
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -90,18 +106,21 @@ impl UiHeadlessRetainedOrder {
             if seen.insert(identity, ()).is_some() {
                 continue;
             }
-            let rank = self.index.rank(identity);
-            let predecessor = rank
-                .and_then(|value| value.checked_sub(1))
-                .and_then(|value| self.index.identity_at(value));
+            let placement = match self.index.rank(identity) {
+                Some(rank) => OriginalOrderPlacement::Ranked {
+                    rank,
+                    predecessor: rank
+                        .checked_sub(1)
+                        .and_then(|value| self.index.identity_at(value)),
+                },
+                None => OriginalOrderPlacement::Unordered,
+            };
             entries.push(OriginalOrderEntry {
                 identity,
-                predecessor,
-                existed: rank.is_some(),
-                rank,
+                placement,
             });
         }
-        entries.sort_unstable_by_key(|entry| entry.rank);
+        entries.sort_unstable_by_key(|entry| entry.placement.rank());
         UiHeadlessRetainedOrderSnapshot {
             entries,
             integrity: self.integrity,
@@ -117,8 +136,10 @@ impl UiHeadlessRetainedOrder {
                 self.index.remove(entry.identity);
             }
         }
-        for entry in snapshot.entries.into_iter().filter(|entry| entry.existed) {
-            self.insert_after(entry.identity, entry.predecessor)?;
+        for entry in snapshot.entries {
+            if let OriginalOrderPlacement::Ranked { predecessor, .. } = entry.placement {
+                self.insert_after(entry.identity, predecessor)?;
+            }
         }
         self.integrity = snapshot.integrity;
         Ok(())

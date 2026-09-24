@@ -127,23 +127,16 @@ impl UiNativeInputObservationState {
     pub(in crate::native::input) fn emit_profile_transition(
         &mut self,
     ) -> UiNativeInputObservationDisposition {
-        if self.profile_requires_completion {
-            self.profile_requires_completion = false;
-            self.profile_observation_pending = true;
-        }
+        self.profile.complete();
         self.emit_completed_profile_transition()
     }
 
     pub(super) fn emit_completed_profile_transition(
         &mut self,
     ) -> UiNativeInputObservationDisposition {
-        let Some(profile) = self.profile else {
+        let Some((profile, transition_tick)) = self.profile.pending_observation() else {
             return UiNativeInputObservationDisposition::Ignored;
         };
-        if !self.profile_observation_pending {
-            return UiNativeInputObservationDisposition::Ignored;
-        }
-        let transition_tick = self.profile_transition_tick.unwrap_or(self.event_tick);
         let disposition = self.emit_payloads_at(
             [
                 UiHostObservationPayload::Viewport {
@@ -163,8 +156,7 @@ impl UiNativeInputObservationState {
             transition_tick,
         );
         if disposition == UiNativeInputObservationDisposition::Retained {
-            self.profile_observation_pending = false;
-            self.profile_transition_tick = None;
+            self.profile.observed();
             self.evidence.record_profile_transition();
         }
         disposition

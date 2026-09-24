@@ -38,12 +38,19 @@ pub enum UiMountedAppearanceWorkPosture {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct UiMountedAppearanceWork {
     posture: UiMountedAppearanceWorkPosture,
-    predecessor: Option<crate::UiMountedFrameIdentity>,
-    predecessor_manifest: Option<UiMountedAppearancePredecessorManifest>,
+    predecessor: Option<AppearancePredecessor>,
     successor: UiMountedAppearanceFrame,
     changes: Box<[UiMountedAppearanceMechanicChange]>,
     damage: Box<[UiAppearanceDamageRegion]>,
     order_changed: bool,
+}
+
+/// A frame that follows another names it together with its manifest; neither
+/// exists without the other.
+#[derive(Clone, Debug, Eq, PartialEq)]
+struct AppearancePredecessor {
+    frame: crate::UiMountedFrameIdentity,
+    manifest: UiMountedAppearancePredecessorManifest,
 }
 
 impl UiMountedAppearancePredecessorManifest {
@@ -159,17 +166,18 @@ impl UiMountedAppearanceWork {
     ) -> Option<Self> {
         let changes = changes.into_iter().collect::<Vec<_>>();
         let damage = damage.into_iter().collect::<Vec<_>>();
-        if predecessor.is_some() != predecessor_manifest.is_some()
-            || !changes_are_structurally_valid(
-                posture,
-                predecessor_manifest.as_ref(),
-                &successor,
-                &changes,
-            )
-        {
+        let predecessor = match (predecessor, predecessor_manifest) {
+            (Some(frame), Some(manifest)) => Some(AppearancePredecessor { frame, manifest }),
+            (None, None) => None,
+            (Some(_), None) | (None, Some(_)) => return None,
+        };
+        let predecessor_manifest = predecessor
+            .as_ref()
+            .map(|predecessor| &predecessor.manifest);
+        if !changes_are_structurally_valid(posture, predecessor_manifest, &successor, &changes) {
             return None;
         }
-        let actual_order_changed = predecessor_manifest.as_ref().is_none_or(|manifest| {
+        let actual_order_changed = predecessor_manifest.is_none_or(|manifest| {
             manifest.overlay_order() != successor.overlay_order().bottom_to_top()
         });
         if order_changed != actual_order_changed {
@@ -198,7 +206,6 @@ impl UiMountedAppearanceWork {
         Some(Self {
             posture,
             predecessor,
-            predecessor_manifest,
             successor,
             changes: changes.into_boxed_slice(),
             damage: damage.into_boxed_slice(),
@@ -209,11 +216,15 @@ impl UiMountedAppearanceWork {
     pub const fn posture(&self) -> UiMountedAppearanceWorkPosture {
         self.posture
     }
-    pub const fn predecessor(&self) -> Option<crate::UiMountedFrameIdentity> {
+    pub fn predecessor(&self) -> Option<crate::UiMountedFrameIdentity> {
         self.predecessor
+            .as_ref()
+            .map(|predecessor| predecessor.frame)
     }
-    pub const fn predecessor_manifest(&self) -> Option<&UiMountedAppearancePredecessorManifest> {
-        self.predecessor_manifest.as_ref()
+    pub fn predecessor_manifest(&self) -> Option<&UiMountedAppearancePredecessorManifest> {
+        self.predecessor
+            .as_ref()
+            .map(|predecessor| &predecessor.manifest)
     }
     pub const fn successor(&self) -> &UiMountedAppearanceFrame {
         &self.successor

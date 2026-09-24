@@ -51,7 +51,7 @@ fn indeterminate_posture_recovers_predecessor_before_a_fresh_publication_or_shut
         let correlation = host.last_presentation_correlation().unwrap();
         let progress = |class, correlation| {
             worth_ui_native_platform::UiNativeApplicationPhysicalProgress::from_certification(
-                UiNativePhysicalProgressGrant::from_certification(class, Some(correlation), false),
+                UiNativePhysicalProgressGrant::from_certification(class, Some(correlation)),
             )
         };
         if delayed {

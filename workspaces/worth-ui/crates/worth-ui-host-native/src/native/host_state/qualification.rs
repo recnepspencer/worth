@@ -16,20 +16,43 @@ impl UiNativePresentationExternalQualification {
     }
 }
 
+/// A planned qualification fault fires once, at the ordinal the plan names.
+#[derive(Clone, Copy)]
+enum UiNativePlannedInjection {
+    Unplanned,
+    Armed { ordinal: u64 },
+    Spent,
+}
+
+impl UiNativePlannedInjection {
+    const fn from_plan(ordinal: Option<u64>) -> Self {
+        match ordinal {
+            Some(ordinal) => Self::Armed { ordinal },
+            None => Self::Unplanned,
+        }
+    }
+
+    const fn fires_at(self, current: u64) -> bool {
+        matches!(self, Self::Armed { ordinal } if ordinal == current)
+    }
+}
+
+/// A derived-state loss whose predecessor bindings have not all been restored.
+struct UiNativePendingReconstruction {
+    class: crate::UiNativeDerivedStateLossClass,
+    predecessors: BTreeSet<u64>,
+    successors: BTreeSet<u64>,
+}
+
 pub(crate) struct UiNativeQualificationState {
     deferred_presentations: [Option<u64>; 3],
-    duplicate_completion_presentation: Option<u64>,
-    duplicate_completion_observed: bool,
-    effects_indeterminate_presentation: Option<u64>,
+    duplicate_completion: UiNativePlannedInjection,
+    effects_indeterminate: UiNativePlannedInjection,
     presentation_submission_count: u64,
-    effects_indeterminate_observed: bool,
     derived_state_loss: Option<crate::UiNativeDerivedStateLossClass>,
-    derived_state_loss_after_completed_presentation: Option<u64>,
-    completed_derived_state_loss_applied: bool,
+    completed_derived_state_loss: UiNativePlannedInjection,
     derived_state_loss_pending: Option<crate::UiNativeDerivedStateLossClass>,
-    derived_state_reconstruction_pending: Option<crate::UiNativeDerivedStateLossClass>,
-    derived_state_reconstruction_predecessors: BTreeSet<u64>,
-    derived_state_reconstruction_successors: BTreeSet<u64>,
+    derived_state_reconstruction: Option<UiNativePendingReconstruction>,
     derived_state_loss_count: u64,
     derived_state_reconstruction_count: u64,
     surface_basis_successor:
@@ -40,18 +63,13 @@ impl UiNativeQualificationState {
     pub(super) const fn ordinary() -> Self {
         Self {
             deferred_presentations: [None, None, None],
-            duplicate_completion_presentation: None,
-            duplicate_completion_observed: false,
-            effects_indeterminate_presentation: None,
+            duplicate_completion: UiNativePlannedInjection::Unplanned,
+            effects_indeterminate: UiNativePlannedInjection::Unplanned,
             presentation_submission_count: 0,
-            effects_indeterminate_observed: false,
             derived_state_loss: None,
-            derived_state_loss_after_completed_presentation: None,
-            completed_derived_state_loss_applied: false,
+            completed_derived_state_loss: UiNativePlannedInjection::Unplanned,
             derived_state_loss_pending: None,
-            derived_state_reconstruction_pending: None,
-            derived_state_reconstruction_predecessors: BTreeSet::new(),
-            derived_state_reconstruction_successors: BTreeSet::new(),
+            derived_state_reconstruction: None,
             derived_state_loss_count: 0,
             derived_state_reconstruction_count: 0,
             surface_basis_successor: None,
@@ -61,19 +79,19 @@ impl UiNativeQualificationState {
     pub(super) fn from_plan(plan: crate::UiNativeQualificationPlan) -> Self {
         Self {
             deferred_presentations: plan.deferred_presentations(),
-            duplicate_completion_presentation: plan.duplicate_completion_presentation(),
-            duplicate_completion_observed: false,
-            effects_indeterminate_presentation: plan.effects_indeterminate_presentation(),
+            duplicate_completion: UiNativePlannedInjection::from_plan(
+                plan.duplicate_completion_presentation(),
+            ),
+            effects_indeterminate: UiNativePlannedInjection::from_plan(
+                plan.effects_indeterminate_presentation(),
+            ),
             presentation_submission_count: 0,
-            effects_indeterminate_observed: false,
             derived_state_loss: plan.derived_state_loss(),
-            derived_state_loss_after_completed_presentation: plan
-                .completed_derived_state_loss_ordinal(),
-            completed_derived_state_loss_applied: false,
+            completed_derived_state_loss: UiNativePlannedInjection::from_plan(
+                plan.completed_derived_state_loss_ordinal(),
+            ),
             derived_state_loss_pending: None,
-            derived_state_reconstruction_pending: None,
-            derived_state_reconstruction_predecessors: BTreeSet::new(),
-            derived_state_reconstruction_successors: BTreeSet::new(),
+            derived_state_reconstruction: None,
             derived_state_loss_count: 0,
             derived_state_reconstruction_count: 0,
             surface_basis_successor: plan.surface_basis_successor(),
@@ -91,10 +109,8 @@ impl UiNativeQualificationState {
         identity: super::super::physical_work_signal::UiNativePhysicalPresentationIdentity,
     ) -> UiNativePresentationExternalQualification {
         UiNativePresentationExternalQualification {
-            effects_indeterminate: !self.effects_indeterminate_observed
-                && self.effects_indeterminate_presentation == Some(identity.sequence()),
-            duplicate_completed: !self.duplicate_completion_observed
-                && self.duplicate_completion_presentation == Some(identity.sequence()),
+            effects_indeterminate: self.effects_indeterminate.fires_at(identity.sequence()),
+            duplicate_completed: self.duplicate_completion.fires_at(identity.sequence()),
         }
     }
 
@@ -105,9 +121,9 @@ impl UiNativeQualificationState {
         super::super::physical_work_signal::UiNativePhysicalSignalStatus,
         Option<crate::UiNativeDerivedStateLossClass>,
     )> {
-        (!self.effects_indeterminate_observed
-            && self.effects_indeterminate_presentation == Some(identity.sequence()))
-        .then_some((
+        self.effects_indeterminate
+            .fires_at(identity.sequence())
+            .then_some((
             super::super::physical_work_signal::UiNativePhysicalSignalStatus::EffectsIndeterminate,
             self.derived_state_loss,
         ))
@@ -117,8 +133,7 @@ impl UiNativeQualificationState {
         &self,
         identity: super::super::physical_work_signal::UiNativePhysicalPresentationIdentity,
     ) -> bool {
-        !self.duplicate_completion_observed
-            && self.duplicate_completion_presentation == Some(identity.sequence())
+        self.duplicate_completion.fires_at(identity.sequence())
     }
 
     pub(crate) fn commit_duplicate_completed_observation(
@@ -126,7 +141,7 @@ impl UiNativeQualificationState {
         identity: super::super::physical_work_signal::UiNativePhysicalPresentationIdentity,
     ) {
         assert!(self.should_duplicate_completed_observation(identity));
-        self.duplicate_completion_observed = true;
+        self.duplicate_completion = UiNativePlannedInjection::Spent;
     }
 
     pub(crate) fn commit_presentation_poll_override(
@@ -137,7 +152,7 @@ impl UiNativeQualificationState {
             self.presentation_poll_override(identity).is_some(),
             "only the selected owner observation may commit the qualification override"
         );
-        self.effects_indeterminate_observed = true;
+        self.effects_indeterminate = UiNativePlannedInjection::Spent;
         self.derived_state_loss_pending = self.derived_state_loss;
     }
 
@@ -151,16 +166,18 @@ impl UiNativeQualificationState {
         &self,
         completed_presentations: u64,
     ) -> Option<crate::UiNativeDerivedStateLossClass> {
-        (!self.completed_derived_state_loss_applied
-            && self.derived_state_loss_after_completed_presentation
-                == Some(completed_presentations))
-        .then_some(self.derived_state_loss)
-        .flatten()
+        self.completed_derived_state_loss
+            .fires_at(completed_presentations)
+            .then_some(self.derived_state_loss)
+            .flatten()
     }
 
     pub(crate) fn commit_completed_derived_state_loss(&mut self) {
-        assert!(!self.completed_derived_state_loss_applied);
-        self.completed_derived_state_loss_applied = true;
+        assert!(matches!(
+            self.completed_derived_state_loss,
+            UiNativePlannedInjection::Armed { .. }
+        ));
+        self.completed_derived_state_loss = UiNativePlannedInjection::Spent;
     }
 
     pub(crate) fn record_derived_state_loss(
@@ -170,26 +187,30 @@ impl UiNativeQualificationState {
     ) {
         assert_eq!(self.derived_state_loss, Some(class));
         assert!(!bindings.is_empty());
-        self.derived_state_reconstruction_pending = Some(class);
-        self.derived_state_reconstruction_predecessors = bindings;
-        self.derived_state_reconstruction_successors.clear();
+        self.derived_state_reconstruction = Some(UiNativePendingReconstruction {
+            class,
+            predecessors: bindings,
+            successors: BTreeSet::new(),
+        });
         self.derived_state_loss_count = self.derived_state_loss_count.saturating_add(1);
     }
 
-    pub(crate) const fn pending_reconstruction(
-        &self,
-    ) -> Option<crate::UiNativeDerivedStateLossClass> {
-        self.derived_state_reconstruction_pending
+    pub(crate) fn pending_reconstruction(&self) -> Option<crate::UiNativeDerivedStateLossClass> {
+        self.derived_state_reconstruction
+            .as_ref()
+            .map(|pending| pending.class)
     }
 
     pub(crate) fn record_derived_state_reconstruction(&mut self, binding: u64, restored: bool) {
-        if !restored || !self.derived_state_reconstruction_successors.insert(binding) {
+        let Some(pending) = self.derived_state_reconstruction.as_mut() else {
+            return;
+        };
+        if !restored || !pending.successors.insert(binding) {
             return;
         }
-        let _ = self.derived_state_reconstruction_predecessors.pop_first();
-        if self.derived_state_reconstruction_predecessors.is_empty()
-            && self.derived_state_reconstruction_pending.take().is_some()
-        {
+        let _ = pending.predecessors.pop_first();
+        if pending.predecessors.is_empty() {
+            self.derived_state_reconstruction = None;
             self.derived_state_reconstruction_count =
                 self.derived_state_reconstruction_count.saturating_add(1);
         }

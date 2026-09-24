@@ -73,25 +73,6 @@ fn physical_level_wake_coalesces_until_the_event_thread_consumes_it() {
 }
 
 #[test]
-fn level_grant_take_does_not_clear_pending_state_before_generation_validation() {
-    let registry = UiNativeReadinessRegistry::new();
-    let physical = registry.register_level().unwrap();
-    registry.signal_level(physical).unwrap();
-    registry.state.lock().unwrap().slots[physical.slot]
-        .as_mut()
-        .expect("registered level owner")
-        .pending_generation = None;
-
-    assert!(registry.take_level(physical).is_err());
-    let state = registry.state.lock().unwrap();
-    let slot = state.slots[physical.slot]
-        .as_ref()
-        .expect("failed take retains the registered owner");
-    assert!(slot.pending);
-    assert!(slot.pending_generation.is_none());
-}
-
-#[test]
 fn exact_closure_invalidates_all_owners_even_with_queued_readiness() {
     let registry = UiNativeReadinessRegistry::new();
     let application = registry.register().unwrap();

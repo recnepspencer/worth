@@ -122,8 +122,7 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
         let changed = self
             .shared
             .borrow_mut()
-            .presentation_surface
-            .as_mut()
+            .presentation_surface_mut()
             .map_or(Ok(false), |surface| surface.observe_occlusion(occluded));
         match changed {
             Ok(true) if occluded => {
@@ -182,21 +181,20 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
             let mut shared = self.shared.borrow_mut();
             let minimized = size.contains(&0);
             let UiNativeHostState {
-                device,
-                presentation_surface,
+                presentation_owners,
                 resources,
                 ..
             } = &mut *shared;
-            let changed = device.as_ref().zip(presentation_surface.as_mut()).map_or(
+            let changed = presentation_owners.as_mut().map_or(
                 Ok(false),
-                |(device, surface)| {
+                |crate::native::UiNativePresentationOwners { device, surface }| {
                     crate::native::lifecycle::resize_surface(device, surface, size, resources)
                 },
             );
             changed.map(|changed| {
-                let suspended = presentation_surface
+                let suspended = presentation_owners
                     .as_ref()
-                    .is_some_and(|surface| surface.state().suspended());
+                    .is_some_and(|owners| owners.surface.state().suspended());
                 (changed, suspended, minimized)
             })
         };
@@ -205,8 +203,7 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
                 let mut shared = self.shared.borrow_mut();
                 if minimized {
                     let _ = shared
-                        .presentation_surface
-                        .as_mut()
+                        .presentation_surface_mut()
                         .map(|surface| surface.observe_occlusion(true));
                 }
                 let transition = if minimized {
@@ -231,8 +228,7 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
         let scale_factor = self
             .shared
             .borrow()
-            .presentation_surface
-            .as_ref()
+            .presentation_surface()
             .map(|surface| surface.state().scale_factor());
         if let Some(scale_factor) = scale_factor {
             self.shared
@@ -260,14 +256,13 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
             let mut shared = self.shared.borrow_mut();
             let minimized = physical_size.is_some_and(|size| size.contains(&0));
             let UiNativeHostState {
-                device,
-                presentation_surface,
+                presentation_owners,
                 resources,
                 ..
             } = &mut *shared;
-            let changed = physical_size
-                .zip(device.as_ref().zip(presentation_surface.as_mut()))
-                .map_or(Ok(false), |(size, (device, surface))| {
+            let changed = physical_size.zip(presentation_owners.as_mut()).map_or(
+                Ok(false),
+                |(size, crate::native::UiNativePresentationOwners { device, surface })| {
                     crate::native::lifecycle::rebind_surface_scale(
                         device,
                         surface,
@@ -275,11 +270,12 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
                         size,
                         resources,
                     )
-                });
+                },
+            );
             changed.map(|changed| {
-                let suspended = presentation_surface
+                let suspended = presentation_owners
                     .as_ref()
-                    .is_some_and(|surface| surface.state().suspended());
+                    .is_some_and(|owners| owners.surface.state().suspended());
                 (changed, suspended, minimized)
             })
         };
@@ -288,8 +284,7 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
                 let mut shared = self.shared.borrow_mut();
                 if minimized {
                     let _ = shared
-                        .presentation_surface
-                        .as_mut()
+                        .presentation_surface_mut()
                         .map(|surface| surface.observe_occlusion(true));
                 }
                 let transition = if minimized {

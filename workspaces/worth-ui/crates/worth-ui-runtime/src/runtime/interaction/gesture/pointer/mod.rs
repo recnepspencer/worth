@@ -43,7 +43,7 @@ impl UiPointerGestureRuntimeState {
             counters: Default::default(),
             appearance_revision: 0,
             appearance_enabled,
-            scroll_chrome: Default::default(),
+            scroll_chrome: scroll_chrome_latch::UiScrollChromeLatchState::idle(),
         }
     }
 

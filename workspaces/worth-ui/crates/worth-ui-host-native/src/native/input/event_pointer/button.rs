@@ -46,6 +46,7 @@ fn event_position(
     };
     let profile = state
         .profile
+        .profile()
         .ok_or(UiNativeInputObservationStop::MissingEventProfile)?;
     pointer::logical_position(position, profile.scale_factor).map_err(|denial| match denial {
         pointer::UiNativePointerCoordinateDenial::NotFinite => {

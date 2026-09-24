@@ -112,6 +112,9 @@ impl WorthUiApplicationSessionState {
     where
         Authority: crate::runtime::session::service_proposal::UiServiceRequestOriginAuthority,
     {
+        if overlay_binding_stage.is_some() && !transition.opens_portal() {
+            return Err(UiPortalProposalPreparationDenial::CloseCarriesOverlayBindingStage);
+        }
         let coherence = request.coherence();
         let portal_family =
             crate::runtime::portal::UiStagedPortalServiceProposal::family_proposal(&transition);

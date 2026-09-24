@@ -3,8 +3,8 @@ impl super::UiMountedIdentityState {
         &self,
         owners: &crate::runtime::appearance::UiPreparedRetainedAppearanceOwnerSuccession,
     ) -> bool {
-        self.current_projection
-            .as_ref()
+        self.frame
+            .projection()
             .is_none_or(|owner| owner.admits_retained_appearance_generation(owners))
     }
 
@@ -12,7 +12,7 @@ impl super::UiMountedIdentityState {
         &mut self,
         owners: &crate::runtime::appearance::UiPreparedRetainedAppearanceOwnerSuccession,
     ) {
-        if let Some(owner) = self.current_projection.as_mut() {
+        if let Some(owner) = self.frame.projection_mut() {
             std::rc::Rc::make_mut(owner).commit_retained_appearance_generation(owners);
         }
     }

@@ -13,7 +13,7 @@ impl PlatformPulseApplicationRuntime {
         &mut self,
         shell: &mut WorthUiNativeApplicationShell,
     ) {
-        while self.terminal_error.is_none()
+        while self.terminal.is_running()
             && !self.visual_identity.retains_rebind_receipt()
             && self.pending_managed_rebind.is_none()
             && self.pending_frame_presentation.is_none()

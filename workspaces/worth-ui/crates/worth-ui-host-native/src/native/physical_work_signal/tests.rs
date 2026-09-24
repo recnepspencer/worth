@@ -13,7 +13,7 @@ mod request_locality;
 pub(super) fn one_runtime_owns_signal_admission_completion_and_quiescent_shutdown() {
     let mut owner = UiNativePhysicalSignalOwner::new();
     let runtime_identity = owner.observation().runtime;
-    let initial_telemetry = owner.worker.as_ref().unwrap().telemetry();
+    let initial_telemetry = owner.runtime.worker().unwrap().telemetry();
     let pending = UiGlyphRasterTransactionPending::from_text_mechanics(
         UiGlyphRasterDemandIdentity::from_text_mechanics([31; 32]),
         2,
@@ -33,7 +33,7 @@ pub(super) fn one_runtime_owns_signal_admission_completion_and_quiescent_shutdow
         UiNativePhysicalSignalSettlement::Completed
     );
 
-    let completed = owner.worker.as_ref().unwrap().telemetry();
+    let completed = owner.runtime.worker().unwrap().telemetry();
     assert!(
         completed.resource.resource_request_admission_count
             > initial_telemetry.resource.resource_request_admission_count

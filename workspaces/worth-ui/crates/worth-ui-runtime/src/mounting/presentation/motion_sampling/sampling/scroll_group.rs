@@ -33,11 +33,12 @@ impl UiMountedMotionSampler {
         if target.scope() != UiMotionTargetScope::ScrollContents {
             return None;
         }
-        let state = self.tracks.get(&target)?;
-        if !state.presented {
-            return None;
-        }
-        let components = state.current?.geometry()?.components();
+        let components = self
+            .tracks
+            .get(&target)?
+            .on_screen()?
+            .geometry()?
+            .components();
         Some([components[0], components[1]])
     }
 }

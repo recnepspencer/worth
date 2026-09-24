@@ -43,8 +43,9 @@ pub(crate) struct UiMountedAppearanceFrameState {
     epoch: Option<UiMountedAppearanceEpoch>,
     batch: Option<UiAppearanceInvalidationBatch>,
     capacity_error: Option<UiAppearanceStateCapacityExceeded>,
-    reconstruction_nodes: Option<Vec<super::UiMountedAppearanceNodeInputContext>>,
-    reconstruction_complete: bool,
+    reconstruction: Option<UiPendingAppearanceReconstruction>,
+    /// Overlay lowering pays its share of a reconstruction on its own pass,
+    /// after node lowering has already consumed `reconstruction`.
     reconstruct_overlays: bool,
     input_refresh_nodes: Vec<super::UiMountedAppearanceNodeInputContext>,
     selection: Rc<UiMountedAppearanceProjectionSelection>,
@@ -62,6 +63,14 @@ pub(crate) struct UiMountedAppearanceFrameState {
     scroll_chrome: scroll_chrome::UiMountedAppearanceScrollChromeState,
 }
 
+/// Nodes a reconstruction relowers; `complete` when it covers every surface
+/// rather than only the surfaces whose bindings were replaced.
+#[derive(Clone)]
+pub(super) struct UiPendingAppearanceReconstruction {
+    pub(super) nodes: Vec<super::UiMountedAppearanceNodeInputContext>,
+    pub(super) complete: bool,
+}
+
 impl Default for UiMountedAppearanceFrameState {
     fn default() -> Self {
         Self {
@@ -70,8 +79,7 @@ impl Default for UiMountedAppearanceFrameState {
             epoch: None,
             batch: None,
             capacity_error: None,
-            reconstruction_nodes: None,
-            reconstruction_complete: false,
+            reconstruction: None,
             reconstruct_overlays: false,
             input_refresh_nodes: Vec::new(),
             selection: Rc::new(UiMountedAppearanceProjectionSelection::empty()),
@@ -182,8 +190,7 @@ impl UiMountedAppearanceFrameState {
                 .unwrap_or_default(),
             batch: None,
             capacity_error: None,
-            reconstruction_nodes: None,
-            reconstruction_complete: false,
+            reconstruction: None,
             reconstruct_overlays: false,
             input_refresh_nodes: Vec::new(),
             selection,
@@ -220,8 +227,10 @@ impl UiMountedAppearanceFrameState {
         &mut self,
         nodes: Vec<super::UiMountedAppearanceNodeInputContext>,
     ) {
-        self.reconstruction_nodes = Some(nodes);
-        self.reconstruction_complete = true;
+        self.reconstruction = Some(UiPendingAppearanceReconstruction {
+            nodes,
+            complete: true,
+        });
         self.reconstruct_overlays = true;
     }
 
@@ -229,8 +238,10 @@ impl UiMountedAppearanceFrameState {
         &mut self,
         nodes: Vec<super::UiMountedAppearanceNodeInputContext>,
     ) {
-        self.reconstruction_nodes = Some(nodes);
-        self.reconstruction_complete = false;
+        self.reconstruction = Some(UiPendingAppearanceReconstruction {
+            nodes,
+            complete: false,
+        });
         self.reconstruct_overlays = true;
     }
 
@@ -319,7 +330,7 @@ impl UiMountedAppearanceFrameState {
     }
 
     pub(super) fn has_pending_lowering(&self) -> bool {
-        self.reconstruction_nodes.is_some()
+        self.reconstruction.is_some()
             || !self.input_refresh_nodes.is_empty()
             || self.scroll_chrome.has_pending()
             || self.members.has_pending_lowering()
@@ -336,9 +347,9 @@ impl UiMountedAppearanceFrameState {
             worth_ui_host_contract::UiMountedInstanceIdentity,
         ),
     > + '_ {
-        self.reconstruction_nodes
+        self.reconstruction
             .iter()
-            .flatten()
+            .flat_map(|reconstruction| &reconstruction.nodes)
             .chain(&self.input_refresh_nodes)
             .map(|node| (node.semantic_surface, node.mounted_instance))
     }

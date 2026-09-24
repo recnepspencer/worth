@@ -14,7 +14,7 @@ pub use recovery::{UiNativeInputRecoveryAcknowledgement, UiNativeInputRecoveryGr
 const INPUT_OBSERVATION_HISTORY_CAPACITY: usize = 64;
 
 use super::pointer;
-use super::profile::{event_profile, UiNativeEventProfile};
+use super::profile::{event_profile, UiNativeProfilePosture};
 pub use super::report::{
     UiNativeInputObservationEventFamily, UiNativeInputObservationReport,
     UiNativeInputObservationStop,
@@ -45,10 +45,7 @@ pub(crate) struct UiNativeInputObservationState {
     )>,
     pub(super) input_recipient: Option<worth_ui_host_contract::UiHostInputRecipientBindingReceipt>,
     pending_presentations: BTreeMap<u64, UiNativePendingPresentationContext>,
-    pub(super) profile: Option<UiNativeEventProfile>,
-    pub(super) profile_requires_completion: bool,
-    pub(super) profile_observation_pending: bool,
-    pub(super) profile_transition_tick: Option<u64>,
+    pub(super) profile: UiNativeProfilePosture,
     pub(super) ime_composition_active: bool,
     pub(super) ime_enabled: bool,
     pub(super) pointer: pointer::UiNativePointerState,
@@ -71,10 +68,7 @@ impl UiNativeInputObservationState {
             completed: None,
             input_recipient: None,
             pending_presentations: BTreeMap::new(),
-            profile: None,
-            profile_requires_completion: false,
-            profile_observation_pending: false,
-            profile_transition_tick: None,
+            profile: UiNativeProfilePosture::Unknown,
             ime_composition_active: false,
             ime_enabled: false,
             pointer: pointer::UiNativePointerState::new(),
@@ -92,7 +86,7 @@ impl UiNativeInputObservationState {
 
     pub(crate) fn install_initial_profile(&mut self, scale_factor: f64, physical_size: [u32; 2]) {
         match event_profile(scale_factor, physical_size) {
-            Ok(profile) => self.profile = Some(profile),
+            Ok(profile) => self.profile = self.profile.with_profile(profile),
             Err(stop) => self.record_terminal_stop(stop),
         }
     }
@@ -130,16 +124,7 @@ impl UiNativeInputObservationState {
                 return;
             }
         };
-        let changed = self.profile.is_none_or(|previous| {
-            previous.scale_micros != profile.scale_micros
-                || previous.physical_size != profile.physical_size
-        });
-        self.profile = Some(profile);
-        if changed {
-            self.profile_requires_completion = true;
-            self.profile_observation_pending = false;
-            self.profile_transition_tick = Some(event_tick);
-        }
+        self.profile.observe(profile, event_tick);
     }
 
     pub(crate) fn record_completed_presentation(
@@ -287,11 +272,8 @@ impl UiNativeInputObservationState {
         self.pending_presentations.clear();
         self.completed = None;
         self.input_recipient = None;
-        self.profile = None;
+        self.profile = UiNativeProfilePosture::Unknown;
         self.active_host_session = None;
-        self.profile_requires_completion = false;
-        self.profile_observation_pending = false;
-        self.profile_transition_tick = None;
         self.ime_composition_active = false;
         self.ime_enabled = false;
         self.pointer.reset();
@@ -352,9 +334,12 @@ impl UiNativeInputObservationState {
         }
         match self.active_host_session {
             None => {
-                let profile = self.profile;
+                let profile = self.profile.profile();
                 self.reset_session_state();
-                self.profile = profile;
+                self.profile = profile.map_or(
+                    UiNativeProfilePosture::Unknown,
+                    UiNativeProfilePosture::Current,
+                );
                 self.active_host_session = Some(host_session);
                 true
             }
@@ -370,10 +355,7 @@ impl UiNativeInputObservationState {
         self.completed = None;
         self.input_recipient = None;
         self.pending_presentations.clear();
-        self.profile = None;
-        self.profile_requires_completion = false;
-        self.profile_observation_pending = false;
-        self.profile_transition_tick = None;
+        self.profile = UiNativeProfilePosture::Unknown;
         self.ime_composition_active = false;
         self.ime_enabled = false;
         self.pointer.reset();

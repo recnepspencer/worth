@@ -132,7 +132,6 @@ fn anchor_loss_defers_native_unmount_until_portal_dismissal_is_physically_commit
         worth_ui_host_native::UiNativePhysicalProgressGrant::from_certification(
             worth_ui_host_native::UiNativePhysicalProgressClass::Presentation,
             None,
-            false,
         ),
     );
     assert!(matches!(

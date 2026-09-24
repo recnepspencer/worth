@@ -87,7 +87,7 @@ impl UiNativeRetainedDrawList {
             source_glyph_runs,
             &[],
             super::super::retained_regions::UiNativeRetainedRegions::paint_only(source_commands),
-            super::super::identity_overlay::UiNativeRetainedIdentityOverlay::default(),
+            super::super::identity_overlay::UiNativeRetainedIdentityOverlay::Absent,
         )
     }
 

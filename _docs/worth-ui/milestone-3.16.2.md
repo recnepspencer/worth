@@ -55,7 +55,8 @@ have no `Default`, no boolean-plus-optional pairs, and no constructor that picks
 a variant silently. Every construction and fork site names its variant, so a
 new variant or field breaks each site until it is propagated (law 9). Review
 converts or explicitly justifies every `bool` and `Option` field in the covered
-owners that qualifies another field.
+owners that qualifies another field; the
+[requirement 2 review](milestone-3.16.2-r2-review.md) records each one.
 
 **3. Only the host can say a frame is on screen.** A presented-frame witness
 (name illustrative) is minted only by host physical-completion acknowledgement
@@ -96,9 +97,9 @@ the AGENTS.md three-question rule and is recorded before design.
   that surface, one owed settle per semantic surface, and is paid there while
   the host still shows its generation, or released when it does not. A Motion
   tick pays what is owed: every surface's settle when it commits no pixels, and
-  every other surface's once its own committed settle lands. Readers read the retained record that the witness
-  wrote. A basis a host reports on an observation only selects which record to
-  read.
+  every other surface's once its own committed settle lands. Readers read the
+  retained record that the witness wrote. A basis a host reports on an
+  observation only selects which record to read.
 - **Scripted, headless, and certification hosts.** They acknowledge the view or
   token they were issued. Certification witnesses run the same issue,
   acknowledge, and admit path. Evidence that measures the Motion sampler alone,

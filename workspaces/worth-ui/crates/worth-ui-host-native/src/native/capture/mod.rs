@@ -28,18 +28,14 @@ pub(crate) fn observe(
 ) -> worth_ui_host_contract::UiHostCaptureObservationOutcome {
     let outcome = {
         let crate::native::UiNativeHostState {
-            device,
-            presentation_surface,
+            presentation_owners,
             captures,
             resources,
             ..
         } = state;
-        let access = device
+        let access = presentation_owners
             .as_ref()
-            .zip(presentation_surface.as_ref())
-            .map(|(device, surface)| {
-                crate::native::UiNativePresentationAccess::new(device, surface)
-            });
+            .map(crate::native::UiNativePresentationOwners::access);
         captures.observe(access.as_ref(), resources, request)
     };
     collect_settled_graphics_generations(state);
@@ -52,18 +48,14 @@ pub(crate) fn cancel(
 ) -> worth_ui_host_contract::UiHostCaptureCancellationOutcome {
     let outcome = {
         let crate::native::UiNativeHostState {
-            device,
-            presentation_surface,
+            presentation_owners,
             captures,
             resources,
             ..
         } = state;
-        let access = device
+        let access = presentation_owners
             .as_ref()
-            .zip(presentation_surface.as_ref())
-            .map(|(device, surface)| {
-                crate::native::UiNativePresentationAccess::new(device, surface)
-            });
+            .map(crate::native::UiNativePresentationOwners::access);
         captures.cancel(access.as_ref(), resources, request)
     };
     collect_settled_graphics_generations(state);
@@ -73,19 +65,19 @@ pub(crate) fn cancel(
 pub(crate) fn close(state: &mut crate::native::UiNativeHostState) -> bool {
     let crate::native::UiNativeHostState {
         captures,
-        device,
-        presentation_surface,
+        presentation_owners,
         resources,
         ..
     } = state;
-    let access = device
+    let access = presentation_owners
         .as_ref()
-        .zip(presentation_surface.as_ref())
-        .map(|(device, surface)| crate::native::UiNativePresentationAccess::new(device, surface));
+        .map(crate::native::UiNativePresentationOwners::access);
     captures.close(access.as_ref(), resources);
     let settled = captures.is_settled();
     if settled {
-        if let Some(device) = device.as_mut() {
+        if let Some(crate::native::UiNativePresentationOwners { device, .. }) =
+            presentation_owners.as_mut()
+        {
             let _ = crate::native::lifecycle::collect_settled_device_generations(device, resources);
         }
     }
@@ -93,7 +85,9 @@ pub(crate) fn close(state: &mut crate::native::UiNativeHostState) -> bool {
 }
 
 fn collect_settled_graphics_generations(state: &mut crate::native::UiNativeHostState) {
-    if let Some(device) = state.device.as_mut() {
+    if let Some(crate::native::UiNativePresentationOwners { device, .. }) =
+        state.presentation_owners.as_mut()
+    {
         let _ = crate::native::lifecycle::collect_settled_device_generations(
             device,
             &mut state.resources,

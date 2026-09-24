@@ -69,10 +69,12 @@ pub(super) fn finish<'session>(
                         .expect("admitted dismissal retains Motion installation"),
                 )
                 .expect("published dismissal retains exact service proposal");
-            let binding_commit = binding_commit.with_retained_exit(exit_retention.is_some());
-            admitted
-                .session
-                .commit_authored_overlay_binding(binding_commit)
+            binding_commit
+                .and_then(|commit| {
+                    admitted.session.commit_authored_overlay_binding(
+                        commit.with_retained_exit(exit_retention.is_some()),
+                    )
+                })
                 .expect("published dismissal retains its exact overlay binding stage");
             admitted
                 .session

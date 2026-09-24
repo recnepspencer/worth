@@ -28,7 +28,9 @@ impl UiNativeHostState {
         };
         let signal_settlement = self.physical_signal.reconcile(polled.observation);
         let progress = self.settle_presentation_signal(identity, polled.ready, signal_settlement);
-        if let Some(device) = self.device.as_mut() {
+        if let Some(crate::native::UiNativePresentationOwners { device, .. }) =
+            self.presentation_owners.as_mut()
+        {
             let _ = crate::native::lifecycle::collect_settled_device_generations(
                 device,
                 &mut self.resources,

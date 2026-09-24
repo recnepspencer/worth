@@ -29,10 +29,12 @@ pub(super) fn settle_published_portal_proposal(
                 .expect("staged proposal retains Motion installation"),
         )
         .expect("exact staged portal proposal accepts its publication receipt");
-    let binding_commit = binding_commit.with_retained_exit(exit_retention.is_some());
-    admitted
-        .session
-        .commit_authored_overlay_binding(binding_commit)
+    binding_commit
+        .and_then(|commit| {
+            admitted.session.commit_authored_overlay_binding(
+                commit.with_retained_exit(exit_retention.is_some()),
+            )
+        })
         .expect("published Portal transition retains its exact overlay binding stage");
     admitted
         .session

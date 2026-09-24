@@ -39,8 +39,10 @@ pub struct UiHeadlessAppearanceFrameTranscript {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct UiHeadlessAppearanceWorkTranscript {
     posture: worth_ui_host_contract::UiMountedAppearanceWorkPosture,
-    predecessor: Option<worth_ui_host_contract::UiMountedFrameIdentity>,
-    predecessor_manifest: Option<UiMountedAppearancePredecessorManifest>,
+    predecessor: Option<(
+        worth_ui_host_contract::UiMountedFrameIdentity,
+        UiMountedAppearancePredecessorManifest,
+    )>,
     successor: UiHeadlessAppearanceFrameTranscript,
     changes: Box<[UiHeadlessAppearanceMechanicChange]>,
     damage: Box<[UiAppearanceDamageRegion]>,
@@ -157,8 +159,7 @@ impl UiHeadlessAppearanceWorkTranscript {
     ) -> Option<Self> {
         Some(Self {
             posture: work.posture(),
-            predecessor: work.predecessor(),
-            predecessor_manifest: work.predecessor_manifest().cloned(),
+            predecessor: work.predecessor().zip(work.predecessor_manifest().cloned()),
             successor: UiHeadlessAppearanceFrameTranscript::from_mounted(work.successor())?,
             changes: work::translate_changes(work.changes()),
             damage: work.damage().to_vec().into_boxed_slice(),
@@ -171,12 +172,12 @@ impl UiHeadlessAppearanceWorkTranscript {
         self.posture
     }
 
-    pub const fn predecessor(&self) -> Option<worth_ui_host_contract::UiMountedFrameIdentity> {
-        self.predecessor
+    pub fn predecessor(&self) -> Option<worth_ui_host_contract::UiMountedFrameIdentity> {
+        self.predecessor.as_ref().map(|(frame, _)| *frame)
     }
 
     pub fn predecessor_manifest(&self) -> Option<&UiMountedAppearancePredecessorManifest> {
-        self.predecessor_manifest.as_ref()
+        self.predecessor.as_ref().map(|(_, manifest)| manifest)
     }
 
     pub fn successor(&self) -> &UiHeadlessAppearanceFrameTranscript {

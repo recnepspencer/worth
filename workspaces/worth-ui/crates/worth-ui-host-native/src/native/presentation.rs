@@ -54,7 +54,7 @@ pub use appearance::{
     certify_mounted_surface_sample, UiNativeSurfaceSampleCertification,
     UiNativeSurfaceSampleCertificationDenial,
 };
-pub(crate) use completed_effects::UiNativePresentationEffects;
+pub(crate) use completed_effects::{UiNativePaintOutcome, UiNativePresentationEffects};
 pub(crate) use delta::{present_delta, UiNativeDeltaPresentation};
 pub(crate) use pending_settlement::{
     UiNativePendingDeltaSettlement, UiNativePendingSurfaceSettlement,

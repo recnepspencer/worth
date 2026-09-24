@@ -61,13 +61,13 @@ fn pointer_presentation_refresh_preserves_admitted_surface_and_primary_authority
 
     let entered_empty = admit(&mut session, first, 1, traveling, outside, false);
     let transition = &entered_empty.pointer_presence_transitions()[0];
-    assert_eq!(transition.current_surface(), Some(surface));
+    assert_eq!(transition.current_surface(), surface);
     assert_eq!(transition.current(), None);
     assert_eq!(presence(&session).primary_pointer(surface), Some(traveling));
     let crossed_empty = admit(&mut session, other, 2, traveling, outside, false);
     let transition = &crossed_empty.pointer_presence_transitions()[0];
     assert_eq!(transition.previous_surface(), Some(surface));
-    assert_eq!(transition.current_surface(), Some(neighbor));
+    assert_eq!(transition.current_surface(), neighbor);
     assert_eq!(transition.current(), None);
     assert_eq!(presence(&session).primary_pointer(surface), None);
     assert_eq!(

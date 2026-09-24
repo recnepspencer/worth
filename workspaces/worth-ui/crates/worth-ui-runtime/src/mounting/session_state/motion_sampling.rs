@@ -62,10 +62,9 @@ impl WorthUiMountedSessionState {
         crate::mounting::presentation::motion_sampling::UiPresentationMotionSamplingDenial,
     > {
         let installation = self.motion_sampling.install(receipt)?;
-        if let Some(sample) = installation.sample() {
-            if self.presentation.accept_published_entrance(sample)? {
-                self.motion_sampling.accept_published_entrance(sample);
-            }
+        let sample = installation.sample();
+        if self.presentation.accept_published_entrance(sample)? {
+            self.motion_sampling.accept_published_entrance(sample);
         }
         Ok(installation)
     }

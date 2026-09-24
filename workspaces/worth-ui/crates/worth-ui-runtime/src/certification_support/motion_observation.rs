@@ -1,18 +1,28 @@
+use crate::mounting::presentation::motion_sampling::UiPresentationMotionSamplingDenial;
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct UiMotionPresentationCertificationSnapshot {
     active_tracks: usize,
     retained_samples: usize,
     last_tick: Option<u64>,
     semantic_publications: u64,
-    geometry: Option<[f32; 4]>,
-    opacity_units: Option<u16>,
-    hit_test_visible: Option<bool>,
-    presentation: Option<worth_ui_host_contract::UiHostObservationPresentationBasis>,
+    sample: Option<UiMotionSampleCertification>,
     sampling_ready: bool,
     hit_test_truth_available: bool,
     sampling_denials: u64,
-    last_denial_was_non_monotonic: bool,
-    last_denial_was_presentation_truth_unavailable: bool,
+    last_denial: Option<UiPresentationMotionSamplingDenial>,
+}
+
+/// The retained Motion sample; its geometry, when resolved, carries the
+/// presentation basis it was placed under.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct UiMotionSampleCertification {
+    pub(crate) placement: Option<(
+        [f32; 4],
+        worth_ui_host_contract::UiHostObservationPresentationBasis,
+    )>,
+    pub(crate) opacity_units: u16,
+    pub(crate) hit_test_visible: bool,
 }
 
 pub trait WorthUiMotionPresentationCertificationExt {
@@ -44,30 +54,22 @@ impl UiMotionPresentationCertificationSnapshot {
         retained_samples: usize,
         last_tick: Option<u64>,
         semantic_publications: u64,
-        geometry: Option<[f32; 4]>,
-        opacity_units: Option<u16>,
-        hit_test_visible: Option<bool>,
-        presentation: Option<worth_ui_host_contract::UiHostObservationPresentationBasis>,
+        sample: Option<UiMotionSampleCertification>,
         sampling_ready: bool,
         hit_test_truth_available: bool,
         sampling_denials: u64,
-        last_denial_was_non_monotonic: bool,
-        last_denial_was_presentation_truth_unavailable: bool,
+        last_denial: Option<UiPresentationMotionSamplingDenial>,
     ) -> Self {
         Self {
             active_tracks,
             retained_samples,
             last_tick,
             semantic_publications,
-            geometry,
-            opacity_units,
-            hit_test_visible,
-            presentation,
+            sample,
             sampling_ready,
             hit_test_truth_available,
             sampling_denials,
-            last_denial_was_non_monotonic,
-            last_denial_was_presentation_truth_unavailable,
+            last_denial,
         }
     }
 
@@ -83,19 +85,23 @@ impl UiMotionPresentationCertificationSnapshot {
     pub const fn semantic_publications(self) -> u64 {
         self.semantic_publications
     }
-    pub const fn geometry(self) -> Option<[f32; 4]> {
-        self.geometry
+    pub fn geometry(self) -> Option<[f32; 4]> {
+        self.sample
+            .and_then(|sample| sample.placement)
+            .map(|(geometry, _)| geometry)
     }
-    pub const fn opacity_units(self) -> Option<u16> {
-        self.opacity_units
+    pub fn opacity_units(self) -> Option<u16> {
+        self.sample.map(|sample| sample.opacity_units)
     }
-    pub const fn hit_test_visible(self) -> Option<bool> {
-        self.hit_test_visible
+    pub fn hit_test_visible(self) -> Option<bool> {
+        self.sample.map(|sample| sample.hit_test_visible)
     }
-    pub const fn presentation(
+    pub fn presentation(
         self,
     ) -> Option<worth_ui_host_contract::UiHostObservationPresentationBasis> {
-        self.presentation
+        self.sample
+            .and_then(|sample| sample.placement)
+            .map(|(_, presentation)| presentation)
     }
     pub const fn sampling_denials(self) -> u64 {
         self.sampling_denials
@@ -107,9 +113,15 @@ impl UiMotionPresentationCertificationSnapshot {
         self.hit_test_truth_available
     }
     pub const fn last_denial_was_non_monotonic(self) -> bool {
-        self.last_denial_was_non_monotonic
+        matches!(
+            self.last_denial,
+            Some(UiPresentationMotionSamplingDenial::NonMonotonicTick)
+        )
     }
     pub const fn last_denial_was_presentation_truth_unavailable(self) -> bool {
-        self.last_denial_was_presentation_truth_unavailable
+        matches!(
+            self.last_denial,
+            Some(UiPresentationMotionSamplingDenial::PresentationTruthUnavailable)
+        )
     }
 }

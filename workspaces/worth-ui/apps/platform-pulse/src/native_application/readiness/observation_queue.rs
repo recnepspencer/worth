@@ -5,7 +5,7 @@ impl PlatformPulseApplicationRuntime {
         &mut self,
         shell: &mut worth_ui::facade::app::WorthUiNativeApplicationShell,
     ) {
-        while self.terminal_error.is_none()
+        while self.terminal.is_running()
             && self.pending_managed_rebind.is_none()
             && self.pending_frame_presentation.is_none()
             && shell.native_frame_boundary_available()

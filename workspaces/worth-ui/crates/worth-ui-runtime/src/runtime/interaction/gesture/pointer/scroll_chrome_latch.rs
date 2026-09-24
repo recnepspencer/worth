@@ -51,11 +51,13 @@ pub(crate) struct UiScrollChromeLatch {
     posture: UiScrollChromeDragPosture,
 }
 
-/// The single latch slot the pointer gesture owner holds.
-#[derive(Debug, Default)]
-pub(crate) struct UiScrollChromeLatchState {
-    held: Option<UiScrollChromeLatch>,
-    pending: Option<UiScrollChromePendingCapture>,
+/// The single latch slot the pointer gesture owner holds: a thumb press is
+/// either still waiting for its capture or holds the drag, never both.
+#[derive(Debug)]
+pub(crate) enum UiScrollChromeLatchState {
+    Idle,
+    Pending(UiScrollChromePendingCapture),
+    Held(UiScrollChromeLatch),
 }
 
 impl UiScrollChromeLatch {
@@ -112,40 +114,53 @@ impl UiScrollChromeLatch {
 }
 
 impl UiScrollChromeLatchState {
+    /// No thumb press holds or awaits the latch.
+    pub(crate) const fn idle() -> Self {
+        Self::Idle
+    }
+
     /// Take the latch for a thumb press. Refused while another drag holds it,
     /// so two pointers never move one thumb.
     pub(crate) fn latch(
         &mut self,
         latch: UiScrollChromeLatch,
     ) -> Result<UiScrollChromeLatch, UiScrollChromeLatchDenial> {
-        if self.held.is_some() || self.pending.is_some() {
+        let Self::Idle = self else {
             return Err(UiScrollChromeLatchDenial::AlreadyLatched);
-        }
-        self.held = Some(latch);
+        };
+        *self = Self::Held(latch);
         Ok(latch)
     }
 
     pub(crate) const fn held(&self) -> Option<UiScrollChromeLatch> {
-        self.held
+        match self {
+            Self::Held(held) => Some(*held),
+            Self::Idle | Self::Pending(_) => None,
+        }
     }
 
     pub(crate) const fn pending(&self) -> Option<UiScrollChromePendingCapture> {
-        self.pending
+        match self {
+            Self::Pending(pending) => Some(*pending),
+            Self::Idle | Self::Held(_) => None,
+        }
     }
 
     pub(crate) fn begin_pending(
         &mut self,
         pending: UiScrollChromePendingCapture,
     ) -> Result<(), UiScrollChromeLatchDenial> {
-        if self.held.is_some() || self.pending.is_some() {
+        let Self::Idle = self else {
             return Err(UiScrollChromeLatchDenial::AlreadyLatched);
-        }
-        self.pending = Some(pending);
+        };
+        *self = Self::Pending(pending);
         Ok(())
     }
 
     pub(crate) fn take_pending(&mut self) -> Option<UiScrollChromePendingCapture> {
-        self.pending.take()
+        let pending = self.pending()?;
+        *self = Self::Idle;
+        Some(pending)
     }
 
     pub(crate) fn move_pending(
@@ -155,7 +170,9 @@ impl UiScrollChromeLatchState {
         point: [f32; 2],
         released: bool,
     ) -> Result<UiScrollChromePendingCapture, UiScrollChromeLatchDenial> {
-        let pending = self.pending.ok_or(UiScrollChromeLatchDenial::NotLatched)?;
+        let pending = self
+            .pending()
+            .ok_or(UiScrollChromeLatchDenial::NotLatched)?;
         if pending.pointer() != pointer {
             return Err(UiScrollChromeLatchDenial::PointerMismatch);
         }
@@ -170,7 +187,7 @@ impl UiScrollChromeLatchState {
         } else {
             pending.moved(point)
         };
-        self.pending = Some(moved);
+        *self = Self::Pending(moved);
         Ok(moved)
     }
 
@@ -185,7 +202,7 @@ impl UiScrollChromeLatchState {
     ) -> Result<UiScrollChromeLatch, UiScrollChromeLatchDenial> {
         let held = self.matching(pointer, capture_epoch)?;
         let moved = UiScrollChromeLatch { posture, ..held };
-        self.held = Some(moved);
+        *self = Self::Held(moved);
         Ok(moved)
     }
 
@@ -196,15 +213,14 @@ impl UiScrollChromeLatchState {
         capture_epoch: UiHostPointerCaptureEpoch,
     ) -> Result<UiScrollChromeLatch, UiScrollChromeLatchDenial> {
         let held = self.matching(pointer, capture_epoch)?;
-        self.held = None;
+        *self = Self::Idle;
         Ok(held)
     }
 
     /// Drop the drag because a lifecycle owner ended it. Reports the latch that
     /// was dropped so the caller can settle the appearance it was holding.
     pub(crate) fn cancel(&mut self) -> Option<UiScrollChromeLatch> {
-        self.pending = None;
-        self.held.take()
+        self.cancel_where(|_| true, |_| true)
     }
 
     /// Drop the drag when its own region occurrence is gone.
@@ -212,15 +228,10 @@ impl UiScrollChromeLatchState {
         &mut self,
         instance: worth_ui_host_contract::UiMountedInstanceIdentity,
     ) -> Option<UiScrollChromeLatch> {
-        if self
-            .pending
-            .is_some_and(|pending| pending.owner_instance() == instance)
-        {
-            self.pending = None;
-        }
-        self.held
-            .filter(|held| held.owner_instance == instance)
-            .and_then(|_| self.held.take())
+        self.cancel_where(
+            |pending| pending.owner_instance() == instance,
+            |held| held.owner_instance == instance,
+        )
     }
 
     /// Drop the drag when the surface binding it was presented under is gone.
@@ -228,15 +239,31 @@ impl UiScrollChromeLatchState {
         &mut self,
         binding: UiSurfaceBindingGeneration,
     ) -> Option<UiScrollChromeLatch> {
-        if self
-            .pending
-            .is_some_and(|pending| pending.binding() == binding)
-        {
-            self.pending = None;
+        self.cancel_where(
+            |pending| pending.binding() == binding,
+            |held| held.binding == binding,
+        )
+    }
+
+    /// Return to idle when the slot's occupant matches, reporting a held
+    /// latch that was dropped.
+    fn cancel_where(
+        &mut self,
+        pending_matches: impl FnOnce(&UiScrollChromePendingCapture) -> bool,
+        held_matches: impl FnOnce(&UiScrollChromeLatch) -> bool,
+    ) -> Option<UiScrollChromeLatch> {
+        let (cancel, dropped) = match self {
+            Self::Idle => (false, None),
+            Self::Pending(pending) => (pending_matches(pending), None),
+            Self::Held(held) => {
+                let matches = held_matches(held);
+                (matches, matches.then_some(*held))
+            }
+        };
+        if cancel {
+            *self = Self::Idle;
         }
-        self.held
-            .filter(|held| held.binding == binding)
-            .and_then(|_| self.held.take())
+        dropped
     }
 
     /// Whether a wheel or a key on this axis of this region must be ignored,
@@ -246,11 +273,13 @@ impl UiScrollChromeLatchState {
         owner: crate::runtime::scroll::UiScrollOwnerIdentity,
         axis: UiScrollChromeAxis,
     ) -> bool {
-        self.held
-            .is_some_and(|held| held.owner == owner && held.axis == axis)
-            || self.pending.is_some_and(|pending| {
+        match self {
+            Self::Idle => false,
+            Self::Held(held) => held.owner == owner && held.axis == axis,
+            Self::Pending(pending) => {
                 !pending.released() && pending.owner() == owner && pending.axis() == axis
-            })
+            }
+        }
     }
 
     fn matching(
@@ -258,7 +287,7 @@ impl UiScrollChromeLatchState {
         pointer: UiHostPointerIdentity,
         capture_epoch: UiHostPointerCaptureEpoch,
     ) -> Result<UiScrollChromeLatch, UiScrollChromeLatchDenial> {
-        let held = self.held.ok_or(UiScrollChromeLatchDenial::NotLatched)?;
+        let held = self.held().ok_or(UiScrollChromeLatchDenial::NotLatched)?;
         if held.pointer != pointer {
             return Err(UiScrollChromeLatchDenial::PointerMismatch);
         }

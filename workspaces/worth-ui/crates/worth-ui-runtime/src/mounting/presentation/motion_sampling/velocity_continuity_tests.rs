@@ -39,7 +39,7 @@ fn a_retarget_at_one_third_of_the_horizon_departs_at_the_interrupted_rate() {
         .install(world.settle(2, -60.0, -120.0, Some(retarget_from_current_sample())))
         .unwrap();
     assert_close(
-        f64::from(installed.sample().unwrap().geometry().unwrap().components()[1]),
+        f64::from(installed.sample().geometry().unwrap().components()[1]),
         interrupted,
         "the successor begins at the accepted sample's position",
     );

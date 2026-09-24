@@ -17,7 +17,7 @@ impl UiMountedIdentityState {
             .semantic_projection()
             .node_receipt_with_probes(mounted_instance);
         let graph_node = node?.graph_node();
-        let trace = self.current_trace_source.as_ref()?;
+        let trace = &self.frame.published()?.trace_source;
         let artifact_index = trace
             .graph_node_evidence_index()
             .lookup_graph_node_identity(graph_node)?

@@ -149,6 +149,7 @@ fn verify_structural_portal(
     let transition = session.portal.as_ref().unwrap().prepare(close).unwrap();
     let binding =
         crate::runtime::portal::UiPortalOverlayBindingCommit::from_transition(&transition, None)
+            .expect("the test transition pairs its overlay binding stage")
             .with_retained_exit(false);
     session
         .portal

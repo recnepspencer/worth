@@ -102,6 +102,7 @@ pub use intent_route_resolution::WorthUiIntentRouteResolutionCertificationExt;
 #[cfg(test)]
 pub(crate) use layout_admission::snapshot_after_layout_admission_support;
 pub use local_interaction_recipient::draft_recipient_contract_for_certification;
+pub(crate) use motion_observation::UiMotionSampleCertification;
 pub use motion_observation::{
     UiMotionPresentationCertificationSnapshot, WorthUiMotionPresentationCertificationExt,
 };

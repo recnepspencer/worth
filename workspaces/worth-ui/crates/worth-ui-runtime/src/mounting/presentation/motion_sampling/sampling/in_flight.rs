@@ -73,7 +73,6 @@ impl UiMountedMotionSampler {
             });
             if let Some(sampled) = sampled {
                 superseded.push(sampled.track.identity());
-                superseded.extend(sampled.queued.map(|queued| queued.identity()));
             }
             if let Some(live) = live {
                 successor.tracks.insert(target, live);
@@ -102,12 +101,14 @@ impl UiMountedMotionSampler {
             return live;
         }
         let tick = self.last_tick.unwrap_or(0);
-        let presented = sampled.active.then(|| UiPresentationInterruptedSample {
-            tick,
-            geometry: sampled.current_geometry,
-            opacity_units: sampled.current_opacity_units,
-            outgoing: sampled.outgoing_curve(tick),
-        });
+        let presented = sampled
+            .is_running()
+            .then(|| UiPresentationInterruptedSample {
+                tick,
+                geometry: sampled.current_geometry,
+                opacity_units: sampled.current_opacity_units,
+                outgoing: sampled.outgoing_curve(tick),
+            });
         match resolve(live.track, presented, self.reduced_motion) {
             UiPresentationMotionInstallation::Install {
                 geometry,

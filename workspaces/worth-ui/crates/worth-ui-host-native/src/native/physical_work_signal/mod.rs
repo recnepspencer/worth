@@ -56,10 +56,7 @@ pub(crate) struct UiNativePhysicalSignalOwner {
     #[cfg(test)]
     declarations: declarations::UiNativePhysicalSignalDeclarations,
     route: UiNativePhysicalSignalRoute,
-    worker: Option<worker::UiNativePhysicalSignalWorker>,
-    terminal_telemetry: worth_signal::facade::adapters::RuntimeTelemetry,
-    terminal_performed_transitions: u64,
-    terminal_performed_nodes: u64,
+    runtime: shutdown::UiNativePhysicalSignalRuntime,
     counters: UiNativePhysicalSignalCounters,
     wake: UiNativePhysicalSignalWakeDelivery,
     next_presentation_sequence: u64,
@@ -72,16 +69,12 @@ pub(crate) struct UiNativePhysicalSignalOwner {
 impl UiNativePhysicalSignalOwner {
     pub(crate) fn new() -> Self {
         let built = UiNativePhysicalSignalConstruction::build();
-        let terminal_telemetry = built.worker.telemetry();
         Self {
             runtime_identity: built.runtime_identity,
             #[cfg(test)]
             declarations: built.declarations,
             route: built.route,
-            worker: Some(built.worker),
-            terminal_telemetry,
-            terminal_performed_transitions: 0,
-            terminal_performed_nodes: 0,
+            runtime: shutdown::UiNativePhysicalSignalRuntime::Owned(built.worker),
             counters: UiNativePhysicalSignalCounters::default(),
             wake: UiNativePhysicalSignalWakeDelivery::new(),
             next_presentation_sequence: 1,
@@ -249,35 +242,23 @@ impl UiNativePhysicalSignalOwner {
                 active_requests: self.route.len(),
                 wake: &self.wake,
                 counters: self.counters,
-                runtime_owned: self.worker.is_some(),
+                runtime_owned: self.runtime.worker().is_some(),
                 accepting_admissions: self.lifecycle == UiNativePhysicalSignalLifecycle::Running,
                 active_recoveries: self
-                    .worker
-                    .as_ref()
+                    .runtime
+                    .worker()
                     .map(|worker| {
                         worker.active_operation_count(
                             declarations::UiNativePhysicalSignalOperation::Recovery,
                         )
                     })
                     .unwrap_or(0),
-                telemetry: self
-                    .worker
-                    .as_ref()
-                    .map(worker::UiNativePhysicalSignalWorker::telemetry)
-                    .unwrap_or(self.terminal_telemetry),
-                performed_transitions: self
-                    .worker
-                    .as_ref()
-                    .map(worker::UiNativePhysicalSignalWorker::performed_transitions)
-                    .unwrap_or(self.terminal_performed_transitions),
-                performed_nodes: self
-                    .worker
-                    .as_ref()
-                    .map(worker::UiNativePhysicalSignalWorker::performed_nodes)
-                    .unwrap_or(self.terminal_performed_nodes),
+                telemetry: self.runtime.telemetry(),
+                performed_transitions: self.runtime.performed_transitions(),
+                performed_nodes: self.runtime.performed_nodes(),
                 last_performed: self
-                    .worker
-                    .as_ref()
+                    .runtime
+                    .worker()
                     .and_then(worker::UiNativePhysicalSignalWorker::last_performed),
                 retained_transition_observations: self.transition_observations.len(),
             },
@@ -371,7 +352,7 @@ impl UiNativePhysicalSignalOwner {
     }
 
     pub(crate) fn token_uses_recovery(&self, token: UiNativePhysicalSignalRequestToken) -> bool {
-        self.worker.as_ref().is_some_and(|worker| {
+        self.runtime.worker().is_some_and(|worker| {
             worker.request_uses_operation(
                 token.handle(),
                 token.work(),
@@ -381,10 +362,10 @@ impl UiNativePhysicalSignalOwner {
     }
 
     fn worker(&self) -> Result<&worker::UiNativePhysicalSignalWorker, ()> {
-        self.worker.as_ref().ok_or(())
+        self.runtime.worker().ok_or(())
     }
 
     fn worker_mut(&mut self) -> Result<&mut worker::UiNativePhysicalSignalWorker, ()> {
-        self.worker.as_mut().ok_or(())
+        self.runtime.worker_mut().ok_or(())
     }
 }

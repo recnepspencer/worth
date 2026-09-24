@@ -23,13 +23,16 @@ pub(super) fn perform_sample(
         return require_owner_reconstruction(state, key);
     }
     let result = present_sample_work(state, view, key);
-    let (cost, painted, observed_pixels, port_crossings, effects) = match result {
+    let (cost, paint, port_crossings, effects) = match result {
         Ok(presented) => presented.into_parts(),
         Err(failure) => return settle_presentation_failure(state, view, failure),
     };
     state.lifecycle.resolve_recovery(key);
     state.lifecycle.record_presented();
-    let pixels = observed_pixels.unwrap_or_else(|| retained_frame::latest_pixels(state));
+    let painted = paint.painted();
+    let pixels = paint
+        .pixels()
+        .unwrap_or_else(|| retained_frame::latest_pixels(state));
     let outcome = completed(state, key, view, cost, painted, effects);
     let sample_presentation_epoch = match &outcome {
         UiHostSurfacePresentationOutcome::Presented(completion) => Some(completion.epoch()),
@@ -54,10 +57,9 @@ fn present_sample_work(
     key: u64,
 ) -> Result<UiNativeSamplePresentation, UiNativePresentationFailure> {
     let defer_initial_observation = defer_presentation_initial_observation(state);
-    let Some(device) = state.device.as_ref() else {
-        return Err(before_effects_declined());
-    };
-    let Some(surface) = state.presentation_surface.as_ref() else {
+    let Some(crate::native::UiNativePresentationOwners { device, surface }) =
+        state.presentation_owners.as_ref()
+    else {
         return Err(before_effects_declined());
     };
     let mut graphics = crate::native::UiNativePresentationAccess::new(device, surface);

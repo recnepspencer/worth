@@ -20,8 +20,7 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
         let surface_basis_generation = self
             .shared
             .borrow()
-            .presentation_surface
-            .as_ref()
+            .presentation_surface()
             .map(|surface| surface.basis_generation())
             .unwrap_or(0);
         let readiness = UiNativeReadinessGrant::issued(

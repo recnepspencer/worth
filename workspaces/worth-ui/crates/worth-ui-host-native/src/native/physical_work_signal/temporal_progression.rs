@@ -220,8 +220,8 @@ impl UiNativePhysicalSignalWorker {
 
 impl UiNativePhysicalSignalOwner {
     pub(crate) fn next_due_tick(&self) -> Option<u64> {
-        self.worker
-            .as_ref()
+        self.runtime
+            .worker()
             .and_then(UiNativePhysicalSignalWorker::next_due_tick)
     }
 

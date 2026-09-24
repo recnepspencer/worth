@@ -5,7 +5,7 @@ fn retarget_starts_from_the_exact_committed_raw_motion_units() {
     let world = World::new();
     let mut sampler = UiMountedMotionSampler::default();
     let initial = sampler.install(world.exit_receipt(100)).unwrap();
-    assert_eq!(initial.sample().unwrap().opacity_units(), u16::MAX);
+    assert_eq!(initial.sample().opacity_units(), u16::MAX);
     commit_tick(&mut sampler, 1, world.presentation);
 
     // Halfway through the 110-tick cubic exit, one eighth remains.
@@ -30,7 +30,7 @@ fn retarget_starts_from_the_exact_committed_raw_motion_units() {
         ),
     );
     let installed = sampler.install(retarget).unwrap();
-    assert_eq!(installed.sample().unwrap().opacity_units(), 8_192);
+    assert_eq!(installed.sample().opacity_units(), 8_192);
 
     // The next curve runs from the tick-56 sample it departs from and
     // interpolates from 8192 units, not from a rounded u8 alpha or an
@@ -55,6 +55,6 @@ fn reduced_motion_exit_publishes_exact_zero_without_a_float_conversion() {
     let mut sampler = UiMountedMotionSampler::default();
     sampler.set_reduced_motion(UiPresentationReducedMotionPosture::Reduce);
     let terminal = sampler.install(world.exit_receipt(102)).unwrap();
-    assert_eq!(terminal.sample().unwrap().opacity_units(), 0);
+    assert_eq!(terminal.sample().opacity_units(), 0);
     assert!(terminal.terminal().is_some());
 }

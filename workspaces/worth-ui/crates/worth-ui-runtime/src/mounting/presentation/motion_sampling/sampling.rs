@@ -82,7 +82,7 @@ impl UiPreparedMotionSampling {
         for sample in self.receipt.samples.iter_mut() {
             *sample = sample.with_presentation_basis(presentation).ok()?;
             if let Some(state) = self.successor.tracks.get_mut(&sample.target()) {
-                state.current = Some(*sample);
+                state.current = *sample;
             }
         }
         Some(UiPresentedMotionSampling {
@@ -172,7 +172,7 @@ impl UiMountedMotionSampler {
             let settled = self
                 .tracks
                 .iter()
-                .find_map(|(target, state)| (!state.active).then_some(*target));
+                .find_map(|(target, state)| (!state.is_running()).then_some(*target));
             if let Some(settled) = settled {
                 self.note_owner_change(settled);
                 self.tracks.remove(&settled);
@@ -183,7 +183,7 @@ impl UiMountedMotionSampler {
         let interruption_tick = self.last_tick.unwrap_or(0);
         let current = self.tracks.get(&target).and_then(|state| {
             state
-                .active
+                .is_running()
                 .then(|| super::interruption::UiPresentationInterruptedSample {
                     tick: interruption_tick,
                     geometry: state.current_geometry,
@@ -261,12 +261,12 @@ impl UiMountedMotionSampler {
         let mut samples = Vec::new();
         let mut terminals = Vec::new();
         let mut considered = 0;
-        for state in self.tracks.values_mut().filter(|state| state.active) {
+        for state in self.tracks.values_mut().filter(|state| state.is_running()) {
             considered += 1;
             if !same_surface_binding(state.track.successor_presentation(), presentation) {
-                state.active = false;
+                state.settle();
                 terminals.push(super::UiPresentationMotionTerminalRequest::new(
-                    state.queued.unwrap_or(state.track).identity(),
+                    state.track.identity(),
                     crate::runtime::motion::UiMotionTerminalCause::ReboundAway,
                 ));
                 continue;
@@ -288,7 +288,10 @@ impl UiMountedMotionSampler {
                     state.shorten_system_reduced_motion();
                 }
             }
-            let sample = match state.sample(tick, presentation) {
+            let Some(sampled) = state.sample(tick, presentation) else {
+                continue;
+            };
+            let sample = match sampled {
                 Ok(sample) => sample,
                 Err(denial) => {
                     return Err(UiPresentationMotionSamplingDenial::InvalidSampleGeometry(
@@ -298,15 +301,11 @@ impl UiMountedMotionSampler {
             };
             samples.push(sample);
             if sample.posture() == super::UiPresentationMotionSamplePosture::Terminal {
-                if let Some(queued) = state.queued.take() {
-                    state.begin_queued(queued, tick);
-                } else {
-                    state.active = false;
-                    terminals.push(super::UiPresentationMotionTerminalRequest::new(
-                        state.track.identity(),
-                        crate::runtime::motion::UiMotionTerminalCause::Completed,
-                    ));
-                }
+                state.settle();
+                terminals.push(super::UiPresentationMotionTerminalRequest::new(
+                    state.track.identity(),
+                    crate::runtime::motion::UiMotionTerminalCause::Completed,
+                ));
             }
         }
         Ok(super::UiPresentationMotionSamplingReceipt::new(
@@ -318,14 +317,14 @@ impl UiMountedMotionSampler {
         &mut self,
         track: crate::runtime::motion::UiMotionTrackIdentity,
     ) -> bool {
-        self.retire_track_where(track, |state| !state.active && state.queued.is_none())
+        self.retire_track_where(track, |state| !state.is_running())
     }
 
     pub(crate) fn retire_rebound_track(
         &mut self,
         track: crate::runtime::motion::UiMotionTrackIdentity,
     ) -> bool {
-        self.retire_track_where(track, |state| state.queued.is_none())
+        self.retire_track_where(track, |_| true)
     }
 
     pub(crate) fn contains_track(
@@ -338,7 +337,7 @@ impl UiMountedMotionSampler {
     }
 
     pub(crate) fn has_active_tracks(&self) -> bool {
-        self.tracks.values().any(|track| track.active)
+        self.tracks.values().any(|track| track.is_running())
     }
 
     pub(crate) fn set_reduced_motion(
@@ -379,10 +378,13 @@ impl UiMountedMotionSampler {
         Option<UiPresentationMotionSamplingDenial>,
     ) {
         (
-            self.tracks.values().filter(|track| track.active).count(),
+            self.tracks
+                .values()
+                .filter(|track| track.is_running())
+                .count(),
             self.tracks.len(),
             self.last_tick,
-            self.tracks.values().find_map(|track| track.current),
+            self.tracks.values().map(|track| track.current).next(),
             self.denial_count,
             self.last_denial,
         )

@@ -94,8 +94,8 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
     ) {
         let profile = (surface.state().scale_factor(), surface.state().extent());
         let mut state = self.shared.borrow_mut();
-        state.device = Some(device);
-        state.presentation_surface = Some(surface);
+        state.presentation_owners =
+            Some(super::super::UiNativePresentationOwners { device, surface });
         state.window = Some(window);
         state
             .lifecycle
@@ -108,8 +108,7 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
     ) -> Result<super::UiNativeEventLoopDirective, UiNativeEventLoopRunDenial> {
         let state = self.shared.borrow();
         let surface = state
-            .presentation_surface
-            .as_ref()
+            .presentation_surface()
             .ok_or(UiNativeEventLoopRunDenial::GraphicsPreparation)?;
         let preparation = {
             UiNativeReadinessGrant::issued(

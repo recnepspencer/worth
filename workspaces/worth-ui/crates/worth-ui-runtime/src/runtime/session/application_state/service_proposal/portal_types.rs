@@ -59,6 +59,8 @@ pub(crate) enum UiPortalProposalPreparationDenial {
     /// The compiled batch and the Focus owner's staged reveal disagree about
     /// whether a Scroll owner replanned, or about which owner did.
     RevealRefinementMismatch,
+    /// Only an opening transition stages an overlay binding.
+    CloseCarriesOverlayBindingStage,
     Coalesced(crate::runtime::session::service_proposal::UiServiceProposalIdentity),
 }
 
@@ -89,7 +91,10 @@ impl UiStagedPortalProposalTransaction {
 impl UiStagedPortalProposalTransaction {
     pub(crate) fn overlay_binding_commit(
         &self,
-    ) -> crate::runtime::portal::UiPortalOverlayBindingCommit {
+    ) -> Result<
+        crate::runtime::portal::UiPortalOverlayBindingCommit,
+        crate::runtime::portal::UiPortalOverlayBindingLifecycleDenial,
+    > {
         self.portal.overlay_binding_commit()
     }
 

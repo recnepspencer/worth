@@ -151,7 +151,6 @@ fn native_content_retry_after_reconstruction_preserves_the_open_portal_projectio
             worth_ui_host_native::UiNativePhysicalProgressGrant::from_certification(
                 worth_ui_host_native::UiNativePhysicalProgressClass::Presentation,
                 None,
-                false,
             ),
         );
     let receipt = match shell

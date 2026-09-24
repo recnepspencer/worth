@@ -96,6 +96,7 @@ pub enum UiRuntimeServiceProposalStopReason {
     Motion,
     MountedFrameMismatch,
     RevealRefinementMismatch,
+    CloseCarriesOverlayBindingStage,
     Coalesced,
 }
 
@@ -196,6 +197,10 @@ impl From<crate::runtime::session::UiPortalProposalPreparationDenial>
             Denial::RevealRefinementMismatch => (
                 UiRuntimeServiceProposalStopReason::RevealRefinementMismatch,
                 "reveal refinement mismatch".into(),
+            ),
+            Denial::CloseCarriesOverlayBindingStage => (
+                UiRuntimeServiceProposalStopReason::CloseCarriesOverlayBindingStage,
+                "close carries an overlay binding stage".into(),
             ),
             Denial::Coalesced(detail) => (
                 UiRuntimeServiceProposalStopReason::Coalesced,

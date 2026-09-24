@@ -211,7 +211,6 @@ fn indeterminate_recovery_waits_for_the_exact_physical_correlation() {
     let unrelated = worth_ui_host_native::UiNativePhysicalProgressGrant::from_certification(
         worth_ui_host_native::UiNativePhysicalProgressClass::TextAtlas,
         None,
-        false,
     );
     let unrelated =
         crate::native_platform::UiNativeApplicationPhysicalProgress::from_host(unrelated);
@@ -231,7 +230,6 @@ fn indeterminate_recovery_waits_for_the_exact_physical_correlation() {
     let exact = worth_ui_host_native::UiNativePhysicalProgressGrant::from_certification(
         worth_ui_host_native::UiNativePhysicalProgressClass::PresentationRecovery,
         Some(exact),
-        false,
     );
     let exact = crate::native_platform::UiNativeApplicationPhysicalProgress::from_host(exact);
     let recovered = shell.progress_indeterminate_presentation_recovery(indeterminate, &exact, 8, 7);
@@ -295,7 +293,6 @@ fn indeterminate_recovery_reconciles_an_uncertain_surface_deregistration() {
     let exact = worth_ui_host_native::UiNativePhysicalProgressGrant::from_certification(
         worth_ui_host_native::UiNativePhysicalProgressClass::PresentationRecovery,
         Some(exact),
-        false,
     );
     let exact = crate::native_platform::UiNativeApplicationPhysicalProgress::from_host(exact);
 

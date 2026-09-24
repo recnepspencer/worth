@@ -195,7 +195,6 @@ impl UiScrollSettleWorld {
             installed_y: self.displacement_from_rest(
                 installed
                     .sample()
-                    .expect("an installed settle reports its opening sample")
                     .geometry()
                     .expect("a settle samples geometry")
                     .components()[1],

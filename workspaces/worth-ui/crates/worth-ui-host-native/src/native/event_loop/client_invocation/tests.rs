@@ -113,8 +113,7 @@ fn pairing_names_the_invoked_callback() {
         refusal(
             client.invoke_physical_work_progressed(UiNativePhysicalProgressGrant::issued(
                 UiNativePhysicalProgressClass::Presentation,
-                None,
-                false,
+                super::super::contract::UiNativePhysicalProgressCorrelation::Unattributed,
             )),
         ),
         refusal(client.invoke_native_observations_ready(

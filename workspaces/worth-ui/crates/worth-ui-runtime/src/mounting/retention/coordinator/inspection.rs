@@ -60,8 +60,11 @@ impl UiMountedFrameRetentionCoordinator {
             retained_structural_bytes: evidence.structural_bytes(),
             frame_index_probes,
             instance_index_probes,
-            diagnostics_requested: selection.diagnostics,
-            diagnostics: authority.diagnostics(evidence.frame()),
+            diagnostics: if selection.diagnostics {
+                UiSelectedDiagnostics::Requested(authority.diagnostics(evidence.frame()))
+            } else {
+                UiSelectedDiagnostics::NotRequested
+            },
         })
     }
 
@@ -102,13 +105,16 @@ impl UiMountedFrameRetentionCoordinator {
         &self,
         selected: &UiSelectedMountedFrameInspection,
     ) -> UiMountedDiagnosticInspectionBasis {
-        if !selected.diagnostics_requested {
-            return UiMountedDiagnosticInspectionBasis::NotRequested;
-        }
-        let Some(evidence) = selected.diagnostics.clone() else {
-            return UiMountedDiagnosticInspectionBasis::Omitted(
-                UiMountedDiagnosticInspectionDenial::NotRetained,
-            );
+        let evidence = match &selected.diagnostics {
+            UiSelectedDiagnostics::NotRequested => {
+                return UiMountedDiagnosticInspectionBasis::NotRequested;
+            }
+            UiSelectedDiagnostics::Requested(None) => {
+                return UiMountedDiagnosticInspectionBasis::Omitted(
+                    UiMountedDiagnosticInspectionDenial::NotRetained,
+                );
+            }
+            UiSelectedDiagnostics::Requested(Some(evidence)) => evidence.clone(),
         };
         let structural_bytes = evidence.structural_bytes();
         match self.authority.borrow_mut().reserve_pin(
@@ -142,8 +148,14 @@ struct UiSelectedMountedFrameInspection {
     retained_structural_bytes: usize,
     frame_index_probes: usize,
     instance_index_probes: usize,
-    diagnostics_requested: bool,
-    diagnostics: Option<Rc<UiRetainedMountedDiagnostics>>,
+    diagnostics: UiSelectedDiagnostics,
+}
+
+/// Diagnostics the inspection asked for, and what the authority still retains
+/// for the selected frame when it did.
+enum UiSelectedDiagnostics {
+    NotRequested,
+    Requested(Option<Rc<UiRetainedMountedDiagnostics>>),
 }
 
 fn inspection_lookup<'a>(

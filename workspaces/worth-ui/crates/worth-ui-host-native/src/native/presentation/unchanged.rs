@@ -11,8 +11,7 @@ use crate::native::{UiNativePresentationAccess, UiNativeResourceRegistry};
 
 pub(crate) struct UiNativeUnchangedPresentation {
     cost: UiHostPresentationCostReport,
-    painted: bool,
-    pixels: Option<[[u8; 4]; 2]>,
+    paint: super::UiNativePaintOutcome,
     port_crossings: u8,
     effects: super::UiNativePresentationEffects,
 }
@@ -22,18 +21,11 @@ impl UiNativeUnchangedPresentation {
         self,
     ) -> (
         UiHostPresentationCostReport,
-        bool,
-        Option<[[u8; 4]; 2]>,
+        super::UiNativePaintOutcome,
         u8,
         super::UiNativePresentationEffects,
     ) {
-        (
-            self.cost,
-            self.painted,
-            self.pixels,
-            self.port_crossings,
-            self.effects,
-        )
+        (self.cost, self.paint, self.port_crossings, self.effects)
     }
 }
 
@@ -80,8 +72,7 @@ pub(crate) fn present_unchanged_appearance<Port: UiNativePresentationPort>(
     if plan.operations.is_empty() && !plan.clear_retained_target {
         return Ok(UiNativeUnchangedPresentation {
             cost: plan.cost,
-            painted: false,
-            pixels: None,
+            paint: super::UiNativePaintOutcome::Unpainted,
             port_crossings: 0,
             effects,
         });
@@ -115,8 +106,7 @@ pub(crate) fn present_unchanged_appearance<Port: UiNativePresentationPort>(
             let (pixels, cost, port_crossings) = observation.into_parts();
             Ok(UiNativeUnchangedPresentation {
                 cost,
-                painted: true,
-                pixels: Some(pixels),
+                paint: super::UiNativePaintOutcome::Painted { pixels },
                 port_crossings,
                 effects,
             })
