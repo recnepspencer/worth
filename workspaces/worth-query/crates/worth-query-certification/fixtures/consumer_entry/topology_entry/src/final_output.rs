@@ -36,7 +36,7 @@ worth_query_structured_value_binding!(pub FinalPlanarMutationInputBinding for Fi
     identity: "worth.query.certification.final-planar-mutation-input.v1"
 });
 worth_query_operation!(pub PublishFinalPlanarOutput for Schema: TopologySchemaBinding, input FinalPlanarMutationInputBinding);
-worth_query_operation_reads!(PublishFinalPlanarOutput => [Body, BodyKey, Length, PlanarSuccessor]);
+worth_query_operation_reads!(PublishFinalPlanarOutput => [Body, BodyKey, Length]);
 worth_query_operation_writes!(PublishFinalPlanarOutput => [BodyKey, PositionX, PositionY, Length]);
 worth_query_operation_creates!(PublishFinalPlanarOutput => [Body]);
 worth_query_operation_links!(PublishFinalPlanarOutput => [PlanarSuccessor]);
