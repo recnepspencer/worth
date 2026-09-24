@@ -1,6 +1,7 @@
 mod bounded_entity_field_lookup;
 mod bounded_related_entity_ordered_lookup;
 mod bounded_relation_join_lookup;
+mod definition_lookup;
 mod execution;
 mod generation_selection;
 mod routing;
@@ -19,6 +20,7 @@ use self::routing::{admissible_access_path, should_verify_sampled_parity};
 #[cfg(test)]
 pub(crate) use self::scratch::index_query_scratch_hint_exists;
 pub(crate) use self::scratch::purge_index_query_scratch_hints;
+pub use definition_lookup::DerivedIndexDefinitionLookup;
 
 pub struct IndexAccess<'runtime> {
     runtime: &'runtime RelationalRuntime,
@@ -71,6 +73,12 @@ impl<'runtime> IndexAccess<'runtime> {
                     && candidate.branch_scoped == expected.branch_scoped
             })
             .map(|definition| definition.as_ref().clone())
+    }
+
+    /// Detaches one exact-definition inventory for callers binding several
+    /// restored indexes. Each lookup preserves the owner's numeric identity.
+    pub fn definition_lookup_snapshot(&self) -> DerivedIndexDefinitionLookup {
+        DerivedIndexDefinitionLookup::new(self.runtime.indexes.definitions())
     }
 
     pub fn published_generation_for_commit(

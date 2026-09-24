@@ -16,3 +16,4 @@ pub use crate::indexes::data::{
     RelationJoinEntry, RelationJoinKey, RelationJoinLeg, RelationJoinSharedEndpoint,
     MAX_BOUNDED_INDEX_CANDIDATES, MAX_BOUNDED_RELATED_ENTITY_PAGE_WIDTH,
 };
+pub use crate::indexes::DerivedIndexDefinitionLookup;

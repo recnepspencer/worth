@@ -1,4 +1,5 @@
 mod access;
+pub use access::DerivedIndexDefinitionLookup;
 mod authority;
 pub(crate) use authority::PreparedCandidateIndexPublication;
 pub mod data;
