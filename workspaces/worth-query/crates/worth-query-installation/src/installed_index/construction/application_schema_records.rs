@@ -45,32 +45,24 @@ pub(super) fn compile_application_schema_records(
     BTreeMap<(String, String), WorthQueryInstalledApplicationSchemaRecord>,
     WorthQueryInstalledPackageIndexDenial,
 > {
-    // WORTH-UI-TEMPORARY-INSTRUMENTATION
-    let trace = std::env::var_os("WORTH_REOPEN_TRACE").is_some();
-    let mut identity_time = std::time::Duration::ZERO;
-    let mut catalog_time = std::time::Duration::ZERO;
     let mut records = BTreeMap::new();
     for ((owner, name), seed) in input.declarations {
         let package = input
             .packages
             .get(&owner)
             .expect("an admitted application schema retains its owning package");
-        let started = std::time::Instant::now();
         let (schema_identity, schema_work) =
             derive_installed_schema_identity(seed.declaration.identity())
                 .map_err(|denial| map_schema_digest_denial_to_index_denial(&name, denial))?;
-        identity_time += started.elapsed();
         let binding = ApplicationSchemaBindingIdentity::from_installed_parts(
             input.runtime.ordinal(),
             input.generation.ordinal(),
             *package.package.package().identity().digest(),
             schema_identity,
         );
-        let started = std::time::Instant::now();
         let catalog =
             compile_native_contract_catalog(&binding, &seed.native_contracts, schema_work)
                 .map_err(map_catalog_denial_to_index_denial)?;
-        catalog_time += started.elapsed();
         accumulate_catalog_counters(input.counters, &catalog);
         records.insert(
             (owner, name),
@@ -83,10 +75,6 @@ pub(super) fn compile_application_schema_records(
                 Arc::new(seed.operation_contracts),
             ),
         );
-    }
-    if trace {
-        eprintln!("[WORTH_REOPEN_TRACE] schema record identities: {identity_time:?}");
-        eprintln!("[WORTH_REOPEN_TRACE] schema record catalogs: {catalog_time:?}");
     }
     Ok(records)
 }

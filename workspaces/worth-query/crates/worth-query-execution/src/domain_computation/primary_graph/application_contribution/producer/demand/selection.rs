@@ -49,9 +49,6 @@ where
             ));
         };
         let output_bindings = self.installed_producers.family_output_bindings::<Family>();
-        // WORTH-UI-TEMPORARY-INSTRUMENTATION
-        let trace_geometry = std::env::var_os("WORTH_REOPEN_TRACE").is_some()
-            && Family::IDENTITY.to_ascii_lowercase().contains("geometry");
         let scope = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(source.source_root());
         let mut lineage = self
             .primary_provider
@@ -99,15 +96,6 @@ where
                 maximum_work,
             )
             .map_err(|()| selection_budget_denial(Family::IDENTITY))?;
-        if trace_geometry {
-            eprintln!(
-                "[WORTH_REOPEN_TRACE] geometry selection {}: bindings={}, candidates={}, lineage_work={}",
-                Family::IDENTITY,
-                output_bindings.len(),
-                candidates.len(),
-                lineage_work
-            );
-        }
         drop(lineage);
         let mut live_candidates = Vec::new();
         for candidate in candidates {
@@ -117,13 +105,6 @@ where
             if let Some(entity) = candidate.correspondence.active_entity_for_role(role) {
                 live_candidates.push((candidate, entity));
             }
-        }
-        if trace_geometry {
-            eprintln!(
-                "[WORTH_REOPEN_TRACE] geometry selection {}: active_candidates={}",
-                Family::IDENTITY,
-                live_candidates.len()
-            );
         }
         if !live_candidates.is_empty() {
             // One admission plus one lifecycle lookup per candidate must fit before
@@ -189,17 +170,6 @@ where
                             )?,
                             OutputDependencySelection::Reuse
                         );
-                    if trace_geometry {
-                        eprintln!(
-                            "[WORTH_REOPEN_TRACE] geometry selection {} candidate: live={}, identity_current={}, facts_present={}, facts_current={}, resources_present={}",
-                            Family::IDENTITY,
-                            live,
-                            identity_current,
-                            candidate.observed_source_facts.as_ref().is_some_and(|facts| !facts.is_empty()),
-                            facts_current,
-                            candidate.resources.is_some()
-                        );
-                    }
                     current.push((live, facts_current));
                 }
                 Ok::<_, WorthQueryOutputDemandDenial>(current)
@@ -221,23 +191,11 @@ where
                         .installed_producers
                         .select_exact::<Family>(candidate.binding)?;
                     selected.retained_resources = Some(resources);
-                    if trace_geometry {
-                        eprintln!(
-                            "[WORTH_REOPEN_TRACE] geometry selection {}: Reuse",
-                            Family::IDENTITY
-                        );
-                    }
                     return Ok(selected);
                 }
                 retained_output = true;
             }
             if retained_output {
-                if trace_geometry {
-                    eprintln!(
-                        "[WORTH_REOPEN_TRACE] geometry selection {}: Preserve",
-                        Family::IDENTITY
-                    );
-                }
                 return self.installed_producers.select::<Family>(
                     WorthQueryProducerApplicability::new(
                         profile_kind,
@@ -245,12 +203,6 @@ where
                     ),
                 );
             }
-        }
-        if trace_geometry {
-            eprintln!(
-                "[WORTH_REOPEN_TRACE] geometry selection {}: Initial",
-                Family::IDENTITY
-            );
         }
         self.installed_producers
             .select::<Family>(WorthQueryProducerApplicability::new(

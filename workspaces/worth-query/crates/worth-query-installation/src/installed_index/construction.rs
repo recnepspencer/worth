@@ -67,9 +67,6 @@ impl WorthQueryInstalledPackageIndex {
         packages: impl IntoIterator<Item = WorthQueryAdmittedPortableDomainPackage>,
         authority_root: InstallationAuthorityRootKey,
     ) -> Result<Self, WorthQueryInstalledPackageIndexDenial> {
-        // WORTH-UI-TEMPORARY-INSTRUMENTATION
-        let trace = std::env::var_os("WORTH_REOPEN_TRACE").is_some();
-        let started = std::time::Instant::now();
         let mut construction = InstalledIndexConstruction::default();
         for package in packages {
             let owner = package.package().domain_identity().owner().to_string();
@@ -92,12 +89,6 @@ impl WorthQueryInstalledPackageIndex {
                 },
             );
         }
-        if trace {
-            eprintln!(
-                "[WORTH_REOPEN_TRACE] installed index content: {:?}",
-                started.elapsed()
-            );
-        }
         construction.finish(runtime, generation, authority_root)
     }
 }
@@ -109,9 +100,6 @@ impl InstalledIndexConstruction {
         generation: WorthQueryInstallationGeneration,
         authority_root: InstallationAuthorityRootKey,
     ) -> Result<WorthQueryInstalledPackageIndex, WorthQueryInstalledPackageIndexDenial> {
-        // WORTH-UI-TEMPORARY-INSTRUMENTATION
-        let trace = std::env::var_os("WORTH_REOPEN_TRACE").is_some();
-        let started = std::time::Instant::now();
         let declarations = std::mem::take(&mut self.application_schemas);
         let application_schemas =
             compile_application_schema_records(ApplicationSchemaRecordCompilationInput {
@@ -121,12 +109,6 @@ impl InstalledIndexConstruction {
                 declarations,
                 counters: &mut self.counters,
             })?;
-        if trace {
-            eprintln!(
-                "[WORTH_REOPEN_TRACE] installed index schema records: {:?}",
-                started.elapsed()
-            );
-        }
         self.complete_installed_counts(&application_schemas);
         let package_work = package_installation_work(&self.records);
         let application_schema_work = application_schema_installation_work(&application_schemas);
@@ -157,12 +139,6 @@ impl InstalledIndexConstruction {
             };
             WorthQueryInstalledPackageIndexDenial::new(kind, "installed-index-canonical-identity")
         })?;
-        if trace {
-            eprintln!(
-                "[WORTH_REOPEN_TRACE] installed index identity: {:?}",
-                started.elapsed()
-            );
-        }
         Ok(WorthQueryInstalledPackageIndex {
             runtime,
             generation,

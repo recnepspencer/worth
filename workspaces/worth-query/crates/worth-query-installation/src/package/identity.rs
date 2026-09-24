@@ -78,9 +78,6 @@ pub(super) fn canonical_identity_with_maximum_bytes(
     ),
     CanonicalDigestDerivationDenial,
 > {
-    // WORTH-UI-TEMPORARY-INSTRUMENTATION
-    let trace = std::env::var_os("WORTH_REOPEN_TRACE").is_some();
-    let started = std::time::Instant::now();
     let budget = CanonicalDigestWorkBudget::new(
         PACKAGE_BUDGET.maximum_entry_count(),
         maximum_canonical_bytes.min(INSTALLATION_MAXIMUM_CANONICAL_BYTES),
@@ -99,33 +96,11 @@ pub(super) fn canonical_identity_with_maximum_bytes(
     append_definitions(&mut basis, package)?;
     append_domain_operations(&mut basis, package)?;
     append_contracts_and_schemas(&mut basis, package)?;
-    if trace {
-        eprintln!(
-            "[WORTH_REOPEN_TRACE] package identity appended schema: {:?}, schema entries: {}",
-            started.elapsed(),
-            package
-                .application_schemas
-                .iter()
-                .map(|schema| schema
-                    .identity()
-                    .canonical_basis()
-                    .payload()
-                    .entries()
-                    .len())
-                .sum::<usize>()
-        );
-    }
     append_conditional_application_operations(&mut basis, package)?;
     for (index, contribution) in package.contributions.iter().enumerate() {
         basis.text(format!("contribution[{index}]"), contribution.as_str())?;
     }
     let (digest, work) = basis.derive()?;
-    if trace {
-        eprintln!(
-            "[WORTH_REOPEN_TRACE] package identity derived: {:?}",
-            started.elapsed()
-        );
-    }
     Ok((WorthQueryPortableDomainPackageIdentity(digest), work))
 }
 

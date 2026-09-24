@@ -198,42 +198,15 @@ impl WorthQueryPortableDomainPackage {
         maximum_canonical_work_bytes: u64,
     ) -> Result<WorthQueryValidatedPortableDomainPackage, WorthQueryPortablePackageValidationDenial>
     {
-        // WORTH-UI-TEMPORARY-INSTRUMENTATION
-        let trace = std::env::var_os("WORTH_REOPEN_TRACE").is_some();
-        let started = std::time::Instant::now();
         validate_package_members(&mut self)?;
-        if trace {
-            eprintln!(
-                "[WORTH_REOPEN_TRACE] package members: {:?}",
-                started.elapsed()
-            );
-        }
         let validated_domain_operations = admit_domain_operations(&self.domain_operations)?;
-        if trace {
-            eprintln!(
-                "[WORTH_REOPEN_TRACE] package operations: {:?}",
-                started.elapsed()
-            );
-        }
         let application_contract_spine =
             compile_application_contract_spine(&self.application_schemas)?;
-        if trace {
-            eprintln!(
-                "[WORTH_REOPEN_TRACE] package contract spine: {:?}",
-                started.elapsed()
-            );
-        }
         let maximum_canonical_work_bytes =
             usize::try_from(maximum_canonical_work_bytes).unwrap_or(usize::MAX);
         let (identity, canonical_work) =
             canonical_identity_with_maximum_bytes(&self, maximum_canonical_work_bytes)
                 .map_err(map_package_canonical_denial)?;
-        if trace {
-            eprintln!(
-                "[WORTH_REOPEN_TRACE] package canonical identity: {:?}",
-                started.elapsed()
-            );
-        }
         let authority =
             AuthorityWitness::from_authority_marker(PortablePackageValidationAuthority {
                 _private: (),
