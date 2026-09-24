@@ -17,6 +17,12 @@ impl<Query> WorthQueryObservedResultSet<Query> {
         self.source.idempotency_identity().bytes()
     }
 
+    pub(in crate::domain_computation::primary_graph) fn source(
+        &self,
+    ) -> &WorthQueryObservedSource<Query> {
+        &self.source
+    }
+
     #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn selection_for_test(
         &self,

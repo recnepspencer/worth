@@ -11,6 +11,7 @@ mod continuation;
 mod control_validation;
 mod controls;
 mod denial;
+pub(in crate::domain_computation::primary_graph) mod derived_view;
 mod disclosure;
 mod execution_shape;
 mod execution_validation;
@@ -53,6 +54,11 @@ pub use controls::{
 };
 pub use denial::{
     WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryAdmissionDenialKind,
+};
+pub use derived_view::{
+    WorthQueryManagedDerivedValue, WorthQueryManagedDerivedView,
+    WorthQueryManagedDerivedViewDenial, WorthQueryManagedDerivedViewKey,
+    WorthQueryManagedDerivedViewSnapshot,
 };
 pub use disclosure::{
     WorthQueryApplicationDisclosureDecisionFact, WorthQueryApplicationDisclosureOutcome,

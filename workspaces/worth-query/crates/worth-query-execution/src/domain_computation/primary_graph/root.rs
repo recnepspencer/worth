@@ -26,6 +26,7 @@ pub struct WorthQueryPrimaryGraph {
     source_owner: WorthQueryRelationalSourceOwner,
     aggregate_projections: Arc<Mutex<super::aggregate_projection::WorthQueryAggregateProjections>>,
     output_lineage: Arc<Mutex<super::output_lineage::WorthQueryApplicationOutputLineage>>,
+    managed_derived_views: Arc<super::application_query::derived_view::ManagedDerivedViewRegistry>,
     workflow_compilation_reuse:
         Arc<Mutex<super::workflow::definition::WorkflowDefinitionCompilationReuse>>,
     workflow_instance_progress_retention:
@@ -86,6 +87,7 @@ impl WorthQueryPrimaryGraph {
                 super::aggregate_projection::WorthQueryAggregateProjections::default(),
             )),
             output_lineage: Arc::new(Mutex::new(Default::default())),
+            managed_derived_views: Arc::new(Default::default()),
             workflow_compilation_reuse: Arc::new(Mutex::new(Default::default())),
             workflow_instance_progress_retention:
                 super::workflow::instance::default_progress_retention_shards(),
@@ -127,6 +129,12 @@ impl WorthQueryPrimaryGraph {
 
     pub(in crate::domain_computation) fn retain_layout(&self) -> Arc<WorthQueryPrimaryGraphLayout> {
         Arc::clone(&self.layout)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn managed_derived_views(
+        &self,
+    ) -> Arc<super::application_query::derived_view::ManagedDerivedViewRegistry> {
+        Arc::clone(&self.managed_derived_views)
     }
 
     pub(crate) fn integration_handle(&self) -> WorthQueryPrimaryGraphIntegrationHandle {

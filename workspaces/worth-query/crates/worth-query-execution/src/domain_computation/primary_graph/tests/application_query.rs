@@ -14,6 +14,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationQueryAccessContext, WorthQueryApplicationQueryAdmissionDenialKind,
     WorthQueryPrincipalResolutionMode,
 };
+mod derived_view;
 mod disclosure_noninterference;
 mod graph_work_capacity;
 mod identity_convergence;

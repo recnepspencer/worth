@@ -5,6 +5,7 @@ mod canonical_basis;
 mod continuation;
 mod definition;
 mod dependency_equivalence;
+mod derived_view;
 mod disclosure_contract;
 mod erased_definition;
 mod lane_eligibility;
@@ -43,6 +44,7 @@ pub use definition::{
     ApplicationQueryRootAuthoring, ApplicationQueryScopeAuthoring,
 };
 pub use dependency_equivalence::ApplicationQueryDependencyEquivalence;
+pub use derived_view::{ApplicationDerivedViewDefinition, ApplicationDerivedViewLimits};
 pub use disclosure_contract::{
     ApplicationQueryDisclosureContract, ApplicationQueryDisclosurePosture,
     ApplicationQueryDisclosureRule, ApplicationQueryDisclosureSelector,
