@@ -28,9 +28,15 @@ pub(crate) fn application_checkpoint_restores_fresh_editable_authority() {
     .expect("the checkpoint source application installs");
     let original_world = application.current_world();
     assert_live_relation_is_readable(&application, "source");
-    let checkpoint = application
-        .capture_application_checkpoint()
+    let (checkpoint, sections) = application
+        .capture_application_checkpoint_with_sections()
         .expect("the current committed world captures as opaque bytes");
+    assert_eq!(sections.total_bytes(), checkpoint.bytes().len());
+    assert!(sections.native_bytes() > 0);
+    assert_eq!(
+        sections.accepted_output_count() == 0,
+        sections.accepted_output_bytes() == 0
+    );
     drop(application);
 
     let restored_contacts = ContactCounters::default();

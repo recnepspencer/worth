@@ -49,7 +49,9 @@ pub use super::application_attempt::{
     WorthQueryReviewedElevation, WorthQueryWorkflowAdvanceAdapter,
     WorthQueryWorkflowInstanceStartAdapter, WorthQueryWorkflowProposalAdapter,
 };
-pub use super::application_checkpoint::WorthQueryApplicationCheckpoint;
+pub use super::application_checkpoint::{
+    WorthQueryApplicationCheckpoint, WorthQueryApplicationCheckpointSectionBytes,
+};
 pub use super::application_contribution::{
     WorthQueryAdmittedOutputDemand, WorthQueryApplicationConditionalBinding,
     WorthQueryApplicationConditionalPackageContract,

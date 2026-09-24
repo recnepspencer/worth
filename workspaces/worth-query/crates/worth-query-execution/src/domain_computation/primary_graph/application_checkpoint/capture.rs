@@ -1,4 +1,4 @@
-use super::{facts, WorthQueryApplicationCheckpoint};
+use super::{facts, WorthQueryApplicationCheckpoint, WorthQueryApplicationCheckpointSectionBytes};
 
 pub(super) fn merge_accepted_outputs(
     mut current: Vec<
@@ -30,6 +30,21 @@ where
         &self,
     ) -> Result<
         WorthQueryApplicationCheckpoint,
+        worth_relational::facade::durability::DurabilityError,
+    > {
+        self.capture_application_checkpoint_with_sections()
+            .map(|(checkpoint, _)| checkpoint)
+    }
+
+    /// Capture one checkpoint and its encoder-owned section sizes together.
+    /// The sizes describe these exact bytes; no second capture is performed.
+    pub fn capture_application_checkpoint_with_sections(
+        &self,
+    ) -> Result<
+        (
+            WorthQueryApplicationCheckpoint,
+            WorthQueryApplicationCheckpointSectionBytes,
+        ),
         worth_relational::facade::durability::DurabilityError,
     > {
         self.primary_provider.graph.with_runtime(|runtime| {

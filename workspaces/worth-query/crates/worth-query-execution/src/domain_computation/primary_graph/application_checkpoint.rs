@@ -1,8 +1,10 @@
 use sha2::{Digest, Sha256};
 
 mod capture;
+mod encode;
 mod facts;
 mod resources;
+mod section_bytes;
 #[cfg(test)]
 mod tests;
 #[cfg(test)]
@@ -10,6 +12,7 @@ use capture::merge_accepted_outputs;
 pub(in crate::domain_computation::primary_graph) use facts::decode as decode_producer_facts;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use facts::encode as encode_producer_facts;
+pub use section_bytes::WorthQueryApplicationCheckpointSectionBytes;
 
 const MAGIC: &[u8; 8] = b"WQAPCP01";
 const FORMAT_VERSION: u16 = 5;
@@ -62,66 +65,6 @@ impl WorthQueryApplicationCheckpoint {
         let checksum = Sha256::digest(&bytes[body_start..]);
         bytes[MAGIC.len()..body_start].copy_from_slice(&checksum);
         Self::from_untrusted_bytes(bytes.into_boxed_slice())
-    }
-
-    fn encode(
-        native: worth_relational::facade::durability::RelationalNativeCheckpoint,
-        publication: &super::WorthQueryPrimaryGraphPublication,
-        accepted_outputs: &[super::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity],
-    ) -> Self {
-        let native_bytes = native.bytes();
-        let accepted_bytes = accepted_outputs.iter().fold(0_usize, |total, accepted| {
-            let role_bytes = accepted.roles.iter().fold(0_usize, |role_total, role| {
-                role_total.saturating_add(8 + role.role.len() + 1 + 8 + role.entity_name.len() + 16)
-            });
-            total.saturating_add(
-                MINIMUM_V5_ACCEPTED_OUTPUT_BYTES - 1
-                    + accepted.producer.len()
-                    + role_bytes
-                    + accepted.producer_facts.as_ref().map_or(0, Vec::len),
-            )
-        });
-        let mut body = Vec::with_capacity(BODY_PREFIX_BYTES + native_bytes.len() + accepted_bytes);
-        body.extend_from_slice(&FORMAT_VERSION.to_be_bytes());
-        body.extend_from_slice(&publication.bootstrap_commit_id().0.to_be_bytes());
-        body.extend_from_slice(&(native_bytes.len() as u64).to_be_bytes());
-        body.extend_from_slice(&(accepted_outputs.len() as u64).to_be_bytes());
-        body.extend_from_slice(native_bytes);
-        for accepted in accepted_outputs {
-            body.extend_from_slice(&(accepted.producer.len() as u64).to_be_bytes());
-            body.extend_from_slice(accepted.producer.as_bytes());
-            body.extend_from_slice(&accepted.source);
-            encode_scope(&mut body, accepted.scope);
-            body.extend_from_slice(&accepted.source_partition);
-            body.push(u8::from(accepted.producer_dependency.is_some()));
-            body.extend_from_slice(&accepted.producer_dependency.unwrap_or_default());
-            body.extend_from_slice(&accepted.idempotency_key);
-            resources::encode_profile(&mut body, accepted.resources);
-            body.extend_from_slice(&(accepted.roles.len() as u64).to_be_bytes());
-            for role in &accepted.roles {
-                body.extend_from_slice(&(role.role.len() as u64).to_be_bytes());
-                body.extend_from_slice(role.role.as_bytes());
-                body.push(match role.posture {
-                    super::WorthQueryApplicationOutputPosture::Preserve => 0,
-                    super::WorthQueryApplicationOutputPosture::Create => 1,
-                    super::WorthQueryApplicationOutputPosture::Retire => 2,
-                });
-                body.extend_from_slice(&(role.entity_name.len() as u64).to_be_bytes());
-                body.extend_from_slice(role.entity_name.as_bytes());
-                encode_entity(&mut body, role.entity);
-            }
-            let fact_bytes = accepted.producer_facts.as_deref().unwrap_or_default();
-            body.extend_from_slice(&(fact_bytes.len() as u64).to_be_bytes());
-            body.extend_from_slice(fact_bytes);
-        }
-        let checksum = Sha256::digest(&body);
-        let mut bytes = Vec::with_capacity(MAGIC.len() + CHECKSUM_BYTES + body.len());
-        bytes.extend_from_slice(MAGIC);
-        bytes.extend_from_slice(&checksum);
-        bytes.extend_from_slice(&body);
-        Self {
-            bytes: bytes.into_boxed_slice(),
-        }
     }
 
     pub(super) fn decode(self) -> Result<DecodedApplicationCheckpoint, String> {
@@ -370,19 +313,4 @@ impl<'a> CheckpointCursor<'a> {
     const fn is_empty(&self) -> bool {
         self.remaining.is_empty()
     }
-}
-
-fn encode_scope(
-    output: &mut Vec<u8>,
-    scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
-) {
-    output.extend_from_slice(&scope.partition_id().to_be_bytes());
-    output.extend_from_slice(&scope.local_slot().to_be_bytes());
-    output.extend_from_slice(&scope.generation().to_be_bytes());
-}
-
-fn encode_entity(output: &mut Vec<u8>, entity: worth_relational::facade::identity::EntityId) {
-    output.extend_from_slice(&entity.partition_value().to_be_bytes());
-    output.extend_from_slice(&entity.local_slot_value().to_be_bytes());
-    output.extend_from_slice(&entity.generation_value().to_be_bytes());
 }
