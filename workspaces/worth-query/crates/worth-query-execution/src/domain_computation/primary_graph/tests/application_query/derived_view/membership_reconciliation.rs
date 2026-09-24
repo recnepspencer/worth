@@ -287,7 +287,17 @@ fn certified_membership_changes_retain_clean_arcs_and_read_only_new_or_dirty_ent
     );
     assert_eq!(added.keys(), &[key.clone()]);
 
-    let after_membership = change(after_open.product(), &tag_locator, "open-v4");
+    let after_content = change(after_open.product(), &label_locator, "primary-content");
+    assert_eq!(
+        world
+            .application
+            .observe_managed_derived_view(&view)
+            .unwrap()
+            .get(&key)
+            .err(),
+        Some(WorthQueryManagedDerivedViewDenial::EntryRefreshRequired)
+    );
+    let after_membership = change(after_content.product(), &tag_locator, "open-v4");
     let after_label = change(
         after_membership.product(),
         &label_locator,

@@ -13,14 +13,7 @@ pub(in crate::domain_computation::primary_graph) fn changes_from_summary(
 ) -> Option<Vec<ViewChange>> {
     let mut required = 0usize;
     for record in &summary.records {
-        // An incomplete summary cannot prove that no retained dependency
-        // changed. Publication will make views cold in this case.
-        if matches!(record.target, RecordRef::Entity(_))
-            && record.structural_change == RecordStructuralChange::Updated
-            && record.aspect_scopes.is_empty()
-        {
-            return None;
-        }
+        // Relation adjacency has no safe bounded target without endpoints.
         if matches!(record.target, RecordRef::Relation(_))
             && record.before_endpoints.is_none()
             && record.after_endpoints.is_none()
@@ -40,7 +33,11 @@ pub(in crate::domain_computation::primary_graph) fn changes_from_summary(
     for record in &summary.records {
         match record.target {
             RecordRef::Entity(entity) => {
-                if record.structural_change != RecordStructuralChange::Updated {
+                // A scope-free update is conservatively bounded by its exact
+                // entity identity, never treated as a no-op.
+                if record.structural_change != RecordStructuralChange::Updated
+                    || record.aspect_scopes.is_empty()
+                {
                     changes.push(ViewChange::Entity(entity));
                 }
                 for scope in &record.aspect_scopes {
@@ -76,6 +73,8 @@ pub(in crate::domain_computation::primary_graph) fn changes_from_summary(
 
 #[cfg(test)]
 mod tests {
+    use std::collections::BTreeSet;
+
     use worth_foundational::facade::{AspectKey, CanonicalFieldPath, FieldKey};
     use worth_relational::facade::{
         history::{BranchId, CommitId},
@@ -89,6 +88,9 @@ mod tests {
     };
 
     use super::{changes_from_summary, ViewChange};
+    use crate::domain_computation::primary_graph::application_query::derived_view::{
+        dependency::ViewDependency, publication::DependencyIndex,
+    };
 
     fn entity(slot: u64) -> EntityId {
         EntityId::new(PartitionId::main(), slot, 1)
@@ -178,19 +180,51 @@ mod tests {
     }
 
     #[test]
-    fn missing_changed_scopes_cannot_keep_a_view_warm() {
-        for target in [
-            RecordRef::Entity(entity(1)),
-            RecordRef::Relation(RelationId::new(PartitionId::main(), 1, 1)),
-        ] {
-            let incomplete = summary(vec![PreparedRelationalRecordChange {
-                target,
-                structural_change: RecordStructuralChange::Updated,
-                aspect_scopes: vec![],
-                before_endpoints: None,
-                after_endpoints: None,
-            }]);
-            assert!(changes_from_summary(&incomplete, 4).is_none());
-        }
+    fn scope_free_updated_entity_dirties_only_its_dependent_entry() {
+        let changed = entity(2);
+        let sibling = entity(3);
+        let membership = entity(1);
+        let sealed = summary(vec![PreparedRelationalRecordChange {
+            target: RecordRef::Entity(changed),
+            structural_change: RecordStructuralChange::Updated,
+            aspect_scopes: vec![],
+            before_endpoints: None,
+            after_endpoints: None,
+        }]);
+        let changes = changes_from_summary(&sealed, 1).unwrap();
+        assert_eq!(changes, vec![ViewChange::Entity(changed)]);
+        assert!(changes_from_summary(&sealed, 0).is_none());
+        let changed_aspect = AspectKey::new("body").unwrap();
+        let siblings_aspect = AspectKey::new("body").unwrap();
+        let membership_dependencies = BTreeSet::from([ViewDependency::Entity(membership)]);
+        let entry_dependencies = [
+            (
+                1,
+                BTreeSet::from([ViewDependency::Aspect(changed, changed_aspect)]),
+            ),
+            (
+                2,
+                BTreeSet::from([ViewDependency::Aspect(sibling, siblings_aspect)]),
+            ),
+        ];
+        let index = DependencyIndex::build(
+            &membership_dependencies,
+            entry_dependencies.iter().map(|(key, deps)| (key, deps)),
+        );
+        let affected = index.affected(&changes, 8).unwrap();
+        assert_eq!(affected.entries, BTreeSet::from([1]));
+        assert!(!affected.membership);
+    }
+
+    #[test]
+    fn relation_without_live_endpoints_still_denies_local_invalidation() {
+        let incomplete = summary(vec![PreparedRelationalRecordChange {
+            target: RecordRef::Relation(RelationId::new(PartitionId::main(), 1, 1)),
+            structural_change: RecordStructuralChange::Updated,
+            aspect_scopes: vec![],
+            before_endpoints: None,
+            after_endpoints: None,
+        }]);
+        assert!(changes_from_summary(&incomplete, 4).is_none());
     }
 }
