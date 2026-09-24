@@ -29,14 +29,14 @@ mod omitted_program_binding;
 mod roots;
 mod validation_denials;
 pub(crate) use omitted_program_binding::validated_omitted_program_binding;
-pub(crate) use validation_denials::{
-    duplicate_feature_is_denied, missing_required_input_is_denied,
-    undeclared_input_is_denied, unexported_cross_instance_is_denied,
-};
 pub use roots::{
     ConsumerDiscoveredProgramRoot, ConsumerProgramRoot, ConsumerRequiredSharedRoot,
     ConsumerSecondaryProgramRoot, ConsumerTruncatedProgramRoot, ConsumerUndeclaredProgramRoot,
     DiscoveredPlanarRoot, RequiredSharedPlanarRoot, SecondaryPlanarRoot,
+};
+pub(crate) use validation_denials::{
+    duplicate_feature_is_denied, missing_required_input_is_denied, undeclared_input_is_denied,
+    unexported_cross_instance_is_denied,
 };
 pub struct ConsumerProgram;
 pub struct OmittedInstalledRuleProgram;

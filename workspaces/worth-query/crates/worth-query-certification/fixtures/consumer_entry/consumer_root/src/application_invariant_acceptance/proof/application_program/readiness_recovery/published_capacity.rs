@@ -17,7 +17,10 @@ pub(crate) fn published_outputs_hold_no_hidden_read_lease(
     let mut demands = Vec::new();
 
     for source in ["anchor-a", "sibling-a", "remote-a"] {
-        let prior_outputs = world.application.output_checkpoint_snapshot_state_for_test().0;
+        let prior_outputs = world
+            .application
+            .output_checkpoint_snapshot_state_for_test()
+            .0;
         let mut demand = request
             .start_program_outputs::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
                 &world.application,
@@ -48,7 +51,9 @@ pub(crate) fn published_outputs_hold_no_hidden_read_lease(
         );
         demands.push(demand);
     }
-    let (outputs, pinned) = world.application.output_checkpoint_snapshot_state_for_test();
+    let (outputs, pinned) = world
+        .application
+        .output_checkpoint_snapshot_state_for_test();
     assert_eq!(outputs, 3);
     assert_eq!(pinned, 0);
 
@@ -73,7 +78,9 @@ pub(crate) fn published_outputs_hold_no_hidden_read_lease(
         drop(demand);
     }
     assert_eq!(
-        world.application.output_checkpoint_snapshot_state_for_test(),
+        world
+            .application
+            .output_checkpoint_snapshot_state_for_test(),
         (15, 0),
         "settled and dropped handles leave no hidden checkpoint lease",
     );

@@ -51,13 +51,16 @@ pub(super) fn revised_parent_publication_is_the_dependent_basis(
         };
         let mut performed = performed
             .start_required_outputs(&request, controls)
-            .expect("the typed output graph starts");
+            .unwrap_or_else(|failure| {
+                panic!("the typed output graph starts: {:?}", failure.denial())
+            });
         let settled = loop {
             match performed
                 .required_output_mut()
                 .advance(&request)
-                .expect("the typed output graph advances")
-            {
+                .unwrap_or_else(|denial| {
+                    panic!("revision {replacement_y} output graph advances: {denial:?}")
+                }) {
                 WorthQueryApplicationProgramOutputProgress::Pending => {}
                 WorthQueryApplicationProgramOutputProgress::Settled(settled) => break settled,
             }

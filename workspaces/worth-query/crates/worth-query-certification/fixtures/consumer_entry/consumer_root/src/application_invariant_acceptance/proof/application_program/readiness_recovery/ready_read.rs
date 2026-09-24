@@ -22,7 +22,9 @@ pub(crate) fn ready_read_capacity_preserves_completion(
         )
         .expect("the declared program starts its output");
     assert!(matches!(
-        program.settle(&request).expect("the program output settles"),
+        program
+            .settle(&request)
+            .expect("the program output settles"),
         WorthQueryApplicationProgramOutputProgress::Settled(_)
     ));
     drop(program);
@@ -40,7 +42,8 @@ pub(crate) fn ready_read_capacity_preserves_completion(
         )
         .expect("the output settles within the bounded progression");
     let committed = first
-        .receipt()
+        .application_commit_receipt()
+        .expect("the first output retains its commit")
         .committed_product_publication()
         .composite_commit()
         .clone();
@@ -89,7 +92,8 @@ pub(crate) fn ready_read_capacity_preserves_completion(
     };
     assert_eq!(
         reopened
-            .receipt()
+            .application_commit_receipt()
+            .expect("the ready output retains its commit")
             .committed_product_publication()
             .composite_commit(),
         &committed,

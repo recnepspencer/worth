@@ -53,7 +53,8 @@ pub(crate) fn complete_dependency_aba_advances_the_live_demand(
 
     let first_a = settle!("first A");
     let first_a_commit = first_a
-        .receipt()
+        .application_commit_receipt()
+        .expect("first A publishes an output")
         .committed_product_publication()
         .composite_commit()
         .clone();
@@ -61,7 +62,8 @@ pub(crate) fn complete_dependency_aba_advances_the_live_demand(
     let retry_a = settle!("unchanged first A");
     assert_eq!(
         retry_a
-            .receipt()
+            .application_commit_receipt()
+            .expect("unchanged A retains its output commit")
             .committed_product_publication()
             .composite_commit(),
         &first_a_commit,
@@ -110,7 +112,8 @@ pub(crate) fn complete_dependency_aba_advances_the_live_demand(
 
     let second_a = settle!("A after B");
     let second_a_commit = second_a
-        .receipt()
+        .application_commit_receipt()
+        .expect("A after B republishes its output")
         .committed_product_publication()
         .composite_commit()
         .clone();
@@ -139,7 +142,8 @@ pub(crate) fn complete_dependency_aba_advances_the_live_demand(
     let retry_second_a = settle!("unchanged second A");
     assert_eq!(
         retry_second_a
-            .receipt()
+            .application_commit_receipt()
+            .expect("converged A retains its output commit")
             .committed_product_publication()
             .composite_commit(),
         &second_a_commit,

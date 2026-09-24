@@ -103,8 +103,8 @@ fn publish_initial(request: &Request<'_>, application: &ProgramApplication, scop
             application,
             PlanarOutputDemand::new(scope_key),
             WorthQueryOutputDemandControls::new(
-            NonZeroUsize::new(4_096).unwrap(),
-            NonZeroUsize::new(8_192).unwrap(),
+                NonZeroUsize::new(4_096).unwrap(),
+                NonZeroUsize::new(8_192).unwrap(),
             ),
         )
         .expect("the declared root producer starts for the selected source");

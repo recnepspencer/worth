@@ -94,6 +94,7 @@ pub(crate) fn preserved_noop_output_completes_readiness_without_a_signal_success
     );
     let committed = settlement
         .root_receipt()
+        .expect("the produced root retains its commit")
         .committed_product_publication()
         .composite_commit()
         .clone();
@@ -130,7 +131,8 @@ pub(crate) fn preserved_noop_output_completes_readiness_without_a_signal_success
     };
     assert_eq!(
         reopened
-            .receipt()
+            .application_commit_receipt()
+            .expect("the reopened output retains its commit")
             .committed_product_publication()
             .composite_commit(),
         &committed,

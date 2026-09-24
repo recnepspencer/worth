@@ -323,7 +323,8 @@ pub(super) fn performed_source_settles_required_output(
     let retired_settlement = recovery::settle_recovered(&request, "anchor-a", controls);
     assert_eq!(
         retired_settlement
-            .receipt()
+            .application_commit_receipt()
+            .expect("the retired output retains its original commit")
             .committed_product_publication()
             .composite_commit(),
         &exact_output

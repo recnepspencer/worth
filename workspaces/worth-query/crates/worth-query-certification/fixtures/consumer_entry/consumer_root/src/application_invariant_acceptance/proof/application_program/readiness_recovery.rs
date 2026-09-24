@@ -5,10 +5,10 @@ use worth_query_host::facade::application_entry::{
     WorthQueryApplicationProgramOutputProgress, WorthQueryApplicationRequestExt,
     WorthQueryRequiredOutputPreparationDenial,
 };
+use worth_query_host::facade::primary_graph::WorthQueryProductBranchAdmissionDenial;
 use worth_query_topology_entry::{
     PlanarEdit, PlanarMutation, PlanarOutputDemand, PlanarOutputRead, PlanarRead,
 };
-use worth_query_host::facade::primary_graph::WorthQueryProductBranchAdmissionDenial;
 
 use super::super::super::{authentication, installation, seed::length};
 use super::super::adjust;
@@ -111,11 +111,16 @@ pub(super) fn denied_program_producer_releases_the_shared_claim(
         ) if denial.kind()
             == worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind::ProducerUnavailable
     ));
-    let settled = (0..64).find_map(|_| match peer.advance(&request).expect("the peer resumes") {
-        WorthQueryApplicationProgramOutputProgress::Pending => None,
-        WorthQueryApplicationProgramOutputProgress::Settled(settled) => Some(settled),
-    });
-    assert!(settled.is_some(), "the peer must settle within bounded advances");
+    let settled = (0..64).find_map(
+        |_| match peer.advance(&request).expect("the peer resumes") {
+            WorthQueryApplicationProgramOutputProgress::Pending => None,
+            WorthQueryApplicationProgramOutputProgress::Settled(settled) => Some(settled),
+        },
+    );
+    assert!(
+        settled.is_some(),
+        "the peer must settle within bounded advances"
+    );
 }
 
 pub(super) fn readiness_failure_recovers_exact_pending_output(

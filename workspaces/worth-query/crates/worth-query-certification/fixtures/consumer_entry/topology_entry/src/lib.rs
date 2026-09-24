@@ -16,6 +16,8 @@ pub use alternate_output::*;
 pub use application_program::*;
 pub use contribution::TopologyConfiguration;
 pub use final_output::*;
+#[cfg(test)]
+mod checkpoint_recovery;
 mod discovery_read;
 mod mutation;
 mod mutation_identity;
@@ -30,8 +32,6 @@ mod producer;
 mod readiness;
 mod source_adjustment;
 mod vertex_replacement;
-#[cfg(test)]
-mod checkpoint_recovery;
 pub use vertex_replacement::*;
 
 pub use discovery_read::*;

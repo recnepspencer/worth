@@ -135,7 +135,8 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
         .find(|(root, _)| root.body_key() == "remote-b")
         .expect("the older independent root settles")
         .1
-        .receipt()
+        .application_commit_receipt()
+        .expect("the older root retains its commit")
         .committed_product_publication()
         .composite_commit();
     let second_remote = second_settled
@@ -143,7 +144,8 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
         .find(|(root, _)| root.body_key() == "remote-b")
         .expect("the newer publication joins the independent root")
         .1
-        .receipt()
+        .application_commit_receipt()
+        .expect("the joined root retains its commit")
         .committed_product_publication()
         .composite_commit();
     assert_eq!(

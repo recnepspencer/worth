@@ -38,10 +38,8 @@ impl ApplicationProgramDefinition<ConsumerSchema> for OmittedProgramBinding {
     }
 }
 
-pub(crate) fn validated_omitted_program_binding() -> ValidatedApplicationProgram<
-    ConsumerSchema,
-    OmittedProgramBinding,
-> {
+pub(crate) fn validated_omitted_program_binding(
+) -> ValidatedApplicationProgram<ConsumerSchema, OmittedProgramBinding> {
     ApplicationProgramAuthoring::<ConsumerSchema, OmittedProgramBinding>::begin()
         .validated_program()
         .expect("the omitted-binding program is declaration-valid")

@@ -109,11 +109,13 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn j
         assert_eq!(first_demand.body_key(), second_demand.body_key());
         assert_eq!(
             first_root
-                .receipt()
+                .application_commit_receipt()
+                .expect("the completed first root retains its commit")
                 .committed_product_publication()
                 .composite_commit(),
             second_root
-                .receipt()
+                .application_commit_receipt()
+                .expect("the joined root retains its commit")
                 .committed_product_publication()
                 .composite_commit(),
             "the later publication joins the older completed root output"

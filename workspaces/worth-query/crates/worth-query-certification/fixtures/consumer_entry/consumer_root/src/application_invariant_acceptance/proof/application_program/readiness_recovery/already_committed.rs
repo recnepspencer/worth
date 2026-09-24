@@ -61,14 +61,20 @@ fn settle_and_close(
         )
         .expect("the program output demand starts");
     let settled = (0..32)
-        .find_map(
-            |_| match demand.advance(request).expect("the program output demand settles") {
+        .find_map(|_| {
+            match demand
+                .advance(request)
+                .expect("the program output demand settles")
+            {
                 WorthQueryApplicationProgramOutputProgress::Pending => None,
                 WorthQueryApplicationProgramOutputProgress::Settled(value) => Some(value),
-            },
-        )
+            }
+        })
         .expect("the output settles within the bounded progression");
-    let commit = settled.root_receipt().clone();
+    let commit = settled
+        .root_receipt()
+        .expect("the produced root retains its commit")
+        .clone();
     let delivery_contacts = settled
         .root_readiness_delivery()
         .unwrap()
@@ -96,12 +102,20 @@ fn settle_ready(
         .start()
         .expect("the settled output opens for a ready read");
     let settled = (0..32)
-        .find_map(|_| match demand.advance(request).expect("the ready output is readable") {
-            WorthQueryApplicationOutputDemandProgress::Pending => None,
-            WorthQueryApplicationOutputDemandProgress::Settled(value) => Some(value),
+        .find_map(|_| {
+            match demand
+                .advance(request)
+                .expect("the ready output is readable")
+            {
+                WorthQueryApplicationOutputDemandProgress::Pending => None,
+                WorthQueryApplicationOutputDemandProgress::Settled(value) => Some(value),
+            }
         })
         .expect("the ready output settles within bounded progression");
-    let receipt = settled.receipt().clone();
+    let receipt = settled
+        .application_commit_receipt()
+        .expect("the ready output retains its commit")
+        .clone();
     let contacts = settled
         .readiness_delivery()
         .expect("a ready output retains delivery evidence")
