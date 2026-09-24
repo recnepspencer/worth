@@ -18,6 +18,8 @@ mod manifest_entry_cost;
 mod persisted_world;
 #[path = "writer_crash/recovery_planning.rs"]
 mod recovery_planning;
+#[path = "writer_crash/rewrite_recovery.rs"]
+mod rewrite_recovery;
 #[path = "writer_crash/successor_candidate_admission.rs"]
 mod successor_candidate_admission;
 #[path = "writer_crash/successor_candidate_cost.rs"]

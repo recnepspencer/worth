@@ -61,7 +61,13 @@ impl ManifestUpdatePlanning<'_, '_, '_> {
                 return self.rebuild_for_successor_capacity(current_root);
             }
         }
-        self.rewrite_at_successor_capacity()
+        if let Some(plan) = self.incremental_when_packed()? {
+            return Ok(plan);
+        }
+        let Some(current_root) = self.current.routing_root() else {
+            return Err(ManifestLookupFailure::Damaged);
+        };
+        self.rebuild_for_successor_capacity(current_root)
     }
 
     fn require_branchable_capacities(&self) -> Result<(), ManifestLookupFailure> {
@@ -143,15 +149,9 @@ impl ManifestUpdatePlanning<'_, '_, '_> {
         })
     }
 
-    fn rewrite_at_successor_capacity(
-        self,
-    ) -> Result<ManifestPublicationPlan, ManifestLookupFailure> {
-        let Self {
-            reader,
-            allocation,
-            current,
-            request,
-        } = self;
+    fn incremental_when_packed(
+        &self,
+    ) -> Result<Option<ManifestPublicationPlan>, ManifestLookupFailure> {
         let RootManifestUpdateRequest {
             successor_generation,
             successor_capacity,
@@ -162,19 +162,19 @@ impl ManifestUpdatePlanning<'_, '_, '_> {
             placements: updates,
             last_inline_record,
             last_inline_segment,
-        } = request;
+        } = self.request;
         let mut planner = UpdatePlanner {
-            allocation,
-            reader,
-            current,
+            allocation: self.allocation,
+            reader: self.reader,
+            current: self.current,
             successor_generation,
             successor_capacity,
-            next_block: current.next_block(),
+            next_block: self.current.next_block(),
             blocks: Vec::new(),
             discovery: ManifestDiscoveryCounterSnapshot::default(),
             inserted: 0,
         };
-        let mut roots = match current.routing_root() {
+        let mut roots = match self.current.routing_root() {
             Some(root) => planner.rewrite(root, updates)?,
             None => {
                 planner.inserted = updates.len() as u64;
@@ -185,13 +185,19 @@ impl ManifestUpdatePlanning<'_, '_, '_> {
             roots = planner.write_parent_level(roots)?;
         }
         let routing_root = roots.pop();
-        let record_count = current
+        let record_count = self
+            .current
             .record_count()
             .checked_add(planner.inserted)
             .ok_or(ManifestLookupFailure::Damaged)?;
+        let packed_level =
+            worth_store_physical_format::required_tree_level(record_count, successor_capacity);
+        if routing_root.map(ManifestBlockReference::level) != packed_level {
+            return Ok(None);
+        }
         let root = DurablePhysicalRootManifest::builder(
             successor_generation,
-            current.tree_identity(),
+            self.current.tree_identity(),
             successor_capacity,
             free_space_checksum,
         )
@@ -205,11 +211,11 @@ impl ManifestUpdatePlanning<'_, '_, '_> {
         .last_inline_segment(last_inline_segment)
         .admit()
         .ok_or(ManifestLookupFailure::Damaged)?;
-        Ok(ManifestPublicationPlan {
+        Ok(Some(ManifestPublicationPlan {
             root,
             blocks: planner.blocks,
             discovery: planner.discovery,
-        })
+        }))
     }
 }
 

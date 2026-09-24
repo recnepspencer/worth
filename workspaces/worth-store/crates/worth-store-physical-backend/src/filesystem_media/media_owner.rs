@@ -49,6 +49,8 @@ pub struct FilesystemMediaOwner {
     store_root_publication_required: AtomicBool,
     root_parent_publication_required: AtomicBool,
     mutation_lease: MutationOwnershipLease,
+    #[cfg(feature = "certification-test-authority")]
+    fail_next_removal_directory_sync: AtomicBool,
 }
 
 pub(super) struct ObservedMediaOwnerAdmissionFailure {
@@ -71,6 +73,18 @@ impl FilesystemMediaOwner {
 
     pub fn mutation_owner(&self) -> MutationOwnerObservation {
         self.mutation_lease.observation()
+    }
+
+    #[cfg(feature = "certification-test-authority")]
+    pub fn certification_fail_next_removal_directory_sync(&self) {
+        self.fail_next_removal_directory_sync
+            .store(true, Ordering::Relaxed);
+    }
+
+    #[cfg(feature = "certification-test-authority")]
+    pub(super) fn take_removal_directory_sync_failure(&self) -> bool {
+        self.fail_next_removal_directory_sync
+            .swap(false, Ordering::Relaxed)
     }
 
     pub(super) fn begin_mutation(

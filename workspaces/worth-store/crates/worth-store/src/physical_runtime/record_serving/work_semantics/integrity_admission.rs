@@ -45,7 +45,6 @@ pub(in crate::physical_runtime::record_serving) enum CleanExtentAdmissionDenial 
 
 pub(in crate::physical_runtime::record_serving) struct AdmittedCleanInlineRecord {
     pub payload: Range<usize>,
-    pub page_lsn: worth_store_physical_format::PhysicalPageLsn,
 }
 
 pub(in crate::physical_runtime::record_serving) struct AdmittedCleanInlinePage {
@@ -109,7 +108,6 @@ pub(in crate::physical_runtime::record_serving) struct AdmittedCleanExtentManife
 
 pub(in crate::physical_runtime::record_serving) struct AdmittedCleanExtentChunk {
     pub payload: Range<usize>,
-    pub page_lsn: worth_store_physical_format::PhysicalPageLsn,
 }
 
 pub(in crate::physical_runtime::record_serving) fn admit_inline_record(
@@ -135,7 +133,6 @@ pub(in crate::physical_runtime::record_serving) fn admit_inline_record(
         .map_err(classify_inline_projection)?;
     Ok(AdmittedCleanInlineRecord {
         payload: projection.payload,
-        page_lsn: projection.page_lsn,
     })
 }
 
@@ -187,7 +184,6 @@ pub(in crate::physical_runtime::record_serving) fn admit_extent_chunk(
         .map_err(classify_extent_projection)?;
     Ok(AdmittedCleanExtentChunk {
         payload: projection.payload,
-        page_lsn: projection.page_lsn,
     })
 }
 

@@ -17,6 +17,7 @@ pub(super) fn validate_disclosure<Schema, Family>(
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request_scope: &WorthQueryRequestScope,
     delivery_branch: crate::basis::WorthQueryProductBranch,
+    allow_retained_program_basis: bool,
     source: WorthQueryApplicationOutputDemandSource<
         FamilySourceQuery<Schema, Family>,
         FamilySourceValue<Schema, Family>,
@@ -81,7 +82,13 @@ where
         || receipt.query_identity() != &source.query_identity
         || source.query_identity != demand.observed_source.query_identity
         || source.query_identifier != demand.observed_source.query_identifier
-        || disclosed != &current
+        // A dependent program output is admitted from its parent's retained
+        // publication, which can intentionally precede the public branch head
+        // until the whole output program completes. Ordinary callers retain
+        // exact-head currentness; internal program progression may use only an
+        // observation from the same branch occurrence.
+        || (!allow_retained_program_basis && disclosed != &current)
+        || (allow_retained_program_basis && !disclosed.same_branch_occurrence(&current))
         || !original.same_branch_occurrence(disclosed)
         || source.model_root != demand.observed_source.model_root
         || source.source_root() != demand.observed_source.source_root()

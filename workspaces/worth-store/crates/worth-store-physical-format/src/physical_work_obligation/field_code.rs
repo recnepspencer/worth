@@ -65,6 +65,7 @@ pub enum PhysicalWorkObligationTargetCode {
     ArtifactParentSynchronization(PhysicalWorkArtifactCode),
     CatalogReplacement(PhysicalWorkArtifactCode),
     RecordNamespaceSynchronization,
+    ArtifactRemoval(PhysicalWorkArtifactCode),
 }
 
 impl PhysicalWorkObligationOperationCode {

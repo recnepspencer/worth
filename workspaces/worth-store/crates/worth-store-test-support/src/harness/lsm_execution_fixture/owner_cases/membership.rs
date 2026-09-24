@@ -5,6 +5,7 @@ use worth_store_lsm_authority::{
 use worth_store_wal::BlobWalRecordKind;
 
 use super::super::begin_durability_fixture;
+use super::published_replacement::published_replacement;
 use super::world;
 
 pub(super) fn observe() -> Vec<LsmMembershipOwnerCaseObservation> {
@@ -63,6 +64,12 @@ fn observe_selection(observations: &mut Vec<LsmMembershipOwnerCaseObservation>) 
         let denied = select_lsm_compaction_membership(&session, key);
         observations.push(denied.owner_case_observation());
     }
+
+    // A published base whose output frame is gone cannot seed another selection.
+    let published = published_replacement();
+    published.truncate_segment_at(published.output_frame_offset);
+    let stale_base = select_lsm_compaction_membership(&published.session, published.key);
+    observations.push(stale_base.owner_case_observation());
 }
 
 fn corrupt_byte(path: &std::path::Path, offset: u64) {

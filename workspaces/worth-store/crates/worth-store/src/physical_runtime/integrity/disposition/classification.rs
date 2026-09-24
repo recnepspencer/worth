@@ -1,12 +1,12 @@
+use worth_store_physical_integrity::PhysicalIntegrityObservationOutcome;
+#[cfg(test)]
 use worth_store_physical_integrity::{
-    PhysicalIntegrityObservationOutcome, PhysicalIntegrityRejection,
-    PhysicalIntegrityValidationRecord,
+    PhysicalIntegrityRejection, PhysicalIntegrityValidationRecord,
 };
 
-use super::authority::{
-    DamagedPhysicalAuthorityObservation, IntactPhysicalAuthorityObservation,
-    StoreAuthoritativeArtifactOwnerTruth,
-};
+#[cfg(test)]
+use super::authority::StoreAuthoritativeArtifactOwnerTruth;
+use super::authority::{DamagedPhysicalAuthorityObservation, IntactPhysicalAuthorityObservation};
 use super::derived::{DamagedPhysicalDerivedDisposition, IntactPhysicalDerivedObservation};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -30,6 +30,7 @@ pub enum OwnerDispositionProjectionDenial {
     NonDamageCannotReceiveOwnerRole,
 }
 
+#[cfg(test)]
 pub(super) fn project_intact_authority(
     owner_truth: StoreAuthoritativeArtifactOwnerTruth,
     validation: PhysicalIntegrityValidationRecord,
@@ -46,6 +47,7 @@ pub(super) fn project_intact_authority(
     ))
 }
 
+#[cfg(test)]
 pub(super) fn project_damaged_authority(
     owner_truth: StoreAuthoritativeArtifactOwnerTruth,
     rejection: PhysicalIntegrityRejection,
@@ -64,6 +66,7 @@ pub(super) fn project_damaged_authority(
     ))
 }
 
+#[cfg(test)]
 pub(super) fn project_rejection_without_owner_truth(
     rejection: PhysicalIntegrityRejection,
 ) -> Result<PhysicalArtifactDisposition, OwnerDispositionProjectionDenial> {
@@ -77,6 +80,7 @@ pub(super) fn project_rejection_without_owner_truth(
 }
 
 impl PhysicalArtifactDisposition {
+    #[cfg(test)]
     const fn with_owner_role(
         validator_outcome: PhysicalIntegrityObservationOutcome,
         owner_role: PhysicalArtifactRoleDisposition,

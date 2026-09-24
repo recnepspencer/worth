@@ -155,7 +155,7 @@ where
             return Err(WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired);
         }
         self.execute_retained_with_commit(
-            move |request| super::authorization::prepare_selected(request, selected),
+            move |request| super::authorization::prepare_selected(request, &selected),
             |_, program, idempotency| {
                 if selected_owns_action {
                     owner.compare_and_commit_program_action_retained::<Intent::Binding>(

@@ -83,8 +83,7 @@ fn exact_checkpoint_root_absence_and_corruption_stop_before_owner_projection() {
                 else {
                     panic!("exact source root family")
                 };
-                assert_eq!(admitted.project_for_recovery(&mut counters).0, manifest);
-                assert_eq!(counters.owner_projection_entries, 1);
+                assert_eq!(admitted.project().0, manifest);
             }
             "absent" => {
                 assert_eq!(counters.rejected_absent, 1);

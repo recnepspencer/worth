@@ -139,7 +139,7 @@ fn observe(root: &Path) -> Value {
             "--max-symlinks",
             "0",
             "--max-elapsed-ms",
-            "10000",
+            crate::support::FIXTURE_ELAPSED_ARGUMENT,
             "--max-report-bytes",
             "65536",
         ])

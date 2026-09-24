@@ -15,8 +15,9 @@ pub use counters::*;
 pub use denials::*;
 pub use durable_page::{
     append_inline_records_owned, decode_inline_record, encode_inline_page, inspect_inline_page,
-    AppendedInlineRecord, InlinePageDenial, InlinePageGeometry, InlineRecordAppend,
-    InlineRecordRange, DURABLE_INLINE_PAGE_PREFIX_BYTES, DURABLE_INLINE_SLOT_BYTES,
+    restamp_inline_page_generation, AppendedInlineRecord, InlinePageDenial, InlinePageGeometry,
+    InlineRecordAppend, InlineRecordRange, DURABLE_INLINE_PAGE_PREFIX_BYTES,
+    DURABLE_INLINE_SLOT_BYTES,
 };
 pub use page_inventory::{inspect_inline_page_records, InlinePageRecordDescriptor};
 pub use slot_directory::*;

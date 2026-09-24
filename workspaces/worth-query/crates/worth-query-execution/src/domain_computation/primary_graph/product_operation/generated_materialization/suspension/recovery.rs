@@ -341,10 +341,11 @@ where
             retry.producer.scope,
             retry.producer.output_occurrence,
             retry.producer.output_generation,
-            retry.producer.source_identity,
+            retry.producer.runtime_source_identity,
+            retry.producer.checkpoint_source_identity,
         )
         .is_some_and(|exact| {
-            exact.source_identity == retry.producer.source_identity
+            exact.source_identity == retry.producer.recorded_source_identity
                 && exact.runtime_authority == retry.producer.runtime_authority
                 && exact.schema == retry.producer.schema
                 && exact.scope == retry.producer.scope

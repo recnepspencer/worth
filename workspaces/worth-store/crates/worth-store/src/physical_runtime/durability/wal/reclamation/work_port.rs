@@ -123,7 +123,7 @@ impl PhysicalWalReclamationWorkPort {
                 return Err(PhysicalWalReclamationActionFailure::DependencyBlocked)
             }
         };
-        let (pacing, backend, policy) = self
+        let (pacing, backend, policy, capacity) = self
             .scheduler
             .wal_reclamation_background(
                 self.record.scheduler_security(),
@@ -131,8 +131,11 @@ impl PhysicalWalReclamationWorkPort {
                 foreground_pressure_events,
             )
             .map_err(|_| PhysicalWalReclamationActionFailure::SchedulerCapacityUnavailable)?;
-        let lease = require_complete_lease(pacing)?;
-        let demand = PhysicalSchedulerDemand::wal_reclamation_background(ready, lease)
+        let lease = match require_complete_lease(pacing) {
+            Ok(lease) => lease,
+            Err(failure) => return Err(failure),
+        };
+        let demand = PhysicalSchedulerDemand::wal_reclamation_background(ready, lease, capacity)
             .map_err(|_| PhysicalWalReclamationActionFailure::SchedulerDemandRejected)?;
         PhysicalWorkAdmission::require_current(
             &runtime.submission,
@@ -140,7 +143,7 @@ impl PhysicalWalReclamationWorkPort {
             &runtime.health,
         )
         .map_err(|_| PhysicalWalReclamationActionFailure::PreEffect)?;
-        let work = PhysicalWorkScheduler::admit(demand, &backend, policy)
+        let work = PhysicalWorkScheduler::admit(self.scheduler.effects(), demand, &backend, policy)
             .map_err(|_| PhysicalWalReclamationActionFailure::QueueAdmissionRejected)?;
         PhysicalExecutorCommand::wal_reclamation(work)
             .map_err(|_| PhysicalWalReclamationActionFailure::Command)

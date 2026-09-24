@@ -18,6 +18,8 @@ pub(crate) enum MutationCrashWorkload {
     ExtentWriteback,
     InlineRecord,
     CapacityTransition,
+    SelectedSegmentRewrite,
+    MultiPageSegmentRewrite,
 }
 
 impl MutationCrashWorkload {
@@ -26,13 +28,17 @@ impl MutationCrashWorkload {
             Self::ExtentWriteback => "extent-writeback",
             Self::InlineRecord => "inline-record",
             Self::CapacityTransition => "capacity-transition",
+            Self::SelectedSegmentRewrite => "selected-segment-rewrite",
+            Self::MultiPageSegmentRewrite => "multi-page-segment-rewrite",
         }
     }
 
     const fn payload_bytes(self) -> usize {
         match self {
             Self::ExtentWriteback => CHECKPOINT_PAYLOAD_BYTES,
-            Self::InlineRecord => INLINE_RECORD_PAYLOAD_BYTES,
+            Self::InlineRecord | Self::SelectedSegmentRewrite | Self::MultiPageSegmentRewrite => {
+                INLINE_RECORD_PAYLOAD_BYTES
+            }
             Self::CapacityTransition => INLINE_RECORD_PAYLOAD_BYTES,
         }
     }

@@ -30,6 +30,17 @@ pub fn admit_foreground_reservation(
             ForegroundReservationAdmissionDenial::CertificationOnlyEnvelopeCannotExecute,
         ));
     }
+    if envelope.claims_unprovided_service_time() {
+        let counters = denied_counters(&request, ForegroundResourceBudget::new());
+        return ForegroundReservationAdmissionOutcome::Held(ForegroundReservationHeld::new(
+            lane.lane(),
+            envelope,
+            counters,
+            ForegroundReservationAdmissionDenial::UnsupportedServiceTimeEnvelope {
+                kind: envelope.kind(),
+            },
+        ));
+    }
     if let Err(denial) = require_declared_resource_budget(lane.requested_budget()) {
         return denied(&request, denial);
     }

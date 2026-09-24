@@ -70,6 +70,12 @@ fn dispatch(role: &str, root: &std::path::Path) {
         "phase16_maelstrom_reopener" => {
             super::super::physical_work::phase_16_maelstrom_reopener(root)
         }
+        "interference_baseline_reopener" => {
+            super::super::maintenance_interference::serving_child(root)
+        }
+        "interference_canonical_child" => {
+            super::super::maintenance_interference::canonical_child(root)
+        }
         _ => panic!("unknown child role"),
     }
 }

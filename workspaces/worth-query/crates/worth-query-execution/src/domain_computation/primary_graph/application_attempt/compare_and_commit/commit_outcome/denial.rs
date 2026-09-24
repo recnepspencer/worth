@@ -141,11 +141,12 @@ impl WorthQueryApplicationCommitDenial {
     pub(in crate::domain_computation::primary_graph::application_attempt) fn custom_invariant_denied(
         stage: WorthQueryApplicationCommitDenialStage,
         custom_invariant: crate::domain_computation::WorthQueryCustomInvariantDenial,
+        detail: impl Into<std::sync::Arc<str>>,
     ) -> Self {
         Self {
             kind: WorthQueryApplicationCommitDenialKind::CustomInvariantDenied,
             stage,
-            detail: None,
+            detail: Some(detail.into()),
             custom_invariant: Some(custom_invariant),
         }
     }

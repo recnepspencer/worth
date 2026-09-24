@@ -127,8 +127,9 @@ fn four_pre_footer_kinds_enforce_b_k_l_t_u_and_kind_with_exact_localization() {
             PhysicalBlastRadius::CanonicalFrame,
         );
 
+        // Schema 2 is the admitted maintenance checkpoint; 3 is unknown.
         let mut unsupported = kind.bytes();
-        unsupported[8] = 2;
+        unsupported[8] = 3;
         reseal_record(&mut unsupported);
         let (rejection, counters) = rejection(kind, &unsupported, scope);
         let PhysicalIntegrityRejection::Unsupported(version) = rejection else {
@@ -139,7 +140,7 @@ fn four_pre_footer_kinds_enforce_b_k_l_t_u_and_kind_with_exact_localization() {
             version.axis(),
             PhysicalIntegrityVersionAxis::CheckpointRecordSchema
         );
-        assert_eq!(version.observed(), 2);
+        assert_eq!(version.observed(), 3);
         assert_rejected_counters(counters, kind.family(), unsupported.len() as u64, None);
     }
 }
@@ -229,8 +230,9 @@ fn footer_enforces_b_k_l_s_t_u_after_typed_prefix_validation() {
         PhysicalBlastRadius::CanonicalFrame,
     );
 
+    // Schema 2 is the admitted maintenance checkpoint; 3 is unknown.
     let mut unsupported = FOOTER;
-    unsupported[8] = 2;
+    unsupported[8] = 3;
     reseal_record(&mut unsupported);
     let (rejection, counters) = footer_rejection(&unsupported);
     let PhysicalIntegrityRejection::Unsupported(version) = rejection else {
@@ -240,7 +242,7 @@ fn footer_enforces_b_k_l_s_t_u_after_typed_prefix_validation() {
         version.axis(),
         PhysicalIntegrityVersionAxis::CheckpointRecordSchema
     );
-    assert_eq!(version.observed(), 2);
+    assert_eq!(version.observed(), 3);
     assert_rejected_counters(
         counters,
         PhysicalIntegrityArtifactFamily::CheckpointFooter,

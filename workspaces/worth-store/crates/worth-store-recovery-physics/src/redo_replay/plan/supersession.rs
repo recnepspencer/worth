@@ -96,14 +96,18 @@ pub(super) fn observed_predecessors(
         if first >= generation {
             continue;
         }
-        let Some(anchor) = history.get(&generation) else {
+        let Some(anchor) = admitted_anchor(members, history, observed) else {
             continue;
         };
-        if !matches_observed(anchor, observed) {
+        let PhysicalRedoTargetIdentity::InlinePage {
+            generation: chain_end,
+            ..
+        } = anchor.target.identity()
+        else {
             continue;
-        }
+        };
         let chain = history
-            .range(..=generation)
+            .range(..=chain_end)
             .map(|(_, claim)| claim)
             .collect::<Vec<_>>();
         for adjacent in chain.windows(2) {
@@ -119,6 +123,69 @@ pub(super) fn observed_predecessors(
         }
     }
     Ok(predecessors)
+}
+
+fn admitted_anchor<'a>(
+    members: &'a [AdmittedPhysicalRedoMember],
+    history: &'a BTreeMap<u64, PageClaim<'a>>,
+    observed: &RecoveryPageObservation,
+) -> Option<&'a PageClaim<'a>> {
+    let PhysicalRedoTargetIdentity::InlinePage { generation, .. } = observed.target() else {
+        return None;
+    };
+    if let Some(exact) = history
+        .get(&generation)
+        .filter(|claim| matches_observed(claim, observed))
+    {
+        return Some(exact);
+    }
+    let prior = generation.checked_sub(1)?;
+    history
+        .get(&prior)
+        .filter(|claim| published_image(members, claim, observed, generation))
+}
+
+fn published_image(
+    members: &[AdmittedPhysicalRedoMember],
+    claim: &PageClaim<'_>,
+    observed: &RecoveryPageObservation,
+    generation: u64,
+) -> bool {
+    let RecoveryPageSource::Materialized { coordinate, .. } = observed.source() else {
+        return false;
+    };
+    if !successor_artifact(claim.target.artifact(), coordinate.artifact())
+        || coordinate.offset() != claim.target.artifact_offset()
+        || coordinate.length() != claim.target.artifact_length()
+    {
+        return false;
+    }
+    let Ok(image) = inline_image(&members[claim.member], claim.target) else {
+        return false;
+    };
+    let bytes = members[claim.member].projection.frames()[image.frame_index].bytes();
+    let Ok(format) =
+        worth_store_physical_format::PhysicalRecordFormatDeclaration::builder().admit()
+    else {
+        return false;
+    };
+    let Ok(mut restamped) =
+        worth_store_physical_format::restamp_inline_page_generation(format, bytes, generation)
+    else {
+        return false;
+    };
+    if worth_store_physical_format::encode_data_frame_page_lsn(
+        &mut restamped,
+        worth_store_physical_format::DurableFrameKind::InlinePage,
+        worth_store_physical_format::PhysicalPageLsn::new(observed.page_lsn()),
+    )
+    .is_err()
+    {
+        return false;
+    }
+    use sha2::Digest;
+    let digest: [u8; 32] = sha2::Sha256::digest(&restamped).into();
+    digest == observed.frame_digest()
 }
 
 fn matches_observed(claim: &PageClaim<'_>, observed: &RecoveryPageObservation) -> bool {

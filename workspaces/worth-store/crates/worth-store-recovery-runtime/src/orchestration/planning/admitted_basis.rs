@@ -49,7 +49,7 @@ pub(super) fn admit(
         context
             .integrity
             .admitted_wal()
-            .selected_frames(context.selection.wal_tail()),
+            .recoverable_frames(context.selection.wal_tail()),
         context.limits.operation_bindings,
         context.limits.redo_bytes,
     ) {

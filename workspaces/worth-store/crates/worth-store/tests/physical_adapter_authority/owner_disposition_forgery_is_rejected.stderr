@@ -1,10 +1,11 @@
-error[E0624]: associated function `new` is private
+error[E0599]: no function or associated item named `new` found for struct `IntactPhysicalAuthorityObservation` in the current scope
  --> tests/physical_adapter_authority/owner_disposition_forgery_is_rejected.rs:5:41
   |
 5 |     IntactPhysicalAuthorityObservation::new(scope)
-  |                                         ^^^ private associated function
+  |                                         ^^^ function or associated item not found in `IntactPhysicalAuthorityObservation`
   |
- ::: src/physical_runtime/integrity/disposition/authority.rs
+help: there is a method `ne` with a similar name
   |
-  |     pub(super) const fn new(scope: PhysicalArtifactScope) -> Self {
-  |     ------------------------------------------------------------- private associated function defined here
+5 -     IntactPhysicalAuthorityObservation::new(scope)
+5 +     IntactPhysicalAuthorityObservation::ne(scope)
+  |

@@ -7,12 +7,16 @@ use crate::physical_runtime::instance::{
 };
 use crate::physical_runtime::record_serving::RecordWorkAdmission;
 use crate::physical_runtime::work::PhysicalWorkAdmissionAuthority;
+use worth_store_physical_backend::ArtifactRangeWriteDurabilityRequirement;
+use worth_store_physical_format::RecordArtifactFile;
+
 use crate::physical_runtime::{
-    PhysicalExecutorCommand, PhysicalMutationWorkRequest, PhysicalRootPublicationWorkAction,
-    PhysicalRootPublicationWorkScope, PhysicalSchedulerDemand, PhysicalWorkAdmission,
-    PhysicalWorkExecution, PhysicalWorkPreEffectDenial, PhysicalWorkReadiness,
-    PhysicalWorkScheduler, PhysicalWorkSubmissionDeferred, PhysicalWorkSubmissionDenial,
-    PhysicalWorkSubmissionFailure, PhysicalWorkSubmissionStale, SettledPhysicalWork,
+    PhysicalExecutorCommand, PhysicalMutationWorkRequest, PhysicalPublicationEffect,
+    PhysicalRootPublicationWorkAction, PhysicalRootPublicationWorkScope, PhysicalSchedulerDemand,
+    PhysicalWorkAdmission, PhysicalWorkExecution, PhysicalWorkPreEffectDenial,
+    PhysicalWorkReadiness, PhysicalWorkScheduler, PhysicalWorkScope,
+    PhysicalWorkSubmissionDeferred, PhysicalWorkSubmissionDenial, PhysicalWorkSubmissionFailure,
+    PhysicalWorkSubmissionStale, SettledPhysicalWork,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -40,6 +44,7 @@ pub enum PhysicalRootPublicationWorkFailureCause {
     DependencyBlocked,
     SchedulerReservation,
     Scheduler,
+    EffectConflict,
     Command,
 }
 
@@ -59,6 +64,9 @@ impl PhysicalRootPublicationWorkFailure {
             Self::DependencyBlocked => PhysicalRootPublicationWorkFailureCause::DependencyBlocked,
             Self::SchedulerReservation(_) => {
                 PhysicalRootPublicationWorkFailureCause::SchedulerReservation
+            }
+            Self::Scheduler(crate::physical_runtime::PhysicalSchedulerDenial::EffectConflict) => {
+                PhysicalRootPublicationWorkFailureCause::EffectConflict
             }
             Self::Scheduler(_) => PhysicalRootPublicationWorkFailureCause::Scheduler,
             Self::Command(_) => PhysicalRootPublicationWorkFailureCause::Command,
@@ -159,7 +167,7 @@ impl PhysicalRootPublicationWorkPort {
         .map_err(PhysicalRootPublicationWorkFailure::PreEffect)?;
         let policy =
             crate::physical_runtime::record_serving::admit_record_queue_policy(demand.queue_work());
-        let work = PhysicalWorkScheduler::admit(demand, &backend, policy)
+        let work = PhysicalWorkScheduler::admit(self.scheduler.effects(), demand, &backend, policy)
             .map_err(PhysicalRootPublicationWorkFailure::Scheduler)?;
         let command = PhysicalExecutorCommand::root_publication_effect(work)
             .map_err(PhysicalRootPublicationWorkFailure::Command)?;
@@ -197,5 +205,139 @@ impl PhysicalRootPublicationWorkPort {
                 .map(|admission| admission.into_parts()),
         }
         .map_err(PhysicalRootPublicationWorkFailure::SchedulerReservation)
+    }
+
+    /// Admits one record-artifact publication effect on the ordinary write lane.
+    ///
+    /// Retirement uses this for segment removal and the following family sync.
+    /// The media effect still synchronizes the parent directory before completion.
+    pub(in crate::physical_runtime) fn execute_record_effect(
+        &self,
+        artifact: RecordArtifactFile,
+        effect: PhysicalPublicationEffect,
+        bytes: u64,
+        permit: Option<crate::physical_runtime::durability::RetirementRemovalPermit>,
+    ) -> Result<SettledPhysicalWork, PhysicalRootPublicationWorkFailure> {
+        let work = self.admit_record_work(artifact, effect, bytes)?;
+        let command = match effect {
+            PhysicalPublicationEffect::RemoveArtifact => {
+                let permit = permit.ok_or(PhysicalRootPublicationWorkFailure::Command(
+                    crate::physical_runtime::PhysicalExecutorCommandDenial::RetirementRemovalRequiresClaim,
+                ))?;
+                PhysicalExecutorCommand::retirement_removal(work, permit)
+            }
+            _ => PhysicalExecutorCommand::publication_effect(work, effect),
+        }
+        .map_err(PhysicalRootPublicationWorkFailure::Command)?;
+        self.execution
+            .execute_physical_work(command)
+            .map_err(PhysicalRootPublicationWorkFailure::PreEffect)
+            .map(|outcome| outcome.into_settled())
+    }
+
+    fn admit_record_work(
+        &self,
+        artifact: RecordArtifactFile,
+        effect: PhysicalPublicationEffect,
+        bytes: u64,
+    ) -> Result<
+        crate::physical_runtime::ResourceAdmittedPhysicalWork,
+        PhysicalRootPublicationWorkFailure,
+    > {
+        let runtime = self
+            .runtime
+            .upgrade()
+            .ok_or(PhysicalRootPublicationWorkFailure::RuntimeReleased)?;
+        let scope = match effect {
+            PhysicalPublicationEffect::RemoveArtifact => {
+                PhysicalWorkScope::artifact_removal(artifact)
+            }
+            PhysicalPublicationEffect::SynchronizeArtifact
+            | PhysicalPublicationEffect::SynchronizeArtifactParent
+            | PhysicalPublicationEffect::ReplaceCatalog
+            | PhysicalPublicationEffect::SynchronizeRecordFamily => {
+                PhysicalWorkScope::artifact(artifact)
+            }
+        };
+        let request = PhysicalMutationWorkRequest::publication(
+            scope,
+            self.record
+                .mutation_basis(crate::physical_runtime::record_serving::RecordPublicationStage::NamespaceSynchronization),
+            self.record.security(),
+            ArtifactRangeWriteDurabilityRequirement::FileDataSynchronization,
+        )
+        .map_err(PhysicalRootPublicationWorkFailure::SubmissionDenied)?;
+        let receipt = match runtime
+            .submission
+            .mutation_submission()
+            .submit(request)
+            .into_raw()
+        {
+            TransitionOutcome::Success(receipt) => receipt,
+            TransitionOutcome::Denied(denial) => {
+                return Err(PhysicalRootPublicationWorkFailure::SubmissionDenied(denial))
+            }
+            TransitionOutcome::Deferred(deferred) => {
+                return Err(PhysicalRootPublicationWorkFailure::SubmissionDeferred(
+                    deferred,
+                ))
+            }
+            TransitionOutcome::Stale(stale) => {
+                return Err(PhysicalRootPublicationWorkFailure::SubmissionStale(stale))
+            }
+            TransitionOutcome::RebindRequired(rebind) => match rebind {},
+            TransitionOutcome::Failed(failure) => {
+                return Err(PhysicalRootPublicationWorkFailure::SubmissionFailed(
+                    failure,
+                ))
+            }
+        };
+        let admitted = PhysicalWorkAdmission::admit(
+            &runtime.submission,
+            receipt,
+            &self.physical,
+            &runtime.health,
+        )
+        .map_err(PhysicalRootPublicationWorkFailure::PreEffect)?;
+        let ready = match runtime
+            .signal
+            .request(admitted)
+            .map_err(PhysicalRootPublicationWorkFailure::PreEffect)?
+        {
+            PhysicalWorkReadiness::Ready(ready) => ready,
+            PhysicalWorkReadiness::Blocked(_) => {
+                return Err(PhysicalRootPublicationWorkFailure::DependencyBlocked)
+            }
+        };
+        let (reservation, backend) = self
+            .scheduler
+            .record_generation_removal(self.record.scheduler_security(), bytes)
+            .map_err(PhysicalRootPublicationWorkFailure::SchedulerReservation)?;
+        let demand = PhysicalSchedulerDemand::foreground(ready, reservation, None)
+            .map_err(PhysicalRootPublicationWorkFailure::Scheduler)?;
+        PhysicalWorkAdmission::require_current(
+            &runtime.submission,
+            demand.intent(),
+            &runtime.health,
+        )
+        .map_err(PhysicalRootPublicationWorkFailure::PreEffect)?;
+        let policy =
+            crate::physical_runtime::record_serving::admit_record_queue_policy(demand.queue_work());
+        PhysicalWorkScheduler::admit(self.scheduler.effects(), demand, &backend, policy)
+            .map_err(PhysicalRootPublicationWorkFailure::Scheduler)
+    }
+
+    #[cfg(feature = "certification-test-authority")]
+    pub(in crate::physical_runtime) fn certification_public_removal_rejected(
+        &self,
+        artifact: RecordArtifactFile,
+    ) -> Result<bool, PhysicalRootPublicationWorkFailure> {
+        let work =
+            self.admit_record_work(artifact, PhysicalPublicationEffect::RemoveArtifact, 1)?;
+        Ok(PhysicalExecutorCommand::publication_effect(
+            work,
+            PhysicalPublicationEffect::RemoveArtifact,
+        )
+        .is_err())
     }
 }

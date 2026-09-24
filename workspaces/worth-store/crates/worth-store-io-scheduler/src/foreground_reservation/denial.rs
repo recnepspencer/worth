@@ -1,6 +1,9 @@
 use crate::{IoSchedulerBackendCapabilityDenial, IoSchedulerBackendCapabilityRequirement};
 
-use super::{ForegroundIoLaneKind, ForegroundResourceBudget, ForegroundResourceUnitKind};
+use super::{
+    ForegroundIoLaneKind, ForegroundLatencyEnvelopeKind, ForegroundResourceBudget,
+    ForegroundResourceUnitKind,
+};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ForegroundReservationResourceShortfall {
@@ -49,6 +52,10 @@ pub enum ForegroundReservationAdmissionDenial {
     CapacityAdmissionArbitrationMismatch,
     CapacityAdmissionSecurityScopeMismatch,
     CertificationOnlyEnvelopeCannotExecute,
+    /// Hard latency bounds and soft service-time SLOs are not provided by this backend.
+    UnsupportedServiceTimeEnvelope {
+        kind: ForegroundLatencyEnvelopeKind,
+    },
     ForegroundPriorityLaundering {
         declared: ForegroundIoLaneKind,
         attempted: ForegroundIoLaneKind,

@@ -22,8 +22,9 @@ pub use bounded_dimension_invariants::{
     BoundedDimensionV1, BoundedDimensionV2, BoundedDimensionV3,
 };
 pub use part_dimension_query::{
-    part_dimension_query_definition, PartDimensionQuery, PartDimensionRow, PartDimensionRowBinding,
-    PartQueryParametersBinding,
+    part_dimension_condition_query_definition, part_dimension_query_definition,
+    PartDimensionConditionBinding, PartDimensionConditionQuery, PartDimensionQuery,
+    PartDimensionRow, PartDimensionRowBinding, PartQueryParametersBinding,
 };
 
 worth_query_application! {
@@ -66,8 +67,9 @@ worth_query_application_contribution! {
                 .operation_write(SetPartDimension::reference(), PartDimensionField::reference())
                 .invariant(bounded_dimension_invariants::first_definition())
                 .invariant(bounded_dimension_invariants::second_definition())
-                .application_query(part_dimension_query_definition());
-            super::dimension_entry::declare(schema)
+                .application_query(part_dimension_query_definition())
+                .application_query(part_dimension_condition_query_definition());
+            super::workflow::declare(super::assessment_output::declare(super::dimension_entry::declare(schema)))
         }
     }
 }
@@ -122,5 +124,22 @@ impl primary_graph::WorthQueryApplicationProjection<BoundedDimensionSchema, Part
             identity: row.field(part_dimension_query::identity_result())?,
             dimension: row.field(part_dimension_query::dimension_result())?,
         })
+    }
+}
+
+impl
+    primary_graph::WorthQueryApplicationProjection<
+        BoundedDimensionSchema,
+        PartDimensionConditionQuery,
+    > for bool
+{
+    fn project(
+        row: &primary_graph::WorthQueryApplicationProjectionRow<
+            '_,
+            BoundedDimensionSchema,
+            PartDimensionConditionQuery,
+        >,
+    ) -> Result<Self, primary_graph::WorthQueryApplicationProjectionDenial> {
+        Ok(row.field(part_dimension_query::condition_dimension_result())? > 0)
     }
 }

@@ -7,12 +7,17 @@ use super::entities::AccountAuthorization;
 use super::fields::{
     AccountAuthorizationIdentity, AccountDisplayName, AccountIdentity, AccountingRevision,
     AuthorizationRole, BusinessIdentityField, InstitutionIdentityField, JournalIdentityField,
-    JournalPurpose, Kind, PostingAmount, PostingIdentityField, Purpose, Status,
+    JournalPurpose, Kind, PaymentIdentityField, PostingAmount, PostingIdentityField, Purpose,
+    Status,
 };
 use super::operations::*;
 use super::relations::{
     AccountAuthorizedUser, AuthorizationAccount, BusinessAccount, InstitutionAccount,
     InstitutionCashAccount, JournalPosting, JournalReversal, PersonalOwner, PostingAccount,
+};
+use super::workflow::{
+    ApprovedBusinessPaymentAdvanceOperation, ApprovedBusinessPaymentApprovalOperation,
+    ApprovedBusinessPaymentAuthoringOperation, ApprovedBusinessPaymentInstanceStartOperation,
 };
 use super::BankSchema;
 
@@ -210,11 +215,40 @@ fn install_payment_operation_budgets(
     schema: ApplicationSchemaDeclarationBuilder<BankSchema>,
 ) -> ApplicationSchemaDeclarationBuilder<BankSchema> {
     schema
+        .operation_read_field(
+            ApprovedBusinessPaymentAuthoringOperation::reference(),
+            PaymentIdentityField::reference(),
+        )
+        .operation_read_field(
+            ApprovedBusinessPaymentApprovalOperation::reference(),
+            PaymentIdentityField::reference(),
+        )
+        .operation_read_field(
+            ApprovedBusinessPaymentInstanceStartOperation::reference(),
+            PaymentIdentityField::reference(),
+        )
+        .operation_read_field(
+            ApprovedBusinessPaymentAdvanceOperation::reference(),
+            PaymentIdentityField::reference(),
+        )
         .operation_decision_fact_budget(ApplyOpeningFundingOperation::reference(), 256)
         .operation_decision_fact_budget(DepositOperation::reference(), 256)
         .operation_decision_fact_budget(WithdrawOperation::reference(), 256)
         .operation_decision_fact_budget(SendMoneyOperation::reference(), 256)
         .operation_decision_fact_budget(InitiateBusinessPaymentOperation::reference(), 64)
+        .operation_decision_fact_budget(
+            ApprovedBusinessPaymentAuthoringOperation::reference(),
+            1_024,
+        )
+        .operation_decision_fact_budget(
+            ApprovedBusinessPaymentApprovalOperation::reference(),
+            1_024,
+        )
+        .operation_decision_fact_budget(
+            ApprovedBusinessPaymentInstanceStartOperation::reference(),
+            1_024,
+        )
+        .operation_decision_fact_budget(ApprovedBusinessPaymentAdvanceOperation::reference(), 1_024)
         .operation_decision_fact_budget(ApprovePaymentOperation::reference(), 256)
         .operation_decision_fact_budget(RejectPaymentOperation::reference(), 128)
         .operation_decision_fact_budget(ReverseJournalOperation::reference(), 256)
@@ -223,6 +257,22 @@ fn install_payment_operation_budgets(
         .operation_projection_work_budget(WithdrawOperation::reference(), 4_096)
         .operation_projection_work_budget(SendMoneyOperation::reference(), 8_192)
         .operation_projection_work_budget(InitiateBusinessPaymentOperation::reference(), 4_096)
+        .operation_projection_work_budget(
+            ApprovedBusinessPaymentAuthoringOperation::reference(),
+            1_024,
+        )
+        .operation_projection_work_budget(
+            ApprovedBusinessPaymentApprovalOperation::reference(),
+            1_024,
+        )
+        .operation_projection_work_budget(
+            ApprovedBusinessPaymentInstanceStartOperation::reference(),
+            1_024,
+        )
+        .operation_projection_work_budget(
+            ApprovedBusinessPaymentAdvanceOperation::reference(),
+            1_024,
+        )
         .operation_projection_work_budget(ApprovePaymentOperation::reference(), 8_192)
         .operation_projection_work_budget(RejectPaymentOperation::reference(), 512)
         .operation_projection_work_budget(ReverseJournalOperation::reference(), 8_192)

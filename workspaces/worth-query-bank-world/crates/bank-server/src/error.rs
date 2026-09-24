@@ -40,6 +40,7 @@ pub enum BankIdentityRuntimeBuildError {
     InstalledSchema(WorthQueryInstalledApplicationSchemaDenial),
     InstalledOperation(WorthQueryApplicationOperationInstallationDenial),
     InstalledBinding(WorthQueryPrincipalBindingInstallationDenial),
+    WorkflowInstallation(String),
 }
 
 impl std::fmt::Display for BankIdentityRuntimeBuildError {
@@ -56,6 +57,7 @@ impl std::fmt::Display for BankIdentityRuntimeBuildError {
             Self::InstalledSchema(error) => error.fmt(formatter),
             Self::InstalledOperation(error) => error.fmt(formatter),
             Self::InstalledBinding(error) => error.fmt(formatter),
+            Self::WorkflowInstallation(error) => formatter.write_str(error),
         }
     }
 }

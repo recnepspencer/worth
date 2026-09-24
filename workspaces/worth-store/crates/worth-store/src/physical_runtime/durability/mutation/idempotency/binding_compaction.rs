@@ -111,6 +111,12 @@ impl PendingPhysicalMutationBindingCompaction {
         self.authority.wal_cutoff_lsn_exclusive
     }
 
+    pub(in crate::physical_runtime) const fn prior_generation(
+        &self,
+    ) -> PhysicalNamespaceDurableCheckpointGeneration {
+        self.prior_generation
+    }
+
     pub(super) fn for_each_record<E>(
         &self,
         registry: &PhysicalMutationIdempotencyRegistry,

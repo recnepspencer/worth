@@ -7,6 +7,8 @@ mod diagnostics;
 mod recovery;
 mod runtime_rebuild;
 
+use crate::branch::AdmittedRelationalBranchBasis;
+use crate::history::data::BranchId;
 use crate::runtime::RelationalRuntime;
 
 pub(crate) use append_authority::DurableAppendAuthority;
@@ -30,6 +32,55 @@ impl<'runtime> DurabilityAuthority<'runtime> {
 /// every call site instead of infecting ordinary durability work.
 pub struct DurabilityRecoveryAuthority<'runtime> {
     runtime: &'runtime mut RelationalRuntime,
+}
+
+/// Linear evidence that this exact Relational runtime and its captured branch
+/// images were rebuilt from a verified native checkpoint. The value is
+/// owner-issued and deliberately non-serializable, so descriptive checkpoint
+/// presence or later branch movement cannot impersonate successful recovery.
+#[derive(Debug)]
+pub struct RecoveredRelationalRuntimeAuthority {
+    runtime_instance_id: u64,
+    recovered_branch_images: std::collections::BTreeMap<
+        BranchId,
+        (
+            crate::branch::RelationalBranchReferenceObservation,
+            crate::branch::RelationalBranchVersion,
+        ),
+    >,
+}
+
+impl RecoveredRelationalRuntimeAuthority {
+    pub fn admit_basis(
+        self,
+        basis: AdmittedRelationalBranchBasis,
+    ) -> Result<RecoveredRelationalBranchBasis, AdmittedRelationalBranchBasis> {
+        let descriptor = basis.descriptor();
+        let matches_recovered_image = self
+            .recovered_branch_images
+            .get(descriptor.branch_id())
+            .is_some_and(|(reference, truth_version)| {
+                reference == descriptor.reference() && *truth_version == descriptor.truth_version()
+            });
+        if descriptor.runtime_instance_id() == self.runtime_instance_id && matches_recovered_image {
+            Ok(RecoveredRelationalBranchBasis { basis })
+        } else {
+            Err(basis)
+        }
+    }
+}
+
+/// An operational branch basis proven to belong to a successfully recovered
+/// Relational runtime. Only recovery authority can construct this wrapper.
+#[derive(Debug)]
+pub struct RecoveredRelationalBranchBasis {
+    basis: AdmittedRelationalBranchBasis,
+}
+
+impl RecoveredRelationalBranchBasis {
+    pub fn into_basis(self) -> AdmittedRelationalBranchBasis {
+        self.basis
+    }
 }
 
 impl<'runtime> DurabilityRecoveryAuthority<'runtime> {

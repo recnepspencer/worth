@@ -170,9 +170,12 @@ fn require_matching_target(
         && target.artifact_offset() == offset;
     let successor = data_generation.checked_add(1) == Some(target_data_generation)
         && placement.page_generation().checked_add(1) == Some(generation);
+    let published = generation.checked_add(1) == Some(placement.page_generation())
+        && target_data_generation.checked_add(1) == Some(data_generation)
+        && target.artifact_offset() == offset;
     if target.artifact_length() == page_bytes
         && segment == placement.segment().get()
-        && (materialized || successor)
+        && (materialized || successor || published)
     {
         Ok(())
     } else {

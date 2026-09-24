@@ -1,5 +1,6 @@
 pub(super) mod counted_search;
 pub(super) mod extent_read_session;
+pub(super) mod extent_rewrite_source;
 pub(super) mod locate;
 pub(super) mod manifest_routing;
 pub(super) mod read_observation;

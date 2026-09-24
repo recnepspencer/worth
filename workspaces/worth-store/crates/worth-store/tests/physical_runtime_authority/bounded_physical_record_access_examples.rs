@@ -83,6 +83,25 @@ fn real_example(durability: worth_store::physical_runtime::AdmittedPhysicalDurab
     let _ = request;
 }
 
+fn protected_reader_example() {
+    use worth_store::physical_runtime::{
+        PhysicalRecordId, RecordReadLimits, ServingPhysicalRuntime,
+    };
+
+    fn read_across_publication(
+        serving: &ServingPhysicalRuntime,
+        record: PhysicalRecordId,
+        limits: RecordReadLimits,
+    ) {
+        let reader = serving.records().expect("read protection admission");
+        let root = reader.protected_root();
+        let mut session = reader.open(record, limits).expect("record read admission");
+        drop(reader); // The session still protects the captured root.
+        let chunk = session.next_chunk().expect("stream progress");
+        let _ = (root, chunk);
+    }
+}
+
 fn borrowed_chunk_example() {
     use worth_store::physical_runtime::{RecordReadSession, RecordStreamFailure};
 
@@ -146,6 +165,7 @@ pub(crate) fn run_configuration_examples() {
 
 fn main() {
     let _ = (
+        protected_reader_example,
         borrowed_chunk_example,
         bounded_copy_example,
         successor_physical_allocation_example,

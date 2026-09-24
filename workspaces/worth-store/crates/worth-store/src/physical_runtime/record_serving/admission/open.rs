@@ -1,15 +1,12 @@
 use worth_store_physical_backend::{ArtifactTreeFailureKind, QualifiedFilesystemMedia};
 use worth_store_physical_format::{
-    DurableArtifactCrc32c, DurableFreeSpaceManifestHeader, DurablePhysicalRootManifest,
-    FreeSpaceHeaderScopeIdentity, PhysicalGeneration, PhysicalRecordFormatDeclaration,
-    PhysicalTreeIdentity, RecordArtifactFile,
+    DurablePhysicalRootManifest, PhysicalRecordFormatDeclaration, RecordArtifactFile,
 };
 use worth_store_physical_integrity::{PhysicalArtifactScope, PhysicalByteRange};
 
 use crate::physical_runtime::integrity::resident_admission::root_manifest::admit_loaded_root_manifest;
 use crate::physical_runtime::integrity::resident_admission::{
-    free_space::admit_resident_free_space_header, load::ResidentAdmissionContext,
-    root_protocol::admit_resident_bootstrap_catalog,
+    load::ResidentAdmissionContext, root_protocol::admit_resident_bootstrap_catalog,
 };
 
 use super::super::residency::serving_artifacts::ServingRecordArtifacts;
@@ -20,23 +17,23 @@ use super::super::{
     },
     publication::publication_residue::observe_publication_residue,
     residency::artifact_tree::RecordFamilyInventory,
-    AdmittedPhysicalRecordFormat, AdmittedRecordAccessPolicy, PhysicalRecordFormatMismatch,
-    RecordBootstrapDenial, UnsupportedPhysicalRecordFormat,
+    AdmittedPhysicalRecordFormat, AdmittedRecordAccessPolicy, RecordBootstrapDenial,
 };
-use super::integrity_denial::{classify_catalog, classify_free_space, classify_root};
+use super::integrity_denial::{classify_catalog, classify_root};
 
 #[derive(Clone)]
-struct CurrentRootAdmission<'a> {
-    media: &'a QualifiedFilesystemMedia,
-    loader: &'a (dyn super::super::residency::frame_ports::FrameLoadPort + Send + Sync),
-    allocation: &'a worth_store_buffer_pool::OperationAllocationGrant,
-    limits: BootstrapCatalogReadLimits,
-    generation: u64,
-    expected_format: PhysicalRecordFormatDeclaration,
-    lifecycle: std::sync::Arc<crate::physical_runtime::lifecycle::LifecycleState>,
-    route: crate::physical_runtime::PhysicalRootProtocolRoute,
-    counters: &'a crate::physical_runtime::RootProtocolRouteCounterCells,
-    resident_integrity_counters: &'a crate::physical_runtime::ResidentAdmissionCounterCells,
+pub(super) struct CurrentRootAdmission<'a> {
+    pub(super) media: &'a QualifiedFilesystemMedia,
+    pub(super) loader: &'a (dyn super::super::residency::frame_ports::FrameLoadPort + Send + Sync),
+    pub(super) allocation: &'a worth_store_buffer_pool::OperationAllocationGrant,
+    pub(super) limits: BootstrapCatalogReadLimits,
+    pub(super) generation: u64,
+    pub(super) expected_format: PhysicalRecordFormatDeclaration,
+    pub(super) lifecycle: std::sync::Arc<crate::physical_runtime::lifecycle::LifecycleState>,
+    pub(super) route: crate::physical_runtime::PhysicalRootProtocolRoute,
+    pub(super) counters: &'a crate::physical_runtime::RootProtocolRouteCounterCells,
+    pub(super) resident_integrity_counters:
+        &'a crate::physical_runtime::ResidentAdmissionCounterCells,
 }
 
 pub(in crate::physical_runtime::record_serving) fn open(
@@ -142,7 +139,7 @@ pub(in crate::physical_runtime::record_serving) fn load_current_root(
         counters,
         resident_integrity_counters,
     };
-    let current_root = load_root_manifest(&admission)?;
+    let current_root = load_root_manifest(&admission, true)?;
     let previous_root = if generation == 1 {
         None
     } else {
@@ -151,11 +148,56 @@ pub(in crate::physical_runtime::record_serving) fn load_current_root(
             lifecycle: std::sync::Arc::clone(&admission.lifecycle),
             ..admission.clone()
         };
-        Some(load_root_manifest(&previous)?)
+        Some(load_root_manifest(&previous, true)?)
     };
-    let free_space = load_free_space_manifest(&admission, &current_root)?;
+    let artifacts = ServingRecordArtifacts::new(media, loader);
+    let prior_roots = publication_roots(&admission, &current_root, previous_root.as_ref())?;
+    let displaced_artifacts = if current_root.requires_maintenance_protocol() {
+        let membership =
+            super::super::access::segment_membership::SegmentMembershipReader::with_loader(
+                media,
+                loader,
+                bootstrap.format,
+                bootstrap.access,
+                &current_root,
+                std::sync::Arc::clone(&admission.lifecycle),
+                resident_integrity_counters,
+            );
+        let mut displaced = super::displaced_segments::retained_displaced_segments(
+            &prior_roots,
+            &current_root,
+            &artifacts,
+            &membership,
+            allocation,
+        )?;
+        displaced.extend(super::displaced_extents::retained_displaced_extents(
+            &prior_roots,
+            &current_root,
+            &artifacts,
+            |root| {
+                super::super::access::manifest_routing::ManifestReader::with_loader(
+                    media,
+                    loader,
+                    bootstrap.format,
+                    bootstrap.access,
+                    root,
+                    std::sync::Arc::clone(&admission.lifecycle),
+                    resident_integrity_counters,
+                )
+            },
+            allocation,
+        )?);
+        displaced
+    } else {
+        Vec::new()
+    };
+    let publication_overheads = super::publication_charge::publication_overheads(
+        &[prior_roots.as_slice(), std::slice::from_ref(&current_root)].concat(),
+    );
+    let free_space =
+        super::current_free_space::load_free_space_manifest(&admission, &current_root)?;
     let publication_residue = observe_publication_residue(
-        &ServingRecordArtifacts::new(media, loader),
+        &artifacts,
         &current_root,
         &free_space,
         bootstrap.observed_staging_residue,
@@ -166,14 +208,40 @@ pub(in crate::physical_runtime::record_serving) fn load_current_root(
         access: bootstrap.access,
         current_root,
         previous_root,
+        displaced_artifacts,
+        publication_overheads,
         publication_residue,
         free_space,
         root_protocol_counters: counters.snapshot(),
     })
 }
 
+fn publication_roots(
+    admission: &CurrentRootAdmission<'_>,
+    current_root: &DurablePhysicalRootManifest,
+    previous_root: Option<&DurablePhysicalRootManifest>,
+) -> Result<Vec<DurablePhysicalRootManifest>, BootstrapTransitionFailure> {
+    let mut prior = Vec::new();
+    for generation in 1..current_root.generation() {
+        let root = match previous_root {
+            Some(root) if root.generation() == generation => root.clone(),
+            _ => {
+                let older = CurrentRootAdmission {
+                    generation,
+                    lifecycle: std::sync::Arc::clone(&admission.lifecycle),
+                    ..admission.clone()
+                };
+                load_root_manifest(&older, false)?
+            }
+        };
+        prior.push(root);
+    }
+    Ok(prior)
+}
+
 fn load_root_manifest(
     admission: &CurrentRootAdmission<'_>,
+    record_route: bool,
 ) -> Result<DurablePhysicalRootManifest, BootstrapTransitionFailure> {
     let root_frame = ServingRecordArtifacts::new(admission.media, admission.loader)
         .load_bounded(
@@ -216,7 +284,9 @@ fn load_root_manifest(
             admission.resident_integrity_counters,
         )
         .map_err(classify_root)?;
-    admission.counters.observe_root(admission.route);
+    if record_route {
+        admission.counters.observe_root(admission.route);
+    }
     if !super::super::planning::policy_units::manifest_capacity_can_branch(
         current_root.node_capacity(),
     ) {
@@ -230,108 +300,4 @@ fn load_root_manifest(
         ));
     }
     Ok(current_root)
-}
-
-fn load_free_space_manifest(
-    admission: &CurrentRootAdmission<'_>,
-    current_root: &DurablePhysicalRootManifest,
-) -> Result<DurableFreeSpaceManifestHeader, BootstrapTransitionFailure> {
-    let free_space_bytes = ServingRecordArtifacts::new(admission.media, admission.loader)
-        .load_bounded(
-            admission.allocation,
-            RecordArtifactFile::FreeSpaceManifest {
-                generation: admission.generation,
-            },
-            admission.limits.current_root_bytes().get(),
-        )
-        .map_err(|failure| {
-            BootstrapTransitionFailure::Denied(match failure.kind() {
-                super::super::residency::frame_loading::FrameLoadFailureKind::Residency(reason) => {
-                    RecordBootstrapDenial::from_residency(reason)
-                }
-                _ => RecordBootstrapDenial::FreeSpaceManifestDamaged,
-            })
-        })?;
-    let generation = PhysicalGeneration::from_raw(admission.generation).map_err(|_| {
-        BootstrapTransitionFailure::Denied(RecordBootstrapDenial::FreeSpaceManifestDamaged)
-    })?;
-    let tree = PhysicalTreeIdentity::new(current_root.tree_identity()).ok_or_else(|| {
-        BootstrapTransitionFailure::Denied(RecordBootstrapDenial::FreeSpaceManifestDamaged)
-    })?;
-    let range = PhysicalByteRange::new(0, free_space_bytes.len() as u64).map_err(|_| {
-        BootstrapTransitionFailure::Denied(RecordBootstrapDenial::FreeSpaceManifestDamaged)
-    })?;
-    let scope = PhysicalArtifactScope::free_space_header(
-        admission.media.store_identity(),
-        admission.expected_format,
-        FreeSpaceHeaderScopeIdentity::new(
-            generation,
-            tree,
-            current_root.free_space_root(),
-            DurableArtifactCrc32c::new(current_root.free_space_checksum()),
-        ),
-        range,
-    );
-    let context = ResidentAdmissionContext::new(
-        std::sync::Arc::clone(&admission.lifecycle),
-        admission.resident_integrity_counters,
-    );
-    let admitted =
-        admit_resident_free_space_header(free_space_bytes.lease(), scope, context.clone())
-            .map_err(classify_free_space)?;
-    let (free_space, free_format) = admitted
-        .with_owner_decoder(context, |view| {
-            view.project_header(admission.limits.current_root_entries())
-        })
-        .map_err(classify_free_space)?
-        .map_err(classify_free_space_denial)?;
-    if !super::super::planning::policy_units::manifest_capacity_can_branch(
-        free_space.node_capacity(),
-    ) {
-        return Err(BootstrapTransitionFailure::Denied(
-            RecordBootstrapDenial::FreeSpaceManifestDamaged,
-        ));
-    }
-    if free_space.generation() != admission.generation {
-        return Err(BootstrapTransitionFailure::Stale(
-            RecordServingStaleReason::FreeSpaceGenerationMismatch,
-        ));
-    }
-    if free_space.root() != current_root.free_space_root() {
-        return Err(BootstrapTransitionFailure::Denied(
-            RecordBootstrapDenial::FreeSpaceManifestDamaged,
-        ));
-    }
-    if free_format != admission.expected_format {
-        return Err(BootstrapTransitionFailure::Denied(
-            RecordBootstrapDenial::PhysicalRecordFormatMismatch(PhysicalRecordFormatMismatch::new(
-                admission.expected_format,
-                free_format,
-            )),
-        ));
-    }
-    if free_space.next_segment() == 0
-        || free_space.next_page() == 0
-        || free_space.next_extent() == 0
-    {
-        return Err(BootstrapTransitionFailure::Denied(
-            RecordBootstrapDenial::FreeSpaceManifestDamaged,
-        ));
-    }
-    Ok(free_space)
-}
-
-fn classify_free_space_denial(
-    denial: worth_store_physical_format::FreeSpaceRoutingDenial,
-) -> BootstrapTransitionFailure {
-    match denial {
-        worth_store_physical_format::FreeSpaceRoutingDenial::Frame(
-            worth_store_physical_format::DurableFrameDenial::UnsupportedFormat(reason),
-        ) => BootstrapTransitionFailure::Denied(
-            RecordBootstrapDenial::UnsupportedPhysicalRecordFormat(
-                UnsupportedPhysicalRecordFormat::new(reason),
-            ),
-        ),
-        _ => BootstrapTransitionFailure::Denied(RecordBootstrapDenial::FreeSpaceManifestDamaged),
-    }
 }

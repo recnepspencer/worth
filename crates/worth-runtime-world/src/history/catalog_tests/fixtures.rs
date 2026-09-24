@@ -85,7 +85,7 @@ pub(super) fn linear_history(
         history_budgets(length as u64, u64::MAX),
         crate::lifecycle::RuntimeWorldClock::from_source(FixedClock),
     );
-    let (_, relational, signal, correspondence, _) = components.bootstrap_intent().into_parts();
+    let (_, relational, signal, correspondence, _, _) = components.bootstrap_intent().into_parts();
     let basis = crate::basis::admit_current(
         authority.issuer(),
         &inputs.relational().basis_port(),

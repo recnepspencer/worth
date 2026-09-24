@@ -72,7 +72,7 @@ where
             return Err(WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired);
         }
         self.execute_with_preparation_and_commit(
-            move |request| super::authorization::prepare_selected(request, selected),
+            move |request| super::authorization::prepare_selected(request, &selected),
             |_, program, idempotency| {
                 if selected_owns_action {
                     owner.compare_and_commit_program_action::<Intent::Binding>(program, idempotency)
@@ -125,7 +125,7 @@ where
             return Err(WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired);
         }
         self.execute_with_preparation_and_commit(
-            move |request| super::authorization::prepare_capability_selected(request, selected),
+            move |request| super::authorization::prepare_capability_selected(request, &selected),
             |_, program, idempotency| {
                 if selected_owns_action {
                     owner.compare_and_commit_program_action::<Intent::Binding>(program, idempotency)

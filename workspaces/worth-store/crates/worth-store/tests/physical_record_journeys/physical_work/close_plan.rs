@@ -7,7 +7,9 @@ use worth_store::physical_runtime::{
 
 use super::{
     executor::admitted_write,
-    fixture::{serving_from_initialization_with_work_profile, work_fixture},
+    fixture::{
+        foreground_saturation_fixture, serving_from_initialization_with_work_profile, work_fixture,
+    },
     readiness::success,
     scheduler::ready_work,
 };
@@ -15,23 +17,24 @@ use super::{
 #[test]
 fn close_safely_cancels_predispatch_work_and_reconciles_signal() {
     let root = tempdir().unwrap();
-    let (profile, _, request) = work_fixture();
+    let (profile, requests) = foreground_saturation_fixture();
     let serving = serving_from_initialization_with_work_profile(root.path(), profile);
     let retained_submission = serving.physical_mutation_submission();
+    let [shared, queued_request, settled_request, cancelled_request] = requests;
 
-    let declared = success(retained_submission.submit(request.clone()));
-    let ready = ready_work(&serving, request.clone());
+    let declared = success(retained_submission.submit(shared.clone()));
+    let ready = ready_work(&serving, shared.clone());
     let ready_identity = ready.intent().identity();
-    let queued = admitted_write(&serving, request.clone());
+    let queued = admitted_write(&serving, queued_request);
     let queued_identity = queued.intent().identity();
-    let settled = admitted_write(&serving, request.clone());
+    let settled = admitted_write(&serving, settled_request);
     let settled_identity = settled.intent().identity();
     let settled = serving
         .execute_physical_work(
             PhysicalExecutorCommand::exact_write(settled, b"settled!".as_slice()).unwrap(),
         )
         .unwrap();
-    let cancelled = admitted_write(&serving, request);
+    let cancelled = admitted_write(&serving, cancelled_request);
     let cancelled_consumer = cancelled.consumer_handle();
     let cancelled_command =
         PhysicalExecutorCommand::exact_write(cancelled, b"cancelld".as_slice()).unwrap();
@@ -83,7 +86,7 @@ fn close_safely_cancels_predispatch_work_and_reconciles_signal() {
         0
     );
     assert!(matches!(
-        retained_submission.submit(work_fixture().2).into_raw(),
+        retained_submission.submit(shared).into_raw(),
         TransitionOutcome::Stale(PhysicalWorkSubmissionStale::OwnerReleased)
     ));
     drop((ready, queued, settled, cancelled_command));

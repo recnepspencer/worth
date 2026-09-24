@@ -17,6 +17,7 @@ pub struct CompactionSourceIntegrityAdmission {
 }
 
 impl CompactionSourceIntegrityAdmission {
+    #[cfg(any(test, feature = "certification-authority"))]
     pub(in crate::compaction_interlock) fn admit_intact_source(
         locality_owner: PhysicalGenerationOwner,
         inspected_bytes: u64,
@@ -29,16 +30,6 @@ impl CompactionSourceIntegrityAdmission {
             inspected_bytes,
             movement_permitted: true,
         })
-    }
-
-    pub(in crate::compaction_interlock) const fn quarantined_source(
-        locality_owner: PhysicalGenerationOwner,
-    ) -> Self {
-        Self {
-            locality_owner: Some(locality_owner),
-            inspected_bytes: 0,
-            movement_permitted: false,
-        }
     }
 
     #[cfg(any(test, feature = "certification-authority"))]

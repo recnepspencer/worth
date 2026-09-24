@@ -1,5 +1,4 @@
 use worth_store_physical_backend::ArtifactTreeFailure;
-#[cfg(feature = "certification-test-authority")]
 use worth_store_physical_backend::QualifiedFilesystemMedia;
 use worth_store_physical_format::{
     CurrentPhysicalRecordPlacement, DurablePhysicalRootManifest, ManifestBlockReference,
@@ -39,7 +38,6 @@ pub(in crate::physical_runtime::record_serving) enum ManifestLookupFailure {
 }
 
 impl<'media> ManifestReader<'media> {
-    #[cfg(feature = "certification-test-authority")]
     pub(in crate::physical_runtime::record_serving) fn with_loader(
         media: &'media QualifiedFilesystemMedia,
         loader: &'media (dyn crate::physical_runtime::record_serving::residency::frame_ports::FrameLoadPort

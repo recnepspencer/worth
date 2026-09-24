@@ -147,7 +147,8 @@ fn phase_four_planner_process() {
     assert_eq!(cost.distinct_targets(), 2);
     assert_eq!(cost.operation_bindings(), 3);
     assert_eq!(cost.observation_reads(), 7);
-    assert_eq!(cost.observation_bytes(), 73_275);
+    // Includes the 368-byte source-root manifest the checkpoint binds.
+    assert_eq!(cost.observation_bytes(), 73_643);
     assert_eq!(cost.staging_bytes(), 3_276_800);
     assert_eq!(cost.dirty_frames(), 1);
     assert_eq!(planned.staging_layout().actions().len(), 1);

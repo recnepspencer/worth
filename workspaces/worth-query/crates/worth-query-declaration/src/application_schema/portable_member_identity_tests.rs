@@ -17,6 +17,10 @@ struct SecondEffect;
 struct QueryEntity;
 struct QueryParameters;
 
+impl ApplicationEntityMarkerIdentity<Schema> for QueryEntity {
+    const IDENTIFIER: &'static str = "QueryEntity";
+}
+
 crate::worth_query_entity!(PortableEntity for Schema);
 crate::worth_query_capability_context!(
     FirstContext in Schema,

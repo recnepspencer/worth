@@ -38,7 +38,35 @@ impl MutationCrashLaunch {
     }
 }
 
-pub(crate) fn launch(mut declaration: WriterLaunch) -> Result<KilledProductionWriter, String> {
+pub(crate) fn launch_root(declaration: WriterLaunch) -> Result<PathBuf, String> {
+    Ok(drive(declaration, false)?.root)
+}
+
+pub(crate) fn launch(declaration: WriterLaunch) -> Result<KilledProductionWriter, String> {
+    let killed = drive(declaration, true)?;
+    let history = if killed.allow_unresolved_current_record {
+        ParentPhysicalHistory::capture_with_unresolved_record(&killed.root, &killed.expected)?
+    } else {
+        ParentPhysicalHistory::capture(&killed.root, &killed.expected)?
+    };
+    Ok(KilledProductionWriter {
+        root: killed.root,
+        history,
+        expected: killed.expected,
+        process_id: killed.process_id,
+        runtime_identity: killed.runtime_identity,
+    })
+}
+
+struct DrivenWriter {
+    root: PathBuf,
+    expected: ExpectedWriterHistory,
+    process_id: u32,
+    runtime_identity: u64,
+    allow_unresolved_current_record: bool,
+}
+
+fn drive(mut declaration: WriterLaunch, bind_history: bool) -> Result<DrivenWriter, String> {
     let mut command = Command::new(c8_writer_binary_path());
     command
         .args(["--root"])
@@ -63,7 +91,7 @@ pub(crate) fn launch(mut declaration: WriterLaunch) -> Result<KilledProductionWr
                 .durable_before_ack
                 .then_some("--durable-before-ack"),
         );
-    if let Some(crash) = declaration.mutation_crash {
+    if let Some(crash) = declaration.mutation_crash.take() {
         command.args(["--mutation-crash-stage", crash.stage]);
         command.args(["--mutation-crash-workload", crash.workload.cli_name()]);
     }
@@ -79,10 +107,12 @@ pub(crate) fn launch(mut declaration: WriterLaunch) -> Result<KilledProductionWr
         "writer ready",
     )?;
     let runtime_identity = read_runtime_identity(&declaration.start)?;
-    declaration
-        .operation_program
-        .expected
-        .bind_persisted_operation_identities(&declaration.root)?;
+    if bind_history {
+        declaration
+            .operation_program
+            .expected
+            .bind_persisted_operation_identities(&declaration.root)?;
+    }
     std::fs::write(&declaration.start, b"release")
         .map_err(|error| format!("release {}: {error}", declaration.stage))?;
     wait_for_marker(&mut child, &declaration.reached, "writer effect")?;
@@ -95,20 +125,12 @@ pub(crate) fn launch(mut declaration: WriterLaunch) -> Result<KilledProductionWr
             declaration.stage
         ));
     }
-    let history = if declaration.allow_unresolved_current_record {
-        ParentPhysicalHistory::capture_with_unresolved_record(
-            &declaration.root,
-            &declaration.operation_program.expected,
-        )?
-    } else {
-        ParentPhysicalHistory::capture(&declaration.root, &declaration.operation_program.expected)?
-    };
-    Ok(KilledProductionWriter {
+    Ok(DrivenWriter {
         root: declaration.root,
-        history,
         expected: declaration.operation_program.expected,
         process_id,
         runtime_identity,
+        allow_unresolved_current_record: declaration.allow_unresolved_current_record,
     })
 }
 

@@ -8,18 +8,13 @@ use super::families::{
     extent::{IntegrityAdmittedExtentChunkFrame, IntegrityAdmittedExtentManifest},
     free_space::{IntegrityAdmittedFreeSpaceHeader, IntegrityAdmittedFreeSpaceMembershipBlock},
     page::IntegrityAdmittedPageFrame,
-    root::{
-        IntegrityAdmittedCurrentRootSelector, IntegrityAdmittedPreviousRootSelector,
-        IntegrityAdmittedRootManifest, IntegrityAdmittedRootRoutingBlock,
-    },
+    root::{IntegrityAdmittedRootManifest, IntegrityAdmittedRootRoutingBlock},
     segment_membership::IntegrityAdmittedSegmentMembershipBlock,
     wal::IntegrityAdmittedWalFrame,
 };
 
 pub(crate) enum IntegrityAdmittedRecoveryArtifact<'media> {
     BootstrapCatalog(IntegrityAdmittedBootstrapCatalog<'media>),
-    CurrentSelector(IntegrityAdmittedCurrentRootSelector<'media>),
-    PreviousSelector(IntegrityAdmittedPreviousRootSelector<'media>),
     RootManifest(IntegrityAdmittedRootManifest<'media>),
     RootRoutingBlock(IntegrityAdmittedRootRoutingBlock<'media>),
     SegmentMembershipBlock(IntegrityAdmittedSegmentMembershipBlock<'media>),

@@ -90,6 +90,13 @@ they cannot become a physical root basis or capture a Store reader. C.10's
 ordinary `ServingPhysicalRuntime::records()` captures the live Store-owned
 root and registers its protection independently of recovery report fields.
 
+Recovery reconciles mixed append, rewrite and retirement WAL tails from
+persisted authority. It redoes a rewrite only from a complete admitted group,
+denies a span destination that does not start at frame 0, and defers WAL cleanup
+while a retirement intent is unresolved. Dead-process read leases, pending
+publications and scheduler state are discarded; the fresh runtime issues new
+leases and rebuilds retained-storage charges.
+
 The direct process suite builds the writer, recoverer, and offline observer as
 separate executables, kills the writer or recoverer at production yieldpoints,
 and compares the resulting bytes from the independent observer. It runs

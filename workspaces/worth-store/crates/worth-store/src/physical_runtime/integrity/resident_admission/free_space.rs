@@ -157,16 +157,6 @@ impl IntegrityAdmittedResidentFreeSpaceHeaderView<'_> {
         )
         .map(|header| (header, format))
     }
-
-    pub(in crate::physical_runtime) const fn scope(&self) -> PhysicalArtifactScope {
-        self.scope
-    }
-}
-
-impl IntegrityAdmittedResidentFreeSpaceMembershipView<'_> {
-    pub(in crate::physical_runtime) const fn scope(&self) -> PhysicalArtifactScope {
-        self.scope
-    }
 }
 
 impl IntegrityAdmittedResidentFreeSpaceMembershipView<'_> {

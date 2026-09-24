@@ -70,7 +70,7 @@ impl CanonicalRecordReadPort {
             )?;
         let demand = PhysicalSchedulerDemand::scrub_background(ready, lease, capacity)
             .map_err(ScrubReadDeferral::Scheduler)?;
-        let work = PhysicalWorkScheduler::admit(demand, &backend, policy)
+        let work = PhysicalWorkScheduler::admit(self.scheduler.effects(), demand, &backend, policy)
             .map_err(ScrubReadDeferral::Scheduler)?;
         let command = PhysicalExecutorCommand::inspection(work, destination)
             .map_err(ScrubReadDeferral::Command)?;

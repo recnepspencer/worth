@@ -1,8 +1,17 @@
-use worth_foundational::facade::AspectKey;
-use worth_foundational::facade::{AspectFieldLocator, AspectValue};
+use worth_foundational::facade::{AspectFieldLocator, AspectKey, AspectValue};
 use worth_relational::facade::identity::{EntityId, KindId, RelationId};
+use worth_relational::facade::indexes::DerivedIndexId;
 
+mod adjacency;
+mod entity_touch;
+mod indexed_entity_selection;
+mod locator_identity;
 mod source_currentness;
+mod workflow_definition_predecessor;
+mod workflow_instance_capacity;
+mod workflow_transition_capacity;
+pub(in crate::domain_computation::primary_graph) use adjacency::observe_adjacency;
+pub(in crate::domain_computation::primary_graph) use indexed_entity_selection::observe_indexed_entity_selection;
 pub(in crate::domain_computation::primary_graph) use source_currentness::WorthQuerySourceCurrentnessFailure;
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -88,6 +97,60 @@ pub(in crate::domain_computation) enum WorthQueryApplicationObservedFact {
         maximum_work_units: usize,
         relations: Vec<WorthQueryApplicationObservedRelation>,
     },
+    /// Exact result of a bounded equality-index selection.
+    ///
+    /// This is owner-issued for Query-native application programs whose
+    /// correctness depends on both presence and absence. Re-executing the
+    /// same bounded lookup during provider recomparison closes the
+    /// check-then-create race without exposing raw index authority.
+    IndexedEntitySelection {
+        index_id: DerivedIndexId,
+        entity_kind: KindId,
+        locator: AspectFieldLocator,
+        value: AspectValue,
+        candidate_limit: usize,
+        candidates: Vec<EntityId>,
+    },
+    /// Exact predecessor intent for a workflow-definition publication.
+    ///
+    /// A false observation is retained deliberately: retained idempotency is
+    /// resolved before fact recomparison, so an identical retry can recover
+    /// its receipt while a new effect attempt is forced stale.
+    WorkflowDefinitionPredecessor {
+        relation_kind: KindId,
+        lineage: Option<EntityId>,
+        expected_definition: Option<EntityId>,
+        maximum_work_units: usize,
+    },
+    /// Requires one exact performed definition to remain current at commit.
+    ///
+    /// This may deliberately be false at preparation so an exact retained
+    /// replay can resolve before a superseded definition makes a fresh start
+    /// stale.
+    WorkflowDefinitionCurrent {
+        relation_kind: KindId,
+        lineage: EntityId,
+        expected_definition: EntityId,
+        maximum_work_units: usize,
+    },
+    /// Exact bounded live-instance occupancy for one workflow lineage.
+    ///
+    /// Equality closes concurrent-start races. Capacity is also checked on
+    /// recomparison, so a full lineage can replay a retained start but cannot
+    /// commit a new instance.
+    WorkflowInstanceCapacity {
+        relation_kind: KindId,
+        lineage: EntityId,
+        maximum_instances: usize,
+        instances: Vec<WorthQueryApplicationObservedRelation>,
+    },
+    /// Exact bounded transition occupancy after retained-idempotency recovery.
+    WorkflowTransitionCapacity {
+        relation_kind: KindId,
+        instance: EntityId,
+        maximum_transitions: usize,
+        transitions: Vec<WorthQueryApplicationObservedRelation>,
+    },
 }
 
 impl WorthQueryApplicationObservedFact {
@@ -99,111 +162,11 @@ impl WorthQueryApplicationObservedFact {
     }
 
     pub(crate) fn locator_identity(&self) -> String {
-        match self {
-            Self::SourceEntity { entity_id } => format!(
-                "application-source-entity:{}:{}:{}",
-                entity_id.partition_value(),
-                entity_id.local_slot_value(),
-                entity_id.generation_value()
-            ),
-            Self::SourceAspectRevision {
-                entity_id, aspect, ..
-            } => format!(
-                "application-source-aspect:{}:{}:{}:{}",
-                entity_id.partition_value(),
-                entity_id.local_slot_value(),
-                entity_id.generation_value(),
-                aspect.as_str()
-            ),
-            Self::SourceAdjacencyRevision {
-                relation_kind,
-                anchor,
-                direction,
-                ..
-            } => format!(
-                "application-source-adjacency:{direction:?}:{}:{}:{}:kind:{}",
-                anchor.partition_value(),
-                anchor.local_slot_value(),
-                anchor.generation_value(),
-                relation_kind.as_u32()
-            ),
-            Self::Entity {
-                entity_id, kind, ..
-            } => format!(
-                "application-entity:{}:{}:{}:kind:{}",
-                entity_id.partition_value(),
-                entity_id.local_slot_value(),
-                entity_id.generation_value(),
-                kind.as_u32()
-            ),
-            Self::Field {
-                entity_id, locator, ..
-            }
-            | Self::AbsentField {
-                entity_id, locator, ..
-            } => format!(
-                "application-field:{}:{}:{}:{}/{}",
-                entity_id.partition_value(),
-                entity_id.local_slot_value(),
-                entity_id.generation_value(),
-                locator.aspect().aspect_key().as_str(),
-                locator
-                    .field_path()
-                    .fields()
-                    .first()
-                    .expect("installed application fields have one field path")
-                    .as_str()
-            ),
-            Self::Relation {
-                relation_kind,
-                from,
-                to,
-                ..
-            } => format!(
-                "application-relation:{}:{}:{}->{}:{}:{}:kind:{}",
-                from.partition_value(),
-                from.local_slot_value(),
-                from.generation_value(),
-                to.partition_value(),
-                to.local_slot_value(),
-                to.generation_value(),
-                relation_kind.as_u32()
-            ),
-            Self::Adjacency {
-                relation_kind,
-                anchor,
-                direction,
-                ..
-            } => format!(
-                "application-adjacency:{direction:?}:{}:{}:{}:kind:{}",
-                anchor.partition_value(),
-                anchor.local_slot_value(),
-                anchor.generation_value(),
-                relation_kind.as_u32()
-            ),
-        }
+        locator_identity::encode(self)
     }
 
     pub(super) fn touches_entity(&self, candidate: EntityId) -> bool {
-        match self {
-            Self::SourceEntity { entity_id } => *entity_id == candidate,
-            Self::SourceAspectRevision { entity_id, .. } => *entity_id == candidate,
-            Self::SourceAdjacencyRevision {
-                anchor, endpoints, ..
-            } => *anchor == candidate || endpoints.contains(&candidate),
-            Self::Entity { entity_id, .. }
-            | Self::Field { entity_id, .. }
-            | Self::AbsentField { entity_id, .. } => *entity_id == candidate,
-            Self::Relation { from, to, .. } => *from == candidate || *to == candidate,
-            Self::Adjacency {
-                anchor, relations, ..
-            } => {
-                *anchor == candidate
-                    || relations
-                        .iter()
-                        .any(|relation| relation.from == candidate || relation.to == candidate)
-            }
-        }
+        entity_touch::evaluate(self, candidate)
     }
 
     pub(crate) fn remains_equal_in(
@@ -314,54 +277,84 @@ impl WorthQueryApplicationObservedFact {
                 maximum_work_units,
                 relations,
                 ..
-            } => observe_adjacency(
+            } => adjacency::remains_equal(
                 runtime,
                 snapshot,
                 *relation_kind,
                 *anchor,
                 *direction,
                 *maximum_work_units,
-            )
-            .is_some_and(|current| current == *relations),
+                relations,
+            ),
+            Self::IndexedEntitySelection {
+                index_id,
+                entity_kind,
+                locator,
+                value,
+                candidate_limit,
+                candidates,
+            } => indexed_entity_selection::remains_equal(
+                runtime,
+                snapshot,
+                *index_id,
+                *entity_kind,
+                locator,
+                value,
+                *candidate_limit,
+                candidates,
+            ),
+            Self::WorkflowDefinitionPredecessor {
+                relation_kind,
+                lineage,
+                expected_definition,
+                maximum_work_units,
+            } => workflow_definition_predecessor::remains_equal(
+                runtime,
+                snapshot,
+                *relation_kind,
+                *lineage,
+                *expected_definition,
+                *maximum_work_units,
+            ),
+            Self::WorkflowDefinitionCurrent {
+                relation_kind,
+                lineage,
+                expected_definition,
+                maximum_work_units,
+            } => workflow_definition_predecessor::remains_equal(
+                runtime,
+                snapshot,
+                *relation_kind,
+                Some(*lineage),
+                Some(*expected_definition),
+                *maximum_work_units,
+            ),
+            Self::WorkflowInstanceCapacity {
+                relation_kind,
+                lineage,
+                maximum_instances,
+                instances,
+            } => workflow_instance_capacity::remains_equal(
+                runtime,
+                snapshot,
+                *relation_kind,
+                *lineage,
+                *maximum_instances,
+                instances,
+            ),
+            Self::WorkflowTransitionCapacity {
+                relation_kind,
+                instance,
+                maximum_transitions,
+                transitions,
+            } => workflow_transition_capacity::remains_equal(
+                runtime,
+                snapshot,
+                *relation_kind,
+                *instance,
+                *maximum_transitions,
+                transitions,
+            ),
         }
     }
-}
-
-pub(super) fn observe_adjacency(
-    runtime: &worth_relational::facade::runtime::RelationalRuntime,
-    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    relation_kind: KindId,
-    anchor: EntityId,
-    direction: WorthQueryApplicationAdjacencyDirection,
-    maximum_work_units: usize,
-) -> Option<Vec<WorthQueryApplicationObservedRelation>> {
-    let read = match direction {
-        WorthQueryApplicationAdjacencyDirection::Outgoing => runtime
-            .read_truth()
-            .bounded_outgoing_relations_of_kind_at_version(
-                anchor,
-                relation_kind,
-                snapshot.version_id(),
-                maximum_work_units,
-            ),
-        WorthQueryApplicationAdjacencyDirection::Incoming => runtime
-            .read_truth()
-            .bounded_incoming_relations_of_kind_at_version(
-                anchor,
-                relation_kind,
-                snapshot.version_id(),
-                maximum_work_units,
-            ),
-    }
-    .ok()?;
-    Some(
-        read.into_records()
-            .into_iter()
-            .map(|record| WorthQueryApplicationObservedRelation {
-                relation_id: record.relation_id,
-                from: record.source,
-                to: record.target,
-            })
-            .collect(),
-    )
 }

@@ -30,34 +30,15 @@ use worth_query_host::facade::{
 };
 
 use super::schema::{
-    BoundedDimensionSchema, ExternalMapping, Part, PartDimensionField, PartDimensionQuery,
-    PartDimensionRowBinding, PartFacts, PartIdentityField, PartPrincipalBinding,
-    PartQueryParametersBinding, Principal, SetPartDimension, SetPartDimensionInput,
-    SetPartDimensionInputBinding,
+    BoundedDimensionSchema, ExternalMapping, Part, PartDimensionConditionBinding,
+    PartDimensionConditionQuery, PartDimensionField, PartDimensionQuery, PartDimensionRowBinding,
+    PartFacts, PartIdentityField, PartPrincipalBinding, PartQueryParametersBinding, Principal,
+    SetPartDimension, SetPartDimensionInput, SetPartDimensionInputBinding,
 };
 
-fn migration_candidate_counts() -> &'static std::sync::Mutex<std::collections::BTreeMap<u64, usize>>
-{
-    static COUNTS: std::sync::OnceLock<std::sync::Mutex<std::collections::BTreeMap<u64, usize>>> =
-        std::sync::OnceLock::new();
-    COUNTS.get_or_init(Default::default)
-}
-
-pub fn reset_candidate_count(dimension: u64) {
-    migration_candidate_counts()
-        .lock()
-        .unwrap_or_else(std::sync::PoisonError::into_inner)
-        .remove(&dimension);
-}
-
-pub fn candidate_count(dimension: u64) -> usize {
-    migration_candidate_counts()
-        .lock()
-        .unwrap_or_else(std::sync::PoisonError::into_inner)
-        .get(&dimension)
-        .copied()
-        .unwrap_or(0)
-}
+#[path = "dimension_entry/candidate_tracking.rs"]
+mod candidate_tracking;
+pub use candidate_tracking::{candidate_count, reset_candidate_count};
 
 /// The one part every host in this court seeds and both programs act on.
 pub const PART_IDENTITY: &str = "part-1";
@@ -74,6 +55,7 @@ worth_query_structured_value_binding!(pub PartDimensionReadBinding for PartDimen
 });
 
 pub struct PartDimensionQueryBinding;
+pub struct PartDimensionConditionQueryBinding;
 
 type PartDimensionQueryScope = ApplicationQueryFieldScope<
     BoundedDimensionSchema,
@@ -126,10 +108,73 @@ impl ApplicationQueryBinding<BoundedDimensionSchema> for PartDimensionQueryBindi
     }
 }
 
+impl ApplicationQueryBinding<BoundedDimensionSchema> for PartDimensionConditionQueryBinding {
+    type Input = PartDimensionConditionRead;
+    type InputBinding = PartDimensionConditionReadBinding;
+    type Query = PartDimensionConditionQuery;
+    type ParameterBinding = PartQueryParametersBinding;
+    type ResultBinding = PartDimensionConditionBinding;
+    type ScopeBinding = PartDimensionQueryScope;
+    type PrincipalBinding = PartPrincipalBinding;
+    type Mapping = ExternalMapping;
+    type Principal = Principal;
+    type PrincipalIdentity = u64;
+    type PrincipalIdentityBinding = U64ApplicationValueBinding;
+
+    const IDENTITY: &'static str =
+        "worth.query.certification.bounded-dimension.condition-read-binding.v1";
+    const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::bounded(1, 64);
+
+    fn scope_field() -> ApplicationFieldRef<
+        BoundedDimensionSchema,
+        Part,
+        PartFacts,
+        PartIdentityField,
+        String,
+        ReadOnly,
+        EqualityPredicate,
+        NoApplicationUnit,
+    > {
+        PartIdentityField::reference()
+    }
+
+    fn principal_binding() -> ApplicationPrincipalBindingRef<
+        BoundedDimensionSchema,
+        PartPrincipalBinding,
+        ExternalMapping,
+        Principal,
+        u64,
+        U64ApplicationValueBinding,
+    > {
+        PartPrincipalBinding::reference()
+    }
+}
+
 impl ApplicationQueryIntent<BoundedDimensionSchema> for PartDimensionRead {
     type Binding = PartDimensionQueryBinding;
 
     fn parameters(&self) -> ApplicationQueryParameterSet<PartDimensionQuery> {
+        ApplicationQueryParameterSet::new()
+    }
+
+    fn into_scope(self) -> PartDimensionQueryScope {
+        PartDimensionQueryScope::new(PartIdentityField::reference(), self.identity)
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct PartDimensionConditionRead {
+    pub identity: String,
+}
+
+worth_query_structured_value_binding!(pub PartDimensionConditionReadBinding for PartDimensionConditionRead {
+    identity: "worth.query.certification.bounded-dimension.condition-read.v1"
+});
+
+impl ApplicationQueryIntent<BoundedDimensionSchema> for PartDimensionConditionRead {
+    type Binding = PartDimensionConditionQueryBinding;
+
+    fn parameters(&self) -> ApplicationQueryParameterSet<PartDimensionConditionQuery> {
         ApplicationQueryParameterSet::new()
     }
 
@@ -292,11 +337,7 @@ impl OperationHandler<BoundedDimensionSchema, SetPartDimensionBinding> for SetPa
         target: WorthQueryInvariantMutationTarget<BoundedDimensionSchema, Part>,
         writer: &mut CandidateWriter<'_, BoundedDimensionSchema, SetPartDimensionBinding>,
     ) -> HandlerResult<PartDimensionWritten, SetPartDimensionDenial> {
-        *migration_candidate_counts()
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .entry(input.dimension)
-            .or_default() += 1;
+        candidate_tracking::record_candidate(input.dimension);
         let part = match writer.projected_entity(&target) {
             Ok(part) => part,
             Err(error) => {
@@ -319,6 +360,7 @@ pub fn declare(
 ) -> ApplicationSchemaDeclarationBuilder<BoundedDimensionSchema> {
     schema
         .application_query_binding::<PartDimensionQueryBinding>()
+        .application_query_binding::<PartDimensionConditionQueryBinding>()
         .application_mutation_binding::<SetPartDimensionBinding>()
 }
 

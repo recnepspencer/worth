@@ -14,6 +14,10 @@ use super::{
 };
 use crate::application_entry::WorthQueryApplicationRequestMutationDenial;
 
+#[path = "authorization/authorized.rs"]
+mod authorized;
+use authorized::AuthorizedMutation;
+
 type IntentBinding<Schema, Intent> = <Intent as ApplicationMutationIntent<Schema>>::Binding;
 type IntentPrincipal<Schema, Intent> =
     <IntentBinding<Schema, Intent> as ApplicationMutationBinding<Schema>>::PrincipalIdentity;
@@ -22,33 +26,19 @@ type MutationScope<Schema, Binding> =
         Schema,
     >>::Scope;
 
-pub(super) struct PreparedMutation<Schema, Binding>
+pub(in crate::application_entry) struct PreparedMutation<Schema, Binding>
 where
     Schema: ApplicationSchema,
     Binding: ApplicationMutationBinding<Schema>,
 {
-    pub(super) principal_identity: Binding::PrincipalIdentity,
-    pub(super) admission: WorthQueryAdmittedApplicationOperation<
+    pub(in crate::application_entry) principal_identity: Binding::PrincipalIdentity,
+    pub(in crate::application_entry) admission: WorthQueryAdmittedApplicationOperation<
         Schema,
         Binding::Operation,
         Binding::Input,
         MutationScope<Schema, Binding>,
     >,
-    pub(super) idempotency: WorthQueryApplicationIdempotencyBinding,
-}
-
-struct AuthorizedMutation<Schema, Binding>
-where
-    Schema: ApplicationSchema,
-    Binding: ApplicationMutationBinding<Schema>,
-{
-    principal_identity: Binding::PrincipalIdentity,
-    admission: WorthQueryAdmittedApplicationOperation<
-        Schema,
-        Binding::Operation,
-        Binding::Input,
-        MutationScope<Schema, Binding>,
-    >,
+    pub(in crate::application_entry) idempotency: WorthQueryApplicationIdempotencyBinding,
 }
 
 pub(super) fn assess<Schema, Intent, SourcePreparation>(
@@ -94,7 +84,7 @@ where
         .on_branch(request.branch)
         .select()
         .map_err(WorthQueryApplicationRequestMutationDenial::ProductSelection)?;
-    authorize_selected(request, selected)
+    authorize_selected(request, &selected)
 }
 
 fn authorize_selected<Schema, Intent, SourcePreparation>(
@@ -106,7 +96,7 @@ fn authorize_selected<Schema, Intent, SourcePreparation>(
         Intent,
         SourcePreparation,
     >,
-    selected: WorthQuerySelectedProductOperation<'_, Schema>,
+    selected: &WorthQuerySelectedProductOperation<'_, Schema>,
 ) -> Result<
     AuthorizedMutation<Schema, IntentBinding<Schema, Intent>>,
     WorthQueryApplicationRequestMutationDenial,
@@ -192,7 +182,7 @@ pub(super) fn prepare_selected<Schema, Intent, SourcePreparation>(
         Intent,
         SourcePreparation,
     >,
-    selected: WorthQuerySelectedProductOperation<'_, Schema>,
+    selected: &WorthQuerySelectedProductOperation<'_, Schema>,
 ) -> Result<PreparedMutation<Schema, IntentBinding<Schema, Intent>>, WorthQueryApplicationRequestMutationDenial>
 where
     Schema: ApplicationSchema,
@@ -260,6 +250,12 @@ where
         IntentBinding::<Schema, Intent>::input_identity(request.request.intent.input()),
     )
     .bind_source(source_identity.as_ref());
+    let idempotency = request.workflow_transition_identity.map_or(idempotency, |identity| {
+        worth_query_execution::facade::workflow_advance::WorthQueryWorkflowAdvanceAdapter::bind_operation_idempotency_raw(
+            idempotency,
+            &identity,
+        )
+    });
     Ok(PreparedMutation {
         principal_identity,
         admission,
@@ -304,10 +300,10 @@ where
         .on_branch(request.request.branch)
         .select()
         .map_err(WorthQueryApplicationRequestMutationDenial::ProductSelection)?;
-    prepare_capability_selected(request, selected)
+    prepare_capability_selected(request, &selected)
 }
 
-pub(super) fn prepare_capability_selected<Schema, Intent, SourcePreparation>(
+pub(in crate::application_entry) fn prepare_capability_selected<Schema, Intent, SourcePreparation>(
     request: &mut WorthQueryApplicationMutationRequestWithIdempotency<
         '_,
         '_,
@@ -317,7 +313,7 @@ pub(super) fn prepare_capability_selected<Schema, Intent, SourcePreparation>(
         Intent,
         SourcePreparation,
     >,
-    selected: WorthQuerySelectedProductOperation<'_, Schema>,
+    selected: &WorthQuerySelectedProductOperation<'_, Schema>,
 ) -> Result<PreparedMutation<Schema, IntentBinding<Schema, Intent>>, WorthQueryApplicationRequestMutationDenial>
 where
     Schema: ApplicationSchema,

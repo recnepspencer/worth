@@ -103,6 +103,7 @@ fn admit_terminal_bindings(
         .ok_or_else(invalid)?;
     let before = context.coordination.freshness().binding_samples();
     let sampled = super::super::super::binding::sample_binding(
+        super::super::super::binding::CheckpointCoveredMembers::Sample,
         context.coordination.freshness(),
         context.coordination.checkpoint_binding_basis(),
         context.media,

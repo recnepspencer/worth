@@ -17,9 +17,10 @@ fn page_failures_retain_distinct_exact_phase_four_read_counters() {
         Ok(_) => panic!("an invalid membership block cannot form a plan"),
         Err(outcome) => expect_blocked(outcome),
     };
-    // Six checkpoint attempts survive discovery alongside the four routing
-    // attempts up to the damaged membership block.
-    assert_eq!(invalid.evidence().integrity_observation_count(), 10);
+    // Six checkpoint attempts and the checkpoint's source-root manifest survive
+    // discovery alongside the four routing attempts up to the damaged
+    // membership block.
+    assert_eq!(invalid.evidence().integrity_observation_count(), 11);
 
     let page_root = prepare_ordinary_recovery_root("c8-phase4-invalid-page");
     let page_selected = selected_ordinary_recovery(page_root.path());

@@ -19,9 +19,9 @@ error: cannot construct `ResourceAdmittedPhysicalWork` with struct literal synta
    |                                                             |
    |                                                             private field
    |
-   = note: ...and other private field `scheduler_capacity` that was not provided
+   = note: ...and other private fields `scheduler_capacity` and `effect_lease` that were not provided
 help: you might have meant to use the `new` associated function
    |
 11 -     let _resource_admitted = ResourceAdmittedPhysicalWork { ready, queue_plan };
-11 +     let _resource_admitted = ResourceAdmittedPhysicalWork::new(_, _, _);
+11 +     let _resource_admitted = ResourceAdmittedPhysicalWork::new(_, _, _, _);
    |

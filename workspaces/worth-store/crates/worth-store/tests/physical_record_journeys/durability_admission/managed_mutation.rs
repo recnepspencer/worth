@@ -13,8 +13,34 @@ use worth_store::physical_runtime::{
 
 #[path = "managed_mutation/cancellation_boundaries.rs"]
 mod cancellation_boundaries;
+#[path = "managed_mutation/candidate_verification.rs"]
+mod candidate_verification;
 #[path = "managed_mutation/drop_boundaries.rs"]
 mod drop_boundaries;
+#[path = "managed_mutation/extent_record_rewrite.rs"]
+mod extent_record_rewrite;
+#[path = "managed_mutation/maintenance_capability.rs"]
+mod maintenance_capability;
+#[path = "managed_mutation/pending_publication.rs"]
+mod pending_publication;
+#[path = "managed_mutation/phase_five_lifecycle.rs"]
+mod phase_five_lifecycle;
+#[path = "managed_mutation/published_segments.rs"]
+mod published_segments;
+#[path = "managed_mutation/retirement_identity.rs"]
+mod retirement_identity;
+#[path = "managed_mutation/retirement_reconstruction.rs"]
+mod retirement_reconstruction;
+#[path = "managed_mutation/retirement_wal_hold.rs"]
+mod retirement_wal_hold;
+#[path = "managed_mutation/rewrite_integrity.rs"]
+mod rewrite_integrity;
+#[path = "managed_mutation/segment_retirement.rs"]
+mod segment_retirement;
+#[path = "managed_mutation/selected_segment_rewrite.rs"]
+mod selected_segment_rewrite;
+#[path = "managed_mutation/usable_growth.rs"]
+mod usable_growth;
 
 #[test]
 fn managed_mutation_completion_is_the_only_acknowledgment_source() {
@@ -271,13 +297,41 @@ fn cancellation_during_runtime_close_is_explicit_and_close_drains_the_attempt() 
     assert_eq!(shutdown.mutations().cancellation_runtime_closing(), 1);
 }
 
-fn prepare(
+pub(super) fn prepare(
     serving: &worth_store::physical_runtime::ServingPhysicalRuntime,
     placement: worth_store::physical_runtime::AdmittedRecordPlacementPolicy,
     material: [u8; 32],
     record: &[u8],
 ) -> PreparedPhysicalMutation {
     prepare_with_deadline(serving, placement, material, record, 1_000)
+}
+
+pub(super) fn prepare_records(
+    serving: &worth_store::physical_runtime::ServingPhysicalRuntime,
+    placement: worth_store::physical_runtime::AdmittedRecordPlacementPolicy,
+    material: [u8; 32],
+    records: &[&[u8]],
+) -> PreparedPhysicalMutation {
+    let submission = serving.record_submission();
+    let key = submission
+        .issue_idempotency_key(PhysicalMutationIdempotencyMaterial::new(material))
+        .unwrap();
+    match submission
+        .prepare_durable_append(
+            RecordAppendBatch::try_from_iter(records.iter().copied()).unwrap(),
+            placement,
+            PhysicalMutationRequest::platform_durable(
+                key,
+                PhysicalMutationDeadline::at(TemporalDuration::temporal_duration(1_000).unwrap()),
+            ),
+        )
+        .into_raw()
+    {
+        TransitionOutcome::Success(PhysicalMutationPreparationSuccess::Prepared(prepared)) => {
+            prepared
+        }
+        _ => panic!("managed mutation preparation must succeed"),
+    }
 }
 
 fn prepare_with_deadline(
@@ -311,7 +365,7 @@ fn prepare_with_deadline(
     }
 }
 
-fn completed(
+pub(super) fn completed(
     outcome: PhysicalMutationOutcome,
 ) -> worth_store::physical_runtime::CompletedPhysicalMutation {
     match outcome {

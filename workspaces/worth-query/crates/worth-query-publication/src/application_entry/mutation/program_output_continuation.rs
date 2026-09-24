@@ -29,6 +29,7 @@ use crate::application_entry::{
 };
 
 mod branch;
+mod leaf;
 
 mod sealed {
     pub trait Continuation {}
@@ -96,58 +97,6 @@ where
     >;
 }
 
-struct CompleteContinuation {
-    open: bool,
-}
-
-impl sealed::Continuation for CompleteContinuation {}
-impl sealed::Factory for ApplicationOutputLeaf {}
-
-impl<'application, Schema> ProgramOutputContinuation<'application, Schema> for CompleteContinuation
-where
-    Schema: ApplicationSchema,
-{
-    fn advance(
-        &mut self,
-        _: &WorthQueryApplicationRequest<'application, '_, '_, Schema>,
-    ) -> Result<ProgramOutputContinuationProgress, WorthQueryRequiredOutputPreparationDenial> {
-        if std::mem::take(&mut self.open) {
-            Ok(ProgramOutputContinuationProgress::Settled {
-                outputs: Vec::new(),
-                work: ProgramOutputTraversalWork::default(),
-            })
-        } else {
-            Err(WorthQueryRequiredOutputPreparationDenial::Closed)
-        }
-    }
-}
-
-impl<'application, Schema, Program, ParentDemand>
-    ProgramOutputContinuationFactory<'application, Schema, Program, ParentDemand>
-    for ApplicationOutputLeaf
-where
-    Schema: ApplicationSchema,
-    Program: ApplicationProgramDefinition<Schema>,
-    ParentDemand: WorthQueryApplicationOutputDemand<Schema>,
-{
-    fn start(
-        _: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
-        _: &ParentDemand,
-        _parent_settlement: &WorthQueryApplicationOutputDemandSettlement<
-            SourceQuery<Schema, ParentDemand>,
-        >,
-        _: &WorthQuerySettledProgramOutput<Schema, Program, ParentDemand>,
-        _: &crate::application_entry::WorthQueryApplicationReadObservation,
-        _: &WorthQueryApplicationRequest<'application, '_, '_, Schema>,
-        _: WorthQueryOutputDemandControls,
-    ) -> Result<
-        Box<dyn ProgramOutputContinuation<'application, Schema> + 'application>,
-        WorthQueryRequiredOutputPreparationDenial,
-    > {
-        Ok(Box::new(CompleteContinuation { open: true }))
-    }
-}
-
 struct EdgeNode<'application, Schema, Program, Demand>
 where
     Schema: ApplicationSchema,
@@ -156,6 +105,10 @@ where
 {
     demand: Demand,
     handle: Option<WorthQueryApplicationProgramDemandHandle<'application, Schema, Program, Demand>>,
+    settled: Option<(
+        WorthQueryApplicationOutputDemandSettlement<SourceQuery<Schema, Demand>>,
+        WorthQuerySettledProgramOutput<Schema, Program, Demand>,
+    )>,
     continuation: Option<Box<dyn ProgramOutputContinuation<'application, Schema> + 'application>>,
 }
 
@@ -284,6 +237,7 @@ where
                 Ok(EdgeNode {
                     demand,
                     handle: Some(handle),
+                    settled: None,
                     continuation: None,
                 })
             })
@@ -336,6 +290,21 @@ where
         request: &WorthQueryApplicationRequest<'application, '_, '_, Schema>,
     ) -> Result<ProgramOutputContinuationProgress, WorthQueryRequiredOutputPreparationDenial> {
         for node in &mut self.nodes {
+            if let Some((settlement, authority)) = node.settled.take() {
+                node.continuation = Some(Children::start(
+                    self.application,
+                    &node.demand,
+                    &settlement,
+                    &authority,
+                    &self.basis,
+                    request,
+                    self.controls,
+                )?);
+                self.outputs.push(ProgramOutputRecord::new::<Schema, Connection>(
+                    node.demand.clone(),
+                    settlement,
+                ));
+            }
             if let Some(handle) = &mut node.handle {
                 match handle
                     .advance(request)
@@ -346,20 +315,9 @@ where
                         settlement,
                         authority,
                     } => {
-                        node.continuation = Some(Children::start(
-                            self.application,
-                            &node.demand,
-                            &settlement,
-                            &authority,
-                            &self.basis,
-                            request,
-                            self.controls,
-                        )?);
-                        self.outputs.push(ProgramOutputRecord::new::<
-                            Schema,
-                            Connection,
-                        >(node.demand.clone(), settlement));
+                        node.settled = Some((settlement, authority));
                         node.handle = None;
+                        continue;
                     }
                 }
             }
@@ -377,7 +335,9 @@ where
         if self
             .nodes
             .iter()
-            .any(|node| node.handle.is_some() || node.continuation.is_some())
+            .any(|node| {
+                node.handle.is_some() || node.settled.is_some() || node.continuation.is_some()
+            })
         {
             return Ok(ProgramOutputContinuationProgress::Pending);
         }

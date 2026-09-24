@@ -8,8 +8,48 @@ use super::authority_continuity::record_recovery_verification_counters;
 use super::diagnostics::{recovery_checkpoint_selected, recovery_range_replayed};
 use super::runtime_rebuild::rebuild_runtime_from_plan;
 use super::DurabilityRecoveryAuthority;
+use super::RecoveredRelationalRuntimeAuthority;
 
 impl<'runtime> DurabilityRecoveryAuthority<'runtime> {
+    pub fn restore_native_checkpoint_with_authority(
+        &mut self,
+        checkpoint: &crate::durability::data::RelationalNativeCheckpoint,
+    ) -> Result<(RuntimeRecoveryOutcome, RecoveredRelationalRuntimeAuthority), DurabilityError>
+    {
+        let outcome = self.restore_native_checkpoint(checkpoint)?;
+        let recovered_branch_images = self
+            .runtime
+            .history()
+            .branch_cells_snapshot()
+            .into_iter()
+            .map(|cell| (cell.branch_id, (cell.observation, cell.truth_version)))
+            .collect();
+        let authority = RecoveredRelationalRuntimeAuthority {
+            runtime_instance_id: self.runtime.runtime_instance_id(),
+            recovered_branch_images,
+        };
+        Ok((outcome, authority))
+    }
+
+    pub fn restore_native_checkpoint(
+        &mut self,
+        checkpoint: &crate::durability::data::RelationalNativeCheckpoint,
+    ) -> Result<RuntimeRecoveryOutcome, DurabilityError> {
+        let initial_schema_authority = self.runtime.initial_schema_authority_snapshot();
+        let checkpoint =
+            crate::durability::log::native_file_codec::decode_checkpoint(checkpoint.bytes())?
+                .checkpoint;
+        let plan = crate::durability::access::native_checkpoint_recovery_plan(
+            self.runtime,
+            checkpoint,
+            crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
+        );
+        let outcome = self.recover(plan)?;
+        self.runtime
+            .restore_initial_schema_authority_after_recovery(initial_schema_authority);
+        Ok(outcome)
+    }
+
     pub fn recover(
         &mut self,
         plan: RecoveryPlan,

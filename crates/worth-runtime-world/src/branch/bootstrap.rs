@@ -2,6 +2,7 @@ use crate::basis::AdmittedCompositeRuntimeWorldBasis;
 use crate::branch::{ProductBranchCreationIntent, ProductBranchObservation};
 use crate::identity::{ProductBranchReferenceGeneration, RuntimeWorldBootstrapAttemptIdentity};
 use worth_relational::facade::branch::AdmittedRelationalBranchBasis;
+use worth_relational::facade::durability::RecoveredRelationalBranchBasis;
 use worth_runtime_bridge::facade::AdmittedRuntimeWorldCorrespondenceBasis;
 use worth_signal::facade::branch::AdmittedSignalBranchBasis;
 
@@ -15,6 +16,7 @@ pub struct RuntimeWorldBootstrapIntent {
     correspondence_basis: AdmittedRuntimeWorldCorrespondenceBasis,
     cancellation: Option<crate::publication::RuntimeWorldCancellationToken>,
     initial_generation: ProductBranchReferenceGeneration,
+    recovered_authoritative_root: bool,
 }
 
 impl RuntimeWorldBootstrapIntent {
@@ -31,6 +33,27 @@ impl RuntimeWorldBootstrapIntent {
             correspondence_basis,
             cancellation: None,
             initial_generation: ProductBranchReferenceGeneration::initial(),
+            recovered_authoritative_root: false,
+        }
+    }
+
+    /// Builds a recovered root intent only from a Relational owner-issued basis
+    /// that proves successful native recovery. Checkpoint presence alone cannot
+    /// select this path.
+    pub fn recovered(
+        creation: ProductBranchCreationIntent,
+        relational_basis: RecoveredRelationalBranchBasis,
+        signal_basis: AdmittedSignalBranchBasis,
+        correspondence_basis: AdmittedRuntimeWorldCorrespondenceBasis,
+    ) -> Self {
+        Self {
+            creation,
+            relational_basis: relational_basis.into_basis(),
+            signal_basis,
+            correspondence_basis,
+            cancellation: None,
+            initial_generation: ProductBranchReferenceGeneration::initial(),
+            recovered_authoritative_root: true,
         }
     }
 
@@ -70,6 +93,7 @@ impl RuntimeWorldBootstrapIntent {
         AdmittedSignalBranchBasis,
         AdmittedRuntimeWorldCorrespondenceBasis,
         ProductBranchReferenceGeneration,
+        bool,
     ) {
         (
             self.creation,
@@ -77,6 +101,7 @@ impl RuntimeWorldBootstrapIntent {
             self.signal_basis,
             self.correspondence_basis,
             self.initial_generation,
+            self.recovered_authoritative_root,
         )
     }
 }
@@ -100,6 +125,7 @@ pub struct PerformedRuntimeWorldBootstrap {
     attempt: RuntimeWorldBootstrapAttemptIdentity,
     basis: AdmittedCompositeRuntimeWorldBasis,
     product_branch: ProductBranchObservation,
+    recovered_authoritative_root: bool,
 }
 
 impl PerformedRuntimeWorldBootstrap {
@@ -115,16 +141,53 @@ impl PerformedRuntimeWorldBootstrap {
         &self.product_branch
     }
 
+    /// Consumes the bootstrap proof into fresh, runtime-scoped authority for
+    /// adopting accepted derived outputs at this recovered root. A fresh
+    /// bootstrap cannot issue recovery authority.
+    pub fn into_recovered_root_authority(self) -> Option<RecoveredRuntimeWorldRootAuthority> {
+        self.recovered_authoritative_root
+            .then_some(RecoveredRuntimeWorldRootAuthority {
+                attempt: self.attempt,
+                basis: self.basis,
+                product_branch: self.product_branch,
+            })
+    }
+
     pub(crate) fn new(
         attempt: RuntimeWorldBootstrapAttemptIdentity,
         basis: AdmittedCompositeRuntimeWorldBasis,
         product_branch: ProductBranchObservation,
+        recovered_authoritative_root: bool,
     ) -> Self {
         Self {
             attempt,
             basis,
             product_branch,
+            recovered_authoritative_root,
         }
+    }
+}
+
+/// World-issued authority to adopt checkpoint-accepted derived outputs at the
+/// exact recovered root. It is runtime-scoped and deliberately non-serializable.
+#[derive(Debug)]
+pub struct RecoveredRuntimeWorldRootAuthority {
+    attempt: RuntimeWorldBootstrapAttemptIdentity,
+    basis: AdmittedCompositeRuntimeWorldBasis,
+    product_branch: ProductBranchObservation,
+}
+
+impl RecoveredRuntimeWorldRootAuthority {
+    pub fn attempt(&self) -> &RuntimeWorldBootstrapAttemptIdentity {
+        &self.attempt
+    }
+
+    pub fn basis(&self) -> &AdmittedCompositeRuntimeWorldBasis {
+        &self.basis
+    }
+
+    pub fn product_branch(&self) -> &ProductBranchObservation {
+        &self.product_branch
     }
 }
 

@@ -1,0 +1,105 @@
+use worth_query_installation::facade::{
+    ApplicationRelationCardinality, ApplicationRelationCrossContextPolicy,
+    ApplicationRelationDeletionPolicy, ApplicationRelationEndpoints, ApplicationRelationIntegrity,
+};
+
+pub(in crate::domain_computation::primary_graph::workflow::schema) fn live_membership_integrity(
+) -> ApplicationRelationIntegrity {
+    integrity(ApplicationRelationCardinality::new(
+        None,
+        Some(1),
+        None,
+        None,
+        None,
+        Some(1),
+    ))
+}
+
+pub(in crate::domain_computation::primary_graph::workflow::schema) fn current_definition_integrity(
+) -> ApplicationRelationIntegrity {
+    integrity(ApplicationRelationCardinality::new(
+        Some(1),
+        Some(1),
+        None,
+        Some(1),
+        None,
+        Some(1),
+    ))
+}
+
+pub(in crate::domain_computation::primary_graph::workflow::schema) fn connection_endpoint_integrity(
+) -> ApplicationRelationIntegrity {
+    integrity(ApplicationRelationCardinality::new(
+        Some(1),
+        Some(1),
+        None,
+        None,
+        None,
+        Some(1),
+    ))
+}
+
+pub(in crate::domain_computation::primary_graph::workflow::schema) fn owned_fact_integrity(
+) -> ApplicationRelationIntegrity {
+    integrity(ApplicationRelationCardinality::new(
+        None,
+        None,
+        Some(1),
+        Some(1),
+        None,
+        Some(1),
+    ))
+}
+
+pub(in crate::domain_computation::primary_graph::workflow::schema) fn workflow_proposal_integrity(
+) -> ApplicationRelationIntegrity {
+    evidence_integrity()
+}
+
+pub(in crate::domain_computation::primary_graph::workflow::schema) fn assessment_evidence_integrity(
+) -> ApplicationRelationIntegrity {
+    evidence_integrity()
+}
+
+pub(in crate::domain_computation::primary_graph::workflow::schema) fn approval_evidence_integrity(
+) -> ApplicationRelationIntegrity {
+    integrity(ApplicationRelationCardinality::new(
+        Some(1),
+        None,
+        None,
+        None,
+        None,
+        Some(1),
+    ))
+}
+
+pub(in crate::domain_computation::primary_graph::workflow::schema) fn approval_proposal_integrity(
+) -> ApplicationRelationIntegrity {
+    integrity(ApplicationRelationCardinality::new(
+        Some(1),
+        Some(1),
+        None,
+        None,
+        None,
+        Some(1),
+    ))
+}
+
+fn evidence_integrity() -> ApplicationRelationIntegrity {
+    integrity(ApplicationRelationCardinality::new(
+        None,
+        Some(1),
+        Some(1),
+        Some(1),
+        None,
+        Some(1),
+    ))
+}
+
+fn integrity(cardinality: ApplicationRelationCardinality) -> ApplicationRelationIntegrity {
+    ApplicationRelationIntegrity::new(
+        ApplicationRelationEndpoints::new(false, ApplicationRelationCrossContextPolicy::Forbid),
+        cardinality,
+        ApplicationRelationDeletionPolicy::RequireRelationDeletionInSameCommit,
+    )
+}

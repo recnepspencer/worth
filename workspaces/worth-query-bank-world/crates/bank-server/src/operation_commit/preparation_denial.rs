@@ -48,6 +48,21 @@ pub enum BankApplicationAttemptDenialKind {
     ElevationApprovalProgramMismatch,
     ElevationCloseProgramMismatch,
     MandatoryReviewProgramMismatch,
+    WorkflowDefinitionAffinityMismatch,
+    WorkflowDefinitionAuthorityMismatch,
+    WorkflowDefinitionIntentIdentityUnavailable,
+    WorkflowLineageUnavailable,
+    WorkflowDefinitionCompilationUnavailable,
+    WorkflowInstanceAffinityMismatch,
+    WorkflowInstanceAuthorityMismatch,
+    WorkflowInstanceIntentIdentityUnavailable,
+    WorkflowInstanceCapacityUnavailable,
+    WorkflowTransitionAffinityMismatch,
+    WorkflowTransitionAuthorityMismatch,
+    WorkflowTransitionAlreadySettled,
+    WorkflowTransitionNodeUnsupported,
+    WorkflowTransitionIdentityUnavailable,
+    WorkflowAssessmentEvidenceMismatch,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -171,6 +186,51 @@ const fn application_attempt_kind(
         }
         Query::MandatoryReviewProgramMismatch => {
             BankApplicationAttemptDenialKind::MandatoryReviewProgramMismatch
+        }
+        Query::WorkflowDefinitionAffinityMismatch => {
+            BankApplicationAttemptDenialKind::WorkflowDefinitionAffinityMismatch
+        }
+        Query::WorkflowDefinitionAuthorityMismatch => {
+            BankApplicationAttemptDenialKind::WorkflowDefinitionAuthorityMismatch
+        }
+        Query::WorkflowDefinitionIntentIdentityUnavailable => {
+            BankApplicationAttemptDenialKind::WorkflowDefinitionIntentIdentityUnavailable
+        }
+        Query::WorkflowLineageUnavailable => {
+            BankApplicationAttemptDenialKind::WorkflowLineageUnavailable
+        }
+        Query::WorkflowDefinitionCompilationUnavailable => {
+            BankApplicationAttemptDenialKind::WorkflowDefinitionCompilationUnavailable
+        }
+        Query::WorkflowInstanceAffinityMismatch => {
+            BankApplicationAttemptDenialKind::WorkflowInstanceAffinityMismatch
+        }
+        Query::WorkflowInstanceAuthorityMismatch => {
+            BankApplicationAttemptDenialKind::WorkflowInstanceAuthorityMismatch
+        }
+        Query::WorkflowInstanceIntentIdentityUnavailable => {
+            BankApplicationAttemptDenialKind::WorkflowInstanceIntentIdentityUnavailable
+        }
+        Query::WorkflowInstanceCapacityUnavailable => {
+            BankApplicationAttemptDenialKind::WorkflowInstanceCapacityUnavailable
+        }
+        Query::WorkflowTransitionAffinityMismatch => {
+            BankApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch
+        }
+        Query::WorkflowTransitionAuthorityMismatch => {
+            BankApplicationAttemptDenialKind::WorkflowTransitionAuthorityMismatch
+        }
+        Query::WorkflowTransitionAlreadySettled => {
+            BankApplicationAttemptDenialKind::WorkflowTransitionAlreadySettled
+        }
+        Query::WorkflowTransitionNodeUnsupported => {
+            BankApplicationAttemptDenialKind::WorkflowTransitionNodeUnsupported
+        }
+        Query::WorkflowTransitionIdentityUnavailable => {
+            BankApplicationAttemptDenialKind::WorkflowTransitionIdentityUnavailable
+        }
+        Query::WorkflowAssessmentEvidenceMismatch => {
+            BankApplicationAttemptDenialKind::WorkflowAssessmentEvidenceMismatch
         }
     }
 }

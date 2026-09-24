@@ -21,6 +21,7 @@ mod program;
 mod program_outputs;
 mod rule;
 mod semantic_encoding;
+mod workflow;
 
 #[cfg(test)]
 mod program_tests;
@@ -98,3 +99,4 @@ pub use rule::{
     ApplicationRuleAt, ApplicationRuleLeaf, ApplicationRuleList, ApplicationSharedRuleInstanceRef,
     ApplicationSharedRuleRef, ApplicationSnapshotPublication,
 };
+pub use workflow::*;

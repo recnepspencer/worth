@@ -25,7 +25,10 @@ mod principal_seed;
 mod program_adoption;
 mod world_seed;
 
-pub use application_definition::{BankApplication, BankApplicationP1};
+pub use application_definition::{
+    approved_business_payment_definition, ApprovedBusinessPaymentDefinitionDenial, BankApplication,
+    BankApplicationP1,
+};
 pub use application_query::{
     BankAccountActivityContinuation, BankAccountActivityHistoricalResult,
     BankAccountActivityLiveLease, BankAccountActivityLiveOutcome, BankAccountActivityLiveUpdate,
@@ -48,6 +51,11 @@ pub use application_query::{
     BankEstateEmergencyAccessActivityPageResult, BankEstateEmergencyAccessActivityResult,
     BankEstateEmergencyAccountDetailsResult, BankGraphReadPlanReviewDenialKind, BankPreviewSession,
     BankPreviewSessionDiscardReceipt, BankProductSelectionDenialKind,
+};
+pub use approved_payment_workflow::{
+    BankApprovedPaymentApplyOutcome, BankApprovedPaymentAssessment,
+    BankApprovedPaymentPerformedOperation, BankApprovedPaymentWorkflow,
+    BankApprovedPaymentWorkflowError,
 };
 pub use authenticated_principal::BankAuthenticatedPrincipal;
 pub use authentication_boundary::BankAuthenticationBoundary;
@@ -101,3 +109,4 @@ pub use ordinary::{
 pub use principal_seed::BankPrincipalSeed;
 pub use program_adoption::{BankProgramAdoptionPreparationDenial, BankProgramInspectionDenial};
 pub use world_seed::{BankBusinessOwnerSeed, BankEmployeeAssignmentSeed, BankWorldSeed};
+mod approved_payment_workflow;

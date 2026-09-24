@@ -110,7 +110,12 @@ impl<'a, Schema: ApplicationSchema> WorthQueryApplicationContributionSetup<'a, S
         let installed = self
             .installed_schema
             .installed_mutation_binding::<Binding>()
-            .map_err(|_| member_denial(Binding::IDENTITY))?;
+            .map_err(|error| {
+                WorthQueryPrimaryGraphInstallationDenial::new(
+                    WorthQueryPrimaryGraphInstallationDenialKind::BindingNotInstalled,
+                    format!("{}: {error}", Binding::IDENTITY),
+                )
+            })?;
         let operation_owned = self.contribution.members().any(|member| {
             matches!(member,
                 ApplicationSchemaMember::ApplicationMutation { description }
@@ -187,7 +192,12 @@ impl<'a, Schema: ApplicationSchema> WorthQueryApplicationContributionSetup<'a, S
         let installed = self
             .installed_schema
             .installed_mutation_binding::<Binding>()
-            .map_err(|_| member_denial(Binding::IDENTITY))?;
+            .map_err(|error| {
+                WorthQueryPrimaryGraphInstallationDenial::new(
+                    WorthQueryPrimaryGraphInstallationDenialKind::BindingNotInstalled,
+                    format!("{}: {error}", Binding::IDENTITY),
+                )
+            })?;
         let owned = self.contribution.members().any(|member| {
             matches!(member,
                 ApplicationSchemaMember::ApplicationMutation { description }

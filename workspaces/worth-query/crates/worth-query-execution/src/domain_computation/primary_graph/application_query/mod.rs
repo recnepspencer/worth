@@ -18,7 +18,7 @@ mod execution_validation;
 mod governance_affinity_tests;
 mod graph_read_plan_binding;
 mod live;
-mod observed_source;
+pub(in crate::domain_computation::primary_graph) mod observed_source;
 mod one_shot;
 mod projection;
 mod read_execution;
@@ -67,7 +67,10 @@ pub use live::{
     WorthQueryApplicationLiveOpenDenialKind, WorthQueryApplicationLiveOutcome,
     WorthQueryApplicationLiveOverflow, WorthQueryApplicationLiveUpdate,
 };
-pub(in crate::domain_computation::primary_graph) use observed_source::WorthQueryObservedSourceEpoch;
+pub(in crate::domain_computation::primary_graph) use observed_source::{
+    WorthQueryCheckpointSourceIdentity, WorthQueryObservedSourceEpoch,
+    WorthQueryRuntimeSourceIdentity,
+};
 pub use observed_source::{
     WorthQueryObservedSource, WorthQuerySourceExpectationDenial,
     WorthQuerySourceExpectationDenialKind,

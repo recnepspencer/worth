@@ -560,6 +560,14 @@ Legend: **E** existing owner extended; **N** new populated responsibility;
 surface; **F** committed future insertion, no empty file now. Paths below are
 relative to `workspaces/worth-store/crates/` unless stated otherwise.
 
+As-built note (recorded at C.11 specification): the planned
+`physical_runtime/maintenance/`, `instance/scheduler_admission/rewrite.rs`,
+`worth-store-physical-format::maintenance_record/` and
+`worth-store-recovery-physics::maintenance_recovery/` were not created. The
+tree below shows where each responsibility actually landed; the
+[C.11 spec](physical-reconstruction-c11-layout-index-and-native-blob-adoption.md#c10-as-built-homes-c11-extends)
+extends those homes and creates no parallel maintenance owner.
+
 ```text
 worth-store/src/physical_runtime/
   mod.rs                                      E facade exports only
@@ -567,7 +575,7 @@ worth-store/src/physical_runtime/
     parts.rs                                  E exhaustive lifecycle composition
     scheduler_admission/                      E producer -> one scheduler
       scrub.rs, checkpoint.rs, reclamation.rs E current adapters cut over
-      rewrite.rs                              N exact physical rewrite demand
+      root_publication.rs, capacity.rs        E rewrite/retirement demand (as built; no rewrite.rs)
     executor/                                 E sole media-effect boundary
   stability/                                  N Store-owned live physical protection
     mod.rs                                    N narrow capability facade
@@ -580,14 +588,17 @@ worth-store/src/physical_runtime/
       mod.rs, registrations.rs, lease.rs, observation.rs
       obligations.rs, pressure.rs             F durable obligations and growth budgets (Phases 3/4)
     lifecycle.rs                              N revoke, release, close propagation
-  maintenance/                                N orchestration, not another runtime
-    mod.rs                                    N caller facade
-    rewrite/                                  N record-preserving producer
-      mod.rs, planning.rs, progression.rs
-    retirement/                               N physical deletion lifecycle
-      mod.rs, eligibility.rs, claim.rs, execution.rs
-    observation.rs                            N progress, debt, effect fate
-    backup/, repair/, tier_movement/           F separately authorized workflows
+  (planned maintenance/ was not created; as built:)
+  record_serving/publication/director/        N record-preserving rewrite and retirement producers
+    selected_segment_rewrite.rs, rewrite_pages.rs, rewrite_span_selection.rs
+    rewrite_anchor.rs, rewrite_source_liveness.rs, extent_record_rewrite.rs
+    retirement.rs
+  record_serving/admission/                   N reopen recharge of displaced generations
+    displaced_segments.rs, displaced_extents.rs
+  durability/retention/                       N physical deletion lifecycle
+    retirement.rs, retired_artifact.rs
+  durability/publication/current_root_owner/displaced.rs  N single displaced slot
+  (backup, repair and tier movement stay separately authorized successor workflows)
   work/
     concurrency_scope.rs                      R incomplete coordinate-only relation
     effect_footprint/                         N exhaustive scope algebra
@@ -631,15 +642,15 @@ worth-store-io-scheduler/src/
     observation/                              E actual queue/service/interference evidence
 
 worth-store-physical-format/src/
-  maintenance_record/                         N canonical bounded versioned payload declarations
-    mod.rs, rewrite.rs, retirement.rs
+  rewrite_redo.rs, manifest/maintenance.rs    N payload declarations (as built; no maintenance_record/)
   wal_frame/, checkpoint/, manifest/          E versioned capability and obligation support
 worth-store-recovery-physics/src/
   redo_replay/                                E typed append/rewrite selection and idempotence
-  maintenance_recovery/                       N pure retirement reconciliation law
-    mod.rs, rewrite.rs, retirement.rs
+  (planned maintenance_recovery/ was not created; reconciliation landed in:)
+worth-store/src/physical_runtime/recovery_freshness/binding/retirement_obligation.rs
 worth-store-recovery-runtime/src/
   orchestration/                              E real performed effects and fresh handoff
+    planning/completion/rewrite_*.rs          N rewrite proof and rebuild from verified source
   progression/discovered/selection.rs         E recovered checkpoint-product selection stays here
 worth-store-offline-integrity-observer/src/
   integrity_observation/families/             E independent maintenance payload interpretation

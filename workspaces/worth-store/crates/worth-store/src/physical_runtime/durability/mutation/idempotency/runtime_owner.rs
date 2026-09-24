@@ -108,6 +108,28 @@ impl PhysicalMutationBindingCompactionRuntimeAuthority {
             pending: Some(pending),
         })
     }
+
+    /// Reacquires the registry after a media barrier. Foreground mutations may
+    /// have changed bindings; only a committed generation change invalidates
+    /// the prospective compaction.
+    pub(in crate::physical_runtime) fn resume_binding_compaction(
+        &self,
+        pending: PendingPhysicalMutationBindingCompaction,
+    ) -> Result<PhysicalMutationBindingCompactionCutover<'_>, PhysicalMutationBindingCompactionDenial>
+    {
+        let registry = self
+            .owner
+            .registry
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        if registry.generation != pending.prior_generation() {
+            return Err(PhysicalMutationBindingCompactionDenial::RegistryChanged);
+        }
+        Ok(PhysicalMutationBindingCompactionCutover {
+            registry,
+            pending: Some(pending),
+        })
+    }
 }
 
 impl PhysicalMutationIdempotencyRuntimeAuthority {
@@ -255,6 +277,16 @@ impl PhysicalMutationBindingCompactionCutover<'_> {
         consume: impl FnMut(&[u8]) -> Result<(), E>,
     ) -> Result<(), E> {
         self.pending_ref().for_each_record(&self.registry, consume)
+    }
+
+    /// Drops the registry guard so a non-preemptible media barrier cannot stall
+    /// foreground mutations that record a WAL binding under this same mutex.
+    pub(in crate::physical_runtime) fn release_registry(
+        mut self,
+    ) -> PendingPhysicalMutationBindingCompaction {
+        self.pending
+            .take()
+            .expect("an uncommitted cutover retains its prospective compaction")
     }
 
     pub(in crate::physical_runtime) fn commit_namespace_durable(

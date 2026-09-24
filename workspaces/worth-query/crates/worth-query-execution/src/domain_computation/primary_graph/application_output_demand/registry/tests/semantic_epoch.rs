@@ -145,11 +145,11 @@ fn distinct_source_queries_are_not_ordered_or_semantically_joined() {
     let scope = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(root(1));
     let first_root = super::super::BoundOutputSource {
         scope,
-        identity: first.source,
+        identity: first.source.clone(),
     };
     let second_root = super::super::BoundOutputSource {
         scope,
-        identity: second.source,
+        identity: second.source.clone(),
     };
 
     assert!(!first.same_occurrence(&second));
@@ -201,9 +201,9 @@ fn recovery_rejoins_the_older_key_that_retains_newer_semantic_custody() {
             discovery: None,
             bound_sources: Some(vec![super::super::BoundOutputSource {
                 scope,
-                identity: retained.source,
+                identity: retained.source.clone(),
             }]),
-            consumed_sources: vec![retained.source],
+            consumed_sources: vec![retained.source.clone()],
             retired_sources: Vec::new(),
             retired: None,
             token_count: 1,

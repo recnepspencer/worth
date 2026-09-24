@@ -338,5 +338,8 @@ const fn publication_recovery_target(
         PhysicalPublicationEffect::SynchronizeRecordFamily => {
             crate::physical_runtime::PhysicalWorkRecoveryTarget::RecordNamespaceSynchronization
         }
+        PhysicalPublicationEffect::RemoveArtifact => {
+            crate::physical_runtime::PhysicalWorkRecoveryTarget::ArtifactRemoval(artifact)
+        }
     }
 }

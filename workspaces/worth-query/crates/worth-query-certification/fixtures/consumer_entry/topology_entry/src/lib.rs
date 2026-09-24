@@ -30,6 +30,8 @@ mod producer;
 mod readiness;
 mod source_adjustment;
 mod vertex_replacement;
+#[cfg(test)]
+mod checkpoint_recovery;
 pub use vertex_replacement::*;
 
 pub use discovery_read::*;

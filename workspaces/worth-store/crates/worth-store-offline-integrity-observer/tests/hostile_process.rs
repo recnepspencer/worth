@@ -176,7 +176,7 @@ fn run(root: &Path, entries: u64, report: &Path) -> Output {
             "--max-symlinks",
             "4",
             "--max-elapsed-ms",
-            "10000",
+            crate::support::FIXTURE_ELAPSED_ARGUMENT,
             "--max-report-bytes",
             "262144",
         ])

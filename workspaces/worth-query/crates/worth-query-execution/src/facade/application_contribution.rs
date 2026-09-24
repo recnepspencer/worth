@@ -18,5 +18,6 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryPreparedManagedComputation, WorthQueryProducerApplicability,
     WorthQueryProducerDemandResources, WorthQueryProducerInvariantRequirement,
     WorthQueryProducerLifecyclePosture, WorthQueryProducerOutputFamily,
+    WorthQueryWorkflowAssessmentOutputFamily, WorthQueryWorkflowAssessmentPosture,
 };
 pub use worth_query_declaration::facade::application_schema::ApplicationSchemaComposition;

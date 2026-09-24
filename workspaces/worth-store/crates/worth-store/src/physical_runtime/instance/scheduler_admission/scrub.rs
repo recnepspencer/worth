@@ -53,6 +53,7 @@ impl PhysicalSchedulerAdmissionOwner {
         .map_err(PhysicalScrubSchedulerAdmissionDenial::Pacing)?;
         match admit_background_pacing(BackgroundIdleCapacityLeaseRequest::new(admission)) {
             BackgroundPacingOutcome::AdmittedWithDebt(admitted) => {
+                self.dispatch.commit_background_quantum();
                 Ok((admitted.into_lease(), capacity, self.buffered_file, policy))
             }
             _ => Err(PhysicalScrubSchedulerAdmissionDenial::Deferred),

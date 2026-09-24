@@ -3,8 +3,8 @@ use std::any::TypeId;
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 
 use super::{
-    latest_output_in_partition, ProductCoordinate, SemanticSource,
-    WorthQueryApplicationOutputLineage, WorthQueryOutputSourcePosture,
+    latest_output_in_partition, latest_output_matching, ProductCoordinate, RecordedSourceIdentity,
+    SemanticSource, WorthQueryApplicationOutputLineage, WorthQueryOutputSourcePosture,
     WorthQueryProducerLineageHead,
 };
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
@@ -88,17 +88,83 @@ impl WorthQueryApplicationOutputLineage {
             if work > maximum_work {
                 return Err(());
             }
-            if let Some(recorded) = versions
-                .get(&coordinate.occurrence)
-                .and_then(|history| history.range(..=coordinate.generation).next_back())
-                .map(|(_, recorded)| recorded)
-            {
-                return Ok((recorded.source_identity == Some(source_identity)
-                    && std::ptr::eq(
-                        recorded.correspondence.as_ref(),
-                        receipt.output_correspondence(),
-                    ))
-                .then(|| (std::sync::Arc::clone(&recorded.observed_source_facts), work)));
+            if let Some(recorded) = versions.get(&coordinate.occurrence).and_then(|history| {
+                latest_output_matching(history, coordinate.generation, |recorded| {
+                    recorded.source_identity
+                        == Some(RecordedSourceIdentity::Runtime(
+                            crate::domain_computation::primary_graph::application_query::WorthQueryRuntimeSourceIdentity::new(source_identity),
+                        ))
+                        && std::ptr::eq(
+                            recorded.correspondence.as_ref(),
+                            receipt.output_correspondence(),
+                        )
+                })
+            }) {
+                let Some(facts) = recorded.observed_source_facts.as_ref() else {
+                    return Ok(None);
+                };
+                return Ok(Some((std::sync::Arc::clone(facts), work)));
+            }
+            let Some(parent) = self.origins.get(&coordinate.occurrence).copied() else {
+                return Ok(None);
+            };
+            coordinate = parent;
+        }
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn source_facts_for_restored_output(
+        &self,
+        runtime_authority: u64,
+        schema: &ApplicationSchemaBindingIdentity,
+        observation: &worth_runtime_world::facade::ProductBranchObservation,
+        settlement: &crate::domain_computation::primary_graph::WorthQueryOutputDemandSettlement,
+        maximum_work: usize,
+    ) -> Result<
+        Option<(
+            std::sync::Arc<[super::super::application_attempt::WorthQueryApplicationObservedFact]>,
+            usize,
+        )>,
+        (),
+    > {
+        let Some(restored) = settlement.restored_source.as_ref() else {
+            return Ok(None);
+        };
+        let Some(output_binding) = settlement.output_correspondence.binding_type() else {
+            return Ok(None);
+        };
+        let source = SemanticSource {
+            runtime_authority,
+            schema: schema.clone(),
+            scope: restored.scope,
+            output_binding,
+        };
+        let Some(versions) = self.by_source.get(&source) else {
+            return Ok(None);
+        };
+        let mut coordinate = ProductCoordinate {
+            occurrence: observation.lifecycle_incarnation(),
+            generation: observation.reference_generation().get(),
+        };
+        let mut work = 0_usize;
+        loop {
+            work = work.checked_add(1).ok_or(())?;
+            if work > maximum_work {
+                return Err(());
+            }
+            if let Some(recorded) = versions.get(&coordinate.occurrence).and_then(|history| {
+                latest_output_matching(history, coordinate.generation, |recorded| {
+                    recorded.source_identity
+                        == Some(RecordedSourceIdentity::Checkpoint(restored.identity))
+                        && std::ptr::eq(
+                            recorded.correspondence.as_ref(),
+                            settlement.output_correspondence.as_ref(),
+                        )
+                })
+            }) {
+                let Some(facts) = recorded.observed_source_facts.as_ref() else {
+                    return Ok(None);
+                };
+                return Ok(Some((std::sync::Arc::clone(facts), work)));
             }
             let Some(parent) = self.origins.get(&coordinate.occurrence).copied() else {
                 return Ok(None);
@@ -126,7 +192,8 @@ impl WorthQueryApplicationOutputLineage {
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
         generation: u64,
         output_bindings: &[TypeId],
-        current_source_identity: [u8; 32],
+        current_runtime_identity: crate::domain_computation::primary_graph::application_query::WorthQueryRuntimeSourceIdentity,
+        current_checkpoint_identity: crate::domain_computation::primary_graph::application_query::WorthQueryCheckpointSourceIdentity,
     ) -> WorthQueryOutputSourcePosture {
         let mut retained_output = false;
         for output_binding in output_bindings {
@@ -144,18 +211,19 @@ impl WorthQueryApplicationOutputLineage {
                 generation,
             };
             loop {
-                if versions.get(&coordinate.occurrence).is_some_and(|history| {
-                    history
-                        .range(..=coordinate.generation)
-                        .next_back()
-                        .is_some()
-                }) {
-                    let recorded = versions
-                        .get(&coordinate.occurrence)
-                        .and_then(|history| history.range(..=coordinate.generation).next_back())
-                        .map(|(_, recorded)| recorded)
-                        .expect("retained output was just found");
-                    if recorded.source_identity == Some(current_source_identity) {
+                if let Some(recorded) = versions
+                    .get(&coordinate.occurrence)
+                    .and_then(|history| history.range(..=coordinate.generation).next_back())
+                    .map(|(_, recorded)| recorded)
+                {
+                    if recorded.iter().any(|recorded| {
+                        recorded.source_identity.is_some_and(|identity| {
+                            identity.matches_current(
+                                current_runtime_identity,
+                                current_checkpoint_identity,
+                            )
+                        })
+                    }) {
                         return WorthQueryOutputSourcePosture::Exact(*output_binding);
                     }
                     retained_output = true;

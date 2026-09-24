@@ -36,10 +36,6 @@ impl<'media> IntegrityAdmittedWalFrame<'media> {
         counters.record_owner_projection();
         self.admitted
     }
-
-    pub(crate) const fn scope(&self) -> worth_store_physical_integrity::PhysicalArtifactScope {
-        self.admitted.scope()
-    }
 }
 
 fn map_store_denial(

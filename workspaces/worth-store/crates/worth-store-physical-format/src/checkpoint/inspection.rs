@@ -1,14 +1,12 @@
-#[cfg(test)]
 use sha2::{Digest, Sha256};
 
-#[cfg(test)]
 use super::{
     CheckpointBindingRecordFrameLength, CheckpointStreamDecodeDenial, CheckpointStreamDecoder,
+    CheckpointStreamFooter, PersistedCompactionCutoverRecord, PhysicalCheckpointSource,
     CHECKPOINT_BINDING_COMPACTION_HEADER_RECORD_BYTES, CHECKPOINT_BINDING_RECORD_PREFIX_BYTES,
     CHECKPOINT_DIRTY_FRAME_RECORD_BYTES, CHECKPOINT_STREAM_FOOTER_RECORD_BYTES,
     CHECKPOINT_STREAM_HEADER_RECORD_BYTES,
 };
-use super::{CheckpointStreamFooter, PersistedCompactionCutoverRecord, PhysicalCheckpointSource};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct VerifiedCheckpointStream {
@@ -83,7 +81,6 @@ impl VerifiedCheckpointStream {
     }
 }
 
-#[cfg(test)]
 pub(crate) fn inspect_checkpoint_stream(
     bytes: &[u8],
     maximum_dirty_records: u64,

@@ -17,6 +17,72 @@ root = "workspaces/worth-store/crates/worth-store-physical-certification/src"
 forbidden_identifiers = ["PhysicalIsolationEntryIdentity", "RecoveryReadinessBasis", "admit_physical_isolation_entry"]
 guidance = "C.10 removes synthetic readiness admission rather than relocating a report-to-root authority route into certification"
 
+[[source_dependency_allowlists]]
+workspace_manifest = "workspaces/worth-store/Cargo.toml"
+sources = ["worth-store-physical-isolation"]
+allowed_targets = [
+  "fs4",
+  "sha2",
+  "tempfile",
+  "worth-foundational",
+  "worth-proof",
+  "worth-store-authority",
+  "worth-store-budgets",
+  "worth-store-contracts",
+  "worth-store-physical-backend",
+  "worth-store-physical-format",
+  "worth-store-physical-integrity",
+  "worth-store-security",
+  "worth-store-wal",
+]
+guidance = "C.10: isolation owns lower protection, conflict and plan-completion mechanisms; it may depend only downward on format, integrity, backend, WAL, security and foundational law, never on Store, recovery, scheduler or certification owners"
+
+[[source_identifier_denials]]
+root = "workspaces/worth-store/crates/worth-store/src/physical_runtime"
+exclude_paths = [
+  "workspaces/worth-store/crates/worth-store/src/physical_runtime/stability",
+  "workspaces/worth-store/crates/worth-store/src/physical_runtime/durability/publication/current_root_owner.rs",
+  "workspaces/worth-store/crates/worth-store/src/physical_runtime/durability/publication/current_root_owner",
+  "workspaces/worth-store/crates/worth-store/src/physical_runtime/durability/retention",
+  "workspaces/worth-store/crates/worth-store/src/physical_runtime/instance/construction/record_serving.rs",
+  "workspaces/worth-store/crates/worth-store/src/physical_runtime/record_serving/publication/director",
+  "workspaces/worth-store/crates/worth-store/src/physical_runtime/record_serving/lifecycle/serving_runtime.rs",
+]
+forbidden_identifiers = [
+  "RootProtectionRegistry",
+  "capture_read_root",
+  "claim_displaced",
+  "claim_retirement",
+  "commit_retirement_intent",
+  "finish_retirement",
+  "try_begin_retirement",
+]
+guidance = "C.10: live root protection is captured only under the current-root owner's lock and registered by stability; retirement claims, intents and completions are minted only by the retention/current-root owners through the publication director. Other modules consume issued leases and outcomes, never these constructors"
+
+[[source_identifier_denials]]
+root = "workspaces/worth-store/crates/worth-store/src/physical_runtime"
+exclude_paths = ["workspaces/worth-store/crates/worth-store/src/physical_runtime/work/effect_footprint"]
+forbidden_identifiers = ["PhysicalEffectKey", "lower_scope"]
+guidance = "C.10: every admitted physical work scope lowers to effect keys only through work/effect_footprint's exhaustive lowering; producers and schedulers consume the lowered footprint and may not hand-build coordination keys"
+
+[[source_identifier_denials]]
+root = "workspaces/worth-store/crates/worth-store/src/physical_runtime"
+exclude_paths = [
+  "workspaces/worth-store/crates/worth-store/src/physical_runtime/instance/executor",
+  "workspaces/worth-store/crates/worth-store/src/physical_runtime/record_serving/residency/artifact_tree.rs",
+]
+forbidden_identifiers = [
+  "remove_scheduled_artifact",
+  "remove_scheduled_file_durably",
+  "replace_scheduled_catalog",
+  "synchronize_scheduled_artifact",
+  "synchronize_scheduled_artifact_parent",
+  "synchronize_scheduled_directory",
+  "synchronize_scheduled_file",
+  "synchronize_scheduled_record_family",
+]
+guidance = "C.10: scheduled maintenance media effects (retirement deletes, reclamation, checkpoint and publication synchronization) execute only in the Store executor after scheduler admission; producers submit work and never touch the artifact tree's scheduled operations"
+
 [[dependency_denials]]
 workspace_manifest = "Cargo.toml"
 sources = ["worth-runtime-bridge"]

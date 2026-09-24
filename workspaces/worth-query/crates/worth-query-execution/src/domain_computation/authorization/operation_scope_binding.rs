@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct WorthQueryOperationScopeEntityBinding {
     partition_id: u32,
     local_slot: u64,

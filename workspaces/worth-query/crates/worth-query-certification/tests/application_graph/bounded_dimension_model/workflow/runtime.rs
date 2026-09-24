@@ -1,0 +1,59 @@
+use worth_query_installation::facade::{
+    WorthQueryApplicationWorkflowResourceCeiling, WorthQueryApplicationWorkflowSpecInstallation,
+};
+
+use super::super::{
+    dimension_entry::{PartDimensionConditionQueryBinding, PartDimensionQueryBinding},
+    host::{BoundedDimensionRuntime, BoundedDimensionWorkflowRuntime},
+    programs::DimensionProgramP0,
+    schema::{BoundedDimensionSchema, SetPartDimension, SetPartDimensionInput},
+};
+use super::{
+    ReviewedGeometryWorkflow, WorkflowAdvanceCapability, WorkflowAdvanceInput,
+    WorkflowAdvanceOperation, WorkflowApprovalCapability, WorkflowDefinitionAuthoringCapability,
+    WorkflowDefinitionAuthoringInput, WorkflowDefinitionAuthoringOperation,
+    WorkflowInstanceStartCapability, WorkflowInstanceStartInput, WorkflowInstanceStartOperation,
+};
+
+pub fn retain_workflow(
+    application: BoundedDimensionRuntime<DimensionProgramP0>,
+) -> BoundedDimensionWorkflowRuntime {
+    retain_workflow_with_resources(application, workflow_resources())
+}
+
+pub fn retain_workflow_with_resources(
+    application: BoundedDimensionRuntime<DimensionProgramP0>,
+    resources: WorthQueryApplicationWorkflowResourceCeiling,
+) -> BoundedDimensionWorkflowRuntime {
+    let workflow = WorthQueryApplicationWorkflowSpecInstallation::<
+        BoundedDimensionSchema,
+        ReviewedGeometryWorkflow,
+        DimensionProgramP0,
+    >::begin(application.runtime().installed_schema(), application.installed_program(), resources)
+    .operation::<WorkflowDefinitionAuthoringOperation, WorkflowDefinitionAuthoringInput>()
+    .expect("the workflow operation is installed")
+    .operation::<SetPartDimension, SetPartDimensionInput>()
+    .expect("the workflow apply operation is installed")
+    .assessment::<PartDimensionQueryBinding>()
+    .expect("the workflow assessment is installed")
+    .condition::<PartDimensionConditionQueryBinding>()
+    .expect("the workflow condition is installed")
+    .approval::<WorkflowApprovalCapability, WorkflowAdvanceOperation, WorkflowAdvanceInput>()
+    .expect("the workflow approval capability is installed")
+    .authoring_capability::<WorkflowDefinitionAuthoringCapability, WorkflowDefinitionAuthoringOperation, WorkflowDefinitionAuthoringInput>()
+    .expect("the workflow authoring capability is installed")
+    .instance_start_capability::<WorkflowInstanceStartCapability, WorkflowInstanceStartOperation, WorkflowInstanceStartInput>()
+    .expect("the workflow instance-start capability is installed")
+    .advance_capability::<WorkflowAdvanceCapability, WorkflowAdvanceOperation, WorkflowAdvanceInput>()
+    .expect("the workflow advance capability is installed")
+    .finish()
+    .expect("the workflow vocabulary is valid");
+    application
+        .retain_workflow_spec(workflow)
+        .expect("the workflow vocabulary belongs to the runtime")
+}
+
+fn workflow_resources() -> WorthQueryApplicationWorkflowResourceCeiling {
+    WorthQueryApplicationWorkflowResourceCeiling::new(32, 64, 4, 4, 64 * 1024, 32, 128, 256 * 1024)
+        .expect("the workflow installation limits are nonzero")
+}

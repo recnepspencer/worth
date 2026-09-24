@@ -223,7 +223,7 @@ where
 {
     let input = provider.operation_input(source);
     let source_epoch = observed_source.idempotency_identity();
-    let key = provider.idempotency_key(source, &source_epoch);
+    let key = provider.idempotency_key(source, &source_epoch.bytes());
     let binding = runtime
         .installed_schema()
         .installed_mutation_binding::<Operation<Schema, Binding>>()

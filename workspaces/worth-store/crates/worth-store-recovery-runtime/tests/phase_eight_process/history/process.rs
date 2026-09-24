@@ -17,4 +17,5 @@ pub(crate) use durable_before_ack_writer::launch_killed_durable_unacknowledged_w
 pub(crate) use lifecycle::KilledProductionWriter;
 pub(crate) use mutation_writer::{
     launch_killed_mutation_writer, launch_killed_mutation_writer_with_operation_count,
+    launch_multi_page_rewrite_root,
 };

@@ -42,6 +42,44 @@ fn certification_only_envelope_is_held_not_execution_ready() {
 }
 
 #[test]
+fn hard_and_soft_service_time_envelopes_are_not_executable() {
+    for envelope in [
+        ForegroundLatencyEnvelope::hard_bound("p99", 1),
+        ForegroundLatencyEnvelope::soft_slo("p999", 1),
+    ] {
+        let kind = envelope.kind();
+        let security = io_qos_security_scope_admission();
+        let backend = backend_admission(IoSchedulerBackendCapabilityRequirement::DirectIo);
+        let lane = ForegroundLaneDeclaration::point_read()
+            .with_latency_envelope(envelope)
+            .with_budget(read_budget());
+        let arbitration =
+            ForegroundArbitrationDeclaration::for_lane(ForegroundIoLaneKind::PointRead);
+        let capacity = capacity_admission(
+            lane,
+            &backend,
+            &security,
+            arbitration,
+            lane.requested_budget(),
+            full_capacity_budget(),
+        );
+        let outcome = admit_foreground_reservation(ForegroundReservationAdmissionRequest::new(
+            lane,
+            &backend,
+            &security,
+            arbitration,
+            &capacity,
+        ));
+        assert_eq!(outcome.state(), ForegroundReservationState::ReservationHeld);
+        assert!(matches!(
+            outcome.into_result(),
+            Err(ForegroundReservationAdmissionDenial::UnsupportedServiceTimeEnvelope { kind: denied })
+                if denied == kind
+        ));
+    }
+}
+
+#[test]
 fn envelope_violation_reports_typed_cause() {
     let receipt = admit_point_read_reservation();
     let violation = receipt

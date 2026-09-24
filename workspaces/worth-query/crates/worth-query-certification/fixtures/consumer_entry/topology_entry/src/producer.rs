@@ -15,6 +15,19 @@ use worth_query_host::facade::application_contribution::{
 
 use super::{PlanarMutationBinding, TopologySchemaBinding};
 
+#[cfg(test)]
+static PROVIDER_CONTACTS: AtomicUsize = AtomicUsize::new(0);
+
+#[cfg(test)]
+pub(super) fn reset_provider_contacts() {
+    PROVIDER_CONTACTS.store(0, Ordering::SeqCst);
+}
+
+#[cfg(test)]
+pub(super) fn provider_contacts() -> usize {
+    PROVIDER_CONTACTS.load(Ordering::SeqCst)
+}
+
 const INITIAL: WorthQueryProducerApplicability =
     WorthQueryProducerApplicability::new("planar", WorthQueryProducerLifecyclePosture::Initial);
 const PRESERVE: WorthQueryProducerApplicability =
@@ -58,6 +71,8 @@ impl<Schema: TopologySchemaBinding>
     const SEMANTIC_IDENTITY: &'static str = "worth.query.certification.planar-initial-provider.v1";
 
     fn operation_input(&self, source: &super::PlanarReadResult) -> super::PlanarMutation {
+        #[cfg(test)]
+        PROVIDER_CONTACTS.fetch_add(1, Ordering::SeqCst);
         let mut input = planar_producer_input(source);
         if self
             .authorization_denials
@@ -72,10 +87,14 @@ impl<Schema: TopologySchemaBinding>
     }
 
     fn idempotency_key(&self, _: &super::PlanarReadResult, source_identity: &[u8; 32]) -> u64 {
+        #[cfg(test)]
+        PROVIDER_CONTACTS.fetch_add(1, Ordering::SeqCst);
         planar_source_key(source_identity)
     }
 
     fn demand_resources(&self, _: &super::PlanarReadResult) -> WorthQueryProducerDemandResources {
+        #[cfg(test)]
+        PROVIDER_CONTACTS.fetch_add(1, Ordering::SeqCst);
         planar_producer_resources()
     }
 }

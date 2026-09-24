@@ -19,6 +19,7 @@ pub struct PhysicalWorkScope {
 enum PhysicalWorkScopeMembers {
     Inspection(worth_store_physical_format::PhysicalArtifactReadRange),
     Artifact(RecordArtifactFile),
+    ArtifactRemoval(RecordArtifactFile),
     One(RecordFrameCoordinate),
     Batch(Box<[RecordFrameCoordinate]>),
     Checkpoint(PhysicalCheckpointWorkScope),
@@ -49,6 +50,12 @@ impl PhysicalWorkScope {
     pub fn artifact(artifact: RecordArtifactFile) -> Self {
         Self {
             members: PhysicalWorkScopeMembers::Artifact(artifact),
+        }
+    }
+
+    pub(in crate::physical_runtime) fn artifact_removal(artifact: RecordArtifactFile) -> Self {
+        Self {
+            members: PhysicalWorkScopeMembers::ArtifactRemoval(artifact),
         }
     }
 
@@ -119,7 +126,9 @@ impl PhysicalWorkScope {
 
     pub fn coordinates(&self) -> &[RecordFrameCoordinate] {
         match &self.members {
-            PhysicalWorkScopeMembers::Artifact(_) | PhysicalWorkScopeMembers::Inspection(_) => &[],
+            PhysicalWorkScopeMembers::Artifact(_)
+            | PhysicalWorkScopeMembers::ArtifactRemoval(_)
+            | PhysicalWorkScopeMembers::Inspection(_) => &[],
             PhysicalWorkScopeMembers::Checkpoint(_)
             | PhysicalWorkScopeMembers::WalAppend(_)
             | PhysicalWorkScopeMembers::WalBarrier(_) => &[],
@@ -130,9 +139,19 @@ impl PhysicalWorkScope {
         }
     }
 
+    pub(in crate::physical_runtime) const fn artifact_removal_target(
+        &self,
+    ) -> Option<RecordArtifactFile> {
+        match &self.members {
+            PhysicalWorkScopeMembers::ArtifactRemoval(artifact) => Some(*artifact),
+            _ => None,
+        }
+    }
+
     pub const fn artifact_target(&self) -> Option<RecordArtifactFile> {
         match &self.members {
-            PhysicalWorkScopeMembers::Artifact(artifact) => Some(*artifact),
+            PhysicalWorkScopeMembers::Artifact(artifact)
+            | PhysicalWorkScopeMembers::ArtifactRemoval(artifact) => Some(*artifact),
             PhysicalWorkScopeMembers::One(_)
             | PhysicalWorkScopeMembers::Batch(_)
             | PhysicalWorkScopeMembers::Inspection(_) => None,
@@ -189,6 +208,7 @@ impl PhysicalWorkScope {
         match &self.members {
             PhysicalWorkScopeMembers::Inspection(_)
             | PhysicalWorkScopeMembers::Artifact(_)
+            | PhysicalWorkScopeMembers::ArtifactRemoval(_)
             | PhysicalWorkScopeMembers::One(_)
             | PhysicalWorkScopeMembers::Checkpoint(_)
             | PhysicalWorkScopeMembers::WalAppend(_)
@@ -205,6 +225,13 @@ impl PhysicalWorkScope {
         digest.update((self.member_count() as u64).to_le_bytes());
         if let Some(range) = self.inspection_target() {
             super::inspection_digest::include(&mut digest, range);
+            return digest.finalize().into();
+        }
+        if let PhysicalWorkScopeMembers::ArtifactRemoval(artifact) = &self.members {
+            digest.update(b"artifact-removal");
+            let name = artifact.file_name();
+            digest.update((name.len() as u64).to_le_bytes());
+            digest.update(name.as_bytes());
             return digest.finalize().into();
         }
         if let PhysicalWorkScopeMembers::Artifact(artifact) = &self.members {

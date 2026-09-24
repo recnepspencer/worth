@@ -44,7 +44,9 @@ impl PoolInner {
         requested: u64,
     ) -> Result<u64, PhysicalResidencyDenial> {
         let scope_current = state.accounting.operation_scope_bytes(scope);
-        let scope_limit = self.limits.scope_bytes(scope);
+        let scope_limit = self
+            .limits
+            .usable_bytes(scope, self.limits.scope_bytes(scope));
         let scope_next = scope_current.saturating_add(requested);
         if scope_next > scope_limit {
             return Err(self.pressure(
@@ -68,7 +70,9 @@ impl PoolInner {
         requested: u64,
     ) -> Result<u64, PhysicalResidencyDenial> {
         let operation_current = state.accounting.active_operation_bytes();
-        let operation_limit = self.limits.operation_bytes();
+        let operation_limit = self
+            .limits
+            .usable_bytes(scope, self.limits.operation_bytes());
         let operation_next = operation_current.saturating_add(requested);
         if operation_next > operation_limit {
             return Err(self.pressure(
@@ -92,7 +96,7 @@ impl PoolInner {
         requested: u64,
     ) -> Result<(), PhysicalResidencyDenial> {
         let total_current = self.current_admitted_bytes(state);
-        let total_limit = self.limits.total_bytes();
+        let total_limit = self.limits.usable_bytes(scope, self.limits.total_bytes());
         let total_next = total_current.saturating_add(requested);
         if total_next > total_limit {
             return Err(self.pressure(

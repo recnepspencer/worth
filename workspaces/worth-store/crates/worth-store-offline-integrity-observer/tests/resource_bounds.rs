@@ -12,6 +12,7 @@ use worth_store_offline_integrity_observer::{
 use crate::support::{clean_store, StoreFixture};
 
 mod hostile_identity;
+mod symlink_refusal;
 
 #[test]
 fn entry_bound_preserves_indeterminate_addressed_root_and_exact_work() {
@@ -199,8 +200,16 @@ fn byte_and_depth_bounds_stop_before_open_or_decode() {
 #[test]
 fn open_file_bound_is_typed_before_deepest_root_acquisition() {
     let fixture = clean_store("open-file-bound");
-    let limits =
-        OfflineIntegrityObservationLimits::new(100, 16 * 1024, 4, 8, 0, 5_000, 64 * 1024).unwrap();
+    let limits = OfflineIntegrityObservationLimits::new(
+        100,
+        16 * 1024,
+        4,
+        8,
+        0,
+        crate::support::FIXTURE_ELAPSED_MILLISECONDS,
+        64 * 1024,
+    )
+    .unwrap();
     let report = observe_store(&bounded_request(&fixture, limits)).unwrap();
     let root = report
         .artifacts()
@@ -226,42 +235,18 @@ fn open_file_bound_is_typed_before_deepest_root_acquisition() {
 }
 
 #[test]
-fn symlinked_artifact_is_refused_without_reading_its_target() {
-    let fixture = clean_store("symlink-bound");
-    let root = fixture.roots.join("root-0000000000000001.manifest");
-    std::fs::remove_file(&root).unwrap();
-    let external = fixture
-        .store
-        .parent()
-        .unwrap()
-        .join("external-root.manifest");
-    std::fs::write(&external, vec![0x5a; 4096]).unwrap();
-    create_file_symlink(&external, &root)
-        .expect("hostile symlink fixture must be supported on the admitted test host");
-    let report = observe_store(&bounded_request(&fixture, limits(100, 16 * 1024, 8, 0))).unwrap();
-    let root_observation = report
-        .artifacts()
-        .iter()
-        .find(|artifact| artifact.family() == PhysicalArtifactFamily::RootManifest)
-        .unwrap();
-    assert_eq!(
-        root_observation.outcome(),
-        &OfflineIntegrityOutcome::Indeterminate(
-            OfflineIndeterminatePhysicalReason::SymlinkBoundExceeded
-        )
-    );
-    let counters = report.counters();
-    assert_eq!(counters.symlinks_refused(), 1);
-    assert_eq!(counters.bytes_read(), 286);
-    assert_eq!(counters.files_opened(), 11);
-    assert_eq!(counters.root_manifest_payload_decoder_entries(), 0);
-    assert_eq!(counters.exhausted_bounds(), 1);
-}
-
-#[test]
 fn report_bound_refuses_emission_without_creating_output() {
     let fixture = clean_store("report-bound");
-    let limits = OfflineIntegrityObservationLimits::new(100, 16 * 1024, 5, 8, 0, 5_000, 1).unwrap();
+    let limits = OfflineIntegrityObservationLimits::new(
+        100,
+        16 * 1024,
+        5,
+        8,
+        0,
+        crate::support::FIXTURE_ELAPSED_MILLISECONDS,
+        1,
+    )
+    .unwrap();
     let denial = observe_store(&bounded_request(&fixture, limits)).unwrap_err();
     assert!(matches!(
         denial,
@@ -272,62 +257,22 @@ fn report_bound_refuses_emission_without_creating_output() {
     assert!(!fixture.report.exists());
 }
 
-#[test]
-fn escaping_unknown_symlink_is_typed_and_counted() {
-    let fixture = clean_store("unknown-symlink");
-    let external = fixture.store.parent().unwrap().join("external-unknown");
-    std::fs::write(&external, b"outside").unwrap();
-    let link = fixture.records.join("mystery.record");
-    create_file_symlink(&external, &link)
-        .expect("hostile symlink fixture must be supported on the admitted test host");
-    let report = observe_store(&bounded_request(&fixture, limits(100, 16 * 1024, 8, 0))).unwrap();
-    let unknown = report
-        .artifacts()
-        .iter()
-        .find(|artifact| artifact.relative_path() == "families/records/mystery.record")
-        .unwrap();
-    assert_eq!(
-        unknown.outcome(),
-        &OfflineIntegrityOutcome::Indeterminate(
-            OfflineIndeterminatePhysicalReason::SymlinkBoundExceeded
-        )
-    );
-    assert_eq!(report.counters().symlinks_refused(), 1);
-    assert_eq!(report.counters().exhausted_bounds(), 1);
-}
-
-#[test]
-fn escaping_root_directory_symlink_is_never_followed() {
-    let fixture = clean_store("directory-symlink");
-    let external = fixture.store.parent().unwrap().join("external-roots");
-    std::fs::rename(&fixture.roots, &external).unwrap();
-    create_directory_symlink(&external, &fixture.roots)
-        .expect("hostile directory-symlink fixture must be supported on the admitted test host");
-    let report = observe_store(&bounded_request(&fixture, limits(100, 16 * 1024, 8, 0))).unwrap();
-    let root = report
-        .artifacts()
-        .iter()
-        .find(|artifact| artifact.family() == PhysicalArtifactFamily::RootManifest)
-        .unwrap();
-    assert_eq!(
-        root.outcome(),
-        &OfflineIntegrityOutcome::Indeterminate(
-            OfflineIndeterminatePhysicalReason::SymlinkBoundExceeded
-        )
-    );
-    assert_eq!(report.counters().symlinks_refused(), 1);
-    assert_eq!(report.counters().bytes_read(), 286);
-    assert_eq!(report.counters().exhausted_bounds(), 1);
-}
-
 fn limits(
     entries: u64,
     bytes: u64,
     depth: u32,
     symlinks: u64,
 ) -> OfflineIntegrityObservationLimits {
-    OfflineIntegrityObservationLimits::new(entries, bytes, 5, depth, symlinks, 5_000, 64 * 1024)
-        .unwrap()
+    OfflineIntegrityObservationLimits::new(
+        entries,
+        bytes,
+        5,
+        depth,
+        symlinks,
+        crate::support::FIXTURE_ELAPSED_MILLISECONDS,
+        64 * 1024,
+    )
+    .unwrap()
 }
 
 fn bounded_request(
@@ -373,24 +318,4 @@ fn store_snapshot(root: &Path) -> Vec<(String, Vec<u8>)> {
     let mut snapshot = Vec::new();
     visit(root, root, &mut snapshot);
     snapshot
-}
-
-#[cfg(unix)]
-fn create_file_symlink(target: &Path, link: &Path) -> std::io::Result<()> {
-    std::os::unix::fs::symlink(target, link)
-}
-
-#[cfg(unix)]
-fn create_directory_symlink(target: &Path, link: &Path) -> std::io::Result<()> {
-    std::os::unix::fs::symlink(target, link)
-}
-
-#[cfg(windows)]
-fn create_directory_symlink(target: &Path, link: &Path) -> std::io::Result<()> {
-    std::os::windows::fs::symlink_dir(target, link)
-}
-
-#[cfg(windows)]
-fn create_file_symlink(target: &Path, link: &Path) -> std::io::Result<()> {
-    std::os::windows::fs::symlink_file(target, link)
 }

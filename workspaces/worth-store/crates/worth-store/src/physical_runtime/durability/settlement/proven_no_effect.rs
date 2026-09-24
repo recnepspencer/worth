@@ -9,6 +9,15 @@ pub enum PhysicalMutationProvenNoEffectCause {
     DeadlineElapsedBeforeGroupSeal,
     WorkerUnavailableBeforeGroupSeal,
     AdmissionDeniedBeforeGroupSeal,
+    /// Another root-changing publication is already pending, so this attempt
+    /// takes no reservation and performs no WAL or data effect.
+    ScopeConflict,
+    /// A published predecessor advanced the root after this rewrite was planned.
+    SourceChanged,
+    /// Retained-storage growth or obligation entries would exceed the hard
+    /// allowance left after progress headroom; checkpoint and retirement can
+    /// release it before an unchanged retry.
+    RetentionPressure,
 }
 
 impl PhysicalMutationProvenNoEffectCause {
@@ -18,6 +27,9 @@ impl PhysicalMutationProvenNoEffectCause {
             Self::DeadlineElapsedBeforeGroupSeal => 2,
             Self::WorkerUnavailableBeforeGroupSeal => 3,
             Self::AdmissionDeniedBeforeGroupSeal => 4,
+            Self::ScopeConflict => 5,
+            Self::SourceChanged => 6,
+            Self::RetentionPressure => 7,
         }
     }
 
@@ -27,6 +39,9 @@ impl PhysicalMutationProvenNoEffectCause {
             2 => Some(Self::DeadlineElapsedBeforeGroupSeal),
             3 => Some(Self::WorkerUnavailableBeforeGroupSeal),
             4 => Some(Self::AdmissionDeniedBeforeGroupSeal),
+            5 => Some(Self::ScopeConflict),
+            6 => Some(Self::SourceChanged),
+            7 => Some(Self::RetentionPressure),
             _ => None,
         }
     }

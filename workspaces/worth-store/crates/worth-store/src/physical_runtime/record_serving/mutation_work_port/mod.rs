@@ -159,7 +159,17 @@ impl CanonicalRecordMutationFailure {
         identity: PhysicalWorkIdentity,
         failure: RecordSchedulerReservationDenial,
     ) -> Self {
-        let RecordSchedulerReservationDenial::Admission(denial) = failure;
+        let denial = match failure {
+            RecordSchedulerReservationDenial::Admission(denial) => denial,
+            RecordSchedulerReservationDenial::OwedBackgroundTurn => {
+                return Self::identified(
+                    identity,
+                    PhysicalRecordMutationFailureCause::Scheduler(
+                        crate::physical_runtime::PhysicalSchedulerDenial::OwedBackgroundTurn,
+                    ),
+                );
+            }
+        };
         Self::identified(
             identity,
             PhysicalRecordMutationFailureCause::SchedulerReservationDenied(denial),

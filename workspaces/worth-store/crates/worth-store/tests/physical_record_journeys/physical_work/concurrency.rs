@@ -1,9 +1,9 @@
 use tempfile::tempdir;
 use worth_proof::TransitionOutcome;
 use worth_store::physical_runtime::{
-    PhysicalEffectObligation, PhysicalExecutorCommand, PhysicalStoreCloseOutcome,
-    PhysicalStoreClosePhase, PhysicalWorkEffectFate, PhysicalWorkExecutionOutcome,
-    PhysicalWorkPreEffectDenial,
+    PhysicalEffectObligation, PhysicalExecutorCommand, PhysicalSchedulerDenial,
+    PhysicalStoreCloseOutcome, PhysicalStoreClosePhase, PhysicalWorkEffectFate,
+    PhysicalWorkExecutionOutcome, PhysicalWorkPreEffectDenial,
 };
 use worth_store_physical_backend::MediaOperationRole;
 use worth_store_physical_backend::{FilesystemAccessPosture, MediaFaultDirective};
@@ -11,9 +11,12 @@ use worth_store_physical_backend::{FilesystemAccessPosture, MediaFaultDirective}
 use super::{
     executor::admitted_write,
     fixture::{
-        disjoint_artifact_mutation_fixture, serving_from_initialization_with_work_profile,
+        disjoint_artifact_mutation_fixture, overlapping_mutation_fixture,
+        serving_from_initialization_with_work_profile, serving_from_open_with_work_profile,
         work_fixture,
     },
+    policy_receipt,
+    scheduler::{ready_work, secure_demand, write_demand},
 };
 
 #[test]
@@ -123,6 +126,49 @@ fn independent_mutation_capabilities_execute_without_a_global_runtime_borrow() {
 }
 
 #[test]
+fn overlapping_writes_conflict_before_the_second_effect() {
+    let root = tempdir().unwrap();
+    let (profile, first_request, second_request) = overlapping_mutation_fixture();
+    serving_from_initialization_with_work_profile(root.path(), profile.clone()).close();
+    let serving = serving_from_open_with_work_profile(root.path(), profile);
+    let before = serving.media_counters();
+    let first = admitted_write(&serving, first_request);
+    let ready = ready_work(&serving, second_request);
+    let demand = write_demand(&serving, ready);
+    let requested_budget = demand.queue_work().requested_budget();
+    let backend_requirement = demand.queue_work().backend_requirement();
+    let backend = serving
+        .admit_physical_scheduler_capability(backend_requirement)
+        .unwrap();
+    let demand = secure_demand(demand, &backend);
+    match serving.admit_physical_scheduler_demand(
+        demand,
+        &backend,
+        policy_receipt(requested_budget),
+    ) {
+        Err(PhysicalSchedulerDenial::EffectConflict) => {}
+        Err(denial) => {
+            panic!("an overlapping write must be refused before its effect, got {denial:?}")
+        }
+        Ok(_) => panic!("an overlapping write must be refused before its effect"),
+    }
+    let command = PhysicalExecutorCommand::exact_write(first, b"overlap!".as_slice()).unwrap();
+    serving.execute_physical_work(command).unwrap();
+    assert_eq!(
+        serving
+            .media_counters()
+            .attempts_for(MediaOperationRole::PositionedWrite)
+            - before.attempts_for(MediaOperationRole::PositionedWrite),
+        1,
+        "the conflicting write must not reach the backend"
+    );
+    assert!(matches!(
+        serving.close_plan().execute(),
+        PhysicalStoreCloseOutcome::Closed { .. }
+    ));
+}
+
+#[test]
 fn close_waits_for_a_dispatched_execution_capability_before_disposal() {
     let root = tempdir().unwrap();
     let (profile, _, request) = work_fixture();
@@ -203,25 +249,42 @@ fn close_waits_for_a_dispatched_execution_capability_before_disposal() {
 }
 
 #[test]
-fn overlapping_exact_writes_settle_as_whole_artifact_coordinated_effects() {
+fn overlapping_exact_writes_are_refused_before_a_second_effect() {
     let root = tempdir().unwrap();
     let (profile, _, request) = work_fixture();
     let serving = serving_from_initialization_with_work_profile(root.path(), profile);
-
-    let (first, second) = execute_two(
-        &serving,
-        admitted_write(&serving, request.clone()),
-        admitted_write(&serving, request),
-        *b"winner01",
-        *b"winner02",
+    let before = serving.media_counters();
+    let first = admitted_write(&serving, request.clone());
+    let ready = ready_work(&serving, request);
+    let demand = write_demand(&serving, ready);
+    let requested_budget = demand.queue_work().requested_budget();
+    let backend = serving
+        .admit_physical_scheduler_capability(demand.queue_work().backend_requirement())
+        .unwrap();
+    let demand = secure_demand(demand, &backend);
+    match serving.admit_physical_scheduler_demand(
+        demand,
+        &backend,
+        policy_receipt(requested_budget),
+    ) {
+        Err(PhysicalSchedulerDenial::EffectConflict) => {}
+        Err(denial) => panic!("the same catalog range must conflict, got {denial:?}"),
+        Ok(_) => panic!("the same catalog range must conflict before a second effect"),
+    }
+    serving
+        .execute_physical_work(
+            PhysicalExecutorCommand::exact_write(first, b"winner01".as_slice()).unwrap(),
+        )
+        .unwrap();
+    assert_eq!(
+        serving
+            .media_counters()
+            .attempts_for(MediaOperationRole::PositionedWrite)
+            - before.attempts_for(MediaOperationRole::PositionedWrite),
+        1
     );
-
-    assert_completed_distinct(&first, &second);
     let catalog = std::fs::read(root.path().join("families/records/bootstrap.catalog")).unwrap();
-    assert!(
-        &catalog[8..16] == b"winner01" || &catalog[8..16] == b"winner02",
-        "the backend coordination boundary must not expose a torn overlapping write"
-    );
+    assert_eq!(&catalog[8..16], b"winner01");
     serving.close();
 }
 
@@ -284,35 +347,6 @@ fn cancellation_and_dispatch_have_one_atomic_physical_winner() {
         serving.close_plan().execute(),
         PhysicalStoreCloseOutcome::Closed { .. }
     ));
-}
-
-fn execute_two(
-    serving: &worth_store::physical_runtime::ServingPhysicalRuntime,
-    first: worth_store::physical_runtime::ResourceAdmittedPhysicalWork,
-    second: worth_store::physical_runtime::ResourceAdmittedPhysicalWork,
-    first_bytes: [u8; 8],
-    second_bytes: [u8; 8],
-) -> (PhysicalWorkExecutionOutcome, PhysicalWorkExecutionOutcome) {
-    let first = PhysicalExecutorCommand::exact_write(first, first_bytes.as_slice()).unwrap();
-    let second = PhysicalExecutorCommand::exact_write(second, second_bytes.as_slice()).unwrap();
-    let barrier = std::sync::Barrier::new(3);
-    std::thread::scope(|scope| {
-        let first_barrier = &barrier;
-        let second_barrier = &barrier;
-        let first = scope.spawn(move || {
-            first_barrier.wait();
-            serving.execute_physical_work(first)
-        });
-        let second = scope.spawn(move || {
-            second_barrier.wait();
-            serving.execute_physical_work(second)
-        });
-        barrier.wait();
-        (
-            first.join().unwrap().unwrap(),
-            second.join().unwrap().unwrap(),
-        )
-    })
 }
 
 fn assert_completed_distinct(

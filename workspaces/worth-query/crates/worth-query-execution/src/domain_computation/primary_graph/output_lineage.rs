@@ -1,7 +1,10 @@
 //! Product-local semantic output correspondence owned by Query publication.
 
 mod current_output;
+mod denial;
 mod qualification;
+mod recorded_source_identity;
+mod restoration;
 mod retention;
 #[cfg(test)]
 mod tests;
@@ -12,9 +15,11 @@ use std::sync::Arc;
 
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 
+pub use denial::{WorthQueryPriorOutputDenial, WorthQueryPriorOutputDenialKind};
+pub(in crate::domain_computation::primary_graph) use recorded_source_identity::RecordedSourceIdentity;
+
 use super::{
-    provider::WorthQueryPrimaryGraphCommittedApplication,
-    WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationOutputProjectionDenial,
+    provider::WorthQueryPrimaryGraphCommittedApplication, WorthQueryApplicationOutputCorrespondence,
 };
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
@@ -31,7 +36,7 @@ pub(crate) struct WorthQueryApplicationOutputLineage {
         SemanticSource,
         HashMap<
             worth_runtime_world::facade::ProductBranchIncarnation,
-            BTreeMap<u64, RecordedOutput>,
+            BTreeMap<u64, Vec<RecordedOutput>>,
         >,
     >,
     origins: HashMap<worth_runtime_world::facade::ProductBranchIncarnation, ProductCoordinate>,
@@ -41,16 +46,17 @@ pub(crate) struct WorthQueryApplicationOutputLineage {
 
 struct RecordedOutput {
     correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
-    source_identity: Option<[u8; 32]>,
+    source_identity: Option<RecordedSourceIdentity>,
     source_partition_identity: Option<[u8; 32]>,
     producer_dependency_identity: Option<[u8; 32]>,
     idempotency_key_identity: [u8; 32],
-    observed_source_facts: Arc<[super::application_attempt::WorthQueryApplicationObservedFact]>,
+    observed_source_facts:
+        Option<Arc<[super::application_attempt::WorthQueryApplicationObservedFact]>>,
 }
 
 pub(super) struct WorthQueryExactRecordedOutput {
     pub(super) correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
-    pub(super) source_identity: [u8; 32],
+    pub(super) source_identity: RecordedSourceIdentity,
     pub(super) source_partition_identity: [u8; 32],
     pub(super) producer_dependency_identity: Option<[u8; 32]>,
     pub(super) idempotency_key_identity: [u8; 32],
@@ -92,71 +98,7 @@ pub(super) struct WorthQueryCurrentOutputFamilyResolution {
     pub(super) source_lookups: usize,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryPriorOutputDenialKind {
-    Unavailable,
-    UndeclaredFamily,
-    MissingRole,
-    ActionMismatch,
-    EntityMismatch,
-    OutputUnavailable,
-    UndeclaredDecisionTarget,
-    WorkBudgetExceeded,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthQueryPriorOutputDenial {
-    kind: WorthQueryPriorOutputDenialKind,
-    role: String,
-}
-
 impl WorthQueryApplicationOutputLineage {
-    #[allow(clippy::too_many_arguments)]
-    pub(super) fn record_restoration(
-        &mut self,
-        output_binding: TypeId,
-        runtime_authority: u64,
-        schema: ApplicationSchemaBindingIdentity,
-        scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
-        observation: &worth_runtime_world::facade::ProductBranchObservation,
-        correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
-        source_identity: [u8; 32],
-        source_partition_identity: [u8; 32],
-        producer_dependency_identity: Option<[u8; 32]>,
-        idempotency_key_identity: [u8; 32],
-        observed_source_facts: Arc<[super::application_attempt::WorthQueryApplicationObservedFact]>,
-    ) {
-        let source = SemanticSource {
-            runtime_authority,
-            schema,
-            scope,
-            output_binding,
-        };
-        let replaced = self
-            .by_source
-            .entry(source)
-            .or_default()
-            .entry(observation.lifecycle_incarnation())
-            .or_default()
-            .insert(
-                observation.reference_generation().get(),
-                RecordedOutput {
-                    correspondence,
-                    source_identity: Some(source_identity),
-                    source_partition_identity: Some(source_partition_identity),
-                    producer_dependency_identity,
-                    idempotency_key_identity,
-                    observed_source_facts,
-                },
-            );
-        assert!(
-            replaced.is_none(),
-            "one product generation may restore one output binding once"
-        );
-        self.live_occurrences
-            .insert(observation.lifecycle_incarnation());
-    }
-
     pub(super) fn install_output_families(&mut self, families: BTreeMap<String, Vec<TypeId>>) {
         assert!(self.output_families.is_empty());
         self.output_families.extend(families);
@@ -199,29 +141,33 @@ impl WorthQueryApplicationOutputLineage {
             scope: scope.scope(),
             output_binding,
         };
-        let replaced = self
+        let generation = self
             .by_source
             .entry(source)
             .or_default()
             .entry(head.lifecycle_incarnation())
             .or_default()
-            .insert(
-                head.reference_generation().get(),
-                RecordedOutput {
-                    correspondence: evidence.retain_output_correspondence(),
-                    source_identity: evidence.idempotency().source_identity(),
-                    source_partition_identity: evidence.idempotency().source_partition_identity(),
-                    producer_dependency_identity: evidence
-                        .idempotency()
-                        .producer_dependency_identity(),
-                    idempotency_key_identity: *evidence.idempotency().key_identity(),
-                    observed_source_facts: evidence.retain_observed_source_facts(),
-                },
-            );
+            .entry(head.reference_generation().get())
+            .or_default();
         assert!(
-            replaced.is_none(),
+            generation
+                .iter()
+                .all(|recorded| recorded.source_partition_identity
+                    != evidence.idempotency().source_partition_identity()),
             "one product generation may publish one output binding once"
         );
+        generation.push(RecordedOutput {
+            correspondence: evidence.retain_output_correspondence(),
+            source_identity: evidence.idempotency().source_identity().map(|identity| {
+                RecordedSourceIdentity::Runtime(
+                    super::application_query::WorthQueryRuntimeSourceIdentity::new(identity),
+                )
+            }),
+            source_partition_identity: evidence.idempotency().source_partition_identity(),
+            producer_dependency_identity: evidence.idempotency().producer_dependency_identity(),
+            idempotency_key_identity: *evidence.idempotency().key_identity(),
+            observed_source_facts: Some(evidence.retain_observed_source_facts()),
+        });
     }
 
     pub(super) fn resolve_current_family(
@@ -269,11 +215,21 @@ impl WorthQueryApplicationOutputLineage {
                 if let Some(recorded) = versions
                     .get(&coordinate.occurrence)
                     .and_then(|history| history.range(..=coordinate.generation).next_back())
-                    .map(|(_, recorded)| recorded)
+                    .and_then(|(_, recorded)| {
+                        recorded
+                            .iter()
+                            .rev()
+                            .find(|recorded| recorded.observed_source_facts.is_some())
+                    })
                 {
                     candidates.push(WorthQueryCurrentOutputCandidate {
                         correspondence: Arc::clone(&recorded.correspondence),
-                        observed_source_facts: Arc::clone(&recorded.observed_source_facts),
+                        observed_source_facts: Arc::clone(
+                            recorded
+                                .observed_source_facts
+                                .as_ref()
+                                .expect("a current-output candidate has source facts"),
+                        ),
                     });
                     break;
                 }
@@ -348,14 +304,32 @@ impl WorthQueryApplicationOutputLineage {
 }
 
 fn latest_output_in_partition(
-    history: &BTreeMap<u64, RecordedOutput>,
+    history: &BTreeMap<u64, Vec<RecordedOutput>>,
     maximum_generation: u64,
     source_partition_identity: [u8; 32],
 ) -> Option<(&u64, &RecordedOutput)> {
     history
         .range(..=maximum_generation)
         .rev()
-        .find(|(_, recorded)| recorded.source_partition_identity == Some(source_partition_identity))
+        .find_map(|(generation, recorded)| {
+            recorded
+                .iter()
+                .find(|recorded| {
+                    recorded.source_partition_identity == Some(source_partition_identity)
+                })
+                .map(|recorded| (generation, recorded))
+        })
+}
+
+fn latest_output_matching<'a>(
+    history: &'a BTreeMap<u64, Vec<RecordedOutput>>,
+    maximum_generation: u64,
+    mut matches: impl FnMut(&RecordedOutput) -> bool,
+) -> Option<&'a RecordedOutput> {
+    history
+        .range(..=maximum_generation)
+        .rev()
+        .find_map(|(_, recorded)| recorded.iter().find(|recorded| matches(recorded)))
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -364,53 +338,3 @@ pub(super) enum WorthQueryOutputSourcePosture {
     Exact(TypeId),
     Drifted,
 }
-
-impl WorthQueryPriorOutputDenial {
-    pub const fn kind(&self) -> WorthQueryPriorOutputDenialKind {
-        self.kind
-    }
-
-    pub fn role(&self) -> &str {
-        &self.role
-    }
-
-    pub(super) fn new(kind: WorthQueryPriorOutputDenialKind, role: impl Into<String>) -> Self {
-        Self {
-            kind,
-            role: role.into(),
-        }
-    }
-
-    pub(super) fn projection(
-        role: &str,
-        denial: WorthQueryApplicationOutputProjectionDenial,
-    ) -> Self {
-        let kind = match denial {
-            WorthQueryApplicationOutputProjectionDenial::MissingRole => {
-                WorthQueryPriorOutputDenialKind::MissingRole
-            }
-            WorthQueryApplicationOutputProjectionDenial::ForeignBinding => {
-                WorthQueryPriorOutputDenialKind::Unavailable
-            }
-            WorthQueryApplicationOutputProjectionDenial::ActionMismatch => {
-                WorthQueryPriorOutputDenialKind::ActionMismatch
-            }
-            WorthQueryApplicationOutputProjectionDenial::EntityMismatch => {
-                WorthQueryPriorOutputDenialKind::EntityMismatch
-            }
-        };
-        Self::new(kind, role)
-    }
-}
-
-impl std::fmt::Display for WorthQueryPriorOutputDenial {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            formatter,
-            "prior output denied: {:?} ({})",
-            self.kind, self.role
-        )
-    }
-}
-
-impl std::error::Error for WorthQueryPriorOutputDenial {}

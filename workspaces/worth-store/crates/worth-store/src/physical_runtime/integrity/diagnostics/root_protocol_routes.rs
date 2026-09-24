@@ -38,6 +38,7 @@ pub struct RootProtocolRouteCounters {
 }
 
 impl RootProtocolRouteCounterCells {
+    #[cfg(feature = "recovery-runtime-owner")]
     pub(in crate::physical_runtime) fn observe_selector(&self, route: PhysicalRootProtocolRoute) {
         self.selector_entries[route.index()].fetch_add(1, Ordering::Relaxed);
     }
@@ -46,6 +47,7 @@ impl RootProtocolRouteCounterCells {
         self.root_entries[route.index()].fetch_add(1, Ordering::Relaxed);
     }
 
+    #[cfg(feature = "recovery-runtime-owner")]
     pub(in crate::physical_runtime) fn observe_publication(
         &self,
         route: PhysicalRootProtocolRoute,

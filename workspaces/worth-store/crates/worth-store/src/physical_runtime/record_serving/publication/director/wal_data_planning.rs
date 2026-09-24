@@ -28,7 +28,14 @@ impl RecordPublicationDirector {
         {
             return Ok(prepared);
         }
-        match self.build_durable_data_plan(&prepared) {
+        let planned = if let Some(source) = prepared.extent_rewrite_source() {
+            self.build_extent_record_rewrite(&prepared, source)
+        } else if prepared.selected_segment_rewrite() {
+            self.build_selected_segment_rewrite(&prepared)
+        } else {
+            self.build_durable_data_plan(&prepared)
+        };
+        match planned {
             Ok((data, root)) => Ok(prepared.attach_plans(data, root)),
             Err(error) => {
                 let denial = data_planning_denial(error);
@@ -107,13 +114,19 @@ impl RecordPublicationDirector {
         prepared
             .materialization_observation()
             .apply_to(&mut payload.observation);
-        materialize_durable_data(
+        let (data, root) = materialize_durable_data(
             payload,
             self.format,
             std::num::NonZeroU64::new(bytes)
                 .expect("an admitted nonempty append has nonzero planning bytes"),
             prepared.manifest_capacity_transition(),
-        )
+        )?;
+        for (artifact, growth_bytes) in data.retained_growth() {
+            self.root_owner
+                .hold_rewrite_candidate(artifact, growth_bytes)
+                .map_err(|()| RecordAppendError::Denied(RecordAppendDenial::RetentionPressure))?;
+        }
+        Ok((data, root))
     }
 }
 

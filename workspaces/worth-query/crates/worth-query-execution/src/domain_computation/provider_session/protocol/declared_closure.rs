@@ -66,6 +66,7 @@ impl WorthQueryProviderPlanDeclarations {
 
     pub(crate) fn from_application_contracts(
         contracts: &worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts,
+        platform_mutation: bool,
     ) -> Self {
         let mut closure = WorthQueryProviderPlanDeclaredClosure::default();
         bind_direct_role_closure(
@@ -73,16 +74,26 @@ impl WorthQueryProviderPlanDeclarations {
             &effect_families(contracts.effects()),
             &invariant_slots(contracts.invariants()),
         );
-        if !contracts.touches().scopes().is_empty() {
+        if platform_mutation {
+            // The attempt carries only Query-owned platform effects. Its
+            // application operation supplied admission and decision reads,
+            // not application touch or invariant authority.
+            closure.effect = vec!["mutation".to_owned()];
+            closure.invariant.clear();
+        } else if !contracts.touches().scopes().is_empty() {
             closure.effect = effect_families(contracts.effects());
             closure.invariant = invariant_slots(contracts.invariants());
-            closure.canonicalize();
         }
+        closure.canonicalize();
         Self {
             direct: [("primary".to_owned(), closure)].into_iter().collect(),
             workflow: BTreeMap::new(),
             decision_fact_families: contracts.decision_facts().required_families().to_vec(),
-            invariant_requirements: contracts.invariant_execution().requirements().to_vec(),
+            invariant_requirements: if platform_mutation {
+                Vec::new()
+            } else {
+                contracts.invariant_execution().requirements().to_vec()
+            },
             reconciliation_posture: "provisional-discard".to_owned(),
             application_graph_reads: Some(contracts.graph_reads().clone()),
             application_touches: Some(contracts.touches().clone()),

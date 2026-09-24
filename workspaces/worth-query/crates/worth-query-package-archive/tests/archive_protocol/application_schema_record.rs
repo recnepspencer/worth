@@ -1,6 +1,6 @@
 use worth_query_declaration::facade::application_schema::{
-    ApplicationEntityRef, ApplicationSchema, ApplicationSchemaDeclaration,
-    ApplicationSchemaDeclarationBuilder,
+    ApplicationEntityMarkerIdentity, ApplicationEntityRef, ApplicationSchema,
+    ApplicationSchemaDeclaration, ApplicationSchemaDeclarationBuilder,
 };
 use worth_query_installation::facade::{
     WorthQueryExpectedPortablePackageIdentity, WorthQueryPortableDomainIdentity,
@@ -13,6 +13,10 @@ const VERSION_FOUR_MINIMAL_SCHEMA_HEX: &str = "0004000800000001000000380000000d6
 
 struct Schema;
 struct Entity;
+
+impl ApplicationEntityMarkerIdentity<Schema> for Entity {
+    const IDENTIFIER: &'static str = "Item";
+}
 
 impl ApplicationSchema for Schema {
     const OWNER: &'static str = "archive.tests";

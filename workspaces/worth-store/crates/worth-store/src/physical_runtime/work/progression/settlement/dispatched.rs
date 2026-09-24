@@ -26,6 +26,8 @@ pub struct DispatchedPhysicalWork {
     pub(in crate::physical_runtime::work::progression) scheduler_capacity: Option<
         worth_store_io_scheduler::foreground_reservation::PhysicalInstanceForegroundCapacityLease,
     >,
+    pub(in crate::physical_runtime::work::progression) effect_lease:
+        Option<crate::physical_runtime::work::PhysicalEffectAdmissionLease>,
     pub(in crate::physical_runtime::work::progression) scheduler_binding:
         BackendQueueExecutionPlanBinding,
     pub(in crate::physical_runtime::work::progression) payload_digest: Option<[u8; 32]>,
@@ -42,6 +44,7 @@ impl DispatchedPhysicalWork {
 
     pub(super) fn release_scheduler_capacity(&mut self) {
         drop(self.scheduler_capacity.take());
+        drop(self.effect_lease.take());
     }
 
     pub const fn intent(&self) -> &crate::physical_runtime::work::PhysicalWorkIntent {
@@ -377,6 +380,9 @@ fn publication_effect_matches(
             PhysicalPublicationEffect::ReplaceCatalog,
             ArtifactTreePublicationEffect::Replacement { .. }
                 | ArtifactTreePublicationEffect::RootProtocolReplacement { .. }
+        ) | (
+            PhysicalPublicationEffect::RemoveArtifact,
+            ArtifactTreePublicationEffect::DurableRemoval(_)
         )
     )
 }

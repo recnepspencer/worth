@@ -84,6 +84,21 @@ pub(in crate::physical_runtime) enum PhysicalMutationIdempotencyGroupSealDenial 
     ProvenNoEffect,
 }
 
+impl PhysicalMutationIdempotencyGroupSealDenial {
+    pub(in crate::physical_runtime) const fn admission_denial(
+        self,
+    ) -> crate::physical_runtime::PhysicalDurabilityGroupAdmissionDenial {
+        use crate::physical_runtime::PhysicalDurabilityGroupAdmissionDenial as Denial;
+        match self {
+            Self::AuthorityReleased => Denial::IdempotencyAuthorityReleased,
+            Self::BindingMismatch => Denial::IdempotencyBindingMismatch,
+            Self::AlreadyGroupSealed => Denial::IdempotencyAlreadyGroupSealed,
+            Self::ReopenedUnresolved => Denial::IdempotencyReopenedUnresolved,
+            Self::ProvenNoEffect => Denial::IdempotencyProvenNoEffect,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(in crate::physical_runtime) enum PhysicalMutationWalBindingDenial {
     AuthorityReleased,

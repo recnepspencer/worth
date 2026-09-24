@@ -38,6 +38,7 @@ pub use producer::{
     WorthQueryOutputDemandRecoveryPosture, WorthQueryProducerApplicability,
     WorthQueryProducerDemandResources, WorthQueryProducerInvariantRequirement,
     WorthQueryProducerLifecyclePosture, WorthQueryProducerOutputFamily,
-    WorthQuerySelectedApplicationProducer,
+    WorthQuerySelectedApplicationProducer, WorthQueryWorkflowAssessmentOutputFamily,
+    WorthQueryWorkflowAssessmentPosture,
 };
 pub use setup::WorthQueryApplicationContributionSetup;

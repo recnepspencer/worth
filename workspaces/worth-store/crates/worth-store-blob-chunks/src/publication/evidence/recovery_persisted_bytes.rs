@@ -16,13 +16,6 @@ pub struct BlobPublicationPersistedBytes {
 
 impl BlobPublicationPersistedBytes {
     #[cfg(test)]
-    pub(crate) fn from_replay_read_bytes(bytes: &[u8]) -> Self {
-        Self {
-            bytes: bytes.to_vec(),
-        }
-    }
-
-    #[cfg(test)]
     pub(crate) fn before_wal_append(operation_digest: impl Into<String>) -> Self {
         encode_persisted_record([FORMAT_VERSION, BEFORE_WAL_APPEND, &operation_digest.into()])
     }

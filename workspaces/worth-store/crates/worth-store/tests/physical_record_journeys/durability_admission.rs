@@ -26,6 +26,7 @@ mod group_commit;
 mod idempotency_reopen;
 #[path = "durability_admission/independent_wal_oracle.rs"]
 mod independent_wal_oracle;
+pub(super) use independent_wal_oracle::produced_rewrite_payloads;
 #[path = "durability_admission/managed_mutation.rs"]
 mod managed_mutation;
 #[path = "durability_admission/mutation_preparation.rs"]

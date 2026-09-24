@@ -64,6 +64,7 @@ pub struct PhysicalCheckpointSource {
     root: CheckpointRootBasis,
     dirty_generation_frontier: u64,
     security_binding: Option<PhysicalCheckpointSecurityBinding>,
+    requires_maintenance_protocol: bool,
 }
 
 /// Persisted Store policy binding required to interpret C.7 operation leases.
@@ -78,9 +79,15 @@ impl PhysicalCheckpointSource {
     pub fn decode_stream_header_record(
         record: &[u8],
     ) -> Result<Self, CheckpointStreamDecodeDenial> {
+        let maintenance = record.get(8) == Some(&super::record::MAINTENANCE_CHECKPOINT_SCHEMA);
         let payload =
             super::record::decode_record(record, super::record::HEADER_KIND, HEADER_PAYLOAD_BYTES)?;
-        decode_header(payload)
+        let source = decode_header(payload)?;
+        Ok(if maintenance {
+            source.with_maintenance_protocol()
+        } else {
+            source
+        })
     }
 
     pub const fn concurrent(
@@ -95,6 +102,7 @@ impl PhysicalCheckpointSource {
             root,
             dirty_generation_frontier,
             security_binding: None,
+            requires_maintenance_protocol: false,
         }
     }
 
@@ -119,6 +127,7 @@ impl PhysicalCheckpointSource {
             root,
             dirty_generation_frontier,
             security_binding: Some(security_binding),
+            requires_maintenance_protocol: false,
         })
     }
 
@@ -140,6 +149,27 @@ impl PhysicalCheckpointSource {
 
     pub const fn security_binding(self) -> Option<PhysicalCheckpointSecurityBinding> {
         self.security_binding
+    }
+
+    pub const fn requires_maintenance_protocol(self) -> bool {
+        self.requires_maintenance_protocol
+    }
+
+    pub const fn with_maintenance_protocol(mut self) -> Self {
+        self.requires_maintenance_protocol = true;
+        self
+    }
+
+    /// C.9 checkpoint envelope. A maintenance-capable stream is rejected before its header is served.
+    pub fn decode_c9_legacy_stream_header_record(
+        record: &[u8],
+    ) -> Result<Self, CheckpointStreamDecodeDenial> {
+        if record.get(8) == Some(&super::record::MAINTENANCE_CHECKPOINT_SCHEMA) {
+            return Err(CheckpointStreamDecodeDenial::UnsupportedSchema(
+                super::record::MAINTENANCE_CHECKPOINT_SCHEMA,
+            ));
+        }
+        Self::decode_stream_header_record(record)
     }
 }
 

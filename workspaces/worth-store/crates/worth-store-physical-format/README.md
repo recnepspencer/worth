@@ -49,6 +49,13 @@ locations, not read authority. Checkpoint identities share the mutable
 `checkpoint.current` location, so overlap checks compare location as well as
 expected content identity. Live acquisition stays in C.4 and Store.
 
+`rewrite_redo` defines the canonical record-preserving rewrite redo payload.
+The Store record journeys decode it with an independent oracle whose golden
+vectors reject unknown and malformed payloads. A checkpoint written
+after a rewrite uses maintenance checkpoint schema 2; readers that accept only
+schema 1 refuse it before interpretation, so the maintenance requirement cannot
+be dropped silently.
+
 The former `offline_walk` I/O/classification surface is deleted. Legacy backup
 and structural-inspection duties live under their actual offline-verifier
 owners, not beside immutable format meaning.

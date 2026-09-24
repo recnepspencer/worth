@@ -20,12 +20,11 @@ pub use executor::{
 };
 pub(in crate::physical_runtime) use parts::PhysicalStoreInstanceParts;
 pub(in crate::physical_runtime) use residency_owner::PhysicalResidencyOwner;
+pub(in crate::physical_runtime) use scheduler_admission::PhysicalSchedulerAdmissionOwner;
 pub(in crate::physical_runtime) use scheduler_admission::PhysicalScrubSchedulerAdmissionDenial;
 #[cfg(feature = "recovery-runtime-owner")]
 pub(in crate::physical_runtime) use scheduler_admission::PhysicalWalReclamationSchedulerAdmissionDenial;
-pub(in crate::physical_runtime) use scheduler_admission::{
-    PhysicalSchedulerAdmissionOwner, RecordSchedulerReservationDenial,
-};
+pub use scheduler_admission::RecordSchedulerReservationDenial;
 #[cfg(feature = "certification-test-authority")]
 pub use signal_owner::CertificationPhysicalSignalPauseGate;
 pub(in crate::physical_runtime) use signal_owner::{

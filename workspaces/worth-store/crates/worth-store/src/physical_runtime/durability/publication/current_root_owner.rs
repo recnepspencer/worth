@@ -2,6 +2,7 @@ use std::sync::Mutex;
 
 #[cfg(feature = "certification-test-authority")]
 mod capture_pause;
+mod displaced;
 #[cfg(feature = "certification-test-authority")]
 pub use capture_pause::{CertificationReadRootCapturePauseGate, CertificationReadRootCaptureStage};
 
@@ -26,9 +27,15 @@ pub(in crate::physical_runtime) struct PhysicalCurrentRootOwner {
     read_protection: std::sync::Arc<crate::physical_runtime::stability::RootProtectionRegistry>,
     state: Mutex<PhysicalCurrentRootState>,
     transition: PhysicalRootPublicationTransitionOwner,
+    publication: std::sync::Arc<
+        crate::physical_runtime::durability::retention::PhysicalPublicationAdmission,
+    >,
+    rewrite_growth:
+        Mutex<Vec<crate::physical_runtime::durability::retention::CandidateGrowthLease>>,
+    displaced: Mutex<Option<crate::physical_runtime::durability::retention::DisplacedArtifact>>,
 }
 
-struct PhysicalCurrentRootState {
+pub(super) struct PhysicalCurrentRootState {
     current_root: DurablePhysicalRootManifest,
     previous_root: Option<RetainedPhysicalRoot>,
     namespace_evidence: crate::physical_runtime::PhysicalRootNamespaceDurabilityEvidence,
@@ -85,7 +92,83 @@ impl PhysicalCurrentRootOwner {
                 free_space,
             }),
             transition: PhysicalRootPublicationTransitionOwner::new(runtime),
+            publication: std::sync::Arc::new(
+                crate::physical_runtime::durability::retention::PhysicalPublicationAdmission::new(
+                    crate::physical_runtime::durability::retention::PhysicalRetentionProfile::store_default(),
+                ),
+            ),
+            rewrite_growth: Mutex::new(Vec::new()),
+            displaced: Mutex::new(None),
         }
+    }
+
+    #[cfg(feature = "certification-test-authority")]
+    pub(in crate::physical_runtime) fn charged_growth_bytes(&self) -> u64 {
+        self.publication.charged_growth_bytes()
+    }
+
+    pub(in crate::physical_runtime) fn reconstruct_retained_bytes(&self, bytes: u64) {
+        self.publication.reconstruct_retained_bytes(bytes);
+    }
+
+    pub(in crate::physical_runtime) fn restore_displaced(
+        &self,
+        source_root: u64,
+        artifact: crate::physical_runtime::durability::RetiredArtifact,
+        bytes: u64,
+    ) {
+        self.publication.retain_displaced(
+            crate::physical_runtime::durability::retention::DisplacedArtifact {
+                source_root,
+                artifact,
+                bytes,
+            },
+        );
+    }
+
+    pub(in crate::physical_runtime) fn publication_admission(
+        &self,
+    ) -> std::sync::Arc<crate::physical_runtime::durability::retention::PhysicalPublicationAdmission>
+    {
+        std::sync::Arc::clone(&self.publication)
+    }
+
+    pub(in crate::physical_runtime) fn register_pending_publication(
+        &self,
+        identity: crate::physical_runtime::PhysicalMutationIdentity,
+    ) -> Result<
+        crate::physical_runtime::durability::retention::PendingPublicationLease,
+        crate::physical_runtime::durability::retention::PhysicalPublicationAdmissionDenial,
+    > {
+        self.publication.register_exclusive_pending(identity)
+    }
+
+    #[cfg(feature = "certification-test-authority")]
+    pub(in crate::physical_runtime) fn pending_publication_count(&self) -> usize {
+        self.publication.pending_len()
+    }
+
+    pub(in crate::physical_runtime) fn hold_rewrite_candidate(
+        &self,
+        artifact: RecordArtifactFile,
+        bytes: u64,
+    ) -> Result<(), ()> {
+        let lease = self
+            .publication
+            .reserve_candidate(artifact, bytes)
+            .map_err(|_| ())?;
+        self.rewrite_growth
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .push(lease);
+        Ok(())
+    }
+
+    pub(in crate::physical_runtime) fn install_retention_profile(
+        &self,
+        profile: crate::physical_runtime::durability::PhysicalRetentionProfile,
+    ) {
+        self.publication.replace_profile(profile);
     }
 
     pub(in crate::physical_runtime) fn snapshot(

@@ -3,6 +3,7 @@ use worth_foundational::facade::{
     CanonicalFieldPath, FieldKey, LocatorAuthority, PortableAspectContractBasis,
 };
 use worth_relational::facade::identity::{EntityId, KindId, PartitionId, RelationId};
+use worth_relational::facade::indexes::DerivedIndexId;
 
 use crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact;
 
@@ -222,6 +223,33 @@ fn lineage_identity_converges_on_retry_and_breaks_aba_replay() {
     assert_ne!(second_a, first_a);
     assert_ne!(second_a, first_b);
     assert_eq!(second_a, retry_second_a);
+}
+
+#[test]
+fn indexed_selection_dependency_distinguishes_absence_value_and_candidates() {
+    let locator = AspectFieldLocator::new(
+        LocatorAuthority::Planned,
+        AspectKey::new("workflow-lineage").unwrap(),
+        CanonicalFieldPath::single(FieldKey::new("identity").unwrap()),
+    );
+    let candidate = EntityId::new(PartitionId::main(), 41, 1);
+    let fact = |value: &str, candidates: Vec<EntityId>| {
+        WorthQueryApplicationObservedFact::IndexedEntitySelection {
+            index_id: DerivedIndexId(9),
+            entity_kind: KindId::new(12),
+            locator: locator.clone(),
+            value: AspectValue::String(value.into()),
+            candidate_limit: 2,
+            candidates,
+        }
+    };
+
+    let absent = identity(fact("reviewed-geometry", vec![]));
+    let present = identity(fact("reviewed-geometry", vec![candidate]));
+    let other_value = identity(fact("alternate-geometry", vec![]));
+
+    assert_ne!(absent, present);
+    assert_ne!(absent, other_value);
 }
 
 fn identity(fact: WorthQueryApplicationObservedFact) -> [u8; 32] {

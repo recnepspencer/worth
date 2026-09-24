@@ -107,6 +107,8 @@ pub struct PhysicalResidencyLimits {
     pub(super) operation_bytes: NonZeroU64,
     pub(super) scope_bytes: [NonZeroU64; 7],
     pub(super) speculative_frames: [NonZeroU32; 3],
+    /// Bytes withheld from ordinary growth so checkpoint and cleanup can still run.
+    pub(super) progress_headroom_bytes: u64,
 }
 
 impl PhysicalResidencyLimits {
@@ -156,5 +158,18 @@ impl PhysicalResidencyLimits {
 
     pub const fn speculative_frames(self, kind: PhysicalSpeculativeWorkKind) -> u32 {
         self.speculative_frames[kind.index()].get()
+    }
+
+    pub const fn progress_headroom_bytes(self) -> u64 {
+        self.progress_headroom_bytes
+    }
+
+    /// Ordinary scopes cannot spend the progress headroom. Maintenance can.
+    pub fn usable_bytes(self, scope: PhysicalOperationAllocationScope, limit: u64) -> u64 {
+        if scope == PhysicalOperationAllocationScope::Maintenance {
+            limit
+        } else {
+            limit.saturating_sub(self.progress_headroom_bytes)
+        }
     }
 }
