@@ -48,32 +48,55 @@ pub(super) struct RelationalBranchRetentionOwnerInner {
 #[derive(Debug)]
 pub(super) struct RelationalRetiredBranchRoot {
     pub(super) root: Option<Arc<RelationalBranchRoot>>,
+    pub(super) branch_bindings: std::collections::BTreeMap<
+        crate::history::data::BranchId,
+        super::RelationalBranchRetentionBinding,
+    >,
+    pub(super) historical_binding: super::RelationalBranchRetentionBinding,
     pub(super) reservations: usize,
     pub(super) retired: bool,
     pub(super) generation: u64,
 }
 
 impl RelationalBranchRetentionOwner {
-    /// Cold inventory of roots that can still back an exact observation.
-    /// Never infer index liveness from the index catalog's latest entry.
-    pub(crate) fn retained_index_versions(
-        &self,
-    ) -> std::collections::BTreeSet<(
-        crate::identity::data::VersionId,
-        crate::schema::data::SchemaVersionId,
-    )> {
+    /// Reader/observation obligations are the index-liveness authority. A
+    /// retired root can share its Arc with a live sibling without an active
+    /// reader of the deleted branch.
+    pub(crate) fn retained_index_roots(&self) -> super::RetainedIndexRoots {
+        let mut retained = super::RetainedIndexRoots::default();
+        for mut entry in self.inner.retired_roots.iter_mut() {
+            if !entry.retired {
+                continue;
+            }
+            let Some(root) = entry.root.as_ref() else {
+                continue;
+            };
+            let Some(envelope) = root.canonical_envelope() else {
+                continue;
+            };
+            let version = envelope.commit.version_id;
+            let schema = root.schema_authority().schema_version();
+            let root_id = root.id();
+            entry
+                .branch_bindings
+                .retain(|_, binding| binding.has_root_obligation(root_id));
+            for branch in entry.branch_bindings.keys() {
+                retained.retired.insert((branch.clone(), version, schema));
+            }
+            if entry.historical_binding.has_root_obligation(root_id) {
+                retained.historical_versions.insert((version, schema));
+            }
+        }
+        retained
+    }
+
+    #[cfg(test)]
+    pub(crate) fn retired_branch_binding_count(&self) -> usize {
         self.inner
             .retired_roots
             .iter()
-            .filter_map(|retired| {
-                let root = retired.root.as_ref()?;
-                let envelope = root.canonical_envelope()?;
-                Some((
-                    envelope.commit.version_id,
-                    root.schema_authority().schema_version(),
-                ))
-            })
-            .collect()
+            .map(|entry| entry.branch_bindings.len())
+            .sum()
     }
 
     pub(crate) fn new(runtime_instance_id: u64) -> Self {
@@ -166,7 +189,7 @@ impl RelationalBranchRetentionOwner {
         Option<(Arc<RelationalBranchRoot>, super::RelationalRetentionGuard)>,
         RelationalRetentionAcquisitionDenial,
     > {
-        let Some(root) = self
+        let Some((root, binding)) = self
             .inner
             .retired_roots_by_commit
             .get(&commit_id)
@@ -177,11 +200,16 @@ impl RelationalBranchRetentionOwner {
                     .get(&root_key)
                     .filter(|retired| retired.generation == generation)
             })
-            .and_then(|retired| retired.root.as_ref().map(Arc::clone))
+            .and_then(|retired| {
+                retired
+                    .root
+                    .as_ref()
+                    .map(|root| (Arc::clone(root), retired.historical_binding.clone()))
+            })
         else {
             return Ok(None);
         };
-        let guard = self.binding().acquire(
+        let guard = binding.acquire(
             super::RelationalRetentionObligationKind::Observation,
             vec![Arc::clone(&root)],
             None,

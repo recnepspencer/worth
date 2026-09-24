@@ -47,12 +47,32 @@ fn reclamation_keeps_pinned_old_and_sibling_versions_and_cleans_bindings() {
     ] {
         catalog.insert(generation);
     }
-    let retained = BTreeSet::from([
-        (VersionId(1), SchemaVersionId(1)),
-        (VersionId(3), SchemaVersionId(1)),
-        (VersionId(4), SchemaVersionId(1)),
-    ]);
-    assert_eq!(catalog.reclaim_except_versions(&retained), 1);
+    let branches = BTreeSet::from([BranchId("branch-0".into()), BranchId("branch-1".into())]);
+    let retained = crate::history::retention::RetainedIndexRoots {
+        live: BTreeSet::from([
+            (
+                BranchId("branch-0".into()),
+                VersionId(1),
+                SchemaVersionId(1),
+            ),
+            (
+                BranchId("branch-0".into()),
+                VersionId(3),
+                SchemaVersionId(1),
+            ),
+            (
+                BranchId("branch-1".into()),
+                VersionId(4),
+                SchemaVersionId(1),
+            ),
+        ]),
+        latest_branches: branches,
+        ..Default::default()
+    };
+    assert_eq!(
+        catalog.reclaim_except_versions(&retained, &BTreeSet::new()),
+        1
+    );
     assert_eq!(
         id(catalog.exact(
             DerivedIndexId(1),

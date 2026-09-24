@@ -78,19 +78,32 @@ pub(crate) struct IndexingSubsystem {
 impl IndexingSubsystem {
     pub(crate) fn reclaim_except_versions(
         &self,
-        retained: &BTreeSet<(VersionId, SchemaVersionId)>,
+        retained: &crate::history::retention::RetainedIndexRoots,
     ) -> usize {
-        self.state
-            .write()
+        let mut state = self.state.write();
+        let global_indexes = state
+            .definitions
+            .values()
+            .filter(|definition| !definition.branch_scoped)
+            .map(|definition| definition.index_id)
+            .collect();
+        state
             .generations
-            .reclaim_except_versions(retained)
+            .reclaim_except_versions(retained, &global_indexes)
     }
 
     pub(crate) fn retained_generations(
         &self,
-        versions: &BTreeSet<(VersionId, SchemaVersionId)>,
+        retained: &crate::history::retention::RetainedIndexRoots,
     ) -> Vec<Arc<DerivedIndexGeneration>> {
-        self.state.read().generations.retained(versions)
+        let state = self.state.read();
+        let global_indexes = state
+            .definitions
+            .values()
+            .filter(|definition| !definition.branch_scoped)
+            .map(|definition| definition.index_id)
+            .collect();
+        state.generations.retained(retained, &global_indexes)
     }
 
     /// Replace the whole subsystem, for checkpoint restore.

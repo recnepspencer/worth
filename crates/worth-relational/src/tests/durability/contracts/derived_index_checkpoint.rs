@@ -11,6 +11,17 @@ fn name_index(runtime: &crate::runtime::RelationalRuntime) -> DerivedIndexDefini
     })
 }
 
+fn scoped_name_index(runtime: &crate::runtime::RelationalRuntime) -> DerivedIndexDefinition {
+    runtime.index_authority().register(DerivedIndexDefinition {
+        index_id: DerivedIndexId(0),
+        name: "scoped-checkpoint-index".into(),
+        kind: DerivedIndexKind::EntityField {
+            field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
+        },
+        branch_scoped: true,
+    })
+}
+
 fn build(
     runtime: &crate::runtime::RelationalRuntime,
     index: DerivedIndexId,
@@ -52,6 +63,7 @@ fn reclamation_and_checkpoint_keep_sibling_head_generation() {
     release_test_commit_snapshot(&runtime, &sibling_commit);
     release_test_commit_snapshot(&runtime, &main);
     runtime.run_branch_root_reclamation_pass();
+    runtime.run_index_generation_reclamation_pass();
     assert!(runtime.indexes.generation(sibling_generation).is_some());
     assert!(runtime.indexes.generation(main_generation).is_some());
     runtime.durability_authority().checkpoint().unwrap();
@@ -141,6 +153,8 @@ fn reclamation_keeps_a_pinned_old_reader_until_release() {
     release_test_commit_snapshot(&runtime, &middle);
     release_test_commit_snapshot(&runtime, &latest);
     runtime.run_branch_root_reclamation_pass();
+    assert!(runtime.indexes.generation(middle_generation).is_some());
+    runtime.run_index_generation_reclamation_pass();
     assert!(runtime.indexes.generation(first_generation).is_some());
     assert!(runtime.indexes.generation(latest_generation).is_some());
     assert!(runtime.indexes.generation(middle_generation).is_none());
@@ -154,6 +168,86 @@ fn reclamation_keeps_a_pinned_old_reader_until_release() {
     assert!(recovered.indexes.generation(latest_generation).is_some());
     release_test_commit_snapshot(&runtime, &first);
     runtime.run_branch_root_reclamation_pass();
+    runtime.run_index_generation_reclamation_pass();
     assert!(runtime.indexes.generation(first_generation).is_none());
     assert!(runtime.indexes.generation(latest_generation).is_some());
+}
+
+#[test]
+fn repeated_closed_branches_leave_no_latest_generation_residue() {
+    let runtime = persisted_runtime_with_test_schema();
+    let anchor = create_entity_outcome(&runtime, "closed-index-anchor");
+    let index = scoped_name_index(&runtime);
+    release_test_commit_snapshot(&runtime, &anchor);
+    let mut runtime = runtime;
+    for ordinal in 0..12 {
+        let branch = create_branch_from_main(&runtime, &format!("closed-index-{ordinal}"));
+        let identity = runtime.branch_identity(&branch).unwrap();
+        let generation = {
+            let (_, basis) = runtime.observe_branch(&identity).unwrap();
+            let built = runtime.index_authority().build_for_basis(
+                DerivedIndexBuildRequest {
+                    source_commit_id: anchor.commit.commit_id,
+                    branch_id: branch.clone(),
+                    index_ids: vec![index.index_id],
+                },
+                &basis,
+            );
+            assert!(built.failed_indexes.is_empty());
+            built.generations[0].generation_id
+        };
+        assert!(runtime
+            .delete_branch(&identity)
+            .unwrap()
+            .deleted()
+            .is_some());
+        assert!(runtime.indexes.generation(generation).is_some());
+        assert_eq!(runtime.run_index_generation_reclamation_pass(), Some(1));
+        assert!(runtime.indexes.generation(generation).is_none());
+        assert!(runtime
+            .index_access()
+            .latest_generation(index.index_id, &branch)
+            .is_none());
+        assert_eq!(runtime.history.retired_branch_binding_count(), 0);
+    }
+    assert!(runtime.index_access().generations_snapshot().is_empty());
+}
+
+#[test]
+fn deleted_branch_reader_retains_only_its_exact_scoped_generation() {
+    let runtime = persisted_runtime_with_test_schema();
+    let anchor = create_entity_outcome(&runtime, "pinned-deleted-fork-anchor");
+    let index = scoped_name_index(&runtime);
+    release_test_commit_snapshot(&runtime, &anchor);
+    let mut runtime = runtime;
+    let branch = create_branch_from_main(&runtime, "pinned-deleted-fork");
+    let identity = runtime.branch_identity(&branch).unwrap();
+    let (_, basis) = runtime.observe_branch(&identity).unwrap();
+    let built = runtime.index_authority().build_for_basis(
+        DerivedIndexBuildRequest {
+            source_commit_id: anchor.commit.commit_id,
+            branch_id: branch.clone(),
+            index_ids: vec![index.index_id],
+        },
+        &basis,
+    );
+    assert!(built.failed_indexes.is_empty());
+    let generation = built.generations[0].generation_id;
+    assert!(runtime
+        .delete_branch(&identity)
+        .unwrap()
+        .deleted()
+        .is_some());
+    assert_eq!(runtime.run_index_generation_reclamation_pass(), Some(0));
+    assert!(runtime.indexes.generation(generation).is_some());
+    runtime.durability_authority().checkpoint().unwrap();
+    let plan = runtime.durability().recovery_plan(
+        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
+    );
+    let mut recovered = persisted_runtime_with_test_schema();
+    recovered.durability_recovery().recover(plan).unwrap();
+    assert!(recovered.indexes.generation(generation).is_none());
+    drop(basis);
+    assert_eq!(runtime.run_index_generation_reclamation_pass(), Some(1));
+    assert!(runtime.indexes.generation(generation).is_none());
 }

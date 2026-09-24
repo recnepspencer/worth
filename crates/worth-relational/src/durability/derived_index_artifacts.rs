@@ -8,14 +8,11 @@ use crate::runtime::RelationalRuntime;
 
 pub(crate) fn checkpoint_derived_index_artifacts(
     runtime: &RelationalRuntime,
-    retained_versions: &std::collections::BTreeSet<(
-        crate::identity::data::VersionId,
-        crate::schema::data::SchemaVersionId,
-    )>,
+    retained: &crate::history::retention::RetainedIndexRoots,
 ) -> Result<DerivedIndexCheckpointArtifacts, crate::durability::data::DurabilityError> {
     let retained = runtime
         .indexes
-        .retained_generations(retained_versions)
+        .retained_generations(retained)
         .into_iter()
         .map(|generation| generation.as_ref().clone())
         .collect();

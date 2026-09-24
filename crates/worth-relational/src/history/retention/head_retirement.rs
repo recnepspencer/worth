@@ -37,9 +37,14 @@ impl RelationalBranchRetentionBinding {
             .owner
             .upgrade()
             .ok_or(RelationalRetentionAcquisitionDenial::OwnerUnavailable)?;
+        let branch_binding = head_retention.binding()?;
         let root_key = Arc::as_ptr(root) as usize;
         let generation = match owner.retired_roots.entry(root_key) {
             Entry::Occupied(mut entry) => {
+                entry
+                    .get_mut()
+                    .branch_bindings
+                    .insert(identity.branch_id().clone(), branch_binding);
                 entry.get_mut().reservations = entry
                     .get()
                     .reservations
@@ -51,6 +56,11 @@ impl RelationalBranchRetentionBinding {
                 let generation = reserve_retirement_slot(&owner)?;
                 entry.insert(RelationalRetiredBranchRoot {
                     root: Some(Arc::clone(root)),
+                    branch_bindings: std::collections::BTreeMap::from([(
+                        identity.branch_id().clone(),
+                        branch_binding,
+                    )]),
+                    historical_binding: RelationalBranchRetentionBinding::new(&owner, None),
                     reservations: 1,
                     retired: false,
                     generation,

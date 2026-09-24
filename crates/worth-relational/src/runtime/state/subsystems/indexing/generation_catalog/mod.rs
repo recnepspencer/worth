@@ -31,9 +31,10 @@ impl GenerationCatalog {
     /// rebuilt from the surviving identities so no stale scope remains.
     pub(super) fn reclaim_except_versions(
         &mut self,
-        retained: &BTreeSet<(VersionId, SchemaVersionId)>,
+        retained: &crate::history::retention::RetainedIndexRoots,
+        global_indexes: &BTreeSet<DerivedIndexId>,
     ) -> usize {
-        let live = self.retained_ids(retained);
+        let live = self.retained_ids(retained, global_indexes);
         let removals = self
             .entries
             .keys()
@@ -49,9 +50,10 @@ impl GenerationCatalog {
 
     pub(super) fn retained(
         &self,
-        versions: &BTreeSet<(VersionId, SchemaVersionId)>,
+        retained: &crate::history::retention::RetainedIndexRoots,
+        global_indexes: &BTreeSet<DerivedIndexId>,
     ) -> Vec<Arc<DerivedIndexGeneration>> {
-        let live = self.retained_ids(versions);
+        let live = self.retained_ids(retained, global_indexes);
         self.entries
             .iter()
             .filter(|(id, _)| live.contains(id))
@@ -61,8 +63,21 @@ impl GenerationCatalog {
 
     fn retained_ids(
         &self,
-        versions: &BTreeSet<(VersionId, SchemaVersionId)>,
+        retained: &crate::history::retention::RetainedIndexRoots,
+        global_indexes: &BTreeSet<DerivedIndexId>,
     ) -> BTreeSet<DerivedIndexGenerationId> {
+        let global_versions = retained
+            .live
+            .iter()
+            .map(|(_, version, schema)| (*version, *schema))
+            .chain(
+                retained
+                    .retired
+                    .iter()
+                    .map(|(_, version, schema)| (*version, *schema)),
+            )
+            .chain(retained.historical_versions.iter().copied())
+            .collect::<BTreeSet<_>>();
         let latest = self.entries.values().fold(
             BTreeMap::<(DerivedIndexId, BranchId), DerivedIndexGenerationId>::new(),
             |mut latest, generation| {
@@ -77,11 +92,29 @@ impl GenerationCatalog {
         self.entries
             .iter()
             .filter(|(id, generation)| {
-                versions.contains(&(
-                    generation.applicability.version_id,
-                    generation.applicability.schema_version,
-                )) || latest.get(&(generation.index_id, generation.source_branch_id.clone()))
-                    == Some(id)
+                let version = generation.applicability.version_id;
+                let schema = generation.applicability.schema_version;
+                let exact = if global_indexes.contains(&generation.index_id) {
+                    global_versions.contains(&(version, schema))
+                } else {
+                    retained.historical_versions.contains(&(version, schema))
+                        || retained.retired.contains(&(
+                            generation.applicability.branch_id.clone(),
+                            version,
+                            schema,
+                        ))
+                        || retained.live.contains(&(
+                            generation.applicability.branch_id.clone(),
+                            version,
+                            schema,
+                        ))
+                };
+                exact
+                    || retained
+                        .latest_branches
+                        .contains(&generation.source_branch_id)
+                        && latest.get(&(generation.index_id, generation.source_branch_id.clone()))
+                            == Some(id)
             })
             .map(|(id, _)| *id)
             .collect()

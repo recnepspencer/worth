@@ -1,5 +1,27 @@
 use std::sync::Arc;
 
+/// Exact roots and publishing branches that can still select a derived cache.
+/// Retired roots contribute only owner-recorded active obligations, not Arc
+/// payload counts or a stale entry in the retired-root inventory.
+#[derive(Debug, Default)]
+pub(crate) struct RetainedIndexRoots {
+    pub(crate) live: std::collections::BTreeSet<(
+        crate::history::data::BranchId,
+        crate::identity::data::VersionId,
+        crate::schema::data::SchemaVersionId,
+    )>,
+    pub(crate) retired: std::collections::BTreeSet<(
+        crate::history::data::BranchId,
+        crate::identity::data::VersionId,
+        crate::schema::data::SchemaVersionId,
+    )>,
+    pub(crate) historical_versions: std::collections::BTreeSet<(
+        crate::identity::data::VersionId,
+        crate::schema::data::SchemaVersionId,
+    )>,
+    pub(crate) latest_branches: std::collections::BTreeSet<crate::history::data::BranchId>,
+}
+
 /// Bounded maintenance result for retired immutable branch roots.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct RelationalBranchRootReclamationOutcome {
@@ -101,7 +123,7 @@ impl crate::runtime::RelationalRuntime {
                 // The owner inventory, rather than Arc payload counts, decides
                 // which historical versions still have live obligations.
                 self.history.reclaim_retired_branch_roots(usize::MAX);
-                let retained = self.history.retained_index_versions();
+                let retained = self.history.retained_index_roots();
                 self.indexes.reclaim_except_versions(&retained)
             })
     }
@@ -109,11 +131,8 @@ impl crate::runtime::RelationalRuntime {
     /// Reclaim cold immutable branch roots through the history owner. This
     /// bounded maintenance pass never walks live references or commit history.
     pub fn run_branch_root_reclamation_pass(&mut self) -> RelationalBranchRootReclamationOutcome {
-        let outcome = self
-            .history
-            .reclaim_retired_branch_roots(self.config.storage.retention.reclaim_batch_size);
-        self.run_index_generation_reclamation_pass();
-        outcome
+        self.history
+            .reclaim_retired_branch_roots(self.config.storage.retention.reclaim_batch_size)
     }
 }
 

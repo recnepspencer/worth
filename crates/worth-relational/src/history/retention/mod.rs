@@ -30,4 +30,5 @@ pub(crate) use obligation::{
 };
 pub(crate) use owner::{RelationalBranchRetentionOwner, RelationalRetentionAcquisitionDenial};
 pub use reclamation::RelationalBranchRootReclamationOutcome;
+pub(crate) use reclamation::RetainedIndexRoots;
 pub(crate) use terminal_accounting::RelationalExternalRetentionTerminalAccounting;

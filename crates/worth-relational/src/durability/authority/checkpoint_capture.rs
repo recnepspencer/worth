@@ -63,7 +63,7 @@ impl CapturedCheckpointBasis {
             .iter()
             .map(|envelope| (envelope.commit.commit_id, envelope.commit.version_id))
             .collect::<std::collections::BTreeMap<_, _>>();
-        let versions = branch_roots
+        let root_bases = branch_roots
             .iter()
             .map(|root| {
                 envelope_versions
@@ -77,12 +77,39 @@ impl CapturedCheckpointBasis {
                         )
                     })
             })
-            .collect::<Result<_, _>>()?;
+            .collect::<Result<Vec<_>, _>>()?;
+        let branch_cells = runtime.history().branch_cells_snapshot();
+        let root_bases = branch_roots
+            .iter()
+            .map(|root| root.commit_id())
+            .zip(root_bases)
+            .collect::<std::collections::BTreeMap<_, _>>();
+        let mut retained = crate::history::retention::RetainedIndexRoots::default();
+        for cell in &branch_cells {
+            retained.latest_branches.insert(cell.branch_id.clone());
+            let worth_foundational::FoundationalBranchTarget::Basis(target) =
+                cell.observation.target()
+            else {
+                continue;
+            };
+            let (version, schema) = root_bases
+                .get(&crate::history::data::CommitId(target.selected_commit_id()))
+                .copied()
+                .ok_or_else(|| {
+                    DurabilityError::new(
+                        crate::durability::data::RecoveryFailureClass::CorruptCheckpoint,
+                        "branch cell has no selected root image",
+                    )
+                })?;
+            retained
+                .live
+                .insert((cell.branch_id.clone(), version, schema));
+        }
         let captured = Self {
             latest_commit: envelopes
                 .last()
                 .map(|positioned| positioned.envelope().commit.clone()),
-            branch_cells: runtime.history().branch_cells_snapshot(),
+            branch_cells,
             branch_roots,
             record_identity: CapturedRecordIdentity {
                 generation_high_water: runtime.record_identity.generation_snapshot(),
@@ -100,7 +127,7 @@ impl CapturedCheckpointBasis {
             index_definitions: runtime.index_access().definitions_snapshot(),
             derived_index_checkpoint:
                 super::super::derived_index_artifacts::checkpoint_derived_index_artifacts(
-                    runtime, &versions,
+                    runtime, &retained,
                 )?,
             symbol_table: runtime.services.symbols.snapshot(),
             runtime_name: runtime.runtime_name().to_string(),
