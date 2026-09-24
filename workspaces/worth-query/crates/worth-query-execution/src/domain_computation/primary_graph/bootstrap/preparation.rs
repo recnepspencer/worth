@@ -75,6 +75,9 @@ impl WorthQueryExecutionInstallationAuthority {
     where
         Schema: ApplicationSchema,
     {
+        let trace_restore =
+            checkpoint.is_some() && std::env::var_os("WORTH_REOPEN_TRACE").is_some();
+        let restore_started = std::time::Instant::now();
         if !self.belongs_to(runtime) {
             return Err(primary_graph_denial(
                 WorthQueryPrimaryGraphInstallationDenialKind::ForeignRuntime,
@@ -110,6 +113,12 @@ impl WorthQueryExecutionInstallationAuthority {
             .map_err(map_initial_schema_installation_denial)?
             .install_with_custom_invariants(additions, registrations)
             .map_err(map_initial_schema_installation_denial)?;
+        if trace_restore {
+            eprintln!(
+                "query graph schema/invariants: {:?}",
+                restore_started.elapsed()
+            );
+        }
         if invariant_installation_receipt.custom_invariant_inventory_digest()
             != &expected_invariant_inventory_digest
         {
@@ -128,6 +137,12 @@ impl WorthQueryExecutionInstallationAuthority {
                         format!("native checkpoint recovery denied: {error:?}"),
                     )
                 })?;
+            if trace_restore {
+                eprintln!(
+                    "query graph native recovery: {:?}",
+                    restore_started.elapsed()
+                );
+            }
             invariant_installation_receipt = relational_runtime
                 .readmit_recovered_initial_schema_installation(invariant_installation_receipt)
                 .map_err(|error| {
@@ -136,6 +151,12 @@ impl WorthQueryExecutionInstallationAuthority {
                         format!("recovered schema authority denied: {error}"),
                     )
                 })?;
+            if trace_restore {
+                eprintln!(
+                    "query graph schema readmission: {:?}",
+                    restore_started.elapsed()
+                );
+            }
             Some(authority)
         } else {
             None
@@ -147,9 +168,21 @@ impl WorthQueryExecutionInstallationAuthority {
             relational_runtime,
             checkpoint.is_some(),
         )?;
+        if trace_restore {
+            eprintln!(
+                "query graph reconstructed graph: {:?}",
+                restore_started.elapsed()
+            );
+        }
         let recovered_publication = checkpoint
             .map(|checkpoint| checkpoint.recover_publication(&graph))
             .transpose()?;
+        if trace_restore {
+            eprintln!(
+                "query graph bootstrap publication: {:?}",
+                restore_started.elapsed()
+            );
+        }
         Ok(WorthQueryPrimaryGraphBootstrap {
             runtime_authority: runtime.authority_identity(),
             installed_packages: runtime.retain_installed_packages(),
