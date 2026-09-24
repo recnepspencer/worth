@@ -51,6 +51,7 @@ pub use super::application_attempt::{
 };
 pub use super::application_checkpoint::{
     WorthQueryApplicationCheckpoint, WorthQueryApplicationCheckpointSectionBytes,
+    WorthQueryNativeCheckpointSectionBytes,
 };
 pub use super::application_contribution::{
     WorthQueryAdmittedOutputDemand, WorthQueryApplicationConditionalBinding,

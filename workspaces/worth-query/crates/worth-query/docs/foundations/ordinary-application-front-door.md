@@ -443,13 +443,16 @@ explains a transition; it does not perform the transition.
 - Conditional providers and managed clocks are stable on the primary-graph
   application runtime. Query does not publish a separate general-purpose
   temporal workspace API.
-- Recovery handles and temporal wake state are runtime-local. Durable restore
-  belongs to the Store handoff; temporal wakes reconstruct from surviving
+- Recovery handles and temporal wake state are runtime-local. An application
+  may capture Query's opaque native checkpoint with its accepted-output
+  identities, then readmit it through its installed schema on restart; the
+  application owns the enclosing artifact and Store transport. This is not a
+  general Query Save/Open API. Temporal wakes reconstruct from surviving
   authoritative domain truth rather than persisted wake handles.
-- Product branches, exact composite history, retained observations, and pending
-  cleanup are memory-resident. Process loss releases those live capabilities;
-  restart durability requires Store-owned descriptive state followed by fresh
-  owner readmission.
+- Product branches, retained observations, and pending cleanup are
+  memory-resident live capabilities. Process loss releases them; checkpoint
+  readmission restores native committed truth and accepted output identities,
+  not these handles or producer execution.
 - Linear undo and redo remain provisional experiments. Milestone 9.18 owns any
   accepted public correction-history contract.
 - Certification replay remains certification-only.

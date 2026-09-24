@@ -12,6 +12,7 @@ impl WorthQueryApplicationCheckpoint {
         publication: &super::super::WorthQueryPrimaryGraphPublication,
         accepted_outputs: &[super::super::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity],
     ) -> (Self, WorthQueryApplicationCheckpointSectionBytes) {
+        let native_sections = native.captured_sections().map(Into::into);
         let native_bytes = native.bytes();
         let accepted_bytes = accepted_outputs.iter().fold(0_usize, |total, accepted| {
             let role_bytes = accepted.roles.iter().fold(0_usize, |role_total, role| {
@@ -68,6 +69,7 @@ impl WorthQueryApplicationCheckpoint {
             native_bytes.len(),
             body.len() - accepted_start,
             accepted_outputs.len(),
+            native_sections,
         );
         debug_assert_eq!(sections.total_bytes(), bytes.len());
         (

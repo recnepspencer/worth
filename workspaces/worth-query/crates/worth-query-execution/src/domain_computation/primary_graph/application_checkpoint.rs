@@ -12,7 +12,9 @@ use capture::merge_accepted_outputs;
 pub(in crate::domain_computation::primary_graph) use facts::decode as decode_producer_facts;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use facts::encode as encode_producer_facts;
-pub use section_bytes::WorthQueryApplicationCheckpointSectionBytes;
+pub use section_bytes::{
+    WorthQueryApplicationCheckpointSectionBytes, WorthQueryNativeCheckpointSectionBytes,
+};
 
 const MAGIC: &[u8; 8] = b"WQAPCP01";
 const FORMAT_VERSION: u16 = 5;
