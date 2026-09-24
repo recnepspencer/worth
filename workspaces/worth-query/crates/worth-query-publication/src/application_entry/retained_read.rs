@@ -39,6 +39,20 @@ impl WorthQueryApplicationReadObservation {
         Self::new(Arc::clone(&self.retained))
     }
 
+    /// Selects this exact retained product for read-only application queries.
+    pub fn select_on<'a, Schema>(
+        &self,
+        application: &'a worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    ) -> Result<
+        worth_query_execution::facade::primary_graph::WorthQuerySelectedProductOperation<'a, Schema>,
+        worth_query_execution::facade::primary_graph::WorthQueryProductBranchAdmissionDenial,
+    >
+    where
+        Schema: worth_query_installation::facade::ApplicationSchema,
+    {
+        application.select_application_read_observation(&self.retained)
+    }
+
     /// Begins non-authoritative preview custody from this exact retained
     /// occurrence. The returned session carries no publication authority.
     pub fn begin_preview<Schema, Program>(
