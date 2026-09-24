@@ -21,7 +21,9 @@ pub(in crate::domain_computation::primary_graph) fn changes_from_summary(
             return None;
         }
         let additional = match record.target {
-            RecordRef::Entity(_) => record.aspect_scopes.len().checked_add(1)?,
+            RecordRef::Entity(_) => record.aspect_scopes.len().checked_add(usize::from(
+                record.structural_change != RecordStructuralChange::Updated,
+            ))?,
             RecordRef::Relation(_) => 4,
         };
         required = required.checked_add(additional)?;
@@ -33,12 +35,11 @@ pub(in crate::domain_computation::primary_graph) fn changes_from_summary(
     for record in &summary.records {
         match record.target {
             RecordRef::Entity(entity) => {
-                // An update cannot change entity lifetime. Unknown value
-                // scopes still invalidate every tracked value on this entity.
+                // Relational's exact native field transition projection
+                // publishes scopes for changed values. An updated record with
+                // no scopes has no field revision changes or lifecycle change.
                 if record.structural_change != RecordStructuralChange::Updated {
                     changes.push(ViewChange::Entity(entity));
-                } else if record.aspect_scopes.is_empty() {
-                    changes.push(ViewChange::EntityValues(entity));
                 }
                 for scope in &record.aspect_scopes {
                     changes.push(match &scope.field_path {
@@ -185,7 +186,7 @@ mod tests {
     }
 
     #[test]
-    fn scope_free_updated_entity_dirties_only_its_dependent_entry() {
+    fn scope_free_updated_entity_preserves_value_and_lifecycle_dependencies() {
         let changed = entity(2);
         let sibling = entity(3);
         let membership = entity(1);
@@ -196,9 +197,8 @@ mod tests {
             before_endpoints: None,
             after_endpoints: None,
         }]);
-        let changes = changes_from_summary(&sealed, 1).unwrap();
-        assert_eq!(changes, vec![ViewChange::EntityValues(changed)]);
-        assert!(changes_from_summary(&sealed, 0).is_none());
+        let changes = changes_from_summary(&sealed, 0).unwrap();
+        assert!(changes.is_empty());
         let changed_aspect = AspectKey::new("body").unwrap();
         let siblings_aspect = AspectKey::new("body").unwrap();
         let membership_dependencies = BTreeSet::from([ViewDependency::Entity(membership)]);
@@ -233,7 +233,7 @@ mod tests {
             entry_dependencies.iter().map(|(key, deps)| (key, deps)),
         );
         let affected = index.affected(&changes, 8).unwrap();
-        assert_eq!(affected.entries, BTreeSet::from([1, 5]));
+        assert!(affected.entries.is_empty());
         assert!(!affected.membership);
         let structural = index.affected(&[ViewChange::Entity(changed)], 8).unwrap();
         assert_eq!(structural.entries, BTreeSet::from([1, 3, 4, 5]));

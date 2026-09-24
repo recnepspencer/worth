@@ -142,22 +142,22 @@ fn replacing_an_entry_dependency_removes_the_old_body_set_edge() {
 }
 
 #[test]
-fn replacing_value_dependency_removes_old_unknown_update_edge() {
+fn replacing_aspect_dependency_removes_old_aspect_edge() {
     let aspect = AspectKey::new("body").unwrap();
     let old = ViewDependency::Aspect(entity(2), aspect.clone());
-    let new = ViewDependency::Aspect(entity(3), aspect);
+    let new = ViewDependency::Aspect(entity(3), aspect.clone());
     let membership = BTreeSet::from([ViewDependency::Entity(entity(1))]);
     let mut index = DependencyIndex::build(&membership, [(&7, &BTreeSet::from([old.clone()]))]);
     index.remove_entry(&7, &BTreeSet::from([old]));
     index.insert_entry(&new, &7);
     assert!(index
-        .affected(&[ViewChange::EntityValues(entity(2))], 16)
+        .affected(&[ViewChange::Aspect(entity(2), aspect.clone())], 16)
         .unwrap()
         .entries
         .is_empty());
     assert_eq!(
         index
-            .affected(&[ViewChange::EntityValues(entity(3))], 16)
+            .affected(&[ViewChange::Aspect(entity(3), aspect)], 16)
             .unwrap()
             .entries,
         BTreeSet::from([7])

@@ -18,9 +18,6 @@ use super::dependency::ViewDependency;
 pub(in crate::domain_computation::primary_graph) enum ViewChange {
     /// Record lifecycle can change, so every dependency on the entity is affected.
     Entity(EntityId),
-    /// Updated record with unknown value scopes; lifetime and relation
-    /// adjacency remain unchanged, but any aspect or field may have changed.
-    EntityValues(EntityId),
     Aspect(EntityId, AspectKey),
     Field(EntityId, AspectKey, CanonicalFieldPath),
     Adjacency(EntityId, KindId, u8),
@@ -42,7 +39,6 @@ enum Target<Key> {
 pub(super) struct DependencyIndex<Key> {
     exact: BTreeMap<ViewDependency, BTreeSet<Target<Key>>>,
     entity: BTreeMap<EntityId, BTreeSet<Target<Key>>>,
-    values: BTreeMap<EntityId, BTreeSet<Target<Key>>>,
     aspect: BTreeMap<(EntityId, AspectKey), BTreeSet<Target<Key>>>,
 }
 
@@ -51,7 +47,6 @@ impl<Key> Default for DependencyIndex<Key> {
         Self {
             exact: BTreeMap::new(),
             entity: BTreeMap::new(),
-            values: BTreeMap::new(),
             aspect: BTreeMap::new(),
         }
     }
@@ -94,20 +89,12 @@ impl<Key: Clone + Ord> DependencyIndex<Key> {
             .insert(target.clone());
         match dependency {
             ViewDependency::Aspect(_, aspect) => {
-                self.values
-                    .entry(entity)
-                    .or_default()
-                    .insert(target.clone());
                 self.aspect
                     .entry((entity, aspect.clone()))
                     .or_default()
                     .insert(target);
             }
             ViewDependency::Field(_, locator) => {
-                self.values
-                    .entry(entity)
-                    .or_default()
-                    .insert(target.clone());
                 self.aspect
                     .entry((entity, locator.aspect().aspect_key().clone()))
                     .or_default()
@@ -151,17 +138,6 @@ impl<Key: Clone + Ord> DependencyIndex<Key> {
                 targets.remove(&target);
                 if targets.is_empty() {
                     self.entity.remove(&entity);
-                }
-            }
-            if matches!(
-                dependency,
-                ViewDependency::Aspect(..) | ViewDependency::Field(..)
-            ) {
-                if let Some(targets) = self.values.get_mut(&entity) {
-                    targets.remove(&target);
-                    if targets.is_empty() {
-                        self.values.remove(&entity);
-                    }
                 }
             }
             let aspect = match dependency {
@@ -212,9 +188,6 @@ impl<Key: Clone + Ord> DependencyIndex<Key> {
             match change {
                 ViewChange::Entity(entity) => {
                     affected.extend(self.entity.get(entity), &mut work, maximum_work_units)?;
-                }
-                ViewChange::EntityValues(entity) => {
-                    affected.extend(self.values.get(entity), &mut work, maximum_work_units)?;
                 }
                 ViewChange::Aspect(entity, aspect) => {
                     affected.extend(
