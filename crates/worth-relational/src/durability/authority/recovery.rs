@@ -35,27 +35,16 @@ impl<'runtime> DurabilityRecoveryAuthority<'runtime> {
         &mut self,
         checkpoint: &crate::durability::data::RelationalNativeCheckpoint,
     ) -> Result<RuntimeRecoveryOutcome, DurabilityError> {
-        let trace = std::env::var_os("WORTH_REOPEN_TRACE").is_some();
-        let started = std::time::Instant::now();
         let initial_schema_authority = self.runtime.initial_schema_authority_snapshot();
         let checkpoint =
             crate::durability::log::native_file_codec::decode_checkpoint(checkpoint.bytes())?
                 .checkpoint;
-        if trace {
-            eprintln!("relational native decode: {:?}", started.elapsed());
-        }
         let plan = crate::durability::access::native_checkpoint_recovery_plan(
             self.runtime,
             checkpoint,
             crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
         );
-        if trace {
-            eprintln!("relational recovery plan: {:?}", started.elapsed());
-        }
         let outcome = self.recover(plan)?;
-        if trace {
-            eprintln!("relational recovered runtime: {:?}", started.elapsed());
-        }
         self.runtime
             .restore_initial_schema_authority_after_recovery(initial_schema_authority);
         Ok(outcome)
@@ -65,20 +54,9 @@ impl<'runtime> DurabilityRecoveryAuthority<'runtime> {
         &mut self,
         plan: RecoveryPlan,
     ) -> Result<RuntimeRecoveryOutcome, DurabilityError> {
-        let trace = std::env::var_os("WORTH_REOPEN_TRACE").is_some();
-        let started = std::time::Instant::now();
         let admitted = admit_recovery_or_emit(self.runtime, plan)?;
-        if trace {
-            eprintln!("relational recovery admission: {:?}", started.elapsed());
-        }
         let material = rebuild_admitted_recovery_or_emit(self.runtime, admitted)?;
-        if trace {
-            eprintln!("relational recovery rebuild: {:?}", started.elapsed());
-        }
         let outcome = publish_recovered_runtime(self.runtime, material);
-        if trace {
-            eprintln!("relational recovery publication: {:?}", started.elapsed());
-        }
         Ok(outcome)
     }
 }

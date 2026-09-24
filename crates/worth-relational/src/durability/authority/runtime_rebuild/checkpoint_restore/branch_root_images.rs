@@ -20,8 +20,6 @@ pub(super) fn restore_branch_root_images(
     restored: &mut RelationalRuntime,
     checkpoint: &DurableCheckpoint,
 ) -> Result<RestoredBranchRootImages, DurabilityError> {
-    let trace = std::env::var_os("WORTH_REOPEN_TRACE").is_some();
-    let started = std::time::Instant::now();
     let mut schema_catalog = RootSchemaReadmissionCatalog::readmit(checkpoint)?;
     let mut partitions = BTreeMap::new();
     let mut schema_authorities = BTreeMap::new();
@@ -52,9 +50,6 @@ pub(super) fn restore_branch_root_images(
                         image.commit_id.0
                     ))
                 })?;
-        if trace {
-            eprintln!("relational root digest: {:?}", started.elapsed());
-        }
         if observed_digest != image.partition_image_digest {
             return Err(corrupt_checkpoint(format!(
                 "branch-root image `{}` partition integrity mismatch",
@@ -62,9 +57,6 @@ pub(super) fn restore_branch_root_images(
             )));
         }
         let schema_authority = schema_catalog.readmit_root(restored, image, envelope)?;
-        if trace {
-            eprintln!("relational root schema: {:?}", started.elapsed());
-        }
         let root_contracts = crate::durability::checkpoints::aspect_state_images::CheckpointAspectContractCatalog::from_contracts(
             schema_authority.retained_aspect_contracts(),
         )?;
@@ -74,9 +66,6 @@ pub(super) fn restore_branch_root_images(
             &root_contracts,
             &owner,
         )?;
-        if trace {
-            eprintln!("relational root partition image: {:?}", started.elapsed());
-        }
         crate::storage::partition::rebuild_adjacency_kind_buckets(&mut restored_partitions)
             .map_err(|detail| {
                 corrupt_checkpoint(format!(
@@ -84,9 +73,6 @@ pub(super) fn restore_branch_root_images(
                     image.commit_id.0
                 ))
             })?;
-        if trace {
-            eprintln!("relational root adjacency: {:?}", started.elapsed());
-        }
         if partitions
             .insert(image.commit_id, restored_partitions)
             .is_some()
