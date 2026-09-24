@@ -104,6 +104,7 @@ pub(super) struct WorthQueryRetainedOutputCandidate {
         Option<Arc<[super::application_attempt::WorthQueryApplicationObservedFact]>>,
     pub(super) resources:
         Option<super::application_contribution::WorthQueryProducerDemandResources>,
+    pub(super) idempotency_key_identity: [u8; 32],
 }
 
 pub(super) struct WorthQueryCurrentOutputFamilyResolution {

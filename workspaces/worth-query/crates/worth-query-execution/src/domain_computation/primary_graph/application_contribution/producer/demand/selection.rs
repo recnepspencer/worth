@@ -112,6 +112,39 @@ where
             if !output_bindings.contains(&binding) {
                 continue;
             }
+            if let (Some(authority), Some(fact_bytes)) = (
+                self.product_runtime.recovered_root_authority.as_ref(),
+                checkpoint.producer_facts.as_deref(),
+            ) {
+                let recovered_observation = authority.product_branch();
+                if checkpoint.source == source.checkpoint_identity().bytes()
+                    && recovered_observation.lifecycle_incarnation()
+                        == observation.lifecycle_incarnation()
+                {
+                    let facts = crate::domain_computation::primary_graph::application_checkpoint::decode_producer_facts(fact_bytes)
+                        .map_err(|error| WorthQueryOutputDemandDenial::new(
+                            WorthQueryOutputDemandDenialKind::IncompleteDependencyCoverage,
+                            error,
+                        ))?;
+                    lineage.record_restoration(
+                        binding,
+                        self.runtime.authority_identity().as_u64(),
+                        self.installed_schema.binding_identity(),
+                        scope,
+                        recovered_observation,
+                        std::sync::Arc::clone(&recovered.correspondence),
+                        crate::domain_computation::primary_graph::output_lineage::RecordedSourceIdentity::Checkpoint(
+                            crate::domain_computation::primary_graph::application_query::WorthQueryCheckpointSourceIdentity::new(checkpoint.source),
+                        ),
+                        checkpoint.source_partition,
+                        checkpoint.producer_dependency,
+                        checkpoint.idempotency_key,
+                        facts,
+                        checkpoint.resources,
+                    );
+                    continue;
+                }
+            }
             lineage.record_recovered_prior_output(
                 binding,
                 self.runtime.authority_identity().as_u64(),
@@ -242,6 +275,8 @@ where
                         .installed_producers
                         .select_exact::<Family>(candidate.binding)?;
                     selected.retained_resources = Some(resources);
+                    selected.retained_idempotency_key = Some(candidate.idempotency_key_identity);
+                    selected.retained_output_binding = Some(candidate.binding);
                     return Ok(selected);
                 }
                 retained_output = true;

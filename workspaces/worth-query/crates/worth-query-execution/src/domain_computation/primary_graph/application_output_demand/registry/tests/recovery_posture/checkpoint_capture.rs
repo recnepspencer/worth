@@ -80,6 +80,7 @@ fn checkpoint_output_slots_ignore_superseded_source_generations() {
         idempotency_key: source,
         resources: None,
         roles: Vec::new(),
+        producer_facts: None,
     };
 
     assert!(checkpoint([1; 32]).same_output_slot(&checkpoint([2; 32])));

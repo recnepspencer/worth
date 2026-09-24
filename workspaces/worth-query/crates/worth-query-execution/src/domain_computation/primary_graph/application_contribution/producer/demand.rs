@@ -155,6 +155,8 @@ pub struct WorthQuerySelectedApplicationProducer {
     pub(super) applicability: WorthQueryProducerApplicability,
     pub(super) exact_retained_output: bool,
     pub(super) retained_resources: Option<super::WorthQueryProducerDemandResources>,
+    pub(super) retained_idempotency_key: Option<[u8; 32]>,
+    pub(super) retained_output_binding: Option<std::any::TypeId>,
 }
 
 /// Runtime-affine admission for one exact source occurrence and installed producer.
@@ -282,6 +284,8 @@ where
             applicability,
             exact_retained_output: false,
             retained_resources: None,
+            retained_idempotency_key: None,
+            retained_output_binding: None,
         })
     }
 }

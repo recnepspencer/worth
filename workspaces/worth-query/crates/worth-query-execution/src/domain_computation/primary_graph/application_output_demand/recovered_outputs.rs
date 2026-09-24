@@ -94,6 +94,7 @@ mod tests {
                     idempotency_key: [0x41; 32],
                     resources: None,
                     roles: Vec::new(),
+                    producer_facts: None,
                 },
                 correspondence: Arc::clone(&correspondence),
             })

@@ -88,6 +88,36 @@ fn field_presence_values_and_relation_sets_are_distinct_dependencies() {
 }
 
 #[test]
+fn unsupported_index_selection_never_becomes_a_partial_reusable_fact_set() {
+    let entity = EntityId::new(PartitionId::main(), 17, 2);
+    let comparable = WorthQueryApplicationObservedFact::SourceEntity { entity_id: entity };
+    let selection = WorthQueryApplicationObservedFact::IndexedEntitySelection {
+        index_id: DerivedIndexId(5),
+        entity_kind: KindId::new(6),
+        locator: AspectFieldLocator::new(
+            LocatorAuthority::Authoritative,
+            AspectKey::new("test.aspect").unwrap(),
+            CanonicalFieldPath::single(FieldKey::new("key").unwrap()),
+        ),
+        value: AspectValue::UInt64(7),
+        candidate_limit: 1,
+        candidates: vec![entity],
+    };
+    assert!(
+        super::output_postcondition::complete_output_currentness_facts(vec![
+            comparable.clone(),
+            selection
+        ],)
+        .is_empty()
+    );
+    assert_eq!(
+        super::output_postcondition::complete_output_currentness_facts(vec![comparable.clone()])
+            .as_ref(),
+        &[comparable],
+    );
+}
+
+#[test]
 fn dependency_identity_budget_covers_the_admitted_dependency_set() {
     let facts = (0..4_096)
         .map(|slot| WorthQueryApplicationObservedFact::SourceEntity {

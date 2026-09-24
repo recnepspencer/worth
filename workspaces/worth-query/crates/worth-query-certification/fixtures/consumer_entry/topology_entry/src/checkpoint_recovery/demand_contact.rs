@@ -1,6 +1,9 @@
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationOutputDemandDenial, WorthQueryApplicationOutputDemandProgress,
 };
+use worth_query_host::facade::primary_graph::{
+    WorthQueryApplicationOutputRole, WorthQueryCreateOutput, WorthQueryPreserveOutput,
+};
 
 use super::*;
 
@@ -49,6 +52,61 @@ fn restored_output_retains_its_resource_profile_without_provider_contact() {
     let reused = direct_demand(&request);
     assert_eq!(reused.producer_contacts_in_this_demand(), 0);
     assert_eq!(super::super::producer::provider_contacts(), 0);
+}
+
+#[test]
+fn restored_final_output_keeps_original_create_producer_and_zero_contact() {
+    let _guard = checkpoint_recovery_test_guard();
+    let application = install(None);
+    let (scope, principal) = authenticate(&application);
+    let request = application.request(&principal, &scope);
+    drop(settle(&request, &application));
+    drop(request);
+    drop(principal);
+    drop(scope);
+    let checkpoint = application.capture_application_checkpoint().unwrap();
+    drop(application);
+
+    let restored = install(Some(checkpoint));
+    let (scope, principal) = authenticate(&restored);
+    let request = restored.request(&principal, &scope);
+    let controls = WorthQueryOutputDemandControls::new(
+        NonZeroUsize::new(4_096).unwrap(),
+        NonZeroUsize::new(8_192).unwrap(),
+    );
+    let mut demand = request
+        .demand(PlanarFinalOutputDemand::new("anchor-a"))
+        .controls(controls)
+        .start()
+        .expect("the original final output is restorable");
+    let mut settled = None;
+    for _ in 0..512 {
+        match demand.advance(&request).expect("the final demand advances") {
+            WorthQueryApplicationOutputDemandProgress::Pending => std::thread::yield_now(),
+            WorthQueryApplicationOutputDemandProgress::Settled(output) => {
+                settled = Some(output);
+                break;
+            }
+        }
+    }
+    let settled = settled.expect("the original final output settles within its bounded graph");
+    assert_eq!(settled.producer_contacts_in_this_demand(), 0);
+    assert!(settled
+        .output_correspondence()
+        .entity(WorthQueryApplicationOutputRole::<
+            FinalPlanarMutationBinding<CheckpointSchema>,
+            Body,
+            WorthQueryCreateOutput,
+        >::from_static("anchor"))
+        .is_ok());
+    assert!(settled
+        .output_correspondence()
+        .entity(WorthQueryApplicationOutputRole::<
+            FinalPlanarPreserveBinding<CheckpointSchema>,
+            Body,
+            WorthQueryPreserveOutput,
+        >::from_static("anchor"))
+        .is_err());
 }
 
 fn assert_small_budget_denied_without_provider(

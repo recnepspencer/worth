@@ -124,6 +124,7 @@ fn checkpoint(
         idempotency_key: [0; 32],
         resources: None,
         roles,
+        producer_facts: None,
     }
 }
 

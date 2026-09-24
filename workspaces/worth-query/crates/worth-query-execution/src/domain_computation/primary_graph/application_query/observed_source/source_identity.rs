@@ -1,5 +1,4 @@
 use std::collections::BTreeMap;
-use std::hash::{Hash, Hasher};
 use std::sync::{Arc, Mutex, Weak};
 
 use super::super::resource_lifecycle::WorthQueryApplicationBasisSelectionIdentity;
@@ -8,6 +7,7 @@ use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIden
 
 mod checkpoint_commitment;
 mod identity_kind;
+mod ordering;
 mod runtime_commitment;
 pub(in crate::domain_computation::primary_graph) use identity_kind::{
     WorthQueryCheckpointSourceIdentity, WorthQueryRuntimeSourceIdentity,
@@ -331,63 +331,17 @@ impl WorthQueryObservedSourceEpoch {
         self.meaning.checkpoint_identity()
     }
 
+    pub(in crate::domain_computation::primary_graph) fn runtime_idempotency_identity(
+        &self,
+    ) -> [u8; 32] {
+        self.meaning.runtime_idempotency_identity().bytes()
+    }
+
     #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) const fn checkpoint_occurrence(
         &self,
     ) -> worth_runtime_world::facade::ProductBranchIncarnation {
         self.occurrence
-    }
-
-    fn ordering_coordinates(
-        &self,
-    ) -> (
-        [u8; 32],
-        [u8; 32],
-        worth_relational::facade::identity::EntityId,
-        worth_runtime_world::facade::ProductBranchIncarnation,
-        u64,
-        [u8; 32],
-    ) {
-        (
-            self.query,
-            self.parameters,
-            self.root,
-            self.occurrence,
-            self.observation_generation,
-            *self.meaning.identity(),
-        )
-    }
-}
-
-impl PartialEq for WorthQueryObservedSourceEpoch {
-    fn eq(&self, other: &Self) -> bool {
-        self.ordering_coordinates() == other.ordering_coordinates()
-    }
-}
-
-impl Eq for WorthQueryObservedSourceEpoch {}
-
-impl PartialOrd for WorthQueryObservedSourceEpoch {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for WorthQueryObservedSourceEpoch {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.ordering_coordinates()
-            .cmp(&other.ordering_coordinates())
-    }
-}
-
-impl Hash for WorthQueryObservedSourceEpoch {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.query.hash(state);
-        self.parameters.hash(state);
-        self.root.hash(state);
-        self.occurrence.hash(state);
-        self.observation_generation.hash(state);
-        self.meaning.identity().hash(state);
     }
 }
 

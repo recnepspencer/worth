@@ -2,12 +2,18 @@ use std::sync::Arc;
 
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
 
+mod adjacency;
+use adjacency::rebase_decision_adjacency;
+
 pub(super) fn rebase(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     facts: Vec<WorthQueryApplicationObservedFact>,
+    producer_output: bool,
+    maximum_pair_rebase_work: usize,
 ) -> Arc<[WorthQueryApplicationObservedFact]> {
-    facts
+    let mut failed_native_rebase = false;
+    let rebased = facts
         .into_iter()
         .map(|fact| match fact {
             WorthQueryApplicationObservedFact::Field {
@@ -34,15 +40,20 @@ pub(super) fn rebase(
                 entity_id,
                 aspect,
                 native_revision,
-            } => WorthQueryApplicationObservedFact::SourceAspectRevision {
-                entity_id,
-                native_revision: runtime
+            } => {
+                let committed_revision = runtime
                     .read_truth()
                     .project_snapshot(snapshot)
-                    .and_then(|view| view.entity_aspect_version(entity_id, &aspect))
-                    .unwrap_or(native_revision),
-                aspect,
-            },
+                    .and_then(|view| view.entity_aspect_version(entity_id, &aspect));
+                if committed_revision.is_none() {
+                    failed_native_rebase = true;
+                }
+                WorthQueryApplicationObservedFact::SourceAspectRevision {
+                    entity_id,
+                    native_revision: committed_revision.unwrap_or(native_revision),
+                    aspect,
+                }
+            }
             WorthQueryApplicationObservedFact::SourceAdjacencyRevision {
                 relation_kind,
                 anchor,
@@ -50,11 +61,8 @@ pub(super) fn rebase(
                 native_revision,
                 comparison_work_limit,
                 endpoints,
-            } => WorthQueryApplicationObservedFact::SourceAdjacencyRevision {
-                relation_kind,
-                anchor,
-                direction,
-                native_revision: runtime
+            } => {
+                let committed_comparison = runtime
                     .read_truth()
                     .project_snapshot(snapshot)
                     .and_then(|view| {
@@ -65,16 +73,48 @@ pub(super) fn rebase(
                             comparison_work_limit,
                         )
                         .ok()
-                    })
-                    .map(|comparison| comparison.revision())
-                    .unwrap_or(native_revision),
-                comparison_work_limit,
-                endpoints,
-            },
+                    });
+                if committed_comparison.is_none() {
+                    failed_native_rebase = true;
+                }
+                WorthQueryApplicationObservedFact::SourceAdjacencyRevision {
+                    relation_kind,
+                    anchor,
+                    direction,
+                    native_revision: committed_comparison
+                        .map(|comparison| comparison.revision())
+                        .unwrap_or(native_revision),
+                    comparison_work_limit,
+                    endpoints,
+                }
+            }
+            fact @ WorthQueryApplicationObservedFact::Relation { .. }
+            | fact @ WorthQueryApplicationObservedFact::Adjacency { .. } => {
+                rebase_decision_adjacency(runtime, snapshot, fact, maximum_pair_rebase_work)
+            }
             fact => fact,
         })
-        .collect::<Vec<_>>()
-        .into()
+        .collect::<Vec<_>>();
+    if producer_output
+        && (failed_native_rebase || !rebased.iter().all(native_output_currentness_fact))
+    {
+        // Failed structural acquisition or an unsupported tracked read cannot
+        // be silently replaced by only the query-footprint subset.
+        Arc::from([])
+    } else {
+        rebased.into()
+    }
+}
+
+fn native_output_currentness_fact(fact: &WorthQueryApplicationObservedFact) -> bool {
+    matches!(
+        fact,
+        WorthQueryApplicationObservedFact::SourceEntity { .. }
+            | WorthQueryApplicationObservedFact::SourceAspectRevision { .. }
+            | WorthQueryApplicationObservedFact::SourceFieldRevision { .. }
+            | WorthQueryApplicationObservedFact::SourceAdjacencyRevision { .. }
+            | WorthQueryApplicationObservedFact::Entity { .. }
+    )
 }
 
 #[cfg(test)]
@@ -119,6 +159,12 @@ mod tests {
             value: StringApplicationValueBinding::encode(&"reviewed".to_owned()).unwrap(),
         };
         let facts = rebase_at_current(&world, vec![field.clone()]);
+        let durable = crate::domain_computation::primary_graph::application_checkpoint::decode_producer_facts(
+            &crate::domain_computation::primary_graph::application_checkpoint::encode_producer_facts(&facts)
+                .expect("the rebased non-query producer decision field is checkpoint-comparable"),
+        )
+        .expect("the complete producer fact set round-trips");
+        assert_eq!(durable.as_ref(), facts.as_ref());
         assert!(matches!(
             facts[0],
             WorthQueryApplicationObservedFact::SourceFieldRevision {
@@ -128,7 +174,7 @@ mod tests {
         ));
         assert!(current(&world, &facts[0]));
         assert!(matches!(
-            output_selection(&world, &facts),
+            output_selection(&world, &durable),
             OutputDependencySelection::Reuse
         ));
         assert_eq!(
@@ -141,7 +187,7 @@ mod tests {
         set_note(&world, entity, locator, "reviewed");
         assert!(!current(&world, &facts[0]));
         assert!(matches!(
-            output_selection(&world, &facts),
+            output_selection(&world, &durable),
             OutputDependencySelection::FreshRequired
         ));
     }
@@ -274,6 +320,8 @@ mod tests {
                     runtime,
                     selected.application_basis().snapshot_handle(),
                     facts,
+                    true,
+                    64,
                 )
             })
     }

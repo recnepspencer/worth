@@ -268,12 +268,34 @@ where
         let source_scope = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(
             observed_source.source_root(),
         );
-        if let Some(restored) = self.readmit_checkpoint_output(
-            &selected.identity,
-            &observed_source,
-            source_epoch,
-            source_scope,
-        )? {
+        // Only the exact retained-candidate selection has compared the full
+        // persisted producer facts at the current native basis. A fresh
+        // selection may never adopt a matching checkpoint by identity alone.
+        let restored = if selected.exact_retained_output {
+            let expected_key = selected.retained_idempotency_key.ok_or_else(|| {
+                denial(
+                    WorthQueryOutputDemandDenialKind::IncompleteDependencyCoverage,
+                    "exact retained output has no idempotency identity",
+                )
+            })?;
+            let output_binding = selected.retained_output_binding.ok_or_else(|| {
+                denial(
+                    WorthQueryOutputDemandDenialKind::IncompleteDependencyCoverage,
+                    "exact retained output has no output binding",
+                )
+            })?;
+            self.readmit_checkpoint_output(
+                &selected.identity,
+                output_binding,
+                expected_key,
+                &observed_source,
+                source_epoch,
+                source_scope,
+            )?
+        } else {
+            None
+        };
+        if let Some(restored) = restored {
             let resources = restored.checkpoint.resources.ok_or_else(|| {
                 denial(
                     WorthQueryOutputDemandDenialKind::IncompleteDependencyCoverage,

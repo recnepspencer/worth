@@ -1,16 +1,24 @@
 use sha2::{Digest, Sha256};
 
+mod capture;
+mod facts;
 mod resources;
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+use capture::merge_accepted_outputs;
+pub(in crate::domain_computation::primary_graph) use facts::decode as decode_producer_facts;
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) use facts::encode as encode_producer_facts;
 
 const MAGIC: &[u8; 8] = b"WQAPCP01";
-const FORMAT_VERSION: u16 = 4;
+const FORMAT_VERSION: u16 = 5;
 const CHECKSUM_BYTES: usize = 32;
 const BODY_PREFIX_BYTES: usize = 2 + 8 + 8 + 8;
 const HEADER_BYTES: usize = MAGIC.len() + CHECKSUM_BYTES + BODY_PREFIX_BYTES;
 const LEGACY_MINIMUM_ACCEPTED_OUTPUT_BYTES: usize = 8 + 1 + 32 + 16 + 32 + 33 + 32 + 8;
 const MINIMUM_ACCEPTED_OUTPUT_BYTES: usize = LEGACY_MINIMUM_ACCEPTED_OUTPUT_BYTES + 17;
+const MINIMUM_V5_ACCEPTED_OUTPUT_BYTES: usize = MINIMUM_ACCEPTED_OUTPUT_BYTES + 8;
 const MAXIMUM_PRODUCER_IDENTITY_BYTES: usize = 4 * 1024;
 const MAXIMUM_ROLE_IDENTITY_BYTES: usize = 4 * 1024;
 const MAXIMUM_ENTITY_NAME_BYTES: usize = 4 * 1024;
@@ -67,7 +75,10 @@ impl WorthQueryApplicationCheckpoint {
                 role_total.saturating_add(8 + role.role.len() + 1 + 8 + role.entity_name.len() + 16)
             });
             total.saturating_add(
-                MINIMUM_ACCEPTED_OUTPUT_BYTES - 1 + accepted.producer.len() + role_bytes,
+                MINIMUM_V5_ACCEPTED_OUTPUT_BYTES - 1
+                    + accepted.producer.len()
+                    + role_bytes
+                    + accepted.producer_facts.as_ref().map_or(0, Vec::len),
             )
         });
         let mut body = Vec::with_capacity(BODY_PREFIX_BYTES + native_bytes.len() + accepted_bytes);
@@ -99,6 +110,9 @@ impl WorthQueryApplicationCheckpoint {
                 body.extend_from_slice(role.entity_name.as_bytes());
                 encode_entity(&mut body, role.entity);
             }
+            let fact_bytes = accepted.producer_facts.as_deref().unwrap_or_default();
+            body.extend_from_slice(&(fact_bytes.len() as u64).to_be_bytes());
+            body.extend_from_slice(fact_bytes);
         }
         let checksum = Sha256::digest(&body);
         let mut bytes = Vec::with_capacity(MAGIC.len() + CHECKSUM_BYTES + body.len());
@@ -122,7 +136,7 @@ impl WorthQueryApplicationCheckpoint {
             return Err("Query application checkpoint checksum differs".to_owned());
         }
         let version = u16::from_be_bytes([body[0], body[1]]);
-        if version != FORMAT_VERSION && version != 3 {
+        if version != FORMAT_VERSION && version != 4 && version != 3 {
             return Err(format!(
                 "Query application checkpoint format {version} is unsupported"
             ));
@@ -134,10 +148,10 @@ impl WorthQueryApplicationCheckpoint {
         let accepted_count = usize::try_from(cursor.next_u64()?)
             .map_err(|_| "checkpoint accepted-output count exceeds this host".to_owned())?;
         let native = cursor.next_bytes(native_len)?;
-        let minimum = if version == 3 {
-            LEGACY_MINIMUM_ACCEPTED_OUTPUT_BYTES
-        } else {
-            MINIMUM_ACCEPTED_OUTPUT_BYTES
+        let minimum = match version {
+            3 => LEGACY_MINIMUM_ACCEPTED_OUTPUT_BYTES,
+            4 => MINIMUM_ACCEPTED_OUTPUT_BYTES,
+            _ => MINIMUM_V5_ACCEPTED_OUTPUT_BYTES,
         };
         if accepted_count > cursor.remaining.len() / minimum {
             return Err("checkpoint accepted-output count exceeds its payload".to_owned());
@@ -215,6 +229,22 @@ impl WorthQueryApplicationCheckpoint {
             if roles.windows(2).any(|pair| pair[0].role >= pair[1].role) {
                 return Err("checkpoint output roles are duplicated or non-canonical".to_owned());
             }
+            let producer_facts = if version >= 5 {
+                let fact_len = usize::try_from(cursor.next_u64()?)
+                    .map_err(|_| "checkpoint producer fact length exceeds this host".to_owned())?;
+                if fact_len > facts::MAXIMUM_FACT_BYTES {
+                    return Err("checkpoint producer fact payload length is invalid".to_owned());
+                }
+                if fact_len == 0 {
+                    None
+                } else {
+                    let bytes = cursor.next_bytes(fact_len)?;
+                    facts::decode(bytes)?;
+                    Some(bytes.to_vec())
+                }
+            } else {
+                None
+            };
             accepted_outputs.push(
                 super::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity {
                     producer,
@@ -225,11 +255,25 @@ impl WorthQueryApplicationCheckpoint {
                     idempotency_key,
                     resources,
                     roles,
+                    producer_facts,
                 },
             );
         }
-        if accepted_outputs.windows(2).any(|pair| pair[0] >= pair[1]) {
+        if accepted_outputs
+            .windows(2)
+            .any(|pair| pair[0].canonical_cmp(&pair[1]) != std::cmp::Ordering::Less)
+        {
             return Err("checkpoint accepted outputs are duplicated or non-canonical".to_owned());
+        }
+        let mut slots = std::collections::BTreeSet::new();
+        if accepted_outputs.iter().any(|accepted| {
+            !slots.insert((
+                accepted.producer.as_str(),
+                accepted.scope,
+                accepted.source_partition,
+            ))
+        }) {
+            return Err("checkpoint output slots are duplicated".to_owned());
         }
         if !cursor.is_empty() {
             return Err("Query application checkpoint payload length differs".to_owned());
@@ -335,55 +379,4 @@ fn encode_entity(output: &mut Vec<u8>, entity: worth_relational::facade::identit
     output.extend_from_slice(&entity.partition_value().to_be_bytes());
     output.extend_from_slice(&entity.local_slot_value().to_be_bytes());
     output.extend_from_slice(&entity.generation_value().to_be_bytes());
-}
-
-fn merge_accepted_outputs(
-    mut current: Vec<super::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity>,
-    recovered: impl IntoIterator<
-        Item = super::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity,
-    >,
-) -> Vec<super::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity> {
-    let unshadowed = recovered
-        .into_iter()
-        .filter(|recovered| {
-            !current
-                .iter()
-                .any(|accepted| accepted.same_output_slot(recovered))
-        })
-        .collect::<Vec<_>>();
-    current.extend(unshadowed);
-    current.sort();
-    current.dedup();
-    current
-}
-
-impl<Schema> super::WorthQueryPrimaryGraphApplicationRuntime<Schema>
-where
-    Schema: worth_query_installation::facade::ApplicationSchema + 'static,
-{
-    pub fn capture_application_checkpoint(
-        &self,
-    ) -> Result<
-        WorthQueryApplicationCheckpoint,
-        worth_relational::facade::durability::DurabilityError,
-    > {
-        self.primary_provider.graph.with_runtime(|runtime| {
-            runtime
-                .durability_authority()
-                .native_checkpoint()
-                .map(|checkpoint| {
-                    let accepted_outputs = merge_accepted_outputs(
-                        self.output_demands.accepted_checkpoint_identities(),
-                        self.recovered_outputs
-                            .iter()
-                            .map(|accepted| accepted.checkpoint.clone()),
-                    );
-                    WorthQueryApplicationCheckpoint::encode(
-                        checkpoint,
-                        self.publication(),
-                        &accepted_outputs,
-                    )
-                })
-        })
-    }
 }

@@ -57,6 +57,7 @@ fn restored_output(
             idempotency_key: [0x77; 32],
             resources: None,
             roles: Vec::new(),
+            producer_facts: None,
         },
         correspondence: Arc::new(
             crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence::default(),

@@ -203,6 +203,8 @@ where
             applicability: selected.declaration.applicability[0],
             exact_retained_output: true,
             retained_resources: None,
+            retained_idempotency_key: None,
+            retained_output_binding: None,
         })
     }
 

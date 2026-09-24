@@ -12,6 +12,8 @@ where
     pub(super) fn readmit_checkpoint_output<Query>(
         &self,
         producer: &str,
+        output_binding: std::any::TypeId,
+        expected_idempotency_key: [u8; 32],
         observed_source: &WorthQueryObservedSource<Query>,
         source_epoch: crate::domain_computation::primary_graph::application_query::WorthQueryObservedSourceEpoch,
         source_scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
@@ -28,6 +30,8 @@ where
             .find(|readmitted| {
                 readmitted.checkpoint.producer == producer
                     && readmitted.checkpoint.source == checkpoint_source.bytes()
+                    && readmitted.checkpoint.idempotency_key == expected_idempotency_key
+                    && readmitted.correspondence.binding_type() == Some(output_binding)
             })
         else {
             return Ok(None);
@@ -48,14 +52,12 @@ where
         {
             return Ok(None);
         }
-        let observed_source_facts = observed_source
-            .retained_checkpoint_facts(&self.primary_provider.graph.layout)
-            .map_err(|error| {
-                denial(
-                    WorthQueryOutputDemandDenialKind::ForeignSource,
-                    format!("checkpoint output source facts were rejected: {error}"),
-                )
-            })?;
+        let Some(fact_bytes) = readmitted.checkpoint.producer_facts.as_deref() else {
+            return Ok(None);
+        };
+        let observed_source_facts =
+            crate::domain_computation::primary_graph::application_checkpoint::decode_producer_facts(fact_bytes)
+                .map_err(|error| denial(WorthQueryOutputDemandDenialKind::IncompleteDependencyCoverage, error))?;
         Ok(Some(
             crate::domain_computation::primary_graph::application_output_demand::WorthQueryRestoredAcceptedOutput {
                 checkpoint: readmitted.checkpoint.clone(),

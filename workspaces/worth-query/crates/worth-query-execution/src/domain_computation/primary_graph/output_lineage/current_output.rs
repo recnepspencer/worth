@@ -264,6 +264,7 @@ impl WorthQueryApplicationOutputLineage {
                         source_identity: recorded.source_identity,
                         observed_source_facts: recorded.observed_source_facts.clone(),
                         resources: recorded.resources,
+                        idempotency_key_identity: recorded.idempotency_key_identity,
                     });
                     break;
                 }

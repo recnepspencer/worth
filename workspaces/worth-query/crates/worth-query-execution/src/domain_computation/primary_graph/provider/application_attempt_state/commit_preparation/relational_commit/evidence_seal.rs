@@ -61,6 +61,16 @@ pub(super) fn seal(
             runtime,
             &committed.committed().snapshot,
             committed.attempt().observed_source_facts(),
+            committed
+                .attempt()
+                .idempotency()
+                .producer_dependency_identity()
+                .is_some(),
+            committed
+                .attempt()
+                .validator_work_admission()
+                .maximum_work()
+                .unwrap_or(0),
         )
     });
     WorthQueryPrimaryGraphCommitEvidence {

@@ -4,6 +4,51 @@ use super::super::{
 use super::{SemanticSource, WorthQueryApplicationOutputLineage};
 
 impl WorthQueryApplicationOutputLineage {
+    /// Only the exact committed output record supplies checkpoint reuse facts.
+    /// A source-query footprint or a digest cannot substitute for producer reads.
+    pub(in crate::domain_computation::primary_graph) fn producer_facts_for_receipt(
+        &self,
+        receipt: &WorthQueryApplicationCommitReceipt,
+    ) -> Option<
+        std::sync::Arc<[super::super::application_attempt::WorthQueryApplicationObservedFact]>,
+    > {
+        let output_binding = receipt.output_correspondence().binding_type()?;
+        let scope = receipt.principal_scope();
+        let idempotency = receipt.idempotency_binding();
+        let source = SemanticSource {
+            runtime_authority: scope.runtime_authority(),
+            schema: scope.binding_identity().clone(),
+            scope: scope.scope(),
+            output_binding,
+        };
+        let publication = receipt.committed_product_publication();
+        self.by_source
+            .get(&source)?
+            .get(&publication.product_incarnation())?
+            .get(&publication.product_generation().get())?
+            .iter()
+            .find(|recorded| {
+                std::ptr::eq(
+                    recorded.correspondence.as_ref(),
+                    receipt.output_correspondence(),
+                ) && recorded.source_partition_identity == idempotency.source_partition_identity()
+                    && recorded.idempotency_key_identity == *idempotency.key_identity()
+                    && recorded.producer_dependency_identity
+                        == idempotency.producer_dependency_identity()
+                    && recorded.source_identity
+                        == idempotency.source_identity().map(|identity| {
+                            super::RecordedSourceIdentity::Runtime(
+                            super::super::application_query::WorthQueryRuntimeSourceIdentity::new(
+                                identity,
+                            ),
+                        )
+                        })
+            })?
+            .observed_source_facts
+            .as_ref()
+            .cloned()
+    }
+
     pub(in crate::domain_computation::primary_graph) fn producer_resources_for_receipt(
         &self,
         receipt: &WorthQueryApplicationCommitReceipt,

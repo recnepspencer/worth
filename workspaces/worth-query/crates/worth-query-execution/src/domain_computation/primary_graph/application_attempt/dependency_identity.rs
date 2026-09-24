@@ -4,7 +4,7 @@ mod canonical_encoding;
 mod output_postcondition;
 
 use canonical_encoding::{dependency_identity, lineage_identity};
-use output_postcondition::{is_output_currentness_fact, normalized_output_facts};
+use output_postcondition::{complete_output_currentness_facts, normalized_output_facts};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum WorthQueryProducerIdentityDenial {
@@ -45,13 +45,7 @@ impl<Schema, Operation, Input, Scope>
                 .map_err(|_| {
                     WorthQueryProducerIdentityDenial::DependencyCanonicalizationRejected
                 })?;
-        self.output_currentness_facts = Some(
-            dependency_facts
-                .into_iter()
-                .filter(is_output_currentness_fact)
-                .collect::<Vec<_>>()
-                .into(),
-        );
+        self.output_currentness_facts = Some(complete_output_currentness_facts(dependency_facts));
         self.read_set
             .admission
             .retain_execution_canonical_work(work);
