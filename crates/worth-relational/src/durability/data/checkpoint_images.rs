@@ -240,12 +240,26 @@ pub(crate) fn branch_root_partition_image_digest(
 ) -> Result<[u8; 32], rmp_serde::encode::Error> {
     use sha2::{Digest, Sha256};
 
-    let encoded = rmp_serde::to_vec(partition_images)?;
     let mut digest = Sha256::new();
     digest.update(b"worth.relational.branch-root-images.v1\0");
     digest.update((partition_images.len() as u64).to_be_bytes());
-    digest.update(encoded);
+    rmp_serde::encode::write(&mut Sha256Writer(&mut digest), partition_images)?;
     Ok(digest.finalize().into())
+}
+
+struct Sha256Writer<'a>(&'a mut sha2::Sha256);
+
+impl std::io::Write for Sha256Writer<'_> {
+    fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+        use sha2::Digest;
+
+        self.0.update(bytes);
+        Ok(bytes.len())
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
 }
 
 pub(crate) fn branch_root_image_digest(
@@ -287,4 +301,50 @@ pub struct DurableCheckpoint {
     pub(crate) derived_index_checkpoint_format: u16,
     pub symbol_table: SymbolTableSnapshot,
     pub runtime_name: String,
+}
+
+#[cfg(test)]
+mod tests {
+    use sha2::{Digest, Sha256};
+
+    use super::branch_root_partition_image_digest;
+    use crate::tests::support::*;
+
+    #[test]
+    fn streamed_branch_root_image_digest_matches_buffered_wire_for_divergent_roots() {
+        let runtime = persisted_runtime_with_test_schema();
+        create_entity(&runtime, "streamed-image-seed");
+        let sibling = create_branch_from_main(&runtime, "streamed-image-sibling");
+        let changed = create_entity_outcome_on_branch(&runtime, "streamed-image-fork", sibling);
+        release_test_commit_snapshot(&runtime, &changed);
+        let checkpoint = runtime.durability_authority().checkpoint().unwrap();
+        assert_eq!(checkpoint.branch_roots.len(), 2);
+
+        for root in &checkpoint.branch_roots {
+            assert_eq!(
+                branch_root_partition_image_digest(&root.partition_images).unwrap(),
+                buffered_digest(&root.partition_images)
+            );
+        }
+        let mut altered = checkpoint.branch_roots[0].partition_images.clone();
+        let original = branch_root_partition_image_digest(&altered).unwrap();
+        altered[0].entity_arena.generations[0] ^= 1;
+        assert_eq!(
+            branch_root_partition_image_digest(&altered).unwrap(),
+            buffered_digest(&altered)
+        );
+        assert_ne!(
+            branch_root_partition_image_digest(&altered).unwrap(),
+            original
+        );
+    }
+
+    fn buffered_digest(images: &[super::PartitionCheckpointImage]) -> [u8; 32] {
+        let encoded = rmp_serde::to_vec(images).unwrap();
+        let mut digest = Sha256::new();
+        digest.update(b"worth.relational.branch-root-images.v1\0");
+        digest.update((images.len() as u64).to_be_bytes());
+        digest.update(encoded);
+        digest.finalize().into()
+    }
 }

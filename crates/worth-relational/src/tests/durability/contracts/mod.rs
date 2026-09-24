@@ -13,6 +13,7 @@ mod lineage_artifact_recovery;
 mod lineage_event_allocator_recovery;
 mod merge_replay_continuity;
 mod native_checkpoint;
+mod native_checkpoint_restore_benchmark;
 mod record_allocation_recovery;
 mod rejected_and_parent_closure;
 mod retention_inspection_store;

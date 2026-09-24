@@ -154,18 +154,70 @@ fn hash_value(domain: &[u8], value: &impl Serialize) -> [u8; 32] {
     hash.update(b"worth.relational.partition-value.v2\0");
     hash.update((domain.len() as u64).to_be_bytes());
     hash.update(domain);
-    hash.update(rmp_serde::to_vec(value).expect("authoritative in-memory values are serializable"));
+    rmp_serde::encode::write(&mut Sha256Writer(&mut hash), value)
+        .expect("authoritative in-memory values are serializable");
     hash.finalize().into()
+}
+
+struct Sha256Writer<'a>(&'a mut Sha256);
+
+impl std::io::Write for Sha256Writer<'_> {
+    fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+        self.0.update(bytes);
+        Ok(bytes.len())
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
 }
 
 #[cfg(test)]
 mod tests {
+    use serde::Serialize;
+    use sha2::{Digest, Sha256};
+
+    use super::hash_value;
     use crate::config::data::{AdjacencyBackend, AdjacencyPolicy};
     use crate::identity::data::{KindId, PartitionId, RelationId};
     use crate::storage::overlay::PartitionState;
     use crate::storage::partition::AdjacencySet;
     use crate::storage::substrate::{EntityArena, RelationArena};
     use crate::symbols::data::StringInterner;
+
+    #[test]
+    fn streamed_content_value_hash_matches_buffered_canonical_encoding() {
+        fn buffered<T: Serialize>(domain: &[u8], value: &T) -> [u8; 32] {
+            let mut hash = Sha256::new();
+            hash.update(b"worth.relational.partition-value.v2\0");
+            hash.update((domain.len() as u64).to_be_bytes());
+            hash.update(domain);
+            hash.update(rmp_serde::to_vec(value).unwrap());
+            hash.finalize().into()
+        }
+
+        let records = vec![
+            (Some(1_u64), vec!["alpha".to_owned(), "beta".to_owned()]),
+            (None, vec!["unicode-λ".to_owned()]),
+        ];
+        let revisions = std::collections::BTreeMap::from([
+            ("field-a", (3_u64, false)),
+            ("field-b", (8_u64, true)),
+        ]);
+        assert_eq!(
+            hash_value(b"record", &records),
+            buffered(b"record", &records)
+        );
+        assert_eq!(
+            hash_value(b"metadata", &revisions),
+            buffered(b"metadata", &revisions)
+        );
+        assert_eq!(hash_value(b"", &0_u64), buffered(b"", &0_u64));
+        assert_ne!(
+            hash_value(b"record", &records),
+            hash_value(b"extra", &records)
+        );
+    }
 
     #[test]
     fn derived_adjacency_caches_cannot_change_truth_digest() {
