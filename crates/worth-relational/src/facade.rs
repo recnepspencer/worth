@@ -217,7 +217,7 @@ pub mod runtime {
         AdjacencyStructuralRevisionDenial, CompiledArtifactAuthorityStatus, CompiledArtifactError,
         CompiledExecutionArtifact, ComplexityContract, ComplexityStatus, EntityProjectionRecord,
         EntityRecordProjection, InvariantAccess, RelationProjectionRecord,
-        RelationRecordProjection, RelationalAdjacencyDirection,
+        RelationRecordProjection, RelationalAdjacencyDirection, RelationalCandidateInputCounters,
         RelationalInitialSchemaInstallation, RelationalInitialSchemaInstallationDenial,
         RelationalInitialSchemaInstallationDenialKind, RelationalInitialSchemaInstallationReceipt,
         RelationalPatchPositionReservationCounters, RelationalPhase4ReferenceCostCounters,
