@@ -196,10 +196,10 @@ fn prepare_lineage(
 }
 
 fn prepare_indexes(checkpoint: &DurableCheckpoint) -> Result<IndexingState, DurabilityError> {
-    if checkpoint.derived_index_checkpoint_format > 1
-        || (checkpoint.derived_index_checkpoint_format == 1)
-            != checkpoint.derived_index_checkpoint.is_some()
-    {
+    if !crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts::supports_outer_format(
+        checkpoint.derived_index_checkpoint_format,
+        checkpoint.derived_index_checkpoint.is_some(),
+    ) {
         return Err(DurabilityError::new(
             crate::durability::data::RecoveryFailureClass::CorruptCheckpoint,
             "derived index checkpoint format or payload is missing",

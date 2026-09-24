@@ -1,4 +1,6 @@
+use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet};
+use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -12,8 +14,7 @@ use crate::indexes::data::{
 };
 use crate::schema::data::SchemaVersionId;
 
-const FORMAT_VERSION: u16 = 1;
-const DIGEST_DOMAIN: &[u8] = b"worth.relational.derived-index-checkpoint.v1\0";
+const DIGEST_DOMAIN: &[u8] = b"worth.relational.derived-index-checkpoint.v2\0";
 
 /// Checkpoint-only deltas. Canonical envelopes remain the semantic authority.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -40,18 +41,59 @@ struct CheckpointGeneration {
     full_digest: [u8; 32],
 }
 
+#[derive(Serialize)]
+struct CheckpointDigestHeader<'a> {
+    generation_id: DerivedIndexGenerationId,
+    index_id: DerivedIndexId,
+    source_commit_id: CommitId,
+    source_branch_id: &'a BranchId,
+    applicability_branch_id: &'a BranchId,
+    version_id: VersionId,
+    schema_version: SchemaVersionId,
+    status: DerivedIndexPublicationStatus,
+}
+
+impl<'a> CheckpointDigestHeader<'a> {
+    fn from_generation(generation: &'a DerivedIndexGeneration) -> Self {
+        Self {
+            generation_id: generation.generation_id,
+            index_id: generation.index_id,
+            source_commit_id: generation.source_commit_id,
+            source_branch_id: &generation.source_branch_id,
+            applicability_branch_id: &generation.applicability.branch_id,
+            version_id: generation.applicability.version_id,
+            schema_version: generation.applicability.schema_version,
+            status: generation.status,
+        }
+    }
+}
+
 impl DerivedIndexCheckpointArtifacts {
+    pub(crate) const FORMAT_VERSION: u16 = 2;
+
+    pub(crate) fn supports_outer_format(format: u16, has_payload: bool) -> bool {
+        matches!(
+            (format, has_payload),
+            (0, false) | (Self::FORMAT_VERSION, true)
+        )
+    }
+
     pub(crate) fn capture(
-        mut generations: Vec<DerivedIndexGeneration>,
+        mut generations: Vec<Arc<DerivedIndexGeneration>>,
     ) -> Result<Self, DurabilityError> {
         generations.sort_by_key(|generation| (generation.index_id, generation.generation_id));
         let mut previous = BTreeMap::<DerivedIndexId, (DerivedIndexGenerationId, Vec<u8>)>::new();
         let mut captured = Vec::with_capacity(generations.len());
-        for generation in generations {
-            let full = rmp_serde::to_vec_named(&generation)
-                .map_err(|error| corrupt(format!("index checkpoint encoding failed: {error}")))?;
-            let entries = rmp_serde::to_vec_named(&generation.entries)
+        for (position, generation) in generations.iter().enumerate() {
+            let mut entries = rmp_serde::to_vec_named(&generation.entries)
                 .map_err(|error| corrupt(format!("index entries encoding failed: {error}")))?;
+            let full_digest = digest(
+                &CheckpointDigestHeader::from_generation(generation),
+                &entries,
+            )?;
+            let next_uses_base = generations
+                .get(position + 1)
+                .is_some_and(|next| next.index_id == generation.index_id);
             let (base_generation_id, prefix, suffix, changed_bytes) =
                 if let Some((base_id, base)) = previous.get(&generation.index_id) {
                     let prefix = base
@@ -65,21 +107,36 @@ impl DerivedIndexCheckpointArtifacts {
                         .zip(entries[prefix..].iter().rev())
                         .take_while(|(a, b)| a == b)
                         .count();
-                    let changed = entries[prefix..entries.len() - suffix].to_vec();
-                    if changed.len().saturating_add(16) >= entries.len() {
-                        (None, 0, 0, entries.clone())
+                    let changed_len = entries.len() - suffix - prefix;
+                    if changed_len.saturating_add(16) >= entries.len() {
+                        let changed = if next_uses_base {
+                            entries.clone()
+                        } else {
+                            std::mem::take(&mut entries)
+                        };
+                        (None, 0, 0, changed)
                     } else {
-                        (Some(*base_id), prefix, suffix, changed)
+                        (
+                            Some(*base_id),
+                            prefix,
+                            suffix,
+                            entries[prefix..entries.len() - suffix].to_vec(),
+                        )
                     }
                 } else {
-                    (None, 0, 0, entries.clone())
+                    let changed = if next_uses_base {
+                        entries.clone()
+                    } else {
+                        std::mem::take(&mut entries)
+                    };
+                    (None, 0, 0, changed)
                 };
             captured.push(CheckpointGeneration {
                 generation_id: generation.generation_id,
                 index_id: generation.index_id,
                 source_commit_id: generation.source_commit_id,
-                source_branch_id: generation.source_branch_id,
-                applicability_branch_id: generation.applicability.branch_id,
+                source_branch_id: generation.source_branch_id.clone(),
+                applicability_branch_id: generation.applicability.branch_id.clone(),
                 version_id: generation.applicability.version_id,
                 schema_version: generation.applicability.schema_version,
                 status: generation.status,
@@ -89,19 +146,23 @@ impl DerivedIndexCheckpointArtifacts {
                 shared_suffix_bytes: u64::try_from(suffix)
                     .map_err(|_| corrupt("index checkpoint suffix exceeds wire range"))?,
                 changed_bytes,
-                full_digest: digest(&full),
+                full_digest,
             });
-            previous.insert(generation.index_id, (generation.generation_id, entries));
+            if next_uses_base {
+                previous.insert(generation.index_id, (generation.generation_id, entries));
+            } else {
+                previous.remove(&generation.index_id);
+            }
         }
         Ok(Self {
-            format_version: FORMAT_VERSION,
+            format_version: Self::FORMAT_VERSION,
             generation_ids: captured.iter().map(|entry| entry.generation_id).collect(),
             generations: captured,
         })
     }
 
     pub(crate) fn readmit(&self) -> Result<Vec<DerivedIndexGeneration>, DurabilityError> {
-        if self.format_version != FORMAT_VERSION {
+        if self.format_version != Self::FORMAT_VERSION {
             return Err(corrupt("unsupported derived index checkpoint format"));
         }
         if self.generation_ids
@@ -113,7 +174,8 @@ impl DerivedIndexCheckpointArtifacts {
         {
             return Err(corrupt("derived index checkpoint manifest mismatch"));
         }
-        let mut previous = BTreeMap::<DerivedIndexId, (DerivedIndexGenerationId, Vec<u8>)>::new();
+        let mut previous =
+            BTreeMap::<DerivedIndexId, (DerivedIndexGenerationId, Cow<'_, [u8]>)>::new();
         let mut seen = BTreeSet::new();
         let mut generations = Vec::with_capacity(self.generations.len());
         for entry in &self.generations {
@@ -143,10 +205,10 @@ impl DerivedIndexCheckpointArtifacts {
                     full.extend_from_slice(&base[..prefix]);
                     full.extend_from_slice(&entry.changed_bytes);
                     full.extend_from_slice(&base[base.len() - suffix..]);
-                    full
+                    Cow::Owned(full)
                 }
                 None if entry.shared_prefix_bytes == 0 && entry.shared_suffix_bytes == 0 => {
-                    entry.changed_bytes.clone()
+                    Cow::Borrowed(entry.changed_bytes.as_slice())
                 }
                 None => return Err(corrupt("unbased derived index checkpoint delta")),
             };
@@ -165,9 +227,11 @@ impl DerivedIndexCheckpointArtifacts {
                 status: entry.status,
                 entries,
             };
-            let full = rmp_serde::to_vec_named(&generation)
-                .map_err(|error| corrupt(format!("index readmission encoding failed: {error}")))?;
-            if digest(&full) != entry.full_digest {
+            if digest(
+                &CheckpointDigestHeader::from_generation(&generation),
+                &entries_bytes,
+            )? != entry.full_digest
+            {
                 return Err(corrupt("derived index checkpoint digest mismatch"));
             }
             previous.insert(entry.index_id, (entry.generation_id, entries_bytes));
@@ -177,11 +241,23 @@ impl DerivedIndexCheckpointArtifacts {
     }
 }
 
-fn digest(bytes: &[u8]) -> [u8; 32] {
+fn digest(
+    header: &CheckpointDigestHeader<'_>,
+    entries: &[u8],
+) -> Result<[u8; 32], DurabilityError> {
+    let header = rmp_serde::to_vec_named(header)
+        .map_err(|error| corrupt(format!("index checkpoint header encoding failed: {error}")))?;
     let mut hasher = Sha256::new();
     hasher.update(DIGEST_DOMAIN);
-    hasher.update(bytes);
-    hasher.finalize().into()
+    let header_len = u64::try_from(header.len())
+        .map_err(|_| corrupt("index checkpoint header exceeds digest range"))?;
+    let entries_len = u64::try_from(entries.len())
+        .map_err(|_| corrupt("index checkpoint entries exceed digest range"))?;
+    hasher.update(header_len.to_le_bytes());
+    hasher.update(header);
+    hasher.update(entries_len.to_le_bytes());
+    hasher.update(entries);
+    Ok(hasher.finalize().into())
 }
 
 fn corrupt(detail: impl Into<String>) -> DurabilityError {
@@ -225,10 +301,15 @@ mod tests {
         }
     }
 
+    fn capture(generations: Vec<DerivedIndexGeneration>) -> DerivedIndexCheckpointArtifacts {
+        DerivedIndexCheckpointArtifacts::capture(generations.into_iter().map(Arc::new).collect())
+            .unwrap()
+    }
+
     #[test]
     fn delta_checkpoint_roundtrips_exact_payload_and_shares_unchanged_bytes() {
         let generations = vec![generation(1, 90), generation(2, 90)];
-        let checkpoint = DerivedIndexCheckpointArtifacts::capture(generations.clone()).unwrap();
+        let checkpoint = capture(generations.clone());
         let wire = rmp_serde::to_vec_named(&checkpoint).unwrap();
         let decoded: DerivedIndexCheckpointArtifacts = rmp_serde::from_slice(&wire).unwrap();
         assert_eq!(decoded.readmit().unwrap(), generations);
@@ -239,14 +320,16 @@ mod tests {
     #[test]
     fn delta_checkpoint_denies_corrupt_missing_and_incompatible_payloads() {
         let generations = vec![generation(1, 10), generation(2, 90)];
-        let mut checkpoint = DerivedIndexCheckpointArtifacts::capture(generations).unwrap();
+        let mut checkpoint = capture(generations);
         checkpoint.generations[1].changed_bytes[0] ^= 1;
         assert!(checkpoint.readmit().is_err());
-        let mut checkpoint =
-            DerivedIndexCheckpointArtifacts::capture(vec![generation(1, 10)]).unwrap();
+        let mut checkpoint = capture(vec![generation(1, 10)]);
+        checkpoint.generations[0].status = DerivedIndexPublicationStatus::BuildFailed;
+        assert!(checkpoint.readmit().is_err());
+        let mut checkpoint = capture(vec![generation(1, 10)]);
         checkpoint.generations.clear();
         assert!(checkpoint.readmit().is_err());
-        checkpoint.format_version = 2;
+        checkpoint.format_version = 1;
         assert!(checkpoint.readmit().is_err());
     }
 }

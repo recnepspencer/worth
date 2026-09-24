@@ -124,10 +124,10 @@ impl PersistedDurableCheckpointFile {
 
     pub(super) fn readmit(self) -> Result<DurableCheckpointFile, DurabilityError> {
         let checkpoint = self.checkpoint;
-        if checkpoint.derived_index_checkpoint_format > 1
-            || (checkpoint.derived_index_checkpoint_format == 1)
-                != checkpoint.derived_index_checkpoint.is_some()
-        {
+        if !crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts::supports_outer_format(
+            checkpoint.derived_index_checkpoint_format,
+            checkpoint.derived_index_checkpoint.is_some(),
+        ) {
             return Err(DurabilityError::new(
                 RecoveryFailureClass::CorruptCheckpoint,
                 "derived index checkpoint format or payload is missing",

@@ -122,7 +122,8 @@ impl crate::runtime::RelationalRuntime {
             .with_quiescent_index_reclamation(|| {
                 // The owner inventory, rather than Arc payload counts, decides
                 // which historical versions still have live obligations.
-                self.history.reclaim_retired_branch_roots(usize::MAX);
+                self.history
+                    .reclaim_retired_branch_roots(self.config.storage.retention.reclaim_batch_size);
                 let retained = self.history.retained_index_roots();
                 self.indexes.reclaim_except_versions(&retained)
             })

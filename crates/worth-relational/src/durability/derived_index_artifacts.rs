@@ -10,13 +10,7 @@ pub(crate) fn checkpoint_derived_index_artifacts(
     runtime: &RelationalRuntime,
     retained: &crate::history::retention::RetainedIndexRoots,
 ) -> Result<DerivedIndexCheckpointArtifacts, crate::durability::data::DurabilityError> {
-    let retained = runtime
-        .indexes
-        .retained_generations(retained)
-        .into_iter()
-        .map(|generation| generation.as_ref().clone())
-        .collect();
-    DerivedIndexCheckpointArtifacts::capture(retained)
+    DerivedIndexCheckpointArtifacts::capture(runtime.indexes.retained_generations(retained))
 }
 
 pub(crate) fn restore_checkpoint_derived_index_artifacts(
@@ -28,6 +22,13 @@ pub(crate) fn restore_checkpoint_derived_index_artifacts(
     if let Some(checkpoint) = checkpoint {
         if !legacy.is_empty() {
             return Err(corrupt("checkpoint mixes legacy and delta index artifacts"));
+        }
+        let source_commits = envelopes
+            .iter()
+            .map(|envelope| (envelope.commit.commit_id, envelope))
+            .collect::<std::collections::BTreeMap<_, _>>();
+        if source_commits.len() != envelopes.len() {
+            return Err(corrupt("checkpoint index source commits are duplicated"));
         }
         for generation in checkpoint.readmit()? {
             let definition = indexes
@@ -50,9 +51,8 @@ pub(crate) fn restore_checkpoint_derived_index_artifacts(
                     "checkpoint index generation kind mismatches definition",
                 ));
             }
-            let source = envelopes
-                .iter()
-                .find(|envelope| envelope.commit.commit_id == generation.source_commit_id)
+            let source = source_commits
+                .get(&generation.source_commit_id)
                 .ok_or_else(|| corrupt("checkpoint index source commit is unavailable"))?;
             if source.commit.version_id != generation.applicability.version_id
                 || source.envelope().schema_version != generation.applicability.schema_version

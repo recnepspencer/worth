@@ -120,11 +120,13 @@ impl HistoricalVisibilityBasis {
             source_version = version_id;
         }
         let source_root_id = root.id();
-        let root = crate::history::retention::RelationalRetainedHistoricalRoot::acquire(
-            &runtime.history.retention_binding(),
-            root,
-        )
-        .map_err(historical_retention_denial)?;
+        let binding = cell
+            .head_retention()
+            .binding()
+            .map_err(historical_retention_denial)?;
+        let root =
+            crate::history::retention::RelationalRetainedHistoricalRoot::acquire(&binding, root)
+                .map_err(historical_retention_denial)?;
         Ok(Self {
             branch_id,
             version_id,

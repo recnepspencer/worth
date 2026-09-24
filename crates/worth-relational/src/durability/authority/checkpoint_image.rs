@@ -80,7 +80,8 @@ impl CapturedCheckpointBasis {
             index_definitions,
             derived_index_artifacts: crate::indexes::data::DerivedIndexArtifacts::default(),
             derived_index_checkpoint: Some(derived_index_checkpoint),
-            derived_index_checkpoint_format: 1,
+            derived_index_checkpoint_format:
+                crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts::FORMAT_VERSION,
             symbol_table,
             runtime_name,
         })
