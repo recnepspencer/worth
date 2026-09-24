@@ -68,6 +68,27 @@ impl UiPresentationTrackState {
         self.presented = true;
     }
 
+    /// Whether this track is exactly as it was installed: no tick has sampled
+    /// it and no frame has accepted its initial sample. A retarget's clock is
+    /// set at installation, so only presentation tells; a snapped track is
+    /// already terminal and never starts.
+    pub(super) const fn is_unstarted(&self) -> bool {
+        self.active && !self.presented
+    }
+
+    /// Record that the host already shows this track's initial sample, which
+    /// `on_screen` put there. A retarget resolved from a presented sample
+    /// starts where that sample left the target, so its departure is what the
+    /// screen holds: the displayed pose settles to it, and the next sample
+    /// damages the place it leaves rather than the published geometry.
+    /// A departure elsewhere is not on screen and stays unpresented.
+    pub(super) fn depart_on_screen(&mut self, on_screen: &Self) {
+        if on_screen.presented && self.current_geometry == on_screen.current_geometry {
+            self.presented_geometry = on_screen.presented_geometry;
+            self.presented = true;
+        }
+    }
+
     pub(super) fn new(
         track: crate::runtime::motion::UiCommittedMotionTrack,
         start_tick: Option<u64>,

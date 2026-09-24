@@ -33,6 +33,7 @@ mod retained_regions;
 mod sample;
 #[cfg(feature = "certification-support")]
 mod sample_certification;
+mod settled_external_obligation;
 mod surface;
 pub(crate) mod surface_basis;
 mod surface_failure;

@@ -43,7 +43,7 @@ impl PlatformPulseApplicationRuntime {
         self.fail(PlatformPulseTerminalError::IntentClock(denial), observation);
     }
 
-    fn fail_intent_settlement(&mut self, detail: impl Into<String>) {
+    pub(super) fn fail_intent_settlement(&mut self, detail: impl Into<String>) {
         let observation = self.publisher.intent_preparation_failure();
         self.fail(
             PlatformPulseTerminalError::IntentExecution(detail.into()),

@@ -21,15 +21,7 @@ impl UiNativeShutdownPort for UiNativeHostShutdownPort<'_> {
 
     fn settle_external_effects(&mut self) -> bool {
         let captures_settled = crate::native::capture::close(self.state);
-        let presentations_settled = self.state.pending_presentations.is_empty();
-        let atlas_settled = self
-            .state
-            .text_atlas_gpu
-            .as_ref()
-            .is_none_or(|gpu| gpu.pending_count() == 0)
-            && self.state.text_atlas_in_flight.is_none()
-            && self.state.text_atlas_recovery.is_none();
-        captures_settled && presentations_settled && atlas_settled
+        captures_settled && self.state.external_effects_settled_for_close()
     }
 
     fn release_derived_state(&mut self) {

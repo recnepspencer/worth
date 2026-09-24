@@ -7,6 +7,11 @@ pub(super) enum UiPresentationMotionInstallation {
         opacity_units: u16,
         start_velocity: UiPresentationSampleVelocity,
         duration_ticks: u32,
+        /// The tick the track's curve starts at. A retarget departs from a
+        /// sample already on screen, so its clock runs from that sample's tick
+        /// and its first tick moves on from it. A fresh track starts at the
+        /// first tick that samples it, whose frame shows its starting point.
+        start_tick: Option<u64>,
     },
     SnapToTarget,
 }
@@ -16,6 +21,7 @@ pub(super) enum UiPresentationMotionInstallation {
 /// moving, so the outgoing curve travels with it.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(super) struct UiPresentationInterruptedSample {
+    pub(super) tick: u64,
     pub(super) geometry: Option<[f32; 4]>,
     pub(super) opacity_units: u16,
     pub(super) outgoing: Option<UiPresentationOutgoingCurve>,
@@ -49,6 +55,7 @@ pub(super) fn resolve(
                 opacity_units: predecessor_opacity_units(track),
                 start_velocity: UiPresentationSampleVelocity::RESTING,
                 duration_ticks: 1,
+                start_tick: None,
             };
         }
     }
@@ -59,6 +66,7 @@ pub(super) fn resolve(
             opacity_units: predecessor_opacity_units(track),
             start_velocity: UiPresentationSampleVelocity::RESTING,
             duration_ticks,
+            start_tick: None,
         },
         Some(crate::runtime::motion::UiMotionRetargetDisposition::Install {
             predecessor:
@@ -70,6 +78,7 @@ pub(super) fn resolve(
                     opacity_units: predecessor_opacity_units(track),
                     start_velocity: UiPresentationSampleVelocity::RESTING,
                     duration_ticks,
+                    start_tick: None,
                 };
             };
             UiPresentationMotionInstallation::Install {
@@ -80,6 +89,7 @@ pub(super) fn resolve(
                     UiPresentationSampleVelocity::of_outgoing_curve,
                 ),
                 duration_ticks,
+                start_tick: Some(interrupted.tick),
             }
         }
     }

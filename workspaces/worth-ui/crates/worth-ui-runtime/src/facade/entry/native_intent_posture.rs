@@ -139,8 +139,16 @@ impl WorthUiActiveApplicationSession {
         policy: crate::runtime::rebind::UiRebindExecutionPolicy,
         execution: crate::runtime::rebind::UiRebindExecutionRequest,
     ) -> WorthUiNativeIntentPosturePublicationOutcome<'_> {
+        let Some(bound) = self
+            .intent_postures
+            .bind_publication_order(posture.observation, posture.commit)
+        else {
+            return stopped(
+                crate::runtime::intent_execution::UiIntentConsequenceStopReason::IntentPostureIdentityExhausted,
+            );
+        };
         let batch = crate::runtime::observation::UiIntentConsequenceObservationBatch::new(
-            Some((posture.observation, posture.commit)),
+            Some(bound),
             None,
             None,
         );

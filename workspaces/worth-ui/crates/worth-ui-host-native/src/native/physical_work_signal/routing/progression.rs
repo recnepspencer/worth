@@ -78,6 +78,33 @@ impl UiNativePhysicalSignalOwner {
     ) -> Result<super::UiNativePhysicalSignalRequestToken, ()> {
         let before = self.observation();
         let token = self.transition_presentation_to_recovery(identity)?;
+        self.record_presentation_cancellation(token, before);
+        Ok(token)
+    }
+
+    /// Cancels presentation work whose request already settled. A request
+    /// spent by settlement leaves nothing to cancel, yet the owner still
+    /// owes the recovery a cancellation after effects promises, so recovery
+    /// is admitted afresh for the same work.
+    pub(crate) fn cancel_settled_presentation_to_recovery(
+        &mut self,
+        identity: super::super::UiNativePhysicalPresentationIdentity,
+    ) -> Result<super::UiNativePhysicalSignalRequestToken, ()> {
+        let work = super::super::UiNativePhysicalSignalWork::Presentation(identity);
+        if self.route.token_for(self.runtime_identity, work).is_ok() {
+            return Err(());
+        }
+        let before = self.observation();
+        let token = self.admit_recovery_work(work)?;
+        self.record_presentation_cancellation(token, before);
+        Ok(token)
+    }
+
+    fn record_presentation_cancellation(
+        &mut self,
+        token: super::UiNativePhysicalSignalRequestToken,
+        before: super::super::UiNativePhysicalSignalObservation,
+    ) {
         self.counters.cancellations = self.counters.cancellations.saturating_add(1);
         let after = self.observation();
         self.record_transition_observation(
@@ -87,7 +114,6 @@ impl UiNativePhysicalSignalOwner {
                 after,
             ),
         );
-        Ok(token)
     }
 
     pub(in crate::native::physical_work_signal) fn transition_work_to_recovery(

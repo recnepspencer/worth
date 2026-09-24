@@ -127,14 +127,21 @@ impl super::UiPortalRuntimeState {
                 if disposition == super::super::UiPortalServiceDisposition::Idempotent {
                     return Ok(());
                 }
+                // A `Closing` row reopens like a closed one. Its close already
+                // closed every descendant, so nothing in the stack depends on
+                // its place or parent. Only its retained exit is left, and the
+                // exit declares retarget-from-current-sample: the successor
+                // Motion displaces that retention and commit replaces the
+                // row's terminal receipt. For the same reason a `Closing` row
+                // above a live one does not hold that row's place, so a live
+                // row is replaced when it is the topmost live row.
                 if let Some(record) = existing {
                     let same_parent = record
                         .placement
                         .and_then(|current| current.prepared().layer().parent())
                         == placement.and_then(|next| next.layer().parent());
-                    if self.stack_order.topmost() != Some(request.portal())
-                        || record.posture == super::super::UiPortalLifecyclePosture::Closing
-                        || !same_parent
+                    if record.posture != super::super::UiPortalLifecyclePosture::Closing
+                        && (self.topmost_live() != Some(request.portal()) || !same_parent)
                     {
                         return Err(
                             super::super::UiPortalServiceTransitionDenial::ReplacementNotTopmost,
@@ -166,6 +173,18 @@ impl super::UiPortalRuntimeState {
             }
         }
         Ok(())
+    }
+
+    fn topmost_live(&self) -> Option<super::super::UiPortalIdentity> {
+        self.stack_order
+            .iter()
+            .rev()
+            .map(|(_, portal)| *portal)
+            .find(|portal| {
+                self.records.get(portal).is_some_and(|record| {
+                    record.posture != super::super::UiPortalLifecyclePosture::Closing
+                })
+            })
     }
 
     fn prior_request(

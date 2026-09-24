@@ -192,7 +192,8 @@ fn geometry_free_motion_evidence_requires_acceptance_and_survives_retarget_and_r
         Some(middle)
     );
     present(&mut session, &host, surface, 57, 4);
-    present(&mut session, &host, surface, 127, 5);
+    // The retarget's curve runs from the tick-56 sample it departs from.
+    present(&mut session, &host, surface, 126, 5);
     let current = session
         .mounted
         .current_presentation_for_surface(surface)
@@ -206,7 +207,7 @@ fn geometry_free_motion_evidence_requires_acceptance_and_survives_retarget_and_r
             .opacity_units(),
         58_367
     );
-    present(&mut session, &host, surface, 197, 6);
+    present(&mut session, &host, surface, 196, 6);
     let current = session
         .mounted
         .current_presentation_for_surface(surface)

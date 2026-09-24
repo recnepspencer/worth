@@ -2,6 +2,8 @@ use super::*;
 
 #[path = "tests/damage.rs"]
 mod damage;
+#[path = "tests/in_flight_commit.rs"]
+mod in_flight_commit;
 #[path = "tests/opacity.rs"]
 mod opacity;
 #[path = "tests/presented_index.rs"]

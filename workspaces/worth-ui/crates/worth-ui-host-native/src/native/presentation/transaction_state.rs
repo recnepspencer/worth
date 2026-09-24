@@ -260,6 +260,15 @@ impl UiNativePendingPresentation {
         }
     }
 
+    /// Stands a settled presentation's finished external work back up for a
+    /// recovery admitted after its settlement.
+    pub(crate) fn await_settled_recovery(&mut self) {
+        debug_assert!(self.external.is_none());
+        self.external = Some(Box::new(
+            super::settled_external_obligation::UiNativeSettledExternalObligation,
+        ));
+    }
+
     pub(crate) fn release(mut self, resources: &mut UiNativeResourceRegistry) {
         self.release_external(resources);
     }

@@ -101,6 +101,10 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
                 ))
                 .map_err(UiNativeEventLoopRunDenial::ClientCallback)
         });
+        let directive = directive.and_then(|directive| {
+            let shared = std::rc::Rc::clone(&self.shared);
+            super::input_recovery::settle(&shared, self.client_or_denied()?, directive)
+        });
         let directive = match directive {
             Ok(directive) => directive,
             Err(denial) => {

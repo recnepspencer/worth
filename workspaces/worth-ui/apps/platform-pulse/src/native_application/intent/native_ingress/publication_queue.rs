@@ -5,7 +5,7 @@ use super::{
 
 pub(in crate::native_application) enum PlatformPulsePendingNativePublication {
     Intent(PlatformPulsePreparedIntentPosture),
-    Dismiss(worth_ui::facade::interaction::UiDismissInteraction),
+    Dismiss(worth_ui::facade::app::WorthUiAdmittedPortalDismissal),
 }
 
 impl PlatformPulseApplicationRuntime {
@@ -17,6 +17,7 @@ impl PlatformPulseApplicationRuntime {
             && !self.visual_identity.retains_rebind_receipt()
             && self.pending_managed_rebind.is_none()
             && self.pending_frame_presentation.is_none()
+            && shell.native_frame_boundary_available()
         {
             let Some(prepared) = self.pending_native_publications.pop_front() else {
                 return;

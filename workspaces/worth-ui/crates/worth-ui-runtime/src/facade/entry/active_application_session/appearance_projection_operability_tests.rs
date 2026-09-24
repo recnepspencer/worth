@@ -16,6 +16,8 @@ mod posture_content_tests;
 
 #[path = "intent_operability_observation_tests.rs"]
 mod observation_tests;
+#[path = "intent_routing_motion_tests.rs"]
+mod routing_motion_tests;
 
 #[path = "pointer_confirmation_tests.rs"]
 mod pointer_confirmation_tests;

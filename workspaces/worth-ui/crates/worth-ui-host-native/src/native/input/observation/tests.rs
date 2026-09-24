@@ -9,8 +9,10 @@ use worth_ui_host_contract::{
     UiSurfaceBindingGeneration,
 };
 
+mod delayed_drain;
 mod pointer_capture;
 mod recipient_absence;
+mod recovery;
 mod scroll;
 
 const HOST_SESSION: u64 = 73;

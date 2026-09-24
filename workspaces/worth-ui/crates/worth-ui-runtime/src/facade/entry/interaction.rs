@@ -21,20 +21,24 @@ impl WorthUiActiveApplicationSession {
                 return UiNativeObservationIngressSettlement::DrainDenied(denial);
             }
         };
-        let outcomes = drain
-            .into_batches()
-            .into_vec()
-            .into_iter()
-            .map(|batch| self.admit_host_interaction_batch(batch))
-            .collect::<Vec<_>>()
-            .into_boxed_slice();
+        let mut outcomes = Vec::new();
+        let mut dismissals = Vec::new();
+        for batch in drain.into_batches() {
+            let (outcome, prepared) = self.admit_host_interaction_batch_with_dismissals(batch);
+            outcomes.push(outcome);
+            dismissals.extend(prepared);
+        }
         // Reports retain their event-time epoch. Admit them while that epoch
         // is still current; a pending thumb press then waits for this physical
         // completion rather than being silently invalidated by it.
         if self.motion.is_installed() {
             self.complete_motion_sample_presentation();
         }
-        UiNativeObservationIngressSettlement::from_outcomes(outcomes, reachability)
+        UiNativeObservationIngressSettlement::with_dismissals(
+            outcomes.into_boxed_slice(),
+            dismissals.into_boxed_slice(),
+            reachability,
+        )
     }
 
     /// Validates raw host evidence and immediately moves admitted evidence into
@@ -43,6 +47,17 @@ impl WorthUiActiveApplicationSession {
         &mut self,
         batch: UiHostObservationBatch,
     ) -> UiHostInteractionIngressOutcome {
+        self.admit_host_interaction_batch_with_dismissals(batch).0
+    }
+
+    pub(super) fn admit_host_interaction_batch_with_dismissals(
+        &mut self,
+        batch: UiHostObservationBatch,
+    ) -> (
+        UiHostInteractionIngressOutcome,
+        Vec<super::WorthUiAdmittedPortalDismissal>,
+    ) {
+        let mut dismissals = Vec::new();
         let previous_input = self.interaction.active_input_binding();
         let core = batch.canonical_core();
         let binding = core.binding();
@@ -159,6 +174,16 @@ impl WorthUiActiveApplicationSession {
                 }
                 self.intent_evidence
                     .retain_transitions(receipt.transitions());
+                // Seal service meaning before a Tick or completion advances the
+                // accepted pixel epoch. Raw observations can then be retired.
+                for transition in receipt.transitions() {
+                    if let crate::runtime::interaction::UiInteractionTransition::DismissRequested(
+                        input,
+                    ) = transition
+                    {
+                        dismissals.push(self.prepare_portal_dismissal_interaction(*input));
+                    }
+                }
                 if let Some(tick) = observation_tick.filter(|_| {
                     self.motion.is_installed() && self.mounted.has_active_motion_samples()
                 }) {
@@ -199,7 +224,7 @@ impl WorthUiActiveApplicationSession {
             }
         };
         self.clear_displaced_input_recipient(previous_input);
-        outcome
+        (outcome, dismissals)
     }
 
     pub fn interaction_state(&self) -> UiInteractionStateSnapshot {

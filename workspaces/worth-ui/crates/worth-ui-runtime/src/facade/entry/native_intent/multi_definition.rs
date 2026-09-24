@@ -26,9 +26,8 @@ impl super::super::WorthUiNativeApplicationShell {
                 ),
             );
         }
-        let outcomes = progress.into_settlement().into_outcomes().into_vec();
+        let (outcomes, dismissals) = progress.into_settlement().into_routing_parts();
         let mut transitions = Vec::new();
-        let mut dismissals = Vec::new();
         let mut duplicate_batches = 0;
         let mut interaction_stops = Vec::new();
         for outcome in outcomes {
@@ -43,20 +42,17 @@ impl super::super::WorthUiNativeApplicationShell {
                         }
                     }
                     for transition in interaction_transitions {
-                        match transition {
-                            crate::facade::interaction::UiInteractionTransition::Semantic(
-                                interaction,
-                            ) => transitions.push(self.admit_triplet_semantic(
+                        if let crate::facade::interaction::UiInteractionTransition::Semantic(
+                            interaction,
+                        ) = transition
+                        {
+                            transitions.push(self.admit_triplet_semantic(
                                 first,
                                 second,
                                 third,
                                 interaction,
                                 deadline,
-                            )),
-                            crate::facade::interaction::UiInteractionTransition::DismissRequested(
-                                dismissal,
-                            ) => dismissals.push(dismissal),
-                            _ => {}
+                            ));
                         }
                     }
                 }
@@ -76,7 +72,7 @@ impl super::super::WorthUiNativeApplicationShell {
         }
         WorthUiNativeIntentIngress {
             transitions: transitions.into_boxed_slice(),
-            dismissals: dismissals.into_boxed_slice(),
+            dismissals,
             duplicate_batches,
             interaction_stops: interaction_stops.into_boxed_slice(),
         }
@@ -185,9 +181,8 @@ impl super::super::WorthUiNativeApplicationShell {
                 ),
             );
         }
-        let outcomes = progress.into_settlement().into_outcomes().into_vec();
+        let (outcomes, dismissals) = progress.into_settlement().into_routing_parts();
         let mut transitions = Vec::new();
-        let mut dismissals = Vec::new();
         let mut duplicate_batches = 0;
         let mut interaction_stops = Vec::new();
         for outcome in outcomes {
@@ -201,19 +196,16 @@ impl super::super::WorthUiNativeApplicationShell {
                         }
                     }
                     for transition in interaction_transitions {
-                        match transition {
-                            crate::facade::interaction::UiInteractionTransition::Semantic(
-                                interaction,
-                            ) => transitions.push(self.admit_pair_semantic(
+                        if let crate::facade::interaction::UiInteractionTransition::Semantic(
+                            interaction,
+                        ) = transition
+                        {
+                            transitions.push(self.admit_pair_semantic(
                                 first,
                                 second,
                                 interaction,
                                 deadline,
-                            )),
-                            crate::facade::interaction::UiInteractionTransition::DismissRequested(
-                                dismissal,
-                            ) => dismissals.push(dismissal),
-                            _ => {}
+                            ));
                         }
                     }
                 }
@@ -233,7 +225,7 @@ impl super::super::WorthUiNativeApplicationShell {
         }
         WorthUiNativeIntentIngress {
             transitions: transitions.into_boxed_slice(),
-            dismissals: dismissals.into_boxed_slice(),
+            dismissals,
             duplicate_batches,
             interaction_stops: interaction_stops.into_boxed_slice(),
         }

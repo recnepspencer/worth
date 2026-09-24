@@ -12,6 +12,19 @@ use crate::native::{
 };
 
 impl super::UiNativeLifecycleOrchestrator {
+    pub(crate) fn begin_input_retention_recovery(
+        &self,
+    ) -> Option<crate::UiNativeInputRecoveryGrant> {
+        self.protocol.begin_input_retention_recovery()
+    }
+
+    pub(crate) fn complete_input_retention_recovery(
+        &mut self,
+        acknowledgement: crate::UiNativeInputRecoveryAcknowledgement,
+    ) -> bool {
+        self.protocol
+            .complete_input_retention_recovery(acknowledgement)
+    }
     pub(crate) fn install_initial_profile(&mut self, scale_factor: f64, size: [u32; 2]) {
         self.protocol.install_initial_profile(scale_factor, size);
     }

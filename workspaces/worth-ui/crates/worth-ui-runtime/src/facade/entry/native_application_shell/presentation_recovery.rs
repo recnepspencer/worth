@@ -26,6 +26,15 @@ pub enum WorthUiNativePhysicalPresentationRecovery {
 }
 
 impl super::WorthUiNativeApplicationShell {
+    /// A physical motion sample can leave visible predecessor pixels while
+    /// invalidating the interaction basis. Reconstruct before more input.
+    pub fn native_presentation_reconstruction_pending(&self) -> bool {
+        self.session
+            .mounted
+            .observation_validation_basis()
+            .binding_requires_reconstruction(self.binding)
+    }
+
     pub(in crate::facade::entry) fn pending_native_surface_reconciliation(
         &self,
     ) -> Option<crate::mounting::UiMountedSurfaceReconciliationBinding> {
@@ -197,6 +206,17 @@ impl super::WorthUiNativeApplicationShell {
     ) -> Result<crate::mounting::UiMountedFrameOutcome, ()> {
         self.reconstruct_current_presentation_detailed(deadline_tick, now_tick)
             .map_err(|_| ())
+    }
+
+    /// Rebind and republish the current mounted frame after a native surface
+    /// basis changes without an application state change.
+    pub fn reconstruct_native_surface_successor(
+        &mut self,
+        deadline_tick: u64,
+        now_tick: u64,
+    ) -> Result<crate::mounting::UiMountedFrameOutcome, WorthUiNativePresentationRecoveryDenial>
+    {
+        self.reconstruct_current_presentation_detailed(deadline_tick, now_tick)
     }
 
     fn reconstruct_current_presentation_detailed(

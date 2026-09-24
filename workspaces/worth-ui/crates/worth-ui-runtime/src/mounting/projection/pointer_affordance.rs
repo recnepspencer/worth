@@ -87,22 +87,26 @@ impl UiMountedPointerAffordanceState {
         match (self.rows.get(&surface), desired) {
             (None, None) => true,
             (Some(retained), Some(desired)) => {
-                let family = match desired.family() {
-                    crate::declaration::UiPointerAffordance::Default => {
-                        UiPointerAffordanceFamily::Default
-                    }
-                    crate::declaration::UiPointerAffordance::Activation => {
-                        UiPointerAffordanceFamily::Activation
-                    }
-                };
+                let same_target = Some(retained.mechanic.target()) == desired.target();
                 retained.binding == binding
                     && !retained.reconstruction
                     && retained.mechanic.pointer() == desired.pointer()
-                    && Some(retained.mechanic.target()) == desired.target()
-                    && retained.mechanic.family() == family
+                    && same_target
+                    && desired.decided_family() == Some(retained.mechanic.family())
             }
             _ => false,
         }
+    }
+
+    /// The affordance this owner holds for `target` on `surface`, if its row
+    /// names that target.
+    pub(in crate::mounting) fn published_family(
+        &self,
+        surface: UiSemanticSurfaceIdentity,
+        target: UiMountedInstanceIdentity,
+    ) -> Option<UiPointerAffordanceFamily> {
+        let row = self.rows.get(&surface)?;
+        (row.mechanic.target() == target).then(|| row.mechanic.family())
     }
 
     pub(in crate::mounting) fn stage(

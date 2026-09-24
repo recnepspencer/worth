@@ -7,7 +7,9 @@ use worth_ui_host_contract::{
 
 mod admission;
 mod recipient;
+mod recovery;
 mod retention;
+pub use recovery::{UiNativeInputRecoveryAcknowledgement, UiNativeInputRecoveryGrant};
 
 const INPUT_OBSERVATION_HISTORY_CAPACITY: usize = 64;
 
@@ -45,6 +47,7 @@ pub(crate) struct UiNativeInputObservationState {
     pending_presentations: BTreeMap<u64, UiNativePendingPresentationContext>,
     pub(super) profile: Option<UiNativeEventProfile>,
     pub(super) profile_requires_completion: bool,
+    pub(super) profile_observation_pending: bool,
     pub(super) profile_transition_tick: Option<u64>,
     pub(super) ime_composition_active: bool,
     pub(super) ime_enabled: bool,
@@ -70,6 +73,7 @@ impl UiNativeInputObservationState {
             pending_presentations: BTreeMap::new(),
             profile: None,
             profile_requires_completion: false,
+            profile_observation_pending: false,
             profile_transition_tick: None,
             ime_composition_active: false,
             ime_enabled: false,
@@ -113,7 +117,10 @@ impl UiNativeInputObservationState {
         event_tick: u64,
     ) {
         self.event_tick = event_tick;
-        if self.terminal_stop.is_some() {
+        if self
+            .terminal_stop
+            .is_some_and(|stop| !stop.permits_retention_recovery())
+        {
             return;
         }
         let profile = match event_profile(scale_factor, physical_size) {
@@ -130,6 +137,7 @@ impl UiNativeInputObservationState {
         self.profile = Some(profile);
         if changed {
             self.profile_requires_completion = true;
+            self.profile_observation_pending = false;
             self.profile_transition_tick = Some(event_tick);
         }
     }
@@ -154,7 +162,9 @@ impl UiNativeInputObservationState {
         !matches!(
             self.emit_profile_transition(),
             UiNativeInputObservationDisposition::Stopped
-        )
+        ) || self
+            .terminal_stop
+            .is_some_and(UiNativeInputObservationStop::permits_retention_recovery)
     }
 
     pub(crate) fn register_session(
@@ -280,6 +290,7 @@ impl UiNativeInputObservationState {
         self.profile = None;
         self.active_host_session = None;
         self.profile_requires_completion = false;
+        self.profile_observation_pending = false;
         self.profile_transition_tick = None;
         self.ime_composition_active = false;
         self.ime_enabled = false;
@@ -315,7 +326,10 @@ impl UiNativeInputObservationState {
     }
 
     pub(super) fn record_terminal_stop(&mut self, stop: UiNativeInputObservationStop) {
-        if self.terminal_stop.is_none() {
+        if self
+            .terminal_stop
+            .is_none_or(UiNativeInputObservationStop::permits_retention_recovery)
+        {
             self.terminal_stop = Some(stop);
         }
         self.record_stop(stop);
@@ -358,6 +372,7 @@ impl UiNativeInputObservationState {
         self.pending_presentations.clear();
         self.profile = None;
         self.profile_requires_completion = false;
+        self.profile_observation_pending = false;
         self.profile_transition_tick = None;
         self.ime_composition_active = false;
         self.ime_enabled = false;

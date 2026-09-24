@@ -1,5 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 
+mod in_flight;
 mod presented_samples;
 mod scroll_group;
 
@@ -23,10 +24,17 @@ pub(crate) struct UiMountedMotionSampler {
     reduced_motion: super::UiPresentationReducedMotionPosture,
     denial_count: u64,
     last_denial: Option<UiPresentationMotionSamplingDenial>,
-    /// Targets retired since the last tick was prepared. A tick in flight was
-    /// sampled from a clone taken before the retirement, so the commit that
-    /// lands it drops these again rather than reinstating them.
-    retired_since_prepare: BTreeSet<crate::runtime::motion::UiMotionTargetIdentity>,
+    /// Targets the owner installed or retired since the last tick was
+    /// prepared. That tick was sampled from a clone taken before these
+    /// changes, so the commit that lands it keeps their live state.
+    changed_since_prepare: BTreeSet<crate::runtime::motion::UiMotionTargetIdentity>,
+    /// Publications that rebound a surface's tracks since the last tick was
+    /// prepared. A rebind relabels the presentation a track is read against
+    /// and leaves its motion alone, so the landing tick takes it too.
+    rebound_since_prepare: Vec<(
+        worth_ui_host_contract::UiSemanticSurfaceIdentity,
+        worth_ui_host_contract::UiHostObservationPresentationBasis,
+    )>,
 }
 
 #[must_use = "prepared motion samples must be committed after presentation or discarded"]
@@ -62,7 +70,8 @@ impl Default for UiMountedMotionSampler {
             reduced_motion: super::UiPresentationReducedMotionPosture::NoPreference,
             denial_count: 0,
             last_denial: None,
-            retired_since_prepare: BTreeSet::new(),
+            changed_since_prepare: BTreeSet::new(),
+            rebound_since_prepare: Vec::new(),
         }
     }
 }
@@ -96,6 +105,7 @@ impl UiMountedMotionSampler {
         {
             state.rebind_published_presentation(presentation);
         }
+        self.rebound_since_prepare.push((surface, presentation));
     }
 
     pub(crate) fn install(
@@ -105,13 +115,14 @@ impl UiMountedMotionSampler {
     {
         let track = receipt.track();
         let target = track.target();
-        self.retired_since_prepare.remove(&target);
+        self.note_owner_change(target);
         if !self.tracks.contains_key(&target) && self.tracks.len() == MAX_PRESENTATION_TRACKS {
             let settled = self
                 .tracks
                 .iter()
                 .find_map(|(target, state)| (!state.active).then_some(*target));
             if let Some(settled) = settled {
+                self.note_owner_change(settled);
                 self.tracks.remove(&settled);
             } else {
                 return self.deny(UiPresentationMotionSamplingDenial::TrackCapacityExceeded);
@@ -122,6 +133,7 @@ impl UiMountedMotionSampler {
             state
                 .active
                 .then(|| super::interruption::UiPresentationInterruptedSample {
+                    tick: interruption_tick,
                     geometry: state.current_geometry,
                     opacity_units: state.current_opacity_units,
                     outgoing: state.outgoing_curve(interruption_tick),
@@ -133,10 +145,11 @@ impl UiMountedMotionSampler {
                 opacity_units,
                 start_velocity,
                 duration_ticks,
+                start_tick,
             } => {
                 let state = match super::track_sampling::UiPresentationTrackState::new(
                     track,
-                    None,
+                    start_tick,
                     geometry,
                     opacity_units,
                     start_velocity,
@@ -180,60 +193,10 @@ impl UiMountedMotionSampler {
         }
     }
 
-    pub(crate) fn prepare_tick(
-        &mut self,
-        tick: u64,
-        presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
-    ) -> Result<UiPreparedMotionSampling, UiPresentationMotionSamplingDenial> {
-        if self.last_tick.is_some_and(|previous| tick <= previous) {
-            return self.deny(UiPresentationMotionSamplingDenial::NonMonotonicTick);
-        }
-        let mut successor = self.clone();
-        successor.retired_since_prepare.clear();
-        match successor.sample_tick(tick, presentation) {
-            Ok(receipt) => Ok(UiPreparedMotionSampling { successor, receipt }),
-            Err(denial) => self.deny(denial),
-        }
-    }
-
     pub(crate) fn reject_presentation_truth_unavailable(
         &mut self,
     ) -> Result<UiPreparedMotionSampling, UiPresentationMotionSamplingDenial> {
         self.deny(UiPresentationMotionSamplingDenial::PresentationTruthUnavailable)
-    }
-
-    pub(crate) fn commit_prepared(
-        &mut self,
-        prepared: UiPreparedMotionSampling,
-    ) -> super::UiPresentationMotionSamplingReceipt {
-        let UiPreparedMotionSampling {
-            mut successor,
-            mut receipt,
-        } = prepared;
-        // A track retired while this tick was in flight stays retired: the
-        // successor was cloned before the retirement and would otherwise bring
-        // the track back, active, against the pointer that displaced it.
-        let retired = std::mem::take(&mut self.retired_since_prepare);
-        let dropped = successor.drop_retired_tracks(&retired);
-        receipt.drop_tracks(&dropped);
-        *self = successor;
-        receipt
-    }
-
-    fn drop_retired_tracks(
-        &mut self,
-        retired: &BTreeSet<crate::runtime::motion::UiMotionTargetIdentity>,
-    ) -> Vec<crate::runtime::motion::UiMotionTrackIdentity> {
-        let mut dropped = Vec::new();
-        for target in retired {
-            if let Some(state) = self.tracks.remove(target) {
-                dropped.push(state.track.identity());
-                if let Some(queued) = state.queued {
-                    dropped.push(queued.identity());
-                }
-            }
-        }
-        dropped
     }
 
     fn sample_tick(
@@ -303,21 +266,14 @@ impl UiMountedMotionSampler {
         &mut self,
         track: crate::runtime::motion::UiMotionTrackIdentity,
     ) -> bool {
-        let target = self.tracks.iter().find_map(|(target, state)| {
-            (!state.active && state.queued.is_none() && state.track.identity() == track)
-                .then_some(*target)
-        });
-        target.is_some_and(|target| self.tracks.remove(&target).is_some())
+        self.retire_track_where(track, |state| !state.active && state.queued.is_none())
     }
 
     pub(crate) fn retire_rebound_track(
         &mut self,
         track: crate::runtime::motion::UiMotionTrackIdentity,
     ) -> bool {
-        let target = self.tracks.iter().find_map(|(target, state)| {
-            (state.queued.is_none() && state.track.identity() == track).then_some(*target)
-        });
-        target.is_some_and(|target| self.tracks.remove(&target).is_some())
+        self.retire_track_where(track, |state| state.queued.is_none())
     }
 
     pub(crate) fn contains_track(

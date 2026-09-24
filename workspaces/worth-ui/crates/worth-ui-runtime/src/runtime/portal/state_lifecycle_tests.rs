@@ -201,6 +201,47 @@ fn parent_close_denies_before_effects_when_a_descendant_retains_exit() {
 }
 
 #[test]
+fn reopening_during_retained_exit_supersedes_the_exit_terminal() {
+    let mut state = state();
+    let portal = portal(7_030, 8_030);
+    let surface = open_live(&mut state, portal, 9_030);
+    let close = state
+        .prepare(UiPortalServiceRequest::close(
+            portal,
+            idempotency(9_031),
+            super::UiPortalDismissalCause::OutsidePress,
+            surface,
+        ))
+        .unwrap();
+    let (_, retention) = state
+        .commit_published_with_exit_retention(close, true)
+        .unwrap();
+    let retention = retention.expect("an animated close retains its exit");
+    assert_eq!(
+        state.posture(portal),
+        super::UiPortalLifecyclePosture::Closing
+    );
+
+    let reopen = state
+        .prepare(moved_open(portal, 9_032, surface, 4))
+        .expect("a Portal whose exit is still retained reopens like a closed one");
+    let receipt = state.commit_published(reopen).unwrap();
+
+    assert_eq!(receipt.disposition(), UiPortalServiceDisposition::Opened);
+    assert_eq!(
+        state.posture(portal),
+        super::UiPortalLifecyclePosture::Visible
+    );
+    assert_eq!(state.stack_snapshot().rows()[0].portal(), portal);
+    assert!(
+        state
+            .prepare_exit_terminal(retention, idempotency(9_033))
+            .is_err(),
+        "the superseded exit's terminal must not close the reopened Portal"
+    );
+}
+
+#[test]
 fn reconstructed_order_index_produces_the_same_sealed_snapshot() {
     let mut state = state();
     let first = portal(710, 810);

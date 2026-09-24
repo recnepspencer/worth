@@ -103,9 +103,17 @@ impl UiMountedPresentationState {
                     target.opacity,
                 )
             } else {
-                let translation = groups
-                    .iter()
-                    .fold(command.base_translation, |sum, (_, delta)| add(sum, *delta));
+                // An accepted base already shows every group where the host put
+                // it, so it moves from there; a published command moves from
+                // its groups' published offsets, as its clips do.
+                let translation = match command.base_translation {
+                    Some(base) => groups.iter().try_fold(base, |sum, (group, _)| {
+                        Ok(add(sum, delta_from(group, group.displayed, &active)?))
+                    })?,
+                    None => groups
+                        .iter()
+                        .fold([0.0; 2], |sum, (_, delta)| add(sum, *delta)),
+                };
                 let source = bounds([0.0, 0.0, 1.0, 1.0], UiMountedCoordinateSpace::Viewport)?;
                 (
                     UiMountedPresentationTransform::from_runtime_sampling(
@@ -129,31 +137,36 @@ impl UiMountedPresentationState {
     }
 }
 
+impl UiMountedScrollMotionGroup {
+    /// The offset the host shows this group at: its last accepted sample's,
+    /// or, before one is accepted, where it stood when the group was bound.
+    pub(super) fn displayed_offset(&self) -> [f64; 2] {
+        self.accepted
+            .get()
+            .and_then(|sample| self.sample_offset(sample))
+            .unwrap_or(self.displayed)
+    }
+
+    fn sample_offset(&self, sample: UiPresentationMotionSampleReceipt) -> Option<[f64; 2]> {
+        let sampled = sample.geometry()?.components();
+        Some([
+            f64::from(self.input.content.x() - sampled[0]),
+            f64::from(self.input.content.y() - sampled[1]),
+        ])
+    }
+}
+
 fn sampled_offset(
     group: &UiMountedScrollMotionGroup,
     active: &ActiveSamples,
 ) -> Result<[f64; 2], Denial> {
-    let input = &group.input;
-    let sample = active
-        .get(&input.owner)
-        .copied()
-        .or_else(|| group.accepted.get());
-    match sample {
-        Some(sample) => {
-            let sampled = sample
-                .geometry()
-                .ok_or(Denial::InvalidGeometry)?
-                .components();
-            Ok([
-                f64::from(input.content.x() - sampled[0]),
-                f64::from(input.content.y() - sampled[1]),
-            ])
-        }
-        None => Ok(offset_points(input.offset)),
+    match active.get(&group.input.owner) {
+        Some(sample) => group.sample_offset(*sample).ok_or(Denial::InvalidGeometry),
+        None => Ok(group.displayed_offset()),
     }
 }
 
-fn offset_points(offset: UiScrollOffset) -> [f64; 2] {
+pub(super) fn published_offset(offset: UiScrollOffset) -> [f64; 2] {
     let unit = worth_ui_host_contract::UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f64;
     [
         offset.inline_subpixels() as f64 / unit,
@@ -165,8 +178,16 @@ fn group_delta(
     group: &UiMountedScrollMotionGroup,
     active: &ActiveSamples,
 ) -> Result<[f32; 2], Denial> {
+    delta_from(group, published_offset(group.input.offset), active)
+}
+
+/// How far the group's sample moves content that stands at `previous`.
+fn delta_from(
+    group: &UiMountedScrollMotionGroup,
+    previous: [f64; 2],
+    active: &ActiveSamples,
+) -> Result<[f32; 2], Denial> {
     let desired = sampled_offset(group, active)?;
-    let previous = offset_points(group.input.offset);
     let snap = |value| value - group.input.scale.grid_residue(value);
     Ok([
         (snap(previous[0]) - snap(desired[0])) as f32,

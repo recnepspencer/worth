@@ -111,6 +111,8 @@ impl UiNativeEventLoopClient for UiNativeApplicationDriver {
                 grant.scale_factor_milli(),
                 false,
             );
+        self.progress
+            .observe_readiness(grant.generation(), grant.surface_basis_generation());
         self.scale_factor_milli = Some(grant.scale_factor_milli());
         self.activate_application_runtime()
             .map_err(|()| Denial::ApplicationProgressDenied)?;
@@ -139,20 +141,21 @@ impl UiNativeEventLoopClient for UiNativeApplicationDriver {
             grant.scale_factor_milli(),
             true,
         );
-        self.progress
+        let surface_basis_successor = self
+            .progress
             .observe_readiness(grant.generation(), grant.surface_basis_generation());
         if self.progress.advance(shell).is_err() {
             return Err(Denial::ClientProgressDenied);
         }
         self.last_ready_generation = grant.generation();
         if self.application_runtime_active
-            && self
-                .shell
-                .as_ref()
-                .is_some_and(WorthUiNativeApplicationShell::native_viewport_presentation_pending)
+            && (surface_basis_successor
+                || self.shell.as_ref().is_some_and(
+                    WorthUiNativeApplicationShell::native_viewport_presentation_pending,
+                ))
         {
             return self
-                .progress_application_runtime_viewport()
+                .progress_application_runtime_viewport(surface_basis_successor)
                 .map_err(|()| Denial::ApplicationProgressDenied);
         }
         Ok(self.next_directive())
@@ -167,7 +170,7 @@ impl UiNativeEventLoopClient for UiNativeApplicationDriver {
             .map_err(|()| Denial::Unattributed)?
         {
             return self
-                .progress_application_runtime_motion_settlement()
+                .progress_application_runtime_motion_settlement(true)
                 .map_err(|()| Denial::ApplicationProgressDenied);
         }
         if self.application_runtime_active {
@@ -220,8 +223,33 @@ impl UiNativeEventLoopClient for UiNativeApplicationDriver {
     }
 
     fn external_close_requested(&mut self) -> Result<UiNativeEventLoopDirective, Denial> {
+        if let Some(runtime) = self.application_runtime.as_mut() {
+            runtime.external_close_requested();
+        }
         self.progress.request_external_close();
         Ok(self.next_directive())
+    }
+
+    fn native_input_retention_exhausted(
+        &mut self,
+        grant: worth_ui_host_native::UiNativeInputRecoveryGrant,
+    ) -> Result<
+        (
+            worth_ui_host_native::UiNativeInputRecoveryAcknowledgement,
+            UiNativeEventLoopDirective,
+        ),
+        Denial,
+    > {
+        let settlement = self
+            .shell
+            .as_mut()
+            .ok_or(Denial::SurfaceUnbound)?
+            .cancel_exhausted_native_input(&grant)
+            .map_err(|()| Denial::ObservationDrainDenied)?;
+        let directive = self
+            .progress_application_runtime_observations(settlement)
+            .map_err(|()| Denial::ApplicationProgressDenied)?;
+        Ok((grant.acknowledge_cancellation(), directive))
     }
 
     fn presentation_attribution(

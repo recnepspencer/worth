@@ -35,6 +35,7 @@ impl UiNativeHostState {
         &mut self,
         mut ready: ReadyPresentation,
     ) -> UiNativePresentationPhysicalProgress {
+        ready.pending.mark_indeterminate();
         ready.pending.release_external(&mut self.resources);
         self.retain_if_completion_pending(ready);
         UiNativePresentationPhysicalProgress::RecoveryCompleted

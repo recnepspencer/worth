@@ -107,6 +107,16 @@ pub enum UiNativePresentationEffectPhase {
 }
 
 impl UiNativeHostState {
+    pub(crate) fn external_effects_settled_for_close(&self) -> bool {
+        self.pending_presentations.is_empty()
+            && self
+                .text_atlas_gpu
+                .as_ref()
+                .is_none_or(|gpu| gpu.pending_count() == 0)
+            && self.text_atlas_in_flight.is_none()
+            && self.text_atlas_recovery.is_none()
+    }
+
     pub(crate) fn presentation_access(&self) -> Option<UiNativePresentationAccess<'_>> {
         Some(UiNativePresentationAccess::new(
             self.device.as_ref()?,

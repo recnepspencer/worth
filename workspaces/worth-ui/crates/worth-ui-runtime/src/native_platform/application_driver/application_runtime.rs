@@ -56,17 +56,11 @@ impl UiNativeApplicationDriver {
         let ports = self.application_runtime_ports.take().ok_or(())?;
         let shell = self.shell.take().ok_or(())?;
         self.application_runtime_active = true;
-        match runtime.activate(shell, ports) {
-            Ok(shell) => {
-                self.shell = Some(shell);
-                self.arm_motion_readiness_now();
-                Ok(())
-            }
-            Err(stopped) => {
-                self.shell = Some(stopped.into_application());
-                Err(())
-            }
-        }
+        let result = runtime
+            .activate(shell, ports)
+            .map(|shell| (shell, UiNativeApplicationRuntimeDirective::Continue))
+            .map_err(|stopped| stopped.into_application());
+        self.settle_application_callback(result).map(|_| ())
     }
 
     pub(super) fn progress_application_runtime(
@@ -88,17 +82,10 @@ impl UiNativeApplicationDriver {
         }
         let runtime = self.application_runtime.as_mut().ok_or(())?;
         let shell = self.shell.take().ok_or(())?;
-        match runtime.readiness_ready(shell, grant.owner_ordinal(), grant.generation()) {
-            Ok((shell, directive)) => {
-                self.shell = Some(shell);
-                self.arm_motion_readiness_now();
-                Ok(map_directive(directive))
-            }
-            Err(stopped) => {
-                self.shell = Some(stopped.into_application());
-                Err(())
-            }
-        }
+        let result = runtime
+            .readiness_ready(shell, grant.owner_ordinal(), grant.generation())
+            .map_err(|stopped| stopped.into_application());
+        self.settle_application_callback(result)
     }
 
     pub(super) fn progress_application_runtime_observations(
@@ -114,17 +101,10 @@ impl UiNativeApplicationDriver {
             crate::native_platform::UiNativeApplicationObservationProgress::from_settlement(
                 settlement,
             );
-        match runtime.native_observations_ready(shell, progress) {
-            Ok((shell, directive)) => {
-                self.shell = Some(shell);
-                self.arm_motion_readiness_now();
-                Ok(map_directive(directive))
-            }
-            Err(stopped) => {
-                self.shell = Some(stopped.into_application());
-                Err(())
-            }
-        }
+        let result = runtime
+            .native_observations_ready(shell, progress)
+            .map_err(|stopped| stopped.into_application());
+        self.settle_application_callback(result)
     }
 
     pub(super) fn progress_application_runtime_pointer(
@@ -135,38 +115,25 @@ impl UiNativeApplicationDriver {
         }
         let runtime = self.application_runtime.as_mut().ok_or(())?;
         let shell = self.shell.take().ok_or(())?;
-        match runtime.native_pointer_affordance_ready(shell) {
-            Ok((shell, directive)) => {
-                self.shell = Some(shell);
-                self.arm_motion_readiness_now();
-                Ok(map_directive(directive))
-            }
-            Err(stopped) => {
-                self.shell = Some(stopped.into_application());
-                Err(())
-            }
-        }
+        let result = runtime
+            .native_pointer_affordance_ready(shell)
+            .map_err(|stopped| stopped.into_application());
+        self.settle_application_callback(result)
     }
 
     pub(super) fn progress_application_runtime_viewport(
         &mut self,
+        surface_basis_successor: bool,
     ) -> Result<worth_ui_host_native::UiNativeEventLoopDirective, ()> {
         if !self.application_runtime_active {
             return Err(());
         }
         let runtime = self.application_runtime.as_mut().ok_or(())?;
         let shell = self.shell.take().ok_or(())?;
-        match runtime.native_viewport_ready(shell) {
-            Ok((shell, directive)) => {
-                self.shell = Some(shell);
-                self.arm_motion_readiness_now();
-                Ok(map_directive(directive))
-            }
-            Err(stopped) => {
-                self.shell = Some(stopped.into_application());
-                Err(())
-            }
-        }
+        let result = runtime
+            .native_viewport_ready(shell, surface_basis_successor)
+            .map_err(|stopped| stopped.into_application());
+        self.settle_application_callback(result)
     }
 
     fn progress_motion_readiness(
@@ -178,17 +145,17 @@ impl UiNativeApplicationDriver {
         {
             return Err(());
         }
-        let schedules_next_frame = self
+        let disposition = self
             .shell
             .as_mut()
             .ok_or(())?
-            .admit_native_motion_tick(grant.physical_tick(), grant.reduced_motion())?
-            .schedules_next_frame();
+            .admit_native_motion_tick(grant.physical_tick(), grant.reduced_motion())?;
+        let schedules_next_frame = disposition.schedules_next_frame();
         self.last_motion_readiness_generation = grant.generation();
         if schedules_next_frame {
             self.arm_motion_readiness_next_frame();
         }
-        self.progress_application_runtime_motion_settlement()
+        self.progress_application_runtime_motion_settlement(false)
     }
 
     /// A Motion tick that re-lowered mounted geometry without host sample work
@@ -196,26 +163,21 @@ impl UiNativeApplicationDriver {
     /// nothing continues without waking the runtime.
     pub(super) fn progress_application_runtime_motion_settlement(
         &mut self,
+        physical_settled: bool,
     ) -> Result<worth_ui_host_native::UiNativeEventLoopDirective, ()> {
         let owed = self
             .shell
             .as_ref()
             .is_some_and(|shell| shell.native_application_presentation_pending());
-        if !owed || !self.application_runtime_active {
+        if (!owed && !physical_settled) || !self.application_runtime_active {
             return Ok(worth_ui_host_native::UiNativeEventLoopDirective::Continue);
         }
         let runtime = self.application_runtime.as_mut().ok_or(())?;
         let shell = self.shell.take().ok_or(())?;
-        match runtime.native_motion_settlement_ready(shell) {
-            Ok((shell, directive)) => {
-                self.shell = Some(shell);
-                Ok(map_directive(directive))
-            }
-            Err(stopped) => {
-                self.shell = Some(stopped.into_application());
-                Err(())
-            }
-        }
+        let result = runtime
+            .native_motion_settlement_ready(shell)
+            .map_err(|stopped| stopped.into_application());
+        self.settle_application_callback(result)
     }
 
     pub(super) fn progress_motion_physical(
@@ -227,12 +189,12 @@ impl UiNativeApplicationDriver {
         }) {
             return Ok(false);
         }
-        let schedules_next_frame = self
+        let disposition = self
             .shell
             .as_mut()
             .ok_or(())?
-            .complete_pending_native_motion_physical(grant.class(), grant.presentation())
-            .schedules_next_frame();
+            .complete_pending_native_motion_physical(grant.class(), grant.presentation());
+        let schedules_next_frame = disposition.schedules_next_frame();
         if schedules_next_frame {
             self.arm_motion_readiness_next_frame();
         }
@@ -273,14 +235,43 @@ impl UiNativeApplicationDriver {
         let shell = self.shell.take().ok_or(())?;
         let progress =
             crate::native_platform::UiNativeApplicationPhysicalProgress::from_host(grant);
-        match runtime.physical_work_progressed(shell, progress) {
+        let result = runtime
+            .physical_work_progressed(shell, progress)
+            .map_err(|stopped| stopped.into_application());
+        let directive = self.settle_application_callback(result)?;
+        if matches!(
+            directive,
+            worth_ui_host_native::UiNativeEventLoopDirective::Continue
+        ) {
+            Ok(self.next_directive())
+        } else {
+            Ok(directive)
+        }
+    }
+
+    /// Every runtime callback gives the shell back through this boundary.
+    /// Scheduling follows the returned state, including Motion started by a
+    /// completion callback rather than directly by user input.
+    fn settle_application_callback(
+        &mut self,
+        result: Result<
+            (
+                crate::facade::WorthUiNativeApplicationShell,
+                UiNativeApplicationRuntimeDirective,
+            ),
+            crate::facade::WorthUiNativeApplicationShell,
+        >,
+    ) -> Result<worth_ui_host_native::UiNativeEventLoopDirective, ()> {
+        match result {
             Ok((shell, directive)) => {
                 self.shell = Some(shell);
-                self.arm_motion_readiness_now();
+                if matches!(directive, UiNativeApplicationRuntimeDirective::Continue) {
+                    self.arm_motion_readiness_now();
+                }
                 Ok(map_directive(directive))
             }
-            Err(stopped) => {
-                self.shell = Some(stopped.into_application());
+            Err(shell) => {
+                self.shell = Some(shell);
                 Err(())
             }
         }

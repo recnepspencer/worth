@@ -33,6 +33,29 @@ pub(crate) struct UiPreparedPortalDismissal {
 }
 
 impl super::UiPortalRuntimeState {
+    /// Motion may advance pixels without changing Portal semantics. Only this
+    /// owner can continue its prepared operation across that change; any Portal
+    /// revision (including close/reopen or a new modal) cancels the operation.
+    pub(crate) fn continue_prepared_dismissal(
+        &self,
+        dismissal: UiPreparedPortalDismissal,
+    ) -> Option<(
+        super::UiPreparedPortalServiceTransition,
+        worth_ui_host_contract::UiHostObservationPresentationBasis,
+    )> {
+        if self.revision != dismissal.transition.expected_revision() {
+            return None;
+        }
+        let record = self.records.get(&dismissal.transition.portal())?;
+        let current = record.placement?.prepared().presentation();
+        if current.binding() != dismissal.presentation.binding()
+            || current.host_surface() != dismissal.presentation.host_surface()
+        {
+            return None;
+        }
+        Some((dismissal.into_transition(), current))
+    }
+
     pub(crate) fn prepare_dismissal(
         &self,
         trigger: UiPortalDismissalTrigger,

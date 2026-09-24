@@ -49,7 +49,7 @@ impl UiHostObservationReportValidation {
         });
         self.commit_observation_basis(frame, observation_basis, basis_changes);
         self.commit_partition(binding, partition, admitted);
-        self.last_sequence = Some(core.sequences().last());
+        self.advance_sequence(core.sequences().last());
         Ok(UiHostObservationReportOutcome::Validated(
             UiValidatedHostObservationBatch::new(core, relation, batch.disposition(), validated),
         ))

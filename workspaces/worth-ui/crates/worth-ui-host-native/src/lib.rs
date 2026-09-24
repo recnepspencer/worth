@@ -1,6 +1,7 @@
 //! Qualified native mechanics profiles and the Worth-owned native host.
 
 mod native;
+pub use native::{UiNativeInputRecoveryAcknowledgement, UiNativeInputRecoveryGrant};
 mod native_profile;
 mod prepared_host;
 #[cfg(feature = "certification-support")]

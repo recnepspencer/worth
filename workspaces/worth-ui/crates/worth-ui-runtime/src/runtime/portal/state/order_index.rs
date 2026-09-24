@@ -57,10 +57,6 @@ impl UiPortalStackOrderIndex {
         self.by_ordinal.iter()
     }
 
-    pub(crate) fn topmost(&self) -> Option<super::super::UiPortalIdentity> {
-        self.by_ordinal.values().next_back().copied()
-    }
-
     pub(crate) fn clear(&mut self) {
         self.by_ordinal.clear();
     }

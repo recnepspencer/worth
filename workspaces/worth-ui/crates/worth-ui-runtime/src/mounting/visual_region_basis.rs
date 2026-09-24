@@ -128,6 +128,22 @@ impl UiMountedVisualRegionBasis {
         }
     }
 
+    /// The overlay this basis presented for one Portal's Motion target.
+    pub(crate) fn presented_portal_overlay(
+        &self,
+        target: crate::runtime::motion::UiMotionTargetIdentity,
+    ) -> Option<worth_ui_host_contract::UiMountedPortalOverlayMechanic> {
+        self.portal_overlays.iter().copied().find(|portal| {
+            self.binding
+                .is_none_or(|binding| portal.binding() == binding)
+                && crate::runtime::motion::UiMotionTargetIdentity::from_portal_owner(
+                    portal.surface(),
+                    portal.owner(),
+                    portal.portal_identity(),
+                ) == target
+        })
+    }
+
     pub(crate) fn hit_test(&self) -> Box<[UiMountedHitTestPresentation]> {
         #[cfg(test)]
         if let Some(materialized) = &self.materialized {

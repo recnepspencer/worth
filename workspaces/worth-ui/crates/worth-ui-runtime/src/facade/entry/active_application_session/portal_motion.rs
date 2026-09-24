@@ -53,7 +53,18 @@ impl super::WorthUiActiveApplicationSession {
                 .then(|| successor_geometry.map(portal_entrance_start_geometry))
                 .flatten()
         });
+        // Reopening a Portal whose exit is still on screen is an entrance: the
+        // exit faded opacity, so only an opacity-bearing successor can carry
+        // the interrupted sample back to visible rather than snap it there.
+        let reopens_exit = transition.opens_portal()
+            && self
+                .portal
+                .as_ref()
+                .is_some_and(|owner| owner.is_exiting(portal));
         let declaration = match (transition.opens_portal(), predecessor) {
+            (true, Some(_)) if reopens_exit => {
+                crate::runtime::motion::UiMotionDeclaration::portal_entrance()
+            }
             (true, Some(_)) => crate::runtime::motion::UiMotionDeclaration::rebind_geometry(),
             (true, None) => crate::runtime::motion::UiMotionDeclaration::portal_entrance(),
             (false, _) => crate::runtime::motion::UiMotionDeclaration::portal_exit(),

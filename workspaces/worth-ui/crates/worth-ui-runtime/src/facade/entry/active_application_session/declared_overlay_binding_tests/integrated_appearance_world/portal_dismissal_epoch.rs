@@ -2,7 +2,7 @@ use super::{authored, session::World};
 use worth_ui_host_contract::*;
 
 #[test]
-fn retained_inside_press_is_ignored_but_cannot_dismiss_after_same_frame_epoch_advance() {
+fn raw_old_epoch_cannot_classify_inside_or_outside_after_motion_advance() {
     use crate::facade::entry::portal_dismissal::{
         UiPortalDismissalPublicationOutcome as Outcome, UiPortalDismissalPublicationStop as Stop,
     };
@@ -65,20 +65,16 @@ fn retained_inside_press_is_ignored_but_cannot_dismiss_after_same_frame_epoch_ad
     };
     let revision = world.session.portal.as_ref().unwrap().revision();
 
-    match world.session.publish_portal_dismissal(
-        interaction(position(
-            bounds.x() + bounds.width() / 2.0,
-            bounds.y() + bounds.height() / 2.0,
-        )),
-        100,
-    ) {
-        Outcome::IgnoredInsideTopmostPortal => {}
-        Outcome::IgnoredNoMatchingPortal => panic!("inside press found no dismissible Portal"),
-        Outcome::Stopped(stop) => panic!("inside press stopped: {stop:?}"),
-        Outcome::Published(_) => panic!("inside press published a dismissal"),
-        Outcome::InFlight(_) => panic!("inside press started host work"),
-        Outcome::Indeterminate(_) => panic!("inside press started indeterminate host work"),
-    }
+    assert!(matches!(
+        world.session.publish_portal_dismissal(
+            interaction(position(
+                bounds.x() + bounds.width() / 2.0,
+                bounds.y() + bounds.height() / 2.0
+            )),
+            100,
+        ),
+        Outcome::Stopped(Stop::StalePresentation),
+    ));
     assert_eq!(world.session.portal.as_ref().unwrap().revision(), revision);
 
     assert!(matches!(

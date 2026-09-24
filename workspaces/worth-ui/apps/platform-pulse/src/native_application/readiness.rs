@@ -3,7 +3,12 @@ use super::{
     PlatformPulseProjectionRebindDenial, PlatformPulseTerminalError,
 };
 
+mod observation_queue;
 mod physical_work_progress;
+#[cfg(test)]
+#[path = "readiness_tests.rs"]
+mod tests;
+const MAX_PENDING_NATIVE_OBSERVATIONS: usize = 256;
 
 impl PlatformPulseApplicationRuntime {
     fn install_native_readiness(
@@ -41,13 +46,43 @@ impl PlatformPulseApplicationRuntime {
 
     fn advance_native_product_turn(&mut self) {
         if !self.startup_ready
+            || self.external_close_requested
             || self.visual_identity.retains_rebind_receipt()
             || self.pending_managed_rebind.is_some()
             || self.pending_frame_presentation.is_some()
+            || self
+                .shell
+                .as_ref()
+                .is_some_and(|shell| !shell.native_frame_boundary_available())
         {
             return;
         }
+        if self
+            .shell
+            .as_ref()
+            .is_some_and(|shell| shell.native_presentation_reconstruction_pending())
+        {
+            self.present();
+            if self.terminal_error.is_some()
+                || self.pending_frame_presentation.is_some()
+                || self
+                    .shell
+                    .as_ref()
+                    .is_some_and(|shell| shell.native_presentation_reconstruction_pending())
+            {
+                return;
+            }
+        }
         let mut shell = self.take_runtime_shell();
+        self.drain_native_observations(&mut shell);
+        if self.terminal_error.is_some()
+            || self.pending_managed_rebind.is_some()
+            || self.pending_frame_presentation.is_some()
+            || !shell.native_frame_boundary_available()
+        {
+            self.shell = Some(shell);
+            return;
+        }
         self.advance_pending_native_publications(&mut shell);
         self.shell = Some(shell);
         if self.terminal_error.is_some()
@@ -112,6 +147,14 @@ impl PlatformPulseApplicationRuntime {
 }
 
 impl worth_ui_native_platform::UiNativeApplicationRuntime for PlatformPulseApplicationRuntime {
+    fn external_close_requested(&mut self) {
+        self.external_close_requested = true;
+    }
+
+    fn external_close_ready(&self) -> bool {
+        self.pending_frame_presentation.is_none()
+    }
+
     fn readiness_owner_count(
         &self,
     ) -> worth_ui_native_platform::UiNativeApplicationReadinessOwnerCount {
@@ -231,26 +274,11 @@ impl worth_ui_native_platform::UiNativeApplicationRuntime for PlatformPulseAppli
         ),
         worth_ui_native_platform::UiNativeApplicationRuntimeProgressStopped,
     > {
-        let mut application = application;
-        if let Some(denial) = progress
-            .focus_publications()
-            .find_map(|result| result.as_ref().err())
-        {
-            self.fail(
-                super::PlatformPulseTerminalError::FocusPlacement(*denial),
-                Ok(()),
-            );
-            self.shell = Some(application);
-            let directive = self.native_runtime_directive();
-            return Ok((self.take_runtime_shell(), directive));
+        if self.pending_native_observations.len() == MAX_PENDING_NATIVE_OBSERVATIONS {
+            self.fail_intent_settlement("native observation queue exceeded its declared capacity");
+        } else {
+            self.pending_native_observations.push_back(progress);
         }
-        if let Err(denial) = self.native_input.observe_native(&progress, &self.publisher) {
-            self.fail(
-                super::PlatformPulseTerminalError::ObservationPublication,
-                Err(denial),
-            )
-        }
-        self.admit_worth_native_intent_input(&mut application, progress);
         self.shell = Some(application);
         self.advance_native_product_turn();
         let directive = self.native_runtime_directive();
@@ -288,7 +316,7 @@ impl worth_ui_native_platform::UiNativeApplicationRuntime for PlatformPulseAppli
     > {
         self.shell = Some(application);
         if self.startup_ready {
-            self.present();
+            self.advance_native_product_turn();
         }
         let directive = self.native_runtime_directive();
         Ok((self.take_runtime_shell(), directive))
@@ -297,6 +325,7 @@ impl worth_ui_native_platform::UiNativeApplicationRuntime for PlatformPulseAppli
     fn native_viewport_ready(
         &mut self,
         application: worth_ui::facade::app::WorthUiNativeApplicationShell,
+        surface_basis_successor: bool,
     ) -> Result<
         (
             worth_ui::facade::app::WorthUiNativeApplicationShell,
@@ -306,7 +335,7 @@ impl worth_ui_native_platform::UiNativeApplicationRuntime for PlatformPulseAppli
     > {
         self.shell = Some(application);
         if self.startup_ready {
-            self.present();
+            self.present_for_surface_basis(surface_basis_successor);
             self.advance_visual_identity();
         }
         let directive = self.native_runtime_directive();
@@ -359,31 +388,4 @@ const fn product_turn_admitted_after_visual_readiness(
         && !managed_rebind_pending
         && !frame_presentation_pending
         && !visual_rebind_receipt_retained
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn visual_settlement_wakes_ordinary_product_progress_without_bypassing_blockers() {
-        assert!(
-            super::product_turn_admitted_after_visual_readiness(true, false, false, false, false),
-            "visual retirement releases the receipt and wakes ordinary product progress"
-        );
-        assert!(!super::product_turn_admitted_after_visual_readiness(
-            false, false, false, false, false
-        ));
-        assert!(!super::product_turn_admitted_after_visual_readiness(
-            true, true, false, false, false
-        ));
-        assert!(!super::product_turn_admitted_after_visual_readiness(
-            true, false, true, false, false
-        ));
-        assert!(!super::product_turn_admitted_after_visual_readiness(
-            true, false, false, true, false
-        ));
-        assert!(
-            !super::product_turn_admitted_after_visual_readiness(true, false, false, false, true),
-            "successor capture and comparison retain the receipt and cannot wake product early"
-        );
-    }
 }

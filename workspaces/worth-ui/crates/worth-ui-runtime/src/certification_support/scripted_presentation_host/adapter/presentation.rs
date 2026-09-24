@@ -146,6 +146,7 @@ impl ScriptedPresentationHost {
                 state.queued_measurement.take(),
             )
         };
+        self.record_native_input_presentation(request, &outcome);
         dispatch_queued_ingress(self, queued_observation, queued_measurement);
         self.state
             .lock()

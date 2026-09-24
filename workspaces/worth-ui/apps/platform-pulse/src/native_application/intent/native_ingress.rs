@@ -90,9 +90,9 @@ impl PlatformPulseApplicationRuntime {
     fn settle_native_intent_ingress(
         &mut self,
         shell: &mut WorthUiNativeApplicationShell,
-        ingress: worth_ui::facade::app::WorthUiNativeIntentIngress,
+        mut ingress: worth_ui::facade::app::WorthUiNativeIntentIngress,
     ) {
-        let dismissals = ingress.dismissals().to_vec();
+        let dismissals = ingress.take_dismissals();
         if ingress.duplicate_batches() > 0 {
             self.fail_intent_settlement(format!(
                 "native interaction ingress duplicated {} batch(es)",
@@ -118,7 +118,7 @@ impl PlatformPulseApplicationRuntime {
         }
         // Preserve the existing dismissal-before-posture ordering while the
         // visual comparison temporarily owns the sole rebind receipt.
-        for dismissal in dismissals.into_iter().rev() {
+        for dismissal in dismissals.into_vec().into_iter().rev() {
             if self.pending_native_publications.len() == MAX_PENDING_NATIVE_PUBLICATIONS {
                 self.fail_intent_settlement(
                     "native publication queue exceeded its declared capacity",

@@ -12,6 +12,13 @@ use crate::native_platform::*;
 /// lifecycle when woken for a settlement, as Pulse does, and counts each wake.
 struct SettlementRuntime {
     wakes: Rc<Cell<u32>>,
+    work: SettlementWork,
+}
+
+#[derive(Clone, Copy)]
+enum SettlementWork {
+    FrameOnly,
+    FrameThenMotion,
 }
 
 impl UiNativeApplicationRuntime for SettlementRuntime {
@@ -72,6 +79,11 @@ impl UiNativeApplicationRuntime for SettlementRuntime {
             crate::mounting::UiMountedFrameOutcome::Published(_)
                 | crate::mounting::UiMountedFrameOutcome::Unchanged(_)
         ));
+        if matches!(self.work, SettlementWork::FrameThenMotion) {
+            crate::facade::entry::native_motion_test_support::install_sampling_track(
+                &mut application,
+            );
+        }
         Ok((application, UiNativeApplicationRuntimeDirective::Continue))
     }
 
@@ -112,6 +124,7 @@ fn frame_stop_name(stop: &crate::facade::entry::WorthUiMountedFrameExecutionStop
 
 fn driver_with_owed_frame(
     active: bool,
+    work: SettlementWork,
 ) -> (
     super::super::UiNativeApplicationDriver,
     Rc<Cell<u32>>,
@@ -131,6 +144,7 @@ fn driver_with_owed_frame(
     let wakes = Rc::new(Cell::new(0));
     let mut runtime = Box::new(SettlementRuntime {
         wakes: Rc::clone(&wakes),
+        work,
     });
     let shell = runtime
         .activate(shell, Box::new([]))
@@ -145,11 +159,11 @@ fn driver_with_owed_frame(
 /// the next settlement finds nothing owed and wakes nobody.
 #[test]
 fn an_owed_frame_wakes_the_active_runtime_until_it_presents() {
-    let (mut driver, wakes, host) = driver_with_owed_frame(true);
+    let (mut driver, wakes, host) = driver_with_owed_frame(true, SettlementWork::FrameOnly);
     host.push_native_display_presented();
 
     let directive = driver
-        .progress_application_runtime_motion_settlement()
+        .progress_application_runtime_motion_settlement(false)
         .expect("an active runtime settles the owed frame");
     assert_eq!(
         directive,
@@ -166,7 +180,7 @@ fn an_owed_frame_wakes_the_active_runtime_until_it_presents() {
     );
 
     let directive = driver
-        .progress_application_runtime_motion_settlement()
+        .progress_application_runtime_motion_settlement(false)
         .expect("nothing owed continues without waking the runtime");
     assert_eq!(
         directive,
@@ -180,10 +194,10 @@ fn an_owed_frame_wakes_the_active_runtime_until_it_presents() {
 /// frame owed: activation, not installation, admits it to the settlement lane.
 #[test]
 fn an_inactive_runtime_is_not_woken_for_an_owed_frame() {
-    let (mut driver, wakes, _host) = driver_with_owed_frame(false);
+    let (mut driver, wakes, _host) = driver_with_owed_frame(false, SettlementWork::FrameOnly);
 
     let directive = driver
-        .progress_application_runtime_motion_settlement()
+        .progress_application_runtime_motion_settlement(false)
         .expect("an inactive runtime is skipped, not failed");
     assert_eq!(
         directive,
@@ -197,5 +211,39 @@ fn an_inactive_runtime_is_not_woken_for_an_owed_frame() {
             .expect("the driver keeps its shell")
             .native_application_presentation_pending(),
         "the debt stays owed until an active runtime presents it"
+    );
+}
+
+#[test]
+fn motion_started_by_settlement_callback_gets_a_readiness_wake() {
+    use std::{sync::mpsc, time::Duration};
+    let (mut driver, wakes, host) = driver_with_owed_frame(true, SettlementWork::FrameThenMotion);
+    let (send, receive) = mpsc::channel();
+    driver.motion_support_installed = true;
+    driver.motion_readiness = Some(super::super::UiNativeMotionReadinessLane::start_for_test(
+        move || send.send(()).map_err(|_| ()),
+    ));
+    assert!(!driver.motion_can_request_readiness());
+    host.push_native_display_presented();
+    driver
+        .progress_application_runtime_motion_settlement(false)
+        .unwrap();
+    assert_eq!(wakes.get(), 1);
+    assert!(
+        driver.motion_can_request_readiness(),
+        "the callback really installed runnable work"
+    );
+    let woke = receive.recv_timeout(Duration::from_secs(1)).is_ok();
+    if !woke {
+        // A missing wake is distinct from a broken worker or notification sink.
+        driver.arm_motion_readiness_now();
+        receive
+            .recv_timeout(Duration::from_secs(1))
+            .expect("the same readiness worker responds when armed");
+    }
+    assert!(driver.close_application_runtime().unwrap().is_some());
+    assert!(
+        woke,
+        "settlement created runnable Motion work but the driver returned without waking it"
     );
 }

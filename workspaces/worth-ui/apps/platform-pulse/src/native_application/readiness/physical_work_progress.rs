@@ -153,6 +153,7 @@ impl PlatformPulseApplicationRuntime {
                     );
                 } else {
                     self.advance_visual_identity();
+                    self.advance_native_product_turn();
                 }
             }
             Ok(worth_ui::facade::app::WorthUiNativeManagedRebindProgress::AwaitingProgress) => {

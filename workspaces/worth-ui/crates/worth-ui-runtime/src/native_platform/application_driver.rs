@@ -134,7 +134,12 @@ impl UiNativeApplicationDriver {
     }
 
     fn next_directive(&self) -> UiNativeEventLoopDirective {
-        if self.progress.should_close() {
+        if self.progress.should_close()
+            && self
+                .application_runtime
+                .as_ref()
+                .is_none_or(|runtime| runtime.external_close_ready())
+        {
             UiNativeEventLoopDirective::Close
         } else {
             UiNativeEventLoopDirective::Continue

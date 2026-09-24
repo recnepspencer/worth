@@ -17,7 +17,7 @@ fn retarget_starts_from_the_exact_committed_raw_motion_units() {
         mid.samples()[0].opacity_units(),
     );
     assert_eq!(composed.units(), 5_000);
-    drop(sampler.prepare_tick(200, world.presentation).unwrap());
+    drop(sampler.prepare_tick(57, world.presentation).unwrap());
 
     let retarget = world.receipt(
         101,
@@ -31,12 +31,11 @@ fn retarget_starts_from_the_exact_committed_raw_motion_units() {
     );
     let installed = sampler.install(retarget).unwrap();
     assert_eq!(installed.sample().unwrap().opacity_units(), 8_192);
-    let first = commit_tick(&mut sampler, 201, world.presentation);
-    assert_eq!(first.samples()[0].opacity_units(), 8_192);
 
-    // The next curve interpolates from 8192 units, not from a rounded u8 alpha
-    // or an appearance-composed value: 8192 + (65535 - 8192) * 7/8.
-    let mid = commit_tick(&mut sampler, 271, world.presentation);
+    // The next curve runs from the tick-56 sample it departs from and
+    // interpolates from 8192 units, not from a rounded u8 alpha or an
+    // appearance-composed value: 8192 + (65535 - 8192) * 7/8.
+    let mid = commit_tick(&mut sampler, 126, world.presentation);
     assert_eq!(mid.samples()[0].opacity_units(), 58_367);
     assert_eq!(
         crate::mounting::presentation::compose_opacity(
@@ -46,7 +45,7 @@ fn retarget_starts_from_the_exact_committed_raw_motion_units() {
         .units(),
         35_625,
     );
-    let terminal = commit_tick(&mut sampler, 341, world.presentation);
+    let terminal = commit_tick(&mut sampler, 196, world.presentation);
     assert_eq!(terminal.samples()[0].opacity_units(), u16::MAX);
 }
 

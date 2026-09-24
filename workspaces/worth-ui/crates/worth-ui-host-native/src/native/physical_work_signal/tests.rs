@@ -6,6 +6,7 @@ use super::{
     UiNativePhysicalSignalSettlement, UiNativePhysicalSignalStatus,
 };
 
+mod presentation_timeout;
 mod request_locality;
 
 #[test]

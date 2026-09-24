@@ -206,18 +206,30 @@ impl UiNativePhysicalSignalOwner {
         if retained.work() != work {
             return Err(());
         }
-        let current = self.begin_work(work)?;
-        let handoff = match self.wake.predecessor(work) {
-            None if retained == current => UiNativePhysicalSignalReadyAttempt::Current(current),
-            Some(predecessor) if retained.handle() == predecessor => {
-                UiNativePhysicalSignalReadyAttempt::Successor {
-                    predecessor: retained,
-                    successor: current,
-                }
+        let current = match self.begin_work(work) {
+            Ok(current) => current,
+            Err(()) => {
+                return Err(());
             }
-            _ => return Err(()),
+        };
+        if self.route.owner_handle(work) != Some(retained.handle()) {
+            return Err(());
+        }
+        let handoff = if retained == current {
+            UiNativePhysicalSignalReadyAttempt::Current(current)
+        } else {
+            UiNativePhysicalSignalReadyAttempt::Successor {
+                predecessor: retained,
+                successor: current,
+            }
         };
         if !self.wake.take(work) {
+            return Err(());
+        }
+        if !self
+            .route
+            .acknowledge_owner_handle(work, retained.handle(), current.handle())
+        {
             return Err(());
         }
         Ok(handoff)
@@ -332,18 +344,6 @@ impl UiNativePhysicalSignalOwner {
             return Err(());
         }
         self.wake.request(performed.work());
-        Ok(())
-    }
-
-    fn publish_successor_performed(
-        &mut self,
-        performed: worker_graph::UiNativePhysicalSignalPerformed,
-        predecessor: worth_signal::facade::ResourceRequestHandle,
-    ) -> Result<(), ()> {
-        if performed.evaluated_nodes() == 0 || !self.worker()?.contains(performed.work()) {
-            return Err(());
-        }
-        self.wake.request_successor(performed.work(), predecessor);
         Ok(())
     }
 

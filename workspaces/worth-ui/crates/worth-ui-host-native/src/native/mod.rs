@@ -6,6 +6,7 @@ mod host_state;
 #[cfg(test)]
 mod host_state_lifecycle_tests;
 mod input;
+pub use input::{UiNativeInputRecoveryAcknowledgement, UiNativeInputRecoveryGrant};
 mod lifecycle;
 mod lifecycle_protocol;
 mod mechanics_adapter;

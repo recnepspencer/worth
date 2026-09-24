@@ -212,6 +212,59 @@ impl WorthUiMountedSessionState {
             && self.motion_sampling.has_active_tracks()
     }
 
+    /// The presentation at which a press on `admitted` may be classified
+    /// against one Portal. A later publication on the same physical surface
+    /// can supersede `admitted` while the host still holds the press, and the
+    /// press still names what the reader saw. It is read at the current
+    /// presentation only when that Portal looked the same in both: the
+    /// admitted frame showed the same overlay geometry, and no Motion sample
+    /// of the Portal reached the screen after the press. Otherwise what the
+    /// reader saw is unknown and the press stays stale.
+    pub(crate) fn portal_dismissal_presentation(
+        &self,
+        admitted: worth_ui_host_contract::UiHostObservationPresentationBasis,
+        target: crate::runtime::motion::UiMotionTargetIdentity,
+    ) -> Result<
+        worth_ui_host_contract::UiHostObservationPresentationBasis,
+        crate::mounting::UiPresentedFrameBasisDenial,
+    > {
+        use crate::mounting::UiPresentedFrameBasisDenial as Denial;
+        if self
+            .current_semantic_surface_for_presentation(admitted)
+            .is_ok()
+        {
+            return Ok(admitted);
+        }
+        if self
+            .presentation
+            .binding_requires_reconstruction(admitted.binding())
+        {
+            return Err(Denial::PresentationTruthUnavailable);
+        }
+        let current = self
+            .current_surface_for_binding(admitted.binding())
+            .and_then(|surface| self.current_presentation_for_surface(surface))
+            .filter(|current| {
+                current.host_surface() == admitted.host_surface()
+                    && current.epoch() > admitted.epoch()
+            })
+            .ok_or(Denial::Expired)?;
+        let seen = self.retention.presented_portal_overlay(admitted, target)?;
+        let shown = self.retention.presented_portal_overlay(current, target)?;
+        let unchanged = match (seen, shown) {
+            (Some(seen), Some(shown)) => same_portal_geometry(seen, shown),
+            _ => false,
+        };
+        if !unchanged
+            || self
+                .motion_sampling
+                .target_presented_after(target, admitted)
+        {
+            return Err(Denial::Expired);
+        }
+        Ok(current)
+    }
+
     pub(crate) fn committed_motion_geometry_for_target(
         &self,
         target: crate::runtime::motion::UiMotionTargetIdentity,
@@ -226,19 +279,10 @@ impl WorthUiMountedSessionState {
         {
             return Err(crate::mounting::UiPresentedFrameBasisDenial::PresentationTruthUnavailable);
         }
-        let relation = self.classify_admitted_interaction_presentation(presentation)?;
-        let row_presentation =
-            if relation == crate::mounting::UiPresentedFrameBasisRelation::Retained {
-                self.current_surface_for_binding(presentation.binding())
-                    .and_then(|surface| self.current_presentation_for_surface(surface))
-                    .filter(|current| current.frame() == presentation.frame())
-                    .unwrap_or(presentation)
-            } else {
-                presentation
-            };
+        self.current_semantic_surface_for_presentation(presentation)?;
         let coordinate_space = self
             .retention
-            .interaction_hit_test_basis(row_presentation)?
+            .interaction_hit_test_basis(presentation)?
             .rows()
             .iter()
             .find(|row| row.mounted_instance() == target.mounted_instance())
@@ -300,4 +344,20 @@ impl WorthUiMountedSessionState {
     ) {
         self.motion_sampling.certification_observation()
     }
+}
+
+/// Everything a Portal dismissal reads from a presented overlay. Frame and
+/// receipt identities differ across publications that leave it in place.
+fn same_portal_geometry(
+    seen: worth_ui_host_contract::UiMountedPortalOverlayMechanic,
+    shown: worth_ui_host_contract::UiMountedPortalOverlayMechanic,
+) -> bool {
+    seen.surface() == shown.surface()
+        && seen.owner() == shown.owner()
+        && seen.portal_identity() == shown.portal_identity()
+        && seen.anchor_bounds() == shown.anchor_bounds()
+        && seen.bounds() == shown.bounds()
+        && seen.clip_bounds() == shown.clip_bounds()
+        && seen.lifecycle() == shown.lifecycle()
+        && seen.shielding() == shown.shielding()
 }

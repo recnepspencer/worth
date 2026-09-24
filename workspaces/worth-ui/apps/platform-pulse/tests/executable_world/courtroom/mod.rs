@@ -39,3 +39,5 @@ mod platform_pulse_scroll;
 #[cfg(target_os = "windows")]
 #[cfg(worth_ui_certified_executable)]
 mod query_application_launch;
+#[cfg(worth_ui_certified_executable)]
+mod timeline_selector;

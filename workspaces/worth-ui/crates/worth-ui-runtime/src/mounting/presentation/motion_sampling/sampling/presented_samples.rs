@@ -30,6 +30,24 @@ impl UiMountedMotionSampler {
         (sample.filter(|_| unique), considered)
     }
 
+    /// Whether a sample of `target` reached the screen after `presentation`,
+    /// so a reader acting on that presentation saw the target elsewhere.
+    pub(crate) fn target_presented_after(
+        &self,
+        target: crate::runtime::motion::UiMotionTargetIdentity,
+        presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
+    ) -> bool {
+        self.tracks
+            .get(&target)
+            .filter(|state| state.presented)
+            .and_then(|state| state.current)
+            .and_then(|sample| sample.geometry())
+            .is_some_and(|geometry| {
+                let shown = geometry.presentation_basis();
+                !same_surface_binding(shown, presentation) || shown.epoch() > presentation.epoch()
+            })
+    }
+
     pub(crate) fn current_sample_for_target(
         &self,
         target: crate::runtime::motion::UiMotionTargetIdentity,

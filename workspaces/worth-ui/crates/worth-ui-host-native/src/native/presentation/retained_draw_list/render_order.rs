@@ -239,6 +239,17 @@ fn portal_anchor_rank(
         .ok_or(Denial::CommandMismatch)
 }
 
+fn portal_is_issued(
+    overlay: Option<&worth_ui_host_contract::UiMountedOverlayOrderMechanic>,
+    instance: UiMountedInstanceIdentity,
+) -> bool {
+    overlay.is_some_and(|order| {
+        order
+            .bottom_to_top()
+            .contains(&UiOverlayParticipantIdentity::Portal(instance))
+    })
+}
+
 fn backdrop_order(
     overlay: &worth_ui_host_contract::UiMountedOverlayOrderMechanic,
     identity: &worth_ui_host_contract::UiMountedBackdropIdentity,

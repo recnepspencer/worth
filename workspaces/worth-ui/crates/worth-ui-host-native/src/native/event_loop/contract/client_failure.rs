@@ -15,6 +15,7 @@ pub enum UiNativeEventLoopClientCallback {
     RedrawReady,
     PhysicalWorkProgressed,
     NativeObservationsReady,
+    NativeInputRetentionExhausted,
     ExternalCloseRequested,
 }
 

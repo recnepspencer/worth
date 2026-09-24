@@ -11,6 +11,7 @@ use worth_ui_host_contract::WorthUiHostCapabilityReport;
 mod accepted_text;
 mod adapter;
 mod measurement_adapter;
+mod native_input;
 mod paint_observations;
 mod visual_capture_script;
 
@@ -20,6 +21,7 @@ use visual_capture_script::ScriptedVisualCapture;
 pub struct ScriptedPresentationHost {
     state: Arc<Mutex<ScriptedPresentationState>>,
     observation_retention: Arc<worth_ui_host_contract::UiHostObservationRetention>,
+    native_input: Option<Arc<Mutex<native_input::ScriptedPresentationNativeInput>>>,
 }
 
 enum ScriptedPresentationStart {

@@ -1,6 +1,8 @@
 #[path = "integrated_appearance_world/portal_order_assertion.rs"]
 mod portal_order_assertion;
 use portal_order_assertion::assert_portal_backdrop_order;
+#[path = "integrated_appearance_world/admitted_dismissal.rs"]
+mod admitted_dismissal;
 #[path = "integrated_appearance_world/authored.rs"]
 mod authored;
 #[path = "integrated_appearance_world/backdrop_role_succession.rs"]
@@ -19,6 +21,8 @@ mod focus_modality;
 mod geometry;
 #[path = "integrated_appearance_world/hostile_protocol.rs"]
 mod hostile_protocol;
+#[path = "integrated_appearance_world/input_completion_order.rs"]
+mod input_completion_order;
 #[path = "integrated_appearance_world/locality.rs"]
 mod locality;
 #[path = "integrated_appearance_world/modal_pointer_shielding.rs"]

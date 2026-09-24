@@ -142,6 +142,27 @@ impl UiMountedFrameRetentionCoordinator {
         Ok(UiPresentedHitTestBasis::new(presentation, relation, rows))
     }
 
+    pub(crate) fn presented_portal_overlay(
+        &self,
+        presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
+        target: crate::runtime::motion::UiMotionTargetIdentity,
+    ) -> Result<
+        Option<worth_ui_host_contract::UiMountedPortalOverlayMechanic>,
+        UiPresentedFrameBasisDenial,
+    > {
+        match self.authority.borrow().frame(presentation.frame()) {
+            UiMountedRetainedFrameLookup::Found { evidence, .. } => {
+                evidence.presented_portal_overlay(presentation, target)
+            }
+            UiMountedRetainedFrameLookup::Expired { .. } => {
+                Err(UiPresentedFrameBasisDenial::Expired)
+            }
+            UiMountedRetainedFrameLookup::Unknown { .. } => {
+                Err(UiPresentedFrameBasisDenial::Unknown)
+            }
+        }
+    }
+
     pub(crate) fn current_projection_input(
         &self,
         slot: worth_ui_query_binding::UiProjectionInputSlot,

@@ -238,6 +238,7 @@ impl UiNativePhysicalSignalOwner {
                 UiNativePhysicalTemporalTransition::TimeoutTerminal { work, handle } => {
                     self.counters.timeout_observations =
                         self.counters.timeout_observations.saturating_add(1);
+                    let owner_handle = self.route.owner_handle(work).ok_or(())?;
                     let token = self
                         .route
                         .token_for(self.runtime_identity, work)
@@ -251,6 +252,10 @@ impl UiNativePhysicalSignalOwner {
                         return Err(());
                     }
                     self.admit_recovery_work(work)?;
+                    if !self.route.adopt_owner_handle(work, owner_handle) {
+                        return Err(());
+                    }
+                    self.wake.request(work);
                 }
                 UiNativePhysicalTemporalTransition::RetryAdmitted {
                     work,
@@ -267,7 +272,7 @@ impl UiNativePhysicalSignalOwner {
                     if transition.performed.work() != work {
                         return Err(());
                     }
-                    self.publish_successor_performed(transition.performed, previous)?;
+                    self.publish_performed(transition.performed)?;
                 }
                 UiNativePhysicalTemporalTransition::PollReady { work } => {
                     if transition.performed.work() != work {

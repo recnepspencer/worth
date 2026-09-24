@@ -40,16 +40,17 @@ fn independently_projected_command_clips_are_not_mistaken_for_shared_input_clips
         commands: Arc::from([UiMountedScrollMotionCommand {
             identity: command.identity(),
             clips: Arc::from([clip.clone()]),
-            base_translation: [0.0; 2],
+            base_translation: None,
         }]),
         thumbs: Arc::from([]),
+        displayed: [0.0; 2],
         accepted: Default::default(),
     };
     assert!(!Arc::ptr_eq(
         &group.input.members[0].clips,
         &group.commands[0].clips
     ));
-    state.scroll_motion_groups.groups = Arc::new(BTreeMap::from([(target, group.clone())]));
+    state.scroll_motion_groups.groups = std::rc::Rc::new(BTreeMap::from([(target, group.clone())]));
     state.scroll_motion_groups.owners = Arc::new(BTreeMap::from([(world.first_instance, target)]));
     state.scroll_motion_groups.memberships = Arc::new(std::collections::HashMap::from([(
         command.identity(),
@@ -67,7 +68,8 @@ fn independently_projected_command_clips_are_not_mistaken_for_shared_input_clips
     let mut projected = enlarged.commands[0].clone();
     projected.clips = Arc::from([clip.clone(), clip.clone()]);
     enlarged.commands = Arc::from([projected]);
-    state.scroll_motion_groups.groups = Arc::new(BTreeMap::from([(target, enlarged.clone())]));
+    state.scroll_motion_groups.groups =
+        std::rc::Rc::new(BTreeMap::from([(target, enlarged.clone())]));
     assert_eq!(
         state.indexed_motion_reserved_bytes().unwrap() - initial,
         size_of::<UiMountedScrollMotionClip>(),
@@ -76,7 +78,7 @@ fn independently_projected_command_clips_are_not_mistaken_for_shared_input_clips
     let mut member = enlarged.input.members[0].clone();
     member.clips = Arc::from([clip.clone(), clip]);
     enlarged.input.members = Arc::from([member]);
-    state.scroll_motion_groups.groups = Arc::new(BTreeMap::from([(target, enlarged)]));
+    state.scroll_motion_groups.groups = std::rc::Rc::new(BTreeMap::from([(target, enlarged)]));
     assert_eq!(
         state.indexed_motion_reserved_bytes().unwrap() - initial,
         2 * size_of::<UiMountedScrollMotionClip>(),

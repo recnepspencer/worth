@@ -15,6 +15,13 @@ impl super::UiPortalRuntimeState {
             .and_then(|record| record.placement)
     }
 
+    /// Whether `portal` is presenting only its retained exit.
+    pub(crate) fn is_exiting(&self, portal: super::super::UiPortalIdentity) -> bool {
+        self.records
+            .get(&portal)
+            .is_some_and(|record| record.posture == super::super::UiPortalLifecyclePosture::Closing)
+    }
+
     pub(crate) fn topmost_presentation(
         &self,
     ) -> Option<worth_ui_host_contract::UiHostObservationPresentationBasis> {

@@ -1,4 +1,5 @@
 mod hit_scroll_refresh;
+mod portal_overlay;
 
 use worth_ui_host_contract::{
     UiHostPresentationEpoch, UiMountedFrameIdentity, UiMountedInstanceIdentity,

@@ -56,7 +56,9 @@ impl<Client: UiNativeEventLoopClient>
             }
             WindowEvent::Occluded(occluded) => self.change_visibility(event_loop, occluded),
             WindowEvent::CloseRequested => self.handle_close_requested(event_loop),
-            event => self.observe_native_input(event_loop, &event),
+            event => {
+                self.observe_native_input(event_loop, &event);
+            }
         }
     }
 
@@ -69,10 +71,27 @@ impl<Client: UiNativeEventLoopClient>
             return;
         }
         self.progress_application_readiness(event_loop);
+        // Ready physical work is a completion, not a paint, so it is not left
+        // to redraw alone. Windows synthesizes a paint only once no posted
+        // message is queued, and readiness wakes are posted messages: a
+        // Motion lane waking faster than a turn completes would otherwise
+        // hold a presented frame, and everything waiting on it, off the
+        // client for as long as it keeps waking.
+        if !event_loop.exiting() {
+            self.request_physical_signal_redraw();
+            self.progress_ready_physical_client(event_loop);
+        }
     }
 
     fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
         if event_loop.exiting() {
+            return;
+        }
+        let close_effects_settled =
+            self.pending_close && self.shared.borrow().external_effects_settled_for_close();
+        if close_effects_settled
+            && self.apply_client_directive(event_loop, UiNativeEventLoopDirective::Close)
+        {
             return;
         }
         self.request_physical_signal_redraw();
@@ -127,6 +146,11 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
         directive: UiNativeEventLoopDirective,
     ) -> bool {
         if matches!(directive, UiNativeEventLoopDirective::Close) {
+            self.pending_close = true;
+            if !self.shared.borrow().external_effects_settled_for_close() {
+                self.request_physical_signal_redraw();
+                return false;
+            }
             let transition = self.shared.borrow_mut().lifecycle.request_close();
             if transition.required_action() == Some(UiNativeLifecycleRequiredAction::DrainRetained)
             {

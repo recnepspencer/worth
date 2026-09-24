@@ -20,6 +20,8 @@ use worth_ui_host_contract::{
 mod support;
 use support::published;
 
+#[path = "native_observation_tests/sequence_continuation.rs"]
+mod sequence_continuation;
 #[cfg(feature = "certification-support")]
 #[path = "native_observation_tests/wheel_retirement.rs"]
 mod wheel_retirement;

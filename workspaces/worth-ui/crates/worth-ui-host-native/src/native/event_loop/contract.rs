@@ -92,6 +92,20 @@ pub trait UiNativeEventLoopClient {
     ) -> Result<UiNativeEventLoopDirective, UiNativeEventLoopClientDenial> {
         Ok(UiNativeEventLoopDirective::Close)
     }
+    /// Cancel input interactions after a drained prefix was followed by source
+    /// exhaustion. Refusal leaves input stopped; success explicitly rearms it.
+    fn native_input_retention_exhausted(
+        &mut self,
+        _grant: crate::UiNativeInputRecoveryGrant,
+    ) -> Result<
+        (
+            crate::UiNativeInputRecoveryAcknowledgement,
+            UiNativeEventLoopDirective,
+        ),
+        UiNativeEventLoopClientDenial,
+    > {
+        Err(UiNativeEventLoopClientDenial::Unsupported)
+    }
     fn presentation_attribution(
         &self,
         observed: &crate::native::UiNativeRetainedFrameObservation,

@@ -97,6 +97,42 @@ impl UiPointerAffordanceProjection {
             _ => crate::declaration::UiPointerAffordance::Default,
         }
     }
+    /// The affordance this observation decided for its target, or `None`
+    /// when a publication in flight withheld the operability decision. The
+    /// next observation turn after it settles decides again, so a withheld
+    /// reading is still owed.
+    pub(crate) fn decided_family(
+        &self,
+    ) -> Option<worth_ui_host_contract::UiPointerAffordanceFamily> {
+        use worth_ui_host_contract::UiPointerAffordanceFamily as Family;
+        if let PointerTarget::Inside {
+            operability: Err(unavailable),
+            ..
+        } = &self.target
+        {
+            if unavailable.is_withheld_by_publication() {
+                return None;
+            }
+        }
+        Some(match self.family() {
+            crate::declaration::UiPointerAffordance::Default => Family::Default,
+            crate::declaration::UiPointerAffordance::Activation => Family::Activation,
+        })
+    }
+
+    /// The affordance to present for this observation. Until a withheld
+    /// decision is made, the target keeps the affordance already `published`
+    /// for it; claiming the default instead flickers the cursor off a target
+    /// that has not changed.
+    pub(crate) fn resolved_family(
+        &self,
+        published: Option<worth_ui_host_contract::UiPointerAffordanceFamily>,
+    ) -> worth_ui_host_contract::UiPointerAffordanceFamily {
+        self.decided_family()
+            .or(published)
+            .unwrap_or(worth_ui_host_contract::UiPointerAffordanceFamily::Default)
+    }
+
     pub(crate) fn operability(
         &self,
     ) -> Option<

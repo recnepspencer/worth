@@ -128,9 +128,15 @@ impl UiNativeApplicationProgramProgress {
         }
     }
 
-    pub(super) fn observe_readiness(&mut self, generation: u64, surface_basis_generation: u64) {
+    pub(super) fn observe_readiness(
+        &mut self,
+        generation: u64,
+        surface_basis_generation: u64,
+    ) -> bool {
+        let surface_basis_successor = surface_basis_generation > self.surface_basis_generation;
         self.readiness_generation = self.readiness_generation.max(generation);
         self.surface_basis_generation = self.surface_basis_generation.max(surface_basis_generation);
+        surface_basis_successor
     }
 
     pub(super) fn should_close(&self) -> bool {

@@ -40,6 +40,16 @@ impl UiNativeInputObservationState {
     ) -> UiNativeInputObservationDisposition {
         self.set_event_tick(event_tick);
         if self.terminal_stop.is_some() {
+            // These are current platform postures, not queued user actions.
+            // Keep them accurate while the discontinuous action stream stops.
+            match event {
+                WindowEvent::ModifiersChanged(modifiers) => {
+                    self.modifiers = super::keyboard::modifiers(*modifiers)
+                }
+                WindowEvent::Ime(winit::event::Ime::Enabled) => self.ime_enabled = true,
+                WindowEvent::Ime(winit::event::Ime::Disabled) => self.ime_enabled = false,
+                _ => {}
+            }
             return UiNativeInputObservationDisposition::Stopped;
         }
         event_focus::observe(self, event)

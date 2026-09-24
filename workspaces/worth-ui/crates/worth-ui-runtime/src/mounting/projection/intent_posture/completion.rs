@@ -34,6 +34,16 @@ impl UiIntentPostureObservation {
         self.owner_order
     }
 
+    pub(super) const fn with_owner_order(self, owner_order: u64) -> (Self, UiIntentPostureCommit) {
+        Self::new(
+            self.graph_node,
+            self.target,
+            self.reference,
+            self.posture,
+            owner_order,
+        )
+    }
+
     pub(crate) const fn mounted_instance(
         &self,
     ) -> worth_ui_host_contract::UiMountedInstanceIdentity {

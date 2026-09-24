@@ -60,6 +60,12 @@ pub struct UiNativeApplicationRuntimeCloseIncomplete {
 pub trait UiNativeApplicationRuntime: 'static {
     fn readiness_owner_count(&self) -> UiNativeApplicationReadinessOwnerCount;
 
+    fn external_close_requested(&mut self) {}
+
+    fn external_close_ready(&self) -> bool {
+        true
+    }
+
     fn activate(
         &mut self,
         application: crate::facade::WorthUiNativeApplicationShell,
@@ -108,10 +114,10 @@ pub trait UiNativeApplicationRuntime: 'static {
         UiNativeApplicationRuntimeProgressStopped,
     >;
 
-    /// Present the mounted geometry a Motion tick settled without host sample
-    /// work, through the application's existing frame lifecycle. An accepted
-    /// Scroll sample moves scrolled content by re-lowering geometry, so the
-    /// frame that shows the movement is owed by the application, not the host.
+    /// Resume application progress after a Motion tick owes a frame or a host
+    /// Motion sample releases its presentation lease. An accepted Scroll
+    /// sample moves content by re-lowering geometry, so its visible frame is
+    /// owed by the application rather than the host.
     fn native_motion_settlement_ready(
         &mut self,
         application: crate::facade::WorthUiNativeApplicationShell,
@@ -129,6 +135,7 @@ pub trait UiNativeApplicationRuntime: 'static {
     fn native_viewport_ready(
         &mut self,
         application: crate::facade::WorthUiNativeApplicationShell,
+        _surface_basis_successor: bool,
     ) -> Result<
         (
             crate::facade::WorthUiNativeApplicationShell,
@@ -372,27 +379,5 @@ impl UiNativeApplicationReadinessPort {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::{
-        UiNativeApplicationReadinessOwnerCount, UiNativeApplicationReadinessOwnerCountDenial,
-    };
-
-    #[test]
-    fn public_runtime_owner_count_preserves_five_slots_beneath_host_internal_capacity() {
-        assert_eq!(UiNativeApplicationReadinessOwnerCount::none().get(), 0);
-        assert_eq!(
-            UiNativeApplicationReadinessOwnerCount::new(5)
-                .expect("five application readiness owners fit")
-                .get(),
-            5
-        );
-        assert_eq!(
-            UiNativeApplicationReadinessOwnerCount::new(6),
-            Err(UiNativeApplicationReadinessOwnerCountDenial::CapacityExceeded)
-        );
-        assert_eq!(
-            worth_ui_host_native::UiNativeApplicationReadinessOwnerCount::MAXIMUM,
-            6
-        );
-    }
-}
+#[path = "application_runtime_tests.rs"]
+mod tests;

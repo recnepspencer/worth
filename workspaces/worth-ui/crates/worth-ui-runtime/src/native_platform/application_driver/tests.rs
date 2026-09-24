@@ -1,7 +1,21 @@
+#[cfg(feature = "certification-support")]
+#[path = "tests/input_backpressure.rs"]
+mod input_backpressure;
 #[path = "tests/motion_settlement.rs"]
 mod motion_settlement;
 #[path = "tests/shutdown.rs"]
 mod shutdown;
+
+#[cfg(feature = "certification-support")]
+#[test]
+fn surface_basis_successor_requires_a_new_basis_generation() {
+    let (_, _, mut progress) = retryable_program();
+
+    assert!(progress.observe_readiness(1, 1));
+    assert!(!progress.observe_readiness(2, 1));
+    assert!(!progress.observe_readiness(3, 0));
+    assert!(progress.observe_readiness(4, 2));
+}
 
 #[cfg(feature = "certification-support")]
 #[test]
@@ -93,12 +107,13 @@ fn retry_that_becomes_in_flight_advances_the_program_frame_exactly_once() {
 #[cfg(feature = "certification-support")]
 #[test]
 fn owner_reconstruction_settles_the_current_program_frame_without_a_parallel_retry_lane() {
-    use crate::runtime::tests::active_application_session_test_support::source_backed_component_app_with_host;
+    use crate::runtime::tests::active_application_session_test_support::source_backed_component_app_with_host_and_viewport_allocation;
 
     let host = crate::certification_support::ScriptedPresentationHost::native_display();
-    let mut shell = source_backed_component_app_with_host(host.clone())
+    let mut shell = source_backed_component_app_with_host_and_viewport_allocation(host.clone())
         .launch_native_surface()
         .expect("native certification shell should launch");
+    shell.observe_native_viewport_readiness([800, 600], 1_000, false);
     let program = crate::facade::entry::UiNativeApplicationProgram::new([
         crate::facade::entry::UiNativeApplicationFrame::present_current(),
         crate::facade::entry::UiNativeApplicationFrame::present_current(),
@@ -276,15 +291,16 @@ fn dpi_timeout_keeps_the_successor_binding_until_retry_settles_reconciliation() 
 #[cfg(feature = "certification-support")]
 #[test]
 fn surface_successor_frames_ignore_same_basis_redraw_generations() {
-    use crate::runtime::tests::active_application_session_test_support::source_backed_component_app_with_host;
+    use crate::runtime::tests::active_application_session_test_support::source_backed_component_app_with_host_and_viewport_allocation;
 
     let host = crate::certification_support::ScriptedPresentationHost::native_display();
     for _ in 0..8 {
         host.push_native_display_presented();
     }
-    let mut shell = source_backed_component_app_with_host(host.clone())
+    let mut shell = source_backed_component_app_with_host_and_viewport_allocation(host.clone())
         .launch_native_surface()
         .expect("native test shell should launch");
+    shell.observe_native_viewport_readiness([800, 600], 1_000, false);
     let program = crate::facade::entry::UiNativeApplicationProgram::new([
         crate::facade::entry::UiNativeApplicationFrame::present_current(),
         crate::facade::entry::UiNativeApplicationFrame::present_current()
@@ -354,12 +370,13 @@ fn retryable_program() -> (
     crate::facade::WorthUiNativeApplicationShell,
     super::program_progress::UiNativeApplicationProgramProgress,
 ) {
-    use crate::runtime::tests::active_application_session_test_support::source_backed_component_app_with_host;
+    use crate::runtime::tests::active_application_session_test_support::source_backed_component_app_with_host_and_viewport_allocation;
 
     let host = crate::certification_support::ScriptedPresentationHost::native_display();
-    let shell = source_backed_component_app_with_host(host.clone())
+    let mut shell = source_backed_component_app_with_host_and_viewport_allocation(host.clone())
         .launch_native_surface()
         .expect("native certification shell should launch");
+    shell.observe_native_viewport_readiness([800, 600], 1_000, false);
     let progress = super::program_progress::UiNativeApplicationProgramProgress::new(
         crate::facade::entry::UiNativeApplicationProgram::single_frame(),
         None,

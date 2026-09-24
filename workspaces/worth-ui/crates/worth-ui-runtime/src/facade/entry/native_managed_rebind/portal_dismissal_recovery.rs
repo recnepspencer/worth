@@ -151,25 +151,13 @@ impl crate::facade::entry::WorthUiNativeApplicationShell {
                 super::super::WorthUiNativePredecessorRecovery::PortalDismissal,
             );
         };
-        let Some(presentation) = self
-            .session
-            .portal
-            .as_ref()
-            .and_then(crate::runtime::portal::UiPortalRuntimeState::topmost_presentation)
-        else {
-            return WorthUiNativeManagedRebindProgress::RecoveredToPredecessor(
+        match self.begin_managed_portal_dismissal(retained, self.managed_rebind_completion_tick) {
+            WorthUiNativeManagedPortalDismissalOutcome::Ignored
+            | WorthUiNativeManagedPortalDismissalOutcome::Stopped(
+                super::WorthUiNativePortalDismissalStop::InteractionCancelled,
+            ) => WorthUiNativeManagedRebindProgress::RecoveredToPredecessor(
                 super::super::WorthUiNativePredecessorRecovery::PortalDismissal,
-            );
-        };
-        match self.begin_managed_portal_dismissal(
-            retained.rebase(presentation),
-            self.managed_rebind_completion_tick,
-        ) {
-            WorthUiNativeManagedPortalDismissalOutcome::Ignored => {
-                WorthUiNativeManagedRebindProgress::RecoveredToPredecessor(
-                    super::super::WorthUiNativePredecessorRecovery::PortalDismissal,
-                )
-            }
+            ),
             WorthUiNativeManagedPortalDismissalOutcome::Retained => {
                 unreachable!("recovery replay runs without another managed intent consequence")
             }
