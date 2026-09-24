@@ -16,7 +16,11 @@ use super::dependency::ViewDependency;
 /// event changes every field reader of that aspect.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum ViewChange {
+    /// Record lifecycle can change, so every dependency on the entity is affected.
     Entity(EntityId),
+    /// Updated record with unknown value scopes; lifetime and relation
+    /// adjacency remain unchanged, but any aspect or field may have changed.
+    EntityValues(EntityId),
     Aspect(EntityId, AspectKey),
     Field(EntityId, AspectKey, CanonicalFieldPath),
     Adjacency(EntityId, KindId, u8),
@@ -38,6 +42,7 @@ enum Target<Key> {
 pub(super) struct DependencyIndex<Key> {
     exact: BTreeMap<ViewDependency, BTreeSet<Target<Key>>>,
     entity: BTreeMap<EntityId, BTreeSet<Target<Key>>>,
+    values: BTreeMap<EntityId, BTreeSet<Target<Key>>>,
     aspect: BTreeMap<(EntityId, AspectKey), BTreeSet<Target<Key>>>,
 }
 
@@ -46,6 +51,7 @@ impl<Key> Default for DependencyIndex<Key> {
         Self {
             exact: BTreeMap::new(),
             entity: BTreeMap::new(),
+            values: BTreeMap::new(),
             aspect: BTreeMap::new(),
         }
     }
@@ -88,12 +94,20 @@ impl<Key: Clone + Ord> DependencyIndex<Key> {
             .insert(target.clone());
         match dependency {
             ViewDependency::Aspect(_, aspect) => {
+                self.values
+                    .entry(entity)
+                    .or_default()
+                    .insert(target.clone());
                 self.aspect
                     .entry((entity, aspect.clone()))
                     .or_default()
                     .insert(target);
             }
             ViewDependency::Field(_, locator) => {
+                self.values
+                    .entry(entity)
+                    .or_default()
+                    .insert(target.clone());
                 self.aspect
                     .entry((entity, locator.aspect().aspect_key().clone()))
                     .or_default()
@@ -139,6 +153,17 @@ impl<Key: Clone + Ord> DependencyIndex<Key> {
                     self.entity.remove(&entity);
                 }
             }
+            if matches!(
+                dependency,
+                ViewDependency::Aspect(..) | ViewDependency::Field(..)
+            ) {
+                if let Some(targets) = self.values.get_mut(&entity) {
+                    targets.remove(&target);
+                    if targets.is_empty() {
+                        self.values.remove(&entity);
+                    }
+                }
+            }
             let aspect = match dependency {
                 ViewDependency::Aspect(_, aspect) => Some(aspect.clone()),
                 ViewDependency::Field(_, locator) => Some(locator.aspect().aspect_key().clone()),
@@ -157,10 +182,18 @@ impl<Key: Clone + Ord> DependencyIndex<Key> {
     }
 
     pub(super) fn entry_insertion_bound(dependency: &ViewDependency) -> usize {
+        let axes = if matches!(
+            dependency,
+            ViewDependency::Aspect(..) | ViewDependency::Field(..)
+        ) {
+            4
+        } else {
+            3
+        };
         dependency
             .retained_bytes()
-            .saturating_mul(3)
-            .saturating_add(std::mem::size_of::<Target<Key>>().saturating_mul(3))
+            .saturating_mul(axes)
+            .saturating_add(std::mem::size_of::<Target<Key>>().saturating_mul(axes))
             .saturating_add(128)
     }
 
@@ -179,6 +212,9 @@ impl<Key: Clone + Ord> DependencyIndex<Key> {
             match change {
                 ViewChange::Entity(entity) => {
                     affected.extend(self.entity.get(entity), &mut work, maximum_work_units)?;
+                }
+                ViewChange::EntityValues(entity) => {
+                    affected.extend(self.values.get(entity), &mut work, maximum_work_units)?;
                 }
                 ViewChange::Aspect(entity, aspect) => {
                     affected.extend(
@@ -271,141 +307,4 @@ pub(super) struct PreparedViewTransition<Key> {
 }
 
 #[cfg(test)]
-mod tests {
-    use std::collections::BTreeSet;
-
-    use worth_foundational::facade::{
-        AspectFieldLocator, AspectKey, CanonicalFieldPath, FieldKey, LocatorAuthority,
-    };
-    use worth_relational::facade::identity::{EntityId, KindId, PartitionId};
-
-    use super::{DependencyIndex, ViewChange, ViewDependency};
-
-    fn entity(slot: u64) -> EntityId {
-        EntityId::new(PartitionId::main(), slot, 1)
-    }
-
-    fn field(aspect: &AspectKey, name: &str) -> AspectFieldLocator {
-        AspectFieldLocator::new(
-            LocatorAuthority::Authoritative,
-            aspect.clone(),
-            CanonicalFieldPath::single(FieldKey::new(name).unwrap()),
-        )
-    }
-
-    #[test]
-    fn exact_field_change_preserves_sibling_and_other_occurrence() {
-        let aspect = AspectKey::new("frame").unwrap();
-        let width = field(&aspect, "width");
-        let height = field(&aspect, "height");
-        let entries = [
-            (
-                1,
-                BTreeSet::from([ViewDependency::Field(entity(2), width.clone())]),
-            ),
-            (
-                2,
-                BTreeSet::from([ViewDependency::Field(entity(2), height.clone())]),
-            ),
-            (
-                3,
-                BTreeSet::from([ViewDependency::Field(entity(3), width.clone())]),
-            ),
-            (
-                4,
-                BTreeSet::from([ViewDependency::Aspect(entity(2), aspect.clone())]),
-            ),
-        ];
-        let index = DependencyIndex::build(
-            &BTreeSet::from([ViewDependency::Entity(entity(1))]),
-            entries
-                .iter()
-                .map(|(key, dependencies)| (key, dependencies)),
-        );
-        let affected = index
-            .affected(
-                &[ViewChange::Field(
-                    entity(2),
-                    aspect.clone(),
-                    width.field_path().clone(),
-                )],
-                16,
-            )
-            .unwrap();
-        assert_eq!(affected.entries, BTreeSet::from([1, 4]));
-        assert!(!affected.membership);
-        assert!(index
-            .affected(
-                &[ViewChange::Field(
-                    entity(2),
-                    aspect.clone(),
-                    height.field_path().clone()
-                )],
-                1
-            )
-            .is_none());
-    }
-
-    #[test]
-    fn structural_changes_include_all_fields_membership_and_both_endpoint_directions() {
-        let aspect = AspectKey::new("frame").unwrap();
-        let kind = KindId::new(7);
-        let entries = [
-            (
-                1,
-                BTreeSet::from([ViewDependency::Field(entity(2), field(&aspect, "width"))]),
-            ),
-            (
-                2,
-                BTreeSet::from([ViewDependency::Adjacency(entity(3), kind, 1)]),
-            ),
-        ];
-        let index = DependencyIndex::build(
-            &BTreeSet::from([ViewDependency::Adjacency(entity(1), kind, 0)]),
-            entries
-                .iter()
-                .map(|(key, dependencies)| (key, dependencies)),
-        );
-        let affected = index
-            .affected(&[ViewChange::Aspect(entity(2), aspect)], 16)
-            .unwrap();
-        assert_eq!(affected.entries, BTreeSet::from([1]));
-        let affected = index
-            .affected(
-                &[
-                    ViewChange::Adjacency(entity(1), kind, 0),
-                    ViewChange::Adjacency(entity(3), kind, 1),
-                ],
-                16,
-            )
-            .unwrap();
-        assert!(affected.membership);
-        assert_eq!(affected.entries, BTreeSet::from([2]));
-        let affected = index
-            .affected(&[ViewChange::Entity(entity(2))], 16)
-            .unwrap();
-        assert_eq!(affected.entries, BTreeSet::from([1]));
-    }
-
-    #[test]
-    fn replacing_an_entry_dependency_removes_the_old_body_set_edge() {
-        let old = ViewDependency::Entity(entity(2));
-        let new = ViewDependency::Entity(entity(3));
-        let membership = BTreeSet::from([ViewDependency::Entity(entity(1))]);
-        let mut index = DependencyIndex::build(&membership, [(&7, &BTreeSet::from([old.clone()]))]);
-        index.remove_entry(&7, &BTreeSet::from([old]));
-        index.insert_entry(&new, &7);
-        assert!(index
-            .affected(&[ViewChange::Entity(entity(2))], 16)
-            .unwrap()
-            .entries
-            .is_empty());
-        assert_eq!(
-            index
-                .affected(&[ViewChange::Entity(entity(3))], 16)
-                .unwrap()
-                .entries,
-            BTreeSet::from([7])
-        );
-    }
-}
+mod tests;

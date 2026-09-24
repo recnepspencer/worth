@@ -33,12 +33,12 @@ pub(in crate::domain_computation::primary_graph) fn changes_from_summary(
     for record in &summary.records {
         match record.target {
             RecordRef::Entity(entity) => {
-                // A scope-free update is conservatively bounded by its exact
-                // entity identity, never treated as a no-op.
-                if record.structural_change != RecordStructuralChange::Updated
-                    || record.aspect_scopes.is_empty()
-                {
+                // An update cannot change entity lifetime. Unknown value
+                // scopes still invalidate every tracked value on this entity.
+                if record.structural_change != RecordStructuralChange::Updated {
                     changes.push(ViewChange::Entity(entity));
+                } else if record.aspect_scopes.is_empty() {
+                    changes.push(ViewChange::EntityValues(entity));
                 }
                 for scope in &record.aspect_scopes {
                     changes.push(match &scope.field_path {
@@ -75,7 +75,9 @@ pub(in crate::domain_computation::primary_graph) fn changes_from_summary(
 mod tests {
     use std::collections::BTreeSet;
 
-    use worth_foundational::facade::{AspectKey, CanonicalFieldPath, FieldKey};
+    use worth_foundational::facade::{
+        AspectFieldLocator, AspectKey, CanonicalFieldPath, FieldKey, LocatorAuthority,
+    };
     use worth_relational::facade::{
         history::{BranchId, CommitId},
         identity::{EntityId, KindId, PartitionId, RelationId, VersionId},
@@ -192,7 +194,7 @@ mod tests {
             after_endpoints: None,
         }]);
         let changes = changes_from_summary(&sealed, 1).unwrap();
-        assert_eq!(changes, vec![ViewChange::Entity(changed)]);
+        assert_eq!(changes, vec![ViewChange::EntityValues(changed)]);
         assert!(changes_from_summary(&sealed, 0).is_none());
         let changed_aspect = AspectKey::new("body").unwrap();
         let siblings_aspect = AspectKey::new("body").unwrap();
@@ -206,14 +208,32 @@ mod tests {
                 2,
                 BTreeSet::from([ViewDependency::Aspect(sibling, siblings_aspect)]),
             ),
+            (3, BTreeSet::from([ViewDependency::Entity(changed)])),
+            (
+                4,
+                BTreeSet::from([ViewDependency::Adjacency(changed, KindId::new(9), 0)]),
+            ),
+            (
+                5,
+                BTreeSet::from([ViewDependency::Field(
+                    changed,
+                    AspectFieldLocator::new(
+                        LocatorAuthority::Authoritative,
+                        AspectKey::new("placement").unwrap(),
+                        CanonicalFieldPath::single(FieldKey::new("x").unwrap()),
+                    ),
+                )]),
+            ),
         ];
         let index = DependencyIndex::build(
             &membership_dependencies,
             entry_dependencies.iter().map(|(key, deps)| (key, deps)),
         );
         let affected = index.affected(&changes, 8).unwrap();
-        assert_eq!(affected.entries, BTreeSet::from([1]));
+        assert_eq!(affected.entries, BTreeSet::from([1, 5]));
         assert!(!affected.membership);
+        let structural = index.affected(&[ViewChange::Entity(changed)], 8).unwrap();
+        assert_eq!(structural.entries, BTreeSet::from([1, 3, 4, 5]));
     }
 
     #[test]
