@@ -222,7 +222,7 @@ impl<'runtime> VisibilityProjectionView<'runtime> {
         );
     }
 
-    fn entity_aspect_plan(
+    pub(super) fn entity_aspect_plan(
         &self,
         kind_id: KindId,
     ) -> Option<&crate::schema::data::LoweredAspectContractPlan> {
@@ -237,7 +237,7 @@ impl<'runtime> VisibilityProjectionView<'runtime> {
         }
     }
 
-    fn relation_aspect_plan(
+    pub(super) fn relation_aspect_plan(
         &self,
         kind_id: KindId,
     ) -> Option<&crate::schema::data::LoweredAspectContractPlan> {

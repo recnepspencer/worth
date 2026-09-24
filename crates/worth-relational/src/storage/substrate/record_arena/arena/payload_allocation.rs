@@ -29,6 +29,17 @@ pub(super) fn aspect_version_bytes(versions: &BTreeMap<Symbol, u64>) -> u64 {
     (versions.len() as u64).saturating_mul(std::mem::size_of::<(Symbol, u64)>() as u64)
 }
 
+pub(super) fn field_revision_bytes(
+    revisions: &Option<BTreeMap<(Symbol, Symbol), crate::storage::data::RelationalFieldRevision>>,
+) -> u64 {
+    revisions.as_ref().map_or(0, |revisions| {
+        (revisions.len() as u64).saturating_mul(std::mem::size_of::<(
+            (Symbol, Symbol),
+            crate::storage::data::RelationalFieldRevision,
+        )>() as u64)
+    })
+}
+
 pub(super) fn diagnostic_enrichment_bytes(entries: &BTreeMap<Symbol, String>) -> u64 {
     (entries.len() as u64)
         .saturating_mul(std::mem::size_of::<(Symbol, String)>() as u64)

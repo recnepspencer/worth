@@ -230,7 +230,8 @@ pub mod runtime {
     };
     pub use crate::storage::data::{
         ChunkVisibilitySummary, ChunkedStorageSummary, EntityReadRecord, PartitionStorageStats,
-        RelationReadRecord, RelationalReadView, StorageStats,
+        RelationReadRecord, RelationalFieldPresence, RelationalFieldRevision, RelationalReadView,
+        StorageStats,
     };
     pub use crate::visibility::authority::VisibilityAuthority as SnapshotAuthority;
     pub use crate::visibility::exact_commit_snapshot::{

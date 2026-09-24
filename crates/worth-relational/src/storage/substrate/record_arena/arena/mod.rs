@@ -17,6 +17,7 @@ use std::collections::BTreeMap;
 
 use crate::identity::data::{KindId, PartitionId, RecordId, VersionId};
 use crate::storage::data::RecordLifecycleState;
+use crate::storage::data::RelationalFieldRevision;
 use crate::storage::partition::DenseSlotBitSet;
 use crate::symbols::data::Symbol;
 
@@ -44,6 +45,8 @@ pub(crate) struct RecordArena<K: RecordKind> {
     pub(crate) retired_at: SharedColumn<Option<VersionId>>,
     pub(crate) extra: SharedColumn<K::Extra>,
     pub(crate) aspect_versions: SharedColumn<BTreeMap<Symbol, u64>>,
+    pub(crate) field_revisions:
+        SharedColumn<Option<BTreeMap<(Symbol, Symbol), RelationalFieldRevision>>>,
     pub(crate) diagnostics_enrichment: SharedColumn<BTreeMap<Symbol, String>>,
     pub(crate) branch_pins: RecordPinCounts,
     pub(crate) replay_pins: RecordPinCounts,
@@ -65,6 +68,7 @@ impl<K: RecordKind> RecordArena<K> {
             retired_at: SharedColumn::with_capacity(capacity),
             extra: SharedColumn::with_capacity(capacity),
             aspect_versions: SharedColumn::with_capacity(capacity),
+            field_revisions: SharedColumn::with_capacity(capacity),
             diagnostics_enrichment: SharedColumn::with_capacity(capacity),
             branch_pins: RecordPinCounts::new(),
             replay_pins: RecordPinCounts::new(),
@@ -133,6 +137,23 @@ impl<K: RecordKind> RecordArena<K> {
     ) -> Option<&mut BTreeMap<Symbol, u64>> {
         let physical = self.physical_index(slot)?;
         self.aspect_versions.get_mut(physical)
+    }
+
+    pub(crate) fn field_revisions_at(
+        &self,
+        slot: usize,
+    ) -> Option<&BTreeMap<(Symbol, Symbol), RelationalFieldRevision>> {
+        self.physical_index(slot)
+            .and_then(|physical| self.field_revisions.get(physical))
+            .and_then(Option::as_ref)
+    }
+
+    pub(crate) fn field_revisions_at_mut(
+        &mut self,
+        slot: usize,
+    ) -> Option<&mut BTreeMap<(Symbol, Symbol), RelationalFieldRevision>> {
+        let physical = self.physical_index(slot)?;
+        self.field_revisions.get_mut(physical)?.as_mut()
     }
 
     pub(crate) fn extra_at(&self, slot: usize) -> Option<&K::Extra> {

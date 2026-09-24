@@ -4,6 +4,7 @@ mod basis_reads;
 mod contracts;
 mod entity_projection;
 mod exact_basis_reads;
+mod field_revisions;
 mod frontier_adjacency;
 mod historical_basis_reads;
 mod projection_records;

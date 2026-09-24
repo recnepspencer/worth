@@ -312,6 +312,7 @@ pub(super) fn arena_from_image<K: CheckpointArenaKind>(
             K::extra_from_image(extra, contracts)
         })
         .collect::<Result<Vec<_>, _>>()?;
+    let slot_count = image.generations.len();
     Ok(RecordArena {
         slots,
         partition_ids: vec![partition_id; image.generations.len()].into(),
@@ -323,6 +324,10 @@ pub(super) fn arena_from_image<K: CheckpointArenaKind>(
         retired_at: image.retired_at.into(),
         extra: extra.into(),
         aspect_versions: image.aspect_versions.into(),
+        // The current checkpoint grammar does not carry field revisions.
+        // Restored slots must deny field-local reuse until the versioned image
+        // contract is extended; an empty known map would be unsafe for ABA.
+        field_revisions: crate::storage::substrate::SharedColumn::with_default(slot_count, None),
         diagnostics_enrichment: image.diagnostics_enrichment.into(),
         branch_pins: image.branch_pins.into(),
         replay_pins: image.replay_pins.into(),

@@ -1,6 +1,6 @@
 //! Publication delta accounting traverses changed column/index paths, not occupied rows.
 use super::payload_allocation::{
-    aspect_version_bytes, diagnostic_enrichment_bytes, visit_metadata,
+    aspect_version_bytes, diagnostic_enrichment_bytes, field_revision_bytes, visit_metadata,
 };
 use super::{RecordArena, RecordKind};
 use crate::storage::substrate::{visit_new_inline_value, StorageAllocationVisitor};
@@ -93,6 +93,14 @@ impl<K: RecordKind> RecordArena<K> {
             visitor,
             &mut |versions, _, mut allocation, visitor| {
                 allocation.bytes += aspect_version_bytes(versions);
+                visitor.visit(allocation);
+            },
+        );
+        self.field_revisions.visit_new_allocations(
+            &previous.field_revisions,
+            visitor,
+            &mut |revisions, _, mut allocation, visitor| {
+                allocation.bytes += field_revision_bytes(revisions);
                 visitor.visit(allocation);
             },
         );

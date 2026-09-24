@@ -26,6 +26,9 @@ impl<K: RecordKind> RecordArena<K> {
             clone
                 .aspect_versions
                 .copy_value_from(physical, &self.aspect_versions, physical);
+            clone
+                .field_revisions
+                .copy_value_from(physical, &self.field_revisions, physical);
             clone.diagnostics_enrichment.copy_value_from(
                 physical,
                 &self.diagnostics_enrichment,
@@ -66,6 +69,7 @@ impl<K: RecordKind> RecordArena<K> {
         clone.metadata_history = SharedColumn::with_default(slot_count, SharedColumn::default());
         clone.extra = SharedColumn::with_default(slot_count, K::empty_extra());
         clone.aspect_versions = SharedColumn::with_default(slot_count, BTreeMap::new());
+        clone.field_revisions = SharedColumn::with_default(slot_count, None);
         clone.diagnostics_enrichment = SharedColumn::with_default(slot_count, BTreeMap::new());
 
         clone

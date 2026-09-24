@@ -16,6 +16,7 @@ impl<K: RecordKind> RecordArena<K> {
             .set(physical, K::unavailable_extra(&self.extra[physical]));
         self.metadata_history.set(physical, Default::default());
         self.aspect_versions.set(physical, Default::default());
+        self.field_revisions.set(physical, None);
         self.diagnostics_enrichment
             .set(physical, Default::default());
         self.live_bitset.set(slot, false);
@@ -50,6 +51,7 @@ impl<K: RecordKind> RecordArena<K> {
             &extra,
         ));
         self.extra.set(physical, extra);
+        self.field_revisions.set(physical, Some(Default::default()));
         self.lifecycle[physical] = RecordLifecycleState::Live;
         self.retired_at[physical] = None;
         self.live_bitset.set(slot, true);
@@ -161,6 +163,7 @@ impl<K: RecordKind> RecordArena<K> {
         self.retired_at[physical] = None;
         self.extra.set(physical, extra);
         self.aspect_versions.set(physical, Default::default());
+        self.field_revisions.set(physical, Some(Default::default()));
         self.diagnostics_enrichment
             .set(physical, Default::default());
         self.branch_pins.set(physical, 0);
@@ -198,6 +201,8 @@ impl<K: RecordKind> RecordArena<K> {
         self.retired_at.push(None);
         self.extra.push(extra);
         self.aspect_versions.push(std::collections::BTreeMap::new());
+        self.field_revisions
+            .push(Some(std::collections::BTreeMap::new()));
         self.diagnostics_enrichment
             .push(std::collections::BTreeMap::new());
         self.branch_pins.push(0);
@@ -215,6 +220,7 @@ impl<K: RecordKind> RecordArena<K> {
         self.kind_ids[physical] = None;
         self.extra.set(physical, K::empty_extra());
         self.aspect_versions.set(physical, Default::default());
+        self.field_revisions.set(physical, None);
         self.diagnostics_enrichment
             .set(physical, Default::default());
         self.branch_pins.set(physical, 0);

@@ -5,6 +5,7 @@ mod effect_assembly;
 mod effect_diagnostics;
 mod effect_publication;
 mod execution;
+mod field_versions;
 pub(crate) mod intents;
 mod mutation_context;
 mod outcomes;

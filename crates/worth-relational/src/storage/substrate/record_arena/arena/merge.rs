@@ -85,7 +85,8 @@ impl<K: RecordKind> RecordArena<K> {
             created_at,
             retired_at,
             extra,
-            aspect_versions
+            aspect_versions,
+            field_revisions
         );
         self.diagnostics_enrichment.copy_value_from(
             physical,
