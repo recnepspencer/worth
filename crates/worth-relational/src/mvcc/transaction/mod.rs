@@ -12,6 +12,7 @@ mod overlay;
 mod overlay_indexing;
 mod planning;
 mod preparation_port;
+mod prepared_change_summary;
 mod read_projection;
 mod read_view;
 mod savepoint;
@@ -25,6 +26,11 @@ pub use footprint::{
 pub(crate) use intent::RelationalMaterializationTransactionMode;
 pub use intent::RelationalTransactionIntent;
 pub use preparation_port::RelationalPreparationPort;
+pub use prepared_change_summary::{
+    PreparedRelationalAspectScope, PreparedRelationalChangeSummary,
+    PreparedRelationalChangeSummaryBudget, PreparedRelationalChangeSummaryDenial,
+    PreparedRelationalRecordChange, PreparedRelationalRelationEndpoints,
+};
 pub use read_projection::RelationalTransactionRelationValue;
 pub use read_view::{RelationalTransactionEntityRead, RelationalTransactionRelationRead};
 pub(crate) use savepoint::RelationalTransactionSavepoint;

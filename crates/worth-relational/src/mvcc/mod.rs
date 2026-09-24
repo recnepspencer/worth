@@ -26,7 +26,10 @@ pub(crate) use transaction::commit_plan::bulk_reservations_for_plan;
 pub(crate) use transaction::RelationalMaterializationTransactionMode;
 pub(crate) use transaction::RelationalTransactionSavepoint;
 pub use transaction::{
-    BranchBoundRelationalTransaction, RelationalBranchTransactionAdmissionDenial,
+    BranchBoundRelationalTransaction, PreparedRelationalAspectScope,
+    PreparedRelationalChangeSummary, PreparedRelationalChangeSummaryBudget,
+    PreparedRelationalChangeSummaryDenial, PreparedRelationalRecordChange,
+    PreparedRelationalRelationEndpoints, RelationalBranchTransactionAdmissionDenial,
     RelationalPreparationPort, RelationalTransactionEntityRead, RelationalTransactionFootprint,
     RelationalTransactionIntent, RelationalTransactionReadLocus, RelationalTransactionRelationRead,
     RelationalTransactionRelationValue, RelationalTransactionStagingDenial,

@@ -162,6 +162,25 @@ impl PreparedRelationalCommitCandidate {
         ))
     }
 
+    pub(crate) fn change_summary_basis_and_roots(
+        &self,
+    ) -> Option<(
+        crate::branch::RelationalBranchBasisDescriptor,
+        std::sync::Arc<crate::branch::RelationalBranchRoot>,
+        std::sync::Arc<crate::branch::RelationalBranchRoot>,
+    )> {
+        let payload = self
+            ._payload
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let payload = payload.as_ref()?;
+        Some((
+            payload.expected_basis.clone(),
+            std::sync::Arc::clone(&payload.expected_root),
+            std::sync::Arc::clone(payload.execution.prepared_root()),
+        ))
+    }
+
     pub(crate) fn indexes_already_prepared(&self) -> bool {
         self._payload
             .lock()

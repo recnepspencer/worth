@@ -2,10 +2,12 @@
 
 pub use crate::mvcc::{
     BranchBoundRelationalTransaction, CustomInvariantExecutionReceipt,
-    DiscardedRelationalCommitCandidate, PerformedRelationalCommit,
-    PreparedRelationalCommitCandidate, PublishRelationalCommit, RelationalBranchObservation,
-    RelationalBranchTransactionAdmissionDenial, RelationalCancellationSource,
-    RelationalCancellationToken, RelationalInterruptionBoundary,
+    DiscardedRelationalCommitCandidate, PerformedRelationalCommit, PreparedRelationalAspectScope,
+    PreparedRelationalChangeSummary, PreparedRelationalChangeSummaryBudget,
+    PreparedRelationalChangeSummaryDenial, PreparedRelationalCommitCandidate,
+    PreparedRelationalRecordChange, PreparedRelationalRelationEndpoints, PublishRelationalCommit,
+    RelationalBranchObservation, RelationalBranchTransactionAdmissionDenial,
+    RelationalCancellationSource, RelationalCancellationToken, RelationalInterruptionBoundary,
     RelationalInterruptionCostCounters, RelationalInterruptionEvent,
     RelationalMutationInvariantEvidence, RelationalOperationControl,
     RelationalOperationInterruption, RelationalPreparationPort, RelationalPublicationDeferred,

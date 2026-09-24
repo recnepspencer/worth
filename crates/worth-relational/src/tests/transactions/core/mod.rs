@@ -31,6 +31,7 @@ mod patch_position_contention;
 mod paused_settlement_locality;
 mod pending_settlement_recovery;
 mod pending_settlement_reservation;
+mod prepared_candidate_change_summary;
 mod prepared_candidate_fork;
 mod prepared_candidate_lifecycle;
 mod prepared_candidates;
