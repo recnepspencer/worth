@@ -7,6 +7,8 @@ use super::{
     WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationOutputLineage,
 };
 
+mod restoration_identity;
+
 #[test]
 fn prior_output_selection_stays_with_its_parameter_partition() {
     let first_partition = [0x11; 32];
@@ -120,7 +122,7 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
         first_partition,
         None,
         [0x41; 32],
-        Arc::from([]),
+        source_facts(),
     );
     lineage.record_restoration(
         std::any::TypeId::of::<RestoredOutputBinding>(),
@@ -133,7 +135,7 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
         sibling_partition,
         Some([0x52; 32]),
         [0x42; 32],
-        Arc::from([]),
+        source_facts(),
     );
     lineage.record_restoration(
         std::any::TypeId::of::<RestoredOutputBinding>(),
@@ -146,7 +148,7 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
         first_partition,
         None,
         [0x41; 32],
-        Arc::from([]),
+        source_facts(),
     );
 
     let source = SemanticSource {
@@ -300,12 +302,41 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
         schema.clone(),
         scope,
         observation,
-        correspondence,
+        Arc::clone(&correspondence),
         source_identity,
         partition,
         None,
         [0x41; 32],
         Arc::from([]),
+    );
+
+    assert!(
+        lineage
+            .qualified_output::<RestoredOutputBinding>(
+                runtime_authority,
+                &schema,
+                scope,
+                observation.lifecycle_incarnation(),
+                observation.reference_generation().get(),
+                runtime_identity,
+                checkpoint_identity,
+            )
+            .is_none(),
+        "an exact restored identity without consumed facts is not currentness evidence"
+    );
+
+    lineage.record_restoration(
+        std::any::TypeId::of::<RestoredOutputBinding>(),
+        runtime_authority,
+        schema.clone(),
+        scope,
+        observation,
+        correspondence,
+        source_identity,
+        partition,
+        None,
+        [0x41; 32],
+        source_facts(),
     );
 
     assert!(lineage
@@ -321,50 +352,21 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
         .is_some());
 }
 
-#[test]
-#[should_panic(expected = "one restored output partition keeps one exact identity")]
-fn restoration_rejects_conflicting_identity_for_the_same_partition() {
-    let world =
-        crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
-            true,
-        );
-    let product = world
-        .application
-        .product_runtime()
-        .admit_product_branch(world.application.product_runtime().default_branch())
-        .expect("the fixture's default product occurrence is live");
-    let observation = product.observation();
-    let runtime_authority = world.application.runtime.authority_identity().as_u64();
-    let schema = world.application.installed_schema.binding_identity();
-    let scope = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(
-        worth_relational::facade::identity::EntityId::new(
-            worth_relational::facade::identity::PartitionId::main(),
-            1,
-            1,
-        ),
-    );
-    let correspondence = Arc::new(WorthQueryApplicationOutputCorrespondence::default());
-    let mut lineage = WorthQueryApplicationOutputLineage::default();
-
-    for source_identity in [[0x31; 32], [0x32; 32]] {
-        lineage.record_restoration(
-            std::any::TypeId::of::<RestoredOutputBinding>(),
-            runtime_authority,
-            schema.clone(),
-            scope,
-            observation,
-            Arc::clone(&correspondence),
-            checkpoint_identity(source_identity),
-            [0x11; 32],
-            None,
-            [0x41; 32],
-            Arc::from([]),
-        );
-    }
-}
-
 fn checkpoint_identity(identity: [u8; 32]) -> RecordedSourceIdentity {
     RecordedSourceIdentity::Checkpoint(
         crate::domain_computation::primary_graph::application_query::WorthQueryCheckpointSourceIdentity::new(identity),
     )
+}
+
+fn source_facts(
+) -> Arc<[crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact]> {
+    Arc::from([
+        crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact::SourceEntity {
+            entity_id: worth_relational::facade::identity::EntityId::new(
+                worth_relational::facade::identity::PartitionId::main(),
+                1,
+                1,
+            ),
+        },
+    ])
 }

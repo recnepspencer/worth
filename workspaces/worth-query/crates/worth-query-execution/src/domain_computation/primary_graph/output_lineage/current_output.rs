@@ -113,7 +113,11 @@ impl WorthQueryApplicationOutputLineage {
                         )
                 })
             }) {
-                let Some(facts) = recorded.observed_source_facts.as_ref() else {
+                let Some(facts) = recorded
+                    .observed_source_facts
+                    .as_ref()
+                    .filter(|facts| !facts.is_empty())
+                else {
                     return Ok(None);
                 };
                 return Ok(Some((std::sync::Arc::clone(facts), work)));
@@ -174,7 +178,11 @@ impl WorthQueryApplicationOutputLineage {
                         )
                 })
             }) {
-                let Some(facts) = recorded.observed_source_facts.as_ref() else {
+                let Some(facts) = recorded
+                    .observed_source_facts
+                    .as_ref()
+                    .filter(|facts| !facts.is_empty())
+                else {
                     return Ok(None);
                 };
                 return Ok(Some((std::sync::Arc::clone(facts), work)));
