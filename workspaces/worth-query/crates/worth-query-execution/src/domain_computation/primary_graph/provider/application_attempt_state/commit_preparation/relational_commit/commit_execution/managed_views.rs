@@ -5,8 +5,9 @@ use worth_relational::facade::{
     history::CommitId,
     identity::VersionId,
     mvcc::{PreparedRelationalChangeSummaryBudget, PreparedRelationalCommitCandidate},
+    publication::RecordStructuralChange,
     snapshots::SnapshotHandle,
-    transactions::CommitResult,
+    transactions::{CommitResult, RecordRef},
 };
 use worth_runtime_world::facade::CompositeCommitIdentity;
 
@@ -38,6 +39,7 @@ pub(super) fn prepare(
     before: &SnapshotHandle,
     candidate: &PreparedRelationalCommitCandidate,
 ) -> Option<PreparedViewPublication> {
+    let trace = std::env::var_os("WORTH_SCENE_TRACE").is_some();
     let registry = provider.graph.managed_derived_views();
     if !registry.has_live_views() {
         return None;
@@ -60,6 +62,27 @@ pub(super) fn prepare(
             },
         )
     });
+    if trace {
+        match &summary {
+            Ok(summary) => eprintln!(
+                "managed view sealed summary: records={} scopes={} updated_empty_scopes={}",
+                summary.records.len(),
+                summary
+                    .records
+                    .iter()
+                    .map(|record| record.aspect_scopes.len())
+                    .sum::<usize>(),
+                summary
+                    .records
+                    .iter()
+                    .filter(|record| matches!(record.target, RecordRef::Entity(_))
+                        && record.structural_change == RecordStructuralChange::Updated
+                        && record.aspect_scopes.is_empty())
+                    .count(),
+            ),
+            Err(_) => eprintln!("managed view sealed summary: denied"),
+        }
+    }
     let admissible = summary.ok().filter(|summary| {
         summary.runtime_instance_id == before.runtime_instance_id()
             && summary.runtime_instance_id == descriptor.runtime_instance_id()
@@ -71,6 +94,13 @@ pub(super) fn prepare(
     let changes = admissible
         .as_ref()
         .and_then(|summary| changes_from_summary(summary, MAXIMUM_VIEW_CHANGES));
+    if trace {
+        eprintln!(
+            "managed view summary admissible={} changes={:?}",
+            admissible.is_some(),
+            changes.as_ref().map(Vec::len)
+        );
+    }
     let has_changes = changes.is_some();
     let plan = match changes {
         Some(changes) => registry.prepare_publication(basis, &changes, MAXIMUM_VIEW_WORK_UNITS),
@@ -102,6 +132,9 @@ impl PreparedViewPublication {
                 && committed.snapshot.version_id() == version
                 && committed.commit.commit_id == commit
         });
+        if std::env::var_os("WORTH_SCENE_TRACE").is_some() {
+            eprintln!("managed view publication exact={exact}");
+        }
         if exact {
             self.plan.apply(after);
         } else {
