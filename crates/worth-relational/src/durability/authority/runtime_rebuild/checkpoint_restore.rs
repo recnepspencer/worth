@@ -172,6 +172,8 @@ fn prepare_history(
     mut branch_roots: branch_root_images::RestoredBranchRootImages,
     symbols: &crate::symbols::data::StringInterner,
 ) -> Result<HistorySubsystem, DurabilityError> {
+    let trace = std::env::var_os("WORTH_REOPEN_TRACE").is_some();
+    let started = std::time::Instant::now();
     let mut history = restored.history.detached_owner_snapshot();
     history.with_ledger_mut(|ledger| {
         ledger.commit_envelopes = checkpoint
@@ -200,6 +202,9 @@ fn prepare_history(
                 )
             })?;
     }
+    if trace {
+        eprintln!("relational history routes: {:?}", started.elapsed());
+    }
     if let Some(position) = history.latest_recorded_patch_position() {
         history.advance_canonical_stream_floor(position);
     }
@@ -217,6 +222,9 @@ fn prepare_history(
         .collect();
     history.with_ledger_mut(|ledger| ledger.commit_graph = commit_graph);
     history.rebuild_catalog_from_durable_envelopes();
+    if trace {
+        eprintln!("relational history catalog: {:?}", started.elapsed());
+    }
     history
         .restore_branch_cells(
             &checkpoint.branch_cells,
@@ -231,6 +239,9 @@ fn prepare_history(
                 detail,
             )
         })?;
+    if trace {
+        eprintln!("relational history branch cells: {:?}", started.elapsed());
+    }
     Ok(history)
 }
 
