@@ -55,13 +55,15 @@ where
                     work,
                 };
             }
-            let prepared_scope = crate::validation::data::PreparedCustomInvariantScope::capture(
-                request.observation(),
-                request.version_id(),
-                request.merged_plan(),
-                registration.access_contract(),
-                &work,
-            );
+            let prepared_scope =
+                crate::validation::data::PreparedCustomInvariantScope::capture_with_shared_inputs(
+                    request.observation(),
+                    request.version_id(),
+                    request.merged_plan(),
+                    registration.access_contract(),
+                    &work,
+                    runtime.shared_candidate_inputs(),
+                );
             let mut planner = CustomInvariantScopePlanner::new_at_current_version(
                 runtime,
                 request.observation(),

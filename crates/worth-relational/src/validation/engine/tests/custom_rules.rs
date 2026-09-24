@@ -2,6 +2,7 @@ use super::validation_engine_fixtures::*;
 use std::sync::Arc;
 
 pub(super) struct AlwaysViolatesCustomRule;
+pub(super) struct RejectsPlannedRelationRule;
 pub(super) struct TinyBudgetUnrelatedRule;
 pub(super) struct BoundedBudgetUnrelatedRule;
 pub(super) struct GraphCompositionViolatesCustomRule;
@@ -49,6 +50,35 @@ impl CustomInvariantRule for AlwaysViolatesCustomRule {
         _scope: &Self::Scope,
     ) -> Result<CustomInvariantVerdict, CustomInvariantExecutionError> {
         Ok(CustomInvariantVerdict::Violation)
+    }
+}
+
+impl CustomInvariantRule for RejectsPlannedRelationRule {
+    type Scope = ();
+
+    fn descriptor(&self) -> CustomInvariantDescriptor {
+        let mut descriptor = AlwaysViolatesCustomRule.descriptor();
+        descriptor.identity.rule_id = CustomInvariantRuleId::new("test.custom.planned-relation");
+        descriptor
+    }
+
+    fn prepare_scope(
+        &self,
+        _: &mut CustomInvariantScopePlanner<'_>,
+    ) -> Result<Self::Scope, CustomInvariantPreparationError> {
+        Ok(())
+    }
+
+    fn evaluate(
+        &self,
+        context: &CustomInvariantExecutionContext<'_>,
+        _: &Self::Scope,
+    ) -> Result<CustomInvariantVerdict, CustomInvariantExecutionError> {
+        Ok(if context.touched().planned_relation_creates().len() < 2 {
+            CustomInvariantVerdict::Pass
+        } else {
+            CustomInvariantVerdict::Violation
+        })
     }
 }
 

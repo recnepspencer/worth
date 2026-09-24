@@ -6,10 +6,14 @@ use crate::storage::substrate::HistoricalMetadata;
 
 mod structural_adjacency;
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub(crate) struct InvariantStateView<'state> {
     state: &'state dyn PartitionAccess,
     version_id: crate::identity::data::VersionId,
+    candidate_inputs: Option<(
+        std::sync::Arc<super::input_preparation::SharedCandidateInputs>,
+        super::input_preparation::CandidateInputBasis,
+    )>,
 }
 
 impl<'state> InvariantStateView<'state> {
@@ -17,7 +21,29 @@ impl<'state> InvariantStateView<'state> {
         state: &'state dyn PartitionAccess,
         version_id: crate::identity::data::VersionId,
     ) -> Self {
-        Self { state, version_id }
+        Self {
+            state,
+            version_id,
+            candidate_inputs: None,
+        }
+    }
+
+    pub(crate) fn with_candidate_inputs(
+        mut self,
+        inputs: Option<std::sync::Arc<super::input_preparation::SharedCandidateInputs>>,
+        basis: super::input_preparation::CandidateInputBasis,
+    ) -> Self {
+        self.candidate_inputs = inputs.map(|inputs| (inputs, basis));
+        self
+    }
+
+    pub(crate) fn candidate_inputs(
+        &self,
+    ) -> Option<&(
+        std::sync::Arc<super::input_preparation::SharedCandidateInputs>,
+        super::input_preparation::CandidateInputBasis,
+    )> {
+        self.candidate_inputs.as_ref()
     }
 
     pub(crate) fn state(&self) -> &'state dyn PartitionAccess {
@@ -112,6 +138,18 @@ impl<'state> InvariantStateView<'state> {
         &self,
         entity_id: crate::identity::data::EntityId,
     ) -> Option<VisibleEntityMetadata> {
+        if let Some((inputs, basis)) = &self.candidate_inputs {
+            return inputs.entity(*basis, self.version_id, entity_id, || {
+                self.read_entity_metadata(entity_id)
+            });
+        }
+        self.read_entity_metadata(entity_id)
+    }
+
+    fn read_entity_metadata(
+        &self,
+        entity_id: crate::identity::data::EntityId,
+    ) -> Option<VisibleEntityMetadata> {
         let slot = entity_id.slot_index();
         let partition = self.entity_partition_for_slot(entity_id.partition_id, slot)?;
         if partition
@@ -175,6 +213,18 @@ impl<'state> InvariantStateView<'state> {
     }
 
     pub(crate) fn relation_metadata(
+        &self,
+        relation_id: crate::identity::data::RelationId,
+    ) -> Option<VisibleRelationMetadata> {
+        if let Some((inputs, basis)) = &self.candidate_inputs {
+            return inputs.relation(*basis, self.version_id, relation_id, || {
+                self.read_relation_metadata(relation_id)
+            });
+        }
+        self.read_relation_metadata(relation_id)
+    }
+
+    fn read_relation_metadata(
         &self,
         relation_id: crate::identity::data::RelationId,
     ) -> Option<VisibleRelationMetadata> {

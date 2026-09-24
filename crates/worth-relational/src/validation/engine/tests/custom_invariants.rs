@@ -99,6 +99,7 @@ fn engine_executes_custom_packets_against_real_structural_surfaces() {
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(schema)
         .custom_invariant(CustomInvariantRegistration::new(StructuralSurfaceRule).unwrap())
+        .custom_invariant(CustomInvariantRegistration::new(RejectsPlannedRelationRule).unwrap())
         .build();
     let source = create_entity_of_kind(&runtime, KindId(1), "structural-source");
     let target = create_entity_of_kind(&runtime, KindId(1), "structural-target");
@@ -122,6 +123,15 @@ fn engine_executes_custom_packets_against_real_structural_surfaces() {
                 fields: crate::transactions::data::AspectFieldPatch::default(),
             }))
             .into(),
+            MutationIntent::Create(CreateIntent::Relation(RelationSpec {
+                partition_id: PartitionId::main(),
+                kind_id: crate::facade::identity::KindId(2),
+                client_key: crate::symbols::data::ClientKey::raw("edge-2"),
+                source: crate::transactions::data::EntityReference::Existing(source),
+                target: crate::transactions::data::EntityReference::Existing(target),
+                fields: crate::transactions::data::AspectFieldPatch::default(),
+            }))
+            .into(),
         ],
     };
 
@@ -136,15 +146,51 @@ fn engine_executes_custom_packets_against_real_structural_surfaces() {
         ),
     );
 
-    assert_eq!(results.results().len(), 1);
+    assert_eq!(results.results().len(), 2);
     assert!(matches!(
         results.results()[0].verdict,
         crate::validation::data::InvariantVerdict::Pass
     ));
+    assert!(matches!(
+        results.results()[1].verdict,
+        crate::validation::data::InvariantVerdict::Violation(_)
+    ));
     let counters = runtime.performance_access().counters();
-    assert_eq!(counters.custom_invariant_preparation_count, 1);
-    assert_eq!(counters.custom_invariant_execution_count, 1);
+    assert_eq!(counters.custom_invariant_preparation_count, 2);
+    assert_eq!(counters.custom_invariant_execution_count, 2);
+    assert_eq!(counters.custom_invariant_candidate_adjacency_gathers, 4);
+    assert_eq!(counters.custom_invariant_candidate_adjacency_count_reads, 4);
+    assert_eq!(
+        counters.custom_invariant_candidate_adjacency_relation_ids,
+        0
+    );
+    assert!(counters.custom_invariant_candidate_reuse_hits > 0);
     assert!(counters.custom_invariant_traversal_frontier_count >= 2);
+
+    create_relation_of_kind(&runtime, KindId(2), source, target, "committed-edge");
+    runtime.performance_access().reset_counters();
+    let after_topology_change = InvariantEngine::new(&runtime).execute(
+        InvariantExecutionRequest::from_profile_with_contract(
+            InvariantRequestProfile::CommitBoundary,
+            &runtime,
+            InvariantObservation::committed(runtime.storage_access().current_edition()).into(),
+            runtime.current_version_id(),
+            Some(&plan),
+            None,
+        ),
+    );
+    assert_eq!(after_topology_change.results().len(), 2);
+    assert!(matches!(
+        after_topology_change.results()[1].verdict,
+        crate::validation::data::InvariantVerdict::Violation(_)
+    ));
+    assert!(
+        runtime
+            .performance_access()
+            .counters()
+            .custom_invariant_candidate_adjacency_relation_ids
+            > 0
+    );
 }
 
 #[test]

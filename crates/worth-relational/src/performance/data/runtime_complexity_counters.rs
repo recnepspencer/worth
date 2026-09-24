@@ -216,4 +216,16 @@ pub struct RuntimeComplexityCounters {
     pub merge_execution_records_admitted: usize,
     pub merge_execution_mutation_intents_emitted: usize,
     pub descriptor_version_mismatches_encountered: usize,
+    #[serde(default)]
+    pub custom_invariant_candidate_entity_reads: usize,
+    #[serde(default)]
+    pub custom_invariant_candidate_relation_reads: usize,
+    #[serde(default)]
+    pub custom_invariant_candidate_adjacency_gathers: usize,
+    #[serde(default)]
+    pub custom_invariant_candidate_adjacency_count_reads: usize,
+    #[serde(default)]
+    pub custom_invariant_candidate_adjacency_relation_ids: usize,
+    #[serde(default)]
+    pub custom_invariant_candidate_reuse_hits: usize,
 }
