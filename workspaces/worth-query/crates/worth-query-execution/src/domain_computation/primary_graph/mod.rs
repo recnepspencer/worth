@@ -40,6 +40,7 @@ pub(crate) use managed_bridge::build_primary_graph_product_bridge;
 mod observations;
 mod ordinary_read;
 pub(crate) mod output_lineage;
+mod output_reuse;
 mod principal_key;
 pub(crate) mod product_activation;
 mod product_operation;

@@ -39,6 +39,7 @@ pub enum WorthQueryOutputDemandDenialKind {
     PublicationCapacityExceeded,
     ForeignDemand,
     ForeignSettlement,
+    IncompleteDependencyCoverage,
     RetainedBasisUnavailable,
     Closed,
     DuplicatePerformedSource,
@@ -128,6 +129,7 @@ impl WorthQueryOutputDemandDenialKind {
             | Self::PublicationCapacityExceeded
             | Self::ForeignDemand
             | Self::ForeignSettlement
+            | Self::IncompleteDependencyCoverage
             | Self::RetainedBasisUnavailable
             | Self::Closed
             | Self::DuplicatePerformedSource => Terminal,

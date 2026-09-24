@@ -1,10 +1,11 @@
 use super::super::{
     ApplicationQueryAuthorizationRequirement, ApplicationQueryBasisSupport,
     ApplicationQueryCardinality, ApplicationQueryContinuationTarget, ApplicationQueryDefinition,
-    ApplicationQueryDependencyCeiling, ApplicationQueryDisclosureContract,
-    ApplicationQueryLaneEligibility, ApplicationQueryLiveCauseContract,
-    ApplicationQueryOrderingTerm, ApplicationQueryParameterDefinition, ApplicationQueryPredicate,
-    ApplicationQueryResultShape, ApplicationQueryRootPathMeaning,
+    ApplicationQueryDependencyCeiling, ApplicationQueryDependencyEquivalence,
+    ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
+    ApplicationQueryLiveCauseContract, ApplicationQueryOrderingTerm,
+    ApplicationQueryParameterDefinition, ApplicationQueryPredicate, ApplicationQueryResultShape,
+    ApplicationQueryRootPathMeaning,
 };
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
 
@@ -95,6 +96,10 @@ impl WorthQueryPortableApplicationQueryParts {
 
     pub const fn dependency_ceiling(&self) -> ApplicationQueryDependencyCeiling {
         self.dependency_ceiling
+    }
+
+    pub const fn dependency_equivalence(&self) -> ApplicationQueryDependencyEquivalence {
+        ApplicationQueryDependencyEquivalence::CompleteNativeSourceRevisions
     }
 
     pub fn disclosure(&self) -> &ApplicationQueryDisclosureContract {

@@ -53,7 +53,7 @@ where
             plan.principal,
             plan.controls.request_scope(),
         );
-    let source_footprints = std::mem::take(&mut kernel.raw.source_footprints);
+    let mut source_footprints = std::mem::take(&mut kernel.raw.source_footprints);
     let result_set_selection = std::sync::Arc::clone(
         kernel
             .raw
@@ -61,6 +61,12 @@ where
             .as_ref()
             .expect("one-shot root selection must retain result-set evidence"),
     );
+    // A single row can feed an output demand. Its output depends on the
+    // complete query selection as well as the row: a newly matching root must
+    // invalidate reuse even when this row's local path remains unchanged.
+    if let [footprint] = source_footprints.as_mut_slice() {
+        footprint.root_selection = Some(std::sync::Arc::clone(&result_set_selection));
+    }
     let request = plan.controls.request_scope();
     let basis_identity = plan.basis.identity().clone();
     let basis_version = plan.basis.version_id();

@@ -150,6 +150,13 @@ impl<Query> Clone for WorthQueryObservedSource<Query> {
 }
 
 impl<Query> WorthQueryObservedSource<Query> {
+    pub(in crate::domain_computation::primary_graph) fn has_complete_output_dependencies(
+        &self,
+    ) -> bool {
+        let footprint = self.source_meaning.footprint();
+        footprint.complete && footprint.root_selection.is_some()
+    }
+
     pub(in crate::domain_computation) fn partition_identity(&self) -> [u8; 32] {
         // The installed source expectation fixes the query contract before
         // this enters output lineage. Its admitted parameter identity is the

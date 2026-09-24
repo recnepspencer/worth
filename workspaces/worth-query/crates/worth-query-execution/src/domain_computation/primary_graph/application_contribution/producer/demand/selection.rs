@@ -1,6 +1,9 @@
 use super::*;
 use crate::domain_computation::primary_graph::{
-    application_attempt::WorthQuerySourceCurrentnessFailure,
+    output_reuse::{
+        compare_retained_output_dependencies, require_installed_output_dependencies,
+        OutputDependencySelection,
+    },
     WorthQueryApplicationBasisSelectionIdentity, WorthQueryPrimaryGraphApplicationRuntime,
 };
 use worth_relational::facade::{runtime::ProjectionAspectScope, storage::RecordLifecycleState};
@@ -28,6 +31,16 @@ where
                 Family::IDENTITY,
             ));
         }
+        let installed = self
+            .installed_schema
+            .installed_query_binding::<Family::Source>()
+            .map_err(|_| {
+                WorthQueryOutputDemandDenial::new(
+                    WorthQueryOutputDemandDenialKind::ForeignSource,
+                    Family::IDENTITY,
+                )
+            })?;
+        require_installed_output_dependencies(installed.query().output_dependencies(), source)?;
         let WorthQueryApplicationBasisSelectionIdentity::Product(observation) = &source.selection
         else {
             return Err(WorthQueryOutputDemandDenial::new(
@@ -145,37 +158,17 @@ where
                             crate::domain_computation::primary_graph::output_lineage::RecordedSourceIdentity::Checkpoint(checkpoint) => checkpoint == source.checkpoint_identity(),
                         }
                     });
-                    let mut facts_current = live && identity_current;
-                    if facts_current {
-                        if let Some(facts) = &candidate.observed_source_facts {
-                        for fact in facts.iter() {
-                            let (equal, work) = fact
-                                .source_currentness_in(
-                                    runtime,
-                                    selected.application_basis().snapshot_handle(),
-                                    remaining_work,
-                                )
-                                .map_err(|failure| match failure {
-                                    WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded => {
-                                        selection_budget_denial(Family::IDENTITY)
-                                    }
-                                    WorthQuerySourceCurrentnessFailure::Unavailable => {
-                                        WorthQueryOutputDemandDenial::new(
-                                            WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
-                                            Family::IDENTITY,
-                                        )
-                                    }
-                                })?;
-                            remaining_work -= work;
-                            if !equal {
-                                facts_current = false;
-                                break;
-                            }
-                        }
-                        } else if !matches!(candidate.source_identity, Some(crate::domain_computation::primary_graph::output_lineage::RecordedSourceIdentity::Checkpoint(_))) {
-                            facts_current = false;
-                        }
-                    }
+                    let facts_current = live
+                        && matches!(
+                            compare_retained_output_dependencies(
+                                runtime,
+                                selected.application_basis().snapshot_handle(),
+                                identity_current,
+                                candidate.observed_source_facts.as_deref(),
+                                &mut remaining_work,
+                            )?,
+                            OutputDependencySelection::Reuse
+                        );
                     current.push((live, facts_current));
                 }
                 Ok::<_, WorthQueryOutputDemandDenial>(current)
