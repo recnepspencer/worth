@@ -109,13 +109,16 @@ fn changed_member_token_for_same_entity_refreshes_entry_and_duplicate_members_fa
     let membership = read_membership();
     let keys = world
         .application
-        .reconstruct_managed_derived_collection_pair_lazy(
+        .reconstruct_managed_derived_collection_pair_parallel(
             &view,
             selected.product(),
             &membership,
             members,
-            |token| read_entry(token),
-            |row| read_entry(row.status()),
+            |token| {
+                let first = read_entry(token)?;
+                let second = read_entry(first.rows()[0].status())?;
+                Ok((first, second))
+            },
             |row| row.status().to_string(),
             |row| row.status().to_string(),
             |_, body| SceneLabel(body.label().to_string()),
