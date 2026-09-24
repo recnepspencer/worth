@@ -66,7 +66,8 @@ pub(in crate::domain_computation::primary_graph) use application_queries::Accoun
 pub(super) use application_queries::{
     cross_root_definition, status_parameter, AccountSummaryQuery, AccountSummaryResult,
     CrossRootQuery, GovernedAccountSummaryQuery, OrderedAccountSummaryQuery,
-    PublicAccountMembershipQuery, PublicScopedAccountSummaryQuery, ScopedAccountSummaryQuery,
+    PublicAccountMembershipQuery, PublicAccountMembershipResult, PublicScopedAccountSummaryQuery,
+    ScopedAccountSummaryQuery,
 };
 pub(super) use current_output_source::TestAccountSourceBinding;
 pub(super) use filtered_activity_query::{

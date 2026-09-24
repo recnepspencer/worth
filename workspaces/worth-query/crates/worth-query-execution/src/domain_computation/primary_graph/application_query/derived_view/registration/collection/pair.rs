@@ -17,6 +17,7 @@ use crate::domain_computation::primary_graph::application_query::derived_view::W
 use crate::domain_computation::primary_graph::application_query::WorthQueryApplicationOneShotResult;
 
 mod read;
+mod reconcile;
 mod reconstruct;
 mod reconstruct_lazy;
 

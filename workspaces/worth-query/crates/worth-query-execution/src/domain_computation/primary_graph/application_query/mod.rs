@@ -56,8 +56,9 @@ pub use denial::{
     WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryAdmissionDenialKind,
 };
 pub use derived_view::{
-    WorthQueryManagedDerivedValue, WorthQueryManagedDerivedView,
-    WorthQueryManagedDerivedViewDenial, WorthQueryManagedDerivedViewKey,
+    WorthQueryManagedDerivedMemberToken, WorthQueryManagedDerivedValue,
+    WorthQueryManagedDerivedView, WorthQueryManagedDerivedViewDenial,
+    WorthQueryManagedDerivedViewKey, WorthQueryManagedDerivedViewReconciliation,
     WorthQueryManagedDerivedViewSnapshot,
 };
 pub use disclosure::{

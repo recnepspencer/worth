@@ -183,8 +183,16 @@ where
                 dependencies,
             ));
         }
-        view.state
-            .reconstruct(reconstructed, membership, product.selected_commit())
+        view.state.reconstruct(
+            result
+                .result_set_observation()
+                .source()
+                .managed_derived_view_key(),
+            None,
+            reconstructed,
+            membership,
+            product.selected_commit(),
+        )
     }
 
     fn checked_view_dependencies<Query, Value>(

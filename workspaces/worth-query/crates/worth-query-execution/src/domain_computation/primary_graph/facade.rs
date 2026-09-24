@@ -115,9 +115,11 @@ pub use super::application_query::{
     WorthQueryApplicationQueryResumeControls, WorthQueryApplicationQueryWorkEvidence,
     WorthQueryApplicationReadObservation, WorthQueryApplicationResultBufferEvidence,
     WorthQueryApplicationResultBufferObservation, WorthQueryApplicationResultBufferObserver,
-    WorthQueryBoundSourceExpectation, WorthQueryManagedDerivedValue, WorthQueryManagedDerivedView,
+    WorthQueryBoundSourceExpectation, WorthQueryManagedDerivedMemberToken,
+    WorthQueryManagedDerivedValue, WorthQueryManagedDerivedView,
     WorthQueryManagedDerivedViewDenial, WorthQueryManagedDerivedViewKey,
-    WorthQueryManagedDerivedViewSnapshot, WorthQueryObservedResultSet, WorthQueryObservedSource,
+    WorthQueryManagedDerivedViewReconciliation, WorthQueryManagedDerivedViewSnapshot,
+    WorthQueryObservedResultSet, WorthQueryObservedSource,
     WorthQueryPrimaryGraphApplicationReadinessSnapshot, WorthQuerySourceExpectationDenial,
     WorthQuerySourceExpectationDenialKind,
 };

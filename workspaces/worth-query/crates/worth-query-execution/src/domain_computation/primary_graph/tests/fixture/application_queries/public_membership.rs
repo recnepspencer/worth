@@ -33,9 +33,14 @@ impl
         >,
     ) -> Result<Self, crate::domain_computation::primary_graph::WorthQueryApplicationProjectionDenial>
     {
+        let tag = row.field(tag_result_field())?;
         Ok(Self {
-            members: vec![row.entity_id()],
-            tag: row.field(tag_result_field())?,
+            members: if tag == "none" {
+                Vec::new()
+            } else {
+                vec![row.entity_id()]
+            },
+            tag,
         })
     }
 }

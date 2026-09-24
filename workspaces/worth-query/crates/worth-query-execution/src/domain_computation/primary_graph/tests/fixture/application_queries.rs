@@ -26,7 +26,7 @@ pub use markers::{
     OrderedAccountSummaryQuery, ScopedAccountSummaryQuery, ScopedAccountSummaryQueryResultBinding,
 };
 pub(super) use public_membership::public_membership_definition;
-pub use public_membership::PublicAccountMembershipQuery;
+pub use public_membership::{PublicAccountMembershipQuery, PublicAccountMembershipResult};
 pub(super) use public_scoped::public_scoped_definition;
 pub use public_scoped::PublicScopedAccountSummaryQuery;
 #[path = "application_queries/parameter_reference.rs"]

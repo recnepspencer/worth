@@ -107,8 +107,19 @@ impl<Key: Clone + Ord> DependencyIndex<Key> {
         self.insert(dependency, Target::Entry(key.clone()));
     }
 
+    pub(super) fn insert_membership(&mut self, dependency: &ViewDependency) {
+        self.insert(dependency, Target::Membership);
+    }
+
     pub(super) fn remove_entry(&mut self, key: &Key, dependencies: &BTreeSet<ViewDependency>) {
-        let target = Target::Entry(key.clone());
+        self.remove_target(dependencies, Target::Entry(key.clone()));
+    }
+
+    pub(super) fn remove_membership(&mut self, dependencies: &BTreeSet<ViewDependency>) {
+        self.remove_target(dependencies, Target::Membership);
+    }
+
+    fn remove_target(&mut self, dependencies: &BTreeSet<ViewDependency>, target: Target<Key>) {
         for dependency in dependencies {
             if let Some(targets) = self.exact.get_mut(dependency) {
                 targets.remove(&target);

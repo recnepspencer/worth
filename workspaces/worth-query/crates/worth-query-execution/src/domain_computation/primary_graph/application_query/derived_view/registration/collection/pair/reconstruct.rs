@@ -121,8 +121,16 @@ where
             return Err(Denial::IncompleteDependencies);
         }
         self.admit_view_product(view, product)?;
-        view.state
-            .reconstruct(entries, membership, product.selected_commit())?;
+        view.state.reconstruct(
+            membership_result
+                .result_set_observation()
+                .source()
+                .managed_derived_view_key(),
+            None,
+            entries,
+            membership,
+            product.selected_commit(),
+        )?;
         Ok(keys)
     }
 }

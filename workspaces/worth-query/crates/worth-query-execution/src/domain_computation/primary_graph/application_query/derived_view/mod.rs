@@ -15,7 +15,10 @@ pub(in crate::domain_computation::primary_graph) use publication::{
 pub(in crate::domain_computation::primary_graph) use registry::{
     ManagedDerivedViewRegistry, PreparedManagedViewPublication,
 };
-pub use retention::{WorthQueryManagedDerivedValue, WorthQueryManagedDerivedViewDenial};
+pub use retention::{
+    WorthQueryManagedDerivedMemberToken, WorthQueryManagedDerivedValue,
+    WorthQueryManagedDerivedViewDenial,
+};
 
 /// Query-issued row identity: an exact source root and parameter binding,
 /// never a consumer-selected scene key.
@@ -63,3 +66,26 @@ pub type WorthQueryManagedDerivedView<Query, Value> =
     retention::WorthQueryManagedDerivedView<Query, WorthQueryManagedDerivedViewKey, Value>;
 pub type WorthQueryManagedDerivedViewSnapshot<Value> =
     retention::WorthQueryManagedDerivedViewSnapshot<WorthQueryManagedDerivedViewKey, Value>;
+
+/// Work performed when a certified member set replaces an older one.
+pub struct WorthQueryManagedDerivedViewReconciliation {
+    pub(super) keys: Vec<WorthQueryManagedDerivedViewKey>,
+    pub(super) refreshed_entries: usize,
+    pub(super) retained_entries: usize,
+    pub(super) removed_entries: usize,
+}
+
+impl WorthQueryManagedDerivedViewReconciliation {
+    pub fn keys(&self) -> &[WorthQueryManagedDerivedViewKey] {
+        &self.keys
+    }
+    pub const fn refreshed_entries(&self) -> usize {
+        self.refreshed_entries
+    }
+    pub const fn retained_entries(&self) -> usize {
+        self.retained_entries
+    }
+    pub const fn removed_entries(&self) -> usize {
+        self.removed_entries
+    }
+}

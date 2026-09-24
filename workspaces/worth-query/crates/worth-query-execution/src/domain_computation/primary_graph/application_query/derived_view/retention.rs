@@ -7,6 +7,7 @@ use worth_query_installation::facade::{
     ApplicationSchemaBindingIdentity, WorthQueryInstalledApplicationQueryIdentity,
 };
 use worth_relational::facade::history::BranchId;
+use worth_relational::facade::identity::EntityId;
 use worth_runtime_world::facade::{
     CompositeCommitIdentity, ProductBranchIdentity, ProductBranchIncarnation,
 };
@@ -15,8 +16,14 @@ use super::dependency::ViewDependency;
 use super::publication::DependencyIndex;
 use super::registry::ManagedDerivedViewRegistry;
 
+mod member_token;
 mod publication;
+mod reconcile;
 mod refresh;
+
+pub use member_token::WorthQueryManagedDerivedMemberToken;
+pub(in crate::domain_computation::primary_graph::application_query::derived_view) use member_token::RetainedMemberToken;
+use member_token::token_charge;
 
 /// A projected value declares its retained heap footprint. Query charges
 /// entry and source-provenance overhead in addition to this payload.
@@ -38,6 +45,7 @@ pub enum WorthQueryManagedDerivedViewDenial {
     StaleSource,
     IncompleteDependencies,
     ColdReconstructionRequired,
+    MembershipReconciliationRequired,
     EntryRefreshRequired,
     QueryExecutionDenied,
     ViewRevisionExhausted,
@@ -51,6 +59,8 @@ struct RetainedEntry<Value> {
 
 struct RetainedView<Key, Value> {
     current_commit: CompositeCommitIdentity,
+    membership_key: Option<Key>,
+    member_tokens: Option<BTreeMap<EntityId, RetainedMemberToken>>,
     membership: BTreeSet<ViewDependency>,
     entries: BTreeMap<Key, RetainedEntry<Value>>,
     index: DependencyIndex<Key>,
@@ -59,6 +69,7 @@ struct RetainedView<Key, Value> {
     revision: u64,
     revision_exhausted: bool,
     cold: bool,
+    membership_dirty: bool,
     disposed: bool,
 }
 
@@ -104,6 +115,8 @@ where
             limits,
             retained: Mutex::new(RetainedView {
                 current_commit: commit,
+                membership_key: None,
+                member_tokens: None,
                 membership: BTreeSet::new(),
                 entries: BTreeMap::new(),
                 index: DependencyIndex::default(),
@@ -112,6 +125,7 @@ where
                 revision: 0,
                 revision_exhausted: false,
                 cold: true,
+                membership_dirty: false,
                 disposed: false,
             }),
         }
@@ -119,6 +133,8 @@ where
 
     pub(super) fn reconstruct(
         &self,
+        membership_key: Key,
+        member_tokens: Option<BTreeMap<EntityId, RetainedMemberToken>>,
         entries: Vec<(Key, Value, BTreeSet<ViewDependency>)>,
         membership: BTreeSet<ViewDependency>,
         observed_commit: &CompositeCommitIdentity,
@@ -152,10 +168,12 @@ where
             return Err(WorthQueryManagedDerivedViewDenial::EntryCapacityExceeded);
         }
         let mut replacement = BTreeMap::new();
-        let mut bytes = membership
-            .iter()
-            .map(ViewDependency::retained_bytes)
-            .fold(0usize, usize::saturating_add);
+        let mut bytes = std::mem::size_of::<Key>().saturating_add(
+            membership
+                .iter()
+                .map(ViewDependency::retained_bytes)
+                .fold(0usize, usize::saturating_add),
+        );
         for (key, value, dependencies) in entries {
             bytes = bytes
                 .saturating_add(value.retained_bytes())
@@ -204,17 +222,21 @@ where
             });
         bytes = bytes
             .saturating_add(index_bound)
-            .saturating_add(maximum_dirty_bytes);
+            .saturating_add(maximum_dirty_bytes)
+            .saturating_add(member_tokens.as_ref().map_or(0, token_charge));
         if bytes > self.limits.maximum_retained_bytes() {
             return Err(WorthQueryManagedDerivedViewDenial::RetainedBytesExceeded);
         }
         retained.entries = replacement;
+        retained.membership_key = Some(membership_key);
+        retained.member_tokens = member_tokens;
         retained.membership = membership;
         retained.index = index;
         retained.dirty.clear();
         retained.charged_bytes = bytes;
         retained.advance_revision();
         retained.cold = false;
+        retained.membership_dirty = false;
         Ok(())
     }
 
@@ -252,12 +274,15 @@ where
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         retained.entries.clear();
+        retained.membership_key = None;
+        retained.member_tokens = None;
         retained.membership.clear();
         retained.index = DependencyIndex::default();
         retained.dirty.clear();
         retained.charged_bytes = 0;
         retained.advance_revision();
         retained.cold = true;
+        retained.membership_dirty = false;
     }
 
     pub(super) fn rebase_cold(&self, commit: CompositeCommitIdentity) {
@@ -266,12 +291,15 @@ where
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         retained.entries.clear();
+        retained.membership_key = None;
+        retained.member_tokens = None;
         retained.membership.clear();
         retained.index = DependencyIndex::default();
         retained.dirty.clear();
         retained.charged_bytes = 0;
         retained.advance_revision();
         retained.cold = true;
+        retained.membership_dirty = false;
         retained.current_commit = commit;
     }
 }
@@ -301,6 +329,9 @@ fn verify_observation<Key, Value>(
     if retained.cold {
         return Err(WorthQueryManagedDerivedViewDenial::ColdReconstructionRequired);
     }
+    if retained.membership_dirty {
+        return Err(WorthQueryManagedDerivedViewDenial::MembershipReconciliationRequired);
+    }
     if &retained.current_commit != commit {
         return Err(WorthQueryManagedDerivedViewDenial::StaleSource);
     }
@@ -328,6 +359,7 @@ impl<Query, Key, Value> Drop for WorthQueryManagedDerivedView<Query, Key, Value>
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         retained.entries.clear();
+        retained.member_tokens = None;
         retained.membership.clear();
         retained.index = DependencyIndex::default();
         retained.dirty.clear();

@@ -71,7 +71,13 @@ where
         if retained.current_commit != prepared.before || retained.revision != prepared.revision {
             retained.cold = true;
         } else {
-            retained.cold |= prepared.affected.membership;
+            if prepared.affected.membership {
+                if self.entry_query.is_some() && self.secondary_entry_query.is_some() {
+                    retained.membership_dirty = true;
+                } else {
+                    retained.cold = true;
+                }
+            }
             retained.dirty = prepared.affected.entries;
         }
         retained.current_commit = after;
