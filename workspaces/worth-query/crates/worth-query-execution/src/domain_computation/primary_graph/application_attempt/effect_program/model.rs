@@ -326,6 +326,7 @@ pub struct WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, S
     pub(super) layout: Arc<super::super::super::schema_layout::WorthQueryPrimaryGraphLayout>,
     pub(super) program: Arc<()>,
     pub(super) effects: Vec<WorthQueryApplicationRealizedEffect>,
+    pub(super) field_write_positions: super::FieldWriteIndex,
     pub(super) keys: BTreeSet<(KindId, String)>,
     pub(super) emission_retained_bytes: u64,
     pub(super) emission_retained_bytes_ceiling: u64,

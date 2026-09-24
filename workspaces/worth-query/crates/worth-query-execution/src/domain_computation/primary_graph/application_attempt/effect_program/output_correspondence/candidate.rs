@@ -2,12 +2,12 @@ mod authoring;
 mod contract;
 
 use std::any::TypeId;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 #[cfg(test)]
 use worth_query_declaration::facade::application_operation::ApplicationMutationOutputPostureSet;
 use worth_relational::facade::identity::EntityId;
-use worth_relational::facade::transactions::{CommitResult, EntityReference};
+use worth_relational::facade::transactions::{CommitResult, CreatedEntityRef, EntityReference};
 
 use contract::{ExpectedOutputBinding, ExpectedOutputFamily};
 
@@ -229,6 +229,32 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
                 &missing.prefix,
             ));
         }
+        if self.roles.is_empty() {
+            return Ok(());
+        }
+        let mut deleted_entities = BTreeSet::new();
+        let mut created_entities = BTreeSet::new();
+        for effect in effects {
+            match effect {
+                WorthQueryApplicationRealizedEffect::DeleteEntity { entity_id } => {
+                    deleted_entities.insert(*entity_id);
+                }
+                WorthQueryApplicationRealizedEffect::CreateEntity {
+                    kind,
+                    key,
+                    partition,
+                    ..
+                } => {
+                    created_entities.insert(CreatedEntityRef {
+                        partition_id: partition
+                            .resolve(worth_relational::facade::identity::PartitionId::main()),
+                        kind_id: *kind,
+                        client_key: worth_relational::facade::symbols::ClientKey::raw(key.clone()),
+                    });
+                }
+                _ => {}
+            }
+        }
         for (role, binding) in &self.roles {
             let meaning_matches = self.expected_roles.get(role).is_some_and(|expected| {
                 expected.posture == binding.posture && expected.entity_name == binding.entity_name
@@ -244,9 +270,7 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
                 ));
             }
             let is_deleted = match binding.entity {
-                EntityReference::Existing(entity_id) => effects.iter().any(|effect| {
-                    matches!(effect, WorthQueryApplicationRealizedEffect::DeleteEntity { entity_id: deleted } if *deleted == entity_id)
-                }),
+                EntityReference::Existing(entity_id) => deleted_entities.contains(&entity_id),
                 EntityReference::Created(_) => false,
             };
             let action_matches = match binding.posture {
@@ -255,7 +279,7 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
                     matches!(
                         &binding.entity,
                         EntityReference::Created(created)
-                            if effects.iter().any(|effect| created_reference_matches_effect(created, effect))
+                            if created_entities.contains(created)
                     )
                 }
                 WorthQueryApplicationOutputPosture::Retire => is_deleted,
@@ -309,25 +333,6 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
             roles,
         }
     }
-}
-
-fn created_reference_matches_effect(
-    created: &worth_relational::facade::transactions::CreatedEntityRef,
-    effect: &WorthQueryApplicationRealizedEffect,
-) -> bool {
-    matches!(
-        effect,
-        WorthQueryApplicationRealizedEffect::CreateEntity {
-            kind,
-            key,
-            partition,
-            ..
-        }
-            if created.partition_id
-                == partition.resolve(worth_relational::facade::identity::PartitionId::main())
-                && created.kind_id == *kind
-                && created.client_key == worth_relational::facade::symbols::ClientKey::raw(key)
-    )
 }
 
 fn validate_reference_posture(

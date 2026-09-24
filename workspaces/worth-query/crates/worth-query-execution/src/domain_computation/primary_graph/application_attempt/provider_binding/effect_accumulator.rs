@@ -4,7 +4,8 @@ use std::sync::Arc;
 use worth_relational::facade::transactions::{EntityReference, MutationIntent, WorkerIntentBatch};
 
 use super::effect_lowering::{
-    created_entity_symbols, lower_provider_effect, WorthQueryLoweredProviderEffect,
+    created_entity_symbols, lower_provider_effect, ObservedFactIndex,
+    WorthQueryLoweredProviderEffect,
 };
 use super::{
     retained_bytes_denial, WorthQueryAdmittedApplicationEmissionBatch,
@@ -19,7 +20,7 @@ pub(in crate::domain_computation::primary_graph) use expected_steps::WorthQueryE
 use expected_steps::WorthQueryExpectedEffectSteps;
 
 pub(super) struct WorthQueryProviderEffectAccumulator<'facts> {
-    facts: &'facts [WorthQueryApplicationObservedFact],
+    facts: ObservedFactIndex<'facts>,
     mutation_partition: worth_relational::facade::identity::PartitionId,
     symbols: BTreeMap<EntityReference, Arc<str>>,
     lowered: Vec<WorthQueryLoweredProviderEffect>,
@@ -49,7 +50,7 @@ impl<'facts> WorthQueryProviderEffectAccumulator<'facts> {
             })
             .unwrap_or(mutation_partition);
         Self {
-            facts,
+            facts: ObservedFactIndex::new(facts),
             mutation_partition,
             symbols: created_entity_symbols(effects, mutation_partition),
             lowered: Vec::with_capacity(effects.len()),
@@ -61,7 +62,7 @@ impl<'facts> WorthQueryProviderEffectAccumulator<'facts> {
         effect: WorthQueryApplicationRealizedEffect,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
         let lowered =
-            lower_provider_effect(self.facts, &self.symbols, self.mutation_partition, effect)?;
+            lower_provider_effect(&self.facts, &self.symbols, self.mutation_partition, effect)?;
         self.lowered.push(lowered);
         Ok(())
     }

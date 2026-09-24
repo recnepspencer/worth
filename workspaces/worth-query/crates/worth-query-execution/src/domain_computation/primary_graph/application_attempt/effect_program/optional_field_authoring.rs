@@ -68,20 +68,10 @@ impl<Schema, Operation, Input, Scope>
                     field.field(),
                 )
             })?;
-        let matching_effect = self.effects.iter().find(|effect| {
-            matches!(
-                effect,
-                WorthQueryApplicationRealizedEffect::UpdateEntity {
-                    entity,
-                    entity_id: candidate,
-                    ..
-                } | WorthQueryApplicationRealizedEffect::PatchOptionalEntityFields {
-                    entity,
-                    entity_id: candidate,
-                    ..
-                } if entity == field.entity() && *candidate == entity_id
-            )
-        });
+        let position = self
+            .field_write_positions
+            .position(field.entity(), entity_id);
+        let matching_effect = position.map(|position| &self.effects[position]);
         let replaced_representation_bytes = matching_effect.and_then(|effect| match effect {
             WorthQueryApplicationRealizedEffect::UpdateEntity { fields, .. } => fields
                 .get(&locator)
@@ -124,8 +114,22 @@ impl<Schema, Operation, Input, Scope>
             replaced_representation_bytes.unwrap_or(0),
         )?;
         let write = WorthQueryApplicationOptionalFieldWrite { contract, value };
-        promote_ordinary_writes(&self.layout, &mut self.effects, field.entity(), entity_id)?;
-        record_write(&mut self.effects, field.entity(), entity_id, locator, write);
+        if let Some(position) = position {
+            promote_ordinary_writes(&self.layout, &mut self.effects[position], field.entity())?;
+        }
+        let first_write = position.is_none();
+        let position = record_write(
+            &mut self.effects,
+            position,
+            field.entity(),
+            entity_id,
+            locator,
+            write,
+        );
+        if first_write {
+            self.field_write_positions
+                .remember(field.entity(), entity_id, position);
+        }
         Ok(())
     }
 }
@@ -161,25 +165,16 @@ fn ordinary_write_contract_representation_bytes(
 
 fn promote_ordinary_writes(
     layout: &super::super::super::schema_layout::WorthQueryPrimaryGraphLayout,
-    effects: &mut [WorthQueryApplicationRealizedEffect],
+    effect: &mut WorthQueryApplicationRealizedEffect,
     entity: &str,
-    entity_id: EntityId,
 ) -> Result<(), WorthQueryApplicationAttemptDenial> {
-    let Some(index) = effects.iter().position(|effect| {
-        matches!(
-            effect,
-            WorthQueryApplicationRealizedEffect::UpdateEntity {
-                entity: candidate_entity,
-                entity_id: candidate,
-                ..
-            } if candidate_entity == entity && *candidate == entity_id
-        )
-    }) else {
+    let WorthQueryApplicationRealizedEffect::UpdateEntity {
+        entity_id, fields, ..
+    } = effect
+    else {
         return Ok(());
     };
-    let WorthQueryApplicationRealizedEffect::UpdateEntity { fields, .. } = &effects[index] else {
-        unreachable!("the selected effect is an ordinary entity update");
-    };
+    let entity_id = *entity_id;
     let fields = fields
         .iter()
         .map(|(locator, value)| {
@@ -201,7 +196,7 @@ fn promote_ordinary_writes(
             ))
         })
         .collect::<Result<BTreeMap<_, _>, _>>()?;
-    effects[index] = WorthQueryApplicationRealizedEffect::PatchOptionalEntityFields {
+    *effect = WorthQueryApplicationRealizedEffect::PatchOptionalEntityFields {
         entity: entity.to_owned(),
         entity_id,
         fields,
@@ -211,31 +206,29 @@ fn promote_ordinary_writes(
 
 fn record_write(
     effects: &mut Vec<WorthQueryApplicationRealizedEffect>,
+    position: Option<usize>,
     entity: &str,
     entity_id: EntityId,
     locator: worth_foundational::facade::AspectFieldLocator,
     write: WorthQueryApplicationOptionalFieldWrite,
-) {
-    match effects.iter_mut().find(|effect| {
-        matches!(
-            effect,
-            WorthQueryApplicationRealizedEffect::PatchOptionalEntityFields {
-                entity: candidate_entity,
-                entity_id: candidate,
-                ..
-            } if candidate_entity == entity && *candidate == entity_id
-        )
-    }) {
+) -> usize {
+    match position.map(|position| &mut effects[position]) {
         Some(WorthQueryApplicationRealizedEffect::PatchOptionalEntityFields { fields, .. }) => {
             fields.insert(locator, write);
+            position.expect("existing field effect has a position")
         }
-        _ => effects.push(
-            WorthQueryApplicationRealizedEffect::PatchOptionalEntityFields {
-                entity: entity.to_owned(),
-                entity_id,
-                fields: BTreeMap::from([(locator, write)]),
-            },
-        ),
+        Some(_) => unreachable!("optional write promotes an ordinary field effect first"),
+        None => {
+            let position = effects.len();
+            effects.push(
+                WorthQueryApplicationRealizedEffect::PatchOptionalEntityFields {
+                    entity: entity.to_owned(),
+                    entity_id,
+                    fields: BTreeMap::from([(locator, write)]),
+                },
+            );
+            position
+        }
     }
 }
 

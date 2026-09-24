@@ -9,11 +9,9 @@ use worth_relational::facade::transactions::{
     ApplyEntityAspectPatchIntent, EntityMutationIntent, MutationIntent,
 };
 
-use super::{effect_step, field_fact_identity, mutation, WorthQueryLoweredProviderEffect};
+use super::{effect_step, mutation, ObservedFactIndex, WorthQueryLoweredProviderEffect};
 use crate::domain_computation::primary_graph::application_attempt::effect_program::WorthQueryApplicationOptionalFieldWrite;
-use crate::domain_computation::primary_graph::application_attempt::{
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationObservedFact,
-};
+use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial;
 use crate::domain_computation::WorthQueryProvisionalEffectAction;
 
 struct AspectFieldPatch {
@@ -24,14 +22,14 @@ struct AspectFieldPatch {
 }
 
 pub(super) fn lower(
-    facts: &[WorthQueryApplicationObservedFact],
+    facts: &ObservedFactIndex<'_>,
     entity_id: EntityId,
     fields: BTreeMap<AspectFieldLocator, WorthQueryApplicationOptionalFieldWrite>,
 ) -> Result<WorthQueryLoweredProviderEffect, WorthQueryApplicationAttemptDenial> {
     let steps = fields
         .iter()
         .map(|(locator, write)| {
-            let identity = field_fact_identity(facts, entity_id, locator)?.into();
+            let identity = facts.field_identity(entity_id, locator)?.into();
             let action = if write.value.is_some() {
                 WorthQueryProvisionalEffectAction::Replace {
                     target_identity: identity,
