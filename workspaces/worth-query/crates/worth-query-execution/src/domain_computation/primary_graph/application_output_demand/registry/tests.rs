@@ -10,6 +10,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
 };
 
+mod ready_reuse;
 mod recovery_posture;
 mod semantic_epoch;
 mod source_custody;
