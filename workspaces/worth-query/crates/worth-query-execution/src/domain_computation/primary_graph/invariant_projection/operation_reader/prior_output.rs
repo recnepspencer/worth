@@ -55,8 +55,33 @@ where
         Entity: ApplicationEntityMarkerIdentity<Schema> + OperationReads<Operation> + 'static,
         Action: WorthQueryApplicationOutputAction,
     {
+        let role_name = role.name().to_owned();
+        self.prior_output_if_present(role)?.ok_or_else(|| {
+            WorthQueryPriorOutputDenial::new(
+                WorthQueryPriorOutputDenialKind::Unavailable,
+                role_name,
+            )
+        })
+    }
+
+    /// A missing correspondence for this exact binding is absence, not a denial.
+    /// Missing scope or product context and invalid or stale correspondence remain denials.
+    pub fn prior_output_if_present<Binding, Entity, Action>(
+        &mut self,
+        role: WorthQueryApplicationOutputRole<Binding, Entity, Action>,
+    ) -> Result<
+        Option<WorthQueryInvariantEntityIdentity<Schema, Entity>>,
+        WorthQueryPriorOutputDenial,
+    >
+    where
+        Binding: 'static,
+        Entity: ApplicationEntityMarkerIdentity<Schema> + OperationReads<Operation> + 'static,
+        Action: WorthQueryApplicationOutputAction,
+    {
         self.admit_prior_entity::<Entity>(role.name())?;
-        let correspondence = self.prior_correspondence::<Binding>(role.name())?;
+        let Some(correspondence) = self.select_prior_correspondence::<Binding>(role.name())? else {
+            return Ok(None);
+        };
         self.require_role_budget(1, role.name())?;
         self.reader.work_budget.consume(1);
         self.reader.work.record_output_lineage_role_lookup();
@@ -65,6 +90,7 @@ where
             .entity(role)
             .map_err(|denial| WorthQueryPriorOutputDenial::projection(&role_name, denial))?;
         self.live_prior_identity::<Entity>(&role_name, output.entity_id())
+            .map(Some)
     }
 
     /// Read every currently visible member of one declared generated-role family.
@@ -182,22 +208,6 @@ where
                 subject,
             )
         })
-    }
-
-    fn prior_correspondence<Binding: 'static>(
-        &mut self,
-        subject: &str,
-    ) -> Result<
-        std::sync::Arc<WorthQueryApplicationOutputCorrespondence>,
-        WorthQueryPriorOutputDenial,
-    > {
-        self.select_prior_correspondence::<Binding>(subject)?
-            .ok_or_else(|| {
-                WorthQueryPriorOutputDenial::new(
-                    WorthQueryPriorOutputDenialKind::Unavailable,
-                    subject,
-                )
-            })
     }
 
     fn select_prior_correspondence<Binding: 'static>(
