@@ -16,6 +16,9 @@ use super::{
     live_scope, resolved_account, WorthQueryApplicationCommitOutcome,
 };
 
+#[path = "mutation_work_scale/locality.rs"]
+mod locality;
+
 #[test]
 fn mutation_work_is_invariant_to_unrelated_graph_population() {
     let baseline = mutation_work(0, 71);
@@ -278,31 +281,33 @@ fn grow_unrelated_accounts(world: &super::super::fixture::AuthorizationWorld, co
     );
     let status = locator(status_ref.entity(), status_ref.aspect(), status_ref.field());
     let label = locator(label_ref.entity(), label_ref.aspect(), label_ref.field());
-    let batch = (0..count).fold(
-        WorkerIntentBatch::new("unrelated-mutation-scale-population"),
-        |batch, ordinal| {
-            let key = format!("unrelated-scale-{ordinal}");
-            let fields = AspectFieldPatch::from(BTreeMap::from([
-                (
-                    identity.clone(),
-                    StringApplicationValueBinding::encode(&key.clone()).unwrap(),
-                ),
-                (
-                    status.clone(),
-                    StringApplicationValueBinding::encode(&"unrelated".to_owned()).unwrap(),
-                ),
-                (
-                    label.clone(),
-                    StringApplicationValueBinding::encode(&"population".to_owned()).unwrap(),
-                ),
-            ]));
-            batch.push(MutationIntent::Create(CreateIntent::Entity(EntitySpec {
-                partition_id: worth_relational::facade::identity::PartitionId::main(),
-                kind_id: kind,
-                client_key: worth_relational::facade::symbols::ClientKey::raw(key),
-                fields,
-            })))
-        },
-    );
-    super::super::fixture::publish_relational_mutation(world, batch);
+    for start in (0..count).step_by(4_000) {
+        let batch = (start..(start + 4_000).min(count)).fold(
+            WorkerIntentBatch::new("unrelated-mutation-scale-population"),
+            |batch, ordinal| {
+                let key = format!("unrelated-scale-{ordinal}");
+                let fields = AspectFieldPatch::from(BTreeMap::from([
+                    (
+                        identity.clone(),
+                        StringApplicationValueBinding::encode(&key.clone()).unwrap(),
+                    ),
+                    (
+                        status.clone(),
+                        StringApplicationValueBinding::encode(&"population".to_owned()).unwrap(),
+                    ),
+                    (
+                        label.clone(),
+                        StringApplicationValueBinding::encode(&"population".to_owned()).unwrap(),
+                    ),
+                ]));
+                batch.push(MutationIntent::Create(CreateIntent::Entity(EntitySpec {
+                    partition_id: worth_relational::facade::identity::PartitionId::main(),
+                    kind_id: kind,
+                    client_key: worth_relational::facade::symbols::ClientKey::raw(key),
+                    fields,
+                })))
+            },
+        );
+        super::super::fixture::publish_relational_mutation(world, batch);
+    }
 }
