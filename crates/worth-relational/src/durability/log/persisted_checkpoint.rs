@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use serde::ser::{SerializeSeq, SerializeStruct};
 use serde::{Deserialize, Serialize};
 
@@ -25,6 +27,20 @@ pub(super) struct PersistedDurableCheckpointFileRef<'a> {
 struct PersistedDurableCheckpointRef<'a>(&'a DurableCheckpoint);
 
 struct CheckpointEnvelopeRefs<'a>(&'a [PositionedCanonicalCommit]);
+
+struct CheckpointBranchRootRefs<'a> {
+    roots: &'a [crate::durability::data::DurableBranchRootImage],
+    alias_by_root: &'a [bool],
+}
+
+struct CheckpointBranchRootRef<'a> {
+    root: &'a crate::durability::data::DurableBranchRootImage,
+    alias_shared_partitions: bool,
+}
+
+// The alias changes only the native file representation. A recovered root
+// still receives its own exact image before digest and schema readmission.
+const PARTITION_ALIAS_FORMAT_VERSION: u16 = 1;
 
 impl<'a> PersistedDurableCheckpointFileRef<'a> {
     pub(super) fn new(checkpoint: &'a DurableCheckpoint) -> Self {
@@ -71,10 +87,27 @@ impl Serialize for PersistedDurableCheckpointRef<'_> {
             symbol_table,
             runtime_name,
         } = self.0;
-        let mut fields = serializer.serialize_struct("PersistedDurableCheckpoint", 18)?;
+        // The current storage mirror and an exact branch root can differ after
+        // forks or schema evolution. Only identical images may share wire bytes.
+        let alias_by_root = branch_roots
+            .iter()
+            .map(|root| root.partition_images.as_slice() == partition_images.as_slice())
+            .collect::<Vec<_>>();
+        let aliased_roots = branch_roots
+            .iter()
+            .zip(&alias_by_root)
+            .filter_map(|(root, alias)| alias.then_some(root.commit_id))
+            .collect::<Vec<_>>();
+        let mut fields = serializer.serialize_struct("PersistedDurableCheckpoint", 20)?;
         fields.serialize_field("coverage", coverage)?;
         fields.serialize_field("branch_cells", branch_cells)?;
-        fields.serialize_field("branch_roots", branch_roots)?;
+        fields.serialize_field(
+            "branch_roots",
+            &CheckpointBranchRootRefs {
+                roots: branch_roots,
+                alias_by_root: &alias_by_root,
+            },
+        )?;
         fields.serialize_field("branch_root_schema_images", branch_root_schema_images)?;
         fields.serialize_field("record_identity", record_identity)?;
         fields.serialize_field("record_generation_high_water", record_generation_high_water)?;
@@ -93,6 +126,55 @@ impl Serialize for PersistedDurableCheckpointRef<'_> {
         )?;
         fields.serialize_field("symbol_table", symbol_table)?;
         fields.serialize_field("runtime_name", runtime_name)?;
+        fields.serialize_field("partition_alias_format", &PARTITION_ALIAS_FORMAT_VERSION)?;
+        fields.serialize_field("branch_root_partition_aliases", &aliased_roots)?;
+        fields.end()
+    }
+}
+
+impl Serialize for CheckpointBranchRootRefs<'_> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut sequence = serializer.serialize_seq(Some(self.roots.len()))?;
+        for (root, alias_shared_partitions) in self.roots.iter().zip(self.alias_by_root) {
+            sequence.serialize_element(&CheckpointBranchRootRef {
+                root,
+                alias_shared_partitions: *alias_shared_partitions,
+            })?;
+        }
+        sequence.end()
+    }
+}
+
+impl Serialize for CheckpointBranchRootRef<'_> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let crate::durability::data::DurableBranchRootImage {
+            format_version,
+            commit_id,
+            partition_images,
+            partition_image_digest,
+            schema_carrier_digest,
+            root_image_digest,
+        } = self.root;
+        let mut fields = serializer.serialize_struct("DurableBranchRootImage", 6)?;
+        fields.serialize_field("format_version", format_version)?;
+        fields.serialize_field("commit_id", commit_id)?;
+        fields.serialize_field(
+            "partition_images",
+            if self.alias_shared_partitions {
+                &[][..]
+            } else {
+                partition_images
+            },
+        )?;
+        fields.serialize_field("partition_image_digest", partition_image_digest)?;
+        fields.serialize_field("schema_carrier_digest", schema_carrier_digest)?;
+        fields.serialize_field("root_image_digest", root_image_digest)?;
         fields.end()
     }
 }
@@ -141,6 +223,14 @@ struct PersistedDurableCheckpoint {
     derived_index_checkpoint_format: u16,
     symbol_table: crate::symbols::data::SymbolTableSnapshot,
     runtime_name: String,
+    #[serde(default, skip_serializing_if = "is_zero_u16")]
+    partition_alias_format: u16,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    branch_root_partition_aliases: Vec<crate::history::data::CommitId>,
+}
+
+fn is_zero_u16(value: &u16) -> bool {
+    *value == 0
 }
 
 impl PersistedDurableCheckpointFile {
@@ -189,12 +279,15 @@ impl PersistedDurableCheckpointFile {
                 derived_index_checkpoint_format,
                 symbol_table,
                 runtime_name,
+                partition_alias_format: 0,
+                branch_root_partition_aliases: Vec::new(),
             },
         }
     }
 
     pub(super) fn readmit(self) -> Result<DurableCheckpointFile, DurabilityError> {
-        let checkpoint = self.checkpoint;
+        let mut checkpoint = self.checkpoint;
+        readmit_partition_aliases(&mut checkpoint)?;
         if !crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts::supports_outer_format(
             checkpoint.derived_index_checkpoint_format,
             checkpoint.derived_index_checkpoint.is_some(),
@@ -243,4 +336,44 @@ impl PersistedDurableCheckpointFile {
             },
         })
     }
+}
+
+fn readmit_partition_aliases(
+    checkpoint: &mut PersistedDurableCheckpoint,
+) -> Result<(), DurabilityError> {
+    let aliases = match checkpoint.partition_alias_format {
+        0 if checkpoint.branch_root_partition_aliases.is_empty() => return Ok(()),
+        PARTITION_ALIAS_FORMAT_VERSION => &checkpoint.branch_root_partition_aliases,
+        _ => {
+            return Err(DurabilityError::new(
+                RecoveryFailureClass::CorruptCheckpoint,
+                "unsupported checkpoint partition alias format",
+            ));
+        }
+    };
+    let mut pending = aliases.iter().copied().collect::<BTreeSet<_>>();
+    if pending.len() != aliases.len() {
+        return Err(DurabilityError::new(
+            RecoveryFailureClass::CorruptCheckpoint,
+            "duplicate branch-root partition alias",
+        ));
+    }
+    for root in &mut checkpoint.branch_roots {
+        if pending.remove(&root.commit_id) {
+            if !root.partition_images.is_empty() {
+                return Err(DurabilityError::new(
+                    RecoveryFailureClass::CorruptCheckpoint,
+                    "branch-root partition alias carries an inline image",
+                ));
+            }
+            root.partition_images = checkpoint.partition_images.clone();
+        }
+    }
+    if !pending.is_empty() {
+        return Err(DurabilityError::new(
+            RecoveryFailureClass::CorruptCheckpoint,
+            "branch-root partition alias names missing root",
+        ));
+    }
+    Ok(())
 }
