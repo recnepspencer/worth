@@ -5,6 +5,7 @@ use super::StorageAllocation as Arc;
 
 mod allocation;
 mod allocation_delta;
+mod bulk_bootstrap;
 mod iteration;
 mod node;
 #[cfg(test)]

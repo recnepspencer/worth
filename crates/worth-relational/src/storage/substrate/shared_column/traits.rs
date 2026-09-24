@@ -21,7 +21,7 @@ impl<T: Clone> std::ops::IndexMut<usize> for SharedColumn<T> {
 
 impl<T: Clone> From<Vec<T>> for SharedColumn<T> {
     fn from(values: Vec<T>) -> Self {
-        values.into_iter().collect()
+        Self::from_dense_values(values)
     }
 }
 

@@ -95,6 +95,93 @@ fn serialization_preserves_sequence_meaning_and_bounds() {
 }
 
 #[test]
+fn dense_restore_bootstrap_preserves_pages_and_future_copy_on_write() {
+    for len in [0_usize, 1, 31, 32, 33, 63, 64, 65, 1025, 8192] {
+        let flat = (0..len).collect::<Vec<_>>();
+        let column: SharedColumn<_> = flat.clone().into();
+        assert_eq!(column.iter().copied().collect::<Vec<_>>(), flat);
+        assert_eq!(column.iter().rev().copied().collect::<Vec<_>>(), {
+            let mut reversed = flat.clone();
+            reversed.reverse();
+            reversed
+        });
+        assert_eq!(
+            column.height,
+            len.div_ceil(PAGE_LEN).next_power_of_two().trailing_zeros() as usize
+        );
+        if let Some(root) = column.root.as_ref() {
+            let mut level = len.div_ceil(PAGE_LEN);
+            let mut expected_nodes = 0;
+            while level > 0 {
+                expected_nodes += level;
+                if level == 1 {
+                    break;
+                }
+                level = level.div_ceil(2);
+            }
+            assert_eq!(root.page_count, len.div_ceil(PAGE_LEN));
+            assert_eq!(root.value_count, len);
+            assert_eq!(root.node_count, expected_nodes);
+        } else {
+            assert_eq!(len, 0);
+        }
+        let mut changed = column.clone();
+        changed.push(len);
+        assert_eq!(changed[len], len);
+        assert_eq!(column.len(), len);
+        if len > 0 {
+            changed[len / 2] = len + 1;
+            assert_eq!(column[len / 2], len / 2);
+            assert_eq!(changed[len / 2], len + 1);
+        }
+    }
+}
+
+#[test]
+fn dense_restore_bootstrap_moves_values_without_cloning_them() {
+    let copies = Arc::new(AtomicUsize::new(0));
+    let values = (0..1025)
+        .map(|value| Counted {
+            value,
+            copies: copies.clone(),
+        })
+        .collect::<Vec<_>>();
+    let column: SharedColumn<_> = values.into();
+    assert_eq!(copies.load(Ordering::Relaxed), 0);
+    let restored = column.into_vec();
+    assert_eq!(restored.len(), 1025);
+    assert_eq!(copies.load(Ordering::Relaxed), 0);
+    assert_eq!(restored[1024].value, 1024);
+}
+
+#[test]
+#[ignore = "run explicitly to measure synthetic dense column restoration"]
+fn synthetic_dense_column_bootstrap_benchmark() {
+    const VALUES: usize = 100_000;
+    const SAMPLES: usize = 5;
+    let values = (0..VALUES).collect::<Vec<_>>();
+    let measure = |bulk: bool| {
+        let inputs = (0..SAMPLES).map(|_| values.clone()).collect::<Vec<_>>();
+        let started = std::time::Instant::now();
+        for input in inputs {
+            let input = std::hint::black_box(input);
+            let column: SharedColumn<_> = if bulk {
+                input.into()
+            } else {
+                input.into_iter().collect()
+            };
+            std::hint::black_box(column.len());
+        }
+        started.elapsed()
+    };
+    let scalar = measure(false);
+    let bulk = measure(true);
+    eprintln!(
+        "synthetic dense SharedColumn bootstrap: values={VALUES} samples={SAMPLES} scalar={scalar:?} bulk={bulk:?}"
+    );
+}
+
+#[test]
 fn sparse_shapes_allocate_only_selected_pages_and_preserve_sequence_export() {
     for len in [0, 1, 31, 32, 33, 64, 65, 1025, 10_000] {
         let mut column = SharedColumn::with_default(len, 0u64);
