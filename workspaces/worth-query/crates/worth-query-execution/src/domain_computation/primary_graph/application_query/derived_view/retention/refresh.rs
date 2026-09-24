@@ -24,6 +24,12 @@ where
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         verify_observation(&retained, commit)?;
         if retained.dirty.contains(key) {
+            if std::env::var_os("WORTH_SCENE_TRACE").is_some() {
+                eprintln!(
+                    "managed dirty entry dependencies: {:?}",
+                    retained.entries.get(key).map(|entry| &entry.dependencies)
+                );
+            }
             Ok(())
         } else {
             Err(WorthQueryManagedDerivedViewDenial::EntryRefreshRequired)

@@ -95,34 +95,73 @@ where
         Schema::MINOR,
     ));
     let contracts = Contributions::contracts().map_err(Denial::Contributions)?;
+    if trace_restore {
+        eprintln!("query restore contracts: {:?}", restore_started.elapsed());
+    }
     let package = contracts
         .compose_package(package.application_schema(declaration.clone()))
         .validate()
         .map_err(Denial::Package)?;
+    if trace_restore {
+        eprintln!(
+            "query restore package validate: {:?}",
+            restore_started.elapsed()
+        );
+    }
     let admitted = WorthQueryInstallationAdmissionProfile::new(
         "primary-graph-in-memory",
         "application-contributions",
     )
     .admit(package)
     .map_err(Denial::Admission)?;
+    if trace_restore {
+        eprintln!(
+            "query restore package admission: {:?}",
+            restore_started.elapsed()
+        );
+    }
     let (runtime, authority) = WorthQueryExecutionRuntimeInstaller::new()
         .application_candidate_resources(limits.candidates)
         .application_query_resources(limits.queries)
         .install(WorthQueryInstallationGeneration::initial(), [admitted])
         .map_err(Denial::Runtime)?
         .into_parts();
+    if trace_restore {
+        eprintln!(
+            "query restore runtime installer: {:?}",
+            restore_started.elapsed()
+        );
+    }
     let installed = runtime
         .installed_packages()
         .bind_application_schema(declaration)
         .map_err(Denial::Schema)?;
+    if trace_restore {
+        eprintln!(
+            "query restore schema binding: {:?}",
+            restore_started.elapsed()
+        );
+    }
     let admitted_program_support = match program_admission {
         Some(admit) => Some(admit(&installed)?),
         None => None,
     };
+    if trace_restore {
+        eprintln!(
+            "query restore program admission: {:?}",
+            restore_started.elapsed()
+        );
+    }
     let configured = WorthQueryConfiguredApplicationContributions::<Schema>::configure::<
         Contributions,
     >(&installed, configuration, contracts)
     .map_err(Denial::Contributions)?;
+    if trace_restore {
+        eprintln!(
+            "query restore contributions configure: {:?}",
+            restore_started.elapsed()
+        );
+    }
     if trace_restore {
         eprintln!(
             "query restore schema and contributions: {:?}",
