@@ -1,4 +1,5 @@
 mod dependency;
+mod publication;
 mod registration;
 mod registry;
 mod retention;
@@ -6,6 +7,9 @@ mod retention;
 use worth_foundational::facade::CanonicalDigestId;
 use worth_relational::facade::identity::EntityId;
 
+pub(in crate::domain_computation::primary_graph) use publication::{
+    ViewChange, ViewPublicationBasis,
+};
 pub(in crate::domain_computation::primary_graph) use registry::ManagedDerivedViewRegistry;
 pub use retention::{WorthQueryManagedDerivedValue, WorthQueryManagedDerivedViewDenial};
 

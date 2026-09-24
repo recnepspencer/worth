@@ -12,7 +12,10 @@ use worth_runtime_world::facade::{
 };
 
 use super::dependency::ViewDependency;
-use super::registry::{ManagedDerivedViewRegistry, RegisteredDerivedView};
+use super::publication::DependencyIndex;
+use super::registry::ManagedDerivedViewRegistry;
+
+mod publication;
 
 /// A projected value declares its retained heap footprint. Query charges
 /// entry and source-provenance overhead in addition to this payload.
@@ -34,6 +37,7 @@ pub enum WorthQueryManagedDerivedViewDenial {
     StaleSource,
     IncompleteDependencies,
     ColdReconstructionRequired,
+    EntryRefreshRequired,
     Disposed,
 }
 
@@ -46,6 +50,9 @@ struct RetainedView<Key, Value> {
     current_commit: CompositeCommitIdentity,
     membership: BTreeSet<ViewDependency>,
     entries: BTreeMap<Key, RetainedEntry<Value>>,
+    index: DependencyIndex<Key>,
+    dirty: BTreeSet<Key>,
+    revision: u64,
     cold: bool,
     disposed: bool,
 }
@@ -88,6 +95,9 @@ where
                 current_commit: commit,
                 membership: BTreeSet::new(),
                 entries: BTreeMap::new(),
+                index: DependencyIndex::default(),
+                dirty: BTreeSet::new(),
+                revision: 0,
                 cold: true,
                 disposed: false,
             }),
@@ -152,8 +162,26 @@ where
                 return Err(WorthQueryManagedDerivedViewDenial::IncompleteDependencies);
             }
         }
+        let index = DependencyIndex::build(
+            &membership,
+            replacement
+                .iter()
+                .map(|(key, entry)| (key, &entry.dependencies)),
+        );
+        let maximum_dirty_bytes = replacement
+            .len()
+            .saturating_mul(std::mem::size_of::<Key>() + 4 * std::mem::size_of::<usize>());
+        bytes = bytes
+            .saturating_add(index.retained_bytes())
+            .saturating_add(maximum_dirty_bytes);
+        if bytes > self.limits.maximum_retained_bytes() {
+            return Err(WorthQueryManagedDerivedViewDenial::RetainedBytesExceeded);
+        }
         retained.entries = replacement;
         retained.membership = membership;
+        retained.index = index;
+        retained.dirty.clear();
+        retained.revision = retained.revision.saturating_add(1);
         retained.cold = false;
         Ok(())
     }
@@ -176,6 +204,9 @@ where
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         verify_observation(&retained, commit)?;
+        if retained.dirty.contains(key) {
+            return Err(WorthQueryManagedDerivedViewDenial::EntryRefreshRequired);
+        }
         let entry = retained.entries.get(key);
         if entry.is_some_and(|entry| entry.dependencies.is_empty()) {
             return Err(WorthQueryManagedDerivedViewDenial::IncompleteDependencies);
@@ -190,6 +221,9 @@ where
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         retained.entries.clear();
         retained.membership.clear();
+        retained.index = DependencyIndex::default();
+        retained.dirty.clear();
+        retained.revision = retained.revision.saturating_add(1);
         retained.cold = true;
     }
 
@@ -200,6 +234,9 @@ where
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         retained.entries.clear();
         retained.membership.clear();
+        retained.index = DependencyIndex::default();
+        retained.dirty.clear();
+        retained.revision = retained.revision.saturating_add(1);
         retained.cold = true;
         retained.current_commit = commit;
     }
@@ -224,20 +261,6 @@ fn verify_observation<Key, Value>(
     Ok(())
 }
 
-impl<Key, Value> RegisteredDerivedView for ManagedDerivedViewState<Key, Value>
-where
-    Key: Clone + Ord + Send + Sync + 'static,
-    Value: WorthQueryManagedDerivedValue,
-{
-    fn dispose(&self) {
-        self.discard();
-        self.retained
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .disposed = true;
-    }
-}
-
 pub struct WorthQueryManagedDerivedView<Query, Key, Value> {
     pub(super) state: Arc<ManagedDerivedViewState<Key, Value>>,
     pub(super) id: u64,
@@ -257,6 +280,8 @@ impl<Query, Key, Value> Drop for WorthQueryManagedDerivedView<Query, Key, Value>
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         retained.entries.clear();
         retained.membership.clear();
+        retained.index = DependencyIndex::default();
+        retained.dirty.clear();
         retained.disposed = true;
     }
 }
