@@ -1,6 +1,6 @@
 use std::collections::BTreeSet;
 
-use worth_foundational::facade::AspectKey;
+use worth_foundational::facade::{AspectFieldLocator, AspectKey};
 use worth_relational::facade::{
     identity::{EntityId, KindId},
     runtime::RelationalAdjacencyDirection,
@@ -12,7 +12,21 @@ use crate::domain_computation::primary_graph::application_attempt::WorthQueryApp
 pub(super) enum ViewDependency {
     Entity(EntityId),
     Aspect(EntityId, AspectKey),
+    Field(EntityId, AspectFieldLocator),
     Adjacency(EntityId, KindId, u8),
+}
+
+impl ViewDependency {
+    pub(super) fn retained_bytes(&self) -> usize {
+        let owned = match self {
+            Self::Aspect(_, aspect) => aspect.owned_allocation_capacity_bytes(),
+            Self::Field(_, locator) => locator.owned_allocation_capacity_bytes(),
+            Self::Entity(_) | Self::Adjacency(..) => 0,
+        };
+        std::mem::size_of::<Self>()
+            .saturating_add(4 * std::mem::size_of::<usize>())
+            .saturating_add(owned)
+    }
 }
 
 pub(super) fn source_dependencies(
@@ -28,6 +42,11 @@ pub(super) fn source_dependencies(
                 entity_id, aspect, ..
             } => {
                 dependencies.insert(ViewDependency::Aspect(*entity_id, aspect.clone()));
+            }
+            WorthQueryApplicationObservedFact::SourceFieldRevision {
+                entity_id, locator, ..
+            } => {
+                dependencies.insert(ViewDependency::Field(*entity_id, locator.clone()));
             }
             WorthQueryApplicationObservedFact::SourceAdjacencyRevision {
                 anchor,

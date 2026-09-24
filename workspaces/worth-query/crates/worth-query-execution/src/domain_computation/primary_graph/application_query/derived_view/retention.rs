@@ -122,16 +122,19 @@ where
         }
         let mut replacement = BTreeMap::new();
         let mut bytes = membership
-            .len()
-            .saturating_mul(std::mem::size_of::<ViewDependency>());
+            .iter()
+            .map(ViewDependency::retained_bytes)
+            .fold(0usize, usize::saturating_add);
         for (key, value, dependencies) in entries {
             bytes = bytes
                 .saturating_add(value.retained_bytes())
                 .saturating_add(std::mem::size_of::<(Key, RetainedEntry<Value>)>())
+                .saturating_add(4 * std::mem::size_of::<usize>())
                 .saturating_add(
                     dependencies
-                        .len()
-                        .saturating_mul(std::mem::size_of::<ViewDependency>()),
+                        .iter()
+                        .map(ViewDependency::retained_bytes)
+                        .fold(0usize, usize::saturating_add),
                 );
             if bytes > self.limits.maximum_retained_bytes() {
                 return Err(WorthQueryManagedDerivedViewDenial::RetainedBytesExceeded);
