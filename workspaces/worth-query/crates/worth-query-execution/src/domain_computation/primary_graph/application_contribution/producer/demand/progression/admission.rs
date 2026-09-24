@@ -1,7 +1,9 @@
 use worth_query_installation::facade::ApplicationSchema;
 
+mod dependent;
 mod restoration;
 mod source_custody;
+pub(super) use source_custody::validate_prepared_source_carrier;
 
 use super::super::{
     FamilySourceQuery, FamilySourceValue, WorthQueryAdmittedOutputDemand,
@@ -46,6 +48,7 @@ where
             crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind::Ordinary,
             None,
             None,
+            None,
         )
     }
 
@@ -78,6 +81,7 @@ where
             maximum_retained_bytes,
             None,
             crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind::Required,
+            None,
             None,
             None,
         )
@@ -146,6 +150,7 @@ where
             crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind::Recovery,
             Some(source_receipt.committed_product_publication().composite_commit()),
             None,
+            None,
         )
     }
 
@@ -185,6 +190,7 @@ where
             crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind::Required,
             None,
             None,
+            None,
         )
     }
 
@@ -202,6 +208,11 @@ where
         successor_of: Option<
             &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
         >,
+        retained_program_basis: Option<
+            std::sync::Arc<
+                crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
+            >,
+        >,
     ) -> Result<WorthQueryAdmittedOutputDemand<Schema, Family>, WorthQueryOutputDemandDenial>
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
@@ -216,10 +227,11 @@ where
                     super::super::WorthQueryOutputDemandRecoveryPosture::Retryable,
                 )
             })?;
-        let selected = self.select_output_producer::<Family>(
+        let selected = self.select_output_producer_with_retained_basis::<Family>(
             selection_source.unwrap_or(&observed_source),
             profile_kind,
             maximum_work,
+            retained_program_basis.as_deref(),
         )?;
         let entry = self
             .installed_producers
@@ -294,6 +306,7 @@ where
                 resources_validated: true,
                 producer_contacts_in_this_demand: 0,
                 admission_kind,
+                retained_program_basis,
                 interest: Some(interest),
             });
         }
@@ -358,33 +371,8 @@ where
             resources_validated,
             producer_contacts_in_this_demand: 0,
             admission_kind,
+            retained_program_basis,
             interest: Some(interest),
         })
     }
-}
-
-pub(super) fn validate_prepared_source_carrier<Query>(
-    runtime_authority: u64,
-    prepared: &crate::domain_computation::primary_graph::WorthQueryPreparedRequiredOutputSource,
-    observed: &crate::domain_computation::primary_graph::WorthQueryObservedSource<Query>,
-) -> Result<(), WorthQueryOutputDemandDenial> {
-    if prepared.runtime_authority != runtime_authority {
-        return Err(denial(
-            WorthQueryOutputDemandDenialKind::ForeignSource,
-            "prepared output source belongs to another Query runtime",
-        ));
-    }
-    if observed.selected_product_commit() != Some(&prepared.source_commit) {
-        return Err(denial(
-            WorthQueryOutputDemandDenialKind::ForeignSource,
-            "prepared output source belongs to another product commit",
-        ));
-    }
-    if observed.selected_product_occurrence() != Some(prepared.product_occurrence) {
-        return Err(denial(
-            WorthQueryOutputDemandDenialKind::ForeignSource,
-            "prepared output source belongs to another product occurrence",
-        ));
-    }
-    Ok(())
 }

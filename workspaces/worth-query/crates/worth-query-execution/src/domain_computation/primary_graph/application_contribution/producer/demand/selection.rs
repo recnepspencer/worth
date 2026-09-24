@@ -8,6 +8,10 @@ use crate::domain_computation::primary_graph::{
 };
 use worth_relational::facade::{runtime::ProjectionAspectScope, storage::RecordLifecycleState};
 
+#[cfg(test)]
+#[path = "selection/retained_basis_tests.rs"]
+mod retained_basis_tests;
+
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema + 'static,
@@ -19,6 +23,28 @@ where
         >,
         profile_kind: &'static str,
         maximum_work: usize,
+    ) -> Result<WorthQuerySelectedApplicationProducer, WorthQueryOutputDemandDenial>
+    where
+        Family: WorthQueryProducerOutputFamily<Schema>,
+    {
+        self.select_output_producer_with_retained_basis::<Family>(
+            source,
+            profile_kind,
+            maximum_work,
+            None,
+        )
+    }
+
+    pub(super) fn select_output_producer_with_retained_basis<Family>(
+        &self,
+        source: &WorthQueryObservedSource<
+            <<Family as WorthQueryProducerOutputFamily<Schema>>::Source as worth_query_declaration::facade::application_query::ApplicationQueryBinding<Schema>>::Query,
+        >,
+        profile_kind: &'static str,
+        maximum_work: usize,
+        retained_program_basis: Option<
+            &crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
+        >,
     ) -> Result<WorthQuerySelectedApplicationProducer, WorthQueryOutputDemandDenial>
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
@@ -48,6 +74,25 @@ where
                 Family::IDENTITY,
             ));
         };
+        if let Some(retained_basis) = retained_program_basis {
+            let retained = self
+                .select_application_read_observation(retained_basis)
+                .map_err(|_| {
+                    WorthQueryOutputDemandDenial::new(
+                        WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
+                        Family::IDENTITY,
+                    )
+                })?;
+            if crate::basis::WorthQueryProductBranchReadIdentity::from_observation(
+                retained.product().observation(),
+            ) != *observation
+            {
+                return Err(WorthQueryOutputDemandDenial::new(
+                    WorthQueryOutputDemandDenialKind::ForeignSource,
+                    Family::IDENTITY,
+                ));
+            }
+        }
         let output_bindings = self.installed_producers.family_output_bindings::<Family>();
         let scope = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(source.source_root());
         let mut lineage = self
@@ -125,10 +170,16 @@ where
                         "output lifecycle basis could not be selected",
                     )
                 })?;
-            if crate::basis::WorthQueryProductBranchReadIdentity::from_observation(
-                selected.product().observation(),
-            ) != *observation
-            {
+            let selected_observation =
+                crate::basis::WorthQueryProductBranchReadIdentity::from_observation(
+                    selected.product().observation(),
+                );
+            let source_basis_is_admitted = source_basis_is_admitted(
+                observation,
+                &selected_observation,
+                retained_program_basis.is_some(),
+            );
+            if !source_basis_is_admitted {
                 return Err(WorthQueryOutputDemandDenial::new(
                     WorthQueryOutputDemandDenialKind::Superseded,
                     Family::IDENTITY,
@@ -209,6 +260,18 @@ where
                 profile_kind,
                 WorthQueryProducerLifecyclePosture::Initial,
             ))
+    }
+}
+
+fn source_basis_is_admitted(
+    source: &crate::basis::WorthQueryProductBranchReadIdentity,
+    current: &crate::basis::WorthQueryProductBranchReadIdentity,
+    owner_retained_program_basis: bool,
+) -> bool {
+    if owner_retained_program_basis {
+        source.same_branch_occurrence(current)
+    } else {
+        source == current
     }
 }
 

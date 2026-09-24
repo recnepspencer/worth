@@ -1,5 +1,31 @@
 use super::*;
 
+pub(crate) fn validate_prepared_source_carrier<Query>(
+    runtime_authority: u64,
+    prepared: &crate::domain_computation::primary_graph::WorthQueryPreparedRequiredOutputSource,
+    observed: &crate::domain_computation::primary_graph::WorthQueryObservedSource<Query>,
+) -> Result<(), WorthQueryOutputDemandDenial> {
+    if prepared.runtime_authority != runtime_authority {
+        return Err(denial(
+            WorthQueryOutputDemandDenialKind::ForeignSource,
+            "prepared output source belongs to another Query runtime",
+        ));
+    }
+    if observed.selected_product_commit() != Some(&prepared.source_commit) {
+        return Err(denial(
+            WorthQueryOutputDemandDenialKind::ForeignSource,
+            "prepared output source belongs to another product commit",
+        ));
+    }
+    if observed.selected_product_occurrence() != Some(prepared.product_occurrence) {
+        return Err(denial(
+            WorthQueryOutputDemandDenialKind::ForeignSource,
+            "prepared output source belongs to another product occurrence",
+        ));
+    }
+    Ok(())
+}
+
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema + 'static,

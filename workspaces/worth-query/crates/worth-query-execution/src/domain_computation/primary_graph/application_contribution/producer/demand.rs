@@ -173,6 +173,11 @@ where
     resources_validated: bool,
     producer_contacts_in_this_demand: usize,
     admission_kind: super::super::super::application_output_demand::DemandAdmissionKind,
+    retained_program_basis: Option<
+        std::sync::Arc<
+            crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
+        >,
+    >,
     interest:
         Option<super::super::super::application_output_demand::WorthQueryOutputDemandInterest>,
 }

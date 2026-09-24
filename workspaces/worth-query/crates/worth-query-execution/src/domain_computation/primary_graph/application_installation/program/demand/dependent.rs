@@ -70,10 +70,8 @@ where
         let parent_commit = parent_observation.selected_commit();
         let parent_occurrence = parent_observation.branch_incarnation();
         let parent_branch = parent_observation.branch_identity();
-        if self
-            .runtime
-            .select_application_read_observation(basis)
-            .is_err()
+        let retained_basis = self.runtime.select_application_read_observation(basis);
+        if retained_basis.is_err()
             || self
                 .runtime
                 .select_application_read_observation(minimum_observation)
@@ -98,10 +96,13 @@ where
             ));
         }
         self.runtime
-            .admit_required_output_demand::<Family<Schema, ConnectionDemand<Schema, Connection>>>(
+            .admit_dependent_output_demand::<Family<Schema, ConnectionDemand<Schema, Connection>>>(
                 source,
                 maximum_work,
                 maximum_retained_bytes,
+                retained_basis
+                    .expect("validated dependent basis")
+                    .retain_application_read(),
             )
             .map(|admitted| WorthQueryAdmittedProgramOutput {
                 admitted,

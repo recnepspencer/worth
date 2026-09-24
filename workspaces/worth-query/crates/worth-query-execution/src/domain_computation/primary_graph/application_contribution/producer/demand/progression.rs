@@ -373,6 +373,7 @@ where
             demand.admission_kind,
             None,
             Some(stale_receipt),
+            demand.retained_program_basis.clone(),
         )?;
         refreshed.producer_contacts_in_this_demand = demand.producer_contacts_in_this_demand;
         if let Some(interest) = demand.interest.take() {
