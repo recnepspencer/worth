@@ -26,6 +26,8 @@ mod effect_authority;
 mod emitted_effects;
 #[path = "application_attempt/idempotency_behavior.rs"]
 mod idempotency_behavior;
+#[path = "application_attempt/index_budget.rs"]
+mod index_budget;
 #[path = "application_attempt/live_delivery_capacity.rs"]
 mod live_delivery_capacity;
 #[path = "application_attempt/mutation_terminal_lifecycle.rs"]

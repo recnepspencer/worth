@@ -161,9 +161,9 @@ fn response_loss_cleanup_preserves_the_interleaved_peer() {
 }
 
 #[test]
-fn index_publication_recovery_cleanup_preserves_the_interleaved_peer() {
+fn post_commit_snapshot_recovery_cleanup_preserves_the_interleaved_peer() {
     assert_interleaved_terminal(
-        |world| world.faults.fail_next_index_publication(),
+        |world| world.faults.fail_next_post_commit_snapshot(),
         |outcome| {
             assert!(matches!(
                 outcome,

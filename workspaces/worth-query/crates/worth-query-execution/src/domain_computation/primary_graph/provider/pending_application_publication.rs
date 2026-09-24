@@ -193,7 +193,6 @@ fn publish_with_snapshot(
         );
     }
     publish_aggregate_projection(provider, runtime, pending, after);
-    verify_index_publication_cutover(provider)?;
     provider
         .graph
         .bind_truth_head_basis_in_runtime(runtime, &pending.next_basis)
@@ -262,17 +261,6 @@ fn publish_aggregate_projection(
         aggregates.recover_after_commit(after.version_id());
     }
     pending.aggregate_published = true;
-}
-
-fn verify_index_publication_cutover(
-    provider: &WorthQueryPrimaryGraphProvider,
-) -> Result<(), WorthQueryProviderSessionFailure> {
-    if provider.take_failed_index_publication() {
-        return Err(failure(
-            "injected primary index cutover failure after authoritative commit",
-        ));
-    }
-    Ok(())
 }
 
 fn failure(detail: &'static str) -> WorthQueryProviderSessionFailure {

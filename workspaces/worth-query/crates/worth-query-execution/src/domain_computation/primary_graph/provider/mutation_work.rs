@@ -84,6 +84,7 @@ impl WorthQueryPrimaryMutationWorkCounters {
 /// touched-record identities. No public constructor.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryPrimaryMutationWorkEvidence {
+    index_maintenance_work: worth_relational::facade::indexes::DerivedIndexMaintenanceWork,
     decision_facts: usize,
     proposed_facts: usize,
     invariant_state_facts: usize,
@@ -114,13 +115,14 @@ impl WorthQueryPrimaryMutationWorkEvidence {
     pub(in crate::domain_computation::primary_graph) fn from_commit_seal(
         seal: super::session_commit::WorthQueryMutationWorkCommitSeal,
     ) -> Self {
-        let (counters, changed_records, preimage) = seal.into_parts();
+        let (counters, index_maintenance_work, changed_records, preimage) = seal.into_parts();
         let touched_records = changed_records
             .into_iter()
             .map(WorthQueryTouchedRecordIdentity::from_commit_record)
             .collect();
         let touch_projection = counters.installed_touch_admission.projection_work();
         Self {
+            index_maintenance_work,
             decision_facts: counters.decision_facts,
             proposed_facts: counters.proposed_facts,
             invariant_state_facts: counters.invariant_state_facts,
@@ -155,6 +157,13 @@ impl WorthQueryPrimaryMutationWorkEvidence {
 
     pub const fn decision_fact_count(&self) -> usize {
         self.decision_facts
+    }
+
+    /// Exact Relational index work admitted before this commit could reach World.
+    pub const fn index_maintenance_work(
+        &self,
+    ) -> &worth_relational::facade::indexes::DerivedIndexMaintenanceWork {
+        &self.index_maintenance_work
     }
 
     pub const fn proposed_fact_count(&self) -> usize {

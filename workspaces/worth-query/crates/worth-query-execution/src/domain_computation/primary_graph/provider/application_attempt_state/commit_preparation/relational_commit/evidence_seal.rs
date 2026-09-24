@@ -33,6 +33,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphCo
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryMutationWorkCommitSeal {
     counters: WorthQueryPrimaryMutationWorkCounters,
+    index_maintenance_work: worth_relational::facade::indexes::DerivedIndexMaintenanceWork,
     changed_records: Vec<worth_relational::facade::transactions::RecordRef>,
     preimage: WorthQueryPreImageRetentionWork,
 }
@@ -44,6 +45,7 @@ pub(super) fn seal(
     let mutation_work =
         WorthQueryPrimaryMutationWorkEvidence::from_commit_seal(WorthQueryMutationWorkCommitSeal {
             counters: committed.work(),
+            index_maintenance_work: committed.index_maintenance_work(),
             changed_records: committed.committed().changed_records.clone(),
             preimage: committed.preimage_retention_work(),
         });
@@ -80,10 +82,16 @@ impl WorthQueryMutationWorkCommitSeal {
         self,
     ) -> (
         WorthQueryPrimaryMutationWorkCounters,
+        worth_relational::facade::indexes::DerivedIndexMaintenanceWork,
         Vec<worth_relational::facade::transactions::RecordRef>,
         WorthQueryPreImageRetentionWork,
     ) {
-        (self.counters, self.changed_records, self.preimage)
+        (
+            self.counters,
+            self.index_maintenance_work,
+            self.changed_records,
+            self.preimage,
+        )
     }
 }
 

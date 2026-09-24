@@ -35,8 +35,10 @@ impl PrimaryGraphFaultController {
         self.schedule(WorthQueryPrimaryGraphFault::RejectedCommitBeforeTransaction);
     }
 
-    pub(in crate::domain_computation::primary_graph) fn fail_next_index_publication(&self) {
-        self.schedule(WorthQueryPrimaryGraphFault::FailedIndexPublication);
+    pub(in crate::domain_computation::primary_graph) fn constrain_next_index_maintenance_budget(
+        &self,
+    ) {
+        self.schedule(WorthQueryPrimaryGraphFault::TightIndexMaintenanceBudget);
     }
 
     pub(in crate::domain_computation::primary_graph) fn skip_next_invariant_owner_execution(&self) {
@@ -117,13 +119,13 @@ const fn mask(fault: WorthQueryPrimaryGraphFault) -> u16 {
         WorthQueryPrimaryGraphFault::LostCommitResponse => 1 << 0,
         WorthQueryPrimaryGraphFault::RejectedSessionPreparation => 1 << 1,
         WorthQueryPrimaryGraphFault::RejectedCommitBeforeTransaction => 1 << 2,
-        WorthQueryPrimaryGraphFault::FailedIndexPublication => 1 << 3,
         WorthQueryPrimaryGraphFault::SkippedInvariantOwnerExecution => 1 << 4,
         WorthQueryPrimaryGraphFault::RelationalInvariantViolation => 1 << 5,
         WorthQueryPrimaryGraphFault::FailedPostCommitSnapshot => 1 << 7,
         WorthQueryPrimaryGraphFault::DelayedOutputReadinessDelivery => 1 << 9,
         WorthQueryPrimaryGraphFault::UndeclaredApplicationTouch => 1 << 6,
         WorthQueryPrimaryGraphFault::PanickedPendingApplicationPublication => 1 << 8,
+        WorthQueryPrimaryGraphFault::TightIndexMaintenanceBudget => 1 << 13,
         WorthQueryPrimaryGraphFault::FailedOutputReadinessEvaluation => 1 << 10,
         #[cfg(feature = "test-primary-graph-faults")]
         WorthQueryPrimaryGraphFault::ReadyReadSnapshotPressure => 1 << 11,

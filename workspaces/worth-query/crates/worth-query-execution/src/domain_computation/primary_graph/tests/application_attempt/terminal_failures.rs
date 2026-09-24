@@ -9,7 +9,7 @@ use super::{
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitDenialStage,
-    WorthQueryApplicationCommitOutcome, WorthQueryApplicationCommitTerminalKind,
+    WorthQueryApplicationCommitOutcome,
 };
 use crate::facade::primary_graph::{
     WorthQueryExternalDispatchRequest, WorthQueryExternalEffectTransport,
@@ -108,42 +108,7 @@ fn pretransaction_commit_failure_is_proved_aborted_and_applies_nothing() {
 }
 
 #[test]
-fn index_publication_failure_recovers_the_committed_transaction_before_returning() {
-    let world = installed_authorization_world(true);
-    let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
-    let first = admitted_program(&world, &principal, &account, &request, "index-replacement");
-    let retry = admitted_program(&world, &principal, &account, &request, "index-replacement");
-
-    world.faults.fail_next_index_publication();
-    let WorthQueryApplicationCommitOutcome::Committed(first_receipt) = world
-        .application
-        .compare_and_commit_application(first, idempotency(21, 21))
-    else {
-        panic!("index reconstruction must prove the committed transaction");
-    };
-    let WorthQueryApplicationCommitOutcome::AlreadyCommitted(receipt) = world
-        .application
-        .compare_and_commit_application(retry, idempotency(21, 21))
-    else {
-        panic!("index reconstruction must recover the committed idempotency record");
-    };
-    assert!(receipt.is_same_authoritative_commit(&first_receipt));
-    assert_eq!(
-        first_receipt.terminal().kind(),
-        WorthQueryApplicationCommitTerminalKind::Executed
-    );
-    assert_eq!(
-        receipt.terminal().kind(),
-        WorthQueryApplicationCommitTerminalKind::Recovered
-    );
-    assert!(receipt.changed_record_count() >= 2);
-    let _committed = resolved_account(&world, "index-replacement", &live_scope());
-}
-
-#[test]
-fn causal_fact_survives_index_publication_failure_via_relational_owner_read() {
+fn causal_fact_survives_post_commit_snapshot_failure_via_relational_owner_read() {
     use crate::domain_computation::application_aftermath::{
         WorthQueryAftermathCausalRole, WorthQueryPendingAftermathCausality,
     };
@@ -163,7 +128,7 @@ fn causal_fact_survives_index_publication_failure_via_relational_owner_read() {
         .expect("fixture has an authoritative branch head");
     let pending = WorthQueryPendingAftermathCausality::undo_of(parent.clone());
 
-    world.faults.fail_next_index_publication();
+    world.faults.fail_next_post_commit_snapshot();
     let WorthQueryApplicationCommitOutcome::Committed(receipt) = world
         .application
         .compare_and_commit_application_with_aftermath(

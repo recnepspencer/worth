@@ -49,6 +49,46 @@ fn budget(cold_slots: usize) -> DerivedIndexMaintenanceBudget {
 }
 
 #[test]
+fn expired_candidate_denies_index_preflight_with_lifetime_not_missing_generation() {
+    let runtime = RelationalRuntimeApi::builder()
+        .schema_registry(declared_aspect_schema_registry(
+            CascadeDeletePolicy::CascadeDeleteRelations,
+        ))
+        .publication(crate::facade::config::PublicationConfig {
+            coherent_publication_required: true,
+            max_patch_records_per_commit: 4_096,
+            max_published_snapshot_handles: 8,
+            max_active_snapshot_handles: 8,
+            max_transaction_overlay_bytes: 1_048_576,
+            max_transaction_footprint_loci: 1_024,
+            max_transaction_savepoints: 8,
+            max_prepared_candidates: 1,
+            candidate_max_lifetime_millis: 0,
+            max_prepared_root_bytes: 268_435_456,
+        })
+        .build();
+    let index_id = index(&runtime);
+    let mut transaction = test_owner_begin_transaction_for_main(&runtime);
+    transaction
+        .push_batch(batch_create("expired-index-candidate"))
+        .unwrap();
+    let mut candidate = runtime.prepare_branch_transaction(transaction).unwrap();
+
+    let denied = runtime
+        .index_authority()
+        .prepare_for_candidate(&mut candidate, &[index_id], None, budget(100))
+        .unwrap_err();
+    assert_eq!(
+        denied.kind,
+        DerivedIndexMaintenanceDenialKind::CandidateLifetimeExpired {
+            maximum_lifetime_millis: 0,
+        }
+    );
+    assert_eq!(runtime.index_access().generations_snapshot().len(), 0);
+    assert_eq!(runtime.history().immutable_commit_count(), 0);
+}
+
+#[test]
 fn candidate_indexes_deny_before_effect_then_publish_exact_cold_generation_on_settlement() {
     let runtime = runtime_with_index_field_aspects();
     let first = create_entity_outcome(&runtime, "before");

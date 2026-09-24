@@ -21,6 +21,14 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema + 'static,
 {
+    /// Schedules failure at the real post-commit snapshot admission boundary.
+    #[doc(hidden)]
+    #[cfg(feature = "test-primary-graph-faults")]
+    pub fn fail_next_post_commit_snapshot_for_test(&self) {
+        self.primary_provider
+            .fail_next_post_commit_snapshot_for_test();
+    }
+
     /// Drops only rebuildable workflow-instance progress projections.
     #[doc(hidden)]
     #[cfg(feature = "test-primary-graph-faults")]
@@ -29,13 +37,6 @@ where
             .retain_primary_graph_integration_handle()
             .expect("a published application runtime retains its primary graph")
             .release_workflow_instance_progress();
-    }
-
-    /// Schedules one failure at the generic Query index-publication boundary.
-    #[doc(hidden)]
-    #[cfg(feature = "test-primary-graph-faults")]
-    pub fn fail_next_index_publication_for_test(&self) {
-        self.primary_provider.fail_next_index_publication_for_test();
     }
 
     /// Delays one output-readiness delivery before its unique World change is consumed.

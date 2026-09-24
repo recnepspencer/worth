@@ -842,7 +842,7 @@ worth-query-execution/src/domain_computation/primary_graph/workflow/
   adoption/{inventory,dispositions}.rs                       N participant in 9.17.5
   recovery/{continuation,disposition}.rs                      N adaptation to actual custody
 worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_binding/effect_accumulator/expected_steps.rs N 2.1 ordered proof
-worth-query-execution/src/domain_computation/primary_graph/provider/index_publication/{preparation,finalization}.rs N 2.1 split
+worth-query-execution/src/domain_computation/primary_graph/{index_maintenance_budget.rs,provider/application_attempt_state/commit_preparation/relational_commit/commit_execution.rs} E 2.1 pre-effect index gate
 crates/worth-relational/src/indexes/authority/maintenance/{entry_edits,work}.rs E/R bounded charge
 crates/worth-relational/src/runtime/state/subsystems/indexing/generation_catalog/{scope,retention}.rs E/N 2.2 liveness
 crates/worth-relational/src/durability/{derived_index_artifacts,log/persisted_checkpoint}.rs E/R shared checkpoint encoding

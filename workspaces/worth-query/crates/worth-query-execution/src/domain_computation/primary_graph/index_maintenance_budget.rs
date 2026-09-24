@@ -27,6 +27,7 @@ pub(super) fn prepare_candidate_with_cold_fallback(
     candidate: &mut worth_relational::facade::mvcc::PreparedRelationalCommitCandidate,
     index_ids: &[worth_relational::facade::indexes::DerivedIndexId],
     before: &worth_relational::facade::snapshots::SnapshotHandle,
+    ordinary_budget: DerivedIndexMaintenanceBudget,
 ) -> Result<
     worth_relational::facade::indexes::DerivedIndexMaintenanceWork,
     worth_relational::facade::indexes::DerivedIndexMaintenanceDenial,
@@ -35,7 +36,7 @@ pub(super) fn prepare_candidate_with_cold_fallback(
         candidate,
         index_ids,
         Some(before),
-        ordinary_index_maintenance_budget(),
+        ordinary_budget,
     );
     if matches!(
         &initial,
