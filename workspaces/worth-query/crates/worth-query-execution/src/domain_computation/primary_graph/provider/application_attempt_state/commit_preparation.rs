@@ -22,7 +22,6 @@ pub(super) struct WorthQueryPreparedApplicationCommit {
     attempt: WorthQueryPrimaryGraphApplicationAttempt,
     candidate: worth_relational::facade::mvcc::ValidatedRelationalProposal,
     work: WorthQueryPrimaryMutationWorkCounters,
-    branch: worth_relational::facade::history::BranchId,
     retained_preimage: Option<WorthQueryRetainedPreImage>,
     preimage_retention_work: WorthQueryPreImageRetentionWork,
     _completion: super::commit_completion::WorthQueryApplicationAttemptCompletion,
@@ -85,14 +84,12 @@ fn take_prepared_session(
         commit_failure("primary graph session has no exact commit-prepared application attempt")
     })?;
     let (attempt, candidate, work, completion) = prepared.into_parts();
-    let branch = attempt.affinity().branch().clone();
     let (retained_preimage, preimage_retention_work) =
         preimage_retention::retain_attempt_preimage(&attempt, &candidate)?.into_parts();
     Ok(WorthQueryPreparedApplicationCommit {
         attempt,
         candidate,
         work,
-        branch,
         retained_preimage,
         preimage_retention_work,
         _completion: completion,

@@ -23,7 +23,6 @@ pub(super) struct WorthQueryCommittedApplicationSession {
     retained_preimage:
         Option<crate::domain_computation::application_aftermath::WorthQueryRetainedPreImage>,
     preimage_retention_work: WorthQueryPreImageRetentionWork,
-    branch: worth_relational::facade::history::BranchId,
     before: worth_relational::facade::snapshots::SnapshotHandle,
     next_basis: worth_relational::facade::branch::AdmittedRelationalBranchBasis,
     committed: worth_relational::facade::transactions::CommitResult,
@@ -42,7 +41,6 @@ pub(super) fn commit(
         mut attempt,
         candidate,
         work,
-        branch,
         retained_preimage,
         preimage_retention_work,
         _completion,
@@ -61,10 +59,21 @@ pub(super) fn commit(
         )
     })
     .map_err(crate::domain_computation::WorthQueryProviderSessionCommitStop::from)?;
-    let candidate = provider
+    let mut candidate = provider
         .graph
         .with_runtime_mut(|runtime| runtime.prepare_validated_proposal(candidate))
         .map_err(transaction_commit_stop)?;
+    provider
+        .graph
+        .with_runtime(|runtime| {
+            crate::domain_computation::primary_graph::index_maintenance_budget::prepare_candidate_with_cold_fallback(
+                runtime,
+                &mut candidate,
+                &provider.graph.primary_index_ids,
+                before.as_snapshot(),
+            )
+        })
+        .map_err(index_preparation_stop)?;
     #[cfg(feature = "test-world-operation-control")]
     provider.after_application_candidate_preparation_for_test();
     let performed = product_publication::publish(provider, &mut attempt, candidate)?;
@@ -86,7 +95,6 @@ pub(super) fn commit(
         work,
         retained_preimage,
         preimage_retention_work,
-        branch,
         before: before.into_publication(),
         next_basis,
         committed,
@@ -160,6 +168,29 @@ impl WorthQueryCommittedApplicationSession {
 
 fn failure(detail: &'static str) -> WorthQueryProviderSessionFailure {
     provider_failure(WorthQueryProviderSessionProtocolStage::Commit, detail)
+}
+
+fn index_preparation_stop(
+    denial: worth_relational::facade::indexes::DerivedIndexMaintenanceDenial,
+) -> crate::domain_computation::WorthQueryProviderSessionCommitStop {
+    use worth_relational::facade::indexes::DerivedIndexMaintenanceDenialKind as Kind;
+    let kind = match denial.kind {
+        Kind::WorkBudgetExceeded => {
+            crate::domain_computation::WorthQueryProviderSessionDenialKind::IndexMaintenanceBudgetExceeded
+        }
+        Kind::GenerationIdentityExhausted => {
+            crate::domain_computation::WorthQueryProviderSessionDenialKind::IndexGenerationIdentityExhausted
+        }
+        _ => crate::domain_computation::WorthQueryProviderSessionDenialKind::ProviderRejected,
+    };
+    crate::domain_computation::WorthQueryProviderSessionCommitStop::PreEffectDenied(
+        WorthQueryProviderSessionFailure::new(
+            kind,
+            WorthQueryProviderSessionProtocolStage::Commit,
+            format!("primary index candidate preparation denied: {denial:?}"),
+            crate::domain_computation::WorthQueryProviderSessionProtocolCounters::default(),
+        ),
+    )
 }
 
 fn transaction_commit_stop(

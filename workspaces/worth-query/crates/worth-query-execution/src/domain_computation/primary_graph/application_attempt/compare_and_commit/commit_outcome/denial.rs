@@ -22,6 +22,8 @@ pub enum WorthQueryApplicationCommitDenialKind {
         maximum_bytes: u64,
         required_bytes: u64,
     },
+    IndexMaintenanceBudgetExceeded,
+    IndexGenerationIdentityExhausted,
     IdempotencyIntentDrift,
     ElevationTransitionRequired,
     ElevationRequestProgramMismatch,
@@ -271,6 +273,28 @@ impl WorthQueryApplicationCommitDenial {
                 maximum_bytes,
                 required_bytes,
             },
+            stage,
+            detail: None,
+            custom_invariant: None,
+        }
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_attempt) const fn index_maintenance_budget_exceeded(
+        stage: WorthQueryApplicationCommitDenialStage,
+    ) -> Self {
+        Self {
+            kind: WorthQueryApplicationCommitDenialKind::IndexMaintenanceBudgetExceeded,
+            stage,
+            detail: None,
+            custom_invariant: None,
+        }
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_attempt) const fn index_generation_identity_exhausted(
+        stage: WorthQueryApplicationCommitDenialStage,
+    ) -> Self {
+        Self {
+            kind: WorthQueryApplicationCommitDenialKind::IndexGenerationIdentityExhausted,
             stage,
             detail: None,
             custom_invariant: None,

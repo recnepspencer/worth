@@ -87,10 +87,7 @@ fn reserve_paths<R>(
     rows: &DerivedIndexRows<R>,
     work: &mut MaintenanceWork,
 ) -> Result<(), Denial> {
-    // im 15.1 uses 64-way B-tree and RRB nodes. Charge up to four 64-handle
-    // paths for seek, split/rebalance, and publication. A binary-height charge
-    // made routine multi-row commits exhaust the budget despite path sharing.
-    let units = 256 * (path_height(keys) + path_height(rows.len()));
+    let units = path_reservation(keys) + path_reservation(rows.len());
     work.charge(units)?;
     work.counts.path_copy_units_reserved += units;
     Ok(())
@@ -105,10 +102,23 @@ fn reserve_row_path(rows: usize, work: &mut MaintenanceWork) -> Result<(), Denia
 }
 
 fn reserve_handle_path(size: usize, work: &mut MaintenanceWork) -> Result<(), Denial> {
-    let units = 256 * path_height(size);
+    let units = path_reservation(size);
     work.charge(units)?;
     work.counts.path_copy_units_reserved += units;
     Ok(())
+}
+
+fn path_reservation(size: usize) -> usize {
+    // An empty map/vector has no retained path to copy. Otherwise reserve one
+    // maximum-size im node per changed level. The new generation owns its
+    // mutable path after the first copy; charging split/rebalance copies on
+    // every edit overcounts shared batches by the size of the House scene.
+    // Payloads are shared Arcs and are not copied by the persistent update.
+    if size == 0 {
+        1
+    } else {
+        64 * path_height(size)
+    }
 }
 
 fn path_height(mut size: usize) -> usize {

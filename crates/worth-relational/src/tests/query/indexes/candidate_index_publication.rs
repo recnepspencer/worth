@@ -141,6 +141,68 @@ fn candidate_indexes_deny_before_effect_then_publish_exact_cold_generation_on_se
 }
 
 #[test]
+fn candidate_index_work_exhaustion_leaves_the_candidate_unpublished_and_retryable() {
+    let runtime = runtime_with_index_field_aspects();
+    let first = create_entity_outcome(&runtime, "before");
+    let entity = changed_entities(&first)[0];
+    let index_id = index(&runtime);
+    let mut candidate = candidate_for_update(&runtime, entity, "after");
+    let commit_id = candidate
+        .index_preparation_roots()
+        .unwrap()
+        .1
+        .commit_id()
+        .unwrap();
+    let denied = runtime
+        .index_authority()
+        .prepare_for_candidate(
+            &mut candidate,
+            &[index_id],
+            Some(&first.snapshot),
+            DerivedIndexMaintenanceBudget {
+                maximum_work_units: 0,
+                maximum_cold_record_slots: 0,
+                maximum_derived_rows: 0,
+            },
+        )
+        .unwrap_err();
+    assert_eq!(
+        denied.kind,
+        DerivedIndexMaintenanceDenialKind::WorkBudgetExceeded
+    );
+    assert!(runtime
+        .indexes
+        .derived_artifacts_for_commit(commit_id)
+        .is_empty());
+    runtime
+        .index_authority()
+        .prepare_for_candidate(
+            &mut candidate,
+            &[index_id],
+            Some(&first.snapshot),
+            budget(100),
+        )
+        .unwrap();
+    let crate::mvcc::RelationalPublicationOutcome::Performed(performed) =
+        runtime.publication_port().compare_and_publish(candidate)
+    else {
+        panic!("retried candidate must publish");
+    };
+    let second = runtime.settle_performed_publication(performed).unwrap();
+    assert!(runtime
+        .indexes
+        .published_generation_for_commit(
+            index_id,
+            Some(&BranchId("main".into())),
+            commit_id,
+            second.commit.version_id,
+        )
+        .is_some());
+    release_test_commit_snapshot(&runtime, &first);
+    release_test_commit_snapshot(&runtime, &second);
+}
+
+#[test]
 fn discarded_prepared_candidate_does_not_expose_index_generation() {
     let runtime = runtime_with_index_field_aspects();
     let first = create_entity_outcome(&runtime, "before");

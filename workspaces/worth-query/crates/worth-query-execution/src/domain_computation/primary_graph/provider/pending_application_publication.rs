@@ -16,7 +16,6 @@ use crate::domain_computation::{
 pub(in crate::domain_computation::primary_graph) struct WorthQueryPendingApplicationPublication {
     product_incarnation: worth_runtime_world::facade::ProductBranchIncarnation,
     attempt: Option<WorthQueryPrimaryGraphApplicationAttempt>,
-    branch: worth_relational::facade::history::BranchId,
     before: Option<worth_relational::facade::snapshots::SnapshotHandle>,
     next_basis: worth_relational::facade::branch::AdmittedRelationalBranchBasis,
     committed: worth_relational::facade::transactions::CommitResult,
@@ -31,7 +30,6 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPendingApplica
 impl WorthQueryPendingApplicationPublication {
     pub(in crate::domain_computation::primary_graph) fn new(
         attempt: WorthQueryPrimaryGraphApplicationAttempt,
-        branch: worth_relational::facade::history::BranchId,
         before: worth_relational::facade::snapshots::SnapshotHandle,
         next_basis: worth_relational::facade::branch::AdmittedRelationalBranchBasis,
         committed: worth_relational::facade::transactions::CommitResult,
@@ -45,7 +43,6 @@ impl WorthQueryPendingApplicationPublication {
         Self {
             product_incarnation,
             attempt: Some(attempt),
-            branch,
             before: Some(before),
             next_basis,
             committed,
@@ -196,7 +193,7 @@ fn publish_with_snapshot(
         );
     }
     publish_aggregate_projection(provider, runtime, pending, after);
-    publish_indexes(provider, runtime, pending, commit_id)?;
+    verify_index_publication_cutover(provider)?;
     provider
         .graph
         .bind_truth_head_basis_in_runtime(runtime, &pending.next_basis)
@@ -267,36 +264,15 @@ fn publish_aggregate_projection(
     pending.aggregate_published = true;
 }
 
-fn publish_indexes(
+fn verify_index_publication_cutover(
     provider: &WorthQueryPrimaryGraphProvider,
-    runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
-    pending: &WorthQueryPendingApplicationPublication,
-    commit_id: worth_relational::facade::history::CommitId,
 ) -> Result<(), WorthQueryProviderSessionFailure> {
     if provider.take_failed_index_publication() {
         return Err(failure(
-            "injected primary index publication failure after authoritative commit",
+            "injected primary index cutover failure after authoritative commit",
         ));
     }
-    let indexes = crate::domain_computation::primary_graph::index_maintenance_budget::refresh_with_cold_fallback(
-        runtime,
-        worth_relational::facade::indexes::DerivedIndexBuildRequest {
-            source_commit_id: commit_id,
-            branch_id: pending.branch.clone(),
-            index_ids: provider.graph.primary_index_ids.to_vec(),
-        },
-        &pending.next_basis,
-        pending.before.as_ref(),
-    );
-    indexes.map(|_| ()).map_err(|denial| {
-        WorthQueryProviderSessionFailure::new(
-            crate::domain_computation::WorthQueryProviderSessionDenialKind::ProviderRejected,
-            WorthQueryProviderSessionProtocolStage::Commit,
-            format!("primary index maintenance denied after authoritative commit: {denial:?}"),
-            crate::domain_computation::WorthQueryProviderSessionProtocolCounters::default(),
-        )
-        .with_recovery_posture(WorthQueryProviderSessionRecoveryPosture::RecoveryRequired)
-    })
+    Ok(())
 }
 
 fn failure(detail: &'static str) -> WorthQueryProviderSessionFailure {

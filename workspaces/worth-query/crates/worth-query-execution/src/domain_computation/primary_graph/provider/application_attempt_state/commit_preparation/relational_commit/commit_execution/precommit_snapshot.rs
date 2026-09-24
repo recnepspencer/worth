@@ -32,6 +32,12 @@ impl WorthQueryPrecommitSnapshot {
             .take()
             .expect("live Query publication retains its before-image observer")
     }
+
+    pub(super) fn as_snapshot(&self) -> &SnapshotHandle {
+        self.snapshot
+            .as_ref()
+            .expect("live Query publication retains its before-image observer")
+    }
 }
 
 impl Drop for WorthQueryPrecommitSnapshot {

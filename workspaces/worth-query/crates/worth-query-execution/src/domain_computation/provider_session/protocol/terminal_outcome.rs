@@ -38,6 +38,7 @@ pub enum WorthQuerySessionCommitOrAbortOutcome {
     NoEffect(worth_runtime_world::facade::NoEffectCompositePublication),
     Committed(WorthQueryClosedProviderSessionDisposition),
     Aborted(WorthQueryClosedProviderSessionDisposition),
+    CommitDenied(WorthQueryProviderSessionFailure),
     CommitDeferred(super::WorthQueryProviderSessionCommitDeferred),
     CommitControlStopped(super::WorthQueryProviderSessionCommitControlStopped),
     CommitSettlementDeferred(WorthQueryProviderSessionSettlementDeferred),
@@ -52,6 +53,7 @@ impl WorthQuerySessionCommitOrAbortOutcome {
             | Self::ProductStale(_)
             | Self::NoEffect(_)
             | Self::Aborted(_)
+            | Self::CommitDenied(_)
             | Self::CommitDeferred(_)
             | Self::CommitControlStopped(_) => WorthQueryProviderSessionRecoveryPosture::Closed,
             Self::CommitSettlementDeferred(_)
@@ -65,9 +67,9 @@ impl WorthQuerySessionCommitOrAbortOutcome {
 
     pub fn failure(&self) -> Option<&WorthQueryProviderSessionFailure> {
         match self {
-            Self::CommitRecoveryRequired(failure) | Self::AbortRecoveryRequired(failure) => {
-                Some(failure)
-            }
+            Self::CommitDenied(failure)
+            | Self::CommitRecoveryRequired(failure)
+            | Self::AbortRecoveryRequired(failure) => Some(failure),
             Self::Committed(_)
             | Self::ProductStale(_)
             | Self::NoEffect(_)
@@ -87,6 +89,7 @@ impl WorthQuerySessionCommitOrAbortOutcome {
             | Self::NoEffect(_)
             | Self::ProductUnpublished(_)
             | Self::Aborted(_)
+            | Self::CommitDenied(_)
             | Self::CommitDeferred(_)
             | Self::CommitControlStopped(_)
             | Self::CommitRecoveryRequired(_)

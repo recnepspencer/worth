@@ -20,6 +20,39 @@ pub(super) const fn cold_index_reconstruction_budget() -> DerivedIndexMaintenanc
     }
 }
 
+/// Seal the exact candidate's primary indexes before World can publish it.
+/// Only a missing compatible prior generation may enter the finite cold lane.
+pub(super) fn prepare_candidate_with_cold_fallback(
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    candidate: &mut worth_relational::facade::mvcc::PreparedRelationalCommitCandidate,
+    index_ids: &[worth_relational::facade::indexes::DerivedIndexId],
+    before: &worth_relational::facade::snapshots::SnapshotHandle,
+) -> Result<
+    worth_relational::facade::indexes::DerivedIndexMaintenanceWork,
+    worth_relational::facade::indexes::DerivedIndexMaintenanceDenial,
+> {
+    let initial = runtime.index_authority().prepare_for_candidate(
+        candidate,
+        index_ids,
+        Some(before),
+        ordinary_index_maintenance_budget(),
+    );
+    if matches!(
+        &initial,
+        Err(denial) if matches!(denial.kind,
+            worth_relational::facade::indexes::DerivedIndexMaintenanceDenialKind::ColdReconstructionRequired)
+    ) {
+        runtime.index_authority().prepare_for_candidate(
+            candidate,
+            index_ids,
+            Some(before),
+            cold_index_reconstruction_budget(),
+        )
+    } else {
+        initial
+    }
+}
+
 /// A captured pre-commit root does not prove that every index has a compatible
 /// prior generation. Retry only that specific absence through the explicit
 /// finite cold lane; ordinary work exhaustion never becomes an unbounded scan.

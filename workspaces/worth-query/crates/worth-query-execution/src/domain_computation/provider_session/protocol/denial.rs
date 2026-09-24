@@ -34,6 +34,8 @@ pub enum WorthQueryProviderSessionDenialKind {
         maximum_bytes: u64,
         required_bytes: u64,
     },
+    IndexMaintenanceBudgetExceeded,
+    IndexGenerationIdentityExhausted,
     ProviderIdentityMismatch,
     ProviderGenerationMismatch,
     SessionProtocolUnsupported,

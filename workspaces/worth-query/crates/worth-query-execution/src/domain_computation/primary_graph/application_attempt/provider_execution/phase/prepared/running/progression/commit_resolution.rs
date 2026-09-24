@@ -192,6 +192,26 @@ pub(super) fn finish_authorized_compare(
 fn provider_compare_denied(
     denial: crate::domain_computation::WorthQueryProviderCompareAndCommitDenial,
 ) -> WorthQueryProviderProgressionOutcome {
+    if let crate::domain_computation::WorthQueryProviderCompareAndCommitDenial::ProviderSession(
+        failure,
+    ) = &denial
+    {
+        use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenial as Denial;
+        use crate::domain_computation::WorthQueryProviderSessionDenialKind as Kind;
+        match failure.kind() {
+            Kind::IndexMaintenanceBudgetExceeded => {
+                return WorthQueryProviderProgressionOutcome::Denied(
+                    Denial::index_maintenance_budget_exceeded(DenialStage::ProviderCommit),
+                );
+            }
+            Kind::IndexGenerationIdentityExhausted => {
+                return WorthQueryProviderProgressionOutcome::Denied(
+                    Denial::index_generation_identity_exhausted(DenialStage::ProviderCommit),
+                );
+            }
+            _ => {}
+        }
+    }
     let (capacity, retention, identity, prepared_root_budget) = match denial {
         crate::domain_computation::WorthQueryProviderCompareAndCommitDenial::ProviderSession(
             failure,
@@ -267,6 +287,33 @@ enum WorthQueryCommitIdentityExhaustion {
     Retention,
     Snapshot,
     Candidate,
+}
+
+#[cfg(test)]
+mod index_preparation_tests {
+    use super::*;
+
+    #[test]
+    fn pre_effect_index_exhaustion_remains_typed_at_application_boundary() {
+        let failure = crate::domain_computation::WorthQueryProviderSessionFailure::new(
+            crate::domain_computation::WorthQueryProviderSessionDenialKind::IndexMaintenanceBudgetExceeded,
+            crate::domain_computation::WorthQueryProviderSessionProtocolStage::Commit,
+            "candidate index work exceeded its finite budget",
+            crate::domain_computation::WorthQueryProviderSessionProtocolCounters::default(),
+        );
+        let outcome = provider_compare_denied(
+            crate::domain_computation::WorthQueryProviderCompareAndCommitDenial::ProviderSession(
+                failure,
+            ),
+        );
+        let WorthQueryProviderProgressionOutcome::Denied(denial) = outcome else {
+            panic!("pre-effect index refusal must remain a denial");
+        };
+        assert_eq!(
+            denial.kind(),
+            crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenialKind::IndexMaintenanceBudgetExceeded,
+        );
+    }
 }
 
 /// A commit whose answer never arrived is re-read through idempotency.

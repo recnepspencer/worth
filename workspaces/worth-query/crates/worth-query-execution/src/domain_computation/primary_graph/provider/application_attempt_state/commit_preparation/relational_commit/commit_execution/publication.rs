@@ -47,7 +47,6 @@ fn publish_retained(
 ) -> Result<WorthQueryPublishedApplicationCommit, WorthQueryProviderSessionFailure> {
     let WorthQueryCommittedApplicationSession {
         mut attempt,
-        branch,
         before,
         next_basis,
         committed,
@@ -75,7 +74,6 @@ fn publish_retained(
         recovery_reservation,
         WorthQueryPendingApplicationPublication::new(
             attempt,
-            branch,
             before,
             next_basis,
             committed,
