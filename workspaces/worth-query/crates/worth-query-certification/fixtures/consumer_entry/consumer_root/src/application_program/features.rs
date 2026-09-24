@@ -19,6 +19,7 @@ pub(super) fn consumer_feature_specs() -> Vec<ApplicationFeatureSpec> {
         ApplicationFeatureSpec::root::<ConsumerSchema, PlanarFinalOutputFeature>()
             .provides::<PlanarFinalBodyOutput>()
             .conditional_operation::<PublishFinalPlanarOutput>()
+            .conditional_operation::<PreserveFinalPlanarOutput>()
             .finish(),
         ApplicationFeatureSpec::root::<ConsumerSchema, PlanarAlternateFinalOutputFeature>()
             .provides::<PlanarAlternateFinalBodyOutput>()

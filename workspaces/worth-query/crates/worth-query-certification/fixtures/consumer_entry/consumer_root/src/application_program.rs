@@ -17,8 +17,9 @@ use worth_query_topology_entry::{
     PlanarFinalOutputFeature, PlanarFinalToSummaryConnection, PlanarOutputFeature,
     PlanarOutputToAlternateFinalConnection, PlanarOutputToFinalConnection,
     PlanarSourceAdjustmentBinding, PlanarSourceFeature, PlanarSourceToOutputConnection,
-    PlanarSummaryFeature, PlanarSummaryInput, PositivePlanarTurn, PriorCycleAdjustmentBinding,
-    PublishAlternatePlanarOutput, PublishFinalPlanarOutput, VertexReplacementBinding,
+    PlanarSummaryFeature, PlanarSummaryInput, PositivePlanarTurn, PreserveFinalPlanarOutput,
+    PriorCycleAdjustmentBinding, PublishAlternatePlanarOutput, PublishFinalPlanarOutput,
+    VertexReplacementBinding,
 };
 
 use crate::ConsumerSchema;

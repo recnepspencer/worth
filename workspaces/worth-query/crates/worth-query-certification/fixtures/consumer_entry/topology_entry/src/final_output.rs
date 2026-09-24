@@ -36,7 +36,7 @@ worth_query_structured_value_binding!(pub FinalPlanarMutationInputBinding for Fi
     identity: "worth.query.certification.final-planar-mutation-input.v1"
 });
 worth_query_operation!(pub PublishFinalPlanarOutput for Schema: TopologySchemaBinding, input FinalPlanarMutationInputBinding);
-worth_query_operation_reads!(PublishFinalPlanarOutput => [Body, BodyKey, Length]);
+worth_query_operation_reads!(PublishFinalPlanarOutput => [Body, BodyKey, Length, PlanarSuccessor]);
 worth_query_operation_writes!(PublishFinalPlanarOutput => [BodyKey, PositionX, PositionY, Length]);
 worth_query_operation_creates!(PublishFinalPlanarOutput => [Body]);
 worth_query_operation_links!(PublishFinalPlanarOutput => [PlanarSuccessor]);
@@ -354,7 +354,7 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationProducerBinding<Schema>
 
     const IDENTITY: &'static str = "worth.query.certification.planar-final-output-producer.v1";
     const OUTPUT_ROLE: &'static str = "anchor";
-    const APPLICABILITY: &'static [WorthQueryProducerApplicability] = SUPPORTED;
+    const APPLICABILITY: &'static [WorthQueryProducerApplicability] = &[INITIAL];
     const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement] =
         &[WorthQueryProducerInvariantRequirement::new(
             "PositivePlanarTurn",
@@ -366,5 +366,9 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationProducerBinding<Schema>
     const REUSE_POLICY: &'static str = "exact-source";
 }
 
+mod preservation;
+mod preserve_readiness;
 mod readiness;
+pub use preservation::*;
+pub use preserve_readiness::*;
 pub use readiness::*;

@@ -65,6 +65,10 @@ pub(super) fn revised_parent_publication_is_the_dependent_basis(
                 WorthQueryApplicationProgramOutputProgress::Settled(settled) => break settled,
             }
         };
+        assert!(
+            settled.work().producer_contact_count() <= 5,
+            "a changed source settles the finite parent and nested output graph once"
+        );
         let retained = request.at(settled.observation());
         assert_eq!(
             retained

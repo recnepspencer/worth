@@ -5,7 +5,7 @@ use worth_query_decl::facade::application_program::{
 };
 use worth_query_parameter_entry::ParameterFeature;
 use worth_query_topology_entry::{
-    MutatePlanar, PublishAlternatePlanarOutput, PublishFinalPlanarOutput,
+    MutatePlanar, PreserveFinalPlanarOutput, PublishAlternatePlanarOutput, PublishFinalPlanarOutput,
 };
 
 use super::{ConsumerRules, ConsumerSchema};
@@ -31,6 +31,7 @@ impl ApplicationProgramDefinition<ConsumerSchema> for OmittedProgramBinding {
             ApplicationFeatureSpec::root::<ConsumerSchema, InstalledConditionalActionFeature>()
                 .conditional_operation::<MutatePlanar>()
                 .conditional_operation::<PublishFinalPlanarOutput>()
+                .conditional_operation::<PreserveFinalPlanarOutput>()
                 .conditional_operation::<PublishAlternatePlanarOutput>()
                 .finish(),
             ApplicationFeatureSpec::root::<ConsumerSchema, ParameterFeature>().finish(),

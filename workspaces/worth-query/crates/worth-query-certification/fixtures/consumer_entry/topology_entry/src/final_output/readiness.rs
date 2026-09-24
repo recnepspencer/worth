@@ -86,11 +86,12 @@ pub(crate) fn declare_final_output<Schema: TopologySchemaBinding>(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_decision_fact_budget(operation, 16)
-        .operation_projection_work_budget(operation, 16)
+        .operation_decision_fact_budget(operation, 64)
+        .operation_projection_work_budget(operation, 64)
         .operation_read_entity(operation, Body::reference())
         .operation_read_field(operation, BodyKey::reference())
         .operation_read_field(operation, Length::reference())
+        .operation_read_relation(operation, PlanarSuccessor::reference())
         .operation_write(operation, Length::reference())
         .operation_write(operation, BodyKey::reference())
         .operation_write(operation, super::PositionX::reference())
@@ -98,6 +99,44 @@ pub(crate) fn declare_final_output<Schema: TopologySchemaBinding>(
         .operation_create(operation, Body::reference())
         .operation_link(operation, PlanarSuccessor::reference())
         .application_mutation_binding::<FinalPlanarMutationBinding<Schema>>()
+        .operation(
+            PreserveFinalPlanarOutput::reference::<Schema>()
+                .definition()
+                .no_external_effect()
+                .no_aftermath()
+                .finish(),
+        )
+        .operation_decision_fact_budget(PreserveFinalPlanarOutput::reference::<Schema>(), 64)
+        .operation_projection_work_budget(PreserveFinalPlanarOutput::reference::<Schema>(), 64)
+        .operation_read_entity(
+            PreserveFinalPlanarOutput::reference::<Schema>(),
+            Body::reference(),
+        )
+        .operation_read_field(
+            PreserveFinalPlanarOutput::reference::<Schema>(),
+            BodyKey::reference(),
+        )
+        .operation_read_field(
+            PreserveFinalPlanarOutput::reference::<Schema>(),
+            PositionY::reference(),
+        )
+        .operation_read_field(
+            PreserveFinalPlanarOutput::reference::<Schema>(),
+            Length::reference(),
+        )
+        .operation_read_relation(
+            PreserveFinalPlanarOutput::reference::<Schema>(),
+            PlanarSuccessor::reference(),
+        )
+        .operation_write(
+            PreserveFinalPlanarOutput::reference::<Schema>(),
+            PositionY::reference(),
+        )
+        .operation_write(
+            PreserveFinalPlanarOutput::reference::<Schema>(),
+            Length::reference(),
+        )
+        .application_mutation_binding::<FinalPlanarPreserveBinding<Schema>>()
 }
 
 fn final_readiness_definition() -> domain::WorthQueryDomainOperationDefinition<
