@@ -231,17 +231,13 @@ where
             plan.query.name(),
         ));
     }
-    application
-        .runtime
-        .installed_packages()
-        .validate_application_schema(&application.installed_schema)
-        .map_err(|_| {
-            denial(
-                WorthQueryApplicationOneShotDenialKind::StaleInstalledQuery,
-                plan.query.name(),
-                plan.query.name(),
-            )
-        })?;
+    if !application.installed_schema_is_current() {
+        return Err(denial(
+            WorthQueryApplicationOneShotDenialKind::StaleInstalledQuery,
+            plan.query.name(),
+            plan.query.name(),
+        ));
+    }
     application
         .installed_schema
         .validate_installed_query(plan.query)

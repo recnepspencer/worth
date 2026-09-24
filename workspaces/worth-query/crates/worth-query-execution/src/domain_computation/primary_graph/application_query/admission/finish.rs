@@ -38,9 +38,6 @@ use crate::domain_computation::provider_session::{
     WorthQueryGraphWorkAccessContextAffinity, WorthQueryManagedGraphWorkSession,
 };
 
-mod temp_trace;
-use temp_trace::{AdmissionPhase, AdmissionProbe};
-
 struct PreparedApplicationQueryGraphWork {
     plan: WorthQueryAdmittedGraphWorkPlan,
     obligation_identity: WorthQueryInstalledGraphObligationSetIdentity,
@@ -98,24 +95,17 @@ where
         >,
         WorthQueryApplicationQueryAdmissionDenial,
     > {
-        let mut probe = AdmissionProbe::begin(query.name());
         let graph = self.runtime.primary_graph().ok_or_else(|| {
             denial(
                 WorthQueryApplicationQueryAdmissionDenialKind::StaleScope,
                 query.name(),
             )
         })?;
-        let prepared = self.prepare_application_query_graph_work(
-            query,
-            &parameters,
-            &controls,
-            graph,
-            &mut probe,
-        )?;
+        let prepared =
+            self.prepare_application_query_graph_work(query, &parameters, &controls, graph)?;
         validate_admission_request(controls.request_scope(), query.name())?;
         let (basis_selection, security_product, controls) = controls.into_admission_parts();
         let basis = admit_application_query_basis(self, basis_selection)?;
-        probe.mark(AdmissionPhase::Basis);
         validate_admission_request(controls.request_scope(), query.name())?;
         let mut graph_work = self.start_application_query_graph_work(
             prepared.plan,
@@ -127,7 +117,6 @@ where
             &security_product,
             graph,
         )?;
-        probe.mark(AdmissionPhase::Session);
         let authorities = self.admit_application_query_authorities(
             &mut graph_work,
             &security_product,
@@ -137,8 +126,6 @@ where
             pending_governance,
             prepared.disclosure,
         )?;
-        probe.mark(AdmissionPhase::Authorities);
-        probe.record();
         Ok(WorthQueryAdmittedApplicationQueryPlan {
             runtime_authority: self.runtime.authority_identity(),
             graph_authority_identity: self
@@ -169,11 +156,9 @@ where
         parameters: &WorthQueryAdmittedApplicationQueryParameters,
         controls: &WorthQueryApplicationQueryControls<'_, Schema>,
         graph: &WorthQueryPrimaryGraph,
-        probe: &mut AdmissionProbe,
     ) -> Result<PreparedApplicationQueryGraphWork, WorthQueryApplicationQueryAdmissionDenial> {
         let reviewed =
             self.review_application_query_graph_work(query, parameters, controls, graph)?;
-        probe.mark(AdmissionPhase::GraphReview);
         let canonical_work = WorthQueryCanonicalWorkPhases::new(
             query.installation_canonical_work(),
             parameters
@@ -195,7 +180,6 @@ where
             admit_application_query_graph_work(reviewed.work, &self.graph_work_resource_support())
                 .map_err(|denial| graph_work_denial(format!("{}: {denial:?}", query.name())))?;
         validate_one_shot_shape(query)?;
-        probe.mark(AdmissionPhase::GraphPlan);
         let disclosure = compile_disclosure_contract(query, &graph.layout).map_err(|denial| {
             WorthQueryApplicationQueryAdmissionDenial::new(
                 WorthQueryApplicationQueryAdmissionDenialKind::DisclosureContractInvalid,
@@ -203,7 +187,6 @@ where
             )
         })?;
         let continuation_index_id = continuation_index_id(query, controls, graph)?;
-        probe.mark(AdmissionPhase::Disclosure);
         Ok(PreparedApplicationQueryGraphWork {
             plan,
             obligation_identity: reviewed.obligation_identity,

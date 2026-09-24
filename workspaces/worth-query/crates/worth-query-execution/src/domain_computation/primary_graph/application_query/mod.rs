@@ -18,6 +18,7 @@ mod execution_validation;
 #[cfg(test)]
 mod governance_affinity_tests;
 mod graph_read_plan_binding;
+mod installed_schema_currentness;
 mod live;
 pub(in crate::domain_computation::primary_graph) mod observed_source;
 mod one_shot;
