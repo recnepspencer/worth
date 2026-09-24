@@ -129,7 +129,7 @@ impl<'borrow, 'runtime, Schema>
         self.admission.freeze()
     }
 
-    pub fn proposed(&self) -> WorthQueryApplicationInvariantReadView<'_, Schema> {
+    pub fn proposed(&self) -> WorthQueryApplicationInvariantReadView<'runtime, Schema> {
         WorthQueryApplicationInvariantReadView {
             aspects: self.lower.aspect_states(),
             relations: self.lower.relations(),
@@ -142,7 +142,7 @@ impl<'borrow, 'runtime, Schema>
         }
     }
 
-    pub fn committed(&self) -> WorthQueryApplicationInvariantReadView<'_, Schema> {
+    pub fn committed(&self) -> WorthQueryApplicationInvariantReadView<'runtime, Schema> {
         WorthQueryApplicationInvariantReadView {
             aspects: self.lower.committed_aspect_states(),
             relations: self.lower.committed_relations(),
@@ -170,7 +170,7 @@ impl<'borrow, 'runtime, Schema> WorthQueryApplicationInvariantContext<'borrow, '
         }
     }
 
-    pub fn proposed(&self) -> WorthQueryApplicationInvariantReadView<'_, Schema> {
+    pub fn proposed(&self) -> WorthQueryApplicationInvariantReadView<'runtime, Schema> {
         WorthQueryApplicationInvariantReadView {
             aspects: self.lower.aspect_states(),
             relations: self.lower.relations(),
@@ -183,7 +183,7 @@ impl<'borrow, 'runtime, Schema> WorthQueryApplicationInvariantContext<'borrow, '
         }
     }
 
-    pub fn committed(&self) -> WorthQueryApplicationInvariantReadView<'_, Schema> {
+    pub fn committed(&self) -> WorthQueryApplicationInvariantReadView<'runtime, Schema> {
         WorthQueryApplicationInvariantReadView {
             aspects: self.lower.committed_aspect_states(),
             relations: self.lower.committed_relations(),
