@@ -1,6 +1,8 @@
 use crate::basis::{WorthQueryProductBranchAdmissionDenial, WorthQueryProductBranchLease};
 use crate::domain_computation::primary_graph::{
-    application_query::resource_lifecycle::WorthQueryApplicationBasisLease,
+    application_query::{
+        resource_lifecycle::WorthQueryApplicationBasisLease, WorthQueryApplicationQueryBasisCustody,
+    },
     WorthQueryPrimaryGraphApplicationRuntime,
 };
 use worth_query_installation::facade::ApplicationSchema;
@@ -32,26 +34,43 @@ impl WorthQueryProductObservationSource for crate::basis::WorthQueryProductObser
 
 /// Security truth is resolved freshly from the selected branch at each
 /// admission stage. A different lifecycle occurrence is rejected before this
-/// basis retains the current application snapshot; exact data remains in the
-/// operation's separately retained product basis.
-pub(in crate::domain_computation) struct WorthQueryProductSecurityBasis {
+/// basis obtains current application truth, reusing an exact live Query-owned
+/// snapshot when it already carries the same selected program interpretation.
+pub(in crate::domain_computation) struct WorthQueryProductSecurityBasis<'basis> {
     _observation: ProductBranchObservation,
-    application_basis: WorthQueryApplicationBasisLease,
+    application_basis: SecurityApplicationBasis<'basis>,
+    _selected_program:
+        Option<super::super::program_occurrence::WorthQueryProgramSupportInterpretation>,
 }
 
-impl WorthQueryProductSecurityBasis {
+enum SecurityApplicationBasis<'basis> {
+    Owned(WorthQueryApplicationBasisLease),
+    Reused(&'basis worth_relational::facade::snapshots::SnapshotHandle),
+}
+
+impl WorthQueryProductSecurityBasis<'_> {
     pub(in crate::domain_computation) fn snapshot_handle(
         &self,
     ) -> &worth_relational::facade::snapshots::SnapshotHandle {
-        self.application_basis.snapshot_handle()
+        match &self.application_basis {
+            SecurityApplicationBasis::Owned(basis) => basis.snapshot_handle(),
+            SecurityApplicationBasis::Reused(snapshot) => snapshot,
+        }
     }
 }
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    fn retain_indexed_security_basis(
+    fn retain_indexed_security_basis<'basis>(
         &self,
         observation: &ProductBranchObservation,
-    ) -> Result<WorthQueryApplicationBasisLease, WorthQueryProductBranchAdmissionDenial> {
+        query_basis: Option<&'basis WorthQueryApplicationQueryBasisCustody>,
+    ) -> Result<
+        (
+            SecurityApplicationBasis<'basis>,
+            Option<super::super::program_occurrence::WorthQueryProgramSupportInterpretation>,
+        ),
+        WorthQueryProductBranchAdmissionDenial,
+    > {
         let graph = self
             .runtime
             .primary_graph()
@@ -65,22 +84,52 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 )
             })
             .map_err(|_| WorthQueryProductBranchAdmissionDenial::ObservationRejected)?;
+        let version = observation
+            .basis()
+            .relational_basis()
+            .observation()
+            .version_id();
+        if let Some(query_basis) =
+            query_basis.filter(|basis| basis.can_reuse_security_snapshot_at(observation))
+        {
+            let (_, interpretation) = self
+                .retain_selected_program_interpretation(version)?
+                .into_parts();
+            if let Some(snapshot) = query_basis.reusable_security_snapshot(interpretation.as_ref())
+            {
+                return Ok((SecurityApplicationBasis::Reused(snapshot), interpretation));
+            }
+        }
         let mut application_basis = self.retain_product_application_basis(observation)?;
-        let _ = self.bind_selected_program_interpretation(
-            observation
-                .basis()
-                .relational_basis()
-                .observation()
-                .version_id(),
-            &mut application_basis,
-        )?;
-        Ok(application_basis)
+        let _ = self.bind_selected_program_interpretation(version, &mut application_basis)?;
+        Ok((SecurityApplicationBasis::Owned(application_basis), None))
     }
 
     pub(in crate::domain_computation) fn admit_product_security_basis(
         &self,
         product: &impl WorthQueryProductObservationSource,
-    ) -> Result<WorthQueryProductSecurityBasis, WorthQueryProductBranchAdmissionDenial> {
+    ) -> Result<WorthQueryProductSecurityBasis<'static>, WorthQueryProductBranchAdmissionDenial>
+    {
+        self.admit_product_security_basis_with_query_basis(product, None)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn admit_query_product_security_basis<
+        'basis,
+    >(
+        &self,
+        product: &impl WorthQueryProductObservationSource,
+        query_basis: &'basis WorthQueryApplicationQueryBasisCustody,
+    ) -> Result<WorthQueryProductSecurityBasis<'basis>, WorthQueryProductBranchAdmissionDenial>
+    {
+        self.admit_product_security_basis_with_query_basis(product, Some(query_basis))
+    }
+
+    fn admit_product_security_basis_with_query_basis<'basis>(
+        &self,
+        product: &impl WorthQueryProductObservationSource,
+        query_basis: Option<&'basis WorthQueryApplicationQueryBasisCustody>,
+    ) -> Result<WorthQueryProductSecurityBasis<'basis>, WorthQueryProductBranchAdmissionDenial>
+    {
         let selected = product.product_observation();
         if let Some(guard) = product.current_security_guard() {
             return self.product_runtime.with_product_observation(
@@ -100,10 +149,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     {
                         return Err(WorthQueryProductBranchAdmissionDenial::IncarnationChanged);
                     }
-                    let application_basis = self.retain_indexed_security_basis(selected)?;
+                    let (application_basis, selected_program) =
+                        self.retain_indexed_security_basis(selected, query_basis)?;
                     Ok(WorthQueryProductSecurityBasis {
                         _observation: selected.clone(),
                         application_basis,
+                        _selected_program: selected_program,
                     })
                 },
             );
@@ -113,10 +164,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 if observation.lifecycle_incarnation() != selected.lifecycle_incarnation() {
                     return Err(WorthQueryProductBranchAdmissionDenial::IncarnationChanged);
                 }
-                let application_basis = self.retain_indexed_security_basis(&observation)?;
+                let (application_basis, selected_program) =
+                    self.retain_indexed_security_basis(&observation, query_basis)?;
                 Ok(WorthQueryProductSecurityBasis {
                     _observation: observation,
                     application_basis,
+                    _selected_program: selected_program,
                 })
             })
     }

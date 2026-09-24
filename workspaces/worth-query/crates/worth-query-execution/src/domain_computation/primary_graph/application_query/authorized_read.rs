@@ -63,7 +63,7 @@ pub(super) fn execute_authorized_read<
 where
     Schema: ApplicationSchema,
 {
-    let security = application.admit_product_security_basis(&plan.security_product)
+    let security = application.admit_query_product_security_basis(&plan.security_product, &plan.basis)
         .map_err(|denial| WorthQueryAuthorizedApplicationReadDenial::Authorization(
             crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial::new(
                 crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::ProductSecurityBasis(denial),

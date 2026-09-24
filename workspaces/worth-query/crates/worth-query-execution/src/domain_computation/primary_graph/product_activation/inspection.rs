@@ -68,6 +68,31 @@ pub(in crate::domain_computation::primary_graph) fn inspect_selected_program<
 }
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    pub(in crate::domain_computation::primary_graph) fn retain_selected_program_interpretation(
+        &self,
+        version: worth_relational::facade::identity::VersionId,
+    ) -> Result<
+        WorthQueryRetainedSelectedProgramInspection,
+        crate::basis::WorthQueryProductBranchAdmissionDenial,
+    > {
+        let inspection = inspect_selected_program(self, version);
+        let interpretation = if let (Some(support), Ok(selected)) =
+            (self.installed_program_support(), &inspection)
+        {
+            Some(
+                support.retain_interpretation(selected.revision()).ok_or(
+                    crate::basis::WorthQueryProductBranchAdmissionDenial::ObservationRejected,
+                )?,
+            )
+        } else {
+            None
+        };
+        Ok(WorthQueryRetainedSelectedProgramInspection {
+            inspection,
+            interpretation,
+        })
+    }
+
     pub(in crate::domain_computation::primary_graph) fn bind_selected_program_interpretation(
         &self,
         version: worth_relational::facade::identity::VersionId,
@@ -76,13 +101,31 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Result<WorthQuerySelectedProgramInspection, WorthQuerySelectedProgramInspectionDenial>,
         crate::basis::WorthQueryProductBranchAdmissionDenial,
     > {
-        let selected = inspect_selected_program(self, version);
-        if let (Some(support), Ok(selected)) = (self.installed_program_support(), &selected) {
-            let interpretation = support
-                .retain_interpretation(selected.revision())
-                .ok_or(crate::basis::WorthQueryProductBranchAdmissionDenial::ObservationRejected)?;
+        let (selected, interpretation) = self
+            .retain_selected_program_interpretation(version)?
+            .into_parts();
+        if let Some(interpretation) = interpretation {
             basis.bind_program_interpretation(interpretation);
         }
         Ok(selected)
+    }
+}
+
+pub(in crate::domain_computation::primary_graph) struct WorthQueryRetainedSelectedProgramInspection
+{
+    inspection:
+        Result<WorthQuerySelectedProgramInspection, WorthQuerySelectedProgramInspectionDenial>,
+    interpretation:
+        Option<super::super::program_occurrence::WorthQueryProgramSupportInterpretation>,
+}
+
+impl WorthQueryRetainedSelectedProgramInspection {
+    pub(in crate::domain_computation::primary_graph) fn into_parts(
+        self,
+    ) -> (
+        Result<WorthQuerySelectedProgramInspection, WorthQuerySelectedProgramInspectionDenial>,
+        Option<super::super::program_occurrence::WorthQueryProgramSupportInterpretation>,
+    ) {
+        (self.inspection, self.interpretation)
     }
 }

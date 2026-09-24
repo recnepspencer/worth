@@ -7,6 +7,7 @@ mod authorization_observation;
 mod authorization_work;
 mod authorized_read;
 mod basis;
+pub(in crate::domain_computation::primary_graph) use basis::WorthQueryApplicationQueryBasisCustody;
 mod continuation;
 mod control_validation;
 mod controls;

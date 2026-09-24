@@ -119,6 +119,7 @@ where
         )?;
         let authorities = self.admit_application_query_authorities(
             &mut graph_work,
+            &basis,
             &security_product,
             query,
             access,

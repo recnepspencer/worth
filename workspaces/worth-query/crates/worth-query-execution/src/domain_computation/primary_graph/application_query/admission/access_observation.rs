@@ -35,7 +35,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             PrincipalIdentity,
             Scope,
         >,
-        security: &crate::domain_computation::primary_graph::product_operation::WorthQueryProductSecurityBasis,
+        security: &crate::domain_computation::primary_graph::product_operation::WorthQueryProductSecurityBasis<'_>,
     ) -> Result<
         (
             WorthQueryRetainedAuthorizationDecisionFacts,

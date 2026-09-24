@@ -54,3 +54,22 @@ fn a_host_without_a_published_activation_names_no_occurrence_program() {
         "an unseeded branch must not present a permissive default activation"
     );
 }
+
+#[test]
+fn retained_program_meaning_does_not_authorize_an_inactive_or_replaced_support() {
+    let world = installed_authorization_world(true);
+    let revision = rostered_program_revision();
+    let support = installed_program_support(&world.application.installed_schema);
+    let prior = support.retain_interpretation(&revision).unwrap();
+    let current = support.retain_interpretation(&revision).unwrap();
+    assert!(prior.same_support_as(&current));
+
+    let replacement = installed_program_support(&world.application.installed_schema);
+    let replacement_pin = replacement.retain_interpretation(&revision).unwrap();
+    assert!(!prior.same_support_as(&replacement_pin));
+
+    let retirement = support.lifecycle().begin_retirement(&revision).unwrap();
+    assert!(support.retain_interpretation(&revision).is_none());
+    drop(retirement);
+    assert!(support.retain_interpretation(&revision).is_some());
+}
