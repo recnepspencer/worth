@@ -142,6 +142,31 @@ impl RelationalCommitCatalog {
         self.append(artifact)
     }
 
+    /// Checkpoint recovery has already readmitted each live root from its
+    /// durable image. Seal each canonical envelope once, with its exact root
+    /// or retained fork descriptor, instead of building a provisional catalog.
+    pub(crate) fn append_checkpoint_recovery(
+        &mut self,
+        envelope: Arc<crate::history::data::CanonicalCommitEnvelope>,
+        root: Option<&Arc<crate::branch::RelationalBranchRoot>>,
+        descriptor: Option<&crate::branch::RelationalBranchRootDescriptor>,
+    ) -> Result<RelationalCommitCatalogEntry, RelationalCommitCatalogEnvelopeAppendDenial> {
+        let artifact = match (root, descriptor) {
+            (Some(root), _) => {
+                RelationalCommitArtifact::from_envelope_with_root(envelope, Arc::clone(root))
+            }
+            (None, Some(descriptor)) => RelationalCommitArtifact::from_envelope_with_descriptor(
+                envelope,
+                descriptor.clone(),
+            ),
+            (None, None) => RelationalCommitArtifact::from_envelope(envelope),
+        }
+        .map_err(RelationalCommitCatalogEnvelopeAppendDenial::Artifact)?;
+        self.materializations.fetch_add(1, Ordering::Relaxed);
+        self.append(artifact)
+            .map_err(|_| RelationalCommitCatalogEnvelopeAppendDenial::DuplicateCommit)
+    }
+
     /// Validate an envelope without materializing or mutating the catalog.
     /// Publication uses this side-effect-free court before durable append so
     /// an invalid artifact cannot fail after storage or catalog effects.

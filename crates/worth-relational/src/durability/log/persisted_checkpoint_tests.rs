@@ -1,6 +1,8 @@
 use super::*;
+use crate::facade::mvcc::WorkerIntentBatch;
+use crate::facade::transactions::{BulkEntityCreateIntent, CreateIntent, MutationIntent};
 use crate::history::data::BranchId;
-use crate::identity::data::VersionId;
+use crate::identity::data::{KindId, PartitionId, VersionId};
 use crate::indexes::data::{
     DerivedIndexApplicability, DerivedIndexArtifacts, DerivedIndexEntries, DerivedIndexGeneration,
     DerivedIndexGenerationId, DerivedIndexId, DerivedIndexPublicationStatus,
@@ -57,9 +59,9 @@ fn partition_alias_wire_readmits_legacy_checkpoint_and_omits_envelope_index_cach
     let stored: PersistedDurableCheckpointFile = rmp_serde::from_slice(&borrowed_wire).unwrap();
     assert_eq!(
         stored.checkpoint.partition_alias_format,
-        PARTITION_ALIAS_FORMAT_VERSION
+        PARTITION_DELTA_FORMAT_VERSION
     );
-    assert_eq!(stored.checkpoint.branch_root_partition_aliases.len(), 1);
+    assert_eq!(stored.checkpoint.branch_root_partition_aliases_v2.len(), 1);
     assert!(stored.checkpoint.branch_roots[0]
         .partition_images
         .is_empty());
@@ -69,6 +71,18 @@ fn partition_alias_wire_readmits_legacy_checkpoint_and_omits_envelope_index_cach
         .readmit()
         .unwrap();
     assert_eq!(restored.checkpoint, legacy.checkpoint);
+    let mut old_alias = PersistedDurableCheckpointFile::from_checkpoint(checkpoint.clone());
+    old_alias.checkpoint.partition_alias_format = partition_aliases::PARTITION_ALIAS_FORMAT_VERSION;
+    old_alias.checkpoint.branch_root_partition_aliases = vec![checkpoint.branch_roots[0].commit_id];
+    old_alias.checkpoint.branch_roots[0]
+        .partition_images
+        .clear();
+    let v1_wire = rmp_serde::to_vec_named(&old_alias).unwrap();
+    let v1 = rmp_serde::from_slice::<PersistedDurableCheckpointFile>(&v1_wire)
+        .unwrap()
+        .readmit()
+        .unwrap();
+    assert_eq!(v1.checkpoint, restored.checkpoint);
     assert!(restored.checkpoint.envelopes[0]
         .envelope()
         .derived_index_artifacts
@@ -79,6 +93,25 @@ fn partition_alias_wire_readmits_legacy_checkpoint_and_omits_envelope_index_cach
 fn partition_alias_wire_preserves_divergent_sibling_roots_and_pinned_reader() {
     let runtime = persisted_runtime_with_test_schema();
     create_entity(&runtime, "partition-alias-seed");
+    let mut transaction = test_owner_begin_transaction_for_main(&runtime);
+    transaction
+        .push_batch(
+            WorkerIntentBatch::new("shared-second-partition").push(MutationIntent::Create(
+                CreateIntent::BulkEntities(BulkEntityCreateIntent {
+                    partition_id: PartitionId(41),
+                    kind_id: KindId(1),
+                    client_keys: vec![crate::symbols::data::ClientKey::raw("shared-secondary")],
+                    field_patches: vec![single_string_aspect_field_patch(
+                        aspect_key("name"),
+                        field_key("name"),
+                        "shared-secondary",
+                    )],
+                }),
+            )),
+        )
+        .unwrap();
+    let second = transaction.commit(&runtime).unwrap();
+    release_test_commit_snapshot(&runtime, &second);
     let main = BranchId("main".into());
     let pinned = snapshot_for_owner_branch(&runtime, &main);
     let sibling = create_branch_from_main(&runtime, "partition-alias-sibling");
@@ -92,7 +125,15 @@ fn partition_alias_wire_preserves_divergent_sibling_roots_and_pinned_reader() {
     let wire =
         rmp_serde::to_vec_named(&PersistedDurableCheckpointFileRef::new(&checkpoint)).unwrap();
     let stored = rmp_serde::from_slice::<PersistedDurableCheckpointFile>(&wire).unwrap();
-    assert_eq!(stored.checkpoint.branch_root_partition_aliases.len(), 1);
+    assert_eq!(stored.checkpoint.branch_root_partition_aliases_v2.len(), 2);
+    let sibling_aliases = stored
+        .checkpoint
+        .branch_root_partition_aliases_v2
+        .iter()
+        .find(|root| root.commit_id == on_sibling.commit.commit_id)
+        .unwrap();
+    assert_eq!(sibling_aliases.shared.len(), 1);
+    assert_eq!(sibling_aliases.shared[0].partition_id, PartitionId(41));
     assert!(
         !stored
             .checkpoint
@@ -117,7 +158,7 @@ fn partition_alias_wire_preserves_divergent_sibling_roots_and_pinned_reader() {
             .unwrap()
             .entities()
             .len(),
-        1
+        2
     );
 
     let mut plan = runtime.durability().recovery_plan(
@@ -135,7 +176,7 @@ fn partition_alias_wire_preserves_divergent_sibling_roots_and_pinned_reader() {
                 .unwrap()
                 .entities()
                 .len(),
-            2
+            3
         );
     }
 }
@@ -148,7 +189,7 @@ fn partition_alias_wire_rejects_unknown_or_inconsistent_aliases() {
     let wire =
         rmp_serde::to_vec_named(&PersistedDurableCheckpointFileRef::new(&checkpoint)).unwrap();
     let stored = rmp_serde::from_slice::<PersistedDurableCheckpointFile>(&wire).unwrap();
-    assert_eq!(stored.checkpoint.branch_root_partition_aliases.len(), 1);
+    assert_eq!(stored.checkpoint.branch_root_partition_aliases_v2.len(), 1);
 
     let mut unknown = rmp_serde::from_slice::<PersistedDurableCheckpointFile>(&wire).unwrap();
     unknown.checkpoint.partition_alias_format += 1;
@@ -160,15 +201,16 @@ fn partition_alias_wire_rejects_unknown_or_inconsistent_aliases() {
     let mut duplicate = rmp_serde::from_slice::<PersistedDurableCheckpointFile>(&wire).unwrap();
     duplicate
         .checkpoint
-        .branch_root_partition_aliases
-        .push(duplicate.checkpoint.branch_root_partition_aliases[0]);
+        .branch_root_partition_aliases_v2
+        .push(duplicate.checkpoint.branch_root_partition_aliases_v2[0].clone());
     assert_eq!(
         duplicate.readmit().unwrap_err().class,
         RecoveryFailureClass::CorruptCheckpoint
     );
 
     let mut missing = rmp_serde::from_slice::<PersistedDurableCheckpointFile>(&wire).unwrap();
-    missing.checkpoint.branch_root_partition_aliases[0] = crate::history::data::CommitId(u64::MAX);
+    missing.checkpoint.branch_root_partition_aliases_v2[0].commit_id =
+        crate::history::data::CommitId(u64::MAX);
     assert_eq!(
         missing.readmit().unwrap_err().class,
         RecoveryFailureClass::CorruptCheckpoint
@@ -185,13 +227,22 @@ fn partition_alias_wire_rejects_unknown_or_inconsistent_aliases() {
     corrupt.checkpoint.partition_images[0]
         .entity_arena
         .generations[0] ^= 1;
-    let corrupt = corrupt.readmit().unwrap();
-    let mut plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
-    plan.checkpoint = Some(corrupt.checkpoint);
-    let mut recovered = persisted_runtime_with_test_schema();
-    let error = recovered.durability_recovery().recover(plan).unwrap_err();
+    let error = corrupt.readmit().unwrap_err();
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
-    assert!(error.detail.contains("partition integrity mismatch"));
+    assert!(error.detail.contains("shared partition digest mismatch"));
+
+    let mut wrong_digest = rmp_serde::from_slice::<PersistedDurableCheckpointFile>(&wire).unwrap();
+    wrong_digest.checkpoint.branch_root_partition_aliases_v2[0].shared[0].image_digest[0] ^= 1;
+    assert_eq!(
+        wrong_digest.readmit().unwrap_err().class,
+        RecoveryFailureClass::CorruptCheckpoint
+    );
+
+    let mut wrong_position =
+        rmp_serde::from_slice::<PersistedDurableCheckpointFile>(&wire).unwrap();
+    wrong_position.checkpoint.branch_root_partition_aliases_v2[0].shared[0].position = u32::MAX;
+    assert_eq!(
+        wrong_position.readmit().unwrap_err().class,
+        RecoveryFailureClass::CorruptCheckpoint
+    );
 }

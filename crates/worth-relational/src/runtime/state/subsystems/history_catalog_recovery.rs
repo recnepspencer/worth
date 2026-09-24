@@ -40,61 +40,12 @@ impl HistorySubsystem {
         })
     }
 
-    pub(crate) fn rebuild_catalog_from_durable_envelopes(&self) {
-        let envelopes = self.recorded_commit_envelopes();
-        let mut catalog = RelationalCommitCatalog::default();
-        for envelope in envelopes {
-            catalog
-                .append_envelope(envelope)
-                .expect("durable commit parentage must be ordered and unique");
-        }
-        self.install_commit_catalog(catalog);
-    }
-
     pub(super) fn rebuild_catalog_with_live_roots(
         &self,
         symbols: &crate::symbols::data::StringInterner,
     ) -> Result<(), String> {
         self.rebuild_catalog_with_live_roots_and_descriptors(
             &std::collections::BTreeMap::new(),
-            &std::collections::BTreeMap::new(),
-            symbols,
-        )
-    }
-
-    pub(super) fn rebuild_catalog_with_checkpoint_targets(
-        &self,
-        checkpoints: &[crate::branch::RelationalBranchCellCheckpoint],
-        symbols: &crate::symbols::data::StringInterner,
-    ) -> Result<(), String> {
-        let mut descriptors = std::collections::BTreeMap::new();
-        for checkpoint in checkpoints {
-            for target in std::iter::once(checkpoint.observation.target()).chain(
-                checkpoint
-                    .fork_provenance
-                    .as_ref()
-                    .map(|provenance| provenance.target()),
-            ) {
-                let FoundationalBranchTarget::Basis(target) = target else {
-                    continue;
-                };
-                let commit_id = crate::history::data::CommitId(target.selected_commit_id());
-                match descriptors.get(&commit_id) {
-                    Some(existing) if existing != target.roots() => {
-                        return Err(format!(
-                            "checkpoint carries competing root descriptors for commit `{}`",
-                            commit_id.0
-                        ));
-                    }
-                    Some(_) => {}
-                    None => {
-                        descriptors.insert(commit_id, target.roots().clone());
-                    }
-                }
-            }
-        }
-        self.rebuild_catalog_with_live_roots_and_descriptors(
-            &descriptors,
             &std::collections::BTreeMap::new(),
             symbols,
         )

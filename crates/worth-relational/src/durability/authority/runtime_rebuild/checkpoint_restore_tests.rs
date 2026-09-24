@@ -1,6 +1,9 @@
 use super::*;
 use crate::durability::data::RecoveryFailureClass;
+use crate::facade::mvcc::WorkerIntentBatch;
+use crate::facade::transactions::{BulkEntityCreateIntent, CreateIntent, MutationIntent};
 use crate::history::data::BranchId;
+use crate::identity::data::KindId;
 use crate::identity::data::PartitionId;
 use crate::tests::support::*;
 
@@ -103,6 +106,62 @@ fn divergent_sibling_is_not_reused_as_the_storage_mirror() {
 }
 
 #[test]
+fn divergent_mirror_partition_rebuilds_cross_partition_adjacency_after_reuse() {
+    let source = persisted_runtime_with_test_schema();
+    let main_entity = create_entity(&source, "partial-mirror-main");
+    let mut transaction = test_owner_begin_transaction_for_main(&source);
+    transaction
+        .push_batch(WorkerIntentBatch::new("partial-mirror-secondary").push(
+            MutationIntent::Create(CreateIntent::BulkEntities(BulkEntityCreateIntent {
+                partition_id: PartitionId(41),
+                kind_id: KindId(1),
+                client_keys: vec![crate::symbols::data::ClientKey::raw("secondary")],
+                field_patches: vec![single_string_aspect_field_patch(
+                    aspect_key("name"),
+                    field_key("name"),
+                    "secondary",
+                )],
+            })),
+        ))
+        .unwrap();
+    let committed = transaction.commit(&source).unwrap();
+    let secondary = changed_entities(&committed)[0];
+    release_test_commit_snapshot(&source, &committed);
+    create_relation_in_partition(
+        &source,
+        main_entity,
+        secondary,
+        "cross-partition",
+        PartitionId(31),
+    );
+    let mut checkpoint = source.durability_authority().checkpoint().unwrap();
+    let main_image = checkpoint
+        .partition_images
+        .iter_mut()
+        .find(|image| image.partition_id == PartitionId::main())
+        .unwrap();
+    main_image.entity_arena.snapshot_pins[0] += 1;
+
+    let mut restored = persisted_runtime_with_test_schema();
+    let roots = restore_branch_root_images(&mut restored, &checkpoint).unwrap();
+    let mirror = prepare_partitions(&mut restored, &checkpoint, &roots).unwrap();
+    let root_commit = checkpoint.branch_roots[0].commit_id;
+    let root = roots.partitions.get(&root_commit).unwrap();
+    assert!(!shares_partition_generation(
+        &mirror,
+        root,
+        PartitionId::main()
+    ));
+    assert!(shares_partition_generation(&mirror, root, PartitionId(41)));
+    let mirror_relation = mirror.get(&PartitionId(31)).unwrap();
+    let root_relation = root.get(&PartitionId(31)).unwrap();
+    assert!(std::ptr::eq(
+        mirror_relation.relation_arena.generations.get(0).unwrap(),
+        root_relation.relation_arena.generations.get(0).unwrap(),
+    ));
+}
+
+#[test]
 fn recovered_main_and_sibling_catalogs_reuse_exact_canonical_payloads() {
     let source = persisted_runtime_with_test_schema();
     let seed = create_entity_outcome(&source, "catalog-relink-seed");
@@ -159,8 +218,16 @@ fn shares_first_generation(
     left: &partition_images::RestoredPartitions,
     right: &partition_images::RestoredPartitions,
 ) -> bool {
-    let left = left.get(&PartitionId::main()).unwrap();
-    let right = right.get(&PartitionId::main()).unwrap();
+    shares_partition_generation(left, right, PartitionId::main())
+}
+
+fn shares_partition_generation(
+    left: &partition_images::RestoredPartitions,
+    right: &partition_images::RestoredPartitions,
+    partition_id: PartitionId,
+) -> bool {
+    let left = left.get(&partition_id).unwrap();
+    let right = right.get(&partition_id).unwrap();
     std::ptr::eq(
         left.entity_arena.generations.get(0).unwrap(),
         right.entity_arena.generations.get(0).unwrap(),

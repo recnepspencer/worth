@@ -17,7 +17,6 @@ mod root_schema_readmission;
 mod tests;
 
 use branch_root_images::restore_branch_root_images;
-use partition_images::restore_unique_partition_images;
 use record_identity::prepare_record_identity;
 
 struct PreparedCheckpointState {
@@ -111,59 +110,12 @@ fn prepare_partitions(
     let aspect_contracts = crate::durability::checkpoints::aspect_state_images::CheckpointAspectContractCatalog::readmit(
         &checkpoint.aspect_contracts,
     )?;
-    // A branch root and the storage mirror are independently scoped images.
-    // Reuse the decoded persistent substrate only when both the bytes and the
-    // complete interpretation contract match; otherwise restore the mirror.
-    partition_images::reject_duplicate_partition_images(
-        &checkpoint.partition_images,
-        "checkpoint",
-    )?;
-    let main_commit = checkpoint
-        .branch_cells
-        .iter()
-        .find(|cell| cell.branch_id == restored.config.history.main_branch)
-        .and_then(|cell| match cell.observation.target() {
-            worth_foundational::FoundationalBranchTarget::Basis(target) => {
-                Some(crate::history::data::CommitId(target.selected_commit_id()))
-            }
-            worth_foundational::FoundationalBranchTarget::Empty => None,
-        });
-    if let Some(image) = checkpoint
-        .branch_roots
-        .iter()
-        .find(|image| Some(image.commit_id) == main_commit)
-    {
-        if image.partition_images == checkpoint.partition_images {
-            if let (Some(schema), Some(partitions)) = (
-                branch_roots.schema_authorities.get(&image.commit_id),
-                branch_roots.partitions.get(&image.commit_id),
-            ) {
-                let root_contracts = crate::durability::checkpoints::aspect_state_images::CheckpointAspectContractCatalog::from_contracts(
-                    schema.retained_aspect_contracts(),
-                )?;
-                if schema.aspect_plans() == &restored.schema_contract_runtime.aspect_contract_plans
-                    && root_contracts == aspect_contracts
-                {
-                    return Ok(partitions.clone());
-                }
-            }
-        }
-    }
-    let mut partitions = restore_unique_partition_images(
-        restored,
-        &checkpoint.partition_images,
+    partition_images::restore_partition_mirror(
+        checkpoint,
+        branch_roots,
+        &restored.schema_contract_runtime.aspect_contract_plans,
         &aspect_contracts,
-        "checkpoint",
-    )?;
-    crate::storage::partition::rebuild_adjacency_kind_buckets(&mut partitions).map_err(
-        |detail| {
-            DurabilityError::new(
-                crate::durability::data::RecoveryFailureClass::CorruptCheckpoint,
-                detail,
-            )
-        },
-    )?;
-    Ok(partitions)
+    )
 }
 
 fn prepare_history(
@@ -221,7 +173,6 @@ fn prepare_history(
         })
         .collect();
     history.with_ledger_mut(|ledger| ledger.commit_graph = commit_graph);
-    history.rebuild_catalog_from_durable_envelopes();
     if trace {
         eprintln!("relational history catalog: {:?}", started.elapsed());
     }

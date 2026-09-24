@@ -118,7 +118,7 @@ impl HistorySubsystem {
         }
         self.branch_cells.restore_all(cells);
         self.branch_cells.clear_retired_names();
-        self.rebuild_catalog_with_checkpoint_targets(checkpoints, symbols)?;
+        self.rebuild_checkpoint_catalog(checkpoints)?;
         self.try_reset_retention_owner(self.runtime_instance_id)
             .map_err(|denial| {
                 format!(
