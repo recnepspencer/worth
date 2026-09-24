@@ -994,11 +994,11 @@ cost follows affected entries rather than all 802 solids.
 
 ### Phase 2.6: Restore and production journey closure
 
-Complete existing compatible House capture/reopen, not generic Query Save/Open. Remove avoidable decoded-image clones, duplicate partition/root rebuild
-and full-scene restore reads without weakening verification. The real 802-solid build -> services -> edit -> capture -> reopen court uses original
-budgets, output/evidence parity, zero replayed effects and no stale view; release reopen meets its under-8-second gate (7.x seconds). Report p50/p95, reads, work, bytes,
-contacts, peak/retained memory and pinned hardware by source, band, rule, index admission, World, output, scene, checkpoint section and restore.
-Vary size, history and readers independently; prove typed exhaustion before Phase 3 trusts it.
+Complete compatible House capture/reopen, not generic Query Save/Open. Remove avoidable decoded clones and duplicate partition/root/scene rebuild without weakening verification.
+The real 802-solid build -> services -> edit -> capture -> reopen court requires output/evidence parity, zero replayed effects and no stale view within existing byte/resource bounds.
+Cold scene work is at most one occurrence/BodySet pair per entry, one discovery per frame band, one index entry per frame member and one lookup per penetration; warm unchanged entries require zero body reads.
+Native restore counts root, mirror, history and index work without duplicate partition rebuild. These workload-derived work bounds, not wall-clock time, gate performance on any machine.
+Report release p50/p95 as diagnostics with reads, work, bytes, contacts, peak/retained memory and pinned hardware by source/band/rule/index/World/output/scene/checkpoint/restore. Timeout is a hang guard, not a latency gate. Vary size, history and readers independently; prove typed exhaustion before Phase 3 trusts it.
 
 ### Phase 3: Control flow, coverage and effect custody
 
