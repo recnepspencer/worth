@@ -175,6 +175,7 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphInstallationDenialKind, WorthQueryPrimaryGraphPublication,
     WorthQueryPrimaryMutationWorkEvidence, WorthQueryPrincipalResolutionDenial,
     WorthQueryPrincipalResolutionDenialKind, WorthQueryPrincipalResolutionMode,
+    WorthQueryPriorOutputDenial, WorthQueryPriorOutputDenialKind,
     WorthQueryPriorOutputFamilyMember, WorthQueryProductBranchAdmissionDenial,
     WorthQueryProductBranchLease, WorthQueryProductBranchReadIdentity,
     WorthQueryProductObservationLease, WorthQueryProductQueryControls,

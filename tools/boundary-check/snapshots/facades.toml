@@ -460,6 +460,8 @@ exports = [
     "WorthQueryPrincipalResolutionDenial",
     "WorthQueryPrincipalResolutionDenialKind",
     "WorthQueryPrincipalResolutionMode",
+    "WorthQueryPriorOutputDenial",
+    "WorthQueryPriorOutputDenialKind",
     "WorthQueryPriorOutputFamilyMember",
     "WorthQueryProductBranchAdmissionDenial",
     "WorthQueryProductBranchLease",
