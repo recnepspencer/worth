@@ -87,12 +87,23 @@ impl UiMountedAppearanceAdmission {
             return Err(Box::new((admission.reject_appearance_output(), inspection)));
         }
         let indexed_motion_bytes = admission.candidates.indexed_motion_reserved_bytes();
-        if refresh_visual_regions || indexed_motion_bytes != Some(0) {
-            match admission.retention.refresh_visual_regions(
+        // Unchanged visual regions are refreshed from what retention already
+        // holds, so a reservation alone never rebuilds them from the frame.
+        let visual_regions = if refresh_visual_regions {
+            Some(admission.frame.visual_region_basis())
+        } else if indexed_motion_bytes != Some(0) {
+            Some(
                 admission
-                    .frame
-                    .visual_region_basis()
-                    .with_indexed_motion_reservation(indexed_motion_bytes),
+                    .retention
+                    .retained_visual_regions()
+                    .unwrap_or_else(|| admission.frame.visual_region_basis()),
+            )
+        } else {
+            None
+        };
+        if let Some(visual_regions) = visual_regions {
+            match admission.retention.refresh_visual_regions(
+                visual_regions.with_indexed_motion_reservation(indexed_motion_bytes),
                 admission.frame.manifest().surfaces(),
             ) {
                 Ok(work) => admission.frame.record_scroll_hit_succession(work),

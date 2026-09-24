@@ -99,6 +99,10 @@ impl UiRetainedPresentedFrame {
         Some(())
     }
 
+    pub(super) fn visual_regions(&self) -> super::super::UiMountedVisualRegionBasis {
+        self.visual_regions.clone()
+    }
+
     pub(super) fn hit_index(&self) -> crate::mounting::presented_hit_index::UiPresentedHitIndex {
         self.visual_regions.presented_hits.clone()
     }

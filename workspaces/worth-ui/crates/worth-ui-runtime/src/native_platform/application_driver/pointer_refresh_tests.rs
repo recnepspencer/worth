@@ -69,8 +69,7 @@ pub(crate) fn exercise_pointer_expiry(
         crate::facade::entry::UiNativeApplicationProgram::new([frame])
             .unwrap()
             .remain_open_until_external_close(),
-        #[cfg(feature = "certification-support")]
-        None,
+        crate::native_platform::profile::UiNativeDriverQualification::ordinary(),
     );
     if scenario == PointerExpiryPresentation::PendingProgram {
         enqueue_pending(&host);

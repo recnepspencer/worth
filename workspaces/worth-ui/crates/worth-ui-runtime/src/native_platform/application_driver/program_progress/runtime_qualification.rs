@@ -1,7 +1,7 @@
 use crate::facade::WorthUiNativeApplicationShell;
 
 pub(super) struct UiNativeRuntimeQualificationState {
-    plan: Option<super::super::runtime_qualification::UiNativeRuntimeQualificationPlan>,
+    plan: Option<crate::native_platform::runtime_qualification::UiNativeRuntimeQualificationPlan>,
     completed_presentations: u64,
     applied: bool,
     reconstruction_required: bool,
@@ -9,7 +9,9 @@ pub(super) struct UiNativeRuntimeQualificationState {
 
 impl UiNativeRuntimeQualificationState {
     pub(super) const fn new(
-        plan: Option<super::super::runtime_qualification::UiNativeRuntimeQualificationPlan>,
+        plan: Option<
+            crate::native_platform::runtime_qualification::UiNativeRuntimeQualificationPlan,
+        >,
     ) -> Self {
         Self {
             plan,
@@ -40,10 +42,10 @@ impl UiNativeRuntimeQualificationState {
             return Ok(());
         }
         match plan.class() {
-            super::super::runtime_qualification::UiNativeRuntimeDerivedStateLossClass::MountedLayouts => {
+            crate::native_platform::runtime_qualification::UiNativeRuntimeDerivedStateLossClass::MountedLayouts => {
                 shell.require_current_layout_reconstruction()?;
             }
-            super::super::runtime_qualification::UiNativeRuntimeDerivedStateLossClass::RasterCache => {
+            crate::native_platform::runtime_qualification::UiNativeRuntimeDerivedStateLossClass::RasterCache => {
                 shell.require_current_raster_cache_reconstruction()?;
             }
         }

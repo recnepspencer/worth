@@ -1,10 +1,10 @@
 use super::*;
 use crate::native::presentation::appearance::cursor::accept_cursor;
-use winit::window::CursorIcon;
+use worth_ui_host_contract::UiPointerAffordanceFamily;
 
 #[test]
 fn superseded_cursor_survives_unrelated_committed_successor_without_overwriting_departure() {
-    for successor_cursor in [None, Some(CursorIcon::Default)] {
+    for successor_cursor in [None, Some(UiPointerAffordanceFamily::Default)] {
         let world = DrawListWorld::new();
         let frame = UiMountedFrameIdentity::mint_unbound().unwrap();
         let previous = world.rect(
@@ -39,7 +39,7 @@ fn superseded_cursor_survives_unrelated_committed_successor_without_overwriting_
             undo,
             UiNativePhysicalSignalStatus::Completed,
         );
-        assert!(pending.bind_completion_identity(1, Some(CursorIcon::Pointer)));
+        assert!(pending.bind_completion_identity(1, Some(UiPointerAffordanceFamily::Activation)));
         state.pending_presentations.push(pending);
         assert_eq!(
             state.accepted_cursor, None,
@@ -70,7 +70,7 @@ fn superseded_cursor_survives_unrelated_committed_successor_without_overwriting_
         let due = state.physical_signal.next_due_tick().unwrap();
         state.physical_signal.advance_clock_to(due).unwrap();
         assert!(state.progress_one_physical_signal_ready());
-        let expected = successor_cursor.unwrap_or(CursorIcon::Pointer);
+        let expected = successor_cursor.unwrap_or(UiPointerAffordanceFamily::Activation);
         assert_eq!(state.accepted_cursor.unwrap().1, expected);
         assert_eq!(
             state.retained_draw_lists[&binding].frame(),

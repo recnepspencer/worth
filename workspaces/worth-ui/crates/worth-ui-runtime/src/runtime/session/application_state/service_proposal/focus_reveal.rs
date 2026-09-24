@@ -19,6 +19,7 @@ impl super::super::WorthUiApplicationSessionState {
     pub(in crate::runtime) fn stage_focus_reveal(
         &self,
         requirement: crate::runtime::session::service_proposal::UiFocusRevealRequirement,
+        frame: &crate::mounting::UiPreparedMountedFrame,
         mounted: &crate::mounting::WorthUiMountedSessionState,
         scroll: &crate::runtime::scroll::UiScrollRuntimeState,
         surface_incarnation: crate::runtime::scroll::UiScrollOwnerIncarnation,
@@ -32,28 +33,28 @@ impl super::super::WorthUiApplicationSessionState {
         if chain.owners().is_empty() {
             return Ok(None);
         }
-        if scroll.has_pending_direct(target.semantic_surface_identity())
-            || scroll.has_unpresented_layout(target.semantic_surface_identity())
-        {
+        let surface = target.semantic_surface_identity();
+        if scroll.has_pending_direct(surface) {
             return Err(UiFocusRevealStagingDenial::UnpublishedScrollGeometry);
         }
-        let Some(publication) = mounted.current_publication() else {
-            return Ok(None);
+        // A completed layout commits with the first frame that presents its
+        // surface, before the proposal bound to that frame settles. The reveal
+        // is then measured from that frame and from Scroll with the layout
+        // committed; a frame that leaves the layout unpresented cannot carry it.
+        let layout = scroll.has_unpresented_layout(surface);
+        let row = if layout {
+            if !frame
+                .surfaces()
+                .iter()
+                .any(|receipt| receipt.requirement().semantic_surface() == surface)
+            {
+                return Err(UiFocusRevealStagingDenial::UnpublishedScrollGeometry);
+            }
+            frame.prepared_hit_row(surface, requirement.target())
+        } else {
+            presented_hit_row(mounted, surface, requirement.target())
         };
-        let Some(presentation) =
-            publication.presentation_for_surface(target.semantic_surface_identity())
-        else {
-            return Ok(None);
-        };
-        let Ok(hit_test) = mounted.interaction_hit_test_basis(presentation) else {
-            return Ok(None);
-        };
-        let Some(row) = hit_test
-            .rows()
-            .iter()
-            .copied()
-            .find(|row| row.mounted_instance() == requirement.target())
-        else {
+        let Some(row) = row else {
             return Ok(None);
         };
         let mounted_incarnation =
@@ -65,12 +66,15 @@ impl super::super::WorthUiApplicationSessionState {
                 || crate::runtime::scroll::UiScrollAnchorIdentity::mounted(requirement.target()),
                 crate::runtime::scroll::UiScrollAnchorIdentity::application_item,
             ),
-            presentation.binding(),
+            row.mounted().binding(),
             signed_subpixels(row.bounds().x())?.max(0),
             signed_subpixels(row.bounds().y())?.max(0),
         )
         .ok_or(UiFocusRevealStagingDenial::GeometryOutOfRange)?;
         let mut successor = scroll.clone();
+        if layout {
+            successor.commit_presented_layout(surface);
+        }
         let mut entries = Vec::with_capacity(chain.owners().len());
         let mut registrations = Vec::with_capacity(chain.owners().len());
         for owner in chain.owners().iter().copied() {
@@ -157,6 +161,24 @@ impl UiStagedFocusReveal {
             "staged focus reveal must commit the exact prevalidated Scroll transition"
         );
     }
+}
+
+/// The row the host displays for `target` now, Motion samples included.
+fn presented_hit_row(
+    mounted: &crate::mounting::WorthUiMountedSessionState,
+    surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+    target: worth_ui_host_contract::UiMountedInstanceIdentity,
+) -> Option<crate::mounting::UiPresentedHitTestRow> {
+    let presentation = mounted
+        .current_publication()?
+        .presentation_for_surface(surface)?;
+    mounted
+        .interaction_hit_test_basis(presentation)
+        .ok()?
+        .rows()
+        .iter()
+        .copied()
+        .find(|row| row.mounted_instance() == target)
 }
 
 fn axes_for(

@@ -119,8 +119,10 @@ fn owner_reconstruction_settles_the_current_program_frame_without_a_parallel_ret
         crate::facade::entry::UiNativeApplicationFrame::present_current(),
     ])
     .expect("two settled frames are a valid application program");
-    let mut progress =
-        super::program_progress::UiNativeApplicationProgramProgress::new(program, None);
+    let mut progress = super::program_progress::UiNativeApplicationProgramProgress::new(
+        program,
+        crate::native_platform::profile::UiNativeDriverQualification::ordinary(),
+    );
     host.push_native_display_presented();
     host.push_presentation(rejected(
         worth_ui_host_contract::UiHostSurfacePresentationDenial::ReconstructionRequired,
@@ -311,7 +313,7 @@ fn surface_successor_frames_ignore_same_basis_redraw_generations() {
     .expect("three bounded surface-basis frames");
     let mut progress = super::program_progress::UiNativeApplicationProgramProgress::new(
         program.remain_open_until_external_close(),
-        None,
+        crate::native_platform::profile::UiNativeDriverQualification::ordinary(),
     );
 
     progress.observe_readiness(1, 1);
@@ -379,7 +381,7 @@ fn retryable_program() -> (
     shell.observe_native_viewport_readiness([800, 600], 1_000, false);
     let progress = super::program_progress::UiNativeApplicationProgramProgress::new(
         crate::facade::entry::UiNativeApplicationProgram::single_frame(),
-        None,
+        crate::native_platform::profile::UiNativeDriverQualification::ordinary(),
     );
     (host, shell, progress)
 }

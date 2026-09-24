@@ -23,7 +23,7 @@ pub use worth_ui_dsl::{
     UiThemeSlotIdentity, UiThemeSolidStroke, UiThemeValue, UiThemeValueKind,
 };
 
-pub use worth_ui_runtime::facade::registry::descriptor::{
+pub use worth_ui_runtime::facade::appearance::{
     FrozenAppearanceThemeCapabilities, FrozenAppearanceThemeCapabilitiesDenial, UiThemeDefinition,
     UiThemeDefinitionDenial, UiThemeDefinitionIdentity, UiThemeSlotCatalog,
     UiThemeSlotCatalogDenial, UiThemeSlotDeclaration, UiThemeSlotDisclosure,
@@ -33,7 +33,7 @@ pub use worth_ui_runtime::facade::{
     AppearanceRoleRegistrationDenial, UiAppearanceInspectionGenerationSuccessionDenial,
 };
 
-pub use worth_ui_runtime::facade::{
+pub use worth_ui_runtime::facade::appearance::{
     UiActiveThemeBinding, UiNativeThemeSwitchDenial, UiProgrammaticThemeSwitchPreparationDenial,
     UiThemeCapabilityReceipt, UiThemeCapabilityReceiptDenial, UiThemeResolutionDenial,
     UiThemeSwitchDenial, UiThemeSwitchOrigin, UiThemeSwitchOriginAdmissionDenial,

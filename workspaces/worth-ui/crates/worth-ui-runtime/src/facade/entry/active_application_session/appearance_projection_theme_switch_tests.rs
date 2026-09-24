@@ -116,9 +116,11 @@ fn live_theme_switch_rejects_without_changing_paint_then_retries_only_its_surfac
             replay_generation,
             replay_capability
         )),
-        Err(crate::facade::UiThemeSwitchPreparationDenial::Admission(
-            crate::runtime::appearance::UiThemeSwitchDenial::DuplicateOrigin
-        ))
+        Err(
+            crate::facade::appearance::UiThemeSwitchPreparationDenial::Admission(
+                crate::runtime::appearance::UiThemeSwitchDenial::DuplicateOrigin
+            )
+        )
     ));
     let output = session
         .mounted

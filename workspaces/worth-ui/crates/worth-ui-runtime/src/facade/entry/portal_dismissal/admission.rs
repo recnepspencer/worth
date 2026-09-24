@@ -63,6 +63,17 @@ impl WorthUiActiveApplicationSession {
                 .mounted
                 .portal_dismissal_presentation(admitted, target)
                 .map_err(|_| Stop::StalePresentation)?,
+            // A key carries no geometry. While mounting still admits the frame
+            // it was typed against, it applies to what is shown now, as queued
+            // keys do; a frame mounting no longer admits stops it.
+            None if matches!(trigger, UiPortalDismissalTrigger::Escape { .. }) => {
+                self.mounted
+                    .classify_interaction_presentation(admitted)
+                    .map_err(|_| Stop::StalePresentation)?;
+                self.mounted
+                    .current_presentation_for_surface(surface)
+                    .ok_or(Stop::StalePresentation)?
+            }
             None => admitted,
         };
         let sampled_bounds = match target {

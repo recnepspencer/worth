@@ -16,8 +16,7 @@ pub use crate::capability::{
     ComponentRealtimeOverlayContractDenialReason, ComponentRealtimeOverlayPriority,
     ComponentSemanticTextContract, ComponentSemanticTextContractDenial,
     ComponentSemanticTextSpanContract, ComponentStateOwnership, ComponentViewportAxisPlacement,
-    ComponentViewportInset, ComponentViewportRegion, FrozenAppearanceThemeCapabilities,
-    FrozenAppearanceThemeCapabilitiesDenial, IconAccessibilityPosture, IconColorSupport,
+    ComponentViewportInset, ComponentViewportRegion, IconAccessibilityPosture, IconColorSupport,
     IconDescriptor, IconFamily, IconId, IconKey, IconSizeSupport, IconSourceDescriptor,
     IconSourceKind, IconThemePosture, MeasurementConstraint, MeasurementValue, MosaicChildRule,
     MosaicClippingPosture, MosaicExteriorCorner, MosaicExteriorCornerPosture, MosaicFocusScopeKind,
@@ -59,15 +58,12 @@ pub use crate::capability::{
     UiCommandRouteScopeIdentity, UiCommandShortcutKey, UiCommandShortcutPlatform,
     UiCommandShortcutSequence, UiCommandShortcutStroke, UiCommandTextInputPolicy,
     UiScrollAxisSupport, UiScrollChromeContract, UiScrollChromeContractDenial, UiScrollLineExtent,
-    UiScrollLineExtentDenial, UiThemeColor, UiThemeColorParseDenial, UiThemeDefinition,
-    UiThemeDefinitionDenial, UiThemeDefinitionIdentity, UiThemeSlotCatalog,
-    UiThemeSlotCatalogDenial, UiThemeSlotDeclaration, UiThemeSlotDisclosure,
-    UiThemeSlotSuccessorCompatibility, ViewBindingDescriptor, ViewBindingFamily, ViewBindingId,
-    VisibleStateBindingDeclaration, WorthUiQueryViewRegistration, WorthUiViewBindingIdentity,
-    UI_SCROLL_LINE_EXTENT_MAXIMUM_LOGICAL_POINTS,
+    UiScrollLineExtentDenial, UiThemeColor, UiThemeColorParseDenial, ViewBindingDescriptor,
+    ViewBindingFamily, ViewBindingId, VisibleStateBindingDeclaration, WorthUiQueryViewRegistration,
+    WorthUiViewBindingIdentity, UI_SCROLL_LINE_EXTENT_MAXIMUM_LOGICAL_POINTS,
 };
 
-pub use worth_ui_host_contract::{
+pub use crate::capability::{
     NormalizedPoint, UiAppearanceLogicalLength, UiSoftShadowGeometry, UiSurfaceGeometry,
     UiSurfaceGeometryDenial, UiVectorSurfaceGeometry, VectorPath, VectorPathDenial,
     VectorPathSegment,

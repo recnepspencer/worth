@@ -38,7 +38,10 @@ fn public_builder_retains_the_exact_qualified_application_font_generation() {
     let collection = Arc::new(collection);
     let builder = WorthUi::app();
     assert!(
-        builder.font_collection.is_none(),
+        matches!(
+            builder.font_collection,
+            super::UiApplicationFontSource::QualifiedProfile
+        ),
         "an override must not pay default font admission"
     );
     let app = builder

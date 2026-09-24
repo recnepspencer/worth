@@ -22,6 +22,7 @@ pub use identity::{
     SurfaceId, TaskPresentationId, ThemeTokenId, ViewBindingId,
 };
 pub use registered_set::RegisteredCapabilitySet;
+// Descriptor contracts are stated in these host geometry vocabularies.
 pub(crate) use registration::{
     validate_registration_candidates, RegistrationCandidate, RegistrationCandidateDiagnostic,
     RegistrationDependency, RegistrationValidationReport,
@@ -165,4 +166,9 @@ pub use support::{
     AdmittedCapability, CapabilitySupportId, CapabilitySupportKind, CapabilitySupportPosture,
     CapabilitySupportRejection, DeferredCapability, PlatformInternalCapability, SupportRequirement,
     UnsupportedCapability,
+};
+pub use worth_ui_host_contract::{
+    NormalizedPoint, UiAppearanceLogicalLength, UiSoftShadowGeometry, UiSurfaceGeometry,
+    UiSurfaceGeometryDenial, UiVectorSurfaceGeometry, VectorPath, VectorPathDenial,
+    VectorPathSegment,
 };

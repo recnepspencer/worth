@@ -1,4 +1,4 @@
-use worth_ui_host_contract::UiHostSurfacePresentationDenial;
+use worth_ui_host_contract::{UiHostSurfacePresentationDenial, UiPointerAffordanceFamily};
 
 use super::{
     port, UiNativePresentationFailure, UiNativePresentationPortFailure, UiNativeResourceClass,
@@ -19,7 +19,7 @@ pub(crate) struct UiNativePendingPresentation {
     physical_work: Box<crate::native::physical_work_signal::UiNativePhysicalPresentationIdentity>,
     physical_token: Box<crate::native::physical_work_signal::UiNativePhysicalSignalRequestToken>,
     completion_identity: Option<u64>,
-    cursor: Option<winit::window::CursorIcon>,
+    cursor: Option<UiPointerAffordanceFamily>,
     settlement: Option<Box<super::UiNativePendingSurfaceSettlement>>,
     completion: UiNativePendingPresentationCompletion,
 }
@@ -85,7 +85,7 @@ impl UiNativePendingPresentation {
     pub(crate) fn bind_completion_identity(
         &mut self,
         identity: u64,
-        cursor: Option<winit::window::CursorIcon>,
+        cursor: Option<UiPointerAffordanceFamily>,
     ) -> bool {
         if self.completion_identity.is_some() || identity == 0 {
             return false;
@@ -95,7 +95,7 @@ impl UiNativePendingPresentation {
         true
     }
 
-    pub(crate) const fn prepared_cursor(&self) -> Option<winit::window::CursorIcon> {
+    pub(crate) const fn prepared_cursor(&self) -> Option<UiPointerAffordanceFamily> {
         self.cursor
     }
 
@@ -129,7 +129,7 @@ impl UiNativePendingPresentation {
     pub(crate) fn inherit_predecessor_settlement(
         &mut self,
         predecessor: super::UiNativePendingSurfaceSettlement,
-        cursor: Option<winit::window::CursorIcon>,
+        cursor: Option<UiPointerAffordanceFamily>,
     ) -> Result<(), Box<super::UiNativePendingSurfaceSettlement>> {
         let Some(successor) = self.settlement.as_mut() else {
             return Err(Box::new(predecessor));

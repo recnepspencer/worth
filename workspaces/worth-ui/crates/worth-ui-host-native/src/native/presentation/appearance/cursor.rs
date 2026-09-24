@@ -1,11 +1,11 @@
 use winit::window::CursorIcon;
 
-use worth_ui_host_contract::{UiMountedPointerAffordanceMechanic, UiPointerAffordanceFamily};
+use worth_ui_host_contract::UiPointerAffordanceFamily;
 
 pub(crate) fn accept_cursor(
     state: &mut crate::native::UiNativeHostState,
     attempt: worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
-    cursor: Option<CursorIcon>,
+    cursor: Option<UiPointerAffordanceFamily>,
 ) {
     let Some(cursor) = cursor else {
         return;
@@ -20,13 +20,13 @@ pub(crate) fn accept_cursor(
     }
     state.accepted_cursor = Some((attempt, cursor));
     if let Some(window) = &state.window {
-        window.set_cursor(cursor);
+        window.set_cursor(cursor_icon(cursor));
     }
 }
 
 pub(crate) fn completed_cursor(
     view: &worth_ui_host_contract::UiMountedFrameConsumptionView<'_>,
-) -> Option<CursorIcon> {
+) -> Option<UiPointerAffordanceFamily> {
     let work = view.appearance_work()?;
     work.fragments().iter().find_map(|fragment| {
         completed_fragment_cursor(fragment.identity(), fragment.work().successor().mechanics())
@@ -36,7 +36,7 @@ pub(crate) fn completed_cursor(
 pub(super) fn completed_fragment_cursor(
     identity: worth_ui_host_contract::UiUnpublishedAppearanceFragmentIdentity,
     mechanics: &[worth_ui_host_contract::UiMountedAppearanceMechanic],
-) -> Option<CursorIcon> {
+) -> Option<UiPointerAffordanceFamily> {
     if !matches!(
         identity,
         worth_ui_host_contract::UiUnpublishedAppearanceFragmentIdentity::SurfacePointer { .. }
@@ -48,16 +48,18 @@ pub(super) fn completed_fragment_cursor(
             .iter()
             .find_map(|mechanic| match mechanic {
                 worth_ui_host_contract::UiMountedAppearanceMechanic::Pointer(pointer) => {
-                    Some(cursor_icon(*pointer))
+                    Some(pointer.family())
                 }
                 _ => None,
             })
-            .unwrap_or(CursorIcon::Default),
+            .unwrap_or(UiPointerAffordanceFamily::Default),
     )
 }
 
-pub(crate) fn cursor_icon(mechanic: UiMountedPointerAffordanceMechanic) -> CursorIcon {
-    match mechanic.family() {
+/// The window cursor for a pointer family; the only place the family meets
+/// the windowing vendor.
+pub(crate) fn cursor_icon(family: UiPointerAffordanceFamily) -> CursorIcon {
+    match family {
         UiPointerAffordanceFamily::Default => CursorIcon::Default,
         UiPointerAffordanceFamily::Activation => CursorIcon::Pointer,
     }
@@ -66,6 +68,7 @@ pub(crate) fn cursor_icon(mechanic: UiMountedPointerAffordanceMechanic) -> Curso
 #[cfg(test)]
 mod tests {
     use super::*;
+    use worth_ui_host_contract::UiMountedPointerAffordanceMechanic;
 
     #[test]
     fn cursor_mapping_is_sealed_family_to_os_icon() {
@@ -80,6 +83,7 @@ mod tests {
                     target,
                     UiPointerAffordanceFamily::Default,
                 )
+                .family()
             ),
             CursorIcon::Default
         );
@@ -91,6 +95,7 @@ mod tests {
                     target,
                     UiPointerAffordanceFamily::Activation,
                 )
+                .family()
             ),
             CursorIcon::Pointer
         );

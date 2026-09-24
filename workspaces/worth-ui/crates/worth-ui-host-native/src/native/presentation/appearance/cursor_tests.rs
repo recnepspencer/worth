@@ -17,11 +17,11 @@ fn completed_pointer_arrival_departure_and_unrelated_work_have_distinct_effects(
             identity,
             &[UiMountedAppearanceMechanic::Pointer(activation)]
         ),
-        Some(winit::window::CursorIcon::Pointer)
+        Some(UiPointerAffordanceFamily::Activation)
     );
     assert_eq!(
         cursor::completed_fragment_cursor(identity, &[]),
-        Some(winit::window::CursorIcon::Default)
+        Some(UiPointerAffordanceFamily::Default)
     );
     assert_eq!(
         cursor::completed_fragment_cursor(
@@ -37,11 +37,11 @@ fn pointer_cursor_port_only_accepts_the_sealed_family() {
     let default = pointer(UiPointerAffordanceFamily::Default);
     let activation = pointer(UiPointerAffordanceFamily::Activation);
     assert_eq!(
-        cursor::cursor_icon(default),
+        cursor::cursor_icon(default.family()),
         winit::window::CursorIcon::Default
     );
     assert_eq!(
-        cursor::cursor_icon(activation),
+        cursor::cursor_icon(activation.family()),
         winit::window::CursorIcon::Pointer
     );
     assert_eq!(super::geometry::PHYSICAL_MICROS_PER_PIXEL, 1_000_000);

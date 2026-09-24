@@ -38,7 +38,7 @@ pub(crate) struct UiNativeHostState {
     pub(crate) window: Option<UiNativeOwnedWindow>,
     pub(crate) accepted_cursor: Option<(
         worth_ui_host_contract::UiMountedPresentationAttemptIdentity,
-        winit::window::CursorIcon,
+        worth_ui_host_contract::UiPointerAffordanceFamily,
     )>,
     pub(crate) device: Option<UiNativeOwnedDevice>,
     pub(crate) presentation_surface: Option<UiNativeOwnedPresentationSurface>,

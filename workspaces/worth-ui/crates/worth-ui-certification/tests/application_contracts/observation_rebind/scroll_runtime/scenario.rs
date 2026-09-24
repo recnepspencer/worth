@@ -190,6 +190,29 @@ pub(super) fn publish_with_hit_coordinate(
     UiHostSurfacePosition,
 ) {
     let prepared = prepare_frame(session);
+    publish_prepared(session, binding, scroll_target, prepared)
+}
+
+/// Presents direct wheel input over the current layout. Layout is refused
+/// while that input is unpublished, so the frame carrying it comes first.
+pub(super) fn publish_scrolled_frame(
+    session: &mut worth_ui::facade::app::WorthUiActiveApplicationSession,
+    binding: worth_ui_runtime::facade::mounted::UiSurfaceBindingGeneration,
+    scroll_target: worth_ui_runtime::facade::mounted::UiMountedInstanceIdentity,
+) -> crate::mounted_application_lifecycle::published_mounted_world::PresentedObservationBasis {
+    let prepared = prepare_current_layout_frame(session);
+    publish_prepared(session, binding, scroll_target, prepared).0
+}
+
+fn publish_prepared(
+    session: &mut worth_ui::facade::app::WorthUiActiveApplicationSession,
+    binding: worth_ui_runtime::facade::mounted::UiSurfaceBindingGeneration,
+    scroll_target: worth_ui_runtime::facade::mounted::UiMountedInstanceIdentity,
+    prepared: worth_ui_runtime::facade::mounted::UiPreparedMountedFrame,
+) -> (
+    crate::mounted_application_lifecycle::published_mounted_world::PresentedObservationBasis,
+    UiHostSurfacePosition,
+) {
     let row = prepared.surfaces()[0]
         .projection()
         .hit_tests()
@@ -230,6 +253,12 @@ pub(super) fn prepare_frame(
     session: &mut worth_ui::facade::app::WorthUiActiveApplicationSession,
 ) -> worth_ui_runtime::facade::mounted::UiPreparedMountedFrame {
     super::geometry::complete(session);
+    prepare_current_layout_frame(session)
+}
+
+fn prepare_current_layout_frame(
+    session: &mut worth_ui::facade::app::WorthUiActiveApplicationSession,
+) -> worth_ui_runtime::facade::mounted::UiPreparedMountedFrame {
     session
         .execute_framework_turn(|_| {})
         .expect("current framework turn is available")

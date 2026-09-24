@@ -1,8 +1,11 @@
 impl super::WorthUiMountedSessionState {
     pub(crate) fn scroll_geometry_reservations(
         &self,
-    ) -> Option<std::collections::BTreeMap<worth_ui_host_contract::UiSemanticSurfaceIdentity, usize>>
-    {
+    ) -> Option<
+        std::rc::Rc<
+            std::collections::BTreeMap<worth_ui_host_contract::UiSemanticSurfaceIdentity, usize>,
+        >,
+    > {
         self.occurrence_geometry.scroll_geometry_reservations()
     }
 

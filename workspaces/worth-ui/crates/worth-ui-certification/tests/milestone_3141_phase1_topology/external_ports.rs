@@ -63,8 +63,12 @@ fn assert_native_vendors_are_confined(
     );
 }
 
+// A `*_tests/` directory holds the child modules of a `*_tests.rs` module.
 fn is_test_source(path: &str) -> bool {
-    path.ends_with("_tests.rs") || path.ends_with("/tests.rs") || path.contains("/tests/")
+    path.ends_with("_tests.rs")
+        || path.ends_with("/tests.rs")
+        || path.contains("/tests/")
+        || path.contains("_tests/")
 }
 
 fn is_approved_vendor_owner(path: &str) -> bool {

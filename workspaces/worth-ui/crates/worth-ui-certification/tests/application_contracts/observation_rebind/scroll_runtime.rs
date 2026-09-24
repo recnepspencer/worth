@@ -6,8 +6,8 @@ mod scenario;
 mod shared_owner_replacement;
 
 use scenario::{
-    admit_scroll, publish_predecessor, publish_with_hit_coordinate, sibling_scroll_visual_source,
-    with_scroll_mosaic,
+    admit_scroll, publish_predecessor, publish_scrolled_frame, publish_with_hit_coordinate,
+    sibling_scroll_visual_source, with_scroll_mosaic,
 };
 use worth_ui::facade::observation_report::UiHostObservationPresentationBasis;
 use worth_ui::facade::source::WorthUiFilesystemSourceProvider;
@@ -124,14 +124,11 @@ fn exact_coordinate_scroll_retains_sign_cancellation_and_ambiguous_denial() {
         }
     );
 
-    let prepared_offset = session
-        .inspect_scroll_runtime_for_certification()
-        .owner_geometry()
-        .iter()
-        .find(|owner| owner.graph_node_digest() == Some(scroll_target_node.digest()))
-        .unwrap()
-        .block_offset_subpixels();
-    assert_eq!(prepared_offset, 250);
+    assert_eq!(
+        target_offset(&session, scroll_target_node),
+        0,
+        "admitted wheel input must not move the committed offset before its frame is accepted"
+    );
     let routed = session.inspect_scroll_runtime_for_certification();
     assert_eq!(
         routed.ownership_resolutions(),
@@ -145,22 +142,10 @@ fn exact_coordinate_scroll_retains_sign_cancellation_and_ambiguous_denial() {
         routed.ownership_plan_nodes_visited(),
         ownership_before_deltas.ownership_plan_nodes_visited()
     );
-    (current, _) = publish_with_hit_coordinate(&mut session, binding, current.instance);
-    presentation = UiHostObservationPresentationBasis::new(
-        current.host_surface,
-        current.frame,
-        binding,
-        current.epoch,
-    );
+    (current, presentation) = republish(&mut session, binding, &current);
     assert_eq!(
-        session
-            .inspect_scroll_runtime_for_certification()
-            .owner_geometry()
-            .iter()
-            .find(|owner| owner.graph_node_digest() == Some(scroll_target_node.digest()))
-            .unwrap()
-            .block_offset_subpixels(),
-        prepared_offset,
+        target_offset(&session, scroll_target_node),
+        250,
         "publication must commit the same regional offset used to prepare the accepted frame"
     );
 
@@ -210,6 +195,7 @@ fn exact_coordinate_scroll_retains_sign_cancellation_and_ambiguous_denial() {
             owners_visited: 1,
         }
     );
+    (current, presentation) = republish(&mut session, binding, &current);
     let saturated_geometry = session.inspect_scroll_runtime_for_certification();
     assert_eq!(saturated_geometry.owner_geometry().len(), 2);
     assert_eq!(
@@ -254,6 +240,7 @@ fn exact_coordinate_scroll_retains_sign_cancellation_and_ambiguous_denial() {
             owners_visited: 1,
         }
     );
+    (current, presentation) = republish(&mut session, binding, &current);
     let returned_geometry = session.inspect_scroll_runtime_for_certification();
     assert!(returned_geometry
         .owner_geometry()
@@ -332,17 +319,37 @@ fn exact_coordinate_scroll_retains_sign_cancellation_and_ambiguous_denial() {
             "lossless wheel input must continue after consumed reports exceed retention capacity"
         );
     }
-    assert_eq!(
-        session
-            .inspect_scroll_runtime_for_certification()
-            .owner_geometry()
-            .iter()
-            .find(|owner| owner.graph_node_digest() == Some(scroll_target_node.digest()))
-            .unwrap()
-            .block_offset_subpixels(),
-        0
-    );
+    let _ = republish(&mut session, binding, &current);
+    assert_eq!(target_offset(&session, scroll_target_node), 0);
 
     let _ = session.shutdown();
     drop(capabilities);
+}
+
+/// Presents the pending frame, which is what commits a direct wheel offset.
+fn republish(
+    session: &mut worth_ui::facade::app::WorthUiActiveApplicationSession,
+    binding: worth_ui_runtime::facade::mounted::UiSurfaceBindingGeneration,
+    current: &crate::mounted_application_lifecycle::published_mounted_world::PresentedObservationBasis,
+) -> (
+    crate::mounted_application_lifecycle::published_mounted_world::PresentedObservationBasis,
+    UiHostObservationPresentationBasis,
+) {
+    let next = publish_scrolled_frame(session, binding, current.instance);
+    let presentation =
+        UiHostObservationPresentationBasis::new(next.host_surface, next.frame, binding, next.epoch);
+    (next, presentation)
+}
+
+fn target_offset(
+    session: &worth_ui::facade::app::WorthUiActiveApplicationSession,
+    node: worth_ui::facade::graph::UiGraphNodeIdentity,
+) -> i64 {
+    session
+        .inspect_scroll_runtime_for_certification()
+        .owner_geometry()
+        .iter()
+        .find(|owner| owner.graph_node_digest() == Some(node.digest()))
+        .unwrap()
+        .block_offset_subpixels()
 }

@@ -3,6 +3,10 @@ use super::*;
 use worth_ui_host_contract::*;
 use worth_ui_host_native::UiNativeLifecycleProtocol;
 
+#[cfg(test)]
+#[path = "native_input_tests.rs"]
+mod native_input_tests;
+
 pub(super) struct ScriptedPresentationNativeInput {
     pub(super) protocol: UiNativeLifecycleProtocol,
     pub(super) pending: BTreeMap<u64, (UiMountedFrameIdentity, UiSurfaceBindingGeneration)>,
@@ -42,21 +46,6 @@ impl ScriptedPresentationHost {
             pending: BTreeMap::new(),
         })));
         host
-    }
-
-    pub fn observe_native_window_event(
-        &self,
-        event: &winit::event::WindowEvent,
-        tick: u64,
-        pointer: Option<winit::dpi::PhysicalPosition<f64>>,
-    ) -> worth_ui_host_native::UiNativeLifecycleTransition {
-        self.native_input
-            .as_ref()
-            .expect("native input fixture installed")
-            .lock()
-            .unwrap()
-            .protocol
-            .observe_window_event_at(event, tick, pointer)
     }
 
     pub fn native_input_report(&self) -> worth_ui_host_native::UiNativeInputObservationReport {

@@ -79,14 +79,41 @@ impl UiScrollGeometryIndex {
     }
 }
 
+type UiScrollReservations = std::rc::Rc<BTreeMap<UiSemanticSurfaceIdentity, usize>>;
+
+/// The last reservation snapshot handed out. Every read recomputes each value
+/// and reuses this one only when all of them match, so it never answers for
+/// geometry it did not see; it spares an unchanged turn an identical map.
+#[derive(Clone, Debug, Default)]
+pub(super) struct UiScrollReservationMemo(std::cell::RefCell<UiScrollReservations>);
+
+impl PartialEq for UiScrollReservationMemo {
+    /// A memo of `surfaces`, which the owning state already compares.
+    fn eq(&self, _: &Self) -> bool {
+        true
+    }
+}
+
 impl UiMountedOccurrenceGeometryState {
-    pub(crate) fn scroll_geometry_reservations(
-        &self,
-    ) -> Option<BTreeMap<UiSemanticSurfaceIdentity, usize>> {
-        self.surfaces
-            .iter()
-            .map(|(surface, geometry)| Some((*surface, geometry.scroll_index.reserved_bytes()?)))
-            .collect()
+    pub(crate) fn scroll_geometry_reservations(&self) -> Option<UiScrollReservations> {
+        let mut memo = self.reservations.0.borrow_mut();
+        let mut remembered = memo.iter();
+        let mut unchanged = memo.len() == self.surfaces.len();
+        for (surface, geometry) in &self.surfaces {
+            let bytes = geometry.scroll_index.reserved_bytes()?;
+            unchanged &= remembered.next() == Some((surface, &bytes));
+        }
+        if !unchanged {
+            *memo = std::rc::Rc::new(
+                self.surfaces
+                    .iter()
+                    .map(|(surface, geometry)| {
+                        Some((*surface, geometry.scroll_index.reserved_bytes()?))
+                    })
+                    .collect::<Option<_>>()?,
+            );
+        }
+        Some(std::rc::Rc::clone(&memo))
     }
 }
 

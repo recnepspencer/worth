@@ -291,14 +291,15 @@ fn queued_escape_is_retained_while_portal_open_publication_is_in_flight() {
         progress,
         WorthUiNativeManagedRebindProgress::IntentConsequencePublished(_)
     ));
-    let resumed =
+    let mut resumed =
         shell.admit_native_intent_observations(definition, escape, execution_deadline(66));
     assert!(
         resumed.interaction_stops().is_empty(),
         "retained Escape must remain admissible after the open settles"
     );
-    assert_eq!(resumed.dismissals().len(), 1);
-    match shell.begin_managed_portal_dismissal(resumed.dismissals()[0], 42) {
+    let [dismissal] = <[_; 1]>::try_from(resumed.take_dismissals().into_vec())
+        .unwrap_or_else(|_| panic!("retained Escape admits exactly one dismissal"));
+    match shell.begin_managed_portal_dismissal(dismissal, 42) {
         worth_ui::facade::app::WorthUiNativeManagedPortalDismissalOutcome::Published(_) => {}
         worth_ui::facade::app::WorthUiNativeManagedPortalDismissalOutcome::Ignored => {
             panic!("published open lost its retained Escape")
