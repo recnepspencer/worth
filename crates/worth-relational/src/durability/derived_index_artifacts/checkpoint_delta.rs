@@ -227,6 +227,11 @@ impl DerivedIndexCheckpointArtifacts {
                 status: entry.status,
                 entries,
             };
+            if generation.source_branch_id != generation.applicability.branch_id {
+                return Err(corrupt(
+                    "derived index checkpoint generation branch affinity mismatches source",
+                ));
+            }
             if digest(
                 &CheckpointDigestHeader::from_generation(&generation),
                 &entries_bytes,
@@ -331,5 +336,15 @@ mod tests {
         assert!(checkpoint.readmit().is_err());
         checkpoint.format_version = 1;
         assert!(checkpoint.readmit().is_err());
+    }
+
+    #[test]
+    fn self_consistent_digest_cannot_relabel_generation_to_foreign_branch() {
+        let mut foreign = generation(1, 10);
+        foreign.applicability.branch_id = BranchId("foreign".into());
+        let checkpoint = capture(vec![foreign]);
+        let error = checkpoint.readmit().unwrap_err();
+        assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
+        assert!(error.detail.contains("branch affinity"));
     }
 }

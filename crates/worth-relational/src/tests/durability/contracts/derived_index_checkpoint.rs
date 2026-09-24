@@ -184,6 +184,39 @@ fn checkpoint_index_artifact_missing_payload_denies_before_recovery() {
 }
 
 #[test]
+fn checkpoint_recovery_denies_a_digest_valid_foreign_generation_affinity() {
+    let runtime = persisted_runtime_with_test_schema();
+    let commit = create_entity_outcome(&runtime, "foreign-affinity-index");
+    let index = name_index(&runtime);
+    build(&runtime, index.index_id, &commit);
+    release_test_commit_snapshot(&runtime, &commit);
+    runtime.durability_authority().checkpoint().unwrap();
+    let mut plan = runtime.durability().recovery_plan(
+        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
+    );
+    let checkpoint = plan.checkpoint.as_mut().unwrap();
+    let mut generation = checkpoint
+        .derived_index_checkpoint
+        .as_ref()
+        .unwrap()
+        .readmit()
+        .unwrap()
+        .pop()
+        .unwrap();
+    generation.applicability.branch_id = BranchId("foreign".into());
+    checkpoint.derived_index_checkpoint = Some(
+        crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts::capture(vec![
+            std::sync::Arc::new(generation),
+        ])
+        .unwrap(),
+    );
+    let mut recovered = persisted_runtime_with_test_schema();
+    let error = recovered.durability_recovery().recover(plan).unwrap_err();
+    assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
+    assert!(error.detail.contains("branch affinity"));
+}
+
+#[test]
 fn reclamation_keeps_a_pinned_old_reader_until_release() {
     let mut runtime = persisted_runtime_with_test_schema();
     let first = create_entity_outcome(&runtime, "pinned-index-first");
