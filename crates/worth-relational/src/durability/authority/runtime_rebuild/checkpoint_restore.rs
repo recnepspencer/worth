@@ -1,6 +1,8 @@
 use std::sync::Arc;
 
-use crate::durability::data::{DurabilityError, DurabilityMode, DurableCheckpoint};
+use crate::durability::data::{
+    CheckpointRestoreWork, DurabilityError, DurabilityMode, DurableCheckpoint,
+};
 use crate::history::data::VersionNode;
 use crate::runtime::{HistorySubsystem, IndexingState, LineageState, RelationalRuntime};
 
@@ -34,8 +36,9 @@ struct PreparedCheckpointState {
 pub(super) fn restore_checkpoint_state(
     restored: &mut RelationalRuntime,
     checkpoint: DurableCheckpoint,
+    work: &mut CheckpointRestoreWork,
 ) -> Result<(), DurabilityError> {
-    let prepared = prepare_checkpoint_state(restored, &checkpoint)?;
+    let prepared = prepare_checkpoint_state(restored, &checkpoint, work)?;
     let restored = super::unshared_state(restored)?;
     install_checkpoint_state(restored, prepared);
     restored.durability.push_checkpoint(checkpoint);
@@ -45,15 +48,16 @@ pub(super) fn restore_checkpoint_state(
 fn prepare_checkpoint_state(
     restored: &mut RelationalRuntime,
     checkpoint: &DurableCheckpoint,
+    work: &mut CheckpointRestoreWork,
 ) -> Result<PreparedCheckpointState, DurabilityError> {
     validate_checkpoint_lineage_artifact(checkpoint)?;
     let symbols = prepare_symbols(restored, checkpoint);
     let record_identity = prepare_record_identity(checkpoint)?;
-    let branch_root_images = restore_branch_root_images(restored, checkpoint)?;
-    let partitions = prepare_partitions(restored, checkpoint, &branch_root_images)?;
-    let history = prepare_history(restored, checkpoint, branch_root_images, &symbols)?;
+    let branch_root_images = restore_branch_root_images(restored, checkpoint, work)?;
+    let partitions = prepare_partitions(restored, checkpoint, &branch_root_images, work)?;
+    let history = prepare_history(restored, checkpoint, branch_root_images, &symbols, work)?;
     let lineage = prepare_lineage(restored, checkpoint);
-    let indexes = prepare_indexes(checkpoint)?;
+    let indexes = prepare_indexes(checkpoint, work)?;
     Ok(PreparedCheckpointState {
         symbols,
         record_identity,
@@ -77,6 +81,7 @@ fn prepare_partitions(
     restored: &mut RelationalRuntime,
     checkpoint: &DurableCheckpoint,
     branch_roots: &branch_root_images::RestoredBranchRootImages,
+    work: &mut CheckpointRestoreWork,
 ) -> Result<
     std::collections::BTreeMap<
         crate::identity::data::PartitionId,
@@ -92,6 +97,7 @@ fn prepare_partitions(
         branch_roots,
         &restored.schema_contract_runtime.aspect_contract_plans,
         &aspect_contracts,
+        work,
     )
 }
 
@@ -100,6 +106,7 @@ fn prepare_history(
     checkpoint: &DurableCheckpoint,
     mut branch_roots: branch_root_images::RestoredBranchRootImages,
     symbols: &crate::symbols::data::StringInterner,
+    work: &mut CheckpointRestoreWork,
 ) -> Result<HistorySubsystem, DurabilityError> {
     let mut history = restored.history.detached_owner_snapshot();
     history.with_ledger_mut(|ledger| {
@@ -128,6 +135,7 @@ fn prepare_history(
                     detail,
                 )
             })?;
+        work.history_envelopes_routed += 1;
     }
     if let Some(position) = history.latest_recorded_patch_position() {
         history.advance_canonical_stream_floor(position);
@@ -159,6 +167,7 @@ fn prepare_history(
                 detail,
             )
         })?;
+    work.branch_cells_readmitted += checkpoint.branch_cells.len();
     Ok(history)
 }
 
@@ -191,7 +200,10 @@ fn prepare_lineage(
     lineage
 }
 
-fn prepare_indexes(checkpoint: &DurableCheckpoint) -> Result<IndexingState, DurabilityError> {
+fn prepare_indexes(
+    checkpoint: &DurableCheckpoint,
+    work: &mut CheckpointRestoreWork,
+) -> Result<IndexingState, DurabilityError> {
     if !crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts::supports_outer_format(
         checkpoint.derived_index_checkpoint_format,
         checkpoint.derived_index_checkpoint.is_some(),
@@ -204,12 +216,14 @@ fn prepare_indexes(checkpoint: &DurableCheckpoint) -> Result<IndexingState, Dura
     let mut indexes = IndexingState::default();
     for definition in &checkpoint.index_definitions {
         indexes.insert_definition(definition.clone());
+        work.index_definitions_readmitted += 1;
     }
     restore_checkpoint_derived_index_artifacts(
         &mut indexes,
         &checkpoint.derived_index_artifacts,
         checkpoint.derived_index_checkpoint.as_ref(),
         &checkpoint.envelopes,
+        work,
     )?;
     Ok(indexes)
 }

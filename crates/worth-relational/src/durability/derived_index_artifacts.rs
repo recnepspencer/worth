@@ -18,6 +18,7 @@ pub(crate) fn restore_checkpoint_derived_index_artifacts(
     legacy: &DerivedIndexArtifacts,
     checkpoint: Option<&DerivedIndexCheckpointArtifacts>,
     envelopes: &[crate::history::data::PositionedCanonicalCommit],
+    work: &mut crate::durability::data::CheckpointRestoreWork,
 ) -> Result<(), crate::durability::data::DurabilityError> {
     if let Some(checkpoint) = checkpoint {
         if !legacy.is_empty() {
@@ -62,10 +63,12 @@ pub(crate) fn restore_checkpoint_derived_index_artifacts(
                 ));
             }
             indexes.restore_generation(generation);
+            work.index_generations_readmitted += 1;
         }
     } else {
         for generation in legacy.generations() {
             indexes.restore_generation(generation.clone());
+            work.index_generations_readmitted += 1;
         }
     }
     Ok(())

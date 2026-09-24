@@ -246,3 +246,91 @@ fn partition_alias_wire_rejects_unknown_or_inconsistent_aliases() {
         RecoveryFailureClass::CorruptCheckpoint
     );
 }
+
+#[test]
+fn native_capture_sections_count_exact_written_values_without_changing_wire() {
+    let runtime = persisted_runtime_with_test_schema();
+    let entity = create_entity(&runtime, "section-seed");
+    let checkpoint = runtime.durability_authority().checkpoint().unwrap();
+    let (bytes, sections) =
+        super::super::native_file_codec::encode_checkpoint(checkpoint.clone()).unwrap();
+    let expected =
+        rmp_serde::to_vec_named(&PersistedDurableCheckpointFileRef::new(&checkpoint)).unwrap();
+    assert_eq!(bytes, expected);
+    assert_eq!(sections.total, bytes.len());
+
+    let aliases = partition_aliases::PartitionAliasPlan::for_checkpoint(&checkpoint).unwrap();
+    let root_values = rmp_serde::to_vec_named(&CheckpointBranchRootRefs {
+        roots: &checkpoint.branch_roots,
+        aliases: &aliases.roots,
+    })
+    .unwrap()
+    .len()
+        + rmp_serde::to_vec_named(&checkpoint.branch_root_schema_images)
+            .unwrap()
+            .len()
+        + rmp_serde::to_vec_named(&aliases.roots).unwrap().len();
+    let index_values = rmp_serde::to_vec_named(&checkpoint.index_definitions)
+        .unwrap()
+        .len()
+        + rmp_serde::to_vec_named(&checkpoint.derived_index_artifacts)
+            .unwrap()
+            .len()
+        + rmp_serde::to_vec_named(&checkpoint.derived_index_checkpoint)
+            .unwrap()
+            .len();
+    assert_eq!(
+        sections.envelopes,
+        rmp_serde::to_vec_named(&CheckpointEnvelopeRefs(&checkpoint.envelopes))
+            .unwrap()
+            .len()
+    );
+    assert_eq!(sections.branch_roots, root_values);
+    assert_eq!(
+        sections.branch_cells,
+        rmp_serde::to_vec_named(&checkpoint.branch_cells)
+            .unwrap()
+            .len()
+    );
+    assert_eq!(
+        sections.partition_mirror,
+        rmp_serde::to_vec_named(&checkpoint.partition_images)
+            .unwrap()
+            .len()
+    );
+    assert_eq!(sections.derived_indexes, index_values);
+    assert_eq!(
+        sections.total,
+        sections.envelopes
+            + sections.branch_roots
+            + sections.branch_cells
+            + sections.partition_mirror
+            + sections.derived_indexes
+            + sections.framing_and_metadata
+    );
+
+    let captured = runtime.durability_authority().native_checkpoint().unwrap();
+    assert_eq!(captured.bytes(), bytes);
+    assert_eq!(captured.captured_sections(), Some(sections));
+    assert_eq!(captured.clone().captured_sections(), Some(sections));
+    assert!(
+        crate::durability::data::RelationalNativeCheckpoint::from_untrusted_bytes(bytes)
+            .captured_sections()
+            .is_none()
+    );
+
+    let pinned = snapshot_for_owner_branch(&runtime, &BranchId("main".into()));
+    update_entity_and_release_snapshot(&runtime, entity, "section-revision");
+    let later = runtime.durability_authority().native_checkpoint().unwrap();
+    let later_sections = later.captured_sections().unwrap();
+    assert!(later_sections.envelopes > sections.envelopes);
+    assert_eq!(
+        runtime
+            .read_truth()
+            .read_snapshot(&pinned)
+            .unwrap()
+            .entities()
+            .len(),
+        1
+    );
+}

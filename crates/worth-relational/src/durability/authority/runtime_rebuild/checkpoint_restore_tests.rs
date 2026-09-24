@@ -20,10 +20,82 @@ fn equal_exact_root_reuses_the_readmitted_partition_substrate() {
     );
 
     let mut restored = persisted_runtime_with_test_schema();
-    let roots = restore_branch_root_images(&mut restored, &checkpoint).unwrap();
-    let mirror = prepare_partitions(&mut restored, &checkpoint, &roots).unwrap();
+    let mut work = crate::durability::data::CheckpointRestoreWork::default();
+    let roots = restore_branch_root_images(&mut restored, &checkpoint, &mut work).unwrap();
+    let mirror = prepare_partitions(&mut restored, &checkpoint, &roots, &mut work).unwrap();
     let root = roots.partitions.get(&committed.commit.commit_id).unwrap();
     assert!(shares_first_generation(&mirror, root));
+}
+
+#[test]
+fn native_restore_work_counts_revised_history_sibling_roots_and_partition_images() {
+    let source = persisted_runtime_with_test_schema();
+    let entity = create_entity(&source, "work-seed");
+    let small = source.durability_authority().native_checkpoint().unwrap();
+    create_entity_in_partition(&source, "work-secondary", PartitionId(41));
+    let grown = source.durability_authority().native_checkpoint().unwrap();
+    assert!(
+        grown.captured_sections().unwrap().partition_mirror
+            > small.captured_sections().unwrap().partition_mirror
+    );
+
+    let pinned = snapshot_for_owner_branch(&source, &BranchId("main".into()));
+    update_entity_and_release_snapshot(&source, entity, "work-revised");
+    let sibling = create_branch_from_main(&source, "work-sibling");
+    let sibling_commit = create_entity_outcome_on_branch(&source, "work-fork", sibling);
+    release_test_commit_snapshot(&source, &sibling_commit);
+    let native = source.durability_authority().native_checkpoint().unwrap();
+    assert!(
+        native.captured_sections().unwrap().envelopes
+            > grown.captured_sections().unwrap().envelopes
+    );
+    let decoded = crate::durability::log::native_file_codec::decode_checkpoint(native.bytes())
+        .unwrap()
+        .checkpoint;
+    let mut recovered = persisted_runtime_with_test_schema();
+    let outcome = recovered
+        .durability_recovery()
+        .restore_native_checkpoint(&native)
+        .unwrap();
+    let work = outcome.checkpoint_restore_work.unwrap();
+    assert_eq!(work.native_bytes_read, Some(native.bytes().len()));
+    assert_eq!(
+        work.native_envelopes_readmitted,
+        Some(decoded.envelopes.len())
+    );
+    assert_eq!(work.root_images_verified, decoded.branch_roots.len());
+    assert_eq!(
+        work.root_partition_images_restored,
+        decoded
+            .branch_roots
+            .iter()
+            .map(|root| root.partition_images.len())
+            .sum::<usize>()
+    );
+    assert_eq!(
+        work.mirror_partition_images_examined,
+        decoded.partition_images.len()
+    );
+    assert_eq!(
+        work.mirror_partitions_reused + work.mirror_partitions_reconstructed,
+        decoded.partition_images.len()
+    );
+    assert!(work.mirror_partitions_reused > 0);
+    assert_eq!(work.history_envelopes_routed, decoded.envelopes.len());
+    assert_eq!(work.branch_cells_readmitted, decoded.branch_cells.len());
+    assert_eq!(
+        work.index_definitions_readmitted,
+        decoded.index_definitions.len()
+    );
+    assert_eq!(
+        source
+            .read_truth()
+            .read_snapshot(&pinned)
+            .unwrap()
+            .entities()
+            .len(),
+        2
+    );
 }
 
 #[test]
@@ -75,8 +147,9 @@ fn divergent_sibling_is_not_reused_as_the_storage_mirror() {
     assert_eq!(checkpoint.branch_roots.len(), 2);
 
     let mut restored = persisted_runtime_with_test_schema();
-    let roots = restore_branch_root_images(&mut restored, &checkpoint).unwrap();
-    let mirror = prepare_partitions(&mut restored, &checkpoint, &roots).unwrap();
+    let mut work = crate::durability::data::CheckpointRestoreWork::default();
+    let roots = restore_branch_root_images(&mut restored, &checkpoint, &mut work).unwrap();
+    let mirror = prepare_partitions(&mut restored, &checkpoint, &roots, &mut work).unwrap();
     let main_root = roots.partitions.get(&main_commit.commit.commit_id).unwrap();
     let sibling_root = roots
         .partitions
@@ -143,8 +216,9 @@ fn divergent_mirror_partition_rebuilds_cross_partition_adjacency_after_reuse() {
     main_image.entity_arena.snapshot_pins[0] += 1;
 
     let mut restored = persisted_runtime_with_test_schema();
-    let roots = restore_branch_root_images(&mut restored, &checkpoint).unwrap();
-    let mirror = prepare_partitions(&mut restored, &checkpoint, &roots).unwrap();
+    let mut work = crate::durability::data::CheckpointRestoreWork::default();
+    let roots = restore_branch_root_images(&mut restored, &checkpoint, &mut work).unwrap();
+    let mirror = prepare_partitions(&mut restored, &checkpoint, &roots, &mut work).unwrap();
     let root_commit = checkpoint.branch_roots[0].commit_id;
     let root = roots.partitions.get(&root_commit).unwrap();
     assert!(!shares_partition_generation(
@@ -208,8 +282,9 @@ fn equal_image_cannot_bypass_global_contract_readmission() {
     checkpoint.aspect_contracts.clear();
 
     let mut restored = persisted_runtime_with_test_schema();
-    let roots = restore_branch_root_images(&mut restored, &checkpoint).unwrap();
-    let error = prepare_partitions(&mut restored, &checkpoint, &roots).unwrap_err();
+    let mut work = crate::durability::data::CheckpointRestoreWork::default();
+    let roots = restore_branch_root_images(&mut restored, &checkpoint, &mut work).unwrap();
+    let error = prepare_partitions(&mut restored, &checkpoint, &roots, &mut work).unwrap_err();
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
     assert!(error.detail.contains("aspect readmission denied"));
 }

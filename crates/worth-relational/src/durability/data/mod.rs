@@ -1,5 +1,6 @@
 mod branch_root_schema_images;
 mod checkpoint_images;
+mod checkpoint_restore_work;
 mod native_checkpoint;
 mod recovery_errors;
 mod recovery_outcome;
@@ -20,7 +21,8 @@ pub(crate) use checkpoint_images::{
     DurableRecordGenerationHighWater, DurableRecordIdentityState, DurableRecordReservationOrigin,
     DurableRecordSlotFrontier, DurableReusableRecordSlot,
 };
-pub use native_checkpoint::RelationalNativeCheckpoint;
+pub use checkpoint_restore_work::CheckpointRestoreWork;
+pub use native_checkpoint::{NativeCheckpointSectionBytes, RelationalNativeCheckpoint};
 pub use recovery_errors::{
     DurabilityError, RecoveryAuthorityContinuityMismatch, RecoveryFailureClass,
     RelationIntegrityContractFamily,

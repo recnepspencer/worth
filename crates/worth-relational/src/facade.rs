@@ -75,10 +75,11 @@ pub mod diagnostics {
 
 pub mod durability {
     pub use crate::durability::data::{
-        CheckpointCoverage, CompactionOutcome, CompactionPlan, CompactionPolicy, DurabilityError,
-        DurabilityMode, DurableCheckpoint, DurableCheckpointId, DurableCheckpointManifest,
-        DurableIntegrityStatus, DurableSegmentId, DurableSegmentManifest, DurableStore,
-        DurableStoreLayout, PartitionCheckpointImage, RecoveryAuthorityContinuityCheck,
+        CheckpointCoverage, CheckpointRestoreWork, CompactionOutcome, CompactionPlan,
+        CompactionPolicy, DurabilityError, DurabilityMode, DurableCheckpoint, DurableCheckpointId,
+        DurableCheckpointManifest, DurableIntegrityStatus, DurableSegmentId,
+        DurableSegmentManifest, DurableStore, DurableStoreLayout, NativeCheckpointSectionBytes,
+        PartitionCheckpointImage, RecoveryAuthorityContinuityCheck,
         RecoveryAuthorityContinuityMismatch, RecoveryAuthorityParity, RecoveryCoverage,
         RecoveryCursor, RecoveryFailureClass, RecoveryIntegrityReport, RecoveryPlan,
         RecoveryVerificationMode, RecoveryVerificationOutcome, RecoveryVerificationPlan,

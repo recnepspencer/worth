@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use crate::durability::data::{DurabilityError, DurableCheckpoint};
+use crate::durability::data::{CheckpointRestoreWork, DurabilityError, DurableCheckpoint};
 use crate::history::data::CommitId;
 use crate::runtime::RelationalRuntime;
 
@@ -19,6 +19,7 @@ pub(super) struct RestoredBranchRootImages {
 pub(super) fn restore_branch_root_images(
     restored: &mut RelationalRuntime,
     checkpoint: &DurableCheckpoint,
+    work: &mut CheckpointRestoreWork,
 ) -> Result<RestoredBranchRootImages, DurabilityError> {
     let mut schema_catalog = RootSchemaReadmissionCatalog::readmit(checkpoint)?;
     let mut partitions = BTreeMap::new();
@@ -56,6 +57,7 @@ pub(super) fn restore_branch_root_images(
                 image.commit_id.0
             )));
         }
+        work.root_images_verified += 1;
         let schema_authority = schema_catalog.readmit_root(restored, image, envelope)?;
         let root_contracts = crate::durability::checkpoints::aspect_state_images::CheckpointAspectContractCatalog::from_contracts(
             schema_authority.retained_aspect_contracts(),
@@ -66,6 +68,7 @@ pub(super) fn restore_branch_root_images(
             &root_contracts,
             &owner,
         )?;
+        work.root_partition_images_restored += image.partition_images.len();
         crate::storage::partition::rebuild_adjacency_kind_buckets(&mut restored_partitions)
             .map_err(|detail| {
                 corrupt_checkpoint(format!(

@@ -7,11 +7,27 @@
 pub struct RelationalNativeCheckpoint {
     bytes: Box<[u8]>,
     region: std::ops::Range<usize>,
+    captured_sections: Option<NativeCheckpointSectionBytes>,
+}
+
+/// Actual MessagePack value bytes emitted during one native capture. The
+/// remainder contains map keys, framing, and small checkpoint metadata.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct NativeCheckpointSectionBytes {
+    pub total: usize,
+    pub envelopes: usize,
+    pub branch_roots: usize,
+    pub branch_cells: usize,
+    pub partition_mirror: usize,
+    pub derived_indexes: usize,
+    pub framing_and_metadata: usize,
 }
 
 impl Clone for RelationalNativeCheckpoint {
     fn clone(&self) -> Self {
-        Self::from_untrusted_bytes(self.bytes().to_vec())
+        let mut cloned = Self::from_untrusted_bytes(self.bytes().to_vec());
+        cloned.captured_sections = self.captured_sections;
+        cloned
     }
 }
 
@@ -36,7 +52,11 @@ impl RelationalNativeCheckpoint {
     pub fn from_untrusted_bytes(bytes: impl Into<Box<[u8]>>) -> Self {
         let bytes = bytes.into();
         let region = 0..bytes.len();
-        Self { bytes, region }
+        Self {
+            bytes,
+            region,
+            captured_sections: None,
+        }
     }
 
     /// Retain an embedded native payload without copying its enclosing buffer.
@@ -48,18 +68,32 @@ impl RelationalNativeCheckpoint {
         if bytes.get(region.clone()).is_none() {
             return Err("native checkpoint byte region is out of bounds");
         }
-        Ok(Self { bytes, region })
+        Ok(Self {
+            bytes,
+            region,
+            captured_sections: None,
+        })
     }
 
     pub fn bytes(&self) -> &[u8] {
         &self.bytes[self.region.clone()]
     }
 
-    pub(crate) fn from_captured_bytes(bytes: Vec<u8>) -> Self {
+    /// Available only on a checkpoint captured by this runtime, not bytes
+    /// received from a caller or an enclosing checkpoint container.
+    pub fn captured_sections(&self) -> Option<NativeCheckpointSectionBytes> {
+        self.captured_sections
+    }
+
+    pub(crate) fn from_captured_bytes(
+        bytes: Vec<u8>,
+        sections: NativeCheckpointSectionBytes,
+    ) -> Self {
         let region = 0..bytes.len();
         Self {
             bytes: bytes.into_boxed_slice(),
             region,
+            captured_sections: Some(sections),
         }
     }
 }

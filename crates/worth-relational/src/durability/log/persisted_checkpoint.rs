@@ -8,6 +8,7 @@ use super::local_store::DurableCheckpointFile;
 use super::persisted_canonical_commit::{PersistedCanonicalCommit, PersistedCheckpointCommitRef};
 
 mod partition_aliases;
+mod section_accounting;
 #[cfg(test)]
 #[path = "persisted_checkpoint_tests.rs"]
 mod tests;
@@ -16,6 +17,8 @@ use partition_aliases::{
     readmit_partition_aliases, CheckpointBranchRootRefs, PartitionAliasPlan, RootPartitionAliases,
     PARTITION_DELTA_FORMAT_VERSION,
 };
+pub(super) use section_accounting::CaptureSectionRecorder;
+use section_accounting::{MeasuredValue, NativeSection};
 
 #[derive(Serialize, Deserialize)]
 pub(super) struct PersistedDurableCheckpointFile {
@@ -26,15 +29,32 @@ pub(super) struct PersistedDurableCheckpointFile {
 /// the checkpoint image and its canonical envelopes stay in one owner.
 pub(super) struct PersistedDurableCheckpointFileRef<'a> {
     checkpoint: &'a DurableCheckpoint,
+    recorder: Option<&'a CaptureSectionRecorder>,
 }
 
-struct PersistedDurableCheckpointRef<'a>(&'a DurableCheckpoint);
+struct PersistedDurableCheckpointRef<'a> {
+    checkpoint: &'a DurableCheckpoint,
+    recorder: Option<&'a CaptureSectionRecorder>,
+}
 
 struct CheckpointEnvelopeRefs<'a>(&'a [PositionedCanonicalCommit]);
 
 impl<'a> PersistedDurableCheckpointFileRef<'a> {
     pub(super) fn new(checkpoint: &'a DurableCheckpoint) -> Self {
-        Self { checkpoint }
+        Self {
+            checkpoint,
+            recorder: None,
+        }
+    }
+
+    pub(super) fn measured(
+        checkpoint: &'a DurableCheckpoint,
+        recorder: &'a CaptureSectionRecorder,
+    ) -> Self {
+        Self {
+            checkpoint,
+            recorder: Some(recorder),
+        }
     }
 }
 
@@ -46,7 +66,10 @@ impl Serialize for PersistedDurableCheckpointFileRef<'_> {
         let mut fields = serializer.serialize_struct("PersistedDurableCheckpointFile", 1)?;
         fields.serialize_field(
             "checkpoint",
-            &PersistedDurableCheckpointRef(self.checkpoint),
+            &PersistedDurableCheckpointRef {
+                checkpoint: self.checkpoint,
+                recorder: self.recorder,
+            },
         )?;
         fields.end()
     }
@@ -76,33 +99,87 @@ impl Serialize for PersistedDurableCheckpointRef<'_> {
             derived_index_checkpoint_format,
             symbol_table,
             runtime_name,
-        } = self.0;
+        } = self.checkpoint;
         // Exact shared partitions are omitted on the wire, while divergent
         // partitions retain their independently readmitted image.
-        let aliases =
-            PartitionAliasPlan::for_checkpoint(self.0).map_err(serde::ser::Error::custom)?;
+        let aliases = PartitionAliasPlan::for_checkpoint(self.checkpoint)
+            .map_err(serde::ser::Error::custom)?;
         let mut fields = serializer.serialize_struct("PersistedDurableCheckpoint", 21)?;
         fields.serialize_field("coverage", coverage)?;
-        fields.serialize_field("branch_cells", branch_cells)?;
         fields.serialize_field(
-            "branch_roots",
-            &CheckpointBranchRootRefs {
-                roots: branch_roots,
-                aliases: &aliases.roots,
+            "branch_cells",
+            &MeasuredValue {
+                value: branch_cells,
+                section: NativeSection::BranchCells,
+                recorder: self.recorder,
             },
         )?;
-        fields.serialize_field("branch_root_schema_images", branch_root_schema_images)?;
+        let root_refs = CheckpointBranchRootRefs {
+            roots: branch_roots,
+            aliases: &aliases.roots,
+        };
+        fields.serialize_field(
+            "branch_roots",
+            &MeasuredValue {
+                value: &root_refs,
+                section: NativeSection::BranchRoots,
+                recorder: self.recorder,
+            },
+        )?;
+        fields.serialize_field(
+            "branch_root_schema_images",
+            &MeasuredValue {
+                value: branch_root_schema_images,
+                section: NativeSection::BranchRoots,
+                recorder: self.recorder,
+            },
+        )?;
         fields.serialize_field("record_identity", record_identity)?;
         fields.serialize_field("record_generation_high_water", record_generation_high_water)?;
         fields.serialize_field("reusable_record_slots", reusable_record_slots)?;
         fields.serialize_field("record_slot_frontiers", record_slot_frontiers)?;
-        fields.serialize_field("envelopes", &CheckpointEnvelopeRefs(envelopes))?;
-        fields.serialize_field("partition_images", partition_images)?;
+        fields.serialize_field(
+            "envelopes",
+            &MeasuredValue {
+                value: &CheckpointEnvelopeRefs(envelopes),
+                section: NativeSection::Envelopes,
+                recorder: self.recorder,
+            },
+        )?;
+        fields.serialize_field(
+            "partition_images",
+            &MeasuredValue {
+                value: partition_images,
+                section: NativeSection::PartitionMirror,
+                recorder: self.recorder,
+            },
+        )?;
         fields.serialize_field("aspect_contracts", aspect_contracts)?;
         fields.serialize_field("lineage", lineage)?;
-        fields.serialize_field("index_definitions", index_definitions)?;
-        fields.serialize_field("derived_index_artifacts", derived_index_artifacts)?;
-        fields.serialize_field("derived_index_checkpoint", derived_index_checkpoint)?;
+        fields.serialize_field(
+            "index_definitions",
+            &MeasuredValue {
+                value: index_definitions,
+                section: NativeSection::DerivedIndexes,
+                recorder: self.recorder,
+            },
+        )?;
+        fields.serialize_field(
+            "derived_index_artifacts",
+            &MeasuredValue {
+                value: derived_index_artifacts,
+                section: NativeSection::DerivedIndexes,
+                recorder: self.recorder,
+            },
+        )?;
+        fields.serialize_field(
+            "derived_index_checkpoint",
+            &MeasuredValue {
+                value: derived_index_checkpoint,
+                section: NativeSection::DerivedIndexes,
+                recorder: self.recorder,
+            },
+        )?;
         fields.serialize_field(
             "derived_index_checkpoint_format",
             derived_index_checkpoint_format,
@@ -114,7 +191,14 @@ impl Serialize for PersistedDurableCheckpointRef<'_> {
             "branch_root_partition_aliases",
             &[] as &[crate::history::data::CommitId],
         )?;
-        fields.serialize_field("branch_root_partition_aliases_v2", &aliases.roots)?;
+        fields.serialize_field(
+            "branch_root_partition_aliases_v2",
+            &MeasuredValue {
+                value: &aliases.roots,
+                section: NativeSection::BranchRoots,
+                recorder: self.recorder,
+            },
+        )?;
         fields.end()
     }
 }

@@ -25,8 +25,13 @@ impl<'runtime> DurabilityAuthority<'runtime> {
         &self,
     ) -> Result<crate::durability::data::RelationalNativeCheckpoint, DurabilityError> {
         let checkpoint = self.capture_checkpoint_basis()?.build_checkpoint_image()?;
-        let bytes = crate::durability::log::native_file_codec::encode_checkpoint(checkpoint)?;
-        Ok(crate::durability::data::RelationalNativeCheckpoint::from_captured_bytes(bytes))
+        let (bytes, sections) =
+            crate::durability::log::native_file_codec::encode_checkpoint(checkpoint)?;
+        Ok(
+            crate::durability::data::RelationalNativeCheckpoint::from_captured_bytes(
+                bytes, sections,
+            ),
+        )
     }
 
     pub fn checkpoint(&self) -> Result<DurableCheckpoint, DurabilityError> {

@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use crate::durability::data::{DurabilityError, PartitionCheckpointImage};
+use crate::durability::data::{CheckpointRestoreWork, DurabilityError, PartitionCheckpointImage};
 use crate::identity::data::PartitionId;
 use crate::storage::overlay::PartitionState;
 
@@ -16,6 +16,7 @@ pub(super) fn restore_partition_mirror(
     branch_roots: &RestoredBranchRootImages,
     plans: &crate::schema::data::AspectContractPlanCatalog,
     contracts: &crate::durability::checkpoints::aspect_state_images::CheckpointAspectContractCatalog,
+    work: &mut CheckpointRestoreWork,
 ) -> Result<RestoredPartitions, DurabilityError> {
     reject_duplicate_partition_images(&checkpoint.partition_images, "checkpoint")?;
     let mut candidates = Vec::new();
@@ -46,6 +47,7 @@ pub(super) fn restore_partition_mirror(
     let mut reused = BTreeMap::new();
     let mut fallback = Vec::new();
     for image in &checkpoint.partition_images {
+        work.mirror_partition_images_examined += 1;
         let matching = candidates.iter().find_map(|(by_id, restored)| {
             (by_id.get(&image.partition_id).copied() == Some(image))
                 .then(|| restored.get(&image.partition_id))
@@ -53,8 +55,10 @@ pub(super) fn restore_partition_mirror(
         });
         if let Some(partition) = matching {
             reused.insert(image.partition_id, partition.clone());
+            work.mirror_partitions_reused += 1;
         } else {
             fallback.push(image.clone());
+            work.mirror_partitions_reconstructed += 1;
         }
     }
     let mut reconstructed =
