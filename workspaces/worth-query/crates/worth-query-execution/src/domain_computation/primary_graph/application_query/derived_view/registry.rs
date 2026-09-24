@@ -34,6 +34,15 @@ impl PreparedManagedViewPublication {
             view.apply_transition(prepared, after);
         }
     }
+
+    pub(in crate::domain_computation::primary_graph) fn apply_cold(
+        self,
+        after: &worth_runtime_world::facade::CompositeCommitIdentity,
+    ) {
+        for (view, _) in self.views {
+            view.apply_transition(None, after);
+        }
+    }
 }
 
 #[derive(Default)]
@@ -48,6 +57,15 @@ pub(in crate::domain_computation::primary_graph) struct ManagedDerivedViewRegist
 }
 
 impl ManagedDerivedViewRegistry {
+    pub(in crate::domain_computation::primary_graph) fn has_live_views(&self) -> bool {
+        self.state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .views
+            .values()
+            .any(|view| view.strong_count() > 0)
+    }
+
     pub(in crate::domain_computation::primary_graph) fn prepare_publication(
         &self,
         basis: super::publication::ViewPublicationBasis<'_>,

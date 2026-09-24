@@ -103,6 +103,56 @@ impl<Key: Clone + Ord> DependencyIndex<Key> {
         }
     }
 
+    pub(super) fn insert_entry(&mut self, dependency: &ViewDependency, key: &Key) {
+        self.insert(dependency, Target::Entry(key.clone()));
+    }
+
+    pub(super) fn remove_entry(&mut self, key: &Key, dependencies: &BTreeSet<ViewDependency>) {
+        let target = Target::Entry(key.clone());
+        for dependency in dependencies {
+            if let Some(targets) = self.exact.get_mut(dependency) {
+                targets.remove(&target);
+                if targets.is_empty() {
+                    self.exact.remove(dependency);
+                }
+            }
+            let entity = match dependency {
+                ViewDependency::Entity(entity)
+                | ViewDependency::Aspect(entity, _)
+                | ViewDependency::Field(entity, _)
+                | ViewDependency::Adjacency(entity, _, _) => *entity,
+            };
+            if let Some(targets) = self.entity.get_mut(&entity) {
+                targets.remove(&target);
+                if targets.is_empty() {
+                    self.entity.remove(&entity);
+                }
+            }
+            let aspect = match dependency {
+                ViewDependency::Aspect(_, aspect) => Some(aspect.clone()),
+                ViewDependency::Field(_, locator) => Some(locator.aspect().aspect_key().clone()),
+                _ => None,
+            };
+            if let Some(aspect) = aspect {
+                let axis = (entity, aspect);
+                if let Some(targets) = self.aspect.get_mut(&axis) {
+                    targets.remove(&target);
+                    if targets.is_empty() {
+                        self.aspect.remove(&axis);
+                    }
+                }
+            }
+        }
+    }
+
+    pub(super) fn entry_insertion_bound(dependency: &ViewDependency) -> usize {
+        dependency
+            .retained_bytes()
+            .saturating_mul(3)
+            .saturating_add(std::mem::size_of::<Target<Key>>().saturating_mul(3))
+            .saturating_add(128)
+    }
+
     pub(super) fn affected(
         &self,
         changes: &[ViewChange],
@@ -158,33 +208,6 @@ impl<Key: Clone + Ord> DependencyIndex<Key> {
         }
         affected.work_units = work;
         Some(affected)
-    }
-
-    pub(super) fn retained_bytes(&self) -> usize {
-        let target_bytes = |targets: &BTreeSet<Target<Key>>| {
-            targets.len().saturating_mul(
-                std::mem::size_of::<Target<Key>>() + 4 * std::mem::size_of::<usize>(),
-            )
-        };
-        let exact = self.exact.iter().fold(0usize, |bytes, (key, targets)| {
-            bytes
-                .saturating_add(key.retained_bytes())
-                .saturating_add(target_bytes(targets))
-        });
-        let entity = self.entity.values().fold(0usize, |bytes, targets| {
-            bytes
-                .saturating_add(std::mem::size_of::<EntityId>())
-                .saturating_add(target_bytes(targets))
-        });
-        self.aspect.iter().fold(
-            exact.saturating_add(entity),
-            |bytes, ((_, aspect), targets)| {
-                bytes
-                    .saturating_add(std::mem::size_of::<(EntityId, AspectKey)>())
-                    .saturating_add(aspect.owned_allocation_capacity_bytes())
-                    .saturating_add(target_bytes(targets))
-            },
-        )
     }
 }
 
@@ -351,5 +374,27 @@ mod tests {
             .affected(&[ViewChange::Entity(entity(2))], 16)
             .unwrap();
         assert_eq!(affected.entries, BTreeSet::from([1]));
+    }
+
+    #[test]
+    fn replacing_an_entry_dependency_removes_the_old_body_set_edge() {
+        let old = ViewDependency::Entity(entity(2));
+        let new = ViewDependency::Entity(entity(3));
+        let membership = BTreeSet::from([ViewDependency::Entity(entity(1))]);
+        let mut index = DependencyIndex::build(&membership, [(&7, &BTreeSet::from([old.clone()]))]);
+        index.remove_entry(&7, &BTreeSet::from([old]));
+        index.insert_entry(&new, &7);
+        assert!(index
+            .affected(&[ViewChange::Entity(entity(2))], 16)
+            .unwrap()
+            .entries
+            .is_empty());
+        assert_eq!(
+            index
+                .affected(&[ViewChange::Entity(entity(3))], 16)
+                .unwrap()
+                .entries,
+            BTreeSet::from([7])
+        );
     }
 }

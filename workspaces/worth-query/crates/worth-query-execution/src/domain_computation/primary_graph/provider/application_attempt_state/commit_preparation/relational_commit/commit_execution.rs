@@ -1,5 +1,6 @@
 //! The single authoritative Relational commit transition.
 
+mod managed_views;
 mod precommit_snapshot;
 mod product_publication;
 mod publication;
@@ -28,6 +29,7 @@ pub(super) struct WorthQueryCommittedApplicationSession {
     next_basis: worth_relational::facade::branch::AdmittedRelationalBranchBasis,
     committed: worth_relational::facade::transactions::CommitResult,
     product_publication: crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationReceipt,
+    managed_views: Option<managed_views::PreparedViewPublication>,
 }
 
 pub(super) fn commit(
@@ -87,6 +89,8 @@ pub(super) fn commit(
             )
         })
         .map_err(index_preparation_stop)?;
+    let managed_views =
+        managed_views::prepare(provider, &product, before.as_snapshot(), &candidate);
     #[cfg(feature = "test-world-operation-control")]
     provider.after_application_candidate_preparation_for_test();
     let performed = product_publication::publish(provider, &mut attempt, candidate)?;
@@ -113,6 +117,7 @@ pub(super) fn commit(
         next_basis,
         committed,
         product_publication: performed,
+        managed_views,
     })
 }
 

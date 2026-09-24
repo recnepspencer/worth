@@ -20,6 +20,8 @@ use crate::domain_computation::primary_graph::application_query::{
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
+mod collection;
+
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema,
@@ -34,6 +36,30 @@ where
             Scope,
         >,
         query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
+        product: &WorthQueryProductBranchLease,
+    ) -> Result<WorthQueryManagedDerivedView<Query, Value>, Denial>
+    where
+        Value: WorthQueryManagedDerivedValue,
+    {
+        self.open_managed_derived_view_with_entry_query(definition, query, None, None, product)
+    }
+
+    fn open_managed_derived_view_with_entry_query<Query, Parameters, QueryResult, Scope, Value>(
+        &self,
+        definition: &ApplicationDerivedViewDefinition<
+            Schema,
+            Query,
+            Parameters,
+            QueryResult,
+            Scope,
+        >,
+        query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
+        entry_query: Option<
+            worth_query_installation::facade::WorthQueryInstalledApplicationQueryIdentity,
+        >,
+        secondary_entry_query: Option<
+            worth_query_installation::facade::WorthQueryInstalledApplicationQueryIdentity,
+        >,
         product: &WorthQueryProductBranchLease,
     ) -> Result<WorthQueryManagedDerivedView<Query, Value>, Denial>
     where
@@ -68,6 +94,8 @@ where
             self.runtime.authority_identity().as_u64(),
             self.installed_schema.binding_identity().clone(),
             query.identity().clone(),
+            entry_query,
+            secondary_entry_query,
             product.relational_basis().identity().branch_id().clone(),
             observation.branch_identity().clone(),
             observation.lifecycle_incarnation(),
@@ -168,6 +196,19 @@ where
     where
         Value: WorthQueryManagedDerivedValue,
     {
+        self.checked_view_dependencies_for_query(view, product, source, &view.state.query)
+    }
+
+    fn checked_view_dependencies_for_query<ViewQuery, SourceQuery, Value>(
+        &self,
+        view: &WorthQueryManagedDerivedView<ViewQuery, Value>,
+        product: &WorthQueryProductBranchLease,
+        source: &WorthQueryObservedSource<SourceQuery>,
+        expected_query: &worth_query_installation::facade::WorthQueryInstalledApplicationQueryIdentity,
+    ) -> Result<std::collections::BTreeSet<super::dependency::ViewDependency>, Denial>
+    where
+        Value: WorthQueryManagedDerivedValue,
+    {
         let state = &view.state;
         if source.runtime_authority != state.runtime_authority {
             return Err(Denial::ForeignApplication);
@@ -175,7 +216,7 @@ where
         if source.schema_binding != state.binding {
             return Err(Denial::ForeignInstallation);
         }
-        if source.query_identity != state.query {
+        if &source.query_identity != expected_query {
             return Err(Denial::ForeignQuery);
         }
         if source.branch != state.branch

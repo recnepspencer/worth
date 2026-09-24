@@ -1,3 +1,4 @@
+mod change_summary;
 mod dependency;
 mod publication;
 mod registration;
@@ -7,10 +8,13 @@ mod retention;
 use worth_foundational::facade::CanonicalDigestId;
 use worth_relational::facade::identity::EntityId;
 
+pub(in crate::domain_computation::primary_graph) use change_summary::changes_from_summary;
 pub(in crate::domain_computation::primary_graph) use publication::{
     ViewChange, ViewPublicationBasis,
 };
-pub(in crate::domain_computation::primary_graph) use registry::ManagedDerivedViewRegistry;
+pub(in crate::domain_computation::primary_graph) use registry::{
+    ManagedDerivedViewRegistry, PreparedManagedViewPublication,
+};
 pub use retention::{WorthQueryManagedDerivedValue, WorthQueryManagedDerivedViewDenial};
 
 /// Query-issued row identity: an exact source root and parameter binding,

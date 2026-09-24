@@ -51,8 +51,12 @@ fn publish_retained(
         next_basis,
         committed,
         product_publication,
+        managed_views,
         ..
     } = committed;
+    if let Some(managed_views) = managed_views {
+        managed_views.apply(&committed, &next_basis, &product_publication);
+    }
     let recovery_reservation = attempt.take_publication_recovery_reservation();
     let changed_record_count = committed.patch().len();
     let runtime_instance_id = committed.snapshot.runtime_instance_id();

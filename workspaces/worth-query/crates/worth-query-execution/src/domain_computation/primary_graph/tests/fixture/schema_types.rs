@@ -66,6 +66,11 @@ worth_query_field!(
     optional u64 => U64ApplicationValueBinding, read_write, no_equality
 );
 worth_query_aspect!(pub AccountAnnotations for IdentityExecutionSchema, Account; identity = AspectIdentity(0x9161103e), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub AccountMembership for IdentityExecutionSchema, Account; identity = AspectIdentity(0x9161103f), revision = AspectContractRevision(1),);
+worth_query_field!(
+    pub AccountMembershipTag for IdentityExecutionSchema, Account, AccountMembership:
+    String => StringApplicationValueBinding, read_only, equality
+);
 worth_query_field!(
     pub AccountAnnotation for IdentityExecutionSchema, Account, AccountAnnotations:
     optional String => StringApplicationValueBinding, read_write, no_equality

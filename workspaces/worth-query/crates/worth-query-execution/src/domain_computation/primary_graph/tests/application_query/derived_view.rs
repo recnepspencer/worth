@@ -25,6 +25,8 @@ use crate::domain_computation::primary_graph::{
     WorthQueryManagedDerivedViewDenial, WorthQueryPrincipalResolutionMode,
 };
 
+mod native_collection;
+mod scoped_query;
 struct SceneLabel(String);
 
 impl WorthQueryManagedDerivedValue for SceneLabel {
@@ -92,7 +94,7 @@ fn public_query_result_reconstructs_disposable_managed_view_from_owner_observati
     let definition = ApplicationDerivedViewDefinition::new(
         "scene-labels",
         OrderedAccountSummaryQuery::reference(),
-        ApplicationDerivedViewLimits::bounded(8, 4096),
+        ApplicationDerivedViewLimits::bounded(8, 32_768),
     );
     let view = world
         .application

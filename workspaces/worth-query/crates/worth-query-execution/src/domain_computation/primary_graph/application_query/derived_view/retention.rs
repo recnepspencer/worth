@@ -16,6 +16,7 @@ use super::publication::DependencyIndex;
 use super::registry::ManagedDerivedViewRegistry;
 
 mod publication;
+mod refresh;
 
 /// A projected value declares its retained heap footprint. Query charges
 /// entry and source-provenance overhead in addition to this payload.
@@ -38,6 +39,8 @@ pub enum WorthQueryManagedDerivedViewDenial {
     IncompleteDependencies,
     ColdReconstructionRequired,
     EntryRefreshRequired,
+    QueryExecutionDenied,
+    ViewRevisionExhausted,
     Disposed,
 }
 
@@ -52,6 +55,7 @@ struct RetainedView<Key, Value> {
     entries: BTreeMap<Key, RetainedEntry<Value>>,
     index: DependencyIndex<Key>,
     dirty: BTreeSet<Key>,
+    charged_bytes: usize,
     revision: u64,
     cold: bool,
     disposed: bool,
@@ -61,6 +65,8 @@ pub(super) struct ManagedDerivedViewState<Key, Value> {
     pub(super) runtime_authority: u64,
     pub(super) binding: ApplicationSchemaBindingIdentity,
     pub(super) query: WorthQueryInstalledApplicationQueryIdentity,
+    pub(super) entry_query: Option<WorthQueryInstalledApplicationQueryIdentity>,
+    pub(super) secondary_entry_query: Option<WorthQueryInstalledApplicationQueryIdentity>,
     pub(super) branch: BranchId,
     pub(super) product_branch: ProductBranchIdentity,
     pub(super) incarnation: ProductBranchIncarnation,
@@ -77,6 +83,8 @@ where
         runtime_authority: u64,
         binding: ApplicationSchemaBindingIdentity,
         query: WorthQueryInstalledApplicationQueryIdentity,
+        entry_query: Option<WorthQueryInstalledApplicationQueryIdentity>,
+        secondary_entry_query: Option<WorthQueryInstalledApplicationQueryIdentity>,
         branch: BranchId,
         product_branch: ProductBranchIdentity,
         incarnation: ProductBranchIncarnation,
@@ -87,6 +95,8 @@ where
             runtime_authority,
             binding,
             query,
+            entry_query,
+            secondary_entry_query,
             branch,
             product_branch,
             incarnation,
@@ -97,6 +107,7 @@ where
                 entries: BTreeMap::new(),
                 index: DependencyIndex::default(),
                 dirty: BTreeSet::new(),
+                charged_bytes: 0,
                 revision: 0,
                 cold: true,
                 disposed: false,
@@ -116,6 +127,14 @@ where
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         if retained.disposed {
             return Err(WorthQueryManagedDerivedViewDenial::Disposed);
+        }
+        if retained.revision_exhausted {
+            return Err(WorthQueryManagedDerivedViewDenial::ViewRevisionExhausted);
+        }
+        if retained.revision == u64::MAX {
+            retained.revision_exhausted = true;
+            retained.cold = true;
+            return Err(WorthQueryManagedDerivedViewDenial::ViewRevisionExhausted);
         }
         if &retained.current_commit != observed_commit {
             return Err(WorthQueryManagedDerivedViewDenial::StaleSource);
@@ -171,8 +190,18 @@ where
         let maximum_dirty_bytes = replacement
             .len()
             .saturating_mul(std::mem::size_of::<Key>() + 4 * std::mem::size_of::<usize>());
+        let index_bound = membership
+            .iter()
+            .chain(
+                replacement
+                    .values()
+                    .flat_map(|entry| entry.dependencies.iter()),
+            )
+            .fold(0usize, |bytes, dependency| {
+                bytes.saturating_add(DependencyIndex::<Key>::entry_insertion_bound(dependency))
+            });
         bytes = bytes
-            .saturating_add(index.retained_bytes())
+            .saturating_add(index_bound)
             .saturating_add(maximum_dirty_bytes);
         if bytes > self.limits.maximum_retained_bytes() {
             return Err(WorthQueryManagedDerivedViewDenial::RetainedBytesExceeded);
@@ -181,7 +210,8 @@ where
         retained.membership = membership;
         retained.index = index;
         retained.dirty.clear();
-        retained.revision = retained.revision.saturating_add(1);
+        retained.charged_bytes = bytes;
+        retained.advance_revision();
         retained.cold = false;
         Ok(())
     }
@@ -223,7 +253,8 @@ where
         retained.membership.clear();
         retained.index = DependencyIndex::default();
         retained.dirty.clear();
-        retained.revision = retained.revision.saturating_add(1);
+        retained.charged_bytes = 0;
+        retained.advance_revision();
         retained.cold = true;
     }
 
@@ -236,7 +267,8 @@ where
         retained.membership.clear();
         retained.index = DependencyIndex::default();
         retained.dirty.clear();
-        retained.revision = retained.revision.saturating_add(1);
+        retained.charged_bytes = 0;
+        retained.advance_revision();
         retained.cold = true;
         retained.current_commit = commit;
     }

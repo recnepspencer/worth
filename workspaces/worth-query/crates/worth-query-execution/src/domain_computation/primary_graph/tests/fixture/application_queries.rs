@@ -1,7 +1,8 @@
 use super::{
-    Account, AccountAllActivity, AccountLabel, AccountPrimaryActivity, AccountSecondaryActivity,
-    AccountStatus, Activity, ActivityFacts, ActivitySequence, CapabilityDisclosure,
-    CapabilityDisclosureBinding, IdentityExecutionSchema, TouchAccountCapability, ViewAccount,
+    Account, AccountAllActivity, AccountLabel, AccountMembership, AccountMembershipTag,
+    AccountPrimaryActivity, AccountSecondaryActivity, AccountStatus, Activity, ActivityFacts,
+    ActivitySequence, CapabilityDisclosure, CapabilityDisclosureBinding, IdentityExecutionSchema,
+    TouchAccountCapability, ViewAccount,
 };
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
@@ -13,20 +14,25 @@ use worth_query_declaration::facade::application_query::{
 use worth_query_declaration::facade::application_schema::{
     ApplicationEncodedScalarValue, ApplicationStructuredValueBinding, StringApplicationValueBinding,
 };
-
 #[path = "application_queries/markers.rs"]
 mod markers;
+#[path = "application_queries/public_membership.rs"]
+mod public_membership;
+#[path = "application_queries/public_scoped.rs"]
+mod public_scoped;
 pub use markers::{
     AccountSummaryQuery, AccountSummaryQueryParametersBinding, AccountSummaryQueryResultBinding,
     CrossRootQuery, CrossRootQueryResultBinding, GovernedAccountSummaryQuery,
     OrderedAccountSummaryQuery, ScopedAccountSummaryQuery, ScopedAccountSummaryQueryResultBinding,
 };
-
+pub(super) use public_membership::public_membership_definition;
+pub use public_membership::PublicAccountMembershipQuery;
+pub(super) use public_scoped::public_scoped_definition;
+pub use public_scoped::PublicScopedAccountSummaryQuery;
 #[path = "application_queries/parameter_reference.rs"]
 mod parameter_reference;
 use parameter_reference::activity_sequence_result_field;
 pub(crate) use parameter_reference::status_parameter;
-
 pub struct AccountSummaryParameters;
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct AccountSummaryResult {
@@ -37,7 +43,6 @@ pub struct StatusParameter;
 pub struct StatusResultSlot;
 pub struct LabelResultSlot;
 pub struct ActivitySequenceResultSlot;
-
 worth_query_declaration::worth_query_portable_type!(
     AccountSummaryResult => "worth.query.test.execution.account_summary.result.v1"
 );
@@ -50,7 +55,6 @@ worth_query_declaration::worth_query_portable_type!(
 worth_query_declaration::worth_query_portable_type!(
     ActivitySequenceResultSlot => "worth.query.test.execution.activity_sequence.slot.v1"
 );
-
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ActivitySequenceResult {
     pub(super) sequence: u64,
