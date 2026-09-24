@@ -17,6 +17,12 @@ impl WorthQueryStagedApplicationAttempt<'_> {
         self.attempt.expected_steps().len()
     }
 
+    pub(in crate::domain_computation::primary_graph::provider) const fn expected_step_preparation_work(
+        &self,
+    ) -> crate::domain_computation::primary_graph::application_attempt::WorthQueryExpectedEffectStepPreparationWork{
+        self.attempt.expected_step_preparation_work()
+    }
+
     pub(in crate::domain_computation::primary_graph::provider) fn batch(
         &self,
     ) -> &worth_relational::facade::transactions::WorkerIntentBatch {

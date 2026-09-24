@@ -1,4 +1,5 @@
 mod effect_accumulator;
+pub(in crate::domain_computation::primary_graph) use effect_accumulator::WorthQueryExpectedEffectStepPreparationWork;
 mod effect_lowering;
 mod registration;
 

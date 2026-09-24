@@ -39,6 +39,8 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryMutatio
     invariant_work_units: u64,
     relational_invariant_executions: usize,
     relational_invariant_results: usize,
+    expected_step_preparation_work:
+        super::super::application_attempt::WorthQueryExpectedEffectStepPreparationWork,
     installed_touch_admission:
         super::application_touch_admission::WorthQueryInstalledTouchAdmissionEvidence,
 }
@@ -52,6 +54,7 @@ impl WorthQueryPrimaryMutationWorkCounters {
         invariant_work_units: u64,
         relational_invariant_executions: usize,
         relational_invariant_results: usize,
+        expected_step_preparation_work: super::super::application_attempt::WorthQueryExpectedEffectStepPreparationWork,
         installed_touch_admission: super::application_touch_admission::WorthQueryInstalledTouchAdmissionEvidence,
     ) -> Self {
         Self {
@@ -61,6 +64,7 @@ impl WorthQueryPrimaryMutationWorkCounters {
             invariant_work_units,
             relational_invariant_executions,
             relational_invariant_results,
+            expected_step_preparation_work,
             installed_touch_admission,
         }
     }
@@ -86,6 +90,8 @@ pub struct WorthQueryPrimaryMutationWorkEvidence {
     invariant_work_units: u64,
     relational_invariant_executions: usize,
     relational_invariant_results: usize,
+    expected_step_key_lookups: usize,
+    expected_step_duplicate_equalities: usize,
     preimage_validated_intents_examined: usize,
     preimage_mutation_targets_materialized: usize,
     preimage_decision_facts_examined: usize,
@@ -121,6 +127,10 @@ impl WorthQueryPrimaryMutationWorkEvidence {
             invariant_work_units: counters.invariant_work_units,
             relational_invariant_executions: counters.relational_invariant_executions,
             relational_invariant_results: counters.relational_invariant_results,
+            expected_step_key_lookups: counters.expected_step_preparation_work.key_lookups(),
+            expected_step_duplicate_equalities: counters
+                .expected_step_preparation_work
+                .duplicate_equalities(),
             preimage_validated_intents_examined: preimage.validated_intents_examined(),
             preimage_mutation_targets_materialized: preimage.mutation_targets_materialized(),
             preimage_decision_facts_examined: preimage.decision_facts_examined(),
@@ -165,6 +175,14 @@ impl WorthQueryPrimaryMutationWorkEvidence {
 
     pub const fn relational_invariant_result_count(&self) -> usize {
         self.relational_invariant_results
+    }
+
+    pub const fn expected_step_key_lookups(&self) -> usize {
+        self.expected_step_key_lookups
+    }
+
+    pub const fn expected_step_duplicate_equalities(&self) -> usize {
+        self.expected_step_duplicate_equalities
     }
 
     pub const fn preimage_validated_intents_examined(&self) -> usize {

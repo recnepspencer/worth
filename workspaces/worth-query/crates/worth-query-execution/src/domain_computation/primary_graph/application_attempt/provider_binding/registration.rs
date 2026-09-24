@@ -99,7 +99,7 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
             );
         }
     };
-    let expected_steps = effects.expected_steps();
+    let expected_steps = effects.shared_expected_steps();
     let dispatch_outbox = context.provider(&inspection).register_application_attempt(
         WorthQueryApplicationAttemptRegistration {
             effect_owner: WorthQueryProviderEffectRegistrationSeal::mint(),

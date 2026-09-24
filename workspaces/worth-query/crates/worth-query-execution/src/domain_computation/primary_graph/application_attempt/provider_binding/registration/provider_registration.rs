@@ -87,8 +87,14 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
 
     pub(in crate::domain_computation::primary_graph) fn expected_steps(
         &self,
-    ) -> Vec<crate::domain_computation::WorthQueryProvisionalEffectStep> {
+    ) -> &[crate::domain_computation::WorthQueryProvisionalEffectStep] {
         self.effects.expected_steps()
+    }
+
+    pub(in crate::domain_computation::primary_graph) const fn expected_step_preparation_work(
+        &self,
+    ) -> crate::domain_computation::primary_graph::application_attempt::WorthQueryExpectedEffectStepPreparationWork{
+        self.effects.expected_step_preparation_work()
     }
 
     pub(in crate::domain_computation::primary_graph) const fn batch(
@@ -230,7 +236,7 @@ impl WorthQueryApplicationAttemptRegistrationCompletion {
         self,
         seal: super::WorthQueryRegisteredProviderAttemptSeal,
         staged: crate::domain_computation::WorthQuerySessionBoundReadsAndEffects<'run>,
-        steps: Vec<crate::domain_computation::WorthQueryProvisionalEffectStep>,
+        steps: std::sync::Arc<[crate::domain_computation::WorthQueryProvisionalEffectStep]>,
     ) -> crate::domain_computation::primary_graph::WorthQueryRegisteredProviderAttempt<'run> {
         crate::domain_computation::primary_graph::WorthQueryRegisteredProviderAttempt::from_registration(
             seal,

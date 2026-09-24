@@ -114,13 +114,23 @@ impl WorthQuerySessionEffectAuthority<'_> {
         read_set: &WorthQueryFreshDecisionReadSet,
         steps: impl IntoIterator<Item = WorthQueryProvisionalEffectStep>,
     ) -> Result<WorthQueryLoweredProvisionalEffectProgram, WorthQueryProvisionalFailure> {
+        self.lower_shared_provisional_program(
+            read_set,
+            steps.into_iter().collect::<Vec<_>>().into(),
+        )
+    }
+
+    pub(in crate::domain_computation) fn lower_shared_provisional_program(
+        &self,
+        read_set: &WorthQueryFreshDecisionReadSet,
+        steps: Arc<[WorthQueryProvisionalEffectStep]>,
+    ) -> Result<WorthQueryLoweredProvisionalEffectProgram, WorthQueryProvisionalFailure> {
         if !read_set.belongs_to(self.binding().canonical_identity()) {
             return Err(WorthQueryProvisionalFailure::new(
                 WorthQueryProvisionalDenialKind::SessionBindingMismatch,
                 "decision read-set belongs to another provider session",
             ));
         }
-        let steps = steps.into_iter().collect::<Vec<_>>();
         // Empty programs are lawful for emit-only / outbox-only commits (R8.55):
         // the application may declare no domain mutation while still co-committing
         // Query scaffolding (idempotency + dispatch outbox) registered on the
@@ -130,7 +140,7 @@ impl WorthQuerySessionEffectAuthority<'_> {
             identity: self.binding().canonical_identity().into(),
             binding_identity: self.binding().canonical_identity().into(),
             decision_read_set_identity: read_set.read_set_identity().into(),
-            steps: steps.into(),
+            steps,
         })
     }
 }

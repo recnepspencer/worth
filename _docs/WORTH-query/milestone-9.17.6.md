@@ -40,6 +40,7 @@ From Phase 2, geometry-scale execution and concise kernel authoring are completi
 requirements. Phase 2 establishes their foundation before the later control-flow,
 evolution and closure work builds on it. These additions do not reopen Phase 1;
 corrections to inherited implementation belong to Phase 2 or the affected later phase.
+Phases 2.1-2.6 close measured House build/edit/checkpoint/reopen bottlenecks before Phase 3 relies on geometry-scale execution.
 
 Closure includes safe A/B definition coexistence, fresh approval/source validation,
 independent required inventory, exact step idempotency, bounded execution, partial
@@ -440,6 +441,10 @@ Count allocations, retained plans/progress, dependency reads and scheduler/World
 contacts at their owners. No unbounded queue or background rebuild hides synchronous
 cost. Independent instances share immutable meaning without a whole-runtime lock.
 
+Phases 2.1-2.6 impose native costs without House caches or raised limits: linear Query step preparation, preadmitted Relational index work,
+liveness-bounded generations, shared candidate reads, consumed-dependency reuse, changed-component writes, incremental views and bounded
+capture/restore. No cache decides currentness; ABA, foreign meaning, unknown coverage and copied receipts deny.
+
 ### Node semantics and complete control flow
 
 | Node kind | Consumes | Produces and limitation |
@@ -808,8 +813,7 @@ close releases interest; it does not itself cancel the instance or its mandatory
 
 ## Destination Topology
 
-Paths are under workspaces/worth-query/crates unless qualified.
-E existing; R extend existing owner; N new semantic responsibility.
+Paths are under workspaces/worth-query/crates unless qualified. E existing; R extend existing owner; N new semantic responsibility.
 No new scheduler, generalized workflow runtime, queue registry or expression compiler.
 
 ~~~text
@@ -821,6 +825,7 @@ worth-query-declaration/src/application_program/workflow/
   validation/{binding,availability,termination,resources}.rs  N structural checks
 worth-query-installation/src/application_program/workflow/
   {vocabulary,adapters,definition_contract}.rs                N/R concrete installed bindings
+worth-query-declaration/src/application_query/{dependency_equivalence,derived_view}.rs N Phases 2.4-2.5 public contracts
 worth-query-admission/src/authentication_event/
   {intent,issuance,clock}.rs                                  N purpose/age/reuse proof in named clock
 worth-query-execution/src/domain_computation/primary_graph/workflow/
@@ -836,6 +841,15 @@ worth-query-execution/src/domain_computation/primary_graph/workflow/
   evidence/{inventory,assessment,approval,currentness}.rs     N owner-backed evidence meaning
   adoption/{inventory,dispositions}.rs                       N participant in 9.17.5
   recovery/{continuation,disposition}.rs                      N adaptation to actual custody
+worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_binding/effect_accumulator/expected_steps.rs N 2.1 ordered proof
+worth-query-execution/src/domain_computation/primary_graph/provider/index_publication/{preparation,finalization}.rs N 2.1 split
+crates/worth-relational/src/indexes/authority/maintenance/{entry_edits,work}.rs E/R bounded charge
+crates/worth-relational/src/runtime/state/subsystems/indexing/generation_catalog/{scope,retention}.rs E/N 2.2 liveness
+crates/worth-relational/src/durability/{derived_index_artifacts,log/persisted_checkpoint}.rs E/R shared checkpoint encoding
+crates/worth-relational/src/durability/authority/runtime_rebuild/checkpoint_restore.rs E/R Phase 2.6 restoration
+crates/worth-relational/src/validation/engine/input_preparation/{plan,materialization}.rs N Phase 2.3 shared candidate reads
+worth-query-execution/src/domain_computation/primary_graph/output_reuse/{dependency,selection}.rs N Phase 2.4 output equivalence
+worth-query-execution/src/domain_computation/primary_graph/application_query/derived_view/{dependency,refresh}.rs N Phase 2.5 managed views
 worth-query-execution/src/domain_computation/
   managed_run/workflow_*                                     E/R read-node provider-run owner only
   provider_session/readmission/workflow.rs                   E/R fresh continuation admission
@@ -859,31 +873,22 @@ worth-proprietary/crates/worth-cad-entry/src/application/workflow/
   {vocabulary,reviewed_geometry}.rs                            N proprietary declarations
 worth-proprietary/crates/worthy-house-application/src/workflow/
   {composition,actions,program_adoption}.rs                    N real product integration
+worth-proprietary/crates/worthy-house-declarations/src/application/framing/revision/{handler,candidate}.rs E/R 2.4 delta authoring
+worth-proprietary/crates/worthy-house-application/src/session/model_thread/scene_projection/{dependency,refresh}.rs N 2.5 scene
 worth-proprietary/crates/worthy-house-certification/tests/journeys/workflow.rs
                                                                N cross-repository court
 worth-proprietary/docs/house/query-platform.md                 R consumer contract and operation
 ~~~
 
-Authoring/validation is pure meaning; installation binds known implementations;
-primary graph stores and mutates definition/instance/proposal facts through admitted
-operations; existing operation, output-demand, managed-read and change-delivery owners
-execute their node families; proof/World/Signal retain authority. Model-step records
-are projections/references to canonical performed
-facts, not another commit/dispatch ledger. No persisted live lease or arbitrary
-status table may become an execution permit.
+Authoring/validation is pure meaning; installation binds implementations; primary graph stores definition/instance/proposal facts through admitted
+operations. Existing operation, output-demand, managed-read and change-delivery owners execute nodes; proof/World/Signal retain authority.
+Model-step records reference performed facts, not another ledger; no persisted live lease or arbitrary status table permits execution.
 
-`authoring` owns pure construction and deterministic component expansion only;
-`definition` owns canonical model meaning and `validation` owns its structural proof.
-The macro is a thin facade over `authoring::builder`, never a second validator.
-Execution `definition/compilation` owns discardable plans derived from published truth;
-`instance/transition/admission` alone binds current authority and resources for one
-step. Neither may absorb the other's lifecycle or become a current-definition store.
-From Phase 2, `compilation/reuse` owns managed immutable semantic reuse and
-`publication_binding` owns its exact concrete references; `instance/progression` owns
-derived incremental state and cold rebuild. `workflow/ordinary` composes existing
-phase owners, while audience facades only reexport. No cached binding or progress
-constructor is exported as authority. These responsibilities enter under the existing
-parents; no second model graph, traversal service or currentness registry is introduced.
+`authoring` owns pure construction/expansion, `definition` canonical meaning, and `validation` structural proof; the macro only fronts the builder.
+Execution `definition/compilation` derives discardable plans; `instance/transition/admission` binds current authority/resources for one step.
+Neither absorbs the other's lifecycle or stores current definitions. Phase 2 `compilation/reuse` manages immutable semantics, `publication_binding`
+exact concrete references, and `instance/progression` derived progress/cold rebuild. `workflow/ordinary` composes owners; facades reexport only.
+No cached constructor grants authority; existing parents gain these roles without a second model graph, traversal service or currentness registry.
 Operation/approval nodes lower to mutation, assessment to output demand, read to
 managed run and notification to change delivery. “Transition” never aliases a managed
 provider step. Capability elevation/mandatory-review workflows remain separate.
@@ -940,27 +945,60 @@ The next phase trusts runtime-authored meaning producing actual admitted effects
 
 ### Phase 2: Geometry-scale foundation and ordinary authoring
 
-Consume Phase 1's published definitions, transition admission and real geometry effect.
-Preserve its phase text and accepted evidence; carry existing unfinished work forward
-without resetting it. Correct inherited implementation within this phase, including
-validation/expansion scans, ordinary full compilation and history replay. Establish
-the cost contract, independent component/provenance bounds, exact compiled reuse,
-incremental instance progress and complete positive/negative source dependencies.
-Select existing bounded access/index/managed-resource contracts where they fit; new
-private mechanics must meet the same locality and authority guarantees.
+Consume Phase 1's published definitions, transition admission and real geometry effect. Preserve its evidence and carry unfinished work forward.
+Correct inherited validation/expansion scans, ordinary full compilation and history replay. Establish the cost contract, independent component/
+provenance bounds, exact compiled reuse, incremental progress and complete positive/negative dependencies. Select bounded native access/index/
+managed-resource contracts where they fit; new private mechanics meet the same locality and authority guarantees.
 
-Ship the common authoring/publication/start/run surface and compiling solver-chain and
-review-component examples. Route the proprietary adapter through it; preserve typed
-denials, explicit authority and resource/cancellation custody. Expose existing managed
-progression rather than requiring a consumer settlement loop. Keep advanced control.
+Ship the common authoring/publication/start/run surface and compiled solver-chain/review-component examples. Route the proprietary adapter through
+it with typed denials, explicit authority, resource/cancellation custody and managed progression; keep advanced control, not consumer settlement.
 
-Close the geometry-scale court for the supported forms, including 10k authored nodes,
-fixed-local-edit population slopes, history-independent warm selection, same-content
-foreign binding denial, bounded exhaustion and destroyed-projection reconstruction.
-Use current source/authority revocation and duplicate-effect tests as parity guards.
-Later phases extend this same scale/API proof as their semantics become available;
-they cannot postpone a regression to closure. The next phase trusts a bounded reusable
-execution foundation and an ordinary API that does not export its internal mechanics.
+Close 10k authored nodes, fixed-local-edit slopes, history-independent warm selection, foreign binding denial, bounded exhaustion and destroyed-
+projection reconstruction; keep source/authority revocation and duplicate-effect parity. Later phases extend this scale/API proof as semantics
+arrive, never defer regressions to closure. Phase 2.1 trusts bounded execution and an ordinary API without exported internals.
+
+### Phase 2.1: Linear effects and admissible index publication
+
+Query carries one immutable ordered, exactly deduplicated effect-step summary from registration through overlay, invariants and commit: no growing
+linear deduplication or rebuild. Relational budgets exact index deltas before World publication; post-commit finalization does no unadmitted
+ordinary work. Failure retains a typed recoverable performed obligation, not “producer unavailable.” Prove the first real 802-solid scene under
+ordinary limits, pre-effect exhaustion, retry and generation parity.
+
+### Phase 2.2: Index lifetime and bounded checkpoints
+
+Retain index generations reachable from branch/history roots or active readers; reclaim the rest. Shared/delta checkpoint payloads retain exact
+version/digest readmission without repeating full maps. Prove pinned old readers and siblings select exact generations; under repeated House edits,
+capture fits the existing 1 GiB cap. Report index, envelopes, partitions, outputs, peak and retained bytes separately. Corrupt or absent artifacts
+deny or rebuild within a finite cold budget, never answer stale.
+
+### Phase 2.3: Shared candidate inputs, independent verdicts
+
+Derive overlapping topology/field preparation from installed rule declarations and materialize once per exact candidate/observation basis. Each
+rule retains independent validation and denial; developers manage no sibling caches or adjacency maps. Changed topology, absence and foreign basis
+invalidate sharing. Count reads, gathers, adjacency and rule cost; real CAD rules plus an overlapping rule expose duplicate work without suppressing
+an independent failure.
+
+### Phase 2.4: Exact output reuse and House delta cutover
+
+Installed query/subfield bounds plus tracked positive, absent, negative and complete-set reads define consumed dependencies. Query compares native
+versions and declared equivalence to retain unchanged outputs automatically; changed/untracked inputs get fresh admission. ABA, foreign meaning,
+incomplete coverage and copied receipts deny. House revisions emit/write only affected components, including multi-joist commands; untouched bands
+have zero producer/invariant/index contacts. Prove changed-band correctness and 1k/10k/100k unrelated-population locality through real facades.
+
+### Phase 2.5: Incremental managed scene views
+
+The House scene uses a Query-managed derived view over exact definition, occurrence and topology dependencies. Publication refreshes affected
+entries; unchanged geometry requires zero body reads before reuse. Framework-owned scene/tessellation/subscription state has finite retention,
+disposal and cold reconstruction, never currentness authority. Prove services, edits, discarded views and foreign bases through real House; warm scene
+cost follows affected entries rather than all 802 solids.
+
+### Phase 2.6: Restore and production journey closure
+
+Complete existing compatible House capture/reopen, not generic Query Save/Open. Remove avoidable decoded-image clones, duplicate partition/root rebuild
+and full-scene restore reads without weakening verification. The real 802-solid build -> services -> edit -> capture -> reopen court uses original
+budgets, output/evidence parity, zero replayed effects and no stale view; reopen meets its 5-second gate. Report p50/p95, reads, work, bytes,
+contacts, peak/retained memory and pinned hardware by source, band, rule, index admission, World, output, scene, checkpoint section and restore.
+Vary size, history and readers independently; prove typed exhaustion before Phase 3 trusts it.
 
 ### Phase 3: Control flow, coverage and effect custody
 
@@ -1129,6 +1167,8 @@ They show CAD model graphs as workflow values rather than
 one workflow node per geometric primitive. Host/decl READMEs link to compiled examples.
 From Phase 2, lead the front-door guide with the short solver chain and reviewed
 component through the common surface, then show advanced publication/recovery controls.
+Phases 2.1-2.6 explain effect/index admission, recovery, retention, shared inputs, exact reuse, component deltas, views and capture/reopen in
+that guide and `worth-proprietary/docs/house/query-platform.md`.
 Document finite defaults, typed waits/partial outcomes, cold versus warm cost and the
 tested geometry/workflow scale envelope. Keep examples compiled against real facades;
 Bank and proprietary adapters must not teach internal demand-settlement loops.

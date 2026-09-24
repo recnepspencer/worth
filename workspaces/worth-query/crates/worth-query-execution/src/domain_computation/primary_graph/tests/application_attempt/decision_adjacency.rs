@@ -1,5 +1,7 @@
 use std::time::Duration;
 
+#[path = "decision_adjacency/duplicate_retirement.rs"]
+mod duplicate_retirement;
 #[path = "decision_adjacency/product_currentness.rs"]
 mod product_currentness;
 
@@ -56,7 +58,7 @@ fn sealed_adjacency_membership_supplies_exact_unlink_evidence() {
     else {
         panic!("the exact relation carried by adjacency evidence must be unlinkable");
     };
-    assert_membership_absent(&world, &actor, &principal, &account, &request);
+    assert_membership_absent(&world, &actor, &principal, &account, &request, "open");
 }
 
 #[test]
@@ -79,7 +81,7 @@ fn removing_an_observed_present_relation_stales_a_competing_program() {
         .application
         .compare_and_commit_application(loser, idempotency(37, 37));
     assert_product_basis_stale(outcome, "removing the retained relation");
-    assert_membership_absent(&world, &actor, &principal, &account, &request);
+    assert_membership_absent(&world, &actor, &principal, &account, &request, "open");
 }
 
 fn assert_product_basis_stale(outcome: WorthQueryApplicationCommitOutcome, cause: &str) {
@@ -275,6 +277,7 @@ fn assert_membership_absent(
         super::super::fixture::Account,
     >,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+    account_status: &str,
 ) {
     let operation = world
         .application
@@ -292,7 +295,7 @@ fn assert_membership_absent(
                 .decision_relations_from(AccountOwner::reference(), principal)
                 .unwrap();
             let account = reader
-                .resolve_entity(AccountStatus::reference(), "open".to_owned())
+                .resolve_entity(AccountStatus::reference(), account_status.to_owned())
                 .unwrap();
             reader
                 .require_decision_field(&account, AccountStatus::reference())

@@ -31,7 +31,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt::provider_e
     };
     let lowered = staged
         .effect_authority()
-        .lower_provisional_program(&fresh, steps)
+        .lower_shared_provisional_program(&fresh, steps)
         .expect("real effect steps must lower for the registered session");
     let session = staged.provider_session_view();
     let first_admission = WorthQueryProvisionalOverlayAdmission::new(

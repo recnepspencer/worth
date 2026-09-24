@@ -252,6 +252,7 @@ impl WorthQueryPrimaryGraphProvider {
             owner_work,
             summary.execution_count,
             summary.result_count,
+            material.expected_step_preparation_work,
             touch_admission,
         );
         self.retain_validated_candidate(session, candidate, work)?;

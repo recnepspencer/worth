@@ -30,6 +30,15 @@ fn mutation_work_is_invariant_to_unrelated_graph_population() {
         baseline.proposed_fact_count()
     );
     assert_eq!(
+        expanded.expected_step_key_lookups(),
+        baseline.expected_step_key_lookups()
+    );
+    assert_eq!(
+        baseline.expected_step_key_lookups(),
+        baseline.proposed_fact_count()
+    );
+    assert_eq!(baseline.expected_step_duplicate_equalities(), 0);
+    assert_eq!(
         expanded.invariant_state_fact_count(),
         baseline.invariant_state_fact_count()
     );
@@ -128,6 +137,8 @@ fn no_demand_work_is_exact_zero_across_real_mutation_breadth() {
 
     assert_eq!(narrow.proposed_fact_count(), 1);
     assert_eq!(wide.proposed_fact_count(), 2);
+    assert_eq!(narrow.expected_step_key_lookups(), 1);
+    assert_eq!(wide.expected_step_key_lookups(), 2);
     assert!(wide.touched_record_count() > narrow.touched_record_count());
     assert_eq!(narrow.performed_application_touches_admitted(), 1);
     assert_eq!(wide.performed_application_touches_admitted(), 2);

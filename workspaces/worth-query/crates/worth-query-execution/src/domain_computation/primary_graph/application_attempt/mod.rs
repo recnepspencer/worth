@@ -30,6 +30,7 @@ mod migration;
 mod observation;
 pub(in crate::domain_computation::primary_graph) mod precondition_binding;
 mod provider_binding;
+pub(in crate::domain_computation::primary_graph) use provider_binding::WorthQueryExpectedEffectStepPreparationWork;
 pub(in crate::domain_computation::primary_graph) use provider_binding::WorthQueryPrimaryGraphApplicationAttempt;
 mod provider_execution;
 mod provider_recomparison;

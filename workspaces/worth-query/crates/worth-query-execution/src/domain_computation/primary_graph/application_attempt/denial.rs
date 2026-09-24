@@ -26,6 +26,7 @@ pub enum WorthQueryApplicationAttemptDenialKind {
     OutputRoleEntityMismatch,
     OutputRoleActionMismatch,
     DuplicateEffectKey,
+    ConflictingEffectStep,
     CandidateCapacityExceeded,
     CandidateReservationExceeded,
     RetainedEffectBytesExceeded,
