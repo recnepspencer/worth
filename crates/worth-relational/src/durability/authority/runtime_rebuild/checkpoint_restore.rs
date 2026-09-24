@@ -47,19 +47,44 @@ fn prepare_checkpoint_state(
     restored: &mut RelationalRuntime,
     checkpoint: &DurableCheckpoint,
 ) -> Result<PreparedCheckpointState, DurabilityError> {
+    let trace = std::env::var_os("WORTH_REOPEN_TRACE").is_some();
+    let started = std::time::Instant::now();
     validate_checkpoint_lineage_artifact(checkpoint)?;
     let symbols = prepare_symbols(restored, checkpoint);
     let record_identity = prepare_record_identity(checkpoint)?;
+    if trace {
+        eprintln!(
+            "relational restore record identity: {:?}",
+            started.elapsed()
+        );
+    }
     let branch_root_images = restore_branch_root_images(restored, checkpoint)?;
+    if trace {
+        eprintln!("relational restore branch roots: {:?}", started.elapsed());
+    }
     let partitions = prepare_partitions(restored, checkpoint, &branch_root_images)?;
+    if trace {
+        eprintln!("relational restore partitions: {:?}", started.elapsed());
+    }
     let history = prepare_history(restored, checkpoint, branch_root_images, &symbols)?;
+    if trace {
+        eprintln!("relational restore history: {:?}", started.elapsed());
+    }
+    let lineage = prepare_lineage(restored, checkpoint);
+    let indexes = prepare_indexes(checkpoint)?;
+    if trace {
+        eprintln!(
+            "relational restore lineage/indexes: {:?}",
+            started.elapsed()
+        );
+    }
     Ok(PreparedCheckpointState {
         symbols,
         record_identity,
         partitions,
         history,
-        lineage: prepare_lineage(restored, checkpoint),
-        indexes: prepare_indexes(checkpoint)?,
+        lineage,
+        indexes,
     })
 }
 
