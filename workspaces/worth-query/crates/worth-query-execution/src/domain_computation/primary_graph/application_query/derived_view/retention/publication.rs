@@ -17,7 +17,10 @@ where
             .retained
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        !retained.disposed && !retained.cold && &retained.current_commit == before
+        !retained.disposed
+            && !retained.revision_exhausted
+            && !retained.cold
+            && &retained.current_commit == before
     }
 
     fn prepare_transition(
@@ -30,7 +33,11 @@ where
             .retained
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        if retained.disposed || retained.cold || &retained.current_commit != before {
+        if retained.disposed
+            || retained.revision_exhausted
+            || retained.cold
+            || &retained.current_commit != before
+        {
             return None;
         }
         let mut affected = retained.index.affected(changes, maximum_work_units)?;
@@ -68,7 +75,7 @@ where
             retained.dirty = prepared.affected.entries;
         }
         retained.current_commit = after;
-        retained.revision = retained.revision.saturating_add(1);
+        retained.advance_revision();
     }
 
     fn advance_cold(&self, after: CompositeCommitIdentity) {
@@ -79,7 +86,7 @@ where
         if !retained.disposed {
             retained.cold = true;
             retained.current_commit = after;
-            retained.revision = retained.revision.saturating_add(1);
+            retained.advance_revision();
         }
     }
 }

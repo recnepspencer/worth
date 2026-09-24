@@ -57,6 +57,7 @@ struct RetainedView<Key, Value> {
     dirty: BTreeSet<Key>,
     charged_bytes: usize,
     revision: u64,
+    revision_exhausted: bool,
     cold: bool,
     disposed: bool,
 }
@@ -109,6 +110,7 @@ where
                 dirty: BTreeSet::new(),
                 charged_bytes: 0,
                 revision: 0,
+                revision_exhausted: false,
                 cold: true,
                 disposed: false,
             }),
@@ -274,12 +276,27 @@ where
     }
 }
 
+impl<Key, Value> RetainedView<Key, Value> {
+    fn advance_revision(&mut self) {
+        match self.revision.checked_add(1) {
+            Some(next) => self.revision = next,
+            None => {
+                self.revision_exhausted = true;
+                self.cold = true;
+            }
+        }
+    }
+}
+
 fn verify_observation<Key, Value>(
     retained: &RetainedView<Key, Value>,
     commit: &CompositeCommitIdentity,
 ) -> Result<(), WorthQueryManagedDerivedViewDenial> {
     if retained.disposed {
         return Err(WorthQueryManagedDerivedViewDenial::Disposed);
+    }
+    if retained.revision_exhausted {
+        return Err(WorthQueryManagedDerivedViewDenial::ViewRevisionExhausted);
     }
     if retained.cold {
         return Err(WorthQueryManagedDerivedViewDenial::ColdReconstructionRequired);
