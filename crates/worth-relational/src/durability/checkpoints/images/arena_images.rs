@@ -271,14 +271,14 @@ pub(super) fn arena_to_image<K: CheckpointArenaKind>(
 
 pub(super) fn arena_from_image<K: CheckpointArenaKind>(
     partition_id: PartitionId,
-    image: RecordArenaCheckpointImage<K::ImageKind>,
+    mut image: RecordArenaCheckpointImage<K::ImageKind>,
     catalog: &AspectContractPlanCatalog,
     contracts: &CheckpointAspectContractCatalog,
 ) -> Result<RecordArena<K>, DurabilityError> {
     let slots = if image.slots.is_empty() && !image.generations.is_empty() {
         (0..image.generations.len() as u64).collect()
     } else {
-        image.slots.clone()
+        std::mem::take(&mut image.slots)
     };
     if slots.len() != image.generations.len() {
         return Err(DurabilityError::new(

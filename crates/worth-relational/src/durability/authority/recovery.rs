@@ -107,8 +107,9 @@ fn publish_recovered_runtime(
         admission,
     } = material;
     let tail_commits = plan.tail_commit_count();
-    let checkpoint_commits = plan
-        .checkpoint
+    let checkpoint_commits = restored
+        .durability
+        .latest_checkpoint()
         .as_ref()
         .map(|checkpoint| checkpoint.envelopes.len())
         .unwrap_or(0);

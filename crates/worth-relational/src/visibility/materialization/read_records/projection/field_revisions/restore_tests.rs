@@ -41,7 +41,8 @@ fn checkpoint_restore_preserves_exact_field_revision() {
         .durability()
         .recovery_plan(RecoveryVerificationMode::NormalRecoveryVerification);
     let mut recovered = runtime_with_test_schema();
-    recovered.durability_recovery().recover(recovery).unwrap();
+    let outcome = recovered.durability_recovery().recover(recovery).unwrap();
+    assert_eq!(outcome.coverage.checkpoint_commits, 1);
     let snapshot = snapshot_for_owner_branch(&recovered, &BranchId("main".to_owned()));
     assert_eq!(
         recovered
@@ -52,6 +53,28 @@ fn checkpoint_restore_preserves_exact_field_revision() {
         Some(before)
     );
     recovered.snapshots().release_snapshot(&snapshot).unwrap();
+    recovered.durability_authority().checkpoint().unwrap();
+    let second_recovery = recovered
+        .durability()
+        .recovery_plan(RecoveryVerificationMode::NormalRecoveryVerification);
+    let mut reopened = runtime_with_test_schema();
+    reopened
+        .durability_recovery()
+        .recover(second_recovery)
+        .unwrap();
+    let reopened_snapshot = snapshot_for_owner_branch(&reopened, &BranchId("main".to_owned()));
+    assert_eq!(
+        reopened
+            .read_truth()
+            .project_snapshot(&reopened_snapshot)
+            .unwrap()
+            .entity_field_revision(entity, &name),
+        Some(before)
+    );
+    reopened
+        .snapshots()
+        .release_snapshot(&reopened_snapshot)
+        .unwrap();
     release_test_commit_snapshot(&runtime, &created);
 }
 

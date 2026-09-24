@@ -47,7 +47,7 @@ fn unshared_state(
 pub(super) fn rebuild_runtime_from_plan(
     admitted: super::recovery::admission::AdmittedRecoveryPlan,
 ) -> Result<(RelationalRuntime, crate::durability::data::RecoveryPlan), DurabilityError> {
-    let plan = admitted.into_plan();
+    let mut plan = admitted.into_plan();
     let tail_envelopes = plan.tail_envelopes_in_stream_order();
     validate_tail_lineage_allocator_capacity(tail_envelopes.iter().copied())?;
     validate_recovered_lineage_artifacts(plan.checkpoint.as_ref(), tail_envelopes.iter().copied())?;
@@ -61,7 +61,7 @@ pub(super) fn rebuild_runtime_from_plan(
     unshared_state(&mut restored)?.commit_strategies.executors =
         plan.commit_strategy_executors.clone();
 
-    if let Some(checkpoint) = &plan.checkpoint {
+    if let Some(checkpoint) = plan.checkpoint.take() {
         restore_checkpoint_state(&mut restored, checkpoint)?;
     }
     // Tail replay performs ordinary compare-and-publish cutovers. Seed its
@@ -103,8 +103,8 @@ pub(super) fn rebuild_runtime_from_plan(
     restored
         .record_identity
         .release_unconsumed_restored_reservations();
-    let mut recovered_canonical_commits = plan
-        .checkpoint
+    let recovered_checkpoint = restored.durability.latest_checkpoint();
+    let mut recovered_canonical_commits = recovered_checkpoint
         .iter()
         .flat_map(|checkpoint| checkpoint.envelopes.iter())
         .cloned()

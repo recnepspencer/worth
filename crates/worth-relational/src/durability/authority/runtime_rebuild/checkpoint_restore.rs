@@ -26,15 +26,16 @@ struct PreparedCheckpointState {
     history: HistorySubsystem,
     lineage: LineageState,
     indexes: IndexingState,
-    checkpoint: DurableCheckpoint,
 }
 
 pub(super) fn restore_checkpoint_state(
     restored: &mut RelationalRuntime,
-    checkpoint: &DurableCheckpoint,
+    checkpoint: DurableCheckpoint,
 ) -> Result<(), DurabilityError> {
-    let prepared = prepare_checkpoint_state(restored, checkpoint)?;
-    install_checkpoint_state(super::unshared_state(restored)?, prepared);
+    let prepared = prepare_checkpoint_state(restored, &checkpoint)?;
+    let restored = super::unshared_state(restored)?;
+    install_checkpoint_state(restored, prepared);
+    restored.durability.push_checkpoint(checkpoint);
     Ok(())
 }
 
@@ -55,7 +56,6 @@ fn prepare_checkpoint_state(
         history,
         lineage: prepare_lineage(restored, checkpoint),
         indexes: prepare_indexes(checkpoint)?,
-        checkpoint: checkpoint.clone(),
     })
 }
 
@@ -228,7 +228,6 @@ fn install_checkpoint_state(
     restored.history = prepared.history;
     restored.lineage.install(prepared.lineage);
     restored.indexes.install(prepared.indexes);
-    restored.durability.push_checkpoint(prepared.checkpoint);
 }
 
 pub(super) fn clear_recovery_partition_pins(restored: &mut RelationalRuntime) {
