@@ -274,16 +274,17 @@ fn apply_guards<Schema, Query, Parameters, QueryResult, Principal, PrincipalIden
             return Err(traversal_denial(guard.field().as_str()));
         }
         for (&entity, source) in &mut *frontier {
-            let observed = source.observe_guard_aspects(
+            let observed = source.observe_guard_field(
                 projection,
                 graph,
                 entity,
                 guard.entity(),
                 guard.aspect(),
+                guard.field(),
                 work,
             )?;
             if let Some(set_source) = &mut *set_source {
-                if set_source.record_aspect(observed) {
+                if set_source.record_field(observed) {
                     work.charge_source_copy(1, guard.field().as_str())?;
                 }
             }

@@ -18,6 +18,8 @@ mod instance_binding;
 mod progression;
 mod settlement;
 use instance_binding::{adjacency, adjacency_with_kind, exact, exact_u64, text};
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) use settlement::decode_field_revision_fact;
 pub(super) use settlement::{
     observe_evidence_dependencies, observe_retained_assessment_evidence,
     observe_retained_transition, observe_retained_workflow_proposal_identity,

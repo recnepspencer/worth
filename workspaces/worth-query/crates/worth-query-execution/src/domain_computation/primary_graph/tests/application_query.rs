@@ -205,8 +205,8 @@ fn execution_runtime_mints_plan_from_exact_mapped_principal_and_typed_scope() {
     let source = result.observed_sources()[0].footprint_for_test();
     assert_eq!(
         source.aspects.len(),
-        1,
-        "a projected predicate aspect is recorded once"
+        2,
+        "each consumed field is recorded once even when both share one aspect"
     );
     assert_eq!(result.receipt().query_identity(), query.identity());
     assert_eq!(result.receipt().projected_record_count(), 1);

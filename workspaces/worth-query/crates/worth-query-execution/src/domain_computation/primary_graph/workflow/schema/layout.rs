@@ -58,6 +58,8 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowEvidenceDependen
     pub(in crate::domain_computation::primary_graph) entity_slot: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) entity_generation: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) aspect: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) field: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) field_presence: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) relation_kind: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) direction: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) native_revision: AspectFieldLocator,

@@ -78,15 +78,18 @@ fn execute(world: &AuthorizationWorld, account: &str) -> OptionalAccountFieldRes
     assert_eq!(result.receipt().projected_field_count(), 4);
     assert!(result.receipt().disclosure().omitted().is_empty());
     let footprint = result.observed_sources()[0].footprint_for_test();
-    assert_eq!(footprint.aspects.len(), 2);
+    assert_eq!(footprint.aspects.len(), 4);
     assert_eq!(
         footprint
             .aspects
             .iter()
-            .filter(|aspect| aspect.native_revision.is_none())
+            .filter(|aspect| aspect
+                .native_revision
+                .is_some_and(|revision| revision.presence()
+                    == worth_relational::facade::runtime::RelationalFieldPresence::Absent))
             .count(),
-        1,
-        "the absent optional field on its own aspect must retain a source dependency"
+        if account == "account-1" { 2 } else { 3 },
+        "each absent optional field must retain an explicit native absence revision"
     );
     result.rows()[0].clone()
 }

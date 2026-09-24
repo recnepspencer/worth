@@ -1,14 +1,14 @@
 use sha2::{Digest, Sha256};
 use worth_relational::facade::identity::EntityId;
 
-use super::{WorthQueryObservedAdjacencyRevision, WorthQueryObservedAspectRevision};
+use super::{WorthQueryObservedAdjacencyRevision, WorthQueryObservedFieldRevision};
 
 /// One immutable root-path witness for a returned row.
 /// Native revisions, not the selected ID alone, prove its currentness.
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub(in crate::domain_computation::primary_graph) struct WorthQueryObservedRootSelection {
     pub(in crate::domain_computation::primary_graph) entities: Vec<EntityId>,
-    pub(in crate::domain_computation::primary_graph) aspects: Vec<WorthQueryObservedAspectRevision>,
+    pub(in crate::domain_computation::primary_graph) aspects: Vec<WorthQueryObservedFieldRevision>,
     pub(in crate::domain_computation::primary_graph) adjacencies:
         Vec<WorthQueryObservedAdjacencyRevision>,
     identity: [u8; 32],
@@ -17,7 +17,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryObservedRootSe
 impl WorthQueryObservedRootSelection {
     pub(in crate::domain_computation::primary_graph) fn new(
         entities: Vec<EntityId>,
-        aspects: Vec<WorthQueryObservedAspectRevision>,
+        aspects: Vec<WorthQueryObservedFieldRevision>,
         adjacencies: Vec<WorthQueryObservedAdjacencyRevision>,
     ) -> Self {
         let identity = canonical_identity(&entities, &aspects, &adjacencies);
@@ -44,12 +44,13 @@ impl WorthQueryObservedRootSelection {
             .saturating_add(
                 self.aspects
                     .capacity()
-                    .saturating_mul(std::mem::size_of::<WorthQueryObservedAspectRevision>()),
+                    .saturating_mul(std::mem::size_of::<WorthQueryObservedFieldRevision>()),
             )
             .saturating_add(self.aspects.iter().fold(0usize, |bytes, aspect| {
                 bytes
                     .saturating_add(aspect.entity_name.capacity())
                     .saturating_add(aspect.aspect.as_str().len())
+                    .saturating_add(aspect.field.as_str().len())
             }))
             .saturating_add(
                 self.adjacencies
@@ -69,11 +70,11 @@ impl WorthQueryObservedRootSelection {
 
 fn canonical_identity(
     entities: &[EntityId],
-    aspects: &[WorthQueryObservedAspectRevision],
+    aspects: &[WorthQueryObservedFieldRevision],
     adjacencies: &[WorthQueryObservedAdjacencyRevision],
 ) -> [u8; 32] {
     let mut digest = Sha256::new();
-    digest.update(b"worth-query:root-selection-source:v1");
+    digest.update(b"worth-query:root-selection-source:v2");
     digest.update((entities.len() as u64).to_be_bytes());
     for entity in entities {
         encode_entity(&mut digest, *entity);
@@ -83,8 +84,9 @@ fn canonical_identity(
         encode_entity(&mut digest, aspect.entity);
         encode_text(&mut digest, &aspect.entity_name);
         encode_text(&mut digest, aspect.aspect.as_str());
+        encode_text(&mut digest, aspect.field.as_str());
         digest.update(aspect.contract_revision.0.to_be_bytes());
-        encode_revision(&mut digest, aspect.native_revision);
+        encode_field_revision(&mut digest, aspect.native_revision);
     }
     digest.update((adjacencies.len() as u64).to_be_bytes());
     for adjacency in adjacencies {
@@ -121,4 +123,18 @@ fn encode_text(digest: &mut Sha256, text: &str) {
 fn encode_revision(digest: &mut Sha256, revision: Option<u64>) {
     digest.update([u8::from(revision.is_some())]);
     digest.update(revision.unwrap_or_default().to_be_bytes());
+}
+
+fn encode_field_revision(
+    digest: &mut Sha256,
+    revision: Option<worth_relational::facade::runtime::RelationalFieldRevision>,
+) {
+    digest.update([u8::from(revision.is_some())]);
+    if let Some(revision) = revision {
+        digest.update(revision.version().0.to_be_bytes());
+        digest.update([match revision.presence() {
+            worth_relational::facade::runtime::RelationalFieldPresence::Present => 1,
+            worth_relational::facade::runtime::RelationalFieldPresence::Absent => 0,
+        }]);
+    }
 }

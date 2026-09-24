@@ -47,6 +47,13 @@ impl WorthQueryApplicationObservedFact {
                     == Some(*native_revision),
                 1,
             )),
+            Self::SourceFieldRevision { entity_id, locator, native_revision } => Ok((
+                native_revision.is_some_and(|expected| {
+                    runtime.read_truth().project_snapshot(snapshot)
+                        .and_then(|view| view.entity_field_revision(*entity_id, locator)) == Some(expected)
+                }),
+                1,
+            )),
             Self::SourceAdjacencyRevision {
                 relation_kind,
                 anchor,

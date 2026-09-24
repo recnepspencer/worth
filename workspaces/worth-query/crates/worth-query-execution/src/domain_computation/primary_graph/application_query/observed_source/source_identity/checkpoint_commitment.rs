@@ -7,7 +7,7 @@ pub(super) fn checkpoint_source_identity(
     footprint: &super::super::WorthQueryObservedSourceFootprint,
 ) -> [u8; 32] {
     let mut digest = Sha256::new();
-    digest.update(b"worth-query:checkpoint-observed-source:v1");
+    digest.update(b"worth-query:checkpoint-observed-source:v2");
     digest.update(query);
     digest.update(parameters);
     append_footprint(&mut digest, footprint);
@@ -29,8 +29,9 @@ fn append_footprint(
         entity(digest, aspect.entity);
         text(digest, &aspect.entity_name);
         text(digest, aspect.aspect.as_str());
+        text(digest, aspect.field.as_str());
         digest.update(aspect.contract_revision.0.to_be_bytes());
-        optional_u64(digest, aspect.native_revision);
+        field_revision(digest, aspect.native_revision);
     }
     length(digest, footprint.adjacencies.len());
     for adjacency in &footprint.adjacencies {
@@ -75,6 +76,20 @@ fn length(digest: &mut Sha256, value: usize) {
 fn optional_u64(digest: &mut Sha256, value: Option<u64>) {
     digest.update([u8::from(value.is_some())]);
     digest.update(value.unwrap_or_default().to_be_bytes());
+}
+
+fn field_revision(
+    digest: &mut Sha256,
+    revision: Option<worth_relational::facade::runtime::RelationalFieldRevision>,
+) {
+    digest.update([u8::from(revision.is_some())]);
+    if let Some(revision) = revision {
+        digest.update(revision.version().0.to_be_bytes());
+        digest.update([match revision.presence() {
+            worth_relational::facade::runtime::RelationalFieldPresence::Present => 1,
+            worth_relational::facade::runtime::RelationalFieldPresence::Absent => 0,
+        }]);
+    }
 }
 
 #[cfg(test)]

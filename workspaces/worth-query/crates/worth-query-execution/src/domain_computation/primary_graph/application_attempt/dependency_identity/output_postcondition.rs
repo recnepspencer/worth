@@ -8,6 +8,7 @@ pub(super) fn is_output_currentness_fact(fact: &WorthQueryApplicationObservedFac
         fact,
         WorthQueryApplicationObservedFact::SourceEntity { .. }
             | WorthQueryApplicationObservedFact::SourceAspectRevision { .. }
+            | WorthQueryApplicationObservedFact::SourceFieldRevision { .. }
             | WorthQueryApplicationObservedFact::SourceAdjacencyRevision { .. }
             | WorthQueryApplicationObservedFact::Entity { .. }
             | WorthQueryApplicationObservedFact::Field { .. }

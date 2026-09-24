@@ -220,7 +220,7 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
         1
     );
     assert!(source_facts.iter().any(|fact| matches!(fact,
-        WorthQueryApplicationObservedFact::SourceAspectRevision { entity_id, .. }
+        WorthQueryApplicationObservedFact::SourceFieldRevision { entity_id, .. }
             if *entity_id == account.entity_id()
     )));
     let kind = first.adjacencies[0].relation_kind;

@@ -1,14 +1,14 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
-use worth_foundational::facade::AspectKey;
+use worth_foundational::facade::{AspectKey, FieldKey};
 use worth_relational::facade::identity::{EntityId, KindId};
 use worth_relational::facade::runtime::{RelationalAdjacencyDirection, VisibilityProjectionView};
 
 use super::{read_execution_denial, RootSelectionWork, WorthQueryApplicationReadExecutionDenial};
 use crate::domain_computation::primary_graph::application_query::{
     observed_source::{
-        WorthQueryObservedAdjacencyRevision, WorthQueryObservedAspectRevision,
+        WorthQueryObservedAdjacencyRevision, WorthQueryObservedFieldRevision,
         WorthQueryObservedRootSelection,
     },
     read_execution::WorthQueryApplicationReadExecutionDenialKind,
@@ -19,7 +19,7 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout;
 #[derive(Clone, Default)]
 pub(super) struct RootPathSourceBuilder {
     entities: BTreeSet<EntityId>,
-    aspects: BTreeMap<(EntityId, AspectKey), WorthQueryObservedAspectRevision>,
+    aspects: BTreeMap<(EntityId, AspectKey, FieldKey), WorthQueryObservedFieldRevision>,
     adjacencies: BTreeMap<(EntityId, KindId, u8), WorthQueryObservedAdjacencyRevision>,
 }
 
@@ -28,9 +28,10 @@ impl RootPathSourceBuilder {
         self.entities.insert(entity)
     }
 
-    pub(super) fn record_aspect(&mut self, aspect: WorthQueryObservedAspectRevision) -> bool {
+    pub(super) fn record_field(&mut self, aspect: WorthQueryObservedFieldRevision) -> bool {
         if let std::collections::btree_map::Entry::Vacant(entry) =
-            self.aspects.entry((aspect.entity, aspect.aspect.clone()))
+            self.aspects
+                .entry((aspect.entity, aspect.aspect.clone(), aspect.field.clone()))
         {
             entry.insert(aspect);
             true
@@ -66,36 +67,44 @@ impl RootPathSourceBuilder {
         self.entities.len() + self.aspects.len() + self.adjacencies.len()
     }
 
-    pub(super) fn observe_guard_aspects(
+    pub(super) fn observe_guard_field(
         &mut self,
         projection: &VisibilityProjectionView<'_>,
         graph: &WorthQueryPrimaryGraphLayout,
         entity: EntityId,
         entity_name: &str,
         aspect: &AspectKey,
+        field: &FieldKey,
         work: &mut RootSelectionWork,
-    ) -> Result<WorthQueryObservedAspectRevision, WorthQueryApplicationReadExecutionDenial> {
+    ) -> Result<WorthQueryObservedFieldRevision, WorthQueryApplicationReadExecutionDenial> {
         let contract_revision = graph
             .aspect_contract(entity_name, aspect)
             .ok_or_else(|| source_denial(entity_name))?
             .revision();
-        if !self.aspects.contains_key(&(entity, aspect.clone())) {
+        if !self
+            .aspects
+            .contains_key(&(entity, aspect.clone(), field.clone()))
+        {
             work.charge_source_observation(entity_name)?;
-            let native_revision = projection
-                .entity_aspect_version(entity, aspect)
-                .ok_or_else(|| source_denial(entity_name))?;
+            let locator = worth_foundational::facade::AspectFieldLocator::new(
+                worth_foundational::facade::LocatorAuthority::Authoritative,
+                aspect.clone(),
+                worth_foundational::facade::CanonicalFieldPath::single(field.clone()),
+            );
+            let native_revision = projection.entity_field_revision(entity, &locator);
             self.aspects.insert(
-                (entity, aspect.clone()),
-                WorthQueryObservedAspectRevision {
+                (entity, aspect.clone(), field.clone()),
+                WorthQueryObservedFieldRevision {
                     entity,
                     entity_name: entity_name.to_owned(),
                     aspect: aspect.clone(),
+                    field: field.clone(),
                     contract_revision,
                     native_revision,
                 },
             );
         }
-        Ok(self.aspects[&(entity, aspect.clone())].clone())
+        Ok(self.aspects[&(entity, aspect.clone(), field.clone())].clone())
     }
 
     pub(super) fn observe_adjacencies(
@@ -149,12 +158,13 @@ impl RootPathSourceBuilder {
             .saturating_add(
                 self.aspects
                     .len()
-                    .saturating_mul(std::mem::size_of::<WorthQueryObservedAspectRevision>()),
+                    .saturating_mul(std::mem::size_of::<WorthQueryObservedFieldRevision>()),
             )
             .saturating_add(self.aspects.values().fold(0usize, |bytes, aspect| {
                 bytes
                     .saturating_add(aspect.entity_name.capacity())
                     .saturating_add(aspect.aspect.as_str().len())
+                    .saturating_add(aspect.field.as_str().len())
             }))
             .saturating_add(
                 self.adjacencies

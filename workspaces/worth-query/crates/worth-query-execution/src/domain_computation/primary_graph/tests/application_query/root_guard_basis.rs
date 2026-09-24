@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 use std::num::NonZeroUsize;
 use std::time::Duration;
+use worth_foundational::facade::{AspectFieldLocator, CanonicalFieldPath, LocatorAuthority};
 
 use worth_query_declaration::facade::application_query::ApplicationQueryParameterSet;
 use worth_query_declaration::facade::application_schema::{
@@ -101,13 +102,35 @@ fn root_path_guard_reads_its_pinned_truth_version() {
         .iter()
         .find(|aspect| aspect.entity == account.entity_id())
         .unwrap();
-    let fact = WorthQueryApplicationObservedFact::SourceAspectRevision {
+    let fact = WorthQueryApplicationObservedFact::SourceFieldRevision {
         entity_id: guard.entity,
-        aspect: guard.aspect.clone(),
+        locator: AspectFieldLocator::new(
+            LocatorAuthority::Authoritative,
+            guard.aspect.clone(),
+            CanonicalFieldPath::single(guard.field.clone()),
+        ),
         native_revision: guard.native_revision,
     };
     let current = world.selected_product();
     let graph = world.application.runtime.primary_graph().unwrap();
+    let unavailable = WorthQueryApplicationObservedFact::SourceFieldRevision {
+        entity_id: guard.entity,
+        locator: AspectFieldLocator::new(
+            LocatorAuthority::Authoritative,
+            guard.aspect.clone(),
+            CanonicalFieldPath::single(guard.field.clone()),
+        ),
+        native_revision: None,
+    };
+    assert!(
+        !graph.integration_handle().with_runtime(|runtime| {
+            unavailable
+                .source_currentness_in(runtime, current.application_basis().snapshot_handle(), 1)
+                .unwrap()
+                .0
+        }),
+        "an unavailable restored field revision cannot authorize reuse"
+    );
     assert!(
         !graph.integration_handle().with_runtime(|runtime| {
             fact.source_currentness_in(runtime, current.application_basis().snapshot_handle(), 1)
@@ -121,9 +144,13 @@ fn root_path_guard_reads_its_pinned_truth_version() {
         WorthQueryApplicationQueryBasisPosture::SelectedProduct
     );
     let absent_guard = &empty_selection.aspects[0];
-    let absent_fact = WorthQueryApplicationObservedFact::SourceAspectRevision {
+    let absent_fact = WorthQueryApplicationObservedFact::SourceFieldRevision {
         entity_id: absent_guard.entity,
-        aspect: absent_guard.aspect.clone(),
+        locator: AspectFieldLocator::new(
+            LocatorAuthority::Authoritative,
+            absent_guard.aspect.clone(),
+            CanonicalFieldPath::single(absent_guard.field.clone()),
+        ),
         native_revision: absent_guard.native_revision,
     };
     change_account_status(&world, account.entity_id(), "open");
@@ -206,9 +233,13 @@ fn empty_indexed_root_set_stales_when_its_scoped_guard_becomes_a_match() {
     assert_eq!(selection.aspects.len(), 1);
     let guard = &selection.aspects[0];
     assert_eq!(guard.entity, account.entity_id());
-    let fact = WorthQueryApplicationObservedFact::SourceAspectRevision {
+    let fact = WorthQueryApplicationObservedFact::SourceFieldRevision {
         entity_id: guard.entity,
-        aspect: guard.aspect.clone(),
+        locator: AspectFieldLocator::new(
+            LocatorAuthority::Authoritative,
+            guard.aspect.clone(),
+            CanonicalFieldPath::single(guard.field.clone()),
+        ),
         native_revision: guard.native_revision,
     };
     change_account_status(&world, account.entity_id(), "closed");

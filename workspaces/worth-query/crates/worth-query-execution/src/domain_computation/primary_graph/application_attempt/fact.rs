@@ -64,6 +64,11 @@ pub(in crate::domain_computation) enum WorthQueryApplicationObservedFact {
         aspect: AspectKey,
         native_revision: Option<u64>,
     },
+    SourceFieldRevision {
+        entity_id: EntityId,
+        locator: AspectFieldLocator,
+        native_revision: Option<worth_relational::facade::runtime::RelationalFieldRevision>,
+    },
     SourceAdjacencyRevision {
         relation_kind: KindId,
         anchor: EntityId,
@@ -203,6 +208,11 @@ impl WorthQueryApplicationObservedFact {
                 .project_snapshot(snapshot)
                 .and_then(|view| view.entity_aspect_version(*entity_id, aspect))
                 == Some(*native_revision),
+            Self::SourceFieldRevision { entity_id, locator, native_revision } =>
+                native_revision.is_some_and(|expected| {
+                    runtime.read_truth().project_snapshot(snapshot)
+                        .and_then(|view| view.entity_field_revision(*entity_id, locator)) == Some(expected)
+                }),
             Self::SourceAdjacencyRevision {
                 relation_kind,
                 anchor,

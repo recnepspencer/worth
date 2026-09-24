@@ -176,10 +176,10 @@ fn merge_same_source_fact(existing: &mut Fact, duplicate: Fact) -> bool {
 
 fn append_aspect(
     layout: &WorthQueryPrimaryGraphLayout,
-    aspect: WorthQueryObservedAspectRevision,
+    aspect: WorthQueryObservedFieldRevision,
     facts: &mut Vec<Fact>,
 ) -> Result<(), WorthQuerySourceExpectationDenial> {
-    layout
+    let contract = layout
         .aspect_contract(&aspect.entity_name, &aspect.aspect)
         .filter(|contract| contract.revision() == aspect.contract_revision)
         .ok_or_else(|| {
@@ -188,9 +188,26 @@ fn append_aspect(
                 aspect.aspect.as_str(),
             )
         })?;
-    facts.push(Fact::SourceAspectRevision {
+    let declared = match contract.shape() {
+        worth_foundational::facade::AspectShape::Struct(shape) => {
+            shape.field(&aspect.field).is_some()
+        }
+        worth_foundational::facade::AspectShape::Scalar(_) => true,
+        _ => false,
+    };
+    if !declared {
+        return Err(WorthQuerySourceExpectationDenial::new(
+            WorthQuerySourceExpectationDenialKind::SourceContractMismatch,
+            aspect.aspect.as_str(),
+        ));
+    }
+    facts.push(Fact::SourceFieldRevision {
         entity_id: aspect.entity,
-        aspect: aspect.aspect,
+        locator: worth_foundational::facade::AspectFieldLocator::new(
+            worth_foundational::facade::LocatorAuthority::Authoritative,
+            aspect.aspect,
+            worth_foundational::facade::CanonicalFieldPath::single(aspect.field),
+        ),
         native_revision: aspect.native_revision,
     });
     Ok(())

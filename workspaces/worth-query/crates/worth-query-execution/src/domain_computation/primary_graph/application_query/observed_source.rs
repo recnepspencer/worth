@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use worth_foundational::facade::{AspectContractRevision, AspectKey, CanonicalDigestId};
+use worth_foundational::facade::{AspectContractRevision, AspectKey, CanonicalDigestId, FieldKey};
 use worth_query_installation::facade::{
     ApplicationSchemaBindingIdentity, WorthQueryInstalledApplicationQueryIdentity,
 };
@@ -42,12 +42,14 @@ pub(in crate::domain_computation::primary_graph) use source_identity::{
 };
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub(in crate::domain_computation) struct WorthQueryObservedAspectRevision {
+pub(in crate::domain_computation) struct WorthQueryObservedFieldRevision {
     pub(in crate::domain_computation::primary_graph) entity: EntityId,
     pub(in crate::domain_computation::primary_graph) entity_name: String,
     pub(in crate::domain_computation::primary_graph) aspect: AspectKey,
+    pub(in crate::domain_computation::primary_graph) field: FieldKey,
     pub(in crate::domain_computation::primary_graph) contract_revision: AspectContractRevision,
-    pub(in crate::domain_computation::primary_graph) native_revision: Option<u64>,
+    pub(in crate::domain_computation::primary_graph) native_revision:
+        Option<worth_relational::facade::runtime::RelationalFieldRevision>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -102,7 +104,7 @@ pub(in crate::domain_computation) struct WorthQueryObservedSourceFootprint {
     pub(in crate::domain_computation::primary_graph) root: EntityId,
     pub(in crate::domain_computation::primary_graph) complete: bool,
     pub(in crate::domain_computation::primary_graph) entities: Vec<EntityId>,
-    pub(in crate::domain_computation::primary_graph) aspects: Vec<WorthQueryObservedAspectRevision>,
+    pub(in crate::domain_computation::primary_graph) aspects: Vec<WorthQueryObservedFieldRevision>,
     pub(in crate::domain_computation::primary_graph) adjacencies:
         Vec<WorthQueryObservedAdjacencyRevision>,
     pub(in crate::domain_computation::primary_graph) root_selection:

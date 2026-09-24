@@ -113,6 +113,32 @@ fn append_fact(
             kind(entries, prefix, "source-aspect-revision");
             optional_u64(entries, prefix, "revision", *native_revision);
         }
+        WorthQueryApplicationObservedFact::SourceFieldRevision {
+            native_revision, ..
+        } => {
+            kind(entries, prefix, "source-field-revision");
+            optional_u64(
+                entries,
+                prefix,
+                "revision",
+                native_revision.map(|revision| revision.version().0),
+            );
+            push(
+                entries,
+                format!("{prefix}.presence"),
+                CanonicalBasisEntryKind::Value,
+                native_revision.map_or(CanonicalBasisValue::Null, |revision| {
+                    text(match revision.presence() {
+                        worth_relational::facade::runtime::RelationalFieldPresence::Present => {
+                            "present"
+                        }
+                        worth_relational::facade::runtime::RelationalFieldPresence::Absent => {
+                            "absent"
+                        }
+                    })
+                }),
+            );
+        }
         WorthQueryApplicationObservedFact::SourceAdjacencyRevision {
             native_revision,
             comparison_work_limit,

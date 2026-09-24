@@ -18,7 +18,7 @@ use evidence::RootPathSourceBuilder;
 pub(super) struct BoundedRootSelection {
     pub(super) candidates: Vec<EntityId>,
     pub(super) selected_predicate_source:
-        Option<super::super::observed_source::WorthQueryObservedAspectRevision>,
+        Option<super::super::observed_source::WorthQueryObservedFieldRevision>,
     pub(super) root_path_source: Option<
         std::collections::BTreeMap<
             EntityId,
@@ -324,12 +324,13 @@ fn select_indexed_root<
     let mut set_source = RootPathSourceBuilder::default();
     let selected_predicate_source = if capture_result_set || scoped.is_some() {
         set_source.observe_entity(plan.scope.entity_id());
-        let observed = set_source.observe_guard_aspects(
+        let observed = set_source.observe_guard_field(
             &projection,
             graph,
             plan.scope.entity_id(),
             entity,
             predicate.aspect_key(),
+            predicate.field_key(),
             &mut work,
         )?;
         scoped.map(|_| observed)
