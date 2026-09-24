@@ -78,17 +78,72 @@ where
             .entry_query
             .as_ref()
             .ok_or(Denial::ForeignQuery)?;
-        let second_identity = view
-            .state
-            .secondary_entry_query
-            .as_ref()
-            .ok_or(Denial::ForeignQuery)?;
         if first.query_identity() != first_identity || first.scope.entity_id() != expected_root {
             return Err(Denial::ForeignQuery);
         }
         let first_result = self
             .execute_application_query_one_shot(first)
             .map_err(|_| Denial::QueryExecutionDenied)?;
+        self.read_managed_entry_pair_from_result(
+            view,
+            product,
+            expected_root,
+            first_result,
+            second_for,
+            first_link,
+            second_link,
+            project,
+        )
+    }
+
+    pub(super) fn read_managed_entry_pair_from_result<
+        MembershipQuery,
+        FirstQuery,
+        FirstResult,
+        SecondQuery,
+        SecondResult,
+        Value,
+        LinkKey,
+    >(
+        &self,
+        view: &WorthQueryManagedDerivedView<MembershipQuery, Value>,
+        product: &WorthQueryProductBranchLease,
+        expected_root: EntityId,
+        first_result: WorthQueryApplicationOneShotResult<FirstQuery, FirstResult>,
+        second_for: impl FnOnce(
+            &FirstResult,
+        ) -> Result<
+            WorthQueryApplicationOneShotResult<SecondQuery, SecondResult>,
+            Denial,
+        >,
+        first_link: impl FnOnce(&FirstResult) -> LinkKey,
+        second_link: impl FnOnce(&SecondResult) -> LinkKey,
+        project: impl FnOnce(&FirstResult, &SecondResult) -> Value,
+    ) -> Result<
+        (
+            WorthQueryManagedDerivedViewKey,
+            Value,
+            BTreeSet<ViewDependency>,
+        ),
+        Denial,
+    >
+    where
+        FirstResult: WorthQueryApplicationProjection<Schema, FirstQuery>,
+        SecondResult: WorthQueryApplicationProjection<Schema, SecondQuery>,
+        Value: WorthQueryManagedDerivedValue,
+        LinkKey: Eq,
+    {
+        self.admit_view_product(view, product)?;
+        let first_identity = view
+            .state
+            .entry_query
+            .as_ref()
+            .ok_or(Denial::ForeignQuery)?;
+        let second_identity = view
+            .state
+            .secondary_entry_query
+            .as_ref()
+            .ok_or(Denial::ForeignQuery)?;
         let ([first_row], [first_source]) = (first_result.rows(), first_result.observed_sources())
         else {
             return Err(Denial::IncompleteDependencies);

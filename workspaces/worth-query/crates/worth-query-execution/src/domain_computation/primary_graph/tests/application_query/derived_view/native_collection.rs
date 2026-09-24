@@ -1,4 +1,5 @@
 use super::*;
+use crate::domain_computation::primary_graph::application_query::WorthQueryApplicationOneShotResult;
 use crate::domain_computation::primary_graph::tests::fixture::{
     AccountSummaryResult, PublicAccountMembershipQuery, PublicScopedAccountSummaryQuery,
 };
@@ -73,23 +74,46 @@ fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entr
         )
         .unwrap();
     assert_eq!(membership.rows().len(), 1);
-    assert_eq!(membership.rows()[0].tag, "member");
+    assert_eq!(membership.rows()[0].tag, "open");
     assert_eq!(membership.rows()[0].members, vec![open.entity_id()]);
     let keys = world
         .application
-        .reconstruct_managed_derived_collection_pair(
+        .reconstruct_managed_derived_collection_pair_lazy(
             &view,
             selected.product(),
             &membership,
-            vec![world
-                .selected_product()
-                .admit_application_query(
-                    &entry_query,
-                    &access,
-                    ApplicationQueryParameterSet::new(),
-                    current_controls(&request),
-                )
-                .unwrap()],
+            |row| {
+                row.members
+                    .iter()
+                    .map(|root| (*root, row.tag.clone()))
+                    .collect()
+            },
+            |occurrence_key| {
+                let occurrence_scope = selected
+                    .resolve_entity(
+                        AccountStatus::reference(),
+                        occurrence_key.clone(),
+                        &request,
+                        WorthQueryPrincipalResolutionMode::Ordinary,
+                    )
+                    .unwrap();
+                let occurrence_access =
+                    WorthQueryApplicationQueryAccessContext::new(&principal, &occurrence_scope);
+                world
+                    .application
+                    .execute_application_query_one_shot(
+                        world
+                            .selected_product()
+                            .admit_application_query(
+                                &entry_query,
+                                &occurrence_access,
+                                ApplicationQueryParameterSet::new(),
+                                current_controls(&request),
+                            )
+                            .unwrap(),
+                    )
+                    .map_err(|_| WorthQueryManagedDerivedViewDenial::QueryExecutionDenied)
+            },
             |row| {
                 let body_scope = selected
                     .resolve_entity(
@@ -116,7 +140,6 @@ fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entr
                     )
                     .map_err(|_| WorthQueryManagedDerivedViewDenial::QueryExecutionDenied)
             },
-            |row| row.members.clone(),
             |row| row.status().to_string(),
             |row| row.status().to_string(),
             |_, body| SceneLabel(body.label().to_string()),
@@ -132,6 +155,50 @@ fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entr
         .unwrap()
         .unwrap();
     assert_eq!(original.0, "primary");
+    let denied = world
+        .application
+        .reconstruct_managed_derived_collection_pair_lazy(
+            &view,
+            selected.product(),
+            &membership,
+            |row| {
+                row.members
+                    .iter()
+                    .map(|root| (*root, row.tag.clone()))
+                    .collect()
+            },
+            |_: &String| -> Result<
+                WorthQueryApplicationOneShotResult<
+                    PublicScopedAccountSummaryQuery,
+                    AccountSummaryResult,
+                >,
+                WorthQueryManagedDerivedViewDenial,
+            > { Err(WorthQueryManagedDerivedViewDenial::QueryExecutionDenied) },
+            |_| -> Result<
+                WorthQueryApplicationOneShotResult<
+                    PublicScopedAccountSummaryQuery,
+                    AccountSummaryResult,
+                >,
+                WorthQueryManagedDerivedViewDenial,
+            > { unreachable!("second read cannot run after first denial") },
+            |row| row.status().to_string(),
+            |row| row.status().to_string(),
+            |_, body| SceneLabel(body.label().to_string()),
+        );
+    assert_eq!(
+        denied.err(),
+        Some(WorthQueryManagedDerivedViewDenial::QueryExecutionDenied)
+    );
+    assert!(std::sync::Arc::ptr_eq(
+        &original,
+        &world
+            .application
+            .observe_managed_derived_view(&view)
+            .unwrap()
+            .get(&key)
+            .unwrap()
+            .unwrap(),
+    ));
 
     let graph = world.application.runtime.primary_graph().unwrap();
     let field = AccountLabel::reference();
