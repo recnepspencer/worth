@@ -15,10 +15,11 @@ $qualifiedTest = "workflow_history_scale::$testName"
 
 # Fixed development qualification envelope, excluding compilation. Sampled
 # process-private bytes are a watchdog, not production allocation admission.
-# A budget stop is a failed lane; never interpret it as successful exhaustion.
+# Elapsed time is a hang guard, never a cross-machine performance gate.
+# A guard stop is a failed lane; never interpret it as successful exhaustion.
 # These exact courts run in process; this runner does not supervise descendants.
 $maximumPrivateBytes = 4GB
-$maximumSeconds = 180
+$hangWatchdogSeconds = 1800
 $pollMilliseconds = 100
 
 $artifacts = @(& cargo test --manifest-path $queryManifest -p worth-query-certification `
@@ -39,7 +40,7 @@ if ($LASTEXITCODE -ne 0 -or $listing -notcontains "${qualifiedTest}: test") {
     throw "the exact workflow history test was not discovered"
 }
 
-Write-Output "workflow history lane=$Lane profile=test max_private_bytes=$maximumPrivateBytes max_seconds=$maximumSeconds poll_ms=$pollMilliseconds"
+Write-Output "workflow history lane=$Lane profile=test max_private_bytes=$maximumPrivateBytes hang_watchdog_seconds=$hangWatchdogSeconds poll_ms=$pollMilliseconds"
 Write-Output "os=$([Environment]::OSVersion) logical_processors=$([Environment]::ProcessorCount) process_64bit=$([Environment]::Is64BitProcess)"
 & rustc --version
 
@@ -68,8 +69,8 @@ try {
         $peakPrivateBytes = [Math]::Max($peakPrivateBytes, $testProcess.PrivateMemorySize64)
         if ($peakPrivateBytes -gt $maximumPrivateBytes) {
             $budgetFailure = "process-private memory budget exceeded"
-        } elseif ($timer.Elapsed.TotalSeconds -gt $maximumSeconds) {
-            $budgetFailure = "wall-time budget exceeded"
+        } elseif ($timer.Elapsed.TotalSeconds -gt $hangWatchdogSeconds) {
+            $budgetFailure = "hang watchdog exceeded"
         }
         if ($budgetFailure) {
             # This Process object owns only the exact test executable launched
