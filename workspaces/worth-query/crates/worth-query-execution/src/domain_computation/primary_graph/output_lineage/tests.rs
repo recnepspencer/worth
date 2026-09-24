@@ -79,6 +79,7 @@ fn record(
         producer_dependency_identity: None,
         idempotency_key_identity: [0x44; 32],
         observed_source_facts: Some(Arc::from([])),
+        resources: None,
     }
 }
 
@@ -123,6 +124,7 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
         None,
         [0x41; 32],
         source_facts(),
+        None,
     );
     lineage.record_restoration(
         std::any::TypeId::of::<RestoredOutputBinding>(),
@@ -136,6 +138,7 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
         Some([0x52; 32]),
         [0x42; 32],
         source_facts(),
+        None,
     );
     lineage.record_restoration(
         std::any::TypeId::of::<RestoredOutputBinding>(),
@@ -149,6 +152,7 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
         None,
         [0x41; 32],
         source_facts(),
+        None,
     );
 
     let source = SemanticSource {
@@ -258,6 +262,7 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
         partition,
         None,
         [0x41; 32],
+        None,
     );
     lineage.record_recovered_prior_output(
         std::any::TypeId::of::<RestoredOutputBinding>(),
@@ -271,6 +276,7 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
         partition,
         None,
         [0x41; 32],
+        None,
     );
     let semantic_source = SemanticSource {
         runtime_authority,
@@ -308,6 +314,7 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
         None,
         [0x41; 32],
         Arc::from([]),
+        None,
     );
 
     assert!(
@@ -337,6 +344,7 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
         None,
         [0x41; 32],
         source_facts(),
+        None,
     );
 
     assert!(lineage

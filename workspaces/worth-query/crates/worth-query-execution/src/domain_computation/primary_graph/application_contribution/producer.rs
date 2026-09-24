@@ -119,7 +119,7 @@ pub struct WorthQueryProducerInvariantRequirement {
     execution_point: ApplicationInvariantExecutionPoint,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct WorthQueryProducerDemandResources {
     work: usize,
     retained_bytes: usize,

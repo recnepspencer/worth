@@ -263,6 +263,23 @@ fn empty_indexed_root_set_stales_when_its_scoped_guard_becomes_a_match() {
         empty.result_set_observation().idempotency_identity(),
         matching.result_set_observation().idempotency_identity()
     );
+    change_account_status(&world, account.entity_id(), "open");
+    let reopened = world.selected_product();
+    assert!(!graph.integration_handle().with_runtime(|runtime| {
+        fact.source_currentness_in(runtime, reopened.application_basis().snapshot_handle(), 1)
+            .unwrap()
+            .0
+    }));
+    let reopened_result = world
+        .application
+        .execute_application_query_one_shot(
+            reopened
+                .admit_application_query(&query, &access, parameters(), current_controls(&request))
+                .unwrap(),
+        )
+        .unwrap();
+    assert!(reopened_result.rows().is_empty());
+    assert_eq!(reopened_result.rows(), empty.rows());
 }
 
 fn change_account_status(

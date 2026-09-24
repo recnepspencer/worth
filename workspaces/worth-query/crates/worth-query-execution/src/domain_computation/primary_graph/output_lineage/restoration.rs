@@ -25,6 +25,9 @@ impl WorthQueryApplicationOutputLineage {
         observed_source_facts: Arc<
             [super::super::application_attempt::WorthQueryApplicationObservedFact],
         >,
+        resources: Option<
+            super::super::application_contribution::WorthQueryProducerDemandResources,
+        >,
     ) {
         let source = SemanticSource {
             runtime_authority,
@@ -52,6 +55,7 @@ impl WorthQueryApplicationOutputLineage {
                 "one restored output partition keeps one exact identity"
             );
             recorded.observed_source_facts = Some(observed_source_facts);
+            recorded.resources = resources;
             self.live_occurrences
                 .insert(observation.lifecycle_incarnation());
             return;
@@ -63,6 +67,7 @@ impl WorthQueryApplicationOutputLineage {
             producer_dependency_identity,
             idempotency_key_identity,
             observed_source_facts: Some(observed_source_facts),
+            resources,
         });
         self.live_occurrences
             .insert(observation.lifecycle_incarnation());
@@ -82,6 +87,9 @@ impl WorthQueryApplicationOutputLineage {
         source_partition_identity: [u8; 32],
         producer_dependency_identity: Option<[u8; 32]>,
         idempotency_key_identity: [u8; 32],
+        resources: Option<
+            super::super::application_contribution::WorthQueryProducerDemandResources,
+        >,
     ) {
         let source = SemanticSource {
             runtime_authority,
@@ -111,6 +119,7 @@ impl WorthQueryApplicationOutputLineage {
             producer_dependency_identity,
             idempotency_key_identity,
             observed_source_facts: None,
+            resources,
         });
         self.live_occurrences.insert(occurrence);
     }

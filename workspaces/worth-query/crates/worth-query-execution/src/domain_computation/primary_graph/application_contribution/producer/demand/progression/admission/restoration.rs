@@ -96,6 +96,7 @@ where
                 restored.checkpoint.producer_dependency,
                 restored.checkpoint.idempotency_key,
                 std::sync::Arc::clone(&restored.observed_source_facts),
+                restored.checkpoint.resources,
             );
         Ok(())
     }

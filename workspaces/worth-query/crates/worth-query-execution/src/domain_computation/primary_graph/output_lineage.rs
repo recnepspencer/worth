@@ -4,6 +4,7 @@ mod current_output;
 mod denial;
 mod qualification;
 mod recorded_source_identity;
+mod resources;
 mod restoration;
 mod retention;
 #[cfg(test)]
@@ -52,6 +53,7 @@ struct RecordedOutput {
     idempotency_key_identity: [u8; 32],
     observed_source_facts:
         Option<Arc<[super::application_attempt::WorthQueryApplicationObservedFact]>>,
+    resources: Option<super::application_contribution::WorthQueryProducerDemandResources>,
 }
 
 pub(super) struct WorthQueryExactRecordedOutput {
@@ -98,6 +100,8 @@ pub(super) struct WorthQueryRetainedOutputCandidate {
     pub(super) source_identity: Option<RecordedSourceIdentity>,
     pub(super) observed_source_facts:
         Option<Arc<[super::application_attempt::WorthQueryApplicationObservedFact]>>,
+    pub(super) resources:
+        Option<super::application_contribution::WorthQueryProducerDemandResources>,
 }
 
 pub(super) struct WorthQueryCurrentOutputFamilyResolution {
@@ -175,6 +179,7 @@ impl WorthQueryApplicationOutputLineage {
             producer_dependency_identity: evidence.idempotency().producer_dependency_identity(),
             idempotency_key_identity: *evidence.idempotency().key_identity(),
             observed_source_facts: Some(evidence.retain_observed_source_facts()),
+            resources: None,
         });
     }
 

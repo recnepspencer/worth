@@ -1,14 +1,16 @@
 use sha2::{Digest, Sha256};
 
+mod resources;
 #[cfg(test)]
 mod tests;
 
 const MAGIC: &[u8; 8] = b"WQAPCP01";
-const FORMAT_VERSION: u16 = 3;
+const FORMAT_VERSION: u16 = 4;
 const CHECKSUM_BYTES: usize = 32;
 const BODY_PREFIX_BYTES: usize = 2 + 8 + 8 + 8;
 const HEADER_BYTES: usize = MAGIC.len() + CHECKSUM_BYTES + BODY_PREFIX_BYTES;
-const MINIMUM_ACCEPTED_OUTPUT_BYTES: usize = 8 + 1 + 32 + 16 + 32 + 33 + 32 + 8;
+const LEGACY_MINIMUM_ACCEPTED_OUTPUT_BYTES: usize = 8 + 1 + 32 + 16 + 32 + 33 + 32 + 8;
+const MINIMUM_ACCEPTED_OUTPUT_BYTES: usize = LEGACY_MINIMUM_ACCEPTED_OUTPUT_BYTES + 17;
 const MAXIMUM_PRODUCER_IDENTITY_BYTES: usize = 4 * 1024;
 const MAXIMUM_ROLE_IDENTITY_BYTES: usize = 4 * 1024;
 const MAXIMUM_ENTITY_NAME_BYTES: usize = 4 * 1024;
@@ -83,6 +85,7 @@ impl WorthQueryApplicationCheckpoint {
             body.push(u8::from(accepted.producer_dependency.is_some()));
             body.extend_from_slice(&accepted.producer_dependency.unwrap_or_default());
             body.extend_from_slice(&accepted.idempotency_key);
+            resources::encode_profile(&mut body, accepted.resources);
             body.extend_from_slice(&(accepted.roles.len() as u64).to_be_bytes());
             for role in &accepted.roles {
                 body.extend_from_slice(&(role.role.len() as u64).to_be_bytes());
@@ -119,7 +122,7 @@ impl WorthQueryApplicationCheckpoint {
             return Err("Query application checkpoint checksum differs".to_owned());
         }
         let version = u16::from_be_bytes([body[0], body[1]]);
-        if version != FORMAT_VERSION {
+        if version != FORMAT_VERSION && version != 3 {
             return Err(format!(
                 "Query application checkpoint format {version} is unsupported"
             ));
@@ -131,7 +134,12 @@ impl WorthQueryApplicationCheckpoint {
         let accepted_count = usize::try_from(cursor.next_u64()?)
             .map_err(|_| "checkpoint accepted-output count exceeds this host".to_owned())?;
         let native = cursor.next_bytes(native_len)?;
-        if accepted_count > cursor.remaining.len() / MINIMUM_ACCEPTED_OUTPUT_BYTES {
+        let minimum = if version == 3 {
+            LEGACY_MINIMUM_ACCEPTED_OUTPUT_BYTES
+        } else {
+            MINIMUM_ACCEPTED_OUTPUT_BYTES
+        };
+        if accepted_count > cursor.remaining.len() / minimum {
             return Err("checkpoint accepted-output count exceeds its payload".to_owned());
         }
         let mut accepted_outputs = Vec::with_capacity(accepted_count);
@@ -175,6 +183,7 @@ impl WorthQueryApplicationCheckpoint {
                 .next_bytes(32)?
                 .try_into()
                 .expect("the checkpoint idempotency identity length is exact");
+            let resources = resources::decode_profile(&mut cursor, version)?;
             let role_count = usize::try_from(cursor.next_u64()?)
                 .map_err(|_| "checkpoint output-role count exceeds this host".to_owned())?;
             if role_count > cursor.remaining.len() / (8 + 1 + 8 + 16) {
@@ -214,6 +223,7 @@ impl WorthQueryApplicationCheckpoint {
                     source_partition,
                     producer_dependency,
                     idempotency_key,
+                    resources,
                     roles,
                 },
             );

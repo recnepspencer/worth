@@ -153,6 +153,8 @@ impl std::error::Error for WorthQueryOutputDemandDenial {}
 pub struct WorthQuerySelectedApplicationProducer {
     pub(super) identity: String,
     pub(super) applicability: WorthQueryProducerApplicability,
+    pub(super) exact_retained_output: bool,
+    pub(super) retained_resources: Option<super::WorthQueryProducerDemandResources>,
 }
 
 /// Runtime-affine admission for one exact source occurrence and installed producer.
@@ -167,6 +169,9 @@ where
     observed_source: WorthQueryObservedSource<FamilySourceQuery<Schema, Family>>,
     currentness_work_limit: std::num::NonZeroUsize,
     maximum_retained_bytes: usize,
+    resources: Option<super::WorthQueryProducerDemandResources>,
+    resources_validated: bool,
+    producer_contacts_in_this_demand: usize,
     admission_kind: super::super::super::application_output_demand::DemandAdmissionKind,
     interest:
         Option<super::super::super::application_output_demand::WorthQueryOutputDemandInterest>,
@@ -270,6 +275,8 @@ where
         Ok(WorthQuerySelectedApplicationProducer {
             identity: selected.declaration.identity.clone(),
             applicability,
+            exact_retained_output: false,
+            retained_resources: None,
         })
     }
 }

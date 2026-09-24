@@ -26,6 +26,7 @@ pub struct WorthQueryOutputDemandSettlement {
     pub(in crate::domain_computation::primary_graph) restored_source:
         Option<WorthQueryRestoredOutputSource>,
     readiness_delivery: Option<WorthQueryOutputReadinessDeliveryEvidence>,
+    producer_contacts_in_this_demand: usize,
     observation: Arc<WorthQueryApplicationReadObservation>,
 }
 
@@ -54,6 +55,7 @@ impl WorthQueryOutputDemandSettlement {
         readiness_delivery: &WorthQueryOutputReadinessDeliveryEvidence,
         producer_identity: &str,
         output_family_identity: &str,
+        producer_contacts_in_this_demand: usize,
     ) -> Result<Arc<Self>, WorthQueryOutputDemandDenial>
     where
         Schema: worth_query_installation::facade::ApplicationSchema,
@@ -81,6 +83,7 @@ impl WorthQueryOutputDemandSettlement {
             output_correspondence: receipt.retain_output_correspondence(),
             restored_source: None,
             readiness_delivery: Some(readiness_delivery.clone()),
+            producer_contacts_in_this_demand,
             observation: WorthQueryApplicationReadObservation::from_product(runtime, observation),
         }))
     }
@@ -105,6 +108,12 @@ impl WorthQueryOutputDemandSettlement {
 
     pub fn readiness_delivery(&self) -> Option<&WorthQueryOutputReadinessDeliveryEvidence> {
         self.readiness_delivery.as_ref()
+    }
+
+    /// Number of installed producer executions initiated by this admitted demand.
+    /// This is not the producing commit's historical readiness evidence.
+    pub const fn producer_contacts_in_this_demand(&self) -> usize {
+        self.producer_contacts_in_this_demand
     }
 
     #[doc(hidden)]
@@ -152,6 +161,7 @@ impl WorthQueryOutputDemandSettlement {
                 identity: restored.source_identity,
             }),
             readiness_delivery: None,
+            producer_contacts_in_this_demand: 0,
             observation: WorthQueryApplicationReadObservation::from_product(
                 runtime,
                 product.read_lease(),

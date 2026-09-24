@@ -127,6 +127,8 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryCompletedOutpu
     pub(in crate::domain_computation::primary_graph) authority: WorthQueryAcceptedOutputAuthority,
     pub(in crate::domain_computation::primary_graph) readiness:
         super::WorthQueryOutputReadinessDeliveryEvidence,
+    pub(in crate::domain_computation::primary_graph) resources:
+        Option<super::super::application_contribution::WorthQueryProducerDemandResources>,
 }
 
 pub(in crate::domain_computation::primary_graph) enum WorthQueryOutputSchedulingResult {
@@ -270,6 +272,8 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryAcceptedOutput
     pub(in crate::domain_computation::primary_graph) source_partition: [u8; 32],
     pub(in crate::domain_computation::primary_graph) producer_dependency: Option<[u8; 32]>,
     pub(in crate::domain_computation::primary_graph) idempotency_key: [u8; 32],
+    pub(in crate::domain_computation::primary_graph) resources:
+        Option<super::super::application_contribution::WorthQueryProducerDemandResources>,
     pub(in crate::domain_computation::primary_graph) roles:
         Vec<crate::domain_computation::primary_graph::application_attempt::WorthQueryCheckpointOutputRole>,
 }
@@ -326,6 +330,7 @@ impl WorthQueryOutputDemandRegistry {
                             source_partition: idempotency.source_partition_identity()?,
                             producer_dependency: idempotency.producer_dependency_identity(),
                             idempotency_key: *idempotency.key_identity(),
+                            resources: completion.resources,
                             roles: receipt.output_correspondence().checkpoint_roles(),
                         })
                     }

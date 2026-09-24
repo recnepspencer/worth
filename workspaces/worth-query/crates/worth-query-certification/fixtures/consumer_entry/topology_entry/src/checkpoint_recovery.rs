@@ -20,6 +20,7 @@ use worth_query_host::facade::{
 
 use super::*;
 mod support;
+mod demand_contact;
 use support::{authenticate, install, length};
 
 fn checkpoint_recovery_test_guard() -> std::sync::MutexGuard<'static, ()> {

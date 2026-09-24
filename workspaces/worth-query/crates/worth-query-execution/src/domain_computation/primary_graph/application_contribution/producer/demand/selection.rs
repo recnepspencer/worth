@@ -81,6 +81,7 @@ where
                 checkpoint.source_partition,
                 checkpoint.producer_dependency,
                 checkpoint.idempotency_key,
+                checkpoint.resources,
             );
         }
         let (candidates, lineage_work) = lineage
@@ -180,9 +181,17 @@ where
                     continue;
                 }
                 if facts_current {
-                    return self
+                    let resources = candidate.resources.ok_or_else(|| {
+                        WorthQueryOutputDemandDenial::new(
+                            WorthQueryOutputDemandDenialKind::IncompleteDependencyCoverage,
+                            "retained output lacks its producer resource profile",
+                        )
+                    })?;
+                    let mut selected = self
                         .installed_producers
-                        .select_exact::<Family>(candidate.binding);
+                        .select_exact::<Family>(candidate.binding)?;
+                    selected.retained_resources = Some(resources);
+                    return Ok(selected);
                 }
                 retained_output = true;
             }

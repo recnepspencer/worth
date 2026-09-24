@@ -19,6 +19,7 @@ fn current_output_replaces_its_recovered_slot_without_checkpoint_growth() {
             source_partition: partition,
             producer_dependency: None,
             idempotency_key: source,
+            resources: None,
             roles: Vec::new(),
         }
     };
@@ -178,7 +179,51 @@ fn accepted_prefix(producer: &[u8], dependency_posture: u8, dependency: [u8; 32]
     accepted.push(dependency_posture);
     accepted.extend_from_slice(&dependency);
     accepted.extend_from_slice(&[3; 32]);
+    accepted.extend_from_slice(&[0; 17]);
     accepted
+}
+
+#[test]
+fn producer_resource_profile_roundtrips_and_legacy_is_unavailable() {
+    let mut accepted = accepted_prefix(b"producer", 0, [0; 32]);
+    accepted.truncate(accepted.len() - 17);
+    super::resources::encode_profile(
+        &mut accepted,
+        Some(crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerDemandResources::new(4_096, 8_192)),
+    );
+    accepted.extend_from_slice(&0_u64.to_be_bytes());
+    let decoded = checkpoint_from_body(checkpoint_body(1, accepted))
+        .decode()
+        .expect("v4 resource evidence decodes");
+    let profile = decoded.accepted_outputs[0].resources.unwrap();
+    assert_eq!((profile.work(), profile.retained_bytes()), (4_096, 8_192));
+
+    let mut legacy = accepted_prefix(b"producer", 0, [0; 32]);
+    legacy.truncate(legacy.len() - 17);
+    legacy.extend_from_slice(&0_u64.to_be_bytes());
+    let mut body = checkpoint_body(1, legacy);
+    body[..2].copy_from_slice(&3_u16.to_be_bytes());
+    let decoded = checkpoint_from_body(body)
+        .decode()
+        .expect("legacy output identity decodes without new resource evidence");
+    assert_eq!(decoded.accepted_outputs[0].resources, None);
+}
+
+#[test]
+fn producer_resource_profile_rejects_invalid_posture_and_padding() {
+    let mut malformed = accepted_without_roles(b"producer", 0);
+    let position = malformed.len() - 8 - 17;
+    malformed[position] = 7;
+    assert_denied(
+        checkpoint_body(1, malformed.clone()),
+        "producer resource profile is invalid",
+    );
+    malformed[position] = 0;
+    malformed[position + 8] = 1;
+    assert_denied(
+        checkpoint_body(1, malformed),
+        "producer resource profile is invalid",
+    );
 }
 
 fn accepted_without_roles(producer: &[u8], role_count: u64) -> Vec<u8> {
@@ -228,19 +273,22 @@ fn padded(mut accepted: Vec<u8>) -> Vec<u8> {
 }
 
 fn assert_denied(body: Vec<u8>, expected: &str) {
-    let checksum = Sha256::digest(&body);
-    let mut bytes = Vec::with_capacity(MAGIC.len() + CHECKSUM_BYTES + body.len());
-    bytes.extend_from_slice(MAGIC);
-    bytes.extend_from_slice(&checksum);
-    bytes.extend_from_slice(&body);
-    let checkpoint =
-        WorthQueryApplicationCheckpoint::from_untrusted_bytes(bytes.into_boxed_slice());
+    let checkpoint = checkpoint_from_body(body);
     let denial = match checkpoint.decode() {
         Err(denial) => denial,
-        Ok(_) => panic!("hostile v3 payload must fail closed"),
+        Ok(_) => panic!("hostile checkpoint payload must fail closed"),
     };
     assert!(
         denial.contains(expected),
         "expected `{expected}` denial, got `{denial}`"
     );
+}
+
+fn checkpoint_from_body(body: Vec<u8>) -> WorthQueryApplicationCheckpoint {
+    let checksum = Sha256::digest(&body);
+    let mut bytes = Vec::with_capacity(MAGIC.len() + CHECKSUM_BYTES + body.len());
+    bytes.extend_from_slice(MAGIC);
+    bytes.extend_from_slice(&checksum);
+    bytes.extend_from_slice(&body);
+    WorthQueryApplicationCheckpoint::from_untrusted_bytes(bytes.into_boxed_slice())
 }

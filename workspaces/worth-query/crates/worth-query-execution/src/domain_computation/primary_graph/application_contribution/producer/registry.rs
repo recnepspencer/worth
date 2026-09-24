@@ -201,6 +201,8 @@ where
         Ok(WorthQuerySelectedApplicationProducer {
             identity: selected.declaration.identity.clone(),
             applicability: selected.declaration.applicability[0],
+            exact_retained_output: true,
+            retained_resources: None,
         })
     }
 

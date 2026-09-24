@@ -47,12 +47,20 @@ where
                         )
                     }
                 };
+                let resources = self
+                    .primary_provider
+                    .graph
+                    .output_lineage
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner)
+                    .producer_resources_for_receipt(&receipt);
                 self.finish_output_checkpoint(
                     interest,
                     claim,
                     Checkpoint::Ready(WorthQueryCompletedOutputDemand {
                         authority: WorthQueryAcceptedOutputAuthority::Committed(receipt),
                         readiness,
+                        resources,
                     }),
                     None,
                 )

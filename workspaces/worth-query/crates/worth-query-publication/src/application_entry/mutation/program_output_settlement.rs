@@ -63,6 +63,10 @@ impl<RootQuery> WorthQueryApplicationProgramOutputSettlement<RootQuery> {
         self.root.readiness_delivery()
     }
 
+    pub fn root_producer_contacts_in_this_demand(&self) -> usize {
+        self.root.producer_contacts_in_this_demand()
+    }
+
     pub fn observation(&self) -> &crate::application_entry::WorthQueryApplicationReadObservation {
         self.outputs
             .iter()

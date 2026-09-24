@@ -262,6 +262,18 @@ where
             source_epoch,
             source_scope,
         )? {
+            let resources = restored.checkpoint.resources.ok_or_else(|| {
+                denial(
+                    WorthQueryOutputDemandDenialKind::IncompleteDependencyCoverage,
+                    "restored output has no retained producer resource profile",
+                )
+            })?;
+            super::resources::validate_retained_resources(
+                resources,
+                &selected.identity,
+                maximum_work,
+                maximum_retained_bytes,
+            )?;
             let (interest, newly_adopted) = self.output_demands.admit_restored(
                 key,
                 source_scope,
@@ -278,34 +290,40 @@ where
                 observed_source,
                 currentness_work_limit,
                 maximum_retained_bytes,
+                resources: Some(resources),
+                resources_validated: true,
+                producer_contacts_in_this_demand: 0,
                 admission_kind,
                 interest: Some(interest),
             });
         }
-        let resources = entry.executor.resources(&source).ok_or_else(|| {
-            denial(
-                WorthQueryOutputDemandDenialKind::ForeignSource,
+        // Exact source currentness has already been proved by Query selection.
+        // An unchanged output must not contact the provider just to estimate
+        // resources for work it will not perform. A racing fresh execution
+        // validates the same limits before producer execution.
+        let resources = if selected.exact_retained_output {
+            let resources = selected.retained_resources.ok_or_else(|| {
+                denial(
+                    WorthQueryOutputDemandDenialKind::IncompleteDependencyCoverage,
+                    "retained output has no producer resource profile",
+                )
+            })?;
+            super::resources::validate_retained_resources(
+                resources,
                 &selected.identity,
-            )
-        })?;
-        if resources.work() > maximum_work {
-            return Err(denial(
-                WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
+                maximum_work,
+                maximum_retained_bytes,
+            )?;
+            resources
+        } else {
+            super::resources::validate_demand_resources(
+                entry.executor.as_ref(),
+                &source,
                 &selected.identity,
-            )
-            .with_recovery_posture(
-                super::super::WorthQueryOutputDemandRecoveryPosture::Retryable,
-            ));
-        }
-        if resources.retained_bytes() > maximum_retained_bytes {
-            return Err(denial(
-                WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
-                &selected.identity,
-            )
-            .with_recovery_posture(
-                super::super::WorthQueryOutputDemandRecoveryPosture::Retryable,
-            ));
-        }
+                maximum_work,
+                maximum_retained_bytes,
+            )?
+        };
         let interest = match performed_source {
             Some(source_commit) => self.output_demands.admit_performed(
                 key,
@@ -328,6 +346,7 @@ where
                 successor_of,
             )?,
         };
+        let resources_validated = !selected.exact_retained_output;
         Ok(WorthQueryAdmittedOutputDemand {
             runtime_authority: self.runtime.authority_identity().as_u64(),
             schema_binding: self.installed_schema.binding_identity(),
@@ -335,6 +354,9 @@ where
             observed_source,
             currentness_work_limit,
             maximum_retained_bytes,
+            resources: Some(resources),
+            resources_validated,
+            producer_contacts_in_this_demand: 0,
             admission_kind,
             interest: Some(interest),
         })

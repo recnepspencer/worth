@@ -36,9 +36,11 @@ impl WorthQueryOutputDemandRegistry {
             return Ok((interest(self, key, record), false));
         }
         supersede_predecessors(&mut state, &requested_key)?;
+        let resources = restored.checkpoint.resources;
         let completion = super::WorthQueryCompletedOutputDemand {
             authority: super::WorthQueryAcceptedOutputAuthority::Restored(restored),
             readiness: crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputReadinessDeliveryEvidence::from_restoration(),
+            resources,
         };
         let record = DemandRecord {
             interests: 1,
