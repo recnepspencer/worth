@@ -75,6 +75,7 @@ impl CustomInvariantRule for GraphSelectedStateProbe {
                         super::world::supply_chain::EntityKind::Vessel,
                     )],
                     affected_relation_kinds: vec![],
+                    include_relation_endpoint_entity_touches: true,
                 }
                 .canonicalize(),
                 execution_point: InvariantExecutionPoint::GraphComposition,

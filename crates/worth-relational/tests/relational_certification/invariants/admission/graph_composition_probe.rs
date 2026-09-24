@@ -65,6 +65,7 @@ impl CustomInvariantRule for LargeAdmissionProbe {
                     read_relation_kinds: vec![],
                     affected_entity_kinds: vec![],
                     affected_relation_kinds: vec![],
+                    include_relation_endpoint_entity_touches: true,
                 }
                 .canonicalize(),
                 execution_point: self.point,
