@@ -13,6 +13,20 @@ pub(in crate::domain_computation::primary_graph) fn changes_from_summary(
 ) -> Option<Vec<ViewChange>> {
     let mut required = 0usize;
     for record in &summary.records {
+        // An incomplete summary cannot prove that no retained dependency
+        // changed. Publication will make views cold in this case.
+        if matches!(record.target, RecordRef::Entity(_))
+            && record.structural_change == RecordStructuralChange::Updated
+            && record.aspect_scopes.is_empty()
+        {
+            return None;
+        }
+        if matches!(record.target, RecordRef::Relation(_))
+            && record.before_endpoints.is_none()
+            && record.after_endpoints.is_none()
+        {
+            return None;
+        }
         let additional = match record.target {
             RecordRef::Entity(_) => record.aspect_scopes.len().checked_add(1)?,
             RecordRef::Relation(_) => 4,
@@ -161,5 +175,22 @@ mod tests {
             ]
         );
         assert!(changes_from_summary(&summary, 3).is_none());
+    }
+
+    #[test]
+    fn missing_changed_scopes_cannot_keep_a_view_warm() {
+        for target in [
+            RecordRef::Entity(entity(1)),
+            RecordRef::Relation(RelationId::new(PartitionId::main(), 1, 1)),
+        ] {
+            let incomplete = summary(vec![PreparedRelationalRecordChange {
+                target,
+                structural_change: RecordStructuralChange::Updated,
+                aspect_scopes: vec![],
+                before_endpoints: None,
+                after_endpoints: None,
+            }]);
+            assert!(changes_from_summary(&incomplete, 4).is_none());
+        }
     }
 }
