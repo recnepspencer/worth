@@ -54,7 +54,7 @@ fn prepare_checkpoint_state(
         partitions,
         history,
         lineage: prepare_lineage(restored, checkpoint),
-        indexes: prepare_indexes(checkpoint),
+        indexes: prepare_indexes(checkpoint)?,
         checkpoint: checkpoint.clone(),
     })
 }
@@ -195,13 +195,27 @@ fn prepare_lineage(
     lineage
 }
 
-fn prepare_indexes(checkpoint: &DurableCheckpoint) -> IndexingState {
+fn prepare_indexes(checkpoint: &DurableCheckpoint) -> Result<IndexingState, DurabilityError> {
+    if checkpoint.derived_index_checkpoint_format > 1
+        || (checkpoint.derived_index_checkpoint_format == 1)
+            != checkpoint.derived_index_checkpoint.is_some()
+    {
+        return Err(DurabilityError::new(
+            crate::durability::data::RecoveryFailureClass::CorruptCheckpoint,
+            "derived index checkpoint format or payload is missing",
+        ));
+    }
     let mut indexes = IndexingState::default();
     for definition in &checkpoint.index_definitions {
         indexes.insert_definition(definition.clone());
     }
-    restore_checkpoint_derived_index_artifacts(&mut indexes, &checkpoint.derived_index_artifacts);
-    indexes
+    restore_checkpoint_derived_index_artifacts(
+        &mut indexes,
+        &checkpoint.derived_index_artifacts,
+        checkpoint.derived_index_checkpoint.as_ref(),
+        &checkpoint.envelopes,
+    )?;
+    Ok(indexes)
 }
 
 fn install_checkpoint_state(

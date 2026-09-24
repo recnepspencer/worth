@@ -280,6 +280,9 @@ pub struct DurableCheckpoint {
     pub lineage: LineageCheckpointArtifact,
     pub index_definitions: Vec<DerivedIndexDefinition>,
     pub derived_index_artifacts: DerivedIndexArtifacts,
+    pub(crate) derived_index_checkpoint:
+        Option<crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts>,
+    pub(crate) derived_index_checkpoint_format: u16,
     pub symbol_table: SymbolTableSnapshot,
     pub runtime_name: String,
 }

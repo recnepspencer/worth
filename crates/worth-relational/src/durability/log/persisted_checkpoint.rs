@@ -32,7 +32,13 @@ struct PersistedDurableCheckpoint {
     aspect_contracts: Vec<worth_foundational::facade::PortableAspectContract>,
     lineage: crate::lineage::data::LineageCheckpointArtifact,
     index_definitions: Vec<crate::indexes::data::DerivedIndexDefinition>,
+    #[serde(default)]
     derived_index_artifacts: crate::indexes::data::DerivedIndexArtifacts,
+    #[serde(default)]
+    derived_index_checkpoint:
+        Option<crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts>,
+    #[serde(default)]
+    derived_index_checkpoint_format: u16,
     symbol_table: crate::symbols::data::SymbolTableSnapshot,
     runtime_name: String,
 }
@@ -53,13 +59,15 @@ impl PersistedDurableCheckpointFile {
                 envelopes: checkpoint
                     .envelopes
                     .iter()
-                    .map(PersistedCanonicalCommit::from_positioned)
+                    .map(PersistedCanonicalCommit::from_checkpoint_positioned)
                     .collect(),
                 partition_images: checkpoint.partition_images.clone(),
                 aspect_contracts: checkpoint.aspect_contracts.clone(),
                 lineage: checkpoint.lineage.clone(),
                 index_definitions: checkpoint.index_definitions.clone(),
                 derived_index_artifacts: checkpoint.derived_index_artifacts.clone(),
+                derived_index_checkpoint: checkpoint.derived_index_checkpoint.clone(),
+                derived_index_checkpoint_format: checkpoint.derived_index_checkpoint_format,
                 symbol_table: checkpoint.symbol_table.clone(),
                 runtime_name: checkpoint.runtime_name.clone(),
             },
@@ -82,6 +90,8 @@ impl PersistedDurableCheckpointFile {
             lineage,
             index_definitions,
             derived_index_artifacts,
+            derived_index_checkpoint,
+            derived_index_checkpoint_format,
             symbol_table,
             runtime_name,
         } = checkpoint;
@@ -97,13 +107,15 @@ impl PersistedDurableCheckpointFile {
                 record_slot_frontiers,
                 envelopes: envelopes
                     .iter()
-                    .map(PersistedCanonicalCommit::from_positioned)
+                    .map(PersistedCanonicalCommit::from_checkpoint_positioned)
                     .collect(),
                 partition_images,
                 aspect_contracts,
                 lineage,
                 index_definitions,
                 derived_index_artifacts,
+                derived_index_checkpoint,
+                derived_index_checkpoint_format,
                 symbol_table,
                 runtime_name,
             },
@@ -112,6 +124,15 @@ impl PersistedDurableCheckpointFile {
 
     pub(super) fn readmit(self) -> Result<DurableCheckpointFile, DurabilityError> {
         let checkpoint = self.checkpoint;
+        if checkpoint.derived_index_checkpoint_format > 1
+            || (checkpoint.derived_index_checkpoint_format == 1)
+                != checkpoint.derived_index_checkpoint.is_some()
+        {
+            return Err(DurabilityError::new(
+                RecoveryFailureClass::CorruptCheckpoint,
+                "derived index checkpoint format or payload is missing",
+            ));
+        }
         let envelopes = checkpoint
             .envelopes
             .into_iter()
@@ -144,6 +165,8 @@ impl PersistedDurableCheckpointFile {
                 lineage: checkpoint.lineage,
                 index_definitions: checkpoint.index_definitions,
                 derived_index_artifacts: checkpoint.derived_index_artifacts,
+                derived_index_checkpoint: checkpoint.derived_index_checkpoint,
+                derived_index_checkpoint_format: checkpoint.derived_index_checkpoint_format,
                 symbol_table: checkpoint.symbol_table,
                 runtime_name: checkpoint.runtime_name,
             },

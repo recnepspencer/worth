@@ -19,6 +19,14 @@ impl PersistedCanonicalCommit {
         }
     }
 
+    /// Checkpoint envelopes carry canonical history, not rebuildable index
+    /// caches. The versioned checkpoint artifact carries retained generations.
+    pub(crate) fn from_checkpoint_positioned(commit: &PositionedCanonicalCommit) -> Self {
+        let mut persisted = Self::from_positioned(commit);
+        persisted.canonical.derived_index_artifacts = Default::default();
+        persisted
+    }
+
     pub(crate) fn into_receipt(self) -> crate::history::data::RelationalCommitReceipt {
         self.canonical.commit
     }

@@ -4,6 +4,7 @@ mod branch_root_checkpoint;
 mod branch_root_content_binding;
 mod branch_root_schema_binding;
 mod checkpoint_recovery;
+mod derived_index_checkpoint;
 mod descriptor_continuity;
 mod fork_provenance_checkpoint;
 mod legacy_segment_recovery;

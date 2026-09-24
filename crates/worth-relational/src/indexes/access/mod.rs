@@ -206,6 +206,7 @@ impl<'runtime> IndexAccess<'runtime> {
             .collect()
     }
 
+    #[cfg(test)]
     pub(crate) fn generations_snapshot(&self) -> Vec<DerivedIndexGeneration> {
         self.runtime
             .indexes

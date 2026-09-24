@@ -76,6 +76,23 @@ pub(crate) struct IndexingSubsystem {
 }
 
 impl IndexingSubsystem {
+    pub(crate) fn reclaim_except_versions(
+        &self,
+        retained: &BTreeSet<(VersionId, SchemaVersionId)>,
+    ) -> usize {
+        self.state
+            .write()
+            .generations
+            .reclaim_except_versions(retained)
+    }
+
+    pub(crate) fn retained_generations(
+        &self,
+        versions: &BTreeSet<(VersionId, SchemaVersionId)>,
+    ) -> Vec<Arc<DerivedIndexGeneration>> {
+        self.state.read().generations.retained(versions)
+    }
+
     /// Replace the whole subsystem, for checkpoint restore.
     pub(crate) fn install(&self, state: IndexingState) {
         *self.state.write() = state;

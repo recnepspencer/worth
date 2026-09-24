@@ -36,6 +36,45 @@ fn id(generation: Option<Arc<DerivedIndexGeneration>>) -> Option<DerivedIndexGen
     generation.map(|generation| generation.generation_id)
 }
 
+#[test]
+fn reclamation_keeps_pinned_old_and_sibling_versions_and_cleans_bindings() {
+    let mut catalog = GenerationCatalog::default();
+    for generation in [
+        generation(1, 1, 0, 1, 1, true),
+        generation(2, 1, 0, 2, 1, true),
+        generation(3, 1, 0, 3, 1, true),
+        generation(4, 1, 1, 4, 1, true),
+    ] {
+        catalog.insert(generation);
+    }
+    let retained = BTreeSet::from([
+        (VersionId(1), SchemaVersionId(1)),
+        (VersionId(3), SchemaVersionId(1)),
+        (VersionId(4), SchemaVersionId(1)),
+    ]);
+    assert_eq!(catalog.reclaim_except_versions(&retained), 1);
+    assert_eq!(
+        id(catalog.exact(
+            DerivedIndexId(1),
+            Some(&BranchId("branch-0".into())),
+            VersionId(1),
+            SchemaVersionId(1)
+        )),
+        Some(DerivedIndexGenerationId(1))
+    );
+    assert_eq!(
+        id(catalog.exact(
+            DerivedIndexId(1),
+            Some(&BranchId("branch-1".into())),
+            VersionId(4),
+            SchemaVersionId(1)
+        )),
+        Some(DerivedIndexGenerationId(4))
+    );
+    assert!(catalog.for_commit(CommitId(102)).is_empty());
+    assert_eq!(catalog.all().len(), 3);
+}
+
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(64))]
     #[test]

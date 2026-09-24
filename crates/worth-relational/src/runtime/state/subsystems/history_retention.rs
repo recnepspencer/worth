@@ -10,6 +10,26 @@ use crate::history::retention::{
 use super::HistorySubsystem;
 
 impl HistorySubsystem {
+    pub(crate) fn retained_index_versions(
+        &self,
+    ) -> std::collections::BTreeSet<(
+        crate::identity::data::VersionId,
+        crate::schema::data::SchemaVersionId,
+    )> {
+        let mut versions = self.retention_owner.retained_index_versions();
+        for cell in self.branch_cells.values() {
+            if let Some(root) = cell.root() {
+                if let Some(envelope) = root.canonical_envelope() {
+                    versions.insert((
+                        envelope.commit.version_id,
+                        root.schema_authority().schema_version(),
+                    ));
+                }
+            }
+        }
+        versions
+    }
+
     pub(crate) fn retention_binding(&self) -> RelationalBranchRetentionBinding {
         self.retention_owner.binding()
     }

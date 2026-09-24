@@ -26,6 +26,67 @@ pub(super) struct GenerationCatalog {
 }
 
 impl GenerationCatalog {
+    /// Retain every exact root version, plus one current locator per index and
+    /// publishing branch for callers of latest_generation. Selection maps are
+    /// rebuilt from the surviving identities so no stale scope remains.
+    pub(super) fn reclaim_except_versions(
+        &mut self,
+        retained: &BTreeSet<(VersionId, SchemaVersionId)>,
+    ) -> usize {
+        let live = self.retained_ids(retained);
+        let removals = self
+            .entries
+            .keys()
+            .filter(|id| !live.contains(id))
+            .copied()
+            .collect::<Vec<_>>();
+        for id in &removals {
+            let generation = self.entries.remove(id).expect("selected retained entry");
+            self.remove_bindings(&generation);
+        }
+        removals.len()
+    }
+
+    pub(super) fn retained(
+        &self,
+        versions: &BTreeSet<(VersionId, SchemaVersionId)>,
+    ) -> Vec<Arc<DerivedIndexGeneration>> {
+        let live = self.retained_ids(versions);
+        self.entries
+            .iter()
+            .filter(|(id, _)| live.contains(id))
+            .map(|(_, generation)| Arc::clone(generation))
+            .collect()
+    }
+
+    fn retained_ids(
+        &self,
+        versions: &BTreeSet<(VersionId, SchemaVersionId)>,
+    ) -> BTreeSet<DerivedIndexGenerationId> {
+        let latest = self.entries.values().fold(
+            BTreeMap::<(DerivedIndexId, BranchId), DerivedIndexGenerationId>::new(),
+            |mut latest, generation| {
+                let key = (generation.index_id, generation.source_branch_id.clone());
+                latest
+                    .entry(key)
+                    .and_modify(|id| *id = (*id).max(generation.generation_id))
+                    .or_insert(generation.generation_id);
+                latest
+            },
+        );
+        self.entries
+            .iter()
+            .filter(|(id, generation)| {
+                versions.contains(&(
+                    generation.applicability.version_id,
+                    generation.applicability.schema_version,
+                )) || latest.get(&(generation.index_id, generation.source_branch_id.clone()))
+                    == Some(id)
+            })
+            .map(|(id, _)| *id)
+            .collect()
+    }
+
     pub(super) fn publish(&mut self, generation: DerivedIndexGeneration) {
         assert!(
             !self.entries.contains_key(&generation.generation_id),

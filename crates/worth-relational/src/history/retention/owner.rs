@@ -54,6 +54,28 @@ pub(super) struct RelationalRetiredBranchRoot {
 }
 
 impl RelationalBranchRetentionOwner {
+    /// Cold inventory of roots that can still back an exact observation.
+    /// Never infer index liveness from the index catalog's latest entry.
+    pub(crate) fn retained_index_versions(
+        &self,
+    ) -> std::collections::BTreeSet<(
+        crate::identity::data::VersionId,
+        crate::schema::data::SchemaVersionId,
+    )> {
+        self.inner
+            .retired_roots
+            .iter()
+            .filter_map(|retired| {
+                let root = retired.root.as_ref()?;
+                let envelope = root.canonical_envelope()?;
+                Some((
+                    envelope.commit.version_id,
+                    root.schema_authority().schema_version(),
+                ))
+            })
+            .collect()
+    }
+
     pub(crate) fn new(runtime_instance_id: u64) -> Self {
         Self::new_with_limits(
             runtime_instance_id,

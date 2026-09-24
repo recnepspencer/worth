@@ -92,11 +92,28 @@ fn remove_commit_root(
 }
 
 impl crate::runtime::RelationalRuntime {
+    /// Explicit cold index maintenance. An in-flight cutover or unsettled
+    /// candidate leaves the catalog untouched for a later pass.
+    pub fn run_index_generation_reclamation_pass(&self) -> Option<usize> {
+        self.history
+            .canonical_checkpoint_gate()
+            .with_quiescent_index_reclamation(|| {
+                // The owner inventory, rather than Arc payload counts, decides
+                // which historical versions still have live obligations.
+                self.history.reclaim_retired_branch_roots(usize::MAX);
+                let retained = self.history.retained_index_versions();
+                self.indexes.reclaim_except_versions(&retained)
+            })
+    }
+
     /// Reclaim cold immutable branch roots through the history owner. This
     /// bounded maintenance pass never walks live references or commit history.
     pub fn run_branch_root_reclamation_pass(&mut self) -> RelationalBranchRootReclamationOutcome {
-        self.history
-            .reclaim_retired_branch_roots(self.config.storage.retention.reclaim_batch_size)
+        let outcome = self
+            .history
+            .reclaim_retired_branch_roots(self.config.storage.retention.reclaim_batch_size);
+        self.run_index_generation_reclamation_pass();
+        outcome
     }
 }
 
