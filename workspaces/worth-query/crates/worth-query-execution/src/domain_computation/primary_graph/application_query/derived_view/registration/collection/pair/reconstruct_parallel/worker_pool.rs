@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::sync::{mpsc, Mutex};
 
-use worth_relational::facade::identity::{EntityId, PartitionId};
+use worth_relational::facade::identity::EntityId;
 
 use super::{Denial, MAX_PAIR_READS_IN_FLIGHT};
 
@@ -129,6 +129,8 @@ mod tests {
     use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
     use std::sync::mpsc;
     use std::time::Duration;
+
+    use worth_relational::facade::identity::PartitionId;
 
     use super::*;
 
