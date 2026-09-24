@@ -57,6 +57,18 @@ fn prepared_summary_reads_exact_whole_scalar_scope_without_publishing() {
         .aspect_scopes
         .iter()
         .any(|scope| { scope.aspect_key.as_str() == "name" && scope.field_path.is_none() }));
+    let (_, before_root, after_root) = candidate.change_summary_basis_and_roots().unwrap();
+    let before_partition = before_root.partition_state(entity.partition_id).unwrap();
+    let after_partition = after_root.partition_state(entity.partition_id).unwrap();
+    let slot = entity.slot_index() as usize;
+    assert_ne!(
+        before_partition.entity_arena.aspect_versions_at(slot),
+        after_partition.entity_arena.aspect_versions_at(slot)
+    );
+    assert_ne!(
+        before_partition.entity_arena.field_revisions_at(slot),
+        after_partition.entity_arena.field_revisions_at(slot)
+    );
     assert_eq!(record.before_endpoints, None);
     assert_eq!(record.after_endpoints, None);
     assert_eq!(
@@ -65,6 +77,70 @@ fn prepared_summary_reads_exact_whole_scalar_scope_without_publishing() {
             .observation()
             .version_id(),
         before.version_id()
+    );
+    runtime.discard_prepared_candidate(candidate).unwrap();
+}
+
+#[test]
+fn unchanged_entity_update_has_empty_scope_but_advances_native_field_revision() {
+    let runtime = runtime_with_test_schema();
+    let entity = create_entity(&runtime, "summary-unchanged");
+    let mut transaction = test_owner_begin_transaction_for_main(&runtime);
+    transaction
+        .push_batch(WorkerIntentBatch::new("summary-unchanged-update").push(
+            MutationIntent::Entity(
+                crate::facade::transactions::EntityMutationIntent::UpdateFields(
+                    UpdateEntityFieldsIntent {
+                        entity_id: entity,
+                        fields: name_field_patch("summary-unchanged"),
+                    },
+                ),
+            ),
+        ))
+        .unwrap();
+    let candidate = runtime.prepare_branch_transaction(transaction).unwrap();
+    let summary = runtime
+        .preparation_port()
+        .summarize_prepared_candidate(&candidate, GENEROUS)
+        .unwrap();
+    let record = summary
+        .records
+        .iter()
+        .find(|record| record.target == RecordRef::Entity(entity))
+        .expect("the unchanged update remains a canonical record patch");
+    assert_eq!(record.structural_change, RecordStructuralChange::Updated);
+    assert!(record.aspect_scopes.is_empty());
+    let (_, before_root, after_root) = candidate.change_summary_basis_and_roots().unwrap();
+    let patch = after_root
+        .canonical_envelope()
+        .unwrap()
+        .patch
+        .authoritative_record_patches
+        .iter()
+        .find(|patch| patch.target == RecordRef::Entity(entity))
+        .unwrap();
+    assert!(patch.semantic_changes.is_empty());
+    let before = before_root.partition_state(entity.partition_id).unwrap();
+    let after = after_root.partition_state(entity.partition_id).unwrap();
+    let slot = entity.slot_index() as usize;
+    assert_eq!(
+        before.entity_arena.aspect_versions_at(slot),
+        after.entity_arena.aspect_versions_at(slot)
+    );
+    let before_fields = before.entity_arena.field_revisions_at(slot).unwrap();
+    let after_fields = after.entity_arena.field_revisions_at(slot).unwrap();
+    assert_eq!(
+        before_fields.keys().collect::<Vec<_>>(),
+        after_fields.keys().collect::<Vec<_>>()
+    );
+    assert_eq!(before_fields.len(), 1);
+    assert_eq!(
+        before_fields.values().next().unwrap().version(),
+        summary.before_version
+    );
+    assert_eq!(
+        after_fields.values().next().unwrap().version(),
+        summary.after_version
     );
     runtime.discard_prepared_candidate(candidate).unwrap();
 }
