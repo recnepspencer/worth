@@ -7,6 +7,7 @@ use dashmap::DashMap;
 use crate::identity::data::KindId;
 use crate::identity::data::{EntityId, PartitionId, RelationId, VersionId};
 use crate::performance::data::CandidateInputCounts;
+use crate::validation::engine::state_view::slot_resolution::AspectLocation;
 use crate::validation::engine::state_view::{VisibleEntityMetadata, VisibleRelationMetadata};
 use crate::validation::engine::{
     InvariantExecutionRequest, InvariantObservation, InvariantRuntimeView,
@@ -54,17 +55,19 @@ pub(super) struct CandidateInputEntries {
         Arc<OnceLock<Option<VisibleRelationMetadata>>>,
     >,
     pub(super) entity_aspects:
-        DashMap<(CandidateInputBasis, VersionId, EntityId), Arc<OnceLock<Option<usize>>>>,
-    pub(super) relation_aspects:
-        DashMap<(CandidateInputBasis, VersionId, RelationId), Arc<OnceLock<Option<usize>>>>,
+        DashMap<(CandidateInputBasis, VersionId, EntityId), Arc<OnceLock<Option<AspectLocation>>>>,
+    pub(super) relation_aspects: DashMap<
+        (CandidateInputBasis, VersionId, RelationId),
+        Arc<OnceLock<Option<AspectLocation>>>,
+    >,
     pub(super) adjacency:
         DashMap<(CandidateInputBasis, VersionId, EntityId, bool), Arc<OnceLock<Arc<[RelationId]>>>>,
     pub(super) adjacency_counts:
         DashMap<(CandidateInputBasis, VersionId, EntityId, bool), Arc<OnceLock<usize>>>,
     pub(super) touched_entities:
-        DashMap<(CandidateInputBasis, VersionId), Arc<OnceLock<Vec<EntityId>>>>,
+        DashMap<(CandidateInputBasis, VersionId), Arc<OnceLock<Arc<[EntityId]>>>>,
     pub(super) touched_relations:
-        DashMap<(CandidateInputBasis, VersionId), Arc<OnceLock<Vec<RelationId>>>>,
+        DashMap<(CandidateInputBasis, VersionId), Arc<OnceLock<Arc<[RelationId]>>>>,
     pub(super) touched_partitions:
         DashMap<(CandidateInputBasis, VersionId), Arc<OnceLock<Option<Arc<[PartitionId]>>>>>,
     pub(super) touched_entity_slots:

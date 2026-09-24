@@ -32,7 +32,7 @@ pub(crate) fn collect_touched_structural_set(
     if let Some(ids) =
         state_view.touched_visible_entity_ids_with_budget(|units| work.try_charge(units))
     {
-        for entity_id in ids {
+        for entity_id in ids.iter().copied() {
             include_affected_entity(
                 &mut visible_entities,
                 entity_id,
@@ -45,7 +45,7 @@ pub(crate) fn collect_touched_structural_set(
     if let Some(ids) =
         state_view.touched_visible_relation_ids_with_budget(|units| work.try_charge(units))
     {
-        for relation_id in ids {
+        for relation_id in ids.iter().copied() {
             include_affected_relation(
                 &mut visible_entities,
                 &mut visible_relations,

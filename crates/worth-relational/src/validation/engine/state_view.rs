@@ -4,6 +4,7 @@ use crate::storage::substrate::HistoricalMetadata;
 use std::sync::Arc;
 
 mod aspect_state;
+pub(crate) mod slot_resolution;
 mod structural_adjacency;
 
 #[derive(Clone)]
@@ -94,7 +95,7 @@ impl<'state> InvariantStateView<'state> {
     pub(crate) fn touched_visible_entity_ids_with_budget(
         &self,
         mut charge: impl FnMut(usize) -> bool,
-    ) -> Option<Vec<crate::identity::data::EntityId>> {
+    ) -> Option<Arc<[crate::identity::data::EntityId]>> {
         let mut sources = Vec::new();
         let partition_ids = self.touched_partitions()?;
         for partition_id in partition_ids.iter().copied() {
@@ -130,7 +131,7 @@ impl<'state> InvariantStateView<'state> {
             };
             match &self.candidate_inputs {
                 Some((inputs, basis)) => inputs.touched_entities(*basis, self.version_id, gather),
-                None => gather(),
+                None => Arc::from(gather()),
             }
         })
     }
@@ -289,7 +290,7 @@ impl<'state> InvariantStateView<'state> {
     pub(crate) fn touched_visible_relation_ids_with_budget(
         &self,
         mut charge: impl FnMut(usize) -> bool,
-    ) -> Option<Vec<crate::identity::data::RelationId>> {
+    ) -> Option<Arc<[crate::identity::data::RelationId]>> {
         let mut sources = Vec::new();
         let partition_ids = self.touched_partitions()?;
         for partition_id in partition_ids.iter().copied() {
@@ -321,7 +322,7 @@ impl<'state> InvariantStateView<'state> {
             };
             match &self.candidate_inputs {
                 Some((inputs, basis)) => inputs.touched_relations(*basis, self.version_id, gather),
-                None => gather(),
+                None => Arc::from(gather()),
             }
         })
     }
@@ -358,37 +359,6 @@ impl<'state> InvariantStateView<'state> {
                     .retired_at()
                     .is_none_or(|retired| self.version_id < retired)
         })
-    }
-
-    fn entity_partition_for_slot(
-        &self,
-        partition_id: crate::identity::data::PartitionId,
-        slot: usize,
-    ) -> Option<&'state crate::storage::overlay::PartitionState> {
-        let partition = self.state.get_partition(partition_id)?;
-        if self.state.entity_slot_is_touched(partition_id, slot)
-            || self.state.touched_entity_slots(partition_id).is_none()
-        {
-            return Some(partition);
-        }
-        self.state.base_partition(partition_id).or(Some(partition))
-    }
-
-    fn relation_partition_for_slot(
-        &self,
-        partition_id: crate::identity::data::PartitionId,
-        slot: usize,
-    ) -> Option<&'state crate::storage::overlay::PartitionState> {
-        let partition = self.state.get_partition(partition_id)?;
-        if self.state.relation_slot_is_touched(partition_id, slot)
-            || (self.state.touched_relation_slots(partition_id).is_none()
-                && partition.relation_arena.get_slot(slot).is_some())
-            || (partition.relation_arena.get_slot(slot).is_some()
-                && !partition.relation_overlay_is_sparse)
-        {
-            return Some(partition);
-        }
-        self.state.base_partition(partition_id).or(Some(partition))
     }
 }
 

@@ -20,6 +20,14 @@ pub(crate) trait PartitionAccess: Sync {
         None
     }
 
+    fn has_touched_entity_slots(&self, partition_id: PartitionId) -> bool {
+        self.touched_entity_slots(partition_id).is_some()
+    }
+
+    fn has_touched_relation_slots(&self, partition_id: PartitionId) -> bool {
+        self.touched_relation_slots(partition_id).is_some()
+    }
+
     fn entity_slot_is_touched(&self, partition_id: PartitionId, slot: usize) -> bool {
         self.touched_entity_slots(partition_id)
             .is_some_and(|slots| slots.contains(&slot))
@@ -122,6 +130,14 @@ impl<S: PartitionAccess> PartitionAccess for OverlayStateView<'_, S> {
 
     fn touched_relation_slots(&self, partition_id: PartitionId) -> Option<Vec<usize>> {
         self.staged.touched_relation_slots(partition_id)
+    }
+
+    fn has_touched_entity_slots(&self, partition_id: PartitionId) -> bool {
+        self.staged.has_touched_entity_slots(partition_id)
+    }
+
+    fn has_touched_relation_slots(&self, partition_id: PartitionId) -> bool {
+        self.staged.has_touched_relation_slots(partition_id)
     }
 
     fn touched_partition_ids(&self) -> Option<Vec<PartitionId>> {

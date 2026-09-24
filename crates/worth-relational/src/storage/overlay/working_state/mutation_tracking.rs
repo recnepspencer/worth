@@ -86,6 +86,14 @@ impl PartitionAccess for WorkingState {
             .map(|journal| journal.relation_slots.iter().copied().collect())
     }
 
+    fn has_touched_entity_slots(&self, partition_id: PartitionId) -> bool {
+        self.mutation_journal.contains_key(&partition_id)
+    }
+
+    fn has_touched_relation_slots(&self, partition_id: PartitionId) -> bool {
+        self.mutation_journal.contains_key(&partition_id)
+    }
+
     fn entity_slot_is_touched(&self, partition_id: PartitionId, slot: usize) -> bool {
         self.mutation_journal
             .get(&partition_id)

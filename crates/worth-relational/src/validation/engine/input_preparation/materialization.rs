@@ -5,6 +5,7 @@ use std::sync::{Arc, OnceLock};
 use dashmap::DashMap;
 
 use crate::identity::data::{EntityId, PartitionId, RelationId, VersionId};
+use crate::validation::engine::state_view::slot_resolution::AspectLocation;
 use crate::validation::engine::state_view::{VisibleEntityMetadata, VisibleRelationMetadata};
 
 use super::plan::{CandidateInputBasis, SharedCandidateInputs};
@@ -18,7 +19,11 @@ fn read_once<K: Eq + Hash, V: Clone>(
     physical_reads: &AtomicUsize,
     reuse_hits: &AtomicUsize,
 ) -> V {
-    let cell = map.entry(key).or_default().clone();
+    let cell = if let Some(entry) = map.get(&key) {
+        Arc::clone(entry.value())
+    } else {
+        map.entry(key).or_default().clone()
+    };
     let mut initialized = false;
     let value = cell
         .get_or_init(|| {
@@ -107,7 +112,8 @@ impl SharedCandidateInputs {
         basis: CandidateInputBasis,
         version: VersionId,
         gather: impl FnOnce() -> Vec<EntityId>,
-    ) -> Vec<EntityId> {
+    ) -> Arc<[EntityId]> {
+        let gather = || Arc::from(gather());
         if !self.sharing_enabled {
             self.entries
                 .touched_entity_gathers
@@ -128,7 +134,8 @@ impl SharedCandidateInputs {
         basis: CandidateInputBasis,
         version: VersionId,
         gather: impl FnOnce() -> Vec<RelationId>,
-    ) -> Vec<RelationId> {
+    ) -> Arc<[RelationId]> {
+        let gather = || Arc::from(gather());
         if !self.sharing_enabled {
             self.entries
                 .touched_relation_gathers
@@ -149,8 +156,8 @@ impl SharedCandidateInputs {
         basis: CandidateInputBasis,
         version: VersionId,
         id: EntityId,
-        locate: impl FnOnce() -> Option<usize>,
-    ) -> Option<usize> {
+        locate: impl FnOnce() -> Option<AspectLocation>,
+    ) -> Option<AspectLocation> {
         if !self.sharing_enabled {
             self.entries
                 .entity_aspect_reads
@@ -171,8 +178,8 @@ impl SharedCandidateInputs {
         basis: CandidateInputBasis,
         version: VersionId,
         id: RelationId,
-        locate: impl FnOnce() -> Option<usize>,
-    ) -> Option<usize> {
+        locate: impl FnOnce() -> Option<AspectLocation>,
+    ) -> Option<AspectLocation> {
         if !self.sharing_enabled {
             self.entries
                 .relation_aspect_reads
