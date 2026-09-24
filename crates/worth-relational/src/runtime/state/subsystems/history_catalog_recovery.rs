@@ -196,16 +196,22 @@ impl HistorySubsystem {
         self.branch_cells.restore_all(cells);
         let mut catalog = RelationalCommitCatalog::default();
         for envelope in self.recorded_commit_envelopes() {
-            let result = match roots.get(&envelope.commit.commit_id) {
-                Some(root) => catalog.append_envelope_with_root(envelope, Arc::clone(root)),
-                None => match descriptors.get(&envelope.commit.commit_id) {
-                    Some(descriptor) => {
-                        catalog.append_envelope_with_descriptor(envelope, descriptor.clone())
-                    }
-                    None => catalog.append_envelope(envelope),
-                },
-            };
-            result
+            let commit_id = envelope.commit.commit_id;
+            let preencoded = self.commit_artifact(commit_id).ok_or_else(|| {
+                format!(
+                    "recovered canonical catalog omitted commit `{}`",
+                    commit_id.0
+                )
+            })?;
+            let artifact = preencoded
+                .relink_preencoded_recovery(
+                    &envelope,
+                    roots.get(&commit_id),
+                    descriptors.get(&commit_id),
+                )
+                .map_err(|denial| format!("recovered catalog root linkage denied: {denial:?}"))?;
+            catalog
+                .append_preencoded_recovery(artifact)
                 .map_err(|denial| format!("recovered catalog root linkage denied: {denial:?}"))?;
         }
         self.install_commit_catalog(catalog);

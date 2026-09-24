@@ -134,29 +134,12 @@ impl RelationalCommitCatalog {
             .map_err(|_| RelationalCommitCatalogEnvelopeAppendDenial::DuplicateCommit)
     }
 
-    pub(crate) fn append_envelope_with_root(
+    pub(crate) fn append_preencoded_recovery(
         &mut self,
-        envelope: Arc<crate::history::data::CanonicalCommitEnvelope>,
-        root: Arc<crate::branch::RelationalBranchRoot>,
-    ) -> Result<RelationalCommitCatalogEntry, RelationalCommitCatalogEnvelopeAppendDenial> {
-        let artifact = RelationalCommitArtifact::from_envelope_with_root(envelope, root)
-            .map_err(RelationalCommitCatalogEnvelopeAppendDenial::Artifact)?;
+        artifact: RelationalCommitArtifact,
+    ) -> Result<RelationalCommitCatalogEntry, RelationalCommitCatalogAppendDenial> {
         self.materializations.fetch_add(1, Ordering::Relaxed);
         self.append(artifact)
-            .map_err(|_| RelationalCommitCatalogEnvelopeAppendDenial::DuplicateCommit)
-    }
-
-    pub(crate) fn append_envelope_with_descriptor(
-        &mut self,
-        envelope: Arc<crate::history::data::CanonicalCommitEnvelope>,
-        descriptor: crate::branch::RelationalBranchRootDescriptor,
-    ) -> Result<RelationalCommitCatalogEntry, RelationalCommitCatalogEnvelopeAppendDenial> {
-        let artifact =
-            RelationalCommitArtifact::from_envelope_with_descriptor(envelope, descriptor)
-                .map_err(RelationalCommitCatalogEnvelopeAppendDenial::Artifact)?;
-        self.materializations.fetch_add(1, Ordering::Relaxed);
-        self.append(artifact)
-            .map_err(|_| RelationalCommitCatalogEnvelopeAppendDenial::DuplicateCommit)
     }
 
     /// Validate an envelope without materializing or mutating the catalog.

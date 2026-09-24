@@ -103,6 +103,41 @@ fn divergent_sibling_is_not_reused_as_the_storage_mirror() {
 }
 
 #[test]
+fn recovered_main_and_sibling_catalogs_reuse_exact_canonical_payloads() {
+    let source = persisted_runtime_with_test_schema();
+    let seed = create_entity_outcome(&source, "catalog-relink-seed");
+    release_test_commit_snapshot(&source, &seed);
+    let sibling = create_branch_from_main(&source, "catalog-relink-sibling");
+    let sibling_commit =
+        create_entity_outcome_on_branch(&source, "catalog-relink-fork", sibling.clone());
+    release_test_commit_snapshot(&source, &sibling_commit);
+    let main_commit = create_entity_outcome(&source, "catalog-relink-main");
+    release_test_commit_snapshot(&source, &main_commit);
+    source.durability_authority().checkpoint().unwrap();
+
+    let plan = source.durability().recovery_plan(
+        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
+    );
+    let mut recovered = persisted_runtime_with_test_schema();
+    recovered.durability_recovery().recover(plan).unwrap();
+    for commit_id in [
+        seed.commit.commit_id,
+        sibling_commit.commit.commit_id,
+        main_commit.commit.commit_id,
+    ] {
+        let original = source.history.commit_artifact(commit_id).unwrap();
+        let readmitted = recovered.history.commit_artifact(commit_id).unwrap();
+        assert_eq!(readmitted.identity(), original.identity());
+        assert_eq!(readmitted.parentage(), original.parentage());
+        assert_eq!(readmitted.roots(), original.roots());
+        assert_eq!(
+            readmitted.canonical_payload_digest(),
+            original.canonical_payload_digest()
+        );
+    }
+}
+
+#[test]
 fn equal_image_cannot_bypass_global_contract_readmission() {
     let source = persisted_runtime_with_test_schema();
     create_entity(&source, "reuse-contract-corruption");
