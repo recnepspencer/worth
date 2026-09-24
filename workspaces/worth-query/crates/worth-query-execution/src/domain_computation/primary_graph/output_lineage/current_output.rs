@@ -3,8 +3,7 @@ use std::{any::TypeId, sync::Arc};
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 
 use super::{
-    latest_output_in_partition_budgeted, latest_output_matching, ProductCoordinate,
-    RecordedSourceIdentity, SemanticSource, WorthQueryApplicationOutputLineage,
+    ProductCoordinate, RecordedSourceIdentity, SemanticSource, WorthQueryApplicationOutputLineage,
     WorthQueryProducerLineageHead, WorthQueryRetainedOutputCandidate,
 };
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
@@ -23,29 +22,26 @@ impl WorthQueryApplicationOutputLineage {
             scope: scope.scope(),
             output_binding: TypeId::of::<Binding>(),
         };
-        let Some(versions) = self.by_source.get(&source) else {
+        if !self.by_source.contains_key(&source) {
             return (maximum_work > 0).then_some((None, 1)).ok_or(());
-        };
+        }
         let mut coordinate = ProductCoordinate {
             occurrence: observation.lifecycle_incarnation(),
             generation: observation.reference_generation().get(),
         };
         let mut work = 0_usize;
         loop {
-            let (recorded, lookup_work) = match versions.get(&coordinate.occurrence) {
-                Some(history) => latest_output_in_partition_budgeted(
-                    history,
-                    coordinate.generation,
-                    source_partition_identity,
-                    maximum_work.saturating_sub(work),
-                )?,
-                None => (None, 1),
-            };
+            let (recorded, lookup_work) = self.latest_output_in_partition_budgeted(
+                &source,
+                coordinate,
+                source_partition_identity,
+                maximum_work.saturating_sub(work),
+            )?;
             work = work.checked_add(lookup_work).ok_or(())?;
             if work > maximum_work {
                 return Err(());
             }
-            if let Some((_, recorded)) = recorded {
+            if let Some(recorded) = recorded {
                 return Ok((
                     Some(WorthQueryProducerLineageHead {
                         occurrence: coordinate.occurrence,
@@ -82,28 +78,24 @@ impl WorthQueryApplicationOutputLineage {
         let Some(source_identity) = receipt.idempotency_binding().source_identity() else {
             return Ok(None);
         };
+        let partition = receipt.idempotency_binding().source_partition_identity();
         let source = SemanticSource {
             runtime_authority,
             schema: schema.clone(),
             scope: receipt.principal_scope().scope(),
             output_binding,
         };
-        let Some(versions) = self.by_source.get(&source) else {
+        if !self.by_source.contains_key(&source) {
             return Ok(None);
-        };
+        }
         let mut coordinate = ProductCoordinate {
             occurrence: observation.lifecycle_incarnation(),
             generation: observation.reference_generation().get(),
         };
         let mut work = 0_usize;
         loop {
-            work = work.checked_add(1).ok_or(())?;
-            if work > maximum_work {
-                return Err(());
-            }
-            if let Some(recorded) = versions.get(&coordinate.occurrence).and_then(|history| {
-                latest_output_matching(history, coordinate.generation, |recorded| {
-                    recorded.source_identity
+            let matches = |recorded: &super::RecordedOutput| {
+                recorded.source_identity
                         == Some(RecordedSourceIdentity::Runtime(
                             crate::domain_computation::primary_graph::application_query::WorthQueryRuntimeSourceIdentity::new(source_identity),
                         ))
@@ -111,8 +103,24 @@ impl WorthQueryApplicationOutputLineage {
                             recorded.correspondence.as_ref(),
                             receipt.output_correspondence(),
                         )
-                })
-            }) {
+            };
+            let (recorded, lookup_work) = match partition {
+                Some(partition) => self.matching_output_in_partition_budgeted(
+                    &source,
+                    coordinate,
+                    partition,
+                    maximum_work.saturating_sub(work),
+                    matches,
+                )?,
+                None => self.matching_legacy_output_budgeted(
+                    &source,
+                    coordinate,
+                    maximum_work.saturating_sub(work),
+                    matches,
+                )?,
+            };
+            work = work.checked_add(lookup_work).ok_or(())?;
+            if let Some(recorded) = recorded {
                 let Some(facts) = recorded
                     .observed_source_facts
                     .as_ref()
@@ -155,29 +163,31 @@ impl WorthQueryApplicationOutputLineage {
             scope: restored.scope,
             output_binding,
         };
-        let Some(versions) = self.by_source.get(&source) else {
+        if !self.by_source.contains_key(&source) {
             return Ok(None);
-        };
+        }
         let mut coordinate = ProductCoordinate {
             occurrence: observation.lifecycle_incarnation(),
             generation: observation.reference_generation().get(),
         };
         let mut work = 0_usize;
         loop {
-            work = work.checked_add(1).ok_or(())?;
-            if work > maximum_work {
-                return Err(());
-            }
-            if let Some(recorded) = versions.get(&coordinate.occurrence).and_then(|history| {
-                latest_output_matching(history, coordinate.generation, |recorded| {
+            let (recorded, lookup_work) = self.matching_output_in_partition_budgeted(
+                &source,
+                coordinate,
+                restored.partition,
+                maximum_work.saturating_sub(work),
+                |recorded| {
                     recorded.source_identity
                         == Some(RecordedSourceIdentity::Checkpoint(restored.identity))
                         && std::ptr::eq(
                             recorded.correspondence.as_ref(),
                             settlement.output_correspondence.as_ref(),
                         )
-                })
-            }) {
+                },
+            )?;
+            work = work.checked_add(lookup_work).ok_or(())?;
+            if let Some(recorded) = recorded {
                 let Some(facts) = recorded
                     .observed_source_facts
                     .as_ref()
@@ -225,32 +235,29 @@ impl WorthQueryApplicationOutputLineage {
                 scope,
                 output_binding: *output_binding,
             };
-            let Some(versions) = self.by_source.get(&source) else {
+            if !self.by_source.contains_key(&source) {
                 work = work.checked_add(1).ok_or(())?;
                 if work > maximum_work {
                     return Err(());
                 }
                 continue;
-            };
+            }
             let mut coordinate = ProductCoordinate {
                 occurrence,
                 generation,
             };
             loop {
-                let (recorded, lookup_work) = match versions.get(&coordinate.occurrence) {
-                    Some(history) => latest_output_in_partition_budgeted(
-                        history,
-                        coordinate.generation,
-                        source_partition_identity,
-                        maximum_work.saturating_sub(work),
-                    )?,
-                    None => (None, 1),
-                };
+                let (recorded, lookup_work) = self.latest_output_in_partition_budgeted(
+                    &source,
+                    coordinate,
+                    source_partition_identity,
+                    maximum_work.saturating_sub(work),
+                )?;
                 work = work.checked_add(lookup_work).ok_or(())?;
                 if work > maximum_work {
                     return Err(());
                 }
-                if let Some((_, recorded)) = recorded {
+                if let Some(recorded) = recorded {
                     candidates.push(WorthQueryRetainedOutputCandidate {
                         binding: *output_binding,
                         correspondence: Arc::clone(&recorded.correspondence),

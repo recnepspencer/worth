@@ -35,6 +35,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryRestoredOutput
         crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
     pub(in crate::domain_computation::primary_graph) identity:
         crate::domain_computation::primary_graph::application_query::WorthQueryCheckpointSourceIdentity,
+    pub(in crate::domain_computation::primary_graph) partition: [u8; 32],
 }
 
 impl WorthQueryOutputDemandSettlement {
@@ -159,6 +160,7 @@ impl WorthQueryOutputDemandSettlement {
             restored_source: Some(WorthQueryRestoredOutputSource {
                 scope: restored.source_scope,
                 identity: restored.source_identity,
+                partition: restored.checkpoint.source_partition,
             }),
             readiness_delivery: None,
             producer_contacts_in_this_demand: 0,

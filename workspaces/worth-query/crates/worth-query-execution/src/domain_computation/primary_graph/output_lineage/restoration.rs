@@ -35,20 +35,29 @@ impl WorthQueryApplicationOutputLineage {
             scope,
             output_binding,
         };
+        let occurrence = observation.lifecycle_incarnation();
+        let generation_number = observation.reference_generation().get();
+        let existing_slot = self.partition_index.at_generation(
+            &source,
+            occurrence,
+            generation_number,
+            source_partition_identity,
+        );
         let generation = self
             .by_source
-            .entry(source)
+            .entry(source.clone())
             .or_default()
-            .entry(observation.lifecycle_incarnation())
+            .entry(occurrence)
             .or_default()
-            .entry(observation.reference_generation().get())
+            .entry(generation_number)
             .or_default();
-        if let Some(recorded) = generation
-            .iter_mut()
-            .find(|recorded| recorded.source_partition_identity == Some(source_partition_identity))
-        {
+        if let Some(slot) = existing_slot {
+            let recorded = generation
+                .get_mut(slot)
+                .expect("a restored partition locator must reference retained output authority");
             assert!(
-                recorded.source_identity == Some(source_identity)
+                recorded.source_partition_identity == Some(source_partition_identity)
+                    && recorded.source_identity == Some(source_identity)
                     && recorded.producer_dependency_identity == producer_dependency_identity
                     && recorded.idempotency_key_identity == idempotency_key_identity
                     && Arc::ptr_eq(&recorded.correspondence, &correspondence),
@@ -60,6 +69,7 @@ impl WorthQueryApplicationOutputLineage {
                 .insert(observation.lifecycle_incarnation());
             return;
         }
+        let slot = generation.len();
         generation.push(RecordedOutput {
             correspondence,
             source_identity: Some(source_identity),
@@ -69,6 +79,13 @@ impl WorthQueryApplicationOutputLineage {
             observed_source_facts: Some(observed_source_facts),
             resources,
         });
+        self.partition_index.insert(
+            source,
+            occurrence,
+            generation_number,
+            source_partition_identity,
+            slot,
+        );
         self.live_occurrences
             .insert(observation.lifecycle_incarnation());
     }
@@ -97,22 +114,32 @@ impl WorthQueryApplicationOutputLineage {
             scope,
             output_binding,
         };
-        let history = self
-            .by_source
-            .entry(source)
-            .or_default()
-            .entry(occurrence)
-            .or_default();
         // Recovery supplies an initial prior correspondence, never a newer
         // publication than one already retained for this partition.
-        if history.range(..=generation).any(|(_, records)| {
-            records.iter().any(|recorded| {
-                recorded.source_partition_identity == Some(source_partition_identity)
-            })
-        }) {
+        if self
+            .partition_index
+            .latest(
+                &source,
+                super::ProductCoordinate {
+                    occurrence,
+                    generation,
+                },
+                source_partition_identity,
+            )
+            .is_some()
+        {
             return;
         }
-        history.entry(generation).or_default().push(RecordedOutput {
+        let records = self
+            .by_source
+            .entry(source.clone())
+            .or_default()
+            .entry(occurrence)
+            .or_default()
+            .entry(generation)
+            .or_default();
+        let slot = records.len();
+        records.push(RecordedOutput {
             correspondence,
             source_identity: Some(source_identity),
             source_partition_identity: Some(source_partition_identity),
@@ -121,6 +148,13 @@ impl WorthQueryApplicationOutputLineage {
             observed_source_facts: None,
             resources,
         });
+        self.partition_index.insert(
+            source,
+            occurrence,
+            generation,
+            source_partition_identity,
+            slot,
+        );
         self.live_occurrences.insert(occurrence);
     }
 }

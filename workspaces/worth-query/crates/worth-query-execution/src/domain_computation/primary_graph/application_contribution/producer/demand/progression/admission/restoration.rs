@@ -22,12 +22,14 @@ where
         WorthQueryOutputDemandDenial,
     >{
         let checkpoint_source = source_epoch.checkpoint_identity();
-        let Some(readmitted) = self.recovered_outputs.iter().find(|readmitted| {
-            readmitted.checkpoint.producer == producer
-                && readmitted.checkpoint.source == checkpoint_source.bytes()
-                && readmitted.checkpoint.scope == source_scope
-                && readmitted.checkpoint.source_partition == observed_source.partition_identity()
-        }) else {
+        let Some(readmitted) = self
+            .recovered_outputs
+            .matching_source_partition(source_scope, observed_source.partition_identity())
+            .find(|readmitted| {
+                readmitted.checkpoint.producer == producer
+                    && readmitted.checkpoint.source == checkpoint_source.bytes()
+            })
+        else {
             return Ok(None);
         };
         let authority = self

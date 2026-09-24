@@ -110,7 +110,7 @@ where
         next_output_producer_attempt: std::sync::atomic::AtomicU64::new(1),
         next_application_mutation_partition: std::sync::atomic::AtomicU32::new(1),
         output_demands: Default::default(),
-        recovered_outputs: Vec::new(),
+        recovered_outputs: Default::default(),
         program_required_bindings,
         program_required_operations,
         program_support: None,

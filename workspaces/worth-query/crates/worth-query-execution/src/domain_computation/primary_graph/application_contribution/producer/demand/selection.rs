@@ -56,15 +56,15 @@ where
             .output_lineage
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        for recovered in &self.recovered_outputs {
+        for recovered in self
+            .recovered_outputs
+            .matching_source_partition(scope, source.partition_identity())
+        {
             let checkpoint = &recovered.checkpoint;
             let Some(binding) = recovered.correspondence.binding_type() else {
                 continue;
             };
-            if checkpoint.scope != scope
-                || checkpoint.source_partition != source.partition_identity()
-                || !output_bindings.contains(&binding)
-            {
+            if !output_bindings.contains(&binding) {
                 continue;
             }
             lineage.record_recovered_prior_output(
