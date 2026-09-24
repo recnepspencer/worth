@@ -195,6 +195,22 @@ impl IndexingSubsystem {
         generation_id
     }
 
+    /// Reserve exact generation identities before the candidate can publish.
+    pub(crate) fn reserve_generation_ids(
+        &self,
+        count: usize,
+    ) -> Option<Vec<DerivedIndexGenerationId>> {
+        let mut state = self.state.write();
+        let end = state
+            .next_generation_id
+            .checked_add(u64::try_from(count).ok()?)?;
+        let mut ids = Vec::new();
+        ids.try_reserve_exact(count).ok()?;
+        ids.extend((state.next_generation_id..end).map(DerivedIndexGenerationId));
+        state.next_generation_id = end;
+        Some(ids)
+    }
+
     pub(crate) fn publish_generation(&self, generation: DerivedIndexGeneration) {
         self.state.write().generations.publish(generation);
     }

@@ -146,6 +146,7 @@ pub(super) fn prepare_commit_publication_execution(
         publication_snapshot,
         aspect_evaluation_traces,
         aspect_emission_traces,
+        prepared_indexes: None,
     })
 }
 
@@ -173,6 +174,7 @@ pub(crate) fn publish_commit_execution(
         aspect_evaluation_traces,
         aspect_emission_traces,
         published_snapshot_slot,
+        prepared_indexes,
     } = prepared;
     let finalized = {
         let (_, _, _, _, commit_log, phase_timing) = admitted.phase_view().into_parts();
@@ -186,6 +188,9 @@ pub(crate) fn publish_commit_execution(
         )?
     };
     let (positioned_commit, changed_records, durability_error) = finalized.into_parts();
+    if let Some(prepared_indexes) = prepared_indexes {
+        prepared_indexes.publish(runtime);
+    }
     let patch_position = positioned_commit.position();
     let canonical_commit_envelope = std::sync::Arc::clone(positioned_commit.canonical_arc());
     let aspect_emission_traces: Vec<crate::transactions::data::AspectEmissionTrace> =
@@ -254,6 +259,7 @@ pub(crate) struct PreparedCommitPublicationExecution {
     aspect_evaluation_traces: Vec<crate::transactions::data::AspectEvaluationTrace>,
     aspect_emission_traces:
         Vec<super::artifact_execution::preparation::PreparedAspectEmissionTrace>,
+    prepared_indexes: Option<crate::indexes::PreparedCandidateIndexPublication>,
 }
 
 pub(crate) struct PreparedCommitPublicationCompletion {
@@ -270,9 +276,30 @@ pub(crate) struct PreparedCommitPublicationCompletion {
     aspect_emission_traces:
         Vec<super::artifact_execution::preparation::PreparedAspectEmissionTrace>,
     published_snapshot_slot: crate::runtime::PublishedSnapshotSlotReservation,
+    prepared_indexes: Option<crate::indexes::PreparedCandidateIndexPublication>,
 }
 
 impl PreparedCommitPublicationExecution {
+    pub(crate) fn attach_prepared_indexes(
+        &mut self,
+        prepared: crate::indexes::PreparedCandidateIndexPublication,
+    ) -> Result<(), crate::indexes::data::DerivedIndexMaintenanceDenialKind> {
+        if self.prepared_indexes.is_some() {
+            return Err(
+                crate::indexes::data::DerivedIndexMaintenanceDenialKind::CandidateIndexesAlreadyPrepared,
+            );
+        }
+        if !prepared.matches_root(self.prepared_root()) {
+            return Err(crate::indexes::data::DerivedIndexMaintenanceDenialKind::CommitMismatch);
+        }
+        self.prepared_indexes = Some(prepared);
+        Ok(())
+    }
+
+    pub(crate) fn has_prepared_indexes(&self) -> bool {
+        self.prepared_indexes.is_some()
+    }
+
     pub(crate) fn reservation_count(&self) -> usize {
         self.publication.reservation_count()
     }
@@ -313,6 +340,7 @@ impl PreparedCommitPublicationExecution {
             aspect_evaluation_traces: self.aspect_evaluation_traces,
             aspect_emission_traces: self.aspect_emission_traces,
             published_snapshot_slot,
+            prepared_indexes: self.prepared_indexes,
         };
         (movement, completion)
     }

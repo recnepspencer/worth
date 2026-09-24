@@ -1,6 +1,7 @@
 mod bounded_entity_field_lookup;
 mod bounded_relation_join_lookup;
 mod branch_scope;
+mod candidate_index_publication;
 mod canonical_build_basis;
 mod entity_field_lookup;
 mod exact_observation;

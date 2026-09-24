@@ -2,6 +2,7 @@ mod basis_build;
 mod build_execution;
 mod diagnostics;
 mod maintenance;
+pub(crate) use maintenance::candidate::PreparedCandidateIndexPublication;
 mod packet_planning;
 
 use crate::history::data::CommitId;
@@ -113,8 +114,24 @@ fn publish_prepared_generation(
     index_id: DerivedIndexId,
     entries: DerivedIndexEntries,
 ) -> DerivedIndexGeneration {
-    let generation = DerivedIndexGeneration {
-        generation_id: DerivedIndexGenerationId(runtime.indexes.next_generation_id()),
+    let generation = prepared_generation(
+        basis,
+        DerivedIndexGenerationId(runtime.indexes.next_generation_id()),
+        index_id,
+        entries,
+    );
+    runtime.indexes.publish_generation(generation.clone());
+    generation
+}
+
+fn prepared_generation(
+    basis: &IndexGenerationPublicationBasis,
+    generation_id: DerivedIndexGenerationId,
+    index_id: DerivedIndexId,
+    entries: DerivedIndexEntries,
+) -> DerivedIndexGeneration {
+    DerivedIndexGeneration {
+        generation_id,
         index_id,
         source_commit_id: basis.source_commit_id,
         source_branch_id: basis.branch_id.clone(),
@@ -125,9 +142,7 @@ fn publish_prepared_generation(
         },
         status: DerivedIndexPublicationStatus::Published,
         entries,
-    };
-    runtime.indexes.publish_generation(generation.clone());
-    generation
+    }
 }
 
 fn failed_build_outcome(

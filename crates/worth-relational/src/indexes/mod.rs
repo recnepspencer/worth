@@ -1,5 +1,6 @@
 mod access;
 mod authority;
+pub(crate) use authority::PreparedCandidateIndexPublication;
 pub mod data;
 mod projected_field_values;
 mod unique_entity_aspect_field_index;

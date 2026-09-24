@@ -24,6 +24,9 @@ pub struct DerivedIndexMaintenanceWork {
     pub cold_record_slots: usize,
     pub derived_rows: usize,
     pub reused_generations: usize,
+    /// Catalog insertions prepared for the performed-commit finalizer.
+    #[serde(default)]
+    pub generation_publications_reserved: usize,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -37,6 +40,10 @@ pub enum DerivedIndexMaintenanceDenialKind {
     PriorEntryMismatch,
     ColdReconstructionRequired,
     WorkBudgetExceeded,
+    ForeignCandidate,
+    CandidateUnavailable,
+    CandidateIndexesAlreadyPrepared,
+    GenerationIdentityExhausted,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

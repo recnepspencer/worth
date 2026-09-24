@@ -1,4 +1,5 @@
 mod basis;
+pub(super) mod candidate;
 mod changes;
 mod entry_edits;
 mod field;
@@ -56,8 +57,8 @@ impl IndexAuthority<'_> {
             self.prepare_refresh(&request, None, &projection, &mut work)
         })();
         result
-            .map(|generations| DerivedIndexMaintenanceOutcome {
-                generations,
+            .map(|prepared| DerivedIndexMaintenanceOutcome {
+                generations: prepared.publish(self.runtime),
                 work: work.counts,
             })
             .map_err(|kind| work.deny(kind))
@@ -97,8 +98,8 @@ impl IndexAuthority<'_> {
             self.prepare_refresh(&request, before.as_ref(), &after, &mut work)
         })();
         result
-            .map(|generations| DerivedIndexMaintenanceOutcome {
-                generations,
+            .map(|prepared| DerivedIndexMaintenanceOutcome {
+                generations: prepared.publish(self.runtime),
                 work: work.counts,
             })
             .map_err(|kind| work.deny(kind))
@@ -110,7 +111,7 @@ impl IndexAuthority<'_> {
         before: Option<&VisibilityProjectionView<'_>>,
         after: &VisibilityProjectionView<'_>,
         work: &mut MaintenanceWork,
-    ) -> Result<Vec<DerivedIndexGeneration>, DerivedIndexMaintenanceDenialKind> {
+    ) -> Result<PreparedRefresh, DerivedIndexMaintenanceDenialKind> {
         let root = after.selected_root().expect("validated exact root");
         let schema_version = root.schema_authority().schema_version();
         let mut prepared = Vec::new();
@@ -223,11 +224,28 @@ impl IndexAuthority<'_> {
             after.version_id(),
             schema_version,
         );
-        reused.extend(prepared.into_iter().map(|(index_id, entries)| {
-            publish_prepared_generation(self.runtime, &publication, index_id, entries)
+        Ok(PreparedRefresh {
+            publication,
+            entries: prepared,
+            reused,
+        })
+    }
+}
+
+struct PreparedRefresh {
+    publication: IndexGenerationPublicationBasis,
+    entries: Vec<(DerivedIndexId, DerivedIndexEntries)>,
+    reused: Vec<DerivedIndexGeneration>,
+}
+
+impl PreparedRefresh {
+    fn publish(self, runtime: &crate::runtime::RelationalRuntime) -> Vec<DerivedIndexGeneration> {
+        let mut generations = self.reused;
+        generations.extend(self.entries.into_iter().map(|(index_id, entries)| {
+            publish_prepared_generation(runtime, &self.publication, index_id, entries)
         }));
-        reused.sort_by_key(|generation| generation.index_id);
-        Ok(reused)
+        generations.sort_by_key(|generation| generation.index_id);
+        generations
     }
 }
 

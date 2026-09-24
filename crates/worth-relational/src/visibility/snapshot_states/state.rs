@@ -90,7 +90,7 @@ impl VisibilitySnapshotStateKey {
 pub(crate) struct VisibilitySnapshotBasis {
     key: VisibilitySnapshotStateKey,
     root: Arc<RelationalBranchRoot>,
-    _retained_observation: crate::mvcc::RelationalBranchObservation,
+    _retained_observation: Option<crate::mvcc::RelationalBranchObservation>,
 }
 
 impl VisibilitySnapshotBasis {
@@ -104,7 +104,22 @@ impl VisibilitySnapshotBasis {
                 root.as_ref(),
             ),
             root,
-            _retained_observation: observation.clone(),
+            _retained_observation: Some(observation.clone()),
+        }
+    }
+
+    /// A prepared candidate owns both roots until its single-use publication
+    /// decision. This projection never enters the snapshot/reader catalogue.
+    pub(crate) fn from_prepared_root(branch_id: BranchId, root: Arc<RelationalBranchRoot>) -> Self {
+        let version_id = root
+            .canonical_envelope()
+            .expect("prepared commit root has its canonical envelope")
+            .commit
+            .version_id;
+        Self {
+            key: VisibilitySnapshotStateKey::exact(branch_id, version_id, root.as_ref()),
+            root,
+            _retained_observation: None,
         }
     }
 
