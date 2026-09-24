@@ -51,41 +51,48 @@ impl Serialize for PersistedDurableCheckpointRef<'_> {
     where
         S: serde::Serializer,
     {
-        let checkpoint = self.0;
+        let DurableCheckpoint {
+            coverage,
+            branch_cells,
+            branch_roots,
+            branch_root_schema_images,
+            record_identity,
+            record_generation_high_water,
+            reusable_record_slots,
+            record_slot_frontiers,
+            envelopes,
+            partition_images,
+            aspect_contracts,
+            lineage,
+            index_definitions,
+            derived_index_artifacts,
+            derived_index_checkpoint,
+            derived_index_checkpoint_format,
+            symbol_table,
+            runtime_name,
+        } = self.0;
         let mut fields = serializer.serialize_struct("PersistedDurableCheckpoint", 18)?;
-        fields.serialize_field("coverage", &checkpoint.coverage)?;
-        fields.serialize_field("branch_cells", &checkpoint.branch_cells)?;
-        fields.serialize_field("branch_roots", &checkpoint.branch_roots)?;
-        fields.serialize_field(
-            "branch_root_schema_images",
-            &checkpoint.branch_root_schema_images,
-        )?;
-        fields.serialize_field("record_identity", &checkpoint.record_identity)?;
-        fields.serialize_field(
-            "record_generation_high_water",
-            &checkpoint.record_generation_high_water,
-        )?;
-        fields.serialize_field("reusable_record_slots", &checkpoint.reusable_record_slots)?;
-        fields.serialize_field("record_slot_frontiers", &checkpoint.record_slot_frontiers)?;
-        fields.serialize_field("envelopes", &CheckpointEnvelopeRefs(&checkpoint.envelopes))?;
-        fields.serialize_field("partition_images", &checkpoint.partition_images)?;
-        fields.serialize_field("aspect_contracts", &checkpoint.aspect_contracts)?;
-        fields.serialize_field("lineage", &checkpoint.lineage)?;
-        fields.serialize_field("index_definitions", &checkpoint.index_definitions)?;
-        fields.serialize_field(
-            "derived_index_artifacts",
-            &checkpoint.derived_index_artifacts,
-        )?;
-        fields.serialize_field(
-            "derived_index_checkpoint",
-            &checkpoint.derived_index_checkpoint,
-        )?;
+        fields.serialize_field("coverage", coverage)?;
+        fields.serialize_field("branch_cells", branch_cells)?;
+        fields.serialize_field("branch_roots", branch_roots)?;
+        fields.serialize_field("branch_root_schema_images", branch_root_schema_images)?;
+        fields.serialize_field("record_identity", record_identity)?;
+        fields.serialize_field("record_generation_high_water", record_generation_high_water)?;
+        fields.serialize_field("reusable_record_slots", reusable_record_slots)?;
+        fields.serialize_field("record_slot_frontiers", record_slot_frontiers)?;
+        fields.serialize_field("envelopes", &CheckpointEnvelopeRefs(envelopes))?;
+        fields.serialize_field("partition_images", partition_images)?;
+        fields.serialize_field("aspect_contracts", aspect_contracts)?;
+        fields.serialize_field("lineage", lineage)?;
+        fields.serialize_field("index_definitions", index_definitions)?;
+        fields.serialize_field("derived_index_artifacts", derived_index_artifacts)?;
+        fields.serialize_field("derived_index_checkpoint", derived_index_checkpoint)?;
         fields.serialize_field(
             "derived_index_checkpoint_format",
-            &checkpoint.derived_index_checkpoint_format,
+            derived_index_checkpoint_format,
         )?;
-        fields.serialize_field("symbol_table", &checkpoint.symbol_table)?;
-        fields.serialize_field("runtime_name", &checkpoint.runtime_name)?;
+        fields.serialize_field("symbol_table", symbol_table)?;
+        fields.serialize_field("runtime_name", runtime_name)?;
         fields.end()
     }
 }

@@ -20,6 +20,10 @@ use crate::transactions::data::{
     RecordRef,
 };
 
+#[path = "canonical_commit_envelope/checkpoint_encoding.rs"]
+mod checkpoint_encoding;
+pub(crate) use checkpoint_encoding::CheckpointCanonicalEnvelopeRef;
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CanonicalCommitEnvelope {
     pub commit: RelationalCommitReceipt,

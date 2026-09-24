@@ -21,11 +21,11 @@ pub use aspect_history::{
     LineageAspectHistory, LineageAspectHistoryQueryResult, LineageAspectResolutionDigest,
 };
 pub use branch_creation::{BranchCreateError, BranchCreateErrorClass};
-pub(crate) use canonical_commit_envelope::CommittedRecordChange;
 pub use canonical_commit_envelope::{
     CanonicalCommitAuthorityKind, CanonicalCommitEnvelope, RelationalReplayRecord,
     ReplaySchemaVersion,
 };
+pub(crate) use canonical_commit_envelope::{CheckpointCanonicalEnvelopeRef, CommittedRecordChange};
 pub use canonical_record_allocation::RecordAllocationClass;
 pub(crate) use canonical_record_allocation::{CanonicalRecordAllocation, RecordAllocationOrigin};
 pub use committed_version::CommittedVersionSummary;
