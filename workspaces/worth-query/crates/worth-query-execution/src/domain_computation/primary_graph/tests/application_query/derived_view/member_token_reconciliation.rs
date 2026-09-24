@@ -132,6 +132,40 @@ fn changed_member_token_for_same_entity_refreshes_entry_and_duplicate_members_fa
         .get(&key)
         .unwrap()
         .unwrap();
+    let denied = world
+        .application
+        .reconstruct_managed_derived_collection_pair_parallel(
+            &view,
+            selected.product(),
+            &membership,
+            members,
+            |token| {
+                if token == "open" {
+                    Err(WorthQueryManagedDerivedViewDenial::QueryExecutionDenied)
+                } else {
+                    let first = read_entry(token)?;
+                    let second = read_entry(first.rows()[0].status())?;
+                    Ok((first, second))
+                }
+            },
+            |row| row.status().to_string(),
+            |row| row.status().to_string(),
+            |_, body| SceneLabel(body.label().to_string()),
+        );
+    assert_eq!(
+        denied.err(),
+        Some(WorthQueryManagedDerivedViewDenial::QueryExecutionDenied)
+    );
+    assert!(std::sync::Arc::ptr_eq(
+        &old,
+        &world
+            .application
+            .observe_managed_derived_view(&view)
+            .unwrap()
+            .get(&key)
+            .unwrap()
+            .unwrap()
+    ));
     let graph = world.application.runtime.primary_graph().unwrap();
     let tag_field = AccountMembershipTag::reference();
     let tag_locator = graph

@@ -17,6 +17,8 @@ use crate::domain_computation::primary_graph::application_query::derived_view::r
 use crate::domain_computation::primary_graph::application_query::WorthQueryApplicationOneShotResult;
 
 const MAX_PAIR_READS_IN_FLIGHT: usize = 8;
+mod worker_pool;
+use worker_pool::read_bounded_pairs;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
@@ -96,23 +98,22 @@ where
         let expected = expected.into_iter().collect::<Vec<_>>();
         let mut entries = Vec::with_capacity(expected.len());
         let mut keys = Vec::with_capacity(expected.len());
-        for chunk in expected.chunks(MAX_PAIR_READS_IN_FLIGHT) {
-            let observations = read_chunk(chunk, &read_pair)?;
-            for ((root, _), (first, second)) in chunk.iter().zip(observations) {
-                let (key, value, dependencies) = self.read_managed_entry_pair_from_result(
-                    view,
-                    product,
-                    *root,
-                    first,
-                    |_| Ok(second),
-                    |row| first_link(row),
-                    |row| second_link(row),
-                    |first, second| project(first, second),
-                )?;
-                keys.push(key.clone());
-                entries.push((key, value, dependencies));
-            }
-        }
+        read_bounded_pairs(&expected, &read_pair, |index, first, second| {
+            let root = expected[index].0;
+            let (key, value, dependencies) = self.read_managed_entry_pair_from_result(
+                view,
+                product,
+                root,
+                first,
+                |_| Ok(second),
+                |row| first_link(row),
+                |row| second_link(row),
+                |first, second| project(first, second),
+            )?;
+            keys.push(key.clone());
+            entries.push((key, value, dependencies));
+            Ok(())
+        })?;
         self.admit_view_product(view, product)?;
         view.state.reconstruct(
             membership_result
@@ -125,81 +126,5 @@ where
             product.selected_commit(),
         )?;
         Ok(keys)
-    }
-}
-
-fn read_chunk<Member, First, Second>(
-    chunk: &[(EntityId, Member)],
-    read_pair: &(impl Fn(&Member) -> Result<(First, Second), Denial> + Sync),
-) -> Result<Vec<(First, Second)>, Denial>
-where
-    Member: Sync,
-    First: Send,
-    Second: Send,
-{
-    std::thread::scope(|scope| {
-        let mut handles = Vec::with_capacity(chunk.len());
-        let mut denial = None;
-        for (_, member) in chunk {
-            match std::thread::Builder::new().spawn_scoped(scope, move || read_pair(member)) {
-                Ok(handle) => handles.push(handle),
-                Err(_) => {
-                    denial = Some(Denial::QueryExecutionDenied);
-                    break;
-                }
-            }
-        }
-        let mut completed = Vec::with_capacity(handles.len());
-        for handle in handles {
-            match handle.join() {
-                Ok(Ok(pair)) => completed.push(Some(pair)),
-                Ok(Err(error)) => {
-                    denial.get_or_insert(error);
-                    completed.push(None);
-                }
-                Err(_) => {
-                    denial.get_or_insert(Denial::QueryExecutionDenied);
-                    completed.push(None);
-                }
-            }
-        }
-        match denial {
-            Some(error) => Err(error),
-            None => Ok(completed.into_iter().map(Option::unwrap).collect()),
-        }
-    })
-}
-
-#[cfg(test)]
-mod tests {
-    use std::sync::atomic::{AtomicUsize, Ordering};
-
-    use worth_relational::facade::identity::{EntityId, PartitionId};
-
-    use super::{read_chunk, MAX_PAIR_READS_IN_FLIGHT};
-
-    #[test]
-    fn cold_pair_workers_never_exceed_bounded_in_flight_limit() {
-        let active = AtomicUsize::new(0);
-        let peak = AtomicUsize::new(0);
-        let members = (0..32)
-            .map(|slot| (EntityId::new(PartitionId::main(), slot, 1), slot))
-            .collect::<Vec<_>>();
-        let mut observed = Vec::new();
-        for chunk in members.chunks(MAX_PAIR_READS_IN_FLIGHT) {
-            observed.extend(
-                read_chunk(chunk, &|member| {
-                    let current = active.fetch_add(1, Ordering::SeqCst) + 1;
-                    peak.fetch_max(current, Ordering::SeqCst);
-                    std::thread::yield_now();
-                    active.fetch_sub(1, Ordering::SeqCst);
-                    Ok((*member, *member))
-                })
-                .unwrap(),
-            );
-        }
-        assert_eq!(observed.len(), members.len());
-        assert!(peak.load(Ordering::SeqCst) <= MAX_PAIR_READS_IN_FLIGHT);
-        assert_eq!(active.load(Ordering::SeqCst), 0);
     }
 }
