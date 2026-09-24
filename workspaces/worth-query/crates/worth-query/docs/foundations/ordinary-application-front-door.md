@@ -419,6 +419,23 @@ evidence includes:
 Do not parse `Display` text or reconstruct authority from a digest. Inspection
 explains a transition; it does not perform the transition.
 
+## Capture And Reopen Cost Boundary
+
+An installed application runtime can capture its opaque Query checkpoint and
+encoder-owned section report together with
+`capture_application_checkpoint_with_sections()`. The report splits Query
+framing, native Relational bytes and accepted-output identities; a locally
+captured native checkpoint also reports envelope, branch-root, branch-cell,
+partition-mirror, derived-index and framing bytes. These sizes describe the
+same encoding pass. They cannot validate received bytes or authorize restore.
+
+The application owns the enclosing artifact, transport, compatibility check
+and fresh installed-schema readmission. Relational verifies and rebuilds
+committed truth; Query readmits accepted-output identities without rerunning
+producers. Retained views and handles are reconstructed separately. Compare
+work against the actual scene/dependency shape and report wall time with its
+hardware; an absolute seconds threshold is not a portable Query contract.
+
 ## Anti-Patterns
 
 - importing internal Query authority crates from application code;
