@@ -3,7 +3,7 @@ use worth_query_host::facade::application_entry::{
     WorkflowDefinitionPublicationOutcome, WorkflowInstanceStartOutcome, WorkflowProgressOutcome,
     WorkflowProposalOutcome, WorkflowTransitionPreparationDenial,
     WorthQueryApplicationMutationOutcome, WorthQueryApplicationRequestExt,
-    WorthQueryWorkflowAdvancePreparationDenial,
+    WorthQueryOrdinaryWorkflowRunStop, WorthQueryWorkflowAdvancePreparationDenial,
 };
 use worth_query_host::facade::primary_graph::WorthQueryApplicationAttemptDenialKind;
 
@@ -19,8 +19,9 @@ use super::super::bounded_dimension_model::{
     workflow::{
         accept_assessment, accept_early_assessment, advance_instance, approve_instance,
         conditionally_required_related_assessment_definition, link_review_requirement,
-        prepare_early_assessment_denial, propose_instance, publish_definition, settle_assessment,
-        settle_early_assessment_for, start_instance, WorkflowAdvanceInput, WorkflowAdvanceIntent,
+        prepare_early_assessment_denial, propose_instance, publish_definition, run_instance,
+        settle_assessment, settle_early_assessment_for, start_instance, WorkflowAdvanceInput,
+        WorkflowAdvanceIntent,
     },
 };
 
@@ -116,18 +117,35 @@ fn native_relation_insertion_makes_an_authored_related_review_newly_required() {
         before_link,
         "native publication does not contact waiting workflow progress",
     );
+    let ordinary = run_instance(&application, instance.clone(), &[703]);
+    assert_eq!(ordinary.attempted_steps(), 1);
+    assert!(ordinary.transitions().is_empty());
+    match ordinary.stop() {
+        WorthQueryOrdinaryWorkflowRunStop::Outcome(WorkflowProgressOutcome::AwaitingEvidence(
+            required,
+        )) => {
+            assert_eq!(required.node_path(), "checks/join");
+            assert_eq!(required.required_assessments(), 3);
+            assert_eq!(required.completed_assessments(), 2);
+        }
+        other => panic!("ordinary run missed newly required review: {other:?}"),
+    }
+    let after_ordinary = application.runtime().workflow_instance_progress_counters();
+    assert_eq!(after_ordinary.cold_misses(), before_link.cold_misses());
+    assert!(after_ordinary.warm_hits() > before_link.warm_hits());
     match advance_instance(&application, instance.clone(), 692)
         .expect("join must re-evaluate independent authored inventory")
     {
         WorkflowProgressOutcome::AwaitingEvidence(required) => {
+            assert_eq!(required.node_path(), "checks/join");
             assert_eq!(required.required_assessments(), 3);
             assert_eq!(required.completed_assessments(), 2);
         }
         other => panic!("old two-review coverage incorrectly completed join: {other:?}"),
     }
     let warm = application.runtime().workflow_instance_progress_counters();
-    assert_eq!(warm.cold_misses(), before_link.cold_misses());
-    assert!(warm.warm_hits() > before_link.warm_hits());
+    assert_eq!(warm.cold_misses(), after_ordinary.cold_misses());
+    assert!(warm.warm_hits() > after_ordinary.warm_hits());
     application
         .runtime()
         .release_workflow_instance_progress_for_test();
