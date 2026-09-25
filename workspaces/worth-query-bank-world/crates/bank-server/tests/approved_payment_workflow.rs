@@ -35,12 +35,10 @@ use fixture::{ordinary_read_world_with_approval_authentication, principal_id, AP
 use support::request_scope;
 use worth_query_host::facade::application_entry::{
     WorkflowProgressOutcome, WorthQueryOrdinaryWorkflowRunStop,
-    WorthQueryWorkflowOperationAcceptanceDenial,
+    WorthQueryWorkflowOperationOwnerAcceptanceDenial, WorthQueryWorkflowOperationOwnerPosture,
     WorthQueryWorkflowOperationRecoveryPreparationDenial,
 };
-use worth_query_host::facade::primary_graph::{
-    WorthQueryExternalDispatchPostureKind, WorthQueryRecoveryHandleDenialKind,
-};
+use worth_query_host::facade::primary_graph::WorthQueryExternalDispatchPostureKind;
 
 use assertions::{key, require_completed};
 use rail_transport::{spawn_rail, BankEstateRailTransport};
@@ -110,19 +108,26 @@ fn approved_business_payment_runs_through_query_and_commits_the_real_payment_ope
         settlement_rail.ledger_status(&attempts[0]),
         LedgerStatus::Completed
     );
+    drop(replayed);
+    drop(performed);
+    // Acceptance and recovery reconstruct custody from the owner after the
+    // original effect response and its retry receipt have both been lost.
     let unresolved = workflow
         .accept_applied(
             instance.clone(),
             &operation,
             authority.clone(),
-            &performed,
+            authority.clone(),
+            &key("approved-payment:operation:perform"),
             &key("approved-payment:operation:accept:unresolved"),
         )
         .expect_err("unresolved external custody cannot settle the workflow operation");
     assert!(matches!(
         unresolved,
-        bank_server::BankApprovedPaymentWorkflowError::OperationAcceptance(
-            WorthQueryWorkflowOperationAcceptanceDenial::RecoveryRequired
+        bank_server::BankApprovedPaymentWorkflowError::OperationOwnerAcceptance(
+            WorthQueryWorkflowOperationOwnerAcceptanceDenial::Owner(
+                WorthQueryWorkflowOperationOwnerPosture::DispatchPending
+            )
         )
     ));
     let still_required = match workflow
@@ -144,7 +149,6 @@ fn approved_business_payment_runs_through_query_and_commits_the_real_payment_ope
         .prepare_apply_recovery(
             &still_required,
             authority.clone(),
-            &performed,
             &key("approved-payment:operation:foreign-recovery"),
         )
         .err()
@@ -152,15 +156,15 @@ fn approved_business_payment_runs_through_query_and_commits_the_real_payment_ope
     assert!(matches!(
         mismatched_recovery,
         bank_server::BankApprovedPaymentWorkflowError::OperationRecoveryPreparation(
-            WorthQueryWorkflowOperationRecoveryPreparationDenial::Recovery(denial)
+            WorthQueryWorkflowOperationRecoveryPreparationDenial::Owner(
+                WorthQueryWorkflowOperationOwnerPosture::IntentDrift
+            )
         )
-            if denial.kind() == WorthQueryRecoveryHandleDenialKind::IdempotencyMismatch
     ));
     let recovery = workflow
         .prepare_apply_recovery(
             &still_required,
             authority.clone(),
-            &performed,
             &key("approved-payment:operation:perform"),
         )
         .expect("the exact workflow-bound operation prepares recovery")
@@ -172,7 +176,8 @@ fn approved_business_payment_runs_through_query_and_commits_the_real_payment_ope
                 instance.clone(),
                 &still_required,
                 authority.clone(),
-                &performed,
+                authority.clone(),
+                &key("approved-payment:operation:perform"),
                 &recovery,
                 &key("approved-payment:operation:accept:recovered"),
             )
@@ -185,7 +190,8 @@ fn approved_business_payment_runs_through_query_and_commits_the_real_payment_ope
                 instance.clone(),
                 &operation,
                 authority.clone(),
-                &performed,
+                authority.clone(),
+                &key("approved-payment:operation:perform"),
                 &recovery,
                 &key("approved-payment:operation:accept:recovered"),
             )

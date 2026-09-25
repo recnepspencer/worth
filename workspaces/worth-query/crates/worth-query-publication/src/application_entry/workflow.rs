@@ -29,7 +29,8 @@ pub use instance::{
 pub use navigation::WorthQueryWorkflowNavigateBackRequest;
 pub use operation::{
     WorthQueryPreparedWorkflowOperationRecovery, WorthQueryWorkflowOperationAcceptanceDenial,
-    WorthQueryWorkflowOperationBindingDenial, WorthQueryWorkflowOperationRecoveryDenial,
+    WorthQueryWorkflowOperationBindingDenial, WorthQueryWorkflowOperationOwnerAcceptanceDenial,
+    WorthQueryWorkflowOperationOwnerPosture, WorthQueryWorkflowOperationRecoveryDenial,
     WorthQueryWorkflowOperationRecoveryPreparationDenial,
 };
 pub use ordinary::{

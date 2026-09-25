@@ -1,7 +1,7 @@
 mod facade;
 pub use facade::*;
 mod aggregate_projection;
-mod application_attempt;
+pub(crate) mod application_attempt;
 mod application_branch;
 mod application_checkpoint;
 mod application_contribution;

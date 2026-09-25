@@ -1,6 +1,5 @@
 use crate::domain_computation::authorization::WorthQueryOperationScopeBinding;
 
-mod recovery;
 #[cfg(test)]
 mod tests;
 mod workflow_definition;
@@ -347,10 +346,6 @@ impl WorthQueryApplicationIdempotencyBinding {
         }
     }
 }
-
-#[cfg(test)]
-#[path = "idempotency/recovery_request_tests.rs"]
-mod recovery_request_tests;
 
 fn append_identity_slot(encoded: &mut String, slot: &str, identity: Option<[u8; 32]>) {
     encoded.push(':');

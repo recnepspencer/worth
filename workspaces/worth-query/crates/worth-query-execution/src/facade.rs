@@ -96,6 +96,7 @@ pub mod workflow_instance_start {
 /// Internal bridge used only by the Publication application-entry owner.
 #[doc(hidden)]
 pub mod workflow_advance {
+    pub use crate::domain_computation::primary_graph::application_attempt::WorthQueryGuardedWorkflowOperationCustody;
     pub use crate::domain_computation::primary_graph::{
         PerformedWorkflowApproval, PerformedWorkflowAssessmentEvidence,
         PerformedWorkflowTransition, PreparedWorkflowAdvance, PreparedWorkflowAssessment,

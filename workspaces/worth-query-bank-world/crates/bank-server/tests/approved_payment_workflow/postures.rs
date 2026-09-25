@@ -7,7 +7,8 @@ use bank_server::{BankApprovedPaymentApplyOutcome, BankAuthenticatedPrincipal};
 use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope;
 use worth_query_host::facade::application_entry::{
     PublishedWorkflowInstanceRef, RequiredWorkflowOperation, WorkflowProgressOutcome,
-    WorthQueryWorkflowOperationAcceptanceDenial,
+    WorthQueryWorkflowOperationOwnerAcceptanceDenial, WorthQueryWorkflowOperationOwnerPosture,
+    WorthQueryWorkflowOperationRecoveryPreparationDenial,
 };
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationCommitOutcome, WorthQueryExternalDispatchPostureKind,
@@ -124,14 +125,17 @@ fn pending_rail_dispatch_remains_under_the_committed_outbox_owner() {
             ready.instance.clone(),
             &ready.operation,
             ready.authority.clone(),
-            &performed,
+            ready.authority.clone(),
+            &key("approved-payment:operation:perform"),
             &key("approved-payment:operation:accept:pending"),
         )
         .expect_err("pending rail settlement cannot complete the workflow operation");
     assert!(matches!(
         denied,
-        bank_server::BankApprovedPaymentWorkflowError::OperationAcceptance(
-            WorthQueryWorkflowOperationAcceptanceDenial::RecoveryRequired
+        bank_server::BankApprovedPaymentWorkflowError::OperationOwnerAcceptance(
+            WorthQueryWorkflowOperationOwnerAcceptanceDenial::Owner(
+                WorthQueryWorkflowOperationOwnerPosture::DispatchPending
+            )
         )
     ));
 }
@@ -165,14 +169,17 @@ fn lost_dispatch_before_rail_admission_requires_recovery_before_workflow_complet
             ready.instance.clone(),
             &ready.operation,
             ready.authority.clone(),
-            &performed,
+            ready.authority.clone(),
+            &key("approved-payment:operation:perform"),
             &key("approved-payment:operation:accept:lost-dispatch"),
         )
         .expect_err("an unresolved dispatch cannot complete the workflow operation");
     assert!(matches!(
         denied,
-        bank_server::BankApprovedPaymentWorkflowError::OperationAcceptance(
-            WorthQueryWorkflowOperationAcceptanceDenial::RecoveryRequired
+        bank_server::BankApprovedPaymentWorkflowError::OperationOwnerAcceptance(
+            WorthQueryWorkflowOperationOwnerAcceptanceDenial::Owner(
+                WorthQueryWorkflowOperationOwnerPosture::DispatchPending
+            )
         )
     ));
     let required = match workflow
@@ -198,7 +205,6 @@ fn lost_dispatch_before_rail_admission_requires_recovery_before_workflow_complet
         .prepare_apply_recovery(
             &required,
             ready.authority.clone(),
-            &performed,
             &key("approved-payment:operation:perform"),
         )
         .expect("the exact operation opens recovery")
@@ -209,7 +215,8 @@ fn lost_dispatch_before_rail_admission_requires_recovery_before_workflow_complet
             ready.instance.clone(),
             &required,
             ready.authority.clone(),
-            &performed,
+            ready.authority.clone(),
+            &key("approved-payment:operation:perform"),
             &recovery,
             &key("approved-payment:operation:accept:lost-dispatch:recovered"),
         )
@@ -248,6 +255,27 @@ fn unpublished_product_retains_owner_recovery_and_never_dispatches_the_rail() {
     assert!(partial.relational_requires_settlement());
     assert_eq!(partial.owner_effect_count(), 1);
     assert!(ready.rail.attempts().is_empty());
+    let workflow = ready
+        .fixture
+        .world
+        .runtime
+        .approved_business_payment(&ready.principal, &ready.scope);
+    let denied = workflow
+        .prepare_apply_recovery(
+            &ready.operation,
+            ready.authority.clone(),
+            &key("approved-payment:operation:perform"),
+        )
+        .err()
+        .expect("outbox recovery cannot precede owner product publication");
+    assert!(matches!(
+        denied,
+        bank_server::BankApprovedPaymentWorkflowError::OperationRecoveryPreparation(
+            WorthQueryWorkflowOperationRecoveryPreparationDenial::Owner(
+                WorthQueryWorkflowOperationOwnerPosture::ProductUnpublished(_)
+            )
+        )
+    ));
     let recovery = partial.into_recovery();
     recovery
         .continue_owner_settlement()

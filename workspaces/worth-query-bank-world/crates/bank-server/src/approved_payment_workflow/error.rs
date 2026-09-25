@@ -4,8 +4,9 @@ use worth_query_host::facade::application_entry::{
     WorthQueryWorkflowAdvancePreparationDenial, WorthQueryWorkflowAssessmentAcceptanceDenial,
     WorthQueryWorkflowAssessmentDemandPreparationDenial,
     WorthQueryWorkflowDefinitionPublicationPreparationDenial,
-    WorthQueryWorkflowInstanceStartPreparationDenial, WorthQueryWorkflowOperationAcceptanceDenial,
-    WorthQueryWorkflowOperationBindingDenial, WorthQueryWorkflowOperationRecoveryPreparationDenial,
+    WorthQueryWorkflowInstanceStartPreparationDenial, WorthQueryWorkflowOperationBindingDenial,
+    WorthQueryWorkflowOperationOwnerAcceptanceDenial,
+    WorthQueryWorkflowOperationRecoveryPreparationDenial,
     WorthQueryWorkflowProposalPreparationDenial,
 };
 use worth_query_host::facade::domain::WorthQueryApplicationWorkflowInstallationDenial;
@@ -26,7 +27,7 @@ pub enum BankApprovedPaymentWorkflowError {
     AssessmentAcceptance(WorthQueryWorkflowAssessmentAcceptanceDenial),
     OperationBinding(WorthQueryWorkflowOperationBindingDenial),
     OperationMutation(WorthQueryApplicationRequestMutationDenial),
-    OperationAcceptance(WorthQueryWorkflowOperationAcceptanceDenial),
+    OperationOwnerAcceptance(WorthQueryWorkflowOperationOwnerAcceptanceDenial),
     OperationRecoveryPreparation(WorthQueryWorkflowOperationRecoveryPreparationDenial),
 }
 
@@ -58,7 +59,7 @@ impl std::fmt::Display for BankApprovedPaymentWorkflowError {
             Self::AssessmentDemand(denial) => denial.fmt(formatter),
             Self::AssessmentAcceptance(denial) => denial.fmt(formatter),
             Self::OperationMutation(denial) => denial.fmt(formatter),
-            Self::OperationAcceptance(denial) => denial.fmt(formatter),
+            Self::OperationOwnerAcceptance(denial) => denial.fmt(formatter),
             Self::OperationRecoveryPreparation(denial) => denial.fmt(formatter),
         }
     }
@@ -78,7 +79,7 @@ impl std::error::Error for BankApprovedPaymentWorkflowError {
             Self::AssessmentDemand(denial) => Some(denial),
             Self::AssessmentAcceptance(denial) => Some(denial),
             Self::OperationMutation(denial) => Some(denial),
-            Self::OperationAcceptance(denial) => Some(denial),
+            Self::OperationOwnerAcceptance(denial) => Some(denial),
             Self::OperationRecoveryPreparation(denial) => Some(denial),
         }
     }

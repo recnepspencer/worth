@@ -30,6 +30,8 @@ use crate::{
 
 #[path = "approved_payment_workflow/error.rs"]
 mod error;
+#[path = "approved_payment_workflow/owner.rs"]
+mod owner;
 #[path = "approved_payment_workflow/progression.rs"]
 mod progression;
 pub use error::BankApprovedPaymentWorkflowError;
@@ -321,70 +323,5 @@ impl<'runtime, 'principal, 'scope> BankApprovedPaymentWorkflow<'runtime, 'princi
                 BankApprovedPaymentApplyOutcome::Commit(outcome)
             }
         })
-    }
-
-    pub fn accept_applied(
-        &self,
-        instance: PublishedWorkflowInstanceRef,
-        required: &RequiredWorkflowOperation,
-        authority: ApprovePayment,
-        performed: &BankApprovedPaymentPerformedOperation,
-        command_key: &BankIdempotencyKey,
-    ) -> Result<WorkflowProgressOutcome, BankApprovedPaymentWorkflowError> {
-        self.runtime
-            .request(self.principal, self.scope)
-            .mutate(ApprovedBusinessPaymentAdvanceIntent { input: authority })
-            .without_source()
-            .idempotency(command_key)
-            .prepare_workflow_advance(self.runtime.approved_payment_workflow_runtime(), instance)
-            .map_err(BankApprovedPaymentWorkflowError::Advance)?
-            .accept_operation::<ApprovePaymentMutationBinding>(required, &performed.receipt)
-            .map_err(BankApprovedPaymentWorkflowError::OperationAcceptance)
-    }
-
-    pub fn prepare_apply_recovery(
-        &self,
-        required: &RequiredWorkflowOperation,
-        operation: ApprovePayment,
-        performed: &BankApprovedPaymentPerformedOperation,
-        command_key: &BankIdempotencyKey,
-    ) -> Result<BankApprovedPaymentPreparedRecovery<'runtime>, BankApprovedPaymentWorkflowError>
-    {
-        self.runtime
-            .request(self.principal, self.scope)
-            .on_branch(performed.receipt.product_branch())
-            .mutate(ApprovedBusinessPaymentApplyIntent { input: operation })
-            .idempotency(command_key)
-            .for_workflow_operation_recovery(
-                self.runtime.approved_payment_workflow_runtime(),
-                required,
-            )
-            .map_err(BankApprovedPaymentWorkflowError::OperationBinding)?
-            .prepare_workflow_operation_recovery(&performed.receipt)
-            .map_err(BankApprovedPaymentWorkflowError::OperationRecoveryPreparation)
-    }
-
-    pub fn accept_recovered_applied(
-        &self,
-        instance: PublishedWorkflowInstanceRef,
-        required: &RequiredWorkflowOperation,
-        authority: ApprovePayment,
-        performed: &BankApprovedPaymentPerformedOperation,
-        recovery: &worth_query_host::facade::primary_graph::WorthQueryRecoverySafeRetryAdmission,
-        command_key: &BankIdempotencyKey,
-    ) -> Result<WorkflowProgressOutcome, BankApprovedPaymentWorkflowError> {
-        self.runtime
-            .request(self.principal, self.scope)
-            .mutate(ApprovedBusinessPaymentAdvanceIntent { input: authority })
-            .without_source()
-            .idempotency(command_key)
-            .prepare_workflow_advance(self.runtime.approved_payment_workflow_runtime(), instance)
-            .map_err(BankApprovedPaymentWorkflowError::Advance)?
-            .accept_recovered_operation::<ApprovePaymentMutationBinding>(
-                required,
-                &performed.receipt,
-                recovery,
-            )
-            .map_err(BankApprovedPaymentWorkflowError::OperationAcceptance)
     }
 }

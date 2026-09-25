@@ -156,6 +156,5 @@ mod tests {
         assert_eq!(first.key_text(), different_client_key.key_text());
         assert_ne!(first.intent_text(), different_client_key.intent_text());
         assert_ne!(first.key_text(), different_transition.key_text());
-        assert!(!first.matches_recovery_request(&different_client_key));
     }
 }

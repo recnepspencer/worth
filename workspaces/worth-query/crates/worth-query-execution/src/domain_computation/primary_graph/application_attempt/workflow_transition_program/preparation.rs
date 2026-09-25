@@ -9,8 +9,8 @@ use worth_query_installation::facade::{
 };
 
 use super::{
-    PreparedWorkflowAdvance, RequiredWorkflowApproval, WorkflowApprovalDecision,
-    WorkflowProgressOutcome, WorkflowTransitionRequestKind,
+    PreparedWorkflowAdvance, RequiredWorkflowApproval, RequiredWorkflowOperation,
+    WorkflowApprovalDecision, WorkflowProgressOutcome, WorkflowTransitionRequestKind,
 };
 use crate::domain_computation::primary_graph::{
     PublishedWorkflowInstanceRef, PublishedWorkflowProposalRef,
@@ -21,6 +21,8 @@ use crate::domain_computation::primary_graph::{
 
 #[path = "preparation/adapter_commit.rs"]
 mod adapter_commit;
+#[path = "preparation/adapter_owner.rs"]
+mod adapter_owner;
 #[path = "preparation/adapter_preparation.rs"]
 mod adapter_preparation;
 #[path = "preparation/adapter_replay.rs"]

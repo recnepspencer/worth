@@ -129,12 +129,4 @@ impl WorthQueryWorkflowAdvanceAdapter {
     ) -> bool {
         super::super::operation::operation_receipt_requires_recovery(receipt)
     }
-
-    #[doc(hidden)]
-    pub fn recovery_request_matches_receipt(
-        request: WorthQueryApplicationIdempotencyBinding,
-        receipt: WorthQueryApplicationIdempotencyBinding,
-    ) -> bool {
-        receipt.matches_recovery_request(&request)
-    }
 }

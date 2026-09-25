@@ -15,8 +15,13 @@ use worth_query_installation::facade::ApplicationSchema;
 use super::progress::WorthQueryWorkflowAdvanceRequest;
 use crate::application_entry::mutation::WorthQueryApplicationMutationRequestWithIdempotency;
 
+#[path = "operation/owner.rs"]
+mod owner;
 #[path = "operation/recovery.rs"]
 mod recovery;
+pub use owner::{
+    WorthQueryWorkflowOperationOwnerAcceptanceDenial, WorthQueryWorkflowOperationOwnerPosture,
+};
 pub use recovery::{
     WorthQueryPreparedWorkflowOperationRecovery, WorthQueryWorkflowOperationRecoveryDenial,
     WorthQueryWorkflowOperationRecoveryPreparationDenial,
@@ -160,13 +165,16 @@ where
     Operation: 'static,
     Input: Clone + Send + Sync + 'static,
 {
-    pub fn accept_operation<Binding>(
+    fn accept_operation<Binding, EffectOperation, EffectInput, EffectScope>(
         self,
         required: &RequiredWorkflowOperation,
         receipt: &worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
+        effect_admission: &worth_query_execution::facade::primary_graph::WorthQueryAdmittedApplicationOperation<Schema, EffectOperation, EffectInput, EffectScope>,
+        effect_idempotency: worth_query_execution::facade::primary_graph::WorthQueryApplicationIdempotencyBinding,
     ) -> Result<WorkflowProgressOutcome, WorthQueryWorkflowOperationAcceptanceDenial>
     where
         Binding: ApplicationMutationBinding<Schema>,
+        EffectInput: Clone + Send + Sync + 'static,
     {
         if required.operation() != Binding::Operation::IDENTIFIER
             || required.binding() != Some(Binding::IDENTITY)
@@ -214,18 +222,31 @@ where
             Input,
             Scope,
             Binding,
-        >(self.application, prepared, receipt, self.idempotency)
+            EffectOperation,
+            EffectInput,
+            EffectScope,
+        >(
+            self.application,
+            prepared,
+            effect_admission,
+            effect_idempotency,
+            required,
+            self.idempotency,
+        )
         .map_err(WorthQueryWorkflowOperationAcceptanceDenial::Attempt)
     }
 
-    pub fn accept_recovered_operation<Binding>(
+    fn accept_recovered_operation<Binding, EffectOperation, EffectInput, EffectScope>(
         self,
         required: &RequiredWorkflowOperation,
         receipt: &worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
         recovery: &worth_query_execution::facade::primary_graph::WorthQueryRecoverySafeRetryAdmission,
+        effect_admission: &worth_query_execution::facade::primary_graph::WorthQueryAdmittedApplicationOperation<Schema, EffectOperation, EffectInput, EffectScope>,
+        effect_idempotency: worth_query_execution::facade::primary_graph::WorthQueryApplicationIdempotencyBinding,
     ) -> Result<WorkflowProgressOutcome, WorthQueryWorkflowOperationAcceptanceDenial>
     where
         Binding: ApplicationMutationBinding<Schema>,
+        EffectInput: Clone + Send + Sync + 'static,
     {
         if required.operation() != Binding::Operation::IDENTIFIER
             || required.binding() != Some(Binding::IDENTITY)
@@ -275,10 +296,15 @@ where
             Input,
             Scope,
             Binding,
+            EffectOperation,
+            EffectInput,
+            EffectScope,
         >(
             self.application,
             prepared,
-            receipt,
+            effect_admission,
+            effect_idempotency,
+            required,
             recovery,
             self.idempotency,
         )
