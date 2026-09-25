@@ -54,24 +54,33 @@ fn a_point_across_the_gutter_classifies_to_one_axis_and_the_corner_to_neither() 
 
     for across in [0.5, 6.0, 11.5] {
         assert_eq!(
-            facts.pointer_axis([(block_track[0] + across) as f32, 100.0]),
+            facts.pointer_axis(crate::mounting::presentation::platform_point_for_test(
+                (block_track[0] + across) as f32,
+                100.0
+            )),
             Some(UiScrollChromeAxis::Block),
             "the effective target fills the whole gutter"
         );
         assert_eq!(
-            facts.pointer_axis([100.0, (inline_track[1] + across) as f32]),
+            facts.pointer_axis(crate::mounting::presentation::platform_point_for_test(
+                100.0,
+                (inline_track[1] + across) as f32
+            )),
             Some(UiScrollChromeAxis::Inline)
         );
     }
     assert_eq!(
-        facts.pointer_axis([(block_track[0] - 0.5) as f32, 100.0]),
+        facts.pointer_axis(crate::mounting::presentation::platform_point_for_test(
+            (block_track[0] - 0.5) as f32,
+            100.0
+        )),
         None
     );
     assert_eq!(
-        facts.pointer_axis([
+        facts.pointer_axis(crate::mounting::presentation::platform_point_for_test(
             (block_track[0] + 6.0) as f32,
             (inline_track[1] + 6.0) as f32
-        ]),
+        )),
         None,
         "the shared corner belongs to neither track"
     );
@@ -106,11 +115,17 @@ fn the_effective_pointer_rect_fills_the_gutter_across_the_thumb() {
     );
     assert!(rect_contains(
         pointer,
-        [(track[0] + 0.5) as f32, (track[1] + 1.0) as f32]
+        crate::mounting::presentation::platform_point_for_test(
+            (track[0] + 0.5) as f32,
+            (track[1] + 1.0) as f32
+        )
     ));
     assert!(!rect_contains(
         pointer,
-        [(track[0] - 0.5) as f32, (track[1] + 1.0) as f32]
+        crate::mounting::presentation::platform_point_for_test(
+            (track[0] - 0.5) as f32,
+            (track[1] + 1.0) as f32
+        )
     ));
 }
 
@@ -136,7 +151,7 @@ fn a_track_press_is_classified_against_the_thumb_it_missed() {
         classify_press(
             UiScrollChromeAxis::Block,
             thumb,
-            [394.0, (start - 5.0) as f32]
+            crate::mounting::presentation::platform_point_for_test(394.0, (start - 5.0) as f32)
         ),
         UiScrollChromePress::TrackBeforeThumb
     );
@@ -144,7 +159,7 @@ fn a_track_press_is_classified_against_the_thumb_it_missed() {
         classify_press(
             UiScrollChromeAxis::Block,
             thumb,
-            [394.0, (start + 1.0) as f32]
+            crate::mounting::presentation::platform_point_for_test(394.0, (start + 1.0) as f32)
         ),
         UiScrollChromePress::Thumb
     );
@@ -152,7 +167,7 @@ fn a_track_press_is_classified_against_the_thumb_it_missed() {
         classify_press(
             UiScrollChromeAxis::Block,
             thumb,
-            [394.0, (end + 5.0) as f32]
+            crate::mounting::presentation::platform_point_for_test(394.0, (end + 5.0) as f32)
         ),
         UiScrollChromePress::TrackAfterThumb
     );
@@ -185,7 +200,11 @@ fn direct_drag_preserves_the_grab_offset_established_at_the_press() {
 
     // Grab three quarters of the way down the thumb, off the thumb's centre.
     let press = [394.0_f32, (thumb_start + length * 0.75) as f32];
-    let grab = grab_offset_logical_points(UiScrollChromeAxis::Block, thumb, press);
+    let grab = grab_offset_logical_points(
+        UiScrollChromeAxis::Block,
+        thumb,
+        crate::mounting::presentation::platform_point_for_test(press[0], press[1]),
+    );
     assert!((f64::from(grab) - length * 0.75).abs() < 0.01);
 
     // Releasing without moving must leave the offset exactly where it was.
@@ -193,7 +212,7 @@ fn direct_drag_preserves_the_grab_offset_established_at_the_press() {
         facts
             .offset_for_thumb_position(
                 UiScrollChromeAxis::Block,
-                press,
+                crate::mounting::presentation::platform_point_for_test(press[0], press[1]),
                 grab,
                 offset(0.0, pressed_at_points)
             )
@@ -210,7 +229,7 @@ fn direct_drag_preserves_the_grab_offset_established_at_the_press() {
     let placed = facts
         .offset_for_thumb_position(
             UiScrollChromeAxis::Block,
-            dragged,
+            crate::mounting::presentation::platform_point_for_test(dragged[0], dragged[1]),
             grab,
             offset(0.0, pressed_at_points),
         )
@@ -239,7 +258,7 @@ fn a_track_click_pages_one_viewport_minus_one_line_toward_the_pointer() {
         facts
             .offset_for_track_click(
                 UiScrollChromeAxis::Block,
-                [394.0, 250.0],
+                crate::mounting::presentation::platform_point_for_test(394.0, 250.0),
                 offset(0.0, 0.0),
                 line_extent_points
             )
@@ -250,7 +269,7 @@ fn a_track_click_pages_one_viewport_minus_one_line_toward_the_pointer() {
     assert_eq!(
         facts.offset_for_track_click(
             UiScrollChromeAxis::Block,
-            [394.0, 4.0],
+            crate::mounting::presentation::platform_point_for_test(394.0, 4.0),
             offset(0.0, 0.0),
             line_extent_points
         ),

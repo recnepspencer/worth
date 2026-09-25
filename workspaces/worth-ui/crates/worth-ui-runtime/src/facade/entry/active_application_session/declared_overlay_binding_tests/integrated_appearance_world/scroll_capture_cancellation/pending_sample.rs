@@ -43,12 +43,24 @@ pub(super) fn old_epoch_press_batch(
     scroll: &ScrollWorld,
     grabbed: [f32; 2],
 ) -> UiHostObservationBatch {
-    old_epoch_button_batch(scroll, grabbed, 1, UiHostPointerButtonTransition::Pressed)
+    old_epoch_button_batch(
+        scroll,
+        viewport(grabbed),
+        1,
+        UiHostPointerButtonTransition::Pressed,
+    )
 }
 
-fn old_epoch_button_batch(
+pub(super) fn viewport(point: [f32; 2]) -> UiHostSurfacePosition {
+    UiHostSurfacePosition::viewport_logical(
+        (point[0] * 1000.0).round() as i64,
+        (point[1] * 1000.0).round() as i64,
+    )
+}
+
+pub(super) fn old_epoch_button_batch(
     scroll: &ScrollWorld,
-    point: [f32; 2],
+    position: UiHostSurfacePosition,
     sequence_value: u64,
     transition: UiHostPointerButtonTransition,
 ) -> UiHostObservationBatch {
@@ -72,10 +84,7 @@ fn old_epoch_button_batch(
                 capture_epoch: UiHostPointerCaptureEpoch::new(CAPTURE_EPOCH),
                 button: UiHostPointerButton::Primary,
                 transition,
-                position: UiHostSurfacePosition::viewport_logical(
-                    (point[0] * 1000.0).round() as i64,
-                    (point[1] * 1000.0).round() as i64,
-                ),
+                position,
             },
         )
         .with_pointer_device_kind(UiHostPointerDeviceKind::Mouse)
@@ -224,7 +233,7 @@ fn release_before_physical_completion_places_final_pointer_position_once() {
         .host
         .enqueue_observation_for_next_drain(old_epoch_button_batch(
             &scroll,
-            release_point,
+            viewport(release_point),
             2,
             UiHostPointerButtonTransition::Released,
         ));
@@ -296,7 +305,7 @@ fn capture_cannot_retire_an_accepted_sample_before_its_pose_is_reconciled() {
     let presentation = scroll.presentation();
     let outcome = scroll.world.session.press_scroll_chrome(
         surface,
-        grabbed,
+        crate::mounting::presentation::platform_point_for_test(grabbed[0], grabbed[1]),
         UiHostPointerIdentity::new(POINTER),
         UiHostPointerCaptureEpoch::new(CAPTURE_EPOCH),
         presentation,

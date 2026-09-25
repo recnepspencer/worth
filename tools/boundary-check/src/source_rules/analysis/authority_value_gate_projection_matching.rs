@@ -168,14 +168,14 @@ pub(super) fn substitute_type(ty: &Type, bindings: &TypeBindings) -> Type {
     }
     let mut substituted = ty.clone();
     match &mut substituted {
-        Type::Array(array) => array.elem = Box::new(substitute_type(&array.elem, bindings)),
-        Type::Group(group) => group.elem = Box::new(substitute_type(&group.elem, bindings)),
-        Type::Paren(paren) => paren.elem = Box::new(substitute_type(&paren.elem, bindings)),
-        Type::Ptr(pointer) => pointer.elem = Box::new(substitute_type(&pointer.elem, bindings)),
+        Type::Array(array) => *array.elem = substitute_type(&array.elem, bindings),
+        Type::Group(group) => *group.elem = substitute_type(&group.elem, bindings),
+        Type::Paren(paren) => *paren.elem = substitute_type(&paren.elem, bindings),
+        Type::Ptr(pointer) => *pointer.elem = substitute_type(&pointer.elem, bindings),
         Type::Reference(reference) => {
-            reference.elem = Box::new(substitute_type(&reference.elem, bindings));
+            *reference.elem = substitute_type(&reference.elem, bindings);
         }
-        Type::Slice(slice) => slice.elem = Box::new(substitute_type(&slice.elem, bindings)),
+        Type::Slice(slice) => *slice.elem = substitute_type(&slice.elem, bindings),
         Type::Tuple(tuple) => {
             for element in &mut tuple.elems {
                 *element = substitute_type(element, bindings);

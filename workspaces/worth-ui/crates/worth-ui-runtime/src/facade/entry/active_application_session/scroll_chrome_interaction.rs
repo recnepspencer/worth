@@ -53,6 +53,9 @@ pub(crate) enum UiScrollChromeInteractionDenial {
     /// owner incarnation that no longer scrolls. The move places nothing; the
     /// release still hands the capture back.
     OwnerReincarnated,
+    /// The report put the pointer on a basis other than viewport logical
+    /// points, so chrome places nothing there. A release still ends its drag.
+    PositionBasisRefused(worth_ui_host_contract::UiHostSurfacePositionBasis),
 }
 
 /// What a press on chrome started.
@@ -73,7 +76,7 @@ impl super::super::WorthUiActiveApplicationSession {
     pub(in crate::facade::entry) fn scroll_chrome_under_pointer(
         &self,
         surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
-        point: [f32; 2],
+        point: crate::mounting::presentation::UiPlatformPoint,
     ) -> Option<UiScrollChromePointerAnswer> {
         let regions = self.presented_scroll_chrome_facts(surface);
         resolve_regions(point, &regions)
@@ -84,7 +87,7 @@ impl super::super::WorthUiActiveApplicationSession {
     pub(in crate::facade::entry) fn prepared_scroll_chrome_under_pointer(
         &self,
         surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
-        point: [f32; 2],
+        point: crate::mounting::presentation::UiPlatformPoint,
     ) -> Option<UiScrollChromePointerAnswer> {
         resolve_regions(point, &self.scroll_chrome_facts(surface))
     }
@@ -93,7 +96,7 @@ impl super::super::WorthUiActiveApplicationSession {
     pub(in crate::facade::entry) fn press_scroll_chrome(
         &mut self,
         surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
-        point: [f32; 2],
+        point: crate::mounting::presentation::UiPlatformPoint,
         pointer: worth_ui_host_contract::UiHostPointerIdentity,
         capture_epoch: worth_ui_host_contract::UiHostPointerCaptureEpoch,
         presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
@@ -208,7 +211,7 @@ impl super::super::WorthUiActiveApplicationSession {
     /// preserved, so the thumb keeps the spot it was grabbed by.
     pub(in crate::facade::entry) fn drag_scroll_chrome(
         &mut self,
-        point: [f32; 2],
+        point: crate::mounting::presentation::UiPlatformPoint,
         pointer: worth_ui_host_contract::UiHostPointerIdentity,
         capture_epoch: worth_ui_host_contract::UiHostPointerCaptureEpoch,
     ) -> Result<crate::runtime::scroll::UiScrollRouteReceipt, UiScrollChromeInteractionDenial> {
@@ -378,7 +381,7 @@ impl super::super::WorthUiActiveApplicationSession {
 }
 
 fn resolve_regions(
-    point: [f32; 2],
+    point: crate::mounting::presentation::UiPlatformPoint,
     regions: &[super::scroll_chrome_projection::UiScrollRegionChromeFacts],
 ) -> Option<UiScrollChromePointerAnswer> {
     let targets = regions

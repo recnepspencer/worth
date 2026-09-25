@@ -1,7 +1,7 @@
 use crate::mounting::UiPresentedHitRect;
 use worth_ui_host_contract::{
     UiHostObservationPresentationBasis, UiHostSurfacePosition, UiMountedCoordinateSpace,
-    UiMountedInstanceIdentity, UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
+    UiMountedInstanceIdentity,
 };
 
 #[allow(
@@ -187,20 +187,13 @@ impl UiPointerPresenceGeometry {
     }
 
     fn contains(self, position: UiHostSurfacePosition) -> bool {
-        if position.basis().coordinate_space()
-            != worth_ui_host_contract::UiHostSurfaceCoordinateSpace::Viewport
-            || position.basis().coordinate_unit()
-                != worth_ui_host_contract::UiHostSurfaceCoordinateUnit::LogicalPoint
-        {
-            return false;
-        }
         // The same platform point hit targeting resolves, so a retest and
         // the hit test it predicts agree at every edge.
-        let scale = UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f64;
-        let point = [
-            (position.x_subpixels() as f64 / scale) as f32,
-            (position.y_subpixels() as f64 / scale) as f32,
-        ];
+        let Ok(point) =
+            crate::mounting::presentation::UiPlatformPoint::from_host_position(position)
+        else {
+            return false;
+        };
         [self.bounds, self.clip_bounds].iter().all(|rect| {
             rect.coordinate_space() == UiMountedCoordinateSpace::Viewport
                 && rect.admits_platform_point(point)

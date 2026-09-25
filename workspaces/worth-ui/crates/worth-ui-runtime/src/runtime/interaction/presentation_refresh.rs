@@ -27,14 +27,11 @@ pub(super) fn affected(
     target: Option<worth_ui_host_contract::UiMountedInstanceIdentity>,
     work: &mut crate::mounting::UiHitTestSpatialWork,
 ) -> Result<bool, UiInteractionTargetingDenial> {
-    let scale = worth_ui_host_contract::UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f64;
-    // Match targeting's canonical f32 point and half-open endpoints exactly.
-    let point = [
-        (position.x_subpixels() as f64 / scale) as f32,
-        (position.y_subpixels() as f64 / scale) as f32,
-    ];
+    // Targeting reads the same platform point, so both agree on every edge.
+    let point = crate::mounting::presentation::UiPlatformPoint::from_host_position(position)
+        .map_err(UiInteractionTargetingDenial::UnsupportedPositionBasis)?;
     let (affected, query_work) = changes
-        .affects(presentation.binding(), point.map(f64::from), target)
+        .affects(presentation.binding(), point, target)
         .map_err(|denial| {
             work.merge(denial.work());
             super::targeting::map_hit_query_denial(denial)

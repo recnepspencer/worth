@@ -167,7 +167,7 @@ impl UiScrollChromeLatchState {
         &mut self,
         pointer: UiHostPointerIdentity,
         capture_epoch: UiHostPointerCaptureEpoch,
-        point: [f32; 2],
+        point: crate::mounting::presentation::UiPlatformPoint,
         released: bool,
     ) -> Result<UiScrollChromePendingCapture, UiScrollChromeLatchDenial> {
         let pending = self

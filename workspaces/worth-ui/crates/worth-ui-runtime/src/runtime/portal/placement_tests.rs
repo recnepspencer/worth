@@ -212,7 +212,7 @@ fn shadow_gutter_does_not_change_body_anchor_gap() {
         runtime.commit_published(transition).unwrap();
         let press = |x: f32, y: f32| super::UiPortalDismissalTrigger::OutsidePress {
             semantic_surface: surface,
-            viewport_point_bits: [x.to_bits(), y.to_bits()],
+            point: crate::mounting::presentation::platform_point_for_test(x, y),
         };
         let idempotency =
             crate::runtime::intent_execution::UiIntentExecutionIdempotencyIdentity::issued(1, 74);

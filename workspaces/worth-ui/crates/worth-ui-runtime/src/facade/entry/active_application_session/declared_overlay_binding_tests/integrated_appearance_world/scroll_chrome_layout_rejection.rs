@@ -35,10 +35,13 @@ fn rejected_extent_keeps_presented_chrome_hit_geometry_and_defers_control_until_
         thumb.y() + thumb.height() / 2.0,
     ];
     assert!(matches!(
-        scroll
-            .world
-            .session
-            .press_scroll_chrome(surface, grabbed, pointer, capture, previous,),
+        scroll.world.session.press_scroll_chrome(
+            surface,
+            crate::mounting::presentation::platform_point_for_test(grabbed[0], grabbed[1]),
+            pointer,
+            capture,
+            previous,
+        ),
         Ok(UiScrollChromePressOutcome::ThumbCaptured(_))
     ));
     let before = scroll.accepted_offset();
@@ -65,7 +68,10 @@ fn rejected_extent_keeps_presented_chrome_hit_geometry_and_defers_control_until_
         scroll
             .world
             .session
-            .prepared_scroll_chrome_under_pointer(surface, point)
+            .prepared_scroll_chrome_under_pointer(
+                surface,
+                crate::mounting::presentation::platform_point_for_test(point[0], point[1])
+            )
             .unwrap()
             .part()
             .unwrap()
@@ -97,7 +103,10 @@ fn rejected_extent_keeps_presented_chrome_hit_geometry_and_defers_control_until_
     let answer = scroll
         .world
         .session
-        .scroll_chrome_under_pointer(surface, point)
+        .scroll_chrome_under_pointer(
+            surface,
+            crate::mounting::presentation::platform_point_for_test(point[0], point[1]),
+        )
         .unwrap();
     assert_eq!(
         answer.part().unwrap().part(),
@@ -105,17 +114,21 @@ fn rejected_extent_keeps_presented_chrome_hit_geometry_and_defers_control_until_
         "the rejected candidate's larger thumb cannot claim a point on the displayed track"
     );
     assert_eq!(
-        scroll
-            .world
-            .session
-            .press_scroll_chrome(surface, point, pointer, capture, previous),
+        scroll.world.session.press_scroll_chrome(
+            surface,
+            crate::mounting::presentation::platform_point_for_test(point[0], point[1]),
+            pointer,
+            capture,
+            previous
+        ),
         Err(UiScrollChromeInteractionDenial::UnpresentedLayout)
     );
     assert_eq!(
-        scroll
-            .world
-            .session
-            .drag_scroll_chrome([grabbed[0], grabbed[1] + 2.0], pointer, capture),
+        scroll.world.session.drag_scroll_chrome(
+            crate::mounting::presentation::platform_point_for_test(grabbed[0], grabbed[1] + 2.0),
+            pointer,
+            capture
+        ),
         Err(UiScrollChromeInteractionDenial::UnpresentedLayout)
     );
     assert_eq!(scroll.accepted_offset(), before);
@@ -135,14 +148,20 @@ fn rejected_extent_keeps_presented_chrome_hit_geometry_and_defers_control_until_
     let answer = scroll
         .world
         .session
-        .scroll_chrome_under_pointer(surface, point)
+        .scroll_chrome_under_pointer(
+            surface,
+            crate::mounting::presentation::platform_point_for_test(point[0], point[1]),
+        )
         .unwrap();
     assert_eq!(answer.part().unwrap().part(), UiScrollChromePart::Thumb);
     assert!(matches!(
-        scroll
-            .world
-            .session
-            .press_scroll_chrome(surface, point, pointer, capture, accepted,),
+        scroll.world.session.press_scroll_chrome(
+            surface,
+            crate::mounting::presentation::platform_point_for_test(point[0], point[1]),
+            pointer,
+            capture,
+            accepted,
+        ),
         Ok(UiScrollChromePressOutcome::ThumbCaptured(_))
     ));
     assert!(scroll

@@ -25,7 +25,10 @@ pub(in crate::facade::entry) struct UiScrollRegionChromeFacts {
 }
 
 impl UiScrollRegionChromeFacts {
-    pub(in crate::facade::entry) fn admits_pointer(&self, point: [f32; 2]) -> bool {
+    pub(in crate::facade::entry) fn admits_pointer(
+        &self,
+        point: crate::mounting::presentation::UiPlatformPoint,
+    ) -> bool {
         self.pointer_clip
             .is_none_or(|clip| crate::runtime::scroll::chrome::rect_contains(clip, point))
     }

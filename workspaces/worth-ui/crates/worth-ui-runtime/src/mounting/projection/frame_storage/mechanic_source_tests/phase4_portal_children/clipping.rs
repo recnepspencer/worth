@@ -92,7 +92,7 @@ fn assert_presented_families(
         .presented_hits
         .at_point(
             binding,
-            [40.0, 80.0],
+            crate::mounting::presentation::platform_point_for_test(40.0, 80.0),
             crate::mounting::spatial_index::UiMountedSpatialBudget {
                 node_visits: 64,
                 candidates: 16,

@@ -192,13 +192,14 @@ fn outside_press_respects_bounds_and_duplicate_dismissal_coalesces() {
     let bounds = opened.placement().unwrap().bounds().components();
     state.commit_published(opened).unwrap();
     let surface = state.semantic_surface_for_test(portal).unwrap();
-    let inside = [bounds[0] + 1.0, bounds[1] + 1.0].map(f32::to_bits);
+    let inside =
+        crate::mounting::presentation::platform_point_for_test(bounds[0] + 1.0, bounds[1] + 1.0);
     assert!(matches!(
         state
             .prepare_dismissal(
                 UiPortalDismissalTrigger::OutsidePress {
                     semantic_surface: surface,
-                    viewport_point_bits: inside
+                    point: inside
                 },
                 None,
                 idempotency(272),
@@ -214,7 +215,7 @@ fn outside_press_respects_bounds_and_duplicate_dismissal_coalesces() {
         .prepare_dismissal(
             UiPortalDismissalTrigger::OutsidePress {
                 semantic_surface: surface,
-                viewport_point_bits: inside,
+                point: inside,
             },
             Some(sampled_bounds),
             idempotency(273),
@@ -230,7 +231,7 @@ fn outside_press_respects_bounds_and_duplicate_dismissal_coalesces() {
             .prepare_dismissal(
                 UiPortalDismissalTrigger::OutsidePress {
                     semantic_surface: surface,
-                    viewport_point_bits: inside
+                    point: inside
                 },
                 None,
                 idempotency(273),
@@ -311,7 +312,7 @@ fn modal_policy_shields_input_and_disables_outside_press_dismissal() {
             .prepare_dismissal(
                 UiPortalDismissalTrigger::OutsidePress {
                     semantic_surface: state.semantic_surface_for_test(portal).unwrap(),
-                    viewport_point_bits: [0.0_f32.to_bits(), 0.0_f32.to_bits()],
+                    point: crate::mounting::presentation::platform_point_for_test(0.0, 0.0),
                 },
                 None,
                 idempotency(302),

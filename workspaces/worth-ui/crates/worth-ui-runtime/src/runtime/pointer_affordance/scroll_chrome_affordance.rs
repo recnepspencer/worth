@@ -64,7 +64,7 @@ impl UiScrollChromePointerAnswer {
 /// one painted on top; a nested region's scrollbar therefore wins over the
 /// scrollbar of the region containing it.
 pub(crate) fn resolve_scroll_chrome_pointer(
-    point: [f32; 2],
+    point: crate::mounting::presentation::UiPlatformPoint,
     regions: &[UiScrollChromeRegionTarget<'_>],
 ) -> Option<UiScrollChromePointerAnswer> {
     regions.iter().rev().find_map(|region| {
@@ -78,7 +78,7 @@ pub(crate) fn resolve_scroll_chrome_pointer(
 /// `None` when the point is outside this region's chrome; `Some(None)` when it
 /// is on the reserved corner.
 fn region_answer(
-    point: [f32; 2],
+    point: crate::mounting::presentation::UiPlatformPoint,
     facts: &UiScrollChromeFacts,
 ) -> Option<Option<UiScrollChromePartAnswer>> {
     if let Some(axis) = facts.pointer_axis(point) {
@@ -94,7 +94,7 @@ fn region_answer(
 /// the whole gutter alongside the thumb, so a press just beside the drawn bar
 /// still grabs it rather than paging past it.
 fn axis_answer(
-    point: [f32; 2],
+    point: crate::mounting::presentation::UiPlatformPoint,
     axis: UiScrollChromeAxis,
     facts: &UiScrollChromeFacts,
 ) -> Option<UiScrollChromePartAnswer> {

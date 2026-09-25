@@ -109,7 +109,7 @@ impl UiMountedFrameRetentionCoordinator {
     pub(in crate::mounting) fn presented_hit_candidates(
         &self,
         presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
-        point: [f64; 2],
+        point: crate::mounting::presentation::UiPlatformPoint,
         budget: UiMountedSpatialBudget,
     ) -> Result<super::super::UiPresentedHitTestBasis, UiPresentedPointLookupDenial> {
         let authority = self.authority.borrow();

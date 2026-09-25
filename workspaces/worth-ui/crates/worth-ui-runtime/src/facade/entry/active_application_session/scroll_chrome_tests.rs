@@ -11,6 +11,7 @@
 //! 269 viewport over 1560 by 672 of content, which overflows on both axes and
 //! therefore reserves a corner.
 
+use crate::mounting::presentation::platform_point_for_test as point;
 use crate::runtime::pointer_affordance::{
     resolve_scroll_chrome_pointer, UiScrollChromeRegionTarget,
 };
@@ -219,7 +220,7 @@ fn a_drag_moves_the_offset_by_the_compressed_travel_ratio() {
     let placed = facts
         .offset_for_thumb_position(
             axis,
-            [762.0, (grab + dragged_points) as f32],
+            point(762.0, (grab + dragged_points) as f32),
             grab as f32,
             offset(0.0, 0.0),
         )
@@ -248,7 +249,7 @@ fn a_track_press_pages_one_viewport_minus_one_line_toward_the_pointer() {
     let forward = facts
         .offset_for_track_click(
             axis,
-            [762.0, (thumb_start + length + 4.0) as f32],
+            point(762.0, (thumb_start + length + 4.0) as f32),
             offset(0.0, start_offset),
             line,
         )
@@ -262,7 +263,7 @@ fn a_track_press_pages_one_viewport_minus_one_line_toward_the_pointer() {
     let back = facts
         .offset_for_track_click(
             axis,
-            [762.0, (thumb_start - 4.0) as f32],
+            point(762.0, (thumb_start - 4.0) as f32),
             offset(0.0, start_offset),
             line,
         )
@@ -280,7 +281,7 @@ fn a_press_on_the_thumb_itself_pages_nothing() {
     assert_eq!(
         facts.offset_for_track_click(
             UiScrollChromeAxis::Block,
-            [762.0, 10.0],
+            point(762.0, 10.0),
             offset(0.0, 0.0),
             24
         ),
@@ -304,7 +305,8 @@ fn every_point_in_the_reserved_gutter_names_the_owning_region() {
         facts: &facts,
     }];
 
-    let on_track = resolve_scroll_chrome_pointer([762.0, 200.0], &targets).expect("in the gutter");
+    let on_track =
+        resolve_scroll_chrome_pointer(point(762.0, 200.0), &targets).expect("in the gutter");
     assert_eq!(on_track.owner(), owner);
     assert_eq!(
         on_track.part().map(|part| part.axis()),
@@ -313,12 +315,13 @@ fn every_point_in_the_reserved_gutter_names_the_owning_region() {
 
     // The corner routes a wheel to the same region while reaching no axis, so a
     // press there moves neither scrollbar.
-    let corner = resolve_scroll_chrome_pointer([762.0, 262.0], &targets).expect("on the corner");
+    let corner =
+        resolve_scroll_chrome_pointer(point(762.0, 262.0), &targets).expect("on the corner");
     assert_eq!(corner.owner(), owner);
     assert_eq!(corner.part(), None);
 
     assert_eq!(
-        resolve_scroll_chrome_pointer([100.0, 100.0], &targets),
+        resolve_scroll_chrome_pointer(point(100.0, 100.0), &targets),
         None
     );
 }
@@ -339,7 +342,7 @@ fn a_press_beside_the_drawn_thumb_still_grabs_it() {
         facts: &facts,
     }];
     // x = 757 is inside the 12-point gutter but outside the 6-point bar.
-    let answer = resolve_scroll_chrome_pointer([757.0, 10.0], &targets)
+    let answer = resolve_scroll_chrome_pointer(point(757.0, 10.0), &targets)
         .and_then(|answer| answer.part())
         .expect("beside the thumb is still the thumb");
     assert_eq!(answer.part(), UiScrollChromePart::Thumb);

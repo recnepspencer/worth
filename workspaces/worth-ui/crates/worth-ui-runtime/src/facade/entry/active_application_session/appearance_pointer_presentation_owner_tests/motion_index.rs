@@ -171,7 +171,13 @@ fn contains(
 ) -> bool {
     session
         .mounted
-        .interaction_hit_test_candidates(presentation, point)
+        .interaction_hit_test_candidates(
+            presentation,
+            crate::mounting::presentation::platform_point_for_test(
+                point[0] as f32,
+                point[1] as f32,
+            ),
+        )
         .unwrap_or_else(|_| panic!("presented candidate basis must remain available"))
         .rows()
         .iter()

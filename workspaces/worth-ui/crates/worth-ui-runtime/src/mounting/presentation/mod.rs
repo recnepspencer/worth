@@ -56,9 +56,11 @@ pub use state::{
     UiMountedPresentationCompletionDenial, UiMountedPresentationInFlight,
 };
 #[cfg(test)]
-pub(crate) use truth_geometry::{displayed_rect_for_test, displayed_scroll_offset_for_test};
 pub(crate) use truth_geometry::{
-    UiAcceptedRect, UiDisplayedRect, UiDisplayedScrollOffset, UiPublishedMap, UiPublishedRect,
-    UiPublishedToAcceptedMap, UiRebaseDenial, UiScrollPoseShift, UiScrollStandingDenial,
-    UiTruthGeometryDenial,
+    displayed_rect_for_test, displayed_scroll_offset_for_test, platform_point_for_test,
+};
+pub(crate) use truth_geometry::{
+    UiAcceptedRect, UiDisplayedRect, UiDisplayedScrollOffset, UiPlatformPoint, UiPublishedMap,
+    UiPublishedRect, UiPublishedToAcceptedMap, UiRebaseDenial, UiScrollPoseShift,
+    UiScrollStandingDenial, UiTruthGeometryDenial,
 };

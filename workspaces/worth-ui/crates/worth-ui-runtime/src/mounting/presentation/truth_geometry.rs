@@ -22,6 +22,8 @@ mod accepted;
 mod displayed;
 #[path = "truth_geometry/logical_rect.rs"]
 mod logical_rect;
+#[path = "truth_geometry/platform_point.rs"]
+mod platform_point;
 #[path = "truth_geometry/pose_shift.rs"]
 mod pose_shift;
 #[path = "truth_geometry/published.rs"]
@@ -36,6 +38,9 @@ pub(crate) use accepted::{UiAcceptedRect, UiRebaseDenial};
 pub(crate) use displayed::displayed_rect_for_test;
 pub(crate) use displayed::UiDisplayedRect;
 pub(crate) use logical_rect::UiTruthGeometryDenial;
+#[cfg(test)]
+pub(crate) use platform_point::platform_point_for_test;
+pub(crate) use platform_point::UiPlatformPoint;
 pub(crate) use pose_shift::UiScrollPoseShift;
 pub(crate) use published::UiPublishedRect;
 pub(crate) use rect_map::{UiPublishedMap, UiPublishedToAcceptedMap};

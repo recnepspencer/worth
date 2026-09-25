@@ -1,4 +1,5 @@
 use super::*;
+use crate::mounting::presentation::UiPlatformPoint;
 use crate::mounting::spatial_index::UiMountedSpatialBudget;
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -52,7 +53,7 @@ impl UiPresentedHitChanges {
     pub(crate) fn affects(
         &self,
         binding: UiSurfaceBindingGeneration,
-        point: [f64; 2],
+        point: UiPlatformPoint,
         previous_target: Option<UiMountedInstanceIdentity>,
     ) -> Result<(bool, UiHitTestSpatialWork), UiPresentedHitQueryDenial> {
         let mut work = UiHitTestSpatialWork::default();

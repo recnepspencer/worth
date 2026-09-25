@@ -31,7 +31,7 @@ fn interaction_dismissal_selects_the_topmost_portal_on_its_own_surface() {
         .prepare_dismissal(
             UiPortalDismissalTrigger::OutsidePress {
                 semantic_surface: surface_a,
-                viewport_point_bits: [f32::MAX.to_bits(), f32::MAX.to_bits()],
+                point: crate::mounting::presentation::platform_point_for_test(f32::MAX, f32::MAX),
             },
             None,
             idempotency(724),

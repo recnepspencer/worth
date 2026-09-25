@@ -20,7 +20,7 @@ fn pressing_the_portal_anchor_preserves_open_activation_and_its_half_open_bounda
     state.commit_published(open).unwrap();
     let press = |x: f32, y: f32| UiPortalDismissalTrigger::OutsidePress {
         semantic_surface: surface,
-        viewport_point_bits: [x.to_bits(), y.to_bits()],
+        point: crate::mounting::presentation::platform_point_for_test(x, y),
     };
     assert!(matches!(
         state

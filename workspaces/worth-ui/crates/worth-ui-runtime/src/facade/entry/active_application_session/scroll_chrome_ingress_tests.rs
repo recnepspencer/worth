@@ -184,10 +184,21 @@ fn a_second_press_during_a_drag_is_not_chromes_to_take() {
 
 /// The point a report names is read in the same logical points the chrome
 /// rectangles are derived in, so a press at 760.5 points is a press at 760.5
-/// points and not at its subpixel count.
+/// points and not at its subpixel count. A position on another basis names
+/// no point, so the lane declines it rather than misreading its units.
 #[test]
 fn a_reports_position_is_read_in_logical_points() {
-    assert_eq!(chrome_point(at(760.5, 41.25)), [760.5, 41.25]);
+    let point = chrome_point(at(760.5, 41.25)).expect("a viewport logical point");
+    assert_eq!([point.x(), point.y()], [760.5, 41.25]);
+    let physical = worth_ui_host_contract::UiHostSurfacePosition::new(
+        worth_ui_host_contract::UiHostSurfacePositionBasis::new(
+            worth_ui_host_contract::UiHostSurfaceCoordinateSpace::Viewport,
+            worth_ui_host_contract::UiHostSurfaceCoordinateUnit::PhysicalPixel,
+        ),
+        760_500,
+        41_250,
+    );
+    assert_eq!(chrome_point(physical), None);
 }
 
 /// A wheel on the axis a thumb drag holds is ignored while the drag runs: the

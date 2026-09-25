@@ -61,19 +61,18 @@ pub(super) fn allows(path: &str, route: &str) -> bool {
         // These calls construct fresh candidates; none interpret persisted input.
         return CHECKSUM_WRITERS.contains(&path);
     }
-    match (path, route) {
+    matches!(
+        (path, route),
         (
             "worth-store/src/physical_runtime/durability/data/frame_identity.rs",
             "inspect_inline_page" | "decode_extent_chunk",
-        ) => true,
-        (
+        ) | (
             "worth-store/src/physical_runtime/durability/data/prior_page_basis.rs"
-            | "worth-store/src/physical_runtime/durability/data/prepared_plan.rs"
-            | "worth-store/src/physical_runtime/durability/data/page_wal_basis.rs",
+                | "worth-store/src/physical_runtime/durability/data/prepared_plan.rs"
+                | "worth-store/src/physical_runtime/durability/data/page_wal_basis.rs",
             "decode_data_frame_page_lsn",
-        ) => true,
-        _ => false,
-    }
+        )
+    )
 }
 
 // Persisted payload projection is confined to the sealed, source-bound family view.

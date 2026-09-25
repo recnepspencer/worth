@@ -49,7 +49,7 @@ impl UiPublishedRect {
 
     /// Whether the point a platform event reports lands in this committed
     /// rect: the platform-event edge.
-    pub(crate) fn admits_platform_point(self, point: [f32; 2]) -> bool {
+    pub(crate) fn admits_platform_point(self, point: super::UiPlatformPoint) -> bool {
         self.rect.admits(point)
     }
 

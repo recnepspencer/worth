@@ -1,5 +1,6 @@
 use super::tests::row;
 use super::*;
+use crate::mounting::presentation::platform_point_for_test as point;
 use worth_ui_host_contract::*;
 
 #[test]
@@ -42,10 +43,12 @@ fn hit_change_queries_do_not_enter_an_unchanged_dense_binding() {
     assert_eq!(changes.changed_count(), 1);
     assert!(changes.comparison_steps() < 128);
     assert_eq!(
-        changes.affects(untouched_binding, [5.0, 5.0], None),
+        changes.affects(untouched_binding, point(5.0, 5.0), None),
         Ok((false, UiHitTestSpatialWork::default()))
     );
-    let (affected, work) = changes.affects(changed_binding, [5.0, 5.0], None).unwrap();
+    let (affected, work) = changes
+        .affects(changed_binding, point(5.0, 5.0), None)
+        .unwrap();
     assert!(affected && work.node_visits > 0);
 }
 
@@ -86,7 +89,7 @@ fn hit_changes_distinguish_receipt_refresh_order_change_and_local_query_exhausti
     let changes = UiPresentedHitChanges::between(previous.clone(), current.clone());
     assert_eq!(changes.changed_count(), 0);
     assert_eq!(
-        changes.affects(binding, [5.0, 5.0], Some(instance)),
+        changes.affects(binding, point(5.0, 5.0), Some(instance)),
         Ok((false, UiHitTestSpatialWork::default()))
     );
     current.replace_base(
@@ -102,7 +105,7 @@ fn hit_changes_distinguish_receipt_refresh_order_change_and_local_query_exhausti
     );
     let changes = UiPresentedHitChanges::between(previous.clone(), current.clone());
     assert!(
-        changes.affects(binding, [5.0, 5.0], None).unwrap().0,
+        changes.affects(binding, point(5.0, 5.0), None).unwrap().0,
         "order alone changes targeting"
     );
     for rank in 3..303 {
@@ -121,6 +124,6 @@ fn hit_changes_distinguish_receipt_refresh_order_change_and_local_query_exhausti
     }
     let changes = UiPresentedHitChanges::between(previous, current);
     assert!(
-        matches!(changes.affects(binding, [25.0, 25.0], None), Err(UiPresentedHitQueryDenial::CandidateBudget { work }) if work.region_tests > 256)
+        matches!(changes.affects(binding, point(25.0, 25.0), None), Err(UiPresentedHitQueryDenial::CandidateBudget { work }) if work.region_tests > 256)
     );
 }

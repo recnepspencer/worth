@@ -147,6 +147,16 @@ pub(super) fn parse_additional_source_targets(
 pub(super) fn parse_additional_production_targets(
     governed: &GovernedCrate,
 ) -> Result<Vec<ModuleNode>, String> {
+    Ok(parse_additional_production_target_graphs(governed)?
+        .into_iter()
+        .flat_map(|graph| graph.modules.into_values())
+        .collect())
+}
+
+/// One module graph per non-library production target, rooted at its source.
+pub(super) fn parse_additional_production_target_graphs(
+    governed: &GovernedCrate,
+) -> Result<Vec<ModuleGraph>, String> {
     let source_root = governed.crate_root.join("src");
     let mut paths = Vec::new();
     let main = source_root.join("main.rs");
@@ -159,24 +169,24 @@ pub(super) fn parse_additional_production_targets(
     paths.sort();
     paths.dedup();
 
-    let mut nodes = Vec::new();
+    let mut graphs = Vec::new();
     for path in paths {
         let root_dir = path
             .parent()
             .unwrap_or_else(|| Path::new("."))
             .to_path_buf();
-        let mut target_modules = BTreeMap::new();
+        let mut modules = BTreeMap::new();
         parse_module_tree(
             &governed.crate_root,
             &path,
             &root_dir,
             Vec::new(),
             false,
-            &mut target_modules,
+            &mut modules,
         )?;
-        nodes.extend(target_modules.into_values());
+        graphs.push(ModuleGraph { modules });
     }
-    Ok(nodes)
+    Ok(graphs)
 }
 
 fn collect_manifest_target_paths(

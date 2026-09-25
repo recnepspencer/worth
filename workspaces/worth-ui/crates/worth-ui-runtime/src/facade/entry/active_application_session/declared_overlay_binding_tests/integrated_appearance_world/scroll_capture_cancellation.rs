@@ -101,7 +101,7 @@ fn press(scroll: &mut ScrollWorld, point: [f32; 2]) -> UiScrollChromePressOutcom
         .session
         .press_scroll_chrome(
             surface,
-            point,
+            crate::mounting::presentation::platform_point_for_test(point[0], point[1]),
             UiHostPointerIdentity::new(POINTER),
             UiHostPointerCaptureEpoch::new(CAPTURE_EPOCH),
             presentation,
@@ -115,7 +115,7 @@ fn drag(scroll: &mut ScrollWorld, point: [f32; 2]) -> UiScrollOffset {
         .world
         .session
         .drag_scroll_chrome(
-            point,
+            crate::mounting::presentation::platform_point_for_test(point[0], point[1]),
             UiHostPointerIdentity::new(POINTER),
             UiHostPointerCaptureEpoch::new(CAPTURE_EPOCH),
         )

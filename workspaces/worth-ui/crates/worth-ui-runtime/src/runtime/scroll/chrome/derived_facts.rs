@@ -85,7 +85,10 @@ impl UiScrollChromeFacts {
 
     /// Which scrollbar a point belongs to. The shared corner belongs to
     /// neither, so this never guesses between two tracks.
-    pub(crate) fn pointer_axis(&self, point: [f32; 2]) -> Option<super::UiScrollChromeAxis> {
+    pub(crate) fn pointer_axis(
+        &self,
+        point: crate::mounting::presentation::UiPlatformPoint,
+    ) -> Option<super::UiScrollChromeAxis> {
         [
             (super::UiScrollChromeAxis::Block, self.block),
             (super::UiScrollChromeAxis::Inline, self.inline),
@@ -103,7 +106,7 @@ impl UiScrollChromeFacts {
     pub(crate) fn offset_for_thumb_position(
         &self,
         axis: super::UiScrollChromeAxis,
-        point: [f32; 2],
+        point: crate::mounting::presentation::UiPlatformPoint,
         grab_offset_logical_points: f32,
         offset: super::super::UiScrollOffset,
     ) -> Option<super::super::UiScrollOffset> {
@@ -124,7 +127,7 @@ impl UiScrollChromeFacts {
     pub(crate) fn offset_for_track_click(
         &self,
         axis: super::UiScrollChromeAxis,
-        point: [f32; 2],
+        point: crate::mounting::presentation::UiPlatformPoint,
         offset: super::super::UiScrollOffset,
         line_extent_logical_points: u16,
     ) -> Option<super::super::UiScrollOffset> {

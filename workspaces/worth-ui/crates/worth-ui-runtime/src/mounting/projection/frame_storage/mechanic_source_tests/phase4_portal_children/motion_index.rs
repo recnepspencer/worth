@@ -113,7 +113,10 @@ fn has(
     index
         .at_point(
             binding,
-            point,
+            crate::mounting::presentation::platform_point_for_test(
+                point[0] as f32,
+                point[1] as f32,
+            ),
             UiMountedSpatialBudget {
                 node_visits: 1024,
                 candidates: 256,

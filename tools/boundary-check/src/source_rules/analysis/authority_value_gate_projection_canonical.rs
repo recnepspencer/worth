@@ -196,13 +196,7 @@ fn canonicalize_boxed_type(
     bindings: &TypeBindings,
     alias_stack: &mut BTreeSet<String>,
 ) {
-    *ty = Box::new(canonical_type_inner(
-        graph,
-        module_path,
-        ty,
-        bindings,
-        alias_stack,
-    ));
+    **ty = canonical_type_inner(graph, module_path, ty, bindings, alias_stack);
 }
 
 fn canonical_arguments(

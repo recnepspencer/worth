@@ -80,7 +80,7 @@ impl WorthUiMountedSessionState {
     pub(crate) fn interaction_hit_test_candidates(
         &self,
         presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
-        point: [f64; 2],
+        point: crate::mounting::presentation::UiPlatformPoint,
     ) -> Result<
         crate::mounting::UiPresentedHitTestBasis,
         crate::mounting::UiPresentedPointLookupDenial,

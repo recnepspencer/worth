@@ -24,6 +24,8 @@ pub(crate) struct Road1Config {
     pub(crate) source_dependency_allowlists: Vec<SourceDependencyAllowlistConfig>,
     #[serde(default)]
     pub(crate) source_identifier_denials: Vec<SourceIdentifierDenialConfig>,
+    #[serde(default)]
+    pub(crate) raw_geometry_denials: Vec<RawGeometryDenialConfig>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -82,6 +84,52 @@ pub(crate) struct SourceIdentifierDenialConfig {
     #[serde(default)]
     pub(crate) forbidden_identifier_fragments: Vec<String>,
     pub(crate) guidance: String,
+}
+
+/// One crate whose production source may hold raw coordinates only at the
+/// declared edges.
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct RawGeometryDenialConfig {
+    pub(crate) crate_root: String,
+    pub(crate) guidance: String,
+    pub(crate) edges: Vec<RawGeometryEdgeConfig>,
+}
+
+/// A source file or directory, relative to the crate root, and optionally the
+/// item paths within it, where raw coordinates are the declared form.
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct RawGeometryEdgeConfig {
+    pub(crate) path: String,
+    #[serde(default)]
+    pub(crate) items: Vec<String>,
+    pub(crate) kind: RawGeometryEdgeKind,
+    pub(crate) reason: String,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq)]
+#[serde(rename_all = "kebab-case")]
+pub(crate) enum RawGeometryEdgeKind {
+    Serialization,
+    PlatformEvent,
+    GpuUpload,
+    SpatialIndex,
+    SealedOwner,
+    CommittedLayout,
+}
+
+impl RawGeometryEdgeKind {
+    pub(crate) fn as_str(self) -> &'static str {
+        match self {
+            Self::Serialization => "serialization",
+            Self::PlatformEvent => "platform-event",
+            Self::GpuUpload => "gpu-upload",
+            Self::SpatialIndex => "spatial-index",
+            Self::SealedOwner => "sealed-owner",
+            Self::CommittedLayout => "committed-layout",
+        }
+    }
 }
 
 /// One machine-owned law substrate: package identity plus legal tier/band sets.

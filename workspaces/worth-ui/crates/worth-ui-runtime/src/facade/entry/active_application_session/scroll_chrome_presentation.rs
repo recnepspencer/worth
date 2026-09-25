@@ -26,7 +26,7 @@ impl super::super::WorthUiActiveApplicationSession {
     pub(in crate::facade::entry) fn lowered_scroll_chrome(
         &self,
         surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
-        pointer: Option<[f32; 2]>,
+        pointer: Option<crate::mounting::presentation::UiPlatformPoint>,
     ) -> Result<Vec<UiMountedScrollChromeNode>, UiScrollChromeLoweringDenial> {
         let Some(device_scale) = self.mounted.scroll_chrome_device_scale(surface) else {
             return Ok(Vec::new());

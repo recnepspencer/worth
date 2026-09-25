@@ -1,4 +1,5 @@
 use super::*;
+use crate::mounting::presentation::UiPlatformPoint;
 use crate::mounting::spatial_index::{UiMountedSpatialBudget, UiMountedSpatialQueryDenial};
 use worth_ui_host_contract::UiMountedCoordinateSpace;
 
@@ -36,7 +37,19 @@ impl UiPresentedHitQueryDenial {
 }
 
 impl UiPresentedHitIndex {
+    /// The rows whose presented hit region holds a platform point.
     pub(in crate::mounting) fn at_point(
+        &self,
+        binding: UiSurfaceBindingGeneration,
+        point: UiPlatformPoint,
+        budget: UiMountedSpatialBudget,
+    ) -> Result<UiPresentedHitQuery, UiPresentedHitQueryDenial> {
+        self.at_index_point(binding, point.index_point(), budget)
+    }
+
+    /// The same query at a raw index point. Only the index reaches it, so its
+    /// tests can probe precision and nonfinite points no platform reports.
+    pub(super) fn at_index_point(
         &self,
         binding: UiSurfaceBindingGeneration,
         point: [f64; 2],

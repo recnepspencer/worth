@@ -98,7 +98,7 @@ impl UiInteractionRuntimeState {
     pub(crate) fn scroll_chrome_hover_point(
         &self,
         surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
-    ) -> Option<[f32; 2]> {
+    ) -> Option<crate::mounting::presentation::UiPlatformPoint> {
         self.scroll_chrome_hover.point(surface)
     }
 
@@ -106,7 +106,7 @@ impl UiInteractionRuntimeState {
         &mut self,
         surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
         binding: UiSurfaceBindingGeneration,
-        point: [f32; 2],
+        point: crate::mounting::presentation::UiPlatformPoint,
     ) {
         self.scroll_chrome_hover.observe(surface, binding, point);
     }

@@ -64,9 +64,10 @@ impl UiLogicalRect {
     }
 
     /// Whether a point lands in this half-open rectangle.
-    pub(super) fn admits(self, point: [f32; 2]) -> bool {
+    pub(super) fn admits(self, point: super::UiPlatformPoint) -> bool {
         let [x, y, width, height] = self.components();
-        point[0] >= x && point[1] >= y && point[0] < x + width && point[1] < y + height
+        let (point_x, point_y) = (point.x(), point.y());
+        point_x >= x && point_y >= y && point_x < x + width && point_y < y + height
     }
 
     /// This rectangle moved by a finite distance, in the same space.

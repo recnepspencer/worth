@@ -54,7 +54,7 @@ impl UiDisplayedRect {
 
     /// Whether the point a platform event reports lands where the host
     /// showed this rect: the platform-event edge.
-    pub(crate) fn admits_platform_point(self, point: [f32; 2]) -> bool {
+    pub(crate) fn admits_platform_point(self, point: super::UiPlatformPoint) -> bool {
         self.rect.admits(point)
     }
 

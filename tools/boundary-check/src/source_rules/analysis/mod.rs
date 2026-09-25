@@ -35,8 +35,10 @@ mod library_target;
 mod module_source;
 mod opaque_attributes;
 mod path_dependencies;
+mod production_cfg;
 mod public_reachability;
 mod query_fence;
+mod raw_geometry;
 mod source_reachability;
 mod store_integrity_routes;
 mod type_alias_reachability;
@@ -49,6 +51,7 @@ use crate::snapshots::FacadeVocabularyAuthority;
 use std::path::Path;
 
 pub(crate) use compiled_library_surface::observe_compiled_library_surface;
+pub(crate) use raw_geometry::enforce_raw_geometry_denials;
 pub(crate) use source_reachability::enforce_workspace_source_reachability;
 
 pub(super) fn validate(

@@ -44,26 +44,27 @@ pub(crate) fn effective_thumb_pointer_rect(
 /// trailing edges, so two adjoining rectangles never both claim it.
 pub(crate) fn rect_contains(
     rect: worth_ui_host_contract::UiMountedCanonicalBox,
-    point: [f32; 2],
+    point: crate::mounting::presentation::UiPlatformPoint,
 ) -> bool {
-    point[0] >= rect.x()
-        && point[0] < rect.x() + rect.width()
-        && point[1] >= rect.y()
-        && point[1] < rect.y() + rect.height()
+    let (x, y) = (point.x(), point.y());
+    x >= rect.x() && x < rect.x() + rect.width() && y >= rect.y() && y < rect.y() + rect.height()
 }
 
 /// The point's coordinate along one axis.
-pub(crate) const fn point_along(axis: super::UiScrollChromeAxis, point: [f32; 2]) -> f32 {
+pub(crate) fn point_along(
+    axis: super::UiScrollChromeAxis,
+    point: crate::mounting::presentation::UiPlatformPoint,
+) -> f32 {
     match axis {
-        super::UiScrollChromeAxis::Inline => point[0],
-        super::UiScrollChromeAxis::Block => point[1],
+        super::UiScrollChromeAxis::Inline => point.x(),
+        super::UiScrollChromeAxis::Block => point.y(),
     }
 }
 
 pub(crate) fn classify_press(
     axis: super::UiScrollChromeAxis,
     thumb: worth_ui_host_contract::UiMountedCanonicalBox,
-    point: [f32; 2],
+    point: crate::mounting::presentation::UiPlatformPoint,
 ) -> UiScrollChromePress {
     let along = point_along(axis, point);
     let start = super::track_origin_logical_points(axis, thumb);
@@ -82,7 +83,7 @@ pub(crate) fn classify_press(
 pub(crate) fn grab_offset_logical_points(
     axis: super::UiScrollChromeAxis,
     thumb: worth_ui_host_contract::UiMountedCanonicalBox,
-    point: [f32; 2],
+    point: crate::mounting::presentation::UiPlatformPoint,
 ) -> f32 {
     point_along(axis, point) - super::track_origin_logical_points(axis, thumb)
 }
@@ -94,7 +95,7 @@ pub(crate) fn offset_for_thumb_position(
     axis: super::UiScrollChromeAxis,
     track: worth_ui_host_contract::UiMountedCanonicalBox,
     extent: super::UiScrollThumbExtent,
-    point: [f32; 2],
+    point: crate::mounting::presentation::UiPlatformPoint,
     grab_offset_logical_points: f32,
     max_offset_subpixels: i64,
 ) -> i64 {
@@ -122,7 +123,7 @@ pub(crate) fn page_step_subpixels(
 pub(crate) fn offset_for_track_click(
     axis: super::UiScrollChromeAxis,
     thumb: worth_ui_host_contract::UiMountedCanonicalBox,
-    point: [f32; 2],
+    point: crate::mounting::presentation::UiPlatformPoint,
     current_offset_subpixels: i64,
     page_step_subpixels: i64,
     max_offset_subpixels: i64,

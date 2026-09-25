@@ -177,15 +177,13 @@ pub(in crate::facade::entry) fn pointer_report_position(
     }
 }
 
-/// The logical point a report names, in the surface space chrome is derived in.
+/// The platform point a report names, in the viewport space chrome is
+/// derived in. A position on another basis names none, and the lane declines
+/// the report, leaving ordinary routing to refuse it.
 pub(in crate::facade::entry) fn chrome_point(
     position: worth_ui_host_contract::UiHostSurfacePosition,
-) -> [f32; 2] {
-    let scale = worth_ui_host_contract::UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f64;
-    [
-        (position.x_subpixels() as f64 / scale) as f32,
-        (position.y_subpixels() as f64 / scale) as f32,
-    ]
+) -> Option<crate::mounting::presentation::UiPlatformPoint> {
+    crate::mounting::presentation::UiPlatformPoint::from_host_position(position).ok()
 }
 
 impl super::super::WorthUiActiveApplicationSession {
@@ -207,11 +205,13 @@ impl super::super::WorthUiActiveApplicationSession {
             // Every pointer report, claimed or not, is where the pointer now
             // is; presentation re-resolves hover from that position against
             // the pose it paints.
-            if let Some(position) = pointer_report_position(report.report().payload()) {
+            if let Some(point) =
+                pointer_report_position(report.report().payload()).and_then(chrome_point)
+            {
                 self.interaction.observe_scroll_chrome_hover(
                     surface,
                     presentation.binding(),
-                    chrome_point(position),
+                    point,
                 );
             }
             let latched = self.interaction.scroll_chrome_capture_identity();
@@ -237,7 +237,7 @@ impl super::super::WorthUiActiveApplicationSession {
                 capture_epoch,
                 position,
             } => {
-                let point = chrome_point(position);
+                let point = chrome_point(position)?;
                 // A press over no chrome is an ordinary press, not a denial:
                 // the lane declines it and leaves the report where it was.
                 self.scroll_chrome_under_pointer(surface, point)?;
@@ -269,7 +269,7 @@ impl super::super::WorthUiActiveApplicationSession {
                         match self.interaction.scroll_chrome_latch_mut().move_pending(
                             pointer,
                             capture_epoch,
-                            chrome_point(position),
+                            chrome_point(position)?,
                             false,
                         ) {
                             Ok(_) => UiScrollChromeIngressOutcome::PendingMoved,
@@ -280,7 +280,7 @@ impl super::super::WorthUiActiveApplicationSession {
                     );
                 }
                 Some(
-                    match self.drag_scroll_chrome(chrome_point(position), pointer, capture_epoch) {
+                    match self.drag_scroll_chrome(chrome_point(position)?, pointer, capture_epoch) {
                         Ok(receipt) => UiScrollChromeIngressOutcome::Dragged(receipt),
                         Err(denial) => UiScrollChromeIngressOutcome::Denied(denial),
                     },
@@ -291,31 +291,31 @@ impl super::super::WorthUiActiveApplicationSession {
                 capture_epoch,
                 position,
             } => {
-                if self
-                    .interaction
-                    .scroll_chrome_latch_mut()
-                    .pending()
-                    .is_some()
-                {
-                    return Some(
-                        match self.interaction.scroll_chrome_latch_mut().move_pending(
-                            pointer,
-                            capture_epoch,
-                            chrome_point(position),
-                            true,
-                        ) {
-                            Ok(_) => UiScrollChromeIngressOutcome::PendingReleased,
-                            Err(denial) => UiScrollChromeIngressOutcome::Denied(
-                                UiScrollChromeInteractionDenial::Latch(denial),
-                            ),
-                        },
+                // A release on a basis chrome cannot read places nothing, but
+                // it still ends the drag it names.
+                let point =
+                    crate::mounting::presentation::UiPlatformPoint::from_host_position(position)
+                        .map_err(UiScrollChromeInteractionDenial::PositionBasisRefused);
+                if let Some(pending) = self.interaction.scroll_chrome_latch_mut().pending() {
+                    let released = self.interaction.scroll_chrome_latch_mut().move_pending(
+                        pointer,
+                        capture_epoch,
+                        point.unwrap_or(pending.latest_point()),
+                        true,
                     );
+                    return Some(match (released, point) {
+                        (Err(denial), _) => UiScrollChromeIngressOutcome::Denied(
+                            UiScrollChromeInteractionDenial::Latch(denial),
+                        ),
+                        (Ok(_), Err(denial)) => UiScrollChromeIngressOutcome::Denied(denial),
+                        (Ok(_), Ok(_)) => UiScrollChromeIngressOutcome::PendingReleased,
+                    });
                 }
                 // The OS may coalesce the final move before button-up. Its
                 // event-time position is the final drag intent, not merely hover.
                 // Stage through ordinary acceptance, then release even on denial.
                 let placement =
-                    self.drag_scroll_chrome(chrome_point(position), pointer, capture_epoch);
+                    point.and_then(|point| self.drag_scroll_chrome(point, pointer, capture_epoch));
                 let release = self.release_scroll_chrome(pointer, capture_epoch);
                 Some(match (placement, release) {
                     (Ok(_), Ok(latch)) => UiScrollChromeIngressOutcome::Released(latch),

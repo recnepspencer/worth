@@ -23,8 +23,8 @@ pub(crate) struct UiScrollChromePendingCapture {
     owner_instance: UiMountedInstanceIdentity,
     incarnation: UiScrollOwnerIncarnation,
     axis: UiScrollChromeAxis,
-    press_point: [f32; 2],
-    latest_point: [f32; 2],
+    press_point: crate::mounting::presentation::UiPlatformPoint,
+    latest_point: crate::mounting::presentation::UiPlatformPoint,
     released: bool,
 }
 
@@ -38,7 +38,7 @@ impl UiScrollChromePendingCapture {
         owner_instance: UiMountedInstanceIdentity,
         incarnation: UiScrollOwnerIncarnation,
         axis: UiScrollChromeAxis,
-        press_point: [f32; 2],
+        press_point: crate::mounting::presentation::UiPlatformPoint,
     ) -> Self {
         Self {
             pointer,
@@ -79,24 +79,30 @@ impl UiScrollChromePendingCapture {
     pub(crate) const fn axis(self) -> UiScrollChromeAxis {
         self.axis
     }
-    pub(crate) const fn press_point(self) -> [f32; 2] {
+    pub(crate) const fn press_point(self) -> crate::mounting::presentation::UiPlatformPoint {
         self.press_point
     }
-    pub(crate) const fn latest_point(self) -> [f32; 2] {
+    pub(crate) const fn latest_point(self) -> crate::mounting::presentation::UiPlatformPoint {
         self.latest_point
     }
     pub(crate) const fn released(self) -> bool {
         self.released
     }
 
-    pub(crate) const fn moved(self, latest_point: [f32; 2]) -> Self {
+    pub(crate) const fn moved(
+        self,
+        latest_point: crate::mounting::presentation::UiPlatformPoint,
+    ) -> Self {
         Self {
             latest_point,
             ..self
         }
     }
 
-    pub(crate) const fn released_at(self, latest_point: [f32; 2]) -> Self {
+    pub(crate) const fn released_at(
+        self,
+        latest_point: crate::mounting::presentation::UiPlatformPoint,
+    ) -> Self {
         Self {
             latest_point,
             released: true,

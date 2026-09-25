@@ -872,3 +872,97 @@ bands = [
   "ui",
   "cert",
 ]
+
+# Milestone 3.16.2 requirement 1: presented geometry carries its truth status in
+# sealed types. A raw coordinate array or scalar pair is legal in these crates'
+# production source only at a declared edge. Serialization, platform-event, and
+# GPU-upload edges are the spec's; spatial-index, sealed-owner, and
+# committed-layout edges are the ones the requirement 1 review records.
+[[raw_geometry_denials]]
+crate_root = "workspaces/worth-ui/crates/worth-ui-runtime"
+guidance = "Milestone 3.16.2 requirement 1: carry presented geometry in its truth-status type (UiPublishedRect, UiAcceptedRect, UiDisplayedRect, UiPlatformPoint, or a Scroll group offset); raw arrays and scalar pairs stay at the edges declared in road1.toml [[raw_geometry_denials]]"
+edges = [
+  { path = "src/certification_support/motion_observation.rs", kind = "serialization", reason = "the Motion certification snapshot reports sampled geometry as wire data" },
+  { path = "src/certification_support/scripted_presentation_host/mod.rs", items = ["ScriptedPresentationState", "ScriptedPresentationHost::set_viewport_extent"], kind = "platform-event", reason = "the scripted host reports a viewport extent the way a platform does" },
+  { path = "src/inspection/visual_snapshot/spatial/geometry.rs", kind = "serialization", reason = "visual snapshot spatial reports are wire data" },
+  { path = "src/runtime/motion/scale_certification.rs", items = ["geometry"], kind = "serialization", reason = "Motion scale certification reports sampled geometry as wire data" },
+  { path = "src/runtime/interaction/targeting/presented_geometry.rs", items = ["UiPresentedInteractionGeometry::for_test_with_components"], kind = "serialization", reason = "test and certification builds only: scenarios build targeting geometry from projection components" },
+  { path = "src/mounting/presentation/work_producer/motion_sample.rs", items = ["logical_damage", "canonical_box"], kind = "serialization", reason = "a Motion sample becomes host-contract damage and a canonical box" },
+  { path = "src/mounting/projection/frame_storage/appearance_order/row.rs", kind = "serialization", reason = "appearance rows are ordered by their host-contract projection bounds" },
+  { path = "src/native_platform/application_driver/visual_snapshot.rs", items = ["bits"], kind = "serialization", reason = "visual snapshot values are compared as their bit patterns" },
+  { path = "src/mounting/presentation/work_producer/scroll_motion_groups/sampling.rs", items = ["translate", "bounds"], kind = "gpu-upload", reason = "the Scroll group clip translate and bounds are uploaded with the sampled command" },
+  { path = "src/mounting/spatial_index.rs", kind = "spatial-index", reason = "the spatial tree stores and queries index boxes" },
+  { path = "src/mounting/spatial_index/bounds.rs", kind = "spatial-index", reason = "the index holds boxes only from index_box and index_box_after; every candidate is still tested at the platform-event edge" },
+  { path = "src/mounting/spatial_index/query.rs", kind = "spatial-index", reason = "the index walk tests its boxes against an index point" },
+  { path = "src/mounting/presented_hit_index.rs", items = ["region"], kind = "spatial-index", reason = "a hit row's index region" },
+  { path = "src/mounting/presented_hit_index/query.rs", items = ["UiPresentedHitIndex::at_index_point"], kind = "spatial-index", reason = "the raw index query that at_point reaches through a platform point; only the index and its tests call it" },
+  { path = "src/mounting/projection/frame_storage/hit_mechanics.rs", items = ["region", "UiMountedHitMechanicSource::update_tree"], kind = "spatial-index", reason = "hit mechanic regions enter the spatial index" },
+  { path = "src/mounting/presentation/truth_geometry", kind = "sealed-owner", reason = "the truth-status types own their representation and its named conversions" },
+  { path = "src/mounting/presentation/motion_sampling", kind = "sealed-owner", reason = "the Motion sampler mints accepted geometry; its curve, velocity, and damage arithmetic is the mint's inside" },
+  { path = "src/mounting/presentation/work_producer/scroll_motion_groups/group_offset.rs", kind = "sealed-owner", reason = "the Scroll group offset and translation status types own their representation" },
+  { path = "src/mounting/occurrence_geometry/region_paint.rs", kind = "committed-layout", reason = "paint omission spans derive from committed boxes before any status is assigned" },
+  { path = "src/mounting/occurrence_geometry/state/presented_grid.rs", items = ["UiMountedOccurrenceGeometryState::presented_scroll_grid_correction"], kind = "committed-layout", reason = "the subpixel grid correction applies to committed allocation before any status is assigned" },
+  { path = "src/mounting/projection/frame_storage/portal_content_extent.rs", items = ["local_bounds"], kind = "committed-layout", reason = "Portal content extent is measured from committed layout" },
+  { path = "src/native_platform/application_driver/program_progress/layout.rs", items = ["resolve_axis"], kind = "committed-layout", reason = "viewport placement resolves committed allocation" },
+  { path = "src/runtime/allocation_receipt/committed_truth/geometry_evidence.rs", items = ["resolve_viewport_axis"], kind = "committed-layout", reason = "viewport placement resolves committed allocation" },
+]
+
+[[raw_geometry_denials]]
+crate_root = "workspaces/worth-ui/crates/worth-ui-host-contract"
+guidance = "Milestone 3.16.2 requirement 1: the host contract carries raw geometry only as projection wire data or raster input declared in road1.toml [[raw_geometry_denials]]"
+edges = [
+  { path = "src/visual_snapshot/coordinate_transform.rs", kind = "serialization", reason = "the visual snapshot coordinate transform is wire data" },
+  { path = "src/mounted_projection/identity_overlay.rs", kind = "serialization", reason = "the client coordinate basis is projection wire data" },
+  { path = "src/mounted_projection/appearance/fill.rs", items = ["UiMountedSurfaceFill::sample"], kind = "gpu-upload", reason = "hosts shade a fill at raster points inside allocation edges" },
+  { path = "src/qualified_text/raster_draw_geometry.rs", kind = "gpu-upload", reason = "glyph bounds are positioned for raster upload" },
+]
+
+[[raw_geometry_denials]]
+crate_root = "workspaces/worth-ui/crates/worth-ui-host-native"
+guidance = "Milestone 3.16.2 requirement 1: the native host holds raw geometry only in its raster and GPU upload path declared in road1.toml [[raw_geometry_denials]]"
+edges = [
+  { path = "src/native/presentation", kind = "gpu-upload", reason = "native presentation rasterizes host-contract projections into physical pixels for GPU upload" },
+  { path = "src/native/mechanics_adapter/text_foreground_atlas_model.rs", kind = "gpu-upload", reason = "glyph vertex colors are uploaded with the atlas" },
+]
+
+[[raw_geometry_denials]]
+crate_root = "workspaces/worth-ui/crates/worth-ui-host-headless"
+guidance = "Milestone 3.16.2 requirement 1: the headless host holds raw geometry only in its transcript raster declared in road1.toml [[raw_geometry_denials]]"
+edges = [
+  { path = "src/headless_transcript/appearance/content_geometry.rs", kind = "gpu-upload", reason = "the headless transcript rasterizes content coverage where a native host would upload to the GPU" },
+]
+
+[[raw_geometry_denials]]
+crate_root = "workspaces/worth-ui/crates/worth-ui-certification"
+guidance = "Milestone 3.16.2 requirement 1: certification reads presented geometry through the runtime's certification surfaces and holds no raw coordinates of its own"
+edges = []
+
+[[raw_geometry_denials]]
+crate_root = "workspaces/worth-ui/crates/worth-ui-test-support"
+guidance = "Milestone 3.16.2 requirement 1: certification harness helpers hold no raw coordinates of their own"
+edges = []
+
+[[raw_geometry_denials]]
+crate_root = "workspaces/worth-ui/crates/worth-ui-native-platform"
+guidance = "Milestone 3.16.2 requirement 1: the native platform facade passes host reports through and holds no raw coordinates of its own"
+edges = []
+
+[[raw_geometry_denials]]
+crate_root = "workspaces/worth-ui/crates/worth-ui"
+guidance = "Milestone 3.16.2 requirement 1: the public facade exposes no raw coordinates"
+edges = []
+
+[[raw_geometry_denials]]
+crate_root = "workspaces/worth-ui/crates/worth-ui-inspection"
+guidance = "Milestone 3.16.2 requirement 1: public inspection carries raw geometry only as the report wire data declared in road1.toml [[raw_geometry_denials]]"
+edges = [
+  { path = "src/receipt/snapshot/geometry.rs", kind = "serialization", reason = "the receipt snapshot coordinate transform is wire data" },
+]
+
+[[raw_geometry_denials]]
+crate_root = "workspaces/worth-ui/apps/platform-pulse"
+guidance = "Milestone 3.16.2 requirement 1: Pulse holds raw geometry only for committed layout and observation wire data declared in road1.toml [[raw_geometry_denials]]"
+edges = [
+  { path = "src/native_application/layout.rs", items = ["resolve_axis"], kind = "committed-layout", reason = "Pulse resolves the committed allocation it owns" },
+  { path = "src/observation_contract/visual_value_projection.rs", items = ["bits"], kind = "serialization", reason = "observed visual values are compared as their bit patterns" },
+]

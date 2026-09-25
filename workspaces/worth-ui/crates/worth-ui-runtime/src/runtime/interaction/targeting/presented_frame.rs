@@ -2,10 +2,10 @@ use super::presented_target::{
     seal_target, UiPresentedInteractionTarget, UiPresentedInteractionTargetView,
     UiPresentedTargetFrameRelation,
 };
+use crate::mounting::presentation::UiPlatformPoint;
 use worth_ui_host_contract::{
-    UiHostObservationPresentationBasis, UiHostSurfaceCoordinateSpace, UiHostSurfaceCoordinateUnit,
-    UiHostSurfacePosition, UiHostSurfacePositionBasis, UiMountedCoordinateSpace,
-    UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT,
+    UiHostObservationPresentationBasis, UiHostSurfacePosition, UiHostSurfacePositionBasis,
+    UiMountedCoordinateSpace,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -35,10 +35,10 @@ pub(crate) fn resolve_presented_target(
     position: UiHostSurfacePosition,
     work: &mut crate::mounting::UiHitTestSpatialWork,
 ) -> Result<UiPresentedInteractionTarget, UiInteractionTargetingDenial> {
-    require_viewport_logical(position.basis())?;
-    let point = canonical_point(position);
+    let point = UiPlatformPoint::from_host_position(position)
+        .map_err(UiInteractionTargetingDenial::UnsupportedPositionBasis)?;
     let basis = mounted
-        .interaction_hit_test_candidates(presentation, point.map(f64::from))
+        .interaction_hit_test_candidates(presentation, point)
         .map_err(|denial| match denial {
             crate::mounting::UiPresentedPointLookupDenial::Presentation(denial) => {
                 map_presentation_denial(denial)
@@ -158,26 +158,6 @@ pub(crate) fn require_current_presentation(
         return Err(UiInteractionTargetingDenial::ExpiredPresentation);
     }
     Ok(())
-}
-
-fn require_viewport_logical(
-    basis: UiHostSurfacePositionBasis,
-) -> Result<(), UiInteractionTargetingDenial> {
-    let supported = basis.coordinate_space() == UiHostSurfaceCoordinateSpace::Viewport
-        && basis.coordinate_unit() == UiHostSurfaceCoordinateUnit::LogicalPoint;
-    supported
-        .then_some(())
-        .ok_or(UiInteractionTargetingDenial::UnsupportedPositionBasis(
-            basis,
-        ))
-}
-
-fn canonical_point(position: UiHostSurfacePosition) -> [f32; 2] {
-    let scale = UI_HOST_SURFACE_POSITION_SUBPIXELS_PER_UNIT as f64;
-    [
-        (position.x_subpixels() as f64 / scale) as f32,
-        (position.y_subpixels() as f64 / scale) as f32,
-    ]
 }
 
 pub(crate) fn map_current_affinity_denial(

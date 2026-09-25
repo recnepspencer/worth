@@ -13,7 +13,13 @@ use worth_ui_host_contract::{UiSemanticSurfaceIdentity, UiSurfaceBindingGenerati
 
 #[derive(Debug, Default)]
 pub(crate) struct UiScrollChromeHoverState {
-    by_surface: BTreeMap<UiSemanticSurfaceIdentity, (UiSurfaceBindingGeneration, [f32; 2])>,
+    by_surface: BTreeMap<
+        UiSemanticSurfaceIdentity,
+        (
+            UiSurfaceBindingGeneration,
+            crate::mounting::presentation::UiPlatformPoint,
+        ),
+    >,
 }
 
 impl UiScrollChromeHoverState {
@@ -22,13 +28,16 @@ impl UiScrollChromeHoverState {
         &mut self,
         surface: UiSemanticSurfaceIdentity,
         binding: UiSurfaceBindingGeneration,
-        point: [f32; 2],
+        point: crate::mounting::presentation::UiPlatformPoint,
     ) {
         self.by_surface.insert(surface, (binding, point));
     }
 
     /// The pointer's last known position on `surface`, if it has had one.
-    pub(crate) fn point(&self, surface: UiSemanticSurfaceIdentity) -> Option<[f32; 2]> {
+    pub(crate) fn point(
+        &self,
+        surface: UiSemanticSurfaceIdentity,
+    ) -> Option<crate::mounting::presentation::UiPlatformPoint> {
         self.by_surface.get(&surface).map(|(_, point)| *point)
     }
 
@@ -53,9 +62,22 @@ mod tests {
         let binding = UiSurfaceBindingGeneration::mint_unbound().unwrap();
         let first = UiSemanticSurfaceIdentity::mint_unbound().unwrap();
         let second = UiSemanticSurfaceIdentity::mint_unbound().unwrap();
-        hover.observe(first, binding, [10.0, 20.0]);
-        hover.observe(first, binding, [30.0, 40.0]);
-        assert_eq!(hover.point(first), Some([30.0, 40.0]));
+        hover.observe(
+            first,
+            binding,
+            crate::mounting::presentation::platform_point_for_test(10.0, 20.0),
+        );
+        hover.observe(
+            first,
+            binding,
+            crate::mounting::presentation::platform_point_for_test(30.0, 40.0),
+        );
+        assert_eq!(
+            hover.point(first),
+            Some(crate::mounting::presentation::platform_point_for_test(
+                30.0, 40.0
+            ))
+        );
         assert_eq!(hover.point(second), None);
     }
 
@@ -66,11 +88,24 @@ mod tests {
         let new = UiSurfaceBindingGeneration::mint_unbound().unwrap();
         let first = UiSemanticSurfaceIdentity::mint_unbound().unwrap();
         let second = UiSemanticSurfaceIdentity::mint_unbound().unwrap();
-        hover.observe(first, old, [1.0, 1.0]);
-        hover.observe(second, new, [2.0, 2.0]);
+        hover.observe(
+            first,
+            old,
+            crate::mounting::presentation::platform_point_for_test(1.0, 1.0),
+        );
+        hover.observe(
+            second,
+            new,
+            crate::mounting::presentation::platform_point_for_test(2.0, 2.0),
+        );
         hover.clear_binding(old);
         assert_eq!(hover.point(first), None);
-        assert_eq!(hover.point(second), Some([2.0, 2.0]));
+        assert_eq!(
+            hover.point(second),
+            Some(crate::mounting::presentation::platform_point_for_test(
+                2.0, 2.0
+            ))
+        );
         hover.clear_all();
         assert_eq!(hover.point(second), None);
     }

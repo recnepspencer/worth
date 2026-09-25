@@ -192,4 +192,7 @@ Two uses sit next to these edges but are not new edges:
 
 This record covers conversion only. Boundary rules and `compile_fail` doctests
 that stop raw geometry from returning outside the kept edges belong to the
-enforcement phase of 3.16.2, which follows R4.
+enforcement phase of 3.16.2, which follows R4. The
+[enforcement review](milestone-3.16.2-enforcement-review.md) records the raw
+coordinate rule and the typed platform point that replaced the `f32`
+platform-event edge.

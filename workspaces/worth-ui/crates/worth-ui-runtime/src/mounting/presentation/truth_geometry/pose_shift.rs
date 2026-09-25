@@ -70,7 +70,7 @@ impl UiDisplayedRect {
     pub(crate) fn admits_platform_point_after(
         self,
         shift: UiScrollPoseShift,
-        point: [f32; 2],
+        point: super::UiPlatformPoint,
     ) -> bool {
         self.rect().shifted(shift.0).admits(point)
     }

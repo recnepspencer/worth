@@ -25,7 +25,7 @@ fn presented_index_queries_and_updates_are_local_and_preserve_retained_versions(
             rows.push(row);
         }
         let retained = index.clone();
-        let found = index.at_point(binding, [5.0, 5.0], budget()).unwrap();
+        let found = index.at_index_point(binding, [5.0, 5.0], budget()).unwrap();
         assert_eq!(
             found
                 .rows
@@ -38,14 +38,14 @@ fn presented_index_queries_and_updates_are_local_and_preserve_retained_versions(
         assert!(found.work.map_key_probes < 64);
         assert!(
             index
-                .at_point(binding, [10.0, 5.0], budget())
+                .at_index_point(binding, [10.0, 5.0], budget())
                 .unwrap()
                 .rows
                 .is_empty(),
             "right edge is excluded"
         );
         assert!(index
-            .at_point(
+            .at_index_point(
                 UiSurfaceBindingGeneration::mint_unbound().unwrap(),
                 [5.0, 5.0],
                 budget()
@@ -56,13 +56,13 @@ fn presented_index_queries_and_updates_are_local_and_preserve_retained_versions(
         let removed = index.replace_base(rows[0].mounted_instance(), None);
         assert!(removed.node_copies < 64);
         assert!(index
-            .at_point(binding, [5.0, 5.0], budget())
+            .at_index_point(binding, [5.0, 5.0], budget())
             .unwrap()
             .rows
             .is_empty());
         assert_eq!(
             retained
-                .at_point(binding, [5.0, 5.0], budget())
+                .at_index_point(binding, [5.0, 5.0], budget())
                 .unwrap()
                 .rows
                 .len(),
@@ -83,7 +83,7 @@ fn presented_index_queries_and_updates_are_local_and_preserve_retained_versions(
                 .map(|row| row.mounted_instance())
                 .collect::<Vec<_>>();
             let mut actual = index
-                .at_point(binding, point, budget())
+                .at_index_point(binding, point, budget())
                 .unwrap()
                 .rows
                 .iter()
@@ -118,7 +118,7 @@ fn presented_index_budget_exhaustion_returns_no_partial_candidates() {
         );
     }
     assert!(matches!(
-        index.at_point(
+        index.at_index_point(
             binding,
             [5.0, 5.0],
             UiMountedSpatialBudget {
@@ -130,7 +130,7 @@ fn presented_index_budget_exhaustion_returns_no_partial_candidates() {
             if work.node_visits <= 64 && work.region_tests > 0 && work.map_key_probes > 0
     ));
     assert!(matches!(
-        index.at_point(
+        index.at_index_point(
             binding,
             [5.0, 5.0],
             UiMountedSpatialBudget {
@@ -143,7 +143,7 @@ fn presented_index_budget_exhaustion_returns_no_partial_candidates() {
     ));
     assert_eq!(
         index
-            .at_point(binding, [5.0, 5.0], budget())
+            .at_index_point(binding, [5.0, 5.0], budget())
             .unwrap()
             .rows
             .len(),
@@ -202,7 +202,7 @@ fn denied_point_queries_retain_partition_probes_without_scanning_regions() {
         } else {
             [f64::NAN, 5.0]
         };
-        let denial = match index.at_point(binding, point, budget()) {
+        let denial = match index.at_index_point(binding, point, budget()) {
             Err(denial) => denial,
             Ok(_) => panic!("incompatible space or nonfinite point must deny"),
         };
@@ -294,7 +294,7 @@ fn presented_index_matches_fractional_and_large_half_open_edges() {
         for point in [x, before, end] {
             let expected = point >= x && point < end;
             let found = index
-                .at_point(binding, [f64::from(point), 2.0], budget())
+                .at_index_point(binding, [f64::from(point), 2.0], budget())
                 .unwrap();
             assert_eq!(
                 !found.rows.is_empty(),
@@ -329,7 +329,7 @@ fn presented_index_removing_overlap_winner_exposes_the_next_rank() {
     }
     let winner = |index: &UiPresentedHitIndex| {
         index
-            .at_point(binding, [5.0, 5.0], budget())
+            .at_index_point(binding, [5.0, 5.0], budget())
             .unwrap()
             .rows
             .into_iter()

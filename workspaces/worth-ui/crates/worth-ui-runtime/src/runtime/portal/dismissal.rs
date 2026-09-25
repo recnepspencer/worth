@@ -5,7 +5,7 @@ pub(crate) enum UiPortalDismissalTrigger {
     },
     OutsidePress {
         semantic_surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
-        viewport_point_bits: [u32; 2],
+        point: crate::mounting::presentation::UiPlatformPoint,
     },
     AcceptedSelection {
         semantic_surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
@@ -81,12 +81,7 @@ impl super::UiPortalRuntimeState {
                 UiPortalDismissalIgnoreReason::NoMatchingPortal,
             ));
         }
-        if let UiPortalDismissalTrigger::OutsidePress {
-            viewport_point_bits,
-            ..
-        } = trigger
-        {
-            let point = viewport_point_bits.map(f32::from_bits);
+        if let UiPortalDismissalTrigger::OutsidePress { point, .. } = trigger {
             // The press lands where the host shows the Portal: its displayed
             // Motion sample, else its committed placement, or on its anchor.
             let inside_portal = match (sampled_bounds, record.placement) {

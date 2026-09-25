@@ -180,7 +180,7 @@ fn a_zero_overflow_axis_has_no_thumb_and_no_drag_target() {
     assert!(facts
         .offset_for_thumb_position(
             UiScrollChromeAxis::Inline,
-            [200.0, 262.0],
+            crate::mounting::presentation::platform_point_for_test(200.0, 262.0),
             0.0,
             offset(0.0, 0.0)
         )

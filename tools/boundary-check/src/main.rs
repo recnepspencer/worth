@@ -32,7 +32,9 @@ use crate::naming::validate_package_names;
 use crate::query_audience::{validate_query_audience_facades, validate_query_audience_rules};
 use crate::seed_contracts::validate_seed_crate_contracts;
 use crate::snapshots::{SnapshotMode, SnapshotSession};
-use crate::source_rules::{validate_source_rules, validate_workspace_source_reachability};
+use crate::source_rules::{
+    enforce_raw_geometry_denials, validate_source_rules, validate_workspace_source_reachability,
+};
 use crate::subworkspace_rules::validate_root_and_subworkspaces;
 use std::env;
 use std::fs;
@@ -165,6 +167,10 @@ fn run(
     diagnostics.extend(validate_source_identifier_denials(
         &root,
         &config.source_identifier_denials,
+    ));
+    diagnostics.extend(enforce_raw_geometry_denials(
+        &root,
+        &config.raw_geometry_denials,
     ));
     diagnostics.extend(
         validate_configured_dependency_denials(&root, &config.dependency_denials).map_err(

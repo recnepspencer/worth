@@ -58,7 +58,10 @@ impl UiPresentedHitRect {
 
     /// Whether the point a platform event reports lands in this rect: the
     /// platform-event edge, where a raw point meets typed geometry.
-    pub(crate) fn admits_platform_point(self, point: [f32; 2]) -> bool {
+    pub(crate) fn admits_platform_point(
+        self,
+        point: crate::mounting::presentation::UiPlatformPoint,
+    ) -> bool {
         match self {
             Self::Published(rect) => rect.admits_platform_point(point),
             Self::Displayed { rect, layout_shift } => {
