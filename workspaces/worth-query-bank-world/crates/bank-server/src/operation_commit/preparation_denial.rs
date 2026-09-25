@@ -250,9 +250,7 @@ const fn application_attempt_kind(
         Query::WorkflowApprovalGrantUnavailable => {
             BankApplicationAttemptDenialKind::WorkflowApprovalGrantUnavailable
         }
-        Query::WorkflowApprovalExpired => {
-            BankApplicationAttemptDenialKind::WorkflowApprovalExpired
-        }
+        Query::WorkflowApprovalExpired => BankApplicationAttemptDenialKind::WorkflowApprovalExpired,
         Query::WorkflowApprovalDelegationChanged => {
             BankApplicationAttemptDenialKind::WorkflowApprovalDelegationChanged
         }

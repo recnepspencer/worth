@@ -6,10 +6,9 @@ use bank_domain::{
         ApprovedBusinessPaymentAdvanceOperation, ApprovedBusinessPaymentApproval,
         ApprovedBusinessPaymentApprovalOperation, ApprovedBusinessPaymentAuthoring,
         ApprovedBusinessPaymentAuthoringBinding, ApprovedBusinessPaymentAuthoringOperation,
-        ApprovedBusinessPaymentInstanceStart,
-        ApprovedBusinessPaymentInstanceStartOperation, ApprovedBusinessPaymentWorkflow,
-        BankPrincipalBinding, BankPrincipalIdBinding, BankSchema, ExternalPrincipalMapping,
-        Principal,
+        ApprovedBusinessPaymentInstanceStart, ApprovedBusinessPaymentInstanceStartOperation,
+        ApprovedBusinessPaymentWorkflow, BankPrincipalBinding, BankPrincipalIdBinding, BankSchema,
+        ExternalPrincipalMapping, Principal,
     },
 };
 use worth_query_host::facade::declaration::application_program::ApplicationWorkflowComponentLimits;
