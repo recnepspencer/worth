@@ -10,8 +10,9 @@ use worth_query_declaration::facade::{
 use worth_query_execution::facade::{
     application_installation::WorthQueryWorkflowApplicationRuntime,
     workflow_advance::{
-        PreparedWorkflowAdvance, PublishedWorkflowInstanceRef, WorkflowProgressOutcome,
-        WorkflowTransitionPreparationDenial, WorthQueryWorkflowAdvanceAdapter,
+        PreparedWorkflowAdvance, PublishedWorkflowInstanceRef, RequiredWorkflowAssessment,
+        WorkflowProgressOutcome, WorkflowTransitionPreparationDenial,
+        WorthQueryWorkflowAdvanceAdapter,
     },
 };
 use worth_query_installation::facade::ApplicationSchema;

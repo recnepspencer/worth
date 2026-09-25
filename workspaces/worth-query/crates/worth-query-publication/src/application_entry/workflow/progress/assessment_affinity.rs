@@ -1,5 +1,8 @@
 use worth_query_execution::facade::workflow_advance::RequiredWorkflowAssessment;
 
+/// Acceptance may carry a compatible completed output across a proposal
+/// revision. The owner derives current coverage and evidence meaning from the
+/// freshly prepared requirement; only its execution affinity must match here.
 pub(super) fn same_requirement(
     left: &RequiredWorkflowAssessment,
     right: &RequiredWorkflowAssessment,

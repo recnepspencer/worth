@@ -119,6 +119,34 @@ where
         )
     }
 
+    pub fn into_assessment_demand_for<Demand>(
+        self,
+        expected: &RequiredWorkflowAssessment,
+        demand: Demand,
+    ) -> Result<
+        super::super::WorthQueryWorkflowAssessmentDemandRequest<
+            'application,
+            'principal,
+            'scope,
+            Schema,
+            Spec,
+            Program,
+            Demand,
+        >,
+        super::super::WorthQueryWorkflowAssessmentDemandPreparationDenial,
+    >
+    where
+        Demand: worth_query_execution::facade::application_contribution::WorthQueryApplicationOutputDemand<Schema>,
+    {
+        let request = self.into_assessment_demand(demand)?;
+        if request.required() != expected {
+            return Err(
+                super::super::WorthQueryWorkflowAssessmentDemandPreparationDenial::requirement_mismatch(),
+            );
+        }
+        Ok(request)
+    }
+
     pub fn accept_assessment<Query>(
         self,
         settlement: &super::super::WorthQueryWorkflowAssessmentDemandSettlement<Query>,

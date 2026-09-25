@@ -34,6 +34,8 @@ use super::bounded_dimension_model::{
 mod conditional_requirement;
 #[path = "workflow_assessment/currentness.rs"]
 mod currentness;
+#[path = "workflow_assessment/demand_affinity.rs"]
+mod demand_affinity;
 #[path = "workflow_assessment/early_collection.rs"]
 mod early_collection;
 #[path = "workflow_assessment/join_policy.rs"]
