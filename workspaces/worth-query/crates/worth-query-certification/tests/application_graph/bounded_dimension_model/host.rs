@@ -12,7 +12,6 @@ use worth_query_host::facade::application_installation::{
     in_memory_rostered_program, WorthQueryApplicationProgramRoster,
     WorthQueryInMemoryApplicationDenial, WorthQueryInMemoryApplicationLimits,
     WorthQueryInMemoryApplicationProfile, WorthQueryProgramApplicationRuntime,
-    WorthQueryWorkflowApplicationRuntime,
 };
 use worth_query_host::facade::declaration::application_program::{
     ApplicationProgramDefinition, ApplicationProgramOutputsShape, ValidatedApplicationProgram,
@@ -46,8 +45,13 @@ use super::workflow::{
     ReviewRequirementBinding, ReviewRequirementHandler, WorkflowAdvanceBinding,
     WorkflowAdvanceHandler, WorkflowApprovalBinding, WorkflowApprovalHandler,
     WorkflowDefinitionAuthoringBinding, WorkflowDefinitionAuthoringHandler,
-    WorkflowInstanceStartBinding, WorkflowInstanceStartHandler,
+    WorkflowGrantStatusBinding, WorkflowGrantStatusHandler, WorkflowInstanceStartBinding,
+    WorkflowInstanceStartHandler,
 };
+
+#[path = "host/workflow_runtime.rs"]
+mod workflow_runtime;
+pub use workflow_runtime::BoundedDimensionWorkflowRuntime;
 
 /// The dimension every host seeds. It satisfies both installed rules, so the
 /// same bootstrap is lawful whichever program the host starts on.
@@ -59,32 +63,6 @@ mod tests;
 
 pub type BoundedDimensionRuntime<Initial> =
     WorthQueryProgramApplicationRuntime<BoundedDimensionSchema, Initial>;
-pub struct BoundedDimensionWorkflowRuntime {
-    pub(super) workflow: WorthQueryWorkflowApplicationRuntime<
-        BoundedDimensionSchema,
-        super::workflow::ReviewedGeometryWorkflow,
-        DimensionProgramP0,
-    >,
-    pub(super) authentication: super::workflow::CertificationAuthenticationOwner,
-}
-
-impl BoundedDimensionWorkflowRuntime {
-    pub fn authentication(&self) -> &super::workflow::CertificationAuthenticationOwner {
-        &self.authentication
-    }
-}
-
-impl std::ops::Deref for BoundedDimensionWorkflowRuntime {
-    type Target = WorthQueryWorkflowApplicationRuntime<
-        BoundedDimensionSchema,
-        super::workflow::ReviewedGeometryWorkflow,
-        DimensionProgramP0,
-    >;
-
-    fn deref(&self) -> &Self::Target {
-        &self.workflow
-    }
-}
 
 impl WorthQueryApplicationContribution<BoundedDimensionSchema> for BoundedDimensionContribution {
     type Configuration = ();
@@ -130,6 +108,9 @@ impl WorthQueryApplicationContribution<BoundedDimensionSchema> for BoundedDimens
             })
             .and_then(|()| setup.handler::<WorkflowAdvanceBinding, _>(WorkflowAdvanceHandler))
             .and_then(|()| setup.handler::<WorkflowApprovalBinding, _>(WorkflowApprovalHandler))
+            .and_then(|()| {
+                setup.handler::<WorkflowGrantStatusBinding, _>(WorkflowGrantStatusHandler)
+            })
     }
 }
 

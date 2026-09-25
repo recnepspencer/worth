@@ -50,6 +50,8 @@ mod proposal;
 mod rejection;
 #[path = "workflow_approval/replay.rs"]
 mod replay;
+#[path = "workflow_approval/wait_revocation.rs"]
+mod wait_revocation;
 
 #[test]
 fn approved_operation_requires_and_consumes_the_exact_performed_effect() {

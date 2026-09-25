@@ -23,7 +23,7 @@ use super::schema::{
 };
 use super::workflow::{
     ReviewRequirementBinding, WorkflowAdvanceBinding, WorkflowApprovalBinding,
-    WorkflowDefinitionAuthoringBinding, WorkflowInstanceStartBinding,
+    WorkflowDefinitionAuthoringBinding, WorkflowGrantStatusBinding, WorkflowInstanceStartBinding,
 };
 
 /// The one feature both programs govern.
@@ -174,6 +174,7 @@ impl ApplicationProgramDefinition<BoundedDimensionSchema> for ChangedFeatureDime
                 .mutation::<WorkflowInstanceStartBinding>()
                 .mutation::<WorkflowAdvanceBinding>()
                 .mutation::<WorkflowApprovalBinding>()
+                .mutation::<WorkflowGrantStatusBinding>()
                 .finish(),
         ]
     }
@@ -197,6 +198,7 @@ impl ApplicationProgramDefinition<BoundedDimensionSchema> for RemovedOperationDi
                 .mutation::<WorkflowInstanceStartBinding>()
                 .mutation::<WorkflowAdvanceBinding>()
                 .mutation::<WorkflowApprovalBinding>()
+                .mutation::<WorkflowGrantStatusBinding>()
                 .finish(),
         ]
     }
@@ -225,6 +227,7 @@ impl ApplicationProgramDefinition<BoundedDimensionSchema> for ChangedOperationDi
                 .mutation::<WorkflowInstanceStartBinding>()
                 .mutation::<WorkflowAdvanceBinding>()
                 .mutation::<WorkflowApprovalBinding>()
+                .mutation::<WorkflowGrantStatusBinding>()
                 .finish(),
         ]
     }
@@ -358,6 +361,7 @@ fn dimension_feature_specs() -> Vec<ApplicationFeatureSpec> {
             .mutation::<WorkflowInstanceStartBinding>()
             .mutation::<WorkflowAdvanceBinding>()
             .mutation::<WorkflowApprovalBinding>()
+            .mutation::<WorkflowGrantStatusBinding>()
             .finish(),
     ]
 }

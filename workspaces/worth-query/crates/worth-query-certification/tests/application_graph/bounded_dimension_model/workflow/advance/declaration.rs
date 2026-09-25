@@ -25,9 +25,10 @@ use super::super::super::{
 };
 use super::super::declaration::{
     WorkflowAuthoringGrant, WorkflowGrantActionField, WorkflowGrantDelegationLimitField,
-    WorkflowGrantGrantee, WorkflowGrantGrantor, WorkflowGrantNotAfterField,
-    WorkflowGrantNotBeforeField, WorkflowGrantPurposeField, WorkflowGrantRelated,
-    WorkflowGrantResource, WorkflowGrantStatusField, WorkflowGrantWorkflowField,
+    WorkflowGrantGrantee, WorkflowGrantGrantor, WorkflowGrantIdentityField,
+    WorkflowGrantNotAfterField, WorkflowGrantNotBeforeField, WorkflowGrantPurposeField,
+    WorkflowGrantRelated, WorkflowGrantResource, WorkflowGrantStatusField,
+    WorkflowGrantWorkflowField,
 };
 
 worth_query_capability_context!(pub WorkflowAdvanceContext in BoundedDimensionSchema);
@@ -139,6 +140,10 @@ pub(super) fn seed(graph: &mut WorthQueryPrimaryGraphBootstrap<BoundedDimensionS
                 entity_key("workflow-advance-grant"),
             )
             .field(
+                WorkflowGrantIdentityField::reference(),
+                "workflow-advance-grant".to_owned(),
+            )
+            .field(
                 WorkflowGrantActionField::reference(),
                 "advance-workflow-instance".to_owned(),
             )
@@ -193,6 +198,10 @@ pub(super) fn seed(graph: &mut WorthQueryPrimaryGraphBootstrap<BoundedDimensionS
             WorthQueryApplicationEntitySeed::new(
                 WorkflowAuthoringGrant::reference(),
                 entity_key("workflow-approval-grant"),
+            )
+            .field(
+                WorkflowGrantIdentityField::reference(),
+                "workflow-approval-grant".to_owned(),
             )
             .field(
                 WorkflowGrantActionField::reference(),

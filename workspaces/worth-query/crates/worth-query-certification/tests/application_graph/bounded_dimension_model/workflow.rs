@@ -8,6 +8,8 @@ mod contract;
 mod declaration;
 #[path = "workflow/definition.rs"]
 mod definition;
+#[path = "workflow/grant_status.rs"]
+mod grant_status;
 #[path = "workflow/join_replay_definition.rs"]
 mod join_replay_definition;
 #[path = "workflow/mutation.rs"]
@@ -42,6 +44,10 @@ pub use definition::{
     reviewed_geometry_definition, reviewed_geometry_definition_with_join_policy, start_instance,
     terminal_definition,
 };
+pub use grant_status::{
+    WorkflowGrantStatusBinding, WorkflowGrantStatusHandler, WorkflowGrantStatusInput,
+    WorkflowGrantStatusIntent,
+};
 pub use join_replay_definition::{
     assessment_join_terminal_definition, assessment_join_terminal_definition_with_policy,
     assessment_retry_definition, conditionally_required_related_assessment_definition,
@@ -66,8 +72,8 @@ pub fn declare(
     super::schema::BoundedDimensionSchema,
 > {
     advance::install_binding(mutation::install_binding(contract::install(
-        advance::install_members(declaration::install_members(review_requirement::declare(
-            schema,
+        grant_status::install_members(advance::install_members(declaration::install_members(
+            review_requirement::declare(schema),
         ))),
     )))
 }
