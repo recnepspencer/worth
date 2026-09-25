@@ -220,6 +220,26 @@ A released pending capture refuses later same-axis wheel input until its final
 placement is staged, and the native physical callback wakes the ordinary frame
 that must publish that placement.
 
+Container allocation is runtime-owned. A component's registered Mosaic layout
+selects its tracks for the current viewport width, allocates fixed extents and
+minimums before weighted remainder, and places members inside its padding.
+Mosaic regions resolve inside the box their owning component was allocated,
+and a region whose owner is unmounted or undeclared is denied rather than
+guessed. Succession across a breakpoint keeps each member's mounted identity,
+incarnation, semantic parent, region and Scroll ownership, source order,
+focus, and Portal anchor binding; only its cell changes. Authored `.wui` and
+Rust layout blocks lower before execution and are admitted only when equal to
+the registered layout. A denied block stops the handoff at `AuthoredLayout`
+with no owner partly updated.
+
+Text shaping is reused by request. A qualified layout is keyed by everything
+that shapes it: source, styles, language, direction, wrap, overflow, line
+limit, allocated width, and the profile, collection, and scale generations.
+Retained rows are indexed by that request, so a frame that moves text, or
+changes only its box height, completes the new occurrence from the retained
+layout and reports no shaping cost. A layout pinned to a different font
+collection instance is never reused, even for the same profile.
+
 Layout extent succession also stays pending until presentation. Accepted
 bounds and offsets remain coherent with displayed content while a resized or
 reclamped candidate is refused. Acceptance reconciles the pending target and

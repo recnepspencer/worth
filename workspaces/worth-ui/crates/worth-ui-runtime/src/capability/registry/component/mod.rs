@@ -15,6 +15,7 @@ mod component_registration;
 mod component_registry;
 mod component_rendering_contracts;
 mod component_semantic_text_contract;
+mod component_semantic_text_flow;
 mod component_semantic_text_span_contract;
 mod component_state_ownership;
 mod component_viewport_axis_placement;
@@ -45,6 +46,7 @@ pub use component_rendering_contracts::{
 pub use component_semantic_text_contract::{
     ComponentSemanticTextContract, ComponentSemanticTextContractDenial,
 };
+pub use component_semantic_text_flow::ComponentSemanticTextFlow;
 pub use component_semantic_text_span_contract::ComponentSemanticTextSpanContract;
 pub use component_state_ownership::ComponentStateOwnership;
 pub use component_viewport_axis_placement::ComponentViewportAxisPlacement;

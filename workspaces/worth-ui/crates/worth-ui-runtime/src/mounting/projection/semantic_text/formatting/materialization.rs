@@ -37,6 +37,14 @@ impl UiMountedSemanticTextRowFormatting<'_> {
         }
     }
 
+    pub(in crate::mounting::projection::semantic_text) const fn flow(
+        self,
+    ) -> crate::capability::ComponentSemanticTextFlow {
+        match self {
+            Self::Default(default) | Self::ScalarSpans(_, default) => default.flow,
+        }
+    }
+
     pub(in crate::mounting::projection::semantic_text) fn materialize(
         self,
         source: &str,

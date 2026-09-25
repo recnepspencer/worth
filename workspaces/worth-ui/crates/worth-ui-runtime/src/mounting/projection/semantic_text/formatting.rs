@@ -25,6 +25,7 @@ pub(in crate::mounting::projection) struct UiMountedSemanticTextDefault {
     style: Option<worth_ui_text::UiTextStyle>,
     line_height_millipoints: Option<u32>,
     alignment: worth_ui_text::UiTextAlignment,
+    flow: crate::capability::ComponentSemanticTextFlow,
     paint_identity: UiMountedTextPaintSpanIdentity,
     appearance_foreground: bool,
 }
@@ -86,6 +87,7 @@ pub(in crate::mounting::projection) fn lower_semantic_text_formatting(
         style: contract.style().cloned(),
         line_height_millipoints: contract.line_height_millipoints(),
         alignment: contract.alignment(),
+        flow: contract.flow(),
         paint_identity: UiMountedTextPaintSpanIdentity::from_runtime_mounting(
             contract.default_paint_identity(),
         ),
@@ -127,6 +129,7 @@ fn lower_directive(
         style: contract.style().cloned(),
         line_height_millipoints: contract.line_height_millipoints(),
         alignment: contract.alignment(),
+        flow: contract.flow(),
         paint_identity: UiMountedTextPaintSpanIdentity::from_runtime_mounting(
             contract.default_paint_identity(),
         ),
@@ -236,6 +239,7 @@ impl UiMountedSemanticTextFormattingSeed {
     pub(in crate::mounting::projection) fn same_layout_as(&self, other: &Self) -> bool {
         self.default.style == other.default.style
             && self.default.alignment == other.default.alignment
+            && self.default.flow == other.default.flow
             && self.lifecycle_caption == other.lifecycle_caption
             && self.default.line_height_millipoints == other.default.line_height_millipoints
             && self.scalar_spans.len() == other.scalar_spans.len()
@@ -251,6 +255,15 @@ impl UiMountedSemanticTextFormattingSeed {
     #[cfg(test)]
     pub(in crate::mounting::projection) fn body_default_for_test() -> Self {
         Self::body_default_with_color_for_test(UiMountedRgba8::new(255, 255, 255, 255))
+    }
+
+    #[cfg(test)]
+    pub(in crate::mounting::projection) fn with_flow_for_test(
+        mut self,
+        flow: crate::capability::ComponentSemanticTextFlow,
+    ) -> Self {
+        self.default.flow = flow;
+        self
     }
 
     #[cfg(test)]
@@ -271,6 +284,7 @@ impl UiMountedSemanticTextFormattingSeed {
                 style: None,
                 line_height_millipoints: None,
                 alignment: worth_ui_text::UiTextAlignment::Start,
+                flow: crate::capability::ComponentSemanticTextFlow::wrapping(),
                 paint_identity: UiMountedTextPaintSpanIdentity::from_runtime_mounting([1; 32]),
                 appearance_foreground: false,
             },

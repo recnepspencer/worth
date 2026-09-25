@@ -253,6 +253,14 @@ wake progresses timed work itself. The watch owns no host state and never
 calls into it; in the ordinary loop, `WaitUntil` reaches each deadline first
 and the watch stays silent.
 
+Each prepared frame lays out against one coherent extent. Containers select
+their responsive tracks for that width and allocate against it. Scroll bounds,
+Portal placement, and Backdrop coverage consume the same viewport. Nothing
+eases toward an older size. Text is reshaped only where its allocated width or
+declared flow changed; unchanged-width text keeps its shaping through the
+drag, including across height-only changes. Logical sizes of icons, radii, and
+type do not change with the window.
+
 ## Presented-Source Readback
 
 The Windows native host records one capture source only after presentation has

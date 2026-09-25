@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use worth_ui_host_contract::{
     UiMountedInstanceIdentity, UiMountedPaintCommandChange, UiMountedSemanticTextMechanic,
     UiSemanticTextSlot,
@@ -241,6 +243,18 @@ impl UiMountedSemanticMechanicSource {
         identity: worth_ui_host_contract::UiQualifiedTextLayoutIdentity,
     ) -> Option<&std::sync::Arc<worth_ui_text::UiQualifiedTextLayout>> {
         self.by_layout.get(identity)
+    }
+
+    /// Looks up, by request, the layouts the retained rows hold now for
+    /// `fonts`; the lookup keeps its own snapshot while this frame replaces
+    /// rows.
+    pub(super) fn retained_layouts(
+        &self,
+        fonts: &Arc<worth_ui_text::UiGlobalFontCollection>,
+    ) -> super::super::semantic_text::UiMountedRetainedTextLayouts {
+        let index = self.by_layout.clone();
+        let fonts = Arc::clone(fonts);
+        Box::new(move |request| index.for_request(request, &fonts).cloned())
     }
 
     fn rebuild_layout_index(&mut self) {

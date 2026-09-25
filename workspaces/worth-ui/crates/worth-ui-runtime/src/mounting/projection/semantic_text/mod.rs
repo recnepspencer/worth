@@ -14,7 +14,9 @@ pub(super) use completion::{
 };
 pub(super) use formatting::{lower_semantic_text_formatting, UiMountedSemanticTextFormattingSeed};
 pub(in crate::mounting::projection) use profile::current_text_profile_generation;
-pub(super) use qualification_cache::UiMountedTextQualificationCache;
+pub(super) use qualification_cache::{
+    UiMountedRetainedTextLayouts, UiMountedTextQualificationCache,
+};
 pub(super) use qualified::{
     rebind_semantic_text, UiMountedQualifiedSemanticText, UiMountedSemanticTextRepaintInput,
 };

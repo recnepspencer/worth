@@ -108,8 +108,8 @@ pub(in crate::mounting::projection) fn complete_semantic_text_replacement(
         .ok_or(UiMountedProjectionDenial::SemanticTextNodeReceiptMismatch)?;
     let qualified =
         super::qualification::qualify_layout(context, text, predecessor.bounds(), formatting)?;
-    let mechanic = UiMountedSemanticTextMechanic::complete_from_runtime_mounting(
-        UiMountedSemanticTextCompletionInput {
+    let mechanic = qualified
+        .complete(UiMountedSemanticTextCompletionInput {
             content_generation: context.content_generation,
             frame: context.frame,
             surface: surface.surface,
@@ -131,9 +131,8 @@ pub(in crate::mounting::projection) fn complete_semantic_text_replacement(
             layer_semantic_order: predecessor.layer_semantic_order(),
             capability_generation: context.capability_generation,
             capability_profile_digest: context.capability_profile_digest,
-        },
-    )
-    .map_err(UiMountedProjectionDenial::SemanticTextCompletion)?;
+        })
+        .map_err(UiMountedProjectionDenial::SemanticTextCompletion)?;
     Ok(super::UiMountedQualifiedSemanticText::new(
         mechanic,
         Arc::clone(qualified.layout()),
@@ -192,8 +191,8 @@ fn push_row(
     }
     let qualified =
         super::qualification::qualify_layout(context, &row.text, row.bounds, row.formatting)?;
-    let mechanic = UiMountedSemanticTextMechanic::complete_from_runtime_mounting(
-        UiMountedSemanticTextCompletionInput {
+    let mechanic = qualified
+        .complete(UiMountedSemanticTextCompletionInput {
             content_generation: context.content_generation,
             frame: context.frame,
             surface: row.surface.surface,
@@ -215,9 +214,8 @@ fn push_row(
             layer_semantic_order: row.layer_semantic_order,
             capability_generation: context.capability_generation,
             capability_profile_digest: context.capability_profile_digest,
-        },
-    )
-    .map_err(UiMountedProjectionDenial::SemanticTextCompletion)?;
+        })
+        .map_err(UiMountedProjectionDenial::SemanticTextCompletion)?;
     rows.push(super::UiMountedQualifiedSemanticText::new(
         mechanic,
         Arc::clone(qualified.layout()),

@@ -40,6 +40,9 @@ pub enum DashboardContent {
         weight: u16,
         alignment: worth_ui::facade::app::UiTextAlignment,
         line_height: u16,
+        /// Wraps between words; otherwise the text holds one line and ends in
+        /// an ellipsis when its allocated width cannot hold it.
+        wraps: bool,
     },
     Surface {
         radius: u16,
@@ -241,6 +244,7 @@ const fn text(
             weight: 500,
             alignment: worth_ui::facade::app::UiTextAlignment::Start,
             line_height: rect[3],
+            wraps: false,
         },
         paint_order: 6,
         portal_owner: None,
@@ -308,10 +312,12 @@ impl DashboardElement {
         if let DashboardContent::Text {
             size,
             ref mut line_height,
+            ref mut wraps,
             ..
         } = self.content
         {
             *line_height = size + 8;
+            *wraps = true;
         }
         self
     }

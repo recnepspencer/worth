@@ -8,7 +8,7 @@ use worth_ui::facade::declaration::{
     ComponentAllocationMeasurementContract, ComponentChildPolicy, ComponentDescriptor,
     ComponentFocusSupport, ComponentHitTestContract, ComponentHitTestOrder, ComponentId,
     ComponentPortalChildContract, ComponentPropSchema, ComponentSemanticTextContract,
-    ComponentStateOwnership, MosaicRegionKindId, ThemeTokenId,
+    ComponentSemanticTextFlow, ComponentStateOwnership, MosaicRegionKindId, ThemeTokenId,
 };
 use worth_ui_platform_pulse::product_world::{
     dashboard_containers, dashboard_elements, DashboardContent, PlatformPulseMosaicRegion,
@@ -45,6 +45,7 @@ pub(in crate::application) fn register_structure(
                 weight,
                 alignment,
                 line_height,
+                wraps,
                 ..
             } => {
                 let style = UiTextStyle::new(UiTextStyleInput {
@@ -72,6 +73,11 @@ pub(in crate::application) fn register_structure(
                     )
                     .unwrap()
                     .with_alignment(alignment)
+                    .with_flow(if wraps {
+                        ComponentSemanticTextFlow::wrapping()
+                    } else {
+                        ComponentSemanticTextFlow::single_line_ellipsis()
+                    })
                     .with_appearance_foreground()
                     .with_lifecycle_caption(false),
                 );

@@ -3,8 +3,12 @@ use worth_ui::facade::appearance::{
     UiAppearanceRoleIdentity, UiDslComponentReference, UiThemeSlotIdentity, UiThemeValueKind,
 };
 use worth_ui::facade::declaration::{
-    MosaicRegionKindDescriptor, MosaicRegionKindId, MosaicRegionRole, MosaicScrollOwnership,
-    UiScrollAxisSupport, UiScrollChromeContract, UiScrollLineExtent,
+    ComponentChildPolicy, ComponentDescriptor, ComponentId, ComponentPropSchema,
+    ComponentSemanticTextContract, ComponentSemanticTextFlow, ComponentStateOwnership,
+    MosaicLayoutCell, MosaicLayoutContract, MosaicRegionKindDescriptor, MosaicRegionKindId,
+    MosaicRegionRole, MosaicResponsiveLayout, MosaicScrollOwnership, MosaicTrack,
+    MosaicViewportWidthInterval, ThemeTokenId, UiScrollAxisSupport, UiScrollChromeContract,
+    UiScrollLineExtent,
 };
 
 const GUIDE: &str = include_str!("../../../../docs/appearance-and-themes.md");
@@ -62,4 +66,68 @@ fn documented_scroll_chrome_declares_roles_and_names_them_on_the_region() {
             .unwrap(),
     );
     let _ = (thumb, region);
+}
+
+/// The guide's container layout example: two weighted columns from 1200
+/// points wide, one stacked column below, with the same members in both.
+#[test]
+fn documented_container_layout_selects_tracks_by_width() {
+    assert!(GUIDE.contains("compiled-example:container-layout-rust"));
+    let title = ComponentId::new("app.component.title").unwrap();
+    let chart = ComponentId::new("app.component.chart").unwrap();
+    let health = ComponentId::new("app.component.health").unwrap();
+    let wide = MosaicLayoutContract::grid(
+        [
+            MosaicTrack::flex(2, 480).unwrap(),
+            MosaicTrack::flex(1, 320).unwrap(),
+        ],
+        [
+            MosaicTrack::fixed(66).unwrap(),
+            MosaicTrack::flex(1, 348).unwrap(),
+        ],
+    )
+    .unwrap()
+    .with_gaps(20, 20)
+    .with_padding(24, 24)
+    .with_member(
+        title.clone(),
+        MosaicLayoutCell::spanning(0, 0, 2, 1).unwrap(),
+    )
+    .unwrap()
+    .with_member(chart.clone(), MosaicLayoutCell::at(0, 1))
+    .unwrap()
+    .with_member(health.clone(), MosaicLayoutCell::at(1, 1))
+    .unwrap();
+    let stacked = MosaicLayoutContract::rows([
+        MosaicTrack::fixed(66).unwrap(),
+        MosaicTrack::flex(1, 348).unwrap(),
+        MosaicTrack::flex(1, 348).unwrap(),
+    ])
+    .unwrap()
+    .with_gaps(20, 20)
+    .with_padding(24, 24)
+    .with_member(title, MosaicLayoutCell::at(0, 0))
+    .unwrap()
+    .with_member(chart, MosaicLayoutCell::at(0, 1))
+    .unwrap()
+    .with_member(health, MosaicLayoutCell::at(0, 2))
+    .unwrap();
+    let layout = MosaicResponsiveLayout::new(stacked)
+        .with_variant(MosaicViewportWidthInterval::at_least(1200), wide)
+        .unwrap();
+    assert_eq!(layout.select(1200.0).column_tracks().len(), 2);
+    assert_eq!(layout.select(1199.5).column_tracks().len(), 1);
+    let page = ComponentDescriptor::new(
+        ComponentId::new("app.component.page").unwrap(),
+        ComponentPropSchema::named("app.component.page.props"),
+        ComponentChildPolicy::no_children(),
+        ComponentStateOwnership::runtime_owned(),
+    )
+    .with_layout(layout);
+    let caption = ComponentSemanticTextContract::body_default(
+        ThemeTokenId::new("app.theme.text").unwrap(),
+        1,
+    )
+    .with_flow(ComponentSemanticTextFlow::single_line_ellipsis());
+    let _ = (page, caption);
 }

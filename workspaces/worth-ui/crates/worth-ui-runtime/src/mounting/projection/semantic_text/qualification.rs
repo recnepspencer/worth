@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use worth_ui_host_contract::UiMountedSemanticTextMechanic;
+
 use super::super::UiMountedProjectionDenial;
 use super::completion::UiMountedSemanticTextCompletionContext;
 
@@ -24,13 +26,14 @@ pub(super) fn qualify_layout(
         input,
         Arc::clone(context.font_collection),
     );
-    let layout = context
+    let (layout, shaped) = context
         .qualification_cache
         .qualify(request)
         .map_err(UiMountedProjectionDenial::SemanticTextQualification)?;
     Ok(UiMountedTextQualification {
         layout,
         foregrounds,
+        shaped,
     })
 }
 
@@ -39,21 +42,22 @@ pub(super) fn paragraph_constraints(
     formatting: super::formatting::UiMountedSemanticTextRowFormatting<'_>,
 ) -> Result<worth_ui_text::UiTextParagraphConstraints, UiMountedProjectionDenial> {
     let width = logical_millipoints(bounds.width())?;
-    let height = logical_millipoints(bounds.height())?;
-    let line_height = formatting.line_height_millipoints().unwrap_or(18_000);
+    // The box height clips the shaped lines; it never decides how many there are.
+    logical_millipoints(bounds.height())?;
+    let flow = formatting.flow();
     worth_ui_text::UiTextParagraphConstraints::new(worth_ui_text::UiTextParagraphConstraintsInput {
         language: Arc::from("und"),
         base_direction: worth_ui_text::UiTextBaseDirection::Auto,
-        wrap: worth_ui_text::UiTextWrap::UnicodeWord,
+        wrap: flow.wrap(),
         alignment: formatting.alignment(),
-        overflow: worth_ui_text::UiTextOverflow::Clip,
+        overflow: flow.overflow(),
         font_size_millipoints: 14_000,
         width_millipoints: width,
-        line_height_millipoints: line_height,
+        line_height_millipoints: formatting.line_height_millipoints().unwrap_or(18_000),
         letter_spacing_millipoints: 0,
         word_spacing_millipoints: 0,
         tab_interval_millipoints: 56_000,
-        maximum_lines: height.div_ceil(line_height).max(1),
+        maximum_lines: flow.line_limit(),
     })
     .ok_or(UiMountedProjectionDenial::SemanticTextShapeMismatch)
 }
@@ -61,6 +65,7 @@ pub(super) fn paragraph_constraints(
 pub(super) struct UiMountedTextQualification {
     layout: Arc<worth_ui_text::UiQualifiedTextLayout>,
     foregrounds: Arc<[worth_ui_host_contract::UiMountedTextForegroundSpan]>,
+    shaped: bool,
 }
 
 impl UiMountedTextQualification {
@@ -72,6 +77,22 @@ impl UiMountedTextQualification {
         &self,
     ) -> &Arc<[worth_ui_host_contract::UiMountedTextForegroundSpan]> {
         &self.foregrounds
+    }
+
+    /// Completes the mechanic, recording shaping cost only when this
+    /// qualification shaped the text rather than reusing a layout.
+    pub(super) fn complete(
+        &self,
+        input: worth_ui_host_contract::UiMountedSemanticTextCompletionInput<'_>,
+    ) -> Result<
+        worth_ui_host_contract::UiMountedSemanticTextMechanic,
+        worth_ui_host_contract::UiMountedSemanticTextCompletionDenial,
+    > {
+        if self.shaped {
+            UiMountedSemanticTextMechanic::complete_from_runtime_mounting(input)
+        } else {
+            UiMountedSemanticTextMechanic::complete_from_runtime_mounting_with_reused_layout(input)
+        }
     }
 }
 

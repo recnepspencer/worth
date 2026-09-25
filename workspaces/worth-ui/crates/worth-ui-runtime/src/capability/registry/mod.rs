@@ -64,10 +64,10 @@ pub use component::{
     ComponentPortalChildContract, ComponentPropSchema, ComponentRealtimeOverlayContract,
     ComponentRealtimeOverlayContractDenial, ComponentRealtimeOverlayContractDenialReason,
     ComponentRealtimeOverlayPriority, ComponentSemanticTextContract,
-    ComponentSemanticTextContractDenial, ComponentSemanticTextSpanContract,
-    ComponentStateOwnership, ComponentViewportAxisPlacement, ComponentViewportInset,
-    ComponentViewportRegion, FrozenComponentCapabilities, UiAuthoredLayoutCause,
-    UiAuthoredLayoutDenial,
+    ComponentSemanticTextContractDenial, ComponentSemanticTextFlow,
+    ComponentSemanticTextSpanContract, ComponentStateOwnership, ComponentViewportAxisPlacement,
+    ComponentViewportInset, ComponentViewportRegion, FrozenComponentCapabilities,
+    UiAuthoredLayoutCause, UiAuthoredLayoutDenial,
 };
 pub(crate) use family_names::{
     APPEARANCE_ROLE_FAMILY_NAME, APPEARANCE_THEME_FAMILY_NAME, COMMAND_FAMILY_NAME,

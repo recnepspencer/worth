@@ -1,6 +1,7 @@
 use super::*;
 
 mod collection;
+mod resize_reuse;
 mod world;
 
 use world::*;
@@ -160,7 +161,7 @@ fn one_width_change_relayouts_only_its_mounted_paragraphs_and_unchanged_is_zero_
             binding,
             node: crate::graph::UiGraphNodeIdentity::new(4_042),
             seed: seed.clone(),
-            width: 160.0,
+            extent: [0.0, 0.0, 160.0, 96.0],
             generation: 1,
         },
     );
@@ -173,20 +174,20 @@ fn one_width_change_relayouts_only_its_mounted_paragraphs_and_unchanged_is_zero_
             binding,
             node: crate::graph::UiGraphNodeIdentity::new(4_043),
             seed: seed.clone(),
-            width: 160.0,
+            extent: [0.0, 0.0, 160.0, 96.0],
             generation: 2,
         },
     );
     let left_before = layouts(&source, left, surface, binding);
     let right_before = layouts(&source, right, surface, binding);
 
-    let semantic = semantic_projection_with_width(
+    let semantic = semantic_projection_in(
         crate::graph::UiGraphNodeIdentity::new(4_042),
         left,
         surface,
         binding,
         seed,
-        80.0,
+        [0.0, 0.0, 80.0, 96.0],
     );
     let frame = UiMountedFrameIdentity::mint_unbound().unwrap();
     let receipts = receipt_basis(frame, left);
@@ -243,7 +244,7 @@ struct InstanceFixture {
     binding: UiSurfaceBindingGeneration,
     node: crate::graph::UiGraphNodeIdentity,
     seed: UiMountedSemanticTextSeed,
-    width: f32,
+    extent: [f32; 4],
     generation: u64,
 }
 
@@ -258,10 +259,10 @@ fn apply_instance(
         binding,
         node,
         seed,
-        width,
+        extent,
         generation,
     } = fixture;
-    let semantic = semantic_projection_with_width(node, instance, surface, binding, seed, width);
+    let semantic = semantic_projection_in(node, instance, surface, binding, seed, extent);
     let frame = UiMountedFrameIdentity::mint_unbound().unwrap();
     let receipts = receipt_basis(frame, instance);
     source
@@ -289,19 +290,20 @@ fn layouts(
         .collect()
 }
 
-fn semantic_projection_with_width(
+/// One text node whose box stands at `[x, y, width, height]`.
+fn semantic_projection_in(
     graph_node: crate::graph::UiGraphNodeIdentity,
     instance: UiMountedInstanceIdentity,
     surface: UiSemanticSurfaceIdentity,
     binding: UiSurfaceBindingGeneration,
     seed: UiMountedSemanticTextSeed,
-    width: f32,
+    [x, y, width, height]: [f32; 4],
 ) -> UiMountedSemanticProjection {
     let bounds = UiMountedCanonicalBox::canonicalize(UiMountedCanonicalBoxInput {
-        x: 0.0,
-        y: 0.0,
+        x,
+        y,
         width,
-        height: 96.0,
+        height,
         coordinate_space: UiMountedCoordinateSpace::HostSurface,
     })
     .unwrap();

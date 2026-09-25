@@ -250,6 +250,19 @@ impl UiMountedSemanticTextSeed {
     }
 
     #[cfg(test)]
+    pub(in crate::mounting::projection) fn scalar_text_for_test(
+        value: &'static str,
+        flow: crate::capability::ComponentSemanticTextFlow,
+    ) -> Self {
+        Self {
+            content: UiMountedSemanticTextSeedContent::Scalar(Some(Arc::from(value))),
+            formatting: UiMountedSemanticTextFormattingSeed::body_default_for_test()
+                .with_flow_for_test(flow),
+            ..Self::scalar_for_test()
+        }
+    }
+
+    #[cfg(test)]
     pub(in crate::mounting::projection) fn posture_only_for_test(posture: &'static str) -> Self {
         Self {
             content: UiMountedSemanticTextSeedContent::Scalar(None),

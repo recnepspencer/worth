@@ -50,7 +50,10 @@ impl UiMountedMechanicSource {
             .preflight(completion.changed, completion.semantic)?;
         let mut mutation = UiMountedMechanicMutation::default();
         let qualification_cache =
-            super::super::semantic_text::UiMountedTextQualificationCache::default();
+            super::super::semantic_text::UiMountedTextQualificationCache::reusing(
+                self.semantic_text
+                    .retained_layouts(completion.font_collection),
+            );
         for instance in completion.changed {
             let Some(node) = completion.semantic.node(*instance) else {
                 mutation

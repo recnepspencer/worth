@@ -1,5 +1,6 @@
 use crate::capability::ThemeTokenId;
 
+use super::component_semantic_text_flow::ComponentSemanticTextFlow;
 use super::component_semantic_text_span_contract::{
     whole_paragraph_paint_identity, ComponentSemanticTextSpanContract,
 };
@@ -23,6 +24,7 @@ pub struct ComponentSemanticTextContract {
     appearance_foreground: bool,
     lifecycle_caption: bool,
     alignment: worth_ui_text::UiTextAlignment,
+    flow: ComponentSemanticTextFlow,
 }
 
 impl ComponentSemanticTextContract {
@@ -38,6 +40,7 @@ impl ComponentSemanticTextContract {
             appearance_foreground: false,
             lifecycle_caption: true,
             alignment: worth_ui_text::UiTextAlignment::Start,
+            flow: ComponentSemanticTextFlow::wrapping(),
         }
     }
 
@@ -57,6 +60,7 @@ impl ComponentSemanticTextContract {
             appearance_foreground: false,
             lifecycle_caption: true,
             alignment: worth_ui_text::UiTextAlignment::Start,
+            flow: ComponentSemanticTextFlow::wrapping(),
         }
     }
 
@@ -80,6 +84,7 @@ impl ComponentSemanticTextContract {
             appearance_foreground: false,
             lifecycle_caption: true,
             alignment: worth_ui_text::UiTextAlignment::Start,
+            flow: ComponentSemanticTextFlow::wrapping(),
         })
     }
 
@@ -101,6 +106,7 @@ impl ComponentSemanticTextContract {
             appearance_foreground: false,
             lifecycle_caption: true,
             alignment: worth_ui_text::UiTextAlignment::Start,
+            flow: ComponentSemanticTextFlow::wrapping(),
         })
     }
 
@@ -131,6 +137,17 @@ impl ComponentSemanticTextContract {
 
     pub const fn alignment(&self) -> worth_ui_text::UiTextAlignment {
         self.alignment
+    }
+
+    /// Declares how the text fills its allocated width; see
+    /// [`ComponentSemanticTextFlow`]. Text wraps between words by default.
+    pub fn with_flow(mut self, flow: ComponentSemanticTextFlow) -> Self {
+        self.flow = flow;
+        self
+    }
+
+    pub const fn flow(&self) -> ComponentSemanticTextFlow {
+        self.flow
     }
 
     pub fn with_appearance_foreground(mut self) -> Self {
@@ -208,13 +225,14 @@ impl ComponentSemanticTextContract {
                 digest
             });
         format!(
-            "semantic-text:{}:{}:{style}:line-height:{:?}:appearance:{}:caption:{}:alignment:{:?}",
+            "semantic-text:{}:{}:{style}:line-height:{:?}:appearance:{}:caption:{}:alignment:{:?}:flow:{}",
             self.theme_token.as_str(),
             self.layer_semantic_order,
             self.line_height_millipoints,
             self.appearance_foreground,
             self.lifecycle_caption,
             self.alignment,
+            self.flow.digest_basis(),
         ) + &spans
     }
 }

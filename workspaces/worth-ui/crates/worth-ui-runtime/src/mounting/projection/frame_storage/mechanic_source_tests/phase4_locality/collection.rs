@@ -191,13 +191,13 @@ impl CollectionFixture {
         changed: &[UiMountedInstanceIdentity],
     ) -> crate::mounting::projection::frame_storage::mechanic_source::UiMountedMechanicMutation
     {
-        let semantic = semantic_projection_with_width(
+        let semantic = semantic_projection_in(
             self.node,
             self.instance,
             self.surface,
             self.binding,
             seed,
-            160.0,
+            [0.0, 0.0, 160.0, 96.0],
         );
         let frame = UiMountedFrameIdentity::mint_unbound().unwrap();
         let receipts = receipt_basis(frame, self.instance);

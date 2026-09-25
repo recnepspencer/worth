@@ -36,7 +36,7 @@ pub use worth_ui_runtime::facade::registry::descriptor::{
     ComponentHitTestInset, ComponentHitTestOrder, ComponentId, ComponentPortalChildContract,
     ComponentPropSchema, ComponentRealtimeOverlayContract, ComponentRealtimeOverlayContractDenial,
     ComponentRealtimeOverlayContractDenialReason, ComponentRealtimeOverlayPriority,
-    ComponentSemanticTextContract, ComponentSemanticTextContractDenial,
+    ComponentSemanticTextContract, ComponentSemanticTextContractDenial, ComponentSemanticTextFlow,
     ComponentSemanticTextSpanContract, ComponentStateOwnership, ComponentViewportAxisPlacement,
     ComponentViewportInset, ComponentViewportRegion, IconAccessibilityPosture, IconColorSupport,
     IconDescriptor, IconFamily, IconId, IconKey, IconSizeSupport, IconSourceDescriptor,

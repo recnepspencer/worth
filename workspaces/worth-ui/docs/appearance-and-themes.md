@@ -87,6 +87,90 @@ become affected merely because it consumes the same axis. Replacement uses
 owner-issued succession so cleared pressed or pending-operability state is
 reflected in the first accepted successor frame.
 
+## Layout Containers
+
+A container component declares where its members stand as a Mosaic layout on
+its descriptor. Tracks are fixed, flexible with a weight and a minimum, or
+flexible with a minimum and a maximum. Allocation gives fixed tracks and
+minimums their extent first, then divides the remaining space by weight,
+redistributing past any maximum. When space runs short, minimums hold and the
+container overflows; nothing gets a negative size and the UI is never
+rescaled. Gaps and padding are logical points; geometry keeps fractional
+precision until the physical boundary quantizes shared edges once.
+
+A responsive layout selects its tracks by viewport width. Variants hold
+half-open, nonoverlapping width intervals over a required fallback, and every
+variant places the same members. Crossing a breakpoint moves members between
+cells; it never remounts or reparents them, so identity, focus, Scroll
+ownership and Portal anchors survive. This shortened form compiles in the
+certification guide test:
+
+<!-- compiled-example:container-layout-rust -->
+```rust
+let wide = MosaicLayoutContract::grid(
+    [MosaicTrack::flex(2, 480)?, MosaicTrack::flex(1, 320)?],
+    [MosaicTrack::fixed(66)?, MosaicTrack::flex(1, 348)?],
+)?
+.with_gaps(20, 20)
+.with_padding(24, 24)
+.with_member(title.clone(), MosaicLayoutCell::spanning(0, 0, 2, 1)?)?
+.with_member(chart.clone(), MosaicLayoutCell::at(0, 1))?
+.with_member(health.clone(), MosaicLayoutCell::at(1, 1))?;
+let stacked = MosaicLayoutContract::rows([
+    MosaicTrack::fixed(66)?,
+    MosaicTrack::flex(1, 348)?,
+    MosaicTrack::flex(1, 348)?,
+])?
+.with_gaps(20, 20)
+.with_padding(24, 24)
+.with_member(title, MosaicLayoutCell::at(0, 0))?
+.with_member(chart, MosaicLayoutCell::at(0, 1))?
+.with_member(health, MosaicLayoutCell::at(0, 2))?;
+let page = page.with_layout(
+    MosaicResponsiveLayout::new(stacked)
+        .with_variant(MosaicViewportWidthInterval::at_least(1200), wide)?,
+);
+```
+
+The same declaration can be restated in `.wui` source. The top-level block
+is the fallback and each `width from <min> [to <max>]` block is a variant:
+
+```text
+layout app.component.page {
+  columns flex 1 min 480;
+  rows fixed 66, flex 1 min 348, flex 1 min 348;
+  gap 20 20;
+  padding 24 24;
+  member app.component.title at 0 0;
+  member app.component.chart at 0 1;
+  member app.component.health at 0 2;
+  width from 1200 {
+    columns flex 2 min 480, flex 1 min 320;
+    rows fixed 66, flex 1 min 348;
+    gap 20 20;
+    padding 24 24;
+    member app.component.title at 0 0 span 2 1;
+    member app.component.chart at 0 1;
+    member app.component.health at 1 1;
+  }
+}
+```
+
+Rust authors state the same block with
+`WorthUiRustAuthoredArtifactInputModule::with_layout`, using the
+`worth_ui::facade::layout` vocabulary. The runtime lowers a block through the
+Mosaic constructors and admits it only where it equals the layout its
+container registered. A disagreement, a duplicate block, or an unregistered
+container is a typed `UiAuthoredLayoutDenial`, and neither source wins.
+Platform Pulse restates its page in
+[`dashboard_layout.wui`](../apps/platform-pulse/app/dashboard_layout.wui).
+
+A container that owns Scroll lays its members out at their minimums and
+scrolls them when they outgrow its viewport. Height constrains that viewport,
+not type size. Modal cards stay centered in the current viewport, and open
+popovers are placed again from each frame's layout with the fit, flip and
+clamp policy they opened with. Backdrops cover the current extent.
+
 ## Geometry, Borders, And Text
 
 Appearance resolves against mounted occurrence rectangles. A region-level seam
@@ -107,6 +191,16 @@ identity remain authoritative. Content edits, authored succession, partial
 surface acceptance, detached retry, and reconstruction settle the exact text
 revision per occurrence. Intrinsic-color glyphs retain their own color; Motion
 and appearance opacity still compose over the result.
+
+A semantic text contract declares its flow with `with_flow`.
+`ComponentSemanticTextFlow::wrapping()`, the default, breaks at word
+boundaries and clips what its box cannot show.
+`ComponentSemanticTextFlow::single_line_ellipsis()` keeps one line and ends it
+with an ellipsis. Both are shaped at the width layout allocates, so resizing a
+container rewraps or re-ellipsizes its text. Box height is not part of the
+flow: it clips the shaped lines but never decides how many there are, so a
+height-only change, or moving a label, reuses its shaping. Pulse card labels
+ellipsize; panel copy wraps.
 
 Scroll clipping does not discard offscreen glyph images or their adopted
 foreground. Intrinsic text clipping travels with the text; ancestor viewports
@@ -234,10 +328,19 @@ and a thumb only; there is no declared arrow, corner or gutter-only appearance,
 and a chrome role cannot be attached to a component. `worth-cert-ui` is neither a
 workspace crate nor a certification owner.
 
+A `.wui` layout restates a registered layout; it cannot yet be the sole
+source, because registration checks membership and containment against it.
+Layout tracks are whole logical points. An ellipsis needs a qualified U+2026
+glyph in the font collection; without one, shaping is denied with
+`EllipsisRequiresQualifiedGlyph`. A container's content extent is measured
+when it opens, not again while it stays open.
+
 ## Anti-Patterns
 
 - Selecting colors or state styles in a renderer or host adapter.
 - Treating a component name as an implicit role or theme slot.
+- Computing breakpoints or container rectangles in an application, or
+  remounting members to move them between columns.
 - Computing a scroll thumb rectangle in an application or reading one back
   from chrome facts to place anything.
 - Reading mutable service state while resolving appearance.
