@@ -14,6 +14,12 @@ struct UiMountedFramePublicationReceiptInner {
         crate::facade::prepared_application_authority::WorthUiPreparedApplicationGenerationIdentity,
     bindings: Box<[UiSurfaceBindingGeneration]>,
     direct_scroll: Box<[crate::runtime::scroll::UiPreparedScrollDirectSuccession]>,
+    portal_placements: Box<
+        [(
+            crate::runtime::portal::UiPortalStackOrdinal,
+            crate::runtime::portal::UiPreparedPortalPlacement,
+        )],
+    >,
     surfaces: std::cell::RefCell<Box<[super::UiMountedSurfacePresentationReceipt]>>,
     cost: std::cell::Cell<super::UiMountCostReport>,
 }
@@ -75,6 +81,7 @@ impl UiMountedFrameReconciliationCandidate {
                     .direct_scroll()
                     .to_vec()
                     .into_boxed_slice(),
+                portal_placements: admission.frame().portal_placements(),
                 surfaces: std::cell::RefCell::new(Box::default()),
                 cost: std::cell::Cell::new(admission.frame().cost_report()),
             }),
@@ -146,6 +153,7 @@ impl UiMountedFramePublicationCandidate {
                     .direct_scroll()
                     .to_vec()
                     .into_boxed_slice(),
+                portal_placements: admission.frame().portal_placements(),
                 surfaces: std::cell::RefCell::new(Box::default()),
                 cost: std::cell::Cell::new(admission.frame().cost_report()),
             }),
@@ -185,6 +193,17 @@ impl UiMountedFramePublicationReceipt {
         &self,
     ) -> &[crate::runtime::scroll::UiPreparedScrollDirectSuccession] {
         &self.inner.direct_scroll
+    }
+
+    /// Where the published frame presents each open Portal, keyed by the stack
+    /// ordinal of the open it was fitted for.
+    pub(crate) fn portal_placements(
+        &self,
+    ) -> &[(
+        crate::runtime::portal::UiPortalStackOrdinal,
+        crate::runtime::portal::UiPreparedPortalPlacement,
+    )] {
+        &self.inner.portal_placements
     }
 
     pub fn attempt(&self) -> worth_ui_host_contract::UiMountedPresentationAttemptIdentity {

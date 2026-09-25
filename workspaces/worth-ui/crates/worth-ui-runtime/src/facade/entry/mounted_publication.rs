@@ -296,6 +296,10 @@ fn rebind_portal_after_published_frame(
         return;
     }
     publication.with_surface_presentations(|surfaces| {
-        portal.rebind_published_presentations(publication.frame(), surfaces)
+        portal.rebind_published_presentations(
+            publication.frame(),
+            surfaces,
+            publication.portal_placements(),
+        )
     });
 }

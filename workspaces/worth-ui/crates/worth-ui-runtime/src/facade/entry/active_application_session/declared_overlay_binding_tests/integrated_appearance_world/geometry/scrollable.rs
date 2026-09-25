@@ -36,6 +36,7 @@ pub(in super::super) fn install_scrollable_primary(
             detach_child: false,
         },
         None,
+        super::VIEWPORT,
     );
 }
 
@@ -71,6 +72,7 @@ pub(in super::super) fn install_scrollable_primary_with_nested_content(
             detach_child: false,
         },
         None,
+        super::VIEWPORT,
     );
 }
 
@@ -103,6 +105,7 @@ pub(in super::super) fn install_scrollable_primary_with_inserted_content(
             detach_child: false,
         },
         None,
+        super::VIEWPORT,
     );
 }
 
@@ -133,6 +136,7 @@ pub(in super::super) fn install_scrollable_primary_without_the_anchored_content(
             detach_child: true,
         },
         None,
+        super::VIEWPORT,
     );
 }
 
@@ -160,6 +164,7 @@ pub(in super::super) fn install_scrollable_primary_with_collapsed_content(
             detach_child: false,
         },
         None,
+        super::VIEWPORT,
     );
 }
 
@@ -199,5 +204,6 @@ pub(in super::super) fn install_scrollable_primary_with_travel(
             detach_child: false,
         },
         None,
+        super::VIEWPORT,
     );
 }

@@ -101,20 +101,9 @@ impl WorthUiActiveApplicationSession {
                         UiIntentConsequenceStopReason::RuntimeServiceRequiresMountedPosture,
                     );
                 }
-                let viewport = match self
-                    .application
-                    .mounted_viewport_bounds_for(handoff.graph_node())
-                {
-                    Ok(viewport) => viewport,
-                    Err(_) => {
-                        return self.stop_intent_consequence(
-                            handoff,
-                            UiIntentConsequenceStopReason::RuntimeServicePortalPlacement(
-                                crate::runtime::intent_execution::UiIntentPortalPlacementStopReason::UnmeasurableContent,
-                            ),
-                        )
-                    }
-                };
+                let viewport = self
+                    .mounted
+                    .current_portal_viewport(handoff.target().surface());
                 let presented_viewport = viewport.and_then(|viewport| {
                     crate::runtime::interaction::UiPresentedViewportGeometry::from_current_interaction(
                         viewport,

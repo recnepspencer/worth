@@ -114,6 +114,27 @@ impl UiPreparedMountedFrame {
         &self.direct_scroll
     }
 
+    /// Where this frame presents each open Portal, keyed by the stack ordinal
+    /// of the open it was fitted for, for the Portal to commit when the frame
+    /// is accepted.
+    pub(in crate::mounting) fn portal_placements(
+        &self,
+    ) -> Box<
+        [(
+            crate::runtime::portal::UiPortalStackOrdinal,
+            crate::runtime::portal::UiPreparedPortalPlacement,
+        )],
+    > {
+        self.frame
+            .candidate
+            .owner
+            .projection()
+            .portal_overlay_inputs()
+            .iter()
+            .map(|input| (input.input_order().1, input.placement()))
+            .collect()
+    }
+
     pub(crate) fn bind_motion_entrance(
         &mut self,
         entrance: Option<crate::runtime::motion::UiPreparedMotionEntrance>,

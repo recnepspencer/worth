@@ -10,7 +10,7 @@ type-complexity-threshold = 512
 # only by Clippy. Each caller carries an `expect` that boundary-check admits only
 # at the callers road1.toml [[truth_type_denials]] declares.
 disallowed-methods = [
-  { path = "worth_ui_runtime::mounting::presentation::truth_geometry::published::UiPublishedRect::translated", reason = "published geometry is shifted only for a Portal entrance start; construct published truth through truth_geometry" },
+  { path = "worth_ui_runtime::mounting::presentation::truth_geometry::published::UiPublishedRect::translated", reason = "published geometry is shifted only for a Portal entrance start or a nested Portal's anchor; construct published truth through truth_geometry" },
   { path = "worth_ui_host_contract::mounted_frame::presentation::UiMountedFrameConsumptionView::acknowledge_presented", reason = "only a presentation host acknowledges presented work; the runtime admits it as the presented-frame witness" },
   { path = "worth_ui_host_contract::mounted_frame::presentation::UiHostPresentationCompletionToken::acknowledge_presented", reason = "only a presentation host acknowledges presented work; the runtime admits it as the presented-frame witness" },
 ]

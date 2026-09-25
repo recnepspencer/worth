@@ -61,6 +61,19 @@ impl UiMountedPortalOverlayProjectionInput {
         self.lifecycle
     }
 
+    pub(crate) const fn placement(self) -> crate::runtime::portal::UiPreparedPortalPlacement {
+        self.placement
+    }
+
+    /// The same Portal presented at the placement this frame gives it.
+    pub(crate) const fn with_placement(
+        mut self,
+        placement: crate::runtime::portal::UiPreparedPortalPlacement,
+    ) -> Self {
+        self.placement = placement;
+        self
+    }
+
     pub(crate) fn mechanic_for(
         self,
         frame: worth_ui_host_contract::UiMountedFrameIdentity,

@@ -201,7 +201,11 @@ impl<'state> UiMountedFrameAssembler<'state> {
                 requested_surfaces: &surfaces,
                 preview,
                 visual_overlay: input.visual_overlay,
-                portal_overlays: input.portal_overlays,
+                portal_overlays: super::portal_placement_succession::succeed_portal_placements(
+                    state,
+                    occurrence_geometry,
+                    input.portal_overlays,
+                ),
                 semantic_content: &input.semantic_content,
                 theme_values: &input.theme_values,
                 appearance_invalidation: input.appearance_invalidation,

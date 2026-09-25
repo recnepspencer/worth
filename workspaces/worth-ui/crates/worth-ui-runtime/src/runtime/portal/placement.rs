@@ -29,11 +29,7 @@ pub(crate) struct UiPortalLayerIdentity {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct UiPreparedPortalPlacement {
     presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
-    anchor: UiPublishedRect,
-    clip_bounds: UiPublishedRect,
-    bounds: UiPresentedPortalBounds,
-    paint_bounds: UiPresentedPortalBounds,
-    side: UiPortalPlacementSide,
+    arrangement: super::planning::UiPortalArrangement,
     layer: UiPortalLayerIdentity,
     shielding: super::UiPortalInputShielding,
 }
@@ -59,24 +55,28 @@ impl UiPreparedPortalPlacement {
 
     pub(super) const fn planned(
         presentation: worth_ui_host_contract::UiHostObservationPresentationBasis,
-        anchor: UiPublishedRect,
-        clip_bounds: UiPublishedRect,
-        bounds: UiPresentedPortalBounds,
-        paint_bounds: UiPresentedPortalBounds,
-        side: UiPortalPlacementSide,
+        arrangement: super::planning::UiPortalArrangement,
         layer: UiPortalLayerIdentity,
         shielding: super::UiPortalInputShielding,
     ) -> Self {
         Self {
             presentation,
-            anchor,
-            clip_bounds,
-            bounds,
-            paint_bounds,
-            side,
+            arrangement,
             layer,
             shielding,
         }
+    }
+
+    pub(super) const fn arrangement(self) -> super::planning::UiPortalArrangement {
+        self.arrangement
+    }
+
+    pub(super) const fn with_arrangement(
+        mut self,
+        arrangement: super::planning::UiPortalArrangement,
+    ) -> Self {
+        self.arrangement = arrangement;
+        self
     }
 
     pub(crate) const fn presentation(
@@ -84,22 +84,24 @@ impl UiPreparedPortalPlacement {
     ) -> worth_ui_host_contract::UiHostObservationPresentationBasis {
         self.presentation
     }
-    /// Where the host showed the anchor, as the placement committed it.
+    /// The anchor this placement was fitted to: where the host showed it at
+    /// open, then where each accepted frame laid its owner out.
     pub(crate) const fn anchor(self) -> UiPublishedRect {
-        self.anchor
+        self.arrangement.anchor
     }
     pub(crate) const fn bounds(self) -> UiPresentedPortalBounds {
-        self.bounds
+        self.arrangement.bounds
     }
     pub(crate) const fn paint_bounds(self) -> UiPresentedPortalBounds {
-        self.paint_bounds
+        self.arrangement.paint_bounds
     }
+    /// The viewport the placement was fitted to, which clips the Portal.
     pub(crate) const fn clip_bounds(self) -> UiPublishedRect {
-        self.clip_bounds
+        self.arrangement.viewport
     }
     #[cfg(test)]
     pub(crate) const fn side(self) -> UiPortalPlacementSide {
-        self.side
+        self.arrangement.side
     }
     pub(crate) const fn layer(self) -> UiPortalLayerIdentity {
         self.layer
@@ -160,7 +162,6 @@ impl UiPortalLayerIdentity {
             depth,
         }
     }
-    #[cfg(test)]
     pub(crate) const fn portal(self) -> super::UiPortalIdentity {
         self.portal
     }

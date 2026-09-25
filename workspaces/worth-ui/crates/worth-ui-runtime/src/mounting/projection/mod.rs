@@ -42,6 +42,7 @@ pub use denial::UiMountedProjectionDenial;
 pub(crate) use focus_scope::UiMountedFocusScope;
 pub(in crate::mounting) use frame_storage::diagnostic_source::UiMountedDiagnosticSource;
 pub(crate) use frame_storage::presentation_sources::compile as compile_presentation_sources;
+pub(in crate::mounting) use frame_storage::surface_coordinates::viewport_bounds;
 pub(crate) use frame_storage::UiMountedAppearanceNodeInputContext;
 #[cfg(test)]
 pub(crate) use frame_storage::UiMountedAppearanceOrderDenial;

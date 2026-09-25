@@ -72,6 +72,7 @@ pub(super) fn install(
         BOXES,
         RegionOverrides::default(),
         None,
+        VIEWPORT,
     );
 }
 
@@ -89,6 +90,7 @@ pub(super) fn install_without_target(
         BOXES,
         RegionOverrides::default(),
         Some(1),
+        VIEWPORT,
     );
 }
 
@@ -106,6 +108,7 @@ pub(super) fn install_successor(
         BOXES,
         RegionOverrides::default(),
         None,
+        VIEWPORT,
     );
 }
 
@@ -125,6 +128,31 @@ pub(super) fn install_moved_target(
         boxes,
         RegionOverrides::default(),
         None,
+        VIEWPORT,
+    );
+}
+
+/// Lays the surfaces out again with the Portal owner at `owner` inside
+/// `viewport`, as a resize or a moved anchor would.
+pub(super) fn install_owner_in_viewport(
+    session: &mut WorthUiActiveApplicationSession,
+    surfaces: [UiSemanticSurfaceIdentity; 2],
+    instances: [UiMountedInstanceIdentity; 5],
+    revision: u64,
+    owner: [f32; 4],
+    viewport: [f32; 4],
+) {
+    let mut boxes = BOXES;
+    boxes[0] = owner;
+    install_with_child_region(
+        session,
+        surfaces,
+        instances,
+        revision,
+        boxes,
+        RegionOverrides::default(),
+        None,
+        viewport,
     );
 }
 
@@ -142,6 +170,7 @@ pub(super) fn install_restored_target(
         BOXES,
         RegionOverrides::default(),
         None,
+        VIEWPORT,
     );
 }
 
@@ -164,6 +193,7 @@ pub(super) fn install_disjoint_child_region(
             detach_child: false,
         },
         None,
+        VIEWPORT,
     );
 }
 
@@ -187,6 +217,7 @@ pub(super) fn install_seam_pair(
         ],
         RegionOverrides::default(),
         None,
+        VIEWPORT,
     );
 }
 
@@ -198,6 +229,7 @@ fn install_with_child_region(
     boxes: [[f32; 4]; 5],
     overrides: RegionOverrides,
     excluded: Option<usize>,
+    viewport: [f32; 4],
 ) {
     for (index, surface) in surfaces.into_iter().enumerate() {
         let surface_declaration = session
@@ -264,7 +296,7 @@ fn install_with_child_region(
         let mut batch = UiMountedSurfaceGeometryBatch::new(
             basis,
             UiMountedLayoutRevision::new(revision).unwrap(),
-            canonical(VIEWPORT),
+            canonical(viewport),
             rows,
         );
         batch = batch.with_regions(regions);

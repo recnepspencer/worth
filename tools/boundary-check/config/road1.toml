@@ -1002,6 +1002,7 @@ mints = [
   { call = "UiPublishedRect::from_committed_box", callers = [
     { path = "src/facade/entry/active_application_session/scroll_accepted_sample_settlement.rs", items = ["UiScrollSettlementReading::owner"] },
     { path = "src/mounting/projection/frame_storage/portal_content_extent.rs", items = ["UiMountedProjectionFrame::portal_content_extent"] },
+    { path = "src/mounting/portal_placement_succession.rs", items = ["viewport_rect"] },
     { path = "src/mounting/retention/interaction_basis.rs", items = ["UiPresentedHitTestRow::committed", "UiPresentedHitTestRow::from_mounted"] },
     { path = "src/runtime/interaction/targeting/presented_geometry.rs", items = ["UiPresentedInteractionGeometry::for_test_with_components", "UiPresentedViewportGeometry::from_current_interaction", "UiPresentedViewportGeometry::for_test"] },
   ], reason = "committed layout is published where the committed frame is read: a canonical committed box becomes published geometry" },
@@ -1012,7 +1013,8 @@ mints = [
   ], reason = "committed layout components are published as Portal bounds, Scroll content, and certification scale geometry" },
   { call = "UiPublishedRect::translated", clippy = "worth_ui_runtime::mounting::presentation::truth_geometry::published::UiPublishedRect::translated", callers = [
     { path = "src/facade/entry/active_application_session/portal_motion.rs", items = ["portal_entrance_start_geometry"] },
-  ], reason = "a Portal entrance starts at its published rect shifted by the entrance offset" },
+    { path = "src/mounting/portal_placement_succession.rs", items = ["nested_anchor"] },
+  ], reason = "a Portal entrance starts at its published rect shifted by the entrance offset, and a nested Portal's anchor is its owner's layout moved by its parent Portal's placement" },
   { call = "UiPublishedRect::adopting", callers = [
     { path = "src/mounting/retention/interaction_basis/hit_rect.rs", items = ["UiPresentedHitRect::adopted"] },
   ], reason = "a hit rect adopts the published rect its prepared entrance maps to" },
@@ -1055,8 +1057,8 @@ mints = [
     { path = "src/mounting/retention/interaction_basis/hit_rect.rs", items = ["UiPresentedHitRect::displayed"] },
   ], reason = "geometry no Scroll pose moved carries no shift" },
   { call = "UiPresentedPortalBounds::new", callers = [
-    { path = "src/runtime/portal/planning.rs", items = ["prepare"] },
-  ], reason = "Portal planning places its bounds from committed layout" },
+    { path = "src/runtime/portal/planning.rs", items = ["arrange"] },
+  ], reason = "Portal planning places its bounds from committed layout, at open and in every frame after" },
   { call = "UiPresentedHitRect::Published", callers = [
     { path = "src/runtime/interaction/targeting/presented_geometry.rs", items = ["UiPresentedInteractionGeometry::for_test_with_components"] },
   ], reason = "certification geometry lifts published rects built from canonical committed boxes" },

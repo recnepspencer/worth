@@ -91,10 +91,16 @@ impl super::UiPortalRuntimeState {
     }
 
     /// Rebinds Portal presentation bases without changing Portal membership.
+    /// Each Portal adopts the placement the accepted frame presented for it,
+    /// so its committed geometry is the geometry on screen.
     pub(crate) fn rebind_published_presentations(
         &mut self,
         frame: worth_ui_host_contract::UiMountedFrameIdentity,
         surfaces: &[crate::mounting::UiMountedSurfacePresentationReceipt],
+        placements: &[(
+            super::UiPortalStackOrdinal,
+            super::UiPreparedPortalPlacement,
+        )],
     ) {
         for record in self.records.values_mut().filter(|record| {
             record.posture != super::UiPortalLifecyclePosture::Closed && record.placement.is_some()
@@ -112,7 +118,22 @@ impl super::UiPortalRuntimeState {
                 surface.binding(),
                 surface.epoch(),
             );
-            rebind_record_presentation(record, presentation);
+            let committed = record
+                .placement
+                .expect("filtered portal retains placement")
+                .prepared();
+            // A frame fitted before this Portal reopened carries the earlier
+            // open's ordinal, so it cannot overwrite the reopened placement.
+            let published = placements
+                .iter()
+                .copied()
+                .find(|(ordinal, placement)| {
+                    *ordinal == record.stack_ordinal && placement.layer() == committed.layer()
+                })
+                .map_or(committed, |(_, placement)| placement);
+            record.placement = Some(super::UiCommittedPortalPlacement::from_prepared(
+                published.with_presentation(presentation),
+            ));
         }
     }
 

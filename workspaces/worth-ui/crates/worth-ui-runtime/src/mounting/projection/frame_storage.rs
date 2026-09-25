@@ -186,7 +186,7 @@ impl UiMountedProjectionFrame {
     ) -> Option<worth_ui_host_contract::UiMountedInstanceIdentity> {
         self.visual_overlay.map(|overlay| overlay.target_instance())
     }
-    pub(super) fn portal_overlay_inputs(
+    pub(in crate::mounting) fn portal_overlay_inputs(
         &self,
     ) -> &[super::super::UiMountedPortalOverlayProjectionInput] {
         &self.portal_overlays

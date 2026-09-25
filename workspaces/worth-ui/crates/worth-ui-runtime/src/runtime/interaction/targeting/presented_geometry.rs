@@ -85,10 +85,9 @@ impl UiPresentedInteractionGeometry {
 
 impl UiPresentedViewportGeometry {
     pub(crate) fn from_current_interaction(
-        committed: crate::runtime::UiCommittedViewportGeometry,
+        bounds: UiPublishedRect,
         interaction: UiPresentedInteractionGeometry,
     ) -> Option<Self> {
-        let bounds = UiPublishedRect::from_committed_box(committed.mounted_box());
         (bounds.coordinate_space() == worth_ui_host_contract::UiMountedCoordinateSpace::Viewport)
             .then_some(Self {
                 bounds,

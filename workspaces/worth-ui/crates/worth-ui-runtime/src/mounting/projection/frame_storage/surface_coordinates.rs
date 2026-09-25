@@ -35,7 +35,9 @@ pub(in crate::mounting::projection) fn viewport_allocation(
     })
 }
 
-pub(in crate::mounting::projection) fn viewport_bounds(
+/// The one surface-to-viewport crossing for committed boxes: a box in a
+/// logical-point surface's layout is the same box in the client viewport.
+pub(in crate::mounting) fn viewport_bounds(
     bounds: worth_ui_host_contract::UiMountedCanonicalBox,
     posture: crate::mounting::UiSurfaceBindingCoordinatePosture,
 ) -> Result<worth_ui_host_contract::UiMountedCanonicalBox, UiMountedProjectionDenial> {

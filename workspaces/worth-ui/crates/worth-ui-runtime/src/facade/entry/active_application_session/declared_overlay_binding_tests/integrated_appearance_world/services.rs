@@ -38,6 +38,36 @@ impl World {
         now: u64,
         inspect: impl FnOnce(&crate::mounting::UiPreparedMountedFrame),
     ) -> UiPortalIdentity {
+        self.open_from(index, declaration, parent, now, true, inspect)
+    }
+
+    /// Opens from wherever the owner is presented now, which for Portal
+    /// content or scrolled content is not its launched box.
+    pub(super) fn open_where_presented(
+        &mut self,
+        index: usize,
+        declaration: &str,
+        parent: Option<UiPortalIdentity>,
+        now: u64,
+    ) -> UiPortalIdentity {
+        self.open_from(index, declaration, parent, now, false, |_| {})
+    }
+
+    /// The graph node each mounted instance occurs for.
+    pub(super) fn owner_graph(&self, index: usize) -> crate::graph::UiGraphNodeIdentity {
+        self.graphs[[0, 1, 2, 0, 3][index]]
+    }
+
+    fn open_from(
+        &mut self,
+        index: usize,
+        declaration: &str,
+        parent: Option<UiPortalIdentity>,
+        now: u64,
+        launched: bool,
+        inspect: impl FnOnce(&crate::mounting::UiPreparedMountedFrame),
+    ) -> UiPortalIdentity {
+        let owner_graph = self.owner_graph(index);
         let session = &mut self.session;
         let expected_shielding = if declaration == "overlay.child" {
             UiPortalInputShielding::ModalSurface
@@ -51,7 +81,7 @@ impl World {
             self.surfaces[0]
         };
         let portal = UiPortalIdentity::for_owner(UiPortalOwnerIdentity::from_mounted_owner(
-            self.graphs[if index == 3 { 0 } else { index }],
+            owner_graph,
             instance,
         ));
         let declaration = session
@@ -76,20 +106,20 @@ impl World {
             row.bounds().coordinate_space(),
             UiMountedCoordinateSpace::Viewport
         );
-        assert_eq!(
-            [
-                row.bounds().platform_box().x(),
-                row.bounds().platform_box().y(),
-                row.bounds().platform_box().width(),
-                row.bounds().platform_box().height()
-            ],
-            super::geometry::BOXES[index]
-        );
+        let presented = row.bounds().platform_box();
+        let [x, y, width, height] = [
+            presented.x(),
+            presented.y(),
+            presented.width(),
+            presented.height(),
+        ];
+        if launched {
+            assert_eq!([x, y, width, height], super::geometry::BOXES[index]);
+        }
         assert_eq!(
             session.mounted.current_surface_viewport(surface).unwrap().1,
             super::geometry::canonical(super::geometry::VIEWPORT)
         );
-        let [x, y, width, height] = super::geometry::BOXES[index];
         let target = crate::runtime::interaction::targeting::resolve_presented_target(
             &session.mounted,
             presentation.basis(),
@@ -102,11 +132,7 @@ impl World {
         .unwrap();
         assert_eq!(target.mounted_instance(), instance);
         let anchor = target.view().geometry();
-        let committed_viewport = session
-            .application
-            .mounted_viewport_bounds_for(self.graphs[if index == 3 { 0 } else { index }])
-            .unwrap()
-            .unwrap();
+        let committed_viewport = session.mounted.current_portal_viewport(surface).unwrap();
         let viewport =
             crate::runtime::interaction::UiPresentedViewportGeometry::from_current_interaction(
                 committed_viewport,

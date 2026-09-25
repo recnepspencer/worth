@@ -20,6 +20,7 @@ mod identity_trace_basis;
 mod identity_view;
 mod occurrence_geometry;
 mod portal_overlay;
+mod portal_placement_succession;
 pub(crate) mod presentation;
 mod projection;
 #[cfg(test)]
