@@ -34,12 +34,20 @@ impl WorthUiNativeEventLoop {
             loop_resources,
         } = preflight;
         let physical_clock = super::physical_clock::UiNativePhysicalEventClock::new();
-        let installed = client
-            .invoke_install_observation_clock(physical_clock.observation_clock())
-            .and_then(|()| {
-                client.invoke_install_application_readiness(application_readiness_ports.into_vec())
-            });
-        if let Err(failure) = installed {
+        let deadline_watch =
+            super::deadline_watch::UiNativeDeadlineWatch::start(event_loop.create_proxy());
+        let installed = match deadline_watch {
+            Some(_) => client
+                .invoke_install_observation_clock(physical_clock.observation_clock())
+                .and_then(|()| {
+                    client.invoke_install_application_readiness(
+                        application_readiness_ports.into_vec(),
+                    )
+                })
+                .map_err(UiNativeEventLoopRunDenial::ClientCallback),
+            None => Err(UiNativeEventLoopRunDenial::ApplicationDriver),
+        };
+        let (Ok(()), Some(deadline_watch)) = (&installed, deadline_watch) else {
             let mut expected = vec![
                 readiness_owner,
                 physical_readiness_owner,
@@ -47,12 +55,11 @@ impl WorthUiNativeEventLoop {
             ];
             expected.extend(application_readiness_owners.iter().copied());
             run_preflight::cancel(&self.state, &readiness, &expected, loop_resources);
-            return Err(stop_before_callbacks(
-                self.state,
-                client,
-                UiNativeEventLoopRunDenial::ClientCallback(failure),
-            ));
-        }
+            let cause = installed
+                .err()
+                .unwrap_or(UiNativeEventLoopRunDenial::ApplicationDriver);
+            return Err(stop_before_callbacks(self.state, client, cause));
+        };
         event_loop.set_control_flow(ControlFlow::Wait);
         let mut application = UiNativeEventLoopApplication {
             shared: self.state,
@@ -78,6 +85,8 @@ impl WorthUiNativeEventLoop {
             observation_wait: Default::default(),
             pointer_input: None,
             pending_input_reachability: Default::default(),
+            pending_resize: Default::default(),
+            deadline_watch,
             thread_posture: self.thread_posture,
         };
         if event_loop.run_app(&mut application).is_err() {

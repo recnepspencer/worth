@@ -16,6 +16,7 @@ mod client_invocation;
 mod close_request;
 mod completion_report;
 mod contract;
+mod deadline_watch;
 mod directive;
 mod failure;
 mod finish;
@@ -33,6 +34,7 @@ mod presentation_retry;
 mod qualified_surface_basis;
 mod readiness_progress;
 mod redraw;
+mod resize;
 mod resume;
 mod run;
 mod run_preflight;
@@ -105,6 +107,8 @@ struct UiNativeEventLoopApplication<Client> {
     physical_clock: UiNativePhysicalEventClock,
     observation_wait: observation_clock::UiNativeObservationWait,
     pointer_input: Option<Box<pointer_position::UiNativePointerInputPort>>,
+    pending_resize: resize::UiNativePendingResize,
+    deadline_watch: deadline_watch::UiNativeDeadlineWatch,
     pending_input_reachability: contract::UiNativeInputReachability,
     thread_posture: UiNativeEventLoopThreadPosture,
 }

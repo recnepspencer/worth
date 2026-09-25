@@ -86,6 +86,11 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
         &mut self,
         event_loop: &ActiveEventLoop,
     ) -> bool {
+        // Input dispatched after a resize in the same turn may present.
+        self.prepare_pending_resize(event_loop);
+        if event_loop.exiting() {
+            return true;
+        }
         if self.signal_native_observation_readiness(event_loop) {
             return true;
         }

@@ -228,6 +228,31 @@ Shutdown first stops new admissions, then drains retained completion and
 recovery obligations. Signal state and native resource ownership are disposed
 only after those obligations reach a terminal posture.
 
+## Live Resize
+
+A border drag reports far more client extents than frames can be prepared
+for. Host-native records each positive extent as the newest pending extent and
+requests a redraw. The next dispatch turn that can hand the client work, a
+redraw, a posted wake, an input observation, or the idle turn, first prepares
+one target for whatever extent is newest by then, and only then publishes that
+viewport. Preparation cost follows turns, not raw resize events, and no
+presentation reports an extent its pixels do not have. A zero extent is a
+lifecycle transition, not a pending extent: it suspends presentation when
+observed and discards the extent it supersedes. A scale change reads the
+window's current extent itself, so it supersedes any pending extent.
+
+While the border is held, Windows dispatches from its own modal loop. Winit
+then emits no `NewEvents` or `AboutToWait`, and a `WaitUntil` deadline never
+fires. Physical completion is polled on due ticks of the host clock, so an
+in-flight frame would otherwise not settle, and no newer extent could present,
+until release. A deadline watch thread holds the next physical-signal or
+presentation-retry deadline and posts one application wake when the event loop
+has not reached it within a small slack. It does not post that deadline again
+while the wake is queued. Posted wakes are dispatched by any loop, and the
+wake progresses timed work itself. The watch owns no host state and never
+calls into it; in the ordinary loop, `WaitUntil` reaches each deadline first
+and the watch stays silent.
+
 ## Presented-Source Readback
 
 The Windows native host records one capture source only after presentation has

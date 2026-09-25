@@ -8,6 +8,10 @@ use super::{
 
 impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
     pub(super) fn redraw(&mut self, event_loop: &ActiveEventLoop) {
+        self.prepare_pending_resize(event_loop);
+        if event_loop.exiting() {
+            return;
+        }
         if self.progress_ready_physical_client(event_loop) {
             return;
         }

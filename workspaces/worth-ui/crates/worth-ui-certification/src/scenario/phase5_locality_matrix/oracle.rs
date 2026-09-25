@@ -170,7 +170,8 @@ fn require_unchanged_zero_work(
         shutdown
             .text_presentation_work()
             .iter()
-            .all(|work| work.mounted_frame() != unchanged.frame()),
+            .filter(|work| work.mounted_frame() == unchanged.frame())
+            .all(|work| !work.performed_work()),
         "unchanged turn performed text qualification, raster, atlas, or pin work",
     )
 }

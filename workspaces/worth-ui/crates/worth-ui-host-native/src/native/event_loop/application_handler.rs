@@ -8,7 +8,7 @@ use super::{
     UiNativeEventLoopApplication, UiNativeEventLoopClient, UiNativeEventLoopDirective,
     UiNativeEventLoopRunDenial,
 };
-use crate::native::{UiNativeHostState, UiNativeLifecycleRequiredAction};
+use crate::native::UiNativeLifecycleRequiredAction;
 
 impl<Client: UiNativeEventLoopClient>
     ApplicationHandler<crate::native::readiness::UiNativeApplicationWake>
@@ -50,7 +50,9 @@ impl<Client: UiNativeEventLoopClient>
         }
         match event {
             WindowEvent::RedrawRequested => self.redraw(event_loop),
-            WindowEvent::Resized(size) => self.resize(event_loop, [size.width, size.height]),
+            WindowEvent::Resized(size) => {
+                self.observe_resize(event_loop, [size.width, size.height])
+            }
             WindowEvent::ScaleFactorChanged { scale_factor, .. } => {
                 self.change_scale(event_loop, scale_factor)
             }
@@ -60,6 +62,7 @@ impl<Client: UiNativeEventLoopClient>
                 self.observe_native_input(event_loop, &event);
             }
         }
+        self.watch_deadlines(false);
     }
 
     fn user_event(
@@ -67,6 +70,17 @@ impl<Client: UiNativeEventLoopClient>
         event_loop: &ActiveEventLoop,
         _event: crate::native::readiness::UiNativeApplicationWake,
     ) {
+        if event_loop.exiting() {
+            return;
+        }
+        self.prepare_pending_resize(event_loop);
+        if event_loop.exiting() {
+            return;
+        }
+        // A modal platform loop dispatches this wake without `NewEvents`, so
+        // the wake progresses timed work itself.
+        self.advance_physical_signal_clock(event_loop);
+        self.progress_due_presentation_retry(event_loop);
         if event_loop.exiting() {
             return;
         }
@@ -81,9 +95,14 @@ impl<Client: UiNativeEventLoopClient>
             self.request_physical_signal_redraw();
             self.progress_ready_physical_client(event_loop);
         }
+        self.watch_deadlines(true);
     }
 
     fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
+        if event_loop.exiting() {
+            return;
+        }
+        self.prepare_pending_resize(event_loop);
         if event_loop.exiting() {
             return;
         }
@@ -106,6 +125,7 @@ impl<Client: UiNativeEventLoopClient>
             event_loop.set_control_flow(ControlFlow::Poll);
         }
         self.schedule_physical_signal_deadline(event_loop);
+        self.watch_deadlines(true);
         if self.first_frame_presented {
             if self.signal_native_observation_readiness(event_loop) {
                 return;
@@ -118,7 +138,7 @@ impl<Client: UiNativeEventLoopClient>
 }
 
 impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
-    fn change_visibility(&mut self, event_loop: &ActiveEventLoop, occluded: bool) {
+    pub(super) fn change_visibility(&mut self, event_loop: &ActiveEventLoop, occluded: bool) {
         let changed = self
             .shared
             .borrow_mut()
@@ -174,150 +194,5 @@ impl<Client: UiNativeEventLoopClient> UiNativeEventLoopApplication<Client> {
             .window
             .as_ref()
             .is_some_and(|window| window.id() == window_id)
-    }
-
-    fn resize(&mut self, event_loop: &ActiveEventLoop, size: [u32; 2]) {
-        let replacement = {
-            let mut shared = self.shared.borrow_mut();
-            let minimized = size.contains(&0);
-            let UiNativeHostState {
-                presentation_owners,
-                resources,
-                ..
-            } = &mut *shared;
-            let changed = presentation_owners.as_mut().map_or(
-                Ok(false),
-                |crate::native::UiNativePresentationOwners { device, surface }| {
-                    crate::native::lifecycle::resize_surface(device, surface, size, resources)
-                },
-            );
-            changed.map(|changed| {
-                let suspended = presentation_owners
-                    .as_ref()
-                    .is_some_and(|owners| owners.surface.state().suspended());
-                (changed, suspended, minimized)
-            })
-        };
-        match replacement {
-            Ok((true, suspended, minimized)) => {
-                let mut shared = self.shared.borrow_mut();
-                if minimized {
-                    let _ = shared
-                        .presentation_surface_mut()
-                        .map(|surface| surface.observe_occlusion(true));
-                }
-                let transition = if minimized {
-                    crate::native::UiNativeSurfaceBasisTransition::Minimized
-                } else if suspended {
-                    crate::native::UiNativeSurfaceBasisTransition::ZeroSized
-                } else {
-                    crate::native::UiNativeSurfaceBasisTransition::Resize
-                };
-                let _directive = shared.observe_surface_basis_transition(transition);
-                drop(shared);
-                if !suspended && !minimized {
-                    self.commit_visible_surface_readiness(event_loop);
-                }
-            }
-            Ok((false, _, minimized)) => self.change_visibility(event_loop, minimized),
-            Err(()) => {
-                self.fail(event_loop, UiNativeEventLoopRunDenial::GraphicsPreparation);
-                return;
-            }
-        }
-        let scale_factor = self
-            .shared
-            .borrow()
-            .presentation_surface()
-            .map(|surface| surface.state().scale_factor());
-        if let Some(scale_factor) = scale_factor {
-            self.shared
-                .borrow_mut()
-                .lifecycle
-                .observe_profile_transition_at(
-                    scale_factor,
-                    size,
-                    self.physical_clock.current_tick(),
-                );
-        }
-        if let Some(input) = self.pointer_input.as_mut() {
-            input.refresh_client_origin();
-        }
-    }
-
-    fn change_scale(&mut self, event_loop: &ActiveEventLoop, scale_factor: f64) {
-        let physical_size = self
-            .shared
-            .borrow()
-            .window
-            .as_ref()
-            .map(|window| window.client_physical_size());
-        let replacement = {
-            let mut shared = self.shared.borrow_mut();
-            let minimized = physical_size.is_some_and(|size| size.contains(&0));
-            let UiNativeHostState {
-                presentation_owners,
-                resources,
-                ..
-            } = &mut *shared;
-            let changed = physical_size.zip(presentation_owners.as_mut()).map_or(
-                Ok(false),
-                |(size, crate::native::UiNativePresentationOwners { device, surface })| {
-                    crate::native::lifecycle::rebind_surface_scale(
-                        device,
-                        surface,
-                        scale_factor,
-                        size,
-                        resources,
-                    )
-                },
-            );
-            changed.map(|changed| {
-                let suspended = presentation_owners
-                    .as_ref()
-                    .is_some_and(|owners| owners.surface.state().suspended());
-                (changed, suspended, minimized)
-            })
-        };
-        match replacement {
-            Ok((true, suspended, minimized)) => {
-                let mut shared = self.shared.borrow_mut();
-                if minimized {
-                    let _ = shared
-                        .presentation_surface_mut()
-                        .map(|surface| surface.observe_occlusion(true));
-                }
-                let transition = if minimized {
-                    crate::native::UiNativeSurfaceBasisTransition::Minimized
-                } else if suspended {
-                    crate::native::UiNativeSurfaceBasisTransition::ZeroSized
-                } else {
-                    crate::native::UiNativeSurfaceBasisTransition::Dpi
-                };
-                let _directive = shared.observe_surface_basis_transition(transition);
-                drop(shared);
-                if !suspended && !minimized {
-                    self.commit_visible_surface_readiness(event_loop);
-                }
-            }
-            Ok((false, _, minimized)) => self.change_visibility(event_loop, minimized),
-            Err(()) => {
-                self.fail(event_loop, UiNativeEventLoopRunDenial::GraphicsPreparation);
-                return;
-            }
-        }
-        if let Some(size) = physical_size {
-            self.shared
-                .borrow_mut()
-                .lifecycle
-                .observe_profile_transition_at(
-                    scale_factor,
-                    size,
-                    self.physical_clock.current_tick(),
-                );
-        }
-        if let Some(input) = self.pointer_input.as_mut() {
-            input.refresh_client_origin();
-        }
     }
 }

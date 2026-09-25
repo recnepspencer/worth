@@ -154,6 +154,16 @@ impl UiNativeClientTextPresentationWorkObservation {
         self.identity[3]
     }
 
+    /// Whether the turn qualified, rasterized, uploaded, pinned, or released
+    /// anything. The turn's DPI and the pins its binding still holds are
+    /// state, not work.
+    pub fn performed_work(&self) -> bool {
+        self.work_counts
+            .iter()
+            .enumerate()
+            .any(|(index, count)| index != 0 && index != 11 && *count != 0)
+    }
+
     pub const fn dpi_milli(&self) -> u64 {
         self.work_counts[0]
     }
@@ -272,5 +282,36 @@ impl UiNativeClientTextPresentationWorkObservation {
 
     pub const fn emitted_carets(&self) -> u64 {
         self.work_counts[29]
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::UiNativeClientTextPresentationWorkObservation;
+
+    fn observation(work_counts: [u64; 30]) -> UiNativeClientTextPresentationWorkObservation {
+        UiNativeClientTextPresentationWorkObservation::reported(
+            [1, 1, 1, 1],
+            work_counts,
+            [[0; 32]; 4],
+            0,
+            [[0; 32]; 2],
+            [],
+            [],
+            [],
+        )
+    }
+
+    #[test]
+    fn dpi_and_held_binding_pins_are_state_not_work() {
+        let mut counts = [0; 30];
+        counts[0] = 1_500;
+        counts[11] = 6;
+        assert!(!observation(counts).performed_work());
+        for index in (1..30).filter(|index| *index != 11) {
+            let mut counts = counts;
+            counts[index] = 1;
+            assert!(observation(counts).performed_work(), "count {index}");
+        }
     }
 }

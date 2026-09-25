@@ -106,6 +106,7 @@ fn root_component() -> ComponentDescriptor {
         ComponentChildPolicy::no_children(),
         ComponentStateOwnership::runtime_owned(),
     )
+    .with_allocation_measurement_contract(ComponentAllocationMeasurementContract::fill_viewport())
 }
 
 fn text_component(case: Phase5LocalityCase, index: usize) -> ComponentDescriptor {
