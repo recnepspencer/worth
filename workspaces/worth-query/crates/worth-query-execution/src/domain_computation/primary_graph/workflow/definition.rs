@@ -3,9 +3,11 @@ mod compilation;
 mod facts;
 mod preparation;
 mod publication;
+pub use compilation::WorthQueryWorkflowCompilationReuseCounters;
 pub(in crate::domain_computation::primary_graph) use compilation::{
     reconstruct_compiled_definition, CompiledWorkflowDefinition, CompiledWorkflowNode,
     CompiledWorkflowNodeKind, WorkflowDefinitionCompilationPosture,
+    WorkflowDefinitionCompilationReuse,
 };
 pub(in crate::domain_computation::primary_graph) use facts::{
     visit_definition_facts, WorkflowLineagePublicationTarget,

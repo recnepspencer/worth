@@ -50,6 +50,42 @@ impl<'support> WorthQueryOccurrenceProgram<'support> {
     }
 }
 
+/// Compares the producer's selected-program binding with this exact occurrence.
+pub(super) fn require_selected_program_matches_occurrence(
+    occurrence: &WorthQueryOccurrenceProgram<'_>,
+    selected_program: Option<(
+        &worth_query_declaration::facade::application_program::ApplicationProgramIdentity,
+        &worth_query_declaration::facade::application_program::ApplicationProgramRevision,
+    )>,
+) -> Result<(), WorthQueryApplicationCommitDenial> {
+    if let Some((identity, revision)) = selected_program {
+        if occurrence.entry().identity() != identity || occurrence.entry().revision() != revision {
+            return Err(
+                WorthQueryApplicationCommitDenial::program_revision_not_active_on_occurrence(
+                    identity,
+                    revision,
+                    occurrence.entry().identity(),
+                    occurrence.entry().revision(),
+                ),
+            );
+        }
+    }
+    Ok(())
+}
+
+/// Requires the activated program to declare the effectful operation route.
+pub(super) fn require_occurrence_acts_through<Operation: 'static>(
+    occurrence: &WorthQueryOccurrenceProgram<'_>,
+) -> Result<(), WorthQueryApplicationCommitDenial> {
+    if !occurrence
+        .entry()
+        .acts_through_operation(std::any::TypeId::of::<Operation>())
+    {
+        return Err(WorthQueryApplicationCommitDenial::application_program_required());
+    }
+    Ok(())
+}
+
 /// Resolves the program active on this attempt's occurrence.
 ///
 /// The read costs one ordinary point read against the attempt's own snapshot

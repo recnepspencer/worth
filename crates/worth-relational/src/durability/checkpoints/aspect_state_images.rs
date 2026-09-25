@@ -45,6 +45,7 @@ pub(super) fn readmit_state(
         .transpose()
 }
 
+#[derive(PartialEq, Eq)]
 pub(crate) struct CheckpointAspectContractCatalog {
     contracts: std::collections::BTreeMap<
         (AspectKey, AspectIdentity, AspectContractRevision),

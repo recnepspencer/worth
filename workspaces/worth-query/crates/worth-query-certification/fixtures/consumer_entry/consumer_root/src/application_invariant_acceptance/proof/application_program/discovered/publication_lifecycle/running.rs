@@ -56,17 +56,17 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn r
         .observed_sources()[0]
         .clone();
     request
-        .mutate(PlanarMutation {
+        .mutate(PlanarEdit(PlanarMutation {
             scope_key: "sibling-b".to_owned(),
             operation: PlanarOperation::Adjust(vec![PlanarAdjustment {
                 body_key: "sibling-b".to_owned(),
                 replacement_y: length(5),
             }]),
             validator_work: 4_096,
-        })
+        }))
         .expect_source(changed)
         .idempotency(&10_045)
-        .execute()
+        .execute_in_program(&world.application)
         .expect("the sibling ring changes while the first handle is active");
     let current = request
         .query(PlanarRead {

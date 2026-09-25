@@ -104,6 +104,49 @@ fn custom_registration_runs_only_for_its_declared_affected_kind() {
     );
 }
 
+#[test]
+fn unrelated_large_candidate_does_not_spend_a_custom_rules_work_budget() {
+    let runtime = RelationalRuntimeApi::builder()
+        .custom_invariant(scoped_registration_with_work(
+            "unrelated.rule",
+            KindId(2),
+            16,
+        ))
+        .build();
+    let plan = large_kind_one_plan(74);
+    let result = evaluate_main_commit_boundary_plan(&runtime, &plan);
+    assert!(result.results().iter().any(|check| {
+        matches!(check.rule, InvariantReportedRule::Custom(ref identity) if identity.rule_id.as_str() == "unrelated.rule")
+            && matches!(check.verdict, InvariantVerdict::NotApplicable)
+    }));
+}
+
+#[test]
+fn related_large_candidate_still_spends_its_custom_rules_work_budget() {
+    let runtime = RelationalRuntimeApi::builder()
+        .custom_invariant(scoped_registration_with_work("related.rule", KindId(1), 16))
+        .build();
+    let result = evaluate_main_commit_boundary_plan(&runtime, &large_kind_one_plan(75));
+    assert!(result.results().iter().any(|check| {
+        matches!(check.rule, InvariantReportedRule::Custom(ref identity) if identity.rule_id.as_str() == "related.rule")
+            && matches!(check.verdict, InvariantVerdict::Violation(_))
+    }));
+}
+
+fn large_kind_one_plan(transaction: u64) -> MergedCommitPlan {
+    let mut plan = graph_relevant_plan(transaction);
+    for index in 0..512 {
+        plan.merged_intents
+            .push(MutationIntent::Create(CreateIntent::Entity(EntitySpec {
+                partition_id: PartitionId::main(),
+                kind_id: KindId(1),
+                client_key: ClientKey::raw(format!("unrelated-{index}")),
+                fields: crate::transactions::data::AspectFieldPatch::default(),
+            })));
+    }
+    plan
+}
+
 fn assert_custom_rule_ids(
     result: &crate::validation::engine::InvariantExecutionResult,
     execution_point: InvariantExecutionPoint,
@@ -152,16 +195,26 @@ fn registration(
         execution_point,
         cost_class,
         affected_entity_kind: None,
+        maximum_work_units: 4096,
     })
     .unwrap()
 }
 
 fn scoped_registration(rule_id: &'static str, kind: KindId) -> CustomInvariantRegistration {
+    scoped_registration_with_work(rule_id, kind, 4096)
+}
+
+fn scoped_registration_with_work(
+    rule_id: &'static str,
+    kind: KindId,
+    maximum_work_units: u64,
+) -> CustomInvariantRegistration {
     CustomInvariantRegistration::new(SelectionRule {
         rule_id,
         execution_point: InvariantExecutionPoint::CommitBoundary,
         cost_class: InvariantCostClass::Touched,
         affected_entity_kind: Some(kind),
+        maximum_work_units,
     })
     .unwrap()
 }
@@ -172,6 +225,7 @@ struct SelectionRule {
     execution_point: InvariantExecutionPoint,
     cost_class: InvariantCostClass,
     affected_entity_kind: Option<KindId>,
+    maximum_work_units: u64,
 }
 
 impl CustomInvariantRule for SelectionRule {
@@ -185,7 +239,7 @@ impl CustomInvariantRule for SelectionRule {
             },
             display_name: Arc::from(self.rule_id),
             operational: CustomInvariantOperationalMetadata {
-                maximum_work_units: std::num::NonZeroU64::new(4096).unwrap(),
+                maximum_work_units: std::num::NonZeroU64::new(self.maximum_work_units).unwrap(),
                 access: self.affected_entity_kind.map_or_else(
                     crate::validation::data::CustomInvariantAccessContract::default,
                     |kind| crate::validation::data::CustomInvariantAccessContract {
@@ -193,6 +247,7 @@ impl CustomInvariantRule for SelectionRule {
                         read_relation_kinds: Vec::new(),
                         affected_entity_kinds: vec![kind],
                         affected_relation_kinds: Vec::new(),
+                        include_relation_endpoint_entity_touches: true,
                     },
                 ),
                 execution_point: self.execution_point,

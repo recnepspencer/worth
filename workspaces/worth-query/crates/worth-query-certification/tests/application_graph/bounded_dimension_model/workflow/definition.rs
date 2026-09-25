@@ -10,8 +10,9 @@ use worth_query_host::facade::{
         WorthQueryWorkflowProposalPreparationDenial,
     },
     declaration::application_program::{
-        ApplicationWorkflowControlOutcome, ApplicationWorkflowDefinitionBuilder,
-        ApplicationWorkflowDefinitionLimits, ValidatedWorkflowDefinition,
+        ApplicationWorkflowComponentLimits, ApplicationWorkflowControlOutcome,
+        ApplicationWorkflowDefinitionBuilder, ApplicationWorkflowDefinitionLimits,
+        ValidatedWorkflowDefinition,
     },
 };
 use worth_query_installation::facade::WorthQueryInstalledWorkflowDefinitionContract;
@@ -51,6 +52,22 @@ pub fn reviewed_geometry_definition(
 pub fn reviewed_geometry_definition_with_join_policy(
     completion_identity: &str,
     join_policy: worth_query_host::facade::declaration::application_program::ApplicationWorkflowEvidenceJoinPolicy,
+) -> ValidatedWorkflowDefinition<ReviewedGeometryWorkflow> {
+    reviewed_geometry_definition_with_policy(completion_identity, join_policy, None)
+}
+
+pub fn approval_retry_definition() -> ValidatedWorkflowDefinition<ReviewedGeometryWorkflow> {
+    reviewed_geometry_definition_with_policy(
+        "applied",
+        worth_query_host::facade::declaration::application_program::ApplicationWorkflowEvidenceJoinPolicy::AllRequiredPassing,
+        Some(2),
+    )
+}
+
+fn reviewed_geometry_definition_with_policy(
+    completion_identity: &str,
+    join_policy: worth_query_host::facade::declaration::application_program::ApplicationWorkflowEvidenceJoinPolicy,
+    approval_retries: Option<u16>,
 ) -> ValidatedWorkflowDefinition<ReviewedGeometryWorkflow> {
     let mut builder = ApplicationWorkflowDefinitionBuilder::<ReviewedGeometryWorkflow>::new(
         "reviewed-geometry",
@@ -114,11 +131,6 @@ pub fn reviewed_geometry_definition_with_join_policy(
             &apply,
         )
         .control(
-            &approval,
-            ApplicationWorkflowControlOutcome::Rejected,
-            &rejected,
-        )
-        .control(
             &apply,
             ApplicationWorkflowControlOutcome::Completed,
             &completed,
@@ -131,6 +143,21 @@ pub fn reviewed_geometry_definition_with_join_policy(
         .joined_evidence(&evidence, &approval)
         .approval_authority(&approval, &apply)
         .operation_input(&propose, &apply);
+    if let Some(bound) = approval_retries {
+        builder.retry(
+            &approval,
+            worth_query_host::facade::declaration::application_program::ApplicationWorkflowRetry::new(
+                ApplicationWorkflowControlOutcome::Rejected, "reconsider", bound,
+            ).expect("the reconsideration bound is valid"),
+            &approval,
+        ).control(&approval, ApplicationWorkflowControlOutcome::RetryExhausted, &rejected);
+    } else {
+        builder.control(
+            &approval,
+            ApplicationWorkflowControlOutcome::Rejected,
+            &rejected,
+        );
+    }
     builder
         .finish()
         .expect("the authored definition is complete")
@@ -299,7 +326,13 @@ pub fn publish_definition(
         .map(|request| request.execute())
 }
 
-pub(super) fn definition_limits() -> ApplicationWorkflowDefinitionLimits {
-    ApplicationWorkflowDefinitionLimits::new(32, 64, 4, 4, 64 * 1024)
-        .expect("the workflow definition limits are nonzero")
+pub(crate) fn definition_limits() -> ApplicationWorkflowDefinitionLimits {
+    ApplicationWorkflowDefinitionLimits::new(
+        32,
+        64,
+        4,
+        ApplicationWorkflowComponentLimits::new(32, 4, 128, 256, 256).unwrap(),
+        64 * 1024,
+    )
+    .expect("the workflow definition limits are nonzero")
 }

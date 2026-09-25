@@ -8,7 +8,9 @@ use crate::domain_computation::primary_graph::application_attempt::{
 use crate::domain_computation::primary_graph::workflow::{
     definition::{
         codec::WorkflowNodeTag,
-        compilation::plan::{CompiledWorkflowNode, CompiledWorkflowNodeKind},
+        compilation::plan::{
+            CompiledWorkflowNode, CompiledWorkflowNodeKind, CompiledWorkflowNodeMeaning,
+        },
     },
     schema::WorthQueryWorkflowLayout,
 };
@@ -81,6 +83,14 @@ pub(super) fn compile_node(
         &node.assessment_binding,
         facts,
     )?;
+    let assessment_subject = observed_optional_text(
+        runtime,
+        snapshot,
+        entity,
+        node.entity_kind,
+        &node.assessment_subject,
+        facts,
+    )?;
     let condition_binding = observed_optional_text(
         runtime,
         snapshot,
@@ -128,13 +138,17 @@ pub(super) fn compile_node(
         parameter_type,
         result_type,
         assessment_binding,
+        assessment_subject,
         condition_binding,
         capability_type,
         approval_operation,
         approval_capability_identity,
         requires_workflow_authority,
     )?;
-    Ok(CompiledWorkflowNode { entity, path, kind })
+    Ok(CompiledWorkflowNode {
+        entity,
+        meaning: std::sync::Arc::new(CompiledWorkflowNodeMeaning { path, kind }),
+    })
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -145,6 +159,7 @@ fn decode_kind(
     parameter_type: Option<String>,
     result_type: Option<String>,
     assessment_binding: Option<String>,
+    assessment_subject: Option<String>,
     condition_binding: Option<String>,
     capability_type: Option<String>,
     approval_operation: Option<String>,
@@ -156,6 +171,7 @@ fn decode_kind(
             if parameter_type.is_none()
                 && result_type.is_none()
                 && assessment_binding.is_none()
+                && assessment_subject.is_none()
                 && condition_binding.is_none()
                 && capability_type.is_none()
                 && approval_operation.is_none()
@@ -180,11 +196,16 @@ fn decode_kind(
                 parameter_type: parameter_type.ok_or_else(invalid_node)?,
                 result_type: result_type.ok_or_else(invalid_node)?,
                 binding: assessment_binding.ok_or_else(invalid_node)?,
+                subject: worth_query_declaration::facade::application_program::ApplicationWorkflowSubjectSelector::from_persistence_identity(
+                    &assessment_subject.ok_or_else(invalid_node)?,
+                )
+                .ok_or_else(invalid_node)?,
             })
         }
         Some(WorkflowNodeTag::Condition)
             if input_type.is_none()
                 && assessment_binding.is_none()
+                && assessment_subject.is_none()
                 && capability_type.is_none()
                 && approval_operation.is_none()
                 && approval_capability_identity.is_none()
@@ -202,6 +223,7 @@ fn decode_kind(
                 && parameter_type.is_none()
                 && result_type.is_none()
                 && assessment_binding.is_none()
+                && assessment_subject.is_none()
                 && condition_binding.is_none()
                 && !requires_workflow_authority =>
         {
@@ -219,6 +241,7 @@ fn decode_kind(
                 &parameter_type,
                 &result_type,
                 &assessment_binding,
+                &assessment_subject,
                 &condition_binding,
                 &capability_type,
                 &approval_operation,
@@ -237,6 +260,7 @@ fn decode_kind(
                 &parameter_type,
                 &result_type,
                 &assessment_binding,
+                &assessment_subject,
                 &condition_binding,
                 &capability_type,
                 &approval_operation,
@@ -257,6 +281,7 @@ fn empty_node_fields(
     parameter_type: &Option<String>,
     result_type: &Option<String>,
     assessment_binding: &Option<String>,
+    assessment_subject: &Option<String>,
     condition_binding: &Option<String>,
     capability_type: &Option<String>,
     approval_operation: &Option<String>,
@@ -268,6 +293,7 @@ fn empty_node_fields(
         && parameter_type.is_none()
         && result_type.is_none()
         && assessment_binding.is_none()
+        && assessment_subject.is_none()
         && condition_binding.is_none()
         && capability_type.is_none()
         && approval_operation.is_none()
@@ -281,6 +307,7 @@ fn empty_optional_node_fields(
     parameter_type: &Option<String>,
     result_type: &Option<String>,
     assessment_binding: &Option<String>,
+    assessment_subject: &Option<String>,
     condition_binding: &Option<String>,
     capability_type: &Option<String>,
     approval_operation: &Option<String>,
@@ -291,6 +318,7 @@ fn empty_optional_node_fields(
         && parameter_type.is_none()
         && result_type.is_none()
         && assessment_binding.is_none()
+        && assessment_subject.is_none()
         && condition_binding.is_none()
         && capability_type.is_none()
         && approval_operation.is_none()
@@ -304,3 +332,7 @@ fn invalid_node() -> WorthQueryApplicationAttemptDenial {
         "published workflow node shape is invalid",
     )
 }
+
+#[cfg(test)]
+#[path = "node/tests.rs"]
+mod tests;

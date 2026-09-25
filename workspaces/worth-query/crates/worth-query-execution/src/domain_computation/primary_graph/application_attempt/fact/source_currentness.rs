@@ -47,6 +47,13 @@ impl WorthQueryApplicationObservedFact {
                     == Some(*native_revision),
                 1,
             )),
+            Self::SourceFieldRevision { entity_id, locator, native_revision } => Ok((
+                native_revision.is_some_and(|expected| {
+                    runtime.read_truth().project_snapshot(snapshot)
+                        .and_then(|view| view.entity_field_revision(*entity_id, locator)) == Some(expected)
+                }),
+                1,
+            )),
             Self::SourceAdjacencyRevision {
                 relation_kind,
                 anchor,
@@ -69,21 +76,11 @@ impl WorthQueryApplicationObservedFact {
                     .map_err(|_| WorthQuerySourceCurrentnessFailure::Unavailable)?;
                 Ok((comparison.revision() == *native_revision, comparison.work_units()))
             }
-            Self::Field {
-                entity_id,
-                kind,
-                locator,
-                value,
-            } => Ok((
-                super::super::observation::observe_field_value(
-                    runtime, snapshot, *entity_id, *kind, locator,
-                )
-                .as_ref()
-                    == Some(value),
-                1,
-            )),
-            Self::Entity { .. } | Self::AbsentField { .. } => {
-                Ok((self.remains_equal_in(runtime, snapshot), 1))
+            Self::Entity { .. } => Ok((self.remains_equal_in(runtime, snapshot), 1)),
+            // Decision facts are value observations, not native revisions.
+            // Output lineage must first rebase them at the committed snapshot.
+            Self::Field { .. } | Self::AbsentField { .. } => {
+                Err(WorthQuerySourceCurrentnessFailure::Unavailable)
             }
             _ => Err(WorthQuerySourceCurrentnessFailure::Unavailable),
         }

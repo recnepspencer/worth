@@ -8,6 +8,7 @@ impl RuntimeBridge {
         prior: &AdmittedBridgeAsyncRequestIdentity,
         current_truth_view_basis: BridgeAsyncRequestTruthViewBasis,
     ) -> Result<BridgeAsyncRevalidationLineage, BridgeAsyncForwardCausalityRejection> {
+        crate::source::validate_lineage_runtime(self.signal_runtime_key, prior)?;
         let report = crate::source::with_async_request_signal_runtime(
             self.signal_runtime_key,
             |signal_runtime| {
@@ -53,6 +54,7 @@ impl RuntimeBridge {
         &self,
         request: BridgeAsyncRetryLineageRequest,
     ) -> Result<BridgeAsyncRetryLineage, BridgeAsyncForwardCausalityRejection> {
+        request.validate_runtime(self.signal_runtime_key)?;
         crate::source::with_async_request_signal_runtime(self.signal_runtime_key, |signal_runtime| {
             crate::source::admit_retry_lineage(signal_runtime, request)
         })
@@ -75,6 +77,7 @@ impl RuntimeBridge {
         &self,
         request: BridgeAsyncRetryLineageRequest,
     ) -> Result<BridgeAsyncRetryLineage, BridgeAsyncForwardCausalityRejection> {
+        request.validate_runtime(self.signal_runtime_key)?;
         crate::source::with_async_request_signal_runtime(self.signal_runtime_key, |signal_runtime| {
             crate::source::admit_retry_lineage(signal_runtime, request)
         })
@@ -97,6 +100,7 @@ impl RuntimeBridge {
         &self,
         request: BridgeAsyncRevalidationLineageRequest,
     ) -> Result<BridgeAsyncRevalidationLineage, BridgeAsyncForwardCausalityRejection> {
+        crate::source::validate_lineage_runtime(self.signal_runtime_key, &request.prior)?;
         crate::source::with_async_request_signal_runtime(self.signal_runtime_key, |signal_runtime| {
             crate::source::admit_revalidation_lineage(signal_runtime, request)
         })

@@ -46,8 +46,15 @@ fn unshared_state(
 
 pub(super) fn rebuild_runtime_from_plan(
     admitted: super::recovery::admission::AdmittedRecoveryPlan,
-) -> Result<(RelationalRuntime, crate::durability::data::RecoveryPlan), DurabilityError> {
-    let plan = admitted.into_plan();
+) -> Result<
+    (
+        RelationalRuntime,
+        crate::durability::data::RecoveryPlan,
+        Option<crate::durability::data::CheckpointRestoreWork>,
+    ),
+    DurabilityError,
+> {
+    let mut plan = admitted.into_plan();
     let tail_envelopes = plan.tail_envelopes_in_stream_order();
     validate_tail_lineage_allocator_capacity(tail_envelopes.iter().copied())?;
     validate_recovered_lineage_artifacts(plan.checkpoint.as_ref(), tail_envelopes.iter().copied())?;
@@ -61,8 +68,11 @@ pub(super) fn rebuild_runtime_from_plan(
     unshared_state(&mut restored)?.commit_strategies.executors =
         plan.commit_strategy_executors.clone();
 
-    if let Some(checkpoint) = &plan.checkpoint {
-        restore_checkpoint_state(&mut restored, checkpoint)?;
+    let mut checkpoint_work = None;
+    if let Some(checkpoint) = plan.checkpoint.take() {
+        let mut work = crate::durability::data::CheckpointRestoreWork::default();
+        restore_checkpoint_state(&mut restored, checkpoint, &mut work)?;
+        checkpoint_work = Some(work);
     }
     // Tail replay performs ordinary compare-and-publish cutovers. Seed its
     // fixed-depth current-head index from the exact restored branch cells
@@ -103,8 +113,8 @@ pub(super) fn rebuild_runtime_from_plan(
     restored
         .record_identity
         .release_unconsumed_restored_reservations();
-    let mut recovered_canonical_commits = plan
-        .checkpoint
+    let recovered_checkpoint = restored.durability.latest_checkpoint();
+    let mut recovered_canonical_commits = recovered_checkpoint
         .iter()
         .flat_map(|checkpoint| checkpoint.envelopes.iter())
         .cloned()
@@ -141,5 +151,5 @@ pub(super) fn rebuild_runtime_from_plan(
 
     finalize_restored_runtime(&mut restored, original_durability_mode)?;
     recovered_roots.finish();
-    Ok((restored, plan))
+    Ok((restored, plan, checkpoint_work))
 }

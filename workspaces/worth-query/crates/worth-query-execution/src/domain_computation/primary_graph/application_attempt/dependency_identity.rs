@@ -4,13 +4,14 @@ mod canonical_encoding;
 mod output_postcondition;
 
 use canonical_encoding::{dependency_identity, lineage_identity};
-use output_postcondition::{is_output_currentness_fact, normalized_output_facts};
+use output_postcondition::{complete_output_currentness_facts, normalized_output_facts};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum WorthQueryProducerIdentityDenial {
     DependencyByteCapacityUnsupported,
     DependencyCanonicalizationRejected,
     MissingSourcePartition,
+    LineageLookupBudgetExceeded,
     LineageCanonicalizationRejected,
 }
 
@@ -26,6 +27,7 @@ impl<Schema, Operation, Input, Scope>
         >,
         declared_key: [u8; 32],
         successor_of: Option<[u8; 32]>,
+        maximum_lineage_work: usize,
     ) -> Result<([u8; 32], [u8; 32]), WorthQueryProducerIdentityDenial>
     where
         OutputBinding: 'static,
@@ -43,17 +45,11 @@ impl<Schema, Operation, Input, Scope>
                 .map_err(|_| {
                     WorthQueryProducerIdentityDenial::DependencyCanonicalizationRejected
                 })?;
-        self.output_currentness_facts = Some(
-            dependency_facts
-                .into_iter()
-                .filter(is_output_currentness_fact)
-                .collect::<Vec<_>>()
-                .into(),
-        );
+        self.output_currentness_facts = Some(complete_output_currentness_facts(dependency_facts));
         self.read_set
             .admission
             .retain_execution_canonical_work(work);
-        let head = runtime
+        let (head, _) = runtime
             .primary_provider
             .graph
             .output_lineage
@@ -66,7 +62,9 @@ impl<Schema, Operation, Input, Scope>
                     .admission
                     .source_partition_identity()
                     .ok_or(WorthQueryProducerIdentityDenial::MissingSourcePartition)?,
-            );
+                maximum_lineage_work,
+            )
+            .map_err(|()| WorthQueryProducerIdentityDenial::LineageLookupBudgetExceeded)?;
         let force_successor = successor_of.is_some_and(|stale_key| {
             head.is_some_and(|head| head.idempotency_key_identity == stale_key)
         });

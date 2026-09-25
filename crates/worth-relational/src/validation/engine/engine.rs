@@ -34,10 +34,11 @@ impl<'runtime> InvariantEngine<'runtime> {
     where
         'runtime: 'state,
     {
+        let runtime = self.runtime.with_candidate_input_plan(&request);
         let mut work_plan =
             crate::authority::commit::preparation::planning::work_plan::empty_preparation_work_plan(
             );
-        work_plan.invariant_execution = Some(plan_invariant_execution(&self.runtime, &request));
+        work_plan.invariant_execution = Some(plan_invariant_execution(&runtime, &request));
         self.record_preparation_plan(&work_plan);
         let planned = work_plan
             .invariant_execution
@@ -48,20 +49,25 @@ impl<'runtime> InvariantEngine<'runtime> {
                 planned
                     .packets
                     .iter()
-                    .map(|packet| evaluate_invariant_packet(&self.runtime, packet))
+                    .map(|packet| evaluate_invariant_packet(&runtime, packet))
                     .collect()
             }
             crate::authority::commit::preparation::planning::strategy::PreparationStrategySelection::StagedParallel => {
                 planned
                     .packets
                     .par_iter()
-                    .map(|packet| evaluate_invariant_packet(&self.runtime, packet))
+                    .map(|packet| evaluate_invariant_packet(&runtime, packet))
                     .collect()
             }
         };
         let proof_boundary = planned_proof_boundary_summary(planned);
         let (result, _, reducer_conflicts) =
             reduce_invariant_execution(&request, planned.strategy, proof_boundary, envelopes);
+        if let Some(inputs) = runtime.shared_candidate_inputs() {
+            runtime
+                .performance_access()
+                .count_custom_invariant_candidate_inputs(inputs.counters());
+        }
         if !reducer_conflicts.is_empty() {
             self.runtime
                 .performance_access()

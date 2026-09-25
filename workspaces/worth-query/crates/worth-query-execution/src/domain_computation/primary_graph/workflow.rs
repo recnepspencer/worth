@@ -22,3 +22,4 @@ pub use definition::{
     WorkflowDefinitionBindingDenial, WorkflowDefinitionPreparationDenial,
     WorthQueryWorkflowDefinitionPublicationAdapter,
 };
+pub use instance::WorthQueryWorkflowInstanceProgressCounters;

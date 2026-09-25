@@ -53,7 +53,7 @@ where
             assessment_identity_locator: layout.assessment_evidence.identity.clone(),
             instance: instance.entity_id(),
             required,
-            replays: Box::default(),
+            replays: Default::default(),
         })
     }
 }

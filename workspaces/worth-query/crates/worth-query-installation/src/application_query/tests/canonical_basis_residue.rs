@@ -233,6 +233,33 @@ fn assert_warm_path_has_no_hashing(path: &Path) {
     }
     let source = std::fs::read_to_string(path)
         .unwrap_or_else(|error| panic!("failed to read {}: {error}", path.display()));
+    if path.ends_with(Path::new(
+        "application_query/observed_source/source_identity.rs",
+    )) {
+        // Dynamic row and result-set witnesses require a runtime evidence digest;
+        // this one named owner must not become a semantic contract hash seam.
+        for domain in [
+            "worth-query:observed-source:v4",
+            "worth-query:observed-result-set:v1",
+            "worth-query:observed-source-partition:v1",
+        ] {
+            assert!(
+                source.contains(domain),
+                "missing runtime evidence domain {domain}"
+            );
+        }
+        assert!(!source.contains("prepare_canonical_basis_sequence"));
+        return;
+    }
+    if path.ends_with(Path::new(
+        "application_query/observed_source/root_selection.rs",
+    )) {
+        // Native selection facts are observation-time evidence, not installed
+        // semantic identities; keep this exception tied to its exact domain.
+        assert!(source.contains("worth-query:root-selection-source:v1"));
+        assert!(!source.contains("prepare_canonical_basis_sequence"));
+        return;
+    }
     for forbidden in [
         "hash_parts",
         "digest_hash_parts",

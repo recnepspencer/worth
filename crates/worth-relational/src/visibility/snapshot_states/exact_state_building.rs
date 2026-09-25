@@ -27,7 +27,7 @@ pub(crate) fn build_visibility_state(
         read_policy,
     };
     let entities = exact_entity_slots(root.as_ref());
-    let relations = exact_relation_slots(runtime, root.as_ref());
+    let relations = exact_relation_slots(root.as_ref());
     assemble_snapshot_state(
         handle,
         SnapshotStateBasis::Exact(basis),
@@ -50,10 +50,7 @@ fn exact_entity_slots(
         .collect()
 }
 
-fn exact_relation_slots(
-    runtime: &RelationalRuntime,
-    root: &crate::branch::RelationalBranchRoot,
-) -> Vec<SelectedRelationSlots> {
+fn exact_relation_slots(root: &crate::branch::RelationalBranchRoot) -> Vec<SelectedRelationSlots> {
     root.partition_ids()
         .into_iter()
         .filter_map(|partition_id| {
@@ -62,36 +59,13 @@ fn exact_relation_slots(
                 .relation_arena
                 .live_bitset
                 .clone();
-            let retained = retained_exact_relations(runtime, root, partition_id, &visible);
             Some(SelectedRelationSlots {
                 partition_id,
                 visible,
-                retained,
+                // Exact reads obtain lifecycle from this same immutable root.
+                // Only historical reconstruction needs a captured override.
+                retained: DenseSlotBitSet::with_capacity(0),
             })
         })
         .collect()
-}
-
-fn retained_exact_relations(
-    runtime: &RelationalRuntime,
-    root: &crate::branch::RelationalBranchRoot,
-    partition_id: crate::identity::data::PartitionId,
-    visible: &DenseSlotBitSet,
-) -> DenseSlotBitSet {
-    let reader = runtime.read_truth();
-    let mut retained = DenseSlotBitSet::with_capacity(visible.represented_slot_capacity());
-    for slot in visible.iter_set_slots() {
-        let relation_id = crate::identity::data::RelationId::new(partition_id, slot as u64, 0);
-        let record = reader.authoritative_relation_record_for_id_from_exact_state(
-            root,
-            root.schema_authority().registry(),
-            relation_id,
-        );
-        if record.is_some_and(|record| {
-            record.lifecycle == crate::storage::data::RecordLifecycleState::RetainedDanglingForAudit
-        }) {
-            retained.set(slot, true);
-        }
-    }
-    retained
 }

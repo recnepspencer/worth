@@ -13,9 +13,9 @@ use super::packets::InvariantWorkPacket;
 mod registered_rule;
 mod verdict_reduction;
 
-pub(crate) fn evaluate_invariant_packet(
-    runtime: &InvariantRuntimeView,
-    packet: &InvariantWorkPacket<'_>,
+pub(crate) fn evaluate_invariant_packet<'state>(
+    runtime: &InvariantRuntimeView<'state>,
+    packet: &InvariantWorkPacket<'state>,
 ) -> InvariantWorkerEnvelope {
     let preparation_failures = invariant_packet_failures(packet);
     debug_assert!(

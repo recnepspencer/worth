@@ -26,11 +26,18 @@ pub(crate) fn application_checkpoint_restores_fresh_editable_authority() {
         },
     )
     .expect("the checkpoint source application installs");
+    assert_eq!(application.checkpoint_restore_work(), None);
     let original_world = application.current_world();
     assert_live_relation_is_readable(&application, "source");
-    let checkpoint = application
-        .capture_application_checkpoint()
+    let (checkpoint, sections) = application
+        .capture_application_checkpoint_with_sections()
         .expect("the current committed world captures as opaque bytes");
+    assert_eq!(sections.total_bytes(), checkpoint.bytes().len());
+    assert!(sections.native_bytes() > 0);
+    assert_eq!(
+        sections.accepted_output_count() == 0,
+        sections.accepted_output_bytes() == 0
+    );
     drop(application);
 
     let restored_contacts = ContactCounters::default();
@@ -53,6 +60,16 @@ pub(crate) fn application_checkpoint_restores_fresh_editable_authority() {
         checkpoint,
     )
     .expect("the Query-issued application checkpoint restores");
+    let restore_work = restored
+        .checkpoint_restore_work()
+        .expect("native readmission reports its actual restore work");
+    assert_eq!(
+        restore_work.native_bytes_read,
+        Some(sections.native_bytes())
+    );
+    assert!(restore_work.native_envelopes_readmitted.unwrap_or_default() > 0);
+    assert!(restore_work.root_images_verified > 0);
+    assert!(restore_work.branch_cells_readmitted > 0);
     assert_eq!(
         restored_execution_probe.snapshot(),
         (0, 0, 0, 0),

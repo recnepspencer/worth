@@ -35,6 +35,7 @@ pub(super) fn lower_assessment_evidence(
         subject_slot: planned_field_locator(EVIDENCE_ASPECT, "subject-slot")?,
         subject_generation: planned_field_locator(EVIDENCE_ASPECT, "subject-generation")?,
         proposal_identity: planned_field_locator(EVIDENCE_ASPECT, "proposal-identity")?,
+        coverage_identity: planned_field_locator(EVIDENCE_ASPECT, "coverage-identity")?,
         source_identity: planned_field_locator(EVIDENCE_ASPECT, "source-identity")?,
         passing: planned_field_locator(EVIDENCE_ASPECT, "passing")?,
         publication_identity: planned_field_locator(EVIDENCE_ASPECT, "publication-identity")?,
@@ -54,6 +55,7 @@ pub(super) fn lower_assessment_evidence(
         .required("subject-slot", ScalarAspectType::UInt64)
         .required("subject-generation", ScalarAspectType::UInt64)
         .required("proposal-identity", ScalarAspectType::String)
+        .required("coverage-identity", ScalarAspectType::String)
         .required("source-identity", ScalarAspectType::String)
         .required("passing", ScalarAspectType::Bool)
         .required("publication-identity", ScalarAspectType::String)

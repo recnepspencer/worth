@@ -294,7 +294,8 @@ fn declare_planar_producers<Schema: TopologySchemaBinding>(
     contracts
         .producer::<InitialPlanarProducer<Schema>>()?
         .producer::<worth_query_topology_entry::AlternatePlanarOutputProducer<Schema>>()?
-        .producer::<worth_query_topology_entry::PlanarFinalOutputProducer<Schema>>()
+        .producer::<worth_query_topology_entry::PlanarFinalOutputProducer<Schema>>()?
+        .producer::<worth_query_topology_entry::PlanarFinalPreserveProducer<Schema>>()
 }
 
 fn install_topology_behavior<Schema: TopologySchemaBinding>(
@@ -312,6 +313,9 @@ fn install_topology_behavior<Schema: TopologySchemaBinding>(
     setup.handler::<worth_query_topology_entry::FinalPlanarMutationBinding<Schema>, _>(
         worth_query_topology_entry::FinalPlanarMutationHandler,
     )?;
+    setup.handler::<worth_query_topology_entry::FinalPlanarPreserveBinding<Schema>, _>(
+        worth_query_topology_entry::FinalPlanarPreserveHandler,
+    )?;
     setup.handler::<worth_query_topology_entry::AlternatePlanarOutputBinding<Schema>, _>(
         worth_query_topology_entry::AlternatePlanarOutputHandler,
     )?;
@@ -328,6 +332,9 @@ fn install_topology_behavior<Schema: TopologySchemaBinding>(
         worth_query_topology_entry::AlternatePlanarOutputProvider,
     )?;
     setup.producer::<worth_query_topology_entry::PlanarFinalOutputProducer<Schema>>(
+        worth_query_topology_entry::PlanarFinalOutputProvider,
+    )?;
+    setup.producer::<worth_query_topology_entry::PlanarFinalPreserveProducer<Schema>>(
         worth_query_topology_entry::PlanarFinalOutputProvider,
     )
 }

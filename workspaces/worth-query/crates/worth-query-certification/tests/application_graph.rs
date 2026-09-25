@@ -11,9 +11,25 @@ mod workflow;
 mod workflow_approval;
 #[path = "application_graph/workflow_assessment.rs"]
 mod workflow_assessment;
+#[path = "application_graph/workflow_compilation.rs"]
+mod workflow_compilation;
+#[path = "application_graph/workflow_component_scale.rs"]
+mod workflow_component_scale;
 #[path = "application_graph/workflow_condition.rs"]
 mod workflow_condition;
+#[path = "application_graph/workflow_geometry_scale.rs"]
+mod workflow_geometry_scale;
+#[path = "application_graph/workflow_history_scale.rs"]
+mod workflow_history_scale;
+#[path = "application_graph/workflow_ordinary.rs"]
+mod workflow_ordinary;
+#[path = "application_graph/workflow_ordinary_component.rs"]
+mod workflow_ordinary_component;
+#[path = "application_graph/workflow_progress_retention.rs"]
+mod workflow_progress_retention;
 #[path = "application_graph/workflow_proposal.rs"]
 mod workflow_proposal;
+#[path = "application_graph/workflow_receipt_lifecycle.rs"]
+mod workflow_receipt_lifecycle;
 #[path = "application_graph/workflow_retry.rs"]
 mod workflow_retry;

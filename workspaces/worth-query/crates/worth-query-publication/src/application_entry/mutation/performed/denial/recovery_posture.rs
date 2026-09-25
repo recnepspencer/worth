@@ -46,6 +46,7 @@ fn demand_posture(
         Denial::Demand(denial) => output_posture(denial),
         Denial::MissingSource
         | Denial::FreshRequestMismatch
+        | Denial::ProgramOutputUndeclared
         | Denial::Superseded
         | Denial::Closed => WorthQueryRequiredOutputRecoveryPosture::Terminal,
     }

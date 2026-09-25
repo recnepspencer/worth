@@ -1,4 +1,7 @@
-use worth_foundational::facade::{AspectKey, AspectValue, InternedString};
+use worth_foundational::facade::{
+    AspectFieldLocator, AspectKey, AspectValue, CanonicalFieldPath, FieldKey, InternedString,
+    LocatorAuthority,
+};
 use worth_relational::facade::identity::{EntityId, KindId, PartitionId, VersionId};
 
 use super::{denial, observed_text, observed_u64};
@@ -98,6 +101,22 @@ fn observe_dependency(
         &layout.evidence_dependency.aspect,
         facts,
     )?;
+    let field = optional_text(
+        runtime,
+        snapshot,
+        dependency,
+        kind,
+        &layout.evidence_dependency.field,
+        facts,
+    )?;
+    let field_presence = optional_text(
+        runtime,
+        snapshot,
+        dependency,
+        kind,
+        &layout.evidence_dependency.field_presence,
+        facts,
+    )?;
     let relation_kind = optional_u64(
         runtime,
         snapshot,
@@ -133,6 +152,8 @@ fn observe_dependency(
     match WorkflowEvidenceDependencyKind::decode(&fact_kind) {
         Some(WorkflowEvidenceDependencyKind::Entity)
             if aspect.is_none()
+                && field.is_none()
+                && field_presence.is_none()
                 && relation_kind.is_none()
                 && direction.is_none()
                 && native_revision.is_none()
@@ -141,7 +162,9 @@ fn observe_dependency(
             Ok(WorthQueryApplicationObservedFact::SourceEntity { entity_id: entity })
         }
         Some(WorkflowEvidenceDependencyKind::AspectRevision)
-            if relation_kind.is_none()
+            if field.is_none()
+                && field_presence.is_none()
+                && relation_kind.is_none()
                 && direction.is_none()
                 && comparison_work_limit.is_none() =>
         {
@@ -154,7 +177,16 @@ fn observe_dependency(
                 native_revision,
             })
         }
-        Some(WorkflowEvidenceDependencyKind::AdjacencyRevision) if aspect.is_none() => {
+        Some(WorkflowEvidenceDependencyKind::FieldRevision)
+            if relation_kind.is_none()
+                && direction.is_none()
+                && comparison_work_limit.is_none() =>
+        {
+            decode_field_revision_fact(entity, aspect, field, native_revision, field_presence)
+        }
+        Some(WorkflowEvidenceDependencyKind::AdjacencyRevision)
+            if aspect.is_none() && field.is_none() && field_presence.is_none() =>
+        {
             let relation_kind = relation_kind
                 .and_then(|value| u32::try_from(value).ok())
                 .map(KindId::new)
@@ -177,6 +209,50 @@ fn observe_dependency(
         }
         _ => Err(denial("workflow evidence dependency shape is invalid")),
     }
+}
+
+pub(in crate::domain_computation::primary_graph) fn decode_field_revision_fact(
+    entity: EntityId,
+    aspect: Option<String>,
+    field: Option<String>,
+    native_revision: Option<u64>,
+    field_presence: Option<String>,
+) -> Result<WorthQueryApplicationObservedFact, WorthQueryApplicationAttemptDenial> {
+    let aspect = aspect
+        .and_then(AspectKey::new)
+        .ok_or_else(|| denial("workflow evidence dependency field aspect is invalid"))?;
+    let field = field
+        .and_then(FieldKey::new)
+        .ok_or_else(|| denial("workflow evidence dependency field key is invalid"))?;
+    let native_revision = match (native_revision, field_presence.as_deref()) {
+        (Some(version), Some("present")) => Some(
+            worth_relational::facade::runtime::RelationalFieldRevision::new(
+                VersionId(version),
+                worth_relational::facade::runtime::RelationalFieldPresence::Present,
+            ),
+        ),
+        (Some(version), Some("absent")) => Some(
+            worth_relational::facade::runtime::RelationalFieldRevision::new(
+                VersionId(version),
+                worth_relational::facade::runtime::RelationalFieldPresence::Absent,
+            ),
+        ),
+        (None, None) => None,
+        _ => {
+            return Err(denial(
+                "workflow evidence dependency field revision is invalid",
+            ))
+        }
+    };
+    Ok(WorthQueryApplicationObservedFact::SourceFieldRevision {
+        entity_id: entity,
+        locator: AspectFieldLocator::new(
+            LocatorAuthority::Authoritative,
+            aspect,
+            CanonicalFieldPath::single(field),
+        ),
+        native_revision,
+    })
 }
 
 fn optional_text(

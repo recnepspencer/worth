@@ -23,7 +23,7 @@ where
         WorthQueryApplicationOutputDemandProgress<SourceQuery<Schema, Demand>>,
         WorthQueryApplicationOutputDemandDenial,
     > {
-        for _ in 0..self.controls.maximum_work().get() {
+        for _ in 0..self.controls.maximum_settlement_attempts().get() {
             let progress = self.advance(fresh_request)?;
             if matches!(
                 progress,
@@ -54,16 +54,27 @@ where
             .map_err(WorthQueryApplicationOutputDemandDenial::Source)?
             .into_output_demand_source();
         let _controls = self.controls;
-        let progress = self
-            .application
-            .advance_output_demand(
+        let progress = if let Some((identity, revision)) = &self.selected_program {
+            self.application.advance_selected_program_output_demand(
+                &worth_query_execution::publication_boundary::program_publication_access(),
+                &mut self.admitted,
+                fresh_request.principal,
+                fresh_request.scope,
+                fresh_request.branch.clone(),
+                disclosure,
+                identity.clone(),
+                revision.clone(),
+            )
+        } else {
+            self.application.advance_output_demand(
                 &mut self.admitted,
                 fresh_request.principal,
                 fresh_request.scope,
                 fresh_request.branch.clone(),
                 disclosure,
             )
-            .map_err(|denial| {
+        }
+        .map_err(|denial| {
                 if denial.kind()
                     == worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::Superseded
                 {

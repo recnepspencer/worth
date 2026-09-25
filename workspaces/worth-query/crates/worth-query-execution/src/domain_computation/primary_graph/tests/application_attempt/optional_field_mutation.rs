@@ -116,6 +116,12 @@ fn ordinary_and_optional_writes_to_one_entity_commit_as_one_native_patch() {
     effects
         .write_optional_field(&account, AccountScore::reference(), Some(0))
         .unwrap();
+    effects
+        .write_field(&account, AccountNote::reference(), "final".to_owned())
+        .unwrap();
+    effects
+        .write_optional_field(&account, AccountScore::reference(), Some(5))
+        .unwrap();
 
     let outcome = world
         .application
@@ -125,8 +131,8 @@ fn ordinary_and_optional_writes_to_one_entity_commit_as_one_native_patch() {
         WorthQueryApplicationCommitOutcome::Committed(_)
     ));
     let result = query(&world, &principal, "account-2", &request);
-    assert_eq!(result.note(), Some("ordinary"));
-    assert_eq!(result.score(), Some(0));
+    assert_eq!(result.note(), Some("final"));
+    assert_eq!(result.score(), Some(5));
 }
 
 #[test]

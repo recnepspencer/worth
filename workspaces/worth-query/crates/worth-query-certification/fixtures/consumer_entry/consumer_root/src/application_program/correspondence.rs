@@ -12,8 +12,11 @@ pub(crate) struct OptionalAdjustmentRow {
 
 pub(crate) struct OptionalAdjustmentCorrespondence;
 
-impl ApplicationRepeatedOptionalMemberCorrespondence<ConsumerSchema, PlanarEditBinding<ConsumerSchema>>
-    for OptionalAdjustmentCorrespondence
+impl
+    ApplicationRepeatedOptionalMemberCorrespondence<
+        ConsumerSchema,
+        PlanarEditBinding<ConsumerSchema>,
+    > for OptionalAdjustmentCorrespondence
 {
     type Row = OptionalAdjustmentRow;
     type Target = String;

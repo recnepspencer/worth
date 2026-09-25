@@ -1,6 +1,7 @@
 mod bounded_entity_field_lookup;
 mod bounded_related_entity_ordered_lookup;
 mod bounded_relation_join_lookup;
+mod definition_lookup;
 mod execution;
 mod generation_selection;
 mod routing;
@@ -19,6 +20,7 @@ use self::routing::{admissible_access_path, should_verify_sampled_parity};
 #[cfg(test)]
 pub(crate) use self::scratch::index_query_scratch_hint_exists;
 pub(crate) use self::scratch::purge_index_query_scratch_hints;
+pub use definition_lookup::DerivedIndexDefinitionLookup;
 
 pub struct IndexAccess<'runtime> {
     runtime: &'runtime RelationalRuntime,
@@ -35,6 +37,12 @@ impl<'runtime> IndexAccess<'runtime> {
         Self { runtime }
     }
 
+    pub fn generation_selection_counters(
+        &self,
+    ) -> crate::indexes::data::DerivedIndexSelectionCounters {
+        self.runtime.indexes.generation_selection_counters()
+    }
+
     pub fn latest_generation(
         &self,
         index_id: DerivedIndexId,
@@ -43,12 +51,7 @@ impl<'runtime> IndexAccess<'runtime> {
         let definition = self.runtime.indexes.definition(index_id)?;
         self.runtime
             .indexes
-            .generations_for(index_id)
-            .into_iter()
-            .rev()
-            .find(|generation| {
-                !definition.branch_scoped || generation.applicability.branch_id == *branch_id
-            })
+            .latest_generation(index_id, definition.branch_scoped.then_some(branch_id))
     }
 
     /// Finds the installed definition with the same semantic identity.
@@ -72,24 +75,24 @@ impl<'runtime> IndexAccess<'runtime> {
             .map(|definition| definition.as_ref().clone())
     }
 
+    /// Detaches one exact-definition inventory for callers binding several
+    /// restored indexes. Each lookup preserves the owner's numeric identity.
+    pub fn definition_lookup_snapshot(&self) -> DerivedIndexDefinitionLookup {
+        DerivedIndexDefinitionLookup::new(self.runtime.indexes.definitions())
+    }
+
     pub fn published_generation_for_commit(
         &self,
         index_id: DerivedIndexId,
         commit: &crate::history::data::RelationalCommitReceipt,
     ) -> Option<std::sync::Arc<DerivedIndexGeneration>> {
         let definition = self.runtime.indexes.definition(index_id)?;
-        self.runtime
-            .indexes
-            .generations_for(index_id)
-            .into_iter()
-            .rev()
-            .find(|generation| {
-                generation.status == crate::indexes::data::DerivedIndexPublicationStatus::Published
-                    && generation.source_commit_id == commit.commit_id
-                    && generation.applicability.version_id == commit.version_id
-                    && (!definition.branch_scoped
-                        || generation.applicability.branch_id == commit.branch_id)
-            })
+        self.runtime.indexes.published_generation_for_commit(
+            index_id,
+            definition.branch_scoped.then_some(&commit.branch_id),
+            commit.commit_id,
+            commit.version_id,
+        )
     }
 
     pub fn generations_for_version(
@@ -211,6 +214,7 @@ impl<'runtime> IndexAccess<'runtime> {
             .collect()
     }
 
+    #[cfg(test)]
     pub(crate) fn generations_snapshot(&self) -> Vec<DerivedIndexGeneration> {
         self.runtime
             .indexes

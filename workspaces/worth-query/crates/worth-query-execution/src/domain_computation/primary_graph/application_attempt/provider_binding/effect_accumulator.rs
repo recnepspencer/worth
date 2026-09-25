@@ -4,7 +4,8 @@ use std::sync::Arc;
 use worth_relational::facade::transactions::{EntityReference, MutationIntent, WorkerIntentBatch};
 
 use super::effect_lowering::{
-    created_entity_symbols, lower_provider_effect, WorthQueryLoweredProviderEffect,
+    created_entity_symbols, lower_provider_effect, ObservedFactIndex,
+    WorthQueryLoweredProviderEffect,
 };
 use super::{
     retained_bytes_denial, WorthQueryAdmittedApplicationEmissionBatch,
@@ -14,15 +15,19 @@ use super::{
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationEmission;
 use crate::domain_computation::WorthQueryProvisionalEffectStep;
 
+mod expected_steps;
+pub(in crate::domain_computation::primary_graph) use expected_steps::WorthQueryExpectedEffectStepPreparationWork;
+use expected_steps::WorthQueryExpectedEffectSteps;
+
 pub(super) struct WorthQueryProviderEffectAccumulator<'facts> {
-    facts: &'facts [WorthQueryApplicationObservedFact],
+    facts: ObservedFactIndex<'facts>,
     mutation_partition: worth_relational::facade::identity::PartitionId,
     symbols: BTreeMap<EntityReference, Arc<str>>,
     lowered: Vec<WorthQueryLoweredProviderEffect>,
 }
 
 pub(super) struct WorthQueryRegisteredProviderEffects {
-    lowered: Vec<WorthQueryLoweredProviderEffect>,
+    expected_steps: WorthQueryExpectedEffectSteps,
     batch: WorkerIntentBatch,
     emissions: WorthQueryAdmittedApplicationEmissionBatch,
     output_correspondence: super::super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
@@ -45,7 +50,7 @@ impl<'facts> WorthQueryProviderEffectAccumulator<'facts> {
             })
             .unwrap_or(mutation_partition);
         Self {
-            facts,
+            facts: ObservedFactIndex::new(facts),
             mutation_partition,
             symbols: created_entity_symbols(effects, mutation_partition),
             lowered: Vec::with_capacity(effects.len()),
@@ -57,7 +62,7 @@ impl<'facts> WorthQueryProviderEffectAccumulator<'facts> {
         effect: WorthQueryApplicationRealizedEffect,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
         let lowered =
-            lower_provider_effect(self.facts, &self.symbols, self.mutation_partition, effect)?;
+            lower_provider_effect(&self.facts, &self.symbols, self.mutation_partition, effect)?;
         self.lowered.push(lowered);
         Ok(())
     }
@@ -81,8 +86,9 @@ impl<'facts> WorthQueryProviderEffectAccumulator<'facts> {
         if emissions.retained_bytes() != expected_emission_retained_bytes {
             return Err(retained_bytes_denial());
         }
+        let expected_steps = WorthQueryExpectedEffectSteps::from_lowered(self.lowered)?;
         Ok(WorthQueryRegisteredProviderEffects {
-            lowered: self.lowered,
+            expected_steps,
             batch,
             emissions,
             output_correspondence: output_correspondence
@@ -93,22 +99,18 @@ impl<'facts> WorthQueryProviderEffectAccumulator<'facts> {
 }
 
 impl WorthQueryRegisteredProviderEffects {
-    pub(super) fn expected_steps(&self) -> Vec<WorthQueryProvisionalEffectStep> {
-        let mut unique = Vec::new();
-        for step in self
-            .lowered
-            .iter()
-            .filter_map(|effect| match effect {
-                WorthQueryLoweredProviderEffect::Mutation { steps, .. } => Some(steps.as_slice()),
-                WorthQueryLoweredProviderEffect::Emission(_) => None,
-            })
-            .flatten()
-        {
-            if !unique.contains(step) {
-                unique.push(step.clone());
-            }
-        }
-        unique
+    pub(super) fn expected_steps(&self) -> &[WorthQueryProvisionalEffectStep] {
+        self.expected_steps.steps()
+    }
+
+    pub(super) fn shared_expected_steps(&self) -> Arc<[WorthQueryProvisionalEffectStep]> {
+        self.expected_steps.shared_steps()
+    }
+
+    pub(super) const fn expected_step_preparation_work(
+        &self,
+    ) -> WorthQueryExpectedEffectStepPreparationWork {
+        self.expected_steps.preparation_work()
     }
 
     pub(super) const fn batch(&self) -> &WorkerIntentBatch {
@@ -167,7 +169,7 @@ impl WorthQueryRegisteredProviderEffects {
             provider.bind_application_dispatch_outbox(batch, dispatch_basis, mutation_partition)?;
         Ok((
             Self {
-                lowered: self.lowered,
+                expected_steps: self.expected_steps,
                 batch,
                 emissions: self.emissions,
                 output_correspondence: self.output_correspondence,

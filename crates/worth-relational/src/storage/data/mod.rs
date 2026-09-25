@@ -10,10 +10,12 @@ use crate::snapshots::data::SnapshotHandle;
 use crate::transactions::data::RecordRef;
 
 mod authoritative_field_comparison_key;
+mod field_revision;
 
 pub use authoritative_field_comparison_key::{
     authoritative_aspect_value_field_comparison_key, AuthoritativeFieldComparisonKey,
 };
+pub use field_revision::{RelationalFieldPresence, RelationalFieldRevision};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum RecordLifecycleState {

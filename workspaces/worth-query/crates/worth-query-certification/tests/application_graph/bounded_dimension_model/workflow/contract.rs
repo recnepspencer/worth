@@ -33,7 +33,7 @@ use super::declaration::{
     WorkflowDefinitionAuthoringOperation, WorkflowDefinitionAuthoringProvenance,
     WorkflowGrantActionField, WorkflowGrantDelegationLimitField, WorkflowGrantGrantee,
     WorkflowGrantGrantor, WorkflowGrantNotAfterField, WorkflowGrantNotBeforeField,
-    WorkflowGrantParent, WorkflowGrantPurposeField, WorkflowGrantResource,
+    WorkflowGrantParent, WorkflowGrantPurposeField, WorkflowGrantRelated, WorkflowGrantResource,
     WorkflowGrantStatusField, WorkflowGrantWorkflowField, WorkflowInstanceStartCapability,
     WorkflowInstanceStartContext, WorkflowInstanceStartInput, WorkflowInstanceStartOperation,
     WorkflowInstanceStartProvenance, WorkflowPartOwner,
@@ -130,7 +130,7 @@ fn advance_contract() -> ApplicationCapabilityContract<
             encoded("advance-workflow-instance"),
         ),
         ApplicationCapabilityRelationBinding::from_reference(WorkflowGrantResource::reference()),
-        ApplicationCapabilityRelationDimension::not_applicable(),
+        ApplicationCapabilityRelationDimension::bound(WorkflowGrantRelated::reference()),
         ApplicationCapabilityFieldDimension::not_applicable(),
         ApplicationCapabilityValueBinding::new(
             WorkflowGrantPurposeField::reference(),
@@ -258,7 +258,7 @@ fn contract() -> ApplicationCapabilityContract<
             encoded("author-workflow-definition"),
         ),
         ApplicationCapabilityRelationBinding::from_reference(WorkflowGrantResource::reference()),
-        ApplicationCapabilityRelationDimension::not_applicable(),
+        ApplicationCapabilityRelationDimension::bound(WorkflowGrantRelated::reference()),
         ApplicationCapabilityFieldDimension::not_applicable(),
         ApplicationCapabilityValueBinding::new(
             WorkflowGrantPurposeField::reference(),

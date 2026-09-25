@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use crate::durability::data::{DurabilityError, DurableCheckpoint};
+use crate::durability::data::{CheckpointRestoreWork, DurabilityError, DurableCheckpoint};
 use crate::history::data::CommitId;
 use crate::runtime::RelationalRuntime;
 
@@ -19,21 +19,28 @@ pub(super) struct RestoredBranchRootImages {
 pub(super) fn restore_branch_root_images(
     restored: &mut RelationalRuntime,
     checkpoint: &DurableCheckpoint,
+    work: &mut CheckpointRestoreWork,
 ) -> Result<RestoredBranchRootImages, DurabilityError> {
     let mut schema_catalog = RootSchemaReadmissionCatalog::readmit(checkpoint)?;
     let mut partitions = BTreeMap::new();
     let mut schema_authorities = BTreeMap::new();
+    let mut envelopes = BTreeMap::new();
+    for envelope in &checkpoint.envelopes {
+        let commit_id = envelope.commit.commit_id;
+        if envelopes.insert(commit_id, envelope.envelope()).is_some() {
+            return Err(corrupt_checkpoint(format!(
+                "duplicate checkpoint commit envelope `{}`",
+                commit_id.0
+            )));
+        }
+    }
     for image in &checkpoint.branch_roots {
-        let envelope = checkpoint
-            .envelopes
-            .iter()
-            .find(|envelope| envelope.commit.commit_id == image.commit_id)
-            .ok_or_else(|| {
-                corrupt_checkpoint(format!(
-                    "branch-root image names missing commit envelope `{}`",
-                    image.commit_id.0
-                ))
-            })?;
+        let envelope = envelopes.get(&image.commit_id).ok_or_else(|| {
+            corrupt_checkpoint(format!(
+                "branch-root image names missing commit envelope `{}`",
+                image.commit_id.0
+            ))
+        })?;
         let owner = format!("branch-root image `{}`", image.commit_id.0);
         reject_duplicate_partition_images(&image.partition_images, &owner)?;
         let observed_digest =
@@ -50,7 +57,8 @@ pub(super) fn restore_branch_root_images(
                 image.commit_id.0
             )));
         }
-        let schema_authority = schema_catalog.readmit_root(restored, image, envelope.envelope())?;
+        work.root_images_verified += 1;
+        let schema_authority = schema_catalog.readmit_root(restored, image, envelope)?;
         let root_contracts = crate::durability::checkpoints::aspect_state_images::CheckpointAspectContractCatalog::from_contracts(
             schema_authority.retained_aspect_contracts(),
         )?;
@@ -60,6 +68,7 @@ pub(super) fn restore_branch_root_images(
             &root_contracts,
             &owner,
         )?;
+        work.root_partition_images_restored += image.partition_images.len();
         crate::storage::partition::rebuild_adjacency_kind_buckets(&mut restored_partitions)
             .map_err(|detail| {
                 corrupt_checkpoint(format!(

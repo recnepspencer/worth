@@ -61,7 +61,7 @@ pub(super) fn persisted_recovery_plan(
         runtime.runtime_config().clone(),
         Some(store.clone()),
         selected_checkpoint.manifest.clone(),
-        selected_checkpoint.checkpoint.clone(),
+        selected_checkpoint.checkpoint,
         verified_tail.tail_log,
         RecoveryCursor {
             checkpoint_id: selected_checkpoint

@@ -16,7 +16,6 @@ use crate::domain_computation::{
 pub(in crate::domain_computation::primary_graph) struct WorthQueryPendingApplicationPublication {
     product_incarnation: worth_runtime_world::facade::ProductBranchIncarnation,
     attempt: Option<WorthQueryPrimaryGraphApplicationAttempt>,
-    branch: worth_relational::facade::history::BranchId,
     before: Option<worth_relational::facade::snapshots::SnapshotHandle>,
     next_basis: worth_relational::facade::branch::AdmittedRelationalBranchBasis,
     committed: worth_relational::facade::transactions::CommitResult,
@@ -31,7 +30,6 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPendingApplica
 impl WorthQueryPendingApplicationPublication {
     pub(in crate::domain_computation::primary_graph) fn new(
         attempt: WorthQueryPrimaryGraphApplicationAttempt,
-        branch: worth_relational::facade::history::BranchId,
         before: worth_relational::facade::snapshots::SnapshotHandle,
         next_basis: worth_relational::facade::branch::AdmittedRelationalBranchBasis,
         committed: worth_relational::facade::transactions::CommitResult,
@@ -45,7 +43,6 @@ impl WorthQueryPendingApplicationPublication {
         Self {
             product_incarnation,
             attempt: Some(attempt),
-            branch,
             before: Some(before),
             next_basis,
             committed,
@@ -196,7 +193,6 @@ fn publish_with_snapshot(
         );
     }
     publish_aggregate_projection(provider, runtime, pending, after);
-    publish_indexes(provider, runtime, &pending.branch, commit_id)?;
     provider
         .graph
         .bind_truth_head_basis_in_runtime(runtime, &pending.next_basis)
@@ -265,33 +261,6 @@ fn publish_aggregate_projection(
         aggregates.recover_after_commit(after.version_id());
     }
     pending.aggregate_published = true;
-}
-
-fn publish_indexes(
-    provider: &WorthQueryPrimaryGraphProvider,
-    runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
-    branch: &worth_relational::facade::history::BranchId,
-    commit_id: worth_relational::facade::history::CommitId,
-) -> Result<(), WorthQueryProviderSessionFailure> {
-    if provider.take_failed_index_publication() {
-        return Err(failure(
-            "injected primary index publication failure after authoritative commit",
-        ));
-    }
-    let indexes = runtime.index_authority().build_for_commit(
-        worth_relational::facade::indexes::DerivedIndexBuildRequest {
-            source_commit_id: commit_id,
-            branch_id: branch.clone(),
-            index_ids: provider.graph.primary_index_ids.to_vec(),
-        },
-    );
-    if indexes.failed_indexes.is_empty() {
-        Ok(())
-    } else {
-        Err(failure(
-            "application commit succeeded but primary indexes did not refresh",
-        ))
-    }
 }
 
 fn failure(detail: &'static str) -> WorthQueryProviderSessionFailure {

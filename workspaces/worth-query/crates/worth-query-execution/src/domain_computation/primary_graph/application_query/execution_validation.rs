@@ -46,11 +46,9 @@ where
     if plan.runtime_authority != application.runtime.authority_identity() {
         return Err(WorthQueryApplicationQueryExecutionValidationDenial::ForeignPlan);
     }
-    application
-        .runtime
-        .installed_packages()
-        .validate_application_schema(&application.installed_schema)
-        .map_err(|_| WorthQueryApplicationQueryExecutionValidationDenial::StaleInstalledQuery)?;
+    if !application.installed_schema_is_current() {
+        return Err(WorthQueryApplicationQueryExecutionValidationDenial::StaleInstalledQuery);
+    }
     application
         .installed_schema
         .validate_installed_query(plan.query)

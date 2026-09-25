@@ -8,15 +8,22 @@ use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationObservedFact,
 };
 use crate::domain_computation::primary_graph::workflow::{
-    instance::{decode_transition_outcome, encode_transition_outcome, SettledWorkflowTransition},
+    instance::{
+        decode_transition_outcome, encode_transition_outcome, SettledWorkflowTransition,
+        WorkflowTransitionLocator,
+    },
     schema::WorthQueryWorkflowLayout,
 };
 
 mod dependency;
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) use dependency::decode_field_revision_fact;
 mod proposal;
+mod retained_evidence;
 mod value;
 pub(in crate::domain_computation::primary_graph::application_attempt) use dependency::observe_evidence_dependencies;
-pub(in crate::domain_computation::primary_graph::application_attempt) use proposal::observe_latest_workflow_proposal_identity;
+pub(in crate::domain_computation::primary_graph::application_attempt) use proposal::observe_retained_workflow_proposal_identity;
+pub(in crate::domain_computation::primary_graph::application_attempt) use retained_evidence::observe_retained_assessment_evidence;
 use value::{observed_bool, observed_text, observed_u64, optional_identity};
 
 pub(super) fn observe_settled_transition(
@@ -85,6 +92,20 @@ pub(super) fn observe_settled_transition(
         outcome,
         operation_receipt_identity,
     ))
+}
+
+pub(in crate::domain_computation::primary_graph::application_attempt) fn observe_retained_transition(
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    layout: &WorthQueryWorkflowLayout,
+    locator: WorkflowTransitionLocator,
+    facts: &mut Vec<WorthQueryApplicationObservedFact>,
+) -> Result<SettledWorkflowTransition, WorthQueryApplicationAttemptDenial> {
+    let observed = observe_settled_transition(runtime, snapshot, layout, locator.entity(), facts)?;
+    if observed != locator.settlement() {
+        return Err(denial("retained workflow transition locator changed"));
+    }
+    Ok(observed)
 }
 
 pub(super) fn observe_assessment_evidence(
@@ -165,6 +186,14 @@ pub(super) fn observe_assessment_evidence(
         &layout.assessment_evidence.output_content_identity,
         facts,
     )?;
+    observed_text(
+        runtime,
+        snapshot,
+        evidence,
+        kind,
+        &layout.assessment_evidence.proposal_identity,
+        facts,
+    )?;
     for locator in [
         &layout.assessment_evidence.subject_partition,
         &layout.assessment_evidence.subject_slot,
@@ -215,12 +244,12 @@ pub(super) fn observe_assessment_evidence(
             &layout.assessment_evidence.passing,
             facts,
         )?,
-        proposal_identity: observed_text(
+        coverage_identity: observed_text(
             runtime,
             snapshot,
             evidence,
             kind,
-            &layout.assessment_evidence.proposal_identity,
+            &layout.assessment_evidence.coverage_identity,
             facts,
         )?,
         source_identity,

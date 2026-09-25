@@ -1,4 +1,8 @@
 use worth_query_decl::facade::{
+    application_aftermath::{
+        DeclaredAftermathPostcondition, DeclaredApplicationAftermathContract, DeclaredCompensation,
+        DeclaredCorrectionMechanism, DeclaredReconciliationProcedure,
+    },
     application_schema::{
         ApplicationOperationDefinition, ApplicationOperationRef,
         ApplicationSchemaDeclarationBuilder, WorthQueryExternalEffectCorrelationFamily,
@@ -231,6 +235,20 @@ fn approved_payment_operation(
             WorthQueryExternalEffectCorrelationFamily::new(APPROVED_PAYMENT_SETTLEMENT_RAIL)
                 .expect("the approved-payment settlement rail is an atomic identity"),
         )
-        .no_aftermath()
+        .aftermath(
+            DeclaredApplicationAftermathContract::runtime_with_external_owner(
+                DeclaredCorrectionMechanism::Compensation(
+                    DeclaredCompensation::new(
+                        "reverse-approved-payment-journal",
+                        DeclaredAftermathPostcondition::BusinessPostcondition {
+                            identity: "approved-payment-settlement-corrected".into(),
+                        },
+                    )
+                    .expect("approved-payment compensation is well-formed"),
+                ),
+                DeclaredReconciliationProcedure::new("confirm-approved-payment-settlement")
+                    .expect("approved-payment reconciliation is well-formed"),
+            ),
+        )
         .finish()
 }

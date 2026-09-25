@@ -13,26 +13,32 @@ pub struct InvariantExecutionContext<'runtime> {
     version_id: crate::identity::data::VersionId,
     current_version_id: crate::identity::data::VersionId,
     merged_plan: Option<&'runtime MergedCommitPlan>,
-    runtime: &'runtime InvariantRuntimeView<'runtime>,
+    runtime: InvariantRuntimeView<'runtime>,
     relation_integrity_scopes: Option<PreparedRelationIntegrityScopes>,
+    current_version_minimum_index:
+        std::sync::Arc<std::sync::OnceLock<super::evaluator::CurrentVersionMinimumIndex>>,
 }
 
 impl<'runtime> InvariantExecutionContext<'runtime> {
     pub fn new(
-        runtime: &'runtime InvariantRuntimeView<'runtime>,
+        runtime: &InvariantRuntimeView<'runtime>,
         observation: InvariantObservation<'runtime>,
         version_id: crate::identity::data::VersionId,
         current_version_id: crate::identity::data::VersionId,
         merged_plan: Option<&'runtime MergedCommitPlan>,
         relation_integrity_scopes: Option<PreparedRelationIntegrityScopes>,
+        current_version_minimum_index: std::sync::Arc<
+            std::sync::OnceLock<super::evaluator::CurrentVersionMinimumIndex>,
+        >,
     ) -> Self {
         Self {
             observation,
             version_id,
             current_version_id,
             merged_plan,
-            runtime,
+            runtime: runtime.clone(),
             relation_integrity_scopes,
+            current_version_minimum_index,
         }
     }
 
@@ -60,6 +66,12 @@ impl<'runtime> InvariantExecutionContext<'runtime> {
 
     pub fn merged_plan(&self) -> Option<&'runtime MergedCommitPlan> {
         self.merged_plan
+    }
+
+    pub(crate) fn current_version_minimum_index(
+        &self,
+    ) -> &std::sync::OnceLock<super::evaluator::CurrentVersionMinimumIndex> {
+        &self.current_version_minimum_index
     }
 
     pub fn relation_integrity_scope(

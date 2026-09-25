@@ -190,7 +190,7 @@ pub mod facade {
         WorthQueryProgramSupportPartialRetirementInventory,
         WorthQueryProgramSupportRetirementDenial, WorthQueryProgramSupportRetirementInventory,
         WorthQueryProgramSupportRoster, WorthQueryProgramValidationScope,
-        WorthQueryRepeatedOptionalMemberState,
+        WorthQueryRepeatedOptionalMemberState, WorthQueryWorkflowHistoryReconstructionBudget,
     };
     pub use crate::application_query::{
         prepare_canonical_read_graph_planning_basis, WorthQueryApplicationCanonicalArtifact,
@@ -205,13 +205,13 @@ pub mod facade {
         WorthQueryInstalledBoundPrincipal, WorthQueryInstalledBoundQuery,
         WorthQueryInstalledGraphOrdering, WorthQueryInstalledGraphPredicate,
         WorthQueryInstalledGraphProjection, WorthQueryInstalledGraphReadContract,
-        WorthQueryInstalledGraphRelation, WorthQueryInstalledRootPath,
-        WorthQueryInstalledRootPathGuard, WorthQueryInstalledRootPathStep,
-        WorthQueryPreparedReadGraphPlanningContract, WorthQueryReadGraphGuardView,
-        WorthQueryReadGraphOrderingMechanism, WorthQueryReadGraphOrderingView,
-        WorthQueryReadGraphPlanningContract, WorthQueryReadGraphPredicateView,
-        WorthQueryReadGraphProjectionView, WorthQueryReadGraphRelationDirection,
-        WorthQueryReadGraphRelationView,
+        WorthQueryInstalledGraphRelation, WorthQueryInstalledOutputDependencyContract,
+        WorthQueryInstalledRootPath, WorthQueryInstalledRootPathGuard,
+        WorthQueryInstalledRootPathStep, WorthQueryPreparedReadGraphPlanningContract,
+        WorthQueryReadGraphGuardView, WorthQueryReadGraphOrderingMechanism,
+        WorthQueryReadGraphOrderingView, WorthQueryReadGraphPlanningContract,
+        WorthQueryReadGraphPredicateView, WorthQueryReadGraphProjectionView,
+        WorthQueryReadGraphRelationDirection, WorthQueryReadGraphRelationView,
     };
     pub use crate::application_schema::{
         WorthQueryInstalledApplicationAspectContract, WorthQueryInstalledApplicationAspectLocus,

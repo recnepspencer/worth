@@ -11,9 +11,10 @@ use super::{
     WorthQueryProducerOutputFamily,
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
-use admission::OutputLifecycleRequirement;
 
 mod admission;
+mod resources;
+mod selected_program;
 mod source_recovery;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
@@ -224,6 +225,7 @@ where
                             &completion.readiness,
                             &demand.selected.identity,
                             Family::IDENTITY,
+                            demand.producer_contacts_in_this_demand,
                         );
                         match settlement {
                             Ok(settlement) => Ok(WorthQueryOutputDemandAdvance::Settled(settlement)),
@@ -258,6 +260,24 @@ where
                 .output_demands
                 .finish_superseded(interest, Family::IDENTITY));
         }
+        if !demand.resources_validated {
+            let resources = resources::validate_demand_resources(
+                entry.executor.as_ref(),
+                &disclosed_value,
+                &demand.selected.identity,
+                demand.currentness_work_limit.get(),
+                demand.maximum_retained_bytes,
+            );
+            let resources = match resources {
+                Ok(resources) => resources,
+                Err(denial) => {
+                    self.output_demands.relinquish_execution(interest);
+                    return Err(denial);
+                }
+            };
+            demand.resources = Some(resources);
+            demand.resources_validated = true;
+        }
         if let Err(denial) = entry.executor.authorize_interest(
             self,
             principal,
@@ -268,6 +288,7 @@ where
             self.output_demands.relinquish_execution(interest);
             return Err(denial);
         }
+        demand.producer_contacts_in_this_demand += 1;
         let result = entry.executor.execute(
             self,
             principal,
@@ -277,6 +298,7 @@ where
             &disclosed_source,
             successor_of,
             commit_authority,
+            demand.currentness_work_limit.get(),
         );
         let mut receipt = match result {
             Ok(receipt) => receipt,
@@ -286,6 +308,14 @@ where
                 return Err(denial);
             }
         };
+        if let Some(resources) = demand.resources {
+            self.primary_provider
+                .graph
+                .output_lineage
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .record_producer_resources(&receipt, resources);
+        }
         let delivery = receipt
             .take_performed_relational_product_change()
             .map_or(
@@ -332,9 +362,10 @@ where
                 .finish_superseded(interest, Family::IDENTITY));
         }
         let profile_kind = Family::profile_kind(&source);
-        let refreshed = self.admit_output_demand_with_source::<Family>(
+        let mut refreshed = self.admit_output_demand_with_source::<Family>(
             source,
             observed_source,
+            None,
             profile_kind,
             demand.currentness_work_limit.get(),
             demand.maximum_retained_bytes,
@@ -342,8 +373,9 @@ where
             demand.admission_kind,
             None,
             Some(stale_receipt),
-            OutputLifecycleRequirement::PreserveExisting,
+            demand.retained_program_basis.clone(),
         )?;
+        refreshed.producer_contacts_in_this_demand = demand.producer_contacts_in_this_demand;
         if let Some(interest) = demand.interest.take() {
             self.output_demands.finish_replaced_interest(
                 &interest,

@@ -12,6 +12,7 @@ mod platform_reservation;
 mod relation_effects;
 mod reservation_charging;
 mod target_admission;
+mod write_index;
 
 #[cfg(test)]
 #[path = "effect_program/candidate_retained_representation_tests.rs"]
@@ -32,6 +33,7 @@ use worth_query_installation::facade::{
     DeclaredApplicationFieldValue, OperationCreates, OperationDeletes, OperationWrites,
 };
 use worth_relational::facade::transactions::EntityReference;
+use write_index::FieldWriteIndex;
 
 pub(in crate::domain_computation::primary_graph::application_attempt) use model::WorthQueryApplicationOptionalFieldWrite;
 pub(in crate::domain_computation::primary_graph) use model::{
@@ -113,6 +115,7 @@ impl<Schema, Operation, Input, Scope>
             layout,
             program: Arc::new(()),
             effects: Vec::new(),
+            field_write_positions: FieldWriteIndex::default(),
             keys: BTreeSet::new(),
             emission_retained_bytes: 0,
             emission_retained_bytes_ceiling,
@@ -155,6 +158,7 @@ impl<Schema, Operation, Input, Scope>
             layout,
             program: Arc::new(()),
             effects: Vec::with_capacity(capacity),
+            field_write_positions: FieldWriteIndex::default(),
             keys: BTreeSet::new(),
             emission_retained_bytes: 0,
             emission_retained_bytes_ceiling,

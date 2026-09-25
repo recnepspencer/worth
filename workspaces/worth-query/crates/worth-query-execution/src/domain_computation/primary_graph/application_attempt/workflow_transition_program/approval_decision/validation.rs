@@ -42,9 +42,7 @@ pub(super) fn validate_requirement_definition(
     compiled: &crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowDefinition,
     required: &RequiredWorkflowApproval,
 ) -> Result<worth_relational::facade::identity::EntityId, WorthQueryApplicationAttemptDenial> {
-    let mut matches = compiled
-        .nodes()
-        .filter(|node| node.path() == required.node_path());
+    let mut matches = compiled.nodes_with_path(required.node_path()).iter();
     let (Some(node), None) = (matches.next(), matches.next()) else {
         return Err(affinity("approval requirement node is not singular"));
     };
@@ -91,33 +89,6 @@ pub(super) fn unique<'a>(
         (Some(node), None) => Ok(node),
         _ => Err(affinity(format!("approval {kind} input is not singular"))),
     }
-}
-
-pub(super) fn validate_passing_evidence(
-    compiled: &crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowDefinition,
-    join: worth_relational::facade::identity::EntityId,
-    transitions: &[super::super::super::workflow_instance_observation::ObservedWorkflowTransition],
-) -> Result<Vec<worth_relational::facade::identity::EntityId>, WorthQueryApplicationAttemptDenial> {
-    let required = compiled.required_assessments(join).collect::<Vec<_>>();
-    if required.len() < 2 {
-        return Err(affinity("approval evidence inventory is incomplete"));
-    }
-    let mut evidence_entities = Vec::new();
-    for node in required {
-        let Some(evidence) =
-            super::super::super::workflow_instance_observation::latest_assessment_evidence(
-                transitions,
-                node.entity(),
-            )
-        else {
-            return Err(affinity("approval required evidence is absent"));
-        };
-        if !evidence.passing {
-            return Err(affinity("approval required evidence is failing"));
-        }
-        evidence_entities.push(evidence.entity);
-    }
-    Ok(evidence_entities)
 }
 
 pub(super) fn affinity(subject: impl Into<String>) -> WorthQueryApplicationAttemptDenial {

@@ -42,6 +42,7 @@ where
                 fact,
                 crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact::SourceEntity { .. }
                     | crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact::SourceAspectRevision { .. }
+                    | crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact::SourceFieldRevision { .. }
                     | crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact::SourceAdjacencyRevision { .. }
                 )
             })
@@ -84,6 +85,10 @@ where
             Ok::<(), WorthQueryApplicationAttemptDenial>(())
         })?;
         let validator_work_admission = reservation.materialize(&effects)?;
+        let progress_update = self.admitted.prepare_progress_update(
+            worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome::Completed,
+            None,
+        )?;
         let mut read_set = self.admitted.into_read_set();
         bind_currentness_facts(&mut read_set, &currentness_facts, &node_path)?;
         let program = WorthQueryApplicationEffectProgram {
@@ -114,6 +119,8 @@ where
             assessment,
             supporting_identity: None,
             operation_receipt_identity: None,
+            progress_update: Some(progress_update),
+            terminal: false,
             approval: None,
             approval_identity: None,
             replays,
@@ -211,7 +218,7 @@ where
         .product_branch();
     let valid = settlement.belongs_to(runtime)
         && source.source_root() == prepared.admitted.subject()
-        && source.query_identifier == prepared.required.query
+        && source.query_identifier == prepared.required.query()
         && source.selected_product_occurrence() == Some(receipt.product_branch().occurrence())
         && receipt.idempotency_binding().source_identity()
             == Some(source.idempotency_identity().bytes())
@@ -273,6 +280,7 @@ fn evidence_meaning<Query>(
         required.result_type(),
         required.binding(),
         required.proposal_identity(),
+        required.coverage_identity(),
         &source_identity,
         &publication_identity,
         &output_content_identity,
@@ -294,6 +302,7 @@ fn evidence_meaning<Query>(
         binding: required.binding().to_owned(),
         subject,
         proposal_identity: required.proposal_identity().to_owned(),
+        coverage_identity: required.coverage_identity().to_owned(),
         source_identity,
         passing,
         publication_identity,
@@ -327,6 +336,7 @@ fn projection_with_locator(
         binding: meaning.binding,
         subject: meaning.subject,
         proposal_identity: meaning.proposal_identity,
+        coverage_identity: meaning.coverage_identity,
         source_identity: meaning.source_identity,
         passing: meaning.passing,
         publication_identity: meaning.publication_identity,

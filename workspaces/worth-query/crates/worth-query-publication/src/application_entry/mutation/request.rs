@@ -15,6 +15,11 @@ pub struct WorthQueryMutationSourceUnprepared;
 #[doc(hidden)]
 pub struct WorthQueryMutationSourcePrepared;
 
+pub(super) enum WorthQueryMutationExpectedSource<Query> {
+    Row(worth_query_execution::facade::primary_graph::WorthQueryObservedSource<Query>),
+    ResultSet(worth_query_execution::facade::primary_graph::WorthQueryObservedResultSet<Query>),
+}
+
 pub struct WorthQueryApplicationMutationRequest<
     'application,
     'principal,
@@ -38,7 +43,7 @@ where
         <<Intent::Binding as ApplicationMutationBinding<Schema>>::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope,
     >,
     pub(super) source: Option<
-        worth_query_execution::facade::primary_graph::WorthQueryObservedSource<
+        WorthQueryMutationExpectedSource<
             <<Intent::Binding as ApplicationMutationBinding<Schema>>::SourceExpectation as ApplicationMutationSourceExpectation<Schema>>::Query,
         >,
     >,
@@ -114,7 +119,32 @@ where
             branch: self.branch,
             intent: self.intent,
             preconditions: self.preconditions,
-            source: Some(source),
+            source: Some(WorthQueryMutationExpectedSource::Row(source)),
+            source_preparation: std::marker::PhantomData,
+        }
+    }
+
+    pub fn expect_result_set(
+        self,
+        source: worth_query_execution::facade::primary_graph::WorthQueryObservedResultSet<
+            <<Intent::Binding as ApplicationMutationBinding<Schema>>::SourceExpectation as ApplicationMutationSourceExpectation<Schema>>::Query,
+        >,
+    ) -> WorthQueryApplicationMutationRequest<
+        'application,
+        'principal,
+        'scope,
+        Schema,
+        Intent,
+        WorthQueryMutationSourcePrepared,
+    > {
+        WorthQueryApplicationMutationRequest {
+            application: self.application,
+            principal: self.principal,
+            scope: self.scope,
+            branch: self.branch,
+            intent: self.intent,
+            preconditions: self.preconditions,
+            source: Some(WorthQueryMutationExpectedSource::ResultSet(source)),
             source_preparation: std::marker::PhantomData,
         }
     }
@@ -144,6 +174,22 @@ where
             source_preparation: std::marker::PhantomData,
         }
     }
+
+    pub(in crate::application_entry) fn repeat_for_workflow_run(&self) -> Self
+    where
+        Intent: Clone,
+        Intent::Binding:
+            ApplicationMutationBinding<Schema, SourceExpectation = NoApplicationMutationSource>,
+    {
+        Self::new(
+            self.application,
+            self.principal,
+            self.scope,
+            self.branch,
+            self.intent.clone(),
+        )
+        .preconditions(self.preconditions.clone())
+    }
 }
 
 impl<'application, 'principal, 'scope, Schema, Intent, SourcePreparation>
@@ -169,6 +215,12 @@ where
         &self,
     ) -> worth_query_execution::facade::product::WorthQueryProductBranch {
         self.branch
+    }
+
+    pub(in crate::application_entry) const fn request_scope(
+        &self,
+    ) -> &'scope WorthQueryRequestScope {
+        self.scope
     }
 
     pub fn preconditions(
@@ -227,6 +279,12 @@ where
 
     pub(in crate::application_entry) fn input_identity(&self) -> [u8; 32] {
         Intent::Binding::input_identity(self.request.intent.input())
+    }
+
+    pub(in crate::application_entry) const fn workflow_transition_identity(
+        &self,
+    ) -> Option<[u8; 32]> {
+        self.workflow_transition_identity
     }
 
     pub(in crate::application_entry) const fn application_runtime(

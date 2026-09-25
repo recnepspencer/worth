@@ -1,23 +1,27 @@
-use worth_foundational::facade::{AspectContractRevision, AspectKey};
+use worth_foundational::facade::{AspectContractRevision, AspectKey, FieldKey};
 use worth_relational::facade::{
     identity::{EntityId, KindId, PartitionId, VersionId},
-    runtime::RelationalAdjacencyDirection,
+    runtime::{RelationalAdjacencyDirection, RelationalFieldPresence, RelationalFieldRevision},
 };
 
 use super::{
     normalize_source_footprint, WorthQueryObservedAdjacencyRevision,
-    WorthQueryObservedAspectRevision, WorthQueryObservedSourceFootprint,
+    WorthQueryObservedFieldRevision, WorthQueryObservedSourceFootprint,
 };
 
 #[test]
 fn normalization_deduplicates_revisited_native_dependencies() {
     let entity = EntityId::new(PartitionId::main(), 7, 1);
-    let aspect = WorthQueryObservedAspectRevision {
+    let aspect = WorthQueryObservedFieldRevision {
         entity,
         entity_name: "Body".to_owned(),
         aspect: AspectKey::new("body-facts").unwrap(),
+        field: FieldKey::new("body-facts").unwrap(),
         contract_revision: AspectContractRevision(1),
-        native_revision: Some(11),
+        native_revision: Some(RelationalFieldRevision::new(
+            VersionId(11),
+            RelationalFieldPresence::Present,
+        )),
     };
     let incoming = adjacency(entity, RelationalAdjacencyDirection::Incoming);
     let outgoing = adjacency(entity, RelationalAdjacencyDirection::Outgoing);
@@ -27,6 +31,7 @@ fn normalization_deduplicates_revisited_native_dependencies() {
         entities: vec![entity, entity],
         aspects: vec![aspect.clone(), aspect],
         adjacencies: vec![incoming.clone(), outgoing.clone(), incoming, outgoing],
+        root_selection: None,
     };
 
     let retained_before = footprint.retained_bytes();

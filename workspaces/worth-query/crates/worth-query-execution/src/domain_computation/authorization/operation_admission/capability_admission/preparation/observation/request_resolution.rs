@@ -88,7 +88,9 @@ impl WorthQueryCapabilityContextKey {
         }
     }
 
-    fn from_slot(slot: &ApplicationCapabilityContextEntitySlotBinding) -> Self {
+    pub(in crate::domain_computation::authorization) fn from_slot(
+        slot: &ApplicationCapabilityContextEntitySlotBinding,
+    ) -> Self {
         Self {
             context: slot.context().to_string(),
             context_type: slot.context_identity().as_str().to_string(),

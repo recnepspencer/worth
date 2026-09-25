@@ -51,6 +51,7 @@ pub(crate) fn run(
     application_program::root_selection::foreign_program_is_denied_before_publication(foreign);
     application_program::root_selection::undeclared_root_is_denied_before_publication(foreign);
     application_program::root_selection::truncated_root_is_denied_before_publication(foreign);
+    application_program::root_selection::result_set_source_binds_through_publication(foreign);
     application_program::ordinary_source_publication_cannot_bypass_program(foreign);
     application_program::lifecycle_proofs(foreign);
     resource_profile::candidate_bytes_beyond_host_limit_are_denied(foreign);
@@ -80,10 +81,21 @@ pub(crate) fn run(
     current_output_selector::producer_qualified_missing_and_stale(&request, &world.application);
     actual_candidate_checks_untouched_neighbors(&request, &world);
     let foreign_world = installation::install(foreign);
+    let materialization_world = installation::install(foreign);
+    let materialization_adapter =
+        authentication::admit(materialization_world.application.installed_schema());
+    let materialization_principal = authentication::block_on(materialization_adapter.authenticate(
+        authentication::LocalCredential::issued_for_model_owner(),
+        &scope,
+    ))
+    .expect("the isolated generated-output journey authenticates its principal");
+    let materialization_request = materialization_world
+        .application
+        .request(&materialization_principal, &scope);
     generated_materialization::typed_reconstruction_preserves_query_authority(
-        &world.application,
+        &materialization_world.application,
         &foreign_world.application,
-        &request,
+        &materialization_request,
         &scope,
     );
     let foreign_scope = authentication::request_scope();

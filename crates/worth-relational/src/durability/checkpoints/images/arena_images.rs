@@ -243,18 +243,19 @@ pub(super) fn arena_to_image<K: CheckpointArenaKind>(
         .collect::<Result<Vec<_>, _>>()?;
     Ok(RecordArenaCheckpointImage {
         slots: arena.slots.slots().to_vec(),
-        generations: arena.generations,
-        lifecycle: arena.lifecycle,
-        kind_ids: arena.kind_ids,
+        generations: arena.generations.into_vec(),
+        lifecycle: arena.lifecycle.into_vec(),
+        kind_ids: arena.kind_ids.into_vec(),
         metadata_history,
-        created_at: arena.created_at,
-        retired_at: arena.retired_at,
-        aspect_versions: arena.aspect_versions,
+        created_at: arena.created_at.into_vec(),
+        retired_at: arena.retired_at.into_vec(),
+        aspect_versions: arena.aspect_versions.into_vec(),
+        field_revisions: arena.field_revisions.into_vec(),
         extra,
-        diagnostics_enrichment: arena.diagnostics_enrichment,
-        branch_pins: arena.branch_pins,
-        replay_pins: arena.replay_pins,
-        snapshot_pins: arena.snapshot_pins,
+        diagnostics_enrichment: arena.diagnostics_enrichment.into_vec(),
+        branch_pins: arena.branch_pins.into_vec(),
+        replay_pins: arena.replay_pins.into_vec(),
+        snapshot_pins: arena.snapshot_pins.into_vec(),
         live_bitset: DurableBitSet {
             words: Vec::new(),
             sparse_words: arena.live_bitset.sparse_words(),
@@ -270,19 +271,25 @@ pub(super) fn arena_to_image<K: CheckpointArenaKind>(
 
 pub(super) fn arena_from_image<K: CheckpointArenaKind>(
     partition_id: PartitionId,
-    image: RecordArenaCheckpointImage<K::ImageKind>,
+    mut image: RecordArenaCheckpointImage<K::ImageKind>,
     catalog: &AspectContractPlanCatalog,
     contracts: &CheckpointAspectContractCatalog,
 ) -> Result<RecordArena<K>, DurabilityError> {
     let slots = if image.slots.is_empty() && !image.generations.is_empty() {
         (0..image.generations.len() as u64).collect()
     } else {
-        image.slots.clone()
+        std::mem::take(&mut image.slots)
     };
     if slots.len() != image.generations.len() {
         return Err(DurabilityError::new(
             RecoveryFailureClass::CorruptCheckpoint,
             "record arena slot directory length differs from its SoA columns",
+        ));
+    }
+    if image.field_revisions.len() != image.generations.len() {
+        return Err(DurabilityError::new(
+            RecoveryFailureClass::CorruptCheckpoint,
+            "record arena field revision length differs from its SoA columns",
         ));
     }
     let slots = crate::storage::substrate::RecordSlotDirectory::restore(slots)
@@ -314,19 +321,20 @@ pub(super) fn arena_from_image<K: CheckpointArenaKind>(
         .collect::<Result<Vec<_>, _>>()?;
     Ok(RecordArena {
         slots,
-        partition_ids: vec![partition_id; image.generations.len()],
-        generations: image.generations,
-        lifecycle: image.lifecycle,
-        kind_ids: image.kind_ids,
-        metadata_history,
-        created_at: image.created_at,
-        retired_at: image.retired_at,
-        extra,
-        aspect_versions: image.aspect_versions,
-        diagnostics_enrichment: image.diagnostics_enrichment,
-        branch_pins: image.branch_pins,
-        replay_pins: image.replay_pins,
-        snapshot_pins: image.snapshot_pins,
+        partition_ids: vec![partition_id; image.generations.len()].into(),
+        generations: image.generations.into(),
+        lifecycle: image.lifecycle.into(),
+        kind_ids: image.kind_ids.into(),
+        metadata_history: metadata_history.into_iter().map(Into::into).collect(),
+        created_at: image.created_at.into(),
+        retired_at: image.retired_at.into(),
+        extra: extra.into(),
+        aspect_versions: image.aspect_versions.into(),
+        field_revisions: image.field_revisions.into(),
+        diagnostics_enrichment: image.diagnostics_enrichment.into(),
+        branch_pins: image.branch_pins.into(),
+        replay_pins: image.replay_pins.into(),
+        snapshot_pins: image.snapshot_pins.into(),
         live_bitset: restore_bitset(image.live_bitset),
         reclaimable_bitset: restore_bitset(image.reclaimable_bitset),
     })

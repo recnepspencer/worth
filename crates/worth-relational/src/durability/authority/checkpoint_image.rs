@@ -22,7 +22,7 @@ impl CapturedCheckpointBasis {
             aspect_contracts,
             lineage_nodes,
             index_definitions,
-            derived_index_artifacts,
+            derived_index_checkpoint,
             symbol_table,
             runtime_name,
         } = self;
@@ -78,7 +78,10 @@ impl CapturedCheckpointBasis {
                 lineage_nodes,
             ),
             index_definitions,
-            derived_index_artifacts,
+            derived_index_artifacts: crate::indexes::data::DerivedIndexArtifacts::default(),
+            derived_index_checkpoint: Some(derived_index_checkpoint),
+            derived_index_checkpoint_format:
+                crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts::FORMAT_VERSION,
             symbol_table,
             runtime_name,
         })

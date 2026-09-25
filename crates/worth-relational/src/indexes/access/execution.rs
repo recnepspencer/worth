@@ -21,11 +21,7 @@ pub(crate) fn execute_index_backed_query_from_generation(
     plan: &SnapshotPinnedQueryPlan,
     generation_id: DerivedIndexGenerationId,
 ) -> Option<QueryExecutionOutcome> {
-    let generation = runtime
-        .indexes
-        .all_generations()
-        .into_iter()
-        .find(|generation| generation.generation_id == generation_id)?;
+    let generation = runtime.indexes.generation(generation_id)?;
     let exact_projection = runtime.read_truth().project_snapshot(&plan.snapshot)?;
     let source = IndexProjectionSource::exact(&exact_projection)
         .expect("commit execution projection must carry an exact basis");

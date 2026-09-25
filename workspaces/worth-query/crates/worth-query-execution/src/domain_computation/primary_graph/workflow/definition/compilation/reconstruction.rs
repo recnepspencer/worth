@@ -2,7 +2,14 @@ use worth_foundational::facade::{AspectFieldLocator, AspectValue, InternedString
 use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
 use worth_relational::facade::identity::{EntityId, KindId};
 
-use super::CompiledWorkflowDefinition;
+use super::plan::CompiledWorkflowDefinition;
+use super::publication_binding::{
+    separate_compiled_definition, WorkflowDefinitionPublicationBindingDenial,
+};
+use super::reuse::{
+    WorkflowDefinitionCompilationReuseDenial, WorkflowDefinitionPublicationReuseKey,
+    WorkflowDefinitionSemanticReuseKey,
+};
 use crate::domain_computation::primary_graph::application_attempt::{
     observe_adjacency, observe_field_value, PublishedWorkflowDefinitionRef,
     WorthQueryApplicationAdjacencyDirection, WorthQueryApplicationAttemptDenial,
@@ -10,8 +17,12 @@ use crate::domain_computation::primary_graph::application_attempt::{
 };
 use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout;
 
+mod cold;
 mod connection;
 mod node;
+mod publication_header;
+use cold::reconstruct_cold_definition;
+use publication_header::{observe_publication_header, observe_publication_revisions};
 
 #[derive(Clone, Copy)]
 pub(in crate::domain_computation::primary_graph) enum WorkflowDefinitionCompilationPosture {
@@ -20,12 +31,13 @@ pub(in crate::domain_computation::primary_graph) enum WorkflowDefinitionCompilat
 }
 
 pub(in crate::domain_computation::primary_graph) fn reconstruct_compiled_definition(
-    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    handle: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     layout: &WorthQueryWorkflowLayout,
     published: &PublishedWorkflowDefinitionRef,
     program_revision: &ApplicationProgramRevision,
     expected_spec: &str,
+    support_identity: &[u8; 32],
     maximum_nodes: usize,
     maximum_connections: usize,
     posture: WorkflowDefinitionCompilationPosture,
@@ -36,141 +48,120 @@ pub(in crate::domain_computation::primary_graph) fn reconstruct_compiled_definit
     ),
     WorthQueryApplicationAttemptDenial,
 > {
-    let definition = published.entity_id();
-    let mut facts = vec![WorthQueryApplicationObservedFact::Entity {
-        entity_id: definition,
-        kind: layout.definition.entity_kind,
-    }];
-    exact_text(
-        runtime,
-        snapshot,
-        definition,
-        layout.definition.entity_kind,
-        &layout.definition.content_identity,
-        &published.content_identity().to_string(),
-        &mut facts,
-    )?;
-    exact_text(
-        runtime,
-        snapshot,
-        definition,
-        layout.definition.entity_kind,
-        &layout.definition.program_revision,
-        &program_revision.to_string(),
-        &mut facts,
-    )?;
-
-    let lineage = exact_adjacent(
-        runtime,
-        snapshot,
-        layout.lineage_definition_relation,
-        definition,
-        WorthQueryApplicationAdjacencyDirection::Incoming,
-        2,
-        &mut facts,
-    )?;
-    if matches!(posture, WorkflowDefinitionCompilationPosture::Current) {
-        facts.push(
-            WorthQueryApplicationObservedFact::WorkflowDefinitionCurrent {
-                relation_kind: layout.current_definition_relation,
-                lineage,
-                expected_definition: definition,
-                maximum_work_units: 2,
-            },
-        );
-    }
-    facts.push(WorthQueryApplicationObservedFact::Entity {
-        entity_id: lineage,
-        kind: layout.lineage.entity_kind,
-    });
-    exact_text(
-        runtime,
-        snapshot,
-        lineage,
-        layout.lineage.entity_kind,
-        &layout.lineage.spec,
+    let semantic_key = WorkflowDefinitionSemanticReuseKey::new(
+        published.content_identity(),
+        program_revision,
         expected_spec,
-        &mut facts,
-    )?;
-    exact_u64(
-        runtime,
-        snapshot,
-        lineage,
-        layout.lineage.entity_kind,
-        &layout.lineage.protocol_version,
-        super::super::super::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION,
-        &mut facts,
-    )?;
-    let start_node = exact_adjacent(
-        runtime,
-        snapshot,
-        layout.definition_start_relation,
-        definition,
-        WorthQueryApplicationAdjacencyDirection::Outgoing,
-        2,
-        &mut facts,
-    )?;
-    let nodes = adjacency(
-        runtime,
-        snapshot,
-        layout.definition_node_relation,
-        definition,
-        WorthQueryApplicationAdjacencyDirection::Outgoing,
-        inventory_work_limit(maximum_nodes),
-        &mut facts,
-    )?;
-    if nodes.is_empty() || nodes.len() > maximum_nodes || !nodes.contains(&start_node) {
-        return Err(denial(
-            "published workflow definition node inventory is invalid",
-        ));
-    }
-    let compiled_nodes = nodes
-        .iter()
-        .map(|node| node::compile_node(runtime, snapshot, layout, *node, &mut facts))
-        .collect::<Result<Vec<_>, _>>()?;
-    let connections = adjacency(
-        runtime,
-        snapshot,
-        layout.definition_connection_relation,
-        definition,
-        WorthQueryApplicationAdjacencyDirection::Outgoing,
-        inventory_work_limit(maximum_connections),
-        &mut facts,
-    )?;
-    if connections.len() > maximum_connections {
-        return Err(denial(
-            "published workflow definition connection inventory is invalid",
-        ));
-    }
-    let compiled_connections = connections
-        .iter()
-        .map(|connection| {
-            connection::compile_connection(
+        support_identity,
+    );
+    let publication_key =
+        WorkflowDefinitionPublicationReuseKey::new(published.branch(), published.entity_id());
+    let reused = handle.with_workflow_compilation_reuse_mut(
+        |reuse: &mut super::reuse::WorkflowDefinitionCompilationReuse| {
+            reuse.reuse(publication_key, &semantic_key)
+        },
+    );
+    if let Some(reused) = reused {
+        let facts = handle.with_runtime(|runtime| {
+            observe_publication_header(
                 runtime,
                 snapshot,
                 layout,
-                *connection,
-                &nodes,
-                &mut facts,
+                published,
+                program_revision,
+                expected_spec,
+                posture,
+                Some(reused.binding.lineage),
             )
-        })
-        .collect::<Result<Vec<_>, _>>()?;
-    Ok((
-        CompiledWorkflowDefinition {
-            lineage,
-            definition,
-            content_identity: published.content_identity().clone(),
-            program_revision: program_revision.clone(),
-            start_node,
-            nodes: compiled_nodes.into_boxed_slice(),
-            connections: compiled_connections.into_boxed_slice(),
-        },
-        facts,
-    ))
+            .and_then(|observed| {
+                let mut facts = observed.facts;
+                observe_publication_revisions(
+                    runtime,
+                    snapshot,
+                    layout,
+                    observed.definition,
+                    Some(&reused.binding.revisions),
+                    &mut facts,
+                )?;
+                Ok(facts)
+            })
+        })?;
+        let compiled = reused
+            .binding
+            .bind(
+                reused.semantic,
+                published.content_identity().clone(),
+                program_revision.clone(),
+            )
+            .map_err(binding_denial)?;
+        return Ok((compiled, facts));
+    }
+    let (cold, facts) = handle.with_runtime(|runtime| {
+        reconstruct_cold_definition(
+            runtime,
+            snapshot,
+            layout,
+            published,
+            program_revision,
+            expected_spec,
+            maximum_nodes,
+            maximum_connections,
+            posture,
+        )
+    })?;
+    let (semantic_candidate, binding) =
+        separate_compiled_definition(cold).map_err(binding_denial)?;
+    let semantic = handle
+        .with_workflow_compilation_reuse_mut(
+            |reuse: &mut super::reuse::WorkflowDefinitionCompilationReuse| {
+                reuse.retain(
+                    publication_key,
+                    semantic_key,
+                    semantic_candidate,
+                    binding.clone(),
+                )
+            },
+        )
+        .map_err(reuse_denial)?;
+    let compiled = binding
+        .bind(
+            semantic,
+            published.content_identity().clone(),
+            program_revision.clone(),
+        )
+        .map_err(binding_denial)?;
+    Ok((compiled, facts))
 }
 
-const fn inventory_work_limit(maximum_records: usize) -> usize {
-    maximum_records.saturating_mul(2).saturating_add(1)
+fn binding_denial(
+    denial_kind: WorkflowDefinitionPublicationBindingDenial,
+) -> WorthQueryApplicationAttemptDenial {
+    let message = match denial_kind {
+        WorkflowDefinitionPublicationBindingDenial::MissingStartNode => {
+            "compiled workflow binding has no start node"
+        }
+        WorkflowDefinitionPublicationBindingDenial::UnknownConnectionEndpoint => {
+            "compiled workflow binding has an unknown connection endpoint"
+        }
+        WorkflowDefinitionPublicationBindingDenial::BindingCardinalityMismatch => {
+            "compiled workflow publication binding cardinality is stale"
+        }
+    };
+    denial(message)
+}
+
+fn reuse_denial(
+    denial_kind: WorkflowDefinitionCompilationReuseDenial,
+) -> WorthQueryApplicationAttemptDenial {
+    let message = match denial_kind {
+        WorkflowDefinitionCompilationReuseDenial::SemanticCollision => {
+            "workflow compilation semantic identity collision was denied"
+        }
+        WorkflowDefinitionCompilationReuseDenial::ByteBudgetExceeded => {
+            "workflow compilation retained-byte budget was exceeded"
+        }
+    };
+    denial(message)
 }
 
 fn exact_adjacent(

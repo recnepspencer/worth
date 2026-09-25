@@ -44,6 +44,7 @@ impl CustomInvariantRule for MaterializationWaveRule {
                     read_relation_kinds: vec![crate::identity::data::KindId(2)],
                     affected_entity_kinds: vec![crate::identity::data::KindId(1)],
                     affected_relation_kinds: vec![crate::identity::data::KindId(2)],
+                    include_relation_endpoint_entity_touches: true,
                 },
                 execution_point: InvariantExecutionPoint::CommitBoundary,
                 groups: InvariantGroupSet::of(InvariantGroup::SchemaCompliance),

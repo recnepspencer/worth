@@ -21,6 +21,8 @@ mod history_branch_lifecycle;
 mod history_canonical_routes;
 #[path = "history_catalog_recovery.rs"]
 mod history_catalog_recovery;
+#[path = "history_checkpoint_catalog.rs"]
+mod history_checkpoint_catalog;
 #[path = "history_construction.rs"]
 mod history_construction;
 #[path = "history_cost_recording.rs"]

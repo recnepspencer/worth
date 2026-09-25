@@ -77,6 +77,17 @@ impl WorthQueryApplicationIdempotencyBinding {
         &self.intent_identity
     }
 
+    pub(in crate::domain_computation::primary_graph) fn matches_recovery_request(
+        &self,
+        request: &Self,
+    ) -> bool {
+        self.key_identity == request.key_identity
+            && self.intent_identity == request.intent_identity
+            && self.source_identity == request.source_identity
+            && self.workflow_transition_identity == request.workflow_transition_identity
+            && self.workflow_support_identity == request.workflow_support_identity
+    }
+
     pub(in crate::domain_computation::primary_graph) const fn source_identity(
         &self,
     ) -> Option<[u8; 32]> {
@@ -334,6 +345,10 @@ impl WorthQueryApplicationIdempotencyBinding {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "idempotency/recovery_request_tests.rs"]
+mod recovery_request_tests;
 
 fn append_identity_slot(encoded: &mut String, slot: &str, identity: Option<[u8; 32]>) {
     encoded.push(':');

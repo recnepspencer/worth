@@ -20,7 +20,6 @@ pub(crate) trait RecordKind: Clone + Debug + 'static {
     fn arena_mut(partition: &mut PartitionState) -> &mut RecordArena<Self>;
     fn empty_extra() -> Self::Extra;
     fn unavailable_extra(extra: &Self::Extra) -> Self::Extra;
-    fn reserve_extra(extra: &mut Vec<Self::Extra>, additional: usize);
     fn retire_metadata(metadata: &mut Self::Meta, version_id: VersionId);
     fn metadata_for_create(
         kind_id: KindId,
@@ -65,10 +64,6 @@ impl RecordKind for EntityRecordKind {
             lineage_id: extra.lineage_id,
             authoritative_aspect_state: None,
         }
-    }
-
-    fn reserve_extra(extra: &mut Vec<Self::Extra>, additional: usize) {
-        extra.reserve(additional);
     }
 
     fn retire_metadata(metadata: &mut Self::Meta, version_id: VersionId) {
@@ -143,10 +138,6 @@ impl RecordKind for RelationRecordKind {
 
     fn unavailable_extra(_extra: &Self::Extra) -> Self::Extra {
         RelationExtra::default()
-    }
-
-    fn reserve_extra(extra: &mut Vec<Self::Extra>, additional: usize) {
-        extra.reserve(additional);
     }
 
     fn retire_metadata(metadata: &mut Self::Meta, version_id: VersionId) {

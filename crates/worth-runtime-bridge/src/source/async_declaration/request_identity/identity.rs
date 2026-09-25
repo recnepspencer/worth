@@ -160,6 +160,9 @@ impl BridgeAsyncInFlightRequestIdentity {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AdmittedBridgeAsyncRequestIdentity {
     bridge_runtime_key: u64,
+    // External Signal-owner admission has external custody; Bridge-owned
+    // requests retain their local runtime through finalization and retries.
+    runtime_custody: Option<super::BridgeSignalRuntimeCustody>,
     request_identity: BridgeAsyncRequestIdentity,
     lowered: LoweredBridgeAsyncSourceDeclaration,
     basis_binding: ValidatedBridgeAsyncRequestBasisBinding,
@@ -188,6 +191,7 @@ impl AdmittedBridgeAsyncRequestIdentity {
     ) -> Self {
         Self {
             bridge_runtime_key,
+            runtime_custody: None,
             request_identity,
             lowered,
             basis_binding,
@@ -203,6 +207,28 @@ impl AdmittedBridgeAsyncRequestIdentity {
 
     pub(crate) fn bridge_runtime_key(&self) -> u64 {
         self.bridge_runtime_key
+    }
+
+    pub(crate) fn lifecycle_observation_custody(
+        &self,
+    ) -> Option<super::BridgeSignalRuntimeCustody> {
+        self.runtime_custody.clone()
+    }
+
+    pub(crate) fn retain_runtime(mut self, custody: super::BridgeSignalRuntimeCustody) -> Self {
+        assert_eq!(custody.key(), self.bridge_runtime_key);
+        self.runtime_custody = Some(custody);
+        self
+    }
+
+    pub(crate) fn inherit_runtime(self, prior: &Self) -> Option<Self> {
+        if self.bridge_runtime_key != prior.bridge_runtime_key {
+            return None;
+        }
+        Some(match &prior.runtime_custody {
+            Some(custody) => self.retain_runtime(custody.clone()),
+            None => self,
+        })
     }
 
     pub fn bridge_runtime_identity(&self) -> BridgeAsyncRequestRuntimeIdentity {

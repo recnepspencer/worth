@@ -2,6 +2,7 @@ use crate::authority::mutation::aspect_versions::write_aspect_versions_for_delta
 use crate::authority::mutation::canonical_deltas::{
     authoritative_patch_with_delta_supplements, canonical_delta_for_mutation,
 };
+use crate::authority::mutation::field_versions::write_field_versions_for_delta;
 use crate::authority::mutation::patch_details::{
     patch_detail_for_entity, patch_detail_for_relation, EntityPatchDetailKind,
     RelationPatchDetailKind,
@@ -28,7 +29,14 @@ pub(crate) fn record_publication_effect_for_mutation(
                 &canonical_delta,
                 version_id,
                 context.symbols,
-            )
+            )?;
+            write_field_versions_for_delta(
+                context.state,
+                &canonical_delta,
+                version_id,
+                context.symbols,
+            );
+            Ok::<(), crate::authority::mutation::canonical_deltas::CanonicalDeltaError>(())
         })
         .map_err(|error| error.to_commit_conflict())?;
 

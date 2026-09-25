@@ -49,20 +49,10 @@ impl<Schema, Operation, Input, Scope>
             ));
         };
         let locator = self.field_locator(field.entity(), field.aspect(), field.field())?;
-        let matching_effect = self.effects.iter().find(|effect| {
-            matches!(
-                effect,
-                WorthQueryApplicationRealizedEffect::UpdateEntity {
-                    entity,
-                    entity_id: candidate,
-                    ..
-                } | WorthQueryApplicationRealizedEffect::PatchOptionalEntityFields {
-                    entity,
-                    entity_id: candidate,
-                    ..
-                } if entity == field.entity() && *candidate == entity_id
-            )
-        });
+        let position = self
+            .field_write_positions
+            .position(field.entity(), entity_id);
+        let matching_effect = position.map(|position| &self.effects[position]);
         let replaced_representation_bytes = matching_effect.and_then(|effect| match effect {
             WorthQueryApplicationRealizedEffect::UpdateEntity { fields, .. } => fields
                 .get(&locator)
@@ -94,61 +84,43 @@ impl<Schema, Operation, Input, Scope>
             retained_representation_bytes,
             replaced_representation_bytes.unwrap_or(0),
         )?;
-        if let Some(WorthQueryApplicationRealizedEffect::PatchOptionalEntityFields {
-            fields, ..
-        }) = self.effects.iter_mut().find(|effect| {
-            matches!(
-                effect,
-                WorthQueryApplicationRealizedEffect::PatchOptionalEntityFields {
-                    entity,
-                    entity_id: candidate,
-                    ..
-                } if entity == field.entity() && *candidate == entity_id
-            )
-        }) {
-            let contract = self
-                .layout
-                .aspect_contract(field.entity(), locator.aspect().aspect_key())
-                .map(worth_foundational::facade::PortableAspectContractBasis::from_contract)
-                .ok_or_else(|| {
-                    denial(
-                        WorthQueryApplicationAttemptDenialKind::UndeclaredEffect,
-                        field.field(),
-                    )
-                })?;
-            fields.insert(
-                locator,
-                WorthQueryApplicationOptionalFieldWrite {
-                    contract,
-                    value: Some(value),
-                },
-            );
-            return Ok(());
-        }
-        match self.effects.iter_mut().find(|effect| {
-            matches!(
-                effect,
-                WorthQueryApplicationRealizedEffect::UpdateEntity {
-                    entity,
-                    entity_id: candidate,
-                    ..
-                } if entity == field.entity() && *candidate == entity_id
-            )
-        }) {
-            Some(WorthQueryApplicationRealizedEffect::UpdateEntity {
-                entity,
-                entity_id: candidate,
-                fields,
-            }) if entity == field.entity() && *candidate == entity_id => {
+        match position.map(|position| &mut self.effects[position]) {
+            Some(WorthQueryApplicationRealizedEffect::PatchOptionalEntityFields {
+                fields, ..
+            }) => {
+                let contract = self
+                    .layout
+                    .aspect_contract(field.entity(), locator.aspect().aspect_key())
+                    .map(worth_foundational::facade::PortableAspectContractBasis::from_contract)
+                    .ok_or_else(|| {
+                        denial(
+                            WorthQueryApplicationAttemptDenialKind::UndeclaredEffect,
+                            field.field(),
+                        )
+                    })?;
+                fields.insert(
+                    locator,
+                    WorthQueryApplicationOptionalFieldWrite {
+                        contract,
+                        value: Some(value),
+                    },
+                );
+            }
+            Some(WorthQueryApplicationRealizedEffect::UpdateEntity { fields, .. }) => {
                 fields.insert(locator, value);
             }
-            _ => self
-                .effects
-                .push(WorthQueryApplicationRealizedEffect::UpdateEntity {
-                    entity: field.entity().to_string(),
-                    entity_id,
-                    fields: BTreeMap::from([(locator, value)]),
-                }),
+            Some(_) => unreachable!("field-write index names only entity-field effects"),
+            None => {
+                let position = self.effects.len();
+                self.effects
+                    .push(WorthQueryApplicationRealizedEffect::UpdateEntity {
+                        entity: field.entity().to_string(),
+                        entity_id,
+                        fields: BTreeMap::from([(locator, value)]),
+                    });
+                self.field_write_positions
+                    .remember(field.entity(), entity_id, position);
+            }
         }
         Ok(())
     }

@@ -180,6 +180,16 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryProgramSupport
     revision: ApplicationProgramRevision,
 }
 
+impl WorthQueryProgramSupportInterpretation {
+    pub(in crate::domain_computation::primary_graph) fn same_support_as(
+        &self,
+        other: &Self,
+    ) -> bool {
+        self.revision == other.revision
+            && Arc::ptr_eq(&self.lifecycle.state, &other.lifecycle.state)
+    }
+}
+
 impl Drop for WorthQueryProgramSupportInterpretation {
     fn drop(&mut self) {
         self.lifecycle

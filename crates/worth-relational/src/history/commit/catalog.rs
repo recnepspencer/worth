@@ -134,26 +134,34 @@ impl RelationalCommitCatalog {
             .map_err(|_| RelationalCommitCatalogEnvelopeAppendDenial::DuplicateCommit)
     }
 
-    pub(crate) fn append_envelope_with_root(
+    pub(crate) fn append_preencoded_recovery(
         &mut self,
-        envelope: Arc<crate::history::data::CanonicalCommitEnvelope>,
-        root: Arc<crate::branch::RelationalBranchRoot>,
-    ) -> Result<RelationalCommitCatalogEntry, RelationalCommitCatalogEnvelopeAppendDenial> {
-        let artifact = RelationalCommitArtifact::from_envelope_with_root(envelope, root)
-            .map_err(RelationalCommitCatalogEnvelopeAppendDenial::Artifact)?;
+        artifact: RelationalCommitArtifact,
+    ) -> Result<RelationalCommitCatalogEntry, RelationalCommitCatalogAppendDenial> {
         self.materializations.fetch_add(1, Ordering::Relaxed);
         self.append(artifact)
-            .map_err(|_| RelationalCommitCatalogEnvelopeAppendDenial::DuplicateCommit)
     }
 
-    pub(crate) fn append_envelope_with_descriptor(
+    /// Checkpoint recovery has already readmitted each live root from its
+    /// durable image. Seal each canonical envelope once, with its exact root
+    /// or retained fork descriptor, instead of building a provisional catalog.
+    pub(crate) fn append_checkpoint_recovery(
         &mut self,
         envelope: Arc<crate::history::data::CanonicalCommitEnvelope>,
-        descriptor: crate::branch::RelationalBranchRootDescriptor,
+        root: Option<&Arc<crate::branch::RelationalBranchRoot>>,
+        descriptor: Option<&crate::branch::RelationalBranchRootDescriptor>,
     ) -> Result<RelationalCommitCatalogEntry, RelationalCommitCatalogEnvelopeAppendDenial> {
-        let artifact =
-            RelationalCommitArtifact::from_envelope_with_descriptor(envelope, descriptor)
-                .map_err(RelationalCommitCatalogEnvelopeAppendDenial::Artifact)?;
+        let artifact = match (root, descriptor) {
+            (Some(root), _) => {
+                RelationalCommitArtifact::from_envelope_with_root(envelope, Arc::clone(root))
+            }
+            (None, Some(descriptor)) => RelationalCommitArtifact::from_envelope_with_descriptor(
+                envelope,
+                descriptor.clone(),
+            ),
+            (None, None) => RelationalCommitArtifact::from_envelope(envelope),
+        }
+        .map_err(RelationalCommitCatalogEnvelopeAppendDenial::Artifact)?;
         self.materializations.fetch_add(1, Ordering::Relaxed);
         self.append(artifact)
             .map_err(|_| RelationalCommitCatalogEnvelopeAppendDenial::DuplicateCommit)

@@ -365,9 +365,22 @@ where
                 Spec::IDENTITY.as_str(),
             ));
         }
+        let support_identity = super::support_identity::derive(
+            self.program.revision(),
+            Spec::IDENTITY.as_str(),
+            &authoring_capability,
+            &instance_start_capability,
+            &advance_capability,
+            &self.operations,
+            &self.assessments,
+            &self.conditions,
+            &self.approvals,
+            self.resources,
+        );
         Ok(WorthQueryInstalledApplicationWorkflowSpec {
             schema_binding: self.schema.binding_identity(),
             program_revision: self.program.revision().clone(),
+            support_identity,
             authoring_capability,
             instance_start_capability,
             advance_capability,

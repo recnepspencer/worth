@@ -9,11 +9,75 @@ use super::{
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct ApplicationWorkflowComponentLimits {
+    maximum_occurrences: u16,
+    maximum_depth: u8,
+    maximum_node_provenance: u32,
+    maximum_connection_provenance: u32,
+    maximum_port_provenance: u32,
+}
+
+impl ApplicationWorkflowComponentLimits {
+    pub const fn new(
+        maximum_occurrences: u16,
+        maximum_depth: u8,
+        maximum_node_provenance: u32,
+        maximum_connection_provenance: u32,
+        maximum_port_provenance: u32,
+    ) -> Option<Self> {
+        if maximum_occurrences == 0
+            || maximum_depth == 0
+            || maximum_node_provenance == 0
+            || maximum_connection_provenance == 0
+            || maximum_port_provenance == 0
+        {
+            None
+        } else {
+            Some(Self {
+                maximum_occurrences,
+                maximum_depth,
+                maximum_node_provenance,
+                maximum_connection_provenance,
+                maximum_port_provenance,
+            })
+        }
+    }
+
+    pub const fn maximum_occurrences(self) -> u16 {
+        self.maximum_occurrences
+    }
+
+    pub const fn maximum_depth(self) -> u8 {
+        self.maximum_depth
+    }
+
+    pub const fn maximum_node_provenance(self) -> u32 {
+        self.maximum_node_provenance
+    }
+
+    pub const fn maximum_connection_provenance(self) -> u32 {
+        self.maximum_connection_provenance
+    }
+
+    pub const fn maximum_port_provenance(self) -> u32 {
+        self.maximum_port_provenance
+    }
+
+    pub const fn fits_within(self, ceiling: Self) -> bool {
+        self.maximum_occurrences <= ceiling.maximum_occurrences
+            && self.maximum_depth <= ceiling.maximum_depth
+            && self.maximum_node_provenance <= ceiling.maximum_node_provenance
+            && self.maximum_connection_provenance <= ceiling.maximum_connection_provenance
+            && self.maximum_port_provenance <= ceiling.maximum_port_provenance
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct ApplicationWorkflowDefinitionLimits {
     maximum_nodes: u16,
     maximum_connections: u16,
     maximum_effects: u16,
-    maximum_component_depth: u8,
+    component_limits: ApplicationWorkflowComponentLimits,
     maximum_canonical_bytes: u32,
 }
 
@@ -22,13 +86,12 @@ impl ApplicationWorkflowDefinitionLimits {
         maximum_nodes: u16,
         maximum_connections: u16,
         maximum_effects: u16,
-        maximum_component_depth: u8,
+        component_limits: ApplicationWorkflowComponentLimits,
         maximum_canonical_bytes: u32,
     ) -> Option<Self> {
         if maximum_nodes == 0
             || maximum_connections == 0
             || maximum_effects == 0
-            || maximum_component_depth == 0
             || maximum_canonical_bytes == 0
         {
             None
@@ -37,7 +100,7 @@ impl ApplicationWorkflowDefinitionLimits {
                 maximum_nodes,
                 maximum_connections,
                 maximum_effects,
-                maximum_component_depth,
+                component_limits,
                 maximum_canonical_bytes,
             })
         }
@@ -55,8 +118,12 @@ impl ApplicationWorkflowDefinitionLimits {
         self.maximum_effects
     }
 
+    pub const fn component_limits(self) -> ApplicationWorkflowComponentLimits {
+        self.component_limits
+    }
+
     pub const fn maximum_component_depth(self) -> u8 {
-        self.maximum_component_depth
+        self.component_limits.maximum_depth()
     }
 
     pub const fn maximum_canonical_bytes(self) -> u32 {
@@ -101,8 +168,12 @@ impl ApplicationWorkflowEvidenceJoinPolicy {
 }
 
 impl ApplicationWorkflowNodeKind {
-    pub const fn is_effect(&self) -> bool {
+    pub const fn is_operation(&self) -> bool {
         matches!(self, Self::Operation { .. })
+    }
+
+    pub const fn is_effect(&self) -> bool {
+        self.is_operation()
     }
 
     pub const fn requires_workflow_authority(&self) -> bool {
@@ -232,6 +303,10 @@ impl ApplicationWorkflowConnection {
     pub fn kind(&self) -> ApplicationWorkflowConnectionKind {
         self.kind.clone()
     }
+
+    pub(super) const fn kind_ref(&self) -> &ApplicationWorkflowConnectionKind {
+        &self.kind
+    }
 }
 
 pub struct AuthoredWorkflowDefinition<Spec>
@@ -273,6 +348,7 @@ where
     pub(super) nodes: Box<[ApplicationWorkflowNode]>,
     pub(super) connections: Box<[ApplicationWorkflowConnection]>,
     pub(super) component_expansions: Box<[ApplicationWorkflowComponentExpansion]>,
+    pub(super) validation_work: super::ApplicationWorkflowValidationWork,
     pub(super) marker: PhantomData<fn() -> Spec>,
 }
 
@@ -306,5 +382,9 @@ where
 
     pub fn component_expansions(&self) -> &[ApplicationWorkflowComponentExpansion] {
         &self.component_expansions
+    }
+
+    pub const fn validation_work(&self) -> super::ApplicationWorkflowValidationWork {
+        self.validation_work
     }
 }

@@ -39,6 +39,8 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryMutatio
     invariant_work_units: u64,
     relational_invariant_executions: usize,
     relational_invariant_results: usize,
+    expected_step_preparation_work:
+        super::super::application_attempt::WorthQueryExpectedEffectStepPreparationWork,
     installed_touch_admission:
         super::application_touch_admission::WorthQueryInstalledTouchAdmissionEvidence,
 }
@@ -52,6 +54,7 @@ impl WorthQueryPrimaryMutationWorkCounters {
         invariant_work_units: u64,
         relational_invariant_executions: usize,
         relational_invariant_results: usize,
+        expected_step_preparation_work: super::super::application_attempt::WorthQueryExpectedEffectStepPreparationWork,
         installed_touch_admission: super::application_touch_admission::WorthQueryInstalledTouchAdmissionEvidence,
     ) -> Self {
         Self {
@@ -61,6 +64,7 @@ impl WorthQueryPrimaryMutationWorkCounters {
             invariant_work_units,
             relational_invariant_executions,
             relational_invariant_results,
+            expected_step_preparation_work,
             installed_touch_admission,
         }
     }
@@ -80,12 +84,15 @@ impl WorthQueryPrimaryMutationWorkCounters {
 /// touched-record identities. No public constructor.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryPrimaryMutationWorkEvidence {
+    index_maintenance_work: worth_relational::facade::indexes::DerivedIndexMaintenanceWork,
     decision_facts: usize,
     proposed_facts: usize,
     invariant_state_facts: usize,
     invariant_work_units: u64,
     relational_invariant_executions: usize,
     relational_invariant_results: usize,
+    expected_step_key_lookups: usize,
+    expected_step_duplicate_equalities: usize,
     preimage_validated_intents_examined: usize,
     preimage_mutation_targets_materialized: usize,
     preimage_decision_facts_examined: usize,
@@ -108,19 +115,24 @@ impl WorthQueryPrimaryMutationWorkEvidence {
     pub(in crate::domain_computation::primary_graph) fn from_commit_seal(
         seal: super::session_commit::WorthQueryMutationWorkCommitSeal,
     ) -> Self {
-        let (counters, changed_records, preimage) = seal.into_parts();
+        let (counters, index_maintenance_work, changed_records, preimage) = seal.into_parts();
         let touched_records = changed_records
             .into_iter()
             .map(WorthQueryTouchedRecordIdentity::from_commit_record)
             .collect();
         let touch_projection = counters.installed_touch_admission.projection_work();
         Self {
+            index_maintenance_work,
             decision_facts: counters.decision_facts,
             proposed_facts: counters.proposed_facts,
             invariant_state_facts: counters.invariant_state_facts,
             invariant_work_units: counters.invariant_work_units,
             relational_invariant_executions: counters.relational_invariant_executions,
             relational_invariant_results: counters.relational_invariant_results,
+            expected_step_key_lookups: counters.expected_step_preparation_work.key_lookups(),
+            expected_step_duplicate_equalities: counters
+                .expected_step_preparation_work
+                .duplicate_equalities(),
             preimage_validated_intents_examined: preimage.validated_intents_examined(),
             preimage_mutation_targets_materialized: preimage.mutation_targets_materialized(),
             preimage_decision_facts_examined: preimage.decision_facts_examined(),
@@ -147,6 +159,13 @@ impl WorthQueryPrimaryMutationWorkEvidence {
         self.decision_facts
     }
 
+    /// Exact Relational index work admitted before this commit could reach World.
+    pub const fn index_maintenance_work(
+        &self,
+    ) -> &worth_relational::facade::indexes::DerivedIndexMaintenanceWork {
+        &self.index_maintenance_work
+    }
+
     pub const fn proposed_fact_count(&self) -> usize {
         self.proposed_facts
     }
@@ -165,6 +184,14 @@ impl WorthQueryPrimaryMutationWorkEvidence {
 
     pub const fn relational_invariant_result_count(&self) -> usize {
         self.relational_invariant_results
+    }
+
+    pub const fn expected_step_key_lookups(&self) -> usize {
+        self.expected_step_key_lookups
+    }
+
+    pub const fn expected_step_duplicate_equalities(&self) -> usize {
+        self.expected_step_duplicate_equalities
     }
 
     pub const fn preimage_validated_intents_examined(&self) -> usize {

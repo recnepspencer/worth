@@ -122,7 +122,9 @@ fn checkpoint(
         source_partition: [0; 32],
         producer_dependency: None,
         idempotency_key: [0; 32],
+        resources: None,
         roles,
+        producer_facts: None,
     }
 }
 

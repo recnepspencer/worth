@@ -126,7 +126,9 @@ where
     if limits.maximum_nodes() > resources.maximum_definition_nodes()
         || limits.maximum_connections() > resources.maximum_definition_connections()
         || limits.maximum_effects() > resources.maximum_definition_effects()
-        || limits.maximum_component_depth() > resources.maximum_component_depth()
+        || !limits
+            .component_limits()
+            .fits_within(resources.component_limits())
         || limits.maximum_canonical_bytes() > resources.maximum_canonical_bytes()
     {
         return Err(denial(

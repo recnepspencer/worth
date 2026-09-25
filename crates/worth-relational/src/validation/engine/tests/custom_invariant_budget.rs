@@ -39,7 +39,7 @@ fn unrelated_custom_rule_returns_owner_proven_non_applicability() {
 }
 
 #[test]
-fn exhausted_applicability_scan_cannot_claim_non_applicability() {
+fn complete_kind_footprint_proves_non_applicability_before_rule_budget() {
     let schema = RelationalSchemaRegistry::new()
         .register_entity_kind(EntityKindRegistration {
             kind_id: KindId(1),
@@ -80,10 +80,10 @@ fn exhausted_applicability_scan_cannot_claim_non_applicability() {
     );
 
     assert_eq!(results.results().len(), 1);
-    assert!(matches!(
+    assert_eq!(
         results.results()[0].verdict,
-        crate::validation::data::InvariantVerdict::Violation(_)
-    ));
+        crate::validation::data::InvariantVerdict::NotApplicable
+    );
 }
 
 #[test]

@@ -1,5 +1,8 @@
 use super::{PinClass, RecordArena, RecordKind};
 
+#[cfg(test)]
+mod tests;
+
 impl<K: RecordKind> RecordArena<K> {
     pub(crate) fn snapshot_pin_count(&self, slot: usize) -> Option<u32> {
         self.physical_index(slot)
@@ -16,12 +19,17 @@ impl<K: RecordKind> RecordArena<K> {
             .and_then(|physical| self.replay_pins.get(physical).copied())
     }
 
-    pub(crate) fn adjust_named_pin(&mut self, slot: usize, class: PinClass) -> Option<&mut u32> {
+    pub(crate) fn adjust_named_pin(
+        &mut self,
+        slot: usize,
+        class: PinClass,
+        delta: i32,
+    ) -> Option<()> {
         let physical = self.physical_index(slot)?;
         match class {
             #[cfg(test)]
-            PinClass::Branch => self.branch_pins.get_mut(physical),
-            PinClass::Replay => self.replay_pins.get_mut(physical),
+            PinClass::Branch => self.branch_pins.adjust(physical, delta),
+            PinClass::Replay => self.replay_pins.adjust(physical, delta),
         }
     }
 
@@ -32,26 +40,18 @@ impl<K: RecordKind> RecordArena<K> {
     }
 
     pub(crate) fn preserve_runtime_pins_from(&mut self, current: &Self) {
-        self.snapshot_pins.fill(0);
-        self.branch_pins.fill(0);
-        self.replay_pins.fill(0);
-        for logical in self.occupied_slots() {
-            let physical = self
-                .physical_index(logical)
-                .expect("occupied slot has a physical row");
-            let Some(current_physical) = current.physical_index(logical) else {
-                continue;
-            };
-            if self.generations[physical] != current.generations[current_physical] {
-                debug_assert_eq!(current.snapshot_pins[current_physical], 0);
-                debug_assert_eq!(current.branch_pins[current_physical], 0);
-                debug_assert_eq!(current.replay_pins[current_physical], 0);
-                continue;
-            }
-            self.snapshot_pins[physical] = current.snapshot_pins[current_physical];
-            self.branch_pins[physical] = current.branch_pins[current_physical];
-            self.replay_pins[physical] = current.replay_pins[current_physical];
-        }
+        let slots = &self.slots;
+        let generations = &self.generations;
+        let remap = |source| {
+            let logical = current.slots.logical_slot(source)?;
+            let physical = slots.physical_index(logical)?;
+            let same_generation = generations[physical] == current.generations[source];
+            debug_assert!(same_generation, "a pinned generation cannot be reused");
+            same_generation.then_some(physical)
+        };
+        self.snapshot_pins.remap_from(&current.snapshot_pins, remap);
+        self.branch_pins.remap_from(&current.branch_pins, remap);
+        self.replay_pins.remap_from(&current.replay_pins, remap);
     }
 
     #[cfg(test)]

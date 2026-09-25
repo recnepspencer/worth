@@ -10,6 +10,29 @@ use crate::history::retention::{
 use super::HistorySubsystem;
 
 impl HistorySubsystem {
+    #[cfg(test)]
+    pub(crate) fn retired_branch_binding_count(&self) -> usize {
+        self.retention_owner.retired_branch_binding_count()
+    }
+
+    pub(crate) fn retained_index_roots(&self) -> crate::history::retention::RetainedIndexRoots {
+        let mut roots = self.retention_owner.retained_index_roots();
+        for cell in self.branch_cells.values() {
+            let branch = cell.identity().branch_id().clone();
+            roots.latest_branches.insert(branch.clone());
+            if let Some(root) = cell.root() {
+                if let Some(envelope) = root.canonical_envelope() {
+                    roots.live.insert((
+                        branch,
+                        envelope.commit.version_id,
+                        root.schema_authority().schema_version(),
+                    ));
+                }
+            }
+        }
+        roots
+    }
+
     pub(crate) fn retention_binding(&self) -> RelationalBranchRetentionBinding {
         self.retention_owner.binding()
     }

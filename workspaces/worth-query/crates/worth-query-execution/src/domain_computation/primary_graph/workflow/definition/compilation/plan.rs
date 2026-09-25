@@ -1,31 +1,51 @@
+use std::sync::Arc;
+
 use worth_query_declaration::facade::application_program::{
     ApplicationProgramRevision, ApplicationWorkflowControlOutcome, ApplicationWorkflowDataFlow,
     ApplicationWorkflowDefinitionContentIdentity,
 };
 use worth_relational::facade::identity::EntityId;
 
-use super::super::codec::{WorkflowConnectionTag, WorkflowNodeTag};
+mod coverage;
+mod dispatch;
+mod identity;
+mod retained_bytes;
+
+pub(super) use dispatch::CompiledWorkflowDispatch;
 
 /// Rebuildable workflow meaning for one exact performed definition revision.
 ///
 /// This phase carries no principal, currentness, reservation, or execution
 /// authority. The instance owner must freshly admit every use.
+#[derive(Clone)]
 pub(in crate::domain_computation::primary_graph) struct CompiledWorkflowDefinition {
-    pub(super) lineage: EntityId,
-    pub(super) definition: EntityId,
+    pub(super) publication: Arc<CompiledWorkflowPublicationPlan>,
     pub(super) content_identity: ApplicationWorkflowDefinitionContentIdentity,
     pub(super) program_revision: ApplicationProgramRevision,
-    pub(super) start_node: EntityId,
+}
+
+pub(super) struct CompiledWorkflowPublicationPlan {
+    pub(super) lineage: EntityId,
+    pub(super) definition: EntityId,
+    pub(super) start: usize,
     pub(super) nodes: Box<[CompiledWorkflowNode]>,
     pub(super) connections: Box<[CompiledWorkflowConnection]>,
+    pub(super) node_ordinals: Arc<[(EntityId, usize)]>,
+    pub(super) dispatch: Arc<CompiledWorkflowDispatch>,
 }
 
 pub(in crate::domain_computation::primary_graph) struct CompiledWorkflowNode {
     pub(super) entity: EntityId,
+    pub(super) meaning: Arc<CompiledWorkflowNodeMeaning>,
+}
+
+#[derive(Debug, Eq, PartialEq)]
+pub(super) struct CompiledWorkflowNodeMeaning {
     pub(super) path: String,
     pub(super) kind: CompiledWorkflowNodeKind,
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum CompiledWorkflowNodeKind {
     Operation {
         operation: String,
@@ -37,6 +57,7 @@ pub(in crate::domain_computation::primary_graph) enum CompiledWorkflowNodeKind {
         parameter_type: String,
         result_type: String,
         binding: String,
+        subject: worth_query_declaration::facade::application_program::ApplicationWorkflowSubjectSelector,
     },
     Condition {
         query: String,
@@ -60,9 +81,10 @@ pub(in crate::domain_computation::primary_graph) struct CompiledWorkflowConnecti
     pub(super) entity: EntityId,
     pub(super) source: EntityId,
     pub(super) target: EntityId,
-    pub(super) kind: CompiledWorkflowConnectionKind,
+    pub(super) kind: Arc<CompiledWorkflowConnectionKind>,
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum CompiledWorkflowConnectionKind {
     Control(ApplicationWorkflowControlOutcome),
     Data(ApplicationWorkflowDataFlow),
@@ -73,138 +95,43 @@ pub(in crate::domain_computation::primary_graph) enum CompiledWorkflowConnection
     },
 }
 
+#[derive(Debug, Eq, PartialEq)]
+pub(super) struct CompiledWorkflowSemanticConnection {
+    pub(super) source: usize,
+    pub(super) target: usize,
+    pub(super) kind: Arc<CompiledWorkflowConnectionKind>,
+}
+
+#[derive(Debug, Eq, PartialEq)]
+pub(super) struct CompiledWorkflowSemanticPlan {
+    pub(super) start: usize,
+    pub(super) nodes: Box<[Arc<CompiledWorkflowNodeMeaning>]>,
+    pub(super) connections: Box<[CompiledWorkflowSemanticConnection]>,
+    pub(super) dispatch: Arc<CompiledWorkflowDispatch>,
+    pub(super) retained_bytes: usize,
+}
+
 impl CompiledWorkflowNode {
     pub(in crate::domain_computation::primary_graph) const fn entity(&self) -> EntityId {
         self.entity
     }
 
     pub(in crate::domain_computation::primary_graph) fn path(&self) -> &str {
-        &self.path
+        &self.meaning.path
     }
 
-    pub(in crate::domain_computation::primary_graph) const fn kind(
-        &self,
-    ) -> &CompiledWorkflowNodeKind {
-        &self.kind
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn identity_material(&self) -> String {
-        let mut fields = vec![
-            self.entity.partition_value().to_string(),
-            self.entity.local_slot_value().to_string(),
-            self.entity.generation_value().to_string(),
-        ];
-        fields.extend(match &self.kind {
-            CompiledWorkflowNodeKind::Operation {
-                operation,
-                input_type,
-                requires_workflow_authority,
-            } => vec![
-                WorkflowNodeTag::Operation.identity().to_owned(),
-                operation.clone(),
-                input_type.clone(),
-                requires_workflow_authority.to_string(),
-            ],
-            CompiledWorkflowNodeKind::Assessment {
-                query,
-                parameter_type,
-                result_type,
-                binding,
-            } => vec![
-                WorkflowNodeTag::Assessment.identity().to_owned(),
-                query.clone(),
-                parameter_type.clone(),
-                result_type.clone(),
-                binding.clone(),
-            ],
-            CompiledWorkflowNodeKind::Condition {
-                query,
-                parameter_type,
-                result_type,
-                binding,
-            } => vec![
-                WorkflowNodeTag::Condition.identity().to_owned(),
-                query.clone(),
-                parameter_type.clone(),
-                result_type.clone(),
-                binding.clone(),
-            ],
-            CompiledWorkflowNodeKind::Approval {
-                capability,
-                capability_type,
-                operation,
-                installed_capability_identity,
-            } => vec![
-                WorkflowNodeTag::Approval.identity().to_owned(),
-                capability.clone(),
-                capability_type.clone(),
-                operation.clone(),
-                installed_capability_identity.clone(),
-            ],
-            CompiledWorkflowNodeKind::EvidenceJoin { policy } => vec![
-                WorkflowNodeTag::EvidenceJoin.identity().to_owned(),
-                policy.identity().to_owned(),
-            ],
-            CompiledWorkflowNodeKind::Terminal => {
-                vec![WorkflowNodeTag::Terminal.identity().to_owned()]
-            }
-        });
-        fields
-            .into_iter()
-            .fold(String::new(), |mut encoded, field| {
-                use std::fmt::Write;
-                write!(&mut encoded, "{}:{field}", field.len())
-                    .expect("writing workflow node identity to String cannot fail");
-                encoded
-            })
-    }
-}
-
-impl CompiledWorkflowConnection {
-    fn identity_material(&self) -> String {
-        let kind = match &self.kind {
-            CompiledWorkflowConnectionKind::Control(outcome) => {
-                WorkflowConnectionTag::control(*outcome)
-                    .identity()
-                    .to_owned()
-            }
-            CompiledWorkflowConnectionKind::Data(flow) => {
-                WorkflowConnectionTag::data(*flow).identity().to_owned()
-            }
-            CompiledWorkflowConnectionKind::Retry {
-                trigger,
-                reason,
-                maximum_attempts,
-            } => format!(
-                "{}:{}:{}",
-                WorkflowConnectionTag::Retry(*trigger).identity(),
-                reason,
-                maximum_attempts,
-            ),
-        };
-        format!(
-            "{}:{}:{}:{}:{}:{}:{}:{}:{}:{kind}",
-            self.entity.partition_value(),
-            self.entity.local_slot_value(),
-            self.entity.generation_value(),
-            self.source.partition_value(),
-            self.source.local_slot_value(),
-            self.source.generation_value(),
-            self.target.partition_value(),
-            self.target.local_slot_value(),
-            self.target.generation_value(),
-            kind = kind,
-        )
+    pub(in crate::domain_computation::primary_graph) fn kind(&self) -> &CompiledWorkflowNodeKind {
+        &self.meaning.kind
     }
 }
 
 impl CompiledWorkflowDefinition {
-    pub(in crate::domain_computation::primary_graph) const fn lineage(&self) -> EntityId {
-        self.lineage
+    pub(in crate::domain_computation::primary_graph) fn lineage(&self) -> EntityId {
+        self.publication.lineage
     }
 
-    pub(in crate::domain_computation::primary_graph) const fn definition(&self) -> EntityId {
-        self.definition
+    pub(in crate::domain_computation::primary_graph) fn definition(&self) -> EntityId {
+        self.publication.definition
     }
 
     pub(in crate::domain_computation::primary_graph) const fn content_identity(
@@ -220,18 +147,35 @@ impl CompiledWorkflowDefinition {
     }
 
     pub(in crate::domain_computation::primary_graph) fn start_path(&self) -> &str {
-        &self.start().path
+        self.start().path()
     }
 
-    pub(in crate::domain_computation::primary_graph) const fn node_count(&self) -> usize {
-        self.nodes.len()
+    pub(in crate::domain_computation::primary_graph) fn node_count(&self) -> usize {
+        self.publication.nodes.len()
     }
 
     pub(in crate::domain_computation::primary_graph) fn start(&self) -> &CompiledWorkflowNode {
-        self.nodes
-            .iter()
-            .find(|node| node.entity == self.start_node)
-            .expect("compiled workflow start belongs to its node inventory")
+        &self.publication.nodes[self.publication.start]
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn node(
+        &self,
+        entity: EntityId,
+    ) -> Option<&CompiledWorkflowNode> {
+        self.node_ordinal(entity)
+            .map(|ordinal| &self.publication.nodes[ordinal])
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn nodes_with_path(
+        &self,
+        path: &str,
+    ) -> &[CompiledWorkflowNode] {
+        let first = self
+            .publication
+            .nodes
+            .partition_point(|node| node.path() < path);
+        let count = self.publication.nodes[first..].partition_point(|node| node.path() == path);
+        &self.publication.nodes[first..first + count]
     }
 
     pub(in crate::domain_computation::primary_graph) fn control_successors(
@@ -239,17 +183,14 @@ impl CompiledWorkflowDefinition {
         source: EntityId,
         outcome: ApplicationWorkflowControlOutcome,
     ) -> impl Iterator<Item = &CompiledWorkflowNode> {
-        self.connections
-            .iter()
-            .filter_map(move |connection| match connection.kind {
-                CompiledWorkflowConnectionKind::Control(candidate)
-                    if candidate == outcome && connection.source == source =>
-                {
-                    Some(connection.target)
+        self.outgoing(source).filter_map(move |edge| {
+            match self.publication.connections[edge.connection].kind.as_ref() {
+                CompiledWorkflowConnectionKind::Control(candidate) if *candidate == outcome => {
+                    Some(&self.publication.nodes[edge.peer])
                 }
                 _ => None,
-            })
-            .filter_map(|target| self.nodes.iter().find(|node| node.entity == target))
+            }
+        })
     }
 
     pub(in crate::domain_computation::primary_graph) fn retry_successors(
@@ -257,54 +198,61 @@ impl CompiledWorkflowDefinition {
         source: EntityId,
         trigger: ApplicationWorkflowControlOutcome,
     ) -> impl Iterator<Item = (&CompiledWorkflowNode, u16)> {
-        self.connections
-            .iter()
-            .filter_map(move |connection| match &connection.kind {
+        self.outgoing(source).filter_map(move |edge| {
+            match self.publication.connections[edge.connection].kind.as_ref() {
                 CompiledWorkflowConnectionKind::Retry {
                     trigger: candidate,
                     maximum_attempts,
                     ..
-                } if *candidate == trigger && connection.source == source => {
-                    Some((connection.target, *maximum_attempts))
+                } if *candidate == trigger => {
+                    Some((&self.publication.nodes[edge.peer], *maximum_attempts))
                 }
                 _ => None,
-            })
-            .filter_map(|(target, maximum_attempts)| {
-                self.nodes
-                    .iter()
-                    .find(|node| node.entity == target)
-                    .map(|node| (node, maximum_attempts))
-            })
+            }
+        })
     }
 
     pub(in crate::domain_computation::primary_graph) fn required_assessments(
         &self,
         join: EntityId,
     ) -> impl Iterator<Item = &CompiledWorkflowNode> {
-        self.connections
-            .iter()
-            .filter_map(move |connection| match connection.kind {
+        self.incoming(join).filter_map(move |edge| {
+            match self.publication.connections[edge.connection].kind.as_ref() {
                 CompiledWorkflowConnectionKind::Data(
                     ApplicationWorkflowDataFlow::AssessmentEvidence,
-                ) if connection.target == join => Some(connection.source),
+                ) => Some(&self.publication.nodes[edge.peer]),
                 _ => None,
-            })
-            .filter_map(|source| self.nodes.iter().find(|node| node.entity == source))
+            }
+        })
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn assessment_subject_sources(
+        &self,
+        assessment: EntityId,
+    ) -> impl Iterator<Item = &CompiledWorkflowNode> {
+        self.data_sources(assessment, ApplicationWorkflowDataFlow::AssessmentSubject)
     }
 
     pub(in crate::domain_computation::primary_graph) fn approval_authority_targets(
         &self,
         approval: EntityId,
     ) -> impl Iterator<Item = &CompiledWorkflowNode> {
-        self.connections
-            .iter()
-            .filter_map(move |connection| match connection.kind {
-                CompiledWorkflowConnectionKind::Data(
-                    ApplicationWorkflowDataFlow::ApprovalAuthority,
-                ) if connection.source == approval => Some(connection.target),
+        self.data_targets(approval, ApplicationWorkflowDataFlow::ApprovalAuthority)
+    }
+
+    fn data_targets(
+        &self,
+        source: EntityId,
+        flow: ApplicationWorkflowDataFlow,
+    ) -> impl Iterator<Item = &CompiledWorkflowNode> {
+        self.outgoing(source).filter_map(move |edge| {
+            match self.publication.connections[edge.connection].kind.as_ref() {
+                CompiledWorkflowConnectionKind::Data(candidate) if *candidate == flow => {
+                    Some(&self.publication.nodes[edge.peer])
+                }
                 _ => None,
-            })
-            .filter_map(|target| self.nodes.iter().find(|node| node.entity == target))
+            }
+        })
     }
 
     pub(in crate::domain_computation::primary_graph) fn approval_proposal_sources(
@@ -333,44 +281,41 @@ impl CompiledWorkflowDefinition {
         target: EntityId,
         flow: ApplicationWorkflowDataFlow,
     ) -> impl Iterator<Item = &CompiledWorkflowNode> {
-        self.connections
-            .iter()
-            .filter_map(move |connection| match connection.kind {
-                CompiledWorkflowConnectionKind::Data(candidate)
-                    if candidate == flow && connection.target == target =>
-                {
-                    Some(connection.source)
+        self.incoming(target).filter_map(move |edge| {
+            match self.publication.connections[edge.connection].kind.as_ref() {
+                CompiledWorkflowConnectionKind::Data(candidate) if *candidate == flow => {
+                    Some(&self.publication.nodes[edge.peer])
                 }
                 _ => None,
-            })
-            .filter_map(|source| self.nodes.iter().find(|node| node.entity == source))
+            }
+        })
     }
 
-    pub(in crate::domain_computation::primary_graph) fn nodes(
+    fn node_ordinal(&self, entity: EntityId) -> Option<usize> {
+        self.publication
+            .node_ordinals
+            .binary_search_by_key(&entity, |(candidate, _)| *candidate)
+            .ok()
+            .map(|index| self.publication.node_ordinals[index].1)
+    }
+
+    fn outgoing(
         &self,
-    ) -> impl Iterator<Item = &CompiledWorkflowNode> {
-        self.nodes.iter()
+        source: EntityId,
+    ) -> impl Iterator<Item = &dispatch::CompiledWorkflowDispatchEdge> {
+        self.node_ordinal(source)
+            .into_iter()
+            .flat_map(|ordinal| self.publication.dispatch.outgoing(ordinal))
     }
 
-    pub(in crate::domain_computation::primary_graph) fn structure_identity_material(
+    fn incoming(
         &self,
-    ) -> String {
-        let mut material = String::new();
-        for node in &self.nodes {
-            append_framed(&mut material, &node.path);
-            append_framed(&mut material, &node.identity_material());
-        }
-        for connection in &self.connections {
-            append_framed(&mut material, &connection.identity_material());
-        }
-        material
+        target: EntityId,
+    ) -> impl Iterator<Item = &dispatch::CompiledWorkflowDispatchEdge> {
+        self.node_ordinal(target)
+            .into_iter()
+            .flat_map(|ordinal| self.publication.dispatch.incoming(ordinal))
     }
-}
-
-fn append_framed(target: &mut String, value: &str) {
-    use std::fmt::Write;
-    write!(target, "{}:{value}", value.len())
-        .expect("writing workflow structure identity to String cannot fail");
 }
 
 #[cfg(test)]

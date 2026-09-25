@@ -3,16 +3,31 @@ use worth_relational::facade::identity::EntityId;
 use super::super::effect_program::WorthQueryApplicationRealizedEffect;
 use super::super::WorthQueryApplicationObservedFact;
 
-pub(super) fn is_output_currentness_fact(fact: &WorthQueryApplicationObservedFact) -> bool {
+pub(super) fn complete_output_currentness_facts(
+    facts: Vec<WorthQueryApplicationObservedFact>,
+) -> std::sync::Arc<[WorthQueryApplicationObservedFact]> {
+    if facts.iter().all(is_output_currentness_fact) {
+        facts.into()
+    } else {
+        // A partial subset would misrepresent the original producer's read
+        // boundary. Empty is the explicit non-reusable marker; the complete
+        // dependency digest still governs idempotency separately.
+        std::sync::Arc::from([])
+    }
+}
+
+fn is_output_currentness_fact(fact: &WorthQueryApplicationObservedFact) -> bool {
     matches!(
         fact,
         WorthQueryApplicationObservedFact::SourceEntity { .. }
             | WorthQueryApplicationObservedFact::SourceAspectRevision { .. }
+            | WorthQueryApplicationObservedFact::SourceFieldRevision { .. }
             | WorthQueryApplicationObservedFact::SourceAdjacencyRevision { .. }
             | WorthQueryApplicationObservedFact::Entity { .. }
             | WorthQueryApplicationObservedFact::Field { .. }
             | WorthQueryApplicationObservedFact::AbsentField { .. }
-            | WorthQueryApplicationObservedFact::IndexedEntitySelection { .. }
+            | WorthQueryApplicationObservedFact::Relation { .. }
+            | WorthQueryApplicationObservedFact::Adjacency { .. }
     )
 }
 

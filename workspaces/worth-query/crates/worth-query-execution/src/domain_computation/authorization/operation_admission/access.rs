@@ -142,6 +142,17 @@ impl<Schema, Operation, Input, Scope>
             .map(WorthQueryRetainedCapabilityAuthorization::capability_authority_identity)
     }
 
+    pub(in crate::domain_computation) fn workflow_subject(
+        &self,
+        selector: &worth_query_declaration::facade::application_program::ApplicationWorkflowSubjectSelector,
+    ) -> Option<worth_relational::facade::identity::EntityId> {
+        self.authorization
+            .as_ref()?
+            .capability_authorization()?
+            .request()
+            .workflow_subject(selector)
+    }
+
     pub(in crate::domain_computation) fn installed_capability_identity(&self) -> Option<[u8; 32]> {
         self.authorization
             .as_ref()?

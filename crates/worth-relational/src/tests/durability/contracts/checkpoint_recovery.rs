@@ -28,10 +28,13 @@ fn durability_contract_checkpoint_tail_recovery_preserves_post_checkpoint_commit
     let plan = runtime.durability().recovery_plan(
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
     );
+    let checkpoint_images = plan.checkpoint.as_ref().unwrap().partition_images.as_ptr();
     let mut recovered = persisted_runtime_with_test_schema();
     let outcome = recovered.durability_recovery().recover(plan).unwrap();
 
     assert_eq!(outcome.recovered_commits, 2);
+    assert_eq!(outcome.coverage.checkpoint_commits, 1);
+    assert_eq!(outcome.coverage.replayed_tail_commits, 1);
     assert_eq!(outcome.latest_commit, Some(later.commit.clone()));
     assert_eq!(
         recovered
@@ -48,6 +51,9 @@ fn durability_contract_checkpoint_tail_recovery_preserves_post_checkpoint_commit
             .commit_id,
         main.commit.commit_id
     );
+    let retained = recovered.durability.latest_checkpoint().unwrap();
+    assert_eq!(retained.envelopes.len(), 1);
+    assert_eq!(retained.partition_images.as_ptr(), checkpoint_images);
 }
 
 #[test]

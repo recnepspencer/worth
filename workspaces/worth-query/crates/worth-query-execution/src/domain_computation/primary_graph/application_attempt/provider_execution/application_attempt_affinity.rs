@@ -45,6 +45,7 @@ struct WorthQueryApplicationAttemptCore {
 pub(in crate::domain_computation) struct WorthQueryApplicationAttemptAffinity {
     basis: WorthQueryApplicationAttemptCore,
     provider_session: WorthQueryProviderSessionTerminalBinding,
+    product: crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
 }
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -170,16 +171,13 @@ impl WorthQueryApplicationAttemptBasis {
         provider_session: &WorthQueryProviderSessionAffinity<'_>,
     ) -> Result<WorthQueryApplicationAttemptAffinity, ()> {
         let provider_session = provider_session.terminal_binding();
-        if !self.affinity_mismatches(&provider_session).is_empty()
-            || provider_session
-                .application_product()
-                .is_none_or(|product| product.observation() != self.product.observation())
-        {
+        if !self.affinity_mismatches(&provider_session).is_empty() {
             return Err(());
         }
         Ok(WorthQueryApplicationAttemptAffinity {
             basis: self.core,
             provider_session,
+            product: self.product.publication_binding(),
         })
     }
 
@@ -189,8 +187,13 @@ impl WorthQueryApplicationAttemptBasis {
     ) -> std::collections::BTreeSet<WorthQueryApplicationAttemptAffinityMismatch> {
         let mut mismatches = self.affinity_mismatches_view(provider_session);
         if provider_session
-            .application_product()
-            .is_none_or(|product| product.observation() != self.product.observation())
+            .application_product_identity()
+            .is_none_or(|product| {
+                product
+                    != &crate::basis::WorthQueryProductBranchReadIdentity::from_observation(
+                        self.product.observation(),
+                    )
+            })
         {
             mismatches.insert(WorthQueryApplicationAttemptAffinityMismatch::Product);
         }
@@ -248,9 +251,7 @@ impl WorthQueryApplicationAttemptAffinity {
         &self.basis.request
     }
     pub(in crate::domain_computation::primary_graph) fn product_publication(&self) -> &crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding{
-        self.provider_session
-            .application_product()
-            .expect("application attempt affinity retains its selected product")
+        &self.product
     }
 
     pub(in crate::domain_computation::primary_graph) fn lookup_identity(

@@ -101,6 +101,10 @@ spatial-fast:
 	cargo test -p worth-spatial --lib -- --format terse
 	cargo test -p worth-spatial --test ui -- --format terse
 
+.PHONY: query-workflow-history-scale
+query-workflow-history-scale:
+	powershell -NoProfile -ExecutionPolicy Bypass -File scripts/ci/run_query_workflow_history_scale.ps1
+
 .PHONY: query-closeout
 query-closeout: query-cold-certification
 	cargo test --manifest-path $(QUERY_MANIFEST) --workspace --exclude worth-query-certification --exclude worth-query-replay -- --format terse

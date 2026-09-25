@@ -164,9 +164,9 @@ mod tests {
         let mut arena = entity_arena_with_authoritative_text("canonical");
         let baseline = arena.allocation_inventory();
         arena.diagnostics_enrichment[0].insert(Symbol(77), "diagnostic".repeat(512));
-        arena.branch_pins.reserve(128);
-        arena.replay_pins.reserve(64);
-        arena.snapshot_pins.reserve(32);
+        arena.branch_pins.set(0, 128);
+        arena.replay_pins.set(0, 64);
+        arena.snapshot_pins.set(0, 32);
         let perturbed = arena.allocation_inventory();
 
         assert_eq!(perturbed.authoritative_bytes, baseline.authoritative_bytes);

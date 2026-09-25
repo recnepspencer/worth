@@ -7,7 +7,6 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryPrimaryGraphFaul
     LostCommitResponse,
     RejectedSessionPreparation,
     RejectedCommitBeforeTransaction,
-    FailedIndexPublication,
     SkippedInvariantOwnerExecution,
     RelationalInvariantViolation,
     FailedPostCommitSnapshot,
@@ -21,6 +20,8 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryPrimaryGraphFaul
     UndeclaredApplicationTouch,
     #[cfg(test)]
     PanickedPendingApplicationPublication,
+    #[cfg(test)]
+    TightIndexMaintenanceBudget,
 }
 
 pub(in crate::domain_computation::primary_graph) trait WorthQueryPrimaryGraphFaultPort:
@@ -94,7 +95,6 @@ const fn fault_mask(fault: WorthQueryPrimaryGraphFault) -> u16 {
         WorthQueryPrimaryGraphFault::LostCommitResponse => 1 << 0,
         WorthQueryPrimaryGraphFault::RejectedSessionPreparation => 1 << 1,
         WorthQueryPrimaryGraphFault::RejectedCommitBeforeTransaction => 1 << 2,
-        WorthQueryPrimaryGraphFault::FailedIndexPublication => 1 << 3,
         WorthQueryPrimaryGraphFault::SkippedInvariantOwnerExecution => 1 << 4,
         WorthQueryPrimaryGraphFault::RelationalInvariantViolation => 1 << 5,
         WorthQueryPrimaryGraphFault::FailedPostCommitSnapshot => 1 << 7,
@@ -108,6 +108,8 @@ const fn fault_mask(fault: WorthQueryPrimaryGraphFault) -> u16 {
         WorthQueryPrimaryGraphFault::UndeclaredApplicationTouch => 1 << 6,
         #[cfg(test)]
         WorthQueryPrimaryGraphFault::PanickedPendingApplicationPublication => 1 << 8,
+        #[cfg(test)]
+        WorthQueryPrimaryGraphFault::TightIndexMaintenanceBudget => 1 << 13,
     }
 }
 
@@ -124,21 +126,17 @@ impl super::WorthQueryPrimaryGraphProvider {
         self.take_fault(WorthQueryPrimaryGraphFault::RejectedCommitBeforeTransaction)
     }
 
-    pub(super) fn take_failed_index_publication(&self) -> bool {
-        self.take_fault(WorthQueryPrimaryGraphFault::FailedIndexPublication)
-    }
-
     pub(super) fn take_failed_post_commit_snapshot(&self) -> bool {
         self.take_fault(WorthQueryPrimaryGraphFault::FailedPostCommitSnapshot)
     }
 
     #[cfg(feature = "test-primary-graph-faults")]
-    pub(in crate::domain_computation::primary_graph) fn fail_next_index_publication_for_test(
+    pub(in crate::domain_computation::primary_graph) fn fail_next_post_commit_snapshot_for_test(
         &self,
     ) {
         assert!(self
             .fault_port
-            .schedule_for_test(WorthQueryPrimaryGraphFault::FailedIndexPublication));
+            .schedule_for_test(WorthQueryPrimaryGraphFault::FailedPostCommitSnapshot));
     }
 
     pub(super) fn take_skipped_invariant_owner_execution(&self) -> bool {
@@ -157,6 +155,11 @@ impl super::WorthQueryPrimaryGraphProvider {
     #[cfg(test)]
     pub(super) fn take_panicked_pending_application_publication(&self) -> bool {
         self.take_fault(WorthQueryPrimaryGraphFault::PanickedPendingApplicationPublication)
+    }
+
+    #[cfg(test)]
+    pub(super) fn take_tight_index_maintenance_budget(&self) -> bool {
+        self.take_fault(WorthQueryPrimaryGraphFault::TightIndexMaintenanceBudget)
     }
 
     pub(super) fn take_fault(&self, fault: WorthQueryPrimaryGraphFault) -> bool {

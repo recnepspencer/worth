@@ -15,9 +15,9 @@ use super::{
     ApplicationWorkflowTerminalNode,
 };
 use crate::application_program::workflow::{
-    ApplicationWorkflowComponentIdentity, ApplicationWorkflowDefinitionLimits,
-    ApplicationWorkflowEvidenceJoinPolicy, ApplicationWorkflowNodeIdentity,
-    ApplicationWorkflowSpec,
+    ApplicationWorkflowComponentIdentity, ApplicationWorkflowComponentLimits,
+    ApplicationWorkflowDefinitionLimits, ApplicationWorkflowEvidenceJoinPolicy,
+    ApplicationWorkflowNodeIdentity, ApplicationWorkflowSpec, ApplicationWorkflowSubjectSelector,
 };
 
 mod connections;
@@ -25,6 +25,7 @@ mod expansion;
 mod model;
 
 pub(super) use expansion::expand;
+pub(super) use model::ComponentExpansionUsage;
 pub use model::{
     ApplicationWorkflowComponentInputBinding, ApplicationWorkflowComponentInputPort,
     ApplicationWorkflowComponentNodeRef, ApplicationWorkflowComponentOutputBinding,
@@ -62,7 +63,14 @@ where
                 MAXIMUM_COMPONENT_NODES,
                 MAXIMUM_COMPONENT_CONNECTIONS,
                 MAXIMUM_COMPONENT_NODES,
-                MAXIMUM_COMPONENT_DEPTH,
+                ApplicationWorkflowComponentLimits::new(
+                    MAXIMUM_COMPONENT_NODES,
+                    MAXIMUM_COMPONENT_DEPTH,
+                    u32::from(MAXIMUM_COMPONENT_NODES) * u32::from(MAXIMUM_COMPONENT_DEPTH),
+                    u32::from(MAXIMUM_COMPONENT_CONNECTIONS) * u32::from(MAXIMUM_COMPONENT_DEPTH),
+                    u32::from(MAXIMUM_COMPONENT_PORTS) * u32::from(MAXIMUM_COMPONENT_DEPTH),
+                )
+                .expect("component expansion bounds are nonzero"),
                 MAXIMUM_COMPONENT_CANONICAL_BYTES,
             )
             .expect("component construction bounds are nonzero"),
@@ -105,9 +113,23 @@ where
     where
         Query: ApplicationQueryMarkerIdentity<Spec::Schema> + 'static,
     {
+        self.assessment_for::<Query>(identity, ApplicationWorkflowSubjectSelector::Resource)
+    }
+
+    pub fn assessment_for<Query>(
+        &mut self,
+        identity: impl Into<String>,
+        subject: ApplicationWorkflowSubjectSelector,
+    ) -> Result<
+        ApplicationWorkflowComponentNodeRef<ApplicationWorkflowAssessmentNode>,
+        ApplicationWorkflowAuthoringDenial,
+    >
+    where
+        Query: ApplicationQueryMarkerIdentity<Spec::Schema> + 'static,
+    {
         self.require_node_capacity()?;
         self.graph
-            .assessment::<Query>(identity)
+            .assessment_for::<Query>(identity, subject)
             .map(|inner| ApplicationWorkflowComponentNodeRef {
                 inner,
                 owner: Arc::clone(&self.owner),
@@ -266,6 +288,7 @@ where
             connections: self.graph.connections,
             ports: self.ports,
             component_expansions: self.graph.component_expansions,
+            expansion_usage: self.graph.component_expansion_usage,
             owner: self.owner,
             marker: PhantomData,
         })

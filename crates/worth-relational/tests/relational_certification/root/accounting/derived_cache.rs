@@ -2,7 +2,6 @@ use super::world::supply_chain::SupplyChainScale;
 use super::world::supply_chain::{
     assert_oracle_matches, certified_supply_chain_world, head_for_supply_chain_branch,
 };
-use std::collections::BTreeMap;
 use worth_foundational::facade::{AspectKey, FieldKey};
 use worth_relational::facade::history::BranchId;
 use worth_relational::facade::identity::EntityId;
@@ -167,14 +166,14 @@ fn empty_entity_field_cache_growth() -> u64 {
 }
 
 fn entity_field_nested_initialized_byte_floor(
-    entries: &BTreeMap<
+    entries: &worth_relational::facade::indexes::DerivedIndexEntryMap<
         worth_relational::facade::storage::AuthoritativeFieldComparisonKey,
-        Vec<EntityId>,
+        EntityId,
     >,
 ) -> u64 {
     let map_entries = (entries.len() as u64).saturating_mul(std::mem::size_of::<(
         worth_relational::facade::storage::AuthoritativeFieldComparisonKey,
-        Vec<EntityId>,
+        worth_relational::facade::indexes::DerivedIndexRows<EntityId>,
     )>() as u64);
     entries.iter().fold(map_entries, |bytes, (key, ids)| {
         bytes

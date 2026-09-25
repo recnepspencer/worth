@@ -19,6 +19,9 @@ use super::observation::RelationalBranchSharingObservation;
 impl RelationalBranchSharingObservation {
     /// Authoritative truth bytes copied by publications on the selected
     /// branches.
+    /// Shared payload adoption contributes zero. Path detachment records the
+    /// copied node payload and page entries (including transient copies), not
+    /// the size of the whole region or reference-count/allocation headers.
     ///
     /// Truth source: the publication cost recorded at each successful root
     /// publication, plus the materialization cost recorded at each fork

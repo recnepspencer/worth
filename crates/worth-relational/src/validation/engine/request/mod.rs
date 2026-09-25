@@ -26,10 +26,15 @@ pub(crate) use scope_types::{
     PreparedRelationIntegrityScopes, PreparedRelationPairKey, PreparedVisibleRelationEdge,
 };
 
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Default)]
 struct RelationScopeRequirement {
     requires_global_evaluation: bool,
     requires_visible_successors: bool,
+    minimum_candidate_kinds: std::collections::BTreeSet<KindId>,
+    scan_existing_source_on_create: bool,
+    scan_existing_target_on_create: bool,
+    scan_existing_pair_on_create: bool,
+    scan_full_on_create: bool,
 }
 
 pub(crate) struct InvariantExecutionRequest<'runtime> {
@@ -169,17 +174,48 @@ pub(crate) fn relation_kind_scope(rule: &InvariantRule) -> Option<KindId> {
 fn relation_scope_requirement(rule: &InvariantRule) -> Option<(KindId, RelationScopeRequirement)> {
     let relation_kind_id = relation_kind_scope(rule)?;
     let requirement = match rule {
-        InvariantRule::CardinalityMinimumContract(_) => RelationScopeRequirement {
-            requires_global_evaluation: true,
+        InvariantRule::CardinalityMinimumContract(contract) => RelationScopeRequirement {
+            minimum_candidate_kinds: contract
+                .candidate_source_kinds
+                .iter()
+                .chain(&contract.candidate_target_kinds)
+                .copied()
+                .collect(),
             requires_visible_successors: false,
+            requires_global_evaluation: false,
+            scan_existing_source_on_create: contract.source_min.is_some_and(|minimum| minimum > 1),
+            scan_existing_target_on_create: contract.target_min.is_some_and(|minimum| minimum > 1),
+            scan_existing_pair_on_create: contract.pair_min.is_some(),
+            scan_full_on_create: false,
         },
+        InvariantRule::CardinalityMaximumContract(contract) => RelationScopeRequirement {
+            scan_existing_source_on_create: contract.source_max.is_some(),
+            scan_existing_target_on_create: contract.target_max.is_some(),
+            scan_existing_pair_on_create: contract.pair_max.is_some(),
+            ..RelationScopeRequirement::default()
+        },
+        InvariantRule::UniquenessContract(_) | InvariantRule::SymmetryContract(_) => {
+            RelationScopeRequirement {
+                scan_existing_pair_on_create: true,
+                scan_full_on_create: true,
+                ..RelationScopeRequirement::default()
+            }
+        }
         InvariantRule::AcyclicityContract(_) => RelationScopeRequirement {
             requires_global_evaluation: false,
             requires_visible_successors: true,
+            scan_existing_source_on_create: true,
+            scan_existing_target_on_create: true,
+            scan_full_on_create: true,
+            ..RelationScopeRequirement::default()
         },
         InvariantRule::ConnectivityMinimumContract(_) => RelationScopeRequirement {
             requires_global_evaluation: true,
             requires_visible_successors: true,
+            scan_existing_source_on_create: true,
+            scan_existing_target_on_create: true,
+            scan_full_on_create: true,
+            ..RelationScopeRequirement::default()
         },
         _ => RelationScopeRequirement::default(),
     };

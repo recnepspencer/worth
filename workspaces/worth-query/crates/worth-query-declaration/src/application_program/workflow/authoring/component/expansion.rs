@@ -1,4 +1,4 @@
-use super::{AuthoredWorkflowComponent, ExpandedWorkflowComponent};
+use super::{AuthoredWorkflowComponent, ComponentExpansionUsage, ExpandedWorkflowComponent};
 use crate::application_program::workflow::{
     ApplicationWorkflowComponentExpansion, ApplicationWorkflowConnection,
     ApplicationWorkflowExpandedConnectionProvenance, ApplicationWorkflowExpandedNodeProvenance,
@@ -20,16 +20,12 @@ where
 {
     super::super::super::identity::require_identity_segment(occurrence)
         .map_err(ApplicationWorkflowAuthoringDenial::InvalidIdentity)?;
-    if builder
-        .component_expansions
-        .iter()
-        .any(|expanded| expanded.occurrence_path() == occurrence)
-    {
+    if builder.component_occurrences.contains(occurrence) {
         return Err(
             ApplicationWorkflowAuthoringDenial::DuplicateComponentOccurrence(occurrence.to_owned()),
         );
     }
-    require_expansion_capacity(builder, component)?;
+    let incoming_usage = require_expansion_capacity(builder, component)?;
     let expanded_nodes = component
         .nodes
         .iter()
@@ -42,12 +38,10 @@ where
             ))
         })
         .collect::<Result<Vec<_>, ApplicationWorkflowAuthoringDenial>>()?;
-    if let Some(duplicate) = expanded_nodes.iter().find(|expanded| {
-        builder
-            .nodes
-            .iter()
-            .any(|existing| existing.identity() == expanded.identity())
-    }) {
+    if let Some(duplicate) = expanded_nodes
+        .iter()
+        .find(|expanded| builder.node_is_operation.contains_key(expanded.identity()))
+    {
         return Err(ApplicationWorkflowAuthoringDenial::DuplicateNode(
             duplicate.identity().clone(),
         ));
@@ -121,6 +115,11 @@ where
         })
         .collect::<Result<Vec<_>, _>>()?;
 
+    builder.node_is_operation.extend(
+        expanded_nodes
+            .iter()
+            .map(|node| (node.identity().clone(), node.kind().is_operation())),
+    );
     builder.nodes.extend(expanded_nodes);
     builder.connections.extend(expanded_connections);
     builder
@@ -132,7 +131,35 @@ where
             node_provenance,
             connection_provenance,
         ));
+    builder.component_occurrences.insert(occurrence.to_owned());
+    builder.component_occurrences.extend(
+        nested_expansions
+            .iter()
+            .map(|expansion| expansion.occurrence_path().to_owned()),
+    );
     builder.component_expansions.extend(nested_expansions);
+    builder.component_expansion_usage = ComponentExpansionUsage {
+        occurrences: builder
+            .component_expansion_usage
+            .occurrences
+            .saturating_add(incoming_usage.occurrences),
+        maximum_depth: builder
+            .component_expansion_usage
+            .maximum_depth
+            .max(incoming_usage.maximum_depth),
+        node_provenance: builder
+            .component_expansion_usage
+            .node_provenance
+            .saturating_add(incoming_usage.node_provenance),
+        connection_provenance: builder
+            .component_expansion_usage
+            .connection_provenance
+            .saturating_add(incoming_usage.connection_provenance),
+        port_provenance: builder
+            .component_expansion_usage
+            .port_provenance
+            .saturating_add(incoming_usage.port_provenance),
+    };
     Ok(ExpandedWorkflowComponent {
         component: component.identity.clone(),
         occurrence: occurrence.to_owned(),
@@ -144,10 +171,27 @@ where
 fn require_expansion_capacity<Spec>(
     builder: &ApplicationWorkflowDefinitionBuilder<Spec>,
     component: &AuthoredWorkflowComponent<Spec>,
-) -> Result<(), ApplicationWorkflowAuthoringDenial>
+) -> Result<ComponentExpansionUsage, ApplicationWorkflowAuthoringDenial>
 where
     Spec: ApplicationWorkflowSpec,
 {
+    let incoming = ComponentExpansionUsage {
+        occurrences: component.expansion_usage.occurrences.saturating_add(1),
+        maximum_depth: component.expansion_usage.maximum_depth.saturating_add(1),
+        node_provenance: component
+            .expansion_usage
+            .node_provenance
+            .saturating_add(component.nodes.len()),
+        connection_provenance: component
+            .expansion_usage
+            .connection_provenance
+            .saturating_add(component.connections.len()),
+        port_provenance: component
+            .expansion_usage
+            .port_provenance
+            .saturating_add(component.ports.len()),
+    };
+    let limits = builder.limits.component_limits();
     require_total(
         ApplicationWorkflowComponentResource::ExpandedNodes,
         builder.nodes.len(),
@@ -162,46 +206,37 @@ where
     )?;
     require_total(
         ApplicationWorkflowComponentResource::ComponentOccurrences,
-        builder.component_expansions.len(),
-        component.component_expansions.len().saturating_add(1),
-        usize::from(builder.limits.maximum_nodes()),
+        builder.component_expansion_usage.occurrences,
+        incoming.occurrences,
+        usize::from(limits.maximum_occurrences()),
     )?;
-
-    let depth = usize::from(builder.limits.maximum_component_depth());
-    let node_limit = usize::from(builder.limits.maximum_nodes()).saturating_mul(depth);
-    let edge_limit = usize::from(builder.limits.maximum_connections()).saturating_mul(depth);
-    let existing = provenance_counts(&builder.component_expansions);
-    let nested = provenance_counts(&component.component_expansions);
+    if incoming.maximum_depth > usize::from(limits.maximum_depth()) {
+        return Err(
+            ApplicationWorkflowAuthoringDenial::ComponentResourceLimitExceeded {
+                resource: ApplicationWorkflowComponentResource::ComponentDepth,
+                maximum: u32::from(limits.maximum_depth()),
+            },
+        );
+    }
     require_total(
         ApplicationWorkflowComponentResource::NodeProvenance,
-        existing.0,
-        component.nodes.len().saturating_add(nested.0),
-        node_limit,
+        builder.component_expansion_usage.node_provenance,
+        incoming.node_provenance,
+        limits.maximum_node_provenance() as usize,
     )?;
     require_total(
         ApplicationWorkflowComponentResource::ConnectionProvenance,
-        existing.1,
-        component.connections.len().saturating_add(nested.1),
-        edge_limit,
+        builder.component_expansion_usage.connection_provenance,
+        incoming.connection_provenance,
+        limits.maximum_connection_provenance() as usize,
     )?;
     require_total(
         ApplicationWorkflowComponentResource::PortProvenance,
-        existing.2,
-        component.ports.len().saturating_add(nested.2),
-        edge_limit,
-    )
-}
-
-fn provenance_counts(
-    expansions: &[ApplicationWorkflowComponentExpansion],
-) -> (usize, usize, usize) {
-    expansions.iter().fold((0, 0, 0), |counts, expansion| {
-        (
-            counts.0.saturating_add(expansion.nodes().len()),
-            counts.1.saturating_add(expansion.connections().len()),
-            counts.2.saturating_add(expansion.ports().len()),
-        )
-    })
+        builder.component_expansion_usage.port_provenance,
+        incoming.port_provenance,
+        limits.maximum_port_provenance() as usize,
+    )?;
+    Ok(incoming)
 }
 
 fn require_total(

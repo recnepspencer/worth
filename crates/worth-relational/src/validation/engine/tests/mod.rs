@@ -4,4 +4,5 @@ mod custom_invariants;
 mod custom_rules;
 mod dispatch;
 mod relation_integrity;
+mod shared_aspect_inputs;
 mod validation_engine_fixtures;

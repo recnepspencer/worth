@@ -111,10 +111,12 @@ pub(super) fn joined_required_root_discovers_at_its_own_publication(
     assert_eq!(
         first_settled
             .root_receipt()
+            .expect("the first root retains its commit")
             .committed_product_publication()
             .composite_commit(),
         second_settled
             .root_receipt()
+            .expect("the joined root retains its commit")
             .committed_product_publication()
             .composite_commit(),
         "the later publication joins the older completed root output"
@@ -176,10 +178,12 @@ pub(super) fn joined_required_root_discovers_at_its_own_publication(
     assert_eq!(
         first_settled
             .root_receipt()
+            .expect("the first root retains its commit")
             .committed_product_publication()
             .composite_commit(),
         third_settled
             .root_receipt()
+            .expect("the recovered root retains its commit")
             .committed_product_publication()
             .composite_commit()
     );

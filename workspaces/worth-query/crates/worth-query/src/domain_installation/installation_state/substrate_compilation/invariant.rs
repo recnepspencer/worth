@@ -109,6 +109,7 @@ impl CustomInvariantRule for InstalledRequiresOutgoingRelationsRule {
                     read_relation_kinds: self.required_relation_kinds.clone(),
                     affected_entity_kinds: self.relevant_entity_kinds.clone(),
                     affected_relation_kinds: self.required_relation_kinds.clone(),
+                    include_relation_endpoint_entity_touches: true,
                 }
                 .canonicalize(),
                 execution_point: InvariantExecutionPoint::CommitBoundary,

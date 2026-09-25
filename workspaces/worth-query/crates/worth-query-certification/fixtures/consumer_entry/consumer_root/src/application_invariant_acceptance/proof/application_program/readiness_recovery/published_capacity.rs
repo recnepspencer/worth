@@ -16,31 +16,31 @@ pub(crate) fn published_outputs_hold_no_hidden_read_lease(
     let request = world.application.request(&principal, &scope);
     let mut demands = Vec::new();
 
-    for (ordinal, source) in ["anchor-a", "sibling-a", "remote-a"]
-        .into_iter()
-        .enumerate()
-    {
+    for source in ["anchor-a", "sibling-a", "remote-a"] {
+        let prior_outputs = world
+            .application
+            .output_checkpoint_snapshot_state_for_test()
+            .0;
         let mut demand = request
-            .demand(PlanarOutputDemand::new(source))
-            .controls(controls())
-            .start()
+            .start_program_outputs::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
+                &world.application,
+                PlanarOutputDemand::new(source),
+                controls(),
+            )
             .expect("the independent output demand starts");
         let mut published = false;
         for _ in 0..8 {
             match demand.advance(&request).expect("publication progresses") {
-                WorthQueryApplicationOutputDemandProgress::Pending => {}
-                WorthQueryApplicationOutputDemandProgress::Settled(_) => {
+                WorthQueryApplicationProgramOutputProgress::Pending => {}
+                WorthQueryApplicationProgramOutputProgress::Settled(_) => {
                     panic!("the checkpoint inspection must happen before readiness settles")
                 }
             }
             let (outputs, pinned) = world
                 .application
                 .output_checkpoint_snapshot_state_for_test();
-            assert_eq!(
-                pinned, 0,
-                "published output receipts cannot pin a read snapshot"
-            );
-            if outputs == ordinal + 1 {
+            assert_eq!(pinned, 0, "published checkpoints cannot pin read snapshots");
+            if outputs > prior_outputs {
                 published = true;
                 break;
             }
@@ -51,12 +51,11 @@ pub(crate) fn published_outputs_hold_no_hidden_read_lease(
         );
         demands.push(demand);
     }
-    assert_eq!(
-        world
-            .application
-            .output_checkpoint_snapshot_state_for_test(),
-        (3, 0)
-    );
+    let (outputs, pinned) = world
+        .application
+        .output_checkpoint_snapshot_state_for_test();
+    assert_eq!(outputs, 3);
+    assert_eq!(pinned, 0);
 
     for mut demand in demands {
         let mut settled = false;
@@ -65,8 +64,8 @@ pub(crate) fn published_outputs_hold_no_hidden_read_lease(
                 .advance(&request)
                 .expect("readiness progresses without a hidden lease")
             {
-                WorthQueryApplicationOutputDemandProgress::Pending => {}
-                WorthQueryApplicationOutputDemandProgress::Settled(_) => {
+                WorthQueryApplicationProgramOutputProgress::Pending => {}
+                WorthQueryApplicationProgramOutputProgress::Settled(_) => {
                     settled = true;
                     break;
                 }
@@ -76,6 +75,13 @@ pub(crate) fn published_outputs_hold_no_hidden_read_lease(
             settled,
             "every independent published output must become ready"
         );
-        demand.close();
+        drop(demand);
     }
+    assert_eq!(
+        world
+            .application
+            .output_checkpoint_snapshot_state_for_test(),
+        (15, 0),
+        "settled and dropped handles leave no hidden checkpoint lease",
+    );
 }

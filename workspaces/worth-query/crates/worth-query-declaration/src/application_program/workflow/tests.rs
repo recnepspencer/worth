@@ -13,8 +13,12 @@ use super::*;
 
 mod authoring;
 mod condition;
+mod resource_limits;
 mod retry;
+mod scale;
+mod sequence;
 mod shape;
+mod subject_selector;
 mod validation;
 
 struct TestSchema;
@@ -168,8 +172,14 @@ impl ApplicationCapabilityMarkerIdentity for GeometryApprover {
 }
 
 fn limits() -> ApplicationWorkflowDefinitionLimits {
-    ApplicationWorkflowDefinitionLimits::new(32, 64, 4, 4, 64 * 1024)
-        .expect("test limits are nonzero")
+    ApplicationWorkflowDefinitionLimits::new(
+        32,
+        64,
+        4,
+        ApplicationWorkflowComponentLimits::new(32, 4, 128, 256, 256).unwrap(),
+        64 * 1024,
+    )
+    .expect("test limits are nonzero")
 }
 
 fn primitive_definition(

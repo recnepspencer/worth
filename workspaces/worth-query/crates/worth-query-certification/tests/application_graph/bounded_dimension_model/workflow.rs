@@ -20,14 +20,17 @@ pub use advance::{
     WorkflowAdvanceInput, WorkflowAdvanceIntent, WorkflowAdvanceOperation, WorkflowApprovalBinding,
     WorkflowApprovalCapability, WorkflowApprovalHandler, WorkflowApprovalIntent,
 };
-pub use assessment::{accept_assessment, settle_assessment, spoofed_assessment_denial};
+pub use assessment::{
+    accept_assessment, settle_assessment, settle_assessment_for, spoofed_assessment_denial,
+};
 pub use declaration::{
     seed_authoring, ReviewedGeometryWorkflow, WorkflowDefinitionAuthoringCapability,
     WorkflowDefinitionAuthoringInput, WorkflowDefinitionAuthoringOperation,
     WorkflowInstanceStartCapability, WorkflowInstanceStartInput, WorkflowInstanceStartOperation,
 };
+pub(crate) use definition::definition_limits;
 pub use definition::{
-    advance_instance, approve_instance, condition_terminal_definition,
+    advance_instance, approval_retry_definition, approve_instance, condition_terminal_definition,
     proposal_terminal_definition, propose_authoring_instance, propose_instance,
     propose_instance_on_branch, publish_definition, repeated_proposal_definition,
     reviewed_geometry_definition, reviewed_geometry_definition_with_join_policy, start_instance,
@@ -35,14 +38,14 @@ pub use definition::{
 };
 pub use join_replay_definition::{
     assessment_join_terminal_definition, assessment_join_terminal_definition_with_policy,
-    assessment_retry_definition,
+    assessment_retry_definition, multi_subject_assessment_retry_definition,
 };
 pub use mutation::{
     WorkflowDefinitionAuthoringBinding, WorkflowDefinitionAuthoringHandler,
     WorkflowDefinitionAuthoringIntent, WorkflowInstanceStartBinding, WorkflowInstanceStartHandler,
     WorkflowInstanceStartIntent,
 };
-pub use retry_definition::bounded_retry_definition;
+pub use retry_definition::{bounded_retry_definition, bounded_retry_definition_with_attempts};
 pub use runtime::{retain_workflow, retain_workflow_with_resources};
 
 pub fn declare(

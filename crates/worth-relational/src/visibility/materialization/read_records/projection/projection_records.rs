@@ -29,43 +29,74 @@ pub trait RelationRecordProjection: Sized {
 
 #[derive(Debug, Clone, Copy)]
 pub struct EntityProjectionRecord<'a> {
-    record: &'a EntityReadRecord,
+    entity_id: EntityId,
+    kind_id: KindId,
+    kind_name: &'a str,
+    lifecycle: RecordLifecycleState,
+    created_at_version: VersionId,
+    authoritative_aspect_state: Option<&'a AuthoritativeRecordAspectState>,
     projection_scope: &'a ProjectionAspectScope,
 }
 
 impl<'a> EntityProjectionRecord<'a> {
-    pub(crate) const fn new(
+    pub(crate) fn new(
         record: &'a EntityReadRecord,
         projection_scope: &'a ProjectionAspectScope,
     ) -> Self {
         Self {
-            record,
+            entity_id: record.entity_id,
+            kind_id: record.kind.kind_id,
+            kind_name: &record.kind.kind_name,
+            lifecycle: record.lifecycle,
+            created_at_version: record.created_at_version,
+            authoritative_aspect_state: record.authoritative_aspect_state.as_ref(),
+            projection_scope,
+        }
+    }
+
+    pub(super) fn from_slot(
+        entity_id: EntityId,
+        slot: &'a crate::storage::substrate::SlotView<
+            '_,
+            crate::storage::substrate::EntityRecordKind,
+        >,
+        kind: &'a crate::schema::data::KindResolution,
+        created_at_version: VersionId,
+        projection_scope: &'a ProjectionAspectScope,
+    ) -> Self {
+        Self {
+            entity_id,
+            kind_id: kind.kind_id,
+            kind_name: &kind.kind_name,
+            lifecycle: slot.lifecycle(),
+            created_at_version,
+            authoritative_aspect_state: slot.extra().authoritative_aspect_state.as_ref(),
             projection_scope,
         }
     }
 
     pub const fn entity_id(self) -> EntityId {
-        self.record.entity_id
+        self.entity_id
     }
 
     pub const fn kind_id(self) -> KindId {
-        self.record.kind.kind_id
+        self.kind_id
     }
 
     pub fn kind_name(self) -> &'a str {
-        &self.record.kind.kind_name
+        self.kind_name
     }
 
     pub const fn lifecycle(self) -> RecordLifecycleState {
-        self.record.lifecycle
+        self.lifecycle
     }
 
     pub const fn created_at_version(self) -> VersionId {
-        self.record.created_at_version
+        self.created_at_version
     }
 
     fn authoritative_aspect_state(self) -> Option<&'a AuthoritativeRecordAspectState> {
-        self.record.authoritative_aspect_state.as_ref()
+        self.authoritative_aspect_state
     }
 
     pub fn aspect_value(

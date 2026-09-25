@@ -115,6 +115,7 @@ pub enum WorthQueryProviderSessionCommitStop {
     ProductStale(crate::domain_computation::WorthQueryProductStaleApplication),
     ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
     NoEffect(worth_runtime_world::facade::NoEffectCompositePublication),
+    PreEffectDenied(WorthQueryProviderSessionFailure),
     Denied(WorthQueryProviderSessionFailure),
     Deferred(WorthQueryProviderSessionCommitDeferred),
     ControlStopped(super::WorthQueryProviderSessionCommitControlStopped),

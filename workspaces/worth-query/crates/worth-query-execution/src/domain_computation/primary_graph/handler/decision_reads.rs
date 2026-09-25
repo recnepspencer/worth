@@ -60,6 +60,49 @@ where
             .map_err(HandlerExecutionDenial::new)
     }
 
+    /// Absence means this binding has not published at the selected product
+    /// coordinate. Missing context, stale entities and invalid roles still deny.
+    pub fn prior_output_if_present<PriorBinding, Entity, Action>(
+        &mut self,
+        role: super::super::WorthQueryApplicationOutputRole<PriorBinding, Entity, Action>,
+    ) -> Result<Option<WorthQueryInvariantEntityIdentity<Schema, Entity>>, HandlerExecutionDenial>
+    where
+        PriorBinding: 'static,
+        Entity:
+            ApplicationEntityMarkerIdentity<Schema> + OperationReads<Binding::Operation> + 'static,
+        Action: super::super::WorthQueryApplicationOutputAction,
+    {
+        self.reader()
+            .prior_output_if_present(role)
+            .map_err(HandlerExecutionDenial::new)
+    }
+
+    /// Read the most recent preserved role, falling back to its initial create
+    /// role only when no preserve correspondence exists for this binding.
+    pub fn prior_output_preserved_or_created<PreserveBinding, CreateBinding, Entity>(
+        &mut self,
+        preserved: super::super::WorthQueryApplicationOutputRole<
+            PreserveBinding,
+            Entity,
+            super::super::WorthQueryPreserveOutput,
+        >,
+        created: super::super::WorthQueryApplicationOutputRole<
+            CreateBinding,
+            Entity,
+            super::super::WorthQueryCreateOutput,
+        >,
+    ) -> Result<WorthQueryInvariantEntityIdentity<Schema, Entity>, HandlerExecutionDenial>
+    where
+        PreserveBinding: 'static,
+        CreateBinding: 'static,
+        Entity:
+            ApplicationEntityMarkerIdentity<Schema> + OperationReads<Binding::Operation> + 'static,
+    {
+        select_prior_preserved_or_created(self.prior_output_if_present(preserved), || {
+            self.prior_output(created)
+        })
+    }
+
     /// Resolve the complete live inventory of one declared prior output family.
     pub fn prior_output_family<PriorBinding, Entity>(
         &mut self,
@@ -290,3 +333,16 @@ where
             .map_err(HandlerExecutionDenial::new)
     }
 }
+
+fn select_prior_preserved_or_created<Value, Error>(
+    preserved: Result<Option<Value>, Error>,
+    created: impl FnOnce() -> Result<Value, Error>,
+) -> Result<Value, Error> {
+    match preserved? {
+        Some(value) => Ok(value),
+        None => created(),
+    }
+}
+
+#[cfg(test)]
+mod prior_output_selection_tests;

@@ -215,6 +215,17 @@ impl WorthQueryApplicationBasisObservation {
 }
 
 impl WorthQueryApplicationBasisLease {
+    pub(in crate::domain_computation::primary_graph) fn carries_selected_program_interpretation(
+        &self,
+        selected: Option<&crate::domain_computation::primary_graph::program_occurrence::WorthQueryProgramSupportInterpretation>,
+    ) -> bool {
+        match (self.program_interpretation.as_ref(), selected) {
+            (Some(retained), Some(current)) => retained.same_support_as(current),
+            (None, None) => true,
+            _ => false,
+        }
+    }
+
     pub(crate) fn bind_product_observation(
         &mut self,
         product: &worth_runtime_world::facade::ProductBranchObservation,

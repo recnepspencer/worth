@@ -1,5 +1,6 @@
 //! The single authoritative Relational commit transition.
 
+mod managed_views;
 mod precommit_snapshot;
 mod product_publication;
 mod publication;
@@ -20,14 +21,15 @@ use crate::domain_computation::{
 pub(super) struct WorthQueryCommittedApplicationSession {
     attempt: WorthQueryPrimaryGraphApplicationAttempt,
     work: WorthQueryPrimaryMutationWorkCounters,
+    index_maintenance_work: worth_relational::facade::indexes::DerivedIndexMaintenanceWork,
     retained_preimage:
         Option<crate::domain_computation::application_aftermath::WorthQueryRetainedPreImage>,
     preimage_retention_work: WorthQueryPreImageRetentionWork,
-    branch: worth_relational::facade::history::BranchId,
     before: worth_relational::facade::snapshots::SnapshotHandle,
     next_basis: worth_relational::facade::branch::AdmittedRelationalBranchBasis,
     committed: worth_relational::facade::transactions::CommitResult,
     product_publication: crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationReceipt,
+    managed_views: Option<managed_views::PreparedViewPublication>,
 }
 
 pub(super) fn commit(
@@ -42,7 +44,6 @@ pub(super) fn commit(
         mut attempt,
         candidate,
         work,
-        branch,
         retained_preimage,
         preimage_retention_work,
         _completion,
@@ -61,10 +62,35 @@ pub(super) fn commit(
         )
     })
     .map_err(crate::domain_computation::WorthQueryProviderSessionCommitStop::from)?;
-    let candidate = provider
+    let mut candidate = provider
         .graph
         .with_runtime_mut(|runtime| runtime.prepare_validated_proposal(candidate))
         .map_err(transaction_commit_stop)?;
+    let ordinary_index_budget =
+        crate::domain_computation::primary_graph::index_maintenance_budget::ordinary_index_maintenance_budget();
+    #[cfg(test)]
+    let ordinary_index_budget = if provider.take_tight_index_maintenance_budget() {
+        worth_relational::facade::indexes::DerivedIndexMaintenanceBudget {
+            maximum_work_units: 1,
+            ..ordinary_index_budget
+        }
+    } else {
+        ordinary_index_budget
+    };
+    let index_maintenance_work = provider
+        .graph
+        .with_runtime(|runtime| {
+            crate::domain_computation::primary_graph::index_maintenance_budget::prepare_candidate_with_cold_fallback(
+                runtime,
+                &mut candidate,
+                &provider.graph.primary_index_ids,
+                before.as_snapshot(),
+                ordinary_index_budget,
+            )
+        })
+        .map_err(index_preparation_stop)?;
+    let managed_views =
+        managed_views::prepare(provider, &product, before.as_snapshot(), &candidate);
     #[cfg(feature = "test-world-operation-control")]
     provider.after_application_candidate_preparation_for_test();
     let performed = product_publication::publish(provider, &mut attempt, candidate)?;
@@ -84,13 +110,14 @@ pub(super) fn commit(
     Ok(WorthQueryCommittedApplicationSession {
         attempt,
         work,
+        index_maintenance_work,
         retained_preimage,
         preimage_retention_work,
-        branch,
         before: before.into_publication(),
         next_basis,
         committed,
         product_publication: performed,
+        managed_views,
     })
 }
 
@@ -130,6 +157,12 @@ impl WorthQueryCommittedApplicationSession {
         self.work
     }
 
+    pub(super) const fn index_maintenance_work(
+        &self,
+    ) -> worth_relational::facade::indexes::DerivedIndexMaintenanceWork {
+        self.index_maintenance_work
+    }
+
     pub(super) const fn retained_preimage(
         &self,
     ) -> Option<&crate::domain_computation::application_aftermath::WorthQueryRetainedPreImage> {
@@ -160,6 +193,89 @@ impl WorthQueryCommittedApplicationSession {
 
 fn failure(detail: &'static str) -> WorthQueryProviderSessionFailure {
     provider_failure(WorthQueryProviderSessionProtocolStage::Commit, detail)
+}
+
+fn index_preparation_stop(
+    denial: worth_relational::facade::indexes::DerivedIndexMaintenanceDenial,
+) -> crate::domain_computation::WorthQueryProviderSessionCommitStop {
+    use worth_relational::facade::indexes::DerivedIndexMaintenanceDenialKind as Kind;
+    if let Kind::CandidateLifetimeExpired {
+        maximum_lifetime_millis,
+    } = &denial.kind
+    {
+        return crate::domain_computation::WorthQueryProviderSessionCommitStop::Deferred(
+            crate::domain_computation::WorthQueryProviderSessionCommitDeferred::new(
+                crate::domain_computation::WorthQueryProviderSessionCommitDeferredKind::CandidateLifetimeExpired {
+                    maximum_lifetime_millis: *maximum_lifetime_millis,
+                },
+                "prepared candidate expired before primary index admission",
+            ),
+        );
+    }
+    let kind = match denial.kind {
+        Kind::WorkBudgetExceeded | Kind::ColdReconstructionRequired => {
+            crate::domain_computation::WorthQueryProviderSessionDenialKind::IndexMaintenanceBudgetExceeded
+        }
+        Kind::GenerationIdentityExhausted => {
+            crate::domain_computation::WorthQueryProviderSessionDenialKind::IndexGenerationIdentityExhausted
+        }
+        _ => crate::domain_computation::WorthQueryProviderSessionDenialKind::ProviderRejected,
+    };
+    crate::domain_computation::WorthQueryProviderSessionCommitStop::PreEffectDenied(
+        WorthQueryProviderSessionFailure::new(
+            kind,
+            WorthQueryProviderSessionProtocolStage::Commit,
+            format!("primary index candidate preparation denied: {denial:?}"),
+            crate::domain_computation::WorthQueryProviderSessionProtocolCounters::default(),
+        ),
+    )
+}
+
+#[cfg(test)]
+mod index_preparation_tests {
+    use super::*;
+
+    #[test]
+    fn expired_candidate_remains_a_typed_retryable_defer() {
+        let stop = index_preparation_stop(
+            worth_relational::facade::indexes::DerivedIndexMaintenanceDenial {
+                kind: worth_relational::facade::indexes::DerivedIndexMaintenanceDenialKind::CandidateLifetimeExpired {
+                    maximum_lifetime_millis: 17,
+                },
+                work: Default::default(),
+            },
+        );
+        let crate::domain_computation::WorthQueryProviderSessionCommitStop::Deferred(deferred) =
+            stop
+        else {
+            panic!("candidate expiry must remain retryable before World effect");
+        };
+        assert_eq!(
+            deferred.kind(),
+            crate::domain_computation::WorthQueryProviderSessionCommitDeferredKind::CandidateLifetimeExpired {
+                maximum_lifetime_millis: 17,
+            },
+        );
+    }
+
+    #[test]
+    fn cold_reconstruction_exhaustion_remains_a_typed_index_budget_denial() {
+        let stop = index_preparation_stop(
+            worth_relational::facade::indexes::DerivedIndexMaintenanceDenial {
+                kind: worth_relational::facade::indexes::DerivedIndexMaintenanceDenialKind::ColdReconstructionRequired,
+                work: Default::default(),
+            },
+        );
+        let crate::domain_computation::WorthQueryProviderSessionCommitStop::PreEffectDenied(denial) =
+            stop
+        else {
+            panic!("cold index exhaustion must deny before World effect");
+        };
+        assert_eq!(
+            denial.kind(),
+            crate::domain_computation::WorthQueryProviderSessionDenialKind::IndexMaintenanceBudgetExceeded,
+        );
+    }
 }
 
 fn transaction_commit_stop(

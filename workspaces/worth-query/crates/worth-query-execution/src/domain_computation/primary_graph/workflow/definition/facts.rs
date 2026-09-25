@@ -48,6 +48,7 @@ where
     Spec: ApplicationWorkflowSpec,
 {
     let limits = definition.limits();
+    let component_limits = limits.component_limits();
     let fields = BTreeMap::from([
         (
             layout.definition.content_identity.clone(),
@@ -70,8 +71,24 @@ where
             AspectValue::UInt64(u64::from(limits.maximum_effects())),
         ),
         (
+            layout.definition.maximum_component_occurrences.clone(),
+            AspectValue::UInt64(u64::from(component_limits.maximum_occurrences())),
+        ),
+        (
             layout.definition.maximum_component_depth.clone(),
-            AspectValue::UInt64(u64::from(limits.maximum_component_depth())),
+            AspectValue::UInt64(u64::from(component_limits.maximum_depth())),
+        ),
+        (
+            layout.definition.maximum_node_provenance.clone(),
+            AspectValue::UInt64(u64::from(component_limits.maximum_node_provenance())),
+        ),
+        (
+            layout.definition.maximum_connection_provenance.clone(),
+            AspectValue::UInt64(u64::from(component_limits.maximum_connection_provenance())),
+        ),
+        (
+            layout.definition.maximum_port_provenance.clone(),
+            AspectValue::UInt64(u64::from(component_limits.maximum_port_provenance())),
         ),
         (
             layout.definition.maximum_canonical_bytes.clone(),
@@ -322,6 +339,12 @@ fn create_node(
         fields.insert(
             layout.node.approval_capability_identity.clone(),
             text(hex(binding.installed_capability_identity)),
+        );
+    }
+    if let ApplicationWorkflowNodeKind::Assessment(assessment) = node.kind() {
+        fields.insert(
+            layout.node.assessment_subject.clone(),
+            text(assessment.subject().persistence_identity()),
         );
     }
     WorthQueryApplicationRealizedEffect::CreateEntity {

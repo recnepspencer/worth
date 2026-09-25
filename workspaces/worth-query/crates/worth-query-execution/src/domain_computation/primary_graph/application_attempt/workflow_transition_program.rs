@@ -94,57 +94,53 @@ where
             instance.definition_entity_id(),
             instance.definition_content_identity().clone(),
         );
-        let (compiled, mut facts) = self.lease.handle().with_runtime(|runtime| {
-            reconstruct_compiled_definition(
-                runtime,
-                self.lease.snapshot(),
-                &layout,
-                &published,
-                instance.program_revision(),
-                Spec::IDENTITY.as_str(),
-                usize::from(installed.resources().maximum_definition_nodes()),
-                usize::from(installed.resources().maximum_definition_connections()),
-                WorkflowDefinitionCompilationPosture::Retained,
-            )
-        })?;
+        let (compiled, mut facts) = reconstruct_compiled_definition(
+            self.lease.handle(),
+            self.lease.snapshot(),
+            &layout,
+            &published,
+            instance.program_revision(),
+            Spec::IDENTITY.as_str(),
+            installed.support_identity_bytes(),
+            usize::from(installed.resources().maximum_definition_nodes()),
+            usize::from(installed.resources().maximum_definition_connections()),
+            WorkflowDefinitionCompilationPosture::Retained,
+        )?;
         let subject = self.admission.scope_entity_id();
+        let maximum_transitions = usize::try_from(
+            installed
+                .resources()
+                .maximum_retained_transitions_per_instance(),
+        )
+        .unwrap_or(usize::MAX);
         let mut observed = self.lease.handle().with_runtime(|runtime| {
             super::workflow_instance_observation::observe_workflow_instance(
+                self.lease.handle(),
                 runtime,
                 self.lease.snapshot(),
                 &layout,
                 &instance,
                 subject,
                 compiled.lineage(),
-                usize::try_from(
-                    installed
-                        .resources()
-                        .maximum_retained_transitions_per_instance(),
-                )
-                .unwrap_or(usize::MAX),
+                &compiled,
+                maximum_transitions,
+                installed.resources().history_reconstruction_budget(),
             )
         })?;
-        let replays = observed
-            .transitions
-            .iter()
-            .map(|transition| {
-                select_settled_replay_transition(
-                    &compiled,
-                    instance.entity_id(),
-                    transition.settlement,
-                )
-                .map(|selected| publication::PreparedWorkflowTransitionReplay {
-                    identity: selected.identity().to_owned(),
-                    identity_bytes: *selected.identity_bytes(),
-                    node_path: selected.node_path().to_owned(),
-                    operation_receipt_identity: transition.settlement.operation_receipt_identity(),
-                })
-            })
-            .collect::<Result<Vec<_>, _>>()?
-            .into_boxed_slice();
         let (live_membership, retire_live_membership) = match observed.live_membership {
             Some(membership) => (membership, true),
             None => {
+                self.lease.handle().with_runtime(|runtime| {
+                    observed.ensure_history(
+                        self.lease.handle(),
+                        runtime,
+                        self.lease.snapshot(),
+                        &layout,
+                        instance.entity_id(),
+                        maximum_transitions,
+                        &compiled,
+                    )
+                })?;
                 if observed.transitions.is_empty() {
                     return Err(denial(
                         WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAlreadySettled,
@@ -158,19 +154,18 @@ where
                     .max_by_key(|(_, transition)| transition.settlement.occurrence())
                     .expect("settled transition inventory was checked as nonempty");
                 let settled = observed.transitions.remove(settled_index);
-                let mut prior = observed
-                    .transitions
-                    .iter()
-                    .map(|transition| transition.settlement)
-                    .collect::<Vec<_>>();
-                let selected =
-                    select_terminal_transition(&compiled, instance.entity_id(), &mut prior)?;
+                let selected = select_terminal_transition(
+                    &compiled,
+                    instance.entity_id(),
+                    &observed.progress_basis,
+                )?;
                 if !selected.matches_settlement(settled.settlement) {
                     return Err(denial(
                         WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,
                         "settled workflow transition does not close the compiled terminal head",
                     ));
                 }
+                let replay_probe_identity = *selected.identity_bytes();
                 let (membership, mut settlement_facts) =
                     self.lease.handle().with_runtime(|runtime| {
                         super::workflow_instance_observation::recover_settled_live_membership(
@@ -184,25 +179,31 @@ where
                     })?;
                 observed.facts.append(&mut settlement_facts);
                 facts.append(&mut observed.facts);
+                let replays = publication::PreparedWorkflowTransitionReplays::retained(
+                    std::mem::take(&mut observed.replays),
+                );
                 return self
                     .materialize_terminal_transition(
                         &layout, compiled, instance, selected, membership, false, facts,
                     )
-                    .map(|prepared| prepared.with_replays(replays));
+                    .map(|prepared| {
+                        prepared.with_replays(replays.with_probe_identity(replay_probe_identity))
+                    });
             }
         };
-        let mut settled = observed
-            .transitions
-            .iter()
-            .map(|transition| transition.settlement)
-            .collect::<Vec<_>>();
-        let selected = match select_current_transition(&compiled, instance.entity_id(), &mut settled)
-        {
+        let selected = match select_current_transition(
+            &compiled,
+            instance.entity_id(),
+            &observed.progress_basis,
+        ) {
             Ok(selected) => selected,
             Err(denial)
                 if denial.kind()
                     == WorthQueryApplicationAttemptDenialKind::WorkflowTransitionNodeUnsupported =>
             {
+                let replays = publication::PreparedWorkflowTransitionReplays::retained(
+                    std::mem::take(&mut observed.replays),
+                );
                 return Ok(PreparedWorkflowAdvance::ReplayOnly {
                     read_set: self,
                     transition_identity_locator: layout.transition.identity.clone(),
@@ -216,19 +217,23 @@ where
             }
             Err(denial) => return Err(denial),
         };
+        let replay_probe_identity = *selected.identity_bytes();
+        let replays = publication::PreparedWorkflowTransitionReplays::retained(std::mem::take(
+            &mut observed.replays,
+        ));
         facts.append(&mut observed.facts);
         let prepared = match selected.kind().clone() {
             SelectedWorkflowTransitionKind::Assessment(assessment) => self
                 .materialize_assessment_requirement(
                     &layout,
-                    compiled.program_revision().clone(),
+                    &compiled,
                     instance,
                     selected,
                     live_membership,
                     false,
                     facts,
                     assessment,
-                    &observed.transitions,
+                    observed.progress_basis.progress(),
                 ),
             SelectedWorkflowTransitionKind::Condition(condition) => self
                 .materialize_condition_requirement(
@@ -251,7 +256,7 @@ where
                 selected,
                 live_membership,
                 facts,
-                &observed.transitions,
+                observed.progress_basis.progress(),
                 policy,
             ),
             SelectedWorkflowTransitionKind::Terminal => self.materialize_terminal_transition(
@@ -272,11 +277,11 @@ where
                     live_membership,
                     false,
                     facts,
-                    &observed.transitions,
+                    observed.progress_basis.progress(),
                     operation,
                 ),
         }?;
-        Ok(prepared.with_replays(replays))
+        Ok(prepared.with_replays(replays.with_probe_identity(replay_probe_identity)))
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -354,9 +359,11 @@ where
             assessment: None,
             supporting_identity: None,
             operation_receipt_identity: None,
+            progress_update: None,
+            terminal: true,
             approval: None,
             approval_identity: None,
-            replays: Box::default(),
+            replays: Default::default(),
         })
     }
 }

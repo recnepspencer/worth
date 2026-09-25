@@ -113,6 +113,7 @@ where
         if !self.entity_keys.insert((kind, key.clone())) {
             return Err(invalid_seed("duplicate application entity key"));
         }
+        self.pending_entity_keys.insert((kind, key.clone()));
         let fields = seed
             .fields
             .into_iter()
@@ -144,10 +145,16 @@ where
             .ok_or_else(|| invalid_seed(seed.relation))?;
         let from_key = seed.from.into_string();
         let to_key = seed.to.into_string();
-        if !self.entity_keys.contains(&(layout.from, from_key.clone()))
-            || !self.entity_keys.contains(&(layout.to, to_key.clone()))
+        if !self
+            .pending_entity_keys
+            .contains(&(layout.from, from_key.clone()))
+            || !self
+                .pending_entity_keys
+                .contains(&(layout.to, to_key.clone()))
         {
-            return Err(invalid_seed("typed relation endpoint is not bound"));
+            return Err(invalid_seed(
+                "typed relation endpoints must be seeded in the current batch",
+            ));
         }
         let relation_identity = (layout.kind, seed.key.clone());
         if !self.relation_keys.insert(relation_identity) {

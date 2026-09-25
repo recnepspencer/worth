@@ -37,7 +37,14 @@ impl VisibilityProjectionView<'_> {
         direction: RelationalAdjacencyDirection,
         maximum_work: usize,
     ) -> Result<AdjacencyStructuralRevision, AdjacencyStructuralRevisionDenial> {
-        if self.authoritative_entity_record(anchor).is_none() {
+        if self
+            .entity_record_with_projection_scope(
+                anchor,
+                super::ProjectionAspectScope::empty(),
+                |_| Some(()),
+            )
+            .is_none()
+        {
             return Err(AdjacencyStructuralRevisionDenial);
         }
         let direction = match direction {

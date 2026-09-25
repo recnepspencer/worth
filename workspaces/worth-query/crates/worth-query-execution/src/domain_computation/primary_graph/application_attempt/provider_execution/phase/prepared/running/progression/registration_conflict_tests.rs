@@ -216,6 +216,7 @@ fn while_peer_is_registered(
         authorization,
         idempotency,
         coordination: &coordination,
+        product: &product,
         aftermath_causality,
     };
     let peer = finish_application_commit(

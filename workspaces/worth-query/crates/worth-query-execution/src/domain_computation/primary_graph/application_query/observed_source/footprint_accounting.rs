@@ -1,7 +1,7 @@
 use worth_relational::facade::identity::EntityId;
 
 use super::{
-    WorthQueryObservedAdjacencyRevision, WorthQueryObservedAspectRevision,
+    WorthQueryObservedAdjacencyRevision, WorthQueryObservedFieldRevision,
     WorthQueryObservedSourceFootprint,
 };
 
@@ -14,11 +14,12 @@ impl WorthQueryObservedSourceFootprint {
         let aspect_bytes = self
             .aspects
             .capacity()
-            .saturating_mul(std::mem::size_of::<WorthQueryObservedAspectRevision>());
+            .saturating_mul(std::mem::size_of::<WorthQueryObservedFieldRevision>());
         let aspect_text = self.aspects.iter().fold(0usize, |bytes, aspect| {
             bytes
                 .saturating_add(aspect.entity_name.capacity())
                 .saturating_add(aspect.aspect.as_str().len())
+                .saturating_add(aspect.field.as_str().len())
         });
         let adjacency_bytes = self
             .adjacencies

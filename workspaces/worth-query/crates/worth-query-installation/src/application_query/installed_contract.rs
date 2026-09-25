@@ -5,7 +5,7 @@ use super::{
     WorthQueryApplicationQueryCanonicalWorkPolicy,
     WorthQueryInstalledApplicationContinuationContract, WorthQueryInstalledApplicationLiveContract,
     WorthQueryInstalledApplicationQueryIdentity, WorthQueryInstalledApplicationReadFamilyBinding,
-    WorthQueryInstalledGraphReadContract,
+    WorthQueryInstalledGraphReadContract, WorthQueryInstalledOutputDependencyContract,
 };
 use crate::{
     application_operation::WorthQueryInstalledAbilityRequirement,
@@ -78,6 +78,14 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
     }
     pub fn read_graph(&self) -> &WorthQueryInstalledGraphReadContract {
         self.compiled.read_graph()
+    }
+
+    pub fn output_dependencies(&self) -> WorthQueryInstalledOutputDependencyContract<'_> {
+        WorthQueryInstalledOutputDependencyContract::new(
+            self.compiled.identity(),
+            self.compiled.read_graph(),
+            self.compiled.dependency_equivalence(),
+        )
     }
     pub fn read_family_binding(&self) -> &WorthQueryInstalledApplicationReadFamilyBinding {
         self.compiled.read_family_binding()

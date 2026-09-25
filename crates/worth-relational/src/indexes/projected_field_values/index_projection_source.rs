@@ -13,6 +13,11 @@ pub(in crate::indexes) struct IndexProjectionSource<'view, 'runtime> {
 }
 
 impl<'view, 'runtime> IndexProjectionSource<'view, 'runtime> {
+    pub(in crate::indexes) fn selected(
+        projection: &'view VisibilityProjectionView<'runtime>,
+    ) -> Self {
+        Self { projection }
+    }
     pub(in crate::indexes) fn exact(
         projection: &'view VisibilityProjectionView<'runtime>,
     ) -> Option<Self> {
@@ -44,6 +49,13 @@ impl<'view, 'runtime> IndexProjectionSource<'view, 'runtime> {
         kind_id: KindId,
     ) -> Option<&LoweredAspectContractPlan> {
         self.schema_authority()?.entity_aspect_plan(kind_id)
+    }
+
+    pub(in crate::indexes) fn relation_aspect_plan(
+        &self,
+        kind_id: KindId,
+    ) -> Option<&LoweredAspectContractPlan> {
+        self.schema_authority()?.relation_aspect_plan(kind_id)
     }
 
     pub(in crate::indexes) fn for_each_entity(

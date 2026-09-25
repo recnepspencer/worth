@@ -189,7 +189,7 @@ fn adjust_prior(
         .execute_in_program(application)
         .expect("the public prior-family operation reaches its installed provider");
     let WorthQueryApplicationMutationOutcome::Committed { result, .. } = outcome else {
-        panic!("the prior-family adjustment must publish: {outcome:?}")
+        panic!("the prior-family adjustment {command} must publish: {outcome:?}")
     };
     result.adjusted_roles
 }

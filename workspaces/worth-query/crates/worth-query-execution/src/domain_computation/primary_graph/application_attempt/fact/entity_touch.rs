@@ -8,6 +8,9 @@ pub(super) fn evaluate(fact: &WorthQueryApplicationObservedFact, candidate: Enti
         WorthQueryApplicationObservedFact::SourceAspectRevision { entity_id, .. } => {
             *entity_id == candidate
         }
+        WorthQueryApplicationObservedFact::SourceFieldRevision { entity_id, .. } => {
+            *entity_id == candidate
+        }
         WorthQueryApplicationObservedFact::SourceAdjacencyRevision {
             anchor, endpoints, ..
         } => *anchor == candidate || endpoints.contains(&candidate),
@@ -51,15 +54,6 @@ pub(super) fn evaluate(fact: &WorthQueryApplicationObservedFact, candidate: Enti
                     .iter()
                     .any(|relation| relation.from == candidate || relation.to == candidate)
         }
-        WorthQueryApplicationObservedFact::WorkflowTransitionCapacity {
-            instance,
-            transitions,
-            ..
-        } => {
-            *instance == candidate
-                || transitions
-                    .iter()
-                    .any(|relation| relation.from == candidate || relation.to == candidate)
-        }
+        WorthQueryApplicationObservedFact::WorkflowHistoryBasis { .. } => false,
     }
 }

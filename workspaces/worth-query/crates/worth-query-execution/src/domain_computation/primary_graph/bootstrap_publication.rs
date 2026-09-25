@@ -23,6 +23,7 @@ use super::{
 
 pub(super) fn commit_bootstrap_rows(
     graph: &WorthQueryPrimaryGraph,
+    first_principal_ordinal: usize,
     rows: Vec<WorthQueryPrincipalBootstrapRow>,
     entity_rows: Vec<WorthQueryTypedEntityBootstrapRow>,
     relation_rows: Vec<WorthQueryTypedRelationBootstrapRow>,
@@ -40,7 +41,7 @@ pub(super) fn commit_bootstrap_rows(
             .map_err(map_bootstrap_transaction_admission_denial)?;
         let mut batch = WorkerIntentBatch::new("application-principal-bootstrap");
         for (ordinal, row) in rows.into_iter().enumerate() {
-            batch = append_principal_row(batch, ordinal, row);
+            batch = append_principal_row(batch, first_principal_ordinal + ordinal, row);
         }
         for row in entity_rows {
             batch = append_typed_entity(batch, row);

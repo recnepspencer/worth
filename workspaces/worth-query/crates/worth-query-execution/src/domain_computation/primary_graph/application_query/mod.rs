@@ -7,16 +7,19 @@ mod authorization_observation;
 mod authorization_work;
 mod authorized_read;
 mod basis;
+pub(in crate::domain_computation::primary_graph) use basis::WorthQueryApplicationQueryBasisCustody;
 mod continuation;
 mod control_validation;
 mod controls;
 mod denial;
+pub(in crate::domain_computation::primary_graph) mod derived_view;
 mod disclosure;
 mod execution_shape;
 mod execution_validation;
 #[cfg(test)]
 mod governance_affinity_tests;
 mod graph_read_plan_binding;
+mod installed_schema_currentness;
 mod live;
 pub(in crate::domain_computation::primary_graph) mod observed_source;
 mod one_shot;
@@ -54,6 +57,12 @@ pub use controls::{
 pub use denial::{
     WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryAdmissionDenialKind,
 };
+pub use derived_view::{
+    WorthQueryManagedDerivedMemberToken, WorthQueryManagedDerivedValue,
+    WorthQueryManagedDerivedView, WorthQueryManagedDerivedViewDenial,
+    WorthQueryManagedDerivedViewKey, WorthQueryManagedDerivedViewReconciliation,
+    WorthQueryManagedDerivedViewSnapshot,
+};
 pub use disclosure::{
     WorthQueryApplicationDisclosureDecisionFact, WorthQueryApplicationDisclosureOutcome,
     WorthQueryApplicationDisclosureOutcomeIdentity, WorthQueryApplicationDisclosureReceipt,
@@ -67,13 +76,13 @@ pub use live::{
     WorthQueryApplicationLiveOpenDenialKind, WorthQueryApplicationLiveOutcome,
     WorthQueryApplicationLiveOverflow, WorthQueryApplicationLiveUpdate,
 };
+pub use observed_source::{
+    WorthQueryBoundSourceExpectation, WorthQueryObservedResultSet, WorthQueryObservedSource,
+    WorthQuerySourceExpectationDenial, WorthQuerySourceExpectationDenialKind,
+};
 pub(in crate::domain_computation::primary_graph) use observed_source::{
     WorthQueryCheckpointSourceIdentity, WorthQueryObservedSourceEpoch,
     WorthQueryRuntimeSourceIdentity,
-};
-pub use observed_source::{
-    WorthQueryObservedSource, WorthQuerySourceExpectationDenial,
-    WorthQuerySourceExpectationDenialKind,
 };
 pub use one_shot::{
     WorthQueryApplicationOneShotDenial, WorthQueryApplicationOneShotDenialKind,

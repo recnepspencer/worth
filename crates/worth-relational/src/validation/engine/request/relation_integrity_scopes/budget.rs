@@ -54,13 +54,14 @@ impl PreparedRelationIntegrityScopeBudgetExceeded {
 pub(super) fn scope_budget_snapshot(
     scopes: &BTreeMap<KindId, PreparedRelationIntegrityScope>,
     touched_entities: &BTreeSet<EntityId>,
+    created_candidate_count: usize,
     deleted_entities: &BTreeSet<EntityId>,
     scanned_relations: &BTreeSet<RelationId>,
     planned_edge_count: usize,
 ) -> RelationIntegrityScopeBudgetSnapshot {
     RelationIntegrityScopeBudgetSnapshot {
         relation_kind_count: scopes.len(),
-        touched_entity_count: touched_entities.len(),
+        touched_entity_count: touched_entities.len() + created_candidate_count,
         deleted_entity_count: deleted_entities.len(),
         scanned_relation_count: scanned_relations.len(),
         planned_edge_count,

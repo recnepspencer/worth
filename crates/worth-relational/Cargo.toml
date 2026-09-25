@@ -26,6 +26,7 @@ sha2 = "0.10"
 dashmap = "6"
 crossbeam-queue = "0.3"
 arc-swap = "1"
+im = { version = "15.1", features = ["serde"] }
 
 [dev-dependencies]
 worth-harness.workspace = true

@@ -1,6 +1,6 @@
 use worth_query_host::facade::declaration::application_program::{
     ApplicationWorkflowControlOutcome, ApplicationWorkflowDefinitionBuilder,
-    ApplicationWorkflowRetry, ValidatedWorkflowDefinition,
+    ApplicationWorkflowRetry, ApplicationWorkflowSubjectSelector, ValidatedWorkflowDefinition,
 };
 
 use super::super::schema::PartDimensionQuery;
@@ -75,8 +75,20 @@ pub fn assessment_join_terminal_definition_with_policy(
 }
 
 pub fn assessment_retry_definition() -> ValidatedWorkflowDefinition<ReviewedGeometryWorkflow> {
+    assessment_retry_definition_with_subjects("assessment-retry", false)
+}
+
+pub fn multi_subject_assessment_retry_definition(
+) -> ValidatedWorkflowDefinition<ReviewedGeometryWorkflow> {
+    assessment_retry_definition_with_subjects("multi-subject-assessment-retry", true)
+}
+
+fn assessment_retry_definition_with_subjects(
+    identity: &str,
+    second_is_related: bool,
+) -> ValidatedWorkflowDefinition<ReviewedGeometryWorkflow> {
     let mut builder = ApplicationWorkflowDefinitionBuilder::<ReviewedGeometryWorkflow>::new(
-        "assessment-retry",
+        identity,
         definition_limits(),
     )
     .expect("the workflow identity is valid");
@@ -86,9 +98,18 @@ pub fn assessment_retry_definition() -> ValidatedWorkflowDefinition<ReviewedGeom
     let first = builder
         .assessment::<PartDimensionQuery>("checks/first")
         .expect("the first assessment is valid");
-    let second = builder
-        .assessment::<PartDimensionQuery>("checks/second")
-        .expect("the second assessment is valid");
+    let second = if second_is_related {
+        builder
+            .assessment_for::<PartDimensionQuery>(
+                "checks/second",
+                ApplicationWorkflowSubjectSelector::related(),
+            )
+            .expect("the related assessment is valid")
+    } else {
+        builder
+            .assessment::<PartDimensionQuery>("checks/second")
+            .expect("the second assessment is valid")
+    };
     let join = builder
         .evidence_join(
             "checks/join",

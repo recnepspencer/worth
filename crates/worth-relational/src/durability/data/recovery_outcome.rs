@@ -14,6 +14,8 @@ pub struct RecoveryOutcome {
     pub cursor: RecoveryCursor,
     pub coverage: RecoveryCoverage,
     pub integrity_report: RecoveryIntegrityReport,
+    #[serde(default)]
+    pub checkpoint_restore_work: Option<super::CheckpointRestoreWork>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

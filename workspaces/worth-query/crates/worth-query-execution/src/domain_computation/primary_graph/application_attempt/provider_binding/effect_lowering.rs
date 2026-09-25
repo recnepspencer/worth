@@ -11,13 +11,15 @@ use worth_relational::facade::transactions::{
 
 use super::{
     progression_denial, WorthQueryApplicationAttemptDenial, WorthQueryApplicationEmission,
-    WorthQueryApplicationObservedFact, WorthQueryApplicationRealizedEffect,
+    WorthQueryApplicationRealizedEffect,
 };
 use crate::domain_computation::{
     WorthQueryProvisionalEffectAction, WorthQueryProvisionalEffectStep,
 };
 
+mod observed_fact_index;
 mod optional_field_patch;
+pub(super) use observed_fact_index::ObservedFactIndex;
 
 #[derive(Clone)]
 pub(super) enum WorthQueryLoweredProviderEffect {
@@ -36,7 +38,7 @@ struct WorthQueryCreateRelationEffect {
 }
 
 pub(super) fn lower_provider_effect(
-    facts: &[WorthQueryApplicationObservedFact],
+    facts: &ObservedFactIndex<'_>,
     symbols: &BTreeMap<EntityReference, Arc<str>>,
     mutation_partition: worth_relational::facade::identity::PartitionId,
     effect: WorthQueryApplicationRealizedEffect,
@@ -100,14 +102,14 @@ fn lower_create_entity(
 }
 
 fn lower_update_entity(
-    facts: &[WorthQueryApplicationObservedFact],
+    facts: &ObservedFactIndex<'_>,
     entity_id: EntityId,
     fields: BTreeMap<AspectFieldLocator, AspectValue>,
 ) -> Result<WorthQueryLoweredProviderEffect, WorthQueryApplicationAttemptDenial> {
     let steps = fields
         .keys()
         .map(|locator| {
-            let target = field_fact_identity(facts, entity_id, locator)?;
+            let target = facts.field_identity(entity_id, locator)?;
             effect_step(WorthQueryProvisionalEffectAction::Replace {
                 target_identity: target.into(),
             })
@@ -125,12 +127,12 @@ fn lower_update_entity(
 }
 
 fn lower_delete_entity(
-    facts: &[WorthQueryApplicationObservedFact],
+    facts: &ObservedFactIndex<'_>,
     entity_id: EntityId,
 ) -> Result<WorthQueryLoweredProviderEffect, WorthQueryApplicationAttemptDenial> {
     mutation(
         vec![effect_step(WorthQueryProvisionalEffectAction::Retire {
-            target_identity: entity_fact_identity(facts, entity_id)?.into(),
+            target_identity: facts.entity_identity(entity_id)?.into(),
         })?],
         MutationIntent::Entity(EntityMutationIntent::Delete(DeleteEntityIntent {
             entity_id,
@@ -172,12 +174,12 @@ fn lower_create_relation(
 }
 
 fn lower_delete_relation(
-    facts: &[WorthQueryApplicationObservedFact],
+    facts: &ObservedFactIndex<'_>,
     relation_id: RelationId,
 ) -> Result<WorthQueryLoweredProviderEffect, WorthQueryApplicationAttemptDenial> {
     mutation(
         vec![effect_step(WorthQueryProvisionalEffectAction::Retire {
-            target_identity: relation_fact_identity(facts, relation_id)?.into(),
+            target_identity: facts.relation_identity(relation_id)?.into(),
         })?],
         MutationIntent::Relation(RelationMutationIntent::Delete(DeleteRelationIntent {
             relation_id,
@@ -235,68 +237,4 @@ fn effect_step(
     action: WorthQueryProvisionalEffectAction,
 ) -> Result<WorthQueryProvisionalEffectStep, WorthQueryApplicationAttemptDenial> {
     WorthQueryProvisionalEffectStep::new("mutation", action).map_err(|_| progression_denial())
-}
-
-fn field_fact_identity(
-    facts: &[WorthQueryApplicationObservedFact],
-    entity_id: EntityId,
-    locator: &worth_foundational::facade::AspectFieldLocator,
-) -> Result<String, WorthQueryApplicationAttemptDenial> {
-    facts
-        .iter()
-        .find(|fact| {
-            matches!(
-                fact,
-                WorthQueryApplicationObservedFact::Field {
-                    entity_id: observed,
-                    locator: observed_locator,
-                    ..
-                }
-                | WorthQueryApplicationObservedFact::AbsentField {
-                    entity_id: observed,
-                    locator: observed_locator,
-                    ..
-                } if *observed == entity_id && observed_locator == locator
-            )
-        })
-        .map(WorthQueryApplicationObservedFact::locator_identity)
-        .ok_or_else(progression_denial)
-}
-
-fn entity_fact_identity(
-    facts: &[WorthQueryApplicationObservedFact],
-    entity_id: EntityId,
-) -> Result<String, WorthQueryApplicationAttemptDenial> {
-    facts
-        .iter()
-        .find(|fact| {
-            matches!(
-                fact,
-                WorthQueryApplicationObservedFact::Entity {
-                    entity_id: observed,
-                    ..
-                } if *observed == entity_id
-            )
-        })
-        .map(WorthQueryApplicationObservedFact::locator_identity)
-        .ok_or_else(progression_denial)
-}
-
-fn relation_fact_identity(
-    facts: &[WorthQueryApplicationObservedFact],
-    relation_id: RelationId,
-) -> Result<String, WorthQueryApplicationAttemptDenial> {
-    facts
-        .iter()
-        .find(|fact| match fact {
-            WorthQueryApplicationObservedFact::Relation {
-                matching_relations, ..
-            } => matching_relations.contains(&relation_id),
-            WorthQueryApplicationObservedFact::Adjacency { relations, .. } => relations
-                .iter()
-                .any(|relation| relation.relation_id == relation_id),
-            _ => false,
-        })
-        .map(WorthQueryApplicationObservedFact::locator_identity)
-        .ok_or_else(progression_denial)
 }

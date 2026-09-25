@@ -4,6 +4,8 @@ mod counters;
 mod identity;
 mod identity_assembly;
 mod rejection;
+mod runtime_custody;
+pub(crate) use runtime_custody::BridgeSignalRuntimeCustody;
 pub(crate) mod state;
 mod subscription_instance;
 mod truth_basis;

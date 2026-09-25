@@ -79,8 +79,16 @@ pub(super) fn lower_definition(
     let maximum_nodes = planned_field_locator(DEFINITION_ASPECT, "maximum-nodes")?;
     let maximum_connections = planned_field_locator(DEFINITION_ASPECT, "maximum-connections")?;
     let maximum_effects = planned_field_locator(DEFINITION_ASPECT, "maximum-effects")?;
+    let maximum_component_occurrences =
+        planned_field_locator(DEFINITION_ASPECT, "maximum-component-occurrences")?;
     let maximum_component_depth =
         planned_field_locator(DEFINITION_ASPECT, "maximum-component-depth")?;
+    let maximum_node_provenance =
+        planned_field_locator(DEFINITION_ASPECT, "maximum-node-provenance")?;
+    let maximum_connection_provenance =
+        planned_field_locator(DEFINITION_ASPECT, "maximum-connection-provenance")?;
+    let maximum_port_provenance =
+        planned_field_locator(DEFINITION_ASPECT, "maximum-port-provenance")?;
     let maximum_canonical_bytes =
         planned_field_locator(DEFINITION_ASPECT, "maximum-canonical-bytes")?;
     let shape = aspects()
@@ -90,7 +98,11 @@ pub(super) fn lower_definition(
         .required("maximum-nodes", ScalarAspectType::UInt64)
         .required("maximum-connections", ScalarAspectType::UInt64)
         .required("maximum-effects", ScalarAspectType::UInt64)
+        .required("maximum-component-occurrences", ScalarAspectType::UInt64)
         .required("maximum-component-depth", ScalarAspectType::UInt64)
+        .required("maximum-node-provenance", ScalarAspectType::UInt64)
+        .required("maximum-connection-provenance", ScalarAspectType::UInt64)
+        .required("maximum-port-provenance", ScalarAspectType::UInt64)
         .required("maximum-canonical-bytes", ScalarAspectType::UInt64)
         .finish()
         .map_err(|_| invalid_member(DEFINITION_ASPECT))?;
@@ -113,7 +125,11 @@ pub(super) fn lower_definition(
             maximum_nodes,
             maximum_connections,
             maximum_effects,
+            maximum_component_occurrences,
             maximum_component_depth,
+            maximum_node_provenance,
+            maximum_connection_provenance,
+            maximum_port_provenance,
             maximum_canonical_bytes,
             content_identity_index_id: DerivedIndexId(0),
         },
@@ -135,6 +151,7 @@ pub(super) fn lower_node(
     let parameter_type = planned_field_locator(NODE_ASPECT, "parameter-type")?;
     let result_type = planned_field_locator(NODE_ASPECT, "result-type")?;
     let assessment_binding = planned_field_locator(NODE_ASPECT, "assessment-binding")?;
+    let assessment_subject = planned_field_locator(NODE_ASPECT, "assessment-subject")?;
     let condition_binding = planned_field_locator(NODE_ASPECT, "condition-binding")?;
     let capability_type = planned_field_locator(NODE_ASPECT, "capability-type")?;
     let approval_operation = planned_field_locator(NODE_ASPECT, "approval-operation")?;
@@ -150,6 +167,7 @@ pub(super) fn lower_node(
         .optional("parameter-type", ScalarAspectType::String)
         .optional("result-type", ScalarAspectType::String)
         .optional("assessment-binding", ScalarAspectType::String)
+        .optional("assessment-subject", ScalarAspectType::String)
         .optional("condition-binding", ScalarAspectType::String)
         .optional("capability-type", ScalarAspectType::String)
         .optional("approval-operation", ScalarAspectType::String)
@@ -178,6 +196,7 @@ pub(super) fn lower_node(
             parameter_type,
             result_type,
             assessment_binding,
+            assessment_subject,
             condition_binding,
             capability_type,
             approval_operation,
@@ -323,9 +342,9 @@ pub(super) fn register_platform_entity(
 
 pub(super) fn allocate_kinds(
     first: KindId,
-) -> Result<[KindId; 28], WorthQueryPrimaryGraphInstallationDenial> {
+) -> Result<[KindId; 30], WorthQueryPrimaryGraphInstallationDenial> {
     let mut next = first.0;
-    let mut kinds = [first; 28];
+    let mut kinds = [first; 30];
     for kind in kinds.iter_mut().skip(1) {
         next = next.checked_add(1).ok_or_else(kind_space_exhausted)?;
         *kind = KindId(next);

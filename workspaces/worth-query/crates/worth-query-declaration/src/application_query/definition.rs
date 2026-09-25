@@ -16,9 +16,10 @@ pub use builder::ApplicationQueryDefinitionBuilder;
 
 use super::{
     ApplicationQueryAuthorizationRequirement, ApplicationQueryBasisSupport,
-    ApplicationQueryContinuationTarget, ApplicationQueryDisclosureContract,
-    ApplicationQueryLaneEligibility, ApplicationQueryLiveCauseContract,
-    ApplicationQueryOrderingTerm, ApplicationQueryParameterDefinition, ApplicationQueryResultShape,
+    ApplicationQueryContinuationTarget, ApplicationQueryDependencyEquivalence,
+    ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
+    ApplicationQueryLiveCauseContract, ApplicationQueryOrderingTerm,
+    ApplicationQueryParameterDefinition, ApplicationQueryResultShape,
     ApplicationQueryRootPathMeaning,
 };
 
@@ -207,6 +208,10 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
 
     pub const fn dependency_ceiling(&self) -> ApplicationQueryDependencyCeiling {
         self.dependency_ceiling
+    }
+
+    pub const fn dependency_equivalence(&self) -> ApplicationQueryDependencyEquivalence {
+        ApplicationQueryDependencyEquivalence::CompleteNativeSourceRevisions
     }
 
     pub fn disclosure(&self) -> &ApplicationQueryDisclosureContract {

@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use worth_foundational::facade::{AspectContractRevision, AspectKey, CanonicalDigestId};
+use worth_foundational::facade::{AspectContractRevision, AspectKey, CanonicalDigestId, FieldKey};
 use worth_query_installation::facade::{
     ApplicationSchemaBindingIdentity, WorthQueryInstalledApplicationQueryIdentity,
 };
@@ -11,23 +11,45 @@ use worth_relational::facade::{
 
 use super::resource_lifecycle::WorthQueryApplicationBasisSelectionIdentity;
 
-mod checkpoint_facts;
 mod denial;
+mod fact_conversion;
 mod footprint_accounting;
-pub(in crate::domain_computation::primary_graph) mod source_identity;
+mod result_set;
+mod root_selection;
 pub use denial::{WorthQuerySourceExpectationDenial, WorthQuerySourceExpectationDenialKind};
+pub use result_set::WorthQueryObservedResultSet;
+
+pub struct WorthQueryBoundSourceExpectation {
+    identity: [u8; 32],
+    partition_identity: [u8; 32],
+}
+
+impl WorthQueryBoundSourceExpectation {
+    pub fn bind_idempotency(
+        self,
+        idempotency: crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding,
+    ) -> crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding {
+        idempotency
+            .bind_source(Some(&self.identity))
+            .bind_source_partition(&self.partition_identity)
+    }
+}
+pub(in crate::domain_computation::primary_graph) mod source_identity;
+pub(in crate::domain_computation::primary_graph) use root_selection::WorthQueryObservedRootSelection;
 pub(in crate::domain_computation::primary_graph) use source_identity::{
     WorthQueryCheckpointSourceIdentity, WorthQueryObservedSourceEpoch,
     WorthQueryRuntimeSourceIdentity,
 };
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub(in crate::domain_computation) struct WorthQueryObservedAspectRevision {
+pub(in crate::domain_computation) struct WorthQueryObservedFieldRevision {
     pub(in crate::domain_computation::primary_graph) entity: EntityId,
     pub(in crate::domain_computation::primary_graph) entity_name: String,
     pub(in crate::domain_computation::primary_graph) aspect: AspectKey,
+    pub(in crate::domain_computation::primary_graph) field: FieldKey,
     pub(in crate::domain_computation::primary_graph) contract_revision: AspectContractRevision,
-    pub(in crate::domain_computation::primary_graph) native_revision: Option<u64>,
+    pub(in crate::domain_computation::primary_graph) native_revision:
+        Option<worth_relational::facade::runtime::RelationalFieldRevision>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -82,9 +104,11 @@ pub(in crate::domain_computation) struct WorthQueryObservedSourceFootprint {
     pub(in crate::domain_computation::primary_graph) root: EntityId,
     pub(in crate::domain_computation::primary_graph) complete: bool,
     pub(in crate::domain_computation::primary_graph) entities: Vec<EntityId>,
-    pub(in crate::domain_computation::primary_graph) aspects: Vec<WorthQueryObservedAspectRevision>,
+    pub(in crate::domain_computation::primary_graph) aspects: Vec<WorthQueryObservedFieldRevision>,
     pub(in crate::domain_computation::primary_graph) adjacencies:
         Vec<WorthQueryObservedAdjacencyRevision>,
+    pub(in crate::domain_computation::primary_graph) root_selection:
+        Option<std::sync::Arc<WorthQueryObservedRootSelection>>,
 }
 
 /// Opaque proof of the native source projected into one public query row.
@@ -128,6 +152,13 @@ impl<Query> Clone for WorthQueryObservedSource<Query> {
 }
 
 impl<Query> WorthQueryObservedSource<Query> {
+    pub(in crate::domain_computation::primary_graph) fn has_complete_output_dependencies(
+        &self,
+    ) -> bool {
+        let footprint = self.source_meaning.footprint();
+        footprint.complete && footprint.root_selection.is_some()
+    }
+
     pub(in crate::domain_computation) fn partition_identity(&self) -> [u8; 32] {
         // The installed source expectation fixes the query contract before
         // this enters output lineage. Its admitted parameter identity is the
@@ -195,120 +226,6 @@ impl<Query> WorthQueryObservedSource<Query> {
     ) -> &WorthQueryObservedSourceFootprint {
         self.source_meaning.footprint()
     }
-    pub(in crate::domain_computation) fn validate_and_into_facts(
-        self,
-        runtime_authority: u64,
-        binding: &ApplicationSchemaBindingIdentity,
-        branch: &BranchId,
-        model_root: EntityId,
-        selected_product: &crate::basis::WorthQueryProductBranchReadIdentity,
-        expected_query_identifier: &str,
-        expected_query_identity: &WorthQueryInstalledApplicationQueryIdentity,
-        layout: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
-    ) -> Result<
-        Vec<crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact>,
-        WorthQuerySourceExpectationDenial,
-    > {
-        use crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact as Fact;
-        use WorthQuerySourceExpectationDenialKind as Kind;
-
-        if self.runtime_authority != runtime_authority {
-            return Err(WorthQuerySourceExpectationDenial::new(
-                Kind::ForeignApplication,
-                expected_query_identifier,
-            ));
-        }
-        if self.schema_binding.runtime_ordinal() != binding.runtime_ordinal()
-            || self.schema_binding.generation() != binding.generation()
-        {
-            return Err(WorthQuerySourceExpectationDenial::new(
-                Kind::ForeignInstallation,
-                expected_query_identifier,
-            ));
-        }
-        if self.schema_binding.schema_identity() != binding.schema_identity()
-            || self.schema_binding.package_identity() != binding.package_identity()
-        {
-            return Err(WorthQuerySourceExpectationDenial::new(
-                Kind::ForeignSchema,
-                expected_query_identifier,
-            ));
-        }
-        if self.query_identifier != expected_query_identifier {
-            return Err(WorthQuerySourceExpectationDenial::new(
-                Kind::SourceContractMismatch,
-                expected_query_identifier,
-            ));
-        }
-        if &self.query_identity != expected_query_identity {
-            return Err(WorthQuerySourceExpectationDenial::new(
-                Kind::SourceContractMismatch,
-                expected_query_identifier,
-            ));
-        }
-        let WorthQueryApplicationBasisSelectionIdentity::Product(observed_product) =
-            &self.selection
-        else {
-            return Err(WorthQuerySourceExpectationDenial::new(
-                Kind::ForeignBranch,
-                expected_query_identifier,
-            ));
-        };
-        if &self.branch != branch || !selected_product.same_branch_occurrence(observed_product) {
-            return Err(WorthQuerySourceExpectationDenial::new(
-                Kind::ForeignBranch,
-                expected_query_identifier,
-            ));
-        }
-        if self.model_root != model_root {
-            return Err(WorthQuerySourceExpectationDenial::new(
-                Kind::ForeignModel,
-                expected_query_identifier,
-            ));
-        }
-        self.validate_completeness(expected_query_identifier)?;
-        let footprint = self.source_meaning.footprint().clone();
-        let mut facts = Vec::with_capacity(
-            footprint
-                .entities
-                .len()
-                .saturating_add(footprint.aspects.len())
-                .saturating_add(footprint.adjacencies.len()),
-        );
-        facts.extend(
-            footprint
-                .entities
-                .into_iter()
-                .map(|entity_id| Fact::SourceEntity { entity_id }),
-        );
-        for aspect in footprint.aspects {
-            layout
-                .aspect_contract(&aspect.entity_name, &aspect.aspect)
-                .filter(|contract| contract.revision() == aspect.contract_revision)
-                .ok_or_else(|| {
-                    WorthQuerySourceExpectationDenial::new(
-                        Kind::SourceContractMismatch,
-                        aspect.aspect.as_str(),
-                    )
-                })?;
-            facts.push(Fact::SourceAspectRevision {
-                entity_id: aspect.entity,
-                aspect: aspect.aspect,
-                native_revision: aspect.native_revision,
-            });
-        }
-        facts.extend(footprint.adjacencies.into_iter().map(|adjacency| {
-            Fact::SourceAdjacencyRevision {
-                relation_kind: adjacency.relation_kind,
-                anchor: adjacency.anchor,
-                direction: adjacency.direction,
-                native_revision: adjacency.native_revision,
-                comparison_work_limit: adjacency.comparison_work_limit,
-                endpoints: adjacency.endpoints,
-            }
-        }));
-        Ok(facts)
-    }
 }
 
 impl<Schema>
@@ -327,7 +244,54 @@ where
         source: WorthQueryObservedSource<
             <Binding::SourceExpectation as worth_query_declaration::facade::application_operation::ApplicationMutationSourceExpectation<Schema>>::Query,
         >,
-    ) -> Result<[u8; 32], WorthQuerySourceExpectationDenial>
+    ) -> Result<WorthQueryBoundSourceExpectation, WorthQuerySourceExpectationDenial>
+    where
+        Binding: worth_query_declaration::facade::application_operation::ApplicationMutationBinding<
+            Schema,
+        >,
+    {
+        let identity = source.idempotency_identity().bytes();
+        self.bind_checked_source_expectation::<Binding, Scope>(admission, source, identity)
+    }
+
+    pub fn bind_application_result_set_expectation<Binding, Scope>(
+        &self,
+        admission: &mut crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<
+            Schema,
+            Binding::Operation,
+            Binding::Input,
+            Scope,
+        >,
+        result_set: WorthQueryObservedResultSet<
+            <Binding::SourceExpectation as worth_query_declaration::facade::application_operation::ApplicationMutationSourceExpectation<Schema>>::Query,
+        >,
+    ) -> Result<WorthQueryBoundSourceExpectation, WorthQuerySourceExpectationDenial>
+    where
+        Binding: worth_query_declaration::facade::application_operation::ApplicationMutationBinding<
+            Schema,
+        >,
+    {
+        let identity = result_set.idempotency_identity();
+        self.bind_checked_source_expectation::<Binding, Scope>(
+            admission,
+            result_set.source,
+            identity,
+        )
+    }
+
+    fn bind_checked_source_expectation<Binding, Scope>(
+        &self,
+        admission: &mut crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<
+            Schema,
+            Binding::Operation,
+            Binding::Input,
+            Scope,
+        >,
+        source: WorthQueryObservedSource<
+            <Binding::SourceExpectation as worth_query_declaration::facade::application_operation::ApplicationMutationSourceExpectation<Schema>>::Query,
+        >,
+        identity: [u8; 32],
+    ) -> Result<WorthQueryBoundSourceExpectation, WorthQuerySourceExpectationDenial>
     where
         Binding: worth_query_declaration::facade::application_operation::ApplicationMutationBinding<
             Schema,
@@ -369,7 +333,6 @@ where
                     Binding::IDENTITY,
                 )
             })?;
-        let idempotency_identity = source.idempotency_identity();
         let partition_identity = source.partition_identity();
         let facts = source.validate_and_into_facts(
             self.runtime.authority_identity().as_u64(),
@@ -383,6 +346,9 @@ where
         )?;
         admission.bind_source_partition(partition_identity);
         admission.bind_source_facts(facts);
-        Ok(idempotency_identity.bytes())
+        Ok(WorthQueryBoundSourceExpectation {
+            identity,
+            partition_identity,
+        })
     }
 }

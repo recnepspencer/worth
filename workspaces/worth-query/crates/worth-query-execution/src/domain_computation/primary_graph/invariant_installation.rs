@@ -3,6 +3,7 @@ use std::marker::PhantomData;
 
 mod program_activation_work_reserve;
 mod schema_resolver;
+mod workflow_publication;
 pub use schema_resolver::WorthQueryApplicationInvariantSchemaResolver;
 
 use worth_query_declaration::facade::application_schema::{
@@ -207,6 +208,7 @@ where
             }
             lowered.push(registration);
         }
+        lowered.push(workflow_publication::registration(layout.workflow())?);
         Ok(lowered)
     }
 }
@@ -225,6 +227,7 @@ fn lower_access_contract(
         read_relation_kinds: Vec::new(),
         affected_entity_kinds: Vec::new(),
         affected_relation_kinds: Vec::new(),
+        include_relation_endpoint_entity_touches: true,
     };
     if reads_program_activation {
         contract

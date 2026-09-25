@@ -25,12 +25,12 @@ pub(super) fn touched_partitions_for_plan_set(
                     if let Some(partition) = current_state.get_partition(entity_id.partition_id) {
                         let slot = entity_id.slot_index();
                         if let Some(adjacency) = partition.adjacency.get(slot) {
-                            for relation_id in adjacency.as_slice() {
+                            for relation_id in adjacency.current_ids() {
                                 include_relation_scope(current_state, &mut touched, *relation_id);
                             }
                         }
                         if let Some(adjacency) = partition.reverse_adjacency.get(slot) {
-                            for relation_id in adjacency.as_slice() {
+                            for relation_id in adjacency.current_ids() {
                                 include_relation_scope(current_state, &mut touched, *relation_id);
                             }
                         }

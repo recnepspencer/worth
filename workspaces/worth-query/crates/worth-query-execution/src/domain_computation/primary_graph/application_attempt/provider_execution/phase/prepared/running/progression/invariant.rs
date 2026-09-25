@@ -7,7 +7,7 @@ use crate::domain_computation::WorthQueryInvariantStateLocator;
 pub(super) fn progress_invariant_candidate<'run>(
     staged: crate::domain_computation::WorthQuerySessionBoundReadsAndEffects<'run>,
     fresh: crate::domain_computation::WorthQueryFreshDecisionReadSet,
-    steps: Vec<crate::domain_computation::WorthQueryProvisionalEffectStep>,
+    steps: std::sync::Arc<[crate::domain_computation::WorthQueryProvisionalEffectStep]>,
     provider: &std::sync::Arc<
         crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider,
     >,
@@ -17,7 +17,7 @@ pub(super) fn progress_invariant_candidate<'run>(
 > {
     let lowered = match staged
         .effect_authority()
-        .lower_provisional_program(&fresh, steps)
+        .lower_shared_provisional_program(&fresh, steps)
     {
         Ok(lowered) => lowered,
         Err(failure) => {

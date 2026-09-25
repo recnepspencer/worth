@@ -158,7 +158,7 @@ pub fn temporal_wake_settlement_repair_keeps_the_original_product_unpublished() 
     assert_eq!(transport.contact_count(), 0);
 }
 
-pub fn temporal_wake_post_performed_index_repair_preserves_its_product_commit() {
+pub fn temporal_wake_post_commit_snapshot_recovery_preserves_its_product_commit() {
     let world = CourtroomWorld::publish("ready");
     let selected = world
         .application
@@ -173,7 +173,7 @@ pub fn temporal_wake_post_performed_index_repair_preserves_its_product_commit() 
         .retain_primary_graph_integration_handle();
     let commits_before =
         integration.with_runtime(|runtime| runtime.history().immutable_commit_count());
-    world.application.fail_next_index_publication_for_test();
+    world.application.fail_next_post_commit_snapshot_for_test();
 
     let committed = observe(&world);
     assert_eq!(committed.retained_due_wake_count(), 0);
@@ -208,7 +208,7 @@ pub fn temporal_wake_post_performed_index_repair_preserves_its_product_commit() 
     assert_eq!(
         world.contacts.snapshot(),
         (1, 1, 1, 1),
-        "projection repair never repeats application behavior"
+        "post-commit recovery never repeats application behavior"
     );
     assert_eq!(
         world

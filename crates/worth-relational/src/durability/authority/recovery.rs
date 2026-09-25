@@ -36,15 +36,21 @@ impl<'runtime> DurabilityRecoveryAuthority<'runtime> {
         checkpoint: &crate::durability::data::RelationalNativeCheckpoint,
     ) -> Result<RuntimeRecoveryOutcome, DurabilityError> {
         let initial_schema_authority = self.runtime.initial_schema_authority_snapshot();
+        let native_bytes_read = checkpoint.bytes().len();
         let checkpoint =
             crate::durability::log::native_file_codec::decode_checkpoint(checkpoint.bytes())?
                 .checkpoint;
+        let native_envelopes_readmitted = checkpoint.envelopes.len();
         let plan = crate::durability::access::native_checkpoint_recovery_plan(
             self.runtime,
             checkpoint,
             crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
         );
-        let outcome = self.recover(plan)?;
+        let mut outcome = self.recover(plan)?;
+        if let Some(work) = &mut outcome.checkpoint_restore_work {
+            work.native_bytes_read = Some(native_bytes_read);
+            work.native_envelopes_readmitted = Some(native_envelopes_readmitted);
+        }
         self.runtime
             .restore_initial_schema_authority_after_recovery(initial_schema_authority);
         Ok(outcome)
@@ -56,7 +62,8 @@ impl<'runtime> DurabilityRecoveryAuthority<'runtime> {
     ) -> Result<RuntimeRecoveryOutcome, DurabilityError> {
         let admitted = admit_recovery_or_emit(self.runtime, plan)?;
         let material = rebuild_admitted_recovery_or_emit(self.runtime, admitted)?;
-        Ok(publish_recovered_runtime(self.runtime, material))
+        let outcome = publish_recovered_runtime(self.runtime, material);
+        Ok(outcome)
     }
 }
 
@@ -64,6 +71,7 @@ struct RecoveredRuntimeMaterial {
     restored: RelationalRuntime,
     plan: RecoveryPlan,
     admission: admission::RecoveryAdmission,
+    checkpoint_restore_work: Option<crate::durability::data::CheckpointRestoreWork>,
 }
 
 fn admit_recovery_or_emit(
@@ -85,10 +93,11 @@ fn rebuild_admitted_recovery_or_emit(
 ) -> Result<RecoveredRuntimeMaterial, DurabilityError> {
     let admission = admitted.admission().clone();
     match rebuild_runtime_from_plan(admitted) {
-        Ok((restored, plan)) => Ok(RecoveredRuntimeMaterial {
+        Ok((restored, plan, checkpoint_restore_work)) => Ok(RecoveredRuntimeMaterial {
             restored,
             plan,
             admission,
+            checkpoint_restore_work,
         }),
         Err(error) => {
             admission.emit(runtime);
@@ -105,10 +114,12 @@ fn publish_recovered_runtime(
         restored,
         plan,
         admission,
+        checkpoint_restore_work,
     } = material;
     let tail_commits = plan.tail_commit_count();
-    let checkpoint_commits = plan
-        .checkpoint
+    let checkpoint_commits = restored
+        .durability
+        .latest_checkpoint()
         .as_ref()
         .map(|checkpoint| checkpoint.envelopes.len())
         .unwrap_or(0);
@@ -141,6 +152,7 @@ fn publish_recovered_runtime(
             recovered_through_commit: restored.history().latest_commit(),
         },
         integrity_report: plan.integrity_report,
+        checkpoint_restore_work,
     };
     *runtime = restored;
     outcome
@@ -153,7 +165,7 @@ impl RelationalRuntime {
     ) -> Result<RelationalRuntime, DurabilityError> {
         let admitted =
             admission::admit_recovery(self, plan).map_err(|rejection| rejection.into_error())?;
-        rebuild_runtime_from_plan(admitted).map(|(restored, plan)| {
+        rebuild_runtime_from_plan(admitted).map(|(restored, plan, _)| {
             restored.durability.set_store(plan.store);
             restored
         })

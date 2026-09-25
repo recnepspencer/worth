@@ -107,6 +107,19 @@ pub(crate) fn run_property_scenario(
             step,
             operation,
         );
+        // Rebuild from authoritative records after every operation, including
+        // retention and rejected mutations. Do not trust the carried digest cache.
+        let symbols = runtime.services.symbols.interner_snapshot();
+        for branch in &branches {
+            let root = runtime
+                .history
+                .branch_cell(branch)
+                .and_then(|cell| cell.root())
+                .unwrap();
+            assert!(root.is_complete(&symbols),
+                "step {step}, {operation:?}, branch {branch:?}: incremental root differs from cold truth");
+            root.assert_derived_inventory_matches_cold();
+        }
         record_any_new_checkpoint(&runtime, &mut checkpoints);
     }
 

@@ -12,6 +12,8 @@ mod commit;
 mod evidence_readiness;
 #[path = "publication/operation.rs"]
 mod operation;
+#[path = "publication/required_assessment.rs"]
+mod required_assessment;
 #[path = "publication/transition_replay.rs"]
 mod transition_replay;
 pub use approval::{RequiredWorkflowApproval, WorkflowApprovalDecision};
@@ -19,7 +21,8 @@ pub use assessment_evidence::PerformedWorkflowAssessmentEvidence;
 pub(super) use commit::project;
 pub use evidence_readiness::RequiredWorkflowEvidence;
 pub use operation::{PreparedWorkflowOperation, RequiredWorkflowOperation};
-pub use transition_replay::PreparedWorkflowTransitionReplay;
+pub use required_assessment::RequiredWorkflowAssessment;
+pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) use transition_replay::PreparedWorkflowTransitionReplays;
 
 #[must_use = "prepared workflow advance owns a live application attempt"]
 pub enum PreparedWorkflowAdvance<Schema, Operation, Input, Scope> {
@@ -32,12 +35,16 @@ pub enum PreparedWorkflowAdvance<Schema, Operation, Input, Scope> {
         assessment_identity_locator: worth_foundational::facade::AspectFieldLocator,
         instance: worth_relational::facade::identity::EntityId,
         node_path: String,
+        terminal: bool,
         assessment: Option<PreparedWorkflowAssessmentProjection>,
         supporting_identity: Option<[u8; 32]>,
         operation_receipt_identity: Option<[u8; 32]>,
+        progress_update: Option<
+            crate::domain_computation::primary_graph::workflow::instance::PreparedWorkflowProgressUpdate,
+        >,
         approval: Option<PreparedWorkflowApprovalProjection>,
         approval_identity: Option<[u8; 32]>,
-        replays: Box<[PreparedWorkflowTransitionReplay]>,
+        replays: PreparedWorkflowTransitionReplays,
     },
     AwaitingAssessment(PreparedWorkflowAssessment<Schema, Operation, Input, Scope>),
     AwaitingCondition(PreparedWorkflowCondition<Schema, Operation, Input, Scope>),
@@ -54,7 +61,7 @@ pub enum PreparedWorkflowAdvance<Schema, Operation, Input, Scope> {
         assessment_identity_locator: worth_foundational::facade::AspectFieldLocator,
         instance: worth_relational::facade::identity::EntityId,
         required: RequiredWorkflowEvidence,
-        replays: Box<[PreparedWorkflowTransitionReplay]>,
+        replays: PreparedWorkflowTransitionReplays,
     },
     AwaitingApproval {
         read_set: super::super::WorthQueryCompleteApplicationReadSet<
@@ -68,7 +75,7 @@ pub enum PreparedWorkflowAdvance<Schema, Operation, Input, Scope> {
         assessment_identity_locator: worth_foundational::facade::AspectFieldLocator,
         instance: worth_relational::facade::identity::EntityId,
         required: RequiredWorkflowApproval,
-        replays: Box<[PreparedWorkflowTransitionReplay]>,
+        replays: PreparedWorkflowTransitionReplays,
     },
     ReplayOnly {
         read_set: super::super::WorthQueryCompleteApplicationReadSet<
@@ -83,7 +90,7 @@ pub enum PreparedWorkflowAdvance<Schema, Operation, Input, Scope> {
         instance: worth_relational::facade::identity::EntityId,
         approval: Option<PreparedWorkflowApprovalProjection>,
         approval_identity: Option<[u8; 32]>,
-        replays: Box<[PreparedWorkflowTransitionReplay]>,
+        replays: PreparedWorkflowTransitionReplays,
         denial: super::super::WorthQueryApplicationAttemptDenial,
     },
 }
@@ -122,6 +129,7 @@ pub struct PreparedWorkflowAssessmentProjection {
     pub(super) binding: String,
     pub(super) subject: worth_relational::facade::identity::EntityId,
     pub(super) proposal_identity: String,
+    pub(super) coverage_identity: String,
     pub(super) source_identity: String,
     pub(super) passing: bool,
     pub(super) publication_identity: String,
@@ -140,7 +148,7 @@ pub struct PreparedWorkflowAssessment<Schema, Operation, Input, Scope> {
     pub(super) layout:
         crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
     pub(super) program_revision: ApplicationProgramRevision,
-    pub(super) replays: Box<[PreparedWorkflowTransitionReplay]>,
+    pub(super) replays: PreparedWorkflowTransitionReplays,
 }
 
 pub struct PreparedWorkflowCondition<Schema, Operation, Input, Scope> {
@@ -155,7 +163,7 @@ pub struct PreparedWorkflowCondition<Schema, Operation, Input, Scope> {
     pub(super) layout:
         crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
     pub(super) program_revision: ApplicationProgramRevision,
-    pub(super) replays: Box<[PreparedWorkflowTransitionReplay]>,
+    pub(super) replays: PreparedWorkflowTransitionReplays,
 }
 
 impl<Schema, Operation, Input, Scope> PreparedWorkflowCondition<Schema, Operation, Input, Scope> {
@@ -175,75 +183,6 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAssessment<Schema, Operati
 
     pub fn into_required(self) -> RequiredWorkflowAssessment {
         self.required
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct RequiredWorkflowAssessment {
-    pub(super) instance: worth_relational::facade::identity::EntityId,
-    pub(super) node_path: String,
-    pub(super) transition_identity: String,
-    pub(super) occurrence: u64,
-    pub(super) query: String,
-    pub(super) parameter_type: String,
-    pub(super) result_type: String,
-    pub(super) binding: String,
-    pub(super) proposal_identity: String,
-}
-
-impl RequiredWorkflowAssessment {
-    pub(in crate::domain_computation::primary_graph) fn from_selected(
-        instance: worth_relational::facade::identity::EntityId,
-        node_path: String,
-        transition_identity: String,
-        occurrence: u64,
-        selected: crate::domain_computation::primary_graph::workflow::instance::SelectedWorkflowAssessment,
-        proposal_identity: String,
-    ) -> Self {
-        Self {
-            instance,
-            node_path,
-            transition_identity,
-            occurrence,
-            query: selected.query,
-            parameter_type: selected.parameter_type,
-            result_type: selected.result_type,
-            binding: selected.binding,
-            proposal_identity,
-        }
-    }
-
-    pub const fn instance(&self) -> worth_relational::facade::identity::EntityId {
-        self.instance
-    }
-    pub fn node_path(&self) -> &str {
-        &self.node_path
-    }
-    pub fn transition_identity(&self) -> &str {
-        &self.transition_identity
-    }
-    pub const fn occurrence(&self) -> u64 {
-        self.occurrence
-    }
-
-    pub fn query(&self) -> &str {
-        &self.query
-    }
-
-    pub fn parameter_type(&self) -> &str {
-        &self.parameter_type
-    }
-
-    pub fn result_type(&self) -> &str {
-        &self.result_type
-    }
-
-    pub fn binding(&self) -> &str {
-        &self.binding
-    }
-
-    pub fn proposal_identity(&self) -> &str {
-        &self.proposal_identity
     }
 }
 
@@ -309,6 +248,7 @@ impl RequiredWorkflowCondition {
 pub struct PerformedWorkflowTransition {
     transition: worth_relational::facade::identity::EntityId,
     node_path: String,
+    terminal: bool,
     receipt: super::super::WorthQueryApplicationCommitReceipt,
     replayed: bool,
     assessment_evidence: Option<PerformedWorkflowAssessmentEvidence>,
@@ -362,6 +302,10 @@ impl PerformedWorkflowTransition {
 
     pub fn node_path(&self) -> &str {
         &self.node_path
+    }
+
+    pub const fn terminal(&self) -> bool {
+        self.terminal
     }
 
     pub const fn receipt(&self) -> &super::super::WorthQueryApplicationCommitReceipt {

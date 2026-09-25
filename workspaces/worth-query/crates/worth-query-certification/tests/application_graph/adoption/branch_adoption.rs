@@ -53,7 +53,11 @@ fn one_branch_adopts_p1_while_its_sibling_keeps_running_p0() {
         .requirements(&requirements)
         .prepare(64)
         .expect("the seed satisfies P1 and adoption must prepare");
-    assert_eq!(prepared.selected_entity_count(), 1);
+    assert_eq!(
+        prepared.selected_entity_count(),
+        2,
+        "adoption validates both seeded parts, including the related workflow subject"
+    );
     let performed = match prepared.publish() {
         WorthQueryBranchAdoptionPublicationOutcome::Performed(performed) => performed,
         WorthQueryBranchAdoptionPublicationOutcome::NoEffect(no_effect) => {

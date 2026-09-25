@@ -1,5 +1,7 @@
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Arc;
 
 use worth_foundational::{
     admit_authoritative_record_aspect_state, aspects, validate_aspect_value, AspectContract,
@@ -79,14 +81,57 @@ fn sparse_speculative_overlay_reads_untouched_entity_truth_from_base_partition()
     assert_eq!(metadata.entity_id, untouched_entity);
 
     let guarded = NoWorldPartitionEnumeration { state: &overlay };
-    let guarded_view = InvariantStateView::new(&guarded, VersionId(1));
+    let inputs = Arc::new(
+        crate::validation::engine::input_preparation::SharedCandidateInputs::sharing_for_test(),
+    );
+    let guarded_view = InvariantStateView::new(&guarded, VersionId(1)).with_candidate_inputs(
+        Some(Arc::clone(&inputs)),
+        crate::validation::engine::input_preparation::CandidateInputBasis::Enforcement,
+    );
+    let mut charged_slots = 0;
     assert_eq!(
         guarded_view
-            .touched_visible_entity_ids_with_budget(|_| true)
+            .touched_visible_entity_ids_with_budget(|units| {
+                charged_slots += units;
+                true
+            })
             .unwrap()
             .len(),
         1
     );
+    assert_eq!(
+        guarded_view
+            .touched_visible_entity_ids_with_budget(|units| {
+                charged_slots += units;
+                true
+            })
+            .unwrap()
+            .len(),
+        1
+    );
+    assert_eq!(charged_slots, 2);
+    assert_eq!(inputs.counters().touched_entity_gathers, 1);
+    assert_eq!(inputs.counters().touched_partition_gathers, 1);
+    assert_eq!(inputs.counters().touched_entity_slot_gathers, 1);
+
+    let guarded = NoSlotEnumerationForRead::new(&overlay);
+    let inputs = Arc::new(
+        crate::validation::engine::input_preparation::SharedCandidateInputs::sharing_for_test(),
+    );
+    let guarded_view = InvariantStateView::new(&guarded, VersionId(1)).with_candidate_inputs(
+        Some(Arc::clone(&inputs)),
+        crate::validation::engine::input_preparation::CandidateInputBasis::Enforcement,
+    );
+    for _ in 0..2 {
+        assert!(guarded_view
+            .entity_aspect_state(untouched_entity)
+            .and_then(|state| state.get(name_contract.key()))
+            .is_some());
+    }
+    assert_eq!(guarded.entity_slot_checks.load(Ordering::Relaxed), 1);
+    assert_eq!(guarded.entity_presence_checks.load(Ordering::Relaxed), 1);
+    assert_eq!(inputs.counters().entity_aspect_reads, 1);
+    assert_eq!(inputs.counters().reuse_hits, 1);
 }
 
 struct NoWorldPartitionEnumeration<'a> {
@@ -108,6 +153,69 @@ impl PartitionAccess for NoWorldPartitionEnumeration<'_> {
 
     fn touched_entity_slots(&self, partition_id: PartitionId) -> Option<Vec<usize>> {
         self.state.touched_entity_slots(partition_id)
+    }
+}
+
+struct NoSlotEnumerationForRead<'a> {
+    state: &'a OverlayStateView<'a, WorkingState>,
+    entity_slot_checks: AtomicUsize,
+    entity_presence_checks: AtomicUsize,
+    relation_slot_checks: AtomicUsize,
+    relation_presence_checks: AtomicUsize,
+}
+
+impl<'a> NoSlotEnumerationForRead<'a> {
+    fn new(state: &'a OverlayStateView<'a, WorkingState>) -> Self {
+        Self {
+            state,
+            entity_slot_checks: AtomicUsize::new(0),
+            entity_presence_checks: AtomicUsize::new(0),
+            relation_slot_checks: AtomicUsize::new(0),
+            relation_presence_checks: AtomicUsize::new(0),
+        }
+    }
+}
+
+impl PartitionAccess for NoSlotEnumerationForRead<'_> {
+    fn get_partition(&self, partition_id: PartitionId) -> Option<&PartitionState> {
+        self.state.get_partition(partition_id)
+    }
+
+    fn partition_ids(&self) -> Vec<PartitionId> {
+        panic!("aspect reads must not enumerate partitions")
+    }
+
+    fn touched_entity_slots(&self, _: PartitionId) -> Option<Vec<usize>> {
+        panic!("aspect reads must not allocate touched entity slots")
+    }
+
+    fn touched_relation_slots(&self, _: PartitionId) -> Option<Vec<usize>> {
+        panic!("aspect reads must not allocate touched relation slots")
+    }
+
+    fn has_touched_entity_slots(&self, partition_id: PartitionId) -> bool {
+        self.entity_presence_checks.fetch_add(1, Ordering::Relaxed);
+        self.state.has_touched_entity_slots(partition_id)
+    }
+
+    fn has_touched_relation_slots(&self, partition_id: PartitionId) -> bool {
+        self.relation_presence_checks
+            .fetch_add(1, Ordering::Relaxed);
+        self.state.has_touched_relation_slots(partition_id)
+    }
+
+    fn entity_slot_is_touched(&self, partition_id: PartitionId, slot: usize) -> bool {
+        self.entity_slot_checks.fetch_add(1, Ordering::Relaxed);
+        self.state.entity_slot_is_touched(partition_id, slot)
+    }
+
+    fn relation_slot_is_touched(&self, partition_id: PartitionId, slot: usize) -> bool {
+        self.relation_slot_checks.fetch_add(1, Ordering::Relaxed);
+        self.state.relation_slot_is_touched(partition_id, slot)
+    }
+
+    fn base_partition(&self, partition_id: PartitionId) -> Option<&PartitionState> {
+        self.state.base_partition(partition_id)
     }
 }
 
@@ -204,6 +312,25 @@ fn sparse_speculative_overlay_reads_untouched_relation_truth_from_base_partition
     );
     assert_eq!(state_view.all_relations_for_entity(left), [relation_id]);
     assert_eq!(state_view.all_relations_for_entity(right), [relation_id]);
+
+    let guarded = NoSlotEnumerationForRead::new(&overlay);
+    let inputs = Arc::new(
+        crate::validation::engine::input_preparation::SharedCandidateInputs::sharing_for_test(),
+    );
+    let guarded_view = InvariantStateView::new(&guarded, VersionId(1)).with_candidate_inputs(
+        Some(Arc::clone(&inputs)),
+        crate::validation::engine::input_preparation::CandidateInputBasis::Enforcement,
+    );
+    for _ in 0..2 {
+        assert!(guarded_view
+            .relation_aspect_state(relation_id)
+            .and_then(|state| state.get(relation_kind_contract.key()))
+            .is_some());
+    }
+    assert_eq!(guarded.relation_slot_checks.load(Ordering::Relaxed), 1);
+    assert_eq!(guarded.relation_presence_checks.load(Ordering::Relaxed), 1);
+    assert_eq!(inputs.counters().relation_aspect_reads, 1);
+    assert_eq!(inputs.counters().reuse_hits, 1);
 }
 
 fn scalar_string_contract(aspect_key: AspectKey, identity: u64) -> AspectContract {

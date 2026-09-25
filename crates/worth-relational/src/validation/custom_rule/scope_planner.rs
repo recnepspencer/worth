@@ -16,19 +16,53 @@ pub(crate) struct PreparedCustomInvariantScope {
 }
 
 impl PreparedCustomInvariantScope {
-    pub(crate) fn capture(
-        observation: &InvariantObservation<'_>,
+    pub(crate) fn empty() -> Self {
+        Self {
+            touched: Arc::new(TouchedStructuralSet::new(
+                Arc::from([]),
+                Arc::from([]),
+                Arc::from([]),
+                Arc::from([]),
+                Arc::from([]),
+                Arc::from([]),
+                Arc::from([]),
+                Arc::from([]),
+                Arc::from([]),
+            )),
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn capture<'state>(
+        observation: &'state InvariantObservation<'state>,
         version_id: VersionId,
         merged_plan: Option<&MergedCommitPlan>,
         access: &crate::validation::data::CustomInvariantAccessContract,
         work: &super::CustomInvariantWorkMeter,
     ) -> Self {
+        Self::capture_with_shared_inputs(observation, version_id, merged_plan, access, work, None)
+    }
+
+    pub(crate) fn capture_with_shared_inputs<'state>(
+        observation: &'state InvariantObservation<'state>,
+        version_id: VersionId,
+        merged_plan: Option<&MergedCommitPlan>,
+        access: &crate::validation::data::CustomInvariantAccessContract,
+        work: &super::CustomInvariantWorkMeter,
+        inputs: Option<Arc<crate::validation::engine::input_preparation::SharedCandidateInputs>>,
+    ) -> Self {
+        use crate::validation::engine::input_preparation::CandidateInputBasis;
         let state_view = InvariantStateView::new(
             observation.enforcement_partition_access(),
             observation.enforcement_version_id(version_id),
+        )
+        .with_candidate_inputs(
+            inputs.clone(),
+            CandidateInputBasis::enforcement(observation),
         );
         let before_image_view = observation.before_image_partition_access().map(|state| {
             InvariantStateView::new(state, observation.before_image_version_id(version_id))
+                .with_candidate_inputs(inputs, CandidateInputBasis::before_image(observation))
         });
         Self {
             touched: Arc::new(collect_touched_structural_set(
@@ -206,20 +240,27 @@ impl<'runtime> CustomInvariantScopePlanner<'runtime> {
         work: super::CustomInvariantWorkMeter,
         access: std::sync::Arc<crate::validation::data::CustomInvariantAccessContract>,
     ) -> Self {
+        use crate::validation::engine::input_preparation::CandidateInputBasis;
+        let inputs = runtime.shared_candidate_inputs();
         let state_view = InvariantStateView::new(
             observation.enforcement_partition_access(),
             observation.enforcement_version_id(version_id),
+        )
+        .with_candidate_inputs(
+            inputs.clone(),
+            CandidateInputBasis::enforcement(observation),
         );
         let committed_state_view =
-            InvariantStateView::new(observation.committed_partition_access(), current_version_id);
+            InvariantStateView::new(observation.committed_partition_access(), current_version_id)
+                .with_candidate_inputs(inputs, CandidateInputBasis::Committed);
         work.try_charge(1);
         let touched =
             prepared_scope.retain_restricted(&state_view, &committed_state_view, &access, &work);
         let aspect_states =
-            StructuralAspectStateView::new(state_view, work.clone(), access.clone());
+            StructuralAspectStateView::new(state_view.clone(), work.clone(), access.clone());
         let relations = StructuralRelationView::new(state_view, work.clone(), access.clone());
         let committed_relations =
-            StructuralRelationView::new(committed_state_view, work.clone(), access.clone());
+            StructuralRelationView::new(committed_state_view.clone(), work.clone(), access.clone());
         let counts = StructuralCountView::from_touched_scope(&touched);
         let traversal = BoundedStructuralTraversal::new(
             runtime.performance_access(),
@@ -261,6 +302,10 @@ impl<'runtime> CustomInvariantScopePlanner<'runtime> {
 
     pub fn touched(&self) -> &TouchedStructuralSet {
         &self.touched
+    }
+
+    pub(crate) fn retained_touched(&self) -> Arc<TouchedStructuralSet> {
+        Arc::clone(&self.touched)
     }
 
     pub(crate) fn has_applicable_touches(&self) -> bool {

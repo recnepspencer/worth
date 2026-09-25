@@ -220,7 +220,7 @@ fn minimum_cardinality_current_version_scans_only_live_slots() {
     delete_txn.commit(&runtime).expect("retire relation");
 
     runtime.performance_access().reset_counters();
-    let _results = InvariantEngine::new(&runtime).execute(
+    let results = InvariantEngine::new(&runtime).execute(
         InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::CertificationBoundary,
             &runtime,
@@ -231,7 +231,26 @@ fn minimum_cardinality_current_version_scans_only_live_slots() {
         ),
     );
 
+    let violating_contracts = results
+        .results()
+        .iter()
+        .filter_map(|result| match (&result.rule, &result.verdict) {
+            (
+                crate::validation::data::InvariantReportedRule::Native(
+                    crate::validation::data::InvariantRule::CardinalityMinimumContract(contract),
+                ),
+                crate::validation::data::InvariantVerdict::Violation(_),
+            ) => Some(contract.contract_id.as_str()),
+            _ => None,
+        })
+        .collect::<std::collections::BTreeSet<_>>();
+    assert_eq!(violating_contracts, ["min_one", "min_one_again"].into());
+
     let counters = runtime.performance_access().counters();
+    assert_eq!(
+        counters.relation_cardinality_minimum_certification_contracts_evaluated,
+        2,
+    );
     assert_eq!(
         counters.relation_cardinality_minimum_certification_relation_slot_scans,
         1
@@ -239,5 +258,130 @@ fn minimum_cardinality_current_version_scans_only_live_slots() {
     assert_eq!(
         counters.relation_cardinality_minimum_certification_entity_slot_scans,
         3
+    );
+}
+
+#[test]
+fn revalidated_entities_cannot_bypass_relation_scope_entity_budget() {
+    let mut runtime = runtime_with_partition_isolation();
+    let first = create_entity_of_kind(&runtime, KindId(1), "first");
+    let second = create_entity_of_kind(&runtime, KindId(1), "second");
+    runtime.configure_for_test(|config| {
+        config
+            .execution
+            .relation_integrity_scope_budget
+            .max_touched_entities = 1;
+    });
+    let plan = MergedCommitPlan {
+        transaction_id: TransactionId(20),
+        merged_intents: [first, second]
+            .into_iter()
+            .map(|entity_id| {
+                MutationIntent::Entity(crate::transactions::data::EntityMutationIntent::Revalidate(
+                    crate::transactions::data::RevalidateEntityIntent { entity_id },
+                ))
+            })
+            .collect(),
+    };
+
+    assert_touched_entity_scope_budget_exceeded(&runtime, &plan);
+}
+
+#[test]
+fn deleted_relation_endpoints_cannot_bypass_relation_scope_entity_budget() {
+    let mut runtime = runtime_with_partition_isolation();
+    let source = create_entity_of_kind(&runtime, KindId(1), "source");
+    let target = create_entity_of_kind(&runtime, KindId(1), "target");
+    let relation = create_relation_of_kind(&runtime, KindId(2), source, target, "edge");
+    runtime.configure_for_test(|config| {
+        config
+            .execution
+            .relation_integrity_scope_budget
+            .max_touched_entities = 1;
+    });
+    let plan = MergedCommitPlan {
+        transaction_id: TransactionId(21),
+        merged_intents: vec![MutationIntent::Relation(RelationMutationIntent::Delete(
+            DeleteRelationIntent {
+                relation_id: relation,
+            },
+        ))],
+    };
+
+    assert_touched_entity_scope_budget_exceeded(&runtime, &plan);
+}
+
+fn assert_touched_entity_scope_budget_exceeded(
+    runtime: &RelationalRuntime,
+    plan: &MergedCommitPlan,
+) {
+    let result =
+        crate::validation::invariant_access::test_support::evaluate_main_commit_boundary_plan(
+            runtime, plan,
+        );
+    let failure = result
+        .summary()
+        .blocking_failure()
+        .expect("relation scope budget violation");
+    match failure.fields() {
+        InvariantViolationFields::RelationIntegrityScopeBudgetExceeded {
+            limit_name,
+            limit,
+            observed,
+            ..
+        } => {
+            assert_eq!(limit_name, "max_touched_entities");
+            assert_eq!(*limit, 1);
+            assert_eq!(*observed, 2);
+        }
+        other => panic!("expected relation scope budget violation, got {other:?}"),
+    }
+}
+
+#[test]
+fn minimum_cardinality_shared_index_preserves_both_passing_contracts() {
+    let runtime = runtime_with_cardinality_minimum();
+    let first = create_entity_of_kind(&runtime, KindId(1), "first");
+    let second = create_entity_of_kind(&runtime, KindId(1), "second");
+    create_relation_of_kind(&runtime, KindId(2), first, second, "forward");
+    create_relation_of_kind(&runtime, KindId(2), second, first, "reverse");
+
+    runtime.performance_access().reset_counters();
+    let results = InvariantEngine::new(&runtime).execute(
+        InvariantExecutionRequest::from_profile_with_contract(
+            InvariantRequestProfile::CertificationBoundary,
+            &runtime,
+            InvariantObservation::committed(runtime.storage_access().current_edition()),
+            runtime.current_version_id(),
+            None,
+            None,
+        ),
+    );
+    let passing_contracts = results
+        .results()
+        .iter()
+        .filter_map(|result| match (&result.rule, &result.verdict) {
+            (
+                crate::validation::data::InvariantReportedRule::Native(
+                    crate::validation::data::InvariantRule::CardinalityMinimumContract(contract),
+                ),
+                crate::validation::data::InvariantVerdict::Pass,
+            ) => Some(contract.contract_id.as_str()),
+            _ => None,
+        })
+        .collect::<std::collections::BTreeSet<_>>();
+    assert_eq!(passing_contracts, ["min_one", "min_one_again"].into());
+    let counters = runtime.performance_access().counters();
+    assert_eq!(
+        counters.relation_cardinality_minimum_certification_contracts_evaluated,
+        2,
+    );
+    assert_eq!(
+        counters.relation_cardinality_minimum_certification_relation_slot_scans,
+        2,
+    );
+    assert_eq!(
+        counters.relation_cardinality_minimum_certification_entity_slot_scans,
+        2,
     );
 }

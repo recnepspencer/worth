@@ -1,9 +1,6 @@
-use std::collections::BTreeMap;
-
-use crate::identity::data::{KindId, PartitionId, VersionId};
-use crate::storage::data::RecordLifecycleState;
-use crate::symbols::data::Symbol;
-
+use super::payload_allocation::{
+    aspect_version_bytes, diagnostic_enrichment_bytes, field_revision_bytes, metadata_history_bytes,
+};
 use super::{RecordArena, RecordKind};
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -35,49 +32,41 @@ impl<K: RecordKind> RecordArena<K> {
     pub(crate) fn allocation_inventory(&self) -> RecordArenaAllocationInventory {
         let authoritative_bytes = [
             self.slots.allocation_bytes(),
-            vector_bytes::<PartitionId>(&self.partition_ids),
-            vector_bytes::<u32>(&self.generations),
-            vector_bytes::<RecordLifecycleState>(&self.lifecycle),
-            vector_bytes::<Option<KindId>>(&self.kind_ids),
-            vector_bytes::<Vec<K::Meta>>(&self.metadata_history),
-            vector_bytes::<VersionId>(&self.created_at),
-            vector_bytes::<Option<VersionId>>(&self.retired_at),
-            vector_bytes::<K::Extra>(&self.extra),
-            vector_bytes::<BTreeMap<Symbol, u64>>(&self.aspect_versions),
+            self.partition_ids.allocation_bytes(),
+            self.generations.allocation_bytes(),
+            self.lifecycle.allocation_bytes(),
+            self.kind_ids.allocation_bytes(),
+            self.metadata_history.allocation_bytes(),
+            self.created_at.allocation_bytes(),
+            self.retired_at.allocation_bytes(),
+            self.extra.allocation_bytes(),
+            self.aspect_versions.allocation_bytes(),
+            self.field_revisions.allocation_bytes(),
             self.live_bitset.authoritative_allocation_bytes(),
             self.reclaimable_bitset.authoritative_allocation_bytes(),
             self.metadata_history
                 .iter()
-                .map(vector_bytes::<K::Meta>)
-                .sum(),
-            self.metadata_history
-                .iter()
-                .flatten()
-                .map(K::metadata_owned_allocation_bytes)
+                .map(metadata_history_bytes::<K>)
                 .sum(),
             self.extra.iter().map(K::extra_owned_allocation_bytes).sum(),
-            self.aspect_versions
-                .iter()
-                .map(|versions| map_entry_bytes::<Symbol, u64>(versions.len()))
-                .sum(),
+            self.aspect_versions.iter().map(aspect_version_bytes).sum(),
+            self.field_revisions.iter().map(field_revision_bytes).sum(),
         ]
         .into_iter()
         .fold(0_u64, u64::saturating_add);
-        let diagnostic_bytes =
-            vector_bytes::<BTreeMap<Symbol, String>>(&self.diagnostics_enrichment).saturating_add(
+        let diagnostic_bytes = self
+            .diagnostics_enrichment
+            .allocation_bytes()
+            .saturating_add(
                 self.diagnostics_enrichment
                     .iter()
-                    .map(|entries| {
-                        map_entry_bytes::<Symbol, String>(entries.len()).saturating_add(
-                            entries.values().map(|value| value.capacity() as u64).sum(),
-                        )
-                    })
+                    .map(diagnostic_enrichment_bytes)
                     .sum(),
             );
         let retention_metadata_bytes = [
-            vector_bytes::<u32>(&self.branch_pins),
-            vector_bytes::<u32>(&self.replay_pins),
-            vector_bytes::<u32>(&self.snapshot_pins),
+            self.branch_pins.allocation_bytes(),
+            self.replay_pins.allocation_bytes(),
+            self.snapshot_pins.allocation_bytes(),
         ]
         .into_iter()
         .fold(0_u64, u64::saturating_add);
@@ -88,12 +77,4 @@ impl<K: RecordKind> RecordArena<K> {
             allocator_bookkeeping_bytes: 0,
         }
     }
-}
-
-fn vector_bytes<T>(values: &Vec<T>) -> u64 {
-    (values.capacity() as u64).saturating_mul(std::mem::size_of::<T>() as u64)
-}
-
-fn map_entry_bytes<K, V>(entry_count: usize) -> u64 {
-    (entry_count as u64).saturating_mul(std::mem::size_of::<(K, V)>() as u64)
 }

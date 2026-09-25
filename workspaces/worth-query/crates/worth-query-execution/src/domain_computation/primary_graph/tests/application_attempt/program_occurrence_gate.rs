@@ -7,11 +7,8 @@
 //! entry must fail closed on it, name the unresolved-activation cause, and
 //! leave the product commit ledger where it was.
 
-use std::any::TypeId;
-
 use super::super::fixture::{
-    installed_authorization_world, installed_program_support, live_scope,
-    rostered_program_revision, ProgramRequiredMutationBinding,
+    installed_authorization_world, installed_program_support, live_scope, rostered_program_revision,
 };
 use super::program_fixture::admitted_program_required_program;
 use super::{authenticated_principal, idempotency, resolved_account};
@@ -81,7 +78,6 @@ fn a_required_output_source_on_an_unseeded_occurrence_is_gated_like_its_siblings
         .application
         .compare_and_commit_application_for_required_output_source(
             &presented,
-            TypeId::of::<ProgramRequiredMutationBinding>(),
             program,
             idempotency(72, 72),
         );

@@ -143,6 +143,35 @@ where
             .collect()
     }
 
+    pub(in crate::domain_computation::primary_graph::application_contribution) fn family_output_role<
+        Family,
+    >(
+        &self,
+        output_binding: TypeId,
+    ) -> Result<&str, WorthQueryOutputDemandDenial>
+    where
+        Family: WorthQueryProducerOutputFamily<Schema>,
+    {
+        let mut matching = self.entries.values().filter(|entry| {
+            entry.declaration.output_family == Family::IDENTITY
+                && entry.declaration.output_family_type == TypeId::of::<Family>()
+                && entry.declaration.operation_binding_type == output_binding
+        });
+        let role = matching.next().ok_or_else(|| {
+            WorthQueryOutputDemandDenial::new(
+                WorthQueryOutputDemandDenialKind::ProducerUnavailable,
+                Family::IDENTITY,
+            )
+        })?;
+        if matching.any(|entry| entry.declaration.output_role != role.declaration.output_role) {
+            return Err(WorthQueryOutputDemandDenial::new(
+                WorthQueryOutputDemandDenialKind::AmbiguousApplicableProducer,
+                Family::IDENTITY,
+            ));
+        }
+        Ok(&role.declaration.output_role)
+    }
+
     pub(in crate::domain_computation::primary_graph::application_contribution) fn select_exact<
         Family,
     >(
@@ -172,6 +201,10 @@ where
         Ok(WorthQuerySelectedApplicationProducer {
             identity: selected.declaration.identity.clone(),
             applicability: selected.declaration.applicability[0],
+            exact_retained_output: true,
+            retained_resources: None,
+            retained_idempotency_key: None,
+            retained_output_binding: None,
         })
     }
 

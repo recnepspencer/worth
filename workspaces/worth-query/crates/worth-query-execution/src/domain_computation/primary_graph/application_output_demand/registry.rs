@@ -127,6 +127,8 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryCompletedOutpu
     pub(in crate::domain_computation::primary_graph) authority: WorthQueryAcceptedOutputAuthority,
     pub(in crate::domain_computation::primary_graph) readiness:
         super::WorthQueryOutputReadinessDeliveryEvidence,
+    pub(in crate::domain_computation::primary_graph) resources:
+        Option<super::super::application_contribution::WorthQueryProducerDemandResources>,
 }
 
 pub(in crate::domain_computation::primary_graph) enum WorthQueryOutputSchedulingResult {
@@ -169,6 +171,7 @@ pub struct WorthQueryOutputDemandNotifications {
     wake: Arc<DemandWake>,
 }
 
+mod accepted_checkpoint;
 mod admission;
 mod checkpoint;
 mod lifecycle;
@@ -270,11 +273,31 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryAcceptedOutput
     pub(in crate::domain_computation::primary_graph) source_partition: [u8; 32],
     pub(in crate::domain_computation::primary_graph) producer_dependency: Option<[u8; 32]>,
     pub(in crate::domain_computation::primary_graph) idempotency_key: [u8; 32],
+    pub(in crate::domain_computation::primary_graph) resources:
+        Option<super::super::application_contribution::WorthQueryProducerDemandResources>,
     pub(in crate::domain_computation::primary_graph) roles:
         Vec<crate::domain_computation::primary_graph::application_attempt::WorthQueryCheckpointOutputRole>,
+    /// Authenticated v5 encoding of the complete rebased producer fact set.
+    /// Legacy and unsupported fact sets carry no reuse authority.
+    pub(in crate::domain_computation::primary_graph) producer_facts: Option<Vec<u8>>,
 }
 
 impl WorthQueryAcceptedOutputCheckpointIdentity {
+    pub(in crate::domain_computation::primary_graph) fn canonical_cmp(
+        &self,
+        other: &Self,
+    ) -> std::cmp::Ordering {
+        self.producer
+            .cmp(&other.producer)
+            .then_with(|| self.source.cmp(&other.source))
+            .then_with(|| self.scope.cmp(&other.scope))
+            .then_with(|| self.source_partition.cmp(&other.source_partition))
+            .then_with(|| self.producer_dependency.cmp(&other.producer_dependency))
+            .then_with(|| self.idempotency_key.cmp(&other.idempotency_key))
+            .then_with(|| self.resources.cmp(&other.resources))
+            .then_with(|| self.roles.cmp(&other.roles))
+    }
+
     pub(in crate::domain_computation::primary_graph) fn same_output_slot(
         &self,
         other: &Self,
@@ -292,52 +315,6 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryReadmittedAcce
     pub(in crate::domain_computation::primary_graph) correspondence: std::sync::Arc<
         crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
     >,
-}
-
-impl WorthQueryOutputDemandRegistry {
-    /// Capture only terminal accepted outputs. In-flight, failed, and merely
-    /// published demands cannot become restart authority.
-    pub(in crate::domain_computation::primary_graph) fn accepted_checkpoint_identities(
-        &self,
-    ) -> Vec<WorthQueryAcceptedOutputCheckpointIdentity> {
-        let state = self
-            .state
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let mut accepted = state
-            .records
-            .iter()
-            .filter_map(|(key, record)| {
-                let DemandState::Output(WorthQueryOutputProgress {
-                    checkpoint: Some(WorthQueryOutputCheckpoint::Ready(completion)),
-                    advancement: WorthQueryOutputAdvancement::Idle,
-                    ..
-                }) = &record.state
-                else {
-                    return None;
-                };
-                match &completion.authority {
-                    WorthQueryAcceptedOutputAuthority::Committed(receipt) => {
-                        let idempotency = receipt.idempotency_binding();
-                        Some(WorthQueryAcceptedOutputCheckpointIdentity {
-                            producer: key.producer.clone(),
-                            source: key.source.checkpoint_identity().bytes(),
-                            scope: receipt.principal_scope().scope(),
-                            source_partition: idempotency.source_partition_identity()?,
-                            producer_dependency: idempotency.producer_dependency_identity(),
-                            idempotency_key: *idempotency.key_identity(),
-                            roles: receipt.output_correspondence().checkpoint_roles(),
-                        })
-                    }
-                    WorthQueryAcceptedOutputAuthority::Restored(restored) => {
-                        Some(restored.checkpoint.clone())
-                    }
-                }
-            })
-            .collect::<Vec<_>>();
-        accepted.sort();
-        accepted
-    }
 }
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryRequiredOutputSourcePreparation {

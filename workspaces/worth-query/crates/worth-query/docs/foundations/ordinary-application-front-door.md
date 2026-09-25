@@ -419,6 +419,23 @@ evidence includes:
 Do not parse `Display` text or reconstruct authority from a digest. Inspection
 explains a transition; it does not perform the transition.
 
+## Capture And Reopen Cost Boundary
+
+An installed application runtime can capture its opaque Query checkpoint and
+encoder-owned section report together with
+`capture_application_checkpoint_with_sections()`. The report splits Query
+framing, native Relational bytes and accepted-output identities; a locally
+captured native checkpoint also reports envelope, branch-root, branch-cell,
+partition-mirror, derived-index and framing bytes. These sizes describe the
+same encoding pass. They cannot validate received bytes or authorize restore.
+
+The application owns the enclosing artifact, transport, compatibility check
+and fresh installed-schema readmission. Relational verifies and rebuilds
+committed truth; Query readmits accepted-output identities without rerunning
+producers. Retained views and handles are reconstructed separately. Compare
+work against the actual scene/dependency shape and report wall time with its
+hardware; an absolute seconds threshold is not a portable Query contract.
+
 ## Anti-Patterns
 
 - importing internal Query authority crates from application code;
@@ -443,13 +460,16 @@ explains a transition; it does not perform the transition.
 - Conditional providers and managed clocks are stable on the primary-graph
   application runtime. Query does not publish a separate general-purpose
   temporal workspace API.
-- Recovery handles and temporal wake state are runtime-local. Durable restore
-  belongs to the Store handoff; temporal wakes reconstruct from surviving
+- Recovery handles and temporal wake state are runtime-local. An application
+  may capture Query's opaque native checkpoint with its accepted-output
+  identities, then readmit it through its installed schema on restart; the
+  application owns the enclosing artifact and Store transport. This is not a
+  general Query Save/Open API. Temporal wakes reconstruct from surviving
   authoritative domain truth rather than persisted wake handles.
-- Product branches, exact composite history, retained observations, and pending
-  cleanup are memory-resident. Process loss releases those live capabilities;
-  restart durability requires Store-owned descriptive state followed by fresh
-  owner readmission.
+- Product branches, retained observations, and pending cleanup are
+  memory-resident live capabilities. Process loss releases them; checkpoint
+  readmission restores native committed truth and accepted output identities,
+  not these handles or producer execution.
 - Linear undo and redo remain provisional experiments. Milestone 9.18 owns any
   accepted public correction-history contract.
 - Certification replay remains certification-only.

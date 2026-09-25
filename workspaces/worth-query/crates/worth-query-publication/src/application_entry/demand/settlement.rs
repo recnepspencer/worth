@@ -55,6 +55,11 @@ impl<Query> WorthQueryApplicationOutputDemandSettlement<Query> {
         self.retained.readiness_delivery()
     }
 
+    /// Producer executions initiated by this demand, not by an earlier output.
+    pub fn producer_contacts_in_this_demand(&self) -> usize {
+        self.retained.producer_contacts_in_this_demand()
+    }
+
     pub(in crate::application_entry) fn retained_settlement(
         &self,
     ) -> &WorthQueryOutputDemandSettlement {

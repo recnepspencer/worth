@@ -10,7 +10,10 @@ use super::phase::{
     start_managed_application_commit, WorthQueryApplicationCommitPreparation,
     WorthQueryApplicationCommitPreparationRequest,
 };
-use super::program_occurrence_gate::resolve_occurrence_program;
+use super::program_occurrence_gate::{
+    require_occurrence_acts_through, require_selected_program_matches_occurrence,
+    resolve_occurrence_program,
+};
 use crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality;
 use crate::domain_computation::primary_graph::program_occurrence::WorthQueryPresentedProgram;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
@@ -51,28 +54,24 @@ where
     >(
         &self,
         presented: &WorthQueryPresentedProgram<'_>,
-        source_binding: std::any::TypeId,
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
     ) -> WorthQueryApplicationCommitOutcome
     where
         Input: Clone + Send + Sync + 'static,
     {
-        if let Err(outcome) =
-            self.require_occurrence_owns_output_source(presented, source_binding, &program)
-        {
+        if let Err(outcome) = self.require_occurrence_owns_output_source(presented, &program) {
             return outcome;
         }
         self.compare_and_commit_application_with_output_observation(program, idempotency, true)
     }
 
     /// Requires that the program presented for this output source is the one
-    /// active on the attempt's own occurrence, and that the occurrence's
-    /// program acts through the mutation binding producing the source.
+    /// active on the attempt's own occurrence. The program runtime already
+    /// checked its typed root and source-binding inventory before entering here.
     fn require_occurrence_owns_output_source<Operation, Input, Scope>(
         &self,
         presented: &WorthQueryPresentedProgram<'_>,
-        source_binding: std::any::TypeId,
         program: &WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
     ) -> Result<(), WorthQueryApplicationCommitOutcome> {
         let Some(support) = self.program_support.as_ref() else {
@@ -90,14 +89,6 @@ where
                 ),
             ));
         }
-        if !occurrence
-            .entry()
-            .acts_through_mutation_binding(source_binding)
-        {
-            return Err(WorthQueryApplicationCommitOutcome::Denied(
-                WorthQueryApplicationCommitDenial::application_program_required(),
-            ));
-        }
         Ok(())
     }
 
@@ -109,6 +100,10 @@ where
         &self,
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
+        selected_program: Option<(
+            &worth_query_declaration::facade::application_program::ApplicationProgramIdentity,
+            &worth_query_declaration::facade::application_program::ApplicationProgramRevision,
+        )>,
     ) -> WorthQueryApplicationCommitOutcome
     where
         Operation: 'static,
@@ -122,17 +117,22 @@ where
                 WorthQueryApplicationCommitDenial::application_program_required(),
             );
         }
-        if let Err(outcome) = self.require_occurrence_acts_through(&program) {
+        if let Err(outcome) =
+            self.require_occurrence_program_commit_binding(&program, selected_program)
+        {
             return outcome;
         }
         self.compare_and_commit_application_with_output_observation(program, idempotency, true)
     }
 
-    /// Requires that the program active on this attempt's occurrence acts
-    /// through the operation being committed.
-    fn require_occurrence_acts_through<Operation, Input, Scope>(
+    /// Resolves the active occurrence, then checks selection and operation authority.
+    fn require_occurrence_program_commit_binding<Operation, Input, Scope>(
         &self,
         program: &WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
+        selected_program: Option<(
+            &worth_query_declaration::facade::application_program::ApplicationProgramIdentity,
+            &worth_query_declaration::facade::application_program::ApplicationProgramRevision,
+        )>,
     ) -> Result<(), WorthQueryApplicationCommitOutcome>
     where
         Operation: 'static,
@@ -144,14 +144,10 @@ where
         };
         let occurrence = resolve_occurrence_program(support, program)
             .map_err(WorthQueryApplicationCommitOutcome::Denied)?;
-        if !occurrence
-            .entry()
-            .acts_through_operation(std::any::TypeId::of::<Operation>())
-        {
-            return Err(WorthQueryApplicationCommitOutcome::Denied(
-                WorthQueryApplicationCommitDenial::application_program_required(),
-            ));
-        }
+        require_selected_program_matches_occurrence(&occurrence, selected_program)
+            .map_err(WorthQueryApplicationCommitOutcome::Denied)?;
+        require_occurrence_acts_through::<Operation>(&occurrence)
+            .map_err(WorthQueryApplicationCommitOutcome::Denied)?;
         Ok(())
     }
 
@@ -222,7 +218,7 @@ where
                 WorthQueryApplicationCommitDenial::application_program_required(),
             );
         }
-        if let Err(outcome) = self.require_occurrence_acts_through(&program) {
+        if let Err(outcome) = self.require_occurrence_program_commit_binding(&program, None) {
             return outcome;
         }
         self.compare_and_commit_application_with_output_observation(program, idempotency, false)

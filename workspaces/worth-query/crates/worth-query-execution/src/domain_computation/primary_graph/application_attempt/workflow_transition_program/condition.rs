@@ -93,6 +93,7 @@ where
         let transition_identity = self.admitted.identity().to_owned();
         let transition_identity_bytes = *self.admitted.identity_bytes();
         let node_path = self.admitted.node_path().to_owned();
+        let progress_update = self.admitted.prepare_progress_update(outcome, None)?;
         let mut read_set = self.admitted.into_read_set();
         super::assessment::bind_currentness_facts(&mut read_set, &currentness_facts, &node_path)?;
         let program = WorthQueryApplicationEffectProgram {
@@ -121,6 +122,8 @@ where
             assessment: None,
             supporting_identity: Some(condition_identity),
             operation_receipt_identity: None,
+            progress_update: Some(progress_update),
+            terminal: false,
             approval: None,
             approval_identity: None,
             replays: self.replays,

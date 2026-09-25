@@ -190,6 +190,7 @@ impl CustomInvariantRule for ProposedAspectStateProbe {
                         super::world::supply_chain::EntityKind::Voyage,
                     )],
                     affected_relation_kinds: vec![],
+                    include_relation_endpoint_entity_touches: true,
                 }
                 .canonicalize(),
                 execution_point: InvariantExecutionPoint::CommitBoundary,

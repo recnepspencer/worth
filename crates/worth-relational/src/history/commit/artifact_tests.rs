@@ -10,7 +10,57 @@ use crate::indexes::data::{
 };
 use crate::tests::support::{create_entity_outcome, persisted_runtime_with_test_schema};
 
-use super::{RelationalCommitArtifact, RelationalCommitAuthoritativeAllocationKind};
+use super::{
+    RelationalCommitArtifact, RelationalCommitArtifactDenial,
+    RelationalCommitAuthoritativeAllocationKind,
+};
+
+#[test]
+fn recovery_relinks_an_already_sealed_payload_without_reencoding_or_weakening_root_checks() {
+    let runtime = persisted_runtime_with_test_schema();
+    create_entity_outcome(&runtime, "preencoded-recovery-root");
+    let root = runtime
+        .history
+        .branch_cell(&crate::history::data::BranchId("main".to_owned()))
+        .and_then(|cell| cell.root())
+        .expect("committed main has one root");
+    let envelope = root
+        .canonical_envelope()
+        .cloned()
+        .expect("committed root carries its canonical envelope");
+    let preencoded = RelationalCommitArtifact::from_envelope(Arc::clone(&envelope)).unwrap();
+    let legacy =
+        RelationalCommitArtifact::from_envelope_with_root(Arc::clone(&envelope), Arc::clone(&root))
+            .unwrap();
+    let relinked = preencoded
+        .relink_preencoded_recovery(&envelope, Some(&root), None)
+        .unwrap();
+    assert!(Arc::ptr_eq(
+        &preencoded.canonical_payload,
+        &relinked.canonical_payload
+    ));
+    assert_eq!(relinked.identity(), legacy.identity());
+    assert_eq!(relinked.parentage(), legacy.parentage());
+    assert_eq!(relinked.roots(), legacy.roots());
+    assert_eq!(
+        relinked.canonical_payload_digest(),
+        legacy.canonical_payload_digest()
+    );
+
+    let equal_but_unsealed = Arc::new((*envelope).clone());
+    assert!(matches!(
+        preencoded.relink_preencoded_recovery(&equal_but_unsealed, Some(&root), None),
+        Err(RelationalCommitArtifactDenial::RootLinkage)
+    ));
+    let mismatched_schema = crate::branch::RelationalBranchRootDescriptor::new(
+        *legacy.roots().truth_root(),
+        [0xAB; 32],
+    );
+    assert!(matches!(
+        preencoded.relink_preencoded_recovery(&envelope, None, Some(&mismatched_schema)),
+        Err(RelationalCommitArtifactDenial::RootLinkage)
+    ));
+}
 
 #[test]
 fn canonical_artifact_accounting_excludes_nested_diagnostic_perturbation() {

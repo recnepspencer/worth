@@ -8,9 +8,12 @@ mod indexed_entity_selection;
 mod locator_identity;
 mod source_currentness;
 mod workflow_definition_predecessor;
+mod workflow_history_basis;
 mod workflow_instance_capacity;
-mod workflow_transition_capacity;
 pub(in crate::domain_computation::primary_graph) use adjacency::observe_adjacency;
+pub(in crate::domain_computation::primary_graph) use adjacency::{
+    observe_adjacency_checked, AdjacencyObservationDenial,
+};
 pub(in crate::domain_computation::primary_graph) use indexed_entity_selection::observe_indexed_entity_selection;
 pub(in crate::domain_computation::primary_graph) use source_currentness::WorthQuerySourceCurrentnessFailure;
 
@@ -60,6 +63,11 @@ pub(in crate::domain_computation) enum WorthQueryApplicationObservedFact {
         entity_id: EntityId,
         aspect: AspectKey,
         native_revision: Option<u64>,
+    },
+    SourceFieldRevision {
+        entity_id: EntityId,
+        locator: AspectFieldLocator,
+        native_revision: Option<worth_relational::facade::runtime::RelationalFieldRevision>,
     },
     SourceAdjacencyRevision {
         relation_kind: KindId,
@@ -144,12 +152,13 @@ pub(in crate::domain_computation) enum WorthQueryApplicationObservedFact {
         maximum_instances: usize,
         instances: Vec<WorthQueryApplicationObservedRelation>,
     },
-    /// Exact bounded transition occupancy after retained-idempotency recovery.
-    WorkflowTransitionCapacity {
-        relation_kind: KindId,
+    /// A budgeted history read at an exact immutable native basis. It carries
+    /// currentness, not permission to address arbitrary entities in that basis.
+    WorkflowHistoryBasis {
         instance: EntityId,
         maximum_transitions: usize,
-        transitions: Vec<WorthQueryApplicationObservedRelation>,
+        transition_count: usize,
+        snapshot: worth_relational::facade::snapshots::SnapshotHandle,
     },
 }
 
@@ -199,6 +208,11 @@ impl WorthQueryApplicationObservedFact {
                 .project_snapshot(snapshot)
                 .and_then(|view| view.entity_aspect_version(*entity_id, aspect))
                 == Some(*native_revision),
+            Self::SourceFieldRevision { entity_id, locator, native_revision } =>
+                native_revision.is_some_and(|expected| {
+                    runtime.read_truth().project_snapshot(snapshot)
+                        .and_then(|view| view.entity_field_revision(*entity_id, locator)) == Some(expected)
+                }),
             Self::SourceAdjacencyRevision {
                 relation_kind,
                 anchor,
@@ -342,18 +356,17 @@ impl WorthQueryApplicationObservedFact {
                 *maximum_instances,
                 instances,
             ),
-            Self::WorkflowTransitionCapacity {
-                relation_kind,
-                instance,
+            Self::WorkflowHistoryBasis {
                 maximum_transitions,
-                transitions,
-            } => workflow_transition_capacity::remains_equal(
+                transition_count,
+                snapshot: observed,
+                ..
+            } => workflow_history_basis::remains_equal(
                 runtime,
                 snapshot,
-                *relation_kind,
-                *instance,
+                observed,
                 *maximum_transitions,
-                transitions,
+                *transition_count,
             ),
         }
     }

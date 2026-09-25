@@ -16,6 +16,29 @@ impl RelationalPreparationPort {
         Self { binding }
     }
 
+    /// Read the sealed candidate's exact, value-free canonical change scope
+    /// before publication. This does not consume or mutate the candidate.
+    pub fn summarize_prepared_candidate(
+        &self,
+        candidate: &crate::mvcc::PreparedRelationalCommitCandidate,
+        budget: super::PreparedRelationalChangeSummaryBudget,
+    ) -> Result<super::PreparedRelationalChangeSummary, super::PreparedRelationalChangeSummaryDenial>
+    {
+        use super::PreparedRelationalChangeSummaryDenial as Denial;
+
+        let runtime = self.binding.runtime_snapshot();
+        let _operation = runtime.admit_operation().ok_or(Denial::OwnerUnavailable)?;
+        if candidate.runtime_instance_id() != runtime.runtime_instance_id()
+            || !candidate.belongs_to_publication_owner(&runtime.publication_binding())
+        {
+            return Err(Denial::ForeignCandidate);
+        }
+        if candidate.lifetime_expired() {
+            return Err(Denial::CandidateLifetimeExpired);
+        }
+        super::prepared_change_summary::summarize(candidate, budget)
+    }
+
     /// Validate a branch-bound transaction and register its immutable
     /// publication candidate without requiring exclusive runtime access.
     pub fn prepare_branch_transaction(

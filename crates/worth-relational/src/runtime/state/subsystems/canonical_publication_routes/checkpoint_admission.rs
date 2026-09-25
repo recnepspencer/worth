@@ -8,6 +8,15 @@ use super::{
 };
 
 impl RelationalCanonicalPublicationRoutes {
+    pub(crate) fn with_quiescent_index_reclamation<R>(
+        &self,
+        reclaim: impl FnOnce() -> R,
+    ) -> Option<R> {
+        let _admission = self.enter_checkpoint_selection().ok()?;
+        self.reject_unsettled().ok()?;
+        Some(reclaim())
+    }
+
     pub(crate) fn mark_settled(&self, commit_id: CommitId) -> bool {
         self.by_commit.get(&commit_id).is_some_and(|route| {
             route.mark_settled();

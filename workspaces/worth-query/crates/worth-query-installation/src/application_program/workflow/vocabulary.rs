@@ -11,87 +11,13 @@ use worth_query_declaration::facade::{
 
 mod approval_binding;
 mod installation;
+mod support_identity;
 pub use installation::WorthQueryApplicationWorkflowSpecInstallation;
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct WorthQueryApplicationWorkflowResourceCeiling {
-    maximum_definition_nodes: u16,
-    maximum_definition_connections: u16,
-    maximum_definition_effects: u16,
-    maximum_component_depth: u8,
-    maximum_canonical_bytes: u32,
-    maximum_live_instances: u32,
-    maximum_retained_transitions_per_instance: u32,
-    maximum_evidence_bytes: u64,
-}
-
-impl WorthQueryApplicationWorkflowResourceCeiling {
-    pub const fn new(
-        maximum_definition_nodes: u16,
-        maximum_definition_connections: u16,
-        maximum_definition_effects: u16,
-        maximum_component_depth: u8,
-        maximum_canonical_bytes: u32,
-        maximum_live_instances: u32,
-        maximum_retained_transitions_per_instance: u32,
-        maximum_evidence_bytes: u64,
-    ) -> Option<Self> {
-        if maximum_definition_nodes == 0
-            || maximum_definition_connections == 0
-            || maximum_definition_effects == 0
-            || maximum_component_depth == 0
-            || maximum_canonical_bytes == 0
-            || maximum_live_instances == 0
-            || maximum_retained_transitions_per_instance == 0
-            || maximum_evidence_bytes == 0
-        {
-            None
-        } else {
-            Some(Self {
-                maximum_definition_nodes,
-                maximum_definition_connections,
-                maximum_definition_effects,
-                maximum_component_depth,
-                maximum_canonical_bytes,
-                maximum_live_instances,
-                maximum_retained_transitions_per_instance,
-                maximum_evidence_bytes,
-            })
-        }
-    }
-
-    pub const fn maximum_definition_nodes(self) -> u16 {
-        self.maximum_definition_nodes
-    }
-
-    pub const fn maximum_definition_connections(self) -> u16 {
-        self.maximum_definition_connections
-    }
-
-    pub const fn maximum_definition_effects(self) -> u16 {
-        self.maximum_definition_effects
-    }
-
-    pub const fn maximum_component_depth(self) -> u8 {
-        self.maximum_component_depth
-    }
-
-    pub const fn maximum_canonical_bytes(self) -> u32 {
-        self.maximum_canonical_bytes
-    }
-
-    pub const fn maximum_live_instances(self) -> u32 {
-        self.maximum_live_instances
-    }
-
-    pub const fn maximum_retained_transitions_per_instance(self) -> u32 {
-        self.maximum_retained_transitions_per_instance
-    }
-
-    pub const fn maximum_evidence_bytes(self) -> u64 {
-        self.maximum_evidence_bytes
-    }
-}
+mod resource_ceiling;
+pub use resource_ceiling::{
+    WorthQueryApplicationWorkflowResourceCeiling, WorthQueryWorkflowHistoryReconstructionBudget,
+};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationWorkflowInstallationDenialKind {
@@ -228,6 +154,7 @@ where
 {
     pub(super) schema_binding: ApplicationSchemaBindingIdentity,
     pub(super) program_revision: ApplicationProgramRevision,
+    pub(super) support_identity: [u8; 32],
     pub(super) authoring_capability: InstalledWorkflowAuthoringCapability,
     pub(super) instance_start_capability: InstalledWorkflowInstanceStartCapability,
     pub(super) advance_capability: InstalledWorkflowAdvanceCapability,

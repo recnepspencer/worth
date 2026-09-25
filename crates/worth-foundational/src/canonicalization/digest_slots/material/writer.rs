@@ -43,8 +43,9 @@ impl CanonicalMaterialWriter {
             });
         }
         if attempted > self.material.capacity() {
-            self.material
-                .reserve_exact(attempted - self.material.capacity());
+            // `additional` is relative to length. Geometric growth avoids
+            // copying the full canonical prefix for every small entry.
+            self.material.reserve(attempted - self.material.len());
         }
         self.material.push_str(value);
         Ok(())
@@ -74,5 +75,37 @@ impl CanonicalEncodedMaterial {
 
     pub(crate) fn into_bytes(self) -> Vec<u8> {
         self.material
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::CanonicalMaterialWriter;
+
+    #[test]
+    fn many_small_appends_keep_canonical_bytes_and_amortize_growth() {
+        let mut writer = CanonicalMaterialWriter::bounded(4_096);
+        let mut growths = 0;
+        let mut capacity = 0;
+        for _ in 0..4_096 {
+            writer.append("x").expect("within byte bound");
+            if writer.material.capacity() != capacity {
+                growths += 1;
+                capacity = writer.material.capacity();
+            }
+        }
+        assert!(
+            growths < 32,
+            "canonical material should not grow per append"
+        );
+        let finished = writer.finish();
+        assert_eq!(finished.encoded_bytes(), 4_096);
+        assert!(finished.allocation_bytes() >= finished.encoded_bytes());
+        assert_eq!(finished.into_bytes(), vec![b'x'; 4_096]);
+
+        let mut bounded = CanonicalMaterialWriter::bounded(3);
+        bounded.append("abc").expect("at the byte bound");
+        let denial = bounded.append("d").expect_err("over the byte bound");
+        assert_eq!((denial.maximum(), denial.attempted()), (3, 4));
     }
 }

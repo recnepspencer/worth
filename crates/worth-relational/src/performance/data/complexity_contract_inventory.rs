@@ -1,6 +1,9 @@
 use super::{ComplexityContract, ComplexityStatus};
 
 #[cfg(test)]
+mod index_access;
+
+#[cfg(test)]
 pub const COMPLEXITY_CONTRACTS: &[ComplexityContract] = &[
     ComplexityContract {
         id: "runtime.partition_local_commit",
@@ -11,12 +14,20 @@ pub const COMPLEXITY_CONTRACTS: &[ComplexityContract] = &[
         proof_tests: &["tests::complexity::contracts::complexity_budget_partition_local_commit_reports_touched_partitions"],
     },
     ComplexityContract {
-        id: "runtime.bulk_create.reserve",
-        function_path: "authority/mutation/record_changes.rs::{reserve_bulk_entity_capacity,reserve_bulk_relation_capacity}",
-        declared_time_complexity: "O(partitions_with_bulk_intents)",
-        budget_summary: "Bulk create paths must reserve partition-local capacity up front instead of relying on repeated slot-by-slot vector growth.",
+        id: "runtime.bulk_create.allocate",
+        function_path: "authority/mutation/intents/{bulk_create_entities.rs,bulk_create_relations.rs}",
+        declared_time_complexity: "O(rows * log(occupied_records))",
+        budget_summary: "Bulk rows reserve exact logical record identities; persistent pages allocate only occupied paths, without a whole-arena capacity reservation.",
         status: ComplexityStatus::Verified,
-        proof_tests: &["tests::complexity::contracts::complexity_budget_bulk_create_reserves_partition_local_capacity"],
+        proof_tests: &["tests::complexity::contracts::commit_budgets::partition_local_commit::complexity_budget_bulk_create_reserves_exact_logical_slots"],
+    },
+    ComplexityContract {
+        id: "runtime.root_content_commitment",
+        function_path: "storage/overlay/partition_content.rs::PartitionContentCommitment::capture",
+        declared_time_complexity: "O(changed_owner_paths * log(N) + changed_value_bytes); no unchanged record/history encoding",
+        budget_summary: "Publication carries the exact count of hashed content values; a one-record append retires one tail and hashes one new history value plus one record, independent of retained history and population. Cold verification rebuilds from truth.",
+        status: ComplexityStatus::Verified,
+        proof_tests: &["storage::overlay::partition_content::incremental_tests::one_record_update_hashes_three_values_regardless_of_population_or_history"],
     },
     ComplexityContract {
         id: "runtime.slot_local_mutation_journal",
@@ -29,7 +40,7 @@ pub const COMPLEXITY_CONTRACTS: &[ComplexityContract] = &[
     ComplexityContract {
         id: "runtime.partition_edition.acquire",
         function_path: "runtime/state/subsystems/storage/partition_edition.rs::PartitionEdition, runtime/state/runtime_state/partition_edition_access.rs::RelationalRuntimeState::acquire_partition_edition",
-        declared_time_complexity: "O(1) per acquisition. A write that finds a reader edition outstanding pays O(partitions) for the spine plus O(slots in that partition) for each partition it then mutates; both are charged to a named lane",
+        declared_time_complexity: "O(1) per acquisition. A write under an outstanding edition copies O(partitions) spine handles, O(1) partition handles, then only changed persistent column/index paths; each copy lane is counted",
         budget_summary: "Readers must be lent the partition spine under one reference-count acquisition rather than handed a deep copy of every partition and slot. Owning the spine is not owning the partitions behind it, so the per-partition copy-on-write a write is forced into is counted separately from the spine and attributed to the ordinary or reconstructive lane rather than absorbed silently.",
         status: ComplexityStatus::Verified,
         proof_tests: &[
@@ -77,10 +88,13 @@ pub const COMPLEXITY_CONTRACTS: &[ComplexityContract] = &[
     ComplexityContract {
         id: "runtime.relation_identity_validation",
         function_path: "authority/intent_merge/relation_validation/relation_creation_admission.rs::validate_relation_creation_intent",
-        declared_time_complexity: "O(out_degree(source) + same_batch_relation_creates)",
-        budget_summary: "Duplicate relation identity checks must avoid full partition relation scans by using adjacency-local candidates and deterministic same-batch keys.",
+        declared_time_complexity: "O(target_count + min(out_degree(source), sum(in_degree(existing_targets))) + same_batch_relation_creates)",
+        budget_summary: "Duplicate relation identity checks scan the smaller current endpoint neighborhood, skip newly created targets, and use deterministic same-batch keys.",
         status: ComplexityStatus::Verified,
-        proof_tests: &["tests::complexity::contracts::complexity_budget_relation_identity_validation_avoids_partition_scan"],
+        proof_tests: &[
+            "tests::complexity::contracts::complexity_budget_relation_identity_validation_avoids_partition_scan",
+            "authority::intent_merge::relation_validation::relation_identity_scan::tests::relation_identity_admission_scans_the_smaller_endpoint_and_skips_new_targets",
+        ],
     },
     ComplexityContract {
         id: "runtime.unique_entity_invariant_lookup",
@@ -142,22 +156,10 @@ pub const COMPLEXITY_CONTRACTS: &[ComplexityContract] = &[
             "tests::complexity::contracts::visibility_budgets::complexity_budget_query_packetization_reports_serial_shape_for_narrow_reads",
         ],
     },
-    ComplexityContract {
-        id: "runtime.query.index_entity_aspect_field_equals",
-        function_path: "indexes/logic/access.rs::IndexAccess::execute_entity_field_equals_from_generation",
-        declared_time_complexity: "O(index_hits + matched_record_materialization)",
-        budget_summary: "Index-backed field equality reads must resolve candidate IDs from derived index entries, must avoid whole-snapshot materialization, and must report index attempts, parity verification, and emitted record counts explicitly.",
-        status: ComplexityStatus::Verified,
-        proof_tests: &["tests::complexity::contracts::visibility_budgets::complexity_budget_index_entity_field_equals_avoids_snapshot_materialization"],
-    },
-    ComplexityContract {
-        id: "runtime.query.index_relation_aspect_field_equals",
-        function_path: "indexes/logic/access.rs::IndexAccess::execute_index_backed_query_from_generation",
-        declared_time_complexity: "O(index_hits + matched_relation_materialization)",
-        budget_summary: "Index-backed relation field equality reads must resolve candidate relation IDs from derived index entries, must avoid whole-snapshot relation materialization, and must report index attempts, parity verification, and emitted relation counts explicitly.",
-        status: ComplexityStatus::Verified,
-        proof_tests: &["tests::complexity::contracts::visibility_budgets::complexity_budget_index_relation_field_equals_avoids_snapshot_materialization"],
-    },
+    index_access::ENTITY_FIELD,
+    index_access::RELATION_FIELD,
+    index_access::GENERATION_SELECTION,
+    index_access::PATCH_LOCAL_MAINTENANCE,
     ComplexityContract {
         id: "runtime.bulk_mutation.planning",
         function_path: "transactions/logic/mod.rs::RelationalTransaction::plan_bulk_mutation_batch",

@@ -1,14 +1,29 @@
 use sha2::{Digest, Sha256};
 
+mod capture;
+mod encode;
+mod facts;
+mod resources;
+mod section_bytes;
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+use capture::merge_accepted_outputs;
+pub(in crate::domain_computation::primary_graph) use facts::decode as decode_producer_facts;
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) use facts::encode as encode_producer_facts;
+pub use section_bytes::{
+    WorthQueryApplicationCheckpointSectionBytes, WorthQueryNativeCheckpointSectionBytes,
+};
 
 const MAGIC: &[u8; 8] = b"WQAPCP01";
-const FORMAT_VERSION: u16 = 3;
+const FORMAT_VERSION: u16 = 5;
 const CHECKSUM_BYTES: usize = 32;
 const BODY_PREFIX_BYTES: usize = 2 + 8 + 8 + 8;
 const HEADER_BYTES: usize = MAGIC.len() + CHECKSUM_BYTES + BODY_PREFIX_BYTES;
-const MINIMUM_ACCEPTED_OUTPUT_BYTES: usize = 8 + 1 + 32 + 16 + 32 + 33 + 32 + 8;
+const LEGACY_MINIMUM_ACCEPTED_OUTPUT_BYTES: usize = 8 + 1 + 32 + 16 + 32 + 33 + 32 + 8;
+const MINIMUM_ACCEPTED_OUTPUT_BYTES: usize = LEGACY_MINIMUM_ACCEPTED_OUTPUT_BYTES + 17;
+const MINIMUM_V5_ACCEPTED_OUTPUT_BYTES: usize = MINIMUM_ACCEPTED_OUTPUT_BYTES + 8;
 const MAXIMUM_PRODUCER_IDENTITY_BYTES: usize = 4 * 1024;
 const MAXIMUM_ROLE_IDENTITY_BYTES: usize = 4 * 1024;
 const MAXIMUM_ENTITY_NAME_BYTES: usize = 4 * 1024;
@@ -54,60 +69,7 @@ impl WorthQueryApplicationCheckpoint {
         Self::from_untrusted_bytes(bytes.into_boxed_slice())
     }
 
-    fn encode(
-        native: worth_relational::facade::durability::RelationalNativeCheckpoint,
-        publication: &super::WorthQueryPrimaryGraphPublication,
-        accepted_outputs: &[super::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity],
-    ) -> Self {
-        let native_bytes = native.bytes();
-        let accepted_bytes = accepted_outputs.iter().fold(0_usize, |total, accepted| {
-            let role_bytes = accepted.roles.iter().fold(0_usize, |role_total, role| {
-                role_total.saturating_add(8 + role.role.len() + 1 + 8 + role.entity_name.len() + 16)
-            });
-            total.saturating_add(
-                MINIMUM_ACCEPTED_OUTPUT_BYTES - 1 + accepted.producer.len() + role_bytes,
-            )
-        });
-        let mut body = Vec::with_capacity(BODY_PREFIX_BYTES + native_bytes.len() + accepted_bytes);
-        body.extend_from_slice(&FORMAT_VERSION.to_be_bytes());
-        body.extend_from_slice(&publication.bootstrap_commit_id().0.to_be_bytes());
-        body.extend_from_slice(&(native_bytes.len() as u64).to_be_bytes());
-        body.extend_from_slice(&(accepted_outputs.len() as u64).to_be_bytes());
-        body.extend_from_slice(native_bytes);
-        for accepted in accepted_outputs {
-            body.extend_from_slice(&(accepted.producer.len() as u64).to_be_bytes());
-            body.extend_from_slice(accepted.producer.as_bytes());
-            body.extend_from_slice(&accepted.source);
-            encode_scope(&mut body, accepted.scope);
-            body.extend_from_slice(&accepted.source_partition);
-            body.push(u8::from(accepted.producer_dependency.is_some()));
-            body.extend_from_slice(&accepted.producer_dependency.unwrap_or_default());
-            body.extend_from_slice(&accepted.idempotency_key);
-            body.extend_from_slice(&(accepted.roles.len() as u64).to_be_bytes());
-            for role in &accepted.roles {
-                body.extend_from_slice(&(role.role.len() as u64).to_be_bytes());
-                body.extend_from_slice(role.role.as_bytes());
-                body.push(match role.posture {
-                    super::WorthQueryApplicationOutputPosture::Preserve => 0,
-                    super::WorthQueryApplicationOutputPosture::Create => 1,
-                    super::WorthQueryApplicationOutputPosture::Retire => 2,
-                });
-                body.extend_from_slice(&(role.entity_name.len() as u64).to_be_bytes());
-                body.extend_from_slice(role.entity_name.as_bytes());
-                encode_entity(&mut body, role.entity);
-            }
-        }
-        let checksum = Sha256::digest(&body);
-        let mut bytes = Vec::with_capacity(MAGIC.len() + CHECKSUM_BYTES + body.len());
-        bytes.extend_from_slice(MAGIC);
-        bytes.extend_from_slice(&checksum);
-        bytes.extend_from_slice(&body);
-        Self {
-            bytes: bytes.into_boxed_slice(),
-        }
-    }
-
-    pub(super) fn decode(&self) -> Result<DecodedApplicationCheckpoint, String> {
+    pub(super) fn decode(self) -> Result<DecodedApplicationCheckpoint, String> {
         if self.bytes.len() < HEADER_BYTES || &self.bytes[..MAGIC.len()] != MAGIC {
             return Err("Query application checkpoint header is invalid".to_owned());
         }
@@ -119,7 +81,7 @@ impl WorthQueryApplicationCheckpoint {
             return Err("Query application checkpoint checksum differs".to_owned());
         }
         let version = u16::from_be_bytes([body[0], body[1]]);
-        if version != FORMAT_VERSION {
+        if version != FORMAT_VERSION && version != 4 && version != 3 {
             return Err(format!(
                 "Query application checkpoint format {version} is unsupported"
             ));
@@ -130,8 +92,13 @@ impl WorthQueryApplicationCheckpoint {
             .map_err(|_| "checkpoint payload length exceeds this host".to_owned())?;
         let accepted_count = usize::try_from(cursor.next_u64()?)
             .map_err(|_| "checkpoint accepted-output count exceeds this host".to_owned())?;
-        let native = cursor.next_bytes(native_len)?;
-        if accepted_count > cursor.remaining.len() / MINIMUM_ACCEPTED_OUTPUT_BYTES {
+        cursor.next_bytes(native_len)?;
+        let minimum = match version {
+            3 => LEGACY_MINIMUM_ACCEPTED_OUTPUT_BYTES,
+            4 => MINIMUM_ACCEPTED_OUTPUT_BYTES,
+            _ => MINIMUM_V5_ACCEPTED_OUTPUT_BYTES,
+        };
+        if accepted_count > cursor.remaining.len() / minimum {
             return Err("checkpoint accepted-output count exceeds its payload".to_owned());
         }
         let mut accepted_outputs = Vec::with_capacity(accepted_count);
@@ -175,6 +142,7 @@ impl WorthQueryApplicationCheckpoint {
                 .next_bytes(32)?
                 .try_into()
                 .expect("the checkpoint idempotency identity length is exact");
+            let resources = resources::decode_profile(&mut cursor, version)?;
             let role_count = usize::try_from(cursor.next_u64()?)
                 .map_err(|_| "checkpoint output-role count exceeds this host".to_owned())?;
             if role_count > cursor.remaining.len() / (8 + 1 + 8 + 16) {
@@ -206,6 +174,22 @@ impl WorthQueryApplicationCheckpoint {
             if roles.windows(2).any(|pair| pair[0].role >= pair[1].role) {
                 return Err("checkpoint output roles are duplicated or non-canonical".to_owned());
             }
+            let producer_facts = if version >= 5 {
+                let fact_len = usize::try_from(cursor.next_u64()?)
+                    .map_err(|_| "checkpoint producer fact length exceeds this host".to_owned())?;
+                if fact_len > facts::MAXIMUM_FACT_BYTES {
+                    return Err("checkpoint producer fact payload length is invalid".to_owned());
+                }
+                if fact_len == 0 {
+                    None
+                } else {
+                    let bytes = cursor.next_bytes(fact_len)?;
+                    facts::decode(bytes)?;
+                    Some(bytes.to_vec())
+                }
+            } else {
+                None
+            };
             accepted_outputs.push(
                 super::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity {
                     producer,
@@ -214,20 +198,41 @@ impl WorthQueryApplicationCheckpoint {
                     source_partition,
                     producer_dependency,
                     idempotency_key,
+                    resources,
                     roles,
+                    producer_facts,
                 },
             );
         }
-        if accepted_outputs.windows(2).any(|pair| pair[0] >= pair[1]) {
+        if accepted_outputs
+            .windows(2)
+            .any(|pair| pair[0].canonical_cmp(&pair[1]) != std::cmp::Ordering::Less)
+        {
             return Err("checkpoint accepted outputs are duplicated or non-canonical".to_owned());
+        }
+        let mut slots = std::collections::BTreeSet::new();
+        if accepted_outputs.iter().any(|accepted| {
+            !slots.insert((
+                accepted.producer.as_str(),
+                accepted.scope,
+                accepted.source_partition,
+            ))
+        }) {
+            return Err("checkpoint output slots are duplicated".to_owned());
         }
         if !cursor.is_empty() {
             return Err("Query application checkpoint payload length differs".to_owned());
         }
+        let native_end = HEADER_BYTES
+            .checked_add(native_len)
+            .ok_or_else(|| "checkpoint native payload length overflows".to_owned())?;
+        let native = worth_relational::facade::durability::RelationalNativeCheckpoint::from_untrusted_bytes_region(
+            self.bytes,
+            HEADER_BYTES..native_end,
+        )
+        .map_err(str::to_owned)?;
         Ok(DecodedApplicationCheckpoint {
-            native: worth_relational::facade::durability::RelationalNativeCheckpoint::from_untrusted_bytes(
-                native.to_vec().into_boxed_slice(),
-            ),
+            native,
             bootstrap_commit_id,
             accepted_outputs,
         })
@@ -309,71 +314,5 @@ impl<'a> CheckpointCursor<'a> {
 
     const fn is_empty(&self) -> bool {
         self.remaining.is_empty()
-    }
-}
-
-fn encode_scope(
-    output: &mut Vec<u8>,
-    scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
-) {
-    output.extend_from_slice(&scope.partition_id().to_be_bytes());
-    output.extend_from_slice(&scope.local_slot().to_be_bytes());
-    output.extend_from_slice(&scope.generation().to_be_bytes());
-}
-
-fn encode_entity(output: &mut Vec<u8>, entity: worth_relational::facade::identity::EntityId) {
-    output.extend_from_slice(&entity.partition_value().to_be_bytes());
-    output.extend_from_slice(&entity.local_slot_value().to_be_bytes());
-    output.extend_from_slice(&entity.generation_value().to_be_bytes());
-}
-
-fn merge_accepted_outputs(
-    mut current: Vec<super::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity>,
-    recovered: impl IntoIterator<
-        Item = super::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity,
-    >,
-) -> Vec<super::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity> {
-    let unshadowed = recovered
-        .into_iter()
-        .filter(|recovered| {
-            !current
-                .iter()
-                .any(|accepted| accepted.same_output_slot(recovered))
-        })
-        .collect::<Vec<_>>();
-    current.extend(unshadowed);
-    current.sort();
-    current.dedup();
-    current
-}
-
-impl<Schema> super::WorthQueryPrimaryGraphApplicationRuntime<Schema>
-where
-    Schema: worth_query_installation::facade::ApplicationSchema + 'static,
-{
-    pub fn capture_application_checkpoint(
-        &self,
-    ) -> Result<
-        WorthQueryApplicationCheckpoint,
-        worth_relational::facade::durability::DurabilityError,
-    > {
-        self.primary_provider.graph.with_runtime(|runtime| {
-            runtime
-                .durability_authority()
-                .native_checkpoint()
-                .map(|checkpoint| {
-                    let accepted_outputs = merge_accepted_outputs(
-                        self.output_demands.accepted_checkpoint_identities(),
-                        self.recovered_outputs
-                            .iter()
-                            .map(|accepted| accepted.checkpoint.clone()),
-                    );
-                    WorthQueryApplicationCheckpoint::encode(
-                        checkpoint,
-                        self.publication(),
-                        &accepted_outputs,
-                    )
-                })
-        })
     }
 }

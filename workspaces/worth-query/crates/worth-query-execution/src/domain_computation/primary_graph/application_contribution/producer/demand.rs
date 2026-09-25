@@ -4,10 +4,7 @@ use super::{
     WorthQueryInstalledApplicationProducerRegistry, WorthQueryProducerApplicability,
     WorthQueryProducerLifecyclePosture, WorthQueryProducerOutputFamily,
 };
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationBasisSelectionIdentity, WorthQueryObservedSource,
-    WorthQueryPrimaryGraphApplicationRuntime,
-};
+use crate::domain_computation::primary_graph::WorthQueryObservedSource;
 
 type FamilySource<Schema, Family> = <Family as WorthQueryProducerOutputFamily<Schema>>::Source;
 type FamilySourceValue<Schema, Family> =
@@ -21,6 +18,7 @@ mod disclosure;
 mod progression;
 mod readiness;
 mod scheduling_progression;
+mod selection;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryOutputDemandDenialKind {
@@ -41,6 +39,7 @@ pub enum WorthQueryOutputDemandDenialKind {
     PublicationCapacityExceeded,
     ForeignDemand,
     ForeignSettlement,
+    IncompleteDependencyCoverage,
     RetainedBasisUnavailable,
     Closed,
     DuplicatePerformedSource,
@@ -130,6 +129,7 @@ impl WorthQueryOutputDemandDenialKind {
             | Self::PublicationCapacityExceeded
             | Self::ForeignDemand
             | Self::ForeignSettlement
+            | Self::IncompleteDependencyCoverage
             | Self::RetainedBasisUnavailable
             | Self::Closed
             | Self::DuplicatePerformedSource => Terminal,
@@ -153,6 +153,10 @@ impl std::error::Error for WorthQueryOutputDemandDenial {}
 pub struct WorthQuerySelectedApplicationProducer {
     pub(super) identity: String,
     pub(super) applicability: WorthQueryProducerApplicability,
+    pub(super) exact_retained_output: bool,
+    pub(super) retained_resources: Option<super::WorthQueryProducerDemandResources>,
+    pub(super) retained_idempotency_key: Option<[u8; 32]>,
+    pub(super) retained_output_binding: Option<std::any::TypeId>,
 }
 
 /// Runtime-affine admission for one exact source occurrence and installed producer.
@@ -167,7 +171,15 @@ where
     observed_source: WorthQueryObservedSource<FamilySourceQuery<Schema, Family>>,
     currentness_work_limit: std::num::NonZeroUsize,
     maximum_retained_bytes: usize,
+    resources: Option<super::WorthQueryProducerDemandResources>,
+    resources_validated: bool,
+    producer_contacts_in_this_demand: usize,
     admission_kind: super::super::super::application_output_demand::DemandAdmissionKind,
+    retained_program_basis: Option<
+        std::sync::Arc<
+            crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
+        >,
+    >,
     interest:
         Option<super::super::super::application_output_demand::WorthQueryOutputDemandInterest>,
 }
@@ -270,100 +282,10 @@ where
         Ok(WorthQuerySelectedApplicationProducer {
             identity: selected.declaration.identity.clone(),
             applicability,
+            exact_retained_output: false,
+            retained_resources: None,
+            retained_idempotency_key: None,
+            retained_output_binding: None,
         })
-    }
-}
-
-impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
-where
-    Schema: ApplicationSchema + 'static,
-{
-    pub fn select_output_producer<Family>(
-        &self,
-        source: &WorthQueryObservedSource<
-            <<Family as WorthQueryProducerOutputFamily<Schema>>::Source as worth_query_declaration::facade::application_query::ApplicationQueryBinding<Schema>>::Query,
-        >,
-        profile_kind: &'static str,
-    ) -> Result<WorthQuerySelectedApplicationProducer, WorthQueryOutputDemandDenial>
-    where
-        Family: WorthQueryProducerOutputFamily<Schema>,
-    {
-        if source.runtime_authority != self.runtime.authority_identity().as_u64()
-            || source.schema_binding != self.installed_schema.binding_identity()
-        {
-            return Err(WorthQueryOutputDemandDenial::new(
-                WorthQueryOutputDemandDenialKind::ForeignSource,
-                Family::IDENTITY,
-            ));
-        }
-        let WorthQueryApplicationBasisSelectionIdentity::Product(observation) = &source.selection
-        else {
-            return Err(WorthQueryOutputDemandDenial::new(
-                WorthQueryOutputDemandDenialKind::ForeignSource,
-                Family::IDENTITY,
-            ));
-        };
-        let output_bindings = self.installed_producers.family_output_bindings::<Family>();
-        let scope = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(source.source_root());
-        let mut lineage = self
-            .primary_provider
-            .graph
-            .output_lineage
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        for recovered in &self.recovered_outputs {
-            let checkpoint = &recovered.checkpoint;
-            let Some(binding) = recovered.correspondence.binding_type() else {
-                continue;
-            };
-            if checkpoint.scope != scope
-                || checkpoint.source_partition != source.partition_identity()
-                || !output_bindings.contains(&binding)
-            {
-                continue;
-            }
-            lineage.record_recovered_prior_output(
-                binding,
-                self.runtime.authority_identity().as_u64(),
-                self.installed_schema.binding_identity(),
-                scope,
-                observation.lifecycle_incarnation(),
-                observation.reference_generation().get(),
-                std::sync::Arc::clone(&recovered.correspondence),
-                super::super::super::output_lineage::RecordedSourceIdentity::Checkpoint(
-                    crate::domain_computation::primary_graph::application_query::WorthQueryCheckpointSourceIdentity::new(checkpoint.source),
-                ),
-                checkpoint.source_partition,
-                checkpoint.producer_dependency,
-                checkpoint.idempotency_key,
-            );
-        }
-        let source_posture = lineage.source_posture_for_any_output_binding(
-            self.runtime.authority_identity().as_u64(),
-            &self.installed_schema.binding_identity(),
-            scope,
-            observation.lifecycle_incarnation(),
-            observation.reference_generation().get(),
-            &output_bindings,
-            source.idempotency_identity(),
-            source.checkpoint_identity(),
-        );
-        drop(lineage);
-        let lifecycle = match source_posture {
-            super::super::super::output_lineage::WorthQueryOutputSourcePosture::Exact(binding) => {
-                return self.installed_producers.select_exact::<Family>(binding)
-            }
-            super::super::super::output_lineage::WorthQueryOutputSourcePosture::Absent => {
-                WorthQueryProducerLifecyclePosture::Initial
-            }
-            super::super::super::output_lineage::WorthQueryOutputSourcePosture::Drifted => {
-                WorthQueryProducerLifecyclePosture::Preserve
-            }
-        };
-        self.installed_producers
-            .select::<Family>(WorthQueryProducerApplicability::new(
-                profile_kind,
-                lifecycle,
-            ))
     }
 }

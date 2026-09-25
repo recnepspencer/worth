@@ -1,24 +1,18 @@
 use worth_query_installation::facade::ApplicationSchema;
 
+mod dependent;
 mod restoration;
 mod source_custody;
+pub(super) use source_custody::validate_prepared_source_carrier;
 
 use super::super::{
     FamilySourceQuery, FamilySourceValue, WorthQueryAdmittedOutputDemand,
-    WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
-    WorthQueryProducerApplicability, WorthQueryProducerLifecyclePosture,
-    WorthQueryProducerOutputFamily,
+    WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind, WorthQueryProducerOutputFamily,
 };
 use super::denial;
 use crate::domain_computation::primary_graph::{
     WorthQueryObservedSource, WorthQueryPrimaryGraphApplicationRuntime,
 };
-
-#[derive(Clone, Copy, Eq, PartialEq)]
-pub(super) enum OutputLifecycleRequirement {
-    SelectCurrent,
-    PreserveExisting,
-}
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
@@ -46,6 +40,7 @@ where
         self.admit_output_demand_with_source::<Family>(
             source,
             observed_source,
+            None,
             profile_kind,
             maximum_work,
             maximum_retained_bytes,
@@ -53,7 +48,7 @@ where
             crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind::Ordinary,
             None,
             None,
-            OutputLifecycleRequirement::SelectCurrent,
+            None,
         )
     }
 
@@ -80,6 +75,7 @@ where
         self.admit_output_demand_with_source::<Family>(
             source,
             observed_source,
+            None,
             profile_kind,
             maximum_work,
             maximum_retained_bytes,
@@ -87,7 +83,7 @@ where
             crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind::Required,
             None,
             None,
-            OutputLifecycleRequirement::SelectCurrent,
+            None,
         )
     }
 
@@ -95,6 +91,10 @@ where
     pub(in crate::domain_computation) fn admit_recovered_output_demand<Family>(
         &self,
         source_result: crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource<
+            FamilySourceQuery<Schema, Family>,
+            FamilySourceValue<Schema, Family>,
+        >,
+        current_result: crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource<
             FamilySourceQuery<Schema, Family>,
             FamilySourceValue<Schema, Family>,
         >,
@@ -111,10 +111,38 @@ where
                 "recovered output source query did not return one owner-paired occurrence",
             )
         })?;
+        let (_, current_observed_source) =
+            current_result.into_single_source().ok_or_else(|| {
+                denial(
+                WorthQueryOutputDemandDenialKind::ForeignSource,
+                "current recovered output source query did not return one owner-paired occurrence",
+            )
+            })?;
+        let retained_epoch = observed_source.output_source_epoch().ok_or_else(|| {
+            denial(
+                WorthQueryOutputDemandDenialKind::ForeignSource,
+                Family::IDENTITY,
+            )
+        })?;
+        let current_epoch = current_observed_source
+            .output_source_epoch()
+            .ok_or_else(|| {
+                denial(
+                    WorthQueryOutputDemandDenialKind::ForeignSource,
+                    Family::IDENTITY,
+                )
+            })?;
+        if !retained_epoch.same_semantic_source(&current_epoch) {
+            return Err(denial(
+                WorthQueryOutputDemandDenialKind::ForeignSource,
+                "current recovered output source differs from retained source",
+            ));
+        }
         let profile_kind = Family::profile_kind(&source);
         self.admit_output_demand_with_source::<Family>(
             source,
             observed_source,
+            Some(&current_observed_source),
             profile_kind,
             maximum_work,
             maximum_retained_bytes,
@@ -122,7 +150,7 @@ where
             crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind::Recovery,
             Some(source_receipt.committed_product_publication().composite_commit()),
             None,
-            OutputLifecycleRequirement::SelectCurrent,
+            None,
         )
     }
 
@@ -154,6 +182,7 @@ where
         self.admit_output_demand_with_source::<Family>(
             source,
             observed_source,
+            None,
             profile_kind,
             maximum_work,
             maximum_retained_bytes,
@@ -161,7 +190,7 @@ where
             crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind::Required,
             None,
             None,
-            OutputLifecycleRequirement::SelectCurrent,
+            None,
         )
     }
 
@@ -169,6 +198,7 @@ where
         &self,
         source: FamilySourceValue<Schema, Family>,
         observed_source: WorthQueryObservedSource<FamilySourceQuery<Schema, Family>>,
+        selection_source: Option<&WorthQueryObservedSource<FamilySourceQuery<Schema, Family>>>,
         profile_kind: &'static str,
         maximum_work: usize,
         maximum_retained_bytes: usize,
@@ -178,7 +208,11 @@ where
         successor_of: Option<
             &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
         >,
-        lifecycle_requirement: OutputLifecycleRequirement,
+        retained_program_basis: Option<
+            std::sync::Arc<
+                crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
+            >,
+        >,
     ) -> Result<WorthQueryAdmittedOutputDemand<Schema, Family>, WorthQueryOutputDemandDenial>
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
@@ -193,15 +227,12 @@ where
                     super::super::WorthQueryOutputDemandRecoveryPosture::Retryable,
                 )
             })?;
-        let selected = if lifecycle_requirement == OutputLifecycleRequirement::PreserveExisting {
-            self.installed_producers
-                .select::<Family>(WorthQueryProducerApplicability::new(
-                    profile_kind,
-                    WorthQueryProducerLifecyclePosture::Preserve,
-                ))?
-        } else {
-            self.select_output_producer::<Family>(&observed_source, profile_kind)?
-        };
+        let selected = self.select_output_producer_with_retained_basis::<Family>(
+            selection_source.unwrap_or(&observed_source),
+            profile_kind,
+            maximum_work,
+            retained_program_basis.as_deref(),
+        )?;
         let entry = self
             .installed_producers
             .entries
@@ -237,12 +268,46 @@ where
         let source_scope = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(
             observed_source.source_root(),
         );
-        if let Some(restored) = self.readmit_checkpoint_output(
-            &selected.identity,
-            &observed_source,
-            source_epoch,
-            source_scope,
-        )? {
+        // Only the exact retained-candidate selection has compared the full
+        // persisted producer facts at the current native basis. A fresh
+        // selection may never adopt a matching checkpoint by identity alone.
+        let restored = if selected.exact_retained_output {
+            let expected_key = selected.retained_idempotency_key.ok_or_else(|| {
+                denial(
+                    WorthQueryOutputDemandDenialKind::IncompleteDependencyCoverage,
+                    "exact retained output has no idempotency identity",
+                )
+            })?;
+            let output_binding = selected.retained_output_binding.ok_or_else(|| {
+                denial(
+                    WorthQueryOutputDemandDenialKind::IncompleteDependencyCoverage,
+                    "exact retained output has no output binding",
+                )
+            })?;
+            self.readmit_checkpoint_output(
+                &selected.identity,
+                output_binding,
+                expected_key,
+                &observed_source,
+                source_epoch,
+                source_scope,
+            )?
+        } else {
+            None
+        };
+        if let Some(restored) = restored {
+            let resources = restored.checkpoint.resources.ok_or_else(|| {
+                denial(
+                    WorthQueryOutputDemandDenialKind::IncompleteDependencyCoverage,
+                    "restored output has no retained producer resource profile",
+                )
+            })?;
+            super::resources::validate_retained_resources(
+                resources,
+                &selected.identity,
+                maximum_work,
+                maximum_retained_bytes,
+            )?;
             let (interest, newly_adopted) = self.output_demands.admit_restored(
                 key,
                 source_scope,
@@ -259,34 +324,41 @@ where
                 observed_source,
                 currentness_work_limit,
                 maximum_retained_bytes,
+                resources: Some(resources),
+                resources_validated: true,
+                producer_contacts_in_this_demand: 0,
                 admission_kind,
+                retained_program_basis,
                 interest: Some(interest),
             });
         }
-        let resources = entry.executor.resources(&source).ok_or_else(|| {
-            denial(
-                WorthQueryOutputDemandDenialKind::ForeignSource,
+        // Exact source currentness has already been proved by Query selection.
+        // An unchanged output must not contact the provider just to estimate
+        // resources for work it will not perform. A racing fresh execution
+        // validates the same limits before producer execution.
+        let resources = if selected.exact_retained_output {
+            let resources = selected.retained_resources.ok_or_else(|| {
+                denial(
+                    WorthQueryOutputDemandDenialKind::IncompleteDependencyCoverage,
+                    "retained output has no producer resource profile",
+                )
+            })?;
+            super::resources::validate_retained_resources(
+                resources,
                 &selected.identity,
-            )
-        })?;
-        if resources.work() > maximum_work {
-            return Err(denial(
-                WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
+                maximum_work,
+                maximum_retained_bytes,
+            )?;
+            resources
+        } else {
+            super::resources::validate_demand_resources(
+                entry.executor.as_ref(),
+                &source,
                 &selected.identity,
-            )
-            .with_recovery_posture(
-                super::super::WorthQueryOutputDemandRecoveryPosture::Retryable,
-            ));
-        }
-        if resources.retained_bytes() > maximum_retained_bytes {
-            return Err(denial(
-                WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
-                &selected.identity,
-            )
-            .with_recovery_posture(
-                super::super::WorthQueryOutputDemandRecoveryPosture::Retryable,
-            ));
-        }
+                maximum_work,
+                maximum_retained_bytes,
+            )?
+        };
         let interest = match performed_source {
             Some(source_commit) => self.output_demands.admit_performed(
                 key,
@@ -309,6 +381,7 @@ where
                 successor_of,
             )?,
         };
+        let resources_validated = !selected.exact_retained_output;
         Ok(WorthQueryAdmittedOutputDemand {
             runtime_authority: self.runtime.authority_identity().as_u64(),
             schema_binding: self.installed_schema.binding_identity(),
@@ -316,34 +389,12 @@ where
             observed_source,
             currentness_work_limit,
             maximum_retained_bytes,
+            resources: Some(resources),
+            resources_validated,
+            producer_contacts_in_this_demand: 0,
             admission_kind,
+            retained_program_basis,
             interest: Some(interest),
         })
     }
-}
-
-pub(super) fn validate_prepared_source_carrier<Query>(
-    runtime_authority: u64,
-    prepared: &crate::domain_computation::primary_graph::WorthQueryPreparedRequiredOutputSource,
-    observed: &crate::domain_computation::primary_graph::WorthQueryObservedSource<Query>,
-) -> Result<(), WorthQueryOutputDemandDenial> {
-    if prepared.runtime_authority != runtime_authority {
-        return Err(denial(
-            WorthQueryOutputDemandDenialKind::ForeignSource,
-            "prepared output source belongs to another Query runtime",
-        ));
-    }
-    if observed.selected_product_commit() != Some(&prepared.source_commit) {
-        return Err(denial(
-            WorthQueryOutputDemandDenialKind::ForeignSource,
-            "prepared output source belongs to another product commit",
-        ));
-    }
-    if observed.selected_product_occurrence() != Some(prepared.product_occurrence) {
-        return Err(denial(
-            WorthQueryOutputDemandDenialKind::ForeignSource,
-            "prepared output source belongs to another product occurrence",
-        ));
-    }
-    Ok(())
 }

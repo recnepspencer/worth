@@ -208,18 +208,7 @@ fn project_published(
     let expected = AspectValue::String(InternedString::Raw(content_identity.to_string()));
     let candidates = receipt
         .committed_changes()
-        .entity_changes()
-        .filter(|(_, change)| {
-            *change == worth_relational::facade::publication::RecordStructuralChange::Created
-        })
-        .filter_map(|(entity_id, _)| {
-            (receipt
-                .committed_changes()
-                .committed_field_values(entity_id, &[locator])
-                == Some(vec![expected.clone()]))
-            .then_some(entity_id)
-        })
-        .collect::<Vec<_>>();
+        .created_entities_with_field_value(locator, &expected);
     let [entity_id] = candidates.as_slice() else {
         return WorkflowDefinitionPublicationOutcome::ProjectionDenied(receipt);
     };

@@ -24,6 +24,16 @@ use crate::ConsumerSchema;
 type Application = WorthQueryPrimaryGraphApplicationRuntime<ConsumerSchema>;
 type Admitted = WorthQueryAdmittedOutputDemand<ConsumerSchema, PlanarOutputFamily>;
 
+mod producer_lifecycle;
+
+pub(super) fn producer_lifecycle_probe(
+    foreign_schema: &worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema<
+        ConsumerSchema,
+    >,
+) {
+    producer_lifecycle::live_output_and_stale_head_selection(foreign_schema);
+}
+
 pub(super) fn raw_owner_guards(
     foreign_schema: &worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema<
         ConsumerSchema,

@@ -19,7 +19,7 @@ use crate::domain_computation::primary_graph::workflow::{
     },
     proposal::{
         derive_workflow_proposal, derive_workflow_proposal_context_identity,
-        observe_workflow_proposal, visit_workflow_proposal_facts,
+        observe_workflow_proposal, visit_workflow_proposal_facts, WorkflowProposalCoverageMeaning,
     },
 };
 
@@ -79,48 +79,46 @@ where
             instance.definition_entity_id(),
             instance.definition_content_identity().clone(),
         );
-        let (compiled, mut facts) = self.lease.handle().with_runtime(|runtime| {
-            reconstruct_compiled_definition(
-                runtime,
-                self.lease.snapshot(),
-                &layout,
-                &published,
-                instance.program_revision(),
-                Spec::IDENTITY.as_str(),
-                usize::from(installed.resources().maximum_definition_nodes()),
-                usize::from(installed.resources().maximum_definition_connections()),
-                WorkflowDefinitionCompilationPosture::Retained,
-            )
-        })?;
+        let (compiled, mut facts) = reconstruct_compiled_definition(
+            self.lease.handle(),
+            self.lease.snapshot(),
+            &layout,
+            &published,
+            instance.program_revision(),
+            Spec::IDENTITY.as_str(),
+            installed.support_identity_bytes(),
+            usize::from(installed.resources().maximum_definition_nodes()),
+            usize::from(installed.resources().maximum_definition_connections()),
+            WorkflowDefinitionCompilationPosture::Retained,
+        )?;
         let subject = self.admission.scope_entity_id();
+        let maximum_transitions = usize::try_from(
+            installed
+                .resources()
+                .maximum_retained_transitions_per_instance(),
+        )
+        .unwrap_or(usize::MAX);
         let mut observed = self.lease.handle().with_runtime(|runtime| {
             super::workflow_instance_observation::observe_workflow_instance(
+                self.lease.handle(),
                 runtime,
                 self.lease.snapshot(),
                 &layout,
                 &instance,
                 subject,
                 compiled.lineage(),
-                usize::try_from(
-                    installed
-                        .resources()
-                        .maximum_retained_transitions_per_instance(),
-                )
-                .unwrap_or(usize::MAX),
+                &compiled,
+                maximum_transitions,
+                installed.resources().history_reconstruction_budget(),
             )
         })?;
         let Some(live_membership) = observed.live_membership else {
             return Err(denial("workflow proposal instance is already settled"));
         };
-        let mut settled = observed
-            .transitions
-            .iter()
-            .map(|transition| transition.settlement)
-            .collect::<Vec<_>>();
         let selection = select_proposal_transition(
             &compiled,
             instance.entity_id(),
-            &mut settled,
+            &observed.progress_basis,
             Operation::IDENTIFIER,
             input_type.as_str(),
         );
@@ -130,6 +128,17 @@ where
                 if error.kind()
                     == WorthQueryApplicationAttemptDenialKind::WorkflowTransitionNodeUnsupported =>
             {
+                self.lease.handle().with_runtime(|runtime| {
+                    observed.ensure_history(
+                        self.lease.handle(),
+                        runtime,
+                        self.lease.snapshot(),
+                        &layout,
+                        instance.entity_id(),
+                        maximum_transitions,
+                        &compiled,
+                    )
+                })?;
                 self.recover_proposal_replay(
                     &layout,
                     &compiled,
@@ -143,6 +152,7 @@ where
             }
             Err(error) => return Err(error),
         };
+        let coverages = self.proposal_coverages(&compiled, selected.node())?;
         let proposal = derive_workflow_proposal(
             selected.identity(),
             Operation::IDENTIFIER,
@@ -150,18 +160,19 @@ where
             input_identity,
             source_identity,
             selected.node_path(),
+            coverages,
         );
         let replay = !replay_facts.is_empty();
         facts.append(&mut replay_facts);
         if replay {
             let transition_count = observed.transitions.len();
-            let Some(WorthQueryApplicationObservedFact::WorkflowTransitionCapacity {
+            let Some(WorthQueryApplicationObservedFact::WorkflowHistoryBasis {
                 maximum_transitions,
                 ..
             }) = observed.facts.iter_mut().find(|fact| {
                 matches!(
                     fact,
-                    WorthQueryApplicationObservedFact::WorkflowTransitionCapacity { .. }
+                    WorthQueryApplicationObservedFact::WorkflowHistoryBasis { .. }
                 )
             })
             else {
@@ -204,6 +215,14 @@ where
             Ok::<(), WorthQueryApplicationAttemptDenial>(())
         })?;
         let validator_work_admission = reservation.materialize(&effects)?;
+        let progress_update = if replay {
+            None
+        } else {
+            Some(admitted.prepare_progress_update(
+                worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome::Completed,
+                None,
+            )?)
+        };
         Ok(PreparedWorkflowProposal {
             program: WorthQueryApplicationEffectProgram {
                 read_set: admitted.into_read_set(),
@@ -231,6 +250,7 @@ where
             input_type: input_type.as_str().to_owned(),
             input_identity,
             source_identity,
+            progress_update,
         })
     }
 
@@ -271,6 +291,7 @@ where
                 input_identity,
                 source_identity,
                 selected.node_path(),
+                self.proposal_coverages(compiled, selected.node())?,
             );
             let proposal_facts = self.lease.handle().with_runtime(|runtime| {
                 observe_workflow_proposal(
@@ -278,7 +299,7 @@ where
                     self.lease.snapshot(),
                     layout,
                     transition.entity,
-                    proposal.identity(),
+                    &proposal,
                 )
             });
             if let Ok(proposal_facts) = proposal_facts {
@@ -297,6 +318,26 @@ where
             ));
         };
         Ok((selected, proposal_facts))
+    }
+
+    fn proposal_coverages(
+        &self,
+        compiled: &crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowDefinition,
+        proposal_node: worth_relational::facade::identity::EntityId,
+    ) -> Result<Vec<WorkflowProposalCoverageMeaning>, WorthQueryApplicationAttemptDenial> {
+        compiled
+            .proposal_coverage_selectors(proposal_node)
+            .map_err(|_| denial("workflow proposal coverage targets are invalid"))?
+            .into_iter()
+            .map(|selector| {
+                self.admission
+                    .workflow_subject(&selector)
+                    .map(|subject| WorkflowProposalCoverageMeaning::new(selector, subject))
+                    .ok_or_else(|| {
+                        denial("workflow proposal subject is absent from admitted capability scope")
+                    })
+            })
+            .collect()
     }
 }
 

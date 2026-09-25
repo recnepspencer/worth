@@ -6,7 +6,7 @@ use super::{allocate_claimed_result_vector, projection_denial, ResultTreeWork};
 use crate::domain_computation::primary_graph::application_query::{
     disclosure::WorthQueryApplicationQueryGovernance,
     observed_source::{
-        WorthQueryObservedAdjacencyRevision, WorthQueryObservedAspectRevision,
+        WorthQueryObservedAdjacencyRevision, WorthQueryObservedFieldRevision,
         WorthQueryObservedSourceFootprint,
     },
     projection::WorthQueryApplicationProjectionNode,
@@ -21,6 +21,8 @@ pub(super) fn collect_source_footprints(
     contract: &WorthQueryInstalledGraphReadContract,
     governance: &WorthQueryApplicationQueryGovernance,
     roots: &[WorthQueryApplicationProjectionNode],
+    selected_predicate_source: Option<&WorthQueryObservedFieldRevision>,
+    root_path_source: Option<&std::collections::BTreeMap<worth_relational::facade::identity::EntityId, std::sync::Arc<crate::domain_computation::primary_graph::application_query::observed_source::WorthQueryObservedRootSelection>>>,
     work: &mut ResultTreeWork,
     result_buffer: &mut WorthQueryApplicationResultBufferReservation,
 ) -> Result<Vec<WorthQueryObservedSourceFootprint>, WorthQueryApplicationReadExecutionDenial> {
@@ -37,7 +39,9 @@ pub(super) fn collect_source_footprints(
             )?,
             aspects: allocate_claimed_result_vector(
                 result_buffer,
-                counts.fields,
+                counts
+                    .fields
+                    .saturating_add(usize::from(selected_predicate_source.is_some())),
                 root.result_path(),
             )?,
             adjacencies: allocate_claimed_result_vector(
@@ -45,6 +49,14 @@ pub(super) fn collect_source_footprints(
                 counts.relations,
                 root.result_path(),
             )?,
+            root_selection: root_path_source
+                .map(|sources| {
+                    sources
+                        .get(&root.entity_id())
+                        .cloned()
+                        .ok_or_else(|| projection_denial(root.result_path()))
+                })
+                .transpose()?,
         };
         collect_node(
             projection,
@@ -56,6 +68,34 @@ pub(super) fn collect_source_footprints(
             result_buffer,
             &mut footprint,
         )?;
+        if let Some(source) = selected_predicate_source {
+            if source.entity != root.entity_id() {
+                return Err(projection_denial(root.result_path()));
+            }
+            match footprint.aspects.iter().find(|observed| {
+                observed.entity == source.entity
+                    && observed.aspect == source.aspect
+                    && observed.field == source.field
+            }) {
+                Some(observed) if observed != source => {
+                    return Err(projection_denial(root.result_path()));
+                }
+                Some(_) => {}
+                None => {
+                    result_buffer
+                        .claim(
+                            source
+                                .entity_name
+                                .len()
+                                .saturating_add(source.aspect.as_str().len())
+                                .saturating_add(source.field.as_str().len()),
+                        )
+                        .map_err(|()| super::result_buffer_denial(root.result_path()))?;
+                    footprint.aspects.push(source.clone());
+                    work.charge_source_observation(1, root.result_path())?;
+                }
+            }
+        }
         let released_bytes = normalize_source_footprint(&mut footprint);
         result_buffer.release_temporary(released_bytes);
         footprints.push(footprint);
@@ -65,9 +105,9 @@ pub(super) fn collect_source_footprints(
 
 fn normalize_source_footprint(footprint: &mut WorthQueryObservedSourceFootprint) -> usize {
     let retained_before = footprint.retained_bytes();
-    footprint
-        .aspects
-        .sort_by(|left, right| (left.entity, &left.aspect).cmp(&(right.entity, &right.aspect)));
+    footprint.aspects.sort_by(|left, right| {
+        (left.entity, &left.aspect, &left.field).cmp(&(right.entity, &right.aspect, &right.field))
+    });
     footprint.aspects.dedup();
     footprint.entities.sort();
     footprint.entities.dedup();
@@ -141,7 +181,9 @@ fn collect_node(
     }) {
         if footprint.aspects[node_aspect_start..]
             .iter()
-            .any(|stamped| stamped.aspect == *field.aspect_key())
+            .any(|stamped| {
+                stamped.aspect == *field.aspect_key() && stamped.field == *field.field_key()
+            })
         {
             continue;
         }
@@ -150,16 +192,30 @@ fn collect_node(
             .ok_or_else(|| projection_denial(field.result_path()))?
             .revision();
         result_buffer
-            .claim(field.entity().len().saturating_add(field.aspect().len()))
+            .claim(
+                field
+                    .entity()
+                    .len()
+                    .saturating_add(field.aspect().len())
+                    .saturating_add(field.field().len()),
+            )
             .map_err(|()| super::result_buffer_denial(field.result_path()))?;
-        footprint.aspects.push(WorthQueryObservedAspectRevision {
+        footprint.aspects.push(WorthQueryObservedFieldRevision {
             entity: node.entity_id(),
             entity_name: field.entity().to_owned(),
             aspect: field.aspect_key().clone(),
+            field: field.field_key().clone(),
             contract_revision,
-            native_revision: projection
-                .entity_aspect_version(node.entity_id(), field.aspect_key())
-                .ok_or_else(|| projection_denial(field.result_path()))?,
+            native_revision: projection.entity_field_revision(
+                node.entity_id(),
+                &worth_foundational::facade::AspectFieldLocator::new(
+                    worth_foundational::facade::LocatorAuthority::Authoritative,
+                    field.aspect_key().clone(),
+                    worth_foundational::facade::CanonicalFieldPath::single(
+                        field.field_key().clone(),
+                    ),
+                ),
+            ),
         });
         work.charge_source_observation(1, field.result_path())?;
     }
@@ -204,18 +260,27 @@ fn collect_node(
                         relation
                             .child_entity()
                             .len()
-                            .saturating_add(predicate.aspect_key().as_str().len()),
+                            .saturating_add(predicate.aspect_key().as_str().len())
+                            .saturating_add(predicate.field_key().as_str().len()),
                     )
                     .map_err(|()| super::result_buffer_denial(relation.result_path()))?;
                 footprint.entities.push(*entity_id);
-                footprint.aspects.push(WorthQueryObservedAspectRevision {
+                footprint.aspects.push(WorthQueryObservedFieldRevision {
                     entity: *entity_id,
                     entity_name: relation.child_entity().to_owned(),
                     aspect: predicate.aspect_key().clone(),
+                    field: predicate.field_key().clone(),
                     contract_revision,
-                    native_revision: projection
-                        .entity_aspect_version(*entity_id, predicate.aspect_key())
-                        .ok_or_else(|| projection_denial(relation.result_path()))?,
+                    native_revision: projection.entity_field_revision(
+                        *entity_id,
+                        &worth_foundational::facade::AspectFieldLocator::new(
+                            worth_foundational::facade::LocatorAuthority::Authoritative,
+                            predicate.aspect_key().clone(),
+                            worth_foundational::facade::CanonicalFieldPath::single(
+                                predicate.field_key().clone(),
+                            ),
+                        ),
+                    ),
                 });
                 work.charge_source_observation(1, relation.result_path())?;
             }
@@ -283,6 +348,7 @@ fn unique_source_aspect_count(
                     earlier.parent_path() == result_path
                         && governance.is_disclosed(earlier.slot_key_identity().as_ref())
                         && earlier.aspect_key() == field.aspect_key()
+                        && earlier.field_key() == field.field_key()
                 })
         })
         .count()

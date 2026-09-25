@@ -29,6 +29,10 @@ pub(super) fn visit_dependency_facts<Error>(
                 entity_id,
                 ..
             } => (*entity_id, WorkflowEvidenceDependencyKind::AspectRevision),
+            super::super::super::application_attempt::WorthQueryApplicationObservedFact::SourceFieldRevision {
+                entity_id,
+                ..
+            } => (*entity_id, WorkflowEvidenceDependencyKind::FieldRevision),
             super::super::super::application_attempt::WorthQueryApplicationObservedFact::SourceAdjacencyRevision {
                 anchor,
                 ..
@@ -66,6 +70,13 @@ pub(super) fn visit_dependency_facts<Error>(
                         AspectValue::UInt64(*revision),
                     );
                 }
+            }
+            super::super::super::application_attempt::WorthQueryApplicationObservedFact::SourceFieldRevision {
+                locator,
+                native_revision,
+                ..
+            } => {
+                append_field_revision_fields(&layout.evidence_dependency, locator, *native_revision, &mut fields);
             }
             super::super::super::application_attempt::WorthQueryApplicationObservedFact::SourceAdjacencyRevision {
                 relation_kind,
@@ -113,6 +124,105 @@ pub(super) fn visit_dependency_facts<Error>(
     Ok(())
 }
 
+fn append_field_revision_fields(
+    layout: &crate::domain_computation::primary_graph::workflow::schema::WorkflowEvidenceDependencyLayout,
+    locator: &worth_foundational::facade::AspectFieldLocator,
+    native_revision: Option<worth_relational::facade::runtime::RelationalFieldRevision>,
+    fields: &mut BTreeMap<worth_foundational::facade::AspectFieldLocator, AspectValue>,
+) {
+    fields.insert(
+        layout.aspect.clone(),
+        text(locator.aspect().aspect_key().as_str()),
+    );
+    fields.insert(
+        layout.field.clone(),
+        text(locator.field_path().fields()[0].as_str()),
+    );
+    if let Some(revision) = native_revision {
+        fields.insert(
+            layout.native_revision.clone(),
+            AspectValue::UInt64(revision.version().0),
+        );
+        fields.insert(
+            layout.field_presence.clone(),
+            text(match revision.presence() {
+                worth_relational::facade::runtime::RelationalFieldPresence::Present => "present",
+                worth_relational::facade::runtime::RelationalFieldPresence::Absent => "absent",
+            }),
+        );
+    }
+}
+
 fn text(value: impl Into<String>) -> AspectValue {
     AspectValue::String(InternedString::Raw(value.into()))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::domain_computation::primary_graph::application_attempt::decode_field_revision_fact;
+    use crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world;
+    use worth_foundational::facade::{AspectFieldLocator, CanonicalFieldPath, LocatorAuthority};
+    use worth_relational::facade::identity::{EntityId, PartitionId, VersionId};
+    use worth_relational::facade::runtime::{RelationalFieldPresence, RelationalFieldRevision};
+
+    #[test]
+    fn durable_field_dependency_roundtrips_presence_and_denies_partial_revision() {
+        let world = installed_authorization_world(true);
+        let layout = &world
+            .application
+            .runtime
+            .primary_graph()
+            .unwrap()
+            .layout
+            .workflow()
+            .evidence_dependency;
+        let entity = EntityId::new(PartitionId::main(), 17, 2);
+        let locator = AspectFieldLocator::new(
+            LocatorAuthority::Authoritative,
+            worth_foundational::facade::AspectKey::new("account-status").unwrap(),
+            CanonicalFieldPath::single(
+                worth_foundational::facade::FieldKey::new("status").unwrap(),
+            ),
+        );
+        for presence in [
+            RelationalFieldPresence::Present,
+            RelationalFieldPresence::Absent,
+        ] {
+            let revision = RelationalFieldRevision::new(VersionId(42), presence);
+            let mut encoded = BTreeMap::new();
+            append_field_revision_fields(layout, &locator, Some(revision), &mut encoded);
+            let string = |field| match encoded.get(field).unwrap() {
+                AspectValue::String(InternedString::Raw(value)) => value.clone(),
+                _ => panic!("string evidence field"),
+            };
+            let version = match encoded.get(&layout.native_revision).unwrap() {
+                AspectValue::UInt64(value) => *value,
+                _ => panic!("revision evidence field"),
+            };
+            let decoded = decode_field_revision_fact(
+                entity,
+                Some(string(&layout.aspect)),
+                Some(string(&layout.field)),
+                Some(version),
+                Some(string(&layout.field_presence)),
+            )
+            .unwrap();
+            assert_eq!(decoded, crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact::SourceFieldRevision {
+                entity_id: entity, locator: locator.clone(), native_revision: Some(revision),
+            });
+            assert!(decode_field_revision_fact(
+                entity,
+                Some(string(&layout.aspect)),
+                Some(string(&layout.field)),
+                Some(version),
+                None
+            )
+            .is_err());
+        }
+        let mut unavailable = BTreeMap::new();
+        append_field_revision_fields(layout, &locator, None, &mut unavailable);
+        assert!(!unavailable.contains_key(&layout.native_revision));
+        assert!(!unavailable.contains_key(&layout.field_presence));
+    }
 }

@@ -7,7 +7,7 @@ use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphPr
 pub(in crate::domain_computation) struct WorthQueryRegisteredProviderAttempt<'run> {
     staged: crate::domain_computation::WorthQuerySessionBoundReadsAndEffects<'run>,
     requests: Vec<crate::domain_computation::WorthQueryDecisionFactRequest>,
-    steps: Vec<crate::domain_computation::WorthQueryProvisionalEffectStep>,
+    steps: std::sync::Arc<[crate::domain_computation::WorthQueryProvisionalEffectStep]>,
     dispatch_outbox:
         Option<crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxRecord>,
 }
@@ -97,7 +97,7 @@ impl<'run> WorthQueryRegisteredProviderAttempt<'run> {
         _seal: WorthQueryRegisteredProviderAttemptSeal,
         staged: crate::domain_computation::WorthQuerySessionBoundReadsAndEffects<'run>,
         requests: Vec<crate::domain_computation::WorthQueryDecisionFactRequest>,
-        steps: Vec<crate::domain_computation::WorthQueryProvisionalEffectStep>,
+        steps: std::sync::Arc<[crate::domain_computation::WorthQueryProvisionalEffectStep]>,
         dispatch_outbox: Option<
             crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxRecord,
         >,

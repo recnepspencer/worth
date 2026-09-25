@@ -23,6 +23,7 @@ impl WorthQueryApplicationOutputLineage {
             versions.retain(|indexed, _| retained.contains(indexed));
             !versions.is_empty()
         });
+        self.partition_index.retain_occurrences(&retained);
         self.origins.retain(|child, _| retained.contains(child));
     }
 }

@@ -66,6 +66,7 @@ pub(in crate::domain_computation::primary_graph) use application_queries::Accoun
 pub(super) use application_queries::{
     cross_root_definition, status_parameter, AccountSummaryQuery, AccountSummaryResult,
     CrossRootQuery, GovernedAccountSummaryQuery, OrderedAccountSummaryQuery,
+    PublicAccountMembershipQuery, PublicAccountMembershipResult, PublicScopedAccountSummaryQuery,
     ScopedAccountSummaryQuery,
 };
 pub(super) use current_output_source::TestAccountSourceBinding;
@@ -212,6 +213,8 @@ worth_query_application_schema! {
                 .field(Account::reference(), AccountLabel::reference())
                 .field(Account::reference(), AccountNote::reference())
                 .field(Account::reference(), AccountScore::reference())
+                .aspect(Account::reference(), AccountMembership::reference())
+                .field(Account::reference(), AccountMembershipTag::reference())
                 .aspect(Account::reference(), AccountAnnotations::reference())
                 .field(Account::reference(), AccountAnnotation::reference())
                 .aspect(Activity::reference(), ActivityFacts::reference())
@@ -307,6 +310,8 @@ worth_query_application_schema! {
                 )
                 .application_query(application_queries::account_summary_definition())
                 .application_query(application_queries::scoped_account_summary_definition())
+                .application_query(application_queries::public_scoped_definition())
+                .application_query(application_queries::public_membership_definition())
                 .application_query(application_queries::cross_root_definition("open"))
                 .application_query(application_queries::governed_account_summary_definition())
                 .application_query(application_queries::ordered_account_summary_definition())

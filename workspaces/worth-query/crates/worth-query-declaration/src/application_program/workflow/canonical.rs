@@ -82,12 +82,17 @@ where
 }
 
 fn limits_record(limits: ApplicationWorkflowDefinitionLimits) -> String {
+    let components = limits.component_limits();
     format!(
-        "nodes={};connections={};effects={};depth={};bytes={}",
+        "nodes={};connections={};effects={};component-occurrences={};component-depth={};node-provenance={};connection-provenance={};port-provenance={};bytes={}",
         limits.maximum_nodes(),
         limits.maximum_connections(),
         limits.maximum_effects(),
-        limits.maximum_component_depth(),
+        components.maximum_occurrences(),
+        components.maximum_depth(),
+        components.maximum_node_provenance(),
+        components.maximum_connection_provenance(),
+        components.maximum_port_provenance(),
         limits.maximum_canonical_bytes()
     )
 }
@@ -117,6 +122,7 @@ fn node_record(node: &ApplicationWorkflowNode) -> String {
                 assessment.identifier(),
                 assessment.parameter_type().as_str(),
                 assessment.result_type().as_str(),
+                &subject_selector_record(assessment.subject()),
             ],
         ),
         ApplicationWorkflowNodeKind::Condition(condition) => framed_record(
@@ -144,6 +150,10 @@ fn node_record(node: &ApplicationWorkflowNode) -> String {
             framed_record("terminal", &[node.identity().as_str()])
         }
     }
+}
+
+fn subject_selector_record(selector: &super::ApplicationWorkflowSubjectSelector) -> String {
+    selector.persistence_identity()
 }
 
 fn connection_record(connection: &ApplicationWorkflowConnection) -> String {

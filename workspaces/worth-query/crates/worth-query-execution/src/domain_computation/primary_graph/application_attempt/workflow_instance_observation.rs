@@ -1,4 +1,4 @@
-use worth_foundational::facade::{AspectValue, InternedString};
+use worth_foundational::facade::AspectValue;
 use worth_relational::facade::identity::{EntityId, RelationId};
 
 use super::{
@@ -6,14 +6,23 @@ use super::{
     WorthQueryApplicationAdjacencyDirection, WorthQueryApplicationAttemptDenial,
     WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationObservedFact,
 };
+use crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowDefinition;
 use crate::domain_computation::primary_graph::workflow::instance::{
-    SettledWorkflowTransition, WorkflowInstanceState,
+    SettledWorkflowTransition, WorkflowInstanceState, WorkflowTransitionLocator,
+    WorkflowTransitionProgressBasis, WorkflowTransitionProgressObservation,
 };
 use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout;
 
+mod history;
+mod instance_binding;
+mod progression;
 mod settlement;
+use instance_binding::{adjacency, adjacency_with_kind, exact, exact_u64, text};
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) use settlement::decode_field_revision_fact;
 pub(super) use settlement::{
-    observe_evidence_dependencies, observe_latest_workflow_proposal_identity,
+    observe_evidence_dependencies, observe_retained_assessment_evidence,
+    observe_retained_transition, observe_retained_workflow_proposal_identity,
     recover_settled_live_membership,
 };
 
@@ -25,6 +34,49 @@ pub(in crate::domain_computation::primary_graph::application_attempt) struct Obs
         Vec<ObservedWorkflowTransition>,
     pub(in crate::domain_computation::primary_graph::application_attempt) facts:
         Vec<WorthQueryApplicationObservedFact>,
+    pub(in crate::domain_computation::primary_graph::application_attempt) progress_basis:
+        WorkflowTransitionProgressBasis,
+    pub(in crate::domain_computation::primary_graph::application_attempt) replays:
+        crate::domain_computation::primary_graph::workflow::instance::WorkflowTransitionReplayRetention,
+    history_materialized: bool,
+    history_budget: worth_query_installation::facade::WorthQueryWorkflowHistoryReconstructionBudget,
+}
+
+impl ObservedWorkflowInstance {
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn ensure_history(
+        &mut self,
+        handle: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle,
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
+        snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+        layout: &WorthQueryWorkflowLayout,
+        instance: EntityId,
+        maximum_transitions: usize,
+        compiled: &CompiledWorkflowDefinition,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        if self.history_materialized {
+            return Ok(());
+        }
+        let mut history = history::observe(
+            runtime,
+            snapshot,
+            layout,
+            instance,
+            self.live_membership.is_some(),
+            maximum_transitions,
+            compiled,
+            self.history_budget,
+        )?;
+        let transition_visits = history.transition_visits;
+        self.transitions = history.transitions;
+        let (key, _) = self.progress_basis.replay_retention();
+        handle.with_workflow_instance_progress_mut(key, |retention| {
+            retention.observe_warm_history(transition_visits);
+            retention.observe_history_reconstruction_charge(history.charge_bytes);
+        });
+        self.facts.append(&mut history.facts);
+        self.history_materialized = true;
+        Ok(())
+    }
 }
 
 pub(in crate::domain_computation::primary_graph::application_attempt) struct ObservedWorkflowTransition
@@ -45,7 +97,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) struct Obs
     pub(in crate::domain_computation::primary_graph::application_attempt) result_type: String,
     pub(in crate::domain_computation::primary_graph::application_attempt) binding: String,
     pub(in crate::domain_computation::primary_graph::application_attempt) passing: bool,
-    pub(in crate::domain_computation::primary_graph::application_attempt) proposal_identity: String,
+    pub(in crate::domain_computation::primary_graph::application_attempt) coverage_identity: String,
     pub(in crate::domain_computation::primary_graph::application_attempt) source_identity: String,
     pub(in crate::domain_computation::primary_graph::application_attempt) publication_identity:
         String,
@@ -53,41 +105,17 @@ pub(in crate::domain_computation::primary_graph::application_attempt) struct Obs
         String,
 }
 
-pub(in crate::domain_computation::primary_graph::application_attempt) fn latest_transition_for_node(
-    transitions: &[ObservedWorkflowTransition],
-    node: EntityId,
-) -> Option<&ObservedWorkflowTransition> {
-    transitions
-        .iter()
-        .filter(|transition| transition.settlement.node() == node)
-        .max_by_key(|transition| transition.settlement.occurrence())
-}
-
-pub(in crate::domain_computation::primary_graph::application_attempt) fn latest_assessment_evidence(
-    transitions: &[ObservedWorkflowTransition],
-    node: EntityId,
-) -> Option<&ObservedWorkflowAssessmentEvidence> {
-    transitions
-        .iter()
-        .filter(|transition| transition.settlement.node() == node)
-        .filter_map(|transition| {
-            transition
-                .assessment_evidence
-                .as_ref()
-                .map(|evidence| (transition.settlement.occurrence(), evidence))
-        })
-        .max_by_key(|(occurrence, _)| *occurrence)
-        .map(|(_, evidence)| evidence)
-}
-
 pub(in crate::domain_computation::primary_graph::application_attempt) fn observe_workflow_instance(
+    handle: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     layout: &WorthQueryWorkflowLayout,
     instance: &PublishedWorkflowInstanceRef,
     subject: EntityId,
     lineage: EntityId,
+    compiled: &CompiledWorkflowDefinition,
     maximum_transitions: usize,
+    history_budget: worth_query_installation::facade::WorthQueryWorkflowHistoryReconstructionBudget,
 ) -> Result<ObservedWorkflowInstance, WorthQueryApplicationAttemptDenial> {
     let entity = instance.entity_id();
     let kind = layout.instance.entity_kind;
@@ -204,152 +232,105 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         }),
         &mut facts,
     )?;
-    let direction = WorthQueryApplicationAdjacencyDirection::Outgoing;
-    let transitions = observe_adjacency(
+    let progress_observation =
+        progression::observe_progress(handle, runtime, snapshot, layout, instance, &mut facts)?;
+    let retained_history_key = live_membership
+        .is_none()
+        .then(|| progress_observation.retained_key())
+        .flatten();
+    let progress_observation = if live_membership.is_some() {
+        match progression::finish_retained_progress(progress_observation, compiled) {
+            Ok((progress_basis, replays)) => {
+                let next_occurrence = usize::try_from(progress_basis.progress().next_occurrence())
+                    .unwrap_or(usize::MAX);
+                if next_occurrence >= maximum_transitions {
+                    return Err(WorthQueryApplicationAttemptDenial::new(
+                        WorthQueryApplicationAttemptDenialKind::WorkflowInstanceCapacityUnavailable,
+                        "workflow instance transition capacity is exhausted",
+                    ));
+                }
+                let (key, _) = progress_basis.replay_retention();
+                handle.with_workflow_instance_progress_mut(key, |retention| {
+                    retention.observe_warm_core()
+                });
+                return Ok(ObservedWorkflowInstance {
+                    live_membership,
+                    transitions: Vec::new(),
+                    facts,
+                    progress_basis,
+                    replays,
+                    history_materialized: false,
+                    history_budget,
+                });
+            }
+            Err(observation) => observation,
+        }
+    } else {
+        progress_observation
+    };
+    let mut history = history::observe(
         runtime,
         snapshot,
-        layout.instance_transition_relation,
+        layout,
         entity,
-        direction,
-        maximum_transitions.saturating_mul(2).saturating_add(1),
-    )
-    .ok_or_else(|| denial("workflow instance transition inventory is unavailable"))?;
-    let transition_count = transitions.len();
-    let settled_transitions = transitions
+        live_membership.is_some(),
+        maximum_transitions,
+        compiled,
+        history_budget,
+    )?;
+    let transition_visits = history.transition_visits;
+    let settled_transitions = history.transitions;
+    if let Some(key) = retained_history_key {
+        handle.with_workflow_instance_progress_mut(key, |retention| {
+            retention.observe_warm_history(transition_visits)
+        });
+    }
+    let mut progress_observations = settled_transitions
         .iter()
         .map(|transition| {
-            settlement::observe_settled_transition(
-                runtime,
-                snapshot,
-                layout,
-                transition.to,
-                &mut facts,
+            WorkflowTransitionProgressObservation::new(
+                WorkflowTransitionLocator::new(transition.entity, transition.settlement),
+                transition
+                    .assessment_evidence
+                    .as_ref()
+                    .map(|evidence| evidence.entity),
             )
-            .and_then(|settlement| {
-                settlement::observe_assessment_evidence(
-                    runtime,
-                    snapshot,
-                    layout,
-                    transition.to,
-                    &mut facts,
-                )
-                .map(|assessment_evidence| ObservedWorkflowTransition {
-                    entity: transition.to,
-                    settlement,
-                    assessment_evidence,
-                })
-            })
         })
-        .collect::<Result<Vec<_>, _>>()?;
-    facts.push(
-        WorthQueryApplicationObservedFact::WorkflowTransitionCapacity {
-            relation_kind: layout.instance_transition_relation,
-            instance: entity,
-            maximum_transitions: if live_membership.is_some() {
-                maximum_transitions
-            } else {
-                transition_count
-            },
-            transitions,
-        },
-    );
+        .collect::<Vec<_>>();
+    if live_membership.is_none() {
+        let settled_index = progress_observations
+            .iter()
+            .enumerate()
+            .max_by_key(|(_, observation)| observation.transition().settlement().occurrence())
+            .map(|(index, _)| index);
+        if let Some(index) = settled_index {
+            progress_observations.swap_remove(index);
+        }
+    }
+    let reconstruction_transition_visits = progress_observations.len();
+    let replay_projections = progression::project_replays(compiled, entity, &settled_transitions)?;
+    let (progress_basis, replays) = progression::finish_progress(
+        handle,
+        progress_observation,
+        compiled,
+        &progress_observations,
+        replay_projections,
+        reconstruction_transition_visits,
+    )?;
+    let (key, _) = progress_basis.replay_retention();
+    handle.with_workflow_instance_progress_mut(key, |retention| {
+        retention.observe_history_reconstruction_charge(history.charge_bytes)
+    });
+    facts.append(&mut history.facts);
     Ok(ObservedWorkflowInstance {
         live_membership,
         transitions: settled_transitions,
         facts,
+        progress_basis,
+        replays,
+        history_materialized: true,
+        history_budget,
     })
-}
-
-fn exact_u64(
-    runtime: &worth_relational::facade::runtime::RelationalRuntime,
-    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    entity: EntityId,
-    kind: worth_relational::facade::identity::KindId,
-    locator: &worth_foundational::facade::AspectFieldLocator,
-    facts: &mut Vec<WorthQueryApplicationObservedFact>,
-) -> Result<u64, WorthQueryApplicationAttemptDenial> {
-    let value = observe_field_value(runtime, snapshot, entity, kind, locator)
-        .ok_or_else(|| denial("workflow transition field is unavailable"))?;
-    let AspectValue::UInt64(number) = value else {
-        return Err(denial("workflow transition field has the wrong type"));
-    };
-    facts.push(WorthQueryApplicationObservedFact::Field {
-        entity_id: entity,
-        kind,
-        locator: locator.clone(),
-        value: AspectValue::UInt64(number),
-    });
-    Ok(number)
-}
-
-fn exact(
-    runtime: &worth_relational::facade::runtime::RelationalRuntime,
-    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    entity: EntityId,
-    kind: worth_relational::facade::identity::KindId,
-    locator: &worth_foundational::facade::AspectFieldLocator,
-    expected: AspectValue,
-    facts: &mut Vec<WorthQueryApplicationObservedFact>,
-) -> Result<(), WorthQueryApplicationAttemptDenial> {
-    let value = observe_field_value(runtime, snapshot, entity, kind, locator)
-        .ok_or_else(|| denial("workflow instance field is unavailable"))?;
-    if value != expected {
-        return Err(denial("workflow instance field changed"));
-    }
-    facts.push(WorthQueryApplicationObservedFact::Field {
-        entity_id: entity,
-        kind,
-        locator: locator.clone(),
-        value,
-    });
-    Ok(())
-}
-
-fn adjacency(
-    runtime: &worth_relational::facade::runtime::RelationalRuntime,
-    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    relation_kind: worth_relational::facade::identity::KindId,
-    anchor: EntityId,
-    limit: usize,
-    unavailable: &'static str,
-    facts: &mut Vec<WorthQueryApplicationObservedFact>,
-) -> Result<Vec<EntityId>, WorthQueryApplicationAttemptDenial> {
-    adjacency_with_kind(
-        runtime,
-        snapshot,
-        relation_kind,
-        anchor,
-        limit,
-        unavailable,
-        facts,
-    )
-}
-
-fn adjacency_with_kind(
-    runtime: &worth_relational::facade::runtime::RelationalRuntime,
-    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    relation_kind: worth_relational::facade::identity::KindId,
-    anchor: EntityId,
-    limit: usize,
-    unavailable: &'static str,
-    facts: &mut Vec<WorthQueryApplicationObservedFact>,
-) -> Result<Vec<EntityId>, WorthQueryApplicationAttemptDenial> {
-    let direction = WorthQueryApplicationAdjacencyDirection::Outgoing;
-    let relations = observe_adjacency(runtime, snapshot, relation_kind, anchor, direction, limit)
-        .ok_or_else(|| denial(unavailable))?;
-    let adjacent = relations.iter().map(|relation| relation.to).collect();
-    facts.push(WorthQueryApplicationObservedFact::Adjacency {
-        relation_kind,
-        anchor,
-        direction,
-        maximum_work_units: limit,
-        relations,
-    });
-    Ok(adjacent)
-}
-
-fn text(value: String) -> AspectValue {
-    AspectValue::String(InternedString::Raw(value))
 }
 
 fn denial(subject: &str) -> WorthQueryApplicationAttemptDenial {

@@ -1,4 +1,5 @@
 mod async_declaration;
+pub(crate) use async_declaration::validate_lineage_runtime;
 mod capabilities;
 mod contracts;
 mod counters;
@@ -12,11 +13,14 @@ mod planning;
 mod records;
 mod row_set;
 mod validation;
+#[cfg(test)]
+pub(crate) use async_declaration::runtime_storage_for_test;
 
 pub(crate) use async_declaration::{
     admit_from_owned_signal_request, admit_owned_retry_lineage, admit_owned_revalidation_lineage,
     admit_retry_lineage, admit_revalidation_lineage, map_owned_signal_report,
-    with_async_request_signal_runtime, BridgeSignalRuntime, SignalRuntimeThreadAffinityError,
+    with_async_request_signal_runtime, BridgeSignalRuntime, BridgeSignalRuntimeCustody,
+    SignalRuntimeThreadAffinityError,
 };
 pub use async_declaration::{
     AdmittedBridgeAsyncCompletion, AdmittedBridgeAsyncRequestIdentity,

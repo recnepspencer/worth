@@ -12,6 +12,8 @@ where
     pub(super) fn readmit_checkpoint_output<Query>(
         &self,
         producer: &str,
+        output_binding: std::any::TypeId,
+        expected_idempotency_key: [u8; 32],
         observed_source: &WorthQueryObservedSource<Query>,
         source_epoch: crate::domain_computation::primary_graph::application_query::WorthQueryObservedSourceEpoch,
         source_scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
@@ -22,12 +24,16 @@ where
         WorthQueryOutputDemandDenial,
     >{
         let checkpoint_source = source_epoch.checkpoint_identity();
-        let Some(readmitted) = self.recovered_outputs.iter().find(|readmitted| {
-            readmitted.checkpoint.producer == producer
-                && readmitted.checkpoint.source == checkpoint_source.bytes()
-                && readmitted.checkpoint.scope == source_scope
-                && readmitted.checkpoint.source_partition == observed_source.partition_identity()
-        }) else {
+        let Some(readmitted) = self
+            .recovered_outputs
+            .matching_source_partition(source_scope, observed_source.partition_identity())
+            .find(|readmitted| {
+                readmitted.checkpoint.producer == producer
+                    && readmitted.checkpoint.source == checkpoint_source.bytes()
+                    && readmitted.checkpoint.idempotency_key == expected_idempotency_key
+                    && readmitted.correspondence.binding_type() == Some(output_binding)
+            })
+        else {
             return Ok(None);
         };
         let authority = self
@@ -46,14 +52,12 @@ where
         {
             return Ok(None);
         }
-        let observed_source_facts = observed_source
-            .retained_checkpoint_facts(&self.primary_provider.graph.layout)
-            .map_err(|error| {
-                denial(
-                    WorthQueryOutputDemandDenialKind::ForeignSource,
-                    format!("checkpoint output source facts were rejected: {error}"),
-                )
-            })?;
+        let Some(fact_bytes) = readmitted.checkpoint.producer_facts.as_deref() else {
+            return Ok(None);
+        };
+        let observed_source_facts =
+            crate::domain_computation::primary_graph::application_checkpoint::decode_producer_facts(fact_bytes)
+                .map_err(|error| denial(WorthQueryOutputDemandDenialKind::IncompleteDependencyCoverage, error))?;
         Ok(Some(
             crate::domain_computation::primary_graph::application_output_demand::WorthQueryRestoredAcceptedOutput {
                 checkpoint: readmitted.checkpoint.clone(),
@@ -96,6 +100,7 @@ where
                 restored.checkpoint.producer_dependency,
                 restored.checkpoint.idempotency_key,
                 std::sync::Arc::clone(&restored.observed_source_facts),
+                restored.checkpoint.resources,
             );
         Ok(())
     }

@@ -142,6 +142,53 @@ fn foreign_runtime_rejects_plan_and_releases_its_basis() {
 }
 
 #[test]
+fn exact_query_observation_reuses_its_live_snapshot_for_fresh_security_stages() {
+    let world = installed_authorization_world(true);
+    let request = super::super::fixture::live_scope();
+    let external = world.authenticate("alice", Duration::from_secs(60), &request);
+    let selected = world.selected_product();
+    let principal = selected
+        .resolve_authenticated_principal(
+            &world.binding,
+            &external,
+            &request,
+            WorthQueryPrincipalResolutionMode::Ordinary,
+        )
+        .unwrap();
+    let account = selected
+        .resolve_entity(
+            AccountStatus::reference(),
+            "open".to_string(),
+            &request,
+            WorthQueryPrincipalResolutionMode::Ordinary,
+        )
+        .unwrap();
+    let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
+    let query = installed_query(&world);
+    let observer = world.application.application_query_basis_observer();
+    let before = observer.observe();
+    let plan = selected
+        .admit_application_query(
+            &query,
+            &access,
+            ApplicationQueryParameterSet::new()
+                .bind(status_parameter(), "open".to_string())
+                .unwrap(),
+            current_controls(&request),
+        )
+        .unwrap();
+    assert_eq!(observer.observe().acquisitions(), before.acquisitions());
+    let result = world
+        .application
+        .execute_application_query_one_shot(plan)
+        .unwrap();
+    assert_eq!(result.rows().len(), 1);
+    assert!(result.receipt().basis_released());
+    assert_eq!(observer.observe().acquisitions(), before.acquisitions());
+    assert_eq!(observer.observe().active(), before.active() - 1);
+}
+
+#[test]
 fn cancellation_after_admission_releases_basis_before_projection() {
     let world = installed_authorization_world(true);
     let cancellation = WorthQueryCancellationSource::new();
@@ -301,6 +348,8 @@ fn scope_revocation_after_product_admission_denies_before_projection() {
         .unwrap();
     let basis = plan.basis_identity().clone();
     revoke_account_ownership(&world, account.entity_id());
+    let observer = world.application.application_query_basis_observer();
+    let acquisitions_before = observer.observe().acquisitions();
 
     let denial = world
         .application
@@ -314,6 +363,10 @@ fn scope_revocation_after_product_admission_denies_before_projection() {
         )
     );
     assert!(!basis_is_live(&world, &basis));
+    assert!(
+        observer.observe().acquisitions() > acquisitions_before,
+        "branch drift must use a newly registered security basis, not the selected data snapshot"
+    );
 }
 
 pub(super) fn basis_is_live(

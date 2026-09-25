@@ -7,6 +7,7 @@ use crate::authority::mutation::canonical_deltas::data::{
 use crate::authority::mutation::canonical_deltas::patch_authority::{
     authoritative_patch_binding_evidence, evaluate_authoritative_patch_delta,
 };
+use crate::authority::mutation::field_versions::changed_fields;
 use crate::authority::mutation::MutationWorkspace;
 
 use super::delta_assembly::{assemble_delta, evaluate_bindings};
@@ -81,6 +82,8 @@ pub(super) fn evaluate_entity_update_delta(
                     RecordStructuralChange::Updated,
                     authoritative_patch,
                 ) {
+                    binding.field_revision_changes =
+                        Some(changed_fields(binding, RecordStructuralChange::Updated));
                     binding.evidence = evidence;
                 }
             }

@@ -45,6 +45,13 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
         self.connection_types.contains(&TypeId::of::<Connection>())
     }
 
+    pub fn contains_output_connection<Connection: 'static>(
+        &self,
+        _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+    ) -> bool {
+        self.contains_connection_type::<Connection>()
+    }
+
     pub fn contains_output_root<Root>(&self) -> bool
     where
         Schema: worth_query_declaration::facade::application_schema::ApplicationSchema,

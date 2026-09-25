@@ -1,14 +1,18 @@
 use std::collections::BTreeMap;
-use std::hash::{Hash, Hasher};
 use std::sync::{Arc, Mutex, Weak};
 
 use super::super::resource_lifecycle::WorthQueryApplicationBasisSelectionIdentity;
 use super::WorthQueryObservedSourceFootprint;
+use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
 
+mod checkpoint_commitment;
 mod identity_kind;
+mod ordering;
+mod runtime_commitment;
 pub(in crate::domain_computation::primary_graph) use identity_kind::{
     WorthQueryCheckpointSourceIdentity, WorthQueryRuntimeSourceIdentity,
 };
+use runtime_commitment::stable_runtime_identity;
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 enum WorthQueryObservedSourceOccurrence {
@@ -29,6 +33,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryObservedSource
     coordinate: WorthQueryObservedSourceCoordinate,
     footprint: WorthQueryObservedSourceFootprint,
     identity: [u8; 32],
+    runtime_idempotency_identity: [u8; 32],
     checkpoint_identity: [u8; 32],
     registry: Weak<Mutex<WorthQueryObservedSourceMeaningRegistryState>>,
 }
@@ -47,7 +52,7 @@ impl WorthQueryObservedSourceMeaning {
     }
 
     pub(super) const fn runtime_idempotency_identity(&self) -> WorthQueryRuntimeSourceIdentity {
-        WorthQueryRuntimeSourceIdentity::new(self.identity)
+        WorthQueryRuntimeSourceIdentity::new(self.runtime_idempotency_identity)
     }
 }
 
@@ -88,12 +93,14 @@ struct WorthQueryObservedSourceMeaningRegistryState {
 }
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryObservedSourceMeaningRegistry {
-    runtime_authority: u64,
+    runtime_authority: WorthQueryRuntimeAuthorityIdentity,
     state: Arc<Mutex<WorthQueryObservedSourceMeaningRegistryState>>,
 }
 
 impl WorthQueryObservedSourceMeaningRegistry {
-    pub(in crate::domain_computation::primary_graph) fn new(runtime_authority: u64) -> Self {
+    pub(in crate::domain_computation::primary_graph) fn new(
+        runtime_authority: WorthQueryRuntimeAuthorityIdentity,
+    ) -> Self {
         Self {
             runtime_authority,
             state: Arc::new(Mutex::new(WorthQueryObservedSourceMeaningRegistryState {
@@ -151,15 +158,16 @@ impl WorthQueryObservedSourceMeaningRegistry {
         };
         state.next_ordinal = next_ordinal;
         let checkpoint_identity =
-            crate::domain_computation::primary_graph::application_checkpoint_source_identity::checkpoint_source_identity(
-                query,
-                parameters,
-                &footprint,
-            );
+            checkpoint_commitment::checkpoint_source_identity(query, parameters, &footprint);
         let meaning = Arc::new(WorthQueryObservedSourceMeaning {
             coordinate: coordinate.clone(),
             footprint,
             identity: source_identity(self.runtime_authority, ordinal),
+            runtime_idempotency_identity: stable_runtime_identity(
+                self.runtime_authority,
+                &coordinate,
+                &checkpoint_identity,
+            ),
             checkpoint_identity,
             registry: Arc::downgrade(&self.state),
         });
@@ -172,12 +180,31 @@ impl WorthQueryObservedSourceMeaningRegistry {
         drop(unmatched_meanings);
         Some(meaning)
     }
+
+    /// Set membership is a distinct source contract from any returned row.
+    pub(in crate::domain_computation::primary_graph) fn intern_result_set(
+        &self,
+        query: &[u8; 32],
+        parameters: &[u8; 32],
+        footprint: WorthQueryObservedSourceFootprint,
+        selection: &WorthQueryApplicationBasisSelectionIdentity,
+    ) -> Option<Arc<WorthQueryObservedSourceMeaning>> {
+        use sha2::{Digest, Sha256};
+        let mut digest = Sha256::new();
+        digest.update(b"worth-query:observed-result-set:v1");
+        digest.update(query);
+        let set_query = digest.finalize().into();
+        self.intern(&set_query, parameters, footprint, selection)
+    }
 }
 
-fn source_identity(runtime_authority: u64, ordinal: u64) -> [u8; 32] {
+fn source_identity(
+    runtime_authority: WorthQueryRuntimeAuthorityIdentity,
+    ordinal: u64,
+) -> [u8; 32] {
     let mut identity = [0; 32];
     identity[..8].copy_from_slice(b"WQSRCE01");
-    identity[8..16].copy_from_slice(&runtime_authority.to_be_bytes());
+    identity[8..16].copy_from_slice(&runtime_authority.as_u64().to_be_bytes());
     identity[16..24].copy_from_slice(&ordinal.to_be_bytes());
     identity
 }
@@ -209,13 +236,10 @@ impl WorthQueryObservedSourceEpoch {
             entities: vec![root],
             aspects: Vec::new(),
             adjacencies: Vec::new(),
+            root_selection: None,
         };
         let checkpoint_identity =
-            crate::domain_computation::primary_graph::application_checkpoint_source_identity::checkpoint_source_identity(
-                &query,
-                &parameters,
-                &footprint,
-            );
+            checkpoint_commitment::checkpoint_source_identity(&query, &parameters, &footprint);
         Self {
             query,
             parameters,
@@ -231,6 +255,7 @@ impl WorthQueryObservedSourceEpoch {
                 },
                 footprint,
                 identity,
+                runtime_idempotency_identity: identity,
                 checkpoint_identity,
                 registry: Weak::new(),
             }),
@@ -247,6 +272,14 @@ impl WorthQueryObservedSourceEpoch {
         let WorthQueryApplicationBasisSelectionIdentity::Product(product) = selection else {
             return None;
         };
+        if meaning.coordinate.query != *query
+            || meaning.coordinate.parameters != *parameters
+            || meaning.coordinate.root != root
+            || meaning.coordinate.occurrence
+                != WorthQueryObservedSourceOccurrence::Product(product.lifecycle_incarnation())
+        {
+            return None;
+        }
         Some(Self {
             query: *query,
             parameters: *parameters,
@@ -298,63 +331,17 @@ impl WorthQueryObservedSourceEpoch {
         self.meaning.checkpoint_identity()
     }
 
+    pub(in crate::domain_computation::primary_graph) fn runtime_idempotency_identity(
+        &self,
+    ) -> [u8; 32] {
+        self.meaning.runtime_idempotency_identity().bytes()
+    }
+
     #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) const fn checkpoint_occurrence(
         &self,
     ) -> worth_runtime_world::facade::ProductBranchIncarnation {
         self.occurrence
-    }
-
-    fn ordering_coordinates(
-        &self,
-    ) -> (
-        [u8; 32],
-        [u8; 32],
-        worth_relational::facade::identity::EntityId,
-        worth_runtime_world::facade::ProductBranchIncarnation,
-        u64,
-        [u8; 32],
-    ) {
-        (
-            self.query,
-            self.parameters,
-            self.root,
-            self.occurrence,
-            self.observation_generation,
-            *self.meaning.identity(),
-        )
-    }
-}
-
-impl PartialEq for WorthQueryObservedSourceEpoch {
-    fn eq(&self, other: &Self) -> bool {
-        self.ordering_coordinates() == other.ordering_coordinates()
-    }
-}
-
-impl Eq for WorthQueryObservedSourceEpoch {}
-
-impl PartialOrd for WorthQueryObservedSourceEpoch {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for WorthQueryObservedSourceEpoch {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.ordering_coordinates()
-            .cmp(&other.ordering_coordinates())
-    }
-}
-
-impl Hash for WorthQueryObservedSourceEpoch {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.query.hash(state);
-        self.parameters.hash(state);
-        self.root.hash(state);
-        self.occurrence.hash(state);
-        self.observation_generation.hash(state);
-        self.meaning.identity().hash(state);
     }
 }
 

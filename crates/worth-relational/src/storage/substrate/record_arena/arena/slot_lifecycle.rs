@@ -12,10 +12,13 @@ impl<K: RecordKind> RecordArena<K> {
             return Err("materialization suspension requires a live record");
         }
         self.lifecycle[physical] = RecordLifecycleState::MaterializationUnavailable;
-        self.extra[physical] = K::unavailable_extra(&self.extra[physical]);
-        self.metadata_history[physical].clear();
-        self.aspect_versions[physical].clear();
-        self.diagnostics_enrichment[physical].clear();
+        self.extra
+            .set(physical, K::unavailable_extra(&self.extra[physical]));
+        self.metadata_history.set(physical, Default::default());
+        self.aspect_versions.set(physical, Default::default());
+        self.field_revisions.set(physical, None);
+        self.diagnostics_enrichment
+            .set(physical, Default::default());
         self.live_bitset.set(slot, false);
         self.reclaimable_bitset.set(slot, false);
         Ok(())
@@ -41,13 +44,14 @@ impl<K: RecordKind> RecordArena<K> {
         {
             return Err("rematerialization identity or kind does not match retained metadata");
         }
-        self.extra[physical] = extra.clone();
         self.metadata_history[physical].push(K::metadata_for_create(
             kind_id,
             self.generations[physical],
             version_id,
             &extra,
         ));
+        self.extra.set(physical, extra);
+        self.field_revisions.set(physical, Some(Default::default()));
         self.lifecycle[physical] = RecordLifecycleState::Live;
         self.retired_at[physical] = None;
         self.live_bitset.set(slot, true);
@@ -64,7 +68,6 @@ impl<K: RecordKind> RecordArena<K> {
         let physical = self
             .physical_index(slot)
             .expect("record extra update requires a materialized slot");
-        self.extra[physical] = extra.clone();
         if let Some(current) = self.metadata_history[physical].last_mut() {
             K::retire_metadata(current, version_id);
         }
@@ -76,6 +79,7 @@ impl<K: RecordKind> RecordArena<K> {
             version_id,
             &extra,
         ));
+        self.extra.set(physical, extra);
     }
 
     pub(crate) fn retire(&mut self, slot: usize, version_id: VersionId) {
@@ -157,12 +161,14 @@ impl<K: RecordKind> RecordArena<K> {
         ));
         self.created_at[physical] = version_id;
         self.retired_at[physical] = None;
-        self.extra[physical] = extra;
-        self.aspect_versions[physical].clear();
-        self.diagnostics_enrichment[physical].clear();
-        self.branch_pins[physical] = 0;
-        self.replay_pins[physical] = 0;
-        self.snapshot_pins[physical] = 0;
+        self.extra.set(physical, extra);
+        self.aspect_versions.set(physical, Default::default());
+        self.field_revisions.set(physical, Some(Default::default()));
+        self.diagnostics_enrichment
+            .set(physical, Default::default());
+        self.branch_pins.set(physical, 0);
+        self.replay_pins.set(physical, 0);
+        self.snapshot_pins.set(physical, 0);
         let logical = self.slots.slots()[physical] as usize;
         self.live_bitset.set(logical, true);
         self.reclaimable_bitset.set(logical, false);
@@ -185,13 +191,18 @@ impl<K: RecordKind> RecordArena<K> {
         self.generations.push(generation);
         self.lifecycle.push(RecordLifecycleState::Live);
         self.kind_ids.push(Some(kind_id));
-        self.metadata_history.push(vec![K::metadata_for_create(
-            kind_id, generation, version_id, &extra,
-        )]);
+        self.metadata_history.push(
+            vec![K::metadata_for_create(
+                kind_id, generation, version_id, &extra,
+            )]
+            .into(),
+        );
         self.created_at.push(version_id);
         self.retired_at.push(None);
         self.extra.push(extra);
         self.aspect_versions.push(std::collections::BTreeMap::new());
+        self.field_revisions
+            .push(Some(std::collections::BTreeMap::new()));
         self.diagnostics_enrichment
             .push(std::collections::BTreeMap::new());
         self.branch_pins.push(0);
@@ -207,12 +218,14 @@ impl<K: RecordKind> RecordArena<K> {
             .physical_index(slot)
             .expect("record reset requires a materialized slot");
         self.kind_ids[physical] = None;
-        self.extra[physical] = K::empty_extra();
-        self.aspect_versions[physical].clear();
-        self.diagnostics_enrichment[physical].clear();
-        self.branch_pins[physical] = 0;
-        self.replay_pins[physical] = 0;
-        self.snapshot_pins[physical] = 0;
+        self.extra.set(physical, K::empty_extra());
+        self.aspect_versions.set(physical, Default::default());
+        self.field_revisions.set(physical, None);
+        self.diagnostics_enrichment
+            .set(physical, Default::default());
+        self.branch_pins.set(physical, 0);
+        self.replay_pins.set(physical, 0);
+        self.snapshot_pins.set(physical, 0);
         self.retired_at[physical] = None;
     }
 

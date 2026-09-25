@@ -61,7 +61,7 @@ where
                 required,
                 layout: layout.clone(),
                 program_revision,
-                replays: Box::default(),
+                replays: Default::default(),
             },
         ))
     }

@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use worth_relational::facade::identity::EntityId;
 
 use super::{exact_adjacent, observed_optional_text, observed_optional_u64, observed_u64};
@@ -18,7 +19,7 @@ pub(super) fn compile_connection(
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     layout: &WorthQueryWorkflowLayout,
     entity: EntityId,
-    nodes: &[EntityId],
+    nodes: &HashSet<EntityId>,
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
 ) -> Result<CompiledWorkflowConnection, WorthQueryApplicationAttemptDenial> {
     facts.push(WorthQueryApplicationObservedFact::Entity {
@@ -105,7 +106,7 @@ pub(super) fn compile_connection(
         entity,
         source,
         target,
-        kind,
+        kind: std::sync::Arc::new(kind),
     })
 }
 

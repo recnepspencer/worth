@@ -182,10 +182,13 @@ where
         .collect()
 }
 
-fn visible_at_version<M: HistoricalMetadata>(history: &[M], version_id: VersionId) -> bool {
+fn visible_at_version<M: HistoricalMetadata + Clone>(
+    history: &crate::storage::substrate::SharedColumn<M>,
+    version_id: VersionId,
+) -> bool {
     let bound = VersionBound::new(version_id);
     let end = history.partition_point(|entry| bound.includes_created(entry.effective_at()));
-    history[..end].iter().rev().any(|entry| {
+    (0..end).rev().map(|index| &history[index]).any(|entry| {
         entry
             .retired_at()
             .is_none_or(|retired| bound.retains_retired(retired))

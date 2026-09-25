@@ -7,6 +7,7 @@ mod owned;
 mod receipt;
 mod rejection;
 mod retry_finalization;
+mod runtime_binding;
 
 pub use class::BridgeAsyncForwardCausalityClass;
 pub use counters::BridgeAsyncForwardCausalityCounters;
@@ -25,3 +26,4 @@ pub use rejection::{
 
 pub(crate) use classification::{admit_retry_lineage, admit_revalidation_lineage};
 pub(crate) use owned::{admit_owned_retry_lineage, admit_owned_revalidation_lineage};
+pub(crate) use runtime_binding::validate_lineage_runtime;

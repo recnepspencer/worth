@@ -59,6 +59,13 @@ pub(crate) enum RelationalRetentionOwnerRelationship {
 }
 
 impl RelationalBranchRetentionBinding {
+    pub(crate) fn has_root_obligation(&self, root_id: u64) -> bool {
+        lock_lane(&self.lane)
+            .obligations
+            .values()
+            .any(|obligation| obligation.root_ids.contains(&root_id))
+    }
+
     pub(super) fn new(
         owner: &Arc<RelationalBranchRetentionOwnerInner>,
         identity: Option<RelationalBranchIdentity>,

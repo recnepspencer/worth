@@ -34,6 +34,7 @@ mod program_activation_recovery;
 mod program_activation_seeding;
 mod publication;
 mod publication_target;
+mod seed_batches;
 use binding_denial::map_binding_denial_kind;
 mod truth_partition;
 pub(super) use program_activation_recovery::recover_program_activation;
@@ -65,12 +66,20 @@ pub struct WorthQueryPrimaryGraphBootstrap<Schema> {
     principal_identities: BTreeSet<(String, AuthoritativeFieldComparisonKey)>,
     principal_keys: BTreeSet<(KindId, String)>,
     pub(super) entity_keys: BTreeSet<(KindId, String)>,
+    pub(super) pending_entity_keys: BTreeSet<(KindId, String)>,
     pub(super) relation_keys: BTreeSet<(KindId, String)>,
     pub(super) entity_rows: Vec<super::typed_bootstrap::WorthQueryTypedEntityBootstrapRow>,
     pub(super) relation_rows: Vec<super::typed_bootstrap::WorthQueryTypedRelationBootstrapRow>,
+    committed_principal_count: usize,
+    committed_entity_count: usize,
+    committed_relation_count: usize,
+    last_seed_commit_id: Option<worth_relational::facade::history::CommitId>,
+    seed_batch_failed: bool,
     pub(super) recovered_publication: Option<WorthQueryPrimaryGraphPublication>,
     recovered_relational_authority:
         Option<worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority>,
+    recovered_checkpoint_restore_work:
+        Option<worth_relational::facade::durability::CheckpointRestoreWork>,
     pub(super) mutation_handlers: super::handler::PendingMutationHandlerRegistry<Schema>,
     /// The initial program this installation activates, seeded before any
     /// ordinary bootstrap row so those rows are validated under its rules.
@@ -89,6 +98,12 @@ where
         &mut self,
     ) -> Option<worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority> {
         self.recovered_relational_authority.take()
+    }
+
+    pub(super) fn recovered_checkpoint_restore_work(
+        &self,
+    ) -> Option<worth_relational::facade::durability::CheckpointRestoreWork> {
+        self.recovered_checkpoint_restore_work
     }
 
     pub fn bind_principal<
@@ -187,7 +202,8 @@ where
         }
         self.external_identities.insert(external_identity_key);
         self.principal_keys.insert(principal_key.clone());
-        self.entity_keys.insert(principal_key);
+        self.entity_keys.insert(principal_key.clone());
+        self.pending_entity_keys.insert(principal_key);
         self.principal_identities.insert(principal_identity_key);
         self.rows.push(row);
         Ok(())
@@ -199,19 +215,25 @@ where
         authority: &WorthQueryExecutionInstallationAuthority,
     ) -> Result<WorthQueryPrimaryGraphPublication, WorthQueryPrimaryGraphInstallationDenial> {
         self.validate_publication_target(runtime, authority)?;
+        if self.seed_batch_failed {
+            return Err(primary_graph_denial(
+                WorthQueryPrimaryGraphInstallationDenialKind::RelationalCommitRejected,
+                "a previous installation seed batch failed",
+            ));
+        }
         if let Some(publication) = self.recovered_publication {
             runtime.install_primary_graph(self.graph);
             return Ok(publication);
         }
-        if self.rows.is_empty() {
+        if self.rows.is_empty() && self.committed_principal_count == 0 {
             return Err(primary_graph_denial(
                 WorthQueryPrimaryGraphInstallationDenialKind::EmptyBootstrap,
                 "at least one application principal binding is required",
             ));
         }
-        let row_count = self.rows.len();
-        let entity_count = self.entity_rows.len();
-        let relation_count = self.relation_rows.len();
+        let row_count = self.committed_principal_count + self.rows.len();
+        let entity_count = self.committed_entity_count + self.entity_rows.len();
+        let relation_count = self.committed_relation_count + self.relation_rows.len();
         let principal_identity_index_count = self
             .graph
             .layout
@@ -230,7 +252,19 @@ where
             commit_initial_program_activation(&self.graph, seed)?;
         }
         let commit_id =
-            commit_bootstrap_rows(&self.graph, self.rows, self.entity_rows, self.relation_rows)?;
+            if self.rows.is_empty() && self.entity_rows.is_empty() && self.relation_rows.is_empty()
+            {
+                self.last_seed_commit_id
+                    .expect("a principal seed batch was committed")
+            } else {
+                commit_bootstrap_rows(
+                    &self.graph,
+                    self.committed_principal_count,
+                    self.rows,
+                    self.entity_rows,
+                    self.relation_rows,
+                )?
+            };
         build_identity_indexes(&self.graph, commit_id, &index_ids)?;
         let binding_identity = self.graph.binding_identity().clone();
         runtime.install_primary_graph(self.graph);

@@ -14,7 +14,8 @@ pub(crate) fn rebuild_adjacency_kind_buckets(
             for metadata in partition
                 .relation_arena
                 .metadata_history_at(slot)
-                .unwrap_or_default()
+                .into_iter()
+                .flatten()
             {
                 let relation_id = RelationId::new(*partition_id, slot as u64, metadata.generation);
                 relation_kinds.insert(relation_id, metadata.kind_id);
@@ -57,7 +58,7 @@ pub(crate) fn rebuild_adjacency_kind_buckets(
         for (&slot, adjacency) in partition.adjacency.iter_mut() {
             current.extend(
                 adjacency
-                    .as_slice()
+                    .current_ids()
                     .iter()
                     .copied()
                     .map(|relation_id| (*partition_id, slot, false, relation_id)),
@@ -67,7 +68,7 @@ pub(crate) fn rebuild_adjacency_kind_buckets(
         for (&slot, adjacency) in partition.reverse_adjacency.iter_mut() {
             current.extend(
                 adjacency
-                    .as_slice()
+                    .current_ids()
                     .iter()
                     .copied()
                     .map(|relation_id| (*partition_id, slot, true, relation_id)),

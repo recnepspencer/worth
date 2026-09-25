@@ -2,8 +2,10 @@
 
 mod current_output;
 mod denial;
+mod partition_index;
 mod qualification;
 mod recorded_source_identity;
+mod resources;
 mod restoration;
 mod retention;
 #[cfg(test)]
@@ -39,6 +41,7 @@ pub(crate) struct WorthQueryApplicationOutputLineage {
             BTreeMap<u64, Vec<RecordedOutput>>,
         >,
     >,
+    partition_index: partition_index::OutputPartitionIndex,
     origins: HashMap<worth_runtime_world::facade::ProductBranchIncarnation, ProductCoordinate>,
     live_occurrences: HashSet<worth_runtime_world::facade::ProductBranchIncarnation>,
     output_families: HashMap<String, Vec<TypeId>>,
@@ -52,6 +55,7 @@ struct RecordedOutput {
     idempotency_key_identity: [u8; 32],
     observed_source_facts:
         Option<Arc<[super::application_attempt::WorthQueryApplicationObservedFact]>>,
+    resources: Option<super::application_contribution::WorthQueryProducerDemandResources>,
 }
 
 pub(super) struct WorthQueryExactRecordedOutput {
@@ -90,6 +94,17 @@ pub(super) struct WorthQueryCurrentOutputCandidate {
     pub(super) correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
     pub(super) observed_source_facts:
         Arc<[super::application_attempt::WorthQueryApplicationObservedFact]>,
+}
+
+pub(super) struct WorthQueryRetainedOutputCandidate {
+    pub(super) binding: TypeId,
+    pub(super) correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
+    pub(super) source_identity: Option<RecordedSourceIdentity>,
+    pub(super) observed_source_facts:
+        Option<Arc<[super::application_attempt::WorthQueryApplicationObservedFact]>>,
+    pub(super) resources:
+        Option<super::application_contribution::WorthQueryProducerDemandResources>,
+    pub(super) idempotency_key_identity: [u8; 32],
 }
 
 pub(super) struct WorthQueryCurrentOutputFamilyResolution {
@@ -141,21 +156,37 @@ impl WorthQueryApplicationOutputLineage {
             scope: scope.scope(),
             output_binding,
         };
+        let partition = evidence.idempotency().source_partition_identity();
+        if let Some(partition) = partition {
+            assert!(
+                self.partition_index
+                    .at_generation(
+                        &source,
+                        coordinate.occurrence,
+                        coordinate.generation,
+                        partition
+                    )
+                    .is_none(),
+                "one product generation may publish one output binding once"
+            );
+        }
         let generation = self
             .by_source
-            .entry(source)
+            .entry(source.clone())
             .or_default()
             .entry(head.lifecycle_incarnation())
             .or_default()
             .entry(head.reference_generation().get())
             .or_default();
-        assert!(
-            generation
-                .iter()
-                .all(|recorded| recorded.source_partition_identity
-                    != evidence.idempotency().source_partition_identity()),
-            "one product generation may publish one output binding once"
-        );
+        if partition.is_none() {
+            assert!(
+                generation
+                    .iter()
+                    .all(|recorded| recorded.source_partition_identity.is_some()),
+                "one product generation may publish one output binding once"
+            );
+        }
+        let slot = generation.len();
         generation.push(RecordedOutput {
             correspondence: evidence.retain_output_correspondence(),
             source_identity: evidence.idempotency().source_identity().map(|identity| {
@@ -167,7 +198,17 @@ impl WorthQueryApplicationOutputLineage {
             producer_dependency_identity: evidence.idempotency().producer_dependency_identity(),
             idempotency_key_identity: *evidence.idempotency().key_identity(),
             observed_source_facts: Some(evidence.retain_observed_source_facts()),
+            resources: None,
         });
+        if let Some(partition) = partition {
+            self.partition_index.insert(
+                source,
+                coordinate.occurrence,
+                coordinate.generation,
+                partition,
+                slot,
+            );
+        }
     }
 
     pub(super) fn resolve_current_family(
@@ -260,35 +301,33 @@ impl WorthQueryApplicationOutputLineage {
             scope: scope.scope(),
             output_binding: TypeId::of::<Binding>(),
         };
-        let Some(versions) = self.by_source.get(&source) else {
-            return Ok(WorthQueryPriorOutputBindingResolution {
-                correspondence: None,
-                source_lookups: 1,
-            });
-        };
+        if !self.by_source.contains_key(&source) {
+            return (maximum_source_lookups > 0)
+                .then_some(WorthQueryPriorOutputBindingResolution {
+                    correspondence: None,
+                    source_lookups: 1,
+                })
+                .ok_or(());
+        }
         let mut coordinate = ProductCoordinate {
             occurrence,
             generation,
         };
-        let mut source_lookups = 0;
+        let mut source_lookups = 0_usize;
         loop {
-            source_lookups += 1;
+            let (recorded, work) = self.latest_output_in_partition_budgeted(
+                &source,
+                coordinate,
+                source_partition_identity,
+                maximum_source_lookups.saturating_sub(source_lookups),
+            )?;
+            source_lookups = source_lookups.checked_add(work).ok_or(())?;
             if source_lookups > maximum_source_lookups {
                 return Err(());
             }
-            if let Some(correspondence) = versions
-                .get(&coordinate.occurrence)
-                .and_then(|history| {
-                    latest_output_in_partition(
-                        history,
-                        coordinate.generation,
-                        source_partition_identity,
-                    )
-                })
-                .map(|(_, recorded)| recorded.correspondence.clone())
-            {
+            if let Some(recorded) = recorded {
                 return Ok(WorthQueryPriorOutputBindingResolution {
-                    correspondence: Some(correspondence),
+                    correspondence: Some(Arc::clone(&recorded.correspondence)),
                     source_lookups,
                 });
             }
@@ -303,24 +342,6 @@ impl WorthQueryApplicationOutputLineage {
     }
 }
 
-fn latest_output_in_partition(
-    history: &BTreeMap<u64, Vec<RecordedOutput>>,
-    maximum_generation: u64,
-    source_partition_identity: [u8; 32],
-) -> Option<(&u64, &RecordedOutput)> {
-    history
-        .range(..=maximum_generation)
-        .rev()
-        .find_map(|(generation, recorded)| {
-            recorded
-                .iter()
-                .find(|recorded| {
-                    recorded.source_partition_identity == Some(source_partition_identity)
-                })
-                .map(|recorded| (generation, recorded))
-        })
-}
-
 fn latest_output_matching<'a>(
     history: &'a BTreeMap<u64, Vec<RecordedOutput>>,
     maximum_generation: u64,
@@ -330,11 +351,4 @@ fn latest_output_matching<'a>(
         .range(..=maximum_generation)
         .rev()
         .find_map(|(_, recorded)| recorded.iter().find(|recorded| matches(recorded)))
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(super) enum WorthQueryOutputSourcePosture {
-    Absent,
-    Exact(TypeId),
-    Drifted,
 }

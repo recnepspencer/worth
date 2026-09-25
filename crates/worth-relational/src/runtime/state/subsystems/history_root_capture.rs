@@ -44,7 +44,7 @@ impl HistorySubsystem {
 
     pub(crate) fn readmit_branch_root(
         &self,
-        partitions: &BTreeMap<
+        partitions: BTreeMap<
             crate::identity::data::PartitionId,
             crate::storage::overlay::PartitionState,
         >,

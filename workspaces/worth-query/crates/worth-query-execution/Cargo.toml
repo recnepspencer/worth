@@ -13,6 +13,7 @@ test-primary-graph-faults = []
 test-world-operation-control = ["worth-runtime-world/test-operation-control"]
 
 [dependencies]
+im = "=15.1.0"
 sha2 = "0.10"
 worth-foundational = { path = "../../../../crates/worth-foundational" }
 worth-proof = { path = "../../../../crates/worth-proof" }

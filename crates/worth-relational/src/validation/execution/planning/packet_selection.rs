@@ -3,13 +3,11 @@ use crate::validation::data::CustomInvariantScopePlanner;
 use crate::validation::engine::InvariantExecutionRequest;
 use crate::validation::engine::InvariantRuntimeView;
 
-pub(super) fn eligible_registrations<'runtime, 'state>(
-    runtime: &'runtime InvariantRuntimeView,
+pub(super) fn eligible_registrations<'state>(
+    runtime: &InvariantRuntimeView<'state>,
     request: &'state InvariantExecutionRequest<'state>,
-) -> Vec<InvariantPacketRegistration>
-where
-    'runtime: 'state,
-{
+) -> Vec<InvariantPacketRegistration> {
+    let touched_kinds = std::cell::OnceCell::new();
     let native = runtime
         .config
         .schema
@@ -37,13 +35,32 @@ where
             let work = crate::validation::custom_rule::CustomInvariantWorkMeter::new(
                 registration.maximum_work_units(),
             );
-            let prepared_scope = crate::validation::data::PreparedCustomInvariantScope::capture(
-                request.observation(),
-                request.version_id(),
-                request.merged_plan(),
-                registration.access_contract(),
-                &work,
-            );
+            let access = registration.access_contract();
+            let has_declared_applicability = !access.affected_entity_kinds.is_empty()
+                || !access.affected_relation_kinds.is_empty();
+            if has_declared_applicability
+                && touched_kinds
+                    .get_or_init(|| {
+                        super::custom_applicability::CandidateTouchedKinds::from_request(request)
+                    })
+                    .as_ref()
+                    .is_some_and(|kinds| !kinds.may_affect(access))
+            {
+                return InvariantPacketRegistration::CustomNotApplicable {
+                    registration: registration.clone(),
+                    prepared_scope: crate::validation::data::PreparedCustomInvariantScope::empty(),
+                    work,
+                };
+            }
+            let prepared_scope =
+                crate::validation::data::PreparedCustomInvariantScope::capture_with_shared_inputs(
+                    request.observation(),
+                    request.version_id(),
+                    request.merged_plan(),
+                    registration.access_contract(),
+                    &work,
+                    runtime.shared_candidate_inputs(),
+                );
             let mut planner = CustomInvariantScopePlanner::new_at_current_version(
                 runtime,
                 request.observation(),
@@ -53,9 +70,6 @@ where
                 work.clone(),
                 std::sync::Arc::new(registration.access_contract().clone()),
             );
-            let access = registration.access_contract();
-            let has_declared_applicability = !access.affected_entity_kinds.is_empty()
-                || !access.affected_relation_kinds.is_empty();
             if request.merged_plan().is_some()
                 && has_declared_applicability
                 && !planner.has_applicable_touches()
@@ -70,10 +84,12 @@ where
             let prepared_execution = registration
                 .executable()
                 .prepare_for_execution(runtime, &mut planner);
+            let retained_touched = planner.retained_touched();
             InvariantPacketRegistration::Custom {
                 registration: registration.clone(),
                 prepared_execution,
                 prepared_scope: prepared_scope.clone(),
+                retained_touched,
             }
         });
 

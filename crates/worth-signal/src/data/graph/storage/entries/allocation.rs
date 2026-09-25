@@ -4,7 +4,30 @@ use crate::data::graph::storage::Slot;
 use crate::data::handle::NodeId;
 use crate::data::node::{NodeDefinitionData, NodeEntry, NodeWarmData};
 
-const NODE_ARENA_RESERVE_CHUNK: usize = 1024;
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn single_node_graph_reserves_at_most_four_rows_per_column() {
+        let mut graph = SignalGraph::new();
+        graph.node().build();
+        for capacity in [
+            graph.arena.nodes.exclusive_capacity(),
+            graph.arena.definitions.exclusive_capacity(),
+            graph.arena.hot.exclusive_capacity(),
+            graph.arena.warm.exclusive_capacity(),
+            graph.arena.cold.exclusive_capacity(),
+        ] {
+            // Vec starts at one row for very wide elements and four for the
+            // narrower columns; neither should reserve a 1,024-row slab.
+            assert!(
+                capacity.is_some_and(|rows| (1..=4).contains(&rows)),
+                "{capacity:?}"
+            );
+        }
+    }
+}
 
 impl SignalGraph {
     pub(in crate::data::graph) fn allocate_node(&mut self, entry: NodeEntry) -> NodeId {
@@ -31,7 +54,9 @@ impl SignalGraph {
 
         let index = self.arena.nodes.len() as u32;
         if self.arena.nodes.exclusive_capacity() == Some(self.arena.nodes.len()) {
-            self.reserve_node_capacity(NODE_ARENA_RESERVE_CHUNK);
+            // Vec's geometric growth amortizes appends without reserving a
+            // thousand wide records for a one-node managed-execution graph.
+            self.reserve_node_capacity(1);
         }
         let mut slot = Slot::vacant();
         let generation = slot.occupy();

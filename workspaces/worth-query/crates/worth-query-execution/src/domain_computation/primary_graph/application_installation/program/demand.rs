@@ -245,6 +245,10 @@ where
             SourceQuery<Schema, WorthQueryProgramRootDemand<Schema, Root>>,
             SourceValue<Schema, WorthQueryProgramRootDemand<Schema, Root>>,
         >,
+        current: WorthQueryApplicationOutputDemandSource<
+            SourceQuery<Schema, WorthQueryProgramRootDemand<Schema, Root>>,
+            SourceValue<Schema, WorthQueryProgramRootDemand<Schema, Root>>,
+        >,
         maximum_work: usize,
         maximum_retained_bytes: usize,
         source_receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
@@ -274,6 +278,7 @@ where
                 Family<Schema, WorthQueryProgramRootDemand<Schema, Root>>,
             >(
                 source,
+                current,
                 maximum_work,
                 maximum_retained_bytes,
                 source_receipt,

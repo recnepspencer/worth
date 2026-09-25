@@ -4,6 +4,7 @@ mod condition;
 mod definition;
 mod instance;
 mod operation;
+mod ordinary;
 mod progress;
 mod proposal;
 
@@ -23,7 +24,17 @@ pub use instance::{
     WorthQueryWorkflowInstanceStartPreparationDenialKind, WorthQueryWorkflowInstanceStartRequest,
 };
 pub use operation::{
-    WorthQueryWorkflowOperationAcceptanceDenial, WorthQueryWorkflowOperationBindingDenial,
+    WorthQueryPreparedWorkflowOperationRecovery, WorthQueryWorkflowOperationAcceptanceDenial,
+    WorthQueryWorkflowOperationBindingDenial, WorthQueryWorkflowOperationRecoveryDenial,
+    WorthQueryWorkflowOperationRecoveryPreparationDenial,
+};
+pub use ordinary::{
+    WorthQueryOrdinaryWorkflowDraft, WorthQueryOrdinaryWorkflowPublication,
+    WorthQueryOrdinaryWorkflowPublicationDenial,
+    WorthQueryOrdinaryWorkflowPublicationWithIdempotency, WorthQueryOrdinaryWorkflowRun,
+    WorthQueryOrdinaryWorkflowRunProgress, WorthQueryOrdinaryWorkflowRunStop,
+    WorthQueryOrdinaryWorkflowRunWithKeys, WorthQueryOrdinaryWorkflowStart,
+    WorthQueryOrdinaryWorkflowStartWithIdempotency,
 };
 pub use progress::{
     WorthQueryWorkflowAdvancePreparationDenial, WorthQueryWorkflowAdvancePreparationDenialKind,

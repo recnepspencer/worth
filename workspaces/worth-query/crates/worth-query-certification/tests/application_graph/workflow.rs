@@ -1,5 +1,6 @@
 //! Public certification for authored workflow-definition publication.
 
+use worth_query_host::facade::declaration::application_program::ApplicationWorkflowComponentLimits;
 use worth_query_host::facade::{
     application_entry::{
         WorkflowDefinitionExpectedPredecessor, WorkflowDefinitionPublicationOutcome,
@@ -25,7 +26,7 @@ fn installed_resource_ceiling_rejects_a_definition_declaring_broader_limits() {
             32,
             64,
             1,
-            4,
+            ApplicationWorkflowComponentLimits::new(32, 4, 128, 256, 256).unwrap(),
             64 * 1024,
             32,
             128,
@@ -49,8 +50,39 @@ fn installed_resource_ceiling_rejects_a_definition_declaring_broader_limits() {
 }
 
 #[test]
+fn installed_component_ceiling_rejects_only_the_broader_component_contract() {
+    let resources =
+        worth_query_installation::facade::WorthQueryApplicationWorkflowResourceCeiling::new(
+            32,
+            64,
+            4,
+            ApplicationWorkflowComponentLimits::new(31, 4, 128, 256, 256).unwrap(),
+            64 * 1024,
+            32,
+            128,
+            256 * 1024,
+        )
+        .expect("the constrained workflow resources are nonzero");
+    let application = super::bounded_dimension_model::workflow::retain_workflow_with_resources(
+        super::bounded_dimension_model::host::publish_on_first_program(),
+        resources,
+    );
+    let denial = match application.workflow_spec().bind_definition(
+        super::bounded_dimension_model::workflow::reviewed_geometry_definition("completed"),
+    ) {
+        Ok(_) => panic!("definition component limits exceed installed resources"),
+        Err(denial) => denial,
+    };
+    assert_eq!(
+        denial.kind(),
+        worth_query_installation::facade::WorthQueryApplicationWorkflowInstallationDenialKind::DefinitionLimitExceeded
+    );
+}
+
+#[test]
 fn public_terminal_workflow_advances_once_through_authenticated_transition_authority() {
     let application = publish_workflow_on_first_program();
+    let before = application.runtime().workflow_compilation_reuse_counters();
     let definition = expect_published(
         "terminal definition",
         publish_definition(
@@ -65,6 +97,9 @@ fn public_terminal_workflow_advances_once_through_authenticated_transition_autho
         definition.definition().clone(),
         32,
     ));
+    let after_cold_start = application.runtime().workflow_compilation_reuse_counters();
+    assert_eq!(after_cold_start.cold_misses(), before.cold_misses() + 1);
+    assert_eq!(after_cold_start.cold_retains(), before.cold_retains() + 1);
     assert_eq!(started.instance().current_node_path(), "completed");
     for key in 100..131 {
         expect_started(start_instance(
@@ -73,12 +108,20 @@ fn public_terminal_workflow_advances_once_through_authenticated_transition_autho
             key,
         ));
     }
+    let after_warm_starts = application.runtime().workflow_compilation_reuse_counters();
+    assert_eq!(
+        after_warm_starts.cold_misses(),
+        after_cold_start.cold_misses()
+    );
+    assert_eq!(
+        after_warm_starts.warm_hits(),
+        after_cold_start.warm_hits() + 31
+    );
     expect_stale_start(start_instance(
         &application,
         definition.definition().clone(),
         131,
     ));
-
     let transition = match advance_instance(&application, started.instance().clone(), 33)
         .expect("workflow advance preparation must succeed")
     {
@@ -86,8 +129,8 @@ fn public_terminal_workflow_advances_once_through_authenticated_transition_autho
         other => panic!("expected a completed terminal transition, got {other:?}"),
     };
     assert_eq!(transition.node_path(), "completed");
+    assert!(transition.terminal());
     assert!(!transition.replayed());
-
     let replay = match advance_instance(&application, started.instance().clone(), 33)
         .expect("an exact workflow transition retry must prepare")
     {
@@ -95,8 +138,8 @@ fn public_terminal_workflow_advances_once_through_authenticated_transition_autho
         other => panic!("expected a replayed terminal transition, got {other:?}"),
     };
     assert!(replay.replayed());
+    assert!(replay.terminal());
     assert_eq!(replay.transition(), transition.transition());
-
     match advance_instance(&application, started.instance().clone(), 34)
         .expect("a new key must reach transition-head comparison")
     {

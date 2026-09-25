@@ -15,7 +15,7 @@ use super::{
 impl RelationalBranchRoot {
     pub(crate) fn readmit(
         issuer: &RelationalBranchRootIdentityIssuer,
-        partitions: &BTreeMap<PartitionId, PartitionState>,
+        partitions: BTreeMap<PartitionId, PartitionState>,
         envelope: Arc<CanonicalCommitEnvelope>,
         descriptor: RelationalBranchRootDescriptor,
         schema_authority: Arc<super::RelationalBranchRootSchemaAuthority>,
@@ -23,8 +23,16 @@ impl RelationalBranchRoot {
     ) -> Result<Arc<Self>, RelationalBranchRootCaptureDenial> {
         validate_schema_root(&envelope, &descriptor)?;
         let root_id = issuer.issue_root_id()?;
+        let entity_slot_count = partitions
+            .values()
+            .map(|partition| partition.entity_arena.slot_count())
+            .sum();
+        let relation_slot_count = partitions
+            .values()
+            .map(|partition| partition.relation_arena.slot_count())
+            .sum();
         let (regions, mut publication_cost) =
-            capture::build_initial_regions(issuer, root_id, partitions, symbols)?;
+            capture::build_initial_regions_owned(issuer, root_id, partitions, symbols)?;
         let (storage_root, content_accumulator) = axes::storage_root_for(&regions);
         require_descriptor_content(&descriptor, storage_root)?;
         let schema_root = *descriptor.schema_root();
@@ -57,14 +65,8 @@ impl RelationalBranchRoot {
         Ok(Arc::new(Self {
             id: root_id,
             regions,
-            entity_slot_count: partitions
-                .values()
-                .map(|partition| partition.entity_arena.slot_count())
-                .sum(),
-            relation_slot_count: partitions
-                .values()
-                .map(|partition| partition.relation_arena.slot_count())
-                .sum(),
+            entity_slot_count,
+            relation_slot_count,
             content_accumulator,
             schema_authority,
             committed: Some(RelationalCommittedBranchRoot {

@@ -19,6 +19,7 @@ use worth_query_host::facade::{
 };
 
 use super::*;
+mod demand_contact;
 mod support;
 use support::{authenticate, install, length};
 
@@ -100,6 +101,7 @@ impl ApplicationProgramDefinition<CheckpointSchema> for CheckpointProgram {
             ApplicationFeatureSpec::root::<CheckpointSchema, PlanarFinalOutputFeature>()
                 .provides::<PlanarFinalBodyOutput>()
                 .conditional_operation::<PublishFinalPlanarOutput>()
+                .conditional_operation::<PreserveFinalPlanarOutput>()
                 .finish(),
             ApplicationFeatureSpec::root::<CheckpointSchema, PlanarAlternateFinalOutputFeature>()
                 .provides::<PlanarAlternateFinalBodyOutput>()

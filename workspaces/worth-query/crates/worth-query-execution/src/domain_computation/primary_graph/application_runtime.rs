@@ -89,6 +89,7 @@ pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         WorthQueryInstalledApplicationSchema<Schema>,
     pub(super) application_readiness_schema_token: String,
     publication: WorthQueryPrimaryGraphPublication,
+    checkpoint_restore_work: Option<worth_relational::facade::durability::CheckpointRestoreWork>,
     pub(in crate::domain_computation) authorization: WorthQueryInstalledAuthorizationRegistry,
     pub(in crate::domain_computation) authorization_clock: Arc<WorthQueryRuntimeClock>,
     authentication_clock: WorthQueryAuthenticationClock,
@@ -213,6 +214,14 @@ where
         &self.publication
     }
 
+    /// Native checkpoint readmission work for this installation, if it was
+    /// restored. This is diagnostic only and grants no recovered authority.
+    pub fn checkpoint_restore_work(
+        &self,
+    ) -> Option<worth_relational::facade::durability::CheckpointRestoreWork> {
+        self.checkpoint_restore_work
+    }
+
     /// Retains the opaque installation needed to bind Query maintenance to
     /// this exact primary application runtime.
     pub fn granular_invalidation_installation(
@@ -237,6 +246,37 @@ where
         &self,
     ) -> crate::domain_computation::authorization::WorthQueryCapabilityPlanCompilationEvidence {
         self.authorization.capability_compilation()
+    }
+
+    #[doc(hidden)]
+    pub fn workflow_compilation_reuse_counters(
+        &self,
+    ) -> super::WorthQueryWorkflowCompilationReuseCounters {
+        self.runtime
+            .retain_primary_graph_integration_handle()
+            .expect("a published application runtime retains its primary graph")
+            .workflow_compilation_reuse_counters()
+    }
+
+    #[doc(hidden)]
+    pub fn workflow_instance_progress_counters(
+        &self,
+    ) -> super::WorthQueryWorkflowInstanceProgressCounters {
+        self.runtime
+            .retain_primary_graph_integration_handle()
+            .expect("a published application runtime retains its primary graph")
+            .workflow_instance_progress_counters()
+    }
+
+    /// Read-only physical candidate-input observation for product integration
+    /// tests; it does not expose a Relational runtime or graph read authority.
+    #[doc(hidden)]
+    pub fn custom_invariant_candidate_input_counters(
+        &self,
+    ) -> worth_relational::facade::runtime::RelationalCandidateInputCounters {
+        self.primary_provider
+            .graph
+            .with_runtime(|runtime| runtime.custom_invariant_candidate_input_counters())
     }
 
     pub(in crate::domain_computation) fn graph_work_resource_support(

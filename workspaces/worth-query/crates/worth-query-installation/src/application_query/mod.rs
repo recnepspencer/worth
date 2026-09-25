@@ -9,6 +9,7 @@ mod graph_access_contract;
 mod installed_binding;
 mod installed_contract;
 mod live_contract;
+mod output_dependency_contract;
 mod planning_contract;
 mod read_family_binding;
 mod root_selection;
@@ -43,6 +44,7 @@ pub use installed_contract::{
     WorthQueryInstalledApplicationQuery, WorthQueryInstalledApplicationQueryAuthorization,
 };
 pub use live_contract::WorthQueryInstalledApplicationLiveContract;
+pub use output_dependency_contract::WorthQueryInstalledOutputDependencyContract;
 pub use planning_contract::{
     prepare_canonical_read_graph_planning_basis, WorthQueryPreparedReadGraphPlanningContract,
     WorthQueryReadGraphGuardView, WorthQueryReadGraphOrderingMechanism,

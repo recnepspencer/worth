@@ -13,7 +13,8 @@ mod state;
 pub use crate::config::data::RelationalRuntimeConfig;
 pub use crate::durability::data::RecoveryOutcome;
 pub use crate::performance::data::{
-    ComplexityContract, ComplexityStatus, RuntimeComplexityCounters,
+    ComplexityContract, ComplexityStatus, RelationalCandidateInputCounters,
+    RuntimeComplexityCounters,
 };
 pub use crate::replay::data::{RelationalReplayRecord, ReplaySchemaVersion};
 pub use crate::simulation::data::{

@@ -1,4 +1,5 @@
 use crate::{
+    application_capability::ApplicationCapabilityContextEntitySlotBinding,
     application_capability::ApplicationCapabilityMarkerIdentity,
     application_query::ApplicationQueryMarkerIdentity,
     application_schema::{ApplicationOperationMarkerIdentity, ApplicationSchema},
@@ -56,6 +57,99 @@ pub struct ApplicationWorkflowAssessmentRef {
     parameter_type: WorthQueryPortableTypeIdentity,
     result_type: WorthQueryPortableTypeIdentity,
     query_type: std::any::TypeId,
+    subject: ApplicationWorkflowSubjectSelector,
+}
+
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub enum ApplicationWorkflowSubjectSelector {
+    Resource,
+    Related,
+    Context(ApplicationCapabilityContextEntitySlotBinding),
+}
+
+impl ApplicationWorkflowSubjectSelector {
+    pub const fn resource() -> Self {
+        Self::Resource
+    }
+
+    pub const fn related() -> Self {
+        Self::Related
+    }
+
+    pub fn context(slot: ApplicationCapabilityContextEntitySlotBinding) -> Self {
+        Self::Context(slot)
+    }
+
+    pub const fn context_slot(&self) -> Option<&ApplicationCapabilityContextEntitySlotBinding> {
+        match self {
+            Self::Context(slot) => Some(slot),
+            Self::Resource | Self::Related => None,
+        }
+    }
+
+    #[doc(hidden)]
+    pub fn persistence_identity(&self) -> String {
+        match self {
+            Self::Resource => "resource".to_owned(),
+            Self::Related => "related".to_owned(),
+            Self::Context(slot) => {
+                let fields = [
+                    slot.context(),
+                    slot.context_identity_ref().as_str(),
+                    slot.slot(),
+                    slot.slot_identity_ref().as_str(),
+                    slot.entity(),
+                ];
+                fields
+                    .iter()
+                    .fold("context".to_owned(), |mut encoded, field| {
+                        use std::fmt::Write;
+                        write!(&mut encoded, "|{}:{field}", field.len())
+                            .expect("writing workflow subject identity cannot fail");
+                        encoded
+                    })
+            }
+        }
+    }
+
+    #[doc(hidden)]
+    pub fn from_persistence_identity(identity: &str) -> Option<Self> {
+        match identity {
+            "resource" => Some(Self::Resource),
+            "related" => Some(Self::Related),
+            _ => {
+                let encoded = identity.strip_prefix("context|")?;
+                let mut fields = Vec::with_capacity(5);
+                let mut rest = encoded;
+                while fields.len() < 5 {
+                    let colon = rest.find(':')?;
+                    let length = rest[..colon].parse::<usize>().ok()?;
+                    let value_start = colon.checked_add(1)?;
+                    let value_end = value_start.checked_add(length)?;
+                    let value = rest.get(value_start..value_end)?;
+                    fields.push(value.to_owned());
+                    rest = rest.get(value_end..)?;
+                    if fields.len() < 5 {
+                        rest = rest.strip_prefix('|')?;
+                    }
+                }
+                if !rest.is_empty() {
+                    return None;
+                }
+                Some(Self::Context(
+                    ApplicationCapabilityContextEntitySlotBinding::from_untrusted_parts(
+                        crate::application_capability::WorthQueryPortableApplicationCapabilityContextEntitySlotBindingParts {
+                            context: fields.remove(0),
+                            context_identity: WorthQueryPortableTypeIdentity::from_untrusted(fields.remove(0)),
+                            slot: fields.remove(0),
+                            slot_identity: WorthQueryPortableTypeIdentity::from_untrusted(fields.remove(0)),
+                            entity: fields.remove(0),
+                        },
+                    ),
+                ))
+            }
+        }
+    }
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -106,12 +200,25 @@ impl ApplicationWorkflowAssessmentRef {
         Spec: ApplicationWorkflowSpec,
         Query: ApplicationQueryMarkerIdentity<Spec::Schema> + 'static,
     {
+        Self::declared_for::<Spec, Query>(ApplicationWorkflowSubjectSelector::Resource)
+    }
+
+    pub fn declared_for<Spec, Query>(subject: ApplicationWorkflowSubjectSelector) -> Self
+    where
+        Spec: ApplicationWorkflowSpec,
+        Query: ApplicationQueryMarkerIdentity<Spec::Schema> + 'static,
+    {
         Self {
             identifier: Query::IDENTIFIER,
             parameter_type: Query::PARAMETER_TYPE_IDENTITY,
             result_type: Query::RESULT_TYPE_IDENTITY,
             query_type: std::any::TypeId::of::<Query>(),
+            subject,
         }
+    }
+
+    pub const fn subject(&self) -> &ApplicationWorkflowSubjectSelector {
+        &self.subject
     }
 
     pub const fn identifier(&self) -> &'static str {

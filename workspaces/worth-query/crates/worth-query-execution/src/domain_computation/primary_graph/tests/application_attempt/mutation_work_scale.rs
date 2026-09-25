@@ -16,6 +16,9 @@ use super::{
     live_scope, resolved_account, WorthQueryApplicationCommitOutcome,
 };
 
+#[path = "mutation_work_scale/locality.rs"]
+mod locality;
+
 #[test]
 fn mutation_work_is_invariant_to_unrelated_graph_population() {
     let baseline = mutation_work(0, 71);
@@ -29,6 +32,15 @@ fn mutation_work_is_invariant_to_unrelated_graph_population() {
         expanded.proposed_fact_count(),
         baseline.proposed_fact_count()
     );
+    assert_eq!(
+        expanded.expected_step_key_lookups(),
+        baseline.expected_step_key_lookups()
+    );
+    assert_eq!(
+        baseline.expected_step_key_lookups(),
+        baseline.proposed_fact_count()
+    );
+    assert_eq!(baseline.expected_step_duplicate_equalities(), 0);
     assert_eq!(
         expanded.invariant_state_fact_count(),
         baseline.invariant_state_fact_count()
@@ -73,7 +85,9 @@ fn mutation_work_is_invariant_to_unrelated_graph_population() {
     );
     assert_eq!(
         baseline.invariant_work_units(),
-        baseline.proposed_fact_count() as u64
+        // The always-installed publication custody receipt costs one fixed
+        // unit even when this account mutation does not touch a workflow.
+        baseline.proposed_fact_count() as u64 + 1
     );
     assert_eq!(baseline.relational_invariant_execution_count(), 3);
     assert!(baseline.relational_invariant_result_count() > 0);
@@ -126,6 +140,8 @@ fn no_demand_work_is_exact_zero_across_real_mutation_breadth() {
 
     assert_eq!(narrow.proposed_fact_count(), 1);
     assert_eq!(wide.proposed_fact_count(), 2);
+    assert_eq!(narrow.expected_step_key_lookups(), 1);
+    assert_eq!(wide.expected_step_key_lookups(), 2);
     assert!(wide.touched_record_count() > narrow.touched_record_count());
     assert_eq!(narrow.performed_application_touches_admitted(), 1);
     assert_eq!(wide.performed_application_touches_admitted(), 2);
@@ -265,31 +281,33 @@ fn grow_unrelated_accounts(world: &super::super::fixture::AuthorizationWorld, co
     );
     let status = locator(status_ref.entity(), status_ref.aspect(), status_ref.field());
     let label = locator(label_ref.entity(), label_ref.aspect(), label_ref.field());
-    let batch = (0..count).fold(
-        WorkerIntentBatch::new("unrelated-mutation-scale-population"),
-        |batch, ordinal| {
-            let key = format!("unrelated-scale-{ordinal}");
-            let fields = AspectFieldPatch::from(BTreeMap::from([
-                (
-                    identity.clone(),
-                    StringApplicationValueBinding::encode(&key.clone()).unwrap(),
-                ),
-                (
-                    status.clone(),
-                    StringApplicationValueBinding::encode(&"unrelated".to_owned()).unwrap(),
-                ),
-                (
-                    label.clone(),
-                    StringApplicationValueBinding::encode(&"population".to_owned()).unwrap(),
-                ),
-            ]));
-            batch.push(MutationIntent::Create(CreateIntent::Entity(EntitySpec {
-                partition_id: worth_relational::facade::identity::PartitionId::main(),
-                kind_id: kind,
-                client_key: worth_relational::facade::symbols::ClientKey::raw(key),
-                fields,
-            })))
-        },
-    );
-    super::super::fixture::publish_relational_mutation(world, batch);
+    for start in (0..count).step_by(4_000) {
+        let batch = (start..(start + 4_000).min(count)).fold(
+            WorkerIntentBatch::new("unrelated-mutation-scale-population"),
+            |batch, ordinal| {
+                let key = format!("unrelated-scale-{ordinal}");
+                let fields = AspectFieldPatch::from(BTreeMap::from([
+                    (
+                        identity.clone(),
+                        StringApplicationValueBinding::encode(&key.clone()).unwrap(),
+                    ),
+                    (
+                        status.clone(),
+                        StringApplicationValueBinding::encode(&"population".to_owned()).unwrap(),
+                    ),
+                    (
+                        label.clone(),
+                        StringApplicationValueBinding::encode(&"population".to_owned()).unwrap(),
+                    ),
+                ]));
+                batch.push(MutationIntent::Create(CreateIntent::Entity(EntitySpec {
+                    partition_id: worth_relational::facade::identity::PartitionId::main(),
+                    kind_id: kind,
+                    client_key: worth_relational::facade::symbols::ClientKey::raw(key),
+                    fields,
+                })))
+            },
+        );
+        super::super::fixture::publish_relational_mutation(world, batch);
+    }
 }

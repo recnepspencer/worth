@@ -17,6 +17,14 @@ pub(super) fn encode(fact: &WorthQueryApplicationObservedFact) -> String {
             entity_id.generation_value(),
             aspect.as_str()
         ),
+        WorthQueryApplicationObservedFact::SourceFieldRevision { entity_id, locator, .. } => format!(
+            "application-source-field:{}:{}:{}:{}/{}",
+            entity_id.partition_value(),
+            entity_id.local_slot_value(),
+            entity_id.generation_value(),
+            locator.aspect().aspect_key().as_str(),
+            locator.field_path().fields()[0].as_str(),
+        ),
         WorthQueryApplicationObservedFact::SourceAdjacencyRevision {
             relation_kind,
             anchor,
@@ -112,13 +120,7 @@ pub(super) fn encode(fact: &WorthQueryApplicationObservedFact) -> String {
             "workflow-instance-capacity:kind:{}:lineage:{lineage:?}",
             relation_kind.as_u32()
         ),
-        WorthQueryApplicationObservedFact::WorkflowTransitionCapacity {
-            relation_kind,
-            instance,
-            ..
-        } => format!(
-            "workflow-transition-capacity:kind:{}:instance:{instance:?}",
-            relation_kind.as_u32()
-        ),
+        WorthQueryApplicationObservedFact::WorkflowHistoryBasis { instance, .. } =>
+            format!("workflow-history-basis:instance:{instance:?}"),
     }
 }

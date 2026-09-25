@@ -1,15 +1,15 @@
 use crate::identity::data::{VersionBound, VersionId};
 use crate::storage::data::RecordLifecycleState;
 use crate::storage::overlay::PartitionState;
-use crate::storage::substrate::{HistoricalMetadata, VersionedRelationMetadata};
+use crate::storage::substrate::{HistoricalMetadata, SharedColumn, VersionedRelationMetadata};
 
-pub(in super::super) fn visible_metadata<M: HistoricalMetadata>(
-    history: &[M],
+pub(in super::super) fn visible_metadata<M: HistoricalMetadata + Clone>(
+    history: &SharedColumn<M>,
     version_id: VersionId,
 ) -> Option<&M> {
     let bound = VersionBound::new(version_id);
     let end = history.partition_point(|entry| bound.includes_created(entry.effective_at()));
-    history[..end].iter().rev().find(|entry| {
+    (0..end).rev().map(|index| &history[index]).find(|entry| {
         bound.includes_created(entry.effective_at())
             && entry
                 .retired_at()
@@ -39,8 +39,8 @@ pub(in super::super) fn visible_relation_metadata(
     })
 }
 
-pub(in super::super) fn historical_created_at<M: HistoricalMetadata>(
-    history: &[M],
+pub(in super::super) fn historical_created_at<M: HistoricalMetadata + Clone>(
+    history: &SharedColumn<M>,
     visible: &M,
     current_generation: u32,
     current_created_at: VersionId,

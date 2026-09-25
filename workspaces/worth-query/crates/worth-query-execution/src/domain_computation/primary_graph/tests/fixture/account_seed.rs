@@ -20,6 +20,7 @@ pub(super) fn bind_account(
     )
     .field(AccountIdentity::reference(), spec.key.to_owned())
     .field(AccountStatus::reference(), spec.status.to_string())
+    .field(AccountMembershipTag::reference(), "open".to_string())
     .field(AccountLabel::reference(), spec.label.to_string());
     if let Some(note) = spec.note {
         seed = seed.field(AccountNote::reference(), note.to_string());

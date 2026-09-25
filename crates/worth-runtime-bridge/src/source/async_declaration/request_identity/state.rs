@@ -1,6 +1,6 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::sync::{Mutex, OnceLock};
+use std::sync::{Arc, Mutex, OnceLock};
 use std::thread::ThreadId;
 
 use worth_signal::facade::{
@@ -21,14 +21,21 @@ thread_local! {
         RefCell::new(HashMap::new());
     static LIVE_ASYNC_DECLARATIONS: RefCell<HashMap<u64, HashMap<String, AsyncNodeCapabilityDeclaration>>> =
         RefCell::new(HashMap::new());
+    static RETIRED_RUNTIMES: Arc<Mutex<Vec<u64>>> = Arc::new(Mutex::new(Vec::new()));
 }
 
-static SIGNAL_RUNTIME_OWNERS: OnceLock<Mutex<HashMap<u64, ThreadId>>> = OnceLock::new();
+struct RuntimeThreadBinding {
+    thread: ThreadId,
+    retired: Arc<Mutex<Vec<u64>>>,
+}
+
+static SIGNAL_RUNTIME_OWNERS: OnceLock<Mutex<HashMap<u64, RuntimeThreadBinding>>> = OnceLock::new();
 
 pub(crate) fn with_signal_runtime<T>(
     runtime_key: u64,
     run: impl FnOnce(&mut BridgeSignalRuntime) -> T,
 ) -> Result<T, SignalRuntimeThreadAffinityError> {
+    drain_retired_runtimes();
     bind_runtime_to_current_thread(runtime_key)?;
     SIGNAL_RUNTIMES.with(|runtimes| {
         let mut runtimes = runtimes.borrow_mut();
@@ -94,17 +101,106 @@ fn bind_runtime_to_current_thread(
         .expect("signal runtime owner registry should not poison");
     let current_thread = std::thread::current().id();
     match owner_map.get(&runtime_key) {
-        Some(owner) if *owner != current_thread => Err(SignalRuntimeThreadAffinityError {
+        Some(owner) if owner.thread != current_thread => Err(SignalRuntimeThreadAffinityError {
             runtime_key,
-            owner: *owner,
+            owner: owner.thread,
             current: current_thread,
         }),
         Some(_) => Ok(()),
         None => {
-            owner_map.insert(runtime_key, current_thread);
+            owner_map.insert(
+                runtime_key,
+                RuntimeThreadBinding {
+                    thread: current_thread,
+                    retired: RETIRED_RUNTIMES.with(Arc::clone),
+                },
+            );
             Ok(())
         }
     }
+}
+
+/// A foreign-thread last drop schedules destruction on the owning thread;
+/// its next runtime access drains the queue, and thread teardown drops all TLS.
+/// The ordinary same-thread last drop destroys storage immediately.
+pub(super) fn release_runtime(key: u64) {
+    let binding = SIGNAL_RUNTIME_OWNERS.get().and_then(|owners| {
+        owners
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .remove(&key)
+    });
+    let Some(binding) = binding else {
+        return;
+    };
+    if binding.thread != std::thread::current().id() || !remove_local_runtime(key) {
+        binding
+            .retired
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .push(key);
+    }
+}
+
+fn drain_retired_runtimes() {
+    let keys = RETIRED_RUNTIMES.with(|retired| {
+        std::mem::take(&mut *retired.lock().unwrap_or_else(|error| error.into_inner()))
+    });
+    for key in keys {
+        if !remove_local_runtime(key) {
+            RETIRED_RUNTIMES.with(|retired| {
+                retired
+                    .lock()
+                    .unwrap_or_else(|error| error.into_inner())
+                    .push(key)
+            });
+        }
+    }
+}
+
+fn remove_local_runtime(key: u64) -> bool {
+    SIGNAL_RUNTIMES
+        .try_with(|runtimes| {
+            LIVE_RESOURCE_DECLARATIONS
+                .try_with(|resources| {
+                    LIVE_ASYNC_DECLARATIONS
+                        .try_with(|asynchronous| {
+                            let removed = {
+                                let Ok(mut runtimes) = runtimes.try_borrow_mut() else {
+                                    return false;
+                                };
+                                let Ok(mut resources) = resources.try_borrow_mut() else {
+                                    return false;
+                                };
+                                let Ok(mut asynchronous) = asynchronous.try_borrow_mut() else {
+                                    return false;
+                                };
+                                (
+                                    runtimes.remove(&key),
+                                    resources.remove(&key),
+                                    asynchronous.remove(&key),
+                                )
+                            };
+                            drop(removed);
+                            true
+                        })
+                        .unwrap_or(true)
+                })
+                .unwrap_or(true)
+        })
+        .unwrap_or(true)
+}
+
+#[cfg(test)]
+pub(crate) fn runtime_storage_for_test(key: u64) -> (bool, bool, bool, bool) {
+    (
+        SIGNAL_RUNTIMES.with(|values| values.borrow().contains_key(&key)),
+        LIVE_RESOURCE_DECLARATIONS.with(|values| values.borrow().contains_key(&key)),
+        LIVE_ASYNC_DECLARATIONS.with(|values| values.borrow().contains_key(&key)),
+        SIGNAL_RUNTIME_OWNERS
+            .get()
+            .is_some_and(|values| values.lock().unwrap().contains_key(&key)),
+    )
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

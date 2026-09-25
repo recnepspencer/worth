@@ -40,9 +40,14 @@ impl IndexAccess<'_> {
         let indexed_entries = prepared.indexed_entries();
         let overflowed = indexed_entries.len() > request.candidate_limit();
         let examined_entry_count = indexed_entries.len().min(request.candidate_limit());
-        let candidate_entity_ids = prepared
-            .verification
-            .verify_entries(&source, &indexed_entries[..examined_entry_count])?;
+        let candidate_entity_ids = prepared.verification.verify_entries(
+            &source,
+            &indexed_entries
+                .iter()
+                .take(examined_entry_count)
+                .copied()
+                .collect::<Vec<_>>(),
+        )?;
         let outcome = BoundedRelationJoinLookupOutcome::new(
             prepared.generation_id,
             candidate_entity_ids,
@@ -71,11 +76,11 @@ struct PreparedRelationJoinLookup {
 }
 
 impl PreparedRelationJoinLookup {
-    fn indexed_entries(&self) -> &[RelationJoinEntry] {
+    fn indexed_entries(&self) -> crate::indexes::data::DerivedIndexRows<RelationJoinEntry> {
         let DerivedIndexEntries::RelationJoin(entries) = &self.generation.entries else {
-            return &[];
+            return Default::default();
         };
-        entries.get(&self.key).map(Vec::as_slice).unwrap_or(&[])
+        entries.get(&self.key).cloned().unwrap_or_default()
     }
 }
 

@@ -1,9 +1,11 @@
 mod advance;
+mod selected_program;
 mod types;
 mod workflow;
 
 use worth_query_declaration::facade::application_program::{
     ApplicationConnectionShape, ApplicationOutputGraphShape, ApplicationProgramDefinition,
+    ApplicationProgramIdentity, ApplicationProgramRevision,
 };
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryBinding, ApplicationQueryIntent, ApplicationQueryScopeResolution,
@@ -40,6 +42,7 @@ where
     admitted: WorthQueryAdmittedOutputDemand<Schema, Family<Schema, Demand>>,
     demand: Demand,
     controls: WorthQueryOutputDemandControls,
+    selected_program: Option<(ApplicationProgramIdentity, ApplicationProgramRevision)>,
     closed: bool,
 }
 
@@ -192,6 +195,7 @@ where
             .recover_program_root_output::<Root>(
                 &worth_query_execution::publication_boundary::program_publication_access(),
                 source_result,
+                current,
                 maximum_work,
                 maximum_retained_bytes,
                 source_receipt,
@@ -376,6 +380,7 @@ where
                     std::num::NonZeroUsize::new(1).unwrap(),
                 )
             }),
+            selected_program: None,
             closed: false,
         }
     }

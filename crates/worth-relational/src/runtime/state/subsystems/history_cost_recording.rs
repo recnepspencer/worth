@@ -42,6 +42,9 @@ impl HistorySubsystem {
             costs.publication_new_authoritative_bytes = costs
                 .publication_new_authoritative_bytes
                 .saturating_add(new_authoritative_bytes);
+            costs.publication_content_values_hashed = costs
+                .publication_content_values_hashed
+                .saturating_add(cost.content_values_hashed);
         });
     }
 

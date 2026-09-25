@@ -180,6 +180,16 @@ impl WorthQueryApplicationOutputCorrespondence {
         })
     }
 
+    pub(in crate::domain_computation::primary_graph) fn active_entity_for_role(
+        &self,
+        role: &str,
+    ) -> Option<EntityId> {
+        self.roles.get(role).and_then(|binding| {
+            (binding.posture != WorthQueryApplicationOutputPosture::Retire)
+                .then_some(binding.entity)
+        })
+    }
+
     pub fn entity<Binding, Entity, Action>(
         &self,
         role: WorthQueryApplicationOutputRole<Binding, Entity, Action>,

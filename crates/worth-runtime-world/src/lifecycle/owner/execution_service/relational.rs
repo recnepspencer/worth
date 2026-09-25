@@ -3,7 +3,7 @@ use crate::recovery::ProductUnpublishedCause;
 
 use super::RuntimeWorldOwnerRoot;
 
-use worth_relational::facade::mvcc::RelationalPublicationOutcome;
+use worth_relational::facade::mvcc::{RelationalPublicationDeferred, RelationalPublicationOutcome};
 
 pub(super) struct RelationalExecutionFailure {
     pub(super) cause: ProductUnpublishedCause,
@@ -100,8 +100,10 @@ where
                 };
                 Err(pre_effect_failure(cause))
             }
+            RelationalPublicationOutcome::Deferred(deferred) => {
+                Err(pre_effect_failure(deferred_no_effect(deferred)))
+            }
             RelationalPublicationOutcome::Interrupted(_)
-            | RelationalPublicationOutcome::Deferred(_)
             | RelationalPublicationOutcome::Failed(_) => {
                 Err(pre_effect_failure(NoEffectCause::PreEffectFailure))
             }
@@ -114,5 +116,34 @@ fn pre_effect_failure(no_effect: NoEffectCause) -> RelationalExecutionFailure {
         cause: ProductUnpublishedCause::SiblingOwnerDenied,
         no_effect,
         partial: RelationalAttemptProgress::untouched(),
+    }
+}
+
+fn deferred_no_effect(deferred: RelationalPublicationDeferred) -> NoEffectCause {
+    match deferred {
+        RelationalPublicationDeferred::RetentionBackpressure => NoEffectCause::CapacityExhausted,
+        RelationalPublicationDeferred::PatchPositionReservationContended
+        | RelationalPublicationDeferred::CandidateLifetimeExpired { .. }
+        | RelationalPublicationDeferred::CandidateCapacityExhausted { .. }
+        | RelationalPublicationDeferred::PublishedSnapshotCapacityExhausted { .. } => {
+            NoEffectCause::PreEffectFailure
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn native_retention_backpressure_is_world_capacity_exhaustion() {
+        assert_eq!(
+            deferred_no_effect(RelationalPublicationDeferred::RetentionBackpressure),
+            NoEffectCause::CapacityExhausted
+        );
+        assert_eq!(
+            deferred_no_effect(RelationalPublicationDeferred::PatchPositionReservationContended),
+            NoEffectCause::PreEffectFailure
+        );
     }
 }

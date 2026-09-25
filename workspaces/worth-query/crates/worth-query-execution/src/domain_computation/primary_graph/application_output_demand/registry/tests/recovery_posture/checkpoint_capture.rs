@@ -11,20 +11,15 @@ fn checkpoint_capture_includes_only_idle_ready_outputs_in_canonical_order() {
     let occurrence = receipt.product_branch().occurrence();
     let registry = WorthQueryOutputDemandRegistry::default();
     let z_key = key("z-producer", 1, 1);
-    let z_source = [
-        104, 12, 250, 201, 243, 137, 209, 8, 5, 95, 184, 254, 185, 193, 81, 209, 154, 242, 13, 62,
-        200, 75, 34, 92, 40, 237, 91, 236, 243, 199, 38, 105,
-    ];
+    let z_source = z_key.source.checkpoint_identity().bytes();
     let a_key = key("a-producer", 1, 2);
-    let a_source = [
-        66, 30, 63, 137, 77, 42, 214, 25, 22, 71, 227, 13, 250, 171, 71, 224, 118, 15, 232, 73, 45,
-        25, 207, 70, 141, 78, 31, 120, 28, 168, 223, 217,
-    ];
+    let a_source = a_key.source.checkpoint_identity().bytes();
     let ready = |receipt| {
         DemandState::Output(WorthQueryOutputProgress::new(
             WorthQueryOutputCheckpoint::Ready(super::super::super::WorthQueryCompletedOutputDemand {
                 authority: WorthQueryAcceptedOutputAuthority::Committed(receipt),
                 readiness: crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputReadinessDeliveryEvidence::for_test(),
+                resources: Some(crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerDemandResources::new(7, 8)),
             }),
         ))
     };
@@ -50,6 +45,7 @@ fn checkpoint_capture_includes_only_idle_ready_outputs_in_canonical_order() {
         super::super::super::WorthQueryCompletedOutputDemand {
             authority: WorthQueryAcceptedOutputAuthority::Committed(receipt),
             readiness: crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputReadinessDeliveryEvidence::for_test(),
+            resources: None,
         },
     ));
     stopped.stop(WorthQueryOutputDemandDenial::new(
@@ -82,7 +78,9 @@ fn checkpoint_output_slots_ignore_superseded_source_generations() {
         source_partition: [7; 32],
         producer_dependency: None,
         idempotency_key: source,
+        resources: None,
         roles: Vec::new(),
+        producer_facts: None,
     };
 
     assert!(checkpoint([1; 32]).same_output_slot(&checkpoint([2; 32])));

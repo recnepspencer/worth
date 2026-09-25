@@ -13,6 +13,15 @@ use crate::application_program::workflow::{
 
 pub(super) type PortDirection = ApplicationWorkflowComponentPortDirection;
 
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub(in crate::application_program::workflow::authoring) struct ComponentExpansionUsage {
+    pub(super) occurrences: usize,
+    pub(super) maximum_depth: usize,
+    pub(super) node_provenance: usize,
+    pub(super) connection_provenance: usize,
+    pub(super) port_provenance: usize,
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(super) struct ComponentPortDescriptor {
     pub(super) identity: String,
@@ -146,6 +155,7 @@ where
     pub(super) connections: Vec<ApplicationWorkflowConnection>,
     pub(super) ports: Vec<ComponentPortDescriptor>,
     pub(super) component_expansions: Vec<ApplicationWorkflowComponentExpansion>,
+    pub(super) expansion_usage: ComponentExpansionUsage,
     pub(super) owner: Arc<ComponentAuthoringOwner>,
     pub(super) marker: PhantomData<fn() -> Spec>,
 }

@@ -12,7 +12,7 @@ use crate::application_program::workflow::{
     ApplicationWorkflowDataFlow, ApplicationWorkflowDefinitionLimits,
     ApplicationWorkflowEvidenceJoinPolicy, ApplicationWorkflowNodeIdentity,
     ApplicationWorkflowNodeKind, ApplicationWorkflowOperationRef, ApplicationWorkflowRetry,
-    ApplicationWorkflowSpec, AuthoredWorkflowDefinition,
+    ApplicationWorkflowSpec, ApplicationWorkflowSubjectSelector, AuthoredWorkflowDefinition,
 };
 
 pub enum ApplicationWorkflowAuthoringCommand {
@@ -46,12 +46,22 @@ impl ApplicationWorkflowAuthoringCommand {
         Spec: ApplicationWorkflowSpec,
         Query: ApplicationQueryMarkerIdentity<Spec::Schema> + 'static,
     {
+        Self::assessment_for::<Spec, Query>(identity, ApplicationWorkflowSubjectSelector::Resource)
+    }
+
+    pub fn assessment_for<Spec, Query>(
+        identity: impl Into<String>,
+        subject: ApplicationWorkflowSubjectSelector,
+    ) -> Result<Self, ApplicationWorkflowAuthoringDenial>
+    where
+        Spec: ApplicationWorkflowSpec,
+        Query: ApplicationQueryMarkerIdentity<Spec::Schema> + 'static,
+    {
         Self::node(
             identity,
-            ApplicationWorkflowNodeKind::Assessment(ApplicationWorkflowAssessmentRef::declared::<
-                Spec,
-                Query,
-            >()),
+            ApplicationWorkflowNodeKind::Assessment(
+                ApplicationWorkflowAssessmentRef::declared_for::<Spec, Query>(subject),
+            ),
         )
     }
 

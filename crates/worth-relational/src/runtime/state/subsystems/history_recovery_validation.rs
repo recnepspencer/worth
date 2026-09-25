@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use crate::branch::{RelationalBranchCellCheckpoint, RelationalBranchReferenceCell};
 use crate::history::data::{BranchId, CanonicalCommitEnvelope, CommitId};
 use worth_foundational::FoundationalBranchTarget;
@@ -159,7 +157,7 @@ pub(super) fn require_branch_target_artifact(
 }
 
 pub(super) fn validate_branch_target_envelope(
-    envelopes: &std::collections::BTreeMap<CommitId, Arc<CanonicalCommitEnvelope>>,
+    envelope: &CanonicalCommitEnvelope,
     branch_id: &BranchId,
     target: &FoundationalBranchTarget<crate::branch::RelationalBranchTarget>,
 ) -> Result<(), String> {
@@ -167,13 +165,8 @@ pub(super) fn validate_branch_target_envelope(
         return Ok(());
     };
     let commit_id = CommitId(target.selected_commit_id());
-    let envelope = envelopes.get(&commit_id).ok_or_else(|| {
-        format!(
-            "branch cell `{}` references missing commit artifact `{}`",
-            branch_id.0, commit_id.0
-        )
-    })?;
-    if envelope.commit.version_id.0 != target.version_id()
+    if envelope.commit.commit_id != commit_id
+        || envelope.commit.version_id.0 != target.version_id()
         || envelope
             .commit
             .parents

@@ -2,18 +2,60 @@ use super::{
     ApplicationWorkflowApprovalNode, ApplicationWorkflowAssessmentNode,
     ApplicationWorkflowConditionNode, ApplicationWorkflowDefinitionBuilder,
     ApplicationWorkflowEvidenceJoinNode, ApplicationWorkflowInputBinding,
-    ApplicationWorkflowOperationNode, ApplicationWorkflowOutputBinding,
+    ApplicationWorkflowNodeRef, ApplicationWorkflowOperationNode, ApplicationWorkflowOutputBinding,
 };
 use crate::application_program::workflow::{
-    ApplicationWorkflowConnection, ApplicationWorkflowConnectionKind,
-    ApplicationWorkflowControlOutcome, ApplicationWorkflowDataFlow, ApplicationWorkflowRetry,
-    ApplicationWorkflowSpec,
+    ApplicationWorkflowAuthoringDenial, ApplicationWorkflowConnection,
+    ApplicationWorkflowConnectionKind, ApplicationWorkflowControlOutcome,
+    ApplicationWorkflowDataFlow, ApplicationWorkflowRetry, ApplicationWorkflowSpec,
 };
 
 impl<Spec> ApplicationWorkflowDefinitionBuilder<Spec>
 where
     Spec: ApplicationWorkflowSpec,
 {
+    /// Connects operation completion in authored order. Data and authority
+    /// bindings remain explicit; non-completion outcomes never acquire a route.
+    pub fn sequence(
+        &mut self,
+        operations: &[ApplicationWorkflowNodeRef<ApplicationWorkflowOperationNode>],
+    ) -> Result<&mut Self, ApplicationWorkflowAuthoringDenial> {
+        if operations.len() < 2 {
+            return Err(ApplicationWorkflowAuthoringDenial::InvalidSequenceLength);
+        }
+        let mut seen = std::collections::BTreeSet::new();
+        for operation in operations {
+            match self.node_is_operation.get(operation.identity()) {
+                None => {
+                    return Err(ApplicationWorkflowAuthoringDenial::UnknownSequenceNode(
+                        operation.identity().clone(),
+                    ))
+                }
+                Some(false) => {
+                    return Err(
+                        ApplicationWorkflowAuthoringDenial::NonOperationSequenceNode(
+                            operation.identity().clone(),
+                        ),
+                    )
+                }
+                Some(true) => {}
+            }
+            if !seen.insert(operation.identity()) {
+                return Err(ApplicationWorkflowAuthoringDenial::DuplicateSequenceNode(
+                    operation.identity().clone(),
+                ));
+            }
+        }
+        for pair in operations.windows(2) {
+            self.control(
+                &pair[0],
+                ApplicationWorkflowControlOutcome::Completed,
+                &pair[1],
+            );
+        }
+        Ok(self)
+    }
+
     pub fn start<Kind, Node>(&mut self, node: &Node) -> &mut Self
     where
         Node: ApplicationWorkflowInputBinding<Kind>,

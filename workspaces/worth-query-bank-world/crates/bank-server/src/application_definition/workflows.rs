@@ -4,10 +4,10 @@ use bank_domain::schema::{
     ApprovedBusinessPaymentAuthoringOperation, ApprovedBusinessPaymentWorkflow,
 };
 use worth_query_host::facade::declaration::application_program::{
-    ApplicationWorkflowAuthoringDenial, ApplicationWorkflowControlOutcome,
-    ApplicationWorkflowDefinitionBuilder, ApplicationWorkflowDefinitionLimits,
-    ApplicationWorkflowEvidenceJoinPolicy, ApplicationWorkflowValidationDenial,
-    ValidatedWorkflowDefinition,
+    ApplicationWorkflowAuthoringDenial, ApplicationWorkflowComponentLimits,
+    ApplicationWorkflowControlOutcome, ApplicationWorkflowDefinitionBuilder,
+    ApplicationWorkflowDefinitionLimits, ApplicationWorkflowEvidenceJoinPolicy,
+    ApplicationWorkflowValidationDenial, ValidatedWorkflowDefinition,
 };
 
 pub fn approved_business_payment_definition() -> Result<
@@ -16,8 +16,14 @@ pub fn approved_business_payment_definition() -> Result<
 > {
     let mut builder = ApplicationWorkflowDefinitionBuilder::<ApprovedBusinessPaymentWorkflow>::new(
         "approved-business-payment",
-        ApplicationWorkflowDefinitionLimits::new(8, 16, 2, 2, 8 * 1_024)
-            .expect("approved-payment limits are nonzero"),
+        ApplicationWorkflowDefinitionLimits::new(
+            8,
+            16,
+            2,
+            ApplicationWorkflowComponentLimits::new(8, 2, 16, 32, 32).unwrap(),
+            8 * 1_024,
+        )
+        .expect("approved-payment limits are nonzero"),
     )
     .expect("approved-payment identity is valid");
     let propose =

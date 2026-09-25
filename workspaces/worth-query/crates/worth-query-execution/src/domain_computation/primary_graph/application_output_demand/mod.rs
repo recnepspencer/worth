@@ -1,7 +1,9 @@
 mod currentness;
+mod recovered_outputs;
 mod registry;
 mod settlement;
 
+pub(super) use recovered_outputs::WorthQueryRecoveredOutputs;
 pub use registry::WorthQueryOutputDemandNotifications;
 pub(super) use registry::{
     BoundOutputSource, DemandAdmissionKind, PreparedOutputRootKind,
@@ -14,4 +16,3 @@ pub(super) use registry::{
     WorthQueryRestoredAcceptedOutput,
 };
 pub use settlement::{WorthQueryOutputDemandSettlement, WorthQueryOutputReadinessDeliveryEvidence};
-pub(super) type WorthQueryRecoveredOutputs = Vec<WorthQueryReadmittedAcceptedOutput>;

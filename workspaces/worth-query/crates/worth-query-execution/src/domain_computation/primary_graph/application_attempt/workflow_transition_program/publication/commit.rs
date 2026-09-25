@@ -32,9 +32,11 @@ where
             transition_identity_bytes,
             transition_identity_locator,
             node_path,
+            terminal,
             assessment,
             supporting_identity,
             operation_receipt_identity,
+            progress_update,
             approval,
             approval_identity,
         ) = match prepared {
@@ -45,9 +47,11 @@ where
                 transition_identity_bytes,
                 transition_identity_locator,
                 node_path,
+                terminal,
                 assessment,
                 supporting_identity,
                 operation_receipt_identity,
+                progress_update,
                 approval,
                 approval_identity,
                 ..
@@ -58,9 +62,11 @@ where
                 transition_identity_bytes,
                 transition_identity_locator,
                 node_path,
+                terminal,
                 assessment,
                 supporting_identity,
                 operation_receipt_identity,
+                progress_update,
                 approval,
                 approval_identity,
             ),
@@ -112,7 +118,7 @@ where
             program,
             idempotency,
         );
-        match outcome {
+        let projected = match outcome {
             super::super::super::WorthQueryApplicationCommitOutcome::Committed(receipt) => {
                 self.primary_provider.graph.with_runtime(|runtime| {
                     project(
@@ -121,6 +127,7 @@ where
                         transition_identity,
                         transition_identity_locator,
                         node_path,
+                        terminal,
                         assessment,
                         approval,
                         operation_receipt_identity,
@@ -136,6 +143,7 @@ where
                         transition_identity,
                         transition_identity_locator,
                         node_path,
+                        terminal,
                         assessment,
                         approval,
                         operation_receipt_identity,
@@ -144,7 +152,27 @@ where
                 })
             }
             other => WorkflowProgressOutcome::Application(other),
+        };
+        if let (Some(progress_update), WorkflowProgressOutcome::Completed(performed)) =
+            (progress_update, &projected)
+        {
+            let committed_revision = performed.receipt().commit_reference().version_id;
+            let progress_key = progress_update.key();
+            let _ = self
+                .primary_provider
+                .graph
+                .with_workflow_instance_progress_mut(progress_key, |retention| {
+                    progress_update.apply(
+                        retention,
+                        committed_revision,
+                        performed.transition(),
+                        performed
+                            .assessment_evidence()
+                            .map(|evidence| evidence.evidence()),
+                    )
+                });
         }
+        projected
     }
 }
 
@@ -154,6 +182,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt::workflow_t
     transition_identity: String,
     transition_identity_locator: worth_foundational::facade::AspectFieldLocator,
     node_path: String,
+    terminal: bool,
     assessment: Option<PreparedWorkflowAssessmentProjection>,
     approval: Option<PreparedWorkflowApprovalProjection>,
     operation_receipt_identity: Option<[u8; 32]>,
@@ -209,6 +238,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt::workflow_t
                 binding: assessment.binding,
                 subject: assessment.subject,
                 proposal_identity: assessment.proposal_identity,
+                coverage_identity: assessment.coverage_identity,
                 source_identity: assessment.source_identity,
                 passing: assessment.passing,
                 publication_identity: assessment.publication_identity,
@@ -227,6 +257,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt::workflow_t
     WorkflowProgressOutcome::Completed(PerformedWorkflowTransition {
         transition: *transition,
         node_path,
+        terminal,
         receipt,
         replayed,
         assessment_evidence,

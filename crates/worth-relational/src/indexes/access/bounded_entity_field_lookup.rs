@@ -41,7 +41,7 @@ impl IndexAccess<'_> {
         let indexed_ids = prepared.indexed_ids();
         let overflowed = indexed_ids.len() > request.candidate_limit();
         let examined_entry_count = indexed_ids.len().min(request.candidate_limit());
-        let candidate_entity_ids = verify_bounded_index_entries(&source, &request, indexed_ids)?;
+        let candidate_entity_ids = verify_bounded_index_entries(&source, &request, &indexed_ids)?;
         let outcome = BoundedEntityFieldLookupOutcome::new(
             prepared.generation_id,
             candidate_entity_ids,
@@ -69,11 +69,13 @@ struct PreparedEntityFieldLookup {
 }
 
 impl PreparedEntityFieldLookup {
-    fn indexed_ids(&self) -> &[crate::identity::data::EntityId] {
+    fn indexed_ids(
+        &self,
+    ) -> crate::indexes::data::DerivedIndexRows<crate::identity::data::EntityId> {
         let DerivedIndexEntries::EntityField(entries) = &self.generation.entries else {
-            return &[];
+            return Default::default();
         };
-        entries.get(&self.key).map(Vec::as_slice).unwrap_or(&[])
+        entries.get(&self.key).cloned().unwrap_or_default()
     }
 }
 
@@ -124,7 +126,7 @@ fn prepare_entity_field_lookup(
 fn verify_bounded_index_entries(
     source: &super::super::projected_field_values::IndexProjectionSource<'_, '_>,
     request: &BoundedEntityFieldLookupRequest,
-    indexed_ids: &[crate::identity::data::EntityId],
+    indexed_ids: &crate::indexes::data::DerivedIndexRows<crate::identity::data::EntityId>,
 ) -> Result<Vec<crate::identity::data::EntityId>, BoundedEntityFieldLookupDenial> {
     let expected = AuthoritativeFieldComparisonKey::from_aspect_value(request.value());
     let mut seen = BTreeSet::new();

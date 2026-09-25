@@ -1,11 +1,11 @@
-use std::sync::Arc;
+use std::{collections::BTreeMap, sync::Arc};
 
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 use worth_relational::facade::{
     history::{CanonicalCommitEnvelope, RelationalCommitReceipt},
     identity::EntityId,
     lineage::LineageEventRecord,
-    publication::RecordStructuralChange,
+    publication::{PublishedAuthoritativeRecordPatch, RecordStructuralChange},
     transactions::{CommitResult, RecordRef},
 };
 
@@ -57,37 +57,98 @@ impl WorthQueryApplicationCommittedChanges {
             .collect()
     }
 
+    /// Project one field across created entities without rescanning the whole
+    /// commit for every candidate. Duplicate committed writes remain invalid.
+    pub(in crate::domain_computation::primary_graph) fn created_entities_with_field_value(
+        &self,
+        locator: &AspectFieldLocator,
+        expected: &AspectValue,
+    ) -> Vec<EntityId> {
+        let [_field] = locator.field_path().fields() else {
+            return Vec::new();
+        };
+        let created = self
+            .entity_changes()
+            .filter_map(|(entity, change)| {
+                (change == RecordStructuralChange::Created).then_some(entity)
+            })
+            .collect::<Vec<_>>();
+        let mut observed = created
+            .iter()
+            .copied()
+            .map(|entity| (entity, (None::<AspectValue>, false)))
+            .collect::<BTreeMap<_, _>>();
+        for patch in &self.envelope.patch.authoritative_record_patches {
+            let RecordRef::Entity(entity) = patch.target else {
+                continue;
+            };
+            let Some((committed, duplicate)) = observed.get_mut(&entity) else {
+                continue;
+            };
+            for_each_committed_field_value(patch, locator, |value| {
+                if committed.replace(value.clone()).is_some() {
+                    *duplicate = true;
+                }
+            });
+        }
+        created
+            .into_iter()
+            .filter(|entity| {
+                observed.get(entity).is_some_and(|(value, duplicate)| {
+                    !duplicate && value.as_ref() == Some(expected)
+                })
+            })
+            .collect()
+    }
+
     fn committed_field_value(
         &self,
         entity: EntityId,
         locator: &AspectFieldLocator,
     ) -> Option<AspectValue> {
-        let [field] = locator.field_path().fields() else {
+        let [_field] = locator.field_path().fields() else {
             return None;
         };
-        let aspect = locator.aspect().aspect_key();
         let mut committed = None;
         for patch in &self.envelope.patch.authoritative_record_patches {
             if patch.target != RecordRef::Entity(entity) {
                 continue;
             }
-            let whole = patch
-                .authoritative_patch
-                .struct_set_for(aspect)
-                .and_then(|value| value.get(field));
-            for value in whole.into_iter().chain(
-                patch
-                    .authoritative_patch
-                    .field_sets_for(aspect)
-                    .filter(|set| &set.field == field)
-                    .map(|set| &set.value),
-            ) {
+            let mut duplicate = false;
+            for_each_committed_field_value(patch, locator, |value| {
                 if committed.replace(value.clone()).is_some() {
-                    return None;
+                    duplicate = true;
                 }
+            });
+            if duplicate {
+                return None;
             }
         }
         committed
+    }
+}
+
+fn for_each_committed_field_value(
+    patch: &PublishedAuthoritativeRecordPatch,
+    locator: &AspectFieldLocator,
+    mut visit: impl FnMut(&AspectValue),
+) {
+    let [field] = locator.field_path().fields() else {
+        return;
+    };
+    let aspect = locator.aspect().aspect_key();
+    let whole = patch
+        .authoritative_patch
+        .struct_set_for(aspect)
+        .and_then(|value| value.get(field));
+    for value in whole.into_iter().chain(
+        patch
+            .authoritative_patch
+            .field_sets_for(aspect)
+            .filter(|set| &set.field == field)
+            .map(|set| &set.value),
+    ) {
+        visit(value);
     }
 }
 

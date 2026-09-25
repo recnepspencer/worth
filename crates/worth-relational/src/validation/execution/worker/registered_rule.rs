@@ -19,9 +19,9 @@ pub(super) struct RegisteredInvariantEvaluation {
     pub(super) verdicts: Vec<InvariantVerdict>,
 }
 
-pub(super) fn evaluate_registered_rule(
-    runtime: &InvariantRuntimeView,
-    packet: &InvariantWorkPacket<'_>,
+pub(super) fn evaluate_registered_rule<'state>(
+    runtime: &InvariantRuntimeView<'state>,
+    packet: &InvariantWorkPacket<'state>,
 ) -> RegisteredInvariantEvaluation {
     match &packet.registration {
         crate::authority::commit::preparation::packets::invariant::InvariantPacketRegistration::Native(
@@ -31,12 +31,14 @@ pub(super) fn evaluate_registered_rule(
             registration,
             prepared_execution,
             prepared_scope,
+            retained_touched,
         } => evaluate_custom_registration(
             runtime,
             packet,
             registration,
             prepared_execution,
             prepared_scope,
+            retained_touched,
         ),
         crate::authority::commit::preparation::packets::invariant::InvariantPacketRegistration::CustomNotApplicable {
             registration,
@@ -49,6 +51,7 @@ pub(super) fn evaluate_registered_rule(
                 packet.version_id,
                 packet.current_version_id,
                 prepared_scope,
+                None,
                 work.clone(),
                 std::sync::Arc::new(registration.access_contract().clone()),
             );
@@ -63,9 +66,9 @@ pub(super) fn evaluate_registered_rule(
     }
 }
 
-fn evaluate_native_registration(
-    runtime: &InvariantRuntimeView,
-    packet: &InvariantWorkPacket<'_>,
+fn evaluate_native_registration<'state>(
+    runtime: &InvariantRuntimeView<'state>,
+    packet: &InvariantWorkPacket<'state>,
     registration: &crate::validation::data::InvariantRegistration,
 ) -> RegisteredInvariantEvaluation {
     let context = InvariantExecutionContext::new(
@@ -75,6 +78,7 @@ fn evaluate_native_registration(
         packet.current_version_id,
         packet.merged_plan,
         packet.relation_integrity_scopes.clone(),
+        std::sync::Arc::clone(&packet.current_version_minimum_index),
     );
     let violations = evaluate_rule(
         &context,
@@ -98,14 +102,15 @@ fn evaluate_native_registration(
     }
 }
 
-fn evaluate_custom_registration(
-    runtime: &InvariantRuntimeView,
-    packet: &InvariantWorkPacket<'_>,
+fn evaluate_custom_registration<'state>(
+    runtime: &InvariantRuntimeView<'state>,
+    packet: &InvariantWorkPacket<'state>,
     registration: &crate::validation::data::CustomInvariantRegistration,
     prepared_execution: &std::sync::Arc<
         dyn crate::validation::data::PreparedCustomInvariantExecution,
     >,
     prepared_scope: &crate::validation::data::PreparedCustomInvariantScope,
+    retained_touched: &std::sync::Arc<crate::validation::data::TouchedStructuralSet>,
 ) -> RegisteredInvariantEvaluation {
     let work = prepared_execution.work_meter();
     let context = CustomInvariantExecutionContext::new(
@@ -114,6 +119,7 @@ fn evaluate_custom_registration(
         packet.version_id,
         packet.current_version_id,
         prepared_scope,
+        Some(std::sync::Arc::clone(retained_touched)),
         work.clone(),
         std::sync::Arc::new(registration.access_contract().clone()),
     );

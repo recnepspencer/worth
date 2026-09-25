@@ -5,6 +5,7 @@ use worth_query_declaration::facade::application_schema::ApplicationSchema;
 
 mod denial;
 mod outcome;
+mod result;
 
 use denial::{authorization_denial, denial};
 pub use denial::{WorthQueryApplicationOneShotDenial, WorthQueryApplicationOneShotDenialKind};
@@ -26,6 +27,7 @@ use outcome::finalize_one_shot;
 pub struct WorthQueryApplicationOneShotResult<Query, QueryResult> {
     rows: Vec<QueryResult>,
     observed_sources: Vec<super::WorthQueryObservedSource<Query>>,
+    result_set_observation: super::WorthQueryObservedResultSet<Query>,
     request_affinity: super::admitted_result::WorthQueryApplicationQueryRequestAffinity,
     receipt: WorthQueryApplicationQueryAccessReceipt,
 }
@@ -229,17 +231,13 @@ where
             plan.query.name(),
         ));
     }
-    application
-        .runtime
-        .installed_packages()
-        .validate_application_schema(&application.installed_schema)
-        .map_err(|_| {
-            denial(
-                WorthQueryApplicationOneShotDenialKind::StaleInstalledQuery,
-                plan.query.name(),
-                plan.query.name(),
-            )
-        })?;
+    if !application.installed_schema_is_current() {
+        return Err(denial(
+            WorthQueryApplicationOneShotDenialKind::StaleInstalledQuery,
+            plan.query.name(),
+            plan.query.name(),
+        ));
+    }
     application
         .installed_schema
         .validate_installed_query(plan.query)
@@ -268,34 +266,5 @@ fn admit_request(
             subject,
         )),
         None => Ok(()),
-    }
-}
-
-impl<Query, QueryResult> WorthQueryApplicationOneShotResult<Query, QueryResult> {
-    pub fn rows(&self) -> &[QueryResult] {
-        &self.rows
-    }
-
-    pub const fn receipt(&self) -> &WorthQueryApplicationQueryAccessReceipt {
-        &self.receipt
-    }
-
-    pub fn observed_sources(&self) -> &[super::WorthQueryObservedSource<Query>] {
-        &self.observed_sources
-    }
-
-    pub fn into_rows(self) -> Vec<QueryResult> {
-        self.rows
-    }
-
-    pub fn into_admitted_disclosed(
-        self,
-    ) -> super::WorthQueryAdmittedDisclosedApplicationResult<Query, QueryResult> {
-        super::WorthQueryAdmittedDisclosedApplicationResult::new_with_sources(
-            self.rows,
-            self.observed_sources,
-            self.request_affinity,
-            self.receipt,
-        )
     }
 }

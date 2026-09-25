@@ -60,6 +60,7 @@ pub(super) trait InstalledProducerExecutor<Schema>: Send + Sync {
         observed_source: &dyn Any,
         successor_of: Option<[u8; 32]>,
         commit_authority: WorthQueryProducerCommitAuthority,
+        maximum_lineage_work: usize,
     ) -> Result<WorthQueryApplicationCommitReceipt, WorthQueryOutputDemandDenial>;
 
     fn resources(&self, source: &dyn Any) -> Option<super::WorthQueryProducerDemandResources>;
@@ -175,6 +176,7 @@ where
         observed_source: &dyn Any,
         successor_of: Option<[u8; 32]>,
         commit_authority: WorthQueryProducerCommitAuthority,
+        maximum_lineage_work: usize,
     ) -> Result<WorthQueryApplicationCommitReceipt, WorthQueryOutputDemandDenial> {
         let source = source
             .downcast_ref::<SourceValue<Schema, Binding>>()
@@ -202,6 +204,7 @@ where
             observed_source.clone(),
             successor_of,
             commit_authority,
+            maximum_lineage_work,
         )
     }
 }
@@ -216,6 +219,7 @@ fn execute_typed<Schema, Binding>(
     observed_source: WorthQueryObservedSource<SourceQuery<Schema, Binding>>,
     successor_of: Option<[u8; 32]>,
     commit_authority: WorthQueryProducerCommitAuthority,
+    maximum_lineage_work: usize,
 ) -> Result<WorthQueryApplicationCommitReceipt, WorthQueryOutputDemandDenial>
 where
     Schema: ApplicationSchema + 'static,
@@ -260,8 +264,7 @@ where
             request_scope,
         )
         .map_err(|error| failed(Binding::IDENTITY, error))?;
-    let source_partition_identity = observed_source.partition_identity();
-    let source_identity = runtime
+    let bound_source = runtime
         .bind_application_source_expectation::<Operation<Schema, Binding>, _>(
             &mut admission,
             observed_source,
@@ -306,20 +309,30 @@ where
             runtime,
             Operation::<Schema, Binding>::idempotency_key_identity(&key),
             successor_of,
+            maximum_lineage_work,
         )
         .map_err(|identity_denial| {
-            denial(
-                WorthQueryOutputDemandDenialKind::ProducerUnavailable,
-                format!("{}: {identity_denial:?}", Binding::IDENTITY),
-            )
+            if identity_denial
+                == crate::domain_computation::primary_graph::application_attempt::WorthQueryProducerIdentityDenial::LineageLookupBudgetExceeded
+            {
+                // This admitted demand cannot increase its limit; execution closes terminally.
+                denial(
+                    WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
+                    Binding::IDENTITY,
+                )
+            } else {
+                denial(
+                    WorthQueryOutputDemandDenialKind::ProducerUnavailable,
+                    format!("{}: {identity_denial:?}", Binding::IDENTITY),
+                )
+            }
         })?;
-    let idempotency = WorthQueryApplicationIdempotencyBinding::new(
-        key_identity,
-        Operation::<Schema, Binding>::input_identity(&input),
-    )
-    .bind_source(Some(&source_identity))
-    .bind_source_partition(&source_partition_identity)
-    .bind_producer_dependency(&dependency_identity);
+    let idempotency = bound_source
+        .bind_idempotency(WorthQueryApplicationIdempotencyBinding::new(
+            key_identity,
+            Operation::<Schema, Binding>::input_identity(&input),
+        ))
+        .bind_producer_dependency(&dependency_identity);
     let program = program
         .with_output_demand_observation()
         .with_producer_required_invariants(Binding::REQUIRED_INVARIANTS);
@@ -327,9 +340,14 @@ where
         WorthQueryProducerCommitAuthority::Ordinary => {
             runtime.compare_and_commit_application(program, idempotency)
         }
-        WorthQueryProducerCommitAuthority::ProgramOutput => {
-            runtime.compare_and_commit_application_for_program_output_producer(program, idempotency)
-        }
+        WorthQueryProducerCommitAuthority::ProgramOutput => runtime
+            .compare_and_commit_application_for_program_output_producer(program, idempotency, None),
+        WorthQueryProducerCommitAuthority::SelectedProgram { identity, revision } => runtime
+            .compare_and_commit_application_for_program_output_producer(
+                program,
+                idempotency,
+                Some((&identity, &revision)),
+            ),
     };
     match outcome {
         WorthQueryApplicationCommitOutcome::Committed(receipt)

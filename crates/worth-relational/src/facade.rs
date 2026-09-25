@@ -75,10 +75,11 @@ pub mod diagnostics {
 
 pub mod durability {
     pub use crate::durability::data::{
-        CheckpointCoverage, CompactionOutcome, CompactionPlan, CompactionPolicy, DurabilityError,
-        DurabilityMode, DurableCheckpoint, DurableCheckpointId, DurableCheckpointManifest,
-        DurableIntegrityStatus, DurableSegmentId, DurableSegmentManifest, DurableStore,
-        DurableStoreLayout, PartitionCheckpointImage, RecoveryAuthorityContinuityCheck,
+        CheckpointCoverage, CheckpointRestoreWork, CompactionOutcome, CompactionPlan,
+        CompactionPolicy, DurabilityError, DurabilityMode, DurableCheckpoint, DurableCheckpointId,
+        DurableCheckpointManifest, DurableIntegrityStatus, DurableSegmentId,
+        DurableSegmentManifest, DurableStore, DurableStoreLayout, NativeCheckpointSectionBytes,
+        PartitionCheckpointImage, RecoveryAuthorityContinuityCheck,
         RecoveryAuthorityContinuityMismatch, RecoveryAuthorityParity, RecoveryCoverage,
         RecoveryCursor, RecoveryFailureClass, RecoveryIntegrityReport, RecoveryPlan,
         RecoveryVerificationMode, RecoveryVerificationOutcome, RecoveryVerificationPlan,
@@ -217,7 +218,7 @@ pub mod runtime {
         AdjacencyStructuralRevisionDenial, CompiledArtifactAuthorityStatus, CompiledArtifactError,
         CompiledExecutionArtifact, ComplexityContract, ComplexityStatus, EntityProjectionRecord,
         EntityRecordProjection, InvariantAccess, RelationProjectionRecord,
-        RelationRecordProjection, RelationalAdjacencyDirection,
+        RelationRecordProjection, RelationalAdjacencyDirection, RelationalCandidateInputCounters,
         RelationalInitialSchemaInstallation, RelationalInitialSchemaInstallationDenial,
         RelationalInitialSchemaInstallationDenialKind, RelationalInitialSchemaInstallationReceipt,
         RelationalPatchPositionReservationCounters, RelationalPhase4ReferenceCostCounters,
@@ -230,7 +231,8 @@ pub mod runtime {
     };
     pub use crate::storage::data::{
         ChunkVisibilitySummary, ChunkedStorageSummary, EntityReadRecord, PartitionStorageStats,
-        RelationReadRecord, RelationalReadView, StorageStats,
+        RelationReadRecord, RelationalFieldPresence, RelationalFieldRevision, RelationalReadView,
+        StorageStats,
     };
     pub use crate::visibility::authority::VisibilityAuthority as SnapshotAuthority;
     pub use crate::visibility::exact_commit_snapshot::{

@@ -51,7 +51,7 @@ pub(super) struct WorthQueryFreshProviderAttempt<'run> {
 impl<'run> WorthQueryFreshProviderAttempt<'run> {
     pub(super) fn progress_invariant(
         self,
-        steps: Vec<crate::domain_computation::WorthQueryProvisionalEffectStep>,
+        steps: std::sync::Arc<[crate::domain_computation::WorthQueryProvisionalEffectStep]>,
         provider: &std::sync::Arc<WorthQueryPrimaryGraphProvider>,
     ) -> Result<
         crate::domain_computation::WorthQueryInvariantApprovedProposedState<'run>,

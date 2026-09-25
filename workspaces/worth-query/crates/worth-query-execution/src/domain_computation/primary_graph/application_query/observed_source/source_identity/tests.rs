@@ -4,7 +4,9 @@ use super::*;
 
 #[test]
 fn exact_meaning_is_reused_but_a_changed_footprint_gets_a_new_identity() {
-    let registry = WorthQueryObservedSourceMeaningRegistry::new(17);
+    let registry = WorthQueryObservedSourceMeaningRegistry::new(
+        crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity::mint_for_test(),
+    );
     let root = EntityId::new(PartitionId::main(), 1, 1);
     let selection = product_selection();
     let first = registry
@@ -21,12 +23,51 @@ fn exact_meaning_is_reused_but_a_changed_footprint_gets_a_new_identity() {
         .unwrap();
     assert_eq!(first.identity(), equivalent.identity());
     assert_ne!(first.identity(), changed.identity());
+    assert_ne!(
+        first.runtime_idempotency_identity(),
+        changed.runtime_idempotency_identity()
+    );
     assert_eq!(first.identity(), returned.identity());
 }
 
 #[test]
+fn result_set_membership_is_not_a_row_source_with_the_same_footprint() {
+    let registry = WorthQueryObservedSourceMeaningRegistry::new(
+        crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity::mint_for_test(),
+    );
+    let root = EntityId::new(PartitionId::main(), 1, 1);
+    let selection = product_selection();
+    let row = registry
+        .intern(&[7; 32], &[8; 32], footprint(root, true), &selection)
+        .unwrap();
+    let set = registry
+        .intern_result_set(&[7; 32], &[8; 32], footprint(root, true), &selection)
+        .unwrap();
+    assert_ne!(row.identity(), set.identity());
+    assert_ne!(row.checkpoint_identity(), set.checkpoint_identity());
+}
+
+#[test]
+fn epoch_rejects_a_meaning_from_another_source_coordinate() {
+    let registry = WorthQueryObservedSourceMeaningRegistry::new(
+        crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity::mint_for_test(),
+    );
+    let root = EntityId::new(PartitionId::main(), 1, 1);
+    let selection = product_selection();
+    let meaning = registry
+        .intern(&[7; 32], &[8; 32], footprint(root, true), &selection)
+        .unwrap();
+    assert!(WorthQueryObservedSourceEpoch::from_observation(
+        &[9; 32], &[8; 32], root, &selection, meaning,
+    )
+    .is_none());
+}
+
+#[test]
 fn released_meaning_removes_only_its_fixed_coordinate() {
-    let registry = WorthQueryObservedSourceMeaningRegistry::new(18);
+    let registry = WorthQueryObservedSourceMeaningRegistry::new(
+        crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity::mint_for_test(),
+    );
     let first_root = EntityId::new(PartitionId::main(), 1, 1);
     let second_root = EntityId::new(PartitionId::main(), 2, 1);
     let selection = product_selection();
@@ -44,28 +85,24 @@ fn released_meaning_removes_only_its_fixed_coordinate() {
 
 #[test]
 fn reinterned_source_retains_checkpoint_identity_without_reusing_runtime_idempotency() {
-    let registry = WorthQueryObservedSourceMeaningRegistry::new(20);
+    let registry = WorthQueryObservedSourceMeaningRegistry::new(
+        crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity::mint_for_test(),
+    );
     let root = EntityId::new(PartitionId::main(), 1, 1);
     let selection = product_selection();
     let first = registry
         .intern(&[7; 32], &[8; 32], footprint(root, true), &selection)
         .unwrap();
     let first_runtime_identity = *first.identity();
+    let first_commitment = first.runtime_idempotency_identity();
     let checkpoint_identity = first.checkpoint_identity();
-    assert_eq!(
-        first.runtime_idempotency_identity().bytes(),
-        first_runtime_identity
-    );
     drop(first);
 
     let reinterned = registry
         .intern(&[7; 32], &[8; 32], footprint(root, true), &selection)
         .unwrap();
     assert_ne!(*reinterned.identity(), first_runtime_identity);
-    assert_eq!(
-        reinterned.runtime_idempotency_identity().bytes(),
-        *reinterned.identity()
-    );
+    assert_eq!(reinterned.runtime_idempotency_identity(), first_commitment);
     assert_eq!(reinterned.checkpoint_identity(), checkpoint_identity);
 }
 
@@ -102,7 +139,9 @@ fn sibling_product_occurrences_share_checkpoint_identity_not_runtime_idempotency
             ),
         )
     };
-    let registry = WorthQueryObservedSourceMeaningRegistry::new(21);
+    let registry = WorthQueryObservedSourceMeaningRegistry::new(
+        crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity::mint_for_test(),
+    );
     let root = EntityId::new(PartitionId::main(), 1, 1);
     let first = registry
         .intern(
@@ -132,7 +171,9 @@ fn sibling_product_occurrences_share_checkpoint_identity_not_runtime_idempotency
 fn parameter_partitions_are_distinct_source_occurrences() {
     let root = EntityId::new(PartitionId::main(), 1, 1);
     let occurrence = product_selection();
-    let registry = WorthQueryObservedSourceMeaningRegistry::new(19);
+    let registry = WorthQueryObservedSourceMeaningRegistry::new(
+        crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity::mint_for_test(),
+    );
     let lower_meaning = registry
         .intern(&[7; 32], &[1; 32], footprint(root, true), &occurrence)
         .unwrap();
@@ -165,6 +206,7 @@ fn footprint(root: EntityId, complete: bool) -> WorthQueryObservedSourceFootprin
         entities: vec![root],
         aspects: Vec::new(),
         adjacencies: Vec::new(),
+        root_selection: None,
     }
 }
 

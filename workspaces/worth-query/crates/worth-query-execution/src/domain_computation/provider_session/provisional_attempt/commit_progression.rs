@@ -191,6 +191,12 @@ impl WorthQueryInvariantApprovedProposedState<'_> {
                     WorthQueryCommittedProviderSession::from_disposition(disposition),
                 )
             }
+            WorthQuerySessionCommitOrAbortOutcome::CommitDenied(failure) => {
+                let _ = self.proposed.attempt.overlay.discard();
+                WorthQueryProviderCompareAndCommitOutcome::Denied(
+                    WorthQueryProviderCompareAndCommitDenial::ProviderSession(failure),
+                )
+            }
             WorthQuerySessionCommitOrAbortOutcome::CommitRecoveryRequired(failure) => {
                 self.proposed
                     .attempt

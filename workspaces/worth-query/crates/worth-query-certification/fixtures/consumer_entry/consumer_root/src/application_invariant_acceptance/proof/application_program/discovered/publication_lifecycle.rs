@@ -52,17 +52,17 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
         .observed_sources()[0]
         .clone();
     request
-        .mutate(PlanarMutation {
+        .mutate(PlanarEdit(PlanarMutation {
             scope_key: "sibling-b".to_owned(),
             operation: PlanarOperation::Adjust(vec![PlanarAdjustment {
                 body_key: "sibling-b".to_owned(),
                 replacement_y: length(5),
             }]),
             validator_work: 4_096,
-        })
+        }))
         .expect_source(changed)
         .idempotency(&10_042)
-        .execute()
+        .execute_in_program(&world.application)
         .expect("the sibling ring changes independently");
     let current = request
         .query(PlanarRead {
@@ -135,7 +135,8 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
         .find(|(root, _)| root.body_key() == "remote-b")
         .expect("the older independent root settles")
         .1
-        .receipt()
+        .application_commit_receipt()
+        .expect("the older root retains its commit")
         .committed_product_publication()
         .composite_commit();
     let second_remote = second_settled
@@ -143,7 +144,8 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
         .find(|(root, _)| root.body_key() == "remote-b")
         .expect("the newer publication joins the independent root")
         .1
-        .receipt()
+        .application_commit_receipt()
+        .expect("the joined root retains its commit")
         .committed_product_publication()
         .composite_commit();
     assert_eq!(

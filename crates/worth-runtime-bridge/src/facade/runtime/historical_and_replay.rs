@@ -192,6 +192,7 @@ impl RuntimeBridge {
         let diagnostics = BridgeDiagnosticsFacade::new(policy);
         let diagnostic_sink = diagnostic_sink.unwrap_or_else(|| Arc::new(diagnostics.clone()));
         let authoritative_source_profile = committed_patch_source.authoritative_source_profile();
+        let signal_runtime_key = fresh_signal_runtime_key();
         Self {
             diagnostic_sink,
             diagnostics,
@@ -211,7 +212,10 @@ impl RuntimeBridge {
             mapping_registry,
             aspect_registry,
             subscription_family_registry,
-            signal_runtime_key: fresh_signal_runtime_key(),
+            signal_runtime_key,
+            signal_runtime_custody: crate::source::BridgeSignalRuntimeCustody::new(
+                signal_runtime_key,
+            ),
             signal_aspect_lowering_owner: worth_signal::facade::SignalAspectLoweringOwner::fresh(),
             execution_basis_reservations: Default::default(),
             correspondence_allocations: Default::default(),

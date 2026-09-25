@@ -118,8 +118,11 @@ impl WorthQueryExecutionInstallationAuthority {
                 "Relational installed an invariant inventory outside the application catalog",
             ));
         }
-        let recovered_relational_authority = if let Some(checkpoint) = checkpoint {
-            let (_, authority) = relational_runtime
+        let (recovered_relational_authority, recovered_checkpoint_restore_work) = if let Some(
+            checkpoint,
+        ) = checkpoint
+        {
+            let (outcome, authority) = relational_runtime
                 .durability_recovery()
                 .restore_native_checkpoint_with_authority(&checkpoint.native)
                 .map_err(|error| {
@@ -136,9 +139,9 @@ impl WorthQueryExecutionInstallationAuthority {
                         format!("recovered schema authority denied: {error}"),
                     )
                 })?;
-            Some(authority)
+            (Some(authority), outcome.checkpoint_restore_work)
         } else {
-            None
+            (None, None)
         };
         let graph = checkpoint::primary_graph_for_installation(
             runtime.authority_identity(),
@@ -160,11 +163,18 @@ impl WorthQueryExecutionInstallationAuthority {
             principal_identities: BTreeSet::new(),
             principal_keys: BTreeSet::new(),
             entity_keys: BTreeSet::new(),
+            pending_entity_keys: BTreeSet::new(),
             relation_keys: BTreeSet::new(),
             entity_rows: Vec::new(),
             relation_rows: Vec::new(),
+            committed_principal_count: 0,
+            committed_entity_count: 0,
+            committed_relation_count: 0,
+            last_seed_commit_id: None,
+            seed_batch_failed: false,
             recovered_publication,
             recovered_relational_authority,
+            recovered_checkpoint_restore_work,
             mutation_handlers: Default::default(),
             program_activation_seed: None,
             invariant_installation_receipt,

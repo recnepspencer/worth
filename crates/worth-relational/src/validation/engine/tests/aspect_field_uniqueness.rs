@@ -187,7 +187,7 @@ fn assert_unique_entity_field_conflict(error: TransactionCommitError, value: &st
     assert!(!commit_log.has_commit_published());
 }
 
-fn assert_entity_summary(
+pub(super) fn assert_entity_summary(
     runtime: &crate::runtime::RelationalRuntime,
     entity_id: crate::identity::data::EntityId,
     title: &str,
@@ -218,7 +218,7 @@ fn assert_entity_summary(
     );
 }
 
-fn whole_summary_patch(
+pub(super) fn whole_summary_patch(
     contract: &worth_foundational::facade::AspectContract,
     title: &str,
     status: &str,

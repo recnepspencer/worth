@@ -19,9 +19,7 @@ use crate::authority::commit::preparation::reduction::merge::{
     canonical_merge_streams, OrderedReductionStream,
 };
 use crate::authority::mutation::outcomes::{MutationOutcome, RecordMutation};
-use crate::authority::mutation::record_changes::{
-    allocate_relation, reserve_bulk_relation_capacity,
-};
+use crate::authority::mutation::record_changes::allocate_relation;
 use crate::authority::mutation::MutationWorkspace;
 use crate::transactions::data::{
     AspectFieldPatch, BulkImportRowDomain, BulkImportStage, BulkRelationCreateIntent,
@@ -46,9 +44,6 @@ pub(super) fn apply(
             count: 0,
         },
     );
-    workspace.with_context(|context| {
-        reserve_bulk_relation_capacity(context.state, intent.partition_id, intent.endpoints.len());
-    });
     for_each_staged_bulk_relation_row(intent, workspace, &mut outcome, version_id)?;
     outcome.set_last_event_count(intent.endpoints.len());
     Ok(outcome)

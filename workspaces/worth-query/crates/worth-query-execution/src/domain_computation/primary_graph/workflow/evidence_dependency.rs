@@ -27,6 +27,7 @@ pub(in crate::domain_computation::primary_graph) const fn evidence_dependency_ad
 pub(in crate::domain_computation::primary_graph) enum WorkflowEvidenceDependencyKind {
     Entity,
     AspectRevision,
+    FieldRevision,
     AdjacencyRevision,
 }
 
@@ -35,6 +36,7 @@ impl WorkflowEvidenceDependencyKind {
         match self {
             Self::Entity => "entity",
             Self::AspectRevision => "aspect-revision",
+            Self::FieldRevision => "field-revision",
             Self::AdjacencyRevision => "adjacency-revision",
         }
     }
@@ -43,6 +45,7 @@ impl WorkflowEvidenceDependencyKind {
         match value {
             "entity" => Some(Self::Entity),
             "aspect-revision" => Some(Self::AspectRevision),
+            "field-revision" => Some(Self::FieldRevision),
             "adjacency-revision" => Some(Self::AdjacencyRevision),
             _ => None,
         }

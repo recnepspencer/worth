@@ -44,6 +44,10 @@ pub(super) fn allocate_entity_with_extra(
     partition
         .reverse_adjacency
         .clear_slot(slot, &adjacency_policy);
+    // Empty membership is still stored adjacency truth. Record initialization
+    // and slot reuse must publish both changed adjacency axes in the journal.
+    state.mark_adjacency_slot_touched(partition_id, slot);
+    state.mark_reverse_adjacency_slot_touched(partition_id, slot);
     let entity_id = EntityId::new(partition_id, slot as u64, generation);
     allocations.record(crate::transactions::data::RecordRef::Entity(entity_id));
     Ok(entity_id)
@@ -206,22 +210,6 @@ pub(crate) fn apply_adjacency_deltas(
             }
         }
     }
-}
-
-pub(super) fn reserve_bulk_entity_capacity(
-    state: &mut WorkingState,
-    partition_id: PartitionId,
-    requested_slots: usize,
-) {
-    state.reserve_entity_slots(partition_id, requested_slots);
-}
-
-pub(super) fn reserve_bulk_relation_capacity(
-    state: &mut WorkingState,
-    partition_id: PartitionId,
-    requested_slots: usize,
-) {
-    state.reserve_relation_slots(partition_id, requested_slots);
 }
 
 fn ensure_partition_state(

@@ -343,9 +343,9 @@ impl StableCanonicalWorkObservation {
 
 impl StableInstallationCanonicalWork {
     fn capture(work: WorthQueryCanonicalWorkEvidence) -> Self {
-        assert_eq!(
-            work.canonical_encoded_bytes(),
-            work.canonical_material_allocation_bytes()
+        assert!(
+            work.canonical_material_allocation_bytes() >= work.canonical_encoded_bytes(),
+            "amortized canonical storage must hold every encoded byte"
         );
         let prepared_only_encoded_bytes = work
             .canonical_encoded_bytes()

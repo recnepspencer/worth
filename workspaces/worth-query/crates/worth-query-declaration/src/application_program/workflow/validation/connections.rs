@@ -1,47 +1,131 @@
-use std::collections::{BTreeMap, BTreeSet};
-
 use crate::application_program::workflow::{
-    ApplicationWorkflowConnection, ApplicationWorkflowConnectionKind, ApplicationWorkflowDataFlow,
-    ApplicationWorkflowNode, ApplicationWorkflowNodeIdentity, ApplicationWorkflowNodeKind,
+    ApplicationWorkflowConnectionKind, ApplicationWorkflowDataFlow,
+    ApplicationWorkflowNodeIdentity, ApplicationWorkflowNodeKind,
+};
+use std::mem::size_of;
+
+use super::{
+    denial, index::ValidationGraph, ApplicationWorkflowValidationDenial,
+    ApplicationWorkflowValidationDenialKind, ValidationWorkMeter,
 };
 
-use super::{denial, ApplicationWorkflowValidationDenial, ApplicationWorkflowValidationDenialKind};
+pub(super) fn validate_requirements(
+    graph: &ValidationGraph<'_>,
+    work: &mut ValidationWorkMeter,
+) -> Result<(), ApplicationWorkflowValidationDenial> {
+    for (index, node) in graph.nodes() {
+        work.visit_requirement_node();
+        let incoming = |flow| graph.summary(index).incoming(flow);
+        match node.kind() {
+            ApplicationWorkflowNodeKind::Condition(_)
+                if incoming(ApplicationWorkflowDataFlow::ConditionSubject) != 1 =>
+            {
+                return Err(denial(
+                    ApplicationWorkflowValidationDenialKind::MissingConditionSubject,
+                    node.identity().as_str(),
+                ));
+            }
+            ApplicationWorkflowNodeKind::Assessment(_)
+                if incoming(ApplicationWorkflowDataFlow::AssessmentSubject) != 1 =>
+            {
+                return Err(denial(
+                    ApplicationWorkflowValidationDenialKind::MissingAssessmentSubject,
+                    node.identity().as_str(),
+                ));
+            }
+            ApplicationWorkflowNodeKind::EvidenceJoin(_)
+                if incoming(ApplicationWorkflowDataFlow::AssessmentEvidence) < 2 =>
+            {
+                return Err(denial(
+                    ApplicationWorkflowValidationDenialKind::IncompleteEvidenceJoin,
+                    node.identity().as_str(),
+                ));
+            }
+            ApplicationWorkflowNodeKind::Approval(_)
+                if incoming(ApplicationWorkflowDataFlow::ProposalSubject) != 1
+                    || incoming(ApplicationWorkflowDataFlow::JoinedEvidence) != 1 =>
+            {
+                return Err(denial(
+                    ApplicationWorkflowValidationDenialKind::IncompleteApproval,
+                    node.identity().as_str(),
+                ));
+            }
+            ApplicationWorkflowNodeKind::Operation {
+                requires_workflow_authority,
+                ..
+            } => validate_authority(
+                node.identity(),
+                *requires_workflow_authority,
+                incoming(ApplicationWorkflowDataFlow::ApprovalAuthority),
+            )?,
+            _ => {}
+        }
+    }
+    Ok(())
+}
 
 pub(super) fn validate(
-    nodes: &BTreeMap<&ApplicationWorkflowNodeIdentity, &ApplicationWorkflowNode>,
-    connections: &[ApplicationWorkflowConnection],
+    graph: &ValidationGraph<'_>,
+    work: &mut ValidationWorkMeter,
 ) -> Result<(), ApplicationWorkflowValidationDenial> {
-    let mut unique = BTreeSet::new();
-    for connection in connections {
-        if !nodes.contains_key(connection.source()) || !nodes.contains_key(connection.target()) {
-            return Err(denial(
-                ApplicationWorkflowValidationDenialKind::UnknownConnectionEndpoint,
-                format!(
-                    "{} -> {}",
-                    connection.source().as_str(),
-                    connection.target().as_str()
-                ),
-            ));
-        }
-        let key = (connection.source(), connection.target(), connection.kind());
-        if !unique.insert(key) {
-            return Err(denial(
-                ApplicationWorkflowValidationDenialKind::DuplicateConnection,
-                format!(
-                    "{} -> {}",
-                    connection.source().as_str(),
-                    connection.target().as_str()
-                ),
-            ));
-        }
-        if let ApplicationWorkflowConnectionKind::Data(flow) = connection.kind() {
+    validate_flows(graph, work)?;
+    require_unique_connections(graph, work)
+}
+
+fn validate_flows(
+    graph: &ValidationGraph<'_>,
+    work: &mut ValidationWorkMeter,
+) -> Result<(), ApplicationWorkflowValidationDenial> {
+    for indexed in graph.connections() {
+        work.visit_connection_semantics();
+        if let ApplicationWorkflowConnectionKind::Data(flow) = indexed.connection.kind_ref() {
             validate_flow(
-                nodes[connection.source()].kind(),
-                nodes[connection.target()].kind(),
-                flow,
-                connection.target(),
+                graph.node(indexed.source).kind(),
+                graph.node(indexed.target).kind(),
+                *flow,
+                indexed.connection.target(),
             )?;
         }
+    }
+    Ok(())
+}
+
+fn require_unique_connections(
+    graph: &ValidationGraph<'_>,
+    work: &mut ValidationWorkMeter,
+) -> Result<(), ApplicationWorkflowValidationDenial> {
+    let connections = graph.connections();
+    let mut order = (0..connections.len()).collect::<Vec<_>>();
+    order.sort_unstable_by(|left, right| {
+        let left = &connections[*left];
+        let right = &connections[*right];
+        (left.source, left.target, left.connection.kind_ref()).cmp(&(
+            right.source,
+            right.target,
+            right.connection.kind_ref(),
+        ))
+    });
+    work.observe_index_bytes(
+        graph
+            .retained_bytes()
+            .saturating_add(order.capacity() * size_of::<usize>()),
+    );
+    if let Some(duplicate) = order.windows(2).find_map(|pair| {
+        let left = &connections[pair[0]];
+        let right = &connections[pair[1]];
+        (left.source == right.source
+            && left.target == right.target
+            && left.connection.kind_ref() == right.connection.kind_ref())
+        .then_some(right.connection)
+    }) {
+        return Err(denial(
+            ApplicationWorkflowValidationDenialKind::DuplicateConnection,
+            format!(
+                "{} -> {}",
+                duplicate.source().as_str(),
+                duplicate.target().as_str()
+            ),
+        ));
     }
     Ok(())
 }
@@ -125,161 +209,11 @@ fn validate_flow(
     }
 }
 
-pub(super) fn validate_requirements(
-    nodes: &BTreeMap<&ApplicationWorkflowNodeIdentity, &ApplicationWorkflowNode>,
-    connections: &[ApplicationWorkflowConnection],
-) -> Result<(), ApplicationWorkflowValidationDenial> {
-    for (identity, node) in nodes {
-        let incoming = |flow| {
-            connections
-                .iter()
-                .filter(|connection| {
-                    connection.target() == *identity
-                        && connection.kind() == ApplicationWorkflowConnectionKind::Data(flow)
-                })
-                .count()
-        };
-        match node.kind() {
-            ApplicationWorkflowNodeKind::Condition(_)
-                if incoming(ApplicationWorkflowDataFlow::ConditionSubject) != 1 =>
-            {
-                return Err(denial(
-                    ApplicationWorkflowValidationDenialKind::MissingConditionSubject,
-                    identity.as_str(),
-                ));
-            }
-            ApplicationWorkflowNodeKind::Assessment(_)
-                if incoming(ApplicationWorkflowDataFlow::AssessmentSubject) != 1 =>
-            {
-                return Err(denial(
-                    ApplicationWorkflowValidationDenialKind::MissingAssessmentSubject,
-                    identity.as_str(),
-                ));
-            }
-            ApplicationWorkflowNodeKind::EvidenceJoin(_)
-                if incoming(ApplicationWorkflowDataFlow::AssessmentEvidence) < 2 =>
-            {
-                return Err(denial(
-                    ApplicationWorkflowValidationDenialKind::IncompleteEvidenceJoin,
-                    identity.as_str(),
-                ));
-            }
-            ApplicationWorkflowNodeKind::Approval(_)
-                if incoming(ApplicationWorkflowDataFlow::ProposalSubject) != 1
-                    || incoming(ApplicationWorkflowDataFlow::JoinedEvidence) != 1 =>
-            {
-                return Err(denial(
-                    ApplicationWorkflowValidationDenialKind::IncompleteApproval,
-                    identity.as_str(),
-                ));
-            }
-            ApplicationWorkflowNodeKind::Operation {
-                requires_workflow_authority,
-                ..
-            } => validate_authority(*identity, *requires_workflow_authority, incoming)?,
-            _ => {}
-        }
-    }
-    Ok(())
-}
-
-pub(super) fn validate_availability(
-    start: &ApplicationWorkflowNodeIdentity,
-    nodes: &BTreeMap<&ApplicationWorkflowNodeIdentity, &ApplicationWorkflowNode>,
-    connections: &[ApplicationWorkflowConnection],
-) -> Result<(), ApplicationWorkflowValidationDenial> {
-    let identities = nodes
-        .keys()
-        .map(|identity| (*identity).clone())
-        .collect::<BTreeSet<_>>();
-    let mut predecessors = identities
-        .iter()
-        .cloned()
-        .map(|identity| (identity, BTreeSet::new()))
-        .collect::<BTreeMap<_, _>>();
-    for connection in connections {
-        if matches!(
-            connection.kind(),
-            ApplicationWorkflowConnectionKind::Control(_)
-        ) {
-            predecessors
-                .get_mut(connection.target())
-                .expect("endpoint validation ran")
-                .insert(connection.source().clone());
-        }
-    }
-
-    let mut dominators = identities
-        .iter()
-        .cloned()
-        .map(|identity| {
-            let initial = if &identity == start {
-                BTreeSet::from([identity.clone()])
-            } else {
-                identities.clone()
-            };
-            (identity, initial)
-        })
-        .collect::<BTreeMap<_, _>>();
-    loop {
-        let mut changed = false;
-        for identity in identities.iter().filter(|identity| *identity != start) {
-            let incoming = predecessors
-                .get(identity)
-                .expect("every validated node has a predecessor set");
-            let mut next = incoming
-                .iter()
-                .map(|predecessor| {
-                    dominators
-                        .get(predecessor)
-                        .expect("every predecessor is a validated node")
-                        .clone()
-                })
-                .reduce(|left, right| left.intersection(&right).cloned().collect())
-                .unwrap_or_default();
-            next.insert(identity.clone());
-            let current = dominators
-                .get_mut(identity)
-                .expect("every validated node has a dominator set");
-            if *current != next {
-                *current = next;
-                changed = true;
-            }
-        }
-        if !changed {
-            break;
-        }
-    }
-
-    for connection in connections {
-        if matches!(
-            connection.kind(),
-            ApplicationWorkflowConnectionKind::Data(_)
-        ) && (connection.source() == connection.target()
-            || !dominators
-                .get(connection.target())
-                .expect("endpoint validation ran")
-                .contains(connection.source()))
-        {
-            return Err(denial(
-                ApplicationWorkflowValidationDenialKind::UnavailableDataFlow,
-                format!(
-                    "{} -> {}",
-                    connection.source().as_str(),
-                    connection.target().as_str()
-                ),
-            ));
-        }
-    }
-    Ok(())
-}
-
 fn validate_authority(
     identity: &ApplicationWorkflowNodeIdentity,
     required: bool,
-    incoming: impl Fn(ApplicationWorkflowDataFlow) -> usize,
+    authorities: usize,
 ) -> Result<(), ApplicationWorkflowValidationDenial> {
-    let authorities = incoming(ApplicationWorkflowDataFlow::ApprovalAuthority);
     if required && authorities != 1 {
         return Err(denial(
             ApplicationWorkflowValidationDenialKind::MissingWorkflowAuthority,

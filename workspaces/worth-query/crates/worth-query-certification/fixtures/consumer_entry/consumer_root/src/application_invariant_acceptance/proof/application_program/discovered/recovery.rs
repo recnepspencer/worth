@@ -134,17 +134,17 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn n
         .observed_sources()[0]
         .clone();
     request
-        .mutate(PlanarMutation {
+        .mutate(PlanarEdit(PlanarMutation {
             scope_key: "sibling-b".to_owned(),
             operation: PlanarOperation::Adjust(vec![PlanarAdjustment {
                 body_key: "sibling-b".to_owned(),
                 replacement_y: length(5),
             }]),
             validator_work: 4_096,
-        })
+        }))
         .expect_source(changed)
         .idempotency(&10_033)
-        .execute()
+        .execute_in_program(&world.application)
         .expect("an ordinary edit advances the discovered source");
     let mut recovered = request
         .recover_discovered_required_outputs::<ConsumerProgram, ConsumerDiscoveredProgramRoot>(

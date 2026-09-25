@@ -71,17 +71,14 @@ where
         &self,
         query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
     ) -> Result<(), WorthQueryApplicationQueryAdmissionDenial> {
-        self.runtime
-            .installed_packages()
-            .validate_application_schema(&self.installed_schema)
-            .map_err(|denial| {
-                WorthQueryApplicationQueryAdmissionDenial::new(
-                    WorthQueryApplicationQueryAdmissionDenialKind::InstalledQuery(
-                        map_schema_denial(denial.kind()),
-                    ),
-                    query.name(),
-                )
-            })?;
+        if !self.installed_schema_is_current() {
+            return Err(WorthQueryApplicationQueryAdmissionDenial::new(
+                WorthQueryApplicationQueryAdmissionDenialKind::InstalledQuery(
+                    worth_query_installation::facade::WorthQueryApplicationQueryInstallationDenialKind::StaleGeneration,
+                ),
+                query.name(),
+            ));
+        }
         self.installed_schema
             .validate_installed_query(query)
             .map_err(|denial| {
@@ -177,25 +174,86 @@ pub(super) fn validate_admission_request(
     }
 }
 
-fn map_schema_denial(
-    kind: worth_query_installation::facade::WorthQueryInstalledApplicationSchemaDenialKind,
-) -> worth_query_installation::facade::WorthQueryApplicationQueryInstallationDenialKind {
-    use worth_query_installation::facade::{
-        WorthQueryApplicationQueryInstallationDenialKind as Query,
-        WorthQueryInstalledApplicationSchemaDenialKind as Schema,
-    };
-    match kind {
-        Schema::ForeignRuntime => Query::ForeignRuntime,
-        Schema::StaleGeneration => Query::StaleGeneration,
-        Schema::PackageIdentityChanged => Query::PackageIdentityChanged,
-        Schema::AuthorityMismatch => Query::AuthorityMismatch,
-        _ => Query::SchemaMeaningChanged,
-    }
-}
-
 fn denial(
     kind: WorthQueryApplicationQueryAdmissionDenialKind,
     subject: impl Into<String>,
 ) -> WorthQueryApplicationQueryAdmissionDenial {
     WorthQueryApplicationQueryAdmissionDenial::new(kind, subject)
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::Arc;
+
+    use worth_query_installation::facade::WorthQueryApplicationQueryInstallationDenialKind;
+
+    use super::WorthQueryApplicationQueryAdmissionDenialKind;
+    use crate::domain_computation::primary_graph::tests::fixture::{
+        installed_capability_live_world_with_label, GovernedLiveAccountActivityQuery,
+    };
+
+    #[test]
+    fn published_schema_validation_keeps_query_and_generation_authority() {
+        let mut world = installed_capability_live_world_with_label("installed");
+        let local_query = world
+            .application
+            .installed_schema()
+            .certification_query(GovernedLiveAccountActivityQuery::reference())
+            .unwrap();
+        assert!(world
+            .application
+            .validate_installed_query(&local_query)
+            .is_ok());
+
+        let foreign = installed_capability_live_world_with_label("foreign");
+        let foreign_query = foreign
+            .application
+            .installed_schema()
+            .certification_query(GovernedLiveAccountActivityQuery::reference())
+            .unwrap();
+        assert_eq!(
+            world
+                .application
+                .validate_installed_query(&foreign_query)
+                .unwrap_err()
+                .kind(),
+            WorthQueryApplicationQueryAdmissionDenialKind::InstalledQuery(
+                WorthQueryApplicationQueryInstallationDenialKind::ForeignRuntime,
+            )
+        );
+
+        let rebuilt = Arc::new(world.application.runtime.installed_packages().rebuild());
+        world
+            .application
+            .runtime
+            .replace_rebuilt_installation(rebuilt)
+            .unwrap();
+        assert!(world
+            .application
+            .validate_installed_query(&local_query)
+            .is_ok());
+
+        let successor = Arc::new(
+            world
+                .application
+                .runtime
+                .installed_packages()
+                .successor_generation(),
+        );
+        world
+            .application
+            .runtime
+            .commit_successor_installation(successor)
+            .unwrap();
+        assert_eq!(
+            world
+                .application
+                .validate_installed_query(&local_query)
+                .unwrap_err()
+                .kind(),
+            WorthQueryApplicationQueryAdmissionDenialKind::InstalledQuery(
+                WorthQueryApplicationQueryInstallationDenialKind::StaleGeneration,
+            )
+        );
+    }
 }

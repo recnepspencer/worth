@@ -42,11 +42,11 @@ impl IndexAccess<'_> {
                 .expect("resolved snapshot projection must carry an exact basis");
         let prepared = prepare_related_lookup(runtime, &snapshot, &request)?;
         let page = select_page(
-            prepared.parent_entries(),
+            &prepared.parent_entries(),
             prepared.contract.ordering(),
             &request,
         )?;
-        verify_entries(&source, &prepared.contract, page.rows)?;
+        verify_entries(&source, &prepared.contract, &page.rows)?;
         let outcome = outcome_from_page(prepared.generation_id, page, parity_mode);
         if parity_mode == BoundedIndexParityMode::Certification {
             certify_storage_parity(&source, &prepared.contract, &outcome)?;
@@ -68,14 +68,14 @@ struct PreparedRelatedLookup<'request> {
 }
 
 impl PreparedRelatedLookup<'_> {
-    fn parent_entries(&self) -> &[RelatedEntityOrderingEntry] {
+    fn parent_entries(&self) -> crate::indexes::data::DerivedIndexRows<RelatedEntityOrderingEntry> {
         let DerivedIndexEntries::RelatedEntityOrdering(entries) = &self.generation.entries else {
-            return &[];
+            return Default::default();
         };
         entries
             .get(&self.contract.parent)
-            .map(Vec::as_slice)
-            .unwrap_or(&[])
+            .cloned()
+            .unwrap_or_default()
     }
 }
 
@@ -184,17 +184,17 @@ fn resolve_related_lookup_contract<'request>(
     })
 }
 
-struct SelectedPage<'a> {
-    rows: &'a [RelatedEntityOrderingEntry],
+struct SelectedPage {
+    rows: Vec<RelatedEntityOrderingEntry>,
     has_more: bool,
     seek_comparison_count: usize,
 }
 
-fn select_page<'a>(
-    entries: &'a [RelatedEntityOrderingEntry],
+fn select_page(
+    entries: &crate::indexes::data::DerivedIndexRows<RelatedEntityOrderingEntry>,
     ordering: &[RelatedEntityOrderingField],
     request: &BoundedRelatedEntityOrderedLookupRequest,
-) -> Result<SelectedPage<'a>, BoundedRelatedEntityOrderedLookupDenial> {
+) -> Result<SelectedPage, BoundedRelatedEntityOrderedLookupDenial> {
     let mut seek_comparison_count = 0;
     let start = match request.after() {
         None => 0,
@@ -211,18 +211,20 @@ fn select_page<'a>(
                 )
             })?,
     };
-    let available = &entries[start.min(entries.len())..];
-    let returned = available.len().min(request.page_width());
+    let available = entries.len().saturating_sub(start);
+    let returned = available.min(request.page_width());
     Ok(SelectedPage {
-        rows: &available[..returned],
-        has_more: available.len() > returned,
+        rows: (start..start + returned)
+            .map(|i| entries.get(i).expect("bounded page index").clone())
+            .collect(),
+        has_more: available > returned,
         seek_comparison_count,
     })
 }
 
 fn outcome_from_page(
     generation_id: crate::indexes::data::DerivedIndexGenerationId,
-    page: SelectedPage<'_>,
+    page: SelectedPage,
     parity_mode: BoundedIndexParityMode,
 ) -> BoundedRelatedEntityOrderedLookupOutcome {
     let child_entity_ids = page
@@ -308,10 +310,11 @@ fn certify_storage_parity(
         ),
     );
     let expected = select_page(
-        storage
+        &storage
             .get(&contract.parent)
-            .map(Vec::as_slice)
-            .unwrap_or(&[]),
+            .cloned()
+            .unwrap_or_default()
+            .into(),
         contract.ordering(),
         contract.request,
     )?;

@@ -22,6 +22,7 @@ pub(super) fn selection_descriptor() -> CustomInvariantDescriptor {
                     entity_kind_id(EntityKind::Voyage),
                 ],
                 affected_relation_kinds: vec![relation_kind_id(RelationKind::CargoBookedOnVoyage)],
+                include_relation_endpoint_entity_touches: true,
             }
             .canonicalize(),
             execution_point: InvariantExecutionPoint::CommitBoundary,

@@ -145,6 +145,64 @@ impl PreparedRelationalCommitCandidate {
         self.reservation_count
     }
 
+    pub(crate) fn index_preparation_roots(
+        &self,
+    ) -> Option<(
+        std::sync::Arc<crate::branch::RelationalBranchRoot>,
+        std::sync::Arc<crate::branch::RelationalBranchRoot>,
+    )> {
+        let payload = self
+            ._payload
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let payload = payload.as_ref()?;
+        Some((
+            std::sync::Arc::clone(&payload.expected_root),
+            std::sync::Arc::clone(payload.execution.prepared_root()),
+        ))
+    }
+
+    pub(crate) fn change_summary_basis_and_roots(
+        &self,
+    ) -> Option<(
+        crate::branch::RelationalBranchBasisDescriptor,
+        std::sync::Arc<crate::branch::RelationalBranchRoot>,
+        std::sync::Arc<crate::branch::RelationalBranchRoot>,
+    )> {
+        let payload = self
+            ._payload
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let payload = payload.as_ref()?;
+        Some((
+            payload.expected_basis.clone(),
+            std::sync::Arc::clone(&payload.expected_root),
+            std::sync::Arc::clone(payload.execution.prepared_root()),
+        ))
+    }
+
+    pub(crate) fn indexes_already_prepared(&self) -> bool {
+        self._payload
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .as_ref()
+            .is_some_and(|payload| payload.execution.has_prepared_indexes())
+    }
+
+    pub(crate) fn attach_prepared_indexes(
+        &mut self,
+        prepared: crate::indexes::PreparedCandidateIndexPublication,
+    ) -> Result<(), crate::indexes::data::DerivedIndexMaintenanceDenialKind> {
+        let mut payload = self
+            ._payload
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let payload = payload
+            .as_mut()
+            .ok_or(crate::indexes::data::DerivedIndexMaintenanceDenialKind::CandidateUnavailable)?;
+        payload.execution.attach_prepared_indexes(prepared)
+    }
+
     pub(crate) fn lifetime_expired(&self) -> bool {
         std::time::Instant::now() >= self.expires_at
     }

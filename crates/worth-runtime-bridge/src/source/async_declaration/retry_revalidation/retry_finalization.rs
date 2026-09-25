@@ -40,6 +40,9 @@ pub(super) fn finalize_retry_lineage(
         timeout_trigger,
         cancellation_trigger,
     } = candidate;
+    let newer = newer
+        .inherit_runtime(&prior)
+        .ok_or_else(super::runtime_binding::runtime_mismatch)?;
     if prior.lowered().declaration_identity() != newer.lowered().declaration_identity() {
         return Err(rejected(
             BridgeAsyncForwardCausalityRejectionKind::PriorAndNewerDeclarationMismatch,

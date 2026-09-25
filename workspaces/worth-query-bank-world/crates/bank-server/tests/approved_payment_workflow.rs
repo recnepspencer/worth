@@ -230,18 +230,81 @@ fn approved_business_payment_runs_through_query_and_commits_the_real_payment_ope
         settlement_rail.ledger_status(&attempts[0]),
         LedgerStatus::Completed
     );
+    let unresolved = workflow
+        .accept_applied(
+            started.instance().clone(),
+            &operation,
+            authority.clone(),
+            &performed,
+            &key("approved-payment:operation:accept:unresolved"),
+        )
+        .expect_err("unresolved external custody cannot settle the workflow operation");
+    assert!(unresolved.to_string().contains("RecoveryRequired"));
+    let still_required = match workflow
+        .advance(
+            started.instance().clone(),
+            authority.clone(),
+            &key("approved-payment:advance:operation:recovery-pending"),
+        )
+        .expect("the unresolved receipt leaves the workflow awaiting its operation")
+    {
+        WorkflowProgressOutcome::AwaitingOperation(required) => required,
+        other => panic!("expected the operation to remain pending, got {other:?}"),
+    };
+    assert_eq!(
+        still_required.transition_identity(),
+        operation.transition_identity()
+    );
+    let mismatched_recovery = workflow
+        .prepare_apply_recovery(
+            &operation,
+            authority.clone(),
+            &performed,
+            &key("approved-payment:operation:foreign-recovery"),
+        )
+        .err()
+        .expect("a different workflow operation command cannot claim recovery custody");
+    assert!(mismatched_recovery
+        .to_string()
+        .contains("IdempotencyMismatch"));
+    let recovery = workflow
+        .prepare_apply_recovery(
+            &operation,
+            authority.clone(),
+            &performed,
+            &key("approved-payment:operation:perform"),
+        )
+        .expect("the exact workflow-bound operation prepares recovery")
+        .safe_retry()
+        .expect("fresh recovery authority re-dispatches the committed outbox");
     require_completed(
         workflow
-            .accept_applied(
+            .accept_recovered_applied(
                 started.instance().clone(),
                 &operation,
                 authority.clone(),
                 &performed,
-                &key("approved-payment:operation:accept"),
+                &recovery,
+                &key("approved-payment:operation:accept:recovered"),
             )
-            .expect("fresh workflow admission accepts the retained operation receipt"),
+            .expect("the exact completed recovery proof settles the operation"),
         "apply",
     );
+    require_completed(
+        workflow
+            .accept_recovered_applied(
+                started.instance().clone(),
+                &operation,
+                authority.clone(),
+                &performed,
+                &recovery,
+                &key("approved-payment:operation:accept:recovered"),
+            )
+            .expect("the recovered workflow settlement replays without another dispatch"),
+        "apply",
+    );
+    assert_eq!(settlement_rail.attempts().len(), 2);
+    assert_eq!(settlement_rail.completed_effect_count(), 1);
     require_completed(
         workflow
             .advance(

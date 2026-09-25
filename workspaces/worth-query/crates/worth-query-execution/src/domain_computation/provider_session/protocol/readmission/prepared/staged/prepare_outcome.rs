@@ -101,6 +101,14 @@ impl WorthQuerySessionPrepareOutcome<'_> {
                     terminal_binding,
                 ),
             ),
+            Ok(Err(
+                super::super::super::super::WorthQueryProviderSessionCommitStop::PreEffectDenied(
+                    failure,
+                ),
+            )) => WorthQuerySessionCommitOrAbortOutcome::CommitDenied(failure.at_stage(
+                WorthQueryProviderSessionProtocolStage::Commit,
+                self.counters,
+            )),
             Ok(Err(super::super::super::super::WorthQueryProviderSessionCommitStop::Denied(
                 failure,
             ))) => WorthQuerySessionCommitOrAbortOutcome::CommitRecoveryRequired(

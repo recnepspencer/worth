@@ -18,6 +18,7 @@ pub(crate) enum InvariantPacketRegistration {
         registration: CustomInvariantRegistration,
         prepared_execution: Arc<dyn PreparedCustomInvariantExecution>,
         prepared_scope: crate::validation::data::PreparedCustomInvariantScope,
+        retained_touched: Arc<crate::validation::data::TouchedStructuralSet>,
     },
     CustomNotApplicable {
         registration: CustomInvariantRegistration,
@@ -69,4 +70,6 @@ pub(crate) struct InvariantWorkPacket<'runtime> {
     pub(crate) current_version_id: crate::identity::data::VersionId,
     pub(crate) merged_plan: Option<&'runtime MergedCommitPlan>,
     pub(crate) relation_integrity_scopes: Option<PreparedRelationIntegrityScopes>,
+    pub(crate) current_version_minimum_index:
+        Arc<std::sync::OnceLock<crate::validation::engine::evaluator::CurrentVersionMinimumIndex>>,
 }

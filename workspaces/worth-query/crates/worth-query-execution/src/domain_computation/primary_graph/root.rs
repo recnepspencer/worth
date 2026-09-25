@@ -1,15 +1,16 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 use std::sync::{Arc, Mutex};
 
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
-use worth_relational::facade::indexes::{DerivedIndexDefinition, DerivedIndexKind};
 use worth_relational::facade::runtime::RelationalRuntime;
 
 use super::schema_layout::WorthQueryPrimaryGraphLayout;
 use crate::domain_computation::execution_runtime::product_world::WorthQueryRelationalSourceOwner;
 
+mod index_installation;
 #[cfg(test)]
 mod test_inspection;
+use index_installation::{register_primary_graph_indexes, IndexInstallationPosture};
 
 /// Execution-owned primary logical graph for one installed application schema.
 ///
@@ -25,26 +26,12 @@ pub struct WorthQueryPrimaryGraph {
     source_owner: WorthQueryRelationalSourceOwner,
     aggregate_projections: Arc<Mutex<super::aggregate_projection::WorthQueryAggregateProjections>>,
     output_lineage: Arc<Mutex<super::output_lineage::WorthQueryApplicationOutputLineage>>,
+    managed_derived_views: Arc<super::application_query::derived_view::ManagedDerivedViewRegistry>,
+    workflow_compilation_reuse:
+        Arc<Mutex<super::workflow::definition::WorkflowDefinitionCompilationReuse>>,
+    workflow_instance_progress_retention:
+        Arc<[Mutex<super::workflow::instance::WorkflowInstanceProgressRetention>]>,
     truth_partition_role: Option<worth_foundational::facade::TruthPartitionRole>,
-}
-
-fn install_index(
-    runtime: &RelationalRuntime,
-    recovered: bool,
-    definition: DerivedIndexDefinition,
-) -> Result<DerivedIndexDefinition, String> {
-    if !recovered {
-        return Ok(runtime.index_authority().register(definition));
-    }
-    runtime
-        .index_access()
-        .matching_definition(&definition)
-        .ok_or_else(|| {
-            format!(
-                "recovered runtime omitted Query index definition '{}'",
-                definition.name
-            )
-        })
 }
 
 impl WorthQueryPrimaryGraph {
@@ -54,8 +41,14 @@ impl WorthQueryPrimaryGraph {
         layout: WorthQueryPrimaryGraphLayout,
         runtime: RelationalRuntime,
     ) -> Self {
-        Self::install(runtime_authority, binding_identity, layout, runtime, false)
-            .expect("ordinary primary-graph index registration is infallible")
+        Self::install(
+            runtime_authority,
+            binding_identity,
+            layout,
+            runtime,
+            IndexInstallationPosture::Register,
+        )
+        .expect("ordinary primary-graph index registration is infallible")
     }
 
     pub(super) fn from_recovered_runtime(
@@ -64,7 +57,13 @@ impl WorthQueryPrimaryGraph {
         layout: WorthQueryPrimaryGraphLayout,
         runtime: RelationalRuntime,
     ) -> Result<Self, String> {
-        Self::install(runtime_authority, binding_identity, layout, runtime, true)
+        Self::install(
+            runtime_authority,
+            binding_identity,
+            layout,
+            runtime,
+            IndexInstallationPosture::RequireRecovered,
+        )
     }
 
     fn install(
@@ -72,84 +71,10 @@ impl WorthQueryPrimaryGraph {
         binding_identity: ApplicationSchemaBindingIdentity,
         mut layout: WorthQueryPrimaryGraphLayout,
         runtime: RelationalRuntime,
-        recovered: bool,
+        index_posture: IndexInstallationPosture,
     ) -> Result<Self, String> {
         let relational_runtime_instance_id = runtime.main_branch_identity().runtime_instance_id();
-        let mut indexes_by_locator = BTreeMap::new();
-        for (binding, binding_layout) in layout.principal_bindings_mut() {
-            let installed = install_index(
-                &runtime,
-                recovered,
-                DerivedIndexDefinition {
-                    index_id: worth_relational::facade::indexes::DerivedIndexId(0),
-                    name: format!("application-principal.{binding}"),
-                    kind: DerivedIndexKind::EntityField {
-                        field_locator: binding_layout.identity_locator.clone(),
-                    },
-                    branch_scoped: false,
-                },
-            )?;
-            binding_layout.index_id = installed.index_id;
-            indexes_by_locator.insert(binding_layout.identity_locator.clone(), installed.index_id);
-        }
-        for ((entity, aspect, field), field_layout) in layout.equality_fields_mut() {
-            let index_id = if let Some(index_id) = indexes_by_locator.get(&field_layout.locator) {
-                *index_id
-            } else {
-                let installed = install_index(
-                    &runtime,
-                    recovered,
-                    DerivedIndexDefinition {
-                        index_id: worth_relational::facade::indexes::DerivedIndexId(0),
-                        name: format!("application-entity.{entity}.{aspect}.{field}"),
-                        kind: DerivedIndexKind::EntityField {
-                            field_locator: field_layout.locator.clone(),
-                        },
-                        branch_scoped: false,
-                    },
-                )?;
-                indexes_by_locator.insert(field_layout.locator.clone(), installed.index_id);
-                installed.index_id
-            };
-            field_layout.equality_index_id = Some(index_id);
-        }
-        layout.register_continuation_orderings(|definition| {
-            install_index(&runtime, recovered, definition).map(|installed| installed.index_id)
-        })?;
-        layout.register_capability_grant_joins(|definition| {
-            install_index(&runtime, recovered, definition).map(|installed| installed.index_id)
-        })?;
-        let provider_idempotency = layout.provider_idempotency_mut();
-        let installed = install_index(
-            &runtime,
-            recovered,
-            DerivedIndexDefinition {
-                index_id: worth_relational::facade::indexes::DerivedIndexId(0),
-                name: "worth-query-provider.idempotency-key".to_owned(),
-                kind: DerivedIndexKind::EntityField {
-                    field_locator: provider_idempotency.key_locator.clone(),
-                },
-                branch_scoped: false,
-            },
-        )?;
-        provider_idempotency.key_index_id = installed.index_id;
-        let aftermath_causality = layout.provider_aftermath_causality_mut();
-        let installed = install_index(
-            &runtime,
-            recovered,
-            DerivedIndexDefinition {
-                index_id: worth_relational::facade::indexes::DerivedIndexId(0),
-                name: "worth-query-provider.aftermath-causality-key".to_owned(),
-                kind: DerivedIndexKind::EntityField {
-                    field_locator: aftermath_causality.key_locator.clone(),
-                },
-                branch_scoped: false,
-            },
-        )?;
-        aftermath_causality.key_index_id = installed.index_id;
-        super::workflow::schema::register_indexes(layout.workflow_mut(), |definition| {
-            install_index(&runtime, recovered, definition)
-        })?;
+        register_primary_graph_indexes(&mut layout, &runtime, index_posture)?;
         let source_owner = WorthQueryRelationalSourceOwner::new(runtime, "primary")
             .expect("the installed primary graph role is canonical");
         Ok(Self {
@@ -162,6 +87,10 @@ impl WorthQueryPrimaryGraph {
                 super::aggregate_projection::WorthQueryAggregateProjections::default(),
             )),
             output_lineage: Arc::new(Mutex::new(Default::default())),
+            managed_derived_views: Arc::new(Default::default()),
+            workflow_compilation_reuse: Arc::new(Mutex::new(Default::default())),
+            workflow_instance_progress_retention:
+                super::workflow::instance::default_progress_retention_shards(),
             truth_partition_role: None,
         })
     }
@@ -202,6 +131,12 @@ impl WorthQueryPrimaryGraph {
         Arc::clone(&self.layout)
     }
 
+    pub(in crate::domain_computation::primary_graph) fn managed_derived_views(
+        &self,
+    ) -> Arc<super::application_query::derived_view::ManagedDerivedViewRegistry> {
+        Arc::clone(&self.managed_derived_views)
+    }
+
     pub(crate) fn integration_handle(&self) -> WorthQueryPrimaryGraphIntegrationHandle {
         let principal_identity_index_ids = self
             .layout
@@ -236,6 +171,11 @@ impl WorthQueryPrimaryGraph {
             primary_index_ids,
             aggregate_projections: Arc::clone(&self.aggregate_projections),
             output_lineage: Arc::clone(&self.output_lineage),
+            managed_derived_views: Arc::clone(&self.managed_derived_views),
+            workflow_compilation_reuse: Arc::clone(&self.workflow_compilation_reuse),
+            workflow_instance_progress_retention: Arc::clone(
+                &self.workflow_instance_progress_retention,
+            ),
             truth_partition_role: self.truth_partition_role.clone(),
         }
     }
@@ -271,10 +211,92 @@ pub struct WorthQueryPrimaryGraphIntegrationHandle {
         Arc<Mutex<super::aggregate_projection::WorthQueryAggregateProjections>>,
     pub(in crate::domain_computation::primary_graph) output_lineage:
         Arc<Mutex<super::output_lineage::WorthQueryApplicationOutputLineage>>,
+    pub(in crate::domain_computation::primary_graph) managed_derived_views:
+        Arc<super::application_query::derived_view::ManagedDerivedViewRegistry>,
+    pub(in crate::domain_computation::primary_graph) workflow_compilation_reuse:
+        Arc<Mutex<super::workflow::definition::WorkflowDefinitionCompilationReuse>>,
+    pub(in crate::domain_computation::primary_graph) workflow_instance_progress_retention:
+        Arc<[Mutex<super::workflow::instance::WorkflowInstanceProgressRetention>]>,
     pub(super) truth_partition_role: Option<worth_foundational::facade::TruthPartitionRole>,
 }
 
 impl WorthQueryPrimaryGraphIntegrationHandle {
+    pub(in crate::domain_computation::primary_graph) fn managed_derived_views(
+        &self,
+    ) -> Arc<super::application_query::derived_view::ManagedDerivedViewRegistry> {
+        Arc::clone(&self.managed_derived_views)
+    }
+
+    #[doc(hidden)]
+    pub fn workflow_compilation_reuse_counters(
+        &self,
+    ) -> super::WorthQueryWorkflowCompilationReuseCounters {
+        let reuse = self
+            .workflow_compilation_reuse
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        reuse.counters()
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn with_workflow_compilation_reuse_mut<T>(
+        &self,
+        mutate: impl FnOnce(&mut super::workflow::definition::WorkflowDefinitionCompilationReuse) -> T,
+    ) -> T {
+        let mut reuse = self
+            .workflow_compilation_reuse
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        mutate(&mut reuse)
+    }
+
+    #[doc(hidden)]
+    pub fn workflow_instance_progress_counters(
+        &self,
+    ) -> super::WorthQueryWorkflowInstanceProgressCounters {
+        let mut counters = super::WorthQueryWorkflowInstanceProgressCounters::default();
+        for shard in self.workflow_instance_progress_retention.iter() {
+            let shard = shard
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            counters.absorb(shard.counters());
+        }
+        counters
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn with_workflow_instance_progress_mut<T>(
+        &self,
+        key: super::workflow::instance::WorkflowInstanceProgressKey,
+        mutate: impl FnOnce(&mut super::workflow::instance::WorkflowInstanceProgressRetention) -> T,
+    ) -> T {
+        let shard = &self.workflow_instance_progress_retention[key.shard_index()];
+        let mut retention = shard
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        mutate(&mut retention)
+    }
+
+    #[cfg(feature = "test-primary-graph-faults")]
+    pub(in crate::domain_computation::primary_graph) fn release_workflow_instance_progress(&self) {
+        for shard in self.workflow_instance_progress_retention.iter() {
+            shard
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .release_all();
+        }
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn release_workflow_instance_progress_for_branch(
+        &self,
+        branch_occurrence: u64,
+    ) {
+        for shard in self.workflow_instance_progress_retention.iter() {
+            shard
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .release_branch(branch_occurrence);
+        }
+    }
+
     #[doc(hidden)]
     pub fn with_runtime<T>(&self, read: impl FnOnce(&RelationalRuntime) -> T) -> T {
         self.source_owner.with_runtime(read)

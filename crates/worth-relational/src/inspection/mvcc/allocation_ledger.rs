@@ -153,11 +153,17 @@ fn inventory_root(
     excluded: &mut Vec<RelationalOwnerExcludedAllocationObservation>,
 ) {
     for region in root.storage_regions() {
+        let partition = root
+            .partition_state(region.partition_id)
+            .expect("observed region owns its partition");
+        let mut payload = PayloadLedger {
+            runtime_instance_id,
+            partition_id: region.partition_id,
+            seen: Default::default(),
+            entries: authoritative,
+        };
+        partition.visit_authoritative_allocations(false, &mut payload);
         for (kind, bytes) in [
-            (
-                RelationalAuthoritativeAllocationKind::PartitionPayload,
-                region.authoritative_bytes,
-            ),
             (
                 RelationalAuthoritativeAllocationKind::PartitionStateObject,
                 region.partition_state_bytes,
@@ -178,36 +184,19 @@ fn inventory_root(
                 bytes,
             ));
         }
-        excluded.extend([
-            excluded_region(
-                runtime_instance_id,
-                region.region_id,
-                region.partition_id,
-                RelationalExcludedAllocationLane::Diagnostics,
-                region.diagnostic_bytes,
-            ),
-            excluded_region(
-                runtime_instance_id,
-                region.region_id,
-                region.partition_id,
-                RelationalExcludedAllocationLane::RetentionMetadata,
-                region.retention_metadata_bytes,
-            ),
-            excluded_region(
-                runtime_instance_id,
-                region.region_id,
-                region.partition_id,
-                RelationalExcludedAllocationLane::AllocatorBookkeeping,
-                region.allocator_bookkeeping_bytes,
-            ),
-            excluded_region(
-                runtime_instance_id,
-                region.region_id,
-                region.partition_id,
-                RelationalExcludedAllocationLane::OptionalCache,
-                region.optional_cache_bytes,
-            ),
-        ]);
+        let mut payload = ExcludedPayloadLedger {
+            runtime_instance_id,
+            partition_id: region.partition_id,
+            lane: RelationalExcludedAllocationLane::Diagnostics,
+            seen: Default::default(),
+            entries: excluded,
+        };
+        partition.visit_diagnostic_allocations(&mut payload);
+        payload.lane = RelationalExcludedAllocationLane::RetentionMetadata;
+        partition.visit_retention_allocations(&mut payload);
+        payload.lane = RelationalExcludedAllocationLane::OptionalCache;
+        partition.visit_cache_allocations(&mut payload);
+        root.visit_content_cache_allocations(region.partition_id, &mut payload);
     }
     for allocation in root.owner_allocation_ledger_entries() {
         let kind = root_allocation_kind(allocation.kind);
@@ -229,6 +218,36 @@ fn inventory_root(
         authoritative,
         excluded,
     );
+}
+
+struct PayloadLedger<'a> {
+    runtime_instance_id: u64,
+    partition_id: PartitionId,
+    seen: BTreeSet<u64>,
+    entries: &'a mut Vec<RelationalAuthoritativeAllocationObservation>,
+}
+
+impl crate::storage::substrate::StorageAllocationVisitor for PayloadLedger<'_> {
+    fn visit(
+        &mut self,
+        allocation: crate::storage::substrate::StorageAllocationObservation,
+    ) -> bool {
+        if !self.seen.insert(allocation.id) {
+            return false;
+        }
+        self.entries
+            .push(RelationalAuthoritativeAllocationObservation::new(
+                RelationalAuthoritativeAllocationLocator::new(
+                    self.runtime_instance_id,
+                    RelationalAuthoritativeAllocationKind::PartitionPayload,
+                    allocation.id,
+                    allocation.id,
+                    Some(self.partition_id),
+                ),
+                allocation.bytes,
+            ));
+        true
+    }
 }
 
 fn inventory_commit(
@@ -271,19 +290,31 @@ fn inventory_commit(
     ]);
 }
 
-fn excluded_region(
+struct ExcludedPayloadLedger<'a> {
     runtime_instance_id: u64,
-    owner_id: u64,
     partition_id: PartitionId,
     lane: RelationalExcludedAllocationLane,
-    bytes: u64,
-) -> RelationalOwnerExcludedAllocationObservation {
-    RelationalOwnerExcludedAllocationObservation {
-        runtime_instance_id,
-        lane,
-        owner_id,
-        partition_id: Some(partition_id),
-        bytes,
+    seen: BTreeSet<u64>,
+    entries: &'a mut Vec<RelationalOwnerExcludedAllocationObservation>,
+}
+
+impl crate::storage::substrate::StorageAllocationVisitor for ExcludedPayloadLedger<'_> {
+    fn visit(
+        &mut self,
+        allocation: crate::storage::substrate::StorageAllocationObservation,
+    ) -> bool {
+        if !self.seen.insert(allocation.id) {
+            return false;
+        }
+        self.entries
+            .push(RelationalOwnerExcludedAllocationObservation {
+                runtime_instance_id: self.runtime_instance_id,
+                lane: self.lane,
+                owner_id: allocation.id,
+                partition_id: Some(self.partition_id),
+                bytes: allocation.bytes,
+            });
+        true
     }
 }
 

@@ -64,6 +64,19 @@ impl WorthQueryRecoverySafeRetryAdmission {
     pub const fn outbox_durability(&self) -> WorthQueryDispatchOutboxDurabilityPosture {
         self.outbox_durability
     }
+
+    pub(crate) fn completes_receipt(
+        &self,
+        receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+    ) -> bool {
+        let Ok(expected) = WorthQueryRecoveryHandleBinding::from_receipt(
+            receipt,
+            self.binding.expires_at_unix_ms(),
+        ) else {
+            return false;
+        };
+        self.binding == expected && self.dispatch.is_external_completion()
+    }
 }
 
 pub fn safe_retry_recovery_handle(

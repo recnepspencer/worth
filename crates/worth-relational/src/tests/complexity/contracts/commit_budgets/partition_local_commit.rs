@@ -43,7 +43,7 @@ fn complexity_budget_commit_topology_inference_distinguishes_flat_and_graph_muta
 }
 
 #[test]
-fn complexity_budget_bulk_create_reserves_partition_local_capacity() {
+fn complexity_budget_bulk_create_reserves_exact_logical_slots() {
     let runtime = runtime_with_test_schema();
     runtime.performance_access().reset_counters();
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);

@@ -23,6 +23,7 @@ impl VisibilityProjectionView<'_> {
             kind_id,
             AdjacencyDirection::Outgoing,
             maximum_work_units,
+            false,
         )
     }
 
@@ -37,6 +38,29 @@ impl VisibilityProjectionView<'_> {
             kind_id,
             AdjacencyDirection::Incoming,
             maximum_work_units,
+            false,
+        )
+    }
+
+    /// Index maintenance mirrors full-build relation visibility, including
+    /// audit-retained edges. Ordinary frontier queries remain Live-only.
+    pub(crate) fn bounded_index_relations_for_frontier(
+        &self,
+        entity_ids: &BTreeSet<EntityId>,
+        kind_id: KindId,
+        outgoing: bool,
+        maximum_work_units: usize,
+    ) -> Result<BoundedFrontierAdjacencyTruthRead, FrontierAdjacencyTruthReadLimitExceeded> {
+        self.bounded_relations_for_frontier(
+            entity_ids,
+            kind_id,
+            if outgoing {
+                AdjacencyDirection::Outgoing
+            } else {
+                AdjacencyDirection::Incoming
+            },
+            maximum_work_units,
+            true,
         )
     }
 
@@ -46,6 +70,7 @@ impl VisibilityProjectionView<'_> {
         kind_id: KindId,
         direction: AdjacencyDirection,
         maximum_work_units: usize,
+        include_audit: bool,
     ) -> Result<BoundedFrontierAdjacencyTruthRead, FrontierAdjacencyTruthReadLimitExceeded> {
         let Some(root) = self.basis.root() else {
             let mut lists = 0;
@@ -88,7 +113,9 @@ impl VisibilityProjectionView<'_> {
                     continue;
                 };
                 if record.kind.kind_id != kind_id
-                    || record.lifecycle != crate::storage::data::RecordLifecycleState::Live
+                    || !(record.lifecycle == crate::storage::data::RecordLifecycleState::Live
+                        || (include_audit && record.lifecycle
+                            == crate::storage::data::RecordLifecycleState::RetainedDanglingForAudit))
                     || !direction.matches_endpoint(&record, *entity_id)
                 {
                     continue;

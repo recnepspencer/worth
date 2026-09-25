@@ -129,6 +129,45 @@ impl RelationalCommitArtifact {
         Ok(artifact)
     }
 
+    /// Recovery first seals the canonical payload while admitting durable
+    /// envelopes. Relinking checkpoint roots must not serialize it again.
+    pub(crate) fn relink_preencoded_recovery(
+        &self,
+        envelope: &Arc<CanonicalCommitEnvelope>,
+        root: Option<&Arc<crate::branch::RelationalBranchRoot>>,
+        descriptor: Option<&RelationalCommitRootDescriptor>,
+    ) -> Result<Self, RelationalCommitArtifactDenial> {
+        if !Arc::ptr_eq(&self.envelope, envelope) {
+            return Err(RelationalCommitArtifactDenial::RootLinkage);
+        }
+        let roots = if let Some(root) = root {
+            if !root.links_envelope(envelope) {
+                return Err(RelationalCommitArtifactDenial::RootLinkage);
+            }
+            root.descriptor()
+                .cloned()
+                .ok_or(RelationalCommitArtifactDenial::RootLinkage)?
+        } else if let Some(descriptor) = descriptor {
+            if descriptor.schema_root()
+                != &crate::schema::data::schema_authority_snapshot_digest_bytes(
+                    &envelope.schema_authority,
+                )
+            {
+                return Err(RelationalCommitArtifactDenial::RootLinkage);
+            }
+            descriptor.clone()
+        } else {
+            self.roots.clone()
+        };
+        Ok(Self {
+            identity: self.identity.clone(),
+            parentage: self.parentage.clone(),
+            roots,
+            envelope: Arc::clone(envelope),
+            canonical_payload: Arc::clone(&self.canonical_payload),
+        })
+    }
+
     pub fn identity(&self) -> &RelationalCommitIdentity {
         &self.identity
     }

@@ -2,9 +2,9 @@
 use worth_query_declaration::facade::application_query::ApplicationQueryReference;
 use worth_query_declaration::facade::{
     application_query::{
-        ApplicationQueryBasisSupport, ApplicationQueryDisclosureContract,
-        ApplicationQueryLaneEligibility, ApplicationQueryParameterDefinition,
-        ErasedApplicationQueryDefinition,
+        ApplicationQueryBasisSupport, ApplicationQueryDependencyEquivalence,
+        ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
+        ApplicationQueryParameterDefinition, ErasedApplicationQueryDefinition,
     },
     application_schema::ApplicationSchemaBindingIdentity,
     portable_identity::WorthQueryPortableTypeIdentity,
@@ -93,6 +93,10 @@ impl WorthQueryCompiledApplicationQuery {
 
     pub(crate) fn read_graph(&self) -> &WorthQueryInstalledGraphReadContract {
         self.read_family.planning_contract()
+    }
+
+    pub(crate) fn dependency_equivalence(&self) -> ApplicationQueryDependencyEquivalence {
+        self.definition.dependency_equivalence()
     }
 
     pub(crate) const fn read_family_binding(

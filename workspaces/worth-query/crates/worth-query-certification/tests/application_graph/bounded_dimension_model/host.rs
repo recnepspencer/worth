@@ -1,9 +1,9 @@
 //! Publishing a bounded-dimension host through the real installation path.
 //!
 //! Every host in this court is built here and nowhere else: one installed
-//! schema carrying both rule contracts, one explicit program roster, and one
-//! seeded part. Which program a host starts on is the only thing that varies,
-//! which is what makes a difference in behaviour attributable to it.
+//! schema carrying both rule contracts, an explicit program roster, and two
+//! seeded parts. Ordinary cases share one resource profile; the scheduled
+//! history court explicitly installs larger history and exact-pin capacities.
 
 use worth_query_host::facade::application_contribution::{
     WorthQueryApplicationContribution, WorthQueryApplicationContributionSetup,
@@ -11,7 +11,8 @@ use worth_query_host::facade::application_contribution::{
 use worth_query_host::facade::application_installation::{
     in_memory_rostered_program, WorthQueryApplicationProgramRoster,
     WorthQueryInMemoryApplicationDenial, WorthQueryInMemoryApplicationLimits,
-    WorthQueryProgramApplicationRuntime, WorthQueryWorkflowApplicationRuntime,
+    WorthQueryInMemoryApplicationProfile, WorthQueryProgramApplicationRuntime,
+    WorthQueryWorkflowApplicationRuntime,
 };
 use worth_query_host::facade::declaration::application_program::{
     ApplicationProgramDefinition, ApplicationProgramOutputsShape, ValidatedApplicationProgram,
@@ -25,7 +26,9 @@ use super::assessment_output::{
     PartAssessmentBinding, PartAssessmentHandler, PartAssessmentProducer, PartAssessmentProvider,
 };
 use super::assessment_readiness::PartAssessmentReadiness;
-use super::dimension_entry::{SetPartDimensionBinding, SetPartDimensionHandler, PART_IDENTITY};
+use super::dimension_entry::{
+    SetPartDimensionBinding, SetPartDimensionHandler, PART_IDENTITY, RELATED_PART_IDENTITY,
+};
 use super::programs::{
     validated_changed_feature_program, validated_changed_operation_program,
     validated_first_program, validated_first_resource_program, validated_foreign_rule_program,
@@ -101,13 +104,49 @@ impl WorthQueryApplicationContribution<BoundedDimensionSchema> for BoundedDimens
 
 /// Publishes a host whose first occurrence runs P0, with P1 rostered beside it.
 pub fn publish_on_first_program() -> BoundedDimensionRuntime<DimensionProgramP0> {
-    publish(
+    publish_on_first_program_with_limits(host_limits())
+}
+
+pub fn publish_on_first_program_for_history_scale() -> BoundedDimensionRuntime<DimensionProgramP0> {
+    publish_on_first_program_with_limits(history_limits(16_384, 64 * 1024 * 1024, 32_768))
+}
+
+/// Scheduled 10k publication lane: 200k candidate items, 128 MiB candidate
+/// bytes, 20M candidate work, 200k operation width, and GeometryKernel's
+/// 65,536-record patch ceiling. Ordinary fixture actions retain their smaller
+/// handler-level candidate requirements.
+pub fn publish_on_first_program_for_geometry_scale() -> BoundedDimensionRuntime<DimensionProgramP0>
+{
+    publish_on_first_program_with_limits(
+        WorthQueryInMemoryApplicationLimits::new(
+            world_resources(1_024, 256 * 1024 * 1024, 2_048),
+            runtime::WorthQueryApplicationCandidateResourceProfile::bounded(
+                200_000,
+                128 * 1024 * 1024,
+                20_000_000,
+            )
+            .expect("finite geometry candidate resources")
+            .with_maximum_operation_width(200_000)
+            .expect("finite geometry publication width"),
+            runtime::WorthQueryApplicationQueryResourceProfile::bounded(5_120, 2_048, 200_000, 128)
+                .expect("finite geometry query resources"),
+            primary_graph::SignalConditionalEvaluationBudget::development(),
+        )
+        .with_profile(WorthQueryInMemoryApplicationProfile::GeometryKernel),
+    )
+}
+
+fn publish_on_first_program_with_limits(
+    limits: WorthQueryInMemoryApplicationLimits,
+) -> BoundedDimensionRuntime<DimensionProgramP0> {
+    publish_with_limits(
         validated_first_program(),
         WorthQueryApplicationProgramRoster::new()
             .support(validated_second_program())
             .support(validated_changed_feature_program())
             .support(validated_changed_operation_program())
             .support(validated_removed_operation_program()),
+        limits,
     )
     .expect("the P0-initial bounded-dimension host must install")
 }
@@ -177,12 +216,31 @@ where
                 BoundedDimensionSchema,
             >,
 {
+    publish_with_limits(initial, roster, host_limits())
+}
+
+fn publish_with_limits<Initial>(
+    initial: ValidatedApplicationProgram<BoundedDimensionSchema, Initial>,
+    roster: WorthQueryApplicationProgramRoster<'_, BoundedDimensionSchema>,
+    limits: WorthQueryInMemoryApplicationLimits,
+) -> Result<BoundedDimensionRuntime<Initial>, WorthQueryInMemoryApplicationDenial>
+where
+    Initial: ApplicationProgramDefinition<
+            BoundedDimensionSchema,
+            Contributions = (BoundedDimensionContribution,),
+        > + 'static,
+    Initial::Outputs:
+        ApplicationProgramOutputsShape<BoundedDimensionSchema>
+            + worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoots<
+                BoundedDimensionSchema,
+            >,
+{
     in_memory_rostered_program(
         initial,
         roster,
         BoundedDimensionSchema::declaration().expect("the bounded-dimension schema is valid"),
         ((),),
-        host_limits(),
+        limits,
         |graph, installed| {
             let principal_binding = installed
                 .principal_binding(PartPrincipalBinding::reference())
@@ -230,15 +288,39 @@ fn seed_part(graph: &mut primary_graph::WorthQueryPrimaryGraphBootstrap<BoundedD
             .field(PartDimensionField::reference(), SEED_DIMENSION),
         )
         .expect("the part must seed");
+    graph
+        .bind_entity(
+            primary_graph::WorthQueryApplicationEntitySeed::new(
+                Part::reference(),
+                primary_graph::WorthQueryApplicationEntityKey::new("part-row-2")
+                    .expect("the related row key is valid"),
+            )
+            .field(
+                PartIdentityField::reference(),
+                RELATED_PART_IDENTITY.to_owned(),
+            )
+            .field(PartDimensionField::reference(), SEED_DIMENSION),
+        )
+        .expect("the related part must seed");
 }
 
 fn host_limits() -> WorthQueryInMemoryApplicationLimits {
+    history_limits(256, 4 * 1024 * 1024, 256)
+}
+
+fn history_limits(
+    commits: u64,
+    metadata_bytes: u64,
+    pins: u64,
+) -> WorthQueryInMemoryApplicationLimits {
+    // Installation admits the binding's maximum publication shape even though
+    // the ordinary Part handler requests its narrow candidate at execution.
     WorthQueryInMemoryApplicationLimits::new(
-        world_resources(),
+        world_resources(commits, metadata_bytes, pins),
         runtime::WorthQueryApplicationCandidateResourceProfile::bounded(
-            4_096,
-            2 * 1024 * 1024,
-            1_048_576,
+            200_000,
+            128 * 1024 * 1024,
+            20_000_000,
         )
         .expect("valid candidate limits"),
         runtime::WorthQueryApplicationQueryResourceProfile::bounded(5_120, 2_048, usize::MAX, 128)
@@ -247,15 +329,19 @@ fn host_limits() -> WorthQueryInMemoryApplicationLimits {
     )
 }
 
-fn world_resources() -> runtime::WorthQueryProductWorldResources {
+fn world_resources(
+    commits: u64,
+    metadata_bytes: u64,
+    pins: u64,
+) -> runtime::WorthQueryProductWorldResources {
     runtime::WorthQueryProductWorldResources::install(
         runtime::RuntimeWorldBudgetInstallation {
             branches: runtime::RuntimeWorldBranchBudgetInstallation {
                 live_product_branches: 32,
             },
             history: runtime::RuntimeWorldHistoryBudgetInstallation {
-                retained_composite_commits: 256,
-                history_metadata_bytes: 4 * 1024 * 1024,
+                retained_composite_commits: commits,
+                history_metadata_bytes: metadata_bytes,
             },
             observations: runtime::RuntimeWorldObservationBudgetInstallation {
                 active_observations: 128,
@@ -268,7 +354,7 @@ fn world_resources() -> runtime::WorthQueryProductWorldResources {
                 retained_partial_metadata_bytes: 4 * 1024 * 1024,
             },
             retention: runtime::RuntimeWorldRetentionBudgetInstallation {
-                unique_exact_component_pins: 256,
+                unique_exact_component_pins: pins,
                 in_flight_pin_acquisition_reservations: 64,
             },
             custody: runtime::RuntimeWorldCustodyBudgetInstallation {

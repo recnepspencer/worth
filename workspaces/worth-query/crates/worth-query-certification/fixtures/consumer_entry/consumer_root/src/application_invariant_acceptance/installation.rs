@@ -92,7 +92,18 @@ pub(super) fn assert_program_cannot_omit_a_required_binding() {
         ConsumerSchema::declaration().expect("the contributed declaration is valid"),
         configuration,
         limits,
-        |_, _| Ok(()),
+        |graph, installed| {
+            let principal = installed
+                .principal_binding(ConsumerPrincipalBinding::reference::<ConsumerSchema>())
+                .expect("the contributed principal mapping is installed");
+            graph.bind_principal(
+                &principal,
+                primary_graph::WorthQueryApplicationPrincipalKey::new("model-owner").unwrap(),
+                1_u64,
+                authentication::external_identity(),
+                WorthQueryPrincipalMappingStatus::Enabled,
+            )
+        },
     );
     let denial = match result {
         Err(installation::WorthQueryInMemoryApplicationDenial::Program(denial)) => denial,
@@ -147,16 +158,17 @@ pub(super) fn assert_required_output_source_cannot_be_an_action() {
             )
         },
     );
-    match result {
-        Err(installation::WorthQueryInMemoryApplicationDenial::RequiredOutputSourceAction(
-            binding,
-        )) => assert_eq!(
-            binding,
-            "worth.query.certification.planar-source-adjustment.v1"
-        ),
-        Err(other) => panic!("expected required-source action denial, received {other}"),
+    let application = result.expect("the overlapping program remains declaration-valid");
+    let denial = match application
+        .admit_program_operation::<worth_query_topology_entry::AdjustPlanarSource>()
+    {
+        Err(denial) => denial,
         Ok(_) => panic!("required output source was admitted as an ordinary action"),
-    }
+    };
+    assert_eq!(
+        denial.kind(),
+        primary_graph::WorthQueryApplicationCommitDenialKind::ApplicationProgramRequired,
+    );
 }
 
 pub(super) fn assert_repeated_optional_member_correspondence(world: &ConsumerWorld) {
@@ -324,6 +336,17 @@ fn install_with_resource_bytes(
                 WorthQueryPrincipalMappingStatus::Enabled,
             )?;
             seed::seed_cycles(graph);
+            graph.bind_principal(
+                &principal,
+                primary_graph::WorthQueryApplicationPrincipalKey::new("sibling-owner").unwrap(),
+                2_u64,
+                worth_query_host::facade::declaration::authentication::WorthQueryExternalPrincipalIdentity::new(
+                    "https://consumer.invalid/local",
+                    "sibling-owner",
+                )
+                .unwrap(),
+                WorthQueryPrincipalMappingStatus::Enabled,
+            )?;
             Ok(())
         },
     )

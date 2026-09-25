@@ -1,5 +1,3 @@
-use worth_query_installation::facade::ApplicationSchema;
-
 use super::{
     PreparedWorkflowAdvance, RequiredWorkflowCondition, RequiredWorkflowOperation,
     WorkflowProgressOutcome,
@@ -9,123 +7,17 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationIdempotencyResolution,
     WorthQueryApplicationIdempotencyResolutionDenial, WorthQueryPrimaryGraphApplicationRuntime,
 };
+use worth_query_installation::facade::ApplicationSchema;
 
 #[path = "transition_replay/condition.rs"]
 mod condition;
-
-#[doc(hidden)]
-pub struct PreparedWorkflowTransitionReplay {
-    pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) identity:
-        String,
-    pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) identity_bytes:
-        [u8; 32],
-    pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) node_path:
-        String,
-    pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) operation_receipt_identity:
-        Option<[u8; 32]>,
-}
+#[path = "transition_replay/descriptor_retention.rs"]
+mod descriptor_retention;
+#[path = "transition_replay/prepared_outcomes.rs"]
+mod prepared_outcomes;
+pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) use descriptor_retention::PreparedWorkflowTransitionReplays;
 
 impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation, Input, Scope> {
-    pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) fn with_replays(
-        self,
-        replays: Box<[PreparedWorkflowTransitionReplay]>,
-    ) -> Self {
-        match self {
-            Self::Transition {
-                program,
-                program_revision,
-                transition_identity,
-                transition_identity_bytes,
-                transition_identity_locator,
-                assessment_identity_locator,
-                instance,
-                node_path,
-                assessment,
-                supporting_identity,
-                operation_receipt_identity,
-                approval,
-                approval_identity,
-                ..
-            } => Self::Transition {
-                program,
-                program_revision,
-                transition_identity,
-                transition_identity_bytes,
-                transition_identity_locator,
-                assessment_identity_locator,
-                instance,
-                node_path,
-                assessment,
-                supporting_identity,
-                operation_receipt_identity,
-                approval,
-                approval_identity,
-                replays,
-            },
-            Self::AwaitingAssessment(mut prepared) => {
-                prepared.replays = replays;
-                Self::AwaitingAssessment(prepared)
-            }
-            Self::AwaitingCondition(mut prepared) => {
-                prepared.replays = replays;
-                Self::AwaitingCondition(prepared)
-            }
-            Self::AwaitingOperation(mut prepared) => {
-                prepared.replays = replays;
-                Self::AwaitingOperation(prepared)
-            }
-            Self::AwaitingEvidence {
-                read_set,
-                transition_identity_locator,
-                assessment_identity_locator,
-                instance,
-                required,
-                ..
-            } => Self::AwaitingEvidence {
-                read_set,
-                transition_identity_locator,
-                assessment_identity_locator,
-                instance,
-                required,
-                replays,
-            },
-            Self::AwaitingApproval {
-                read_set,
-                transition_identity_locator,
-                assessment_identity_locator,
-                instance,
-                required,
-                ..
-            } => Self::AwaitingApproval {
-                read_set,
-                transition_identity_locator,
-                assessment_identity_locator,
-                instance,
-                required,
-                replays,
-            },
-            Self::ReplayOnly {
-                read_set,
-                transition_identity_locator,
-                assessment_identity_locator,
-                instance,
-                approval,
-                approval_identity,
-                denial,
-                ..
-            } => Self::ReplayOnly {
-                read_set,
-                transition_identity_locator,
-                assessment_identity_locator,
-                instance,
-                approval,
-                approval_identity,
-                replays,
-                denial,
-            },
-        }
-    }
-
     pub(super) fn resolve_transition_replay(
         &self,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -149,28 +41,28 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                 transition_identity_locator,
                 *approval_identity,
                 approval.as_ref(),
-                replays.as_ref(),
+                replays,
             ),
             Self::AwaitingAssessment(prepared) => (
                 &prepared.admitted.read_set().admission,
                 &prepared.layout.transition.identity,
                 None,
                 None,
-                prepared.replays.as_ref(),
+                &prepared.replays,
             ),
             Self::AwaitingCondition(prepared) => (
                 &prepared.admitted.read_set().admission,
                 &prepared.layout.transition.identity,
                 None,
                 None,
-                prepared.replays.as_ref(),
+                &prepared.replays,
             ),
             Self::AwaitingOperation(prepared) => (
                 &prepared.admitted.read_set().admission,
                 &prepared.layout.transition.identity,
                 None,
                 None,
-                prepared.replays.as_ref(),
+                &prepared.replays,
             ),
             Self::AwaitingEvidence {
                 read_set,
@@ -202,9 +94,22 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                     Self::ReplayOnly { approval, .. } => approval.as_ref(),
                     _ => None,
                 },
-                replays.as_ref(),
+                replays,
             ),
         };
+        if let Some(probe_identity) = replays.probe_identity {
+            let probe = runtime.resolve_admitted_application_idempotency(
+                admission,
+                idempotency.bind_workflow_transition(&probe_identity),
+            )?;
+            if matches!(
+                probe.into_resolution(),
+                WorthQueryApplicationIdempotencyResolution::Unseen
+            ) {
+                return Ok(None);
+            }
+        }
+        let replays = replays.materialize();
         if replays.is_empty() {
             return Ok(None);
         }
@@ -234,6 +139,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                                 replay.identity.clone(),
                                 locator.clone(),
                                 replay.node_path.clone(),
+                                replay.terminal,
                                 None,
                                 approval.cloned(),
                                 replay.operation_receipt_identity,
@@ -259,6 +165,9 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
         required: &RequiredWorkflowOperation,
         receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
         idempotency: WorthQueryApplicationIdempotencyBinding,
+        recovery: Option<
+            &crate::domain_computation::application_aftermath::WorthQueryRecoverySafeRetryAdmission,
+        >,
     ) -> Result<Option<WorkflowProgressOutcome>, WorthQueryApplicationIdempotencyResolutionDenial>
     where
         Schema: ApplicationSchema,
@@ -278,7 +187,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                 &program.read_set.admission,
                 program.read_set.lease.product().product_branch(),
                 transition_identity_locator,
-                replays.as_ref(),
+                replays,
             ),
             Self::AwaitingAssessment(prepared) => (
                 &prepared.admitted.read_set().admission,
@@ -289,7 +198,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                     .product()
                     .product_branch(),
                 &prepared.layout.transition.identity,
-                prepared.replays.as_ref(),
+                &prepared.replays,
             ),
             Self::AwaitingCondition(prepared) => (
                 &prepared.admitted.read_set().admission,
@@ -300,7 +209,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                     .product()
                     .product_branch(),
                 &prepared.layout.transition.identity,
-                prepared.replays.as_ref(),
+                &prepared.replays,
             ),
             Self::AwaitingOperation(prepared) => (
                 &prepared.admitted.read_set().admission,
@@ -311,7 +220,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                     .product()
                     .product_branch(),
                 &prepared.layout.transition.identity,
-                prepared.replays.as_ref(),
+                &prepared.replays,
             ),
             Self::AwaitingEvidence {
                 read_set,
@@ -334,9 +243,10 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                 &read_set.admission,
                 read_set.lease.product().product_branch(),
                 transition_identity_locator,
-                replays.as_ref(),
+                replays,
             ),
         };
+        let replays = replays.materialize();
         let Some(replay) = replays
             .iter()
             .find(|replay| replay.identity == required.transition_identity())
@@ -350,6 +260,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                 admission.scope_entity_id(),
                 branch,
                 receipt,
+                recovery,
             )
         else {
             return Ok(None);
@@ -379,6 +290,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                         replay.identity.clone(),
                         locator.clone(),
                         replay.node_path.clone(),
+                        replay.terminal,
                         None,
                         None,
                         Some(receipt_identity),

@@ -24,13 +24,15 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
         if self.primary_indexes_are_current(runtime, &head) {
             return Ok(());
         }
-        let build = runtime.index_authority().build_for_basis(
+        let build = runtime.index_authority().refresh_for_basis(
             DerivedIndexBuildRequest {
                 source_commit_id: head.commit_id,
                 branch_id: head.branch_id,
                 index_ids: self.primary_index_ids.to_vec(),
             },
             basis,
+            None,
+            super::index_maintenance_budget::cold_index_reconstruction_budget(),
         );
         self.require_complete_build(build)
     }
@@ -50,16 +52,20 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
 
     fn require_complete_build(
         &self,
-        build: worth_relational::facade::indexes::DerivedIndexBuildOutcome,
+        build: Result<
+            worth_relational::facade::indexes::DerivedIndexMaintenanceOutcome,
+            worth_relational::facade::indexes::DerivedIndexMaintenanceDenial,
+        >,
     ) -> Result<(), WorthQueryPrimaryIndexCurrencyDenial> {
-        if let Some(denial) = build.basis_denial {
-            return Err(WorthQueryPrimaryIndexCurrencyDenial::Basis(
-                index_basis_denial(denial),
-            ));
-        }
-        if build.failed_indexes.is_empty()
-            && build.generations.len() == self.primary_index_ids.len()
-        {
+        let build = build.map_err(|denial| match denial.kind {
+            worth_relational::facade::indexes::DerivedIndexMaintenanceDenialKind::Basis(basis) => {
+                WorthQueryPrimaryIndexCurrencyDenial::Basis(index_basis_denial(basis))
+            }
+            _ => WorthQueryPrimaryIndexCurrencyDenial::IndexUnavailable(
+                "primary graph index reconstruction exceeded its budget or lacked exact authority",
+            ),
+        })?;
+        if build.generations.len() == self.primary_index_ids.len() {
             Ok(())
         } else {
             Err(WorthQueryPrimaryIndexCurrencyDenial::IndexUnavailable(

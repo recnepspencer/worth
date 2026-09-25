@@ -1,6 +1,21 @@
 use super::RelationalRuntime;
 
 impl RelationalRuntime {
+    /// Read-only candidate preparation observation for integration proof.
+    pub fn custom_invariant_candidate_input_counters(
+        &self,
+    ) -> crate::runtime::RelationalCandidateInputCounters {
+        let counters = self.performance_access().complexity_counters_snapshot();
+        crate::runtime::RelationalCandidateInputCounters {
+            entity_reads: counters.custom_invariant_candidate_entity_reads,
+            relation_reads: counters.custom_invariant_candidate_relation_reads,
+            entity_aspect_reads: counters.custom_invariant_candidate_entity_aspect_reads,
+            relation_aspect_reads: counters.custom_invariant_candidate_relation_aspect_reads,
+            adjacency_gathers: counters.custom_invariant_candidate_adjacency_gathers,
+            reuse_hits: counters.custom_invariant_candidate_reuse_hits,
+        }
+    }
+
     pub(crate) fn retention_cost_counters(
         &self,
     ) -> crate::history::retention::RelationalRetentionCostCounters {
@@ -119,6 +134,9 @@ impl RelationalRuntime {
             total.publication_new_authoritative_bytes = total
                 .publication_new_authoritative_bytes
                 .saturating_add(costs.publication_new_authoritative_bytes);
+            total.publication_content_values_hashed = total
+                .publication_content_values_hashed
+                .saturating_add(costs.publication_content_values_hashed);
             total.reclaimable_unique_bytes = total
                 .reclaimable_unique_bytes
                 .saturating_add(costs.reclaimable_unique_bytes);

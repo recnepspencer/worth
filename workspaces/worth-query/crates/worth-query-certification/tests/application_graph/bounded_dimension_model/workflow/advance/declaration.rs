@@ -3,9 +3,9 @@ use worth_query_decl::facade::{
     worth_query_operation_reads,
 };
 use worth_query_host::facade::declaration::application_capability::{
-    ApplicationCapabilityEntitySelector, ApplicationCapabilityRequest,
-    ApplicationCapabilityRequestContext, ApplicationCapabilityRequestProjection,
-    ApplicationCapabilityRequestProjectionDenial,
+    ApplicationCapabilityEntitySelector, ApplicationCapabilityRelatedEntitySelector,
+    ApplicationCapabilityRequest, ApplicationCapabilityRequestContext,
+    ApplicationCapabilityRequestProjection, ApplicationCapabilityRequestProjectionDenial,
 };
 use worth_query_host::facade::declaration::application_schema::{
     ApplicationEncodedScalarValue, ApplicationSchemaDeclarationBuilder,
@@ -20,14 +20,14 @@ use worth_query_host::facade::{
 };
 
 use super::super::super::{
-    dimension_entry::PART_IDENTITY,
+    dimension_entry::{PART_IDENTITY, RELATED_PART_IDENTITY},
     schema::{BoundedDimensionSchema, Part, PartIdentityField, Principal},
 };
 use super::super::declaration::{
     WorkflowAuthoringGrant, WorkflowGrantActionField, WorkflowGrantDelegationLimitField,
     WorkflowGrantGrantee, WorkflowGrantGrantor, WorkflowGrantNotAfterField,
-    WorkflowGrantNotBeforeField, WorkflowGrantPurposeField, WorkflowGrantResource,
-    WorkflowGrantStatusField, WorkflowGrantWorkflowField,
+    WorkflowGrantNotBeforeField, WorkflowGrantPurposeField, WorkflowGrantRelated,
+    WorkflowGrantResource, WorkflowGrantStatusField, WorkflowGrantWorkflowField,
 };
 
 worth_query_capability_context!(pub WorkflowAdvanceContext in BoundedDimensionSchema);
@@ -71,7 +71,14 @@ impl ApplicationCapabilityRequest<BoundedDimensionSchema, WorkflowAdvanceCapabil
             encoded("advance-workflow-instance".to_owned()),
             encoded("reviewed-geometry".to_owned()),
             ApplicationCapabilityRequestContext::new(WorkflowAdvanceContext::reference()),
-        ))
+        )
+        .related_entity(ApplicationCapabilityRelatedEntitySelector::new(
+            WorkflowGrantRelated::reference(),
+            ApplicationCapabilityEntitySelector::new(
+                PartIdentityField::reference(),
+                encoded(RELATED_PART_IDENTITY.to_owned()),
+            ),
+        )))
     }
 }
 
@@ -157,6 +164,14 @@ pub(super) fn seed(graph: &mut WorthQueryPrimaryGraphBootstrap<BoundedDimensionS
             entity_key::<Part>("part-row-1"),
         ))
         .expect("workflow advance resource must seed");
+    graph
+        .bind_relation(WorthQueryApplicationRelationSeed::new(
+            WorkflowGrantRelated::reference(),
+            "workflow-advance-grant-related",
+            entity_key::<WorkflowAuthoringGrant>("workflow-advance-grant"),
+            entity_key::<Part>("part-row-2"),
+        ))
+        .expect("workflow advance related subject must seed");
     graph
         .bind_relation(WorthQueryApplicationRelationSeed::new(
             WorkflowGrantGrantor::reference(),

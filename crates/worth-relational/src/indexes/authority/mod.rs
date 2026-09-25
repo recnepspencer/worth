@@ -1,13 +1,15 @@
 mod basis_build;
 mod build_execution;
 mod diagnostics;
+mod maintenance;
+pub(crate) use maintenance::candidate::PreparedCandidateIndexPublication;
 mod packet_planning;
 
 use crate::history::data::CommitId;
 use crate::indexes::data::{
     DerivedIndexApplicability, DerivedIndexBuildOutcome, DerivedIndexBuildRequest,
-    DerivedIndexDefinition, DerivedIndexGeneration, DerivedIndexGenerationId, DerivedIndexId,
-    DerivedIndexPublicationStatus,
+    DerivedIndexDefinition, DerivedIndexEntries, DerivedIndexGeneration, DerivedIndexGenerationId,
+    DerivedIndexId, DerivedIndexPublicationStatus,
 };
 use crate::runtime::RelationalRuntime;
 
@@ -96,23 +98,51 @@ fn publish_index_generations(
             failed_indexes.push(result.index_id);
             continue;
         };
-        let generation = DerivedIndexGeneration {
-            generation_id: DerivedIndexGenerationId(runtime.indexes.next_generation_id()),
-            index_id: result.index_id,
-            source_commit_id: basis.source_commit_id,
-            source_branch_id: basis.branch_id.clone(),
-            applicability: DerivedIndexApplicability {
-                branch_id: basis.branch_id.clone(),
-                version_id: basis.version_id,
-                schema_version: basis.schema_version,
-            },
-            status: DerivedIndexPublicationStatus::Published,
+        generations.push(publish_prepared_generation(
+            runtime,
+            basis,
+            result.index_id,
             entries,
-        };
-        runtime.indexes.publish_generation(generation.clone());
-        generations.push(generation);
+        ));
     }
     generations
+}
+
+fn publish_prepared_generation(
+    runtime: &RelationalRuntime,
+    basis: &IndexGenerationPublicationBasis,
+    index_id: DerivedIndexId,
+    entries: DerivedIndexEntries,
+) -> DerivedIndexGeneration {
+    let generation = prepared_generation(
+        basis,
+        DerivedIndexGenerationId(runtime.indexes.next_generation_id()),
+        index_id,
+        entries,
+    );
+    runtime.indexes.publish_generation(generation.clone());
+    generation
+}
+
+fn prepared_generation(
+    basis: &IndexGenerationPublicationBasis,
+    generation_id: DerivedIndexGenerationId,
+    index_id: DerivedIndexId,
+    entries: DerivedIndexEntries,
+) -> DerivedIndexGeneration {
+    DerivedIndexGeneration {
+        generation_id,
+        index_id,
+        source_commit_id: basis.source_commit_id,
+        source_branch_id: basis.branch_id.clone(),
+        applicability: DerivedIndexApplicability {
+            branch_id: basis.branch_id.clone(),
+            version_id: basis.version_id,
+            schema_version: basis.schema_version,
+        },
+        status: DerivedIndexPublicationStatus::Published,
+        entries,
+    }
 }
 
 fn failed_build_outcome(

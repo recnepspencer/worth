@@ -1,5 +1,27 @@
 use std::sync::Arc;
 
+/// Exact roots and publishing branches that can still select a derived cache.
+/// Retired roots contribute only owner-recorded active obligations, not Arc
+/// payload counts or a stale entry in the retired-root inventory.
+#[derive(Debug, Default)]
+pub(crate) struct RetainedIndexRoots {
+    pub(crate) live: std::collections::BTreeSet<(
+        crate::history::data::BranchId,
+        crate::identity::data::VersionId,
+        crate::schema::data::SchemaVersionId,
+    )>,
+    pub(crate) retired: std::collections::BTreeSet<(
+        crate::history::data::BranchId,
+        crate::identity::data::VersionId,
+        crate::schema::data::SchemaVersionId,
+    )>,
+    pub(crate) historical_versions: std::collections::BTreeSet<(
+        crate::identity::data::VersionId,
+        crate::schema::data::SchemaVersionId,
+    )>,
+    pub(crate) latest_branches: std::collections::BTreeSet<crate::history::data::BranchId>,
+}
+
 /// Bounded maintenance result for retired immutable branch roots.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct RelationalBranchRootReclamationOutcome {
@@ -92,6 +114,21 @@ fn remove_commit_root(
 }
 
 impl crate::runtime::RelationalRuntime {
+    /// Explicit cold index maintenance. An in-flight cutover or unsettled
+    /// candidate leaves the catalog untouched for a later pass.
+    pub fn run_index_generation_reclamation_pass(&self) -> Option<usize> {
+        self.history
+            .canonical_checkpoint_gate()
+            .with_quiescent_index_reclamation(|| {
+                // The owner inventory, rather than Arc payload counts, decides
+                // which historical versions still have live obligations.
+                self.history
+                    .reclaim_retired_branch_roots(self.config.storage.retention.reclaim_batch_size);
+                let retained = self.history.retained_index_roots();
+                self.indexes.reclaim_except_versions(&retained)
+            })
+    }
+
     /// Reclaim cold immutable branch roots through the history owner. This
     /// bounded maintenance pass never walks live references or commit history.
     pub fn run_branch_root_reclamation_pass(&mut self) -> RelationalBranchRootReclamationOutcome {

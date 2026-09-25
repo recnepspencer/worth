@@ -42,22 +42,6 @@ impl WorkingState {
             .insert(slot);
     }
 
-    pub(crate) fn reserve_entity_slots(&mut self, partition_id: PartitionId, additional: usize) {
-        if additional == 0 {
-            return;
-        }
-        let partition = self.get_partition_mut(partition_id);
-        partition.entity_arena.reserve_additional(additional);
-    }
-
-    pub(crate) fn reserve_relation_slots(&mut self, partition_id: PartitionId, additional: usize) {
-        if additional == 0 {
-            return;
-        }
-        let partition = self.get_partition_mut(partition_id);
-        partition.relation_arena.reserve_additional(additional);
-    }
-
     pub(crate) fn mutation_journal(
         &self,
     ) -> &BTreeMap<PartitionId, super::super::PartitionMutationJournal> {
@@ -100,6 +84,14 @@ impl PartitionAccess for WorkingState {
         self.mutation_journal
             .get(&partition_id)
             .map(|journal| journal.relation_slots.iter().copied().collect())
+    }
+
+    fn has_touched_entity_slots(&self, partition_id: PartitionId) -> bool {
+        self.mutation_journal.contains_key(&partition_id)
+    }
+
+    fn has_touched_relation_slots(&self, partition_id: PartitionId) -> bool {
+        self.mutation_journal.contains_key(&partition_id)
     }
 
     fn entity_slot_is_touched(&self, partition_id: PartitionId, slot: usize) -> bool {

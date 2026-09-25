@@ -18,9 +18,7 @@ use crate::authority::commit::preparation::reduction::merge::{
     canonical_merge_streams, OrderedReductionStream,
 };
 use crate::authority::mutation::outcomes::{MutationOutcome, RecordMutation};
-use crate::authority::mutation::record_changes::{
-    allocate_entity_with_extra, reserve_bulk_entity_capacity,
-};
+use crate::authority::mutation::record_changes::allocate_entity_with_extra;
 use crate::authority::mutation::MutationWorkspace;
 use crate::transactions::data::{
     BulkEntityCreateIntent, BulkImportRowDomain, BulkImportStage, CommitConflict, CreatedEntityRef,
@@ -49,13 +47,6 @@ pub(super) fn apply(
     );
     let staged_rows = stage_bulk_entity_rows(intent, workspace)?;
     let entity_aspect_plans = stage_bulk_entity_aspect_plans(intent, workspace, &staged_rows)?;
-    workspace.with_context(|context| {
-        reserve_bulk_entity_capacity(
-            context.state,
-            intent.partition_id,
-            intent.field_patches.len(),
-        );
-    });
     for ((client_key, _fields), aspect_plan) in intent
         .client_keys
         .iter()

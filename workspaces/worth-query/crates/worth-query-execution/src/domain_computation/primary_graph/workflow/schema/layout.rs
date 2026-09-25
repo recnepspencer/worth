@@ -11,6 +11,8 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryWorkflowLayout
     pub(in crate::domain_computation::primary_graph) instance: WorkflowInstanceLayout,
     pub(in crate::domain_computation::primary_graph) transition: WorkflowTransitionLayout,
     pub(in crate::domain_computation::primary_graph) proposal: WorkflowProposalLayout,
+    pub(in crate::domain_computation::primary_graph) proposal_coverage:
+        WorkflowProposalCoverageLayout,
     pub(in crate::domain_computation::primary_graph) assessment_evidence:
         WorkflowAssessmentEvidenceLayout,
     pub(in crate::domain_computation::primary_graph) approval: WorkflowApprovalLayout,
@@ -29,12 +31,23 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryWorkflowLayout
     pub(in crate::domain_computation::primary_graph) instance_transition_relation: KindId,
     pub(in crate::domain_computation::primary_graph) transition_node_relation: KindId,
     pub(in crate::domain_computation::primary_graph) transition_proposal_relation: KindId,
+    pub(in crate::domain_computation::primary_graph) proposal_coverage_relation: KindId,
     pub(in crate::domain_computation::primary_graph) transition_assessment_evidence_relation:
         KindId,
     pub(in crate::domain_computation::primary_graph) transition_approval_relation: KindId,
     pub(in crate::domain_computation::primary_graph) approval_proposal_relation: KindId,
     pub(in crate::domain_computation::primary_graph) approval_evidence_relation: KindId,
     pub(in crate::domain_computation::primary_graph) evidence_dependency_relation: KindId,
+}
+
+#[derive(Clone, Debug)]
+pub(in crate::domain_computation::primary_graph) struct WorkflowProposalCoverageLayout {
+    pub(in crate::domain_computation::primary_graph) entity_kind: KindId,
+    pub(in crate::domain_computation::primary_graph) identity: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) selector: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) subject_partition: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) subject_slot: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) subject_generation: AspectFieldLocator,
 }
 
 #[derive(Clone, Debug)]
@@ -45,6 +58,8 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowEvidenceDependen
     pub(in crate::domain_computation::primary_graph) entity_slot: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) entity_generation: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) aspect: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) field: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) field_presence: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) relation_kind: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) direction: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) native_revision: AspectFieldLocator,
@@ -97,6 +112,7 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowAssessmentEviden
     pub(in crate::domain_computation::primary_graph) subject_slot: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) subject_generation: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) proposal_identity: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) coverage_identity: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) source_identity: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) passing: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) publication_identity: AspectFieldLocator,
@@ -120,7 +136,13 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowDefinitionLayout
     pub(in crate::domain_computation::primary_graph) maximum_nodes: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) maximum_connections: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) maximum_effects: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) maximum_component_occurrences:
+        AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) maximum_component_depth: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) maximum_node_provenance: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) maximum_connection_provenance:
+        AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) maximum_port_provenance: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) maximum_canonical_bytes: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) content_identity_index_id: DerivedIndexId,
 }
@@ -135,6 +157,7 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowNodeLayout {
     pub(in crate::domain_computation::primary_graph) parameter_type: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) result_type: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) assessment_binding: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) assessment_subject: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) condition_binding: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) capability_type: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) approval_operation: AspectFieldLocator,
@@ -190,5 +213,6 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowProposalLayout {
     pub(in crate::domain_computation::primary_graph) input_identity: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) source_identity: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) node_path: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) coverage_count: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) identity_index_id: DerivedIndexId,
 }

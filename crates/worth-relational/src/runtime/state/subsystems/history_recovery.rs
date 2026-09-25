@@ -13,7 +13,7 @@ impl HistorySubsystem {
     pub(crate) fn restore_branch_cells(
         &mut self,
         checkpoints: &[RelationalBranchCellCheckpoint],
-        root_partitions: &std::collections::BTreeMap<
+        root_partitions: &mut std::collections::BTreeMap<
             CommitId,
             std::collections::BTreeMap<
                 crate::identity::data::PartitionId,
@@ -46,27 +46,26 @@ impl HistorySubsystem {
                 }
                 FoundationalBranchTarget::Basis(target) => {
                     let commit_id = CommitId(target.selected_commit_id());
+                    let envelope = self.recorded_commit_envelope(commit_id).ok_or_else(|| {
+                        format!(
+                            "branch cell `{}` references missing commit artifact `{}`",
+                            checkpoint.branch_id.0, commit_id.0
+                        )
+                    })?;
                     validate_branch_target_envelope(
-                        &self.recorded_commit_envelope_map(),
+                        &envelope,
                         &checkpoint.branch_id,
                         checkpoint.observation.target(),
                     )?;
                     if let Some(root) = readmitted_roots.get(&commit_id) {
                         Some(root.clone())
                     } else {
-                        let partitions = root_partitions.get(&commit_id).ok_or_else(|| {
+                        let partitions = root_partitions.remove(&commit_id).ok_or_else(|| {
                             format!(
                                 "durable branch cell references missing branch-root image `{}`",
                                 commit_id.0
                             )
                         })?;
-                        let envelope =
-                            self.recorded_commit_envelope(commit_id).ok_or_else(|| {
-                                format!(
-                                    "durable branch cell references missing commit envelope `{}`",
-                                    commit_id.0
-                                )
-                            })?;
                         let schema_authority = root_schema_authorities
                             .get(&commit_id)
                             .cloned()
@@ -119,7 +118,7 @@ impl HistorySubsystem {
         }
         self.branch_cells.restore_all(cells);
         self.branch_cells.clear_retired_names();
-        self.rebuild_catalog_with_checkpoint_targets(checkpoints, symbols)?;
+        self.rebuild_checkpoint_catalog(checkpoints)?;
         self.try_reset_retention_owner(self.runtime_instance_id)
             .map_err(|denial| {
                 format!(

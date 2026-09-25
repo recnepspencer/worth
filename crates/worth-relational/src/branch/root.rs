@@ -19,6 +19,9 @@ mod axes;
 mod capture;
 #[path = "root_capture_preparation.rs"]
 mod capture_preparation;
+#[cfg(test)]
+#[path = "root_content_tests.rs"]
+mod content_tests;
 #[path = "root_identity.rs"]
 mod identity;
 #[path = "root_owner_allocation_ledger.rs"]
@@ -71,6 +74,7 @@ pub(crate) struct RelationalBranchRootPublicationCost {
     pub(crate) reused_regions: u64,
     /// Exact immutable radix nodes allocated by this publication.
     pub(crate) persistent_index_path_nodes: u64,
+    pub(crate) content_values_hashed: u64,
     pub(crate) new_authoritative_bytes: u64,
     pub(crate) copied_truth_bytes: u64,
     pub(crate) copied_commit_envelopes: u64,
@@ -298,6 +302,16 @@ impl RelationalBranchRoot {
         self.regions
             .get(partition_id)
             .map(|region| region.partition.as_ref())
+    }
+
+    pub(crate) fn visit_content_cache_allocations(
+        &self,
+        partition_id: PartitionId,
+        visitor: &mut dyn crate::storage::substrate::StorageAllocationVisitor,
+    ) {
+        if let Some(region) = self.regions.get(partition_id) {
+            region.content_commitment.visit_allocations(visitor);
+        }
     }
 
     pub(crate) fn partition_ids(&self) -> Vec<PartitionId> {

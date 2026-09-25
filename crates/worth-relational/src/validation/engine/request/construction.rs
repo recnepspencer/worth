@@ -115,6 +115,13 @@ fn relation_scope_requirements_for(
                     .or_insert_with(super::RelationScopeRequirement::default);
                 entry.requires_global_evaluation |= requirement.requires_global_evaluation;
                 entry.requires_visible_successors |= requirement.requires_visible_successors;
+                entry
+                    .minimum_candidate_kinds
+                    .extend(requirement.minimum_candidate_kinds);
+                entry.scan_existing_source_on_create |= requirement.scan_existing_source_on_create;
+                entry.scan_existing_target_on_create |= requirement.scan_existing_target_on_create;
+                entry.scan_existing_pair_on_create |= requirement.scan_existing_pair_on_create;
+                entry.scan_full_on_create |= requirement.scan_full_on_create;
                 requirements
             },
         )

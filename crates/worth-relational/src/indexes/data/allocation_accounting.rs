@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use super::{DerivedIndexEntryMap, DerivedIndexRows};
 
 use crate::identity::data::EntityId;
 use crate::storage::data::AuthoritativeFieldComparisonKey;
@@ -38,8 +38,8 @@ impl DerivedIndexEntries {
     }
 }
 
-fn comparison_entries_bytes<RecordId>(
-    entries: &BTreeMap<AuthoritativeFieldComparisonKey, Vec<RecordId>>,
+fn comparison_entries_bytes<RecordId: Clone>(
+    entries: &DerivedIndexEntryMap<AuthoritativeFieldComparisonKey, RecordId>,
 ) -> u64 {
     map_payload_bytes(entries)
         .saturating_add(
@@ -48,20 +48,17 @@ fn comparison_entries_bytes<RecordId>(
                 .map(AuthoritativeFieldComparisonKey::owned_allocation_capacity_bytes)
                 .sum(),
         )
-        .saturating_add(
-            entries
-                .values()
-                .map(vector_capacity_bytes::<RecordId>)
-                .sum(),
-        )
+        .saturating_add(entries.values().map(row_payload_bytes::<RecordId>).sum())
 }
 
-fn ordering_entries_bytes(entries: &BTreeMap<EntityId, Vec<RelatedEntityOrderingEntry>>) -> u64 {
+fn ordering_entries_bytes(
+    entries: &DerivedIndexEntryMap<EntityId, RelatedEntityOrderingEntry>,
+) -> u64 {
     map_payload_bytes(entries).saturating_add(
         entries
             .values()
             .map(|values| {
-                vector_capacity_bytes::<RelatedEntityOrderingEntry>(values).saturating_add(
+                row_payload_bytes::<RelatedEntityOrderingEntry>(values).saturating_add(
                     values
                         .iter()
                         .map(RelatedEntityOrderingEntry::owned_allocation_capacity_bytes)
@@ -72,22 +69,36 @@ fn ordering_entries_bytes(entries: &BTreeMap<EntityId, Vec<RelatedEntityOrdering
     )
 }
 
-fn fixed_entries_bytes(entries: &BTreeMap<RelationJoinKey, Vec<RelationJoinEntry>>) -> u64 {
+fn fixed_entries_bytes(entries: &DerivedIndexEntryMap<RelationJoinKey, RelationJoinEntry>) -> u64 {
     map_payload_bytes(entries).saturating_add(
         entries
             .values()
-            .map(vector_capacity_bytes::<RelationJoinEntry>)
+            .map(row_payload_bytes::<RelationJoinEntry>)
             .sum(),
     )
 }
 
-fn map_payload_bytes<Key, Value>(entries: &BTreeMap<Key, Value>) -> u64 {
-    // BTreeMap does not expose node capacity. Count every owned logical entry
-    // plus all recursively visible buffers; allocator/node bookkeeping is not
-    // presented as authoritative cache payload.
-    (entries.len() as u64).saturating_mul(std::mem::size_of::<(Key, Value)>() as u64)
+fn map_payload_bytes<Key: Ord + Clone, Value: Clone>(
+    entries: &DerivedIndexEntryMap<Key, Value>,
+) -> u64 {
+    // Charge reachable payload for every generation, including shared Arc key
+    // headers and map handles. This is an estimate, not unique physical bytes:
+    // im tree-node capacity and allocator overhead are not exposed here.
+    let per_key = std::mem::size_of::<(std::sync::Arc<Key>, DerivedIndexRows<Value>)>()
+        .saturating_add(std::mem::size_of::<Key>())
+        .saturating_add(2 * std::mem::size_of::<usize>());
+    (entries.len() as u64).saturating_mul(per_key as u64)
 }
 
 fn vector_capacity_bytes<Value>(values: &Vec<Value>) -> u64 {
     (values.capacity() as u64).saturating_mul(std::mem::size_of::<Value>() as u64)
+}
+
+fn row_payload_bytes<Value>(values: &DerivedIndexRows<Value>) -> u64 {
+    // Each row has an Arc allocation plus a vector handle; im node capacity is
+    // deliberately excluded from this logical reachable-payload estimate.
+    let per_row = std::mem::size_of::<Value>()
+        .saturating_add(std::mem::size_of::<std::sync::Arc<Value>>())
+        .saturating_add(2 * std::mem::size_of::<usize>());
+    (values.len() as u64).saturating_mul(per_row as u64)
 }

@@ -27,6 +27,12 @@ impl<'runtime> VisibilityProjectionView<'runtime> {
         self.basis.version_id()
     }
 
+    pub(crate) fn selected_root(
+        &self,
+    ) -> Option<&std::sync::Arc<crate::branch::RelationalBranchRoot>> {
+        self.basis.root()
+    }
+
     pub(crate) fn is_exact_basis(&self) -> bool {
         matches!(
             self.basis,
@@ -62,10 +68,7 @@ impl<'runtime> VisibilityProjectionView<'runtime> {
 
     pub fn entity<T: EntityRecordProjection>(&self, entity_id: EntityId) -> Option<T> {
         let projection_scope = self.assert_entity_projection_contract::<T>();
-        self.authoritative_entity_record(entity_id)
-            .and_then(|record| {
-                T::from_record(EntityProjectionRecord::new(&record, &projection_scope))
-            })
+        self.project_entity_record(entity_id, &projection_scope, T::from_record)
     }
 
     pub fn entity_records_with_projection_scope<T>(
@@ -87,9 +90,10 @@ impl<'runtime> VisibilityProjectionView<'runtime> {
         projection_scope: ProjectionAspectScope,
         mut project: impl FnMut(EntityProjectionRecord<'_>) -> Option<T>,
     ) -> Option<T> {
-        let record = self.authoritative_entity_record(entity_id)?;
-        self.assert_entity_projection_scope(record.kind.kind_id, &projection_scope);
-        project(EntityProjectionRecord::new(&record, &projection_scope))
+        self.project_entity_record(entity_id, &projection_scope, |record| {
+            self.assert_entity_projection_scope(record.kind_id(), &projection_scope);
+            project(record)
+        })
     }
 
     pub(crate) fn entity_record_of_expected_kind_with_projection_scope<T>(
@@ -99,17 +103,15 @@ impl<'runtime> VisibilityProjectionView<'runtime> {
         projection_scope: ProjectionAspectScope,
         mut project: impl FnMut(EntityProjectionRecord<'_>) -> Option<T>,
     ) -> Result<Option<T>, KindId> {
-        let Some(record) = self.authoritative_entity_record(entity_id) else {
-            return Ok(None);
-        };
-        if record.kind.kind_id != expected_kind_id {
-            return Err(record.kind.kind_id);
-        }
-        self.assert_entity_projection_scope(expected_kind_id, &projection_scope);
-        Ok(project(EntityProjectionRecord::new(
-            &record,
-            &projection_scope,
-        )))
+        self.project_entity_record(entity_id, &projection_scope, |record| {
+            Some(if record.kind_id() != expected_kind_id {
+                Err(record.kind_id())
+            } else {
+                self.assert_entity_projection_scope(expected_kind_id, &projection_scope);
+                Ok(project(record))
+            })
+        })
+        .unwrap_or(Ok(None))
     }
 
     pub fn relations<T: RelationRecordProjection>(&self) -> Vec<T> {
@@ -220,7 +222,7 @@ impl<'runtime> VisibilityProjectionView<'runtime> {
         );
     }
 
-    fn entity_aspect_plan(
+    pub(super) fn entity_aspect_plan(
         &self,
         kind_id: KindId,
     ) -> Option<&crate::schema::data::LoweredAspectContractPlan> {
@@ -235,7 +237,7 @@ impl<'runtime> VisibilityProjectionView<'runtime> {
         }
     }
 
-    fn relation_aspect_plan(
+    pub(super) fn relation_aspect_plan(
         &self,
         kind_id: KindId,
     ) -> Option<&crate::schema::data::LoweredAspectContractPlan> {
@@ -320,6 +322,27 @@ impl<'runtime> VisibilityReadContext<'runtime> {
             version_id,
         )
         .map_err(historical_projection_denial)?;
+        Ok(VisibilityProjectionView::new(
+            self.runtime(),
+            crate::visibility::snapshot_states::SnapshotStateBasis::Historical(basis),
+        ))
+    }
+
+    pub(crate) fn try_project_retained_commit(
+        &self,
+        commit_id: crate::history::data::CommitId,
+        branch_id: crate::history::data::BranchId,
+        version_id: VersionId,
+    ) -> Result<VisibilityProjectionView<'runtime>, crate::branch::RelationalBranchBasisDenial>
+    {
+        let basis =
+            crate::visibility::snapshot_states::HistoricalVisibilityBasis::resolve_retained_commit(
+                self.runtime(),
+                commit_id,
+                branch_id,
+                version_id,
+            )
+            .map_err(historical_projection_denial)?;
         Ok(VisibilityProjectionView::new(
             self.runtime(),
             crate::visibility::snapshot_states::SnapshotStateBasis::Historical(basis),

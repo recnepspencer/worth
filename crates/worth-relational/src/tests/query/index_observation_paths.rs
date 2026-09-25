@@ -194,7 +194,7 @@ fn derived_index_build_materializes_latest_visible_entity_field_values() {
                     .get(&field_comparison_key("gamma"))
                     .cloned()
                     .unwrap_or_default(),
-                vec![alpha]
+                vec![alpha].into()
             );
         }
         other => panic!("expected entity field entries, got {other:?}"),
@@ -276,7 +276,7 @@ fn derived_index_build_materializes_declared_struct_field_through_field_projecti
                     .get(&field_comparison_key("projected-title"))
                     .cloned()
                     .unwrap_or_default(),
-                vec![alpha]
+                vec![alpha].into()
             );
             assert!(!entries.contains_key(&field_comparison_key("hidden-status")));
         }

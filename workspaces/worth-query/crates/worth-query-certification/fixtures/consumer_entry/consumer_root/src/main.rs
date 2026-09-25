@@ -52,7 +52,7 @@ fn run() {
         .expect("the root-owned contributions form one closed schema declaration");
 
     assert_eq!(declaration.contributions().len(), 2);
-    assert_eq!(declaration.erased().members().len(), 100);
+    assert_eq!(declaration.erased().members().len(), 128);
     assert_ne!(
         TopologyLengthBinding::IDENTITY,
         ParameterCountBinding::IDENTITY

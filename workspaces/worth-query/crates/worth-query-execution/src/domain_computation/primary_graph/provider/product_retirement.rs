@@ -39,6 +39,8 @@ impl WorthQueryPrimaryGraphProvider {
                 .release(commit);
             drop(evidence);
         }
+        self.graph
+            .release_workflow_instance_progress_for_branch(incarnation.ordinal());
         self.retire_application_branch_commit_lane(incarnation);
     }
 }

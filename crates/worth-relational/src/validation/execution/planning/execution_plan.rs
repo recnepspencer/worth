@@ -21,13 +21,10 @@ use crate::validation::engine::InvariantRuntimeView;
 use super::packet_scope::packet_partition_scope;
 use super::packet_selection::eligible_registrations;
 
-pub(crate) fn plan_invariant_execution<'runtime, 'state>(
-    runtime: &'runtime InvariantRuntimeView,
+pub(crate) fn plan_invariant_execution<'state>(
+    runtime: &InvariantRuntimeView<'state>,
     request: &'state InvariantExecutionRequest<'state>,
-) -> PreparedInvariantExecution<'state>
-where
-    'runtime: 'state,
-{
+) -> PreparedInvariantExecution<'state> {
     let registrations = eligible_registrations(runtime, request);
     let context = Arc::new(planning_context(runtime, request));
     let partition_scope = packet_partition_scope(request.merged_plan());
@@ -126,6 +123,7 @@ fn invariant_work_packets<'state>(
 ) -> Vec<crate::authority::commit::preparation::InvariantWorkPacket<'state>> {
     let observation = request.observation();
     let relation_integrity_scopes = request.relation_integrity_scopes().cloned();
+    let current_version_minimum_index = Arc::new(std::sync::OnceLock::new());
 
     registrations
         .into_iter()
@@ -175,6 +173,7 @@ fn invariant_work_packets<'state>(
                 current_version_id: request.current_version_id(),
                 merged_plan: request.merged_plan(),
                 relation_integrity_scopes: relation_integrity_scopes.clone(),
+                current_version_minimum_index: Arc::clone(&current_version_minimum_index),
             }
         })
         .collect()

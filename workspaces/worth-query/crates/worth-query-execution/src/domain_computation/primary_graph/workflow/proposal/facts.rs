@@ -68,6 +68,10 @@ pub(in crate::domain_computation::primary_graph) fn visit_workflow_proposal_fact
             layout.proposal.node_path.clone(),
             text(proposal.node_path.clone()),
         ),
+        (
+            layout.proposal.coverage_count.clone(),
+            AspectValue::UInt64(u64::try_from(proposal.coverages.len()).unwrap_or(u64::MAX)),
+        ),
     ]);
     if let Some(source_identity) = &proposal.source_identity {
         fields.insert(
@@ -87,6 +91,47 @@ pub(in crate::domain_computation::primary_graph) fn visit_workflow_proposal_fact
         from: EntityReference::Created(transition.clone()),
         to: EntityReference::Created(proposal_entity.clone()),
     })?;
+    for (index, coverage) in proposal.coverages.iter().enumerate() {
+        let key = format!("proposal-coverage-{index}");
+        let coverage_entity = CreatedEntityRef {
+            partition_id: instance.partition_id,
+            kind_id: layout.proposal_coverage.entity_kind,
+            client_key: ClientKey::raw(key.clone()),
+        };
+        emit(WorthQueryApplicationRealizedEffect::CreateEntity {
+            kind: coverage_entity.kind_id,
+            key: key.clone(),
+            fields: BTreeMap::from([
+                (
+                    layout.proposal_coverage.identity.clone(),
+                    text(coverage.identity.clone()),
+                ),
+                (
+                    layout.proposal_coverage.selector.clone(),
+                    text(coverage.selector.persistence_identity()),
+                ),
+                (
+                    layout.proposal_coverage.subject_partition.clone(),
+                    AspectValue::UInt64(coverage.subject.partition_value_u64()),
+                ),
+                (
+                    layout.proposal_coverage.subject_slot.clone(),
+                    AspectValue::UInt64(coverage.subject.local_slot_value()),
+                ),
+                (
+                    layout.proposal_coverage.subject_generation.clone(),
+                    AspectValue::UInt64(u64::from(coverage.subject.generation_value())),
+                ),
+            ]),
+            partition: WorthQueryApplicationCreationPartition::Context(instance.partition_id),
+        })?;
+        emit(WorthQueryApplicationRealizedEffect::CreateRelation {
+            kind: layout.proposal_coverage_relation,
+            key: format!("proposal-coverage-relation-{index}"),
+            from: EntityReference::Created(proposal_entity.clone()),
+            to: EntityReference::Created(coverage_entity),
+        })?;
+    }
     Ok((transition, proposal_entity))
 }
 
