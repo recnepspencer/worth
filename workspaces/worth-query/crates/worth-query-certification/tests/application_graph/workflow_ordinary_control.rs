@@ -6,6 +6,7 @@ use worth_query_host::facade::application_entry::{
     WorkflowProposalOutcome, WorthQueryApplicationRequestExt,
     WorthQueryOrdinaryWorkflowRunProgress, WorthQueryOrdinaryWorkflowRunStop,
 };
+use worth_query_host::facade::primary_graph::WorthQueryApplicationAttemptDenialKind;
 
 use super::bounded_dimension_model::{
     dimension_entry::{
@@ -16,9 +17,10 @@ use super::bounded_dimension_model::{
     presented_request::set_dimension,
     settled_verdict::{settle, DimensionVerdict},
     workflow::{
-        advance_instance, condition_terminal_definition, condition_terminal_draft,
-        propose_authoring_instance, publish_definition, start_instance, WorkflowAdvanceInput,
-        WorkflowAdvanceIntent, WorkflowDefinitionAuthoringInput, WorkflowDefinitionAuthoringIntent,
+        advance_instance, bounded_retry_definition, condition_terminal_definition,
+        condition_terminal_draft, propose_authoring_instance, publish_definition, start_instance,
+        WorkflowAdvanceInput, WorkflowAdvanceIntent, WorkflowDefinitionAuthoringInput,
+        WorkflowDefinitionAuthoringIntent,
     },
 };
 
@@ -244,4 +246,93 @@ fn ordinary_and_advanced_satisfied_condition_share_meaning_wait_and_terminal() {
 #[test]
 fn ordinary_and_advanced_unsatisfied_condition_share_meaning_wait_and_terminal() {
     assert_condition_path_parity(false);
+}
+
+#[test]
+fn ordinary_and_advanced_retry_share_typed_denials_and_exhaustion() {
+    let application = publish_workflow_on_first_program();
+    let published = match publish_definition(
+        &application,
+        bounded_retry_definition(),
+        WorkflowDefinitionExpectedPredecessor::Absent,
+        919_100,
+    )
+    .expect("bounded retry publication prepares")
+    {
+        WorkflowDefinitionPublicationOutcome::Published(performed) => performed,
+        other => panic!("bounded retry did not publish: {other:?}"),
+    };
+    let start = |key| match start_instance(&application, published.definition().clone(), key)
+        .expect("retry instance starts")
+    {
+        WorkflowInstanceStartOutcome::Started(performed) => performed.instance().clone(),
+        other => panic!("retry instance did not start: {other:?}"),
+    };
+    let advanced = start(919_101);
+    let ordinary = start(919_102);
+    let expected_paths = [
+        "proposal/first",
+        "proposal/revise",
+        "proposal/first",
+        "proposal/revise",
+        "proposal/first",
+        "proposal/revise",
+    ];
+    for (index, expected) in expected_paths.iter().enumerate() {
+        let advanced_outcome =
+            advance_instance(&application, advanced.clone(), 919_120 + index as u64)
+                .expect("advanced retry advance prepares");
+        let ordinary_outcome = run(&application, ordinary.clone(), &[919_130 + index as u64]);
+        assert_eq!(ordinary_outcome.attempted_steps(), 1);
+        assert!(ordinary_outcome.transitions().is_empty());
+        let WorkflowProgressOutcome::PreparationDenied(advanced_denial) = advanced_outcome else {
+            panic!("advanced retry advance did not deny its proposal: {advanced_outcome:?}");
+        };
+        let WorthQueryOrdinaryWorkflowRunStop::Outcome(WorkflowProgressOutcome::PreparationDenied(
+            ordinary_denial,
+        )) = ordinary_outcome.stop()
+        else {
+            panic!(
+                "ordinary retry advance did not deny its proposal: {:?}",
+                ordinary_outcome.stop()
+            );
+        };
+        assert_eq!(
+            advanced_denial.kind(),
+            WorthQueryApplicationAttemptDenialKind::WorkflowTransitionNodeUnsupported
+        );
+        assert_eq!(ordinary_denial.kind(), advanced_denial.kind());
+        assert_eq!(ordinary_denial.subject(), advanced_denial.subject());
+        assert_eq!(ordinary_denial.subject(), *expected);
+        for (instance, key) in [
+            (advanced.clone(), 919_140 + index as u64),
+            (ordinary.clone(), 919_150 + index as u64),
+        ] {
+            let WorkflowProposalOutcome::Published(performed) =
+                propose_authoring_instance(&application, instance, key)
+                    .expect("required retry proposal prepares")
+            else {
+                panic!("required retry proposal did not publish");
+            };
+            assert_eq!(performed.node_path(), *expected);
+            assert!(!performed.replayed());
+        }
+    }
+    let WorkflowProgressOutcome::Completed(advanced_terminal) =
+        advance_instance(&application, advanced, 919_160)
+            .expect("advanced retry exhaustion prepares")
+    else {
+        panic!("advanced retry did not exhaust");
+    };
+    let ordinary_terminal = run(&application, ordinary, &[919_161]);
+    assert!(matches!(
+        ordinary_terminal.stop(),
+        WorthQueryOrdinaryWorkflowRunStop::Terminal
+    ));
+    assert_eq!(ordinary_terminal.transitions().len(), 1);
+    assert_eq!(
+        ordinary_terminal.transitions()[0].node_path(),
+        advanced_terminal.node_path()
+    );
+    assert_eq!(advanced_terminal.node_path(), "retry-exhausted");
 }
