@@ -3,7 +3,8 @@ use bank_server::BankApprovedPaymentWorkflow;
 use worth_query_host::facade::application_entry::{
     PublishedWorkflowInstanceRef, RequiredWorkflowOperation, WorkflowDefinitionExpectedPredecessor,
     WorkflowDefinitionPublicationOutcome, WorkflowInstanceStartOutcome, WorkflowProgressOutcome,
-    WorkflowProposalOutcome, WorthQueryWorkflowAssessmentDemandProgress,
+    WorkflowProposalOutcome, WorthQueryOrdinaryWorkflowRunStop,
+    WorthQueryWorkflowAssessmentDemandProgress,
 };
 
 use super::approval::require_authenticated_approval_and_replay;
@@ -123,27 +124,19 @@ pub(super) fn prepare_approved_payment_operation(
             .expect("the exact independent assessment is accepted"),
         "review/independent",
     );
-    require_completed(
-        workflow
-            .advance(
-                instance.clone(),
-                authority.clone(),
-                &key("approved-payment:advance:evidence"),
-            )
-            .expect("both assessments satisfy the evidence join"),
-        "review/evidence",
-    );
-
-    let approval = match workflow
-        .advance(
-            instance.clone(),
-            authority.clone(),
-            &key("approved-payment:advance:approval"),
-        )
-        .expect("the evidence join advances")
-    {
-        WorkflowProgressOutcome::AwaitingApproval(required) => required,
-        other => panic!("expected approval requirement, got {other:?}"),
+    let keys = [
+        key("approved-payment:advance:evidence"),
+        key("approved-payment:advance:approval"),
+    ];
+    let progressed = workflow.run(instance.clone(), authority.clone(), &keys);
+    assert_eq!(progressed.attempted_steps(), 2);
+    assert_eq!(progressed.transitions().len(), 1);
+    assert_eq!(progressed.transitions()[0].node_path(), "review/evidence");
+    let approval = match progressed.stop() {
+        WorthQueryOrdinaryWorkflowRunStop::Outcome(WorkflowProgressOutcome::AwaitingApproval(
+            required,
+        )) => required,
+        other => panic!("expected typed approval wait after the evidence join, got {other:?}"),
     };
     require_authenticated_approval_and_replay(
         workflow,
@@ -153,16 +146,15 @@ pub(super) fn prepare_approved_payment_operation(
         authority,
     );
 
-    let operation = match workflow
-        .advance(
-            instance.clone(),
-            authority.clone(),
-            &key("approved-payment:advance:operation"),
-        )
-        .expect("approval advances to the real payment operation")
-    {
-        WorkflowProgressOutcome::AwaitingOperation(required) => required,
-        other => panic!("expected payment operation requirement, got {other:?}"),
+    let keys = [key("approved-payment:advance:operation")];
+    let progressed = workflow.run(instance.clone(), authority.clone(), &keys);
+    assert_eq!(progressed.attempted_steps(), 1);
+    assert!(progressed.transitions().is_empty());
+    let operation = match progressed.stop() {
+        WorthQueryOrdinaryWorkflowRunStop::Outcome(WorkflowProgressOutcome::AwaitingOperation(
+            required,
+        )) => required.clone(),
+        other => panic!("expected typed payment operation wait, got {other:?}"),
     };
     (instance, operation)
 }

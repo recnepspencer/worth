@@ -30,6 +30,8 @@ use crate::{
 
 #[path = "approved_payment_workflow/error.rs"]
 mod error;
+#[path = "approved_payment_workflow/progression.rs"]
+mod progression;
 use error::other_denial;
 pub use error::BankApprovedPaymentWorkflowError;
 
@@ -171,22 +173,6 @@ impl<'runtime, 'principal, 'scope> BankApprovedPaymentWorkflow<'runtime, 'princi
             .without_source()
             .idempotency(command_key)
             .prepare_workflow_proposal(self.runtime.approved_payment_workflow_runtime(), instance)
-            .map(|request| request.execute())
-            .map_err(other_denial)
-    }
-
-    pub fn advance(
-        &self,
-        instance: PublishedWorkflowInstanceRef,
-        authority: ApprovePayment,
-        command_key: &BankIdempotencyKey,
-    ) -> Result<WorkflowProgressOutcome, BankApprovedPaymentWorkflowError> {
-        self.runtime
-            .request(self.principal, self.scope)
-            .mutate(ApprovedBusinessPaymentAdvanceIntent { input: authority })
-            .without_source()
-            .idempotency(command_key)
-            .prepare_workflow_advance(self.runtime.approved_payment_workflow_runtime(), instance)
             .map(|request| request.execute())
             .map_err(other_denial)
     }
@@ -368,7 +354,10 @@ impl<'runtime, 'principal, 'scope> BankApprovedPaymentWorkflow<'runtime, 'princi
             .on_branch(performed.receipt.product_branch())
             .mutate(ApprovedBusinessPaymentApplyIntent { input: operation })
             .idempotency(command_key)
-            .for_workflow_operation_recovery(self.runtime.approved_payment_workflow_runtime(), required)
+            .for_workflow_operation_recovery(
+                self.runtime.approved_payment_workflow_runtime(),
+                required,
+            )
             .map_err(BankApprovedPaymentWorkflowError::OperationBinding)?
             .prepare_workflow_operation_recovery(&performed.receipt)
             .map_err(other_denial)

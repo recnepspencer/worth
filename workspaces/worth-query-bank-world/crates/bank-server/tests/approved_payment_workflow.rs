@@ -32,7 +32,8 @@ use bank_external_rail::{test_control::FaultScript, LedgerStatus};
 use fixture::{ordinary_read_world_with_approval_authentication, principal_id, APPROVER};
 use support::request_scope;
 use worth_query_host::facade::application_entry::{
-    WorkflowProgressOutcome, WorthQueryWorkflowOperationAcceptanceDenial,
+    WorkflowProgressOutcome, WorthQueryOrdinaryWorkflowRunStop,
+    WorthQueryWorkflowOperationAcceptanceDenial,
     WorthQueryWorkflowOperationRecoveryPreparationDenial,
 };
 use worth_query_host::facade::primary_graph::{
@@ -187,16 +188,15 @@ fn approved_business_payment_runs_through_query_and_commits_the_real_payment_ope
     );
     assert_eq!(settlement_rail.attempts().len(), 2);
     assert_eq!(settlement_rail.completed_effect_count(), 1);
-    require_completed(
-        workflow
-            .advance(
-                instance.clone(),
-                authority,
-                &key("approved-payment:advance:completed"),
-            )
-            .expect("the applied workflow reaches its terminal"),
-        "completed",
-    );
+    let keys = [key("approved-payment:advance:completed")];
+    let completed = workflow.run(instance.clone(), authority, &keys);
+    assert_eq!(completed.attempted_steps(), 1);
+    assert_eq!(completed.transitions().len(), 1);
+    assert_eq!(completed.transitions()[0].node_path(), "completed");
+    assert!(matches!(
+        completed.stop(),
+        WorthQueryOrdinaryWorkflowRunStop::Terminal
+    ));
 
     let observed = fixture
         .world
