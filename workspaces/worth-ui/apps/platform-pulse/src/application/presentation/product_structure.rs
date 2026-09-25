@@ -8,10 +8,11 @@ use worth_ui::facade::declaration::{
     ComponentAllocationMeasurementContract, ComponentChildPolicy, ComponentDescriptor,
     ComponentFocusSupport, ComponentHitTestContract, ComponentHitTestOrder, ComponentId,
     ComponentPortalChildContract, ComponentPropSchema, ComponentSemanticTextContract,
-    ComponentStateOwnership, ThemeTokenId,
+    ComponentStateOwnership, MosaicRegionKindId, ThemeTokenId,
 };
 use worth_ui_platform_pulse::product_world::{
     dashboard_containers, dashboard_elements, DashboardContent, PlatformPulseLogicalRect,
+    PlatformPulseMosaicRegion,
 };
 mod scrolling;
 mod surfaces;
@@ -130,6 +131,16 @@ pub(in crate::application) fn register_structure(
                 ComponentHitTestOrder::front_to_back(1_000 + ordinal as u32),
                 allocation,
             ));
+        }
+        if element.id == "seed" {
+            for region in PlatformPulseMosaicRegion::SURFACE {
+                descriptor = descriptor.with_region_allocation(
+                    MosaicRegionKindId::new(region.id()).unwrap(),
+                    region
+                        .surface_placement()
+                        .expect("the surface owner places its own regions"),
+                );
+            }
         }
         if let Some(owner) = element.portal_owner {
             descriptor = descriptor.with_portal_child(ComponentPortalChildContract::new(

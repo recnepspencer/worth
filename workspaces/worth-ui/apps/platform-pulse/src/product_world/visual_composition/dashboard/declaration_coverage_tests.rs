@@ -6,6 +6,7 @@ use std::collections::BTreeSet;
 use std::path::Path;
 
 use super::{dashboard_containers, dashboard_elements, DashboardScrollPanel};
+use crate::product_world::PlatformPulseMosaicRegion;
 
 /// Components declared outside the element table on purpose: the status band,
 /// the two scroll owners, and the layout containers, which are registered by
@@ -21,15 +22,21 @@ fn declared_without_an_element() -> BTreeSet<String> {
     allowed
 }
 
-fn declared_components() -> BTreeSet<String> {
+fn dsl_sources() -> Vec<String> {
     let app = Path::new(env!("CARGO_MANIFEST_DIR")).join("app");
-    let mut declared = BTreeSet::new();
+    let mut sources = Vec::new();
     for entry in std::fs::read_dir(&app).expect("the app directory holds the DSL modules") {
         let path = entry.expect("readable app directory entry").path();
-        if path.extension().is_none_or(|extension| extension != "wui") {
-            continue;
+        if path.extension().is_some_and(|extension| extension == "wui") {
+            sources.push(std::fs::read_to_string(&path).expect("readable DSL module"));
         }
-        let source = std::fs::read_to_string(&path).expect("readable DSL module");
+    }
+    sources
+}
+
+fn declared_components() -> BTreeSet<String> {
+    let mut declared = BTreeSet::new();
+    for source in dsl_sources() {
         for line in source.lines() {
             let Some(rest) = line.strip_prefix("component ") else {
                 continue;
@@ -66,4 +73,48 @@ fn every_authored_element_has_exactly_one_dsl_component_declaration() {
             "{component} is declared under app/ but no authored element paints it"
         );
     }
+}
+
+/// Every Mosaic region an `app/*.wui` component mounts, paired with that
+/// component, nested regions included.
+fn mounted_regions() -> BTreeSet<(String, String)> {
+    let mut mounted = BTreeSet::new();
+    for source in dsl_sources() {
+        let mut owner = None;
+        for line in source.lines() {
+            if let Some(rest) = line.strip_prefix("component ") {
+                owner = rest.split_whitespace().next().map(str::to_owned);
+            } else if line.starts_with('}') {
+                owner = None;
+            } else if let (Some(owner), Some(rest)) =
+                (&owner, line.trim_start().strip_prefix("region "))
+            {
+                let region = rest.split_whitespace().next().expect("a mounted region");
+                mounted.insert((owner.clone(), region.to_owned()));
+            }
+        }
+    }
+    mounted
+}
+
+/// Layout places a region only where its owner declares a placement, so each
+/// mounted region is exactly one the product places for that owner: the
+/// surface regions on the seed, and each list region on its panel owner.
+#[test]
+fn every_mounted_region_has_a_placement_from_its_owner() {
+    let mut placed = BTreeSet::new();
+    for region in PlatformPulseMosaicRegion::SURFACE {
+        assert!(region.surface_placement().is_some(), "{region:?}");
+        placed.insert((
+            "platform.pulse.component.seed".to_owned(),
+            region.id().to_owned(),
+        ));
+    }
+    for panel in DashboardScrollPanel::ALL {
+        placed.insert((
+            format!("platform.pulse.component.{}", panel.owner()),
+            panel.region().to_owned(),
+        ));
+    }
+    assert_eq!(mounted_regions(), placed);
 }

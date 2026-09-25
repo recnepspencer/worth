@@ -1,3 +1,5 @@
+use worth_ui::facade::declaration::{ComponentViewportAxisPlacement, ComponentViewportRegion};
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum PlatformPulseMosaicRegion {
     Viewport,
@@ -41,6 +43,47 @@ impl PlatformPulseMosaicRegion {
         Self::ServiceList,
         Self::ActivityList,
     ];
+
+    /// The regions the dashboard surface owner places across the viewport.
+    pub const SURFACE: [Self; 5] = [
+        Self::Viewport,
+        Self::Masthead,
+        Self::EvidenceRail,
+        Self::ServiceStage,
+        Self::StatusBand,
+    ];
+
+    /// Where the surface owner places this region across the viewport: the
+    /// rail runs the full height on the left, the masthead spans the rest of
+    /// the top, the service stage fills beneath it, and the status band closes
+    /// the rail. `None` for a region another owner places.
+    pub fn surface_placement(self) -> Option<ComponentViewportRegion> {
+        let fill = ComponentViewportAxisPlacement::stretch_between(0, 0);
+        let rail = ComponentViewportAxisPlacement::fixed_from_start(0, 235)
+            .expect("the evidence rail has width");
+        let beside_rail = ComponentViewportAxisPlacement::stretch_between(235, 0);
+        let (horizontal, vertical) = match self {
+            Self::Viewport => (fill, fill),
+            Self::Masthead => (
+                beside_rail,
+                ComponentViewportAxisPlacement::fixed_from_start(0, 58)
+                    .expect("the masthead has height"),
+            ),
+            Self::EvidenceRail => (rail, fill),
+            Self::ServiceStage => (
+                beside_rail,
+                ComponentViewportAxisPlacement::stretch_between(58, 0),
+            ),
+            Self::StatusBand => (
+                rail,
+                ComponentViewportAxisPlacement::stretch_between(930, 0),
+            ),
+            Self::ServiceTile | Self::NativeTile | Self::ServiceList | Self::ActivityList => {
+                return None;
+            }
+        };
+        Some(ComponentViewportRegion::new(horizontal, vertical))
+    }
 
     pub const fn id(self) -> &'static str {
         match self {

@@ -28,6 +28,10 @@ pub struct ComponentDescriptor {
     hit_test_contract: Option<super::ComponentHitTestContract>,
     portal_child_contract: Option<super::ComponentPortalChildContract>,
     layout: Option<crate::capability::MosaicResponsiveLayout>,
+    region_allocations: std::collections::BTreeMap<
+        crate::capability::MosaicRegionKindId,
+        super::ComponentViewportRegion,
+    >,
     appearance_aspect_contract: Option<worth_ui_dsl::UiAppearanceAspectContract>,
 }
 
@@ -92,6 +96,7 @@ impl ComponentDescriptor {
             hit_test_contract: None,
             portal_child_contract: None,
             layout: None,
+            region_allocations: std::collections::BTreeMap::new(),
             appearance_aspect_contract: None,
         }
     }
@@ -123,6 +128,7 @@ impl ComponentDescriptor {
             hit_test_contract: None,
             portal_child_contract: None,
             layout: None,
+            region_allocations: std::collections::BTreeMap::new(),
             appearance_aspect_contract: None,
         }
     }
@@ -154,6 +160,7 @@ impl ComponentDescriptor {
             hit_test_contract: None,
             portal_child_contract: None,
             layout: None,
+            region_allocations: std::collections::BTreeMap::new(),
             appearance_aspect_contract: None,
         }
     }
@@ -255,6 +262,19 @@ impl ComponentDescriptor {
         self
     }
 
+    /// Declares where this component's Mosaic region of kind `region` stands:
+    /// a placement within the box this component's own allocation resolves
+    /// against, which is its layout cell or the viewport. A later placement
+    /// for the same kind replaces the earlier one.
+    pub fn with_region_allocation(
+        mut self,
+        region: crate::capability::MosaicRegionKindId,
+        placement: super::ComponentViewportRegion,
+    ) -> Self {
+        self.region_allocations.insert(region, placement);
+        self
+    }
+
     pub fn id(&self) -> &ComponentId {
         &self.id
     }
@@ -336,6 +356,20 @@ impl ComponentDescriptor {
 
     pub fn layout(&self) -> Option<&crate::capability::MosaicResponsiveLayout> {
         self.layout.as_ref()
+    }
+
+    /// Each Mosaic region kind this component places, with its placement.
+    pub fn region_allocations(
+        &self,
+    ) -> impl Iterator<
+        Item = (
+            &crate::capability::MosaicRegionKindId,
+            super::ComponentViewportRegion,
+        ),
+    > {
+        self.region_allocations
+            .iter()
+            .map(|(region, placement)| (region, *placement))
     }
 
     pub(crate) fn has_conflicting_allocation_contracts(&self) -> bool {

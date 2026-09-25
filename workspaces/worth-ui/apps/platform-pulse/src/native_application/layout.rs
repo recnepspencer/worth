@@ -3,9 +3,7 @@ use worth_ui::facade::app::{
     UiMountedOccurrenceGeometry, UiMountedSurfaceGeometryBatch,
     UiNativeMountedComponentLayoutInput, WorthUiNativeApplicationShell,
 };
-use worth_ui_platform_pulse::product_world::{dashboard_elements, PlatformPulseMosaicRegion};
-
-mod scroll_region_bounds;
+use worth_ui_platform_pulse::product_world::dashboard_elements;
 
 pub(super) fn publish_native_layout(
     shell: &mut WorthUiNativeApplicationShell,
@@ -59,42 +57,24 @@ fn prepare_native_layout_batch(
         .iter()
         .map(|component| (component.authored_semantic_identity(), component.instance()))
         .collect::<std::collections::BTreeMap<_, _>>();
-    let occurrences =
-        UiNativeMountedComponentLayoutInput::resolve_occurrences(viewport, components)
+    let (occurrences, regions) =
+        UiNativeMountedComponentLayoutInput::resolve_layout(viewport, components, region_inputs)
             .map_err(|denial| format!("native-layout-components:{denial:?}"))?
-            .into_vec()
-            .into_iter()
-            .zip(components)
-            .map(|(occurrence, component)| {
-                let Some(panel) = scroll_panels.get(component.authored_semantic_identity()) else {
-                    return Ok(occurrence);
-                };
-                let owner = format!("component:platform.pulse.component.{}", panel.owner());
-                let owner = instances
-                    .get(owner.as_str())
-                    .ok_or("native-layout-scroll-owner-missing")?;
-                scrolled_into_panel(occurrence, component, *owner)
-            })
-            .collect::<Result<Vec<_>, String>>()?;
-    let occurrence_index = occurrences
-        .iter()
-        .copied()
-        .map(|occurrence| (occurrence.instance(), occurrence))
-        .collect::<std::collections::BTreeMap<_, _>>();
-    let mut host_bounds = std::collections::BTreeMap::new();
-    let regions = region_inputs
-        .iter()
-        .map(|region| {
-            let owner = resolve_host_bounds(
-                region.owner(),
-                &occurrence_index,
-                &mut host_bounds,
-                occurrence_index.len(),
-            )?;
-            region_bounds(region.region_kind(), viewport, owner)
-                .map(|bounds| region.geometry(bounds))
+            .into_parts();
+    let occurrences = occurrences
+        .into_iter()
+        .zip(components)
+        .map(|(occurrence, component)| {
+            let Some(panel) = scroll_panels.get(component.authored_semantic_identity()) else {
+                return Ok(occurrence);
+            };
+            let owner = format!("component:platform.pulse.component.{}", panel.owner());
+            let owner = instances
+                .get(owner.as_str())
+                .ok_or("native-layout-scroll-owner-missing")?;
+            scrolled_into_panel(occurrence, component, *owner)
         })
-        .collect::<Result<Vec<_>, _>>()?;
+        .collect::<Result<Vec<_>, String>>()?;
     Ok(
         UiMountedSurfaceGeometryBatch::new(basis, revision, viewport, occurrences)
             .with_regions(regions),
@@ -131,98 +111,6 @@ fn scrolled_into_panel(
     ))
 }
 
-fn region_bounds(
-    region_kind: &str,
-    viewport: UiMountedCanonicalBox,
-    owner: UiMountedCanonicalBox,
-) -> Result<UiMountedCanonicalBox, String> {
-    let (x, y, region_width, region_height) =
-        match scroll_region_bounds::scroll_region_surface_bounds(region_kind)? {
-            Some(bounds) => (bounds.x(), bounds.y(), bounds.width(), bounds.height()),
-            None => surface_region_bounds(region_kind, viewport, owner)?,
-        };
-    canonical_box(
-        x - owner.x(),
-        y - owner.y(),
-        region_width,
-        region_height,
-        UiMountedCoordinateSpace::GraphNodeLocal,
-    )
-}
-
-/// Host-surface rectangles for the regions the surface itself allocates.
-fn surface_region_bounds(
-    region_kind: &str,
-    viewport: UiMountedCanonicalBox,
-    owner: UiMountedCanonicalBox,
-) -> Result<(f32, f32, f32, f32), String> {
-    let width = viewport.width();
-    let height = viewport.height();
-    let bounds = match region_kind {
-        kind if kind == PlatformPulseMosaicRegion::Viewport.id() => (0.0, 0.0, width, height),
-        kind if kind == PlatformPulseMosaicRegion::Masthead.id() => {
-            (235.0, 0.0, (width - 235.0).max(0.0), 58.0)
-        }
-        kind if kind == PlatformPulseMosaicRegion::EvidenceRail.id() => (0.0, 0.0, 235.0, height),
-        kind if kind == PlatformPulseMosaicRegion::ServiceStage.id() => (
-            235.0,
-            58.0,
-            (width - 235.0).max(0.0),
-            (height - 58.0).max(0.0),
-        ),
-        kind if kind == PlatformPulseMosaicRegion::StatusBand.id() => {
-            (0.0, 930.0, 235.0, (height - 930.0).max(0.0))
-        }
-        kind if kind == PlatformPulseMosaicRegion::ServiceTile.id()
-            || kind == PlatformPulseMosaicRegion::NativeTile.id() =>
-        {
-            (owner.x(), owner.y(), owner.width(), owner.height())
-        }
-        _ => return Err(format!("native-layout-unknown-mosaic-region:{region_kind}")),
-    };
-    Ok(bounds)
-}
-
-fn resolve_host_bounds(
-    instance: worth_ui::facade::app::UiMountedInstanceIdentity,
-    occurrence_index: &std::collections::BTreeMap<
-        worth_ui::facade::app::UiMountedInstanceIdentity,
-        UiMountedOccurrenceGeometry,
-    >,
-    resolved: &mut std::collections::BTreeMap<
-        worth_ui::facade::app::UiMountedInstanceIdentity,
-        UiMountedCanonicalBox,
-    >,
-    remaining_depth: usize,
-) -> Result<UiMountedCanonicalBox, String> {
-    if let Some(bounds) = resolved.get(&instance) {
-        return Ok(*bounds);
-    }
-    if remaining_depth == 0 {
-        return Err("native-layout-occurrence-cycle".into());
-    }
-    let occurrence = occurrence_index
-        .get(&instance)
-        .ok_or_else(|| "native-layout-region-owner-missing".to_owned())?;
-    let bounds = match occurrence.parent() {
-        None => occurrence.bounds(),
-        Some(parent) => {
-            let parent =
-                resolve_host_bounds(parent, occurrence_index, resolved, remaining_depth - 1)?;
-            let local = occurrence.bounds();
-            canonical_box(
-                parent.x() + local.x(),
-                parent.y() + local.y(),
-                local.width(),
-                local.height(),
-                UiMountedCoordinateSpace::HostSurface,
-            )?
-        }
-    };
-    resolved.insert(instance, bounds);
-    Ok(bounds)
-}
-
 fn canonical_box(
     x: f32,
     y: f32,
@@ -238,38 +126,4 @@ fn canonical_box(
         coordinate_space,
     })
     .map_err(|denial| format!("native-layout-geometry:{denial:?}"))
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn resized_surface_regions_are_local_to_their_owner() {
-        let viewport = canonical_box(
-            0.0,
-            0.0,
-            1_120.0,
-            700.0,
-            UiMountedCoordinateSpace::HostSurface,
-        )
-        .unwrap();
-        let service_region = region_bounds(
-            PlatformPulseMosaicRegion::ServiceStage.id(),
-            viewport,
-            viewport,
-        )
-        .unwrap();
-        assert_eq!(
-            [
-                service_region.x(),
-                service_region.y(),
-                service_region.width(),
-                service_region.height()
-            ],
-            [235.0, 58.0, 885.0, 642.0]
-        );
-        assert_eq!(viewport.x() + service_region.x(), 235.0);
-        assert_eq!(viewport.y() + service_region.y(), 58.0);
-    }
 }

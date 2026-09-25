@@ -3,7 +3,7 @@ use worth_ui::facade::app::{
 };
 use worth_ui::facade::declaration::{
     ComponentChildPolicy, ComponentDescriptor, ComponentHitTestContract, ComponentHitTestOrder,
-    ComponentId, ComponentPropSchema, ComponentStateOwnership,
+    ComponentId, ComponentPropSchema, ComponentStateOwnership, MosaicRegionKindId,
 };
 use worth_ui_platform_pulse::product_world::{DashboardScrollPanel, PlatformPulseLogicalRect};
 
@@ -24,6 +24,10 @@ pub(super) fn register(
                 ComponentStateOwnership::runtime_owned(),
             )
             .with_allocation_measurement_contract(allocation)
+            .with_region_allocation(
+                MosaicRegionKindId::new(panel.region()).unwrap(),
+                panel.region_placement(),
+            )
             .with_hit_test(ComponentHitTestContract::allocation_bounds(
                 ComponentHitTestOrder::front_to_back(900 + index as u32),
                 allocation,

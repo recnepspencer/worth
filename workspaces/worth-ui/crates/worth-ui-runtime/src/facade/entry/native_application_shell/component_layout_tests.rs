@@ -7,13 +7,19 @@ use worth_ui_host_contract::{
     UiMountedInstanceIdentity,
 };
 
-use super::UiNativeMountedComponentLayoutInput;
+use super::{UiNativeMountedComponentLayoutInput, UiNativeMountedRegionLayoutInput};
 use crate::capability::{
     ComponentAcceptedRegistrationProof, ComponentAllocationMeasurementContract,
-    ComponentChildPolicy, ComponentDescriptor, ComponentId, ComponentPropSchema,
-    ComponentStateOwnership, ComponentViewportAxisPlacement as Axis, ComponentViewportRegion,
-    FrozenComponentCapabilities, MosaicLayoutCell, MosaicLayoutContract, MosaicTrack,
+    ComponentChildPolicy, ComponentDescriptor, ComponentId, ComponentPortalChildContract,
+    ComponentPropSchema, ComponentStateOwnership, ComponentViewportAxisPlacement as Axis,
+    ComponentViewportRegion, FrozenComponentCapabilities, MosaicLayoutCell, MosaicLayoutContract,
+    MosaicRegionKindId, MosaicTrack,
 };
+use crate::runtime::mosaic::layout::UiNativeComponentLayoutDenial;
+
+const LIST_REGION: &str = "demo.region.list";
+const BADGE_REGION: &str = "demo.region.badge";
+const SHEET_REGION: &str = "demo.region.sheet_body";
 
 fn id(value: &str) -> ComponentId {
     ComponentId::new(value).unwrap()
@@ -44,7 +50,7 @@ fn in_cell(
 
 /// A row 100 points in from each side of the viewport, split 3:1 with a
 /// 20-point gap, holding a stretched label, a filled card, and an
-/// end-anchored icon.
+/// end-anchored icon, and a sheet the row presents as a Portal.
 fn descriptors() -> Vec<ComponentDescriptor> {
     let layout = MosaicLayoutContract::columns([
         MosaicTrack::flex(3, 0).unwrap(),
@@ -69,6 +75,13 @@ fn descriptors() -> Vec<ComponentDescriptor> {
         component(
             "demo.component.card",
             ComponentAllocationMeasurementContract::fill_layout_cell(),
+        )
+        .with_region_allocation(
+            MosaicRegionKindId::new(BADGE_REGION).unwrap(),
+            ComponentViewportRegion::new(
+                Axis::stretch_between(10, 10),
+                Axis::stretch_between(10, 10),
+            ),
         ),
         component(
             "demo.component.icon",
@@ -81,7 +94,29 @@ fn descriptors() -> Vec<ComponentDescriptor> {
                 Axis::fixed_from_start(50, 80).unwrap(),
             )),
         )
-        .with_layout(layout),
+        .with_layout(layout)
+        .with_region_allocation(
+            MosaicRegionKindId::new(LIST_REGION).unwrap(),
+            ComponentViewportRegion::new(
+                Axis::stretch_between(100, 100),
+                Axis::fixed_from_start(60, 200).unwrap(),
+            ),
+        ),
+        component(
+            "demo.component.sheet",
+            ComponentAllocationMeasurementContract::viewport_region(ComponentViewportRegion::new(
+                Axis::fixed_from_start(300, 200).unwrap(),
+                Axis::fixed_from_start(200, 100).unwrap(),
+            )),
+        )
+        .with_portal_child(ComponentPortalChildContract::new(id("demo.component.row")))
+        .with_region_allocation(
+            MosaicRegionKindId::new(SHEET_REGION).unwrap(),
+            ComponentViewportRegion::new(
+                Axis::stretch_between(300, 500),
+                Axis::fixed_from_start(210, 50).unwrap(),
+            ),
+        ),
     ]
 }
 
@@ -97,8 +132,11 @@ fn host_box(bounds: [f32; 4], coordinate_space: UiMountedCoordinateSpace) -> UiM
     .unwrap()
 }
 
-#[test]
-fn registered_members_are_placed_within_their_mounted_container() {
+/// The admitted inputs, in descriptor order, and each component's instance.
+fn mounted_inputs() -> (
+    Vec<UiNativeMountedComponentLayoutInput>,
+    BTreeMap<ComponentId, UiMountedInstanceIdentity>,
+) {
     let descriptors = descriptors();
     let accepted = descriptors
         .iter()
@@ -130,12 +168,31 @@ fn registered_members_are_placed_within_their_mounted_container() {
             )
         })
         .collect::<Vec<_>>();
-    let viewport = host_box(
+    (inputs, mounted)
+}
+
+fn viewport() -> UiMountedCanonicalBox {
+    host_box(
         [0.0, 0.0, 1_000.0, 600.0],
         UiMountedCoordinateSpace::HostSurface,
-    );
-    let occurrences =
-        UiNativeMountedComponentLayoutInput::resolve_occurrences(viewport, &inputs).unwrap();
+    )
+}
+
+fn region(owner: UiMountedInstanceIdentity, kind: &str) -> UiNativeMountedRegionLayoutInput {
+    UiNativeMountedRegionLayoutInput::from_mounted_region(
+        owner,
+        kind,
+        worth_ui_dsl::UiMosaicRegionDeclarationIdentity::new(7).unwrap(),
+        kind,
+    )
+}
+
+#[test]
+fn registered_members_are_placed_within_their_mounted_container() {
+    let (inputs, mounted) = mounted_inputs();
+    let layout =
+        UiNativeMountedComponentLayoutInput::resolve_layout(viewport(), &inputs, &[]).unwrap();
+    let occurrences = layout.occurrences();
 
     let row = mounted[&id("demo.component.row")];
     // The row is 800 wide; 780 remain after the gap, shared 585 and 195.
@@ -151,6 +208,8 @@ fn registered_members_are_placed_within_their_mounted_container() {
                 UiMountedCoordinateSpace::HostSurface,
             ),
         ),
+        // A Portal child places against the viewport, relative to its owner.
+        (Some(row), host_box([300.0, 200.0, 200.0, 100.0], local)),
     ];
     assert_eq!(occurrences.len(), expected.len());
     for ((occurrence, input), (parent, bounds)) in occurrences.iter().zip(&inputs).zip(expected) {
@@ -168,4 +227,69 @@ fn registered_members_are_placed_within_their_mounted_container() {
             input.authored_semantic_identity()
         );
     }
+}
+
+/// A region resolves within the box its owner's allocation resolved against,
+/// then stands local to the owner: a scroll viewport can be taller than the
+/// row that owns it, a member's region follows its cell, and a Portal child's
+/// region resolves against the viewport it is placed in.
+#[test]
+fn regions_resolve_within_their_owner_reference_and_stand_local_to_it() {
+    let (inputs, mounted) = mounted_inputs();
+    let row = mounted[&id("demo.component.row")];
+    let card = mounted[&id("demo.component.card")];
+    let sheet = mounted[&id("demo.component.sheet")];
+    let layout = UiNativeMountedComponentLayoutInput::resolve_layout(
+        viewport(),
+        &inputs,
+        &[
+            region(row, LIST_REGION),
+            region(card, BADGE_REGION),
+            region(sheet, SHEET_REGION),
+        ],
+    )
+    .unwrap();
+    let local = UiMountedCoordinateSpace::GraphNodeLocal;
+    let bounds = layout
+        .regions()
+        .iter()
+        .map(|region| (region.owner(), region.bounds()))
+        .collect::<Vec<_>>();
+    assert_eq!(
+        bounds,
+        [
+            (row, host_box([0.0, 10.0, 800.0, 200.0], local)),
+            (card, host_box([10.0, 10.0, 175.0, 60.0], local)),
+            (sheet, host_box([0.0, 10.0, 200.0, 50.0], local)),
+        ]
+    );
+}
+
+#[test]
+fn a_region_its_owner_does_not_place_is_refused() {
+    let (inputs, mounted) = mounted_inputs();
+    let label = mounted[&id("demo.component.label")];
+    assert_eq!(
+        UiNativeMountedComponentLayoutInput::resolve_layout(
+            viewport(),
+            &inputs,
+            &[region(label, LIST_REGION)],
+        )
+        .map(|_| ())
+        .unwrap_err(),
+        UiNativeComponentLayoutDenial::MissingRegionAllocation
+    );
+    assert_eq!(
+        UiNativeMountedComponentLayoutInput::resolve_layout(
+            viewport(),
+            &inputs,
+            &[region(
+                UiMountedInstanceIdentity::mint_unbound().unwrap(),
+                LIST_REGION
+            )],
+        )
+        .map(|_| ())
+        .unwrap_err(),
+        UiNativeComponentLayoutDenial::MissingRegionOwner
+    );
 }

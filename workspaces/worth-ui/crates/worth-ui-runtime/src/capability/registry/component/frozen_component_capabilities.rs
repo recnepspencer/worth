@@ -151,8 +151,17 @@ fn fold_component_descriptor(accumulator: u64, descriptor: &ComponentDescriptor)
             .layout()
             .map(crate::capability::MosaicResponsiveLayout::digest_basis),
     );
+    let with_regions = descriptor.region_allocations().fold(
+        fold_bytes(with_layout, b"region-allocations"),
+        |digest, (region, placement)| {
+            fold_bytes(
+                fold_bytes(digest, region.as_str().as_bytes()),
+                placement.digest_basis().as_bytes(),
+            )
+        },
+    );
     let with_allocation = fold_optional_str(
-        with_layout,
+        with_regions,
         descriptor
             .allocation_measurement_contract()
             .map(|contract| contract.digest_basis()),

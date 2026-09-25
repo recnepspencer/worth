@@ -11,6 +11,7 @@ pub struct UiNativeMountedComponentLayoutInput {
         worth_ui_host_contract::UiMountedInstanceIdentity,
         crate::capability::ComponentId,
     )>,
+    region_allocations: Box<[(Box<str>, crate::capability::ComponentViewportRegion)]>,
 }
 
 #[derive(Clone, Debug)]
@@ -56,6 +57,11 @@ impl UiNativeMountedComponentLayoutInput {
                 .and_then(|contract| mounted(contract.owner())),
             layout: descriptor.and_then(|descriptor| descriptor.layout().cloned()),
             layout_member,
+            region_allocations: descriptor
+                .into_iter()
+                .flat_map(|descriptor| descriptor.region_allocations())
+                .map(|(region, placement)| (region.as_str().into(), placement))
+                .collect(),
         }
     }
 
@@ -84,6 +90,17 @@ impl UiNativeMountedComponentLayoutInput {
     /// The mounted container that places this component in one of its cells.
     pub fn layout_container(&self) -> Option<worth_ui_host_contract::UiMountedInstanceIdentity> {
         self.layout_member.as_ref().map(|(container, _)| *container)
+    }
+
+    /// Where this component places the Mosaic region of `region_kind`, within
+    /// the box its own allocation resolves against.
+    pub fn region_allocation(
+        &self,
+        region_kind: &str,
+    ) -> Option<crate::capability::ComponentViewportRegion> {
+        self.region_allocations
+            .iter()
+            .find_map(|(region, placement)| (&**region == region_kind).then_some(*placement))
     }
 
     pub(super) fn layout_node(&self) -> crate::runtime::mosaic::layout::UiMosaicLayoutNode<'_> {

@@ -8,7 +8,7 @@ pub use worth_ui_runtime::facade::entry::{
     UiFocusPlacementReconciliationExecutionDenial, UiIntentWiringSatisfied,
     UiMountedHostMeasurementTransitionDenial, UiMountedHostMeasurementUnexpectedTransition,
     UiNativeComponentLayoutDenial, UiNativeMountedComponentLayoutInput,
-    UiNativeMountedRegionLayoutInput, UiNativeReplacementLayoutInput,
+    UiNativeMountedRegionLayoutInput, UiNativeReplacementLayoutInput, UiNativeResolvedLayout,
     UiPortalDismissalPublicationReceipt, UiSemanticFocusParticipantObservation,
     UiSemanticFocusPhysicalPlacementOutcome, UiSemanticFocusPublicationCause,
     UiSemanticFocusPublicationOutcome, UiSemanticFocusPublicationReceipt,

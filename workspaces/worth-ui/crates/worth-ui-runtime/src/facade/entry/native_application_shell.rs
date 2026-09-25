@@ -49,6 +49,7 @@ mod viewport_extent;
 #[path = "native_application_shell/viewport_measurement.rs"]
 mod viewport_measurement;
 pub use crate::runtime::mosaic::layout::UiNativeComponentLayoutDenial;
+pub use component_layout::UiNativeResolvedLayout;
 use mounted_row::NativeMountedRow;
 pub use occurrence_geometry::{
     UiNativeMountedComponentLayoutInput, UiNativeMountedRegionLayoutInput,

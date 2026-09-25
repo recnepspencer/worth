@@ -206,7 +206,7 @@ pub(crate) use native_application_shell::{
 };
 pub use native_application_shell::{
     UiNativeComponentLayoutDenial, UiNativeMountedComponentLayoutInput,
-    UiNativeMountedRegionLayoutInput, WorthUiNativeApplicationCleanup,
+    UiNativeMountedRegionLayoutInput, UiNativeResolvedLayout, WorthUiNativeApplicationCleanup,
     WorthUiNativeApplicationShell, WorthUiNativeApplicationShellLaunchDenial,
     WorthUiNativeApplicationShutdownReceipt, WorthUiNativePhysicalPresentationRecovery,
     WorthUiNativePresentationRecoveryDenial, WorthUiNativeReducedMotionPosture,

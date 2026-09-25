@@ -12,23 +12,20 @@ pub(in super::super) fn complete_program_layout(
         return Ok(());
     }
     let viewport = shell.native_layout_viewport().ok_or(())?;
-    if !shell.native_region_layout_inputs().is_empty() {
-        return Err(());
-    }
-    let occurrences = UiNativeMountedComponentLayoutInput::resolve_occurrences(
+    let (occurrences, regions) = UiNativeMountedComponentLayoutInput::resolve_layout(
         viewport,
         &shell.native_component_layout_inputs(),
+        &shell.native_region_layout_inputs(),
     )
-    .map_err(|_| ())?;
+    .map_err(|_| ())?
+    .into_parts();
     let basis = shell.native_layout_basis().map_err(|_| ())?;
     let revision = shell.next_native_layout_revision().map_err(|_| ())?;
     shell
-        .complete_native_layout(UiMountedSurfaceGeometryBatch::new(
-            basis,
-            revision,
-            viewport,
-            occurrences.into_vec(),
-        ))
+        .complete_native_layout(
+            UiMountedSurfaceGeometryBatch::new(basis, revision, viewport, occurrences)
+                .with_regions(regions),
+        )
         .map_err(|_| ())?;
     Ok(())
 }

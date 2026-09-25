@@ -46,6 +46,24 @@ pub(crate) struct UiMosaicPlacedComponent {
     pub(crate) instance: UiMountedInstanceIdentity,
     pub(crate) parent: Option<UiMountedInstanceIdentity>,
     pub(crate) bounds: UiMosaicLayoutBox,
+    /// The box the component's allocation resolved against, in the same
+    /// frame as `bounds`: its layout cell, or the viewport.
+    pub(crate) reference: UiMosaicLayoutBox,
+}
+
+impl UiMosaicPlacedComponent {
+    /// Where one of this component's Mosaic regions stands, relative to the
+    /// component: `placement` resolved within the component's own reference
+    /// box, so a region can span more or less than the component it belongs
+    /// to, such as a scroll viewport over taller content.
+    pub(crate) fn region_box(&self, placement: ComponentViewportRegion) -> UiMosaicLayoutBox {
+        let region = region_box(placement, self.reference);
+        UiMosaicLayoutBox {
+            x: region.x - self.bounds.x,
+            y: region.y - self.bounds.y,
+            ..region
+        }
+    }
 }
 
 /// Why mounted components cannot be laid out.
@@ -61,6 +79,10 @@ pub enum UiNativeComponentLayoutDenial {
     ContainerCycle,
     /// A resolved box is not a canonical finite box.
     NonCanonicalBounds,
+    /// A mounted Mosaic region's owner is not among the laid-out components.
+    MissingRegionOwner,
+    /// A mounted Mosaic region's owner declares no placement for it.
+    MissingRegionAllocation,
 }
 
 /// Resolves every component's box for one logical viewport. Containers
@@ -85,6 +107,7 @@ pub(crate) fn resolve_component_layout(
     nodes
         .iter()
         .map(|node| {
+            let placed = resolution.resolve(node.instance, 0)?;
             Ok(UiMosaicPlacedComponent {
                 instance: node.instance,
                 parent: match node.parent {
@@ -92,7 +115,8 @@ pub(crate) fn resolve_component_layout(
                     UiMosaicLayoutParent::Portal(owner) => Some(owner),
                     UiMosaicLayoutParent::Container { container, .. } => Some(container),
                 },
-                bounds: resolution.resolve(node.instance, 0)?,
+                bounds: placed.bounds,
+                reference: placed.reference,
             })
         })
         .collect()
@@ -101,7 +125,14 @@ pub(crate) fn resolve_component_layout(
 struct Resolution<'n, 'a> {
     viewport: UiMosaicLayoutBox,
     nodes: BTreeMap<UiMountedInstanceIdentity, &'n UiMosaicLayoutNode<'a>>,
-    resolved: BTreeMap<UiMountedInstanceIdentity, UiMosaicLayoutBox>,
+    resolved: BTreeMap<UiMountedInstanceIdentity, Placed>,
+}
+
+/// A resolved box and the reference box it resolved against.
+#[derive(Clone, Copy)]
+struct Placed {
+    bounds: UiMosaicLayoutBox,
+    reference: UiMosaicLayoutBox,
 }
 
 impl Resolution<'_, '_> {
@@ -109,9 +140,9 @@ impl Resolution<'_, '_> {
         &mut self,
         instance: UiMountedInstanceIdentity,
         depth: usize,
-    ) -> Result<UiMosaicLayoutBox, UiNativeComponentLayoutDenial> {
-        if let Some(bounds) = self.resolved.get(&instance) {
-            return Ok(*bounds);
+    ) -> Result<Placed, UiNativeComponentLayoutDenial> {
+        if let Some(placed) = self.resolved.get(&instance) {
+            return Ok(*placed);
         }
         if depth > self.nodes.len() {
             return Err(UiNativeComponentLayoutDenial::ContainerCycle);
@@ -123,12 +154,12 @@ impl Resolution<'_, '_> {
         let contract = node
             .allocation
             .ok_or(UiNativeComponentLayoutDenial::MissingAllocation)?;
-        let bounds = match (contract, node.parent) {
+        let placed = match (contract, node.parent) {
             (
                 ComponentAllocationMeasurementContract::LayoutCell(region),
                 UiMosaicLayoutParent::Container { container, member },
             ) => {
-                let container_box = self.resolve(container, depth + 1)?;
+                let container_box = self.resolve(container, depth + 1)?.bounds;
                 let layout = self.nodes[&container]
                     .layout
                     .ok_or(UiNativeComponentLayoutDenial::MissingLayoutContainer)?
@@ -136,7 +167,11 @@ impl Resolution<'_, '_> {
                 let cell = layout
                     .member_cell(member)
                     .ok_or(UiNativeComponentLayoutDenial::UnplacedMember)?;
-                region_box(region, cell_box(layout, cell, container_box))
+                let reference = cell_box(layout, cell, container_box);
+                Placed {
+                    bounds: region_box(region, reference),
+                    reference,
+                }
             }
             (ComponentAllocationMeasurementContract::LayoutCell(_), _) => {
                 return Err(UiNativeComponentLayoutDenial::MissingLayoutContainer);
@@ -144,10 +179,13 @@ impl Resolution<'_, '_> {
             (_, UiMosaicLayoutParent::Container { .. }) => {
                 return Err(UiNativeComponentLayoutDenial::UnplacedMember);
             }
-            (contract, _) => viewport_box(contract, self.viewport),
+            (contract, _) => Placed {
+                bounds: viewport_box(contract, self.viewport),
+                reference: self.viewport,
+            },
         };
-        self.resolved.insert(instance, bounds);
-        Ok(bounds)
+        self.resolved.insert(instance, placed);
+        Ok(placed)
     }
 }
 

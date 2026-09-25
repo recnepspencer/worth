@@ -94,9 +94,10 @@ pub(crate) fn install_native_occurrence_geometry(
         .cloned()
         .collect::<Vec<_>>();
     let mut resolved =
-        UiNativeMountedComponentLayoutInput::resolve_occurrences(viewport, &allocated)
+        UiNativeMountedComponentLayoutInput::resolve_layout(viewport, &allocated, &[])
             .expect("certification components declare placeable allocations")
-            .into_vec()
+            .into_parts()
+            .0
             .into_iter();
     // Occurrences keep the mounted order; a component without an allocation
     // contract takes a distinct grid slot.

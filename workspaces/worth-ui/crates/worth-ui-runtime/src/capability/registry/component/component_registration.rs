@@ -1,7 +1,8 @@
 use crate::capability::{
     CapabilityDiagnosticCode, CapabilitySupportKind, ComponentDescriptor, ComponentExecutionLane,
     RegistrationCandidate, RegistrationCandidateDiagnostic, RegistrationDependency,
-    COMMAND_FAMILY_NAME, COMPONENT_FAMILY_NAME, THEME_TOKEN_FAMILY_NAME,
+    COMMAND_FAMILY_NAME, COMPONENT_FAMILY_NAME, MOSAIC_REGION_KIND_FAMILY_NAME,
+    THEME_TOKEN_FAMILY_NAME,
 };
 
 impl ComponentDescriptor {
@@ -102,6 +103,14 @@ fn add_component_dependencies(
             COMPONENT_FAMILY_NAME,
             COMPONENT_FAMILY_NAME,
             portal_child.owner().as_str(),
+        ));
+    }
+
+    for (region, _) in descriptor.region_allocations() {
+        candidate = candidate.with_dependency(RegistrationDependency::new(
+            MOSAIC_REGION_KIND_FAMILY_NAME,
+            MOSAIC_REGION_KIND_FAMILY_NAME,
+            region.as_str(),
         ));
     }
 
