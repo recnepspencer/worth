@@ -108,6 +108,24 @@ impl UiScrollRuntimeState {
         self.revision = candidate.revision;
     }
 
+    /// Lays a layout candidate for `surface` out from where direct input
+    /// awaiting its frame put each owner there. Only a staged candidate
+    /// adopts these records: the accepted state keeps them pending, and the
+    /// frame that presents the layout commits the input first and the
+    /// layout's records over it.
+    pub(crate) fn adopt_pending_direct(&mut self, surface: UiSemanticSurfaceIdentity) {
+        for (owner, prepared) in &self.pending_direct {
+            if owner.semantic_surface() == surface
+                && self
+                    .owners
+                    .get(owner)
+                    .is_some_and(|current| current.incarnation == prepared.record.incarnation)
+            {
+                self.owners.insert(*owner, prepared.record);
+            }
+        }
+    }
+
     pub(crate) fn has_pending_direct(&self, surface: UiSemanticSurfaceIdentity) -> bool {
         self.pending_direct
             .keys()

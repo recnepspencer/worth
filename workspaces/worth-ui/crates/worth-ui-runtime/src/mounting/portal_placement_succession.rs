@@ -1,17 +1,24 @@
-//! Places each open Portal again from where this frame lays out its anchor.
+//! Places each open Portal again from where this frame lays out its anchor
+//! and content.
 //!
 //! A Portal's anchor is its owner occurrence, and its children present
-//! relative to that owner. When layout moves the owner or the surface resizes,
-//! the Portal is placed again by the same Portal arithmetic that opened it,
-//! from the owner's allocation and the surface viewport this frame carries. A
-//! Portal whose anchor or viewport this frame cannot place keeps the
+//! relative to that owner. When layout moves the owner, resizes the surface,
+//! or lays the content out at a new extent, the Portal is placed again by the
+//! same Portal arithmetic that opened it, from the owner's allocation, the
+//! content this frame lays out, and the surface viewport this frame carries.
+//! A Portal whose anchor or viewport this frame cannot place keeps the
 //! placement it has.
+//!
+//! Content is measured from the semantic projection this frame prepares, so
+//! a content root the frame adds or replaces counts the frame it arrives, and
+//! only a Portal fitted to its content measures it.
 use crate::mounting::presentation::UiPublishedRect;
 use worth_ui_host_contract::UiMountedAllocationProjection;
 
 pub(in crate::mounting) fn succeed_portal_placements(
     state: &super::UiMountedIdentityState,
     geometry: &super::UiMountedOccurrenceGeometryState,
+    semantic: &super::projection::UiMountedSemanticProjection,
     overlays: std::rc::Rc<[super::UiMountedPortalOverlayProjectionInput]>,
 ) -> std::rc::Rc<[super::UiMountedPortalOverlayProjectionInput]> {
     if overlays.is_empty() {
@@ -36,9 +43,12 @@ pub(in crate::mounting) fn succeed_portal_placements(
                 |&(_, parent_owner, parent_paint)| nested_anchor(owner, parent_owner, parent_paint),
             ),
         };
+        let content = || semantic.portal_content_extent(input.owner()).ok()?;
         let successor = anchor
             .zip(portal_viewport(state, geometry, input.surface()))
-            .and_then(|(anchor, viewport)| input.placement().succeeded(anchor, viewport).ok());
+            .and_then(|(anchor, viewport)| {
+                input.placement().succeeded(anchor, viewport, content).ok()
+            });
         if let Some(placement) = successor {
             succeeded[index] = input.with_placement(placement);
         }

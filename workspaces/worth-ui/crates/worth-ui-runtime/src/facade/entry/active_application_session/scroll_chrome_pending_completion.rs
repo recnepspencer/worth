@@ -134,8 +134,7 @@ fn retryable_placement_denial(
     use crate::mounting::UiMountedOccurrenceGeometryDenial as Geometry;
     matches!(
         denial,
-        Denial::UnpresentedLayout
-            | Denial::Geometry(Geometry::PresentationInFlight | Geometry::UnpublishedScrollEffect)
+        Denial::UnpresentedLayout | Denial::Geometry(Geometry::PresentationInFlight)
     )
 }
 

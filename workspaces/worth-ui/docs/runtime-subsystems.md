@@ -244,7 +244,10 @@ Layout extent succession also stays pending until presentation. Accepted
 bounds and offsets remain coherent with displayed content while a resized or
 reclamped candidate is refused. Acceptance reconciles the pending target and
 accepted offset together. New input cannot overwrite an unpublished layout or
-direct successor with incompatible evidence.
+direct successor with incompatible evidence. A resize that arrives while
+direct input still awaits its frame lays out from where that input put each
+region, clamped to the new travel, and the one frame that presents the layout
+acknowledges the input with it.
 
 Empty paint groups still cross ordinary host completion: an accepted semantic
 Scroll sample can change geometry without inventing a paint command. No-host

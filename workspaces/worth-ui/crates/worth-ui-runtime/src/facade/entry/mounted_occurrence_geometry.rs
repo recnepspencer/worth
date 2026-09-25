@@ -37,10 +37,13 @@ impl WorthUiMountedLayout<'_> {
         batch: UiMountedSurfaceGeometryBatch,
     ) -> Result<UiMountedLayoutCompletionReceipt, UiMountedOccurrenceGeometryDenial> {
         let surface = batch.surface();
-        if self.session.mounted.has_pending_direct_scroll(surface) {
-            return Err(UiMountedOccurrenceGeometryDenial::UnpublishedScrollEffect);
-        }
+        // A resize can arrive before the frame carrying direct input. The
+        // new layout stands where that input put each region, and the one
+        // frame that presents it acknowledges the input as well.
         let mut staged_scroll = self.session.scroll.as_ref().cloned();
+        if let Some(staged) = staged_scroll.as_mut() {
+            staged.adopt_pending_direct(surface);
+        }
         let authority = UiMountedOccurrenceGeometryValidationAuthority::active(self.session);
         let validated = authority.validate(batch, staged_scroll.as_mut())?;
         let (batch, work) = validated.into_parts();

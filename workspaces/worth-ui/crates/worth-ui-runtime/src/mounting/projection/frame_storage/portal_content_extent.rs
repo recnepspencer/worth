@@ -1,25 +1,25 @@
-use super::{UiMountedProjectionDenial, UiMountedProjectionFrame};
+use super::{UiMountedProjectionDenial, UiMountedSemanticProjection};
 use worth_ui_host_contract::{
     UiMountedAllocationProjection, UiMountedCanonicalBox, UiMountedCanonicalBoxInput,
     UiMountedCoordinateSpace, UiMountedInstanceIdentity, UiSurfaceGeometry,
 };
 
-impl UiMountedProjectionFrame {
-    /// Opening cost follows the selected owner's indexed children, including
+impl UiMountedSemanticProjection {
+    /// The extent the owner's Portal content lays out over in this projection:
+    /// the content roots this projection holds, where it lays each out. An
+    /// open measures the published projection; a successor frame measures the
+    /// one it prepares, so a root it adds or replaces counts the frame it
+    /// arrives. Cost follows the selected owner's indexed children, including
     /// currently suppressed content. No unrelated surface is scanned.
     pub(in crate::mounting) fn portal_content_extent(
         &self,
         owner: UiMountedInstanceIdentity,
     ) -> Result<Option<crate::runtime::portal::UiPortalContentBounds>, UiMountedProjectionDenial>
     {
-        let (children, _) = self.semantic.portal_children_for_owners(&[owner]);
+        let (children, _) = self.portal_children_for_owners(&[owner]);
         if children.is_empty() {
             return Ok(None);
         }
-        let owner = self
-            .semantic
-            .node(owner)
-            .ok_or(UiMountedProjectionDenial::PortalOverlayOwnerMissing)?;
         let bounds = |allocation| match allocation {
             UiMountedAllocationProjection::Known { bounds, .. }
             | UiMountedAllocationProjection::PortalAnchorObservation { bounds, .. } => Ok(bounds),
@@ -27,7 +27,11 @@ impl UiMountedProjectionFrame {
                 Err(UiMountedProjectionDenial::PortalOverlayOwnerMissing)
             }
         };
-        let anchor = bounds(owner.occurrence_allocation)?;
+        let anchor = bounds(
+            self.node(owner)
+                .ok_or(UiMountedProjectionDenial::PortalOverlayOwnerMissing)?
+                .occurrence_allocation,
+        )?;
         // Content is one union measured in anchor-relative space. An authored
         // overlay routinely begins before the control that opens it: a
         // viewport-inset panel is wider than its anchor, and a menu opens
@@ -39,7 +43,6 @@ impl UiMountedProjectionFrame {
         let mut has_shadow = false;
         for instance in children {
             let child = self
-                .semantic
                 .node(instance)
                 .ok_or(UiMountedProjectionDenial::PortalOverlayOwnerMissing)?;
             let inset = match child.surface_geometry {

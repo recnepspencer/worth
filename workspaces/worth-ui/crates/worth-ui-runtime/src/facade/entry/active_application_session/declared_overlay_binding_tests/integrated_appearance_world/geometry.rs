@@ -156,6 +156,30 @@ pub(super) fn install_owner_in_viewport(
     );
 }
 
+/// Lays the surfaces out again with the Portal child at `child` inside
+/// `viewport`, as a resize that lays the Portal's content out anew would.
+pub(super) fn install_child_in_viewport(
+    session: &mut WorthUiActiveApplicationSession,
+    surfaces: [UiSemanticSurfaceIdentity; 2],
+    instances: [UiMountedInstanceIdentity; 5],
+    revision: u64,
+    child: [f32; 4],
+    viewport: [f32; 4],
+) {
+    let mut boxes = BOXES;
+    boxes[4] = child;
+    install_with_child_region(
+        session,
+        surfaces,
+        instances,
+        revision,
+        boxes,
+        RegionOverrides::default(),
+        None,
+        viewport,
+    );
+}
+
 pub(super) fn install_restored_target(
     session: &mut WorthUiActiveApplicationSession,
     surfaces: [UiSemanticSurfaceIdentity; 2],

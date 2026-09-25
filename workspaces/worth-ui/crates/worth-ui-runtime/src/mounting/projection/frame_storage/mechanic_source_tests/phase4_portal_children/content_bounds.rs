@@ -44,8 +44,8 @@ fn mounted_shadow_caster_and_paint_are_measured_separately() {
             false,
         );
         world.semantic.insert_node(body);
-        let frame = world.frame(&[], None);
-        let measured = frame
+        let measured = world
+            .semantic
             .portal_content_extent(world.owners[0])
             .unwrap()
             .unwrap();
@@ -61,9 +61,9 @@ fn content_beginning_before_its_anchor_is_measured_from_the_union() {
     // it, so its near edge precedes the anchor origin on both axes. Measuring
     // from the anchor origin denied that world outright and reported the
     // refusal as an incompatible coordinate space.
-    let mut world = GeometryWorld::new();
-    let frame = world.frame(&[], None);
-    let measured = frame
+    let world = GeometryWorld::new();
+    let measured = world
+        .semantic
         .portal_content_extent(world.owners[0])
         .unwrap()
         .unwrap();

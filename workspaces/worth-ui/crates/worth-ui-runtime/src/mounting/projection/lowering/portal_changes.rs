@@ -33,6 +33,40 @@ pub(in crate::mounting::projection) fn changed_owners(
     changed
 }
 
+/// Marks every Portal owner whose placement or order this frame changed, and
+/// every child presented inside one, as changed presentation. Returns those
+/// instances; none means no Portal changed.
+pub(super) fn mark_changed(
+    build: &mut super::UiMountedProjectionBuild,
+    predecessor: Option<&super::super::UiMountedProjectionFrame>,
+    overlays: &[crate::mounting::UiMountedPortalOverlayProjectionInput],
+) -> Result<Vec<UiMountedInstanceIdentity>, super::UiMountedProjectionDenial> {
+    let owners = changed_owners(predecessor, overlays);
+    if owners.is_empty() {
+        return Ok(owners);
+    }
+    let (children, work) = children_in_transition(
+        predecessor.map(super::super::UiMountedProjectionFrame::semantic_projection),
+        &build.semantic,
+        &owners,
+    );
+    build.cost.index_entries = build
+        .cost
+        .index_entries
+        .checked_add(work)
+        .ok_or(super::UiMountedProjectionDenial::CostCounterOverflow)?;
+    let mut geometry = children;
+    geometry.extend_from_slice(&owners);
+    geometry.sort_unstable();
+    geometry.dedup();
+    let mut changed = build.presentation_changed_instances.to_vec();
+    changed.extend_from_slice(&geometry);
+    changed.sort_unstable();
+    changed.dedup();
+    build.presentation_changed_instances = changed.into();
+    Ok(geometry)
+}
+
 pub(in crate::mounting::projection) fn children_in_transition(
     predecessor: Option<&UiMountedSemanticProjection>,
     successor: &UiMountedSemanticProjection,

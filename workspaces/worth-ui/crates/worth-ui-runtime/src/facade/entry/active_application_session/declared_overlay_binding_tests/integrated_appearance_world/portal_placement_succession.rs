@@ -9,7 +9,10 @@ use super::session::World;
 /// inside the viewport.
 const OPENED: [f32; 4] = [40.0, 118.0, 280.0, 320.0];
 
-fn committed_bounds(world: &World, portal: crate::runtime::portal::UiPortalIdentity) -> [f32; 4] {
+pub(super) fn committed_bounds(
+    world: &World,
+    portal: crate::runtime::portal::UiPortalIdentity,
+) -> [f32; 4] {
     let placement = world
         .session
         .portal

@@ -183,10 +183,9 @@ impl UiPortalServiceRequest {
                 }
             });
             if let Some(extent) = self.content_extent {
-                let [_, _, width, height] = extent.layout.components();
                 self.placement_geometry = self
                     .placement_geometry
-                    .map(|geometry| geometry.with_content_extent([width as u16, height as u16]));
+                    .map(|geometry| geometry.with_content_extent(extent.layout_extent()));
             }
             if self.shielding_uses_policy_default {
                 self.shielding = match policy.kind() {

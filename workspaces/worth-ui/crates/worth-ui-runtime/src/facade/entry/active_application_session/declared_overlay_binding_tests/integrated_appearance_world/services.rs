@@ -2,6 +2,18 @@ use super::session::World;
 use crate::runtime::portal::*;
 use worth_ui_host_contract::*;
 
+/// Where an open finds its anchor, and what extent the Portal takes.
+#[derive(Clone, Copy, Eq, PartialEq)]
+enum Opening {
+    /// From the owner's launched box, at the declared extent.
+    Launched,
+    /// From wherever the owner presents now, at the declared extent.
+    WherePresented,
+    /// From the owner's launched box, fitted to the content it lays out, as
+    /// an activated open is.
+    FittedToContent,
+}
+
 impl World {
     pub(super) fn focus_first_surface_participant(&mut self) -> UiMountedInstanceIdentity {
         let focus = self.session.focus.as_mut().unwrap();
@@ -38,7 +50,24 @@ impl World {
         now: u64,
         inspect: impl FnOnce(&crate::mounting::UiPreparedMountedFrame),
     ) -> UiPortalIdentity {
-        self.open_from(index, declaration, parent, now, true, inspect)
+        self.open_from(index, declaration, parent, now, Opening::Launched, inspect)
+    }
+
+    /// Opens a top-level Portal fitted to its content, as activation does.
+    pub(super) fn open_fitted(
+        &mut self,
+        index: usize,
+        declaration: &str,
+        now: u64,
+    ) -> UiPortalIdentity {
+        self.open_from(
+            index,
+            declaration,
+            None,
+            now,
+            Opening::FittedToContent,
+            |_| {},
+        )
     }
 
     /// Opens from wherever the owner is presented now, which for Portal
@@ -50,7 +79,14 @@ impl World {
         parent: Option<UiPortalIdentity>,
         now: u64,
     ) -> UiPortalIdentity {
-        self.open_from(index, declaration, parent, now, false, |_| {})
+        self.open_from(
+            index,
+            declaration,
+            parent,
+            now,
+            Opening::WherePresented,
+            |_| {},
+        )
     }
 
     /// The graph node each mounted instance occurs for.
@@ -64,7 +100,7 @@ impl World {
         declaration: &str,
         parent: Option<UiPortalIdentity>,
         now: u64,
-        launched: bool,
+        opening: Opening,
         inspect: impl FnOnce(&crate::mounting::UiPreparedMountedFrame),
     ) -> UiPortalIdentity {
         let owner_graph = self.owner_graph(index);
@@ -113,7 +149,7 @@ impl World {
             presented.width(),
             presented.height(),
         ];
-        if launched {
+        if opening != Opening::WherePresented {
             assert_eq!([x, y, width, height], super::geometry::BOXES[index]);
         }
         assert_eq!(
@@ -163,6 +199,15 @@ impl World {
             }
         }
         .with_declared_portal(Some(declaration));
+        let request = match opening {
+            Opening::FittedToContent => request.with_content_extent(
+                session
+                    .mounted
+                    .current_portal_content_extent(instance)
+                    .unwrap(),
+            ),
+            Opening::Launched | Opening::WherePresented => request,
+        };
         let binding = session
             .admit_authored_portal_open(declaration, portal, surface)
             .unwrap();

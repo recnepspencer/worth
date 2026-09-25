@@ -1001,7 +1001,7 @@ sealed = [
 mints = [
   { call = "UiPublishedRect::from_committed_box", callers = [
     { path = "src/facade/entry/active_application_session/scroll_accepted_sample_settlement.rs", items = ["UiScrollSettlementReading::owner"] },
-    { path = "src/mounting/projection/frame_storage/portal_content_extent.rs", items = ["UiMountedProjectionFrame::portal_content_extent"] },
+    { path = "src/mounting/projection/frame_storage/portal_content_extent.rs", items = ["UiMountedSemanticProjection::portal_content_extent"] },
     { path = "src/mounting/portal_placement_succession.rs", items = ["viewport_rect"] },
     { path = "src/mounting/retention/interaction_basis.rs", items = ["UiPresentedHitTestRow::committed", "UiPresentedHitTestRow::from_mounted"] },
     { path = "src/runtime/interaction/targeting/presented_geometry.rs", items = ["UiPresentedInteractionGeometry::for_test_with_components", "UiPresentedViewportGeometry::from_current_interaction", "UiPresentedViewportGeometry::for_test"] },

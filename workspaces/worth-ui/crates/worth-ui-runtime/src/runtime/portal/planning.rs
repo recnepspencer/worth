@@ -62,16 +62,28 @@ pub(super) struct UiPortalArrangement {
 }
 
 impl super::UiPreparedPortalPlacement {
-    /// Places this Portal again where a successor frame lays out its anchor
-    /// and viewport, by the arithmetic that opened it. Its presentation basis,
+    /// Places this Portal again where a successor frame lays out its anchor,
+    /// viewport, and content, by the arithmetic that opened it. A Portal that
+    /// opened fitted to its content fits the content as `content` measures it
+    /// now, or as it last did when the successor cannot measure it; any other
+    /// keeps its declared extent and never measures. Its presentation basis,
     /// layer, and shielding carry over; the accepted frame rebinds the basis.
     pub(crate) fn succeeded(
         self,
         anchor: UiPublishedRect,
         viewport: UiPublishedRect,
+        content: impl FnOnce() -> Option<super::UiPortalContentBounds>,
     ) -> Result<Self, super::UiPortalPlacementDenial> {
         let arrangement = self.arrangement();
-        let successor = arrange(anchor, viewport, arrangement.policy, arrangement.content)?;
+        let content = arrangement
+            .content
+            .map(|fitted| content().unwrap_or(fitted));
+        let policy = content.map_or(arrangement.policy, |content| {
+            arrangement
+                .policy
+                .with_content_extent(content.layout_extent())
+        });
+        let successor = arrange(anchor, viewport, policy, content)?;
         Ok(self.with_arrangement(successor))
     }
 }

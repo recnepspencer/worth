@@ -43,6 +43,8 @@ mod native_attribution;
 mod palette;
 #[path = "integrated_appearance_world/pointer_geometry.rs"]
 mod pointer_geometry;
+#[path = "integrated_appearance_world/portal_content_succession.rs"]
+mod portal_content_succession;
 #[path = "integrated_appearance_world/portal_dismissal_epoch.rs"]
 mod portal_dismissal_epoch;
 #[path = "integrated_appearance_world/portal_exit_retention.rs"]
@@ -69,6 +71,8 @@ mod scroll_coarse_wheel;
 mod scroll_content_anchoring;
 #[path = "integrated_appearance_world/scroll_direct_acceptance.rs"]
 mod scroll_direct_acceptance;
+#[path = "integrated_appearance_world/scroll_direct_resize.rs"]
+mod scroll_direct_resize;
 #[path = "integrated_appearance_world/scroll_empty_sample_acceptance.rs"]
 mod scroll_empty_sample_acceptance;
 #[path = "integrated_appearance_world/scroll_extent_acceptance.rs"]

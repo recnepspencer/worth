@@ -169,7 +169,9 @@ A container that owns Scroll lays its members out at their minimums and
 scrolls them when they outgrow its viewport. Height constrains that viewport,
 not type size. Modal cards stay centered in the current viewport, and open
 popovers are placed again from each frame's layout with the fit, flip and
-clamp policy they opened with. Backdrops cover the current extent.
+clamp policy they opened with. A Portal opened fitted to its content fits the
+extent each frame lays that content out at, not the extent it opened at.
+Backdrops cover the current extent.
 
 ## Geometry, Borders, And Text
 

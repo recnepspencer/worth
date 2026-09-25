@@ -166,9 +166,6 @@ pub(crate) fn prepare_projection(
                 .semantic_projection()
                 .supports_surfaces(input.requested_surfaces)
         });
-    let portal_changed_instances =
-        portal_changes::changed_owners(delta_predecessor, input.portal_overlays.as_ref());
-    let portal_overlays_changed = !portal_changed_instances.is_empty();
     let delta = match (delta_predecessor, input.allocation_source.delta()) {
         (
             Some(current),
@@ -204,29 +201,17 @@ pub(crate) fn prepare_projection(
     build
         .semantic
         .apply_projection_inputs(input.semantic_content);
-    let mut portal_geometry_changes = Vec::new();
-    if !portal_changed_instances.is_empty() {
-        let mut changed = build.presentation_changed_instances.to_vec();
-        let (children, work) = portal_changes::children_in_transition(
-            delta_predecessor.map(super::UiMountedProjectionFrame::semantic_projection),
-            &build.semantic,
-            &portal_changed_instances,
-        );
-        portal_geometry_changes.extend_from_slice(&children);
-        portal_geometry_changes.extend_from_slice(&portal_changed_instances);
-        portal_geometry_changes.sort_unstable();
-        portal_geometry_changes.dedup();
-        changed.extend(children);
-        build.cost.index_entries = build
-            .cost
-            .index_entries
-            .checked_add(work)
-            .ok_or(UiMountedProjectionDenial::CostCounterOverflow)?;
-        changed.extend(portal_changed_instances);
-        changed.sort_unstable();
-        changed.dedup();
-        build.presentation_changed_instances = changed.into();
-    }
+    // Each open Portal is placed again from the content this projection lays
+    // out, which the build above has just put in place.
+    let portal_overlays = crate::mounting::portal_placement_succession::succeed_portal_placements(
+        state,
+        input.occurrence_geometry,
+        &build.semantic,
+        input.portal_overlays,
+    );
+    let portal_geometry_changes =
+        portal_changes::mark_changed(&mut build, delta_predecessor, &portal_overlays)?;
+    let portal_overlays_changed = !portal_geometry_changes.is_empty();
     let appearance_invalidation = appearance_input::finish(
         state,
         input.requested_surfaces,
@@ -243,7 +228,7 @@ pub(crate) fn prepare_projection(
             semantic: build.semantic,
             preview: input.preview,
             visual_overlay: input.visual_overlay,
-            portal_overlays: input.portal_overlays,
+            portal_overlays,
             projection_changes,
             presentation_changed_instances: build.presentation_changed_instances,
             appearance_selection: std::rc::Rc::new(appearance_selection),

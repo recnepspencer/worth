@@ -158,6 +158,62 @@ fn missing_presented_viewport_denies_before_portal_truth_changes() {
     ));
 }
 
+#[test]
+fn a_fitted_modal_keeps_its_last_extent_when_a_successor_cannot_measure_it() {
+    let anchor = [120.0, 80.0, 48.0, 24.0];
+    let request = open_request(portal(41, 42), 43, anchor, viewport())
+        .with_content_extent(Some(content([200.0, 100.0])));
+    let placement = modal(request);
+    assert_eq!(
+        placement.bounds().components(),
+        [380.0, 250.0, 200.0, 100.0]
+    );
+
+    let kept = placement
+        .succeeded(published(anchor), published(viewport()), || None)
+        .expect("the modal places again");
+    assert_eq!(kept.bounds(), placement.bounds());
+
+    let grown = placement
+        .succeeded(published(anchor), published(viewport()), || {
+            Some(content([240.0, 140.0]))
+        })
+        .expect("the modal places again");
+    assert_eq!(grown.bounds().components(), [360.0, 230.0, 240.0, 140.0]);
+}
+
+#[test]
+fn a_modal_at_its_declared_extent_never_measures_its_content() {
+    let anchor = [120.0, 80.0, 48.0, 24.0];
+    let placement = modal(open_request(portal(51, 52), 53, anchor, viewport()));
+    let succeeded = placement
+        .succeeded(published(anchor), published(viewport()), || {
+            panic!("a Portal at its declared extent is never measured")
+        })
+        .expect("the modal places again");
+    assert_eq!(succeeded.bounds(), placement.bounds());
+}
+
+fn modal(request: UiPortalServiceRequest) -> super::UiPreparedPortalPlacement {
+    state()
+        .prepare_authored(request, crate::declaration::UiPortalPolicy::modal_dialog())
+        .expect("placement prepares")
+        .placement()
+        .expect("open has placement")
+}
+
+fn content([width, height]: [f32; 2]) -> super::UiPortalContentBounds {
+    let extent = published([0.0, 0.0, width, height]);
+    super::UiPortalContentBounds {
+        layout: extent,
+        paint: extent,
+    }
+}
+
+fn published(components: [f32; 4]) -> crate::mounting::presentation::UiPublishedRect {
+    crate::mounting::presentation::UiPublishedRect::from_committed_box(canonical_box(components))
+}
+
 fn state() -> UiPortalRuntimeState {
     UiPortalRuntimeState::new(
         crate::runtime::UiServiceStatePersistencePosture::SessionRestoreCandidate,

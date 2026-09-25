@@ -210,6 +210,7 @@ impl WorthUiMountedSessionState {
         self.identity
             .current_projection()
             .ok_or(crate::mounting::UiMountedProjectionDenial::PortalOverlayOwnerMissing)?
+            .semantic_projection()
             .portal_content_extent(owner)
     }
 
