@@ -4,9 +4,9 @@ use std::sync::Arc;
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 use worth_relational::facade::identity::{EntityId, RelationId};
 use worth_relational::facade::transactions::{
-    AspectFieldPatch, CreateIntent, DeleteEntityIntent, DeleteRelationIntent, EntityMutationIntent,
-    EntityReference, EntitySpec, MutationIntent, RelationMutationIntent, RelationSpec,
-    UpdateEntityFieldsIntent,
+    AspectFieldPatch, CreateIntent, CreatedEntityRef, DeleteEntityIntent, DeleteRelationIntent,
+    EntityMutationIntent, EntityReference, EntitySpec, MutationIntent, RelationMutationIntent,
+    RelationSpec, UpdateEntityFieldsIntent,
 };
 
 use super::{
@@ -37,16 +37,73 @@ struct WorthQueryCreateRelationEffect {
     to: EntityReference,
 }
 
+pub(super) struct CreatedEffectReferences {
+    resolved: BTreeMap<EntityReference, EntityReference>,
+    symbols: BTreeMap<EntityReference, Arc<str>>,
+}
+
+impl CreatedEffectReferences {
+    pub(super) fn new(
+        effects: &[WorthQueryApplicationRealizedEffect],
+        mutation_partition: worth_relational::facade::identity::PartitionId,
+    ) -> Self {
+        let mut resolved = BTreeMap::new();
+        let mut symbols = BTreeMap::new();
+        for effect in effects {
+            let WorthQueryApplicationRealizedEffect::CreateEntity {
+                kind,
+                key,
+                partition,
+                ..
+            } = effect
+            else {
+                continue;
+            };
+            let reference = |partition_id| {
+                EntityReference::Created(CreatedEntityRef {
+                    partition_id,
+                    kind_id: *kind,
+                    client_key: worth_relational::facade::symbols::ClientKey::raw(key.clone()),
+                })
+            };
+            let authored = reference(
+                partition.resolve(worth_relational::facade::identity::PartitionId::main()),
+            );
+            let lowered = reference(partition.resolve(mutation_partition));
+            resolved.insert(authored, lowered.clone());
+            symbols.insert(lowered, created_entity_symbol(*kind, key));
+        }
+        Self { resolved, symbols }
+    }
+
+    fn lower(
+        &self,
+        reference: EntityReference,
+    ) -> Result<EntityReference, WorthQueryApplicationAttemptDenial> {
+        match reference {
+            EntityReference::Created(_) => self
+                .resolved
+                .get(&reference)
+                .cloned()
+                .ok_or_else(progression_denial),
+            existing => Ok(existing),
+        }
+    }
+}
+
 pub(super) fn lower_provider_effect(
     facts: &ObservedFactIndex<'_>,
-    symbols: &BTreeMap<EntityReference, Arc<str>>,
+    created: &CreatedEffectReferences,
     mutation_partition: worth_relational::facade::identity::PartitionId,
     effect: WorthQueryApplicationRealizedEffect,
 ) -> Result<WorthQueryLoweredProviderEffect, WorthQueryApplicationAttemptDenial> {
     match effect {
         WorthQueryApplicationRealizedEffect::CreateEntity {
-            kind, key, fields, ..
-        } => lower_create_entity(mutation_partition, kind, key, fields),
+            kind,
+            key,
+            fields,
+            partition,
+        } => lower_create_entity(partition.resolve(mutation_partition), kind, key, fields),
         WorthQueryApplicationRealizedEffect::UpdateEntity {
             entity_id, fields, ..
         } => lower_update_entity(facts, entity_id, fields),
@@ -64,7 +121,7 @@ pub(super) fn lower_provider_effect(
             from,
             to,
         } => lower_create_relation(
-            symbols,
+            created,
             mutation_partition,
             WorthQueryCreateRelationEffect {
                 kind,
@@ -141,15 +198,15 @@ fn lower_delete_entity(
 }
 
 fn lower_create_relation(
-    symbols: &BTreeMap<EntityReference, Arc<str>>,
+    created: &CreatedEffectReferences,
     mutation_partition: worth_relational::facade::identity::PartitionId,
     effect: WorthQueryCreateRelationEffect,
 ) -> Result<WorthQueryLoweredProviderEffect, WorthQueryApplicationAttemptDenial> {
-    let from = remap_created_reference(effect.from, mutation_partition);
-    let to = remap_created_reference(effect.to, mutation_partition);
+    let from = created.lower(effect.from)?;
+    let to = created.lower(effect.to)?;
     let dependencies = [&from, &to]
         .into_iter()
-        .filter_map(|reference| symbols.get(reference).cloned());
+        .filter_map(|reference| created.symbols.get(reference).cloned());
     let step = effect_step(WorthQueryProvisionalEffectAction::Create {
         symbolic_identity: format!(
             "application-create-relation:{}:{}",
@@ -163,7 +220,14 @@ fn lower_create_relation(
     mutation(
         vec![step],
         MutationIntent::Create(CreateIntent::Relation(RelationSpec {
-            partition_id: mutation_partition,
+            partition_id: if from.partition_id() == to.partition_id()
+                && (matches!(&from, EntityReference::Created(_))
+                    || matches!(&to, EntityReference::Created(_)))
+            {
+                from.partition_id()
+            } else {
+                mutation_partition
+            },
             kind_id: effect.kind,
             client_key: worth_relational::facade::symbols::ClientKey::raw(effect.key),
             source: from,
@@ -187,46 +251,90 @@ fn lower_delete_relation(
     )
 }
 
-pub(super) fn created_entity_symbols(
-    effects: &[WorthQueryApplicationRealizedEffect],
-    mutation_partition: worth_relational::facade::identity::PartitionId,
-) -> BTreeMap<EntityReference, Arc<str>> {
-    effects
-        .iter()
-        .filter_map(|effect| {
-            let WorthQueryApplicationRealizedEffect::CreateEntity { kind, key, .. } = effect else {
-                return None;
-            };
-            let reference = EntityReference::Created(
-                worth_relational::facade::transactions::CreatedEntityRef {
-                    partition_id: mutation_partition,
-                    kind_id: *kind,
-                    client_key: worth_relational::facade::symbols::ClientKey::raw(key.clone()),
-                },
-            );
-            Some((reference, created_entity_symbol(*kind, key)))
-        })
-        .collect()
-}
-
-fn remap_created_reference(
-    reference: EntityReference,
-    mutation_partition: worth_relational::facade::identity::PartitionId,
-) -> EntityReference {
-    match reference {
-        EntityReference::Created(mut created) => {
-            created.partition_id = mutation_partition;
-            EntityReference::Created(created)
-        }
-        existing => existing,
-    }
-}
-
 fn mutation(
     steps: Vec<WorthQueryProvisionalEffectStep>,
     intent: MutationIntent,
 ) -> Result<WorthQueryLoweredProviderEffect, WorthQueryApplicationAttemptDenial> {
     Ok(WorthQueryLoweredProviderEffect::Mutation { steps, intent })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCreationPartition;
+    use worth_relational::facade::identity::{KindId, PartitionId};
+
+    #[test]
+    fn appended_workflow_facts_keep_their_context_after_an_issued_application_create() {
+        let application_partition = PartitionId::new(3);
+        let workflow_partition = PartitionId::new(7);
+        let created = |partition_id, kind_id, key: &str| {
+            EntityReference::Created(CreatedEntityRef {
+                partition_id,
+                kind_id: KindId::new(kind_id),
+                client_key: worth_relational::facade::symbols::ClientKey::raw(key),
+            })
+        };
+        let effects = vec![
+            WorthQueryApplicationRealizedEffect::CreateEntity {
+                kind: KindId::new(10),
+                key: "cad-feature".to_owned(),
+                fields: BTreeMap::new(),
+                partition: WorthQueryApplicationCreationPartition::Issued,
+            },
+            WorthQueryApplicationRealizedEffect::CreateEntity {
+                kind: KindId::new(11),
+                key: "transition".to_owned(),
+                fields: BTreeMap::new(),
+                partition: WorthQueryApplicationCreationPartition::Context(workflow_partition),
+            },
+            WorthQueryApplicationRealizedEffect::CreateRelation {
+                kind: KindId::new(12),
+                key: "instance-transition".to_owned(),
+                from: EntityReference::Existing(EntityId::new(workflow_partition, 1, 1)),
+                to: created(workflow_partition, 11, "transition"),
+            },
+            WorthQueryApplicationRealizedEffect::CreateRelation {
+                kind: KindId::new(13),
+                key: "cad-membership".to_owned(),
+                from: EntityReference::Existing(EntityId::new(application_partition, 2, 1)),
+                to: created(PartitionId::main(), 10, "cad-feature"),
+            },
+        ];
+        let references = CreatedEffectReferences::new(&effects, application_partition);
+        let facts = ObservedFactIndex::new(&[]);
+        let mut lowered = effects.into_iter().map(|effect| {
+            lower_provider_effect(&facts, &references, application_partition, effect).unwrap()
+        });
+        let entity_partition = |lowered| match lowered {
+            WorthQueryLoweredProviderEffect::Mutation {
+                intent: MutationIntent::Create(CreateIntent::Entity(entity)),
+                ..
+            } => entity.partition_id,
+            _ => panic!("expected an entity create"),
+        };
+        assert_eq!(
+            entity_partition(lowered.next().unwrap()),
+            application_partition
+        );
+        assert_eq!(
+            entity_partition(lowered.next().unwrap()),
+            workflow_partition
+        );
+        let relation = |lowered| match lowered {
+            WorthQueryLoweredProviderEffect::Mutation {
+                intent: MutationIntent::Create(CreateIntent::Relation(relation)),
+                ..
+            } => relation,
+            _ => panic!("expected a relation create"),
+        };
+        let workflow_relation = relation(lowered.next().unwrap());
+        assert_eq!(workflow_relation.partition_id, workflow_partition);
+        assert_eq!(workflow_relation.target.partition_id(), workflow_partition);
+        let cad_relation = relation(lowered.next().unwrap());
+        assert_eq!(cad_relation.partition_id, application_partition);
+        assert_eq!(cad_relation.target.partition_id(), application_partition);
+    }
 }
 
 fn created_entity_symbol(kind: worth_relational::facade::identity::KindId, key: &str) -> Arc<str> {

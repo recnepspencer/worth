@@ -107,6 +107,7 @@ struct WorthQueryProviderAttemptPreparation {
     installed_read_scopes: Vec<worth_query_installation::facade::WorthQueryOperationGraphReadScope>,
     facts: Vec<WorthQueryApplicationObservedFact>,
     effects: Vec<WorthQueryApplicationRealizedEffect>,
+    application_effect_count: usize,
     emission_retained_bytes: u64,
     emission_retained_bytes_ceiling: u64,
     preimage_demand: Option<worth_query_installation::facade::InstalledPreImageDemand>,
@@ -198,6 +199,7 @@ where
             provider: WorthQueryProviderAttemptPreparation {
                 installed_read_scopes: read_set.installed_read_scopes,
                 facts: read_set.facts,
+                application_effect_count: effects.len(),
                 effects,
                 emission_retained_bytes,
                 emission_retained_bytes_ceiling,
@@ -278,6 +280,7 @@ fn prepare_application_provider_attempt(
 ) -> Result<WorthQueryPreparedApplicationProviderAttempt, ()> {
     prepare_provider_attempt(
         mutation_partition,
+        preparation.application_effect_count,
         preparation.installed_read_scopes,
         preparation.facts,
         preparation.effects,
