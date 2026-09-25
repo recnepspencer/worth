@@ -63,11 +63,23 @@ fn source_native_stamp_survives_unrelated_publication_and_wire_roundtrip() {
     let recovered = RelationalAuthorizationDurableDependencies::from_wire_string(&wire)
         .expect("canonical stamp decodes after restart");
     assert!(before.matches(&recovered));
+    assert!(recovered
+        .source_revisions_match(
+            &fixture.runtime,
+            &fixture.runtime.visibility_authority().snapshot()
+        )
+        .unwrap());
 
     let unrelated = create_entity(&fixture.runtime, "unrelated");
     let other = create_entity(&fixture.runtime, "other");
     create_relation(&fixture.runtime, unrelated, other, "unrelated-edge");
     assert!(recovered.matches(&stamp_now(&fixture)));
+    assert!(recovered
+        .source_revisions_match(
+            &fixture.runtime,
+            &fixture.runtime.visibility_authority().snapshot()
+        )
+        .unwrap());
 }
 
 #[test]
@@ -113,6 +125,12 @@ fn source_native_stamp_compares_after_checkpoint_recovery() {
             .unwrap()
             .matches(&fresh)
     );
+    assert!(
+        RelationalAuthorizationDurableDependencies::from_wire_string(&wire)
+            .unwrap()
+            .source_revisions_match(&recovered, &recovered.visibility_authority().snapshot())
+            .unwrap()
+    );
 }
 
 #[test]
@@ -134,6 +152,12 @@ fn predicate_field_change_back_cannot_revive_old_stamp() {
     update_entity(&fixture.runtime, role, "temporarily-disabled");
     update_entity(&fixture.runtime, role, "approver");
     assert!(!before.matches(&stamp_now(&fixture)));
+    assert!(!before
+        .source_revisions_match(
+            &fixture.runtime,
+            &fixture.runtime.visibility_authority().snapshot()
+        )
+        .unwrap());
 }
 
 #[test]
@@ -144,6 +168,12 @@ fn adjacency_add_remove_cannot_revive_old_stamp() {
     let edge = create_relation(&fixture.runtime, fixture.principal, detour, "detour-edge");
     delete_relation_on_branch(&fixture.runtime, edge, BranchId("main".to_owned()));
     assert!(!before.matches(&stamp_now(&fixture)));
+    assert!(!before
+        .source_revisions_match(
+            &fixture.runtime,
+            &fixture.runtime.visibility_authority().snapshot()
+        )
+        .unwrap());
 }
 
 #[test]
@@ -155,6 +185,12 @@ fn relation_retarget_and_return_cannot_revive_old_stamp() {
     retarget(&fixture, role, alternative);
     retarget(&fixture, role, fixture.scope);
     assert!(!before.matches(&stamp_now(&fixture)));
+    assert!(!before
+        .source_revisions_match(
+            &fixture.runtime,
+            &fixture.runtime.visibility_authority().snapshot()
+        )
+        .unwrap());
 }
 
 #[test]

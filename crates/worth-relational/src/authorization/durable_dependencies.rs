@@ -12,6 +12,7 @@ use super::{
 };
 
 mod capture;
+mod currentness;
 mod wire;
 
 pub const MAXIMUM_AUTHORIZATION_DEPENDENCIES: usize = 4_096;

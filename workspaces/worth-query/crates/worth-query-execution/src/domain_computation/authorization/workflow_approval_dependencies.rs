@@ -1,6 +1,7 @@
 //! Bounded, descriptive source-native dependencies retained with one approval.
 
 use serde::{Deserialize, Serialize};
+use worth_relational::facade::{runtime::RelationalRuntime, snapshots::SnapshotHandle};
 
 use super::{
     WorkflowApprovalRequestEncodingDenial, WorthQueryDurableAuthorizationDependencies,
@@ -79,6 +80,21 @@ impl WorthQueryWorkflowApprovalDependencies {
             current
                 .retained_durable_dependencies()
                 .is_ok_and(|observed| observed == *expected)
+        })
+    }
+
+    pub(in crate::domain_computation) fn delegation_target_support_matches(
+        &self,
+        current: &super::WorthQueryAuthorizationDecisionFact,
+        runtime: &RelationalRuntime,
+        snapshot: &SnapshotHandle,
+    ) -> bool {
+        self.support.as_ref().is_some_and(|expected| {
+            current
+                .retained_durable_dependencies()
+                .is_ok_and(|observed| {
+                    expected.matches_with_retained_activation(&observed, runtime, snapshot)
+                })
         })
     }
 }

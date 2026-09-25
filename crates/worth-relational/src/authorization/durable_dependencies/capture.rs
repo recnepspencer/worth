@@ -147,7 +147,7 @@ pub(super) fn capture(
     Ok(stamp)
 }
 
-fn capture_entity(
+pub(super) fn capture_entity(
     view: &VisibilityProjectionView<'_>,
     entity: EntityId,
     remaining: &mut usize,
@@ -163,7 +163,7 @@ fn capture_entity(
     .ok_or(Denial::DependencyUnavailable)
 }
 
-fn capture_relation(
+pub(super) fn capture_relation(
     view: &VisibilityProjectionView<'_>,
     relation: RelationId,
     remaining: &mut usize,
@@ -202,11 +202,11 @@ fn capture_relation(
     .ok_or(Denial::DependencyUnavailable)
 }
 
-fn consume(remaining: &mut usize) -> Result<(), Denial> {
+pub(super) fn consume(remaining: &mut usize) -> Result<(), Denial> {
     consume_many(remaining, 1)
 }
 
-fn consume_many(remaining: &mut usize, amount: usize) -> Result<(), Denial> {
+pub(super) fn consume_many(remaining: &mut usize, amount: usize) -> Result<(), Denial> {
     *remaining = remaining
         .checked_sub(amount)
         .ok_or(Denial::DependencyBudgetExceeded)?;

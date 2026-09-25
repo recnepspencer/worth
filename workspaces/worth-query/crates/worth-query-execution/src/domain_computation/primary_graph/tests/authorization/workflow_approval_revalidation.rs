@@ -28,6 +28,20 @@ fn durable_approval_basis_with_snapshots(
     replacement_support: Option<&str>,
     replacement_lineage: Option<&str>,
 ) -> WorthQueryWorkflowApprovalAuthorityBasis {
+    durable_approval_basis_with_dependency_snapshot(
+        admission,
+        replacement_support,
+        replacement_lineage,
+        None,
+    )
+}
+
+fn durable_approval_basis_with_dependency_snapshot(
+    admission: &Admission,
+    replacement_support: Option<&str>,
+    replacement_lineage: Option<&str>,
+    replacement_dependencies: Option<&str>,
+) -> WorthQueryWorkflowApprovalAuthorityBasis {
     let authority = admission.workflow_approval_authority().unwrap();
     let request = WorthQueryRetainedCapabilityRequest::decode_workflow_approval_request(
         &admission
@@ -55,13 +69,12 @@ fn durable_approval_basis_with_snapshots(
         .unwrap();
     let support =
         decode_workflow_approval_support(replacement_support.unwrap_or(&original_support)).unwrap();
-    let mut dependency_snapshot: serde_json::Value = serde_json::from_str(
-        &admission
-            .workflow_approval_dependencies_snapshot()
-            .unwrap()
-            .unwrap(),
-    )
-    .unwrap();
+    let original_dependencies = admission
+        .workflow_approval_dependencies_snapshot()
+        .unwrap()
+        .unwrap();
+    let mut dependency_snapshot: serde_json::Value =
+        serde_json::from_str(replacement_dependencies.unwrap_or(&original_dependencies)).unwrap();
     if support.is_some() && dependency_snapshot["support"].is_null() {
         dependency_snapshot["support"] = dependency_snapshot["primary"].clone();
     }

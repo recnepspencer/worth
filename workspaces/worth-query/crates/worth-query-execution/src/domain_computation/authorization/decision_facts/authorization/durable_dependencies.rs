@@ -5,6 +5,7 @@ use worth_relational::facade::authorization::{
     RelationalAuthorizationDurableDependencies, RelationalAuthorizationObservationEvidence,
 };
 use worth_relational::facade::runtime::RelationalRuntime;
+use worth_relational::facade::snapshots::SnapshotHandle;
 
 use super::WorthQueryAuthorizationDecisionFact;
 
@@ -59,6 +60,26 @@ impl WorthQueryDurableAuthorizationDependencies {
             validate(activation)?;
         }
         Ok(())
+    }
+
+    pub(in crate::domain_computation) fn matches_with_retained_activation(
+        &self,
+        observed: &Self,
+        runtime: &RelationalRuntime,
+        snapshot: &SnapshotHandle,
+    ) -> bool {
+        self.primary == observed.primary
+            && self.delegation == observed.delegation
+            && observed.activation.is_none()
+            && self.activation.as_ref().is_some_and(|activation| {
+                RelationalAuthorizationDurableDependencies::from_wire_string(activation).is_ok_and(
+                    |stamp| {
+                        stamp
+                            .source_revisions_match(runtime, snapshot)
+                            .is_ok_and(|matches| matches)
+                    },
+                )
+            })
     }
 }
 

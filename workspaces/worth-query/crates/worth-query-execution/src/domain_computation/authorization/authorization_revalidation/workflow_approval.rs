@@ -101,8 +101,7 @@ where
                 return Err(stale_authorization());
             }
             if let Some(support) = authority.support() {
-                if support.request().resource() != authority.request().resource()
-                    || support.request().principal() != authority.request().principal()
+                if support.request().principal() != authority.request().principal()
                     || !support_matches_primary(authority, support)
                 {
                     return Err(stale_authorization());
@@ -145,7 +144,15 @@ where
                 if observed.decision().durable_lineage() != *support.lineage() {
                     return Err(stale_authorization());
                 }
-                if !authority.dependencies().support_matches(observed.decision()) {
+                let dependencies_match = match support.role() {
+                    crate::domain_computation::authorization::WorthQueryCapabilitySupportRole::DelegationTarget => authority
+                        .dependencies()
+                        .delegation_target_support_matches(observed.decision(), runtime, snapshot),
+                    crate::domain_computation::authorization::WorthQueryCapabilitySupportRole::ElevationUpperBound => authority
+                        .dependencies()
+                        .support_matches(observed.decision()),
+                };
+                if !dependencies_match {
                     return Err(stale_authorization());
                 }
             }
@@ -166,6 +173,7 @@ fn support_matches_primary(
         }
         WorthQueryCapabilitySupportRole::ElevationUpperBound => {
             support.posture() == WorthQueryCapabilityObservationPosture::UpperBound
+                && support.request().resource() == authority.request().resource()
                 && support.request().capability_identity()
                     == authority.request().capability_identity()
                 && support.capability_authority_identity()
