@@ -1,3 +1,6 @@
+component platform.pulse.component.chart_panel {}
+component platform.pulse.component.chart_x_axis {}
+component platform.pulse.component.chart_y_axis {}
 appearance role platform.pulse.appearance.service_stage applies_to platform.pulse.component.service_stage {
   background use token(theme.platform_pulse.raised_surface)
   radius use token(theme.platform_pulse.radius.r12)

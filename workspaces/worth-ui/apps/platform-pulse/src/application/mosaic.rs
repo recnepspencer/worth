@@ -104,7 +104,7 @@ fn region_descriptor(region: PlatformPulseMosaicRegion) -> MosaicRegionKindDescr
         ),
         PlatformPulseMosaicRegion::ServiceList | PlatformPulseMosaicRegion::ActivityList => (
             MosaicRegionRole::auxiliary(),
-            MosaicSizingBehavior::viewport_bounded(),
+            MosaicSizingBehavior::fills_available_space(),
             MosaicScrollOwnership::region_owned(),
             MosaicFocusScopeKind::region_scope(),
             MosaicChildRule::leaf_only(),
@@ -172,12 +172,11 @@ fn chrome_contract(panel: DashboardScrollPanel) -> UiScrollChromeContract {
 
 fn sizing_descriptor(sizing: PlatformPulseMosaicSizing) -> MosaicSizingContractDescriptor {
     let kind = match sizing {
-        PlatformPulseMosaicSizing::Viewport | PlatformPulseMosaicSizing::ServiceStage => {
-            MosaicSizingKind::fill()
-        }
+        PlatformPulseMosaicSizing::Viewport
+        | PlatformPulseMosaicSizing::ServiceStage
+        | PlatformPulseMosaicSizing::DashboardList => MosaicSizingKind::fill(),
         PlatformPulseMosaicSizing::Masthead
         | PlatformPulseMosaicSizing::EvidenceRail
-        | PlatformPulseMosaicSizing::DashboardList
         | PlatformPulseMosaicSizing::StatusBand => MosaicSizingKind::fixed(),
     };
     let descriptor = MosaicSizingContractDescriptor::new(sizing_id(sizing), kind)

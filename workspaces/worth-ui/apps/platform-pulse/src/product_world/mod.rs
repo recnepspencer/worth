@@ -20,15 +20,15 @@ pub use runtime_services::{
 };
 #[doc(hidden)]
 pub use visual_composition::{
-    PlatformPulseCompositionExtent, PlatformPulseCompositionLayout,
-    PlatformPulseCompositionLayoutDenial, PlatformPulseLogicalRect, PlatformPulsePaletteRole,
-    PlatformPulseProductComponent, PlatformPulseProductFactSource, PlatformPulseProductRegion,
-    PlatformPulseProductRegionContract, PlatformPulseProductTargetContract, PlatformPulseRgba,
-    PlatformPulseServiceStoryGate, PlatformPulseSourceSignalRole, PlatformPulseStaticCopy,
-    PlatformPulseTextRole, PlatformPulseTextStyleContract,
+    PlatformPulseLogicalRect, PlatformPulsePaletteRole, PlatformPulseProductComponent,
+    PlatformPulseProductFactSource, PlatformPulseProductRegion, PlatformPulseProductRegionContract,
+    PlatformPulseProductTargetContract, PlatformPulseRgba, PlatformPulseServiceStoryGate,
+    PlatformPulseSourceSignalRole, PlatformPulseStaticCopy, PlatformPulseTextRole,
+    PlatformPulseTextStyleContract,
 };
 
 pub use visual_composition::{
     dashboard_containers, dashboard_elements, DashboardContainer, DashboardContent,
-    DashboardElement, DashboardGraphic, DashboardLayoutCell, DashboardScrollPanel,
+    DashboardElement, DashboardGraphic, DashboardLayoutCell, DashboardPlacement,
+    DashboardScrollPanel, PLATFORM_PULSE_MASTHEAD_HEIGHT, PLATFORM_PULSE_SIDEBAR_WIDTH,
 };

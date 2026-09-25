@@ -35,6 +35,8 @@ mod scroll_chrome_pixels;
 #[cfg(target_os = "windows")]
 #[cfg(worth_ui_certified_executable)]
 mod source_to_pixel;
+#[cfg(worth_ui_certified_executable)]
+mod status_badge_pixels;
 mod visual_contract_manifest;
 #[cfg(worth_ui_certified_executable)]
 mod visual_overlay_pixels;
@@ -128,12 +130,15 @@ pub(crate) use source_to_pixel::{
     ExecutableFirstFrameEvidence, ExecutableFirstFrameFailure,
 };
 #[cfg(worth_ui_certified_executable)]
+pub(crate) use status_badge_pixels::{
+    adjudicate_dashboard_status_badge, DashboardStatusBadgeFailure,
+};
+#[cfg(worth_ui_certified_executable)]
 pub(crate) use visual_overlay_pixels::{
     adjudicate_overlay_pixels, adjudicate_restored_pixels, ExecutableVisualClearEvidence,
     ExecutableVisualOverlayEvidence,
 };
 #[cfg(worth_ui_certified_executable)]
 pub(crate) use wrapping_text_pixels::{
-    adjudicate_dashboard_status_badge, adjudicate_resized_wrapping_text,
-    PlatformPulseWrappingTextFailure,
+    adjudicate_resized_wrapping_text, PlatformPulseWrappingTextFailure,
 };

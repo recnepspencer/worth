@@ -1,125 +1,103 @@
 use worth_ui::facade::declaration::ComponentViewportAxisPlacement as Axis;
 
-use super::{container, elements, CARD_COLUMNS, CARD_GAP, ROW_END};
+use super::super::dashboard_containers;
+use super::super::declared_layout::{assert_near, Declared, Rect, EXTENTS};
+use super::{container, elements, CARD_COLUMNS, ROW};
 
-/// Independent oracle: weighted columns share the row width left after the
-/// gaps, then each element's region resolves inside its column. Every
-/// column's minimum is its weight, so a share below one point per weight
-/// holds every column at its minimum instead.
-fn expected_rects(viewport_width: f32) -> Vec<[f32; 4]> {
-    let row_x = f32::from(CARD_COLUMNS[0].0);
-    let row_width = viewport_width - row_x - f32::from(ROW_END);
+const CARDS: [&str; 4] = ["active_card", "query_card", "error_card", "latency_card"];
+
+/// Independent oracle: the cards share the row width left after the 20-point
+/// gaps in proportion to their concept widths, and a row too narrow for that
+/// holds every card at its concept width and overflows.
+fn expected_cards(row: Rect) -> [Rect; 4] {
     let weights = CARD_COLUMNS.map(|(_, width)| f32::from(width));
-    let share = ((row_width - 3.0 * f32::from(CARD_GAP)) / weights.iter().sum::<f32>()).max(1.0);
-    let resolve = |axis: Axis, available: f32| match axis {
-        Axis::FixedFromStart {
-            start_logical_points,
-            extent_logical_points,
-        } => (
-            f32::from(start_logical_points),
-            f32::from(extent_logical_points),
-        ),
-        Axis::StretchBetween {
-            start_logical_points,
-            end_logical_points,
-        } => (
-            f32::from(start_logical_points),
-            available - f32::from(start_logical_points) - f32::from(end_logical_points),
-        ),
-        Axis::FixedFromEnd {
-            end_logical_points,
-            extent_logical_points,
-        } => (
-            available - f32::from(end_logical_points) - f32::from(extent_logical_points),
-            f32::from(extent_logical_points),
-        ),
-    };
-    elements()
-        .into_iter()
-        .map(|element| {
-            let cell = element
-                .layout_cell
-                .expect("every card element is a row member");
-            let column = usize::from(cell.cell.column());
-            let column_x = row_x
-                + weights[..column].iter().sum::<f32>() * share
-                + column as f32 * f32::from(CARD_GAP);
-            let (x, width) = resolve(cell.region.horizontal(), weights[column] * share);
-            let (y, height) = resolve(cell.region.vertical(), 98.0);
-            [column_x + x, 152.0 + y, width, height]
-        })
-        .collect()
-}
-
-fn rect_of(rects: &[[f32; 4]], id: &str) -> [f32; 4] {
-    let index = elements()
-        .iter()
-        .position(|element| element.id == id)
-        .unwrap();
-    rects[index]
+    let share = ((row[2] - 60.0) / weights.iter().sum::<f32>()).max(1.0);
+    let mut x = row[0];
+    weights.map(|weight| {
+        let card = [x, row[1], weight * share, row[3]];
+        x += weight * share + 20.0;
+        card
+    })
 }
 
 #[test]
-fn the_canonical_extent_reproduces_every_authored_rectangle() {
-    for (element, expected) in elements().into_iter().zip(expected_rects(1536.0)) {
-        let authored = element.rect.map(f32::from);
-        assert_eq!(expected, authored, "{} moved at 1536", element.id);
+fn cards_share_the_row_by_their_concept_widths() {
+    for (width, height) in EXTENTS
+        .into_iter()
+        .chain([(800.0, 600.0), (2560.0, 1440.0)])
+    {
+        let declared = Declared::at(width, height);
+        let row = declared.container(ROW);
+        for (id, expected) in CARDS.into_iter().zip(expected_cards(row)) {
+            assert_near(declared.element(id), expected, &format!("{id} at {width}"));
+        }
     }
 }
 
+/// Every card element keeps its concept distance from its card's top and
+/// from the card edge it is anchored to, at every width.
 #[test]
-fn wider_rows_grow_cards_while_content_keeps_its_padding() {
-    let wide = expected_rects(2_048.0);
-    let card = rect_of(&wide, "latency_card");
-    let label = rect_of(&wide, "latency_label");
-    let value = rect_of(&wide, "latency_value");
-    let icon = rect_of(&wide, "latency_icon_back");
-    assert!(card[2] > 237.0);
-    let padding = |measured: f32, authored: f32| (measured - authored).abs() < 1e-3;
-    assert!(padding(label[0] - card[0], 25.0));
-    assert!(padding(card[0] + card[2] - (label[0] + label[2]), 17.0));
-    assert!(padding(value[0] - card[0], 25.0));
-    assert!(padding(card[0] + card[2] - (icon[0] + icon[2]), 24.0));
-    assert_eq!([value[2], icon[2]], [115.0, 44.0]);
-}
-
-#[test]
-fn narrower_rows_keep_canonical_cards_and_overflow() {
-    for width in [800.0, 1_200.0, 1_535.0] {
-        for (element, expected) in elements().into_iter().zip(expected_rects(width)) {
-            let authored = element.rect.map(f32::from);
-            assert_eq!(expected, authored, "{} moved at {width}", element.id);
+fn card_content_keeps_its_concept_padding() {
+    for width in [800.0, 1_200.0, 1_536.0, 2_048.0] {
+        let declared = Declared::at(width, 1024.0);
+        for element in elements() {
+            let column = usize::from(element.placement.layout_cell().unwrap().cell.column());
+            let (concept_x, concept_width) = CARD_COLUMNS[column];
+            let card = declared.element(CARDS[column]);
+            let placed = declared.element(element.id);
+            let [x, y, w, _] = element.rect.map(f32::from);
+            let from_start = x - f32::from(concept_x);
+            let from_end = f32::from(concept_x + concept_width) - x - w;
+            let at = format!("{} at {width}", element.id);
+            assert!((placed[1] - card[1] - (y - 152.0)).abs() < 1e-3, "{at} top");
+            match element.placement.layout_cell().unwrap().region.horizontal() {
+                Axis::FixedFromEnd { .. } => {
+                    let end = card[0] + card[2] - placed[0] - placed[2];
+                    assert!((end - from_end).abs() < 1e-3, "{at} end");
+                }
+                Axis::StretchBetween { .. } => {
+                    assert!(
+                        (placed[0] - card[0] - from_start).abs() < 1e-3,
+                        "{at} start"
+                    );
+                    let end = card[0] + card[2] - placed[0] - placed[2];
+                    assert!((end - from_end).abs() < 1e-3, "{at} end");
+                }
+                Axis::FixedFromStart { .. } => {
+                    assert!(
+                        (placed[0] - card[0] - from_start).abs() < 1e-3,
+                        "{at} start"
+                    );
+                }
+            }
         }
     }
 }
 
 /// Content anchored to a card's end never moves closer to content anchored
-/// to its start than the canonical frame places it.
+/// to its start than the concept draws it.
 #[test]
-fn card_content_never_crowds_closer_than_canonical() {
-    let canonical = expected_rects(1536.0);
+fn card_content_never_crowds_closer_than_the_concept() {
     for width in [800.0, 1_200.0, 1_535.0, 1_537.0, 2_048.0, 2_560.0] {
-        let resized = expected_rects(width);
-        for (start_index, start) in elements().iter().enumerate() {
-            for (end_index, end) in elements().iter().enumerate() {
-                let (Some(start_cell), Some(end_cell)) = (start.layout_cell, end.layout_cell)
+        let resized = Declared::at(width, 1024.0);
+        for start in elements() {
+            for end in elements() {
+                let (Some(start_cell), Some(end_cell)) =
+                    (start.placement.layout_cell(), end.placement.layout_cell())
                 else {
                     continue;
                 };
-                let start_anchored =
-                    !matches!(start_cell.region.horizontal(), Axis::FixedFromEnd { .. })
-                        && start_cell.region.horizontal() != Axis::stretch_between(0, 0);
                 if start_cell.cell != end_cell.cell
-                    || !start_anchored
+                    || !matches!(start_cell.region.horizontal(), Axis::FixedFromStart { .. })
                     || !matches!(end_cell.region.horizontal(), Axis::FixedFromEnd { .. })
                 {
                     continue;
                 }
-                let gap = |rects: &[[f32; 4]]| {
-                    rects[end_index][0] - (rects[start_index][0] + rects[start_index][2])
-                };
+                let placed = resized.element(start.id);
+                let gap = resized.element(end.id)[0] - (placed[0] + placed[2]);
+                let concept = f32::from(end.rect[0]) - f32::from(start.rect[0] + start.rect[2]);
                 assert!(
-                    gap(&resized) >= gap(&canonical) - 1e-3,
+                    gap >= concept - 1e-3,
                     "{} crowds {} at {width}",
                     end.id,
                     start.id
@@ -130,13 +108,18 @@ fn card_content_never_crowds_closer_than_canonical() {
 }
 
 #[test]
-fn the_row_declares_every_card_element_as_a_member() {
-    let row = container(&elements());
+fn the_row_declares_exactly_the_card_elements_as_members() {
+    assert_eq!(container().id, ROW);
+    let row = dashboard_containers()
+        .into_iter()
+        .find(|container| container.id == ROW)
+        .expect("the card row is a container");
     let layout = row.layout.fallback();
+    assert_eq!(layout.members().count(), elements().len());
     for element in elements() {
         assert_eq!(
             layout.member_cell(&element.component()),
-            element.layout_cell.map(|cell| cell.cell)
+            element.placement.layout_cell().map(|cell| cell.cell)
         );
     }
     assert!(row.layout.variants().next().is_none());

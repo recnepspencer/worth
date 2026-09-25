@@ -3,7 +3,7 @@ pub const PLATFORM_PULSE_IDENTITY_TARGET_AUTHORED_NAME: &str =
 pub const PLATFORM_PULSE_CANONICAL_LOGICAL_EXTENT: [u32; 2] = [1536, 1024];
 pub const PLATFORM_PULSE_PRODUCT_LOGICAL_EXTENT: [u32; 2] = [1536, 1024];
 pub const PLATFORM_PULSE_BACKGROUND_LOGICAL_POINT: [u32; 2] = [250, 80];
-pub const PLATFORM_PULSE_TARGET_LOGICAL_POINT: [u32; 2] = [1398, 792];
+pub const PLATFORM_PULSE_TARGET_LOGICAL_POINT: [u32; 2] = [1404, 809];
 /// The logical client extent every native courtroom world (and the product
 /// itself) opens at; the certified lane's physical expectation is this
 /// extent at the certified scale.

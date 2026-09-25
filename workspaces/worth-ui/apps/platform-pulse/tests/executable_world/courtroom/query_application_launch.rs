@@ -5,6 +5,7 @@ use worth_ui_platform_pulse::observation_contract::{
     PlatformPulseSemanticFocusCause,
 };
 
+use crate::adjudication::dashboard_visual_oracle as dashboard;
 use crate::external_observation::{NativeClientPixelPoint, NativeKeyboardCommand};
 use crate::installation::{CanonicalPlatformPulse, IsolatedPulseInstallation};
 use crate::native_platform::{CertifiedNativePlatform, NativePlatformContract};
@@ -232,10 +233,11 @@ fn authored_query_revisions_reach_the_real_pulse_process() {
         );
         std::thread::sleep(Duration::from_millis(10));
     };
+    let [badge_x, badge_y, badge_width, badge_height] = dashboard::QUERY_POSTURE_REGION;
     let review_target = NativeClientPixelPoint::interior(
         &signals_closed,
-        1434 * signals_closed.width() / 1536,
-        792 * signals_closed.height() / 1024,
+        (badge_x + badge_width / 2) * signals_closed.width() / 1536,
+        (badge_y + badge_height / 2) * signals_closed.height() / 1024,
         1,
     )
     .expect("review target lies inside the native client area");

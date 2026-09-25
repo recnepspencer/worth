@@ -1,6 +1,43 @@
+//! The Deployments panel: a heading, a "View all" link, and four entries,
+//! each keeping its concept padding from the panel as the panel resizes.
+use super::frame::Edge;
+use super::page::Panel;
 use super::{surface, text, DashboardElement, DashboardGraphic};
 
 pub(super) fn elements() -> Vec<DashboardElement> {
+    let frame = Panel::Deployments.frame();
+    authored()
+        .into_iter()
+        .map(|element| {
+            let horizontal = horizontal_edge(element.id);
+            let vertical = if element.id == "deployments_card" {
+                Edge::Both
+            } else {
+                Edge::Start
+            };
+            frame.place(element, horizontal, vertical)
+        })
+        .collect()
+}
+
+/// Which panel edge each element keeps its inset from: the icons lead, the
+/// status badges and the link trail, and the rules and entry text take the
+/// width between.
+fn horizontal_edge(id: &str) -> Edge {
+    match id {
+        "deployments_card" => Edge::Both,
+        "deployments_heading" => Edge::Start,
+        "deployments_all" | "review_target" | "projected_status" => Edge::End,
+        _ => match id.rsplit_once('_').map(|(stem, _)| stem) {
+            Some("deploy_icon_bg" | "deploy_icon") => Edge::Start,
+            Some("deploy_rule" | "deploy_version" | "deploy_detail") => Edge::Both,
+            Some("deploy_badge" | "deploy_status") => Edge::End,
+            _ => unreachable!("deployment element {id} declares no edge"),
+        },
+    }
+}
+
+fn authored() -> Vec<DashboardElement> {
     vec![
         surface(
             "deployments_card",

@@ -1,3 +1,4 @@
+component platform.pulse.component.page {}
 appearance role platform.pulse.appearance.seed applies_to platform.pulse.component.seed {
   background use token(theme.platform_pulse.canvas)
 }

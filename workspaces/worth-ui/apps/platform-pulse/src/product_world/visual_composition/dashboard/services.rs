@@ -4,6 +4,8 @@
 //! Every row sits at its band index times the declared pitch, in coordinates
 //! local to the scrolled content. Nothing here restates where the panel lands
 //! on the host surface, and nothing is patched after the table is built.
+use super::frame::Edge;
+use super::page::Panel;
 use super::{surface, text, DashboardElement, DashboardScrollPanel};
 
 /// The block extent one service health row occupies, band top to band top.
@@ -31,11 +33,10 @@ const RULE_LOCAL_X: u16 = 1;
 const RULE_WIDTH: u16 = 357;
 const RULE_BLOCK_INSET: u16 = 35;
 
-/// Marks one element as travelling with the Service health content. The card
-/// and its heading never carry this: they stay put while the list moves.
-const fn scrolled(mut element: DashboardElement) -> DashboardElement {
-    element.scroll_panel = Some(DashboardScrollPanel::ServiceHealth);
-    element
+/// Makes one element travel with the Service health content. The card and
+/// its heading never do: they stay put while the list moves.
+fn scrolled(element: DashboardElement, horizontal: Edge) -> DashboardElement {
+    DashboardScrollPanel::ServiceHealth.carry(element, horizontal)
 }
 
 /// One authored service row. Its element identities are bound to its band
@@ -87,62 +88,81 @@ pub(super) fn elements() -> Vec<DashboardElement> {
     elements
 }
 
-/// The card behind the list. Fixed: the region clips the content against it.
+/// The card behind the list, filling its panel. The region clips the content
+/// against it.
 fn card() -> DashboardElement {
-    surface(
-        "native_card",
-        [1095, 269, 411, 348],
-        "raised_surface",
-        12,
-        true,
-        2,
+    Panel::ServiceHealth.frame().place(
+        surface(
+            "native_card",
+            [1095, 269, 411, 348],
+            "raised_surface",
+            12,
+            true,
+            2,
+        ),
+        Edge::Both,
+        Edge::Both,
     )
 }
 
-/// The panel header. Fixed, as neighbouring panel headers are.
+/// The panel header, kept at the panel's top left as neighboring panel
+/// headers are.
 fn heading() -> DashboardElement {
-    text(
-        "native_label",
-        "Service health",
-        [1120, 288, 290, 35],
-        18,
-        true,
-        "primary_text",
+    Panel::ServiceHealth.frame().place(
+        text(
+            "native_label",
+            "Service health",
+            [1120, 288, 290, 35],
+            18,
+            true,
+            "primary_text",
+        ),
+        Edge::Start,
+        Edge::Start,
     )
 }
 
 fn row_elements(row: &HealthRow) -> Vec<DashboardElement> {
     let top = row_band_top(row.band);
     let mut cells = vec![
-        scrolled(surface(
-            row.dot_id,
-            [DOT_LOCAL_X, top + DOT_BLOCK_INSET, DOT_EXTENT, DOT_EXTENT],
-            row.tone,
-            32,
-            false,
-            3,
-        )),
-        scrolled(text(
-            row.name_id,
-            row.name,
-            [NAME_LOCAL_X, top + NAME_BLOCK_INSET, NAME_WIDTH, 25],
-            14,
-            false,
-            "primary_text",
-        )),
-        scrolled(surface(
-            row.badge_id,
-            [
-                BADGE_LOCAL_X,
-                top + BADGE_BLOCK_INSET,
-                BADGE_WIDTH,
-                BADGE_HEIGHT,
-            ],
-            row.badge_tone,
-            8,
-            false,
-            3,
-        )),
+        scrolled(
+            surface(
+                row.dot_id,
+                [DOT_LOCAL_X, top + DOT_BLOCK_INSET, DOT_EXTENT, DOT_EXTENT],
+                row.tone,
+                32,
+                false,
+                3,
+            ),
+            Edge::Start,
+        ),
+        scrolled(
+            text(
+                row.name_id,
+                row.name,
+                [NAME_LOCAL_X, top + NAME_BLOCK_INSET, NAME_WIDTH, 25],
+                14,
+                false,
+                "primary_text",
+            ),
+            Edge::Start,
+        ),
+        scrolled(
+            surface(
+                row.badge_id,
+                [
+                    BADGE_LOCAL_X,
+                    top + BADGE_BLOCK_INSET,
+                    BADGE_WIDTH,
+                    BADGE_HEIGHT,
+                ],
+                row.badge_tone,
+                8,
+                false,
+                3,
+            ),
+            Edge::End,
+        ),
         scrolled(
             text(
                 row.status_id,
@@ -158,18 +178,22 @@ fn row_elements(row: &HealthRow) -> Vec<DashboardElement> {
                 row.tone,
             )
             .centered(),
+            Edge::End,
         ),
     ];
     // The last band has nothing after it to be separated from.
     if usize::from(row.band) + 1 < ROW_COUNT {
-        cells.push(scrolled(surface(
-            row.rule_id,
-            [RULE_LOCAL_X, top + RULE_BLOCK_INSET, RULE_WIDTH, 1],
-            "grid",
-            0,
-            false,
-            3,
-        )));
+        cells.push(scrolled(
+            surface(
+                row.rule_id,
+                [RULE_LOCAL_X, top + RULE_BLOCK_INSET, RULE_WIDTH, 1],
+                "grid",
+                0,
+                false,
+                3,
+            ),
+            Edge::Both,
+        ));
     }
     cells
 }
@@ -216,7 +240,7 @@ mod tests {
         }
     }
 
-    /// Service health stays a vertical list. If the card and heading travelled
+    /// Service health stays a vertical list. If the card and heading traveled
     /// with the rows the panel would scroll its own chrome away.
     #[test]
     fn the_card_and_heading_do_not_travel_with_the_list() {

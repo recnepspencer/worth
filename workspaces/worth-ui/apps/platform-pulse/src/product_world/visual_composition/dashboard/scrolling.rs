@@ -1,10 +1,18 @@
 //! Authored content extents and region viewports for the two independent
 //! dashboard lists.
 //!
-//! A panel's viewport is the placement its owner declares for its Mosaic
-//! region. It is never reconstructed from the content it clips, so content
-//! that overflows is overflow the region can actually prove.
-use worth_ui::facade::declaration::{ComponentViewportAxisPlacement, ComponentViewportRegion};
+//! Each list's content is a layout container placed in its panel, and every
+//! element that travels with the list is a member of it. A panel's viewport
+//! is the placement the content declares for its Mosaic region, within the
+//! same panel. It is never reconstructed from the content it clips, so
+//! content that overflows is overflow the region can actually prove.
+use worth_ui::facade::declaration::{
+    ComponentViewportRegion, MosaicLayoutCell, MosaicLayoutContract,
+};
+
+use super::frame::{Edge, Frame};
+use super::page::Panel;
+use super::{ContainerTracks, DashboardElement};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum DashboardScrollPanel {
@@ -20,10 +28,16 @@ impl DashboardScrollPanel {
             Self::RecentActivity => "activity_content",
         }
     }
-    /// The authored extent of the panel's scrolled content, in host-surface
-    /// logical points. Service health stays a vertical list: its inline extent
-    /// equals its region's, so it keeps block-only travel. Recent activity
-    /// carries twelve rows and four trailing columns, so it overflows on both.
+    const fn panel(self) -> Panel {
+        match self {
+            Self::ServiceHealth => Panel::ServiceHealth,
+            Self::RecentActivity => Panel::RecentActivity,
+        }
+    }
+    /// Where the concept draws the panel's scrolled content. Service health
+    /// stays a vertical list: its inline extent equals its region's, so it
+    /// keeps block-only travel. Recent activity carries twelve rows and four
+    /// trailing columns, so it overflows on both.
     pub const fn content_rect(self) -> [u16; 4] {
         match self {
             Self::ServiceHealth => [1120, 324, 360, 344],
@@ -45,26 +59,52 @@ impl DashboardScrollPanel {
             Self::RecentActivity => "platform.pulse.mosaic.region.activity_list",
         }
     }
-    /// The panel's region viewport, in host-surface logical points. Service
-    /// health keeps its region as wide as its content, so it stays a vertical
-    /// list; Recent activity's region is narrower than its content, so the
-    /// list travels on both axes.
+    /// Where the concept draws the panel's region viewport. Service health
+    /// keeps its region as wide as its content, so it stays a vertical list;
+    /// Recent activity's region is narrower than its content, so the list
+    /// travels on both axes.
     pub const fn region_rect(self) -> [u16; 4] {
         match self {
             Self::ServiceHealth => [1_120, 324, 360, 269],
             Self::RecentActivity => [290, 693, 768, 269],
         }
     }
-    /// The placement the panel owner declares for its region. The owner is
-    /// placed against the viewport, so the region is too.
+    /// The placement the content declares for its region: filling the
+    /// panel inside its padding, as the content was placed within it.
     pub fn region_placement(self) -> ComponentViewportRegion {
-        let [x, y, width, height] = self.region_rect();
-        ComponentViewportRegion::new(
-            ComponentViewportAxisPlacement::fixed_from_start(x, width)
-                .expect("Pulse scroll region width is nonzero"),
-            ComponentViewportAxisPlacement::fixed_from_start(y, height)
-                .expect("Pulse scroll region height is nonzero"),
+        self.panel()
+            .frame()
+            .region(self.region_rect(), Edge::Both, Edge::Both)
+    }
+    /// The content container, placed in its panel below the heading. Service
+    /// health's content keeps its region's width; Recent activity's keeps
+    /// its own.
+    pub(super) fn container(self) -> ContainerTracks {
+        let horizontal = match self {
+            Self::ServiceHealth => Edge::Both,
+            Self::RecentActivity => Edge::Start,
+        };
+        ContainerTracks {
+            id: self.owner(),
+            placement: self
+                .panel()
+                .frame()
+                .placement(self.content_rect(), horizontal, Edge::Start),
+            tracks: MosaicLayoutContract::frame().expect("scrolled content frames its members"),
+            scroll_panel: Some(self),
+        }
+    }
+    /// Makes `element`, authored from the content origin, travel with this
+    /// list, keeping its concept inset from the chosen content edge.
+    pub(super) fn carry(self, mut element: DashboardElement, horizontal: Edge) -> DashboardElement {
+        let [_, _, width, height] = self.content_rect();
+        element.scroll_panel = Some(self);
+        Frame::cell(
+            self.owner(),
+            MosaicLayoutCell::at(0, 0),
+            [0, 0, width, height],
         )
+        .place(element, horizontal, Edge::Start)
     }
 }
 

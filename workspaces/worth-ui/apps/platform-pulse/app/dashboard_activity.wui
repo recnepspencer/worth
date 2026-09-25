@@ -1,3 +1,4 @@
+component platform.pulse.component.activity_panel {}
 appearance role platform.pulse.appearance.activity_card applies_to platform.pulse.component.activity_card {
   background use token(theme.platform_pulse.raised_surface)
   radius use token(theme.platform_pulse.radius.r12)

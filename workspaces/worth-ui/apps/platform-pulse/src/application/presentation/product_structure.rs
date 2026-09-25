@@ -11,8 +11,7 @@ use worth_ui::facade::declaration::{
     ComponentStateOwnership, MosaicRegionKindId, ThemeTokenId,
 };
 use worth_ui_platform_pulse::product_world::{
-    dashboard_containers, dashboard_elements, DashboardContent, PlatformPulseLogicalRect,
-    PlatformPulseMosaicRegion,
+    dashboard_containers, dashboard_elements, DashboardContent, PlatformPulseMosaicRegion,
 };
 mod scrolling;
 mod surfaces;
@@ -157,22 +156,28 @@ pub(in crate::application) fn register_structure(
             ComponentStateOwnership::runtime_owned(),
         )
         .with_allocation_measurement_contract(
-            PlatformPulseLogicalRect::new(0, 930, 235, 94).allocation(),
+            ComponentAllocationMeasurementContract::viewport_region(
+                PlatformPulseMosaicRegion::StatusBand
+                    .surface_placement()
+                    .expect("the surface owner places the status band"),
+            ),
         ),
     );
     for container in dashboard_containers() {
         let id = container.component();
-        builder = builder.register_component(
-            ComponentDescriptor::new(
-                id.clone(),
-                ComponentPropSchema::named(format!("{}.props", id.as_str())),
-                ComponentChildPolicy::no_children(),
-                ComponentStateOwnership::runtime_owned(),
-            )
-            .with_allocation_measurement_contract(container.allocation)
-            .with_layout(container.layout),
-        );
+        let allocation = container.allocation();
+        let descriptor = ComponentDescriptor::new(
+            id.clone(),
+            ComponentPropSchema::named(format!("{}.props", id.as_str())),
+            ComponentChildPolicy::no_children(),
+            ComponentStateOwnership::runtime_owned(),
+        )
+        .with_allocation_measurement_contract(allocation)
+        .with_layout(container.layout);
+        builder = builder.register_component(match container.scroll_panel {
+            Some(panel) => scrolling::scroll_owner(descriptor, panel, allocation),
+            None => descriptor,
+        });
     }
-    builder = scrolling::register(builder);
     surfaces::register(builder)
 }

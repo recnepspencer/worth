@@ -1,5 +1,10 @@
 use worth_ui::facade::declaration::{ComponentViewportAxisPlacement, ComponentViewportRegion};
 
+use super::{PLATFORM_PULSE_MASTHEAD_HEIGHT, PLATFORM_PULSE_SIDEBAR_WIDTH};
+
+/// The status band's height, closing the bottom of the rail.
+const STATUS_BAND_HEIGHT: u16 = 94;
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum PlatformPulseMosaicRegion {
     Viewport,
@@ -59,24 +64,27 @@ impl PlatformPulseMosaicRegion {
     /// the rail. `None` for a region another owner places.
     pub fn surface_placement(self) -> Option<ComponentViewportRegion> {
         let fill = ComponentViewportAxisPlacement::stretch_between(0, 0);
-        let rail = ComponentViewportAxisPlacement::fixed_from_start(0, 235)
-            .expect("the evidence rail has width");
-        let beside_rail = ComponentViewportAxisPlacement::stretch_between(235, 0);
+        let rail =
+            ComponentViewportAxisPlacement::fixed_from_start(0, PLATFORM_PULSE_SIDEBAR_WIDTH)
+                .expect("the evidence rail has width");
+        let beside_rail =
+            ComponentViewportAxisPlacement::stretch_between(PLATFORM_PULSE_SIDEBAR_WIDTH, 0);
         let (horizontal, vertical) = match self {
             Self::Viewport => (fill, fill),
             Self::Masthead => (
                 beside_rail,
-                ComponentViewportAxisPlacement::fixed_from_start(0, 58)
+                ComponentViewportAxisPlacement::fixed_from_start(0, PLATFORM_PULSE_MASTHEAD_HEIGHT)
                     .expect("the masthead has height"),
             ),
             Self::EvidenceRail => (rail, fill),
             Self::ServiceStage => (
                 beside_rail,
-                ComponentViewportAxisPlacement::stretch_between(58, 0),
+                ComponentViewportAxisPlacement::stretch_between(PLATFORM_PULSE_MASTHEAD_HEIGHT, 0),
             ),
             Self::StatusBand => (
                 rail,
-                ComponentViewportAxisPlacement::stretch_between(930, 0),
+                ComponentViewportAxisPlacement::fixed_from_end(0, STATUS_BAND_HEIGHT)
+                    .expect("the status band has height"),
             ),
             Self::ServiceTile | Self::NativeTile | Self::ServiceList | Self::ActivityList => {
                 return None;
@@ -136,11 +144,19 @@ impl PlatformPulseMosaicSizing {
 
     pub const fn named_measurement(self) -> Option<(&'static str, u32)> {
         match self {
-            Self::DashboardList => Some(("platform.pulse.measurement.dashboard_list_height", 269)),
-            Self::Viewport | Self::ServiceStage => None,
-            Self::Masthead => Some(("platform.pulse.measurement.masthead_height", 56)),
-            Self::EvidenceRail => Some(("platform.pulse.measurement.evidence_width", 216)),
-            Self::StatusBand => Some(("platform.pulse.measurement.status_height", 24)),
+            Self::DashboardList | Self::Viewport | Self::ServiceStage => None,
+            Self::Masthead => Some((
+                "platform.pulse.measurement.masthead_height",
+                PLATFORM_PULSE_MASTHEAD_HEIGHT as u32,
+            )),
+            Self::EvidenceRail => Some((
+                "platform.pulse.measurement.evidence_width",
+                PLATFORM_PULSE_SIDEBAR_WIDTH as u32,
+            )),
+            Self::StatusBand => Some((
+                "platform.pulse.measurement.status_height",
+                STATUS_BAND_HEIGHT as u32,
+            )),
         }
     }
 }

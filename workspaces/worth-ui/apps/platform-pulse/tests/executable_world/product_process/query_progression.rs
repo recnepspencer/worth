@@ -237,7 +237,7 @@ fn await_query<Stage, Kind>(
         .map_err(PulseExecutableWorldFailure::QueryCurrent)?;
         if expectation.requires_wrapping_text {
             adjudicate_dashboard_status_badge(evidence.pixels())
-                .map_err(crate::adjudication::ExecutableQueryCurrentFailure::WrappingText)
+                .map_err(crate::adjudication::ExecutableQueryCurrentFailure::StatusBadge)
                 .map_err(PulseExecutableWorldFailure::QueryCurrent)?;
         }
         Ok(evidence)

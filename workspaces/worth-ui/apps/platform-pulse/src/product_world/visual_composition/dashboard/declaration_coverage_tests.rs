@@ -75,6 +75,20 @@ fn every_authored_element_has_exactly_one_dsl_component_declaration() {
     }
 }
 
+/// A layout container without a declaration has no graph node, so layout
+/// refuses the product at start-up.
+#[test]
+fn every_layout_container_has_a_dsl_component_declaration() {
+    let declared = declared_components();
+    for container in dashboard_containers() {
+        let component = container.component().as_str().to_owned();
+        assert!(
+            declared.contains(&component),
+            "{component} is a layout container but declared in no app/*.wui"
+        );
+    }
+}
+
 /// Every Mosaic region an `app/*.wui` component mounts, paired with that
 /// component, nested regions included.
 fn mounted_regions() -> BTreeSet<(String, String)> {

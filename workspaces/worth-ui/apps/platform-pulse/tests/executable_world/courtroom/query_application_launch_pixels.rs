@@ -1,10 +1,11 @@
+use crate::adjudication::dashboard_visual_oracle as dashboard;
 use crate::external_observation::NativeClientPixelCapture;
 
 pub(super) fn changed_status_pixels(
     before: &NativeClientPixelCapture,
     after: &NativeClientPixelCapture,
 ) -> usize {
-    changed_region_pixels(before, after, [1392, 779, 85, 27])
+    changed_region_pixels(before, after, dashboard::QUERY_POSTURE_REGION)
 }
 
 pub(super) fn changed_region_pixels(

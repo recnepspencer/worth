@@ -9,7 +9,17 @@ use crate::external_observation::NativeClientPixelCapture;
 use super::scroll_chrome_pixel_failure::ScrollChromePixelFailure;
 
 /// Recent activity viewport, host-surface logical points: [x, y, width, height].
-const REGION: [u32; 4] = [290, 693, 768, 269];
+/// The layout spec at 1536 x 1024 places the activity panel at [260, 653,
+/// 821.3, 347]: the page starts after the 236-point rail and 24-point gutter,
+/// ends 24 points before the viewport edge, and splits its columns 2:1 after
+/// a 20-point gap. The list keeps its concept insets inside the panel: 24
+/// left, 57 top and 20 right and bottom.
+const REGION: [f64; 4] = [
+    284.0,
+    710.0,
+    (1536.0 - 24.0 - 260.0 - 20.0) * 2.0 / 3.0 - 44.0,
+    270.0,
+];
 /// Authored extent of the Recent activity content, logical points.
 const CONTENT_EXTENT: [u32; 2] = [1_560, 672];
 /// The product's declared line extent: one wheel line moves the list this far.
@@ -77,19 +87,19 @@ pub(crate) struct RecentActivityScrollGeometry;
 
 impl RecentActivityScrollGeometry {
     pub(crate) fn max_offset_points(self) -> f64 {
-        f64::from(CONTENT_EXTENT[1] - REGION[3])
+        f64::from(CONTENT_EXTENT[1]) - REGION[3]
     }
 
     /// The vertical track: the viewport height less the corner the block track
     /// surrenders because the content also overflows inline.
     fn track_length_points(self) -> f64 {
-        let inline_overflows = CONTENT_EXTENT[0] > REGION[2];
-        f64::from(REGION[3]) - if inline_overflows { GUTTER_POINTS } else { 0.0 }
+        let inline_overflows = f64::from(CONTENT_EXTENT[0]) > REGION[2];
+        REGION[3] - if inline_overflows { GUTTER_POINTS } else { 0.0 }
     }
 
     pub(crate) fn thumb_length_points(self) -> f64 {
         let track = self.track_length_points();
-        (track * f64::from(REGION[3]) / f64::from(CONTENT_EXTENT[1]))
+        (track * REGION[3] / f64::from(CONTENT_EXTENT[1]))
             .max(MINIMUM_THUMB_POINTS)
             .min(track)
     }
@@ -99,12 +109,12 @@ impl RecentActivityScrollGeometry {
     }
 
     pub(crate) fn thumb_top_points(self, offset_points: f64) -> f64 {
-        f64::from(REGION[1]) + self.thumb_travel_points() * offset_points / self.max_offset_points()
+        REGION[1] + self.thumb_travel_points() * offset_points / self.max_offset_points()
     }
 
     pub(crate) fn thumb_center_points(self, offset_points: f64) -> [f64; 2] {
         [
-            f64::from(REGION[0] + REGION[2]) - GUTTER_POINTS / 2.0,
+            REGION[0] + REGION[2] - GUTTER_POINTS / 2.0,
             self.thumb_top_points(offset_points) + self.thumb_length_points() / 2.0,
         ]
     }
@@ -116,15 +126,12 @@ impl RecentActivityScrollGeometry {
 
     /// The scrolled viewport itself, logical points: [x, y, width, height].
     pub(crate) fn viewport_points(self) -> [f64; 4] {
-        REGION.map(f64::from)
+        REGION
     }
 
     /// A point inside the scrolled content, clear of the chrome.
     pub(crate) fn content_interior_points(self) -> [f64; 2] {
-        [
-            f64::from(REGION[0]) + f64::from(REGION[2]) / 2.0,
-            f64::from(REGION[1]) + f64::from(REGION[3]) / 4.0,
-        ]
+        [REGION[0] + REGION[2] / 2.0, REGION[1] + REGION[3] / 4.0]
     }
 }
 
@@ -140,9 +147,8 @@ pub(crate) fn adjudicate_vertical_thumb(
 ) -> Result<VerticalThumbEvidence, ScrollChromePixelFailure> {
     let geometry = RecentActivityScrollGeometry;
     let column_px = physical_px(geometry.thumb_center_points(0.0)[0], dpi) as u32;
-    let track_top = physical_px(f64::from(REGION[1]), dpi).max(0) as u32;
-    let track_bottom =
-        physical_px(f64::from(REGION[1]) + geometry.track_length_points(), dpi).max(0) as u32;
+    let track_top = physical_px(REGION[1], dpi).max(0) as u32;
+    let track_bottom = physical_px(REGION[1] + geometry.track_length_points(), dpi).max(0) as u32;
     let scan_bottom = track_bottom.min(capture.height());
     let mut best: Option<(u32, u32)> = None;
     let mut run_start = None;
@@ -190,9 +196,9 @@ pub(crate) fn adjudicate_content_shift(
     dpi: u32,
     shift_points: f64,
 ) -> Result<ContentShiftEvidence, ScrollChromePixelFailure> {
-    let top = physical_px(f64::from(REGION[1]), dpi).max(0) as u32;
+    let top = physical_px(REGION[1], dpi).max(0) as u32;
     let bottom = physical_px(
-        f64::from(REGION[1]) + RecentActivityScrollGeometry.track_length_points(),
+        REGION[1] + RecentActivityScrollGeometry.track_length_points(),
         dpi,
     )
     .max(0) as u32;
@@ -238,8 +244,8 @@ fn ink_column(
     bottom: u32,
     dpi: u32,
 ) -> Result<u32, ScrollChromePixelFailure> {
-    let first = physical_px(f64::from(REGION[0]) + 1.0, dpi).max(0) as u32;
-    let last = physical_px(f64::from(REGION[0] + INK_SEARCH_SPAN_POINTS), dpi).max(0) as u32;
+    let first = physical_px(REGION[0] + 1.0, dpi).max(0) as u32;
+    let last = physical_px(REGION[0] + f64::from(INK_SEARCH_SPAN_POINTS), dpi).max(0) as u32;
     (first..last)
         .filter_map(|x| {
             let reference = physical_pixel(capture, [x, top])?;

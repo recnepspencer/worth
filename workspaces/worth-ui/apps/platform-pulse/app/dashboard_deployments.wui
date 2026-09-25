@@ -1,3 +1,4 @@
+component platform.pulse.component.deployments_panel {}
 appearance role platform.pulse.appearance.deployments_card applies_to platform.pulse.component.deployments_card {
   background use token(theme.platform_pulse.raised_surface)
   radius use token(theme.platform_pulse.radius.r12)

@@ -1,11 +1,45 @@
+//! The sidebar, the masthead, and the greeting. The sidebar keeps its width
+//! and its footer keeps to the bottom; the masthead fills the width beside
+//! the sidebar, its controls keeping to the right.
+use super::frame::{Edge, VIEWPORT};
+use super::page;
 use super::{surface, text, DashboardElement, DashboardGraphic};
 
 pub(super) fn elements() -> Vec<DashboardElement> {
+    let greeting = page::greeting();
+    authored()
+        .into_iter()
+        .map(|element| match element.id {
+            "service_eyebrow" | "service_title" => greeting.place(element, Edge::Both, Edge::Start),
+            id => match viewport_edges(id) {
+                Some((horizontal, vertical)) => VIEWPORT.place(element, horizontal, vertical),
+                None => element,
+            },
+        })
+        .collect()
+}
+
+/// Which viewport edges the chrome that moves keeps its insets from. The
+/// brand and navigation keep to the top left, where they are authored.
+fn viewport_edges(id: &str) -> Option<(Edge, Edge)> {
+    match id {
+        "evidence_rail" => Some((Edge::Start, Edge::Both)),
+        "source_signal_active" | "runtime_badge" | "lower_shelf_divider" | "status_text" => {
+            Some((Edge::Start, Edge::End))
+        }
+        "masthead_border" => Some((Edge::Both, Edge::Start)),
+        "search_field" | "search_label" | "search_icon" | "portal_target" | "portal_bell"
+        | "notification_dot" | "avatar" | "avatar_label" => Some((Edge::End, Edge::Start)),
+        _ => None,
+    }
+}
+
+fn authored() -> Vec<DashboardElement> {
     vec![
         surface("seed", [0, 0, 1536, 1024], "canvas", 0, false, 0),
         surface(
             "evidence_rail",
-            [0, 0, 235, 1024],
+            [0, 0, page::PLATFORM_PULSE_SIDEBAR_WIDTH, 1024],
             "navigation_surface",
             0,
             false,
@@ -112,7 +146,12 @@ pub(super) fn elements() -> Vec<DashboardElement> {
         .wrapped(),
         surface(
             "masthead_border",
-            [235, 56, 1301, 1],
+            [
+                page::PLATFORM_PULSE_SIDEBAR_WIDTH,
+                page::PLATFORM_PULSE_MASTHEAD_HEIGHT - 1,
+                1300,
+                1,
+            ],
             "structural_rule",
             0,
             false,
@@ -182,7 +221,7 @@ pub(super) fn elements() -> Vec<DashboardElement> {
         text(
             "service_eyebrow",
             "Good afternoon",
-            [266, 81, 620, 24],
+            [266, 81, 1240, 24],
             15,
             false,
             "secondary_text",
@@ -190,7 +229,7 @@ pub(super) fn elements() -> Vec<DashboardElement> {
         text(
             "service_title",
             "Here’s what’s happening on Platform Pulse.",
-            [266, 104, 900, 43],
+            [266, 104, 1240, 43],
             25,
             true,
             "primary_text",

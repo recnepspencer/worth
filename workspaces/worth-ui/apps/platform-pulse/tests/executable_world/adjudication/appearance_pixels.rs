@@ -25,9 +25,13 @@ pub(crate) enum FirstFrameAppearanceFailure {
     },
 }
 
-/// Independent checkpoints from the 1536 × 1024 dashboard concept: white
-/// brand lettering on the navigation rail, a rounded metric card, and a
-/// canvas gap between adjacent cards. No product layout values are imported.
+/// Independent checkpoints from the layout spec at 1536 × 1024: white brand
+/// lettering on the navigation rail, a rounded metric card, and a canvas gap
+/// between adjacent cards. The card row starts at the rail (236) plus the
+/// 24-point gutter and below the masthead (57), gutter, greeting (66) and a
+/// 20-point gap; its cards share the 1192 points left after three gaps by
+/// their concept widths, so the first card spans x 260..569.3 and y 167..265
+/// and the second starts at x 589.3. No product layout values are imported.
 pub(crate) fn adjudicate_first_frame_appearance(
     pixels: &NativeClientPixelCapture,
 ) -> Result<(), FirstFrameAppearanceFailure> {
@@ -39,19 +43,19 @@ pub(crate) fn adjudicate_first_frame_appearance(
         return Err(FirstFrameAppearanceFailure::MissingBrandForeground);
     }
 
-    for point in [[267, 154], [517, 154], [267, 248], [517, 248]] {
+    for point in [[261, 169], [568, 169], [261, 263], [568, 263]] {
         let observed = logical_pixel(pixels, point);
         if observed.is_none_or(|pixel| !matches_rgb(pixel, CANVAS)) {
             return Err(FirstFrameAppearanceFailure::MetricCardCorner { point, observed });
         }
     }
-    for point in [[275, 163], [500, 200], [550, 200]] {
+    for point in [[269, 178], [551, 215], [601, 215]] {
         let observed = logical_pixel(pixels, point);
         if observed.is_none_or(|pixel| !matches_rgb(pixel, WHITE)) {
             return Err(FirstFrameAppearanceFailure::MissingMetricCardFill { point, observed });
         }
     }
-    let point = [527, 200];
+    let point = [579, 215];
     let observed = logical_pixel(pixels, point);
     if observed.is_none_or(|pixel| !matches_rgb(pixel, CANVAS)) {
         return Err(FirstFrameAppearanceFailure::IncorrectMetricCardGap { point, observed });

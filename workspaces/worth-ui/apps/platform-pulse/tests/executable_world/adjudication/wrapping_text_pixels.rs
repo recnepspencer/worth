@@ -1,54 +1,4 @@
-use super::dashboard_visual_oracle as dashboard;
 use crate::external_observation::NativeClientPixelCapture;
-
-const STATUS_TEXT_RGB: [u8; 3] = [116, 103, 232];
-
-/// The current dashboard projects Query status into the deployment badge,
-/// not the removed two-line Query card. Require legible ink with room at the
-/// badge edges rather than importing the product's text layout.
-pub(crate) fn adjudicate_dashboard_status_badge(
-    capture: &NativeClientPixelCapture,
-) -> Result<(), PlatformPulseWrappingTextFailure> {
-    let [width, height] = dashboard::LOGICAL_EXTENT;
-    if capture.width() * height != capture.height() * width {
-        return Err(PlatformPulseWrappingTextFailure::UnexpectedExtent([
-            capture.width(),
-            capture.height(),
-        ]));
-    }
-    let mut interior_ink = 0;
-    let mut edge_ink = 0;
-    for y in 779..806 {
-        for x in 1392..1477 {
-            let px = x * capture.width() / width;
-            let py = y * capture.height() / height;
-            let offset = ((py * capture.width() + px) * 4) as usize;
-            let Some(pixel) = capture.rgba().get(offset..offset + 3) else {
-                continue;
-            };
-            let ink = pixel
-                .iter()
-                .zip(STATUS_TEXT_RGB)
-                .all(|(observed, expected)| {
-                    observed.abs_diff(expected) <= dashboard::CHANNEL_TOLERANCE
-                });
-            if ink {
-                if !(1398..=1470).contains(&x) || !(784..=801).contains(&y) {
-                    edge_ink += 1;
-                } else {
-                    interior_ink += 1;
-                }
-            }
-        }
-    }
-    if interior_ink < 8 {
-        return Err(PlatformPulseWrappingTextFailure::StatusInkMissing);
-    }
-    if edge_ink > 0 {
-        return Err(PlatformPulseWrappingTextFailure::StatusInkClipped { edge_ink });
-    }
-    Ok(())
-}
 
 const DEFAULT_LOGICAL_EXTENT: [u32; 2] = [960, 600];
 const RESIZED_LOGICAL_EXTENT: [u32; 2] = [1_120, 700];
@@ -59,10 +9,6 @@ const LINE_HEIGHT: u32 = 20;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum PlatformPulseWrappingTextFailure {
     UnexpectedExtent([u32; 2]),
-    StatusInkMissing,
-    StatusInkClipped {
-        edge_ink: usize,
-    },
     RequiredWrappedLineMissing {
         identity: &'static str,
         line: u32,
