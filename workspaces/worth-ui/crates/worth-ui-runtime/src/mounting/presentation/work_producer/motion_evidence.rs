@@ -170,16 +170,18 @@ impl UiPreparedCommandMotionAcceptance {
                 .with_presentation_basis(presentation)
                 .map_err(|_| UiCommandMotionAcceptanceDenial::SampleBasis)?;
         }
-        for group in &mut self.scroll {
-            group.validate(current, displayed)?;
-        }
+        let scroll = self
+            .scroll
+            .iter()
+            .map(|group| group.validate(current, displayed))
+            .collect::<Result<Vec<_>, _>>()?;
         for update in self.updates {
             update.slot.0.set(Some(UiDisplayedCommandMotion {
                 sample: update.sample,
                 change: update.change,
             }));
         }
-        for group in self.scroll {
+        for group in scroll {
             group.commit();
         }
         Ok(())

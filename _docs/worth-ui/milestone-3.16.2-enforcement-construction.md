@@ -225,6 +225,7 @@ by `cfg(worth_ui_compile_probe = "name")`. The modules exist only under
 | --- | --- | --- | --- | --- |
 | 1 | apply a published map to a displayed rect | `published-map-displayed` | E0308 | `published-map-published` |
 | 1 | chain a published Scroll group translation with a displayed one | `group-move-displayed` | E0308 | `group-move-published` |
+| 2 | commit a Scroll group update no witness displayed | `group-update-commit-prepared` | E0599 | `group-update-commit-displayed` |
 | 3 | claim `OnScreen` from a displayed basis instead of a witness | `presented-by-basis` | E0308 | `presented-by-witness` |
 | 3 | mint a witness by its literal | `witness-literal` | E0451 | `witness-read` |
 | 4 | edit the Motion track table without recording the edit | `track-table-direct` | E0616 | `track-table-install` |

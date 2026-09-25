@@ -10,7 +10,12 @@ pub(in crate::mounting::presentation::work_producer) struct UiScrollGroupMotionU
     target: UiMotionTargetIdentity,
     slot: Rc<Cell<Option<UiDisplayedRect>>>,
     sample: UiPresentationMotionSampleReceipt,
-    displayed: Option<UiDisplayedRect>,
+}
+
+/// A group update the admitted witness displayed, ready to commit.
+pub(in crate::mounting::presentation::work_producer) struct UiDisplayedScrollGroupMotion {
+    slot: Rc<Cell<Option<UiDisplayedRect>>>,
+    displayed: UiDisplayedRect,
 }
 
 impl UiScrollGroupMotionUpdate {
@@ -27,15 +32,16 @@ impl UiScrollGroupMotionUpdate {
                 .get(&sample.target())?
                 .displayed_sample
                 .clone(),
-            displayed: None,
         })
     }
 
+    /// What `displayed` shows of this update, if the group it was prepared
+    /// for is still the one `state` holds.
     pub(in crate::mounting::presentation::work_producer) fn validate(
-        &mut self,
+        &self,
         state: &UiMountedPresentationState,
         displayed: UiDisplayedSurfaceBasis,
-    ) -> Result<(), Denial> {
+    ) -> Result<UiDisplayedScrollGroupMotion, Denial> {
         let group = state
             .scroll_motion_groups
             .groups
@@ -44,17 +50,21 @@ impl UiScrollGroupMotionUpdate {
         if !Rc::ptr_eq(&group.displayed_sample, &self.slot) {
             return Err(Denial::CommandReplaced);
         }
-        self.sample = self
+        let sample = self
             .sample
             .with_presentation_basis(displayed.basis())
             .map_err(|_| Denial::SampleBasis)?;
-        let geometry = self.sample.geometry().ok_or(Denial::SampleBasis)?;
-        self.displayed =
-            Some(UiDisplayedRect::displayed(geometry, displayed).map_err(|_| Denial::SampleBasis)?);
-        Ok(())
+        let geometry = sample.geometry().ok_or(Denial::SampleBasis)?;
+        Ok(UiDisplayedScrollGroupMotion {
+            slot: self.slot.clone(),
+            displayed: UiDisplayedRect::displayed(geometry, displayed)
+                .map_err(|_| Denial::SampleBasis)?,
+        })
     }
+}
 
+impl UiDisplayedScrollGroupMotion {
     pub(in crate::mounting::presentation::work_producer) fn commit(self) {
-        self.slot.set(self.displayed);
+        self.slot.set(Some(self.displayed));
     }
 }

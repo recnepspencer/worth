@@ -136,6 +136,15 @@ change-tracking path, such as `note_owner_change` and `rebound_since_prepare`.
 - Closure requires total conversion across the covered owners. A remaining raw
   lane is a material review finding.
 
+The records of this work are the
+[requirement 1](milestone-3.16.2-r1-review.md),
+[requirement 2](milestone-3.16.2-r2-review.md), and
+[requirement 4](milestone-3.16.2-r4-review.md) reviews, the
+[raw coordinate edges](milestone-3.16.2-enforcement-review.md), the
+[construction rules and compile-fail proofs](milestone-3.16.2-enforcement-construction.md),
+the [interleaving model](milestone-3.16.2-interleaving-model.md), and the
+[regression proofs and closure](milestone-3.16.2-closure.md).
+
 ## Decisive production proof
 
 Drive the existing native Pulse through actual OS border dragging with the button

@@ -325,15 +325,16 @@ fn a_group_rebuilt_before_its_accepted_sample_settles_moves_from_where_the_host_
             .map(|base| base.components()),
         Some([0.0, -40.0])
     );
-    assert!(matches!(
-        rebound.bound_standing.standing(),
-        UiGroupStanding::Displayed(_)
-    ));
-    assert_eq!(rebound.bound_standing.standing().points(), [0.0, 40.0]);
     state.scroll_motion_groups.groups = std::rc::Rc::new(BTreeMap::from([(target, rebound)]));
     sampler.install(install(82, -40.0, -60.0)).unwrap();
+    // The host shows the content at -40; the next settle departs from there.
     assert_translation(present(&state, &mut sampler, 200), -40.0);
     assert_translation(present(&state, &mut sampler, 320), -60.0);
+    let standing = state.scroll_motion_groups.groups[&target]
+        .bound_standing
+        .standing();
+    assert!(matches!(standing, UiGroupStanding::Displayed(_)));
+    assert_eq!(standing.points(), [0.0, 40.0]);
 }
 
 fn rect(y: f32, height: f32) -> UiMountedCanonicalBox {
