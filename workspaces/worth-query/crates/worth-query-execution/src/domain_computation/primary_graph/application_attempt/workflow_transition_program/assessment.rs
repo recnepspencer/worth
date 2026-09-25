@@ -85,10 +85,14 @@ where
             Ok::<(), WorthQueryApplicationAttemptDenial>(())
         })?;
         let validator_work_admission = reservation.materialize(&effects)?;
-        let progress_update = self.admitted.prepare_progress_update(
-            worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome::Completed,
-            None,
-        )?;
+        let progress_update = if self.admitted.is_assessment_collection() {
+            self.admitted.prepare_assessment_collection_update()?
+        } else {
+            self.admitted.prepare_progress_update(
+                worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome::Completed,
+                None,
+            )?
+        };
         let mut read_set = self.admitted.into_read_set();
         bind_currentness_facts(&mut read_set, &currentness_facts, &node_path)?;
         let program = WorthQueryApplicationEffectProgram {
@@ -123,6 +127,7 @@ where
             terminal: false,
             approval: None,
             approval_identity: None,
+            approval_authentication: None,
             replays,
         })
     }

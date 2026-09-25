@@ -17,10 +17,14 @@ mod workflow_compilation;
 mod workflow_component_scale;
 #[path = "application_graph/workflow_condition.rs"]
 mod workflow_condition;
+#[path = "application_graph/workflow_effect_resources.rs"]
+mod workflow_effect_resources;
 #[path = "application_graph/workflow_geometry_scale.rs"]
 mod workflow_geometry_scale;
 #[path = "application_graph/workflow_history_scale.rs"]
 mod workflow_history_scale;
+#[path = "application_graph/workflow_navigation.rs"]
+mod workflow_navigation;
 #[path = "application_graph/workflow_ordinary.rs"]
 mod workflow_ordinary;
 #[path = "application_graph/workflow_ordinary_component.rs"]

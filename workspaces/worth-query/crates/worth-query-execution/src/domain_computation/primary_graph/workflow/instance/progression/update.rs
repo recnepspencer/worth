@@ -71,7 +71,41 @@ impl WorkflowTransitionProgressBasis {
                 node_path,
                 // Terminal settlement has no successor and bypasses progress updates.
                 terminal: false,
+                navigation_back: outcome == ApplicationWorkflowControlOutcome::NavigatedBack,
                 operation_receipt_identity,
+            },
+        })
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn prepare_assessment_collection(
+        &self,
+        node: EntityId,
+        occurrence: u64,
+        transition_identity: String,
+        transition_identity_bytes: [u8; 32],
+        node_path: String,
+    ) -> Result<PreparedWorkflowProgressUpdate, WorthQueryApplicationAttemptDenial> {
+        let settlement = SettledWorkflowTransition::new(
+            node,
+            occurrence,
+            ApplicationWorkflowControlOutcome::Completed,
+            None,
+        );
+        let mut advanced = self.progress.clone();
+        advanced.collect_assessment(&self.compiled, settlement)?;
+        Ok(PreparedWorkflowProgressUpdate {
+            key: self.key,
+            source_revision: self.revision,
+            source: self.progress.clone(),
+            advanced,
+            settlement,
+            replay: WorkflowTransitionReplayProjection {
+                identity: transition_identity,
+                identity_bytes: transition_identity_bytes,
+                node_path,
+                terminal: false,
+                navigation_back: false,
+                operation_receipt_identity: None,
             },
         })
     }
@@ -110,6 +144,11 @@ impl PreparedWorkflowProgressUpdate {
             settlement,
             replay,
         } = self;
+        advanced.retain_transition_identity(
+            settlement.node(),
+            settlement.occurrence(),
+            replay.identity.clone(),
+        );
         advanced.retain_observation(WorkflowTransitionProgressObservation::new(
             WorkflowTransitionLocator::new(transition, settlement),
             assessment_evidence,

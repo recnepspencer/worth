@@ -16,14 +16,14 @@ use worth_query_host::facade::declaration::application_program::{
 };
 
 use super::assessment_output::PublishPartAssessment;
-use super::dimension_entry::SetPartDimensionBinding;
+use super::dimension_entry::{ReviewedSetPartDimensionBinding, SetPartDimensionBinding};
 use super::schema::{
     BoundedDimensionContribution, BoundedDimensionSchema, BoundedDimensionV1, BoundedDimensionV2,
     BoundedDimensionV3, PartDimensionRowBinding,
 };
 use super::workflow::{
-    WorkflowAdvanceBinding, WorkflowApprovalBinding, WorkflowDefinitionAuthoringBinding,
-    WorkflowInstanceStartBinding,
+    ReviewRequirementBinding, WorkflowAdvanceBinding, WorkflowApprovalBinding,
+    WorkflowDefinitionAuthoringBinding, WorkflowInstanceStartBinding,
 };
 
 /// The one feature both programs govern.
@@ -191,6 +191,7 @@ impl ApplicationProgramDefinition<BoundedDimensionSchema> for RemovedOperationDi
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         vec![
             ApplicationFeatureSpec::root::<BoundedDimensionSchema, BoundedDimensionFeature>()
+                .mutation::<ReviewRequirementBinding>()
                 .conditional_operation::<PublishPartAssessment>()
                 .mutation::<WorkflowDefinitionAuthoringBinding>()
                 .mutation::<WorkflowInstanceStartBinding>()
@@ -218,6 +219,7 @@ impl ApplicationProgramDefinition<BoundedDimensionSchema> for ChangedOperationDi
                     ChangedOperationLocality,
                     ChangedOperationShape,
                 >()
+                .mutation::<ReviewRequirementBinding>()
                 .conditional_operation::<PublishPartAssessment>()
                 .mutation::<WorkflowDefinitionAuthoringBinding>()
                 .mutation::<WorkflowInstanceStartBinding>()
@@ -349,6 +351,8 @@ fn dimension_feature_specs() -> Vec<ApplicationFeatureSpec> {
     vec![
         ApplicationFeatureSpec::root::<BoundedDimensionSchema, BoundedDimensionFeature>()
             .mutation::<SetPartDimensionBinding>()
+            .mutation::<ReviewedSetPartDimensionBinding>()
+            .mutation::<ReviewRequirementBinding>()
             .conditional_operation::<PublishPartAssessment>()
             .mutation::<WorkflowDefinitionAuthoringBinding>()
             .mutation::<WorkflowInstanceStartBinding>()

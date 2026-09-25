@@ -141,12 +141,25 @@ where
     let mut approval_bindings = Vec::new();
     for node in definition.nodes() {
         let supported = match node.kind() {
-            ApplicationWorkflowNodeKind::Operation { operation, .. } => {
-                installed.operations.iter().any(|candidate| {
+            ApplicationWorkflowNodeKind::Operation {
+                operation,
+                requires_workflow_authority,
+            } => {
+                let matching = installed.operations.iter().filter(|candidate| {
                     candidate.marker == operation.operation_type()
                         && candidate.identifier == operation.identifier()
                         && &candidate.input_type == operation.input_type()
-                })
+                        && candidate.requires_workflow_authority == *requires_workflow_authority
+                        && match operation.binding() {
+                            Some((identity, marker, posture)) => {
+                                candidate.binding_type == marker
+                                    && candidate.binding_identity == identity
+                                    && candidate.requires_workflow_authority == posture
+                            }
+                            None => !*requires_workflow_authority,
+                        }
+                });
+                matching.count() == 1
             }
             ApplicationWorkflowNodeKind::Assessment(assessment) => installed
                 .assessments

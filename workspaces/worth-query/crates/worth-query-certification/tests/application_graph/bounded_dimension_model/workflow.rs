@@ -1,5 +1,7 @@
 #[path = "workflow/assessment.rs"]
 mod assessment;
+#[path = "workflow/authentication.rs"]
+mod authentication;
 #[path = "workflow/contract.rs"]
 mod contract;
 #[path = "workflow/declaration.rs"]
@@ -12,6 +14,8 @@ mod join_replay_definition;
 mod mutation;
 #[path = "workflow/retry_definition.rs"]
 mod retry_definition;
+#[path = "workflow/review_requirement.rs"]
+mod review_requirement;
 #[path = "workflow/runtime.rs"]
 mod runtime;
 
@@ -21,8 +25,10 @@ pub use advance::{
     WorkflowApprovalCapability, WorkflowApprovalHandler, WorkflowApprovalIntent,
 };
 pub use assessment::{
-    accept_assessment, settle_assessment, settle_assessment_for, spoofed_assessment_denial,
+    accept_assessment, accept_early_assessment, prepare_early_assessment_denial, settle_assessment,
+    settle_assessment_for, settle_early_assessment_for, spoofed_assessment_denial,
 };
+pub use authentication::{install_certification_authentication, CertificationAuthenticationOwner};
 pub use declaration::{
     seed_authoring, ReviewedGeometryWorkflow, WorkflowDefinitionAuthoringCapability,
     WorkflowDefinitionAuthoringInput, WorkflowDefinitionAuthoringOperation,
@@ -38,7 +44,8 @@ pub use definition::{
 };
 pub use join_replay_definition::{
     assessment_join_terminal_definition, assessment_join_terminal_definition_with_policy,
-    assessment_retry_definition, multi_subject_assessment_retry_definition,
+    assessment_retry_definition, conditionally_required_related_assessment_definition,
+    early_assessment_definition, multi_subject_assessment_retry_definition,
 };
 pub use mutation::{
     WorkflowDefinitionAuthoringBinding, WorkflowDefinitionAuthoringHandler,
@@ -46,6 +53,9 @@ pub use mutation::{
     WorkflowInstanceStartIntent,
 };
 pub use retry_definition::{bounded_retry_definition, bounded_retry_definition_with_attempts};
+pub use review_requirement::{
+    link_review_requirement, ReviewRequirementBinding, ReviewRequirementHandler,
+};
 pub use runtime::{retain_workflow, retain_workflow_with_resources};
 
 pub fn declare(
@@ -56,7 +66,9 @@ pub fn declare(
     super::schema::BoundedDimensionSchema,
 > {
     advance::install_binding(mutation::install_binding(contract::install(
-        advance::install_members(declaration::install_members(schema)),
+        advance::install_members(declaration::install_members(review_requirement::declare(
+            schema,
+        ))),
     )))
 }
 #[path = "workflow/advance.rs"]

@@ -14,7 +14,10 @@ use worth_query_host::facade::primary_graph::{
 };
 
 use super::bounded_dimension_model::{
-    dimension_entry::{SetPartDimensionBinding, SetPartDimensionIntent, PART_IDENTITY},
+    dimension_entry::{
+        ReviewedSetPartDimensionBinding, ReviewedSetPartDimensionIntent, SetPartDimensionIntent,
+        PART_IDENTITY,
+    },
     host::{BoundedDimensionWorkflowRuntime, SEED_DIMENSION},
     operator_identity::{authenticate_operator, request_scope},
     presented_request::set_dimension,
@@ -28,8 +31,17 @@ use super::bounded_dimension_model::{
     },
 };
 
+#[path = "workflow_approval/authentication.rs"]
+mod authentication;
+#[path = "workflow_approval/commit_boundary.rs"]
+mod commit_boundary;
+#[path = "workflow_approval/effect_currentness.rs"]
+mod effect_currentness;
+#[path = "workflow_approval/journey.rs"]
+mod journey;
 #[path = "workflow_approval/operation_requirement.rs"]
 mod operation_requirement;
+use journey::approval_journey;
 #[path = "workflow_approval/proposal.rs"]
 mod proposal;
 #[path = "workflow_approval/rejection.rs"]
@@ -90,7 +102,7 @@ fn approved_operation_requires_and_consumes_the_exact_performed_effect() {
     let unbound = runtime
         .request(&principal, &scope)
         .on_branch(instance.branch())
-        .mutate(SetPartDimensionIntent {
+        .mutate(ReviewedSetPartDimensionIntent {
             input: super::bounded_dimension_model::schema::SetPartDimensionInput {
                 identity: PART_IDENTITY.to_owned(),
                 dimension: 8,
@@ -98,43 +110,54 @@ fn approved_operation_requires_and_consumes_the_exact_performed_effect() {
         })
         .without_source()
         .idempotency(&812_u64)
-        .execute_in_program(application.program_runtime())
-        .expect("the ordinary unbound effect request must execute");
-    let unbound_receipt = match unbound {
-        WorthQueryApplicationMutationOutcome::Committed { receipt, .. } => receipt,
-        other => panic!("expected the unbound effect to commit, got {other:?}"),
-    };
-    let unbound_acceptance = runtime
+        .execute_in_program(application.program_runtime());
+    assert!(matches!(
+        unbound,
+        Err(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::RequiresWorkflowTransition)
+    ));
+    assert_eq!(read_dimension(runtime, instance.branch()), SEED_DIMENSION);
+    let sibling = runtime
+        .branches()
+        .fork(instance.branch())
+        .components(|components| components.fork_relational().reuse_exact_signal_basis())
+        .create()
+        .expect("the sibling branch publishes");
+    let wrong_branch = runtime
         .request(&principal, &scope)
-        .on_branch(instance.branch())
-        .mutate(WorkflowAdvanceIntent {
-            input: WorkflowAdvanceInput {
-                part_identity: PART_IDENTITY.to_owned(),
+        .on_branch(sibling)
+        .mutate(ReviewedSetPartDimensionIntent {
+            input: super::bounded_dimension_model::schema::SetPartDimensionInput {
+                identity: PART_IDENTITY.to_owned(),
+                dimension: 8,
             },
         })
         .without_source()
-        .idempotency(&816_u64)
-        .prepare_workflow_advance(&application, instance.clone())
-        .expect("the unbound receipt rejection must prepare")
-        .accept_operation::<SetPartDimensionBinding>(&required, &unbound_receipt);
+        .idempotency(&812_u64)
+        .for_workflow_operation(&application, &required);
     assert!(matches!(
-        unbound_acceptance,
-        Err(worth_query_host::facade::application_entry::WorthQueryWorkflowOperationAcceptanceDenial::Attempt(attempt))
-            if attempt.kind() == WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch
+        wrong_branch,
+        Err(worth_query_host::facade::application_entry::WorthQueryWorkflowOperationBindingDenial::RequirementMismatch)
     ));
-    assert_eq!(
-        settle(set_dimension(
-            application.program_runtime(),
-            instance.branch(),
-            SEED_DIMENSION,
-            813,
-        )),
-        DimensionVerdict::Performed(SEED_DIMENSION)
-    );
-    let wrong_input = runtime
+    let wrong_binding = runtime
         .request(&principal, &scope)
         .on_branch(instance.branch())
         .mutate(SetPartDimensionIntent {
+            input: super::bounded_dimension_model::schema::SetPartDimensionInput {
+                identity: PART_IDENTITY.to_owned(),
+                dimension: 8,
+            },
+        })
+        .without_source()
+        .idempotency(&813_u64)
+        .for_workflow_operation(&application, &required);
+    assert!(matches!(
+        wrong_binding,
+        Err(worth_query_host::facade::application_entry::WorthQueryWorkflowOperationBindingDenial::RequirementMismatch)
+    ));
+    let wrong_input = runtime
+        .request(&principal, &scope)
+        .on_branch(instance.branch())
+        .mutate(ReviewedSetPartDimensionIntent {
             input: super::bounded_dimension_model::schema::SetPartDimensionInput {
                 identity: PART_IDENTITY.to_owned(),
                 dimension: 9,
@@ -153,7 +176,7 @@ fn approved_operation_requires_and_consumes_the_exact_performed_effect() {
     let effect = runtime
         .request(&principal, &scope)
         .on_branch(instance.branch())
-        .mutate(SetPartDimensionIntent {
+        .mutate(ReviewedSetPartDimensionIntent {
             input: super::bounded_dimension_model::schema::SetPartDimensionInput {
                 identity: PART_IDENTITY.to_owned(),
                 dimension: 8,
@@ -182,7 +205,7 @@ fn approved_operation_requires_and_consumes_the_exact_performed_effect() {
         .idempotency(&816_u64)
         .prepare_workflow_advance(&application, instance.clone())
         .expect("the effect acceptance must prepare")
-        .accept_operation::<SetPartDimensionBinding>(&required, &receipt)
+        .accept_operation::<ReviewedSetPartDimensionBinding>(&required, &receipt)
         .expect("the exact owner-issued effect receipt must be accepted");
     let durable_receipt_identity = match completed {
         WorkflowProgressOutcome::Completed(performed) => {
@@ -206,7 +229,7 @@ fn approved_operation_requires_and_consumes_the_exact_performed_effect() {
         .idempotency(&816_u64)
         .prepare_workflow_advance(&application, instance.clone())
         .expect("the operation acceptance replay must prepare")
-        .accept_operation::<SetPartDimensionBinding>(&required, &receipt)
+        .accept_operation::<ReviewedSetPartDimensionBinding>(&required, &receipt)
         .expect("the exact operation acceptance must replay");
     match replayed {
         WorkflowProgressOutcome::Completed(performed) => {
@@ -219,7 +242,7 @@ fn approved_operation_requires_and_consumes_the_exact_performed_effect() {
         }
         other => panic!("expected the apply transition replay, got {other:?}"),
     }
-    match advance_instance(&application, instance, 817)
+    match advance_instance(&application, instance.clone(), 817)
         .expect("the completion terminal must prepare")
     {
         WorkflowProgressOutcome::Completed(performed) => {
@@ -227,6 +250,34 @@ fn approved_operation_requires_and_consumes_the_exact_performed_effect() {
         }
         other => panic!("expected the completion terminal, got {other:?}"),
     }
+    assert_eq!(
+        settle(set_dimension(
+            application.program_runtime(),
+            instance.branch(),
+            SEED_DIMENSION,
+            819,
+        )),
+        DimensionVerdict::Performed(SEED_DIMENSION)
+    );
+    let stale = runtime
+        .request(&principal, &scope)
+        .on_branch(instance.branch())
+        .mutate(ReviewedSetPartDimensionIntent {
+            input: super::bounded_dimension_model::schema::SetPartDimensionInput {
+                identity: PART_IDENTITY.to_owned(),
+                dimension: 8,
+            },
+        })
+        .without_source()
+        .idempotency(&820_u64)
+        .for_workflow_operation(&application, &required)
+        .expect("the descriptor still identifies the old operation")
+        .execute_in_program(application.program_runtime());
+    assert!(matches!(
+        stale,
+        Ok(WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift)
+    ));
+    assert_eq!(read_dimension(runtime, instance.branch()), SEED_DIMENSION);
 }
 
 #[test]
@@ -328,72 +379,4 @@ fn approval_rejects_assessment_evidence_after_native_source_aba() {
         )) if attempt.kind()
             == WorthQueryApplicationAttemptDenialKind::WorkflowAssessmentEvidenceMismatch
     ));
-}
-
-fn approval_journey(
-    completion: &str,
-    key: u64,
-) -> (
-    BoundedDimensionWorkflowRuntime,
-    PublishedWorkflowDefinitionRef,
-    PublishedWorkflowInstanceRef,
-    PublishedWorkflowProposalRef,
-    RequiredWorkflowApproval,
-    Vec<worth_relational::facade::identity::EntityId>,
-) {
-    let application = super::bounded_dimension_model::host::publish_workflow_on_first_program();
-    let definition = match publish_definition(
-        &application,
-        reviewed_geometry_definition(completion),
-        WorkflowDefinitionExpectedPredecessor::Absent,
-        key,
-    )
-    .expect("approval definition publication must prepare")
-    {
-        WorkflowDefinitionPublicationOutcome::Published(performed) => performed,
-        other => panic!("expected a published approval definition, got {other:?}"),
-    };
-    let instance = match start_instance(&application, definition.definition().clone(), key + 1)
-        .expect("approval instance start must prepare")
-    {
-        WorkflowInstanceStartOutcome::Started(performed) => performed.instance().clone(),
-        other => panic!("expected a started approval instance, got {other:?}"),
-    };
-    let proposal = proposal::published_proposal(&application, instance.clone(), key + 2);
-    let mut evidence = Vec::new();
-    for offset in [3, 5] {
-        let settlement = settle_assessment(&application, instance.clone(), key + offset);
-        match accept_assessment(
-            &application,
-            instance.clone(),
-            &settlement,
-            key + offset + 1,
-        ) {
-            Ok(WorkflowProgressOutcome::Completed(performed)) => evidence.push(
-                performed
-                    .assessment_evidence()
-                    .expect("accepted assessment must expose its evidence entity")
-                    .evidence(),
-            ),
-            other => panic!("expected accepted assessment, got {other:?}"),
-        }
-    }
-    match advance_instance(&application, instance.clone(), key + 7) {
-        Ok(WorkflowProgressOutcome::Completed(_)) => {}
-        other => panic!("expected completed evidence join, got {other:?}"),
-    }
-    let required = match advance_instance(&application, instance.clone(), key + 8)
-        .expect("approval requirement must prepare")
-    {
-        WorkflowProgressOutcome::AwaitingApproval(required) => required,
-        other => panic!("expected an approval requirement, got {other:?}"),
-    };
-    (
-        application,
-        definition.definition().clone(),
-        instance,
-        proposal,
-        required,
-        evidence,
-    )
 }

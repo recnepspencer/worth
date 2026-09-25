@@ -102,7 +102,7 @@ fn method() -> WorthQueryAuthenticationMethod {
     WorthQueryAuthenticationMethod::new("certification").expect("the operator method is valid")
 }
 
-fn block_on<F: Future>(future: F) -> F::Output {
+pub(crate) fn block_on<F: Future>(future: F) -> F::Output {
     let mut future = pin!(future);
     let waker = Waker::noop();
     let mut context = Context::from_waker(waker);

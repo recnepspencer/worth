@@ -17,10 +17,79 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowProposalMeaning 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) struct WorkflowProposalCoverageMeaning {
     pub(in crate::domain_computation::primary_graph) identity: String,
+    local_identity: String,
     pub(in crate::domain_computation::primary_graph) selector:
         worth_query_declaration::facade::application_program::ApplicationWorkflowSubjectSelector,
     pub(in crate::domain_computation::primary_graph) subject:
         worth_relational::facade::identity::EntityId,
+}
+
+/// Proposal meaning shared by every coverage in one authored proposal.
+///
+/// The transition identity is intentionally absent: a later occurrence of the
+/// same proposal does not revise a subject's evidence. The selected coverage
+/// identity is added by `coverage_identity`, so an unrelated subject can revise
+/// the proposal as a whole without revising this subject's scope.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(super) struct WorkflowProposalCoverageScope {
+    operation: String,
+    input_type: String,
+    input_identity: String,
+    source_identity: Option<String>,
+}
+
+impl WorkflowProposalCoverageScope {
+    pub(super) fn from_identities(
+        operation: &str,
+        input_type: &str,
+        input_identity: [u8; 32],
+        source_identity: Option<[u8; 32]>,
+    ) -> Self {
+        let input_identity = encode(input_identity);
+        let source_identity = source_identity.map(encode);
+        Self::from_encoded(
+            operation,
+            input_type,
+            &input_identity,
+            source_identity.as_deref(),
+        )
+    }
+
+    pub(super) fn from_encoded(
+        operation: &str,
+        input_type: &str,
+        input_identity: &str,
+        source_identity: Option<&str>,
+    ) -> Self {
+        Self {
+            operation: operation.to_owned(),
+            input_type: input_type.to_owned(),
+            input_identity: input_identity.to_owned(),
+            source_identity: source_identity.map(str::to_owned),
+        }
+    }
+
+    pub(super) fn coverage_identity(&self, local_identity: &str) -> String {
+        let material = canonical_operation_material(vec![
+            ("workflow.coverage.scope.operation", self.operation.clone()),
+            (
+                "workflow.coverage.scope.input-type",
+                self.input_type.clone(),
+            ),
+            ("workflow.coverage.scope.input", self.input_identity.clone()),
+            (
+                "workflow.coverage.scope.source",
+                self.source_identity
+                    .clone()
+                    .unwrap_or_else(|| "none".to_owned()),
+            ),
+            (
+                "workflow.coverage.scope.coverage",
+                local_identity.to_owned(),
+            ),
+        ]);
+        encode(Sha256::digest(material.as_bytes()).into())
+    }
 }
 
 impl WorkflowProposalCoverageMeaning {
@@ -30,10 +99,15 @@ impl WorkflowProposalCoverageMeaning {
     ) -> Self {
         let identity = coverage_identity(&selector.persistence_identity(), subject);
         Self {
-            identity,
+            identity: identity.clone(),
+            local_identity: identity,
             selector,
             subject,
         }
+    }
+
+    pub(super) fn local_identity(&self) -> &str {
+        &self.local_identity
     }
 }
 
@@ -55,6 +129,15 @@ pub(in crate::domain_computation::primary_graph) fn derive_workflow_proposal(
     coverages.sort_by(|left, right| left.selector.cmp(&right.selector));
     let input_identity = encode(input_identity);
     let source_identity = source_identity.map(encode);
+    let scope = WorkflowProposalCoverageScope::from_encoded(
+        operation,
+        input_type,
+        &input_identity,
+        source_identity.as_deref(),
+    );
+    for coverage in &mut coverages {
+        coverage.identity = scope.coverage_identity(&coverage.local_identity);
+    }
     let mut fields = vec![
         ("workflow.transition", transition_identity.to_owned()),
         ("workflow.operation", operation.to_owned()),
@@ -187,5 +270,94 @@ mod tests {
         assert_ne!(first.identity, second.identity);
         assert_ne!(first_a.identity, second_a.identity);
         assert_eq!(first.coverages[1].identity, second.coverages[1].identity);
+    }
+
+    #[test]
+    fn changing_shared_proposal_meaning_changes_each_coverage_scope() {
+        let coverage = WorkflowProposalCoverageMeaning::new(
+            ApplicationWorkflowSubjectSelector::Resource,
+            EntityId::new(PartitionId::new(1), 10, 1),
+        );
+        let first = derive_workflow_proposal(
+            "transition",
+            "operation",
+            "input",
+            [1; 32],
+            Some([2; 32]),
+            "proposal",
+            vec![coverage.clone()],
+        );
+        let changed = derive_workflow_proposal(
+            "transition",
+            "changed-operation",
+            "input",
+            [1; 32],
+            Some([2; 32]),
+            "proposal",
+            vec![coverage],
+        );
+        let changed_input = derive_workflow_proposal(
+            "transition",
+            "operation",
+            "input",
+            [4; 32],
+            Some([2; 32]),
+            "proposal",
+            vec![WorkflowProposalCoverageMeaning::new(
+                ApplicationWorkflowSubjectSelector::Resource,
+                EntityId::new(PartitionId::new(1), 10, 1),
+            )],
+        );
+        let changed_source = derive_workflow_proposal(
+            "transition",
+            "operation",
+            "input",
+            [1; 32],
+            Some([3; 32]),
+            "proposal",
+            vec![WorkflowProposalCoverageMeaning::new(
+                ApplicationWorkflowSubjectSelector::Resource,
+                EntityId::new(PartitionId::new(1), 10, 1),
+            )],
+        );
+
+        assert_ne!(first.coverages[0].identity, changed.coverages[0].identity);
+        assert_ne!(
+            first.coverages[0].identity,
+            changed_input.coverages[0].identity
+        );
+        assert_ne!(
+            first.coverages[0].identity,
+            changed_source.coverages[0].identity
+        );
+    }
+
+    #[test]
+    fn changing_only_transition_occurrence_preserves_each_coverage_scope() {
+        let coverage = WorkflowProposalCoverageMeaning::new(
+            ApplicationWorkflowSubjectSelector::Resource,
+            EntityId::new(PartitionId::new(1), 10, 1),
+        );
+        let first = derive_workflow_proposal(
+            "transition/first-occurrence",
+            "operation",
+            "input",
+            [1; 32],
+            None,
+            "proposal",
+            vec![coverage.clone()],
+        );
+        let later = derive_workflow_proposal(
+            "transition/later-occurrence",
+            "operation",
+            "input",
+            [1; 32],
+            None,
+            "proposal",
+            vec![coverage],
+        );
+
+        assert_ne!(first.identity, later.identity);
+        assert_eq!(first.coverages[0].identity, later.coverages[0].identity);
     }
 }

@@ -90,6 +90,7 @@ worth_query_mutation_binding!(
     denial PaymentDecisionDenialBinding,
     handler identity "bank.operation.approve-payment.handler.v1",
     program required,
+    workflow_authority required,
     outputs PaymentDecisionOutputs,
     principal BankPrincipalBinding,
         mapping ExternalPrincipalMapping,

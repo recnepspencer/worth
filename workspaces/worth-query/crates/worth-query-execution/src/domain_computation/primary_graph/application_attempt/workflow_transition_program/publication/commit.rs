@@ -20,6 +20,9 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
+        if let Err(denial) = prepared.validate_approval_descriptor() {
+            return WorkflowProgressOutcome::AuthenticationDenied(denial);
+        }
         match prepared.resolve_transition_replay(self, idempotency) {
             Ok(Some(outcome)) => return outcome,
             Ok(None) => {}
@@ -39,6 +42,7 @@ where
             progress_update,
             approval,
             approval_identity,
+            approval_authentication,
         ) = match prepared {
             PreparedWorkflowAdvance::Transition {
                 program,
@@ -54,6 +58,7 @@ where
                 progress_update,
                 approval,
                 approval_identity,
+                approval_authentication,
                 ..
             } => (
                 program,
@@ -69,6 +74,7 @@ where
                 progress_update,
                 approval,
                 approval_identity,
+                approval_authentication,
             ),
             PreparedWorkflowAdvance::AwaitingAssessment(prepared) => {
                 return WorkflowProgressOutcome::AwaitingAssessment(prepared.into_required())
@@ -89,6 +95,28 @@ where
                 return WorkflowProgressOutcome::PreparationDenied(denial)
             }
         };
+        let progress_update = approval_authentication
+            .as_ref()
+            .map(|authentication| authentication.trusted_progress_update())
+            .or(progress_update);
+        match (approval.is_some(), approval_authentication) {
+            (true, Some(authentication)) => {
+                if !authentication.matches_basis(program.output_currentness_facts.as_ref()) {
+                    return WorkflowProgressOutcome::AuthenticationDenied(
+                        worth_query_admission::facade::authentication_event::WorthQueryAuthenticationEventDenial::WrongOwner,
+                    );
+                }
+                if let Err(denial) = authentication.readmit() {
+                    return WorkflowProgressOutcome::AuthenticationDenied(denial);
+                }
+            }
+            (true, None) | (false, Some(_)) => {
+                return WorkflowProgressOutcome::AuthenticationDenied(
+                    worth_query_admission::facade::authentication_event::WorthQueryAuthenticationEventDenial::MissingSigningProof,
+                );
+            }
+            (false, None) => {}
+        }
         let Some(presented) = self
             .installed_program_support()
             .and_then(|support| support.present(&program_revision))

@@ -6,6 +6,9 @@ use super::super::{WorthQueryApplicationCommitOutcome, WorthQueryApplicationEffe
 mod approval;
 #[path = "publication/assessment_evidence.rs"]
 mod assessment_evidence;
+#[path = "publication/authentication.rs"]
+mod authentication;
+pub use authentication::PreparedWorkflowApprovalAuthentication;
 #[path = "publication/commit.rs"]
 mod commit;
 #[path = "publication/evidence_readiness.rs"]
@@ -20,7 +23,10 @@ pub use approval::{RequiredWorkflowApproval, WorkflowApprovalDecision};
 pub use assessment_evidence::PerformedWorkflowAssessmentEvidence;
 pub(super) use commit::project;
 pub use evidence_readiness::RequiredWorkflowEvidence;
-pub use operation::{PreparedWorkflowOperation, RequiredWorkflowOperation};
+pub use operation::{
+    PreparedWorkflowOperation, RequiredWorkflowOperation, WorkflowOperationAuthority,
+    WorkflowOperationAuthoritySlot,
+};
 pub use required_assessment::RequiredWorkflowAssessment;
 pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) use transition_replay::PreparedWorkflowTransitionReplays;
 
@@ -44,6 +50,7 @@ pub enum PreparedWorkflowAdvance<Schema, Operation, Input, Scope> {
         >,
         approval: Option<PreparedWorkflowApprovalProjection>,
         approval_identity: Option<[u8; 32]>,
+        approval_authentication: Option<PreparedWorkflowApprovalAuthentication<Schema>>,
         replays: PreparedWorkflowTransitionReplays,
     },
     AwaitingAssessment(PreparedWorkflowAssessment<Schema, Operation, Input, Scope>),
@@ -340,5 +347,8 @@ pub enum WorkflowProgressOutcome {
     Application(WorthQueryApplicationCommitOutcome),
     ProjectionDenied(super::super::WorthQueryApplicationCommitReceipt),
     PreparationDenied(super::super::WorthQueryApplicationAttemptDenial),
+    AuthenticationDenied(
+        worth_query_admission::facade::authentication_event::WorthQueryAuthenticationEventDenial,
+    ),
     IdempotencyDenied(super::super::WorthQueryApplicationIdempotencyResolutionDenial),
 }

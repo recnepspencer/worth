@@ -10,7 +10,12 @@ fn populated(count: u64) -> WorkflowInstanceProgress {
         head: entity(count + 1),
         next_occurrence: count,
         retry_counts: OrdMap::new(),
+        path_depth: 0,
+        path: OrdMap::new(),
+        back_blocked_by_operation: false,
+        back_edge_iterations: OrdMap::new(),
         latest_transitions: OrdMap::new(),
+        latest_transition_identities: OrdMap::new(),
         latest_assessment_evidence: OrdMap::new(),
     };
     for occurrence in 0..count {
@@ -87,6 +92,50 @@ fn progress_snapshots_share_maps_and_preserve_isolated_values() {
         update_last(&mut duplicate, count);
         assert_eq!(advanced, duplicate);
     }
+}
+
+#[test]
+fn ten_thousand_back_settlements_keep_warm_navigation_state_bounded() {
+    let first = entity(1);
+    let second = entity(2);
+    let mut progress = populated(0);
+    for cycle in 0..10_000_u64 {
+        progress
+            .advance_with(
+                SettledWorkflowTransition::new(
+                    first,
+                    cycle * 2,
+                    ApplicationWorkflowControlOutcome::Completed,
+                    None,
+                ),
+                &mut |_, _, _| Ok(second),
+            )
+            .expect("forward settlement is contiguous");
+        progress
+            .advance_with(
+                SettledWorkflowTransition::new(
+                    second,
+                    cycle * 2 + 1,
+                    ApplicationWorkflowControlOutcome::NavigatedBack,
+                    None,
+                ),
+                &mut |_, _, _| panic!("Back derives its predecessor without forward selection"),
+            )
+            .expect("Back settlement is contiguous");
+    }
+    assert_eq!(progress.head(), first);
+    assert_eq!(progress.next_occurrence(), 20_000);
+    assert_eq!(progress.path_depth, 0);
+    assert!(progress.path.is_empty());
+    assert_eq!(progress.back_edge_iterations.len(), 1);
+    assert_eq!(
+        progress.back_edge_iterations.get(&(second, first)),
+        Some(&10_000)
+    );
+    let snapshot = progress.clone();
+    assert!(snapshot
+        .back_edge_iterations
+        .ptr_eq(&progress.back_edge_iterations));
 }
 
 #[cfg(feature = "allocation-probes")]

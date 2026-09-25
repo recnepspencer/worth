@@ -1,15 +1,18 @@
 use worth_relational::facade::identity::EntityId;
 
+mod shape;
+use shape::{empty_node_fields, empty_optional_node_fields, invalid_node};
+
 use super::{observed_bool, observed_optional_text, observed_text, observed_u64};
 use crate::domain_computation::primary_graph::application_attempt::{
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
-    WorthQueryApplicationObservedFact,
+    WorthQueryApplicationAttemptDenial, WorthQueryApplicationObservedFact,
 };
 use crate::domain_computation::primary_graph::workflow::{
     definition::{
         codec::WorkflowNodeTag,
         compilation::plan::{
-            CompiledWorkflowNode, CompiledWorkflowNodeKind, CompiledWorkflowNodeMeaning,
+            CompiledWorkflowAssessmentApplicability, CompiledWorkflowNode,
+            CompiledWorkflowNodeKind, CompiledWorkflowNodeMeaning,
         },
     },
     schema::WorthQueryWorkflowLayout,
@@ -91,6 +94,38 @@ pub(super) fn compile_node(
         &node.assessment_subject,
         facts,
     )?;
+    let assessment_applicability_relation = observed_optional_text(
+        runtime,
+        snapshot,
+        entity,
+        node.entity_kind,
+        &node.assessment_applicability_relation,
+        facts,
+    )?;
+    let assessment_applicability_from = observed_optional_text(
+        runtime,
+        snapshot,
+        entity,
+        node.entity_kind,
+        &node.assessment_applicability_from,
+        facts,
+    )?;
+    let assessment_applicability_to = observed_optional_text(
+        runtime,
+        snapshot,
+        entity,
+        node.entity_kind,
+        &node.assessment_applicability_to,
+        facts,
+    )?;
+    let operation_binding = observed_optional_text(
+        runtime,
+        snapshot,
+        entity,
+        node.entity_kind,
+        &node.operation_binding,
+        facts,
+    )?;
     let condition_binding = observed_optional_text(
         runtime,
         snapshot,
@@ -135,10 +170,14 @@ pub(super) fn compile_node(
         kind,
         member,
         input_type,
+        operation_binding,
         parameter_type,
         result_type,
         assessment_binding,
         assessment_subject,
+        assessment_applicability_relation,
+        assessment_applicability_from,
+        assessment_applicability_to,
         condition_binding,
         capability_type,
         approval_operation,
@@ -156,16 +195,54 @@ fn decode_kind(
     tag: u64,
     member: String,
     input_type: Option<String>,
+    operation_binding: Option<String>,
     parameter_type: Option<String>,
     result_type: Option<String>,
     assessment_binding: Option<String>,
     assessment_subject: Option<String>,
+    assessment_applicability_relation: Option<String>,
+    assessment_applicability_from: Option<String>,
+    assessment_applicability_to: Option<String>,
     condition_binding: Option<String>,
     capability_type: Option<String>,
     approval_operation: Option<String>,
     approval_capability_identity: Option<String>,
     requires_workflow_authority: bool,
 ) -> Result<CompiledWorkflowNodeKind, WorthQueryApplicationAttemptDenial> {
+    if (!matches!(
+        WorkflowNodeTag::from_persisted(tag),
+        Some(WorkflowNodeTag::Operation)
+    ) && operation_binding.is_some())
+        || (requires_workflow_authority && operation_binding.as_deref().is_none_or(str::is_empty))
+    {
+        return Err(invalid_node());
+    }
+    let applicability = match (
+        assessment_applicability_relation,
+        assessment_applicability_from,
+        assessment_applicability_to,
+    ) {
+        (None, None, None) => CompiledWorkflowAssessmentApplicability::Always,
+        (Some(relation), Some(from), Some(to))
+            if !relation.is_empty() && !from.is_empty() && !to.is_empty() =>
+        {
+            CompiledWorkflowAssessmentApplicability::WhenRelatedRelationPresent {
+                relation,
+                from,
+                to,
+            }
+        }
+        _ => return Err(invalid_node()),
+    };
+    if !matches!(
+        WorkflowNodeTag::from_persisted(tag),
+        Some(WorkflowNodeTag::Assessment)
+    ) && !matches!(
+        applicability,
+        CompiledWorkflowAssessmentApplicability::Always
+    ) {
+        return Err(invalid_node());
+    }
     match WorkflowNodeTag::from_persisted(tag) {
         Some(WorkflowNodeTag::Operation)
             if parameter_type.is_none()
@@ -180,6 +257,7 @@ fn decode_kind(
             Ok(CompiledWorkflowNodeKind::Operation {
                 operation: member,
                 input_type: input_type.ok_or_else(invalid_node)?,
+                binding: operation_binding.filter(|identity| !identity.is_empty()),
                 requires_workflow_authority,
             })
         }
@@ -191,15 +269,22 @@ fn decode_kind(
                 && condition_binding.is_none()
                 && !requires_workflow_authority =>
         {
+            let subject = worth_query_declaration::facade::application_program::ApplicationWorkflowSubjectSelector::from_persistence_identity(
+                &assessment_subject.ok_or_else(invalid_node)?,
+            )
+            .ok_or_else(invalid_node)?;
+            if !matches!(applicability, CompiledWorkflowAssessmentApplicability::Always)
+                && !matches!(subject, worth_query_declaration::facade::application_program::ApplicationWorkflowSubjectSelector::Related)
+            {
+                return Err(invalid_node());
+            }
             Ok(CompiledWorkflowNodeKind::Assessment {
                 query: member,
                 parameter_type: parameter_type.ok_or_else(invalid_node)?,
                 result_type: result_type.ok_or_else(invalid_node)?,
                 binding: assessment_binding.ok_or_else(invalid_node)?,
-                subject: worth_query_declaration::facade::application_program::ApplicationWorkflowSubjectSelector::from_persistence_identity(
-                    &assessment_subject.ok_or_else(invalid_node)?,
-                )
-                .ok_or_else(invalid_node)?,
+                subject,
+                applicability,
             })
         }
         Some(WorkflowNodeTag::Condition)
@@ -272,65 +357,6 @@ fn decode_kind(
         }
         _ => Err(invalid_node()),
     }
-}
-
-#[allow(clippy::too_many_arguments)]
-fn empty_node_fields(
-    member: &str,
-    input_type: &Option<String>,
-    parameter_type: &Option<String>,
-    result_type: &Option<String>,
-    assessment_binding: &Option<String>,
-    assessment_subject: &Option<String>,
-    condition_binding: &Option<String>,
-    capability_type: &Option<String>,
-    approval_operation: &Option<String>,
-    approval_capability_identity: &Option<String>,
-    requires_workflow_authority: bool,
-) -> bool {
-    member.is_empty()
-        && input_type.is_none()
-        && parameter_type.is_none()
-        && result_type.is_none()
-        && assessment_binding.is_none()
-        && assessment_subject.is_none()
-        && condition_binding.is_none()
-        && capability_type.is_none()
-        && approval_operation.is_none()
-        && approval_capability_identity.is_none()
-        && !requires_workflow_authority
-}
-
-#[allow(clippy::too_many_arguments)]
-fn empty_optional_node_fields(
-    input_type: &Option<String>,
-    parameter_type: &Option<String>,
-    result_type: &Option<String>,
-    assessment_binding: &Option<String>,
-    assessment_subject: &Option<String>,
-    condition_binding: &Option<String>,
-    capability_type: &Option<String>,
-    approval_operation: &Option<String>,
-    approval_capability_identity: &Option<String>,
-    requires_workflow_authority: bool,
-) -> bool {
-    input_type.is_none()
-        && parameter_type.is_none()
-        && result_type.is_none()
-        && assessment_binding.is_none()
-        && assessment_subject.is_none()
-        && condition_binding.is_none()
-        && capability_type.is_none()
-        && approval_operation.is_none()
-        && approval_capability_identity.is_none()
-        && !requires_workflow_authority
-}
-
-fn invalid_node() -> WorthQueryApplicationAttemptDenial {
-    WorthQueryApplicationAttemptDenial::new(
-        WorthQueryApplicationAttemptDenialKind::WorkflowDefinitionCompilationUnavailable,
-        "published workflow node shape is invalid",
-    )
 }
 
 #[cfg(test)]

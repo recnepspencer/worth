@@ -321,6 +321,15 @@ fn create_node(
     ]);
     for (locator, value) in [
         (&layout.node.input_type, input_type),
+        (
+            &layout.node.operation_binding,
+            match node.kind() {
+                ApplicationWorkflowNodeKind::Operation { operation, .. } => {
+                    operation.binding().map(|(identity, _, _)| identity)
+                }
+                _ => None,
+            },
+        ),
         (&layout.node.parameter_type, parameter_type),
         (&layout.node.result_type, result_type),
         (&layout.node.assessment_binding, assessment_binding),
@@ -346,6 +355,17 @@ fn create_node(
             layout.node.assessment_subject.clone(),
             text(assessment.subject().persistence_identity()),
         );
+        if let Some((relation, from, to)) = assessment.applicability().relation() {
+            fields.insert(
+                layout.node.assessment_applicability_relation.clone(),
+                text(relation),
+            );
+            fields.insert(
+                layout.node.assessment_applicability_from.clone(),
+                text(from),
+            );
+            fields.insert(layout.node.assessment_applicability_to.clone(), text(to));
+        }
     }
     WorthQueryApplicationRealizedEffect::CreateEntity {
         kind: reference.kind_id,

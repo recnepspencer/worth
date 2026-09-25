@@ -162,6 +162,7 @@ pub use workflow_transition_program::{
     PreparedWorkflowAdvance, PreparedWorkflowAssessment, PreparedWorkflowOperation,
     RequiredWorkflowApproval, RequiredWorkflowAssessment, RequiredWorkflowCondition,
     RequiredWorkflowEvidence, RequiredWorkflowOperation, WorkflowApprovalDecision,
-    WorkflowProgressOutcome, WorkflowTransitionBindingDenial, WorkflowTransitionPreparationDenial,
+    WorkflowOperationAuthority, WorkflowOperationAuthoritySlot, WorkflowProgressOutcome,
+    WorkflowTransitionBindingDenial, WorkflowTransitionPreparationDenial,
     WorthQueryWorkflowAdvanceAdapter,
 };

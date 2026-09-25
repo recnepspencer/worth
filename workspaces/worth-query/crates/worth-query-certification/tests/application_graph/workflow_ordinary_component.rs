@@ -13,10 +13,10 @@ use worth_query_host::facade::{
 };
 
 use super::bounded_dimension_model::{
-    dimension_entry::PART_IDENTITY,
+    dimension_entry::{ReviewedSetPartDimensionBinding, PART_IDENTITY},
     host::publish_workflow_on_first_program,
     operator_identity::{authenticate_operator, request_scope},
-    schema::{PartDimensionQuery, SetPartDimension},
+    schema::PartDimensionQuery,
     workflow::{
         advance_instance, definition_limits, propose_instance, start_instance,
         ReviewedGeometryWorkflow, WorkflowApprovalCapability, WorkflowDefinitionAuthoringInput,
@@ -81,7 +81,7 @@ fn reviewed_component_draft() -> AuthoredWorkflowDefinition<ReviewedGeometryWork
         .approval::<WorkflowApprovalCapability>("approval")
         .expect("approval is valid");
     let apply = workflow
-        .operation::<SetPartDimension>("apply", true)
+        .operation_binding::<ReviewedSetPartDimensionBinding>("apply")
         .expect("effect is valid");
     let completed = workflow.terminal("completed").expect("terminal is valid");
     let rejected = workflow.terminal("rejected").expect("terminal is valid");

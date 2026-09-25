@@ -43,6 +43,12 @@ pub(super) fn lower_approval(
         grant_slot: field("grant-slot")?,
         grant_generation: field("grant-generation")?,
         authorization_decision: field("authorization-decision")?,
+        authorization_request: field("authorization-request")?,
+        authorization_principal: field("authorization-principal")?,
+        capability_authority_identity: field("capability-authority-identity")?,
+        authorization_lineage: field("authorization-lineage")?,
+        authorization_support: field("authorization-support")?,
+        authorization_dependencies: field("authorization-dependencies")?,
         action: field("action")?,
         purpose: field("purpose")?,
         validity_timeline: field("validity-timeline")?,
@@ -75,6 +81,12 @@ pub(super) fn lower_approval(
     }
     let shape = shape
         .required("authorization-decision", ScalarAspectType::String)
+        .required("authorization-request", ScalarAspectType::String)
+        .required("authorization-principal", ScalarAspectType::String)
+        .required("capability-authority-identity", ScalarAspectType::String)
+        .required("authorization-lineage", ScalarAspectType::String)
+        .required("authorization-support", ScalarAspectType::String)
+        .required("authorization-dependencies", ScalarAspectType::String)
         .required("action", ScalarAspectType::String)
         .required("purpose", ScalarAspectType::String)
         .required("validity-timeline", ScalarAspectType::String)

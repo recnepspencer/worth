@@ -52,9 +52,19 @@ pub(in crate::domain_computation::primary_graph) fn admit_platform_effects<
         .execution_strategy()
         .expect("installed application operation has exactly one execution strategy")
         .envelope();
+    let declared = read_set
+        .admission
+        .allowed_graph_contract()
+        .platform_candidate_ceiling()
+        .ok_or_else(|| {
+            WorthQueryApplicationAttemptDenial::new(
+                WorthQueryApplicationAttemptDenialKind::CandidateCapacityExceeded,
+                "platform effect operation has no installed candidate contract",
+            )
+        })?;
     let reservation = WorthQueryCandidateReservation::admit(
         requirements,
-        requirements,
+        declared,
         envelope.scale_ceiling(WorthQuerySemanticScaleAxis::CandidateItems),
         envelope
             .resource_ceiling(WorthQueryResourceDimension::CandidateRetainedRepresentationBytes),

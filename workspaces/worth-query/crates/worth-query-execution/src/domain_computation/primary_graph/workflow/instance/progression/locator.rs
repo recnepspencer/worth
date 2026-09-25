@@ -77,6 +77,12 @@ impl WorkflowTransitionProgressObservation {
     ) -> WorkflowTransitionLocator {
         self.transition
     }
+
+    pub(in crate::domain_computation::primary_graph) const fn assessment_evidence(
+        self,
+    ) -> Option<EntityId> {
+        self.assessment_evidence
+    }
 }
 
 impl WorkflowInstanceProgress {

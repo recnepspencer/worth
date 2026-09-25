@@ -33,6 +33,7 @@ pub enum WorthQueryApplicationCommitDenialKind {
     DelegationActivationRequired,
     CapabilityRevocationRequired,
     ApplicationProgramRequired,
+    WorkflowAuthorityRequired,
     /// The presented program is not the program this occurrence is running.
     ProgramNotActiveOnOccurrence,
     /// This occurrence carries no branch program activation the host can
@@ -349,7 +350,14 @@ impl WorthQueryApplicationCommitDenial {
             custom_invariant: None,
         }
     }
-
+    pub(in crate::domain_computation) const fn workflow_authority_required() -> Self {
+        Self {
+            kind: WorthQueryApplicationCommitDenialKind::WorkflowAuthorityRequired,
+            stage: WorthQueryApplicationCommitDenialStage::ProposalBinding,
+            detail: None,
+            custom_invariant: None,
+        }
+    }
     pub(in crate::domain_computation::primary_graph::application_attempt) const fn elevation_request_program_mismatch(
     ) -> Self {
         Self {

@@ -1,6 +1,9 @@
 use std::mem::size_of;
 
-use crate::application_program::workflow::ApplicationWorkflowConnectionKind;
+use crate::application_program::workflow::{
+    ApplicationWorkflowAssessmentApplicability, ApplicationWorkflowConnectionKind,
+    ApplicationWorkflowDataFlow, ApplicationWorkflowNodeKind,
+};
 
 use super::{
     control::ControlProof,
@@ -35,9 +38,24 @@ pub(super) fn validate_availability(
             continue;
         }
         work.visit_dominance_query();
-        if indexed.source == indexed.target
-            || !dominance.dominates(indexed.source, indexed.target, work)
-        {
+        let conditional_assessment_evidence = matches!(
+            indexed.connection.kind_ref(),
+            ApplicationWorkflowConnectionKind::Data(
+                ApplicationWorkflowDataFlow::AssessmentEvidence
+            )
+        ) && matches!(
+            graph.node(indexed.source).kind(),
+            ApplicationWorkflowNodeKind::Assessment(assessment)
+                if !matches!(assessment.applicability(), ApplicationWorkflowAssessmentApplicability::Always)
+        );
+        // Conditional evidence is independently collectible off-cursor. Its
+        // exact authored identity, applicability, and source currentness are
+        // checked when the typed join consumes it; control ancestry is not
+        // the availability authority for this one data-flow kind. Control
+        // validation has already made both endpoints reachable from start.
+        let available = conditional_assessment_evidence
+            || dominance.dominates(indexed.source, indexed.target, work);
+        if indexed.source == indexed.target || !available {
             return Err(denial(
                 ApplicationWorkflowValidationDenialKind::UnavailableDataFlow,
                 format!(

@@ -3,10 +3,13 @@ mod assessment;
 mod condition;
 mod definition;
 mod instance;
+mod navigation;
 mod operation;
 mod ordinary;
 mod progress;
 mod proposal;
+
+pub use approval::WorthQueryWorkflowApprovalSigningRequest;
 
 pub use assessment::{
     WorthQueryWorkflowAssessmentDemandHandle, WorthQueryWorkflowAssessmentDemandPreparationDenial,
@@ -23,6 +26,7 @@ pub use instance::{
     WorthQueryWorkflowInstanceStartPreparationDenial,
     WorthQueryWorkflowInstanceStartPreparationDenialKind, WorthQueryWorkflowInstanceStartRequest,
 };
+pub use navigation::WorthQueryWorkflowNavigateBackRequest;
 pub use operation::{
     WorthQueryPreparedWorkflowOperationRecovery, WorthQueryWorkflowOperationAcceptanceDenial,
     WorthQueryWorkflowOperationBindingDenial, WorthQueryWorkflowOperationRecoveryDenial,

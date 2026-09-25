@@ -10,6 +10,7 @@
 mod admission_digest;
 mod application_query;
 mod authenticated_principal;
+mod authentication_event;
 mod canonical_identity_derivation;
 mod domain_computation;
 mod graph_obligation;

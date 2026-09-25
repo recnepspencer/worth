@@ -1,11 +1,15 @@
 use worth_query_host::facade::admission::authenticated_principal::{
     WorthQueryAuthenticationAdapterAdmissionDenial, WorthQueryAuthenticationDenial,
 };
-use worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationDenial;
+use worth_query_host::facade::admission::authentication_event::WorthQueryAuthenticationEventDenial;
+use worth_query_host::facade::application_installation::{
+    WorthQueryInMemoryApplicationDenial, WorthQueryWorkflowRuntimeBindingDenial,
+};
 use worth_query_host::facade::declaration::application_program::ApplicationProgramValidationDenial;
 use worth_query_host::facade::declaration::application_schema::ApplicationSchemaDeclarationDenial;
 use worth_query_host::facade::domain::{
-    WorthQueryApplicationOperationInstallationDenial, WorthQueryInstallationAdmissionDenial,
+    WorthQueryApplicationOperationInstallationDenial,
+    WorthQueryApplicationWorkflowInstallationDenial, WorthQueryInstallationAdmissionDenial,
     WorthQueryInstalledApplicationSchemaDenial, WorthQueryInstalledPackageIndexDenial,
     WorthQueryPortablePackageValidationDenial, WorthQueryPrincipalBindingInstallationDenial,
 };
@@ -40,7 +44,9 @@ pub enum BankIdentityRuntimeBuildError {
     InstalledSchema(WorthQueryInstalledApplicationSchemaDenial),
     InstalledOperation(WorthQueryApplicationOperationInstallationDenial),
     InstalledBinding(WorthQueryPrincipalBindingInstallationDenial),
-    WorkflowInstallation(String),
+    WorkflowInstallation(WorthQueryApplicationWorkflowInstallationDenial),
+    WorkflowRuntimeBinding(WorthQueryWorkflowRuntimeBindingDenial),
+    WorkflowAuthenticationInstallation(WorthQueryAuthenticationEventDenial),
 }
 
 impl std::fmt::Display for BankIdentityRuntimeBuildError {
@@ -57,7 +63,9 @@ impl std::fmt::Display for BankIdentityRuntimeBuildError {
             Self::InstalledSchema(error) => error.fmt(formatter),
             Self::InstalledOperation(error) => error.fmt(formatter),
             Self::InstalledBinding(error) => error.fmt(formatter),
-            Self::WorkflowInstallation(error) => formatter.write_str(error),
+            Self::WorkflowInstallation(error) => error.fmt(formatter),
+            Self::WorkflowRuntimeBinding(error) => write!(formatter, "{error:?}"),
+            Self::WorkflowAuthenticationInstallation(error) => write!(formatter, "{error:?}"),
         }
     }
 }

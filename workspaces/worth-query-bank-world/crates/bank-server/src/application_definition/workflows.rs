@@ -1,6 +1,6 @@
 use bank_domain::queries::PaymentDetailQuery;
 use bank_domain::schema::{
-    ApprovePaymentOperation, ApprovedBusinessPaymentApproval,
+    ApprovePaymentMutationBinding, ApprovedBusinessPaymentApproval,
     ApprovedBusinessPaymentAuthoringOperation, ApprovedBusinessPaymentWorkflow,
 };
 use worth_query_host::facade::declaration::application_program::{
@@ -35,7 +35,7 @@ pub fn approved_business_payment_definition() -> Result<
         ApplicationWorkflowEvidenceJoinPolicy::AllRequiredPassing,
     )?;
     let approval = builder.approval::<ApprovedBusinessPaymentApproval>("approval")?;
-    let apply = builder.operation::<ApprovePaymentOperation>("apply", true)?;
+    let apply = builder.operation_binding::<ApprovePaymentMutationBinding>("apply")?;
     let completed = builder.terminal("completed")?;
     let rejected = builder.terminal("rejected")?;
 

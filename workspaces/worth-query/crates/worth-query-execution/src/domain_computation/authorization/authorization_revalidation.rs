@@ -2,6 +2,7 @@ mod currentness;
 mod observation;
 mod retained_authorization;
 mod supporting_capability;
+mod workflow_approval;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{

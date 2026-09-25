@@ -7,6 +7,7 @@ pub(super) struct ObservedApprovalEvidence {
 }
 
 pub(super) struct ValidatedApprovalInputs {
+    pub(super) proposal_entity: worth_relational::facade::identity::EntityId,
     pub(super) evidence: Vec<ObservedApprovalEvidence>,
     pub(super) currentness: Vec<super::super::super::WorthQueryApplicationObservedFact>,
     pub(super) facts: Vec<super::super::super::WorthQueryApplicationObservedFact>,
@@ -16,16 +17,18 @@ pub(super) struct ValidatedApprovalInputs {
 pub(super) fn observe(
     compiled: &crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowDefinition,
     layout: &crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
+    graph_layout: &crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout,
+    resource: worth_relational::facade::identity::EntityId,
     instance: &super::super::super::PublishedWorkflowInstanceRef,
     progress: &crate::domain_computation::primary_graph::workflow::instance::WorkflowInstanceProgress,
     approval: worth_relational::facade::identity::EntityId,
-    proposal: &super::super::super::PublishedWorkflowProposalRef,
+    proposal: Option<&super::super::super::PublishedWorkflowProposalRef>,
     handle: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     maximum_facts: usize,
 ) -> Result<ValidatedApprovalInputs, WorthQueryApplicationAttemptDenial> {
     let proposal_source = unique(compiled.approval_proposal_sources(approval), "proposal")?;
-    if proposal.node_path() != proposal_source.path() {
+    if proposal.is_some_and(|proposal| proposal.node_path() != proposal_source.path()) {
         return Err(affinity(
             "approval proposal source differs from authored input",
         ));
@@ -42,7 +45,9 @@ pub(super) fn observe(
             maximum_facts,
         )
     })?;
-    if proposal_entity != proposal.entity_id() || proposal_identity != proposal.identity() {
+    if proposal.is_some_and(|proposal| {
+        proposal_entity != proposal.entity_id() || proposal_identity != proposal.identity()
+    }) {
         return Err(affinity("approval proposal binding changed"));
     }
 
@@ -72,27 +77,64 @@ pub(super) fn observe(
     }
     enforce_fact_budget(facts.len(), maximum_facts)?;
 
-    let required = compiled
+    let authored = compiled
         .required_assessments(evidence_source.entity())
         .collect::<Vec<_>>();
-    if required.len() < 2 {
+    if authored.len() < 2 {
         return Err(affinity("approval evidence inventory is incomplete"));
+    }
+    let mut required = Vec::new();
+    let mut observed_proposals =
+        super::super::assessment_coverage::AssessmentProposalObservations::default();
+    for node in authored {
+        let remaining = maximum_facts.saturating_sub(facts.len());
+        let subject = super::super::assessment_coverage::observe_subject_cached(
+            compiled,
+            layout,
+            progress,
+            node,
+            resource,
+            handle,
+            snapshot,
+            remaining,
+            &mut observed_proposals,
+        )?;
+        let remaining =
+            maximum_facts.saturating_sub(facts.len().saturating_add(subject.facts.len()));
+        let observed = handle.with_runtime(|runtime| {
+            super::super::assessment_applicability::observe(
+                node,
+                graph_layout,
+                runtime,
+                snapshot,
+                subject.resource,
+                subject.related,
+                remaining,
+            )
+        })?;
+        facts.extend(subject.facts);
+        facts.extend(observed.facts);
+        if observed.applicable {
+            required.push((node, subject.coverage));
+        }
+    }
+    enforce_fact_budget(facts.len(), maximum_facts)?;
+    if required.is_empty() {
+        return Err(affinity(
+            "approval has no currently applicable authored requirement",
+        ));
     }
     let mut evidence = Vec::with_capacity(required.len());
     let mut currentness = Vec::new();
-    for node in required {
-        let crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowNodeKind::Assessment {
-            query,
-            parameter_type,
-            result_type,
-            binding,
-            ..
-        } = node.kind() else {
-            return Err(affinity("approval evidence requirement is not an assessment"));
-        };
+    for (node, coverage) in required {
         let locator = progress
             .latest_assessment_evidence(node.entity())
-            .ok_or_else(|| affinity("approval required evidence is absent"))?;
+            .ok_or_else(|| {
+                denial(
+                    WorthQueryApplicationAttemptDenialKind::WorkflowAssessmentEvidenceIncomplete,
+                    "approval required evidence is absent",
+                )
+            })?;
         let remaining = maximum_facts.saturating_sub(facts.len());
         let (observed, mut retained_facts) = handle.with_runtime(|runtime| {
             super::super::super::workflow_instance_observation::observe_retained_assessment_evidence(
@@ -104,39 +146,34 @@ pub(super) fn observe(
             )
         })?;
         facts.append(&mut retained_facts);
-        if observed.query != *query
-            || observed.parameter_type != *parameter_type
-            || observed.result_type != *result_type
-            || observed.binding != *binding
-        {
-            return Err(affinity(
-                "approval evidence contract differs from its authored requirement",
+        let remaining = maximum_facts.saturating_sub(facts.len());
+        let coverage_state = super::super::assessment_coverage::observe(
+            node, &coverage, &observed, layout, handle, snapshot, remaining,
+        )?;
+        facts.extend(coverage_state.facts);
+        if !coverage_state.current {
+            return Err(denial(
+                WorthQueryApplicationAttemptDenialKind::WorkflowAssessmentEvidenceMismatch,
+                "approval required evidence is stale",
             ));
         }
         if !observed.passing {
             return Err(affinity("approval required evidence is failing"));
         }
-        let remaining = maximum_facts.saturating_sub(facts.len());
-        currentness.extend(handle.with_runtime(|runtime| {
-            super::super::super::workflow_instance_observation::observe_evidence_dependencies(
-                runtime,
-                snapshot,
-                layout,
-                observed.entity,
-                remaining,
-                &mut facts,
-            )
-        })?);
+        currentness.extend(coverage_state.dependencies);
         evidence.push(ObservedApprovalEvidence {
             node_path: node.path().to_owned(),
             evidence: observed,
         });
     }
-    if proposal.definition_entity_id() != instance.definition_entity_id() {
+    if proposal
+        .is_some_and(|proposal| proposal.definition_entity_id() != instance.definition_entity_id())
+    {
         return Err(affinity("approval proposal definition changed"));
     }
     enforce_fact_budget(facts.len(), maximum_facts)?;
     Ok(ValidatedApprovalInputs {
+        proposal_entity,
         evidence,
         currentness,
         facts,

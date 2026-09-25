@@ -1,10 +1,14 @@
 /// Conservative logical allocation charge for im 15.1.0's ordered map.
 ///
 /// Each B-tree node reserves 64 inline pairs and 65 child references. An
-/// insertion-only map has at least 32 pairs per non-root node; charge one full
-/// root even for an empty map. Count shared nodes in each retained entry so
+/// insertion-only map has at least 32 pairs per non-root node; an empty map
+/// has no allocated root (its inline handle is charged by `size_of::<Self>()`).
+/// Count shared nodes in each retained entry so
 /// sharing never discounts the owner's admission budget.
 pub(super) fn map_charge_bytes<K: Ord + Clone, V: Clone>(map: &im::OrdMap<K, V>) -> usize {
+    if map.is_empty() {
+        return 0;
+    }
     const NODE_CAPACITY: usize = 64;
     const MINIMUM_OCCUPANCY: usize = NODE_CAPACITY / 2;
     const ALLOCATION_AND_CHUNK_METADATA: usize = 128;

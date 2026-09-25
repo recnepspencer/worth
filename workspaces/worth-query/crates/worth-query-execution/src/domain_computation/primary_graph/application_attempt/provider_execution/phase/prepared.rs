@@ -124,6 +124,8 @@ struct WorthQueryCurrentApplicationCommit<Schema, Operation, Input, Scope> {
     provider: WorthQueryProviderAttemptPreparation,
     idempotency: WorthQueryApplicationIdempotencyBinding,
     aftermath_causality: Option<WorthQueryPendingAftermathCausality>,
+    workflow_approval_authority:
+        Option<crate::domain_computation::authorization::WorthQueryWorkflowApprovalAuthorityBasis>,
 }
 
 pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) fn prepare_application_commit<
@@ -159,6 +161,9 @@ where
         producer_required_invariants,
         output_currentness_facts,
     } = program;
+    let workflow_approval_authority = read_set
+        .workflow_authority_binding
+        .map(|binding| binding.approval_authority);
     let mut admission = read_set.admission;
     let preimage_demand = installed_preimage_demand(admission.allowed_graph_contract().aftermath());
     let idempotency =
@@ -200,6 +205,7 @@ where
             },
             idempotency,
             aftermath_causality,
+            workflow_approval_authority,
         },
     )
 }
@@ -214,11 +220,13 @@ fn prepare_authorized_application_commit<Schema, Operation, Input, Scope>(
         provider,
         idempotency,
         aftermath_causality,
+        workflow_approval_authority,
     } = current;
     let authorization = match take_commit_authorization(application, &mut admission) {
         Ok(authorization) => authorization,
         Err(outcome) => return terminal(outcome),
-    };
+    }
+    .with_workflow_approval_authority(workflow_approval_authority);
     let Some(mutation_partition) = application.issue_application_mutation_partition() else {
         return terminal(denied(DenialStage::ProposalBinding));
     };

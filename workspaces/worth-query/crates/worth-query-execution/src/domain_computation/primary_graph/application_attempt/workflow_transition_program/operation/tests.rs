@@ -3,9 +3,8 @@ use std::sync::Arc;
 
 use worth_query_declaration::facade::application_schema::TypedMutationPreconditions;
 
-use super::{
-    operation_receipt_requires_recovery, receipt_identity, validate_operation_receipt_custody,
-};
+use super::operation_receipt_requires_recovery;
+use super::receipt::{receipt_identity, validate_operation_receipt_custody};
 use crate::domain_computation::application_aftermath::{
     safe_retry_recovery_handle, WorthQueryExternalDispatchRequest,
     WorthQueryExternalEffectTransport, WorthQueryExternalTransportOutcome,

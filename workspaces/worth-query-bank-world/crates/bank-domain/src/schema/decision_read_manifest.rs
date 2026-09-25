@@ -249,7 +249,7 @@ fn install_payment_operation_budgets(
             1_024,
         )
         .operation_decision_fact_budget(ApprovedBusinessPaymentAdvanceOperation::reference(), 1_024)
-        .operation_decision_fact_budget(ApprovePaymentOperation::reference(), 256)
+        .operation_decision_fact_budget(ApprovePaymentOperation::reference(), 1_024)
         .operation_decision_fact_budget(RejectPaymentOperation::reference(), 128)
         .operation_decision_fact_budget(ReverseJournalOperation::reference(), 256)
         .operation_projection_work_budget(ApplyOpeningFundingOperation::reference(), 4_096)

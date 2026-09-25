@@ -186,7 +186,7 @@ fn back_navigation_reuses_compatible_evidence_across_new_transition_occurrences(
 }
 
 #[test]
-fn evidence_join_rejects_completed_evidence_after_its_native_source_changes() {
+fn evidence_join_requires_new_evidence_after_its_native_source_changes() {
     let application = publish_workflow_on_first_program();
     let definition = match publish_definition(
         &application,
@@ -227,17 +227,19 @@ fn evidence_join_rejects_completed_evidence_after_its_native_source_changes() {
         )),
         DimensionVerdict::Performed(SEED_DIMENSION + 1)
     );
-    assert!(matches!(
-        advance_instance(&application, started.instance().clone(), 488),
-        Err(WorthQueryWorkflowAdvancePreparationDenial::TransitionPreparation(
-            WorkflowTransitionPreparationDenial::Attempt(attempt)
-        )) if attempt.kind()
-            == WorthQueryApplicationAttemptDenialKind::WorkflowAssessmentEvidenceMismatch
-    ));
+    match advance_instance(&application, started.instance().clone(), 488)
+        .expect("stale evidence must remain an unmet authored requirement")
+    {
+        WorkflowProgressOutcome::AwaitingEvidence(required) => {
+            assert_eq!(required.required_assessments(), 2);
+            assert_eq!(required.completed_assessments(), 0);
+        }
+        other => panic!("stale evidence incorrectly completed the join: {other:?}"),
+    }
 }
 
 #[test]
-fn evidence_join_rejects_completed_evidence_after_native_source_aba() {
+fn evidence_join_requires_new_evidence_after_native_source_aba() {
     let application = publish_workflow_on_first_program();
     let definition = match publish_definition(
         &application,
@@ -289,13 +291,15 @@ fn evidence_join_rejects_completed_evidence_after_native_source_aba() {
         DimensionVerdict::Performed(SEED_DIMENSION)
     );
 
-    assert!(matches!(
-        advance_instance(&application, started.instance().clone(), 529),
-        Err(WorthQueryWorkflowAdvancePreparationDenial::TransitionPreparation(
-            WorkflowTransitionPreparationDenial::Attempt(attempt)
-        )) if attempt.kind()
-            == WorthQueryApplicationAttemptDenialKind::WorkflowAssessmentEvidenceMismatch
-    ));
+    match advance_instance(&application, started.instance().clone(), 529)
+        .expect("ABA must leave the old evidence unmet despite equal values")
+    {
+        WorkflowProgressOutcome::AwaitingEvidence(required) => {
+            assert_eq!(required.required_assessments(), 2);
+            assert_eq!(required.completed_assessments(), 0);
+        }
+        other => panic!("ABA evidence incorrectly completed the join: {other:?}"),
+    }
 }
 
 #[test]

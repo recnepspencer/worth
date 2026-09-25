@@ -34,6 +34,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                 transition_identity_locator,
                 approval,
                 approval_identity,
+                approval_authentication,
                 replays,
                 ..
             } => (
@@ -41,7 +42,10 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                 transition_identity_locator,
                 *approval_identity,
                 approval.as_ref(),
-                replays,
+                approval_authentication
+                    .as_ref()
+                    .and_then(|authentication| authentication.trusted_replays())
+                    .unwrap_or(replays),
             ),
             Self::AwaitingAssessment(prepared) => (
                 &prepared.admitted.read_set().admission,

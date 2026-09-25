@@ -1,21 +1,27 @@
+use crate::domain_computation::primary_graph::application_installation::{
+    workflow_approval_authentication_intent, WorthQueryWorkflowApplicationRuntime,
+};
 use worth_query_declaration::facade::{
     application_capability::ApplicationCapabilityMarkerIdentity,
     application_program::ApplicationWorkflowSpec,
     application_schema::ApplicationOperationMarkerIdentity,
 };
-use worth_query_installation::facade::{
-    ApplicationSchema, WorthQueryInstalledApplicationWorkflowSpec,
-};
+use worth_query_installation::facade::ApplicationSchema;
 
 use super::*;
 
 #[path = "approval_decision/identity.rs"]
 mod identity;
 mod inputs;
+#[path = "approval_decision/materialization.rs"]
+mod materialization;
+mod operation_inputs;
 #[path = "approval_decision/projection.rs"]
 mod projection;
 #[path = "approval_decision/validation.rs"]
 mod validation;
+use materialization::materialize_decision;
+pub(super) use operation_inputs::observe_operation_approval_inputs;
 use validation::*;
 
 impl<Schema, Operation, Input, Scope>
@@ -36,7 +42,7 @@ where
         Program,
     >(
         mut self,
-        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec, Program>,
+        workflow: &WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>,
         instance: super::super::PublishedWorkflowInstanceRef,
         required: &RequiredWorkflowApproval,
         proposal: &super::super::PublishedWorkflowProposalRef,
@@ -49,6 +55,7 @@ where
         Capability: ApplicationCapabilityMarkerIdentity<Schema = Schema> + 'static,
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
+        let installed = workflow.workflow_spec();
         validate_request_binding::<Schema, Capability, Operation, _, _, _, _>(
             &self, installed, &instance, required, proposal,
         )?;
@@ -108,10 +115,12 @@ where
         let inputs = inputs::observe(
             &compiled,
             &layout,
+            &self.lease.layout,
+            self.admission.scope_entity_id(),
             &instance,
             observed.progress_basis.progress(),
             approval_node,
-            proposal,
+            Some(proposal),
             self.lease.handle(),
             self.lease.snapshot(),
             maximum_input_facts,
@@ -130,9 +139,9 @@ where
             .progress_basis
             .progress()
             .latest_transition(approval_node);
-        let settled = if latest
-            .is_some_and(|transition| transition.settlement().occurrence() > required.occurrence())
-        {
+        let older_settlement = latest
+            .is_some_and(|transition| transition.settlement().occurrence() > required.occurrence());
+        let settled = if older_settlement {
             self.lease.handle().with_runtime(|runtime| {
                 observed.ensure_history(
                     self.lease.handle(),
@@ -168,13 +177,36 @@ where
                 )
             })?;
             facts.append(&mut settlement_facts);
-            let selected = select_settled_replay_transition(
-                &compiled,
-                instance.entity_id(),
-                settled.settlement(),
-            )?;
-            if selected.node_path() != required.node_path()
-                || selected.identity() != required.transition_identity()
+            let (selected_path, selected_identity, probe_identity) = if older_settlement {
+                // Current back-edge counters cannot reconstruct an earlier
+                // occurrence. History is charged and observed on an exact
+                // basis above, including the published transition identity.
+                let historical = observed
+                    .transitions
+                    .iter()
+                    .find(|transition| transition.entity == settled.entity())
+                    .ok_or_else(|| affinity("settled approval is absent from observed history"))?;
+                let node = compiled
+                    .node(historical.settlement.node())
+                    .ok_or_else(|| affinity("settled approval node is absent"))?;
+                let bytes = decode_transition_identity(&historical.identity)
+                    .ok_or_else(|| affinity("settled approval identity is malformed"))?;
+                (node.path().to_owned(), historical.identity.clone(), bytes)
+            } else {
+                let selected = select_settled_replay_transition(
+                    &compiled,
+                    instance.entity_id(),
+                    settled.settlement(),
+                    observed.progress_basis.progress().back_edge_iterations(),
+                )?;
+                (
+                    selected.node_path().to_owned(),
+                    selected.identity().to_owned(),
+                    *selected.identity_bytes(),
+                )
+            };
+            if selected_path != required.node_path()
+                || selected_identity != required.transition_identity()
                 || settled.settlement().occurrence() != required.occurrence()
             {
                 return Err(affinity(
@@ -201,7 +233,7 @@ where
                 instance: instance.entity_id(),
                 approval: Some(approval_projection.clone()),
                 approval_identity: Some(meaning.identity),
-                replays: replays.with_probe_identity(*selected.identity_bytes()),
+                replays: replays.with_probe_identity(probe_identity),
                 denial: denial(
                     WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAlreadySettled,
                     required.node_path(),
@@ -279,7 +311,16 @@ where
             &inputs.currentness,
             required.node_path(),
         )?;
+        let authentication_intent = identity::authentication_intent(
+            &instance,
+            required,
+            proposal,
+            decision,
+            &inputs.evidence,
+            &inputs.currentness,
+        );
         let evidence_currentness = std::sync::Arc::from(inputs.currentness);
+        let signing_basis = std::sync::Arc::clone(&evidence_currentness);
         let admitted = admit_workflow_transition(
             self,
             selected,
@@ -288,87 +329,27 @@ where
             live_membership,
             false,
         );
-        materialize_decision(
+        let mut prepared = materialize_decision(
             &layout,
             compiled.program_revision().clone(),
             admitted,
             meaning,
             evidence_currentness,
             approval_projection,
-        )
-        .map(|prepared| prepared.with_replays(replays.with_probe_identity(replay_probe_identity)))
+        )?;
+        let authentication = publication::PreparedWorkflowApprovalAuthentication::pending(
+            workflow.authentication_owner().clone(),
+            authentication_intent,
+            signing_basis,
+            &prepared,
+        );
+        if let PreparedWorkflowAdvance::Transition {
+            approval_authentication,
+            ..
+        } = &mut prepared
+        {
+            *approval_authentication = Some(authentication);
+        }
+        Ok(prepared.with_replays(replays.with_probe_identity(replay_probe_identity)))
     }
-}
-
-fn materialize_decision<Schema, Operation, Input, Scope>(
-    layout: &crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
-    program_revision: worth_query_declaration::facade::application_program::ApplicationProgramRevision,
-    admitted: crate::domain_computation::primary_graph::workflow::instance::AdmittedWorkflowTransition<Schema, Operation, Input, Scope>,
-    meaning: crate::domain_computation::primary_graph::workflow::WorkflowApprovalMeaning,
-    evidence_currentness: std::sync::Arc<
-        [crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact],
-    >,
-    approval_projection: publication::PreparedWorkflowApprovalProjection,
-) -> Result<
-    PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
-    WorthQueryApplicationAttemptDenial,
->
-where
-    Schema: ApplicationSchema,
-{
-    let transition_identity = admitted.identity().to_owned();
-    let transition_identity_bytes = *admitted.identity_bytes();
-    let instance = admitted.instance();
-    let node_path = admitted.node_path().to_owned();
-    let mut demand = PlatformEffectDemand::default();
-    crate::domain_computation::primary_graph::workflow::visit_workflow_approval_facts(
-        layout,
-        &admitted,
-        &meaning,
-        |effect| demand.observe(&effect),
-    )?;
-    let reservation = admit_platform_effects(admitted.read_set(), demand)?;
-    let mut effects = Vec::new();
-    crate::domain_computation::primary_graph::workflow::visit_workflow_approval_facts(
-        layout,
-        &admitted,
-        &meaning,
-        |effect| {
-            effects.push(effect);
-            Ok::<(), WorthQueryApplicationAttemptDenial>(())
-        },
-    )?;
-    let validator_work_admission = reservation.materialize(&effects)?;
-    let progress_update = admitted.prepare_progress_update(meaning.decision.outcome(), None)?;
-    Ok(PreparedWorkflowAdvance::Transition {
-        program: WorthQueryApplicationEffectProgram {
-            read_set: admitted.into_read_set(),
-            effects,
-            emission_retained_bytes: 0,
-            emission_retained_bytes_ceiling: 0,
-            conditional_definition: None,
-            platform_mutation: true,
-            validator_work_admission,
-            output_correspondence: Default::default(),
-            retain_output_demand_observation: false,
-            retain_client_observation: false,
-            producer_required_invariants: &[],
-            output_currentness_facts: Some(evidence_currentness),
-        },
-        program_revision,
-        transition_identity,
-        transition_identity_bytes,
-        transition_identity_locator: layout.transition.identity.clone(),
-        assessment_identity_locator: layout.assessment_evidence.identity.clone(),
-        instance,
-        node_path,
-        assessment: None,
-        supporting_identity: None,
-        operation_receipt_identity: None,
-        progress_update: Some(progress_update),
-        terminal: false,
-        approval: Some(approval_projection),
-        approval_identity: Some(meaning.identity),
-        replays: Default::default(),
-    })
 }

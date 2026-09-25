@@ -18,13 +18,11 @@ use worth_query_host::facade::{
 use worth_query_installation::facade::WorthQueryInstalledWorkflowDefinitionContract;
 
 use super::super::{
-    dimension_entry::PART_IDENTITY,
+    dimension_entry::{ReviewedSetPartDimensionBinding, PART_IDENTITY},
     host::BoundedDimensionWorkflowRuntime,
-    operator_identity::{authenticate_operator, request_scope},
+    operator_identity::{authenticate_operator, block_on, request_scope},
     programs::DimensionProgramP0,
-    schema::{
-        BoundedDimensionSchema, PartDimensionConditionQuery, PartDimensionQuery, SetPartDimension,
-    },
+    schema::{BoundedDimensionSchema, PartDimensionConditionQuery, PartDimensionQuery},
 };
 use super::{
     ReviewedGeometryWorkflow, WorkflowAdvanceInput, WorkflowAdvanceIntent,
@@ -90,7 +88,7 @@ fn reviewed_geometry_definition_with_policy(
         .approval::<WorkflowApprovalCapability>("approval")
         .expect("the approval node is valid");
     let apply = builder
-        .operation::<SetPartDimension>("apply", true)
+        .operation_binding::<ReviewedSetPartDimensionBinding>("apply")
         .expect("the guarded operation node is valid");
     let completed = builder
         .terminal(completion_identity)

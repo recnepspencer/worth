@@ -126,6 +126,7 @@ where
             terminal: false,
             approval: None,
             approval_identity: None,
+            approval_authentication: None,
             replays: self.replays,
         })
     }

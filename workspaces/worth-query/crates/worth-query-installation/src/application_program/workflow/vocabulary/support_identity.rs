@@ -44,7 +44,16 @@ pub(super) fn derive(
     entries.extend(operations.iter().map(|operation| {
         fields(
             "operation",
-            &[operation.identifier, operation.input_type.as_str()],
+            &[
+                operation.identifier,
+                operation.input_type.as_str(),
+                operation.binding_identity,
+                if operation.requires_workflow_authority {
+                    "guarded"
+                } else {
+                    "direct"
+                },
+            ],
         )
     }));
     entries.extend(assessments.iter().map(|assessment| {

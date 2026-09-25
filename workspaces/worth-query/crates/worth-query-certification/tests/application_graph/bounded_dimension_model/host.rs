@@ -27,7 +27,8 @@ use super::assessment_output::{
 };
 use super::assessment_readiness::PartAssessmentReadiness;
 use super::dimension_entry::{
-    SetPartDimensionBinding, SetPartDimensionHandler, PART_IDENTITY, RELATED_PART_IDENTITY,
+    ReviewedSetPartDimensionBinding, ReviewedSetPartDimensionHandler, SetPartDimensionBinding,
+    SetPartDimensionHandler, PART_IDENTITY, RELATED_PART_IDENTITY,
 };
 use super::programs::{
     validated_changed_feature_program, validated_changed_operation_program,
@@ -42,22 +43,48 @@ use super::schema::{
     Part, PartDimensionField, PartIdentityField, PartPrincipalBinding,
 };
 use super::workflow::{
-    WorkflowAdvanceBinding, WorkflowAdvanceHandler, WorkflowApprovalBinding,
-    WorkflowApprovalHandler, WorkflowDefinitionAuthoringBinding,
-    WorkflowDefinitionAuthoringHandler, WorkflowInstanceStartBinding, WorkflowInstanceStartHandler,
+    ReviewRequirementBinding, ReviewRequirementHandler, WorkflowAdvanceBinding,
+    WorkflowAdvanceHandler, WorkflowApprovalBinding, WorkflowApprovalHandler,
+    WorkflowDefinitionAuthoringBinding, WorkflowDefinitionAuthoringHandler,
+    WorkflowInstanceStartBinding, WorkflowInstanceStartHandler,
 };
 
 /// The dimension every host seeds. It satisfies both installed rules, so the
 /// same bootstrap is lawful whichever program the host starts on.
 pub const SEED_DIMENSION: u64 = 7;
 
+#[cfg(test)]
+#[path = "host/tests.rs"]
+mod tests;
+
 pub type BoundedDimensionRuntime<Initial> =
     WorthQueryProgramApplicationRuntime<BoundedDimensionSchema, Initial>;
-pub type BoundedDimensionWorkflowRuntime = WorthQueryWorkflowApplicationRuntime<
-    BoundedDimensionSchema,
-    super::workflow::ReviewedGeometryWorkflow,
-    DimensionProgramP0,
->;
+pub struct BoundedDimensionWorkflowRuntime {
+    pub(super) workflow: WorthQueryWorkflowApplicationRuntime<
+        BoundedDimensionSchema,
+        super::workflow::ReviewedGeometryWorkflow,
+        DimensionProgramP0,
+    >,
+    pub(super) authentication: super::workflow::CertificationAuthenticationOwner,
+}
+
+impl BoundedDimensionWorkflowRuntime {
+    pub fn authentication(&self) -> &super::workflow::CertificationAuthenticationOwner {
+        &self.authentication
+    }
+}
+
+impl std::ops::Deref for BoundedDimensionWorkflowRuntime {
+    type Target = WorthQueryWorkflowApplicationRuntime<
+        BoundedDimensionSchema,
+        super::workflow::ReviewedGeometryWorkflow,
+        DimensionProgramP0,
+    >;
+
+    fn deref(&self) -> &Self::Target {
+        &self.workflow
+    }
+}
 
 impl WorthQueryApplicationContribution<BoundedDimensionSchema> for BoundedDimensionContribution {
     type Configuration = ();
@@ -86,6 +113,10 @@ impl WorthQueryApplicationContribution<BoundedDimensionSchema> for BoundedDimens
         )?;
         setup
             .handler::<SetPartDimensionBinding, _>(SetPartDimensionHandler)
+            .and_then(|()| {
+                setup.handler::<ReviewedSetPartDimensionBinding, _>(ReviewedSetPartDimensionHandler)
+            })
+            .and_then(|()| setup.handler::<ReviewRequirementBinding, _>(ReviewRequirementHandler))
             .and_then(|()| setup.handler::<PartAssessmentBinding, _>(PartAssessmentHandler))
             .and_then(|()| setup.producer::<PartAssessmentProducer>(PartAssessmentProvider))
             .and_then(|()| setup.conditional::<PartAssessmentReadiness>(()))

@@ -8,12 +8,14 @@ publish = false
 
 [dependencies]
 bank-domain.workspace = true
+getrandom = "0.3"
 worth-foundational.workspace = true
 worth-query-host.workspace = true
 
 [dev-dependencies]
 bank-external-rail.workspace = true
 tokio.workspace = true
+worth-query-host = { workspace = true, features = ["test-durability-faults"] }
 
 [lints]
 workspace = true

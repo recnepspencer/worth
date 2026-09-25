@@ -51,7 +51,7 @@ pub use validation::{
     ApplicationWorkflowValidationDenialKind, ApplicationWorkflowValidationWork,
 };
 pub use vocabulary::{
-    ApplicationWorkflowApprovalRef, ApplicationWorkflowAssessmentRef,
-    ApplicationWorkflowConditionRef, ApplicationWorkflowOperationRef, ApplicationWorkflowSpec,
-    ApplicationWorkflowSubjectSelector,
+    ApplicationWorkflowApprovalRef, ApplicationWorkflowAssessmentApplicability,
+    ApplicationWorkflowAssessmentRef, ApplicationWorkflowConditionRef,
+    ApplicationWorkflowOperationRef, ApplicationWorkflowSpec, ApplicationWorkflowSubjectSelector,
 };

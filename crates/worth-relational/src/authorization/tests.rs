@@ -19,6 +19,7 @@ use super::{
 };
 
 mod anchored_paths;
+mod durable_dependencies;
 mod exact_adjacency;
 mod freshness;
 mod strictly_greater;

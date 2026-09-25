@@ -26,6 +26,7 @@ pub use recovery::{
 pub enum WorthQueryWorkflowOperationBindingDenial {
     RuntimeMismatch,
     RequirementMismatch,
+    AuthorityUnavailable,
 }
 
 #[derive(Debug)]
@@ -84,6 +85,40 @@ where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
         Program: ApplicationProgramDefinition<Schema>,
     {
+        self.validate_workflow_operation_binding(workflow, required)?;
+        if !required.authority_slot().was_issued() {
+            return Err(WorthQueryWorkflowOperationBindingDenial::AuthorityUnavailable);
+        }
+        Ok(self.bind_workflow_transition(
+            *required.transition_identity_bytes(),
+            required.authority_slot(),
+        ))
+    }
+
+    /// Binds only the exact performed operation for outbox recovery. This does
+    /// not issue authority to run a new guarded mutation.
+    pub fn for_workflow_operation_recovery<Spec, Program>(
+        self,
+        workflow: &WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>,
+        required: &RequiredWorkflowOperation,
+    ) -> Result<Self, WorthQueryWorkflowOperationBindingDenial>
+    where
+        Spec: ApplicationWorkflowSpec<Schema = Schema>,
+        Program: ApplicationProgramDefinition<Schema>,
+    {
+        self.validate_workflow_operation_binding(workflow, required)?;
+        Ok(self.bind_workflow_recovery_transition(*required.transition_identity_bytes()))
+    }
+
+    fn validate_workflow_operation_binding<Spec, Program>(
+        &self,
+        workflow: &WorthQueryWorkflowApplicationRuntime<Schema, Spec, Program>,
+        required: &RequiredWorkflowOperation,
+    ) -> Result<(), WorthQueryWorkflowOperationBindingDenial>
+    where
+        Spec: ApplicationWorkflowSpec<Schema = Schema>,
+        Program: ApplicationProgramDefinition<Schema>,
+    {
         if !std::ptr::eq(
             self.application_runtime(),
             workflow.program_runtime().runtime(),
@@ -92,13 +127,17 @@ where
         }
         if required.operation()
             != <<Intent as ApplicationMutationIntent<Schema>>::Binding as ApplicationMutationBinding<Schema>>::Operation::IDENTIFIER
+            || required.binding()
+                != Some(<<Intent as ApplicationMutationIntent<Schema>>::Binding as ApplicationMutationBinding<Schema>>::IDENTITY)
+            || !<<Intent as ApplicationMutationIntent<Schema>>::Binding as ApplicationMutationBinding<Schema>>::REQUIRES_WORKFLOW_AUTHORITY
             || required.input_type()
                 != <<Intent as ApplicationMutationIntent<Schema>>::Binding as ApplicationMutationBinding<Schema>>::InputBinding::IDENTITY.as_str()
             || required.input_identity() != &self.input_identity()
+            || required.branch() != self.product_branch()
         {
             return Err(WorthQueryWorkflowOperationBindingDenial::RequirementMismatch);
         }
-        Ok(self.bind_workflow_transition(*required.transition_identity_bytes()))
+        Ok(())
     }
 }
 
@@ -130,6 +169,7 @@ where
         Binding: ApplicationMutationBinding<Schema>,
     {
         if required.operation() != Binding::Operation::IDENTIFIER
+            || required.binding() != Some(Binding::IDENTITY)
             || required.input_type() != Binding::InputBinding::IDENTITY.as_str()
         {
             return Err(WorthQueryWorkflowOperationAcceptanceDenial::RequirementMismatch);
@@ -188,6 +228,7 @@ where
         Binding: ApplicationMutationBinding<Schema>,
     {
         if required.operation() != Binding::Operation::IDENTIFIER
+            || required.binding() != Some(Binding::IDENTITY)
             || required.input_type() != Binding::InputBinding::IDENTITY.as_str()
         {
             return Err(WorthQueryWorkflowOperationAcceptanceDenial::RequirementMismatch);
@@ -246,11 +287,13 @@ where
 }
 
 fn same_requirement(left: &RequiredWorkflowOperation, right: &RequiredWorkflowOperation) -> bool {
-    left.instance() == right.instance()
+    left.branch() == right.branch()
+        && left.instance() == right.instance()
         && left.node_path() == right.node_path()
         && left.transition_identity() == right.transition_identity()
         && left.occurrence() == right.occurrence()
         && left.operation() == right.operation()
+        && left.binding() == right.binding()
         && left.input_type() == right.input_type()
         && left.input_identity() == right.input_identity()
 }

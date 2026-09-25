@@ -123,7 +123,7 @@ pub(super) fn install_members(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_decision_fact_budget(WorkflowAdvanceOperation::reference(), 512)
+        .operation_decision_fact_budget(WorkflowAdvanceOperation::reference(), 2048)
         .operation_projection_work_budget(WorkflowAdvanceOperation::reference(), 512)
         .operation_read_field(
             WorkflowAdvanceOperation::reference(),

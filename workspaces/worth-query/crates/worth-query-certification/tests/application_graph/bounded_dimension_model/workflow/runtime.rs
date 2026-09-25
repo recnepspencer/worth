@@ -4,14 +4,18 @@ use worth_query_installation::facade::{
 };
 
 use super::super::{
-    dimension_entry::{PartDimensionConditionQueryBinding, PartDimensionQueryBinding},
+    dimension_entry::{
+        PartDimensionConditionQueryBinding, PartDimensionQueryBinding,
+        ReviewedSetPartDimensionBinding,
+    },
     host::{BoundedDimensionRuntime, BoundedDimensionWorkflowRuntime},
     programs::DimensionProgramP0,
-    schema::{BoundedDimensionSchema, SetPartDimension, SetPartDimensionInput},
+    schema::BoundedDimensionSchema,
 };
 use super::{
-    ReviewedGeometryWorkflow, WorkflowAdvanceCapability, WorkflowAdvanceInput,
-    WorkflowAdvanceOperation, WorkflowApprovalCapability, WorkflowDefinitionAuthoringCapability,
+    install_certification_authentication, ReviewedGeometryWorkflow, WorkflowAdvanceCapability,
+    WorkflowAdvanceInput, WorkflowAdvanceOperation, WorkflowApprovalCapability,
+    WorkflowDefinitionAuthoringBinding, WorkflowDefinitionAuthoringCapability,
     WorkflowDefinitionAuthoringInput, WorkflowDefinitionAuthoringOperation,
     WorkflowInstanceStartCapability, WorkflowInstanceStartInput, WorkflowInstanceStartOperation,
 };
@@ -31,9 +35,9 @@ pub fn retain_workflow_with_resources(
         ReviewedGeometryWorkflow,
         DimensionProgramP0,
     >::begin(application.runtime().installed_schema(), application.installed_program(), resources)
-    .operation::<WorkflowDefinitionAuthoringOperation, WorkflowDefinitionAuthoringInput>()
+    .operation::<WorkflowDefinitionAuthoringBinding>()
     .expect("the workflow operation is installed")
-    .operation::<SetPartDimension, SetPartDimensionInput>()
+    .operation::<ReviewedSetPartDimensionBinding>()
     .expect("the workflow apply operation is installed")
     .assessment::<PartDimensionQueryBinding>()
     .expect("the workflow assessment is installed")
@@ -49,9 +53,15 @@ pub fn retain_workflow_with_resources(
     .expect("the workflow advance capability is installed")
     .finish()
     .expect("the workflow vocabulary is valid");
-    application
-        .retain_workflow_spec(workflow)
-        .expect("the workflow vocabulary belongs to the runtime")
+    let authentication =
+        install_certification_authentication(application.runtime().installed_schema());
+    let workflow = application
+        .retain_workflow_spec(workflow, authentication.signing_owner())
+        .expect("the workflow vocabulary belongs to the runtime");
+    BoundedDimensionWorkflowRuntime {
+        workflow,
+        authentication,
+    }
 }
 
 fn workflow_resources() -> WorthQueryApplicationWorkflowResourceCeiling {

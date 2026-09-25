@@ -35,6 +35,38 @@ fn bounded_retry_is_the_only_valid_back_edge() -> Result<(), Box<dyn std::error:
 }
 
 #[test]
+fn back_navigation_cannot_be_authored_as_a_control_result() -> Result<(), Box<dyn std::error::Error>>
+{
+    let mut builder = ApplicationWorkflowDefinitionBuilder::<ReviewedGeometry>::new(
+        "not-an-authored-back-edge",
+        limits(),
+    )?;
+    let proposal = builder.operation::<ProposeChange>("proposal", false)?;
+    let terminal = builder.terminal("completed")?;
+    builder
+        .start(&proposal)
+        .control(
+            &proposal,
+            ApplicationWorkflowControlOutcome::Completed,
+            &terminal,
+        )
+        .control(
+            &proposal,
+            ApplicationWorkflowControlOutcome::NavigatedBack,
+            &terminal,
+        );
+    let denial = match builder.finish()?.validate() {
+        Ok(_) => panic!("Back is an owner action, not an authored control result"),
+        Err(denial) => denial,
+    };
+    assert_eq!(
+        denial.kind(),
+        ApplicationWorkflowValidationDenialKind::UnexpectedControlOutcome
+    );
+    Ok(())
+}
+
+#[test]
 fn retry_requires_a_nonzero_bound_and_reason() {
     assert!(ApplicationWorkflowRetry::new(
         ApplicationWorkflowControlOutcome::Completed,

@@ -118,31 +118,29 @@ impl WorthQueryExecutionInstallationAuthority {
                 "Relational installed an invariant inventory outside the application catalog",
             ));
         }
-        let (recovered_relational_authority, recovered_checkpoint_restore_work) = if let Some(
-            checkpoint,
-        ) = checkpoint
-        {
-            let (outcome, authority) = relational_runtime
-                .durability_recovery()
-                .restore_native_checkpoint_with_authority(&checkpoint.native)
-                .map_err(|error| {
-                    primary_graph_denial(
+        let (recovered_relational_authority, recovered_checkpoint_restore_work) =
+            if let Some(checkpoint) = checkpoint {
+                let (outcome, authority) = relational_runtime
+                    .durability_recovery()
+                    .restore_native_checkpoint_with_authority(&checkpoint.native)
+                    .map_err(|error| {
+                        primary_graph_denial(
                         WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
                         format!("native checkpoint recovery denied: {error:?}"),
                     )
-                })?;
-            invariant_installation_receipt = relational_runtime
-                .readmit_recovered_initial_schema_installation(invariant_installation_receipt)
-                .map_err(|error| {
-                    primary_graph_denial(
+                    })?;
+                invariant_installation_receipt = relational_runtime
+                    .readmit_recovered_initial_schema_installation(invariant_installation_receipt)
+                    .map_err(|error| {
+                        primary_graph_denial(
                         WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
                         format!("recovered schema authority denied: {error}"),
                     )
-                })?;
-            (Some(authority), outcome.checkpoint_restore_work)
-        } else {
-            (None, None)
-        };
+                    })?;
+                (Some(authority), outcome.checkpoint_restore_work)
+            } else {
+                (None, None)
+            };
         let graph = checkpoint::primary_graph_for_installation(
             runtime.authority_identity(),
             installed_schema.binding_identity(),

@@ -26,6 +26,18 @@ where
         self.program_support.is_some()
     }
 
+    pub(in crate::domain_computation) fn direct_operation_commit_denial<Operation: 'static>(
+        &self,
+    ) -> Option<WorthQueryApplicationCommitDenial> {
+        if self.operation_requires_workflow_authority::<Operation>() {
+            Some(WorthQueryApplicationCommitDenial::workflow_authority_required())
+        } else if self.operation_requires_application_program::<Operation>() {
+            Some(WorthQueryApplicationCommitDenial::application_program_required())
+        } else {
+            None
+        }
+    }
+
     pub fn compare_and_commit_application<Operation, Input, Scope>(
         &self,
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
@@ -35,14 +47,8 @@ where
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        if self.has_installed_application_program()
-            || self
-                .program_required_operations
-                .contains(&std::any::TypeId::of::<Operation>())
-        {
-            return WorthQueryApplicationCommitOutcome::Denied(
-                WorthQueryApplicationCommitDenial::application_program_required(),
-            );
+        if let Some(denial) = self.direct_operation_commit_denial::<Operation>() {
+            return WorthQueryApplicationCommitOutcome::Denied(denial);
         }
         self.compare_and_commit_application_with_output_observation(program, idempotency, false)
     }

@@ -20,6 +20,7 @@ struct DelegationFrame {
     parent_grant: worth_relational::facade::identity::EntityId,
     discovery: worth_relational::facade::authorization::RelationalAuthorizationObservationEvidence,
     transition: worth_relational::facade::authorization::RelationalAuthorizationObservationEvidence,
+    status_revision: worth_relational::facade::runtime::RelationalFieldRevision,
 }
 
 pub(in crate::domain_computation::authorization) struct WorthQueryCapabilityObservationPermit(());

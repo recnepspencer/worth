@@ -10,7 +10,8 @@ use crate::domain_computation::primary_graph::workflow::instance::progression::{
 
 mod selection;
 pub(in crate::domain_computation::primary_graph) use selection::{
-    select_current_transition, select_proposal_replay_transition, select_proposal_transition,
+    select_assessment_collection, select_current_transition, select_navigation_back_transition,
+    select_proposal_replay_transition, select_proposal_transition,
     select_settled_replay_transition, select_terminal_transition, SelectedWorkflowApproval,
     SelectedWorkflowAssessment, SelectedWorkflowCondition, SelectedWorkflowOperation,
     SelectedWorkflowTransition, SelectedWorkflowTransitionKind,
@@ -83,6 +84,29 @@ impl<Schema, Operation, Input, Scope> AdmittedWorkflowTransition<Schema, Operati
             operation_receipt_identity,
             self.identity.clone(),
             self.identity_bytes,
+            self.node_path.clone(),
+        )
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn is_assessment_collection(&self) -> bool {
+        self.progress_basis
+            .as_ref()
+            .is_some_and(|basis| basis.progress().head() != self.node)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn prepare_assessment_collection_update(
+        &self,
+    ) -> Result<PreparedWorkflowProgressUpdate, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial>{
+        self.progress_basis.as_ref().ok_or_else(|| {
+            crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial::new(
+                crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenialKind::WorkflowInstanceAffinityMismatch,
+                "assessment collection progress basis is unavailable",
+            )
+        })?.prepare_assessment_collection(
+            self.node,
+            self.occurrence,
+            self.identity.clone(),
+            *self.identity_bytes(),
             self.node_path.clone(),
         )
     }
