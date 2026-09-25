@@ -138,13 +138,23 @@ where
     where
         Demand: worth_query_execution::facade::application_contribution::WorthQueryApplicationOutputDemand<Schema>,
     {
-        let request = self.into_assessment_demand(demand)?;
-        if request.required() != expected {
+        let current = match &self.prepared {
+            PreparedWorkflowAdvance::AwaitingAssessment(prepared) => prepared.required(),
+            PreparedWorkflowAdvance::Transition { .. }
+            | PreparedWorkflowAdvance::AwaitingCondition(_)
+            | PreparedWorkflowAdvance::AwaitingOperation(_)
+            | PreparedWorkflowAdvance::AwaitingEvidence { .. }
+            | PreparedWorkflowAdvance::AwaitingApproval { .. }
+            | PreparedWorkflowAdvance::ReplayOnly { .. } => return Err(
+                super::super::WorthQueryWorkflowAssessmentDemandPreparationDenial::not_assessment(),
+            ),
+        };
+        if current != expected {
             return Err(
                 super::super::WorthQueryWorkflowAssessmentDemandPreparationDenial::requirement_mismatch(),
             );
         }
-        Ok(request)
+        self.into_assessment_demand(demand)
     }
 
     pub fn accept_assessment<Query>(
