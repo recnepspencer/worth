@@ -12,7 +12,7 @@ use worth_query_host::facade::{
     declaration::application_program::{
         ApplicationWorkflowComponentLimits, ApplicationWorkflowControlOutcome,
         ApplicationWorkflowDefinitionBuilder, ApplicationWorkflowDefinitionLimits,
-        ValidatedWorkflowDefinition,
+        AuthoredWorkflowDefinition, ValidatedWorkflowDefinition,
     },
 };
 use worth_query_installation::facade::WorthQueryInstalledWorkflowDefinitionContract;
@@ -207,6 +207,12 @@ pub fn proposal_terminal_definition() -> ValidatedWorkflowDefinition<ReviewedGeo
 }
 
 pub fn condition_terminal_definition() -> ValidatedWorkflowDefinition<ReviewedGeometryWorkflow> {
+    condition_terminal_draft()
+        .validate()
+        .expect("the condition definition is valid")
+}
+
+pub fn condition_terminal_draft() -> AuthoredWorkflowDefinition<ReviewedGeometryWorkflow> {
     let mut builder = ApplicationWorkflowDefinitionBuilder::<ReviewedGeometryWorkflow>::new(
         "condition-terminal",
         definition_limits(),
@@ -245,8 +251,6 @@ pub fn condition_terminal_definition() -> ValidatedWorkflowDefinition<ReviewedGe
     builder
         .finish()
         .expect("the condition definition is complete")
-        .validate()
-        .expect("the condition definition is valid")
 }
 
 pub fn repeated_proposal_definition() -> ValidatedWorkflowDefinition<ReviewedGeometryWorkflow> {

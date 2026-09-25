@@ -31,6 +31,8 @@ mod workflow_navigation;
 mod workflow_ordinary;
 #[path = "application_graph/workflow_ordinary_component.rs"]
 mod workflow_ordinary_component;
+#[path = "application_graph/workflow_ordinary_control.rs"]
+mod workflow_ordinary_control;
 #[path = "application_graph/workflow_progress_retention.rs"]
 mod workflow_progress_retention;
 #[path = "application_graph/workflow_proposal.rs"]
