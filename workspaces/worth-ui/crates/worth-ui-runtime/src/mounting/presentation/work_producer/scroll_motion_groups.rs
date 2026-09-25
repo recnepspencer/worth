@@ -314,6 +314,9 @@ mod sampling;
 pub(super) use acceptance::UiScrollGroupMotionUpdate;
 #[path = "scroll_motion_groups/chrome_geometry.rs"]
 mod chrome_geometry;
+#[cfg(worth_ui_compile_probe)]
+#[path = "scroll_motion_groups/compile_probe.rs"]
+mod compile_probe;
 #[cfg(test)]
 #[path = "scroll_motion_groups/composition_tests.rs"]
 mod composition_tests;

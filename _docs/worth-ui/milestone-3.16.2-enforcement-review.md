@@ -4,8 +4,9 @@ The enforcement section of [milestone 3.16.2](milestone-3.16.2.md) has
 boundary-check forbid raw coordinate representations outside declared edges
 in the covered modules. This record covers that rule: the conversion it needed
 first, how the rule reads source, the edges it admits, and the tool debt found
-along the way. The constructor and `Default` rules, the compile-fail proofs,
-the interleaving model, and the Scroll regression proofs are separate phases.
+along the way. The [construction review](milestone-3.16.2-enforcement-construction.md)
+covers the constructor and `Default` rules and the compile-fail proofs. The
+interleaving model and the Scroll regression proofs are separate phases.
 
 ## Platform points are typed
 

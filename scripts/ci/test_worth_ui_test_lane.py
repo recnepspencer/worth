@@ -80,6 +80,12 @@ class WorthUiTestLaneTests(TestCase):
         self.assertEqual(command[0], lane_runner.sys.executable)
         self.assertTrue(command[1].endswith("run_worth_ui_compile_contracts.py"))
 
+    def test_compile_contracts_also_run_the_in_crate_probes(self) -> None:
+        command = lane_runner.commands_for("compile-contracts")[1]
+
+        self.assertEqual(command[0], lane_runner.sys.executable)
+        self.assertTrue(command[1].endswith("run_worth_ui_compile_probes.py"))
+
     def test_full_lane_retains_every_independent_proof_family(self) -> None:
         commands = lane_runner.commands_for("full")
         rendered = [" ".join(command) for command in commands]

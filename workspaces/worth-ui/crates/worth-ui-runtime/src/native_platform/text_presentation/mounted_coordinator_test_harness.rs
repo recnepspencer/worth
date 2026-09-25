@@ -142,6 +142,10 @@ impl UiGlyphRasterBatchSink for AcceptingRasterSink {
     }
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "the test host acknowledges the presentation it performed"
+)]
 fn presented_outcome(view: &UiMountedFrameConsumptionView<'_>) -> UiHostSurfacePresentationOutcome {
     UiHostSurfacePresentationOutcome::Presented(view.acknowledge_presented(
         UiHostSurfacePresentationMode::NativeDisplay,

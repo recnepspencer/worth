@@ -966,3 +966,156 @@ edges = [
   { path = "src/native_application/layout.rs", items = ["resolve_axis"], kind = "committed-layout", reason = "Pulse resolves the committed allocation it owns" },
   { path = "src/observation_contract/visual_value_projection.rs", items = ["bits"], kind = "serialization", reason = "observed visual values are compared as their bit patterns" },
 ]
+
+[[truth_type_denials]]
+crate_root = "workspaces/worth-ui/crates/worth-ui-runtime"
+guidance = "Milestone 3.16.2 requirements 1-3: construct presented geometry and the presented-frame witness through their owners, and name a lifecycle state's variant where it is built; declared mints live in road1.toml [[truth_type_denials]]"
+sealed = [
+  { name = "UiPublishedRect", requirement = 1, owners = ["src/mounting/presentation/truth_geometry"] },
+  { name = "UiAcceptedRect", requirement = 1, owners = ["src/mounting/presentation/truth_geometry"] },
+  { name = "UiDisplayedRect", requirement = 1, owners = ["src/mounting/presentation/truth_geometry"] },
+  { name = "UiDisplayedScrollOffset", requirement = 1, owners = ["src/mounting/presentation/truth_geometry"] },
+  { name = "UiScrollPoseShift", requirement = 1, owners = ["src/mounting/presentation/truth_geometry"] },
+  { name = "UiPlatformPoint", requirement = 1, owners = ["src/mounting/presentation/truth_geometry"] },
+  { name = "UiPublishedToAcceptedMap", requirement = 1, owners = ["src/mounting/presentation/truth_geometry"] },
+  { name = "UiPublishedMap", requirement = 1, owners = ["src/mounting/presentation/truth_geometry"] },
+  { name = "UiTrackGeometry", requirement = 1, owners = ["src/mounting/presentation/motion_sampling"] },
+  { name = "UiTrackSamplePlace", requirement = 1, owners = ["src/mounting/presentation/motion_sampling"] },
+  { name = "UiTrackCurvePoint", requirement = 1, owners = ["src/mounting/presentation/motion_sampling"] },
+  { name = "UiTrackCurveSpan", requirement = 1, owners = ["src/mounting/presentation/motion_sampling"] },
+  { name = "UiPresentationSampledClipGeometry", requirement = 1, owners = ["src/mounting/presentation/motion_sampling"] },
+  { name = "UiPresentationMotionDamageRegion", requirement = 1, owners = ["src/mounting/presentation/motion_sampling"] },
+  { name = "UiPresentedHitRect", requirement = 1, owners = ["src/mounting/retention/interaction_basis.rs", "src/mounting/retention/interaction_basis"] },
+  { name = "UiPresentedPortalBounds", requirement = 1, owners = ["src/runtime/portal/placement.rs"] },
+  { name = "UiScrollGroupBind", requirement = 1, owners = ["src/mounting/presentation/work_producer/scroll_motion_groups.rs", "src/mounting/presentation/work_producer/scroll_motion_groups"] },
+  { name = "UiPublishedGroupOffset", requirement = 1, owners = ["src/mounting/presentation/work_producer/scroll_motion_groups.rs", "src/mounting/presentation/work_producer/scroll_motion_groups"] },
+  { name = "UiDisplayedGroupOffset", requirement = 1, owners = ["src/mounting/presentation/work_producer/scroll_motion_groups.rs", "src/mounting/presentation/work_producer/scroll_motion_groups"] },
+  { name = "UiAcceptedGroupOffset", requirement = 1, owners = ["src/mounting/presentation/work_producer/scroll_motion_groups.rs", "src/mounting/presentation/work_producer/scroll_motion_groups"] },
+  { name = "UiGroupStanding", requirement = 1, owners = ["src/mounting/presentation/work_producer/scroll_motion_groups.rs", "src/mounting/presentation/work_producer/scroll_motion_groups"] },
+  { name = "UiBoundGroupStanding", requirement = 1, owners = ["src/mounting/presentation/work_producer/scroll_motion_groups.rs", "src/mounting/presentation/work_producer/scroll_motion_groups"] },
+  { name = "UiPublishedToAcceptedTranslation", requirement = 1, owners = ["src/mounting/presentation/work_producer/scroll_motion_groups.rs", "src/mounting/presentation/work_producer/scroll_motion_groups"] },
+  { name = "UiDisplayedToAcceptedTranslation", requirement = 1, owners = ["src/mounting/presentation/work_producer/scroll_motion_groups.rs", "src/mounting/presentation/work_producer/scroll_motion_groups"] },
+  { name = "UiDisplayedCommandTranslation", requirement = 1, owners = ["src/mounting/presentation/work_producer/scroll_motion_groups.rs", "src/mounting/presentation/work_producer/scroll_motion_groups"] },
+  { name = "UiAcceptedCommandTranslation", requirement = 1, owners = ["src/mounting/presentation/work_producer/scroll_motion_groups.rs", "src/mounting/presentation/work_producer/scroll_motion_groups"] },
+  { name = "UiPresentedSurfaceWitness", requirement = 3, owners = ["src/mounting/presentation/presented_surface.rs", "src/mounting/presentation/presented_surface"] },
+  { name = "UiDisplayedSurfaceBasis", requirement = 3, owners = ["src/mounting/presentation/presented_surface.rs", "src/mounting/presentation/presented_surface"] },
+]
+mints = [
+  { call = "UiPublishedRect::from_committed_box", callers = [
+    { path = "src/facade/entry/active_application_session/scroll_accepted_sample_settlement.rs", items = ["WorthUiActiveApplicationSession::scroll_settlement_owner"] },
+    { path = "src/mounting/projection/frame_storage/portal_content_extent.rs", items = ["UiMountedProjectionFrame::portal_content_extent"] },
+    { path = "src/mounting/retention/interaction_basis.rs", items = ["UiPresentedHitTestRow::committed", "UiPresentedHitTestRow::from_mounted"] },
+    { path = "src/runtime/interaction/targeting/presented_geometry.rs", items = ["UiPresentedInteractionGeometry::for_test_with_components", "UiPresentedViewportGeometry::from_current_interaction", "UiPresentedViewportGeometry::for_test"] },
+  ], reason = "committed layout is published where the committed frame is read: a canonical committed box becomes published geometry" },
+  { call = "UiPublishedRect::from_committed_components", callers = [
+    { path = "src/runtime/motion/scale_certification.rs", items = ["geometry"] },
+    { path = "src/runtime/portal/placement.rs", items = ["UiPresentedPortalBounds::new"] },
+    { path = "src/runtime/scroll/transition/motion_request.rs", items = ["scroll_content_geometry"] },
+  ], reason = "committed layout components are published as Portal bounds, Scroll content, and certification scale geometry" },
+  { call = "UiPublishedRect::translated", clippy = "worth_ui_runtime::mounting::presentation::truth_geometry::published::UiPublishedRect::translated", callers = [
+    { path = "src/facade/entry/active_application_session/portal_motion.rs", items = ["portal_entrance_start_geometry"] },
+  ], reason = "a Portal entrance starts at its published rect shifted by the entrance offset" },
+  { call = "UiPublishedRect::adopting", callers = [
+    { path = "src/mounting/retention/interaction_basis/hit_rect.rs", items = ["UiPresentedHitRect::adopted"] },
+  ], reason = "a hit rect adopts the published rect its prepared entrance maps to" },
+  { call = "UiPublishedMap::between", callers = [
+    { path = "src/mounting/retention/interaction_basis.rs", items = ["UiPresentedHitTestRow::with_prepared_entrance"] },
+  ], reason = "a prepared entrance maps its committed rect onto the entrance start" },
+  { call = "UiPublishedToAcceptedMap::of_sample", callers = [
+    { path = "src/mounting/retention/interaction_basis.rs", items = ["UiPresentedHitTestRow::with_motion_sample"] },
+  ], reason = "a hit row maps published geometry through the accepted Motion sample it holds" },
+  { call = "UiAcceptedRect::sampled", callers = [
+    { path = "src/mounting/presentation/motion_sampling/track_geometry.rs", items = ["UiTrackSamplePlace::accepted_on"] },
+  ], reason = "the Motion sampler yields accepted geometry from a sampled track" },
+  { call = "UiAcceptedRect::holding", callers = [
+    { path = "src/mounting/presentation/motion_sampling/track_geometry.rs", items = ["UiTrackSamplePlace::accepted_on"] },
+  ], reason = "the Motion sampler yields accepted geometry for a track holding its place" },
+  { call = "UiPresentationSampledClipGeometry::from_presented_components", callers = [
+    { path = "src/mounting/presentation/work_producer/motion_sample.rs", items = ["clip_geometry"] },
+  ], reason = "a sampled paint command's damage is clipped to its committed clip bounds" },
+  { call = "UiDisplayedRect::displayed", callers = [
+    { path = "src/facade/entry/active_application_session/scroll_accepted_sample_settlement.rs", items = ["WorthUiActiveApplicationSession::settle_accepted_scroll_sample_inner", "WorthUiActiveApplicationSession::accepted_scroll_sample_settled"] },
+    { path = "src/mounting/presentation/work_producer/scroll_motion_groups/acceptance.rs", items = ["UiScrollGroupMotionUpdate::validate"] },
+    { path = "src/mounting/retention/interaction_basis.rs", items = ["UiPresentedHitTestRow::with_motion_sample"] },
+    { path = "src/mounting/session_state/motion_sampling.rs", items = ["WorthUiMountedSessionState::committed_motion_geometry_for_target"] },
+  ], reason = "accepted geometry becomes displayed only against a displayed basis an admitted witness proved" },
+  { call = "UiDisplayedScrollOffset::from_rest", callers = [
+    { path = "src/facade/entry/active_application_session/scroll_accepted_sample_settlement.rs", items = ["UiScrollSettlementOwner::settle"] },
+  ], reason = "a Scroll settlement rests its displayed offset where the accepted sample settles" },
+  { call = "UiPlatformPoint::from_host_position", callers = [
+    { path = "src/facade/entry/active_application_session/scroll_chrome_ingress.rs", items = ["chrome_point", "WorthUiActiveApplicationSession::answer_scroll_chrome_intent"] },
+    { path = "src/facade/entry/portal_dismissal/trigger.rs", items = ["dismissal_trigger"] },
+    { path = "src/runtime/interaction/presentation_refresh.rs", items = ["affected"] },
+    { path = "src/runtime/interaction/targeting/presented_frame.rs", items = ["resolve_presented_target"] },
+  ], reason = "a platform event's host position becomes a platform point where the event is read" },
+  { call = "UiScrollPoseShift::between", callers = [
+    { path = "src/mounting/occurrence_geometry/state/scroll.rs", items = ["UiMountedOccurrenceGeometryState::prepare_scroll_pose"] },
+  ], reason = "occurrence geometry measures the shift between two Scroll poses it prepared" },
+  { call = "UiScrollPoseShift::none", callers = [
+    { path = "src/mounting/occurrence_geometry/state/scroll.rs", items = ["UiMountedOccurrenceGeometryState::prepare_scroll_pose"] },
+    { path = "src/mounting/presented_hit_index.rs", items = ["UiPresentedHitIndex::replace_base"] },
+    { path = "src/mounting/retention/interaction_basis/hit_rect.rs", items = ["UiPresentedHitRect::displayed"] },
+  ], reason = "geometry no Scroll pose moved carries no shift" },
+  { call = "UiPresentedPortalBounds::new", callers = [
+    { path = "src/runtime/portal/planning.rs", items = ["prepare"] },
+  ], reason = "Portal planning places its bounds from committed layout" },
+  { call = "UiPresentedHitRect::Published", callers = [
+    { path = "src/runtime/interaction/targeting/presented_geometry.rs", items = ["UiPresentedInteractionGeometry::for_test_with_components"] },
+  ], reason = "certification geometry lifts published rects built from canonical committed boxes" },
+  { call = "UiPresentedSurfaceWitness::admit", callers = [
+    { path = "src/mounting/presentation/coordinator/motion_sample.rs", items = ["settle_presented"] },
+    { path = "src/mounting/presentation/coordinator/pending_completion/presented.rs", items = ["complete"] },
+    { path = "src/mounting/presentation/coordinator/presentation_outcome.rs", items = ["PresentationOutcomeSettlement::record_presented"] },
+  ], reason = "a host acknowledgement becomes the presented-frame witness only by admission against the work this runtime issued" },
+  { call = "UiMountedFrameConsumptionView::acknowledge_presented", clippy = "worth_ui_host_contract::mounted_frame::presentation::UiMountedFrameConsumptionView::acknowledge_presented", callers = [
+    { path = "src/certification_support/scripted_presentation_host/acknowledgement.rs", items = ["ScriptedPresentationAcknowledgement::acknowledge_view"] },
+    { path = "src/mounting/presentation/presented_surface/certification_witness.rs", items = ["presented_surface_witness_for_certification"] },
+  ], reason = "the scripted host and certification acknowledge issued work the way a host does, and the runtime admits it like any other" },
+  { call = "UiHostPresentationCompletionToken::acknowledge_presented", clippy = "worth_ui_host_contract::mounted_frame::presentation::UiHostPresentationCompletionToken::acknowledge_presented", callers = [
+    { path = "src/certification_support/scripted_presentation_host/acknowledgement.rs", items = ["ScriptedPresentationAcknowledgement::acknowledge_token"] },
+  ], reason = "the scripted host acknowledges a completion token the way a host does" },
+]
+lifecycle_states = ["UiTrackMotion", "UiTrackScreen", "UiMountedFrameState", "UiStagedPointerOutput", "UiSelectedDiagnostics", "UiPendingAppearanceReconstruction", "UiLocalInputStopRecipient", "UiScrollChromeLatchState", "UiPortalOverlayBindingEffect", "UiMotionSampleCertification"]
+
+[[truth_type_denials]]
+crate_root = "workspaces/worth-ui/crates/worth-ui-host-contract"
+guidance = "Milestone 3.16.2 requirement 3: only a presentation host acknowledges presented work, through the issued view or token; declared mints live in road1.toml [[truth_type_denials]]"
+sealed = [
+  { name = "UiMountedSurfacePresentationCompletion", requirement = 3, owners = ["src/mounted_frame/presentation/completion.rs"] },
+  { name = "UiMountedIssuedSurfaceWork", requirement = 3, owners = ["src/mounted_frame/presentation/completion.rs"] },
+  { name = "UiHostPresentationCompletionToken", requirement = 3, owners = ["src/mounted_frame/presentation.rs"] },
+]
+mints = [
+  { call = "UiMountedIssuedSurfaceWork::new", callers = [
+    { path = "src/mounted_frame/presentation.rs", items = ["UiMountedFrameConsumptionView::issued_work"] },
+  ], reason = "a consumption view issues the surface work its acknowledgement answers" },
+]
+lifecycle_states = ["BoundResources"]
+
+[[truth_type_denials]]
+crate_root = "workspaces/worth-ui/crates/worth-ui-host-native"
+guidance = "Milestone 3.16.2 requirements 2 and 3: the native host acknowledges presented work only at its declared completion sites, and names a lifecycle state's variant where it is built"
+mints = [
+  { call = "UiMountedFrameConsumptionView::acknowledge_presented", clippy = "worth_ui_host_contract::mounted_frame::presentation::UiMountedFrameConsumptionView::acknowledge_presented", callers = [
+    { path = "src/native/mechanics_adapter/presentation/completion.rs", items = ["completed"] },
+  ], reason = "only a presentation host acknowledges presented work; the runtime admits the acknowledgement as the presented-frame witness" },
+  { call = "UiHostPresentationCompletionToken::acknowledge_presented", clippy = "worth_ui_host_contract::mounted_frame::presentation::UiHostPresentationCompletionToken::acknowledge_presented", callers = [
+    { path = "src/native/presentation/pending_settlement.rs", items = ["UiNativePendingSurfaceSettlement::complete"] },
+  ], reason = "only a presentation host acknowledges presented work; the runtime admits the acknowledgement as the presented-frame witness" },
+]
+lifecycle_states = ["SlotReadiness", "CommittedReadiness", "LevelReadiness", "UiNativePlannedInjection", "UiNativePendingReconstruction", "QualifiedObservation", "UiNativePaintOutcome", "UiNativeRetainedIdentityOverlay", "OriginalOrderPlacement", "UiNativePresentationOwners", "UiNativeProfilePosture", "UiNativePhysicalSignalRuntime", "UiNativePhysicalProgressCorrelation"]
+
+[[truth_type_denials]]
+crate_root = "workspaces/worth-ui/crates/worth-ui-host-headless"
+guidance = "Milestone 3.16.2 requirements 2 and 3: the headless host acknowledges presented work only at its recorder, and names a lifecycle state's variant where it is built"
+mints = [
+  { call = "UiMountedFrameConsumptionView::acknowledge_presented", clippy = "worth_ui_host_contract::mounted_frame::presentation::UiMountedFrameConsumptionView::acknowledge_presented", callers = [
+    { path = "src/headless_recorder.rs", items = ["WorthUiHeadlessRecorder::perform_mounted_surface_presentation"] },
+  ], reason = "only a presentation host acknowledges presented work; the runtime admits the acknowledgement as the presented-frame witness" },
+]
+lifecycle_states = ["OriginalOrderPlacement"]
+
+[[truth_type_denials]]
+crate_root = "workspaces/worth-ui/apps/platform-pulse"
+guidance = "Milestone 3.16.2 requirement 2: name a Pulse lifecycle state's variant where it is built"
+lifecycle_states = ["PlatformPulseNativeInputIngress", "PlatformPulseTerminalPosture", "PlatformPulseVisualIdentityExecution", "PlatformPulseDisabledVisualIdentity", "PlatformPulseQueryOwnerState"]

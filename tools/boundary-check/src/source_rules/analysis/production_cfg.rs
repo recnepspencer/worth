@@ -5,10 +5,17 @@
 //! `cfg` predicates can never hold: `test`, `all(test, ..)`, `any()`, and
 //! the like. Anything unparseable or feature-selected stays compiled, which
 //! keeps rules that skip test code fail-closed.
+//!
+//! `worth_ui_compile_probe`, bare or with a value, never holds either: only
+//! `scripts/ci/run_worth_ui_compile_probes.py` passes it, to a `check` build
+//! whose probe cases exist to break the rules this tool enforces.
 
 use super::crate_modules::ModuleGraph;
 use syn::punctuated::Punctuated;
 use syn::{Attribute, Item, Meta, Token};
+
+/// The `cfg` that gates the Worth UI runtime's compile probes.
+const COMPILE_PROBE: &str = "worth_ui_compile_probe";
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 enum Holds {
@@ -54,7 +61,8 @@ pub(super) fn module_compiled_out_of_production(
 
 fn holds(predicate: &Meta) -> Holds {
     match predicate {
-        Meta::Path(path) if path.is_ident("test") => Holds::Never,
+        Meta::Path(path) if path.is_ident("test") || path.is_ident(COMPILE_PROBE) => Holds::Never,
+        Meta::NameValue(name_value) if name_value.path.is_ident(COMPILE_PROBE) => Holds::Never,
         Meta::List(list) if list.path.is_ident("not") => match list.parse_args::<Meta>() {
             Ok(inner) => match holds(&inner) {
                 Holds::Never => Holds::Always,
@@ -98,6 +106,8 @@ mod tests {
             "#[cfg(all(test, not(feature = \"certification-support\")))] fn f() {}",
             "#[cfg(any())] fn f() {}",
             "#[inline] #[cfg(all(unix, test))] fn f() {}",
+            "#[cfg(worth_ui_compile_probe)] fn f() {}",
+            "#[cfg(worth_ui_compile_probe = \"witness-literal\")] fn f() {}",
         ] {
             assert!(compiled_out(source), "kept {source}");
         }
@@ -109,6 +119,8 @@ mod tests {
             "#[cfg(any(test, feature = \"certification-support\"))] fn f() {}",
             "#[cfg(debug_assertions)] fn f() {}",
             "#[cfg_attr(test, allow(dead_code))] fn f() {}",
+            "#[cfg(not(worth_ui_compile_probe))] fn f() {}",
+            "#[cfg(worth_ui_adapter = \"software\")] fn f() {}",
         ] {
             assert!(!compiled_out(source), "dropped {source}");
         }

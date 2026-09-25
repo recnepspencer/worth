@@ -24,6 +24,10 @@ fn basis() -> UiHostObservationPresentationBasis {
     )
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "the test acknowledges its issued work the way a host does"
+)]
 fn acknowledged(
     basis: UiHostObservationPresentationBasis,
     mode: UiHostSurfacePresentationMode,

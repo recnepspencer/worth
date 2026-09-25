@@ -100,7 +100,8 @@ def closure_stress_commands() -> list[list[str]]:
 
 def compile_contract_commands() -> list[list[str]]:
     return [
-        [sys.executable, str(ROOT / "scripts/ci/run_worth_ui_compile_contracts.py")]
+        [sys.executable, str(ROOT / "scripts/ci/run_worth_ui_compile_contracts.py")],
+        [sys.executable, str(ROOT / "scripts/ci/run_worth_ui_compile_probes.py")],
     ]
 
 

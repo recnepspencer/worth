@@ -1,5 +1,7 @@
 mod admission;
 mod capability;
+#[cfg(worth_ui_compile_probe)]
+mod compile_probes;
 mod declaration;
 mod evidence;
 pub mod facade;

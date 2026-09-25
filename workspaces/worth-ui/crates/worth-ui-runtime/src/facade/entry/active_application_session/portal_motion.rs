@@ -92,6 +92,10 @@ impl super::WorthUiActiveApplicationSession {
 
 const PORTAL_ENTRANCE_TRANSLATION_Y: f32 = 8.0;
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "a Portal entrance starts at its published rect shifted by the entrance offset"
+)]
 fn portal_entrance_start_geometry(
     successor: crate::mounting::presentation::UiPublishedRect,
 ) -> crate::mounting::presentation::UiPublishedRect {

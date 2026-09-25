@@ -104,6 +104,10 @@ impl WorthUiOperationalHostAdapter for NativeIdentityTraceHost {
         )
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "the trace host acknowledges the presentation it performed"
+    )]
     fn present_mounted_surface(
         &self,
         authority: &UiHostAdapterSessionAuthority,

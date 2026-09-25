@@ -319,6 +319,10 @@ impl WorthUiHostMechanicsAdapter for WorthUiHeadlessRecorder {
         )
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "the headless host acknowledges the presentation it recorded"
+    )]
     fn perform_mounted_surface_presentation(
         &self,
         view: &UiMountedFrameConsumptionView<'_>,

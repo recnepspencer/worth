@@ -193,6 +193,10 @@ fn rejected(denial: UiHostSurfacePresentationDenial) -> UiHostSurfacePresentatio
     UiHostSurfacePresentationOutcome::RejectedBeforeEffects(denial)
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "the test host acknowledges the presentation it performed"
+)]
 fn presented() -> UiHostSurfacePresentationOutcome {
     let world = crate::native::presentation::DrawListWorld::new();
     let initial = world.initial(

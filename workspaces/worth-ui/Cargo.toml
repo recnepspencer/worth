@@ -83,6 +83,8 @@ unsafe_code = "forbid"
 unexpected_cfgs = { level = "deny", check-cfg = [
     'cfg(worth_ui_windowing, values("wayland", "x11"))',
     'cfg(worth_ui_adapter, values("hardware", "software"))',
+    'cfg(worth_ui_compile_probe)',
+    'cfg(worth_ui_compile_probe, values(any()))',
 ] }
 
 [workspace.lints.clippy]

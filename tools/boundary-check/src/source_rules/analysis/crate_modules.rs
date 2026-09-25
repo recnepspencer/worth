@@ -9,12 +9,11 @@ use super::module_source::{
     all_path_selectors, child_module_dir, directory_after_loading_file, path_attribute_dir,
     resolve_child_sources,
 };
-use crate::cargo_graph::{normalize_path, package_name_from_manifest};
-use crate::config::SubworkspaceConfig;
+use crate::cargo_graph::normalize_path;
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
-use syn::{File, Item, ItemMod, Visibility};
+use syn::{Attribute, File, Item, ItemMod, Visibility};
 
 /// One governed crate discovered under configured subworkspace roots.
 #[derive(Clone, Debug)]
@@ -33,49 +32,10 @@ pub(super) struct ModuleGraph {
 pub(super) struct ModuleNode {
     pub(super) relative_source: String,
     pub(super) public_from_parent: bool,
+    /// A file module's inner attributes. An inline module's are on its
+    /// declaration, which its parent's items hold.
+    pub(super) attributes: Vec<Attribute>,
     pub(super) items: Vec<Item>,
-}
-
-pub(super) fn discover_governed_crates(
-    root: &Path,
-    subworkspaces: &[SubworkspaceConfig],
-) -> Result<Vec<GovernedCrate>, String> {
-    let mut crates = Vec::new();
-    for subworkspace in subworkspaces {
-        let member_lane = root.join(&subworkspace.path).join(
-            subworkspace
-                .member_lane
-                .trim_end_matches("/*")
-                .trim_end_matches('*')
-                .trim_end_matches('/'),
-        );
-        if !member_lane.is_dir() {
-            continue;
-        }
-        for entry in fs::read_dir(&member_lane)
-            .map_err(|e| format!("read member lane {}: {e}", member_lane.display()))?
-        {
-            let entry = entry.map_err(|e| format!("read member entry: {e}"))?;
-            let crate_path = entry.path();
-            let manifest = crate_path.join("Cargo.toml");
-            if !crate_path.is_dir() || !manifest.is_file() {
-                continue;
-            }
-            let package = package_name_from_manifest(&manifest)?;
-            let relative = normalize_path(
-                crate_path
-                    .strip_prefix(root)
-                    .map_err(|e| format!("strip root from {}: {e}", crate_path.display()))?,
-            );
-            crates.push(GovernedCrate {
-                package,
-                crate_root: crate_path,
-                relative_crate_root: relative,
-            });
-        }
-    }
-    crates.sort_by(|a, b| a.package.cmp(&b.package));
-    Ok(crates)
 }
 
 pub(super) fn parse_crate_modules(governed: &GovernedCrate) -> Result<ModuleGraph, String> {
@@ -270,6 +230,7 @@ fn parse_module_tree(
         module_path.clone(),
         relative_source,
         public_from_parent,
+        file.attrs,
         file.items,
     );
 
@@ -313,6 +274,7 @@ fn load_child_module(
             child_path.clone(),
             relative_source,
             public_from_parent,
+            Vec::new(),
             items.clone(),
         );
         // Nested declarations resolve against this inline module's virtual directory.
@@ -361,9 +323,11 @@ fn merge_module_node(
     module_path: Vec<String>,
     relative_source: String,
     public_from_parent: bool,
+    attributes: Vec<Attribute>,
     items: Vec<Item>,
 ) {
     if let Some(existing) = modules.get_mut(&module_path) {
+        existing.attributes.extend(attributes);
         existing.items.extend(items);
         if !existing.relative_source.contains(&relative_source) {
             existing.relative_source = format!("{};{}", existing.relative_source, relative_source);
@@ -375,6 +339,7 @@ fn merge_module_node(
             ModuleNode {
                 relative_source,
                 public_from_parent,
+                attributes,
                 items,
             },
         );

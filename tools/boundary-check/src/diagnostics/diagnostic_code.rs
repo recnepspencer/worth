@@ -24,6 +24,8 @@ pub(crate) enum DiagnosticCode {
     Bc7002LawSubstrateConfig,
     Bc7003SourceReachability,
     Bc7004RawGeometryRepresentation,
+    Bc7005SealedTruthConstruction,
+    Bc7006LifecycleStateDefault,
     Bc8001SnapshotBaseline,
     Bc8002FacadeSnapshotDrift,
     Bc8003CrateDagSnapshotDrift,
@@ -31,7 +33,7 @@ pub(crate) enum DiagnosticCode {
 
 impl DiagnosticCode {
     #[cfg(test)]
-    pub(crate) const ALL: [Self; 24] = [
+    pub(crate) const ALL: [Self; 26] = [
         Self::Bc1001IllegalCrateName,
         Self::Bc1002UnreservedDomain,
         Self::Bc2001BandDependencyViolation,
@@ -53,6 +55,8 @@ impl DiagnosticCode {
         Self::Bc7002LawSubstrateConfig,
         Self::Bc7003SourceReachability,
         Self::Bc7004RawGeometryRepresentation,
+        Self::Bc7005SealedTruthConstruction,
+        Self::Bc7006LifecycleStateDefault,
         Self::Bc8001SnapshotBaseline,
         Self::Bc8002FacadeSnapshotDrift,
         Self::Bc8003CrateDagSnapshotDrift,
@@ -81,6 +85,8 @@ impl DiagnosticCode {
             Self::Bc7002LawSubstrateConfig => "BC7002_LAW_SUBSTRATE_CONFIG",
             Self::Bc7003SourceReachability => "BC7003_SOURCE_REACHABILITY",
             Self::Bc7004RawGeometryRepresentation => "BC7004_RAW_GEOMETRY_REPRESENTATION",
+            Self::Bc7005SealedTruthConstruction => "BC7005_SEALED_TRUTH_CONSTRUCTION",
+            Self::Bc7006LifecycleStateDefault => "BC7006_LIFECYCLE_STATE_DEFAULT",
             Self::Bc8001SnapshotBaseline => "BC8001_SNAPSHOT_BASELINE",
             Self::Bc8002FacadeSnapshotDrift => "BC8002_FACADE_SNAPSHOT_DRIFT",
             Self::Bc8003CrateDagSnapshotDrift => "BC8003_CRATE_DAG_SNAPSHOT_DRIFT",
@@ -102,6 +108,8 @@ impl DiagnosticCode {
             Self::Bc7001AuthoritySealing | Self::Bc7002LawSubstrateConfig => "tools/boundary-check/config/road1.toml [law_substrates]; governed authority belongs to concrete worth-proof witnesses",
             Self::Bc7003SourceReachability => "tools/boundary-check/config/generated_source_exemptions.txt; every production Rust source must belong to a compiled target/module graph",
             Self::Bc7004RawGeometryRepresentation => "tools/boundary-check/config/road1.toml [[raw_geometry_denials]]; carry presented geometry in its sealed truth-status type, or declare the edge that owns the raw form",
+            Self::Bc7005SealedTruthConstruction => "tools/boundary-check/config/road1.toml [[truth_type_denials]]; construct sealed truth through its owner, or declare the caller the constructor admits",
+            Self::Bc7006LifecycleStateDefault => "tools/boundary-check/config/road1.toml [[truth_type_denials]]; name the variant at each construction site instead of a Default",
             Self::Bc8001SnapshotBaseline | Self::Bc8002FacadeSnapshotDrift | Self::Bc8003CrateDagSnapshotDrift => "tools/boundary-check/snapshots/; regenerate the governed snapshot explicitly with boundary-check --update-snapshots",
         };
         LegalHome::new(pointer).expect("diagnostic code legal homes are valid")

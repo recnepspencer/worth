@@ -1,3 +1,5 @@
+#[cfg(worth_ui_compile_probe)]
+mod compile_probe;
 mod in_flight;
 mod presented_samples;
 mod scroll_group;

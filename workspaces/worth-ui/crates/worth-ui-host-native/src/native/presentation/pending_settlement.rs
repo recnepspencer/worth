@@ -292,6 +292,10 @@ impl UiNativePendingSurfaceSettlement {
         );
         crate::native::capture::record_completed_basis(state, basis, frame, epoch);
         state.lifecycle.record_presented();
+        #[expect(
+            clippy::disallowed_methods,
+            reason = "the native host acknowledges the presentation it performed"
+        )]
         let completion = token.acknowledge_presented(
             worth_ui_host_contract::UiHostSurfacePresentationMode::NativeDisplay,
             epoch,

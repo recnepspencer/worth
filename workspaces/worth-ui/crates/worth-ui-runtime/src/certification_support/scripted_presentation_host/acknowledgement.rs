@@ -41,6 +41,10 @@ impl ScriptedPresentationAcknowledgement {
         }
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "the scripted host acknowledges the presentation it scripted"
+    )]
     pub(super) fn acknowledge_view(
         self,
         view: &UiMountedFrameConsumptionView<'_>,
@@ -70,6 +74,10 @@ impl ScriptedPresentationAcknowledgement {
         self.acknowledge_view(&foreign)
     }
 
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "the scripted host acknowledges the presentation it scripted"
+    )]
     pub(super) fn acknowledge_token(
         self,
         token: UiHostPresentationCompletionToken,

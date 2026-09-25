@@ -11,7 +11,9 @@ use crate::diagnostics::Diagnostic;
 use crate::snapshots::FacadeVocabularyAuthority;
 use std::path::Path;
 
-pub(crate) use analysis::{enforce_raw_geometry_denials, observe_compiled_library_surface};
+pub(crate) use analysis::{
+    enforce_raw_geometry_denials, enforce_truth_type_denials, observe_compiled_library_surface,
+};
 pub(crate) use law_substrates::{illegal_law_substrate_edge, is_legal_law_substrate_edge};
 
 pub(crate) fn validate_workspace_source_reachability(

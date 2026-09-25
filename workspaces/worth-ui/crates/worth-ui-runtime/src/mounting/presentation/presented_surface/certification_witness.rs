@@ -22,6 +22,10 @@ pub(super) const CERTIFICATION_EFFECTS: [UiMountedEffectFamily; 1] =
     [UiMountedEffectFamily::RecordedProjection];
 
 /// A witness that `basis` reached the screen for a freshly minted semantic surface.
+#[expect(
+    clippy::disallowed_methods,
+    reason = "certification acknowledges its issued work the way a host does"
+)]
 pub(crate) fn presented_surface_witness_for_certification(
     basis: UiHostObservationPresentationBasis,
 ) -> UiPresentedSurfaceWitness {

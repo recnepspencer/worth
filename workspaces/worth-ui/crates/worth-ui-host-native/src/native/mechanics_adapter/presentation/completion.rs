@@ -15,6 +15,10 @@ pub(super) fn completed(
     else {
         return super::failure::malformed();
     };
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "the native host acknowledges the presentation it performed"
+    )]
     let outcome = UiHostSurfacePresentationOutcome::Presented(view.acknowledge_presented(
         UiHostSurfacePresentationMode::NativeDisplay,
         epoch,

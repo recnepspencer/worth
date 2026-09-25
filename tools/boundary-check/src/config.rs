@@ -26,6 +26,8 @@ pub(crate) struct Road1Config {
     pub(crate) source_identifier_denials: Vec<SourceIdentifierDenialConfig>,
     #[serde(default)]
     pub(crate) raw_geometry_denials: Vec<RawGeometryDenialConfig>,
+    #[serde(default)]
+    pub(crate) truth_type_denials: Vec<TruthTypeDenialConfig>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -130,6 +132,54 @@ impl RawGeometryEdgeKind {
             Self::CommittedLayout => "committed-layout",
         }
     }
+}
+
+/// One crate whose sealed truth types are constructed only by their owners and
+/// at declared callers, and whose lifecycle state has no `Default`.
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct TruthTypeDenialConfig {
+    pub(crate) crate_root: String,
+    pub(crate) guidance: String,
+    #[serde(default)]
+    pub(crate) sealed: Vec<SealedTruthTypeConfig>,
+    #[serde(default)]
+    pub(crate) mints: Vec<SealedMintConfig>,
+    #[serde(default)]
+    pub(crate) lifecycle_states: Vec<String>,
+}
+
+/// A requirement 1 or 3 type and the sources, relative to the crate root,
+/// that own it.
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct SealedTruthTypeConfig {
+    pub(crate) name: String,
+    pub(crate) requirement: u8,
+    pub(crate) owners: Vec<String>,
+}
+
+/// A constructor called outside its owner, and the only sites that call it.
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct SealedMintConfig {
+    /// `Type::constructor`, as a path names it.
+    pub(crate) call: String,
+    /// The method's path in the root `clippy.toml` `disallowed-methods`, for a
+    /// mint called as a method, whose receiver only Clippy resolves. Each
+    /// caller then carries the `expect` that admits it.
+    #[serde(default)]
+    pub(crate) clippy: Option<String>,
+    pub(crate) callers: Vec<SealedMintCallerConfig>,
+    pub(crate) reason: String,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct SealedMintCallerConfig {
+    pub(crate) path: String,
+    #[serde(default)]
+    pub(crate) items: Vec<String>,
 }
 
 /// One machine-owned law substrate: package identity plus legal tier/band sets.

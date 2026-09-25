@@ -31,16 +31,19 @@ pub(super) mod external_public_reexport;
 mod external_use_target;
 mod forbidden_aliases;
 mod forbidden_bound_scan;
+mod governed_crates;
 mod library_target;
 mod module_source;
 mod opaque_attributes;
 mod path_dependencies;
 mod production_cfg;
+mod production_scope;
 mod public_reachability;
 mod query_fence;
 mod raw_geometry;
 mod source_reachability;
 mod store_integrity_routes;
+mod truth_types;
 mod type_alias_reachability;
 mod use_binding_resolution;
 mod workspace_crates;
@@ -53,6 +56,7 @@ use std::path::Path;
 pub(crate) use compiled_library_surface::observe_compiled_library_surface;
 pub(crate) use raw_geometry::enforce_raw_geometry_denials;
 pub(crate) use source_reachability::enforce_workspace_source_reachability;
+pub(crate) use truth_types::enforce_truth_type_denials;
 
 pub(super) fn validate(
     root: &Path,
@@ -62,7 +66,7 @@ pub(super) fn validate(
 ) -> Result<Vec<Diagnostic>, String> {
     let mut diagnostics = Vec::new();
     let query_vocabulary = query_fence::QueryVocabulary::load(query_audience, facade_exports);
-    let crates = crate_modules::discover_governed_crates(root, subworkspaces)?;
+    let crates = governed_crates::discover_governed_crates(root, subworkspaces)?;
     for governed in crates {
         let module_graph = match crate_modules::parse_crate_modules(&governed) {
             Ok(graph) => graph,
