@@ -31,6 +31,12 @@ use super::super::schema::{
     PartPrincipalBinding, Principal,
 };
 
+#[path = "review_requirement/unlink.rs"]
+mod unlink;
+pub use unlink::{
+    unlink_review_requirement, UnlinkReviewRequirementBinding, UnlinkReviewRequirementHandler,
+};
+
 worth_query_relation!(pub ReviewRequired in BoundedDimensionSchema, Part => Part; integrity = ApplicationRelationIntegrity {
     cardinality: ApplicationRelationCardinality::new(None, Some(1), None, None, None, Some(1)),
     ..ApplicationRelationIntegrity::same_context_unbounded_retain_dangling()
@@ -51,7 +57,9 @@ worth_query_operation_links!(LinkReviewRequirement => [ReviewRequired]);
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ReviewRequirementLinked;
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub enum ReviewRequirementDenial {}
+pub enum ReviewRequirementDenial {
+    RelationMismatch,
+}
 worth_query_structured_value_binding!(pub ReviewRequirementLinkedBinding for ReviewRequirementLinked {
     identity: "worth.query.certification.review-requirement-linked.v1"
 });
@@ -226,7 +234,7 @@ impl OperationHandler<BoundedDimensionSchema, ReviewRequirementBinding>
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<BoundedDimensionSchema>,
 ) -> ApplicationSchemaDeclarationBuilder<BoundedDimensionSchema> {
-    schema
+    let schema = schema
         .relation(
             ReviewRequired::reference(),
             Part::reference(),
@@ -249,7 +257,8 @@ pub fn declare(
             LinkReviewRequirement::reference(),
             ReviewRequired::reference(),
         )
-        .application_mutation_binding::<ReviewRequirementBinding>()
+        .application_mutation_binding::<ReviewRequirementBinding>();
+    unlink::declare(schema)
 }
 
 fn identity(bytes: &[u8]) -> [u8; 32] {

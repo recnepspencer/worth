@@ -66,7 +66,8 @@ pub use mutation::{
 pub use ordinary_run::run_instance;
 pub use retry_definition::{bounded_retry_definition, bounded_retry_definition_with_attempts};
 pub use review_requirement::{
-    link_review_requirement, ReviewRequirementBinding, ReviewRequirementHandler,
+    link_review_requirement, unlink_review_requirement, ReviewRequirementBinding,
+    ReviewRequirementHandler, UnlinkReviewRequirementBinding, UnlinkReviewRequirementHandler,
 };
 pub use runtime::{retain_workflow, retain_workflow_with_resources};
 

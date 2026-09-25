@@ -153,6 +153,8 @@ pub struct PreparedWorkflowAssessment<Schema, Operation, Input, Scope> {
             Scope,
         >,
     pub(super) required: RequiredWorkflowAssessment,
+    pub(super) applicability_dependencies:
+        Vec<crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact>,
     pub(super) layout:
         crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
     pub(super) program_revision: ApplicationProgramRevision,

@@ -42,6 +42,8 @@ mod early_collection;
 mod join_policy;
 #[path = "workflow_assessment/multi_subject_currentness.rs"]
 mod multi_subject_currentness;
+#[path = "workflow_assessment/relation_aba.rs"]
+mod relation_aba;
 
 #[test]
 fn authenticated_advance_reconstructs_the_exact_required_assessment_without_settling_it() {

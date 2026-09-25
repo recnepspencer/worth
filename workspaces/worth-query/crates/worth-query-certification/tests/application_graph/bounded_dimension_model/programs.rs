@@ -22,8 +22,9 @@ use super::schema::{
     BoundedDimensionV3, PartDimensionRowBinding,
 };
 use super::workflow::{
-    ReviewRequirementBinding, WorkflowAdvanceBinding, WorkflowApprovalBinding,
-    WorkflowDefinitionAuthoringBinding, WorkflowGrantStatusBinding, WorkflowInstanceStartBinding,
+    ReviewRequirementBinding, UnlinkReviewRequirementBinding, WorkflowAdvanceBinding,
+    WorkflowApprovalBinding, WorkflowDefinitionAuthoringBinding, WorkflowGrantStatusBinding,
+    WorkflowInstanceStartBinding,
 };
 
 /// The one feature both programs govern.
@@ -193,6 +194,7 @@ impl ApplicationProgramDefinition<BoundedDimensionSchema> for RemovedOperationDi
         vec![
             ApplicationFeatureSpec::root::<BoundedDimensionSchema, BoundedDimensionFeature>()
                 .mutation::<ReviewRequirementBinding>()
+                .mutation::<UnlinkReviewRequirementBinding>()
                 .conditional_operation::<PublishPartAssessment>()
                 .mutation::<WorkflowDefinitionAuthoringBinding>()
                 .mutation::<WorkflowInstanceStartBinding>()
@@ -222,6 +224,7 @@ impl ApplicationProgramDefinition<BoundedDimensionSchema> for ChangedOperationDi
                     ChangedOperationShape,
                 >()
                 .mutation::<ReviewRequirementBinding>()
+                .mutation::<UnlinkReviewRequirementBinding>()
                 .conditional_operation::<PublishPartAssessment>()
                 .mutation::<WorkflowDefinitionAuthoringBinding>()
                 .mutation::<WorkflowInstanceStartBinding>()
@@ -356,6 +359,7 @@ fn dimension_feature_specs() -> Vec<ApplicationFeatureSpec> {
             .mutation::<SetPartDimensionBinding>()
             .mutation::<ReviewedSetPartDimensionBinding>()
             .mutation::<ReviewRequirementBinding>()
+            .mutation::<UnlinkReviewRequirementBinding>()
             .conditional_operation::<PublishPartAssessment>()
             .mutation::<WorkflowDefinitionAuthoringBinding>()
             .mutation::<WorkflowInstanceStartBinding>()

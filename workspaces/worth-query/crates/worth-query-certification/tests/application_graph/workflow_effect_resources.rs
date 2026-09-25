@@ -27,10 +27,10 @@ use super::bounded_dimension_model::{
 
 #[test]
 fn approval_effect_links_are_admitted_against_the_installed_operation_ceiling() {
-    // The installed approval binding allows eight links. Approval emits four
-    // fixed links plus one per retained evidence entity: four reviews fit;
-    // five exceed the real candidate envelope during transition preparation.
-    for (review_count, key) in [(4, 52_000), (5, 53_000)] {
+    // The installed approval binding allows nine links. Approval emits four
+    // fixed links plus one per retained evidence entity: five reviews fit;
+    // six exceed the real candidate envelope during transition preparation.
+    for (review_count, key) in [(5, 52_000), (6, 53_000)] {
         let (application, instance, proposal, required) = approval_ready(review_count, key);
         let result = approve_instance(
             &application,
@@ -40,7 +40,7 @@ fn approval_effect_links_are_admitted_against_the_installed_operation_ceiling() 
             WorkflowApprovalDecision::Approve,
             key + 100,
         );
-        if review_count == 4 {
+        if review_count == 5 {
             assert!(matches!(result, Ok(WorkflowProgressOutcome::Completed(_))));
         } else {
             assert!(

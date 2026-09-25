@@ -42,11 +42,11 @@ use super::schema::{
     Part, PartDimensionField, PartIdentityField, PartPrincipalBinding,
 };
 use super::workflow::{
-    ReviewRequirementBinding, ReviewRequirementHandler, WorkflowAdvanceBinding,
-    WorkflowAdvanceHandler, WorkflowApprovalBinding, WorkflowApprovalHandler,
-    WorkflowDefinitionAuthoringBinding, WorkflowDefinitionAuthoringHandler,
-    WorkflowGrantStatusBinding, WorkflowGrantStatusHandler, WorkflowInstanceStartBinding,
-    WorkflowInstanceStartHandler,
+    ReviewRequirementBinding, ReviewRequirementHandler, UnlinkReviewRequirementBinding,
+    UnlinkReviewRequirementHandler, WorkflowAdvanceBinding, WorkflowAdvanceHandler,
+    WorkflowApprovalBinding, WorkflowApprovalHandler, WorkflowDefinitionAuthoringBinding,
+    WorkflowDefinitionAuthoringHandler, WorkflowGrantStatusBinding, WorkflowGrantStatusHandler,
+    WorkflowInstanceStartBinding, WorkflowInstanceStartHandler,
 };
 
 #[path = "host/workflow_runtime.rs"]
@@ -95,6 +95,9 @@ impl WorthQueryApplicationContribution<BoundedDimensionSchema> for BoundedDimens
                 setup.handler::<ReviewedSetPartDimensionBinding, _>(ReviewedSetPartDimensionHandler)
             })
             .and_then(|()| setup.handler::<ReviewRequirementBinding, _>(ReviewRequirementHandler))
+            .and_then(|()| {
+                setup.handler::<UnlinkReviewRequirementBinding, _>(UnlinkReviewRequirementHandler)
+            })
             .and_then(|()| setup.handler::<PartAssessmentBinding, _>(PartAssessmentHandler))
             .and_then(|()| setup.producer::<PartAssessmentProducer>(PartAssessmentProvider))
             .and_then(|()| setup.conditional::<PartAssessmentReadiness>(()))

@@ -82,6 +82,17 @@ where
                 remaining,
             )
         })?;
+        let applicability_dependencies = applicability
+            .facts
+            .iter()
+            .filter(|fact| {
+                matches!(
+                    fact,
+                    super::super::WorthQueryApplicationObservedFact::SourceAdjacencyRevision { .. }
+                )
+            })
+            .cloned()
+            .collect();
         facts.extend(subject.facts);
         facts.extend(applicability.facts);
         if self.facts.len().saturating_add(facts.len())
@@ -190,6 +201,7 @@ where
             PreparedWorkflowAssessment {
                 admitted,
                 required,
+                applicability_dependencies,
                 layout: layout.clone(),
                 program_revision,
                 replays: Default::default(),
