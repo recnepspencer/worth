@@ -61,6 +61,62 @@ impl super::super::WorthUiActiveApplicationSession {
         Ok(())
     }
 
+    /// Stage a published Portal's focus reveal as the direct placement it is.
+    /// Like a thumb placed on a track, it says where the content is, so it
+    /// lands with the frame that carries it. Until then Scroll holds it
+    /// pending and mounted geometry holds its pose, both awaiting publication.
+    /// Owners past the prefix the route moved keep their accepted records: a
+    /// reveal that never reached them has no offset to land there.
+    pub(in crate::facade::entry) fn stage_focus_reveal_placement(
+        &mut self,
+        reveal: crate::runtime::session::UiStagedFocusReveal,
+    ) {
+        let mut successor = self
+            .scroll
+            .as_ref()
+            .expect("a staged reveal retains its installed Scroll owner")
+            .clone();
+        let (target, receipt) = reveal.route(&mut successor);
+        let installed = self
+            .scroll
+            .as_mut()
+            .expect("a staged reveal retains its installed Scroll owner");
+        if successor.holds_offsets_of(installed) {
+            // A reveal that moves nothing leaves no pose awaiting publication,
+            // only its anchor rebind, which is Scroll's own record.
+            *installed = successor;
+            return;
+        }
+        // A route moves a prefix of the chain, so each transition's index is
+        // its owner's slot in the target's chain.
+        let geometry = receipt
+            .transitions()
+            .iter()
+            .enumerate()
+            .map(|(slot, transition)| match transition.owner() {
+                crate::runtime::scroll::UiScrollOwnerIdentity::Region { .. } => {
+                    // Publication lands the placement only on the incarnation
+                    // the region's frame carries; any other would drop it.
+                    debug_assert!(
+                        self.mounted
+                            .scroll_region_incarnation(target, slot)
+                            .is_some_and(|incarnation| successor
+                                .offset(transition.owner(), incarnation)
+                                .is_ok()),
+                        "a revealed region owner holds the incarnation its frame lands on"
+                    );
+                    self.mounted
+                        .scroll_region_geometry(target, slot)
+                        .map(|row| row.0)
+                }
+                crate::runtime::scroll::UiScrollOwnerIdentity::Surface(_)
+                | crate::runtime::scroll::UiScrollOwnerIdentity::Viewport(_) => None,
+            })
+            .collect::<Vec<_>>();
+        self.stage_direct_scroll_succession(&successor, &receipt, target, &geometry)
+            .expect("a settled Portal publication leaves no presentation in flight");
+    }
+
     /// End everything still moving `owner`'s content on `mounted_instance` at
     /// capture, so the pointer that just latched the thumb is the only
     /// authority left over the region.

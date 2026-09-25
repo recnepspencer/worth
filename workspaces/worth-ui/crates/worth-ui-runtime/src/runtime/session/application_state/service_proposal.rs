@@ -25,7 +25,8 @@ pub(crate) use focus_reveal::{UiFocusRevealStagingDenial, UiStagedFocusReveal};
 use portal_types::UiPortalProposalSettlement;
 pub(crate) use portal_types::{
     UiIndeterminatePortalProposalTransaction, UiPortalProposalPreparation,
-    UiPortalProposalPreparationDenial, UiStagedPortalProposalTransaction,
+    UiPortalProposalPreparationDenial, UiPublishedPortalSettlement,
+    UiStagedPortalProposalTransaction,
 };
 pub(crate) use scroll_settle_types::UiScrollSettlePublicationDenial;
 

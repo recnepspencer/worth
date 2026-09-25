@@ -13,6 +13,8 @@ mod certification;
 #[path = "native_application_shell/component_presence.rs"]
 mod component_presence;
 pub(crate) use component_presence::UiNativeComponentPresenceProgress;
+#[path = "native_application_shell/component_layout.rs"]
+mod component_layout;
 #[path = "native_application_shell/input_recovery.rs"]
 mod input_recovery;
 #[path = "native_application_shell/launch.rs"]
@@ -46,6 +48,7 @@ mod surface_reconciliation;
 mod viewport_extent;
 #[path = "native_application_shell/viewport_measurement.rs"]
 mod viewport_measurement;
+pub use crate::runtime::mosaic::layout::UiNativeComponentLayoutDenial;
 use mounted_row::NativeMountedRow;
 pub use occurrence_geometry::{
     UiNativeMountedComponentLayoutInput, UiNativeMountedRegionLayoutInput,

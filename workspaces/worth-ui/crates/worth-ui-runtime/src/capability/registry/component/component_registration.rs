@@ -104,5 +104,15 @@ fn add_component_dependencies(
             portal_child.owner().as_str(),
         ));
     }
+
+    if let Some(layout) = descriptor.layout() {
+        for (member, _) in layout.fallback().members() {
+            candidate = candidate.with_dependency(RegistrationDependency::new(
+                COMPONENT_FAMILY_NAME,
+                COMPONENT_FAMILY_NAME,
+                member.as_str(),
+            ));
+        }
+    }
     candidate
 }

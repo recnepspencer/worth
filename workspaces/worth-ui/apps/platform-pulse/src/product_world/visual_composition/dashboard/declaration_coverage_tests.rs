@@ -5,15 +5,18 @@
 use std::collections::BTreeSet;
 use std::path::Path;
 
-use super::{dashboard_elements, DashboardScrollPanel};
+use super::{dashboard_containers, dashboard_elements, DashboardScrollPanel};
 
-/// Components declared outside the element table on purpose: the status band
-/// and the two scroll owners, which are registered by the structure owners
-/// rather than authored as painted elements.
+/// Components declared outside the element table on purpose: the status band,
+/// the two scroll owners, and the layout containers, which are registered by
+/// the structure owners rather than authored as painted elements.
 fn declared_without_an_element() -> BTreeSet<String> {
     let mut allowed = BTreeSet::from(["platform.pulse.component.status_band".to_owned()]);
     for panel in DashboardScrollPanel::ALL {
         allowed.insert(format!("platform.pulse.component.{}", panel.owner()));
+    }
+    for container in dashboard_containers() {
+        allowed.insert(container.component().as_str().to_owned());
     }
     allowed
 }

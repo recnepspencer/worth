@@ -4,7 +4,12 @@ pub(super) fn settle_published_portal_proposal(
 ) -> Option<crate::facade::entry::focus_placement::UiSemanticFocusPublicationReceipt> {
     let transaction = admitted.transfer.portal_proposal.take()?;
     let binding_commit = transaction.overlay_binding_commit();
-    let (focus, motion, exit_retention) = admitted
+    let crate::runtime::session::UiPublishedPortalSettlement {
+        focus,
+        motion,
+        exit_retention,
+        reveal,
+    } = admitted
         .session
         .application
         .settle_published_portal_service_proposal(
@@ -20,7 +25,6 @@ pub(super) fn settle_published_portal_proposal(
                 .focus
                 .as_mut()
                 .expect("staged proposal retains Focus installation"),
-            admitted.session.scroll.as_mut(),
             admitted.session.selection.as_mut(),
             admitted
                 .session
@@ -46,6 +50,9 @@ pub(super) fn settle_published_portal_proposal(
     admitted
         .session
         .install_portal_exit_retention(exit_retention);
+    if let Some(reveal) = reveal {
+        admitted.session.stage_focus_reveal_placement(reveal);
+    }
     admitted.session.install_committed_motion(motion);
     Some(focus)
 }

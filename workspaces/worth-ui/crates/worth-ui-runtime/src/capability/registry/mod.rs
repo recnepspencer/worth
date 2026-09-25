@@ -123,10 +123,11 @@ pub(crate) use mosaic_region::{
     MosaicSeamPaintAcceptedRegistrationProof, UiAuthoredScrollRegionClauses,
 };
 pub use mosaic_sizing::{
-    FrozenMosaicSizingCapabilities, MeasurementConstraint, MeasurementValue,
-    MosaicMeasurementAuthority, MosaicOverflowBehavior, MosaicParentGrowthBehavior,
-    MosaicResizePermission, MosaicSizingContractDescriptor, MosaicSizingKind,
-    MosaicSizingPersistence, MosaicViewportConstraint, NamedMeasurementDefinition,
+    FrozenMosaicSizingCapabilities, MeasurementConstraint, MeasurementValue, MosaicLayoutCell,
+    MosaicLayoutContract, MosaicLayoutDenial, MosaicMeasurementAuthority, MosaicOverflowBehavior,
+    MosaicParentGrowthBehavior, MosaicResizePermission, MosaicResponsiveLayout,
+    MosaicSizingContractDescriptor, MosaicSizingKind, MosaicSizingPersistence, MosaicTrack,
+    MosaicViewportConstraint, MosaicViewportWidthInterval, NamedMeasurementDefinition,
     NamedMeasurementToken, RawLayoutMeasurementForDiagnostics, RawLayoutMeasurementKind,
 };
 pub(crate) use mosaic_sizing::{MosaicSizingAcceptedRegistrationProof, MosaicSizingRegistry};

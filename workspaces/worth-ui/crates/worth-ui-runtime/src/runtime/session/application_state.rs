@@ -10,7 +10,8 @@ pub(crate) use mounted_region::UiMountedRegionDeclarationBinding;
 mod service_proposal;
 pub(crate) use service_proposal::{
     UiIndeterminatePortalProposalTransaction, UiPortalProposalPreparationDenial,
-    UiScrollSettlePublicationDenial, UiStagedPortalProposalTransaction,
+    UiPublishedPortalSettlement, UiScrollSettlePublicationDenial, UiStagedFocusReveal,
+    UiStagedPortalProposalTransaction,
 };
 mod appearance_consumers;
 #[cfg(any(test, feature = "certification-support"))]

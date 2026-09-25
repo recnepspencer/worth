@@ -11,7 +11,7 @@ use worth_ui::facade::declaration::{
     ComponentStateOwnership, ThemeTokenId,
 };
 use worth_ui_platform_pulse::product_world::{
-    dashboard_elements, DashboardContent, PlatformPulseLogicalRect,
+    dashboard_containers, dashboard_elements, DashboardContent, PlatformPulseLogicalRect,
 };
 mod scrolling;
 mod surfaces;
@@ -21,11 +21,10 @@ pub(in crate::application) fn register_structure(
     fonts: &super::fonts::PulseFonts,
 ) -> WorthUiApplicationBuilder<UiChangeProfileInstalled, UiIntentWiringSatisfied> {
     for (ordinal, element) in dashboard_elements().into_iter().enumerate() {
-        let [x, y, w, h] = element.rect;
         let allocation = if element.id == "seed" {
             ComponentAllocationMeasurementContract::fill_viewport()
         } else {
-            PlatformPulseLogicalRect::new(x.into(), y.into(), w.into(), h.into()).allocation()
+            element.allocation()
         };
         let id = element.component_id();
         let mut descriptor = ComponentDescriptor::new(
@@ -150,6 +149,19 @@ pub(in crate::application) fn register_structure(
             PlatformPulseLogicalRect::new(0, 930, 235, 94).allocation(),
         ),
     );
+    for container in dashboard_containers() {
+        let id = container.component();
+        builder = builder.register_component(
+            ComponentDescriptor::new(
+                id.clone(),
+                ComponentPropSchema::named(format!("{}.props", id.as_str())),
+                ComponentChildPolicy::no_children(),
+                ComponentStateOwnership::runtime_owned(),
+            )
+            .with_allocation_measurement_contract(container.allocation)
+            .with_layout(container.layout),
+        );
+    }
     builder = scrolling::register(builder);
     surfaces::register(builder)
 }

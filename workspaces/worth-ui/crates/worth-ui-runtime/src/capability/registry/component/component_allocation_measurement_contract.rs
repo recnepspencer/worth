@@ -3,7 +3,13 @@ pub enum ComponentAllocationMeasurementContract {
     FillViewport,
     ViewportInset(super::ComponentViewportInset),
     ViewportRegion(super::ComponentViewportRegion),
-    FixedLogicalSize { width: u16, height: u16 },
+    FixedLogicalSize {
+        width: u16,
+        height: u16,
+    },
+    /// A region of the cell that the component's layout container assigns
+    /// it. The cell, not the viewport, is the region's reference box.
+    LayoutCell(super::ComponentViewportRegion),
 }
 
 impl ComponentAllocationMeasurementContract {
@@ -23,6 +29,18 @@ impl ComponentAllocationMeasurementContract {
         (width != 0 && height != 0).then_some(Self::FixedLogicalSize { width, height })
     }
 
+    pub const fn layout_cell(region: super::ComponentViewportRegion) -> Self {
+        Self::LayoutCell(region)
+    }
+
+    /// The whole cell that the component's layout container assigns it.
+    pub const fn fill_layout_cell() -> Self {
+        Self::LayoutCell(super::ComponentViewportRegion::new(
+            super::ComponentViewportAxisPlacement::stretch_between(0, 0),
+            super::ComponentViewportAxisPlacement::stretch_between(0, 0),
+        ))
+    }
+
     pub(crate) fn digest_basis(self) -> String {
         match self {
             Self::FillViewport => "fill-viewport".to_owned(),
@@ -31,6 +49,7 @@ impl ComponentAllocationMeasurementContract {
             Self::FixedLogicalSize { width, height } => {
                 format!("fixed-logical-size:{width}:{height}")
             }
+            Self::LayoutCell(region) => format!("layout-cell:{}", region.digest_basis()),
         }
     }
 }
@@ -70,6 +89,10 @@ mod tests {
                 .unwrap()
                 .digest_basis(),
             "fixed-logical-size:160:24"
+        );
+        assert_eq!(
+            ComponentAllocationMeasurementContract::fill_layout_cell().digest_basis(),
+            "layout-cell:viewport-region:stretch-between:0:0:stretch-between:0:0"
         );
     }
 }

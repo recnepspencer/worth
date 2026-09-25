@@ -35,6 +35,20 @@ pub(super) struct UiPortalProposalSettlement {
         crate::runtime::session::service_proposal::UiServiceProposalOccupancyScopeIdentity,
 }
 
+/// What a published Portal proposal leaves for its session to install: the
+/// Focus successor, the Motion commit and exit retention, and the focus reveal
+/// still to stage as a direct placement.
+#[must_use = "a published Portal settlement installs its Focus, Motion, and reveal"]
+pub(crate) struct UiPublishedPortalSettlement {
+    pub(crate) focus: crate::runtime::focus::UiFocusTransitionReceipt,
+    pub(crate) motion: Option<crate::runtime::motion::UiMotionCommitReceipt>,
+    pub(crate) exit_retention: Option<(
+        crate::runtime::portal::UiPortalExitRetentionReceipt,
+        crate::runtime::motion::UiMotionExitRetentionReceipt,
+    )>,
+    pub(crate) reveal: Option<super::UiStagedFocusReveal>,
+}
+
 #[must_use = "indeterminate portal and Focus successors must settle from presentation truth or shutdown"]
 pub(crate) struct UiIndeterminatePortalProposalTransaction {
     pub(super) transaction: UiStagedPortalProposalTransaction,

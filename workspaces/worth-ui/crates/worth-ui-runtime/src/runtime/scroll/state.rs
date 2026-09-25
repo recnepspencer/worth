@@ -185,6 +185,18 @@ impl UiScrollRuntimeState {
         Ok(self.exact_owner(owner, incarnation)?.offset)
     }
 
+    /// Whether every owner here stands where `installed` holds it. A rebind
+    /// can move an offset before any route does, so a successor matches the
+    /// displayed pose only when each owner's offset does.
+    pub(crate) fn holds_offsets_of(&self, installed: &Self) -> bool {
+        self.owners.iter().all(|(identity, record)| {
+            installed
+                .owners
+                .get(identity)
+                .is_some_and(|accepted| accepted.offset == record.offset)
+        })
+    }
+
     pub(super) fn owner_geometry(
         &self,
         owner: super::UiScrollOwnerIdentity,

@@ -1,9 +1,7 @@
 use worth_ui::facade::app::{
     UiMountedCanonicalBox, UiMountedCanonicalBoxInput, UiMountedCoordinateSpace,
-    UiMountedOccurrenceGeometry, UiMountedSurfaceGeometryBatch, WorthUiNativeApplicationShell,
-};
-use worth_ui::facade::declaration::{
-    ComponentAllocationMeasurementContract, ComponentViewportAxisPlacement,
+    UiMountedOccurrenceGeometry, UiMountedSurfaceGeometryBatch,
+    UiNativeMountedComponentLayoutInput, WorthUiNativeApplicationShell,
 };
 use worth_ui_platform_pulse::product_world::{dashboard_elements, PlatformPulseMosaicRegion};
 
@@ -47,55 +45,37 @@ fn prepare_native_layout_batch(
     viewport: UiMountedCanonicalBox,
     basis: worth_ui::facade::app::UiMountedLayoutBasis,
     revision: worth_ui::facade::app::UiMountedLayoutRevision,
-    components: &[worth_ui::facade::app::UiNativeMountedComponentLayoutInput],
+    components: &[UiNativeMountedComponentLayoutInput],
     region_inputs: &[worth_ui::facade::app::UiNativeMountedRegionLayoutInput],
 ) -> Result<UiMountedSurfaceGeometryBatch, String> {
-    let panel_parents = dashboard_elements()
+    let scroll_panels = dashboard_elements()
         .into_iter()
         .filter_map(|element| {
-            element
-                .scroll_panel
-                .map(|panel| (format!("component:{}", element.component_id()), panel))
+            let panel = element.scroll_panel?;
+            Some((format!("component:{}", element.component_id()), panel))
         })
         .collect::<std::collections::BTreeMap<_, _>>();
-    let mut occurrences = Vec::new();
-    for component in components {
-        let contract = component.allocation().ok_or_else(|| {
-            format!(
-                "native-layout-missing-allocation:{}",
-                component.authored_semantic_identity()
-            )
-        })?;
-        let panel = panel_parents.get(component.authored_semantic_identity());
-        let parent = match panel {
-            Some(panel) => Some(
-                components
-                    .iter()
-                    .find(|input| {
-                        input.authored_semantic_identity()
-                            == format!("component:platform.pulse.component.{}", panel.owner())
-                    })
-                    .ok_or("native-layout-scroll-owner-missing")?
-                    .instance(),
-            ),
-            None => component.portal_parent(),
-        };
-        let coordinate_space = if parent.is_some() {
-            UiMountedCoordinateSpace::GraphNodeLocal
-        } else {
-            UiMountedCoordinateSpace::HostSurface
-        };
-        // A scrolled child's allocation is already content-local: the product
-        // authors it from its panel's content origin, so layout subtracts
-        // nothing here and owns no scroll geometry.
-        let bounds = resolve_allocation(contract, viewport, coordinate_space)?;
-        occurrences.push(match parent {
-            Some(parent) => {
-                UiMountedOccurrenceGeometry::parent_relative(component.instance(), parent, bounds)
-            }
-            None => UiMountedOccurrenceGeometry::surface(component.instance(), bounds),
-        });
-    }
+    let instances = components
+        .iter()
+        .map(|component| (component.authored_semantic_identity(), component.instance()))
+        .collect::<std::collections::BTreeMap<_, _>>();
+    let occurrences =
+        UiNativeMountedComponentLayoutInput::resolve_occurrences(viewport, components)
+            .map_err(|denial| format!("native-layout-components:{denial:?}"))?
+            .into_vec()
+            .into_iter()
+            .zip(components)
+            .map(|(occurrence, component)| {
+                let Some(panel) = scroll_panels.get(component.authored_semantic_identity()) else {
+                    return Ok(occurrence);
+                };
+                let owner = format!("component:platform.pulse.component.{}", panel.owner());
+                let owner = instances
+                    .get(owner.as_str())
+                    .ok_or("native-layout-scroll-owner-missing")?;
+                scrolled_into_panel(occurrence, component, *owner)
+            })
+            .collect::<Result<Vec<_>, String>>()?;
     let occurrence_index = occurrences
         .iter()
         .copied()
@@ -121,67 +101,34 @@ fn prepare_native_layout_batch(
     )
 }
 
-fn resolve_allocation(
-    contract: ComponentAllocationMeasurementContract,
-    viewport: UiMountedCanonicalBox,
-    coordinate_space: UiMountedCoordinateSpace,
-) -> Result<UiMountedCanonicalBox, String> {
-    let (x, y, width, height) = match contract {
-        ComponentAllocationMeasurementContract::FillViewport => {
-            (0.0, 0.0, viewport.width(), viewport.height())
-        }
-        ComponentAllocationMeasurementContract::ViewportInset(inset) => {
-            let horizontal = f32::from(inset.horizontal_logical_points());
-            let vertical = f32::from(inset.vertical_logical_points());
-            (
-                horizontal,
-                vertical,
-                (viewport.width() - 2.0 * horizontal).max(0.0),
-                (viewport.height() - 2.0 * vertical).max(0.0),
-            )
-        }
-        ComponentAllocationMeasurementContract::ViewportRegion(region) => {
-            let horizontal = resolve_axis(region.horizontal(), viewport.width());
-            let vertical = resolve_axis(region.vertical(), viewport.height());
-            (horizontal.0, vertical.0, horizontal.1, vertical.1)
-        }
-        ComponentAllocationMeasurementContract::FixedLogicalSize { width, height } => {
-            (0.0, 0.0, f32::from(width), f32::from(height))
-        }
-    };
-    canonical_box(x, y, width, height, coordinate_space)
-}
-
-fn resolve_axis(axis: ComponentViewportAxisPlacement, available: f32) -> (f32, f32) {
-    match axis {
-        ComponentViewportAxisPlacement::FixedFromStart {
-            start_logical_points,
-            extent_logical_points,
-        } => (
-            f32::from(start_logical_points),
-            f32::from(extent_logical_points),
-        ),
-        ComponentViewportAxisPlacement::StretchBetween {
-            start_logical_points,
-            end_logical_points,
-        } => {
-            let start = f32::from(start_logical_points);
-            (
-                start,
-                (available - start - f32::from(end_logical_points)).max(0.0),
-            )
-        }
-        ComponentViewportAxisPlacement::FixedFromEnd {
-            end_logical_points,
-            extent_logical_points,
-        } => {
-            let extent = f32::from(extent_logical_points);
-            (
-                (available - f32::from(end_logical_points) - extent).max(0.0),
-                extent,
-            )
-        }
+/// Places a scrolled child relative to the panel owner that scrolls it. Its
+/// allocation is already content-local: the product authors it from its
+/// panel's content origin, so layout subtracts nothing here and owns no
+/// scroll geometry. A layout-cell member is refused: its bounds are relative
+/// to its container, so reparenting them would silently drop that offset.
+fn scrolled_into_panel(
+    occurrence: UiMountedOccurrenceGeometry,
+    component: &UiNativeMountedComponentLayoutInput,
+    owner: worth_ui::facade::app::UiMountedInstanceIdentity,
+) -> Result<UiMountedOccurrenceGeometry, String> {
+    if component.layout_container().is_some() {
+        return Err(format!(
+            "native-layout-scrolled-layout-member:{}",
+            component.authored_semantic_identity()
+        ));
     }
+    let bounds = occurrence.bounds();
+    Ok(UiMountedOccurrenceGeometry::parent_relative(
+        occurrence.instance(),
+        owner,
+        canonical_box(
+            bounds.x(),
+            bounds.y(),
+            bounds.width(),
+            bounds.height(),
+            UiMountedCoordinateSpace::GraphNodeLocal,
+        )?,
+    ))
 }
 
 fn region_bounds(
@@ -190,7 +137,7 @@ fn region_bounds(
     owner: UiMountedCanonicalBox,
 ) -> Result<UiMountedCanonicalBox, String> {
     let (x, y, region_width, region_height) =
-        match scroll_region_bounds::scroll_region_surface_bounds(region_kind, viewport)? {
+        match scroll_region_bounds::scroll_region_surface_bounds(region_kind)? {
             Some(bounds) => (bounds.x(), bounds.y(), bounds.width(), bounds.height()),
             None => surface_region_bounds(region_kind, viewport, owner)?,
         };
@@ -296,10 +243,9 @@ fn canonical_box(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use worth_ui::facade::declaration::ComponentViewportRegion;
 
     #[test]
-    fn resized_surface_and_portal_local_contracts_keep_their_coordinate_owners() {
+    fn resized_surface_regions_are_local_to_their_owner() {
         let viewport = canonical_box(
             0.0,
             0.0,
@@ -308,33 +254,6 @@ mod tests {
             UiMountedCoordinateSpace::HostSurface,
         )
         .unwrap();
-        let service =
-            ComponentAllocationMeasurementContract::viewport_region(ComponentViewportRegion::new(
-                ComponentViewportAxisPlacement::stretch_between(264, 24),
-                ComponentViewportAxisPlacement::stretch_between(104, 72),
-            ));
-        let service =
-            resolve_allocation(service, viewport, UiMountedCoordinateSpace::HostSurface).unwrap();
-        assert_eq!(
-            [service.x(), service.y(), service.width(), service.height()],
-            [264.0, 104.0, 832.0, 524.0]
-        );
-
-        let portal =
-            ComponentAllocationMeasurementContract::viewport_region(ComponentViewportRegion::new(
-                ComponentViewportAxisPlacement::fixed_from_start(24, 104).unwrap(),
-                ComponentViewportAxisPlacement::fixed_from_start(248, 40).unwrap(),
-            ));
-        let portal =
-            resolve_allocation(portal, viewport, UiMountedCoordinateSpace::GraphNodeLocal).unwrap();
-        assert_eq!(
-            portal.coordinate_space(),
-            UiMountedCoordinateSpace::GraphNodeLocal
-        );
-        assert_eq!(
-            [portal.x(), portal.y(), portal.width(), portal.height()],
-            [24.0, 248.0, 104.0, 40.0]
-        );
         let service_region = region_bounds(
             PlatformPulseMosaicRegion::ServiceStage.id(),
             viewport,

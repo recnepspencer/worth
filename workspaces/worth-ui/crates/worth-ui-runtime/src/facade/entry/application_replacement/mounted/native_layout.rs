@@ -75,18 +75,16 @@ pub(super) fn prepare_input(
     let components = components
         .into_iter()
         .map(|(authored, instance, descriptor)| {
-            let portal_parent = descriptor
-                .portal_child_contract()
-                .and_then(|contract| {
-                    component_instances
-                        .get(format!("component:{}", contract.owner().as_str()).as_str())
-                })
-                .copied();
-            UiNativeMountedComponentLayoutInput::new(
+            UiNativeMountedComponentLayoutInput::from_descriptor(
                 authored,
                 instance,
-                descriptor.allocation_measurement_contract(),
-                portal_parent,
+                Some(descriptor),
+                authority.capabilities().components(),
+                |component| {
+                    component_instances
+                        .get(format!("component:{}", component.as_str()).as_str())
+                        .copied()
+                },
             )
         })
         .collect::<Vec<_>>();

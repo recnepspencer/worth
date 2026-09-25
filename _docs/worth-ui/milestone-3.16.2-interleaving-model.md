@@ -217,7 +217,7 @@ itself a commit, and the invariant runs again there.
 ### What the debug invariant found
 
 Running the invariant across the runtime's world tests found three more
-faults.
+faults. The certification suite found a fourth.
 
 **The hit lanes drifted apart by rounding.** The hit index moved a row by
 each settle in turn. The interaction basis moved the row once, by the sum of
@@ -248,6 +248,18 @@ tick. `install_motion_commit` now projects the installed target into the hit
 index. It hands the resulting hit transition to interaction, the same way a
 committed tick does.
 
+**A Portal's focus reveal moved Scroll off the displayed pose.** Opening a
+Portal can reveal its focus target by scrolling the region that holds it. The
+settlement committed that reveal to Scroll after the Portal frame had
+published, so Scroll held the revealed offset while mounted geometry held the
+pose the host displayed, with nothing staged to explain the gap. A reveal is
+direct authority over the offset, like a thumb placed on a track, so it now
+takes the same lane. The settlement hands the routed reveal to the session,
+which stages it as a direct placement. Mounted geometry takes the pose and
+owes its paint, Scroll holds the result pending, and both land when the frame
+carrying it is accepted. A reveal that moves no offset commits at once, since
+it leaves no pose awaiting publication.
+
 Reverting any of these fixes fails the tests that reach it. Moving index
 rows settle by settle fails the Scroll settle frame tests: the hit-test lanes
 part. Dropping a pose that leaves the row's box in place fails
@@ -259,7 +271,9 @@ what the latest witness no longer shows under it. Comparing only the floor
 fails
 `a_portal_above_a_modal_that_starts_closing_changes_what_the_modal_admits`.
 Skipping the projection at install fails the Portal dismissal tests: the
-hit-test lanes part.
+hit-test lanes part. Committing the reveal at settlement again fails
+`declared_selection_portal_rejects_atomically_then_commits_selection_and_focus_reveal`:
+Scroll and mounted geometry part.
 
 ## Follow-ups
 

@@ -7,6 +7,7 @@ mod component_hit_test_clip_contract;
 mod component_hit_test_contract;
 mod component_hit_test_inset;
 mod component_hit_test_order;
+mod component_layout_membership;
 mod component_portal_child_contract;
 mod component_prop_schema;
 mod component_registration;

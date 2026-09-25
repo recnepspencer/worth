@@ -5,21 +5,22 @@
 //! from the content owner it clips, so the content extents authored in
 //! `product_world` are free to exceed it on either axis.
 use worth_ui::facade::app::{UiMountedCanonicalBox, UiMountedCoordinateSpace};
-use worth_ui::facade::declaration::ComponentAllocationMeasurementContract;
-use worth_ui_platform_pulse::product_world::{DashboardScrollPanel, PlatformPulseLogicalRect};
+use worth_ui_platform_pulse::product_world::DashboardScrollPanel;
 
 /// The region's own bounds when `region_kind` names a dashboard scroll region,
 /// or `None` when the surface allocates that region instead.
 pub(super) fn scroll_region_surface_bounds(
     region_kind: &str,
-    viewport: UiMountedCanonicalBox,
 ) -> Result<Option<UiMountedCanonicalBox>, String> {
     let Some(panel) = allocated_scroll_region(region_kind) else {
         return Ok(None);
     };
-    super::resolve_allocation(
-        region_allocation(panel),
-        viewport,
+    let [x, y, width, height] = authored_region_rect(panel);
+    super::canonical_box(
+        x.into(),
+        y.into(),
+        width.into(),
+        height.into(),
         UiMountedCoordinateSpace::HostSurface,
     )
     .map(Some)
@@ -29,11 +30,6 @@ fn allocated_scroll_region(region_kind: &str) -> Option<DashboardScrollPanel> {
     DashboardScrollPanel::ALL
         .into_iter()
         .find(|panel| panel.region() == region_kind)
-}
-
-fn region_allocation(panel: DashboardScrollPanel) -> ComponentAllocationMeasurementContract {
-    let [x, y, width, height] = authored_region_rect(panel);
-    PlatformPulseLogicalRect::new(x.into(), y.into(), width.into(), height.into()).allocation()
 }
 
 /// The authored viewport rectangle of each dashboard scroll region, in

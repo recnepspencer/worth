@@ -903,7 +903,6 @@ edges = [
   { path = "src/mounting/occurrence_geometry/region_paint.rs", kind = "committed-layout", reason = "paint omission spans derive from committed boxes before any status is assigned" },
   { path = "src/mounting/occurrence_geometry/state/presented_grid.rs", items = ["UiMountedOccurrenceGeometryState::presented_scroll_grid_correction"], kind = "committed-layout", reason = "the subpixel grid correction applies to committed allocation before any status is assigned" },
   { path = "src/mounting/projection/frame_storage/portal_content_extent.rs", items = ["local_bounds"], kind = "committed-layout", reason = "Portal content extent is measured from committed layout" },
-  { path = "src/native_platform/application_driver/program_progress/layout.rs", items = ["resolve_axis"], kind = "committed-layout", reason = "viewport placement resolves committed allocation" },
   { path = "src/runtime/allocation_receipt/committed_truth/geometry_evidence.rs", items = ["resolve_viewport_axis"], kind = "committed-layout", reason = "viewport placement resolves committed allocation" },
 ]
 
@@ -963,7 +962,6 @@ edges = [
 crate_root = "workspaces/worth-ui/apps/platform-pulse"
 guidance = "Milestone 3.16.2 requirement 1: Pulse holds raw geometry only for committed layout and observation wire data declared in road1.toml [[raw_geometry_denials]]"
 edges = [
-  { path = "src/native_application/layout.rs", items = ["resolve_axis"], kind = "committed-layout", reason = "Pulse resolves the committed allocation it owns" },
   { path = "src/observation_contract/visual_value_projection.rs", items = ["bits"], kind = "serialization", reason = "observed visual values are compared as their bit patterns" },
 ]
 

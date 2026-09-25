@@ -1,3 +1,4 @@
+component platform.pulse.component.metric_row {}
 appearance role platform.pulse.appearance.active_card applies_to platform.pulse.component.active_card {
   background use token(theme.platform_pulse.raised_surface)
   radius use token(theme.platform_pulse.radius.r12)

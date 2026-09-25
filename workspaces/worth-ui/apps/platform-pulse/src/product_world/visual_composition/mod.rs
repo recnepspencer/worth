@@ -6,7 +6,8 @@ mod palette;
 mod projection;
 mod typography;
 pub use dashboard::{
-    dashboard_elements, DashboardContent, DashboardElement, DashboardGraphic, DashboardScrollPanel,
+    dashboard_containers, dashboard_elements, DashboardContainer, DashboardContent,
+    DashboardElement, DashboardGraphic, DashboardLayoutCell, DashboardScrollPanel,
 };
 
 pub use component_identity::PlatformPulseProductComponent;

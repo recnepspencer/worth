@@ -20,6 +20,7 @@ impl CapabilityRegistrationBuilder {
     /// Freeze registered capabilities and return structured registration diagnostics.
     pub fn freeze_with_registration_report(mut self) -> CapabilityRegistrationReport {
         self.record_mosaic_seam_diagnostics();
+        self.record_component_layout_diagnostics();
         let validation = validate_registration_candidates(
             &self.registration_candidates,
             self.diagnostic_richness,
@@ -54,6 +55,17 @@ impl CapabilityRegistrationBuilder {
                     "mosaic seam-paint contract must name exactly the registered region-kind set",
                 ),
             );
+        }
+    }
+
+    fn record_component_layout_diagnostics(&mut self) {
+        for (component, diagnostic) in self.component_registry.layout_membership_diagnostics() {
+            for candidate in self.registration_candidates.iter_mut().filter(|candidate| {
+                candidate.family_name() == crate::capability::COMPONENT_FAMILY_NAME
+                    && candidate.identity_text() == component.as_str()
+            }) {
+                candidate.record_descriptor_diagnostic(diagnostic.clone());
+            }
         }
     }
 

@@ -25,6 +25,7 @@ use super::super::world::{
     launch_scroll_portal, routed_scroll_selection_input, PayloadApplicationFacts,
     PayloadProjectionRegistration, DECLARATION,
 };
+use super::focus_reveal_frame::publish_focus_reveal_frame;
 use super::selection_identity::{collection_registration, open_collection};
 
 #[test]
@@ -229,10 +230,17 @@ fn declared_selection_portal_rejects_atomically_then_commits_selection_and_focus
         selected.selected_application_item_keys(),
         &[core::num::NonZeroU64::new(315_051).unwrap()],
     );
-    let revealed = world
+    let focused = world
         .interaction
         .session
-        .inspect_scroll_runtime_for_certification();
+        .inspect_focus_runtime_for_certification();
+    assert_eq!(focused.revision(), focus_before.revision() + 1);
+    assert!(focused.current_participant().is_some());
+    let revealed = publish_focus_reveal_frame(
+        &mut world,
+        &recorder,
+        scrolled.owner_geometry()[0].block_offset_subpixels(),
+    );
     assert_eq!((revealed.owners(), revealed.admitted_requests()), (1, 2));
     assert_eq!(revealed.owners_visited(), 2);
     assert_eq!(
@@ -240,12 +248,6 @@ fn declared_selection_portal_rejects_atomically_then_commits_selection_and_focus
         expected_reveal_offset,
         "Nearest reveal settles in owner content space, independent of the predecessor offset"
     );
-    let focused = world
-        .interaction
-        .session
-        .inspect_focus_runtime_for_certification();
-    assert_eq!(focused.revision(), focus_before.revision() + 1);
-    assert!(focused.current_participant().is_some());
 
     let _ = recorder.drain_transcripts();
     publish_mounted_replacement(&mut world, replacement_input);

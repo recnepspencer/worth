@@ -51,6 +51,7 @@ pub use command_routing::{
 };
 pub(crate) mod focus;
 mod measurement;
+pub(crate) mod mosaic;
 pub(crate) mod motion;
 pub(crate) mod observation;
 pub(crate) mod overlay_composition;

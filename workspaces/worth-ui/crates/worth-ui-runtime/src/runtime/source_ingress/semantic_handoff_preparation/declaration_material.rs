@@ -113,6 +113,11 @@ fn runtime_component_measurement_claims(
                 continue;
             };
             let (basis, mode) = match contract {
+                // A layout cell is resolved by its container's layout, not
+                // from a viewport measurement.
+                crate::capability::ComponentAllocationMeasurementContract::LayoutCell(_) => {
+                    continue;
+                }
                 crate::capability::ComponentAllocationMeasurementContract::FillViewport => (
                     Some(UiDeclaredMeasurementBasisSource::ViewportExtent),
                     crate::declaration::UiDeclaredMeasurementMode::FillViewport,

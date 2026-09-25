@@ -27,6 +27,7 @@ pub struct ComponentDescriptor {
     semantic_text_contract: Option<super::ComponentSemanticTextContract>,
     hit_test_contract: Option<super::ComponentHitTestContract>,
     portal_child_contract: Option<super::ComponentPortalChildContract>,
+    layout: Option<crate::capability::MosaicResponsiveLayout>,
     appearance_aspect_contract: Option<worth_ui_dsl::UiAppearanceAspectContract>,
 }
 
@@ -90,6 +91,7 @@ impl ComponentDescriptor {
             semantic_text_contract: None,
             hit_test_contract: None,
             portal_child_contract: None,
+            layout: None,
             appearance_aspect_contract: None,
         }
     }
@@ -120,6 +122,7 @@ impl ComponentDescriptor {
             semantic_text_contract: None,
             hit_test_contract: None,
             portal_child_contract: None,
+            layout: None,
             appearance_aspect_contract: None,
         }
     }
@@ -150,6 +153,7 @@ impl ComponentDescriptor {
             semantic_text_contract: None,
             hit_test_contract: None,
             portal_child_contract: None,
+            layout: None,
             appearance_aspect_contract: None,
         }
     }
@@ -240,6 +244,17 @@ impl ComponentDescriptor {
         self
     }
 
+    /// Declares the tracks this container lays its member components out in.
+    /// Each member places itself within its cell through a layout-cell
+    /// allocation contract.
+    pub fn with_layout(
+        mut self,
+        layout: impl Into<crate::capability::MosaicResponsiveLayout>,
+    ) -> Self {
+        self.layout = Some(layout.into());
+        self
+    }
+
     pub fn id(&self) -> &ComponentId {
         &self.id
     }
@@ -317,6 +332,10 @@ impl ComponentDescriptor {
 
     pub fn portal_child_contract(&self) -> Option<&super::ComponentPortalChildContract> {
         self.portal_child_contract.as_ref()
+    }
+
+    pub fn layout(&self) -> Option<&crate::capability::MosaicResponsiveLayout> {
+        self.layout.as_ref()
     }
 
     pub(crate) fn has_conflicting_allocation_contracts(&self) -> bool {

@@ -6,6 +6,11 @@ pub struct UiNativeMountedComponentLayoutInput {
     instance: worth_ui_host_contract::UiMountedInstanceIdentity,
     allocation: Option<crate::capability::ComponentAllocationMeasurementContract>,
     portal_parent: Option<worth_ui_host_contract::UiMountedInstanceIdentity>,
+    layout: Option<crate::capability::MosaicResponsiveLayout>,
+    layout_member: Option<(
+        worth_ui_host_contract::UiMountedInstanceIdentity,
+        crate::capability::ComponentId,
+    )>,
 }
 
 #[derive(Clone, Debug)]
@@ -17,17 +22,40 @@ pub struct UiNativeMountedRegionLayoutInput {
 }
 
 impl UiNativeMountedComponentLayoutInput {
-    pub(crate) fn new(
+    /// Pairs one mounted occurrence with its admitted descriptor. `mounted`
+    /// finds the occurrence of the Portal owner or layout container the
+    /// descriptor names.
+    pub(crate) fn from_descriptor(
         authored_semantic_identity: impl Into<Box<str>>,
         instance: worth_ui_host_contract::UiMountedInstanceIdentity,
-        allocation: Option<crate::capability::ComponentAllocationMeasurementContract>,
-        portal_parent: Option<worth_ui_host_contract::UiMountedInstanceIdentity>,
+        descriptor: Option<&crate::capability::ComponentDescriptor>,
+        components: &crate::capability::FrozenComponentCapabilities,
+        mounted: impl Fn(
+            &crate::capability::ComponentId,
+        ) -> Option<worth_ui_host_contract::UiMountedInstanceIdentity>,
     ) -> Self {
+        let allocation =
+            descriptor.and_then(|descriptor| descriptor.allocation_measurement_contract());
+        let layout_member = descriptor
+            .filter(|_| {
+                matches!(
+                    allocation,
+                    Some(crate::capability::ComponentAllocationMeasurementContract::LayoutCell(_))
+                )
+            })
+            .and_then(|descriptor| {
+                let container = components.layout_container(descriptor.id())?;
+                Some((mounted(container.id())?, descriptor.id().clone()))
+            });
         Self {
             authored_semantic_identity: authored_semantic_identity.into(),
             instance,
             allocation,
-            portal_parent,
+            portal_parent: descriptor
+                .and_then(|descriptor| descriptor.portal_child_contract())
+                .and_then(|contract| mounted(contract.owner())),
+            layout: descriptor.and_then(|descriptor| descriptor.layout().cloned()),
+            layout_member,
         }
     }
 
@@ -45,6 +73,34 @@ impl UiNativeMountedComponentLayoutInput {
 
     pub fn portal_parent(&self) -> Option<worth_ui_host_contract::UiMountedInstanceIdentity> {
         self.portal_parent
+    }
+
+    /// The tracks this component lays its members out in, when it is a
+    /// layout container.
+    pub fn layout(&self) -> Option<&crate::capability::MosaicResponsiveLayout> {
+        self.layout.as_ref()
+    }
+
+    /// The mounted container that places this component in one of its cells.
+    pub fn layout_container(&self) -> Option<worth_ui_host_contract::UiMountedInstanceIdentity> {
+        self.layout_member.as_ref().map(|(container, _)| *container)
+    }
+
+    pub(super) fn layout_node(&self) -> crate::runtime::mosaic::layout::UiMosaicLayoutNode<'_> {
+        use crate::runtime::mosaic::layout::UiMosaicLayoutParent;
+        crate::runtime::mosaic::layout::UiMosaicLayoutNode {
+            instance: self.instance,
+            allocation: self.allocation,
+            layout: self.layout.as_ref(),
+            parent: match (&self.layout_member, self.portal_parent) {
+                (Some((container, member)), _) => UiMosaicLayoutParent::Container {
+                    container: *container,
+                    member,
+                },
+                (None, Some(owner)) => UiMosaicLayoutParent::Portal(owner),
+                (None, None) => UiMosaicLayoutParent::Viewport,
+            },
+        }
     }
 }
 
@@ -121,19 +177,17 @@ impl WorthUiNativeApplicationShell {
                 let descriptor = component_id
                     .as_ref()
                     .and_then(|identity| capabilities.get(identity));
-                let portal_parent = descriptor
-                    .and_then(|descriptor| descriptor.portal_child_contract())
-                    .and_then(|contract| {
-                        self.mounted_component_instance(&format!(
-                            "component:{}",
-                            contract.owner().as_str()
-                        ))
-                    });
-                Some(UiNativeMountedComponentLayoutInput::new(
+                Some(UiNativeMountedComponentLayoutInput::from_descriptor(
                     row.authored_semantic_identity.clone(),
                     instance,
-                    descriptor.and_then(|descriptor| descriptor.allocation_measurement_contract()),
-                    portal_parent,
+                    descriptor,
+                    capabilities,
+                    |component| {
+                        self.mounted_component_instance(&format!(
+                            "component:{}",
+                            component.as_str()
+                        ))
+                    },
                 ))
             })
             .collect::<Vec<_>>()

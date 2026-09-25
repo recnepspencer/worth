@@ -121,20 +121,9 @@ impl super::WorthUiApplicationSessionState {
         mounted: &crate::mounting::UiMountedFramePublicationReceipt,
         portal: &mut crate::runtime::portal::UiPortalRuntimeState,
         focus: &mut crate::runtime::focus::UiFocusRuntimeState,
-        scroll_state: Option<&mut crate::runtime::scroll::UiScrollRuntimeState>,
         selection_state: Option<&mut crate::runtime::selection::UiSelectionRuntimeState>,
         motion_state: &mut crate::runtime::motion::UiMotionRuntimeState,
-    ) -> Result<
-        (
-            crate::runtime::focus::UiFocusTransitionReceipt,
-            Option<crate::runtime::motion::UiMotionCommitReceipt>,
-            Option<(
-                crate::runtime::portal::UiPortalExitRetentionReceipt,
-                crate::runtime::motion::UiMotionExitRetentionReceipt,
-            )>,
-        ),
-        super::UiPortalProposalPreparationDenial,
-    > {
+    ) -> Result<super::UiPublishedPortalSettlement, super::UiPortalProposalPreparationDenial> {
         if !transaction.reveal_refinement_agrees() {
             return Err(super::UiPortalProposalPreparationDenial::RevealRefinementMismatch);
         }
@@ -181,10 +170,6 @@ impl super::WorthUiApplicationSessionState {
         let focus_transition = focus
             .commit_portal_proposal(focus_owner.proposal(), frame)
             .expect("exclusive Focus proposal retains exact prepared successor");
-        if let Some(staged_reveal) = staged_reveal {
-            staged_reveal
-                .commit(scroll_state.expect("a staged reveal retains its installed Scroll owner"));
-        }
         let motion_exit_retention = motion_commit.and_then(|commit| commit.exit_retention());
         let (_, portal_exit_retention) = portal
             .commit_published_with_exit_retention(transition, motion_exit_retention.is_some())
@@ -215,7 +200,14 @@ impl super::WorthUiApplicationSessionState {
                 selection_state.expect("a staged Selection proposal retains its installed owner"),
             );
         }
-        Ok((focus_transition, motion_commit, exit_retention))
+        // The staged reveal leaves with the settlement: it lands as a direct
+        // placement with the frame that carries it, not on this one.
+        Ok(super::UiPublishedPortalSettlement {
+            focus: focus_transition,
+            motion: motion_commit,
+            exit_retention,
+            reveal: staged_reveal,
+        })
     }
 
     pub(crate) fn settle_indeterminate_portal_service_proposal(

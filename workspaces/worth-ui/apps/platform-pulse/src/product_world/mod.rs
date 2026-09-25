@@ -29,5 +29,6 @@ pub use visual_composition::{
 };
 
 pub use visual_composition::{
-    dashboard_elements, DashboardContent, DashboardElement, DashboardGraphic, DashboardScrollPanel,
+    dashboard_containers, dashboard_elements, DashboardContainer, DashboardContent,
+    DashboardElement, DashboardGraphic, DashboardLayoutCell, DashboardScrollPanel,
 };

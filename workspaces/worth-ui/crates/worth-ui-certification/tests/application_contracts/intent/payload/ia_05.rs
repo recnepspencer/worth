@@ -29,6 +29,7 @@ use super::world::{
 };
 use crate::projection_lifecycle::support::ScalarLifecycleWorld;
 
+mod focus_reveal_frame;
 mod selection_identity;
 mod selection_portal_coordination;
 

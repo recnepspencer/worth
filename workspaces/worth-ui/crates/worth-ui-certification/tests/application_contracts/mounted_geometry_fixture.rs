@@ -4,10 +4,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use worth_ui::facade::app::{
     UiMountedCanonicalBox, UiMountedCanonicalBoxInput, UiMountedCoordinateSpace,
     UiMountedLayoutRevision, UiMountedOccurrenceGeometry, UiMountedSurfaceGeometryBatch,
-    WorthUiActiveApplicationSession,
-};
-use worth_ui::facade::declaration::{
-    ComponentAllocationMeasurementContract, ComponentViewportAxisPlacement,
+    UiNativeMountedComponentLayoutInput, WorthUiActiveApplicationSession,
 };
 use worth_ui_runtime::facade::mounted::UiMountedAllocationProjection;
 use worth_ui_test_support::{
@@ -91,37 +88,39 @@ pub(crate) fn install_native_occurrence_geometry(
     let inputs = shell.native_component_layout_inputs();
     // Scripted native allocation observations and input drains use 800 by 600.
     let viewport = canonical_box([0.0, 0.0, 800.0, 600.0]);
-    let mut surface_bounds = BTreeMap::new();
-    for (index, input) in inputs.iter().enumerate() {
-        let coordinate_space = if input.portal_parent().is_some() {
-            UiMountedCoordinateSpace::GraphNodeLocal
-        } else {
-            UiMountedCoordinateSpace::HostSurface
-        };
-        let bounds = input
-            .allocation()
-            .map(|contract| resolve_allocation(contract, viewport, coordinate_space))
-            .unwrap_or_else(|| {
-                let bounds = occurrence_bounds(index);
-                box_in_space(
-                    [bounds.x(), bounds.y(), bounds.width(), bounds.height()],
-                    coordinate_space,
-                )
-            });
-        surface_bounds.insert(input.instance(), bounds);
-    }
+    let allocated = inputs
+        .iter()
+        .filter(|input| input.allocation().is_some())
+        .cloned()
+        .collect::<Vec<_>>();
+    let mut resolved =
+        UiNativeMountedComponentLayoutInput::resolve_occurrences(viewport, &allocated)
+            .expect("certification components declare placeable allocations")
+            .into_vec()
+            .into_iter();
+    // Occurrences keep the mounted order; a component without an allocation
+    // contract takes a distinct grid slot.
     let occurrences = inputs
         .iter()
-        .map(|input| match input.portal_parent() {
-            Some(parent) => UiMountedOccurrenceGeometry::parent_relative(
-                input.instance(),
-                parent,
-                surface_bounds[&input.instance()],
-            ),
-            None => UiMountedOccurrenceGeometry::surface(
-                input.instance(),
-                surface_bounds[&input.instance()],
-            ),
+        .enumerate()
+        .map(|(index, input)| {
+            if input.allocation().is_some() {
+                return resolved
+                    .next()
+                    .expect("one resolved occurrence per allocated component");
+            }
+            let bounds = occurrence_bounds(index);
+            let bounds = [bounds.x(), bounds.y(), bounds.width(), bounds.height()];
+            match input.portal_parent() {
+                Some(parent) => UiMountedOccurrenceGeometry::parent_relative(
+                    input.instance(),
+                    parent,
+                    local_box(bounds),
+                ),
+                None => {
+                    UiMountedOccurrenceGeometry::surface(input.instance(), canonical_box(bounds))
+                }
+            }
         })
         .collect::<Vec<_>>();
     let regions = shell
@@ -141,69 +140,6 @@ pub(crate) fn install_native_occurrence_geometry(
                 .with_regions(regions),
         )
         .expect("native certification layout covers every mounted occurrence");
-}
-
-fn resolve_allocation(
-    contract: ComponentAllocationMeasurementContract,
-    viewport: UiMountedCanonicalBox,
-    coordinate_space: UiMountedCoordinateSpace,
-) -> UiMountedCanonicalBox {
-    let (x, y, width, height) = match contract {
-        ComponentAllocationMeasurementContract::FillViewport => {
-            (0.0, 0.0, viewport.width(), viewport.height())
-        }
-        ComponentAllocationMeasurementContract::ViewportInset(inset) => {
-            let horizontal = f32::from(inset.horizontal_logical_points());
-            let vertical = f32::from(inset.vertical_logical_points());
-            (
-                horizontal,
-                vertical,
-                (viewport.width() - 2.0 * horizontal).max(0.0),
-                (viewport.height() - 2.0 * vertical).max(0.0),
-            )
-        }
-        ComponentAllocationMeasurementContract::ViewportRegion(region) => {
-            let horizontal = resolve_axis(region.horizontal(), viewport.width());
-            let vertical = resolve_axis(region.vertical(), viewport.height());
-            (horizontal.0, vertical.0, horizontal.1, vertical.1)
-        }
-        ComponentAllocationMeasurementContract::FixedLogicalSize { width, height } => {
-            (0.0, 0.0, f32::from(width), f32::from(height))
-        }
-    };
-    box_in_space([x, y, width, height], coordinate_space)
-}
-
-fn resolve_axis(axis: ComponentViewportAxisPlacement, available: f32) -> (f32, f32) {
-    match axis {
-        ComponentViewportAxisPlacement::FixedFromStart {
-            start_logical_points,
-            extent_logical_points,
-        } => (
-            f32::from(start_logical_points),
-            f32::from(extent_logical_points),
-        ),
-        ComponentViewportAxisPlacement::StretchBetween {
-            start_logical_points,
-            end_logical_points,
-        } => {
-            let start = f32::from(start_logical_points);
-            (
-                start,
-                (available - start - f32::from(end_logical_points)).max(0.0),
-            )
-        }
-        ComponentViewportAxisPlacement::FixedFromEnd {
-            end_logical_points,
-            extent_logical_points,
-        } => {
-            let extent = f32::from(extent_logical_points);
-            (
-                (available - f32::from(end_logical_points) - extent).max(0.0),
-                extent,
-            )
-        }
-    }
 }
 
 fn occurrence_bounds(index: usize) -> UiMountedCanonicalBox {

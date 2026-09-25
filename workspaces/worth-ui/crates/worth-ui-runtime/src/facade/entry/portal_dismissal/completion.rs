@@ -41,7 +41,12 @@ pub(super) fn finish<'session>(
                 .as_ref()
                 .expect("published dismissal retains proposal")
                 .overlay_binding_commit();
-            let (focus, motion, exit_retention) = admitted
+            let crate::runtime::session::UiPublishedPortalSettlement {
+                focus,
+                motion,
+                exit_retention,
+                reveal,
+            } = admitted
                 .session
                 .application
                 .settle_published_portal_service_proposal(
@@ -60,7 +65,6 @@ pub(super) fn finish<'session>(
                         .focus
                         .as_mut()
                         .expect("admitted dismissal retains Focus installation"),
-                    admitted.session.scroll.as_mut(),
                     admitted.session.selection.as_mut(),
                     admitted
                         .session
@@ -86,6 +90,9 @@ pub(super) fn finish<'session>(
             admitted
                 .session
                 .install_portal_exit_retention(exit_retention);
+            if let Some(reveal) = reveal {
+                admitted.session.stage_focus_reveal_placement(reveal);
+            }
             admitted.session.install_committed_motion(motion);
             UiPortalDismissalPublicationOutcome::Published(
                 UiPortalDismissalPublicationReceipt::new(mounted, focus),

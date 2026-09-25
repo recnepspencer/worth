@@ -1,5 +1,6 @@
 #[must_use = "a staged focus reveal must commit with or be discarded by its proposal"]
 pub(crate) struct UiStagedFocusReveal {
+    target: worth_ui_host_contract::UiMountedInstanceIdentity,
     registrations: Vec<crate::runtime::scroll::UiScrollOwnerRegistration>,
     anchor: crate::runtime::scroll::UiScrollAnchor,
     request: crate::runtime::scroll::UiScrollProgrammaticRevealRequest,
@@ -127,6 +128,7 @@ impl super::super::WorthUiApplicationSessionState {
             .reveal(request.clone())
             .map_err(UiFocusRevealStagingDenial::Route)?;
         Ok(Some(UiStagedFocusReveal {
+            target: requirement.target(),
             registrations,
             anchor,
             request,
@@ -136,9 +138,23 @@ impl super::super::WorthUiApplicationSessionState {
 }
 
 impl UiStagedFocusReveal {
-    pub(crate) fn commit(self, state: &mut crate::runtime::scroll::UiScrollRuntimeState) {
+    /// Route the reveal on `successor`, a copy of current Scroll truth, and
+    /// return the occurrence it reveals with the exact prevalidated receipt.
+    ///
+    /// A reveal is direct authority over the offset, the same as a thumb
+    /// placed on a track, so a caller whose reveal moves an offset stages the
+    /// routed successor as a direct placement that lands with the frame
+    /// carrying it. Committing it at once would move Scroll off the pose the
+    /// host displays with nothing awaiting publication to show for it.
+    pub(crate) fn route(
+        self,
+        successor: &mut crate::runtime::scroll::UiScrollRuntimeState,
+    ) -> (
+        worth_ui_host_contract::UiMountedInstanceIdentity,
+        crate::runtime::scroll::UiScrollRouteReceipt,
+    ) {
         for registration in self.registrations {
-            state
+            successor
                 .reconcile_rebind(crate::runtime::scroll::UiScrollRebindRequest::new(
                     registration,
                     Some(self.anchor),
@@ -146,13 +162,14 @@ impl UiStagedFocusReveal {
                 ))
                 .expect("staged focus reveal retains its exact current Scroll owner");
         }
-        let committed = state
+        let routed = successor
             .reveal(self.request)
             .expect("staged focus reveal rebases against current Scroll truth");
         assert_eq!(
-            committed, self.receipt,
-            "staged focus reveal must commit the exact prevalidated Scroll transition"
+            routed, self.receipt,
+            "staged focus reveal must route the exact prevalidated Scroll transition"
         );
+        (self.target, routed)
     }
 }
 

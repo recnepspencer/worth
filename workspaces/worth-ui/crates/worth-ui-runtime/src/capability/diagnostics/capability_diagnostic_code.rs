@@ -9,6 +9,8 @@ pub enum CapabilityDiagnosticCode {
     MissingComponentCanvasSpatialContract,
     MissingComponentRealtimeOverlayContract,
     ConflictingComponentAllocationContract,
+    InvalidComponentLayoutMembership,
+    CyclicComponentLayout,
     AppearanceRoleAttachmentMismatch,
     UnsupportedSurfacePlacementClass,
     InvalidSurfaceStateClass,

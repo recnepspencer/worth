@@ -6,6 +6,8 @@ use super::{ComponentAcceptedRegistrationProof, ComponentDescriptor};
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct FrozenComponentCapabilities {
     descriptors: Vec<ComponentDescriptor>,
+    /// Each layout member's container, as an index into `descriptors`.
+    layout_containers: std::collections::BTreeMap<ComponentId, usize>,
 }
 
 impl FrozenComponentCapabilities {
@@ -13,6 +15,7 @@ impl FrozenComponentCapabilities {
     pub(crate) fn empty() -> Self {
         Self {
             descriptors: Vec::new(),
+            layout_containers: std::collections::BTreeMap::new(),
         }
     }
 
@@ -22,7 +25,21 @@ impl FrozenComponentCapabilities {
     ) -> Self {
         descriptors.retain(|descriptor| accepted_components.admits(descriptor));
         descriptors.sort_by(|left, right| left.id().cmp(right.id()));
-        Self { descriptors }
+        let layout_containers = descriptors
+            .iter()
+            .enumerate()
+            .filter_map(|(index, descriptor)| Some((index, descriptor.layout()?)))
+            .flat_map(|(index, layout)| {
+                layout
+                    .fallback()
+                    .members()
+                    .map(move |(member, _)| (member.clone(), index))
+            })
+            .collect();
+        Self {
+            descriptors,
+            layout_containers,
+        }
     }
 
     pub fn is_empty(&self) -> bool {
@@ -42,6 +59,13 @@ impl FrozenComponentCapabilities {
             .binary_search_by(|descriptor| descriptor.id().cmp(id))
             .ok()
             .map(|index| &self.descriptors[index])
+    }
+
+    /// The container whose layout places `member` in one of its cells.
+    pub fn layout_container(&self, member: &ComponentId) -> Option<&ComponentDescriptor> {
+        self.layout_containers
+            .get(member)
+            .map(|index| &self.descriptors[*index])
     }
 
     pub(crate) fn digest_basis(&self) -> u64 {
@@ -121,8 +145,14 @@ fn fold_component_descriptor(accumulator: u64, descriptor: &ComponentDescriptor)
             .portal_child_contract()
             .map(super::ComponentPortalChildContract::digest_basis),
     );
-    let with_allocation = fold_optional_str(
+    let with_layout = fold_optional_str(
         with_portal_child,
+        descriptor
+            .layout()
+            .map(crate::capability::MosaicResponsiveLayout::digest_basis),
+    );
+    let with_allocation = fold_optional_str(
+        with_layout,
         descriptor
             .allocation_measurement_contract()
             .map(|contract| contract.digest_basis()),
