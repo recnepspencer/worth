@@ -23,7 +23,9 @@ use crate::domain_computation::primary_graph::{
 
 mod authority_binding;
 mod receipt;
-pub(super) use receipt::{operation_receipt_requires_recovery, validate_operation_receipt};
+pub(in crate::domain_computation::primary_graph::application_attempt) use receipt::operation_receipt_requires_recovery;
+pub(in crate::domain_computation::primary_graph::application_attempt) use receipt::receipt_identity_from_outcome;
+pub(super) use receipt::validate_operation_receipt;
 
 impl<Schema, Operation, Input, Scope>
     WorthQueryCompleteApplicationReadSet<
@@ -182,23 +184,13 @@ where
             .binding
             .clone()
             .ok_or_else(|| mismatch(selected.node_path()))?;
-        let authority = approval_authority.map(|approval_authority| {
-            WorkflowOperationAuthority::new(
-                operation.operation.clone(),
-                binding,
-                *selected.identity_bytes(),
-                input_identity,
-                self.admission.runtime_authority().as_u64(),
-                self.admission.graph_work_session_identity(),
-                crate::basis::WorthQueryProductBranchReadIdentity::from_observation(
-                    self.lease.product().observation(),
-                ),
-                authority_facts,
-                approval_authority,
-                self.lease.handle().clone(),
-                std::sync::Arc::clone(&self.lease.layout),
-            )
-        });
+        let runtime_authority = self.admission.runtime_authority().as_u64();
+        let session_identity = self.admission.graph_work_session_identity();
+        let observation = crate::basis::WorthQueryProductBranchReadIdentity::from_observation(
+            self.lease.product().observation(),
+        );
+        let handle = self.lease.handle().clone();
+        let graph_layout = std::sync::Arc::clone(&self.lease.layout);
         let admitted =
             crate::domain_computation::primary_graph::workflow::instance::admit_workflow_transition(
                 self,
@@ -208,6 +200,23 @@ where
                 live_membership,
                 retire_live_membership,
             );
+        let authority = approval_authority.map(|approval_authority| {
+            WorkflowOperationAuthority::new(
+                operation.operation.clone(),
+                binding,
+                *admitted.identity_bytes(),
+                input_identity,
+                runtime_authority,
+                session_identity,
+                observation,
+                authority_facts,
+                admitted.operation_settlement_basis(),
+                layout.clone(),
+                approval_authority,
+                handle,
+                graph_layout,
+            )
+        });
         let required = RequiredWorkflowOperation::from_selected(
             branch,
             admitted.instance(),
@@ -321,7 +330,7 @@ where
             emission_retained_bytes: 0,
             emission_retained_bytes_ceiling: 0,
             conditional_definition: None,
-            platform_mutation: true,
+            effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Platform,
             validator_work_admission,
             output_correspondence: Default::default(),
             retain_output_demand_observation: false,

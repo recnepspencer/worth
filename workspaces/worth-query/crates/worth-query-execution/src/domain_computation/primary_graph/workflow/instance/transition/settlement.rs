@@ -4,7 +4,7 @@ use worth_foundational::facade::{AspectValue, InternedString};
 use worth_relational::facade::symbols::ClientKey;
 use worth_relational::facade::transactions::{CreatedEntityRef, EntityReference};
 
-use super::AdmittedWorkflowTransition;
+use super::{AdmittedWorkflowTransition, WorkflowOperationSettlementBasis};
 use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationCreationPartition, WorthQueryApplicationRealizedEffect,
 };
@@ -68,9 +68,80 @@ pub(in crate::domain_computation::primary_graph) fn visit_workflow_operation_tra
     )
 }
 
+pub(in crate::domain_computation::primary_graph) fn visit_workflow_operation_settlement_facts<
+    Error,
+>(
+    layout: &WorthQueryWorkflowLayout,
+    basis: &WorkflowOperationSettlementBasis,
+    operation_receipt_identity: &[u8; 32],
+    emit: impl FnMut(WorthQueryApplicationRealizedEffect) -> Result<(), Error>,
+) -> Result<CreatedEntityRef, Error> {
+    visit_transition_facts_from_basis(
+        layout,
+        TransitionFactBasis::from_settlement(basis),
+        worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome::Completed,
+        super::super::state::WorkflowInstanceState::Ready,
+        Some(operation_receipt_identity),
+        emit,
+    )
+}
+
 fn visit_transition_facts<Schema, Operation, Input, Scope, Error>(
     layout: &WorthQueryWorkflowLayout,
     admitted: &AdmittedWorkflowTransition<Schema, Operation, Input, Scope>,
+    outcome: worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome,
+    state: super::super::state::WorkflowInstanceState,
+    operation_receipt_identity: Option<&[u8; 32]>,
+    emit: impl FnMut(WorthQueryApplicationRealizedEffect) -> Result<(), Error>,
+) -> Result<CreatedEntityRef, Error> {
+    visit_transition_facts_from_basis(
+        layout,
+        TransitionFactBasis::from_admitted(admitted),
+        outcome,
+        state,
+        operation_receipt_identity,
+        emit,
+    )
+}
+
+struct TransitionFactBasis<'a> {
+    instance: worth_relational::facade::identity::EntityId,
+    node: worth_relational::facade::identity::EntityId,
+    occurrence: u64,
+    live_membership: worth_relational::facade::identity::RelationId,
+    retire_live_membership: bool,
+    identity: &'a str,
+}
+
+impl<'a> TransitionFactBasis<'a> {
+    fn from_admitted<Schema, Operation, Input, Scope>(
+        admitted: &'a AdmittedWorkflowTransition<Schema, Operation, Input, Scope>,
+    ) -> Self {
+        Self {
+            instance: admitted.instance,
+            node: admitted.node,
+            occurrence: admitted.occurrence,
+            live_membership: admitted.live_membership,
+            retire_live_membership: admitted.retire_live_membership,
+            identity: &admitted.identity,
+        }
+    }
+
+    fn from_settlement(basis: &'a WorkflowOperationSettlementBasis) -> Self {
+        Self {
+            instance: basis.instance,
+            node: basis.node,
+            occurrence: basis.occurrence,
+            live_membership: basis.live_membership,
+            retire_live_membership: basis.retire_live_membership,
+            identity: &basis.identity,
+        }
+    }
+}
+
+fn visit_transition_facts_from_basis<Error>(
+    layout: &WorthQueryWorkflowLayout,
+    admitted: TransitionFactBasis<'_>,
     outcome: worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome,
     state: super::super::state::WorkflowInstanceState,
     operation_receipt_identity: Option<&[u8; 32]>,
@@ -84,7 +155,7 @@ fn visit_transition_facts<Schema, Operation, Input, Scope, Error>(
     let mut fields = BTreeMap::from([
         (
             layout.transition.identity.clone(),
-            AspectValue::String(InternedString::Raw(admitted.identity.clone())),
+            AspectValue::String(InternedString::Raw(admitted.identity.to_owned())),
         ),
         (
             layout.transition.protocol_version.clone(),

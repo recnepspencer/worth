@@ -41,6 +41,7 @@ pub struct WorthQueryCompiledApplicationOperationContracts {
     pub(super) aftermath: Option<WorthQueryInstalledAftermathContract>,
     pub(super) overlap_index: WorthQueryOperationReadTouchOverlapIndex,
     pub(super) platform_candidate_ceiling: Option<ApplicationCandidateRequirements>,
+    pub(super) workflow_settlement_ceiling: Option<ApplicationCandidateRequirements>,
 }
 
 impl WorthQueryCompiledApplicationOperationContracts {
@@ -48,6 +49,12 @@ impl WorthQueryCompiledApplicationOperationContracts {
     /// this operation. Query-owned platform effects cannot exceed these kinds.
     pub const fn platform_candidate_ceiling(&self) -> Option<ApplicationCandidateRequirements> {
         self.platform_candidate_ceiling
+    }
+
+    /// Query-owned sidecar capacity for one locally performed workflow step.
+    /// It is separate from the product handler's candidate writer ceiling.
+    pub const fn workflow_settlement_ceiling(&self) -> Option<ApplicationCandidateRequirements> {
+        self.workflow_settlement_ceiling
     }
 
     pub fn mutation_preconditions(&self) -> &[WorthQueryInstalledMutationPrecondition] {

@@ -34,8 +34,9 @@ use super::{
 #[path = "definition/instance.rs"]
 mod instance;
 pub use instance::{
-    advance_instance, approve_instance, propose_authoring_instance, propose_instance,
-    propose_instance_on_branch, start_instance,
+    advance_instance, approve_instance, propose_authoring_instance,
+    propose_authoring_instance_with_dimension, propose_instance, propose_instance_on_branch,
+    start_instance,
 };
 
 pub fn reviewed_geometry_definition(

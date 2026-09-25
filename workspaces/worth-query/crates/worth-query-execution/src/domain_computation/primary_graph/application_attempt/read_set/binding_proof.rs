@@ -8,6 +8,10 @@ pub(in crate::domain_computation::primary_graph::application_attempt) struct Wor
     pub(in crate::domain_computation::primary_graph::application_attempt) input_identity: [u8; 32],
     pub(in crate::domain_computation::primary_graph::application_attempt) approval_authority:
         crate::domain_computation::authorization::WorthQueryWorkflowApprovalAuthorityBasis,
+    pub(in crate::domain_computation::primary_graph::application_attempt) settlement_basis:
+        crate::domain_computation::primary_graph::workflow::instance::WorkflowOperationSettlementBasis,
+    pub(in crate::domain_computation::primary_graph::application_attempt) workflow_layout:
+        crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
 }
 
 pub(in crate::domain_computation::primary_graph::application_attempt) struct MutationHandlerBindingProof

@@ -15,8 +15,8 @@ use worth_query_host::facade::primary_graph::{
 
 use super::bounded_dimension_model::{
     dimension_entry::{
-        ReviewedSetPartDimensionBinding, ReviewedSetPartDimensionIntent, SetPartDimensionIntent,
-        PART_IDENTITY,
+        candidate_count, reset_candidate_count, ReviewedSetPartDimensionBinding,
+        ReviewedSetPartDimensionIntent, SetPartDimensionIntent, PART_IDENTITY,
     },
     host::{BoundedDimensionWorkflowRuntime, SEED_DIMENSION},
     operator_identity::{authenticate_operator, request_scope},
@@ -27,10 +27,11 @@ use super::bounded_dimension_model::{
         accept_assessment, advance_instance, approve_instance, propose_instance,
         publish_definition, reviewed_geometry_definition,
         reviewed_geometry_definition_with_join_policy, settle_assessment, start_instance,
-        WorkflowAdvanceInput, WorkflowAdvanceIntent,
     },
 };
 
+#[path = "workflow_approval/atomic_settlement.rs"]
+mod atomic_settlement;
 #[path = "workflow_approval/authentication.rs"]
 mod authentication;
 #[path = "workflow_approval/commit_boundary.rs"]
@@ -196,58 +197,21 @@ fn approved_operation_requires_and_consumes_the_exact_performed_effect() {
         WorthQueryApplicationMutationOutcome::Committed { receipt, .. } => receipt,
         other => panic!("expected the approved effect to commit, got {other:?}"),
     };
+    assert!(receipt.outcome_identity().is_some());
+    assert_eq!(
+        receipt
+            .committed_changes()
+            .entity_changes()
+            .filter(|(_, change)| {
+                *change == worth_relational::facade::publication::RecordStructuralChange::Created
+            })
+            .count(),
+        2,
+        "the zero-create handler and Query-owned transition share one commit"
+    );
     assert_eq!(read_dimension(runtime, instance.branch()), 8);
-    let completed = runtime
-        .request(&principal, &scope)
-        .on_branch(instance.branch())
-        .mutate(WorkflowAdvanceIntent {
-            input: WorkflowAdvanceInput {
-                part_identity: PART_IDENTITY.to_owned(),
-            },
-        })
-        .without_source()
-        .idempotency(&816_u64)
-        .prepare_workflow_advance(&application, instance.clone())
-        .expect("the effect acceptance must prepare")
-        .accept_operation::<ReviewedSetPartDimensionBinding>(&required, &receipt)
-        .expect("the exact owner-issued effect receipt must be accepted");
-    let durable_receipt_identity = match completed {
-        WorkflowProgressOutcome::Completed(performed) => {
-            assert_eq!(performed.node_path(), "apply");
-            assert!(!performed.replayed());
-            *performed
-                .operation_receipt_identity()
-                .expect("the performed effect receipt identity must be durable")
-        }
-        other => panic!("expected the apply transition to complete, got {other:?}"),
-    };
-    let replayed = runtime
-        .request(&principal, &scope)
-        .on_branch(instance.branch())
-        .mutate(WorkflowAdvanceIntent {
-            input: WorkflowAdvanceInput {
-                part_identity: PART_IDENTITY.to_owned(),
-            },
-        })
-        .without_source()
-        .idempotency(&816_u64)
-        .prepare_workflow_advance(&application, instance.clone())
-        .expect("the operation acceptance replay must prepare")
-        .accept_operation::<ReviewedSetPartDimensionBinding>(&required, &receipt)
-        .expect("the exact operation acceptance must replay");
-    match replayed {
-        WorkflowProgressOutcome::Completed(performed) => {
-            assert_eq!(performed.node_path(), "apply");
-            assert!(performed.replayed());
-            assert_eq!(
-                performed.operation_receipt_identity(),
-                Some(&durable_receipt_identity)
-            );
-        }
-        other => panic!("expected the apply transition replay, got {other:?}"),
-    }
     match advance_instance(&application, instance.clone(), 817)
-        .expect("the completion terminal must prepare")
+        .expect("the local mutation already settled apply, so the successor must prepare")
     {
         WorkflowProgressOutcome::Completed(performed) => {
             assert_eq!(performed.node_path(), "applied")

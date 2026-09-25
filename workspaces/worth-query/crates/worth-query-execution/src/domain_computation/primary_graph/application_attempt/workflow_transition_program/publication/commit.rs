@@ -1,4 +1,7 @@
 use worth_foundational::facade::{AspectValue, InternedString};
+#[path = "commit/transition_lookup.rs"]
+mod transition_lookup;
+pub(in crate::domain_computation::primary_graph::application_attempt) use transition_lookup::transition_entity_in_receipt;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::*;
@@ -216,22 +219,9 @@ pub(in crate::domain_computation::primary_graph::application_attempt::workflow_t
     operation_receipt_identity: Option<[u8; 32]>,
     replayed: bool,
 ) -> WorkflowProgressOutcome {
-    let expected = AspectValue::String(InternedString::Raw(transition_identity));
-    let candidates = receipt
-        .committed_changes()
-        .entity_changes()
-        .filter(|(_, change)| {
-            *change == worth_relational::facade::publication::RecordStructuralChange::Created
-        })
-        .filter_map(|(entity, _)| {
-            (receipt
-                .committed_changes()
-                .committed_field_values(entity, &[&transition_identity_locator])
-                == Some(vec![expected.clone()]))
-            .then_some(entity)
-        })
-        .collect::<Vec<_>>();
-    let [transition] = candidates.as_slice() else {
+    let Some(transition) =
+        transition_entity_in_receipt(&receipt, &transition_identity, &transition_identity_locator)
+    else {
         return WorkflowProgressOutcome::ProjectionDenied(receipt);
     };
     let assessment_evidence = match assessment {
@@ -276,14 +266,14 @@ pub(in crate::domain_computation::primary_graph::application_attempt::workflow_t
         None => None,
     };
     let approval = match approval {
-        Some(approval) => match project_approval(runtime, &receipt, *transition, approval) {
+        Some(approval) => match project_approval(runtime, &receipt, transition, approval) {
             Some(approval) => Some(approval),
             None => return WorkflowProgressOutcome::ProjectionDenied(receipt),
         },
         None => None,
     };
     WorkflowProgressOutcome::Completed(PerformedWorkflowTransition {
-        transition: *transition,
+        transition,
         node_path,
         terminal,
         receipt,

@@ -34,8 +34,10 @@ mod condition_materialization;
 mod evidence_join;
 mod navigation;
 mod operation;
+pub(super) use operation::{operation_receipt_requires_recovery, receipt_identity_from_outcome};
 mod preparation;
 mod publication;
+pub(super) use publication::transition_entity_in_receipt;
 mod terminal;
 
 pub use preparation::{

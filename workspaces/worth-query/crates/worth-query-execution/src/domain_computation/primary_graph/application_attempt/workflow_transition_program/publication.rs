@@ -22,6 +22,7 @@ mod transition_replay;
 pub use approval::{RequiredWorkflowApproval, WorkflowApprovalDecision};
 pub use assessment_evidence::PerformedWorkflowAssessmentEvidence;
 pub(super) use commit::project;
+pub(in crate::domain_computation::primary_graph::application_attempt) use commit::transition_entity_in_receipt;
 pub use evidence_readiness::RequiredWorkflowEvidence;
 pub use operation::{
     PreparedWorkflowOperation, RequiredWorkflowOperation, WorkflowOperationAuthority,

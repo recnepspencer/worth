@@ -1,7 +1,8 @@
 //! Bank-owned description of a Query commit denial.
 
 use worth_query_host::facade::primary_graph::{
-    WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitDenialStage,
+    WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationCommitDenialKind,
+    WorthQueryApplicationCommitDenialStage,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -11,6 +12,9 @@ pub enum BankCommitDenialKind {
     CandidateValidatorWorkExceeded {
         maximum_work: usize,
         required_work: usize,
+    },
+    WorkflowSettlementDenied {
+        kind: WorthQueryApplicationAttemptDenialKind,
     },
     ProductBasisStale,
     ActiveSnapshotCapacityExhausted {
@@ -72,6 +76,9 @@ pub(crate) const fn denial_kind(
             maximum_work,
             required_work,
         },
+        Query::WorkflowSettlementDenied { kind } => {
+            BankCommitDenialKind::WorkflowSettlementDenied { kind }
+        }
         Query::ProductBasisStale => BankCommitDenialKind::ProductBasisStale,
         Query::ActiveSnapshotCapacityExhausted {
             maximum_active_snapshots,

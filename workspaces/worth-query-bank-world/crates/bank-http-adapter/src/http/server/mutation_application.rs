@@ -9,9 +9,7 @@ use worth_query_host::facade::primary_graph::{
 };
 use worth_query_host::facade::{
     admission::authenticated_principal::{WorthQueryCancellationToken, WorthQueryRequestScope},
-    application_entry::{
-        WorthQueryApplicationMutationOutcome, WorthQueryApplicationRequestMutationDenialKind,
-    },
+    application_entry::WorthQueryApplicationMutationOutcome,
     primary_graph::{WorthQueryApplicationCommitOutcome, WorthQueryApplicationCommitReceipt},
 };
 
@@ -21,6 +19,9 @@ use super::super::protocol::{
     BankHttpProviderRecoveryKind,
 };
 use super::authentication::BankHttpApplicationAuthenticator;
+
+mod denial;
+use denial::request_mutation_denial;
 
 pub(super) enum AdmittedBankHttpMutation {
     Deposit(Deposit),
@@ -305,39 +306,6 @@ fn cancelled_or_denied(denial: BankHttpDenial) -> BankHttpMutationFailureKind {
     }
 }
 
-pub(super) fn request_mutation_denial(
-    kind: WorthQueryApplicationRequestMutationDenialKind,
-) -> BankHttpDenial {
-    use WorthQueryApplicationRequestMutationDenialKind as Denial;
-    match kind {
-        Denial::ProductSelection => {
-            BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh)
-        }
-        Denial::ScopeResolution => BankHttpDenial::new(
-            BankHttpDenialKind::NotFound,
-            BankHttpNextAction::CorrectRequest,
-        ),
-        Denial::Authorization => BankHttpDenial::new(
-            BankHttpDenialKind::PermissionDenied,
-            BankHttpNextAction::None,
-        ),
-        Denial::ApplicationProgramRequired | Denial::ApplicationProgramMismatch => {
-            BankHttpDenial::new(
-                BankHttpDenialKind::MalformedRequest,
-                BankHttpNextAction::CorrectRequest,
-            )
-        }
-        Denial::BindingInstallation
-        | Denial::CapabilityInstallation
-        | Denial::PrincipalResolution
-        | Denial::Idempotency
-        | Denial::Handler
-        | Denial::SourceExpectation => {
-            BankHttpDenial::new(BankHttpDenialKind::Unavailable, BankHttpNextAction::Retry)
-        }
-    }
-}
-
 pub(super) fn commit_denial(
     kind: WorthQueryApplicationCommitDenialKind,
 ) -> (BankHttpMutationFailureKind, BankHttpDenial) {
@@ -362,6 +330,7 @@ pub(super) fn commit_denial(
             ),
         ),
         Denial::CandidateValidatorWorkExceeded { .. }
+        | Denial::WorkflowSettlementDenied { .. }
         | Denial::PreparedRootBudgetExhausted { .. }
         | Denial::ElevationTransitionRequired
         | Denial::ElevationRequestProgramMismatch
@@ -370,7 +339,8 @@ pub(super) fn commit_denial(
         | Denial::MandatoryReviewProgramMismatch
         | Denial::DelegationActivationRequired
         | Denial::CapabilityRevocationRequired
-        | Denial::ApplicationProgramRequired => (
+        | Denial::ApplicationProgramRequired
+        | Denial::WorkflowAuthorityRequired => (
             BankHttpMutationFailureKind::Aborted,
             BankHttpDenial::new(
                 BankHttpDenialKind::MalformedRequest,
@@ -379,18 +349,25 @@ pub(super) fn commit_denial(
         ),
         Denial::ProviderRejected
         | Denial::ActiveSnapshotCapacityExhausted { .. }
-        | Denial::RetentionCapacityExhausted => (
+        | Denial::RetentionCapacityExhausted
+        | Denial::IndexMaintenanceBudgetExceeded => (
             BankHttpMutationFailureKind::Aborted,
             BankHttpDenial::new(BankHttpDenialKind::Unavailable, BankHttpNextAction::Retry),
         ),
         Denial::RetentionIdentityExhausted
         | Denial::SnapshotIdentityExhausted
-        | Denial::CandidateIdentityExhausted => (
+        | Denial::CandidateIdentityExhausted
+        | Denial::IndexGenerationIdentityExhausted
+        | Denial::ProgramActivationUnresolved => (
             BankHttpMutationFailureKind::Aborted,
             BankHttpDenial::new(
                 BankHttpDenialKind::Unavailable,
                 BankHttpNextAction::ContactOperator,
             ),
+        ),
+        Denial::ProgramNotActiveOnOccurrence => (
+            BankHttpMutationFailureKind::ProductStale,
+            BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh),
         ),
     }
 }

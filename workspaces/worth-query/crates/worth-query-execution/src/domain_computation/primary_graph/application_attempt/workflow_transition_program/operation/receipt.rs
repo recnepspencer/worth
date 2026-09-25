@@ -57,7 +57,7 @@ where
     validate_operation_receipt_custody(required.node_path(), receipt, recovery)
 }
 
-pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) fn operation_receipt_requires_recovery(
+pub(in crate::domain_computation::primary_graph::application_attempt) fn operation_receipt_requires_recovery(
     receipt: &WorthQueryApplicationCommitReceipt,
 ) -> bool {
     receipt.dispatch_outbox().is_some()
@@ -82,10 +82,22 @@ pub(super) fn validate_operation_receipt_custody(
 }
 
 pub(super) fn receipt_identity(receipt: &WorthQueryApplicationCommitReceipt) -> Option<[u8; 32]> {
+    Some(receipt_identity_from_outcome(
+        receipt.runtime_authority().as_u64(),
+        receipt.outcome_identity()?.get(),
+        receipt.installed_operation(),
+    ))
+}
+
+pub(in crate::domain_computation::primary_graph) fn receipt_identity_from_outcome(
+    runtime_authority: u64,
+    outcome_identity: u64,
+    installed_operation: &[u8; 32],
+) -> [u8; 32] {
     let mut digest = Sha256::new();
     digest.update(b"worth-query.workflow-operation-receipt.v1");
-    digest.update(receipt.runtime_authority().as_u64().to_le_bytes());
-    digest.update(receipt.outcome_identity()?.get().to_le_bytes());
-    digest.update(receipt.installed_operation());
-    Some(digest.finalize().into())
+    digest.update(runtime_authority.to_le_bytes());
+    digest.update(outcome_identity.to_le_bytes());
+    digest.update(installed_operation);
+    digest.finalize().into()
 }

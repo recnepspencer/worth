@@ -15,7 +15,9 @@ use crate::domain_computation::operation_binding::{
     WorthQueryExecutionCommitPosture, WorthQueryInstalledDomainExecutionAuthority,
     WorthQueryInstalledOperationExecutionSupport,
 };
-use crate::domain_computation::provider_session::WorthQueryProviderPlanDeclarations;
+use crate::domain_computation::provider_session::{
+    WorthQueryApplicationEffectPosture, WorthQueryProviderPlanDeclarations,
+};
 
 pub(crate) struct WorthQueryApplicationOperationBindingInput<'a> {
     pub(crate) runtime: &'a WorthQueryExecutionRuntime,
@@ -37,7 +39,7 @@ pub(crate) struct WorthQueryApplicationOperationBindingInput<'a> {
         &'a worth_query_installation::facade::ApplicationSchemaBindingIdentity,
     pub(crate) snapshot: &'a worth_relational::facade::snapshots::SnapshotHandle,
     pub(crate) product: &'a crate::basis::WorthQueryProductBranchLease,
-    pub(crate) platform_mutation: bool,
+    pub(crate) effect_posture: WorthQueryApplicationEffectPosture,
 }
 
 impl WorthQueryExecutionBoundOperationAuthority {
@@ -69,7 +71,7 @@ impl WorthQueryExecutionBoundOperationAuthority {
             provider_plan_declarations: Arc::new(
                 WorthQueryProviderPlanDeclarations::from_application_contracts(
                     input.contracts,
-                    input.platform_mutation,
+                    input.effect_posture,
                 ),
             ),
             commit_posture,

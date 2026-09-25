@@ -75,6 +75,10 @@ pub struct WorkflowOperationAuthority {
     pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) observation:
         WorthQueryProductBranchReadIdentity,
     pub(super) facts: Arc<[WorthQueryApplicationObservedFact]>,
+    pub(in crate::domain_computation::primary_graph::application_attempt) settlement_basis:
+        crate::domain_computation::primary_graph::workflow::instance::WorkflowOperationSettlementBasis,
+    pub(in crate::domain_computation::primary_graph::application_attempt) workflow_layout:
+        crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
     pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) approval_authority:
         crate::domain_computation::authorization::WorthQueryWorkflowApprovalAuthorityBasis,
     pub(super) handle: WorthQueryPrimaryGraphIntegrationHandle,
@@ -196,6 +200,10 @@ impl WorkflowOperationAuthority {
             crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
         observation: WorthQueryProductBranchReadIdentity,
         facts: Vec<WorthQueryApplicationObservedFact>,
+        settlement_basis:
+            crate::domain_computation::primary_graph::workflow::instance::WorkflowOperationSettlementBasis,
+        workflow_layout:
+            crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
         approval_authority:
             crate::domain_computation::authorization::WorthQueryWorkflowApprovalAuthorityBasis,
         handle: WorthQueryPrimaryGraphIntegrationHandle,
@@ -212,6 +220,8 @@ impl WorkflowOperationAuthority {
             session_identity,
             observation,
             facts: facts.into(),
+            settlement_basis,
+            workflow_layout,
             approval_authority,
             handle,
             layout,

@@ -82,6 +82,8 @@ impl<Schema, Operation, Input, Scope>
             transition_identity: authority.transition_identity,
             input_identity: authority.input_identity,
             approval_authority: authority.approval_authority.clone(),
+            settlement_basis: authority.settlement_basis.clone(),
+            workflow_layout: authority.workflow_layout.clone(),
         });
         Ok(self)
     }

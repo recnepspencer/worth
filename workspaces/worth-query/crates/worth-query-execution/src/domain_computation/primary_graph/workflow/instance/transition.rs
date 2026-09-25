@@ -8,12 +8,12 @@ pub(in crate::domain_computation::primary_graph) use admission::{
     select_proposal_transition, select_settled_replay_transition, select_terminal_transition,
     AdmittedWorkflowTransition, SelectedWorkflowApproval, SelectedWorkflowAssessment,
     SelectedWorkflowCondition, SelectedWorkflowOperation, SelectedWorkflowTransition,
-    SelectedWorkflowTransitionKind,
+    SelectedWorkflowTransitionKind, WorkflowOperationSettlementBasis,
 };
 pub(in crate::domain_computation::primary_graph) use outcome::{
     decode_transition_outcome, encode_transition_outcome,
 };
 pub(in crate::domain_computation::primary_graph) use settlement::{
-    visit_terminal_transition_facts, visit_workflow_operation_transition_facts,
-    visit_workflow_transition_facts,
+    visit_terminal_transition_facts, visit_workflow_operation_settlement_facts,
+    visit_workflow_operation_transition_facts, visit_workflow_transition_facts,
 };

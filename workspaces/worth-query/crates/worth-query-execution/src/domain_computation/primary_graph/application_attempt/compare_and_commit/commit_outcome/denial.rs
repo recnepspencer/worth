@@ -1,6 +1,7 @@
 //! Pre-publication application denial categories and owner evidence.
 
 mod program_binding;
+mod workflow;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationCommitDenialKind {
@@ -9,6 +10,9 @@ pub enum WorthQueryApplicationCommitDenialKind {
     CandidateValidatorWorkExceeded {
         maximum_work: usize,
         required_work: usize,
+    },
+    WorkflowSettlementDenied {
+        kind: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenialKind,
     },
     ProductBasisStale,
     ActiveSnapshotCapacityExhausted {
@@ -345,14 +349,6 @@ impl WorthQueryApplicationCommitDenial {
     pub(in crate::domain_computation) const fn application_program_required() -> Self {
         Self {
             kind: WorthQueryApplicationCommitDenialKind::ApplicationProgramRequired,
-            stage: WorthQueryApplicationCommitDenialStage::ProposalBinding,
-            detail: None,
-            custom_invariant: None,
-        }
-    }
-    pub(in crate::domain_computation) const fn workflow_authority_required() -> Self {
-        Self {
-            kind: WorthQueryApplicationCommitDenialKind::WorkflowAuthorityRequired,
             stage: WorthQueryApplicationCommitDenialStage::ProposalBinding,
             detail: None,
             custom_invariant: None,
