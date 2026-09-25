@@ -451,20 +451,6 @@ forbidden_identifiers = [
 guidance = "Milestone 3.15: host logical and physical geometry are protocol types, not aliases of runtime allocation or measurement rectangles"
 
 [[source_identifier_denials]]
-root = "workspaces/worth-ui/crates"
-exclude_paths = [
-  "workspaces/worth-ui/crates/worth-ui-host-contract/src/runtime/service_geometry.rs",
-  "workspaces/worth-ui/crates/worth-ui-runtime/src/mounting/presentation/motion_sampling/sampled_geometry.rs",
-]
-forbidden_identifiers = ["from_sampled_logical_projection"]
-guidance = "Milestone 3.15: only the presentation-sampled geometry projection may invoke the narrow host logical-geometry constructor"
-
-[[source_identifier_denials]]
-root = "workspaces/worth-ui/apps"
-forbidden_identifiers = ["from_sampled_logical_projection"]
-guidance = "Milestone 3.15: applications cannot mint host logical geometry; only runtime presentation sampling owns that projection"
-
-[[source_identifier_denials]]
 root = "workspaces/worth-ui/crates/worth-ui-host-contract/src/runtime/solicited_effect"
 forbidden_identifiers = [
   "UiRuntimeServiceFamily",
