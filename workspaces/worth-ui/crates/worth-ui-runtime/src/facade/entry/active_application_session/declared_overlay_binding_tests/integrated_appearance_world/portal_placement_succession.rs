@@ -24,7 +24,7 @@ pub(super) fn committed_bounds(
     placement.bounds().components()
 }
 
-fn presented_child(world: &World) -> [f32; 4] {
+pub(super) fn presented_child(world: &World) -> [f32; 4] {
     let presentation = world
         .session
         .mounted

@@ -2,6 +2,7 @@ use std::{cell::Cell, rc::Rc};
 use worth_ui_host_contract::{UiMountedPaintCommandIdentity, UiMountedPresentationSampleChange};
 
 use super::super::motion_sampling::UiPresentationMotionSampleReceipt;
+use super::command_motion_layers::UiCommandMotionLayers;
 use super::UiMountedPresentationState;
 
 /// Live physical evidence, shared only by versions of one unchanged command.
@@ -9,17 +10,26 @@ use super::UiMountedPresentationState;
 #[derive(Clone, Default)]
 pub(super) struct UiCommandMotionAcceptance(Rc<Cell<Option<UiDisplayedCommandMotion>>>);
 
-/// The sample and change an admitted witness displayed for one command. Only
-/// acceptance at a witness's displayed basis writes it.
+/// The sample and change an admitted witness displayed for one command, and
+/// the Motion layers that change composes. Only acceptance at a witness's
+/// displayed basis writes it.
 #[derive(Clone, Copy)]
 struct UiDisplayedCommandMotion {
     sample: UiPresentationMotionSampleReceipt,
     change: UiMountedPresentationSampleChange,
+    layers: UiCommandMotionLayers,
 }
 
 impl UiCommandMotionAcceptance {
     pub(super) fn sample(&self) -> Option<UiPresentationMotionSampleReceipt> {
         self.0.get().map(|accepted| accepted.sample)
+    }
+
+    /// The opacity every Motion showing the command scales it by, composed.
+    pub(super) fn motion_units(&self) -> Option<u16> {
+        self.0
+            .get()
+            .map(|accepted| accepted.change.opacity().motion_units())
     }
 }
 
@@ -28,6 +38,7 @@ pub(super) struct UiCommandMotionUpdate {
     slot: UiCommandMotionAcceptance,
     sample: UiPresentationMotionSampleReceipt,
     change: UiMountedPresentationSampleChange,
+    layers: UiCommandMotionLayers,
 }
 
 #[derive(Clone)]
@@ -38,6 +49,7 @@ pub(super) struct UiPreparedEntranceAcceptance {
             UiMountedPaintCommandIdentity,
             UiCommandMotionAcceptance,
             UiMountedPresentationSampleChange,
+            UiCommandMotionLayers,
         )],
     >,
 }
@@ -46,12 +58,12 @@ impl UiMountedPresentationState {
     pub(super) fn retain_entrance_acceptance(
         &mut self,
         entrance: crate::runtime::motion::UiPreparedMotionEntrance,
-        changes: &[worth_ui_host_contract::UiMountedPresentationSampleChange],
+        changes: &[(UiMountedPresentationSampleChange, UiCommandMotionLayers)],
     ) -> Result<(), worth_ui_host_contract::UiHostSurfacePresentationDenial> {
         let commands = changes
             .iter()
-            .map(|change| {
-                self.motion_slot(change.command()).cloned().map(|slot| (change.command(), slot, *change))
+            .map(|(change, layers)| {
+                self.motion_slot(change.command()).cloned().map(|slot| (change.command(), slot, *change, *layers))
                 .ok_or(worth_ui_host_contract::UiHostSurfacePresentationDenial::MalformedProjection)
             })
             .collect::<Result<Vec<_>, _>>()?;
@@ -90,11 +102,12 @@ impl UiMountedPresentationState {
         let updates = prepared
             .commands
             .iter()
-            .map(|(command, slot, change)| UiCommandMotionUpdate {
+            .map(|(command, slot, change, layers)| UiCommandMotionUpdate {
                 command: *command,
                 slot: slot.clone(),
                 sample,
                 change: *change,
+                layers: *layers,
             })
             .collect();
         UiPreparedCommandMotionAcceptance::new(updates).accept_at(self, displayed)?;
@@ -179,6 +192,7 @@ impl UiPreparedCommandMotionAcceptance {
             update.slot.0.set(Some(UiDisplayedCommandMotion {
                 sample: update.sample,
                 change: update.change,
+                layers: update.layers,
             }));
         }
         for group in scroll {
@@ -234,38 +248,12 @@ impl UiMountedPresentationState {
         })
     }
 
-    pub(super) fn prepare_command_motion_update(
-        &self,
-        command: UiMountedPaintCommandIdentity,
-        sample: UiPresentationMotionSampleReceipt,
-    ) -> UiCommandMotionUpdate {
-        let coordinate_space = if command.is_appearance_surface() {
-            self.appearance_surface_sample_target(command.mounted_instance())
-                .expect("prepared appearance target is admitted")
-                .geometry()
-                .clip()
-                .coordinate_space()
-        } else {
-            self.command(command).clip_bounds().coordinate_space()
-        };
-        let transform = super::motion_sample::sample_transform(sample, coordinate_space)
-            .expect("prepared sample geometry is admitted");
-        let change = UiMountedPresentationSampleChange::from_runtime_sampling(
-            command,
-            transform,
-            super::super::compose_opacity(
-                self.appearance_opacity_for_command(command),
-                sample.opacity_units(),
-            ),
-        );
-        self.prepare_command_motion_update_with_change(command, sample, change)
-    }
-
     pub(super) fn prepare_command_motion_update_with_change(
         &self,
         command: UiMountedPaintCommandIdentity,
         sample: UiPresentationMotionSampleReceipt,
         change: UiMountedPresentationSampleChange,
+        layers: UiCommandMotionLayers,
     ) -> UiCommandMotionUpdate {
         UiCommandMotionUpdate {
             command,
@@ -275,6 +263,7 @@ impl UiMountedPresentationState {
                 .clone(),
             sample,
             change,
+            layers,
         }
     }
 
@@ -303,6 +292,17 @@ impl UiMountedPresentationState {
             .0
             .get()
             .map(|accepted| accepted.change)
+    }
+
+    /// The Motion layers the host shows `command` through now: none before
+    /// any is accepted.
+    pub(super) fn accepted_motion_layers(
+        &self,
+        command: UiMountedPaintCommandIdentity,
+    ) -> UiCommandMotionLayers {
+        self.motion_slot(command)
+            .and_then(|slot| slot.0.get())
+            .map_or_else(UiCommandMotionLayers::default, |accepted| accepted.layers)
     }
 
     pub(in crate::mounting::presentation) fn motion_for_command(

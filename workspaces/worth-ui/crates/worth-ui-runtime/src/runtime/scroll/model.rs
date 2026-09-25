@@ -124,7 +124,7 @@ impl UiScrollBounds {
 
     /// Whether these bounds leave anywhere to scroll to. Content that emptied
     /// and content that shrank to fit its viewport both land here, and neither
-    /// has a second offset to reach, so a settle under them is travelling
+    /// has a second offset to reach, so a settle under them is traveling
     /// toward the only place it can already be.
     pub(crate) const fn admits_no_travel(self) -> bool {
         self.max_inline_subpixels == 0 && self.max_block_subpixels == 0
@@ -153,7 +153,7 @@ impl UiScrollBounds {
     /// The offset nearest `[inline, block]` that these bounds admit, for a pair
     /// of axis values that has not been proven non-negative.
     ///
-    /// An offset is a distance travelled from rest, so a negative one names a
+    /// An offset is a distance traveled from rest, so a negative one names a
     /// place behind rest and lands at rest. Alignment arithmetic reaches that
     /// place routinely -- revealing something already at the top asks to scroll
     /// past the beginning -- and answering it here is what lets the reveal lane

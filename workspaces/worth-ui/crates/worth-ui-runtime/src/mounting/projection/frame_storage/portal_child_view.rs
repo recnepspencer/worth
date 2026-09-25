@@ -8,6 +8,8 @@ use super::{UiMountedProjectionDenial, UiMountedProjectionFrame};
 pub(super) enum UiMountedPortalChildPresentation {
     Ordinary,
     Suppressed,
+    /// Presented through a Portal, with the laid-out box whose origin the
+    /// Portal presents at the origin of its paint bounds.
     Presented(
         UiMountedPortalOverlayMechanic,
         worth_ui_host_contract::UiMountedCanonicalBox,
@@ -144,6 +146,17 @@ impl UiMountedProjectionFrame {
                     worth_ui_host_contract::UiMountedPortalOverlayCompletionDenial::CoordinateSpaceMismatch,
                 ));
             }
+            // Paint bounds begin where the content the Portal was fitted to
+            // begins, which is not the owner's origin when that content is
+            // laid out away from it.
+            let source_anchor = input
+                .placement()
+                .content_anchor(
+                    crate::mounting::presentation::UiPublishedRect::from_committed_box(
+                        source_anchor,
+                    ),
+                )
+                .canonical_box();
             matched = Some((
                 input
                     .mechanic_for(self.frame, binding, receipt)

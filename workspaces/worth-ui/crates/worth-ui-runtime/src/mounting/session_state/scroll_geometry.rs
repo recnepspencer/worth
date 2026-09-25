@@ -47,6 +47,18 @@ impl super::WorthUiMountedSessionState {
             .expect("published extent and admitted Motion request carry finite geometry");
     }
 
+    /// Where the frame on screen presents the Scroll region occurrence
+    /// `owner`: where it is laid out while no frame is on screen.
+    pub(crate) fn presented_region_placement(
+        &self,
+        owner: worth_ui_host_contract::UiMountedInstanceIdentity,
+    ) -> crate::mounting::UiMountedRegionPlacement {
+        self.identity.current_projection().map_or(
+            crate::mounting::UiMountedRegionPlacement::InPlace,
+            |frame| frame.semantic_projection().region_placement(owner),
+        )
+    }
+
     pub(crate) fn scroll_region_geometry(
         &self,
         target: worth_ui_host_contract::UiMountedInstanceIdentity,
@@ -80,15 +92,15 @@ impl super::WorthUiMountedSessionState {
         )
     }
 
-    /// The Scroll region owner that `instance` travels with, when it is
-    /// scrolled content rather than a region owner in its own right.
-    pub(crate) fn scrolled_content_owner(
+    /// The Scroll region owner a gesture over `instance` addresses: the
+    /// instance when it owns a region, otherwise the owner it travels with.
+    pub(crate) fn addressed_scroll_owner(
         &self,
         instance: worth_ui_host_contract::UiMountedInstanceIdentity,
     ) -> Option<worth_ui_host_contract::UiMountedInstanceIdentity> {
         let projected = self.identity.projection_instance(instance)?;
         self.occurrence_geometry
-            .scrolled_content_owner(projected.basis().semantic_surface_identity(), instance)
+            .addressed_scroll_owner(projected.basis().semantic_surface_identity(), instance)
     }
 
     /// Move every named region's descendants to the offset it names, and
@@ -227,7 +239,7 @@ impl super::WorthUiMountedSessionState {
     /// keyed by the target that names it. This is the sole source of scrolled
     /// geometry: once a witness displays a sample it reports what the host has
     /// already presented, never the semantic target the content is still
-    /// travelling toward.
+    /// traveling toward.
     pub(crate) fn accepted_scroll_group_samples(
         &self,
     ) -> Vec<(

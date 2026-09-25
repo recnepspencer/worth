@@ -5,7 +5,7 @@
 //! The write-back is a route, so the reconciled bounds that clamp the accepted
 //! offset clamp the pending target in the same call. Clamping one without the
 //! other would leave the owner either holding an offset outside its bounds or
-//! still travelling toward one.
+//! still traveling toward one.
 
 use super::assert_close;
 use super::settle_world::{bounds, points, UiScrollSettleWorld, ONE_NOTCH_POINTS, SETTLE_TICKS};
@@ -26,7 +26,7 @@ fn a_settle_inside_its_bounds_arrives_untouched() {
     assert_close(
         world.accepted_offset_points(),
         ONE_NOTCH_POINTS,
-        "an in-bounds settle keeps every point it travelled",
+        "an in-bounds settle keeps every point it traveled",
     );
 }
 
@@ -62,7 +62,7 @@ fn shrunken_bounds_clamp_the_accepted_offset_and_the_pending_target_together() {
     assert_eq!(
         points(pending.target_offset().block_subpixels()),
         world.accepted_offset_points(),
-        "a clamped settle leaves nothing still travelling"
+        "a clamped settle leaves nothing still traveling"
     );
 }
 

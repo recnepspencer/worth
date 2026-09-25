@@ -74,18 +74,13 @@ impl UiMountedPresentationCommandBundle {
 
     pub(super) fn appearance_motion(
         &self,
-    ) -> impl ExactSizeIterator<
-        Item = (
-            &UiMountedPaintCommand,
-            Option<super::super::motion_sampling::UiPresentationMotionSampleReceipt>,
-        ),
-    > {
+    ) -> impl ExactSizeIterator<Item = (&UiMountedPaintCommand, Option<u16>)> {
         self.order.iter().map(|key| {
             let record = self
                 .commands
                 .get(key)
                 .expect("command order names an indexed command");
-            (&record.command, record.motion.sample())
+            (&record.command, record.motion.motion_units())
         })
     }
 

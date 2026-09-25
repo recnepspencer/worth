@@ -58,9 +58,20 @@ fn exact_physical_change_survives_acceptance_and_reconstruction_without_semantic
         source,
     )
     .unwrap();
+    let mut layers = crate::mounting::presentation::work_producer::command_motion_layers::UiCommandMotionLayers::default();
+    layers
+        .sample(
+            crate::mounting::presentation::work_producer::command_motion_layers::UiCommandMotionLayerKind::Scroll,
+            crate::mounting::presentation::work_producer::command_motion_layers::UiCommandMotionLayer::scrolled(
+                change.transform().unwrap(),
+                source,
+                sample.opacity_units(),
+            ),
+        )
+        .unwrap();
     let prepare = || {
         UiPreparedCommandMotionAcceptance::new(vec![
-            current.prepare_command_motion_update_with_change(identity, sample, change)
+            current.prepare_command_motion_update_with_change(identity, sample, change, layers)
         ])
     };
     drop(prepare());
@@ -96,9 +107,13 @@ fn exact_physical_change_survives_acceptance_and_reconstruction_without_semantic
         None,
         UiMountedPresentationOpacity::from_runtime_composition(0),
     );
-    let invalid = UiPreparedCommandMotionAcceptance::new(vec![
-        current.prepare_command_motion_update_with_change(identity, sample, invalid_change)
-    ]);
+    let invalid = UiPreparedCommandMotionAcceptance::new(vec![current
+        .prepare_command_motion_update_with_change(
+            identity,
+            sample,
+            invalid_change,
+            Default::default(),
+        )]);
     assert!(matches!(
         invalid.accept(
             &current,

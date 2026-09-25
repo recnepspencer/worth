@@ -4,6 +4,10 @@ use worth_ui_host_contract::{
     UiMountedPresentationTransform,
 };
 
+use super::command_motion_layers::{
+    UiCommandMotionLayer, UiCommandMotionLayerKind, UiCommandMotionLayers,
+};
+
 impl super::UiMountedPresentationState {
     pub(in crate::mounting::presentation) fn prepare_motion_entrance(
         &mut self,
@@ -29,20 +33,30 @@ impl super::UiMountedPresentationState {
             (None, None) => None,
             _ => return Err(Denial::MalformedProjection),
         };
+        // The entrance's first sample moves the Portal's content and the bars
+        // it carries, over whatever else the host already shows them through.
+        let mut entered = UiCommandMotionLayers::default();
+        entered
+            .sample(
+                UiCommandMotionLayerKind::Portal,
+                UiCommandMotionLayer::moved(transform, 0),
+            )
+            .map_err(|_| Denial::MalformedProjection)?;
         let changes = group
             .commands()
+            .chain(self.scroll_motion_groups.portal_chrome(entrance.target()))
             .map(|identity| {
-                UiMountedPresentationSampleChange::from_runtime_sampling(
-                    identity,
-                    transform,
-                    super::super::compose_opacity(self.appearance_opacity_for_command(identity), 0),
-                )
+                let layers = entered.over(self.accepted_motion_layers(identity));
+                self.resting_opacity(identity)
+                    .and_then(|resting| layers.change(identity, resting))
+                    .map(|change| (change, layers))
+                    .map_err(|_| Denial::MalformedProjection)
             })
-            .collect::<Vec<_>>();
+            .collect::<Result<Vec<_>, _>>()?;
         if changes.is_empty() {
             return Err(Denial::MalformedProjection);
         }
         self.retain_entrance_acceptance(entrance, &changes)?;
-        Ok(changes)
+        Ok(changes.into_iter().map(|(change, _)| change).collect())
     }
 }

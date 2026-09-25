@@ -6,6 +6,24 @@
 //! and the region's declared chrome contract. The mounted pose follows only
 //! samples a witness displayed, so the thumb reports where the content already
 //! is, not where the semantic target is heading.
+//!
+//! Paint reads chrome where each region is laid out: the frame being prepared
+//! places it where that frame presents the region. The pointer reads it where
+//! the frame on screen presents the region, which for Portal content is where
+//! the Portal moved it, and only within what the Portal covers.
+
+/// Which geometry one reading of chrome answers in.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum UiScrollChromeReading {
+    /// Where each region is laid out, at its candidate geometry.
+    Paint,
+    /// Where the frame on screen presents each region, at its candidate
+    /// geometry.
+    Hover,
+    /// Where the frame on screen presents each region, at the geometry it
+    /// was presented with while a layout or direct input awaits its frame.
+    Pointer,
+}
 
 /// The chrome one Scroll region occurrence presents this frame, bound to the
 /// mounted occurrence that owns it and the appearance roles that paint it.
@@ -102,26 +120,35 @@ impl UiScrollRegionChromeFacts {
 
 impl super::super::WorthUiActiveApplicationSession {
     /// The chrome every Scroll region occurrence on `surface` presents at its
-    /// accepted offset. A region whose enabled axes do not overflow presents
-    /// none and is absent from the result.
+    /// accepted offset, where each region is laid out. A region whose enabled
+    /// axes do not overflow presents none and is absent from the result.
     pub(in crate::facade::entry) fn scroll_chrome_facts(
         &self,
         surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
     ) -> Vec<UiScrollRegionChromeFacts> {
-        self.resolve_scroll_chrome_facts(surface, false)
+        self.resolve_scroll_chrome_facts(surface, UiScrollChromeReading::Paint)
+    }
+
+    /// The same chrome where the frame on screen presents each region, for
+    /// the hover the frame being prepared paints.
+    pub(in crate::facade::entry) fn hovered_scroll_chrome_facts(
+        &self,
+        surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
+    ) -> Vec<UiScrollRegionChromeFacts> {
+        self.resolve_scroll_chrome_facts(surface, UiScrollChromeReading::Hover)
     }
 
     pub(in crate::facade::entry) fn presented_scroll_chrome_facts(
         &self,
         surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
     ) -> Vec<UiScrollRegionChromeFacts> {
-        self.resolve_scroll_chrome_facts(surface, true)
+        self.resolve_scroll_chrome_facts(surface, UiScrollChromeReading::Pointer)
     }
 
     fn resolve_scroll_chrome_facts(
         &self,
         surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
-        presented: bool,
+        reading: UiScrollChromeReading,
     ) -> Vec<UiScrollRegionChromeFacts> {
         let Some(scroll) = self.scroll.as_ref() else {
             return Vec::new();
@@ -129,7 +156,7 @@ impl super::super::WorthUiActiveApplicationSession {
         scroll
             .ownership_instances()
             .flat_map(|mounted_instance| {
-                self.region_chrome_on_surface(surface, mounted_instance, presented)
+                self.region_chrome_on_surface(surface, mounted_instance, reading)
                     .into_iter()
             })
             .collect()
@@ -141,7 +168,7 @@ impl super::super::WorthUiActiveApplicationSession {
         &self,
         surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
         mounted_instance: worth_ui_host_contract::UiMountedInstanceIdentity,
-        presented: bool,
+        reading: UiScrollChromeReading,
     ) -> Vec<UiScrollRegionChromeFacts> {
         let Some(scroll) = self.scroll.as_ref() else {
             return Vec::new();
@@ -161,9 +188,7 @@ impl super::super::WorthUiActiveApplicationSession {
                         crate::runtime::scroll::UiScrollOwnerIdentity::Region { .. }
                     )
             })
-            .filter_map(|(slot, owner)| {
-                self.region_chrome(owner, mounted_instance, slot, presented)
-            })
+            .filter_map(|(slot, owner)| self.region_chrome(owner, mounted_instance, slot, reading))
             .collect()
     }
 
@@ -173,7 +198,7 @@ impl super::super::WorthUiActiveApplicationSession {
         owner: crate::runtime::scroll::UiScrollOwnerIdentity,
         mounted_instance: worth_ui_host_contract::UiMountedInstanceIdentity,
         slot: usize,
-        presented: bool,
+        reading: UiScrollChromeReading,
     ) -> Option<UiScrollRegionChromeFacts> {
         // An inadmissible declaration paints nothing: the denial was raised at
         // the admission site before any geometry was derived, and a region
@@ -184,7 +209,7 @@ impl super::super::WorthUiActiveApplicationSession {
             .mounted
             .scroll_region_geometry(mounted_instance, slot)?;
         let scroll = self.scroll.as_ref()?;
-        let retained = presented
+        let retained = reading == UiScrollChromeReading::Pointer
             && (scroll.has_unpresented_layout(owner.semantic_surface())
                 || scroll.has_pending_direct(owner.semantic_surface()));
         let pointer_clip = if retained {
@@ -195,11 +220,17 @@ impl super::super::WorthUiActiveApplicationSession {
             );
             let (accepted_content, accepted_viewport, clip) =
                 self.mounted.retained_scroll_chrome_geometry(target)?;
+            // Retained geometry is already where that frame presented it.
             content = accepted_content;
             viewport = accepted_viewport;
             Some(clip)
-        } else {
+        } else if reading == UiScrollChromeReading::Paint {
             None
+        } else {
+            let placement = self.mounted.presented_region_placement(owner_instance);
+            content = placement.place(content)?;
+            viewport = placement.place(viewport)?;
+            placement.coverage()
         };
         let bounds =
             crate::runtime::scroll::UiScrollBounds::from_mounted_region(content, viewport)?;
@@ -209,7 +240,7 @@ impl super::super::WorthUiActiveApplicationSession {
         // The mounted pose, not the semantic offset: the thumb reports where
         // the content already is. Under the immediate policy the two coincide;
         // under a settling one the pose is the last displayed sample and the
-        // semantic offset is still travelling toward it.
+        // semantic offset is still traveling toward it.
         let mounted_offset = if retained {
             scroll.offset(owner, incarnation).ok()?
         } else {

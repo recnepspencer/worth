@@ -40,12 +40,7 @@ pub(in crate::mounting::projection) fn portal_ancestor_clip(
     {
         return Ok(ancestry);
     }
-    let bounds = canonical_clip(portal.paint_bounds())?;
-    let clip = canonical_clip(portal.clip_bounds())?;
-    let (Some(bounds), Some(clip)) = (bounds, clip) else {
-        return Ok(Clip::Suppressed);
-    };
-    let Some(coverage) = super::clip::intersect_clips(bounds, clip) else {
+    let Some(coverage) = portal_coverage(portal)? else {
         return Ok(Clip::Suppressed);
     };
     match ancestry {
@@ -63,7 +58,43 @@ pub(in crate::mounting::projection) fn portal_ancestor_clip(
     }
 }
 
-fn translate_box(
+/// What of its host surface an open Portal presents content over: its paint
+/// bounds within its clip. `None` when that is nothing. Every reader of
+/// Portal coverage takes it from here.
+pub(in crate::mounting::projection) fn portal_coverage_box(
+    portal: UiMountedPortalOverlayMechanic,
+) -> Option<worth_ui_host_contract::UiMountedCanonicalBox> {
+    portal.paint_bounds().intersection(portal.clip_bounds())
+}
+
+/// [`portal_coverage_box`] as an appearance clip: `None` when nothing of it
+/// survives canonical precision.
+pub(super) fn portal_coverage(
+    portal: UiMountedPortalOverlayMechanic,
+) -> Result<Option<UiAppearanceClip>, Denial> {
+    portal_coverage_box(portal).map_or(Ok(None), canonical_clip)
+}
+
+/// The step, in logical subpixels, from where the Portal's source anchor is
+/// laid out to where the Portal presents it.
+pub(super) fn portal_step(
+    portal: UiMountedPortalOverlayMechanic,
+    source_anchor: UiMountedCanonicalBox,
+) -> Result<[i64; 2], Denial> {
+    let presented = super::geometry::allocation(portal.paint_bounds())?;
+    let anchor = super::geometry::allocation(source_anchor)?;
+    Ok([
+        i64::from(presented.x()) - i64::from(anchor.x()),
+        i64::from(presented.y()) - i64::from(anchor.y()),
+    ])
+}
+
+/// Moves one logical-subpixel coordinate by a Portal step.
+pub(super) fn step_coordinate(coordinate: i32, step: i64) -> Result<i32, Denial> {
+    i32::try_from(i64::from(coordinate) + step).map_err(|_| Denial::CoordinateOverflow)
+}
+
+pub(in crate::mounting::projection) fn translate_box(
     bounds: UiMountedCanonicalBox,
     portal: UiMountedPortalOverlayMechanic,
     source_anchor: UiMountedCanonicalBox,
@@ -83,13 +114,10 @@ fn translate_clip(
     portal: UiMountedPortalOverlayMechanic,
     source_anchor: UiMountedCanonicalBox,
 ) -> Result<UiAppearanceClip, Denial> {
-    let presented = super::geometry::allocation(portal.paint_bounds())?;
-    let anchor = super::geometry::allocation(source_anchor)?;
-    let x = i64::from(clip.x()) + i64::from(presented.x()) - i64::from(anchor.x());
-    let y = i64::from(clip.y()) + i64::from(presented.y()) - i64::from(anchor.y());
+    let [x, y] = portal_step(portal, source_anchor)?;
     UiAppearanceClip::new(
-        i32::try_from(x).map_err(|_| Denial::CoordinateOverflow)?,
-        i32::try_from(y).map_err(|_| Denial::CoordinateOverflow)?,
+        step_coordinate(clip.x(), x)?,
+        step_coordinate(clip.y(), y)?,
         clip.width(),
         clip.height(),
     )

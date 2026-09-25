@@ -67,11 +67,11 @@ fn one_notch_travels_the_platform_line_count_times_the_declared_extent() {
         "an immediate wheel over a region declaring a line extent applies: {outcome:?}"
     );
 
-    let travelled = i64::from(LINES_PER_NOTCH) * i64::from(LINE_EXTENT_POINTS);
+    let traveled = i64::from(LINES_PER_NOTCH) * i64::from(LINE_EXTENT_POINTS);
     scroll.publish_direct(6);
     assert_eq!(
         scroll.accepted_offset(),
-        block(travelled),
+        block(traveled),
         "two lines of ten points each"
     );
     assert_ne!(
@@ -81,7 +81,7 @@ fn one_notch_travels_the_platform_line_count_times_the_declared_extent() {
     );
     assert_eq!(
         scroll.mounted_offset(),
-        Some(block(travelled)),
+        Some(block(traveled)),
         "the pixels moved the same distance the offset did"
     );
     let _ = scroll.world.session.shutdown();

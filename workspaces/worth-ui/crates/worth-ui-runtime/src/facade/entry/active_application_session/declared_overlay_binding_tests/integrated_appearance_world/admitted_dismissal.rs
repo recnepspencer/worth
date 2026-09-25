@@ -20,7 +20,7 @@ fn opened() -> (World, crate::runtime::portal::UiPortalIdentity) {
     (world, portal)
 }
 
-fn advance_motion(world: &mut World, tick: u64, epoch: u64) {
+pub(super) fn advance_motion(world: &mut World, tick: u64, epoch: u64) {
     let basis = world
         .session
         .mounted

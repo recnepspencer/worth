@@ -33,7 +33,7 @@ impl UiScrollChromeAppearanceState {
     /// The classes `part` presents, given which part the pointer is hovering on
     /// this axis and whether this axis's thumb is being dragged.
     ///
-    /// A drag owns both parts of its own axis: the track a thumb is travelling
+    /// A drag owns both parts of its own axis: the track a thumb is traveling
     /// in is as held as the thumb is. Hover is decided by the pointer's actual
     /// location, so a drag that leaves the gutter reports the pointer outside
     /// while still reporting the press captured.

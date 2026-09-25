@@ -60,6 +60,8 @@ struct ScriptedPresentationState {
     presentation_calls: usize,
     last_node_changes: Vec<worth_ui_host_contract::UiMountedPresentationNodeChange>,
     last_surface_colors: Vec<worth_ui_host_contract::UiMountedRgba8>,
+    last_scroll_chrome: Vec<worth_ui_host_contract::UiMountedScrollChromeMechanic>,
+    last_motion_samples: Vec<worth_ui_host_contract::UiMountedPresentationSampleChange>,
     last_appearance_samples: Vec<worth_ui_host_contract::UiMountedPresentationSampleChange>,
     accepted_text: accepted_text::ScriptedAcceptedText,
     last_presentation_correlation:
@@ -109,6 +111,8 @@ impl Default for ScriptedPresentationState {
             presentation_calls: 0,
             last_node_changes: Vec::new(),
             last_surface_colors: Vec::new(),
+            last_scroll_chrome: Vec::new(),
+            last_motion_samples: Vec::new(),
             last_appearance_samples: Vec::new(),
             accepted_text: Default::default(),
             last_presentation_correlation: None,

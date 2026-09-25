@@ -52,6 +52,8 @@ impl UiMountedPortalOverlayProjectionInput {
             && self.placement.clip_bounds() == other.placement.clip_bounds()
             && self.placement.bounds() == other.placement.bounds()
             && self.placement.paint_bounds() == other.placement.paint_bounds()
+            && self.placement.content_anchor(self.placement.anchor())
+                == other.placement.content_anchor(other.placement.anchor())
             && self.placement.layer() == other.placement.layer()
             && self.placement.shielding() == other.placement.shielding()
             && self.lifecycle == other.lifecycle

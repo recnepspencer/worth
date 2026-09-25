@@ -55,9 +55,24 @@ impl UiMountedOccurrenceGeometryState {
         None
     }
 
+    /// The Scroll region owner a gesture over `instance` addresses:
+    /// `instance` itself when it owns a region, even one that is in turn
+    /// scrolled content of another, otherwise the owner it travels with.
+    pub(crate) fn addressed_scroll_owner(
+        &self,
+        surface: UiSemanticSurfaceIdentity,
+        instance: UiMountedInstanceIdentity,
+    ) -> Option<UiMountedInstanceIdentity> {
+        let geometry = self.surfaces.get(&surface)?;
+        if !geometry.scroll_index.regions(instance).is_empty() {
+            return Some(instance);
+        }
+        self.scrolled_content_owner(surface, instance)
+    }
+
     /// The offset the displayed pose of one region occurrence was last built
     /// from. This is the displayed truth rather than the semantic target: the
-    /// accepted-sample settlement writes it, so a region still travelling
+    /// accepted-sample settlement writes it, so a region still traveling
     /// toward a new offset reports the one the host has already presented.
     pub(crate) fn applied_scroll_pose(
         &self,
@@ -219,7 +234,7 @@ impl UiMountedOccurrenceGeometryState {
                     scroll.owner_anchor(owner, incarnation).ok().flatten(),
                     // An owner with no record and an owner whose record belongs
                     // to an earlier incarnation are the same thing to a restore:
-                    // neither names an offset this surface has travelled, so both
+                    // neither names an offset this surface has traveled, so both
                     // start it at rest rather than at a distance nothing here can
                     // account for.
                     scroll

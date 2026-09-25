@@ -43,9 +43,10 @@ impl WorthUiActiveApplicationSession {
                 .map_err(UiHostScrollObservationDenial::Targeting)?;
                 // Content that travels with a Scroll region is laid out relative
                 // to the region owner, not mounted beneath it, so a wheel over
-                // that content addresses the region that scrolls it.
+                // that content addresses the region that scrolls it. A region
+                // owner that is itself such content keeps the wheel.
                 let hit = target.view().mounted_instance();
-                let mounted = self.mounted.scrolled_content_owner(hit).unwrap_or(hit);
+                let mounted = self.mounted.addressed_scroll_owner(hit).unwrap_or(hit);
                 self.mounted
                     .current_mounted_identity_basis(mounted)
                     .map(|basis| (mounted, basis))

@@ -8,7 +8,7 @@
 //! every frame, which is worse than blur: it is shimmer.
 //!
 //! So the grid appears once, on the read that paints. The offset each scrolled
-//! occurrence travelled is rounded to whole device pixels and the fraction it
+//! occurrence traveled is rounded to whole device pixels and the fraction it
 //! was carrying is added back to the box that offset moved, which puts the
 //! whole box back on the phase layout gave it. Every command the occurrence
 //! lowers to takes that one correction from that one accepted sample, so

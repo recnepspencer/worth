@@ -117,13 +117,13 @@ fn an_immediate_wheel_moves_what_the_resting_pointer_is_over() {
     assert_eq!(
         hovered(&scroll),
         Some(nested),
-        "the content travelled under the pointer, so the pointer is over it"
+        "the content traveled under the pointer, so the pointer is over it"
     );
     let _ = scroll.world.session.shutdown();
 }
 
 /// A published settle pays its accepted sample out over several frames. Hover
-/// follows the accepted sample, never the target the content is travelling
+/// follows the accepted sample, never the target the content is traveling
 /// toward: the owner keeps the pointer until the content has actually arrived
 /// under it.
 #[test]

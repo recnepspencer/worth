@@ -50,6 +50,7 @@ pub(crate) use frame_storage::UiMountedAppearanceOutputDenial;
 pub(crate) use frame_storage::UiMountedAppearanceSurfaceSampleGeometry;
 pub(in crate::mounting) use frame_storage::UiMountedHitMechanicSource;
 pub use frame_storage::UiMountedProjectionFrame;
+pub(crate) use frame_storage::UiMountedRegionPlacement;
 pub(in crate::mounting) use frame_storage::UiMountedSemanticMechanicSource;
 pub(in crate::mounting) use frame_storage::UiMountedSemanticProjection;
 pub(crate) use frame_storage::{

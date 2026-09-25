@@ -89,7 +89,7 @@ impl super::super::WorthUiActiveApplicationSession {
         surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
         point: crate::mounting::presentation::UiPlatformPoint,
     ) -> Option<UiScrollChromePointerAnswer> {
-        resolve_regions(point, &self.scroll_chrome_facts(surface))
+        resolve_regions(point, &self.hovered_scroll_chrome_facts(surface))
     }
 
     /// Press chrome at `point`. A thumb press captures; a track press pages.

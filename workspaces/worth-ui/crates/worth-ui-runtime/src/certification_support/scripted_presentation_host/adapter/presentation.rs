@@ -23,6 +23,14 @@ impl ScriptedPresentationHost {
                 _ => Vec::new(),
             };
             state.last_surface_colors = surface_colors(request.appearance_work());
+            if request.appearance_work().is_some() {
+                state.last_scroll_chrome = scroll_chrome(request.appearance_work());
+            }
+            if let worth_ui_host_contract::UiMountedPresentationWorkView::Sample(work) =
+                request.presentation_work()
+            {
+                state.last_motion_samples = work.changes().to_vec();
+            }
             state.last_appearance_samples = request
                 .appearance_work()
                 .map(|work| work.sample_overrides().to_vec())
@@ -187,6 +195,21 @@ fn surface_colors(
         .flat_map(|work| work.fragments())
         .flat_map(|fragment| fragment.work().successor().mechanics())
         .filter_map(surface_color)
+        .collect()
+}
+
+fn scroll_chrome(
+    work: Option<&worth_ui_host_contract::UiMountedAppearancePresentationWork>,
+) -> Vec<worth_ui_host_contract::UiMountedScrollChromeMechanic> {
+    work.into_iter()
+        .flat_map(|work| work.fragments())
+        .flat_map(|fragment| fragment.work().successor().mechanics())
+        .filter_map(|mechanic| match mechanic {
+            worth_ui_host_contract::UiMountedAppearanceMechanic::ScrollChrome(chrome) => {
+                Some(*chrome)
+            }
+            _ => None,
+        })
         .collect()
 }
 

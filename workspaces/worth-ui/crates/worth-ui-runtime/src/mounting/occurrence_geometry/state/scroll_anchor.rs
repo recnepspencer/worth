@@ -29,7 +29,7 @@ impl UiMountedOccurrenceGeometryState {
     /// and the policy that says what to do with it.
     ///
     /// `previous` is the anchor the owner was carrying, `offset` the distance
-    /// it had travelled, and `bounds` the extent the new layout leaves it.
+    /// it had traveled, and `bounds` the extent the new layout leaves it.
     pub(crate) fn scroll_rebind_anchor(
         &self,
         surface: UiSemanticSurfaceIdentity,
@@ -130,7 +130,7 @@ fn anchor_at(
 /// Reporting zero for it instead would be worse than reporting nothing. An
 /// anchor is remembered as a distance and later re-measured, and the offset
 /// moves by the difference; content clamped to zero on the way in would report
-/// a difference smaller than the distance it travelled, and the reader would
+/// a difference smaller than the distance it traveled, and the reader would
 /// land that much away from what they were looking at. Refusing the row costs
 /// only its candidacy: the region anchors to another occurrence, or to none
 /// and clamps, which is the answer it already has for content it cannot

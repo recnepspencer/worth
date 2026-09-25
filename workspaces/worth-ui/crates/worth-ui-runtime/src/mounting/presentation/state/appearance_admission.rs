@@ -26,6 +26,15 @@ impl UiMountedPresentationAdmission {
             return self.deny_appearance_output();
         };
         let motion = self.candidates.accepted_appearance_motion(&targets);
+        // Chrome is derived where each region is laid out; this frame paints
+        // it, and samples its Motion, where the frame presents the region.
+        let Ok(scroll_chrome) = self
+            .frame
+            .semantic_projection()
+            .place_scroll_chrome(&derived.scroll_chrome)
+        else {
+            return self.deny_appearance_output();
+        };
         let refresh_visual_regions = !targets.is_empty()
             || !overlays.is_empty()
             || !derived.scroll_chrome.is_empty()
@@ -37,13 +46,13 @@ impl UiMountedPresentationAdmission {
             profile,
             motion,
             overlays,
-            &derived.scroll_chrome,
+            &scroll_chrome,
         );
         self.candidates
             .bind_appearance_sample_targets(&self.frame, &targets);
         if self
             .candidates
-            .bind_scroll_motion_groups(&self.frame, derived)
+            .bind_scroll_motion_groups(&self.frame, derived, &scroll_chrome)
             .is_err()
         {
             return self.deny_appearance_output();

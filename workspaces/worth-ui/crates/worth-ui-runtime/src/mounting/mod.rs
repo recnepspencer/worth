@@ -110,6 +110,7 @@ pub(crate) use projection::UiMountedAppearanceClip;
 pub(crate) use projection::UiMountedAppearanceClipDenial;
 pub(crate) use projection::UiMountedAppearanceProjectionSelection;
 pub(crate) use projection::UiMountedFocusScope;
+pub(crate) use projection::UiMountedRegionPlacement;
 pub(crate) use projection::{
     lower_scroll_chrome, UiMountedScrollChromeNode, UiScrollChromeLoweringDenial,
     UiScrollChromeLoweringInput,

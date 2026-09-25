@@ -180,11 +180,25 @@ Motion; smooth policy requires admitted Motion support.
 
 A phased gesture remains latched to its first consuming owner until end or
 cancellation, even when that owner reaches an edge. A new gesture beginning at
-an edge may select a consuming ancestor. Unphased wheel input uses its declared
-quiet interval. Modality loss, removal and reincarnation invalidate the latch.
+an edge may select a consuming ancestor. A wheel over content that travels with
+a region addresses that region; a wheel over a region owner addresses the
+owner's own region, even when that owner is itself content of an outer region.
+Unphased wheel input uses its declared quiet interval. Modality loss, removal
+and reincarnation invalidate the latch.
 Nested Scroll groups compose each ancestor displacement exactly once. Their
 membership and clip provenance are indexed at ordinary frame admission, not
 rediscovered by a graph walk on each motion sample.
+
+One command can move under three Motions at once: its own, the Scroll regions
+that carry it, and the Portal that presents it. The host shows one change per
+command, so presentation keeps each command's accepted change as those three
+layers and composes them innermost first: the Scroll clip travels with what the
+Portal moves, and opacities multiply. A tick samples only the layers that
+moved; every other layer holds where the host already shows it. A modal
+closing over a settling wheel therefore plays its exit while the settle lands,
+and an element animating inside a scrolled region keeps its scroll offset. Two
+Motions of the same layer moving one command in one tick remain ambiguous and
+are refused.
 
 Moving commands retain intrinsic geometry and clipping separately from their
 stationary viewport clips. A fully clipped glyph remains available to reveal

@@ -178,6 +178,35 @@ pub(in super::super) fn install_scrollable_primary_with_shorter_content(
     install_scrollable_primary_with_travel(session, surfaces, instances, 25, 5.0);
 }
 
+/// The Portal child's region in the child's own local space when the modal
+/// content scrolls: half the child's height, so it has eighteen points of
+/// block travel.
+pub(in super::super) const SCROLLABLE_CHILD_REGION: [f32; 4] = [0.0, 0.0, 140.0, 18.0];
+
+/// Reinstall the launched geometry with the Portal child's region smaller than
+/// the child, so the content a modal presents has somewhere to scroll.
+pub(in super::super) fn install_scrollable_child(
+    session: &mut WorthUiActiveApplicationSession,
+    surfaces: [UiSemanticSurfaceIdentity; 2],
+    instances: [UiMountedInstanceIdentity; 5],
+) {
+    install_with_child_region(
+        session,
+        surfaces,
+        instances,
+        20,
+        BOXES,
+        RegionOverrides {
+            child: Some(SCROLLABLE_CHILD_REGION),
+            primary: None,
+            nested: None,
+            detach_child: false,
+        },
+        None,
+        super::VIEWPORT,
+    );
+}
+
 /// The nested World relaid out at `revision` with `travel` points of block
 /// travel: the first component is exactly that much taller than the region
 /// showing it, and the nested component keeps its place inside the region.

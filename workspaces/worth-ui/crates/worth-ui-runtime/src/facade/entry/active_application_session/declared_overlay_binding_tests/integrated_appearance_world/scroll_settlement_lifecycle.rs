@@ -14,7 +14,7 @@
 //! while they were away.
 //!
 //! Every scenario pays frames before the boundary until the content has
-//! visibly started travelling, so the settle being ended is a live one rather
+//! visibly started traveling, so the settle being ended is a live one rather
 //! than one that had nothing left to do. The first frame after a notch samples
 //! the rest pose and moves nothing, so that takes two.
 

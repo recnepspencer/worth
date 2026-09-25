@@ -53,12 +53,18 @@ mod portal_exit_retention;
 mod portal_lifecycle;
 #[path = "integrated_appearance_world/portal_placement_succession.rs"]
 mod portal_placement_succession;
+#[path = "integrated_appearance_world/portal_scroll_region.rs"]
+mod portal_scroll_region;
+#[path = "integrated_appearance_world/portal_scroll_settle.rs"]
+mod portal_scroll_settle;
 #[path = "integrated_appearance_world/reconstruction.rs"]
 mod reconstruction;
 #[path = "integrated_appearance_world/replacement.rs"]
 mod replacement;
 #[path = "integrated_appearance_world/replacement_geometry.rs"]
 mod replacement_geometry;
+#[path = "integrated_appearance_world/scroll_addressed_owner.rs"]
+mod scroll_addressed_owner;
 #[path = "integrated_appearance_world/scroll_capture_cancellation.rs"]
 mod scroll_capture_cancellation;
 #[path = "integrated_appearance_world/scroll_chrome_fixture.rs"]

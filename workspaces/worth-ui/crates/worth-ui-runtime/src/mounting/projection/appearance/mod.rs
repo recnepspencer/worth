@@ -20,6 +20,7 @@ mod reconstruction;
 mod resolved_node_source;
 pub(crate) use derived_input::UiMountedAppearanceDerivedInput;
 mod scroll_chrome;
+mod scroll_chrome_placement;
 pub(crate) use scroll_chrome::UiMountedAppearanceScrollChromeInput;
 mod style;
 pub(in crate::mounting::projection) use style::resolved_opacity;
@@ -40,7 +41,7 @@ pub(crate) use fact::{
 pub(crate) use geometry::UiMountedAppearanceGeometryDenial;
 pub(crate) use geometry_scope::UiMountedAppearanceGeometryScope;
 pub(in crate::mounting::projection) use portal_geometry::{
-    portal_ancestor_clip, portal_presented_allocation,
+    portal_ancestor_clip, portal_coverage_box, portal_presented_allocation, translate_box,
 };
 pub(crate) use resolved_node_source::UiResolvedAppearanceNodeSource;
 #[derive(Clone, Debug, Eq, PartialEq)]

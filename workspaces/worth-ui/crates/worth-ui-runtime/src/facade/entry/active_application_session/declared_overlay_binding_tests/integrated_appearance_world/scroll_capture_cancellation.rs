@@ -268,7 +268,7 @@ fn a_drag_after_the_capture_places_the_offset_its_thumb_position_names() {
     assert_eq!(
         moved.y() - thumb.y(),
         f32::from(DRAG_POINTS),
-        "the thumb travelled exactly as far as the pointer did, so the spot the \
+        "the thumb traveled exactly as far as the pointer did, so the spot the \
          reader grabbed is still under it"
     );
     let _ = scroll.world.session.shutdown();

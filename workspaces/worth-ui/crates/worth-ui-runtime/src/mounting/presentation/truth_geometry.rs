@@ -32,6 +32,8 @@ mod published;
 mod rect_map;
 #[path = "truth_geometry/scroll_offset.rs"]
 mod scroll_offset;
+#[path = "truth_geometry/transform_carry.rs"]
+mod transform_carry;
 
 pub(crate) use accepted::{UiAcceptedRect, UiRebaseDenial};
 #[cfg(test)]
@@ -47,3 +49,4 @@ pub(crate) use rect_map::{UiPublishedMap, UiPublishedToAcceptedMap};
 #[cfg(test)]
 pub(crate) use scroll_offset::displayed_scroll_offset_for_test;
 pub(crate) use scroll_offset::{UiDisplayedScrollOffset, UiScrollStandingDenial};
+pub(in crate::mounting::presentation) use transform_carry::{carried_box, carried_transform};

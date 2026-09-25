@@ -105,9 +105,12 @@ impl UiPreparedFrameCandidates {
         &mut self,
         frame: &crate::mounting::UiPreparedMountedFrame,
         derived: &crate::mounting::UiMountedAppearanceDerivedInput,
+        placed_chrome: &[crate::mounting::UiMountedAppearanceScrollChromeInput],
     ) -> Result<(), ()> {
         for surface in &mut self.surfaces {
-            surface.state.bind_scroll_motion_groups(frame, derived)?;
+            surface
+                .state
+                .bind_scroll_motion_groups(frame, derived, placed_chrome)?;
         }
         Ok(())
     }
@@ -172,12 +175,11 @@ impl UiPreparedFrameCandidates {
                 continue;
             };
             for instance in instances {
-                for (identity, portal_surface, instance_composable, sample) in surface
+                for (identity, portal_surface, instance_composable, opacity) in surface
                     .state
                     .accepted_appearance_motion_for_instance(*instance)
                 {
                     commands_visited += 1;
-                    let opacity = sample.map(|sample| sample.opacity_units());
                     by_command.insert(identity, opacity);
                     if !instance_composable {
                         insert_instance_motion(

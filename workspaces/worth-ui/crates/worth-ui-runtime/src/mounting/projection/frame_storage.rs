@@ -42,6 +42,8 @@ mod presentation_effects;
 pub(crate) mod presentation_sources;
 mod presentation_view;
 mod presented_hits;
+mod region_placement;
+pub(crate) use region_placement::UiMountedRegionPlacement;
 mod projection_owner;
 mod rebind;
 mod semantic_mechanics;

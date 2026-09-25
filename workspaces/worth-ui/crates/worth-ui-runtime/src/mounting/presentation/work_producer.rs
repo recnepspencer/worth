@@ -10,6 +10,10 @@ use super::{UiMountedPresentationLease, UiMountedPresentationWork};
 
 #[path = "work_producer/command_bundle.rs"]
 mod command_bundle;
+#[path = "work_producer/command_motion_layers.rs"]
+mod command_motion_layers;
+#[path = "work_producer/command_motion_ticks.rs"]
+mod command_motion_ticks;
 #[path = "work_producer/delta_diff.rs"]
 mod delta_diff;
 #[path = "work_producer/effect_expectations.rs"]
@@ -22,6 +26,8 @@ pub(super) use motion_evidence::UiPreparedCommandMotionAcceptance;
 mod motion_entrance;
 #[path = "work_producer/motion_sample.rs"]
 mod motion_sample;
+#[path = "work_producer/motion_sample_command.rs"]
+mod motion_sample_command;
 #[path = "work_producer/overlay_attribution.rs"]
 mod overlay_attribution;
 #[path = "work_producer/portal_motion_groups.rs"]

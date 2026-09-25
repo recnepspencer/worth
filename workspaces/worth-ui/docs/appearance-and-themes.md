@@ -296,6 +296,15 @@ appearance does not require a synthetic pointer event to catch up. Captured
 dragging and extent changes publish their exact prepared geometry through the
 same host-acceptance boundary as other mounted changes.
 
+A region inside Portal content is laid out where its component is laid out, but
+presented where the Portal moves it. Its bars are painted, clipped and pressed
+there, and only within what the Portal covers; a closed Portal's content paints
+no bars and offers none to the pointer. The Portal's entrance and exit Motion
+carry the bars with the content they scroll, so a modal's bars slide and fade
+with the modal instead of waiting at its resting position. A wheel settle and
+the Portal's Motion compose rather than compete: content scrolled while the
+modal enters or leaves moves by both, clipped where the Portal presents it.
+
 ## Live Theme Switching
 
 Obtain the current surface, predecessor presentation, and

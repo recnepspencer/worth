@@ -41,14 +41,7 @@ impl UiMountedPresentationState {
     pub(in crate::mounting::presentation) fn accepted_appearance_motion_for_instance(
         &self,
         instance: worth_ui_host_contract::UiMountedInstanceIdentity,
-    ) -> impl Iterator<
-        Item = (
-            UiMountedPaintCommandIdentity,
-            bool,
-            bool,
-            Option<super::super::super::motion_sampling::UiPresentationMotionSampleReceipt>,
-        ),
-    > + '_ {
+    ) -> impl Iterator<Item = (UiMountedPaintCommandIdentity, bool, bool, Option<u16>)> + '_ {
         self.commands_by_instance
             .get(&instance)
             .into_iter()
@@ -66,7 +59,7 @@ impl UiMountedPresentationState {
                             UiMountedPaintCommandIdentity::appearance_surface(instance),
                             false,
                             true,
-                            target.motion().sample(),
+                            target.motion().motion_units(),
                         )
                     }),
             )

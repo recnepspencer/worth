@@ -112,7 +112,7 @@ fn a_reduced_motion_settle_leaves_nothing_still_settling() {
 /// content is on its way rather than there, which is what makes the reduced
 /// answer a different one rather than the declared horizon being trivial.
 #[test]
-fn the_same_notch_without_the_posture_is_still_travelling_on_that_frame() {
+fn the_same_notch_without_the_posture_is_still_traveling_on_that_frame() {
     let mut scroll = world_with_one_notch(UiPresentationReducedMotionPosture::NoPreference);
 
     assert_eq!(

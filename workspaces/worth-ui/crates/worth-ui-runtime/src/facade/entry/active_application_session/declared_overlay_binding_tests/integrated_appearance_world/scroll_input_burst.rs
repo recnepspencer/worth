@@ -211,7 +211,7 @@ fn an_immediate_burst_leaves_the_storage_the_session_started_with() {
     );
     assert!(
         CONTENT_TRAVEL_POINTS > i64::from(LINE_EXTENT_POINTS),
-        "which is further than a single notch reaches, so the burst travelled"
+        "which is further than a single notch reaches, so the burst traveled"
     );
     let _ = short.world.session.shutdown();
     let _ = long.world.session.shutdown();

@@ -95,6 +95,19 @@ impl UiPreparedPortalPlacement {
     pub(crate) const fn paint_bounds(self) -> UiPresentedPortalBounds {
         self.arrangement.paint_bounds
     }
+    /// `anchor`, the owner's laid-out box, moved to where the content this
+    /// placement was fitted to begins: the box whose origin `paint_bounds`
+    /// presents. A Portal at its declared extent keeps the anchor's origin.
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "a Portal's content anchor is its owner's layout moved to where the content it was fitted to begins"
+    )]
+    pub(crate) fn content_anchor(self, anchor: UiPublishedRect) -> UiPublishedRect {
+        self.arrangement.content.map_or(anchor, |content| {
+            let [x, y, _, _] = content.paint.components();
+            anchor.translated([x, y])
+        })
+    }
     /// The viewport the placement was fitted to, which clips the Portal.
     pub(crate) const fn clip_bounds(self) -> UiPublishedRect {
         self.arrangement.viewport

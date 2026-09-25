@@ -27,11 +27,12 @@ impl UiMountedPresentationState {
         .find(|identity| self.scroll_motion_groups.chrome.contains_key(identity))?;
         let track = self.scroll_motion_groups.chrome.get(&identity)?;
         let accepted =
-            self.accepted_motion_change(UiMountedPaintCommandIdentity::scroll_chrome(identity));
-        // A region's own offset never moves its track. Its accepted translation
-        // is therefore exactly the ancestor displacement of viewport/content.
+            self.accepted_motion_layers(UiMountedPaintCommandIdentity::scroll_chrome(identity));
+        // A region's own offset never moves its track. Its accepted Scroll
+        // translation is therefore exactly the ancestor displacement of
+        // viewport/content.
         let delta = accepted
-            .and_then(|change| change.transform())
+            .scroll_transform()
             .map(|transform| {
                 [
                     transform.sampled().x() - transform.source().x(),
@@ -54,9 +55,7 @@ impl UiMountedPresentationState {
         Some((
             translated(input.content)?,
             translated(input.viewport)?,
-            accepted
-                .and_then(|change| change.clip())
-                .unwrap_or(track.clip),
+            accepted.scroll_clip().unwrap_or(track.clip),
         ))
     }
 }

@@ -224,7 +224,7 @@ fn routing_with_reconciled_bounds_reclamps_the_pending_target() {
 /// a declared smooth wheel routes visits exactly one owner however deep the
 /// chain is. The ancestor behind it is the owner that notch will actually
 /// settle, and the bounds arriving with the route are the live geometry it has
-/// to settle against. Writing bounds only as far as the route travelled would
+/// to settle against. Writing bounds only as far as the route traveled would
 /// leave that ancestor measuring itself against whatever geometry was current
 /// the last time a delta had something left for it -- under a smooth wheel,
 /// never -- and it would stage a target past content that is no longer there.
@@ -356,7 +356,7 @@ fn a_reveal_retires_the_settle_it_overrode() {
     assert_eq!(
         state.pending_transition_count(),
         0,
-        "nothing may go on travelling toward a target the reveal overrode"
+        "nothing may go on traveling toward a target the reveal overrode"
     );
 }
 

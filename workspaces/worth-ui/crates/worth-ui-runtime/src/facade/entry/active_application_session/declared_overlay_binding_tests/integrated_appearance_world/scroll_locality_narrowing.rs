@@ -107,7 +107,7 @@ fn a_notch_re_resolves_the_content_its_region_carries_and_nothing_beside_it() {
     assert_eq!(
         cost.selected_instance_count(),
         CARRIED.len(),
-        "two occurrences travelled, so two are re-resolved -- not the {mounted} \
+        "two occurrences traveled, so two are re-resolved -- not the {mounted} \
          this session has mounted"
     );
     assert_eq!(
@@ -128,7 +128,7 @@ fn a_notch_re_resolves_the_content_its_region_carries_and_nothing_beside_it() {
     for position in CARRIED {
         assert!(
             reached(position),
-            "the occurrence at {position} travelled with the region, so the frame owes it"
+            "the occurrence at {position} traveled with the region, so the frame owes it"
         );
     }
     assert!(

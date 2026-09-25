@@ -16,7 +16,7 @@ impl UiMountedMotionSampler {
     /// The accepted translation of one Scroll region's scrolled content, in the
     /// sample's own coordinate space. This is the sole authority for displayed
     /// scrolled geometry: it reports only what the host has already accepted,
-    /// never the semantic target the content is still travelling toward.
+    /// never the semantic target the content is still traveling toward.
     ///
     /// Only a Scroll-content target answers. An ordinary component target and a
     /// Portal-content target name different moving things on the same mounted

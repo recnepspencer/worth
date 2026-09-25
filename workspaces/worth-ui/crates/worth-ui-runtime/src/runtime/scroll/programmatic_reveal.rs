@@ -86,7 +86,7 @@ impl super::UiScrollRuntimeState {
     ///
     /// A reveal is direct authority over the accepted offset, the same as a
     /// thumb placed on a track: it says where the content is, not where it is
-    /// heading. So a settle already travelling toward a wheel target is an
+    /// heading. So a settle already traveling toward a wheel target is an
     /// intention this request has just overruled, and every owner the route
     /// moved retires its target rather than resume dragging the content off
     /// what the reveal put on screen.
